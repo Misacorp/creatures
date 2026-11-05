@@ -9,6 +9,7 @@
  * The fold trusts nothing it cannot read: an event it has no rule for changes nothing, and the final `end` event sets the boss's HP, so the
  * last state is the fight's own whatever a rule it does not know did on the way.
  */
+import { content } from '@creatures/game';
 import type { BoardEvent, FightEvent, FinaleActionKind } from '@creatures/engine/v2';
 import type { FightCreatureV2 } from './fight-v2-api';
 import type { BossCardV2 } from './raid-v2-api';
@@ -24,6 +25,10 @@ export interface FoldCreature {
   startHp: number;
   row: number;
   col: number;
+  /** Its element (the colour of its hits and of a reaction it sets off), when known. */
+  element?: string;
+  /** Its saved Knack's name, when it has one (the name that pops on it when it acts). */
+  knackName?: string | null;
 }
 
 /** What the fold knows about the fight before the first event. */
@@ -47,6 +52,11 @@ export interface CreatureState {
   silenced: number;
   /** Its Store (Heat, Calm, Dodge stacks): 0 when it has none. */
   store: number;
+  /**
+   * A Support's Boost it still carries, in basis points (0: none). A Boost lasts until the creature's next hit on the boss (R16, the
+   * keyword "Boost"), so a hit from it spends it, and a knock-out takes it away.
+   */
+  boost: number;
 }
 
 /** A mark on the boss: its element, its count and whether it is Sealed. */
@@ -116,7 +126,7 @@ export function startState(setup: FoldSetup): BoardState {
     creatures: Object.fromEntries(
       setup.creatures.map((c) => [
         c.key,
-        { hp: c.startHp, out: c.startHp <= 0, silenced: 0, store: 0 },
+        { hp: c.startHp, out: c.startHp <= 0, silenced: 0, store: 0, boost: 0 },
       ]),
     ),
     bossHp: setup.bossHpStart,
@@ -201,6 +211,8 @@ function play(
         s.bossHp = Math.max(0, s.bossHp - b.damage);
         const row = rowOf.get(b.from);
         if (row !== undefined) s.step = { kind: 'row', row };
+        const hitter = s.creatures[b.from];
+        if (hitter !== undefined) hitter.boost = 0;
       } else if (b.to !== null) {
         const taker = s.creatures[b.by ?? b.to];
         if (taker !== undefined) taker.hp = Math.max(0, taker.hp - b.damage);
@@ -244,7 +256,13 @@ function play(
         c.hp = 0;
         c.silenced = 0;
         c.store = 0;
+        c.boost = 0;
       }
+      break;
+    }
+    case 'boost': {
+      const c = s.creatures[b.who];
+      if (c !== undefined && !c.out) c.boost += b.bp;
       break;
     }
     case 'silence': {
@@ -330,6 +348,8 @@ export interface BeatV2 {
   row: number;
   /** The creature that acts (its key); null for the others. */
   actor: string | null;
+  /** A reaction goes off in the beat: it is held a moment longer so the callout lands. */
+  reacts: boolean;
 }
 
 /** Events that come just before a creature's own hit: its reaction, its crit and the Sure Crit it spends. */
@@ -348,7 +368,7 @@ export function buildBeats(
   setup: Pick<FoldSetup, 'creatures'>,
 ): BeatV2[] {
   const rows = new Map(setup.creatures.map((c) => [c.key, c.row]));
-  type Start = Omit<BeatV2, 'to'>;
+  type Start = Omit<BeatV2, 'to' | 'reacts'>;
   const starts: Start[] = [];
   let round = 0;
   events.forEach((event, i) => {
@@ -372,13 +392,25 @@ export function buildBeats(
   if (starts.length === 0)
     return events.length === 0
       ? []
-      : [{ from: 0, to: events.length, kind: 'round', round: 0, row: 0, actor: null }];
+      : [
+          {
+            from: 0,
+            to: events.length,
+            kind: 'round',
+            round: 0,
+            row: 0,
+            actor: null,
+            reacts: false,
+          },
+        ];
   const first = starts[0] as Start;
-  const out = starts.map((st, k): BeatV2 => ({
-    ...st,
-    from: k === 0 ? 0 : st.from,
-    to: starts[k + 1]?.from ?? events.length,
-  }));
+  const out = starts.map((st, k): BeatV2 => {
+    const from = k === 0 ? 0 : st.from;
+    const to = starts[k + 1]?.from ?? events.length;
+    let reacts = false;
+    for (let i = from; i < to && !reacts; i++) reacts = events[i]?.board?.type === 'reaction';
+    return { ...st, from, to, reacts };
+  });
   // A first event before the first round belongs to it; the fold keeps their order.
   if (first.from > 0) out[0] = { ...(out[0] as BeatV2), from: 0 };
   return out;
@@ -409,6 +441,10 @@ function snapshotOf(s: MutableState): BoardState {
 
 // --- What a beat shows ---
 
+/** The kinds of number and word that float over a creature or the boss. */
+export type FloatToneV2 =
+  'hit' | 'hurt' | 'blocked' | 'dodge' | 'heal' | 'reaction' | 'save' | 'boost' | 'knack';
+
 /** One thing to float over a creature or the boss. */
 export interface FloatCue {
   /** The index of the event it came from (unique, so a number is not drawn twice). */
@@ -416,10 +452,28 @@ export interface FloatCue {
   /** The creature it floats over; null for the boss. */
   target: string | null;
   text: string;
-  tone: 'hit' | 'hurt' | 'blocked' | 'dodge' | 'heal';
+  tone: FloatToneV2;
   crit: boolean;
   /** Sideways drift in steps (-3 to 3), from the event index. */
   drift: number;
+  /** A creature's hit on the boss: the hitter's element, the colour of the number. */
+  element?: string;
+  /** A reaction: the element of the mark and of the hit that cashed it (its two colours). */
+  elements?: readonly [string, string];
+  /** A short second line: the reaction's bonus, what a Guard's cover saved, a boost's size. */
+  sub?: string;
+  /** A crit's multiplier, as the words "x2.6!". */
+  mult?: string;
+  /** A reaction: the hit of the same creature that cashed it, in the same beat (the callout can carry its number). */
+  hit?: HitOfReaction;
+}
+
+/** The hit a reaction was cashed on: its event index (so the stage can leave its own number out), the damage, and a crit's size. */
+export interface HitOfReaction {
+  i: number;
+  text: string;
+  crit: boolean;
+  mult?: string;
 }
 
 /** What the screen draws for one beat, read from its events. */
@@ -441,12 +495,35 @@ export interface BeatShow {
   bossHit: boolean;
   /** A live input took effect in this beat. */
   actions: readonly { kind: FinaleActionKind; row: number | null; by: string }[];
+  /** Guards that took a hit for, or cut a hit on, a creature (`prevented`: what a cover saved; null when it is not known). */
+  saves: readonly { i: number; guard: string; who: string; prevented: number | null }[];
+  /** Creatures whose Knack acted in this beat, with the Knack's name (shown only when the player asked for Knack names). */
+  knacks: readonly { i: number; who: string; name: string }[];
 }
 
 const drift = (i: number): number => ((i * 5) % 7) - 3;
 
+/** The name of the reaction a hit of `trigger`'s element sets off on a mark of `mark`'s (the content's own name), or null. */
+export const reactionName = (mark: string, trigger: string): string | null =>
+  content.reactions.find((r) => r.markElement === mark && r.triggerElement === trigger)?.name ??
+  null;
+
+/** "x2.6!" for a crit multiplier in basis points (26_000), as short as it reads ("x2!" for 20_000). */
+export const critWords = (bp: number): string => `x${String(Number((bp / 10_000).toFixed(1)))}!`;
+
+/** What `showOf` may know about the fight beyond the events: the creatures (their elements and Knack names) and who is silenced. */
+export interface ShowContext {
+  creatures?: readonly Pick<FoldCreature, 'key' | 'element' | 'knackName'>[];
+  /** Creatures whose Knack does not act (silenced, or out) when the beat begins. */
+  quiet?: ReadonlySet<string>;
+}
+
 /** What a beat shows: who flashes, the numbers that float, who falls, what is cashed. */
-export function showOf(events: readonly FightEvent[], beat: BeatV2): BeatShow {
+export function showOf(
+  events: readonly FightEvent[],
+  beat: BeatV2,
+  context: ShowContext = {},
+): BeatShow {
   const flash = new Set<string | null>();
   const floats: FloatCue[] = [];
   const knockedOut: { i: number; who: string }[] = [];
@@ -454,6 +531,21 @@ export function showOf(events: readonly FightEvent[], beat: BeatV2): BeatShow {
   const cashed: string[] = [];
   const shed: string[] = [];
   const actions: { kind: FinaleActionKind; row: number | null; by: string }[] = [];
+  const saves: { i: number; guard: string; who: string; prevented: number | null }[] = [];
+  const knackOwners = new Map<string, number>();
+  const boosts = new Map<string, { i: number; bp: number }>();
+  // The creature behind each number on the boss, and who cashed each reaction: a reaction's callout takes the number of its own hit.
+  const hitters = new Map<number, string>();
+  const reactors: { cue: FloatCue; by: string }[] = [];
+  const byKey = new Map((context.creatures ?? []).map((c) => [c.key, c]));
+  const quiet = context.quiet ?? new Set<string>();
+  const elementOf = (key: string | null): string | undefined =>
+    key === null ? undefined : byKey.get(key)?.element;
+  const withElement = (key: string | null): { element: string } | Record<string, never> => {
+    const element = elementOf(key);
+    return element === undefined ? {} : { element };
+  };
+  if (beat.kind === 'creature' && beat.actor !== null) knackOwners.set(beat.actor, beat.from);
   let move: string | null = null;
   let bossHit = false;
   for (let i = beat.from; i < beat.to; i++) {
@@ -465,9 +557,10 @@ export function showOf(events: readonly FightEvent[], beat: BeatV2): BeatShow {
       case 'hit': {
         if (b.from !== null && b.to === null) {
           flash.add(null);
+          if (!b.dodged && !b.blocked) hitters.set(i, b.from);
           floats.push(
             b.dodged
-              ? { i, target: null, text: 'Dodged', tone: 'dodge', crit: false, drift: drift(i) }
+              ? { i, target: null, text: 'Dodged!', tone: 'dodge', crit: false, drift: drift(i) }
               : b.blocked
                 ? { i, target: null, text: '0', tone: 'blocked', crit: b.crit, drift: drift(i) }
                 : {
@@ -477,6 +570,8 @@ export function showOf(events: readonly FightEvent[], beat: BeatV2): BeatShow {
                     tone: 'hit',
                     crit: b.crit,
                     drift: drift(i),
+                    ...withElement(b.from),
+                    ...(b.crit && b.critBp !== undefined ? { mult: critWords(b.critBp) } : {}),
                   },
           );
         } else if (b.to !== null) {
@@ -485,7 +580,7 @@ export function showOf(events: readonly FightEvent[], beat: BeatV2): BeatShow {
           flash.add(target);
           floats.push(
             b.dodged
-              ? { i, target: b.to, text: 'Dodged', tone: 'dodge', crit: false, drift: drift(i) }
+              ? { i, target: b.to, text: 'Dodged!', tone: 'dodge', crit: false, drift: drift(i) }
               : b.blocked
                 ? { i, target, text: '0', tone: 'blocked', crit: b.crit, drift: drift(i) }
                 : {
@@ -509,6 +604,7 @@ export function showOf(events: readonly FightEvent[], beat: BeatV2): BeatShow {
           tone: 'hit',
           crit: false,
           drift: drift(i),
+          ...withElement(b.from),
         });
         break;
       case 'heal':
@@ -520,6 +616,19 @@ export function showOf(events: readonly FightEvent[], beat: BeatV2): BeatShow {
           crit: false,
           drift: drift(i),
         });
+        if (b.by !== undefined && !knackOwners.has(b.by)) knackOwners.set(b.by, i);
+        break;
+      case 'boost': {
+        const was = boosts.get(b.who);
+        boosts.set(b.who, { i: was?.i ?? i, bp: (was?.bp ?? 0) + b.bp });
+        if (!knackOwners.has(b.by)) knackOwners.set(b.by, i);
+        break;
+      }
+      case 'intercept':
+        saves.push({ i, guard: b.guard, who: b.who, prevented: null });
+        break;
+      case 'cover':
+        saves.push({ i, guard: b.guard, who: b.who, prevented: b.prevented });
         break;
       case 'knockout':
         knockedOut.push({ i, who: b.who });
@@ -527,9 +636,24 @@ export function showOf(events: readonly FightEvent[], beat: BeatV2): BeatShow {
       case 'silence':
         silenced.push(b.who);
         break;
-      case 'reaction':
+      case 'reaction': {
         cashed.push(b.mark);
+        const trigger = elementOf(b.by);
+        const name = trigger === undefined ? null : reactionName(b.mark, trigger);
+        const cue: FloatCue = {
+          i,
+          target: null,
+          text: `${name ?? 'Reaction'}!`,
+          tone: 'reaction',
+          crit: false,
+          drift: drift(i),
+          sub: `+${String(b.bonus)}`,
+          ...(trigger === undefined ? {} : { elements: [b.mark, trigger] as const }),
+        };
+        floats.push(cue);
+        reactors.push({ cue, by: b.by });
         break;
+      }
       case 'shed':
         shed.push(...b.marks);
         break;
@@ -540,7 +664,52 @@ export function showOf(events: readonly FightEvent[], beat: BeatV2): BeatShow {
         break;
     }
   }
-  return { flash, floats, knockedOut, silenced, cashed, shed, move, bossHit, actions };
+  for (const { cue, by } of reactors) {
+    const hit = floats.find((f) => f.tone === 'hit' && f.i > cue.i && hitters.get(f.i) === by);
+    if (hit !== undefined)
+      cue.hit = {
+        i: hit.i,
+        text: hit.text,
+        crit: hit.crit,
+        ...(hit.mult === undefined ? {} : { mult: hit.mult }),
+      };
+  }
+  for (const s of saves) {
+    floats.push({
+      i: s.i,
+      target: s.who,
+      text: s.prevented === null ? '' : `-${String(s.prevented)}`,
+      tone: 'save',
+      crit: false,
+      drift: 0,
+    });
+  }
+  for (const [who, { i, bp }] of boosts)
+    floats.push({
+      i,
+      target: who,
+      text: '',
+      tone: 'boost',
+      crit: false,
+      drift: 0,
+      sub: `+${String(Math.round(bp / 100))}%`,
+    });
+  const knacks = [...knackOwners]
+    .filter(([who]) => !quiet.has(who) && (byKey.get(who)?.knackName ?? null) !== null)
+    .map(([who, i]) => ({ i, who, name: byKey.get(who)?.knackName as string }));
+  return {
+    flash,
+    floats,
+    knockedOut,
+    silenced,
+    cashed,
+    shed,
+    move,
+    bossHit,
+    actions,
+    saves,
+    knacks,
+  };
 }
 
 // --- Words and counts for the screens ---
@@ -586,6 +755,8 @@ export function foldSetupOf(args: {
       startHp: f.startHp,
       row: f.row,
       col: f.col,
+      element: f.element,
+      knackName: f.knackName,
     })),
     bossHpStart,
     moveTurns: Object.fromEntries(card.moves.map((m) => [m.id, m.turn])),

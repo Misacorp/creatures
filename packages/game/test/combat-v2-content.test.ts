@@ -410,6 +410,8 @@ const BOARD_KEYWORDS: ReadonlySet<string> = new Set<string>([
   'Back-most',
   // The boss's Escalating meter; an Escalating boss shows its own name in the text, and no text says the word itself.
   'Escalating',
+  // The chip by the boss card when the server has failed this boss before; no Knack or talent text names it.
+  'Determination',
 ]);
 
 describe('combat v2 content gate: keywords', () => {
@@ -544,12 +546,29 @@ describe('combat v2 content gate: talents and their pools', () => {
     ...new Set(content.creatures.filter((c) => c.line === line).map((c) => c.role)),
   ];
 
-  it('every talent fits a role and is in a line pool (Culling Strike waits for a killing-blow talent)', () => {
+  it('Culling Strike, an enabler (Misa, 2026-11-03), is in the pool of a line of each role and of each element', () => {
+    const lines = Object.entries(pack.pools).filter(([, ids]) => ids.includes('cull'));
+    const base = (line: string) => {
+      const form = content.creatures.find((c) => c.line === line && c.stage === 1);
+      if (form === undefined) throw new Error(`no stage 1 form for ${line}`);
+      return form;
+    };
+    expect(new Set(lines.map(([line]) => base(line).role))).toEqual(
+      new Set(['setter', 'payoff', 'guard', 'support']),
+    );
+    expect(new Set(lines.map(([line]) => base(line).element))).toEqual(
+      new Set(['tide', 'ember', 'grove', 'spark', 'mire']),
+    );
+    expect(pack.talents['cull']?.roles).toEqual(['setter', 'payoff', 'guard', 'support']);
+    expect(pack.talents['cull']?.intent).toMatch(/not intended to be used alone/);
+  });
+
+  it('every talent fits a role and is in a line pool', () => {
     const pooled = new Set(Object.values(pack.pools).flat());
     for (const [id, t] of Object.entries(pack.talents)) {
       expect(t.id, id).toBe(id);
       expect(t.roles.length, id).toBeGreaterThan(0);
-      expect(pooled.has(id), `${id} pool membership`).toBe(id !== 'cull');
+      expect(pooled.has(id), `${id} pool membership`).toBe(true);
     }
     expect(Object.keys(pack.talents).length).toBeGreaterThanOrEqual(28);
     // Retired in panel 3.

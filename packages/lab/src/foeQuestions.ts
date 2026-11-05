@@ -8,6 +8,7 @@
  */
 import { answerLine } from './bossAnswers';
 import { gauntletStats } from './dungeon';
+import { OLD_PACK } from './dungeonKnobs';
 import { foeAt } from './foes';
 import type { Pick } from './search';
 import { withoutTool } from './bossAnswers';
@@ -215,9 +216,12 @@ export interface FoeQuestionResult {
   readonly gap: number;
 }
 
-/** The foe at the question's depth with its HP and Attack scaled. */
+/**
+ * The foe at the question's depth with its HP and Attack scaled: from the numbers before the dungeon's baseline of 2026-11-04 (`OLD_PACK`),
+ * which the questions were tuned on (a foe's question only shows when the fight is hard enough).
+ */
 export function questionFoe(q: FoeQuestion) {
-  const base = foeAt(q.foe, q.depth);
+  const base = foeAt(q.foe, q.depth, {}, OLD_PACK);
   return {
     ...base,
     hp: Math.max(1, Math.round((base.hp * q.hpBp) / 10_000)),

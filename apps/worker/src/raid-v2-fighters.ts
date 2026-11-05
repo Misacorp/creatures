@@ -13,6 +13,7 @@ import {
   buildFighter,
   gearStatLines,
   savedKnackOf,
+  slottedGolden,
   slottedTalents,
   type GearStats,
 } from './fighter-v2';
@@ -37,6 +38,8 @@ export interface V2CreatureRow {
 /** A creature as a stage reads it: its row, its slotted v2 talents (in slot order) and its gear's stat lines. */
 export interface V2Creature extends V2CreatureRow {
   talents: string[];
+  /** The ids among `talents` that are golden. */
+  goldenTalents: string[];
   gear: GearStats;
 }
 
@@ -87,14 +90,16 @@ export function loadV2Creatures(sql: SqlStorage, ids: readonly string[]): Map<st
       .toArray();
     const learned = new Map<string, LearnedTalent[]>();
     for (const t of sql
-      .exec<{ creature_id: string; talent_id: string; slot: number | null }>(
-        `SELECT creature_id, talent_id, slot FROM creature_talents_v2
-         WHERE creature_id IN (${marks}) AND slot IS NOT NULL ORDER BY creature_id, slot`,
+      .exec<{ creature_id: string; talent_id: string; slot: number | null; golden: number }>(
+        `SELECT t.creature_id, t.talent_id, t.slot, COALESCE(b.golden, 0) AS golden FROM creature_talents_v2 t
+         JOIN creatures c ON c.id = t.creature_id
+         LEFT JOIN line_talents b ON b.user_id = c.user_id AND b.line = c.line AND b.talent_id = t.talent_id
+         WHERE t.creature_id IN (${marks}) AND t.slot IS NOT NULL ORDER BY t.creature_id, t.slot`,
         ...part,
       )
       .toArray()) {
       const list = learned.get(t.creature_id) ?? [];
-      list.push({ talentId: t.talent_id, slot: t.slot });
+      list.push({ talentId: t.talent_id, slot: t.slot, golden: t.golden === 1 });
       learned.set(t.creature_id, list);
     }
     const worn = wornOnCreatures(sql, part);
@@ -109,6 +114,7 @@ export function loadV2Creatures(sql: SqlStorage, ids: readonly string[]): Map<st
         nickname: r.nickname,
         // A slotted talent counts only while its slot is open at the creature's level.
         talents: slottedTalents({ species, level: r.level }, learned.get(r.id) ?? []),
+        goldenTalents: slottedGolden({ species, level: r.level }, learned.get(r.id) ?? []),
         gear: gearLinesOf(species, r.level, r.fusion_count, worn.get(r.id)),
       });
     }
@@ -133,6 +139,7 @@ export function fighterOf(
     level: c.level,
     knack: c.knack,
     talents: c.talents,
+    goldenTalents: c.goldenTalents,
     gear: c.gear,
     row: place.row,
     col: place.col,

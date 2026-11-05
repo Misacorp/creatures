@@ -9,13 +9,17 @@ import type { DevPanelProps } from '../dev-gate';
 import { creatureName } from '../game';
 import {
   clockRows,
+  describeBench,
   describeResult,
   errorSentence,
   eventLine,
   fetchDevEvents,
   fetchDevState,
+  parseWatch,
+  replayPhaseOf,
   runTool,
   type DevStateView,
+  type WatchTarget,
 } from './dev-api';
 import './dev.css';
 import { buildRows, readBuildInfo } from '../build-info';
@@ -29,6 +33,7 @@ import { ToolForm } from './ToolForm';
 import { COMBAT_LAB_URL } from './combat-lab-link';
 import { PROTOTYPE_URL } from './prototype-link';
 import { WORKBENCH_URL } from './workbench-link';
+import { Replay } from '../Replay';
 import { Accordion } from '../ui/Accordion';
 import { DataTable } from '../ui/DataTable';
 
@@ -206,6 +211,8 @@ export default function DevPanel({ tab, creatures, onChanged }: DevPanelProps): 
   const [busy, setBusy] = useState(false);
   const [events, setEvents] = useState<string[] | null>(null);
   const [opened, setOpened] = useState<Record<string, boolean>>({});
+  /** The fight a Play button opened: its replay is on screen over the game. */
+  const [watch, setWatch] = useState<WatchTarget | null>(null);
   const inFlight = useRef(false);
 
   const choices = useMemo<CreatureChoice[]>(
@@ -242,12 +249,37 @@ export default function DevPanel({ tab, creatures, onChanged }: DevPanelProps): 
         setStatus({ ok: false, text: `${spec.label}: ${errorSentence(outcome.error)}` });
         return;
       }
-      setStatus({ ok: true, text: `${spec.label}: ${describeResult(outcome.result)}` });
+      setStatus({
+        ok: true,
+        text: `${spec.label}: ${describeBench(spec.tool, outcome.result) ?? describeResult(outcome.result)}`,
+      });
+      // A played stage opens its replay at once (a live finale has none: the game's own finale screen shows it).
+      const target = spec.tool === 'raid-play' ? parseWatch(outcome.result) : null;
+      if (target !== null) {
+        setWatch(target);
+        setOpen(false);
+      }
       reloadView();
       if (spec.tool === 'analytics-rollup' && events !== null) loadEvents();
       onChanged();
     });
   };
+
+  /** The controls one after the other, as listed: a sequence of steps. */
+  const steps = (specs: readonly ToolSpec[]): JSX.Element => (
+    <>
+      {specs.map((s) => (
+        <ToolForm
+          key={`${s.tool}:${s.label}`}
+          spec={s}
+          choices={choices}
+          busy={busy}
+          onRun={run}
+          stacked
+        />
+      ))}
+    </>
+  );
 
   const forms = (specs: readonly ToolSpec[]): JSX.Element => (
     <>
@@ -296,6 +328,19 @@ export default function DevPanel({ tab, creatures, onChanged }: DevPanelProps): 
       >
         DEV
       </button>
+      {watch !== null && (
+        <div class="dev-replay" role="region" aria-label="Replay">
+          <Replay
+            weekId={watch.week}
+            party={watch.party}
+            phase={replayPhaseOf(watch.phase)}
+            rules={2}
+            onClose={() => {
+              setWatch(null);
+            }}
+          />
+        </div>
+      )}
       {open && (
         <div class="dev-drawer" id="dev-drawer" role="region" aria-label="Dev tools">
           <header class="dev-head">
@@ -389,7 +434,7 @@ export default function DevPanel({ tab, creatures, onChanged }: DevPanelProps): 
                 open={sectionOpen(section.id, section.tab === tab)}
                 onToggle={toggle(section.id)}
               >
-                {forms(section.specs)}
+                {section.ordered === true ? steps(section.specs) : forms(section.specs)}
                 {section.id === 'analytics' && (
                   <div class="dev-events">
                     <button type="button" class="dev-btn" onClick={loadEvents}>

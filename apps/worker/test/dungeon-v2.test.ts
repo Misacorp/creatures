@@ -1,11 +1,19 @@
 /**
  * The daily dungeon on combat v2 (docs/design/combat/integration.md, sections 5 and 6): a run that starts with the
  * flag on is version 2 to its end, its rooms are v2 fights against `foeAt`, only HP carries, a knocked-out creature
- * stays out until the camp swaps in a fresh one, the replay and the views say `rules: 2` and carry the board events,
+ * stays out between rooms until the camp swaps in a fresh one (the way down into the Undercroft gets it back up), the replay and the views say `rules: 2` and carry the board events,
  * and a v1 run that began before the flag turned on finishes on v1.
  */
 import { combatV2, knownKnacks } from '@creatures/game/combat-v2';
-import { RULES, createSeededRng, dungeonContent } from '@creatures/game';
+import {
+  RULES,
+  createSeededRng,
+  dungeonContent,
+  dungeonResourceBp,
+  dungeonRunXp,
+  scaleBp,
+  undercroftDepth,
+} from '@creatures/game';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { RunState } from '../src/dungeon-state';
 import type {
@@ -24,6 +32,7 @@ import {
   type DungeonPlayer,
 } from './dungeon-helpers';
 import { runCore, type CoreContext } from './helpers';
+import { gameDay } from '../src/time';
 import { nextGuild, rows } from './raid-helpers';
 
 /** 14:00 in Helsinki on 2027-01-15, after the daily reset: the game day is the 15th. */
@@ -119,6 +128,27 @@ const toCamp = async (p: DungeonPlayer, state: DungeonRunState) => {
 };
 
 describe('a v2 run', () => {
+  it('reads no weather in its fights, even on a day with a Boon and an Omen (Misa, 2026-11-04)', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await dungeonPlayer(ctx, 1, STRONG);
+        giveV2(ctx, p.id);
+        ctx.clock.t = AFTER_RESET;
+        const state = await begin(p);
+        const st = stored(ctx, state.id);
+        // The valley has a day's weather, but the run stores none of it and its fight input carries none.
+        expect(st.weather).toBeNull();
+        expect(st.input.luck).toEqual(RULES.combat.luck);
+        expect(st.input).not.toHaveProperty('bossAttacks');
+        for (const key of ['rainHealBp', 'sky', 'fog', 'bramble']) {
+          expect(JSON.stringify(st.input)).not.toContain(key);
+        }
+      },
+      { ...V2('v2-weather'), weather: true },
+    );
+  });
+
   it('starts as version 2: its fighters frozen, its max HP the fighters’, the views saying rules 2', async () => {
     await runCore(
       nextGuild(),
@@ -436,6 +466,41 @@ describe('a v2 day: rooms, a knock-out, the camp swap, the floor boss', () => {
     );
   });
 
+  it('stores no weather and records no weather use, so its summary and experience never read the day', async () => {
+    const hard = scaleV2Foes(3_000_000, 3_000_000);
+    try {
+      await runCore(
+        nextGuild(),
+        async (ctx) => {
+          const p = await dungeonPlayer(ctx, 1, STRONG);
+          giveV2(ctx, p.id);
+          ctx.clock.t = AFTER_RESET;
+          // A day with a Boon and an Omen that a v1 run would store, name in its summary and log.
+          ctx.core.weather.force(
+            gameDay(ctx.clock.t, 'Europe/Helsinki', RULES.daily.reset),
+            'fair-winds',
+            'heatwave',
+          );
+          const state = await begin(p);
+          expect(stored(ctx, state.id).weather).toBeNull();
+          const res = await p.act(state, { type: 'move', node: state.reachable[0] as string });
+          expect(res.status, JSON.stringify(res.body)).toBe(200);
+          expect(res.body.summary?.rules).toBe(2);
+          expect(res.body.summary).not.toHaveProperty('weather');
+          expect(JSON.parse(runRow(ctx, state.id)?.summary_json ?? '{}')).not.toHaveProperty(
+            'weather',
+          );
+          expect(
+            rows(ctx.sql, "SELECT 1 FROM analytics_events WHERE kind = 'weather_use'"),
+          ).toHaveLength(0);
+        },
+        { ...V2('v2-no-weather'), weather: true },
+      );
+    } finally {
+      hard();
+    }
+  });
+
   it('ends the run lost when the whole team falls in a room', async () => {
     const hard = scaleV2Foes(3_000_000, 3_000_000);
     try {
@@ -482,7 +547,7 @@ describe('the descent card and the descent on v2', () => {
     return { shown, down, hurt };
   }
 
-  it('promises no revive on a v2 run, and the descent keeps a knocked-out creature at 0 HP with revived 0', async () => {
+  it('promises the revive on a v2 run, and the descent gets a knocked-out creature back up (decision 2026-11-04)', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
@@ -490,16 +555,19 @@ describe('the descent card and the descent on v2', () => {
         giveV2(ctx, p.id);
         const { shown, down, hurt } = await atDescentWithFallen(ctx, p);
         expect(shown.rules).toBe(2);
-        expect(shown.pending).toMatchObject({ kind: 'descend', reviveBp: 0 });
+        expect(shown.pending).toMatchObject({
+          kind: 'descend',
+          reviveBp: RULES.dungeon.undercroft.reviveBp,
+        });
         const res = await p.act(shown, { type: 'descend' });
         expect(res.status, JSON.stringify(res.body)).toBe(200);
         const team = res.body.state.team;
-        expect(team.find((m) => m.id === down)?.hp).toBe(0);
-        // The standing creature still catches its breath.
+        expect(team.find((m) => m.id === down)?.hp).toBeGreaterThan(0);
+        // The standing creature still heals its own share.
         expect(team.find((m) => m.id === hurt)?.hp).toBeGreaterThan(5);
-        expect(res.body.state.history.at(-1)).toMatchObject({ result: 'descend', revived: 0 });
+        expect(res.body.state.history.at(-1)).toMatchObject({ result: 'descend', revived: 1 });
       },
-      V2('v2-descent-no-revive'),
+      V2('v2-descent-revive'),
     );
   });
 
@@ -591,5 +659,98 @@ describe('the rules version is kept to the end of a run', () => {
       },
       V2('v2-before-off'),
     );
+  });
+});
+
+describe('v2 rewards grow with depth, the Undercroft by its own depth (Misa, 2026-11-04)', () => {
+  const DEEP = 40;
+  const setDepth = (ctx: CoreContext, userId: string, depth: number): void => {
+    ctx.sql.exec(
+      `INSERT INTO dungeon_progress (user_id, depth, first_day) VALUES (?, ?, '2027-01-01')
+       ON CONFLICT(user_id) DO UPDATE SET depth = excluded.depth`,
+      userId,
+      depth,
+    );
+  };
+  const atDescent = (s: DungeonRunState): boolean => s.pending?.kind === 'descend';
+  const summaryOf = (ctx: CoreContext, runId: string) =>
+    JSON.parse(runRow(ctx, runId)?.summary_json ?? '{}') as {
+      pack: {
+        found: { bait: number; essence: number; scrap: number };
+        kept: { bait: number; essence: number; scrap: number };
+      };
+      rewards: { experience: { creatureId: string; gained: number }[] };
+    };
+
+  it('pays the pack and the experience scaled by depth, and says nothing of it to the player', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await dungeonPlayer(ctx, 1, STRONG);
+        giveV2(ctx, p.id);
+        ctx.clock.t = AFTER_RESET;
+        setDepth(ctx, p.id, DEEP);
+        const state = await begin(p);
+        const waiting = (await p.play(state, { stopWhen: atDescent })).body
+          .state as DungeonRunState;
+        expect(waiting.pending?.kind).toBe('descend');
+        const raw = stored(ctx, state.id);
+        const res = await p.act(waiting, { type: 'home' });
+        expect(res.status, JSON.stringify(res.body)).toBe(200);
+        const summary = summaryOf(ctx, state.id);
+        const bp = dungeonResourceBp(DEEP);
+        expect(bp).toBeGreaterThan(10_000);
+        expect(summary.pack.found).toMatchObject({
+          bait: scaleBp(raw.pack.bait, bp),
+          essence: scaleBp(raw.pack.essence, bp),
+          scrap: scaleBp(raw.pack.scrap, bp),
+        });
+        expect(summary.pack.found.scrap).toBeGreaterThan(raw.pack.scrap);
+        expect(summary.pack.kept).toMatchObject(summary.pack.found);
+        const topBase = Math.max(0, ...Object.values(raw.earned).map((x) => x.base));
+        for (const e of summary.rewards.experience) {
+          const earned = raw.earned[e.creatureId];
+          expect(e.gained).toBe(dungeonRunXp(earned?.base ?? 0, DEEP, topBase));
+        }
+        expect(summary.rewards.experience.length).toBeGreaterThan(0);
+        // Nothing in the payload names the rule.
+        expect(JSON.stringify(res.body)).not.toMatch(/rollsMax|bestOf|best-of|depthRewards/i);
+      },
+      V2('v2-depth-pack'),
+    );
+  });
+
+  it('pays a run that went down by the Undercroft depth', async () => {
+    const u = RULES.dungeon.undercroft as { depthBonus: number };
+    const before = u.depthBonus;
+    u.depthBonus = 20;
+    try {
+      await runCore(
+        nextGuild(),
+        async (ctx) => {
+          const p = await dungeonPlayer(ctx, 1, STRONG);
+          giveV2(ctx, p.id);
+          ctx.clock.t = AFTER_RESET;
+          setDepth(ctx, p.id, DEEP);
+          const state = await begin(p);
+          const waiting = (await p.play(state, { stopWhen: atDescent })).body
+            .state as DungeonRunState;
+          const down = await p.act(waiting, { type: 'descend' });
+          expect(down.status, JSON.stringify(down.body)).toBe(200);
+          const raw = stored(ctx, state.id);
+          expect(raw.level).toBe(1);
+          ctx.clock.t = AFTER_RESET + 24 * 60 * 60 * 1000;
+          ctx.core.dungeon.closeStale();
+          const summary = summaryOf(ctx, state.id);
+          const deepBp = dungeonResourceBp(undercroftDepth(DEEP, 1));
+          expect(deepBp).toBeGreaterThan(dungeonResourceBp(DEEP));
+          expect(summary.pack.found.scrap).toBe(scaleBp(raw.pack.scrap, deepBp));
+          expect(summary.pack.found.essence).toBe(scaleBp(raw.pack.essence, deepBp));
+        },
+        V2('v2-depth-under'),
+      );
+    } finally {
+      u.depthBonus = before;
+    }
   });
 });

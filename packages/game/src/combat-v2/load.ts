@@ -92,6 +92,8 @@ export interface CombatV2Pack {
   /** The lab scale of a foe's content numbers and the depth curve of its HP and Attack. */
   readonly foeScale: FoeScale;
   readonly foeCurve: FoeCurve;
+  /** The same two for the Undercroft's foes: their own scale and their own depth curve. */
+  readonly foeUndercroft: { readonly scale: FoeScale; readonly curve: FoeCurve };
   /** Dungeon foes by id. */
   readonly foes: Readonly<Record<string, FoeDef>>;
 }
@@ -428,6 +430,11 @@ export function loadCombatV2(
     const element = bossElements.get(b.id);
     if (element === undefined) fail(`raid boss "${b.id}" is not a shipped boss`);
     const resolve = (use: MoveUseDef) => resolveMove(use, moves, `raid boss "${b.id}"`, element);
+    // Only a full column is a piece the engine can play (the board repeats it per player); any other shape needs engine support first.
+    if (b.piece.rows !== b.rows)
+      fail(
+        `raid boss "${b.id}": its piece has ${String(b.piece.rows)} rows but the arena has ${String(b.rows)}; the engine plays only one full column per player yet`,
+      );
     const { moves: ownUses, escalation: escUse, ...rest } = b;
     const own = ownUses.map(resolve);
     const escalation = escUse === undefined ? undefined : resolveEscalation(escUse, resolve);
@@ -526,6 +533,7 @@ export function loadCombatV2(
     raidTrack: trackFile,
     foeScale: foeFile.scale,
     foeCurve: foeFile.curve,
+    foeUndercroft: foeFile.undercroft,
     foes,
   };
 }

@@ -1524,6 +1524,17 @@
     "section": "dungeon"
   },
   {
+    "id": "depth-choice",
+    "title": "Depth to play",
+    "short": "Step back to a depth you have beaten, for less reward.",
+    "lines": [
+      "Pick any depth from 1 to your own. The line shows its XP and loot against depth 1.",
+      "Only a clear at your own depth takes you deeper.",
+      "A landmark's bonus is paid once, when the clear takes you past it."
+    ],
+    "section": "dungeon"
+  },
+  {
     "id": "room-modifiers",
     "title": "Room modifiers",
     "short": "Each room has a twist, shown before you enter.",

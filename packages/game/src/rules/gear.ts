@@ -639,6 +639,21 @@ export function rollFinaleItem(rng: Rng, rank: number, element: Element): GearIt
   return rollItem(rng, { baseId: base.id, rarity, itemLevel });
 }
 
+/**
+ * A kill-bonus piece (combat v2 raid, Misa 2026-11-04): the rarity is fixed by the bonus, the item level and the boss's element are the
+ * finale's. Draws the slot, then the lines.
+ */
+export function rollKillBonusItem(
+  rng: Rng,
+  rank: number,
+  element: Element,
+  rarity: 'rare' | 'epic',
+): GearItem {
+  const itemLevel = finaleItemLevel(rank);
+  const base = dropBase(rng, element, itemLevel, { roleCharm: true });
+  return rollItem(rng, { baseId: base.id, rarity, itemLevel });
+}
+
 /** What a won finale gives each participant: one gear piece or one blueprint. */
 export type FinaleReward = { kind: 'gear'; item: GearItem } | { kind: 'blueprint'; baseId: string };
 

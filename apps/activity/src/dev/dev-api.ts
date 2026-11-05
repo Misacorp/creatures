@@ -20,8 +20,18 @@ export function errorCode(err: unknown): string {
  * code. Any other code is shown as it is.
  */
 const ERROR_SENTENCES: Readonly<Record<string, string>> = {
-  roster_locked:
-    'The roster is locked: Phase 1 has been fought this week. Jump the week to Week done, then to Preparation to start next week, then fill it.',
+  not_v2:
+    'This raid week is on the old rules. Press Clear the board: it makes the week again on the new rules.',
+  fought: 'This week has been fought. Clear the board first.',
+  clear_first: 'The calendar is past a stage that was not played here. Clear the board first.',
+  nobody_placed: 'Nobody is on the board. Place a creature or fill the board first.',
+  nobody_left:
+    'Nobody is left on the board to fight: the creatures that fell stay out this weekend.',
+  already_played: 'That stage is already played. Clear the board to start again.',
+  play_stage1_first: 'Play stage 1 first.',
+  play_stage2_first: 'Play stage 2 first.',
+  boss_fell: 'The boss already fell.',
+  festival: 'This is a Festival week, with no raid. Clear the board first.',
 };
 
 /** What the panel shows for an error code: a plain sentence when there is one, else the code. */
@@ -128,6 +138,65 @@ export function eventLine(event: DevEvent): string {
 }
 
 const RESULT_LIMIT = 300;
+
+/** The fight a Play button opens: the stage's week, party and the name the replay route takes. */
+export interface WatchTarget {
+  week: string;
+  party: number;
+  phase: 'stage1' | 'stage2' | 'finale';
+}
+
+/** The `watch` part of a `raid-play` answer, or null (a live finale has none, and so has anything unexpected). */
+export function parseWatch(result: unknown): WatchTarget | null {
+  if (!isRecord(result) || !isRecord(result['watch'])) return null;
+  const { week, party, phase } = result['watch'];
+  if (typeof week !== 'string' || typeof party !== 'number' || !Number.isInteger(party))
+    return null;
+  if (phase !== 'stage1' && phase !== 'stage2' && phase !== 'finale') return null;
+  return { week, party, phase };
+}
+
+/** The replay screen's name for a stage of a combat v2 week (`phase1` and `phase2` are its stages 1 and 2). */
+export const replayPhaseOf = (phase: WatchTarget['phase']): 'phase1' | 'phase2' | 'finale' =>
+  phase === 'stage1' ? 'phase1' : phase === 'stage2' ? 'phase2' : 'finale';
+
+const num = (record: Record<string, unknown>, key: string): number | null => {
+  const value = record[key];
+  return typeof value === 'number' ? value : null;
+};
+
+/** The raid bench's answers as one plain sentence; null for any other tool or an answer that is not what was expected. */
+export function describeBench(tool: DevToolId, result: unknown): string | null {
+  if (!isRecord(result)) return null;
+  switch (tool) {
+    case 'raid-clear': {
+      const rank = num(result, 'rank');
+      if (rank === null) return null;
+      const back =
+        result['clockMovedBack'] === true ? ' The clock went back into the preparation.' : '';
+      return `The board is clear, Boss Rank ${String(rank)}.${back}`;
+    }
+    case 'raid-fill': {
+      const added = num(result, 'added');
+      if (added === null) return null;
+      const full = result['boardFull'] === true ? ' The board is full.' : '';
+      return `${String(added)} simulated ${added === 1 ? 'player' : 'players'} added.${full}`;
+    }
+    case 'raid-rank': {
+      const rank = num(result, 'rank');
+      return rank === null ? null : `Boss Rank ${String(rank)} set.`;
+    }
+    case 'raid-play': {
+      const stage = num(result, 'stage');
+      if (stage === null) return null;
+      const name = stage === 3 ? 'The finale' : `Stage ${String(stage)}`;
+      if (result['live'] === true) return `${name} started live.`;
+      return `${name} played.${result['bossFell'] === true ? ' The boss fell.' : ''}`;
+    }
+    default:
+      return null;
+  }
+}
 
 /** A tool's result as short plain text (cut off when long). */
 export function describeResult(result: unknown): string {

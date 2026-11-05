@@ -1,0 +1,293 @@
+{
+  "rules": 2,
+  "summary": {
+    "rules": 2,
+    "id": "00000000-0000-4000-8700-000000000015",
+    "day": "2027-01-13",
+    "attempt": 1,
+    "depth": 1,
+    "newDepth": 1,
+    "cleared": false,
+    "deepest": 0,
+    "roomsCleared": 1,
+    "landmark": false,
+    "streak": 0,
+    "createdAt": 1799841600000,
+    "team": [
+      {
+        "id": "00000000-0000-4000-8700-000000000016",
+        "name": "Tidewing",
+        "speciesId": "tidewing",
+        "element": "tide",
+        "role": "setter",
+        "level": 30,
+        "hpMax": 476,
+        "hpEnd": 476
+      },
+      {
+        "id": "00000000-0000-4000-8700-000000000017",
+        "name": "Pyrelynx",
+        "speciesId": "pyrelynx",
+        "element": "ember",
+        "role": "payoff",
+        "level": 30,
+        "hpMax": 395,
+        "hpEnd": 395
+      },
+      {
+        "id": "00000000-0000-4000-8700-000000000018",
+        "name": "Thornbuck",
+        "speciesId": "thornbuck",
+        "element": "grove",
+        "role": "guard",
+        "level": 30,
+        "hpMax": 803,
+        "hpEnd": 803
+      }
+    ],
+    "rooms": [
+      {
+        "index": 0,
+        "kind": "foe",
+        "foe": {
+          "id": "bog-toad",
+          "name": "Bog Toad",
+          "element": "mire",
+          "hpMax": 13
+        },
+        "modifier": {
+          "id": "flooded",
+          "name": "Flooded",
+          "description": "Tide creatures hit 20% harder."
+        },
+        "played": true,
+        "cleared": true,
+        "rounds": 1,
+        "foeHpEnd": 0
+      }
+    ],
+    "rewards": {
+      "bait": 0,
+      "essence": 0,
+      "parts": {},
+      "gear": [],
+      "converted": [],
+      "supplies": [],
+      "landmark": false,
+      "streak": null
+    },
+    "path": ["fight"],
+    "pack": {
+      "found": {
+        "bait": 1,
+        "essence": 0,
+        "scrap": 1,
+        "shards": {
+          "mire-shard": 1
+        }
+      },
+      "kept": {
+        "bait": 1,
+        "essence": 0,
+        "scrap": 1,
+        "shards": {
+          "mire-shard": 1
+        }
+      }
+    },
+    "keepsakes": []
+  },
+  "row": [
+    {
+      "position": 0,
+      "id": "00000000-0000-4000-8700-000000000016",
+      "name": "Tidewing",
+      "species": "tidewing",
+      "element": "tide",
+      "role": "setter",
+      "level": 30
+    },
+    {
+      "position": 1,
+      "id": "00000000-0000-4000-8700-000000000017",
+      "name": "Pyrelynx",
+      "species": "pyrelynx",
+      "element": "ember",
+      "role": "payoff",
+      "level": 30
+    },
+    {
+      "position": 2,
+      "id": "00000000-0000-4000-8700-000000000018",
+      "name": "Thornbuck",
+      "species": "thornbuck",
+      "element": "grove",
+      "role": "guard",
+      "level": 30
+    }
+  ],
+  "rooms": [
+    {
+      "rules": 2,
+      "index": 0,
+      "kind": "foe",
+      "node": "f0l0",
+      "row": [
+        {
+          "position": 0,
+          "id": "00000000-0000-4000-8700-000000000016",
+          "name": "Tidewing",
+          "species": "tidewing",
+          "element": "tide",
+          "role": "setter",
+          "level": 30
+        },
+        {
+          "position": 1,
+          "id": "00000000-0000-4000-8700-000000000017",
+          "name": "Pyrelynx",
+          "species": "pyrelynx",
+          "element": "ember",
+          "role": "payoff",
+          "level": 30
+        },
+        {
+          "position": 2,
+          "id": "00000000-0000-4000-8700-000000000018",
+          "name": "Thornbuck",
+          "species": "thornbuck",
+          "element": "grove",
+          "role": "guard",
+          "level": 30
+        }
+      ],
+      "foe": {
+        "id": "bog-toad",
+        "name": "Bog Toad",
+        "element": "mire",
+        "hpMax": 13
+      },
+      "modifier": {
+        "id": "flooded",
+        "name": "Flooded",
+        "description": "Tide creatures hit 20% harder."
+      },
+      "cleared": true,
+      "rounds": 1,
+      "hpStart": {
+        "00000000-0000-4000-8700-000000000016": 476,
+        "00000000-0000-4000-8700-000000000017": 395,
+        "00000000-0000-4000-8700-000000000018": 803
+      },
+      "hpEnd": {
+        "00000000-0000-4000-8700-000000000016": 476,
+        "00000000-0000-4000-8700-000000000017": 395,
+        "00000000-0000-4000-8700-000000000018": 803
+      },
+      "hpMax": {
+        "00000000-0000-4000-8700-000000000016": 476,
+        "00000000-0000-4000-8700-000000000017": 395,
+        "00000000-0000-4000-8700-000000000018": 803
+      },
+      "events": [
+        {
+          "round": 1,
+          "turn": 0,
+          "kind": "board",
+          "text": "",
+          "board": {
+            "type": "round",
+            "round": 1
+          }
+        },
+        {
+          "round": 1,
+          "turn": 0,
+          "kind": "board",
+          "text": "",
+          "board": {
+            "type": "hit",
+            "from": "00000000-0000-4000-8700-000000000016",
+            "to": null,
+            "damage": 99,
+            "crit": false,
+            "blocked": false,
+            "dodged": false
+          }
+        },
+        {
+          "round": 1,
+          "turn": 0,
+          "kind": "killing-blow",
+          "text": "Tidewing lands the killing blow"
+        },
+        {
+          "round": 1,
+          "turn": 0,
+          "kind": "mark",
+          "text": "tide x1",
+          "board": {
+            "type": "mark",
+            "element": "tide",
+            "stacks": 1,
+            "sealed": true
+          }
+        },
+        {
+          "round": 1,
+          "turn": 0,
+          "kind": "board",
+          "text": "",
+          "board": {
+            "type": "end",
+            "round": 1,
+            "won": true,
+            "wiped": false,
+            "bossHp": 0
+          }
+        }
+      ],
+      "card": {
+        "armour": 14,
+        "cards": [
+          {
+            "id": "shake-it-off",
+            "name": "Shake It Off",
+            "asks": "Every 3 rounds the boss clears all its debuffs; can you put them back?"
+          }
+        ],
+        "strengthBp": 10000,
+        "escalation": null,
+        "plain": {
+          "label": "Front Strike",
+          "shape": "single",
+          "hits": 1
+        },
+        "moves": [
+          {
+            "id": "mud-spit",
+            "name": "Mud Spit",
+            "label": "Barrage",
+            "shape": "scatter",
+            "silences": false,
+            "oneShot": false,
+            "every": 2,
+            "turn": 0,
+            "windUp": false,
+            "later": false
+          }
+        ]
+      },
+      "arena": {
+        "rows": 1,
+        "cols": 3,
+        "rounds": 6
+      },
+      "knacks": {
+        "00000000-0000-4000-8700-000000000016": "Brand",
+        "00000000-0000-4000-8700-000000000017": "Detonate",
+        "00000000-0000-4000-8700-000000000018": "Wide Reach"
+      }
+    }
+  ]
+}

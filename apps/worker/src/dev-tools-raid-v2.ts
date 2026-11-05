@@ -78,7 +78,7 @@ function takenSlots(ctx: ToolCtx, weekId: string, userId: string): Set<number> {
 
 /**
  * Places creatures of the player on the v2 grid through the placement code: each in the lowest free slot (a column fills row by row, so
- * a joining player takes a column), at most three on the board. A creature already on the board stays. With `knack` each gets the
+ * a joining player takes a column), at most the boss piece's seats on the board. A creature already on the board stays. With `knack` each gets the
  * casual player's Knack first. Stops quietly at a full board or the cap; any other refusal (a locked week, a Festival week) is a 409.
  * Returns the ids it placed.
  */

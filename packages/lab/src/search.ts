@@ -18,6 +18,8 @@ export interface Pick {
   readonly level?: number;
   /** Combat talent ids (lab: any number, for measuring one talent at a time; a player's line carries only legal ones, see `legalTalents`). */
   readonly talents?: readonly string[];
+  /** The talents (of `talents`) that are golden (the dungeon days' players roll them). */
+  readonly goldenTalents?: readonly string[];
 }
 
 export const LEVEL = 25;
@@ -62,6 +64,7 @@ export function toPlacements(line: readonly Pick[], mode: Mode): Placement[] {
     level: p.level ?? mode.level ?? LEVEL,
     knack: p.knack,
     ...(p.talents ? { talents: p.talents } : {}),
+    ...(p.goldenTalents?.length ? { goldenTalents: p.goldenTalents } : {}),
     row: Math.floor(i / mode.cols),
     col: i % mode.cols,
   }));

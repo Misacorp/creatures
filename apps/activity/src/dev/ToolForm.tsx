@@ -30,7 +30,7 @@ function FieldInput({ field, value, choices, onInput }: FieldInputProps): JSX.El
           min={field.min}
           max={field.max}
           value={value}
-          placeholder={field.optional === true ? 'unchanged' : ''}
+          placeholder={field.placeholder ?? (field.optional === true ? 'unchanged' : '')}
           onInput={change}
         />
       );
@@ -80,10 +80,18 @@ interface ToolFormProps {
   busy: boolean;
   /** Runs the tool with a checked body. */
   onRun: (spec: ToolSpec, body: Record<string, unknown>) => void;
+  /** A step in a sequence: a button with no fields shows its hint under it, on a row of its own. */
+  stacked?: boolean;
 }
 
 /** A tool as a button (no fields) or a small form (fields, then the button). */
-export function ToolForm({ spec, choices, busy, onRun }: ToolFormProps): JSX.Element {
+export function ToolForm({
+  spec,
+  choices,
+  busy,
+  onRun,
+  stacked = false,
+}: ToolFormProps): JSX.Element {
   const [values, setValues] = useState<Values>(() => initialValues(spec, choices));
   const [problem, setProblem] = useState<string | null>(null);
 
@@ -112,14 +120,15 @@ export function ToolForm({ spec, choices, busy, onRun }: ToolFormProps): JSX.Ele
       class={spec.danger === true ? 'dev-btn dev-danger' : 'dev-btn'}
       disabled={busy}
     >
-      {spec.fields.length === 0 || spec.danger === true ? spec.label : 'Apply'}
+      {spec.fields.length === 0 || spec.danger === true ? spec.label : (spec.button ?? 'Apply')}
     </button>
   );
 
   if (spec.fields.length === 0) {
     return (
-      <form class="dev-quick" onSubmit={submit}>
+      <form class={stacked ? 'dev-quick dev-step' : 'dev-quick'} onSubmit={submit}>
         {button}
+        {stacked && spec.hint !== undefined && <p class="dev-hint">{spec.hint}</p>}
       </form>
     );
   }

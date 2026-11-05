@@ -99,6 +99,151 @@
   vertical-align: baseline;
 }
 
+/* A creature's hit on the boss: the number in the hitter's element colour (the class sets --el), a crit bigger in that same colour. */
+.stage-v2 .float-hit {
+  color: var(--el, var(--bone));
+}
+
+.stage-v2 .float-hit.crit {
+  color: var(--el, var(--bone));
+}
+
+/* The numbers beside the boss stand a little closer in, so a crit never passes the stage's edge on a 320 px phone. */
+.stage-v2 .stage-boss-art .float.lane-1 {
+  --lx: -5.25rem;
+}
+
+.stage-v2 .stage-boss-art .float.lane-2 {
+  --lx: 5.25rem;
+}
+
+/* A word on a tile is as wide as its content, not squeezed into the half of the tile it starts from. */
+.party-slot .slot-fx .float:not(.float-knack) {
+  width: max-content;
+}
+
+/*
+  A reaction's callout over the boss: one float on an ink plate. Its name on top with the two element colours in the letters (the
+  first half the mark's, the second the hitter's, hard split), under it on one line the hit's total in the hitter's colour and the
+  bonus in gold ("452 +307"). It starts higher than the numbers, so the plate does not sit on the boss's HP bar.
+*/
+.float-reaction .float-body {
+  gap: 0.125rem;
+  padding: 0.125rem 0.5rem 0.25rem;
+  background: var(--ink);
+}
+
+.float-reaction .float-text {
+  font-size: var(--fs-title);
+}
+
+.float-reaction .rx-name > span {
+  color: var(--el, var(--bone));
+}
+
+.float-reaction .rx-numbers {
+  display: flex;
+  gap: 0.375rem;
+  align-items: baseline;
+  white-space: nowrap;
+}
+
+.float-reaction .rx-num {
+  color: var(--el, var(--bone));
+  font-size: var(--fs-title);
+}
+
+.float-reaction .rx-bonus {
+  color: var(--gold);
+  font-size: var(--fs-row);
+}
+
+.stage-v2 .float-sub {
+  color: var(--gold);
+  font-size: var(--fs-row);
+}
+
+.stage-v2 .stage-boss-art .float-reaction {
+  top: -4%;
+}
+
+/* A Guard's save over the covered creature: the shield, with what it kept off in green. */
+.stage-v2 .float-save {
+  color: var(--good);
+}
+
+/* A boost: two gold arrows rising, with its size under them. */
+.stage-v2 .float-boost {
+  color: var(--gold);
+}
+
+.float-arrows {
+  display: flex;
+  gap: 1px;
+}
+
+.float-arrows > i {
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--gold);
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+
+/* A Knack's name when its creature acts (the option in Settings): it pops where the Knack's chip sits on the tile, in gold. */
+.stage-v2 .float-knack {
+  color: var(--gold);
+  font-size: var(--fs-small);
+}
+
+.party-slot .slot-fx .float-knack {
+  top: 62%;
+  width: 100%;
+  left: 0;
+  transform: none;
+  --rise: 0.75rem;
+}
+
+.party-slot .slot-fx .float-knack .float-body {
+  align-items: stretch;
+}
+
+.party-slot .slot-fx .float-knack .float-text {
+  display: block;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+}
+
+/* Beside a hit's number on the same tile: the save, then the boost, a little lower so each can be read. */
+.party-slot .slot-fx .float-save {
+  top: 50%;
+}
+
+.party-slot .slot-fx .float-boost {
+  top: 36%;
+}
+
+/* A Guard's save: the Guard's tile flashes, and a pulse of protection runs through the tiles' backgrounds to the covered creature (below). */
+.party-slot.fight-guarding {
+  box-shadow: inset 0 0 0 var(--px) var(--bone);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .party-slot.fight-guarding {
+    animation: guard-flash var(--beat, 600ms) ease-out both;
+  }
+
+  @keyframes guard-flash {
+    0% {
+      background-color: rgb(var(--gold-rgb) / 40%);
+    }
+
+    100% {
+      background-color: var(--dusk);
+    }
+  }
+}
+
 .float-text {
   display: inline-flex;
   align-items: center;
@@ -198,13 +343,434 @@
 }
 
 .stage-result .acc-head {
-  padding-right: 5.25rem;
+  padding-right: 5.75rem;
 }
 
+/* Watch sits inside the accordion's own edge (the card's padding is 0.75rem, so 1.25rem leaves half a rem clear of its border). */
 .stage-result .stage-watch {
   position: absolute;
-  top: 0.75rem;
-  right: 0.75rem;
+  top: 1rem;
+  right: 1.25rem;
   min-height: 2rem;
   padding: 0 0.625rem;
+}
+
+/*
+  --- A creature carrying a Support's Boost ---
+  The mark stays for as long as the Boost lasts (until the creature's next hit), so the board can be read at a glance. It is the tile's
+  ::after, not its own box-shadow, so it never replaces the element ring, the Guard's flash or a hit's red. It is a yellow inner
+  glow (`boostLook: glow`, the pattern is the default) that starts flush at the tile's border (inset 0 inside the border, no gap), in three hard steps of gold going inwards (no
+  blur), light enough to leave the creature clear. A static drawing: it has no motion to reduce.
+*/
+.party-slot.fight-boosted.boost-glow::after {
+  position: absolute;
+  inset: 0;
+  content: '';
+  z-index: 1;
+  background: rgb(var(--gold-rgb) / 6%);
+  box-shadow:
+    inset 0 0 0 var(--px) rgb(var(--gold-rgb) / 50%),
+    inset 0 0 0 calc(var(--px) * 2) rgb(var(--gold-rgb) / 28%),
+    inset 0 0 0 calc(var(--px) * 3) rgb(var(--gold-rgb) / 12%);
+  pointer-events: none;
+}
+
+/*
+  Special text: the hard horizontal two-tone (docs/design/ux-patterns.md, "Special text"). The upper half a lighter shade of the text's
+  colour (`--el`, else bone), the lower half its base colour, split in one step (no blend): a hard-stop linear gradient clipped to the
+  text (`background-clip: text`). The ink outline is a drop-shadow filter, since the text itself is clipped from the fill. A crit's
+  number uses it with a "!" after it; any text that should feel special may add the class.
+*/
+.crit-split,
+.special-text {
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--el, var(--bone)) 55%, white) 50%,
+    var(--el, var(--bone)) 50%
+  );
+  background-clip: text;
+  color: transparent;
+  text-shadow: none;
+  filter: drop-shadow(2px 0 var(--ink)) drop-shadow(-2px 0 var(--ink)) drop-shadow(0 2px var(--ink))
+    drop-shadow(0 -2px var(--ink));
+  -webkit-text-fill-color: transparent;
+}
+
+/*
+  A Guard's save: a large shield on the covered creature, as wide as the creature's sprite (2.5 rem, the most the tile's content box holds), with what it kept off
+  on it. It pops in big, settles, flashes bright and is gone before the creature's HP line is needed again. Reduced motion: the same
+  shield, still.
+*/
+.party-slot .slot-fx .float-save {
+  top: 10%;
+  --ly: 0px;
+  --rise: 0.25rem;
+  z-index: 5;
+}
+
+.float-save .float-text {
+  display: grid;
+  place-items: center;
+}
+
+.float-save .float-text > * {
+  grid-area: 1 / 1;
+}
+
+.float-save canvas.float-shield {
+  width: 2.5rem;
+  height: 2.5rem;
+  margin: 0;
+  /* Brighter than the plain glyph, no ring: it must read as a flash. */
+  --shield-glow: brightness(1.1);
+  filter: var(--shield-glow);
+  image-rendering: pixelated;
+}
+
+.float-save .save-num {
+  position: relative;
+  z-index: 1;
+  color: var(--bone);
+  font-size: var(--fs-title);
+  text-shadow:
+    2px 0 var(--ink),
+    -2px 0 var(--ink),
+    0 2px var(--ink),
+    0 -2px var(--ink);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .float-save .float-body {
+    animation: save-pop var(--fx-ms) ease-out both;
+  }
+
+  .float-save canvas.float-shield {
+    animation: save-flash var(--fx-ms) ease-out both;
+  }
+
+  .wb-held .float-save .float-body,
+  .wb-held .float-save canvas.float-shield {
+    animation: none;
+  }
+
+  @keyframes save-pop {
+    0% {
+      opacity: 0;
+      transform: scale(0.3);
+    }
+
+    6% {
+      opacity: 1;
+      transform: scale(1.5);
+    }
+
+    14%,
+    50% {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    100% {
+      opacity: 0;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes save-flash {
+    0%,
+    10% {
+      filter: brightness(3) saturate(0.3);
+    }
+
+    30%,
+    100% {
+      filter: var(--shield-glow);
+    }
+  }
+}
+
+/*
+  A Guard's save from the Guard itself: the shield glyph on the stage's overlay layer (above the board, clipped to the stage so it never
+  scrolls the page), its centre on the Guard tile's centre (--bx, --by, set from the tile's box). It starts as large as the shields on
+  the covered creatures (2.5 rem) and scales up to 2.5 times that while fading out, over the same time as they last. Reduced motion
+  (and the workbench's held frames): one still, large shield.
+*/
+.stage-v2 .stage-bursts {
+  position: absolute;
+  inset: 0;
+  overflow: clip;
+  pointer-events: none;
+}
+
+.guard-burst {
+  position: absolute;
+  top: var(--by, 0);
+  left: var(--bx, 0);
+  width: 2.5rem;
+  height: 2.5rem;
+  margin: -1.25rem 0 0 -1.25rem;
+  transform: scale(2);
+  opacity: 0.75;
+}
+
+.guard-burst canvas.burst-shield {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* Brighter, nearly opaque until the end, so it reads as a shield. (Its dark ink outline is left out of the drawing: see `GuardBurst`.) */
+  filter: brightness(1.3);
+  image-rendering: pixelated;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .guard-burst {
+    animation: guard-burst var(--fx-ms, 2000ms) ease-out both;
+  }
+
+  .wb-held .guard-burst {
+    animation: none;
+  }
+
+  @keyframes guard-burst {
+    0% {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    60% {
+      opacity: 0.9;
+    }
+
+    100% {
+      opacity: 0;
+      transform: scale(2.5);
+    }
+  }
+}
+
+/*
+  --- Boosted and debuffed: a pattern in the tile's background ---
+  Hard-edged arrows (a stepped pixel arrow, no blur, each filling its whole square cell) on a checkerboard of equal square cells (every other cell, none beside another), behind the creature, name and Knack chip: the tile is its own
+  stacking context and the pattern sits at z-index -1 above its colour, low in contrast so the foreground reads as without it. A
+  boost's are yellow and point up, drifting slowly up; a debuff's are the same flipped, red, drifting slowly down. The field is two
+  identical halves, each taller than the tile, so the loop has no seam. Reduced motion: the arrows stand still.
+*/
+.party-slot.fight-boosted.boost-pattern,
+.party-slot.fight-debuffed {
+  isolation: isolate;
+}
+
+.party-slot .slot-pattern {
+  position: absolute;
+  inset: 0.2rem;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.party-slot .slot-pattern-field {
+  display: flex;
+  flex-direction: column;
+  /* Sixteen rows of one square cell each: two identical halves of eight. A cell is a third of the tile's width, so a half is 8 cells tall: about 2.7 tile widths, taller than any tile (an even number of cells, so the checkerboard lines up at the seam and the loop is whole cell pairs). */
+}
+
+/* A row is three equal square cells (a cell's height is its width, empty or filled) with an arrow in the 1st and 3rd, or on the next row in the 2nd only. Each arrow fills its whole cell, so arrows touch only corner to corner. */
+.party-slot .slot-pattern b {
+  display: grid;
+  flex: none;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: auto;
+}
+
+.party-slot .slot-pattern b i {
+  grid-row: 1;
+}
+
+.party-slot .slot-pattern b i:nth-child(1) {
+  grid-column: 1;
+}
+
+.party-slot .slot-pattern b i:nth-child(2) {
+  grid-column: 3;
+}
+
+.party-slot .slot-pattern b.odd i:nth-child(1) {
+  grid-column: 2;
+}
+
+.party-slot .slot-pattern i {
+  --u: 14.2857%;
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  background: var(--pattern-ink);
+  /* A seven-step pixel arrow: a stepped head over a three-wide stem. */
+  clip-path: polygon(
+    calc(var(--u) * 3) 0,
+    calc(var(--u) * 4) 0,
+    calc(var(--u) * 4) var(--u),
+    calc(var(--u) * 5) var(--u),
+    calc(var(--u) * 5) calc(var(--u) * 2),
+    calc(var(--u) * 6) calc(var(--u) * 2),
+    calc(var(--u) * 6) calc(var(--u) * 3),
+    100% calc(var(--u) * 3),
+    100% calc(var(--u) * 4),
+    calc(var(--u) * 5) calc(var(--u) * 4),
+    calc(var(--u) * 5) 100%,
+    calc(var(--u) * 2) 100%,
+    calc(var(--u) * 2) calc(var(--u) * 4),
+    0 calc(var(--u) * 4),
+    0 calc(var(--u) * 3),
+    var(--u) calc(var(--u) * 3),
+    var(--u) calc(var(--u) * 2),
+    calc(var(--u) * 2) calc(var(--u) * 2),
+    calc(var(--u) * 2) var(--u),
+    calc(var(--u) * 3) var(--u)
+  );
+}
+
+.party-slot .slot-pattern.up {
+  /* A saturated gold, a solid mid-bright colour rather than a see-through one: a low-alpha yellow over the dusk tile goes olive and brown. Quiet because it sits behind everything and is dimmer than the text. */
+  --pattern-ink: #a98f14;
+}
+
+.party-slot .slot-pattern.down {
+  --pattern-ink: #b02f40;
+}
+
+.party-slot .slot-pattern.down i {
+  transform: scaleY(-1);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .party-slot .slot-pattern.up .slot-pattern-field {
+    animation: pattern-up 7s linear infinite;
+  }
+
+  .party-slot .slot-pattern.down .slot-pattern-field {
+    animation: pattern-down 7s linear infinite;
+  }
+
+  @keyframes pattern-up {
+    to {
+      transform: translateY(-50%);
+    }
+  }
+
+  @keyframes pattern-down {
+    from {
+      transform: translateY(-50%);
+    }
+
+    to {
+      transform: translateY(0);
+    }
+  }
+}
+
+/*
+  --- A Guard's pulse of protection ---
+  On a save, a light band runs through the backgrounds of the tiles of the row, from the Guard's tile to the covered creature's, behind the
+  creature, name and chip (the tile is its own stacking context and the pulse sits at z-index -1, like the arrow patterns). Each tile
+  starts its band `--pulse-step` steps (320 ms each) after the Guard's, so the band runs on from tile to tile; it is three hard bars
+  of light (no blur), and the covered tile flashes as it lands. A tile to the left of the Guard is the same thing mirrored. It is
+  clipped to the tile, so nothing shifts. Reduced motion (and the workbench's held frames): no band, a faint still tint on the Guard's
+  tile and the covered one.
+*/
+.party-slot.pulsing {
+  isolation: isolate;
+}
+
+.party-slot .slot-pulse {
+  position: absolute;
+  inset: 0.2rem;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.party-slot .slot-pulse.left {
+  transform: scaleX(-1);
+}
+
+.party-slot .slot-pulse::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -60%;
+  width: 60%;
+  content: '';
+  background: linear-gradient(
+    to right,
+    rgb(255 244 190 / 10%) 33.3%,
+    rgb(255 244 190 / 24%) 33.3% 66.6%,
+    rgb(255 244 190 / 46%) 66.6%
+  );
+  display: none;
+}
+
+.party-slot .slot-pulse::after {
+  position: absolute;
+  inset: 0;
+  content: '';
+  background: rgb(255 244 190 / 26%);
+  opacity: 0;
+}
+
+.party-slot .slot-pulse.guard::after,
+.party-slot .slot-pulse.end::after {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .party-slot .slot-pulse::before {
+    display: block;
+    animation: pulse-band 520ms linear calc(var(--pulse-step, 0) * 320ms) both;
+  }
+
+  .party-slot .slot-pulse.guard::after,
+  .party-slot .slot-pulse.end::after {
+    opacity: 0;
+    animation: pulse-flash 700ms ease-out calc(var(--pulse-step, 0) * 320ms + 260ms) both;
+    background: rgb(255 244 190 / 50%);
+  }
+
+  .party-slot .slot-pulse.guard:not(.end)::after {
+    animation-delay: 0ms;
+  }
+
+  .wb-held .party-slot .slot-pulse::before {
+    display: none;
+  }
+
+  .wb-held .party-slot .slot-pulse.guard::after,
+  .wb-held .party-slot .slot-pulse.end::after {
+    opacity: 1;
+    background: rgb(255 244 190 / 26%);
+    animation: none;
+  }
+
+  @keyframes pulse-band {
+    from {
+      transform: translateX(0);
+    }
+
+    to {
+      transform: translateX(267%);
+    }
+  }
+
+  @keyframes pulse-flash {
+    0% {
+      opacity: 0;
+    }
+
+    15% {
+      opacity: 1;
+    }
+
+    100% {
+      opacity: 0;
+    }
+  }
 }

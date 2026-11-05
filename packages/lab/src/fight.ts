@@ -20,11 +20,14 @@ export { resistedElement } from '@creatures/engine/v2';
 const resolver = createResolver(combatV2, SHIPPED);
 const { resolve } = resolver;
 
+/** One placement as the engine's weekend creature (no uid yet): `journey.ts` builds its own stage inputs from these. */
+export const resolvePlacement = resolve;
+
 /** The creatures of a line-up, as a fight takes them: each one's uid is its owner, form and place in the line (`owner:formId:index`). */
 export const { placeFighters } = resolver;
 
 /** What the engine reads besides the creatures: the lab's rules numbers, the shipped element chart and the elements' order. */
-const world = {
+export const world = {
   version: 2,
   rules: LAB_RULES,
   elements: ELEMENTS,

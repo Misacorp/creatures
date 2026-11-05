@@ -59,7 +59,7 @@ export const V2_NAMES: readonly string[] = [
 export interface V2SampleOptions {
   /** The track's slot (the Boss Rank). */
   slot: number;
-  /** The party's players: the board has `max(4, players)` columns. */
+  /** The party's players: the board has one column per player. */
   players: number;
   /** Stages played: 0 is before stage 1; after one, the creatures carry HP. */
   stagesPlayed: 0 | 1 | 2;
@@ -71,6 +71,8 @@ export interface V2SampleOptions {
   knockedOut: boolean;
   /** The swap requests: none, one you asked, one you were asked, or both. */
   swaps: 'none' | 'asked' | 'incoming' | 'both';
+  /** Failed weekends on this boss from the second lap: the bonus they give, in basis points (default 0: none). */
+  determinationBp?: number;
 }
 
 const BOARD_SPECIES = [
@@ -167,8 +169,10 @@ interface Standing {
 /** The sample week: the view the screens read, with the board's creatures in their slots. */
 export function raidV2Sample(o: V2SampleOptions): { view: RaidView; ownedIds: string[] } {
   const players = Math.max(1, o.players);
-  const cols = Math.max(4, players);
-  const boss = trackBoss(combatV2, SHIPPED, o.slot, { players });
+  // Before stage 1 the board keeps a spare piece (one more column) free for a newcomer; stage 1 drops it.
+  const spare = o.stagesPlayed === 0;
+  const cols = Math.max(1, players + (spare ? 1 : 0));
+  const boss = trackBoss(combatV2, SHIPPED, o.slot, { players, followSmallParty: true });
   const rows = boss.rows;
   const standing: Standing[] = [];
   const place = (
@@ -307,12 +311,15 @@ export function raidV2Sample(o: V2SampleOptions): { view: RaidView; ownedIds: st
     slot: o.slot,
     bestShareBp: o.bestShareBp,
     failedWeekends: 0,
-    determinationBp: 0,
+    determinationBp: o.determinationBp ?? 0,
     stagesPlayed: o.stagesPlayed,
     nextStage: o.stagesPlayed + 1,
     joiningOpen: o.stagesPlayed === 0,
     rows,
     cols,
+    // One player's piece is one column of the boss's rows.
+    seats: rows,
+    spare,
     players,
     card: cardOf(boss, carry),
     track: trackOf(o.slot),

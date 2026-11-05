@@ -25,9 +25,15 @@ import { StreakTrack } from './ui/StreakTrack';
 export function DungeonPrerun({
   today,
   forecast = null,
+  progressDepth,
   children,
 }: {
   today: DungeonToday;
+  /**
+   * The player's own depth for the depth track, when `today` shows another (a depth picked below it on combat v2:
+   * `today.depth`, `map` and the landmark are then the picked depth's). Absent: `today.depth`.
+   */
+  progressDepth?: number;
   /** The valley's sky: one line under the title (absent or null: none). */
   forecast?: Forecast | null;
   children?: ComponentChildren;
@@ -50,7 +56,8 @@ export function DungeonPrerun({
           <StreakTrack pips={streakPips(today.streak)} label={streakLabel(today.streak)} />
         </GlossaryTag>
       </div>
-      <SkyLine forecast={forecast} />
+      {/* A combat v2 run reads no weather (Misa, 2026-11-04): no sky line before it either. */}
+      <SkyLine forecast={today.rules === 2 ? null : forecast} />
       {today.map != null && (
         <div class="dungeon-preview">
           <DungeonMap map={today.map} state={null} landmark={today.landmark} depth={today.depth} />
@@ -62,7 +69,7 @@ export function DungeonPrerun({
           <span>{landmarkLine(today.landmarkBoss)}</span>
         </p>
       )}
-      <DepthProgress depth={today.depth} />
+      <DepthProgress depth={progressDepth ?? today.depth} />
       {children}
     </section>
   );

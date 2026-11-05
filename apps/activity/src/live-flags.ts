@@ -24,3 +24,14 @@ export function setRaidLiveOffered(offered: boolean): void {
 export function raidLiveOffered(): boolean {
   return raidLive;
 }
+
+let combatV2 = false;
+
+export function setCombatV2(on: boolean): void {
+  combatV2 = on;
+}
+
+/** True when the server plays combat v2 (`combatV2` of `/api/config`): help text then reads the v2 rules. */
+export function combatV2On(): boolean {
+  return combatV2;
+}

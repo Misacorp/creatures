@@ -77,6 +77,16 @@ import raidReveal from './fixtures/raid-reveal.json';
 import raidRevealSeen from './fixtures/raid-reveal-seen.json';
 import statsFinale from './fixtures/raid-stats-finale.json';
 import requestBodies from './fixtures/request-bodies.json';
+import v2DungeonActFight from './fixtures/v2-dungeon-act-fight.json';
+import v2DungeonReplay from './fixtures/v2-dungeon-replay.json';
+import v2DungeonStart from './fixtures/v2-dungeon-start.json';
+import v2DungeonToday from './fixtures/v2-dungeon-today.json';
+import v2Live from './fixtures/v2-live.json';
+import v2RaidOpen from './fixtures/v2-raid-open.json';
+import v2RaidStage1 from './fixtures/v2-raid-stage1.json';
+import v2Replay from './fixtures/v2-replay.json';
+import v2State from './fixtures/v2-state.json';
+import v2Stats from './fixtures/v2-stats.json';
 
 const apiFetch = vi.hoisted(() => vi.fn());
 vi.mock('./api', async (importOriginal) => ({
@@ -136,6 +146,8 @@ import type { StartJobRequest } from './gear-types';
 import { errorText } from './game';
 import { autoFireTarget, buildAction } from './live';
 import { sendLiveAction, startPractice } from './live-api';
+import { parseLiveV2, parseReplayV2, parseStatsV2 } from './fight-v2-api';
+import { parseRaidView } from './raid-api';
 import { fetchStats, markRevealSeen, setRaidAbility, setRaidAutofire } from './raid-api';
 
 /** The older run route's error rows come first, then the map's: the codes of both are in the fixtures. */
@@ -1393,5 +1405,43 @@ describe('gear views of other sources', () => {
       grants: [{ ...grant, source: 'dungeon', key: 'dungeon:2026-10-13:1' }],
     });
     expect(parsed.grants[0]?.source).toBe('dungeon');
+  });
+});
+
+describe('combat v2 payloads, captured from the server (`pnpm fixtures:capture --set combat-v2`)', () => {
+  it('reads the creature payload: v2 talents with their book, and the stats the fight uses', () => {
+    const state = parseGameState(v2State);
+    const creature = state.creatures[0];
+    expect(creature?.talentsV2?.book.length).toBeGreaterThan(0);
+    expect(creature?.talentsV2?.slots.length).toBeGreaterThan(0);
+    expect(creature?.statsV2?.hp).toBeGreaterThan(0);
+  });
+
+  it('reads the raid view of a v2 week, open and after stage 1', () => {
+    const open = parseRaidView(v2RaidOpen);
+    expect(open.rules).toBe(2);
+    expect(open.v2?.stagesPlayed).toBe(0);
+    const after = parseRaidView(v2RaidStage1);
+    expect(after.v2?.stagesPlayed).toBe(1);
+    expect(after.party?.results.length).toBe(1);
+  });
+
+  it('reads a stored stage, its after-action stats and the live finale', () => {
+    const replay = parseReplayV2(v2Replay);
+    expect(replay.stage).toBe(1);
+    expect(replay.events.length).toBeGreaterThan(0);
+    expect(parseStatsV2(v2Stats).stage).toBe(1);
+    const live = parseLiveV2(v2Live);
+    expect(live.rules).toBe(2);
+    expect(live.status).toBe('live');
+  });
+
+  it('reads a v2 dungeon run: its start, today, the first room and the replay', () => {
+    const start = parseDungeonStart(v2DungeonStart);
+    expect(start.state.rules).toBe(2);
+    expect(parseDungeonToday(v2DungeonToday).active?.rules).toBe(2);
+    const act = parseDungeonAct(v2DungeonActFight);
+    expect(act.room?.rules).toBe(2);
+    expect(parseDungeonReplay(v2DungeonReplay).rules).toBe(2);
   });
 });

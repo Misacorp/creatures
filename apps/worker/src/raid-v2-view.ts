@@ -96,9 +96,13 @@ export interface RaidV2Part {
   nextStage: number;
   /** Joining is open: stage 1 has not begun and the week is not a Festival. */
   joiningOpen: boolean;
-  /** The arena: rows of the slot's boss and the columns (`max(4, players)`); a slot is `col * rows + row`. */
+  /** The arena: rows of the slot's boss and the columns (one per player); a slot is `col * rows + row`. */
   rows: number;
   cols: number;
+  /** The creatures one player brings: the seats of the boss's arena piece (a column of `rows`, today). */
+  seats: number;
+  /** The board includes the spare piece (one free column) that stays until stage 1 locks the players, so a newcomer can always join. */
+  spare: boolean;
   /** The party's players (set at stage 1; before it, the players joined so far). */
   players: number;
   /** The weekend's boss as it fights this party, with its rule cards applied (moves carry their library ids). */
@@ -282,7 +286,7 @@ export function buildRaidViewV2(
   const names = displayNames(sql);
   const slot = week.trackSlot ?? 1;
   const track = readTrack(sql);
-  const { rows } = slotBossInfo(slot);
+  const { rows, seats } = slotBossInfo(slot);
   const schedule = raid.schedule(week.weekId, tz);
   const pending = nextPendingEvent(week.status);
   const progression = readWeekProgression(sql, week.weekId);
@@ -319,6 +323,7 @@ export function buildRaidViewV2(
     | 'stagesPlayed'
     | 'nextStage'
     | 'cols'
+    | 'spare'
     | 'players'
     | 'boss'
     | 'moveNames'
@@ -329,7 +334,8 @@ export function buildRaidViewV2(
   > = {
     stagesPlayed: 0,
     nextStage: 1,
-    cols: colsFor(1),
+    cols: colsFor(1, week.status === 'open'),
+    spare: week.status === 'open',
     players: 0,
     boss: null,
     moveNames: {},
@@ -343,9 +349,11 @@ export function buildRaidViewV2(
     const members = partyMembers(sql, week.weekId, shownParty);
     const stored: PartyCarry | null = readPartyCarry(sql, week.weekId, shownParty);
     const players = stored?.players ?? Math.max(1, members.length);
-    const cols = colsFor(players);
+    // The spare piece stays until stage 1 locks the players (the carry is stored then).
+    const spare = stored === null && week.status === 'open';
+    const cols = colsFor(players, spare);
     const length = rows * cols;
-    const placements = partyPlacements(sql, week.weekId, shownParty);
+    const placements = partyPlacements(sql, week.weekId, shownParty, seats);
     // One load for the board and its move preview: the creatures with their slotted talents and gear lines, a few statements however many.
     const creatureOf = loadV2Creatures(
       sql,
@@ -410,7 +418,9 @@ export function buildRaidViewV2(
               `SELECT id, user_id, species, nickname FROM creatures WHERE id IN (${out.map(() => '?').join(', ')})`,
               ...out,
             )
-            .toArray();
+            .toArray()
+            // In the order the carry lists them (the order the fight knocked them out), not the order of their random ids.
+            .sort((a, b) => out.indexOf(a.id) - out.indexOf(b.id));
     const stagesPlayed = stored?.carry.stage ?? 0;
     const pool = sql
       .exec<{ hp_max: number | null; hp_current: number | null }>(
@@ -458,6 +468,7 @@ export function buildRaidViewV2(
       stagesPlayed,
       nextStage: killed ? 4 : Math.min(4, stagesPlayed + 1),
       cols,
+      spare,
       players,
       boss,
       moveNames: moveNamesOf(boss),
@@ -566,6 +577,8 @@ export function buildRaidViewV2(
       joiningOpen: joinOpen,
       rows,
       cols: v2Party.cols,
+      seats,
+      spare: v2Party.spare,
       players: v2Party.players,
       boss: v2Party.boss,
       moveNames: v2Party.moveNames,

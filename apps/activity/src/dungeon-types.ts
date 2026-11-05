@@ -238,6 +238,8 @@ export type DungeonPending =
       catchBreathBp: number;
       reviveBp: number;
       newDepth: number;
+      /** The run plays below the player's own depth (the picker): the boss falling unlocks nothing, and `newDepth` is not a new depth. Absent otherwise. */
+      lower?: true;
       banked: DungeonBanked;
     };
 
@@ -249,6 +251,8 @@ export interface DungeonRunState {
   day: string;
   attempt: number;
   depth: number;
+  /** True on a combat v2 run played below the player's own depth (the depth picker): a clear unlocks no depth. Absent otherwise. */
+  lower?: true;
   landmark: boolean;
   status: 'active' | 'done';
   outcome: DungeonOutcome | null;
@@ -387,8 +391,24 @@ export interface DungeonStartRequest {
    * Each is in `team`, once. Left out when there are none.
    */
   treats?: string[];
+  /**
+   * Combat v2 only: the depth to play, any depth the player has unlocked (1 to their own). Left out: their own. A v1
+   * server refuses it, so it is sent only when `DungeonToday.rules` is 2.
+   */
+  depth?: number;
   /** A fresh key for every new run (8 to 64 characters of A-Z a-z 0-9 _ -); a retry reuses it. */
   idempotencyKey: string;
+}
+
+/**
+ * `GET /api/dungeon/preview?depth=N`: the part of the pre-run card that depends on the depth, for a depth picked below
+ * the player's own (combat v2).
+ */
+export interface DungeonPreview {
+  depth: number;
+  landmark: boolean;
+  landmarkBoss: { depth: number; foeId: string } | null;
+  map: DungeonMapView;
 }
 
 export interface DungeonStartResponse {
@@ -516,6 +536,8 @@ export interface DungeonRunSummary {
   depth: number;
   /** The depth after this run: one deeper after the floor boss fell (also when the run was then lost in the Undercroft), otherwise the same. */
   newDepth: number;
+  /** True when the run was played below the player's own depth (the depth picker): a clear unlocked no depth, and `newDepth` is the player's own depth. Absent otherwise. */
+  lower?: true;
   /** The floor boss was beaten (all rooms for an old three-room run). It stays true when the run was lost below. */
   cleared: boolean;
   /** Undercroft levels cleared (keepers beaten): 0 for a run that never went down. Absent in older runs (read as 0). */

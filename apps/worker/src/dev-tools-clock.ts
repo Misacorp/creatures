@@ -11,12 +11,9 @@ import { RULES } from '@creatures/game';
 import type * as v from 'valibot';
 import { DevError, type ToolCtx } from './dev-context';
 import { MAX_CLOCK_OFFSET_MS } from './dev-state';
-import type { ClockBodySchema, RaidPhaseBodySchema } from './dev-schemas';
+import type { ClockBodySchema } from './dev-schemas';
 import { addWeeks, eventTimes, weekIdFor, type RaidRules } from './raid-schedule';
 import { gameDay, nextOccurrence } from './time';
-
-/** The finale's live fight is over by this long after it starts (12 rounds of at most 22 s, plus playback). */
-export const FINALE_WINDOW_MS = 10 * 60_000;
 
 /** Where the dev clock stands: the offset, the game time it gives and the real time. */
 export function clockState(ctx: ToolCtx) {
@@ -43,11 +40,21 @@ export function gameNow(ctx: ToolCtx): number {
 
 /**
  * Moves the game clock forward to `target` (game time). A target that is not ahead changes nothing. It reads the clock as it stands, so
- * a tool that moves it several times (`raid-weekend`) lands on each target.
+ * a tool that moves it several times lands on each target.
  */
 export function advanceTo(ctx: ToolCtx, target: number): void {
   const now = gameNow(ctx);
   if (target > now) setOffset(ctx, ctx.offset.get() + (target - now));
+}
+
+/**
+ * Moves the game clock back to `target`, or as far back as it goes: the offset is never negative, so the game time stops at the real
+ * time. A target that is not behind changes nothing. Returns the game time the clock ended at.
+ */
+export function retreatTo(ctx: ToolCtx, target: number): number {
+  const now = gameNow(ctx);
+  if (target < now) ctx.offset.set(Math.max(0, ctx.offset.get() - (now - target)));
+  return gameNow(ctx);
 }
 
 /** The rules version of a raid week, for the calendar (`eventTimes`). */
@@ -93,37 +100,4 @@ export function clockTool(ctx: ToolCtx, body: v.InferOutput<typeof ClockBodySche
     advanceTo(ctx, nextPhaseTarget(gameNow(ctx), ctx.tz, weekRulesOf(ctx)));
   }
   return clockState(ctx);
-}
-
-/**
- * The earliest game time at or after `now` when the raid week is in a phase:
- * - `preparation`: from the week start to Phase 1;
- * - `phase1`: from Phase 1 to Phase 2 (Phase 1 has resolved);
- * - `phase2`: from Phase 2 to the finale;
- * - `finale`: the finale has started (its live fight is on), for `FINALE_WINDOW_MS`;
- * - `done`: the finale is over, until the next week starts.
- * If the clock is inside the phase already, that is `now`. Looks at this week and the next.
- */
-export function phaseTarget(
-  to: v.InferOutput<typeof RaidPhaseBodySchema>['to'],
-  now: number,
-  tz: string,
-  rulesOf: RulesOf,
-): number {
-  const week = weekIdFor(now, tz);
-  for (const id of [week, addWeeks(week, 1)]) {
-    const t = eventTimes(id, tz, rulesOf(id));
-    const nextStart = eventTimes(addWeeks(id, 1), tz, rulesOf(addWeeks(id, 1))).weekStart;
-    const range: Record<typeof to, readonly [number, number]> = {
-      preparation: [t.weekStart, t.phase1],
-      phase1: [t.phase1, t.phase2],
-      phase2: [t.phase2, t.finale],
-      finale: [t.finale, t.finale + FINALE_WINDOW_MS],
-      done: [t.finale + FINALE_WINDOW_MS, nextStart],
-    };
-    const [from, until] = range[to];
-    const candidate = Math.max(now, from);
-    if (candidate < until) return candidate;
-  }
-  throw new DevError(409, 'no_such_phase');
 }

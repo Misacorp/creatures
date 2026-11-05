@@ -40,7 +40,9 @@ const V2 = { combatV2: true } as const;
 
 /** What a creature learned, by talent id (the order the store reads them in is by time, then id). */
 const learnedSorted = (sql: SqlStorage, creatureId: string) =>
-  [...learnedOf(sql, creatureId)].sort((a, b) => a.talentId.localeCompare(b.talentId));
+  learnedOf(sql, creatureId)
+    .map(({ talentId, slot }) => ({ talentId, slot }))
+    .sort((a, b) => a.talentId.localeCompare(b.talentId));
 
 function parseWrangler(): {
   vars: Record<string, string>;
@@ -521,6 +523,54 @@ describe('the stats a creature page shows under v2 (statsV2)', () => {
     );
   });
 
+  it('a golden talent counts x1.25 in the fight, and the page shows the fighter’s numbers', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await seeded(ctx, ['mossback'], 12);
+        const id = p.ids[0] as string;
+        ctx.sql.exec('DELETE FROM creature_talents_v2 WHERE creature_id = ?', id);
+        ctx.sql.exec('DELETE FROM line_talents WHERE user_id = ?', p.id);
+        ctx.sql.exec(
+          'INSERT INTO creature_talents_v2 (creature_id, talent_id, slot, learned_at) VALUES (?, ?, 1, 1)',
+          id,
+          'sharp-claws',
+        );
+        const form = formStats(combatV2, content, 'mossback', 12);
+        const bp = combatV2.talents['sharp-claws']?.fx.atkBp ?? 0;
+        const atkWith = (golden: number) => {
+          ctx.sql.exec(
+            'INSERT INTO line_talents (user_id, line, talent_id, golden, found_at) VALUES (?, ?, ?, ?, 1) ON CONFLICT(user_id, line, talent_id) DO UPDATE SET golden = excluded.golden',
+            p.id,
+            species.line,
+            'sharp-claws',
+            golden,
+          );
+          return { normal: bp, golden: Math.floor((bp * 125 + 50) / 100) }[
+            golden === 1 ? 'golden' : 'normal'
+          ];
+        };
+        for (const golden of [0, 1]) {
+          const addBp = atkWith(golden);
+          const state = await p.call('GET', '/api/state');
+          const shown = state.body.creatures[0].statsV2;
+          const team = loadCreaturesById(ctx.sql, p.id, [id])[0];
+          if (team === undefined) throw new Error('no creature');
+          const dungeon = fightNumbers(fighterV2(team, learnedOf(ctx.sql, id)));
+          const raid = loadV2Creatures(ctx.sql, [id]).get(id);
+          if (raid === undefined) throw new Error('no raid creature');
+          const weekend = fightNumbers(fighterOf(raid, 'm1', { row: 0, col: 0 }));
+          expect(shown).toEqual(dungeon);
+          expect(shown).toEqual(weekend);
+          expect(shown.atk).toBe(Math.floor((form.atk * (10_000 + addBp)) / 10_000));
+          expect(raid.goldenTalents).toEqual(golden === 1 ? ['sharp-claws'] : []);
+        }
+        expect(Math.floor((bp * 125 + 50) / 100)).toBeGreaterThan(bp);
+      },
+      V2,
+    );
+  });
+
   it('comes with the creature in the state, from its slotted talent', async () => {
     await runCore(
       nextGuild(),
@@ -827,7 +877,7 @@ describe('learning a talent from the line book', () => {
         const path = learnPath(p.ids[0] as string);
         // In the pool but not found yet; and a talent that is in no pool of this line.
         expect(
-          await p.call('POST', path, { talentId: 'brace', idempotencyKey: newKey() }),
+          await p.call('POST', path, { talentId: 'cull', idempotencyKey: newKey() }),
         ).toMatchObject({ status: 404, body: { error: 'not_in_book' } });
         expect(
           await p.call('POST', path, { talentId: 'first-pounce', idempotencyKey: newKey() }),
@@ -835,13 +885,13 @@ describe('learning a talent from the line book', () => {
         expect(
           (await p.call('POST', path, { talentId: 'no-such', idempotencyKey: newKey() })).status,
         ).toBe(400);
-        expect((await p.call('POST', path, { talentId: 'brace' })).status).toBe(400);
+        expect((await p.call('POST', path, { talentId: 'cull' })).status).toBe(400);
         // Another player's creature is not found, and their book is not this one's.
         const other = seedPlayer(ctx, 2, { species: ['mossback'], creatures: 1 });
-        find(ctx, other.id, 'brace');
+        find(ctx, other.id, 'cull');
         expect(
           await p.call('POST', learnPath(other.creatureIds[0] as string), {
-            talentId: 'brace',
+            talentId: 'cull',
             idempotencyKey: newKey(),
           }),
         ).toMatchObject({ status: 404, body: { error: 'not_found' } });
@@ -857,7 +907,7 @@ describe('learning a talent from the line book', () => {
       async (ctx) => {
         const p = await withTalent(ctx, ['mossback'], 0);
         find(ctx, p.id, 'hardy');
-        find(ctx, p.id, 'brace');
+        find(ctx, p.id, 'cull');
         give(ctx, p.id, { bait: 50 });
         const key = newKey();
         await p.call('POST', learnPath(p.ids[0] as string), {
@@ -865,7 +915,7 @@ describe('learning a talent from the line book', () => {
           idempotencyKey: key,
         });
         const res = await p.call('POST', learnPath(p.ids[0] as string), {
-          talentId: 'brace',
+          talentId: 'cull',
           idempotencyKey: key,
         });
         expect(res).toMatchObject({ status: 409, body: { error: 'key_conflict' } });
@@ -1031,21 +1081,21 @@ describe('a role-changing evolution (R20.8)', () => {
         expect(combatV2.pools['mossback']).toContain(to);
         expect(idleFor(to, 'payoff')).toBe(false);
         expect(['owners-mark', 'opportunist']).not.toContain(to);
-        // Candidates in pool order: finisher, stubborn, hardy, brace, rally-cry; index 3 is brace.
-        expect(to).toBe('brace');
+        // Candidates in pool order: finisher, stubborn, hardy, cull, rally-cry; index 3 is cull.
+        expect(to).toBe('cull');
         // The old talent stays learned and in the book; the new one is in the book and the slot.
         expect(learnedSorted(ctx.sql, p.ids[0] as string)).toEqual([
-          { talentId: 'brace', slot: 1 },
+          { talentId: 'cull', slot: 1 },
           { talentId: 'owners-mark', slot: null },
         ]);
         expect(
           lineBook(ctx.sql, p.id, 'mossback')
             .map((e) => e.talentId)
             .sort(),
-        ).toEqual(['brace', 'opportunist', 'owners-mark']);
+        ).toEqual(['cull', 'opportunist', 'owners-mark']);
         // The payload shows the new slot and the idle talent in the book.
         const creature = res.body.state.creatures[0];
-        expect(creature.talentsV2.slots[0].talent).toMatchObject({ id: 'brace', idle: false });
+        expect(creature.talentsV2.slots[0].talent).toMatchObject({ id: 'cull', idle: false });
         expect(
           (creature.talentsV2.book as { id: string }[]).find((e) => e.id === 'owners-mark'),
         ).toMatchObject({ idle: true, learned: true, slot: null });
@@ -1190,7 +1240,7 @@ describe('the combat-v2-convert dev tool', () => {
           'SELECT creature_id, talent_id, slot FROM creature_talents_v2',
         );
         const again = (await p.tool('combat-v2-convert')) as { creatures: number };
-        expect(again).toEqual({ creatures: 0, knacksCleared: 0, abilitiesCleared: 0 });
+        expect(again).toMatchObject({ creatures: 0, knacksCleared: 0, abilitiesCleared: 0 });
         expect(
           rows(ctx.sql, 'SELECT creature_id, talent_id, slot FROM creature_talents_v2'),
         ).toEqual(snapshot);

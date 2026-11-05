@@ -4,7 +4,8 @@
  * picklists of the shipped content, and every number has a range. Nothing here takes a user id: the
  * tools always act on the session's player and guild.
  */
-import { RULES, content, dungeonContent, expeditionContent, weatherContent } from '@creatures/game';
+import { RULES, dungeonContent, expeditionContent, weatherContent } from '@creatures/game';
+import { combatV2 } from '@creatures/game/combat-v2';
 import * as v from 'valibot';
 import { IdSchema } from './collection-schemas';
 import { BASE_IDS, DESTINATION_IDS, GOAL_IDS, SPECIES_IDS, SUPPLY_IDS } from './content-ids';
@@ -40,19 +41,16 @@ export const DEV_ACTION_TOOLS = [
   'dungeon-modifiers',
   'dungeon-seed',
   'set-weather',
-  'raid-phase',
-  'raid-resolve',
-  'raid-boss',
-  'raid-festival',
-  'raid-roster',
-  'raid-live',
-  'raid-simulate',
-  'raid-weekend',
   'games-bots',
   'games-run-now',
   'games-reset',
   'analytics-rollup',
+  'raid-clear',
+  'raid-fill',
+  'raid-rank',
+  'raid-play',
   'combat-v2-convert',
+  'reset-raids-dungeons',
   'valley-fresh',
   'reset-account',
 ] as const;
@@ -65,7 +63,6 @@ const int = (min: number, max: number) =>
   v.pipe(v.number(), v.integer(), v.minValue(min), v.maxValue(max));
 
 const JOURNAL_IDS = expeditionContent.journal.entries.map((e) => e.id) as [string, ...string[]];
-const BOSS_IDS = content.bosses.map((b) => b.id) as [string, ...string[]];
 const MODIFIER_IDS = dungeonContent.modifiers.map((m) => m.id) as [string, ...string[]];
 const liveWeather = (kind: 'boon' | 'omen') =>
   weatherContent.filter((d) => d.kind === kind && d.status === 'live').map((d) => d.id) as [
@@ -248,45 +245,26 @@ export const SetWeatherBodySchema = v.strictObject({
   omen: v.nullable(v.picklist(OMEN_IDS)),
 });
 
-// --- The raid ---
+// --- The raid test bench ---
 
-export const RaidPhaseBodySchema = v.strictObject({
-  to: v.picklist(['preparation', 'phase1', 'phase2', 'finale', 'done']),
-});
+/** The most simulated players one fill adds (a party holds `RULES.raid.maxPartySize`, and the caller is one of them). */
+export const MAX_BENCH_PLAYERS = 14;
 
-export const RaidResolveBodySchema = v.strictObject({ phase: v.picklist(['phase1', 'phase2']) });
+export const RaidFillBodySchema = v.strictObject({ count: v.optional(int(1, MAX_BENCH_PLAYERS)) });
 
-export const RaidBossBodySchema = v.pipe(
+/** The Boss Ranks of the track: one per slot of `raid-track.json`. */
+export const TRACK_RANKS = combatV2.raidTrack.slots.length;
+export const RaidRankBodySchema = v.strictObject({ rank: int(1, TRACK_RANKS) });
+
+export const RAID_PLAY_STAGES = ['stage1', 'stage2', 'finale'] as const;
+export const RaidPlayBodySchema = v.pipe(
   v.strictObject({
-    bossId: v.optional(v.picklist(BOSS_IDS)),
-    rank: v.optional(int(1, RULES.raid.scaling.maxRank)),
+    stage: v.picklist(RAID_PLAY_STAGES),
+    /** The finale only: start its live fight now instead of playing it to its end at once. */
+    live: v.optional(v.boolean()),
   }),
-  v.check((o) => o.bossId !== undefined || o.rank !== undefined, NEED_ONE),
+  v.check((o) => o.live !== true || o.stage === 'finale', 'only the finale can be played live'),
 );
-
-export const RaidFestivalBodySchema = v.strictObject({ on: v.boolean() });
-
-/** Guests are other players: a party holds at most `maxPartySize`, and the caller is one of them. */
-export const MAX_GUESTS = 40;
-export const RaidRosterBodySchema = v.strictObject({ count: int(0, MAX_GUESTS) });
-
-export const RaidLiveBodySchema = v.strictObject({
-  countdownSeconds: v.optional(int(1, 60)),
-});
-
-export const RaidSimulateBodySchema = v.strictObject({
-  guests: v.optional(int(0, MAX_GUESTS)),
-});
-
-/**
- * Plays a combat v2 weekend on the real scheduler (staging with `COMBAT_V2` only): up to `step` (default the finale's start), each
- * step after any earlier one that has not run. `guests` sets the simulated roster first (as `raid-roster`, before stage 1).
- */
-export const RAID_WEEKEND_STEPS = ['stage1', 'stage2', 'finale-start', 'finale-end'] as const;
-export const RaidWeekendBodySchema = v.strictObject({
-  step: v.optional(v.picklist(RAID_WEEKEND_STEPS)),
-  guests: v.optional(int(0, MAX_GUESTS)),
-});
 
 // --- The Valley Games ---
 
@@ -302,5 +280,8 @@ export const GamesRunNowBodySchema = v.strictObject({
 // --- The account ---
 
 export const ResetAccountBodySchema = v.strictObject({ confirm: v.literal('RESET') });
+
+/** Wipes every raid and dungeon of the guild: the word must be typed. */
+export const ResetRaidsDungeonsBodySchema = v.strictObject({ confirm: v.literal('reset') });
 
 export const NoBodySchema = Empty;

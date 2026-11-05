@@ -270,16 +270,17 @@ export function Dungeon({
     });
   }
 
-  async function enter(slots: Slots, treats: ReadonlySet<string>): Promise<void> {
+  async function enter(slots: Slots, treats: ReadonlySet<string>, depth?: number): Promise<void> {
     const team = completeTeam(slots);
     if (today === null || team === null) return;
     const request = buildRunRequest(slots, '', treats);
     const picked = request?.treats ?? [];
     // One key per distinct run: a retry of the same picks (and treats) reuses it, other picks get their own.
-    await runner.runKeyed(ActionIds.dungeonStart(team, picked), async (key) => {
+    await runner.runKeyed(ActionIds.dungeonStart(team, picked, depth), async (key) => {
       const answer = await startDungeonRun({
         team,
         ...(picked.length === 0 ? {} : { treats: picked }),
+        ...(depth === undefined ? {} : { depth }),
         idempotencyKey: key,
       });
       onRunStarted();
@@ -325,8 +326,8 @@ export function Dungeon({
           draft={draft}
           onDraftChange={onDraftChange}
           saveDraft={(team) => saveDungeonTeam({ team })}
-          onEnter={(slots, treats) => {
-            void enter(slots, treats);
+          onEnter={(slots, treats, depth) => {
+            void enter(slots, treats, depth);
           }}
           onSeeLast={() => {
             if (today.last !== null) setView({ kind: 'results', run: today.last });

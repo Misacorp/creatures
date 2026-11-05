@@ -3,6 +3,10 @@ import { URL, fileURLToPath } from 'node:url';
 import { CARDS } from './cards';
 import { RAID_BOSS_IDS } from './bosses';
 import { planBosses } from './bossReport';
+import { planDungeonDays } from './dungeonMeasure';
+import { planUndercroftTools } from './undercroftTools';
+import { planFourSlot } from './fourSlot';
+import { planJourney } from './journey';
 import { planPath, type PathSummary } from './path';
 import { ownabilityMarkdown, ownabilityTable } from './ownability';
 import { ROSTER_SPEEDS, type RosterSpeed } from './roster';
@@ -56,6 +60,10 @@ export async function main(args: readonly string[], run: JobRunner = serial): Pr
     return tune(args, quick, run);
   }
   if (args.includes('--path')) return path(args, quick, run);
+  if (args.includes('--journey')) return journey(quick, run);
+  if (args.includes('--dungeon-days')) return dungeonDays(args, quick, run);
+  if (args.includes('--undercroft-tools')) return undercroftTools(args, quick, run);
+  if (args.includes('--four-slot')) return fourSlot(quick, run);
   const bossAt = args.indexOf('--boss');
   if (args.includes('--bosses') || bossAt >= 0) {
     // Only the real raid bosses and dungeon foes, to the console (nothing is written).
@@ -175,6 +183,75 @@ async function tune(args: readonly string[], quick: boolean, run: JobRunner): Pr
     writeFileSync(out, summary.join('\n') + '\n');
     writeFileSync(out.replace(/(\.md)?$/, '.json'), JSON.stringify(results, null, 1) + '\n');
   }
+  return 0;
+}
+
+/** `--journey [--quick]`: the journey on the game's rules (`journey.ts`), beside the lab's, to the console (nothing is written). */
+async function journey(quick: boolean, run: JobRunner): Promise<number> {
+  const t0 = Date.now();
+  const { value, timings } = await runPlan(planJourney({ quick }), run);
+  console.log(value.md.join('\n'));
+  console.log(`journey in ${secondsSince(t0)} s`);
+  console.log(timings);
+  return 0;
+}
+
+/** `--undercroft-tools [--quick] [--tools a,b] [--servers n]`: the tools that make the Undercroft past depth 40 easier (`undercroftTools.ts`), to the console (nothing is written). */
+async function undercroftTools(
+  args: readonly string[],
+  quick: boolean,
+  run: JobRunner,
+): Promise<number> {
+  const t0 = Date.now();
+  const tools = flagValue(args, '--tools')?.split(',');
+  const servers = flagValue(args, '--servers');
+  const { value, timings } = await runPlan(
+    planUndercroftTools({
+      quick,
+      ...(tools ? { tools } : {}),
+      ...(servers ? { servers: Number(servers) } : {}),
+    }),
+    run,
+  );
+  console.log(value.md.join('\n'));
+  console.log(`undercroft tools in ${secondsSince(t0)} s`);
+  console.log(timings);
+  return 0;
+}
+
+/** `--four-slot [--quick]`: the team search on a row of four, to the console (`fourSlot.ts`; nothing is written). */
+async function fourSlot(quick: boolean, run: JobRunner): Promise<number> {
+  const t0 = Date.now();
+  const { value, timings } = await runPlan(planFourSlot({ quick }), run);
+  console.log(value.md.join('\n'));
+  console.log(`four-slot in ${secondsSince(t0)} s`);
+  console.log(timings);
+  return 0;
+}
+
+/** `--dungeon-days [--quick] [--rewards] [--scenarios a,b] [--step-back n] [--servers n]`: each player's daily dungeon runs over 24 weeks (`dungeonDays.ts`), to the console (nothing is written). */
+async function dungeonDays(
+  args: readonly string[],
+  quick: boolean,
+  run: JobRunner,
+): Promise<number> {
+  const t0 = Date.now();
+  const scenarios = flagValue(args, '--scenarios')?.split(',');
+  const stepBack = Number(flagValue(args, '--step-back') ?? 0);
+  const servers = flagValue(args, '--servers');
+  const { value, timings } = await runPlan(
+    planDungeonDays({
+      quick,
+      ...(scenarios ? { scenarios } : {}),
+      ...(stepBack > 0 ? { stepBack } : {}),
+      ...(args.includes('--rewards') ? { rewards: true } : {}),
+      ...(servers ? { servers: Number(servers) } : {}),
+    }),
+    run,
+  );
+  console.log(value.md.join('\n'));
+  console.log(`dungeon days in ${secondsSince(t0)} s`);
+  console.log(timings);
   return 0;
 }
 

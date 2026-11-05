@@ -6,7 +6,7 @@
  */
 import type { ComponentChildren } from 'preact';
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'preact/hooks';
-import { bossArt } from './art';
+import { bossArt, elementClass } from './art';
 import { ArmourChip, EscalatingMeter, boardTurnSteps, stageTicks } from './BossCardV2';
 import { combatGlyph, moveGlyphId } from './combat-glyphs';
 import { actionActive, stepId, type BoardState, type StageModel } from './fight-v2';
@@ -33,38 +33,197 @@ import { elementIcon } from './sprites/element-icons';
 import type { PlaybackV2 } from './use-playback-v2';
 import { MarkStrip, type MarkChipModel } from './ui/MarkStrip';
 import { RaidBoard, type BoardRowModel } from './ui/RaidBoard';
-import type { SlotModel } from './ui/SlotButton';
+import type { BoostLook, SlotModel, TilePulse } from './ui/SlotButton';
 import type { SlotCue } from './ui/slot-cue';
 import { SegmentBar } from './ui/SegmentBar';
 import { StageHead } from './ui/StageHead';
 import { Tag } from './ui/Tag';
 import { TurnStrip } from './ui/TurnStrip';
 
-/** The numbers that float over a creature or the boss: a Blocked hit is the shield and 0, a crit is bigger, in the hit's own colour. */
+/**
+ * A word with its two element colours put into its letters, as two parts (the first half in the mark's colour, the second in the
+ * hitter's; never markup built from the word: each part is text). A reaction's name is drawn with it.
+ */
+function SplitName({
+  text,
+  elements,
+}: {
+  text: string;
+  elements: readonly [string | null, string | null];
+}) {
+  const letters = Array.from(text);
+  const half = Math.ceil(letters.length / 2);
+  return (
+    <>
+      <span class={elementClass(elements[0])}>{letters.slice(0, half).join('')}</span>
+      <span class={elementClass(elements[1])}>{letters.slice(half).join('')}</span>
+    </>
+  );
+}
+
+/**
+ * The numbers and words that float over a creature or the boss. A creature's hit on the boss is a number in its element's colour, a
+ * crit the same number ending with "!" in two hard halves (`crit-split`); a Blocked hit is the shield and 0; a reaction is one float:
+ * its name in its two element colours with, under it on one line, the hit's total and the bonus ("452 +307"); a Guard's save is a
+ * large shield (with what it kept off, when known; the Guard itself bursts a shield out, `GuardBursts`); a boost is rising arrows; a Knack's name is a small word. All of it is text and drawings, never markup built from a name.
+ */
 function FloatsV2({ fx, target }: { fx: readonly FxItem[]; target: string | null }) {
+  // The hits whose number rides in a reaction's callout, so they are not drawn twice.
+  const taken = new Set<number>();
+  for (const { cue } of fx)
+    if (cue.kind === 'float' && cue.tone === 'reaction' && cue.hit !== undefined)
+      taken.add(cue.hit.i);
   return (
     <>
       {fx.map((item) => {
         const { cue } = item;
         if (cue.kind !== 'float' || cue.target !== target) return null;
+        if (cue.tone === 'hit' && taken.has(cue.i)) return null;
+        const [markEl, hitEl] = cue.elements ?? [null, null];
+        const merged = cue.tone === 'reaction' ? cue.hit : undefined;
+        const colour =
+          cue.tone === 'hit'
+            ? elementClass(cue.element ?? null)
+            : merged === undefined
+              ? ''
+              : elementClass(hitEl);
         return (
           <span
-            key={`float-${String(cue.i)}`}
-            class={`float float-${cue.tone}${cue.crit ? ' crit' : ''} lane-${String(item.lane)}`}
+            key={`float-${cue.tone}-${String(cue.i)}`}
+            class={`float float-${cue.tone}${cue.crit ? ' crit' : ''}${colour === '' ? '' : ` ${colour}`}${
+              cue.tone === 'reaction' ? ' rx' : ''
+            } lane-${String(item.lane)}`}
             ref={fxRef(item, { '--drift': cue.drift, '--lane': item.lane })}
           >
             <span class="float-body">
-              <span class="float-text">
-                {cue.tone === 'blocked' && (
-                  <Sprite sprite={glyphOrUnknown('shield')} scale={1} class="float-shield" />
-                )}
-                {cue.text}
-              </span>
+              {cue.tone === 'reaction' ? (
+                <>
+                  <span class="float-text rx-name">
+                    <SplitName text={cue.text} elements={[markEl, hitEl]} />
+                  </span>
+                  <span class="rx-numbers">
+                    {merged !== undefined && (
+                      <span class="rx-num">
+                        {merged.crit ? (
+                          <span class="crit-split">{`${merged.text}!`}</span>
+                        ) : (
+                          merged.text
+                        )}
+                      </span>
+                    )}
+                    {cue.sub !== undefined && <span class="rx-bonus">{cue.sub}</span>}
+                  </span>
+                </>
+              ) : (
+                <>
+                  {cue.tone === 'boost' && (
+                    <span class="float-arrows">
+                      <i />
+                      <i />
+                    </span>
+                  )}
+                  <span class="float-text">
+                    {(cue.tone === 'blocked' || cue.tone === 'save') && (
+                      <Sprite sprite={glyphOrUnknown('shield')} scale={1} class="float-shield" />
+                    )}
+                    {cue.tone === 'hit' && cue.crit ? (
+                      <span class="crit-split">{`${cue.text}!`}</span>
+                    ) : cue.tone === 'save' ? (
+                      <span class="save-num">{cue.text}</span>
+                    ) : (
+                      cue.text
+                    )}
+                  </span>
+                  {cue.sub !== undefined && <span class="float-sub">{cue.sub}</span>}
+                </>
+              )}
             </span>
           </span>
         );
       })}
     </>
+  );
+}
+
+/**
+ * A Guard's save, from the Guard itself: the same shield as the one on the covered creature, starting on the Guard's tile and growing
+ * to 2.5 times its size while it fades, as long as the shields on the tiles last. It outgrows the tile, so it is drawn on the stage's
+ * overlay layer (clipped to the stage, never scrolling it), placed from the Guard tile's box and kept there when the board scrolls.
+ * Motion reduced: one still large shield on the Guard for the beat.
+ */
+function GuardBursts({
+  fx,
+  tile,
+  strip,
+}: {
+  fx: readonly FxItem[];
+  tile: (key: string) => HTMLElement | null;
+  strip: () => HTMLElement | null;
+}) {
+  const bursts = fx.flatMap((item) => {
+    const { cue } = item;
+    if (cue.kind !== 'cover') return [];
+    // Timed with the save's shield on the covered creature (the same beat's float).
+    const saved = fx.find(
+      (f) => f.cue.kind === 'float' && f.cue.tone === 'save' && f.cue.i === cue.i,
+    );
+    return [{ key: `guard-burst-${String(cue.i)}`, guard: cue.guard, ms: (saved ?? item).ms }];
+  });
+  return (
+    <>
+      {bursts.map((b) => (
+        <GuardBurst key={b.key} guard={b.guard} ms={b.ms} tile={tile} strip={strip} />
+      ))}
+    </>
+  );
+}
+
+/**
+ * The shield glyph without its ink outline (the `k` cells): the outline is near black, so scaled up and faded it draws a dark box on the
+ * tile. Only the shield's own light pixels are drawn.
+ */
+function burstShield() {
+  const glyph = glyphOrUnknown('shield');
+  return { ...glyph, rows: glyph.rows.map((row) => row.replaceAll('k', '.')) };
+}
+const BURST_SHIELD = burstShield();
+
+function GuardBurst({
+  guard,
+  ms,
+  tile,
+  strip,
+}: {
+  guard: string;
+  ms: number;
+  tile: (key: string) => HTMLElement | null;
+  strip: () => HTMLElement | null;
+}) {
+  const ref = useRef<HTMLSpanElement>(null);
+  // Place the shield's centre on the Guard tile's centre, in the overlay layer's own coordinates; follow a sideways scroll of the board.
+  useLayoutEffect(() => {
+    const el = ref.current;
+    const layer = el?.parentElement;
+    const scroller = strip();
+    if (el === null || layer === null || layer === undefined) return undefined;
+    const place = (): void => {
+      const box = tile(guard)?.getBoundingClientRect();
+      const at = layer.getBoundingClientRect();
+      if (box === undefined) return;
+      el.style.setProperty('--bx', `${String(box.left + box.width / 2 - at.left)}px`);
+      el.style.setProperty('--by', `${String(box.top + box.height / 2 - at.top)}px`);
+    };
+    el.style.setProperty('--fx-ms', `${String(ms)}ms`);
+    place();
+    scroller?.addEventListener('scroll', place, { passive: true });
+    return () => {
+      scroller?.removeEventListener('scroll', place);
+    };
+  }, [guard, ms]);
+  return (
+    <span class="guard-burst" ref={ref}>
+      <Sprite sprite={BURST_SHIELD} scale={1} class="burst-shield" />
+    </span>
   );
 }
 
@@ -107,6 +266,8 @@ interface StageV2Props {
   ticks?: readonly number[];
   /** Under the board: the live finale's input. */
   children?: ComponentChildren;
+  /** How a boosted creature shows (default `pattern`: arrows drifting up in the tile's background; `glow`: the inner glow). */
+  boostLook?: BoostLook;
   /** Drawn over the stage inside its padding, like the effects' layer (the dungeon's room banner); it lets taps through. */
   overlay?: ComponentChildren;
 }
@@ -134,6 +295,7 @@ export function StageV2({
   single = false,
   ticks,
   children,
+  boostLook = 'pattern',
   overlay,
 }: StageV2Props) {
   const popovers = usePopoverHost();
@@ -163,6 +325,37 @@ export function StageV2({
     [fighters, rows],
   );
   const hit = show?.flash ?? new Set<string | null>();
+
+  // A Guard's save (it took a hit for a creature, or its cover cut one): a pulse of protection passes through the tiles of the row from the
+  // Guard to each creature it covered (the cover's reach can be wider than "beside"), the covered tile flashing as it lands. The tiles
+  // between are lit by their slot, empty ones too; several covered creatures share the tiles near the Guard.
+  const { pulses, guards } = useMemo(() => {
+    const pulses = new Map<number, TilePulse>();
+    const guards = new Set<string>();
+    const at = new Map(fighters.map((f) => [f.key, f]));
+    for (const item of fx) {
+      if (item.cue.kind !== 'cover') continue;
+      const guard = at.get(item.cue.guard);
+      const saved = at.get(item.cue.creature);
+      if (guard === undefined || saved === undefined) continue;
+      guards.add(guard.key);
+      if (guard.col === saved.col || guard.row !== saved.row) continue;
+      const dir = saved.col > guard.col ? 'right' : 'left';
+      const [from, to] = [Math.min(guard.col, saved.col), Math.max(guard.col, saved.col)];
+      for (let col = from; col <= to; col++) {
+        const slot = col * rows + guard.row;
+        const step = Math.abs(col - guard.col);
+        const was = pulses.get(slot);
+        pulses.set(slot, {
+          dir,
+          step: was === undefined ? step : Math.min(was.step, step),
+          guard: (was?.guard ?? false) || col === guard.col,
+          end: (was?.end ?? false) || col === saved.col,
+        });
+      }
+    }
+    return { pulses, guards };
+  }, [fx, fighters, rows]);
 
   // The live inputs in play: Rally lights everyone, a Shield Wall its row.
   const actions = state.actions.filter((a) => actionActive(a, state.round) && state.end === null);
@@ -211,7 +404,13 @@ export function StageV2({
           out: now?.out === true,
           store: now?.store ?? 0,
           hit: hit.has(f.key),
+          ...((now?.boost ?? 0) > 0 && now?.out !== true
+            ? { boosted: true as const, boostLook }
+            : {}),
+          // Silence is the one lowering a creature carries in the events today.
+          ...((now?.silenced ?? 0) > 0 && now?.out !== true ? { debuffed: true as const } : {}),
           acting: landed?.kind === 'creature' && landed.actor === f.key,
+          ...(guards.has(f.key) ? { guarding: true as const } : {}),
           overlay: (
             <>
               <FloatsV2 fx={fx} target={f.key} />
@@ -232,15 +431,29 @@ export function StageV2({
       const now = f === undefined ? undefined : state.creatures[f.key];
       const lane = (f?.col ?? Math.floor(slot / rows)) + 1;
       const where = single ? `Place ${String(lane)}` : `${rowNameV2(at)}, lane ${String(lane)}`;
+      const pulse = pulses.get(slot);
       if (f === undefined)
-        return { index: slot, hideNumber: true, ariaLabel: `${where}, empty`, occupant: null };
+        return {
+          index: slot,
+          hideNumber: true,
+          ariaLabel: `${where}, empty`,
+          occupant: null,
+          ...(pulse === undefined ? {} : { pulse }),
+        };
       const parts = [
         `${where}, ${f.name}`,
         `${String(now?.hp ?? 0)} / ${String(f.maxHp)} HP`,
         ...(now?.out === true ? ['out'] : []),
+        ...((now?.boost ?? 0) > 0 && now?.out !== true ? ['boosted'] : []),
         ...((now?.silenced ?? 0) > 0 ? [`silenced, ${String(now?.silenced)} turns left`] : []),
       ];
-      return { index: slot, hideNumber: true, ariaLabel: parts.join(', '), occupant: tileOf(f) };
+      return {
+        index: slot,
+        hideNumber: true,
+        ariaLabel: parts.join(', '),
+        occupant: tileOf(f),
+        ...(pulse === undefined ? {} : { pulse }),
+      };
     }),
   }));
 
@@ -430,6 +643,19 @@ export function StageV2({
       {children}
       {/* The effects' layer sits inside the stage's padding, so nothing of it is drawn past the stage's content. */}
       <div class="stage-overlay">
+        <div class="stage-bursts" aria-hidden="true">
+          <GuardBursts
+            fx={fx}
+            tile={(key) => {
+              const slot = bySlotKey.get(key);
+              return slot === undefined
+                ? null
+                : (stripRef.current?.querySelector<HTMLElement>(`[data-slot="${String(slot)}"]`) ??
+                    null);
+            }}
+            strip={() => stripRef.current}
+          />
+        </div>
         <div class="stage-strikes" ref={layerRef} aria-hidden="true">
           {strike !== null && (
             <BossFx

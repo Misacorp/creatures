@@ -79,14 +79,26 @@ export const FOE_IDS: readonly string[] = FOE_SPECS.map((s) => s.id);
 export const DUNGEON_DEPTHS: readonly number[] = [1, 3, 5, 7];
 
 /** A foe's HP and Attack at a depth: the content's numbers, the lab scale, then the dungeon's depth curve (the engine's resolver, on the game's pack). */
-export function foeStats(id: string, depth: number): { hp: number; atk: number } {
-  return foeStatsOf(combatV2, SHIPPED, id, depth);
+export function foeStats(
+  id: string,
+  depth: number,
+  pack: FoePack = combatV2,
+): { hp: number; atk: number } {
+  return foeStatsOf(pack, SHIPPED, id, depth);
 }
+
+/** The parts of the combat v2 pack a dungeon foe is built from: a report may swap the scale and the depth curve (`dungeonKnobs.ts`), never the game's data. */
+export type FoePack = Pick<typeof combatV2, 'foes' | 'foeScale' | 'foeCurve' | 'cards'>;
 
 /**
  * A dungeon foe at a depth: a one-row arena, its own armour, plain attack, moves and cards; a floor boss gains its
  * signature at a landmark (`signature` decides it instead: an Undercroft keeper always has it).
  */
-export function foeAt(id: string, depth: number, options: { signature?: boolean } = {}): BossDef {
-  return foeAtOf(combatV2, SHIPPED, id, depth, options);
+export function foeAt(
+  id: string,
+  depth: number,
+  options: { signature?: boolean } = {},
+  pack: FoePack = combatV2,
+): BossDef {
+  return foeAtOf(pack, SHIPPED, id, depth, options);
 }

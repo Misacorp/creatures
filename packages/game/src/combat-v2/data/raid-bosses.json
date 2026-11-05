@@ -2,6 +2,7 @@
   {
     "id": "tidal-colossus",
     "rows": 3,
+    "piece": { "rows": 3 },
     "armour": 41,
     "atk": 113,
     "hp": 19100,
@@ -41,6 +42,7 @@
   {
     "id": "cinder-wyrm",
     "rows": 4,
+    "piece": { "rows": 4 },
     "armour": 60,
     "atk": 130,
     "hp": 24000,
@@ -81,6 +83,7 @@
   {
     "id": "thornmother",
     "rows": 3,
+    "piece": { "rows": 3 },
     "armour": 224,
     "atk": 92,
     "hp": 9200,
@@ -159,6 +162,7 @@
   {
     "id": "storm-sovereign",
     "rows": 2,
+    "piece": { "rows": 2 },
     "armour": 10,
     "atk": 71,
     "hp": 14500,
@@ -237,6 +241,7 @@
   {
     "id": "old-bogback",
     "rows": 3,
+    "piece": { "rows": 3 },
     "armour": 36,
     "atk": 112,
     "hp": 27000,

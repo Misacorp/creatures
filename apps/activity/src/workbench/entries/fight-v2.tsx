@@ -16,7 +16,7 @@ import { staticFx } from '../../stage-fx';
 import { MarkStrip } from '../../ui/MarkStrip';
 import type { PlaybackV2 } from '../../use-playback-v2';
 import { cuesOf } from '../../use-playback-v2';
-import { num, str } from '../props';
+import { bool, num, str } from '../props';
 import type { Entry, Props } from '../types';
 import {
   cardOfBoss,
@@ -48,6 +48,13 @@ const MOMENTS = [
   'a silenced creature',
   'a knock-out',
   'a reaction is cashed',
+  'a Guard save',
+  'a Guard save two slots away',
+  'a dodge',
+  'a heal',
+  'a boost',
+  'a boosted and a silenced creature',
+  'a Knack acts',
   'a boss that sheds marks',
   'the end',
   'beat number',
@@ -67,7 +74,9 @@ function momentBeat(
     const k = beats.findIndex((_, i) => found(i));
     return k < 0 ? 0 : k + 1;
   };
-  const shows = beats.map((b) => showOf(events, b));
+  const shows = beats.map((b, k) =>
+    showOf(events, b, { creatures: model.setup.creatures, quiet: quietOf(model, k) }),
+  );
   switch (moment) {
     case 'start':
       return 0;
@@ -76,8 +85,37 @@ function momentBeat(
         (k) =>
           (states[k + 1]?.marks.length ?? 0) >= 2 && (states[k + 1]?.announced.length ?? 0) > 0,
       );
-    case 'a crit':
-      return at((k) => shows[k]?.floats.some((f) => f.crit) === true);
+    case 'a crit': {
+      const marked = at((k) => shows[k]?.floats.some((f) => f.mult !== undefined) === true);
+      return marked > 0 ? marked : at((k) => shows[k]?.floats.some((f) => f.crit) === true);
+    }
+    case 'a Guard save':
+      return at(
+        (k) =>
+          (shows[k]?.saves.length ?? 0) > 0 &&
+          shows[k]?.saves.some((s) => s.prevented !== null) === true,
+      );
+    case 'a Guard save two slots away': {
+      const col = new Map(model.setup.creatures.map((c) => [c.key, c.col]));
+      return at((k) =>
+        (shows[k]?.saves ?? []).some(
+          (s) => Math.abs((col.get(s.guard) ?? 0) - (col.get(s.who) ?? 0)) >= 2,
+        ),
+      );
+    }
+    case 'a dodge':
+      return at((k) => shows[k]?.floats.some((f) => f.tone === 'dodge') === true);
+    case 'a heal':
+      return at((k) => shows[k]?.floats.some((f) => f.tone === 'heal') === true);
+    case 'a boost':
+      return at((k) => shows[k]?.floats.some((f) => f.tone === 'boost') === true);
+    case 'a boosted and a silenced creature':
+      return at((k) => {
+        const now = Object.values(states[k + 1]?.creatures ?? {});
+        return now.some((c) => c.boost > 0 && !c.out) && now.some((c) => c.silenced > 0 && !c.out);
+      });
+    case 'a Knack acts':
+      return at((k) => (shows[k]?.knacks.length ?? 0) > 0);
     case 'a Blocked hit':
       return at((k) => shows[k]?.floats.some((f) => f.tone === 'blocked') === true);
     case 'a silenced creature':
@@ -95,9 +133,38 @@ function momentBeat(
   }
 }
 
+/** The creatures whose Knack does not act as beat `k` begins (silenced or out), as the playback reads it. */
+const quietOf = (model: StageModel, k: number): ReadonlySet<string> =>
+  new Set(
+    Object.entries(model.states[k]?.creatures ?? {}).flatMap(([key, c]) =>
+      c.out || c.silenced > 0 ? [key] : [],
+    ),
+  );
+
+/** The effects of the beat that just landed, as the playback draws them (the Knack names only when `knackNames`). */
+function heldFx(
+  model: StageModel,
+  events: Parameters<typeof showOf>[0],
+  beat: number,
+  knackNames: boolean,
+): { show: ReturnType<typeof showOf> | null; fx: PlaybackV2['fx'] } {
+  const landed = beat > 0 ? model.beats[beat - 1] : undefined;
+  if (landed === undefined) return { show: null, fx: [] };
+  const show = showOf(events, landed, {
+    creatures: model.setup.creatures,
+    quiet: quietOf(model, beat - 1),
+  });
+  return { show, fx: staticFx(cuesOf(show, knackNames)) };
+}
+
+/** How a boosted creature shows: `pattern` (the default) or `glow`. */
+const boostLookOf = (p: Props): 'pattern' | 'glow' =>
+  str(p, 'boostLook') === 'glow' ? 'glow' : 'pattern';
+
 function optionsOf(p: Props): FightSampleOptions {
   const stage = num(p, 'stage');
   return {
+    party: str(p, 'party') === 'mixed' ? 'mixed' : 'rows',
     slot: num(p, 'slot'),
     players: num(p, 'players'),
     stage: stage >= 3 ? 3 : stage === 2 ? 2 : 1,
@@ -124,8 +191,7 @@ function StageHeld({ p }: { p: Props }) {
   const model = useMemo(() => stageModelOf(setup, replay.events), [setup, replay]);
   const moment = MOMENTS.find((m) => m === str(p, 'moment')) ?? 'start';
   const beat = momentBeat(model, replay.events, moment, num(p, 'beat'));
-  const landed = beat > 0 ? model.beats[beat - 1] : undefined;
-  const show = landed === undefined ? null : showOf(replay.events, landed);
+  const { show, fx } = heldFx(model, replay.events, beat, bool(p, 'knackNames'));
   const playback: PlaybackV2 = {
     beat,
     total: model.beats.length,
@@ -134,7 +200,7 @@ function StageHeld({ p }: { p: Props }) {
     setPlaying: () => undefined,
     move: () => undefined,
     show,
-    fx: show === null ? [] : staticFx(cuesOf(show)),
+    fx,
     intro: null,
   };
   return (
@@ -150,6 +216,7 @@ function StageHeld({ p }: { p: Props }) {
         place={opts.stage === 3 ? 'Finale' : `Stage ${String(opts.stage)} / 3`}
         hpMax={replay.bossHpMax}
         rounds={replay.boss.rounds}
+        boostLook={boostLookOf(p)}
       />
     </div>
   );
@@ -190,8 +257,7 @@ function DungeonRoomHeld({ p }: { p: Props }) {
   );
   const moment = MOMENTS.find((m) => m === str(p, 'moment')) ?? 'start';
   const beat = momentBeat(model, room.events, moment, num(p, 'beat'));
-  const landed = beat > 0 ? model.beats[beat - 1] : undefined;
-  const show = landed === undefined ? null : showOf(room.events, landed);
+  const { show, fx } = heldFx(model, room.events, beat, bool(p, 'knackNames'));
   const playback: PlaybackV2 = {
     beat,
     total: model.beats.length,
@@ -200,7 +266,7 @@ function DungeonRoomHeld({ p }: { p: Props }) {
     setPlaying: () => undefined,
     move: () => undefined,
     show,
-    fx: show === null ? [] : staticFx(cuesOf(show)),
+    fx,
     intro: null,
   };
   return (
@@ -218,6 +284,7 @@ function DungeonRoomHeld({ p }: { p: Props }) {
         rounds={fight.rounds}
         single
         ticks={[]}
+        boostLook={boostLookOf(p)}
       />
     </div>
   );
@@ -369,6 +436,9 @@ const CONTROLS = {
   players: { kind: 'number', min: 1, max: 15 },
   stage: { kind: 'number', min: 1, max: 3 },
   seed: { kind: 'text', maxLength: 12 },
+  party: { kind: 'select', options: ['rows', 'mixed'] },
+  knackNames: { kind: 'toggle' },
+  boostLook: { kind: 'select', options: ['pattern', 'glow'] },
   moment: { kind: 'select', options: MOMENTS },
   beat: { kind: 'number', min: 0, max: 400 },
   round: { kind: 'number', min: 0, max: 8 },
@@ -388,6 +458,9 @@ const DEFAULTS = {
   players: 4,
   stage: 1,
   seed: 'fold',
+  party: 'rows',
+  knackNames: false,
+  boostLook: 'pattern',
   moment: 'marks and an announced move',
   beat: 0,
   round: 3,
@@ -406,7 +479,7 @@ const stageV2: Entry = {
   file: 'apps/activity/src/StageV2.tsx',
   group: 'Creatures & game pieces',
   description:
-    "The combat v2 fight stage, played from a real fight (every event is the engine's own, from the shipped bosses and creatures): the boss above its HP bar with a tick per stage, the move it just made, the marks on it oldest first, Mired, what it resists and the Escalating meter, the turn strip lighting the step on, and the v2 board with each creature's HP, a silenced creature's Knack crossed out with the turns left, knocked-out ones greyed and the move announced at round start on each creature it will land on. Views: held still at a moment of the fight (a crit, a Blocked hit, a silenced creature, a knock-out, a cashed mark), playing by itself like the replay, the live finale with the player's action button (Rally, Shield Wall with its row picker, Purge) and Auto fire, a stage's result card, and the Raid tab's pick of the finale action.",
+    "The combat v2 fight stage, played from a real fight (every event is the engine's own, from the shipped bosses and creatures): the boss above its HP bar with a tick per stage, the move it just made, the marks on it oldest first, Mired, what it resists and the Escalating meter, the turn strip lighting the step on, and the v2 board with each creature's HP, a silenced creature's Knack crossed out with the turns left, knocked-out ones greyed and the move announced at round start on each creature it will land on. What a fight shows: a reaction's name in its two colours over the boss with the hit's total and the bonus under it on one line (the beat is held a moment longer), a number on the boss for every hit in the hitter's element colour (a crit ending with \"!\" in two hard halves), a Guard's save (a shield on the covered creature with what the cover kept off, the Guard's own shield bursting out of its tile to 2.5 times the size while it fades, the Guard's tile flashing and a pulse of protection running through the tiles' backgrounds, across every tile of the row between them, to the covered creature), \"Dodged!\", heals as green numbers, boosts as rising arrows (a boosted creature also has small yellow arrows drifting up in its tile's background, `boostLook` `pattern` by default, or the inner `glow`; a silenced creature has the same pattern flipped, red arrows drifting down), and, only when the Knack names option is on (Settings, off by default), the Knack's name popping on the creature that acts. The `party` control swaps the sample for a mixed party (Guards and Supports among the Setters and Payoffs) so every one of these happens. Views: held still at a moment of the fight (a crit, a Blocked hit, a silenced creature, a knock-out, a cashed mark, a Guard save, a dodge, a heal, a boost, a Knack acting), playing by itself like the replay, the live finale with the player's action button (Rally, Shield Wall with its row picker, Purge) and Auto fire, a stage's result card, and the Raid tab's pick of the finale action.",
   controls: CONTROLS,
   defaults: DEFAULTS,
   presets: [
@@ -420,6 +493,62 @@ const stageV2: Entry = {
     { name: 'A knock-out', props: { slot: 5, moment: 'a knock-out' } },
     { name: 'A reaction is cashed', props: { moment: 'a reaction is cashed' } },
     { name: 'The end of stage 1', props: { moment: 'the end' } },
+    {
+      name: 'Reaction callout: the name in its two colours over the numbers on one line (total and bonus), over the boss (Old Bogback)',
+      props: { slot: 4, players: 5, party: 'mixed', moment: 'a reaction is cashed' },
+    },
+    {
+      name: 'A crit: "452!" in two hard halves (the special text), no multiplier',
+      props: { slot: 4, players: 5, party: 'mixed', moment: 'a crit' },
+    },
+    {
+      name: 'Boosted creatures: small yellow arrows drifting up in the tile’s background until their next hit (the default look)',
+      props: { slot: 4, players: 5, party: 'mixed', moment: 'a boost' },
+    },
+    {
+      name: 'Boosted, the glow look to compare (a yellow inner glow flush to the border)',
+      props: { slot: 4, players: 5, party: 'mixed', moment: 'a boost', boostLook: 'glow' },
+    },
+    {
+      name: 'Debuffed (silenced): the same pattern flipped, red arrows drifting down in the background',
+      props: { slot: 5, moment: 'a silenced creature' },
+    },
+    {
+      name: 'A boosted and a debuffed creature side by side',
+      props: { slot: 5, players: 4, party: 'mixed', moment: 'a boosted and a silenced creature' },
+    },
+    {
+      name: 'A Guard save: a large shield on the covered creature with what it kept off (no ring), the Guard’s own shield bursting out to 2.5x, the flash and the pulse through the tiles to the covered creature',
+      props: { slot: 4, players: 5, party: 'mixed', moment: 'a Guard save' },
+    },
+    {
+      name: 'A Guard save from two slots away (Wide Reach): the pulse runs through the tile between to the covered creature',
+      props: { slot: 3, players: 5, party: 'mixed', moment: 'a Guard save two slots away' },
+    },
+    {
+      name: 'A dodge ("Dodged!")',
+      props: { slot: 4, players: 5, party: 'mixed', moment: 'a dodge' },
+    },
+    {
+      name: 'A heal (green numbers)',
+      props: { slot: 4, players: 5, party: 'mixed', moment: 'a heal' },
+    },
+    {
+      name: 'A boost (rising arrows on the boosted creatures)',
+      props: { slot: 4, players: 5, party: 'mixed', moment: 'a boost' },
+    },
+    {
+      name: 'A Knack acts, Knack names off (the default)',
+      props: { slot: 4, players: 5, party: 'mixed', moment: 'a Knack acts' },
+    },
+    {
+      name: 'The same beat with Knack names on',
+      props: { slot: 4, players: 5, party: 'mixed', moment: 'a Knack acts', knackNames: true },
+    },
+    {
+      name: 'Playing: a mixed party, stage 1 (reactions, saves, heals and boosts, by itself)',
+      props: { view: 'replay', slot: 4, players: 5, party: 'mixed' },
+    },
     {
       name: 'Stage 2 of Old Bogback, 6 players (carried HP, resistance)',
       props: { slot: 4, players: 6, stage: 2, moment: 'the end' },

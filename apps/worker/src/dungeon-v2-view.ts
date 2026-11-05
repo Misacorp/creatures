@@ -17,10 +17,14 @@ export function foeCardV2(
   foeId: string,
   depth: number,
   keeper: boolean,
+  undercroft = false,
 ): BossCardV2View | undefined {
   try {
     return bossCardView(
-      foeAt(combatV2, SHIPPED, foeId, depth, keeper ? { signature: true } : {}),
+      foeAt(combatV2, SHIPPED, foeId, depth, {
+        ...(keeper ? { signature: true } : {}),
+        ...(undercroft ? { undercroft: true } : {}),
+      }),
       null,
     );
   } catch {
@@ -45,7 +49,7 @@ export function mapViewV2(
     ...view,
     nodes: view.nodes.map((node) => {
       if (node.foe === undefined) return node;
-      const card = foeCardV2(node.foe.id, at, level > 0 && node.kind === 'boss');
+      const card = foeCardV2(node.foe.id, at, level > 0 && node.kind === 'boss', level > 0);
       return card === undefined ? node : { ...node, foe: { ...node.foe, card } };
     }),
   };

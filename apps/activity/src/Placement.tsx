@@ -40,7 +40,9 @@ import {
   pickerOptions,
   pickerTitle,
   placedCount,
+  placedLine,
   rosterNote,
+  seatsWord,
   ON_BOARD_NOTE,
   type PickerCreature,
   type PickerOption,
@@ -148,7 +150,9 @@ export function Placement(props: Props) {
     ...(grid === null ? {} : { place: placeAt }),
   };
   const placed = placedCount(party.row);
-  const note = rosterNote(placed, canEdit);
+  // How many creatures a player brings: a combat v2 boss's piece seats (2 to 4), three on a v1 week.
+  const seats = v2 === undefined ? MAX_ON_BOARD : v2.view.seats;
+  const note = rosterNote(placed, canEdit, seats);
 
   const nameOf = (creatureId: string): string =>
     party.row.find((s) => s.creature?.creatureId === creatureId)?.creature?.name ?? 'Creature';
@@ -393,12 +397,12 @@ export function Placement(props: Props) {
       <section class="raid-section placement pix-panel" aria-labelledby="raid-place-heading">
         <h3 id="raid-place-heading">Raid Roster</h3>
         <p class="muted small roster-help prose">
-          Place up to three creatures on the board beside everyone else's. Placing your first one
-          joins you to this week's raid, and you bring only what you place.
+          Place up to {seatsWord(seats)} creatures on the board beside everyone else's. Placing your
+          first one joins you to this week's raid, and you bring only what you place.
           {props.turnOrder === 'serpentine' &&
             ' The board shows the order of round 1; the rows flip direction each round.'}
         </p>
-        <PlacedCount placed={placed}>
+        <PlacedCount placed={placed} max={seats}>
           <span class="roster-total">
             <span class="roster-sep" aria-hidden="true">
               {' · '}
@@ -484,7 +488,7 @@ export function Placement(props: Props) {
       {picking !== null && (
         <RosterPicker
           title={pickerTitle(placeAt(picking))}
-          status={`${String(placed)} / ${String(MAX_ON_BOARD)} placed`}
+          status={placedLine(placed, seats)}
           options={pickerOptions({
             creatures: props.creatures,
             row: party.row,
@@ -493,6 +497,7 @@ export function Placement(props: Props) {
             turnOrder: props.turnOrder,
             // A v2 board has no reaction pairs or influence to preview; its picker greys the creatures knocked out this weekend.
             showEffects: v2 === undefined && SHOW_PICKER_EFFECTS,
+            max: seats,
             ...(v2 === undefined
               ? {}
               : { out: new Set(v2.view.out.filter((o) => o.mine).map((o) => o.creatureId)) }),

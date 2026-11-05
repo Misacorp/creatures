@@ -1,5 +1,11 @@
 import type { Dungeon } from './dungeon';
-import { ActBodySchema, DraftBodySchema, StartBodySchema } from './dungeon-schemas';
+import * as v from 'valibot';
+import {
+  ActBodySchema,
+  DraftBodySchema,
+  PreviewDepthSchema,
+  StartBodySchema,
+} from './dungeon-schemas';
 import {
   errorResponse,
   failure,
@@ -29,6 +35,19 @@ export interface DungeonRouteContext {
 export const dungeonRoutes: Routes<DungeonRouteContext> = {
   '/api/dungeon/today': {
     GET: (_request, ctx) => json(ctx.core.dungeon.today(ctx.user.id)),
+  },
+  // The pre-run map at a depth the player picked below their own (combat v2): read only, nothing is stored.
+  '/api/dungeon/preview': {
+    GET: (request, ctx) => {
+      const parsed = v.safeParse(
+        PreviewDepthSchema,
+        new URL(request.url).searchParams.get('depth') ?? '',
+      );
+      if (!parsed.success) return invalidBody();
+      const outcome = ctx.core.dungeon.preview(ctx.user.id, parsed.output);
+      if (!outcome.ok) return failure(outcome);
+      return json(outcome.value);
+    },
   },
   '/api/dungeon/team': {
     // Saves the row the player set up, so it survives a tab switch. Not a spend: no key.

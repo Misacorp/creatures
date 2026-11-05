@@ -251,3 +251,53 @@
   margin-left: auto;
   text-align: right;
 }
+
+/*
+  The dropdown panel (ui/DropList.tsx): fixed, directly under (or over) its trigger, the trigger's width, inset from the
+  window's edges, at most half the window high, scrolling by itself. DropList writes its place as custom properties.
+*/
+.drop-panel {
+  position: fixed;
+  top: var(--drop-y, 0);
+  left: var(--drop-x, 0);
+  z-index: var(--z-popover-layer);
+  box-sizing: border-box;
+  width: var(--drop-w, auto);
+  max-height: var(--drop-max, 50vh);
+  padding: 0.25rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--dusk);
+  box-shadow: var(--frame);
+  color: var(--bone);
+}
+
+/*
+  The panel scrolls, not the list inside it. In a dropdown the rows sit on the panel itself, one faint line between
+  them, not as boxes with gaps (Misa, 2026-11-05); the picked row keeps the list's gold ring (`roster-option.on`).
+*/
+.drop-panel .roster-list {
+  overflow: visible;
+  gap: 0;
+}
+
+/* The faint line is an inset shadow at each row's bottom (none under the last), so the rows keep one height. */
+.drop-panel .roster-option {
+  background: none;
+  box-shadow: inset 0 calc(var(--px) * -1) 0 var(--line);
+}
+
+.drop-panel .roster-option:last-child,
+.drop-panel .roster-option:has(+ .roster-option.on) {
+  box-shadow: none;
+}
+
+/* Keyboard focus is a soft fill; gold stays for the picked row alone. */
+.drop-panel .roster-option:focus-visible {
+  background: var(--dusk-2);
+}
+
+/* The picked row's gold ring replaces its line, so the ring never sits on a divider. */
+.drop-panel .roster-option.on {
+  box-shadow: inset 0 0 0 var(--px) var(--gold);
+}

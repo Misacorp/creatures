@@ -123,17 +123,19 @@ export type DungeonPendingView =
        * The floor boss (or an Undercroft keeper with a cracked floor) is down: head home with the pack, or
        * descend. What is known of the level below: its number, its floors (the keeper's included), that
        * its foes are fiercer (`depthBonus` more depth per level), the breath the team catches on the way
-       * (`catchBreathBp` of max HP, and, on a v1 run only, `reviveBp` for a fallen one that gets back up: 0 on a v2 run) and what the chest banked. The pack stays at risk all the way down.
+       * (`catchBreathBp` of max HP, and `reviveBp` for a fallen one that gets back up) and what the chest banked. The pack stays at risk all the way down.
        */
       kind: 'descend';
       level: number;
       floors: number;
       depthBonus: number;
       catchBreathBp: number;
-      /** The share of max HP a fallen creature gets back up with. v1 runs only: 0 on a run of combat v2, where a fallen creature stays out until a camp swaps it. */
+      /** The share of max HP a fallen creature gets back up with. Both rules versions. */
       reviveBp: number;
       /** The depth the player is at now (locked in when the main boss fell). */
       newDepth: number;
+      /** The run plays below the player's own depth (the picker): the boss falling unlocks nothing, so `newDepth` is not a new depth. Absent otherwise. */
+      lower?: true;
       banked: DungeonBankedView;
     };
 
@@ -236,6 +238,8 @@ export interface DungeonRunState {
   day: string;
   attempt: number;
   depth: number;
+  /** True when the run plays below the player's own depth (combat v2's depth picker): its clear unlocks no depth. Absent otherwise. */
+  lower?: true;
   landmark: boolean;
   status: 'active' | 'done';
   outcome: DungeonOutcome | null;
@@ -360,8 +364,10 @@ export interface DungeonRunSummary {
   day: string;
   attempt: number;
   depth: number;
-  /** The depth the player is at after this run (one deeper after a clear). */
+  /** The depth the player is at after this run (one deeper after a clear at their own depth). */
   newDepth: number;
+  /** True when the run was played below the player's own depth (combat v2's depth picker): a clear unlocked no depth. Absent otherwise. */
+  lower?: true;
   /** The floor boss was beaten. */
   cleared: boolean;
   /** Fights cleared. */
@@ -450,6 +456,14 @@ export interface DungeonAttention {
   active: boolean;
   /** When the game day ends: the answer can change then on its own. */
   resetsAt: number;
+}
+
+/** `GET /api/dungeon/preview`: the pre-run screen's depth-dependent part at a picked depth below the player's own. */
+export interface DungeonPreview {
+  depth: number;
+  landmark: boolean;
+  landmarkBoss: DungeonToday['landmarkBoss'];
+  map: DungeonMapView;
 }
 
 export interface DungeonStartResponse {

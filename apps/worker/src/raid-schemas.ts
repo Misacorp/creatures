@@ -8,7 +8,8 @@ import { isWeekId, RAID_PHASES } from './raid-schedule';
 const RESULT_PHASES_V2 = ['stage1', 'stage2'] as const;
 
 /** Slots are small: a party row has at most 3 x 15 slots, a combat v2 board at most 4 rows of 15 columns. */
-const MAX_SLOT = RULES.raid.maxPartySize * Math.max(RULES.raid.teamSize, 4) - 1;
+// A v2 board is up to four rows by the players and one spare column (`raid-v2-core.ts`).
+const MAX_SLOT = (RULES.raid.maxPartySize + 1) * Math.max(RULES.raid.teamSize, 4) - 1;
 /** Most rows a boss's arena has is 4 (a bound for the schema; the server checks the boss's own). */
 const MAX_ROW = 3;
 

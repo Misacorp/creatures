@@ -1,0 +1,819 @@
+{
+  "rules": 2,
+  "status": "live",
+  "practice": false,
+  "week": "2027-W02",
+  "party": 1,
+  "you": "m1",
+  "startsAt": 1800208800000,
+  "roundMs": 30000,
+  "rounds": 8,
+  "round": 1,
+  "roundStarts": [1800208800000],
+  "nextRoundAt": 1800208830000,
+  "serverNow": 1800208801000,
+  "boss": {
+    "id": "tidal-colossus",
+    "name": "Tidal Colossus",
+    "element": "tide",
+    "hpMax": 19300,
+    "hpStart": 4764
+  },
+  "bossDef": {
+    "id": "tidal-colossus",
+    "name": "Tidal Colossus",
+    "element": "tide",
+    "hp": 19300,
+    "atk": 88,
+    "armour": 37,
+    "spd": 30,
+    "rounds": 8,
+    "rows": 3,
+    "cols": 4,
+    "plain": {
+      "pattern": {
+        "anchor": "front",
+        "shape": "row"
+      },
+      "powerBp": 2500
+    },
+    "moves": [
+      {
+        "id": "undertow",
+        "name": "Undertow",
+        "pattern": {
+          "anchor": "front",
+          "shape": "row"
+        },
+        "powerBp": 9000,
+        "every": 3,
+        "turn": 0
+      },
+      {
+        "id": "spray",
+        "name": "Spray",
+        "pattern": {
+          "anchor": "random",
+          "shape": "scatter",
+          "n": 4,
+          "perColumns": 4
+        },
+        "powerBp": 5000,
+        "every": 2,
+        "turn": 0
+      },
+      {
+        "id": "deepwater-spear",
+        "name": "Deepwater Spear",
+        "pattern": {
+          "anchor": "strongest",
+          "shape": "columns",
+          "n": 2,
+          "perColumns": 4
+        },
+        "powerBp": 12000,
+        "every": 3,
+        "turn": 1
+      },
+      {
+        "id": "riptide",
+        "name": "Riptide",
+        "pattern": {
+          "anchor": "random",
+          "shape": "columns",
+          "n": 1,
+          "perColumns": 4
+        },
+        "powerBp": 10800,
+        "every": 4,
+        "turn": 1,
+        "charged": true
+      },
+      {
+        "id": "rogue-wave",
+        "name": "Rogue Wave",
+        "pattern": {
+          "anchor": "payoff",
+          "shape": "row"
+        },
+        "powerBp": 12300,
+        "every": 6,
+        "turn": 1,
+        "charged": true
+      },
+      {
+        "id": "great-wave",
+        "name": "Great Wave",
+        "pattern": {
+          "anchor": "random",
+          "shape": "randomRow"
+        },
+        "powerBp": 13900,
+        "every": 3,
+        "turn": 2,
+        "charged": true
+      },
+      {
+        "id": "backflow",
+        "name": "Backflow",
+        "pattern": {
+          "anchor": "back",
+          "shape": "rows",
+          "n": 2
+        },
+        "powerBp": 8000,
+        "every": 7,
+        "turn": 0
+      }
+    ],
+    "cards": ["adapts", "shake-it-off", "slippery", "breakwater"],
+    "mods": {
+      "adapts": true,
+      "shakeEvery": 3,
+      "wardBp": 24400
+    },
+    "strengthBp": 7200,
+    "escalation": {
+      "name": "Rising Tide",
+      "feed": "hpLost",
+      "per": 2000,
+      "cap": 3,
+      "grow": {
+        "atkBp": 1300,
+        "area": 1
+      },
+      "strengthBp": 7200
+    },
+    "dodgeBp": 1800
+  },
+  "card": {
+    "armour": 37,
+    "cards": [
+      {
+        "id": "adapts",
+        "name": "Reaction Resistance",
+        "asks": "Raid only: from stage 2 it resists your most-used reaction."
+      },
+      {
+        "id": "shake-it-off",
+        "name": "Shake It Off",
+        "asks": "Every 3 rounds the boss clears all its debuffs; can you put them back?"
+      },
+      {
+        "id": "slippery",
+        "name": "Slippery",
+        "asks": "The boss slips away from a quarter of all hits, whatever debuffs it has; can you make hits land?"
+      },
+      {
+        "id": "breakwater",
+        "name": "Breakwater",
+        "asks": "Row Wards are up to 3 times as strong against its Area hits"
+      }
+    ],
+    "strengthBp": 7200,
+    "escalation": {
+      "name": "Rising Tide",
+      "cap": 3,
+      "step": 3
+    },
+    "plain": {
+      "label": "Front Sweep",
+      "shape": "row",
+      "hits": 1
+    },
+    "moves": [
+      {
+        "id": "undertow",
+        "name": "Undertow",
+        "label": "Front Sweep",
+        "shape": "row",
+        "silences": false,
+        "oneShot": false,
+        "every": 3,
+        "turn": 0,
+        "windUp": false,
+        "later": false
+      },
+      {
+        "id": "spray",
+        "name": "Spray",
+        "label": "Barrage",
+        "shape": "scatter",
+        "silences": false,
+        "oneShot": false,
+        "every": 2,
+        "turn": 0,
+        "windUp": false,
+        "later": false
+      },
+      {
+        "id": "deepwater-spear",
+        "name": "Deepwater Spear",
+        "label": "Nemesis Lance",
+        "shape": "columns",
+        "silences": false,
+        "oneShot": false,
+        "every": 3,
+        "turn": 1,
+        "windUp": false,
+        "later": false
+      },
+      {
+        "id": "riptide",
+        "name": "Riptide",
+        "label": "Wild Lance",
+        "shape": "columns",
+        "silences": false,
+        "oneShot": false,
+        "every": 4,
+        "turn": 1,
+        "windUp": true,
+        "later": false
+      },
+      {
+        "id": "rogue-wave",
+        "name": "Rogue Wave",
+        "label": "Payoff Sweep",
+        "shape": "row",
+        "silences": false,
+        "oneShot": false,
+        "every": 6,
+        "turn": 1,
+        "windUp": true,
+        "later": false
+      },
+      {
+        "id": "great-wave",
+        "name": "Great Wave",
+        "label": "Wild Sweep",
+        "shape": "randomRow",
+        "silences": false,
+        "oneShot": false,
+        "every": 3,
+        "turn": 2,
+        "windUp": true,
+        "later": false
+      },
+      {
+        "id": "backflow",
+        "name": "Backflow",
+        "label": "Rear Sweep",
+        "shape": "rows",
+        "silences": false,
+        "oneShot": false,
+        "every": 7,
+        "turn": 0,
+        "windUp": false,
+        "later": false
+      }
+    ]
+  },
+  "moveNames": {
+    "undertow": "Undertow",
+    "spray": "Spray",
+    "deepwater-spear": "Deepwater Spear",
+    "riptide": "Riptide",
+    "rogue-wave": "Rogue Wave",
+    "great-wave": "Great Wave",
+    "backflow": "Backflow"
+  },
+  "fighters": [
+    {
+      "key": "00000000-0000-4000-8700-000000000002",
+      "name": "Fogwyrm",
+      "species": "fogwyrm",
+      "element": "tide",
+      "role": "guard",
+      "level": null,
+      "owner": "m1",
+      "row": 1,
+      "col": 0,
+      "knack": "wide-reach",
+      "knackName": "Wide Reach",
+      "talents": ["bright-boost"],
+      "maxHp": 539,
+      "startHp": 148
+    },
+    {
+      "key": "00000000-0000-4000-8700-000000000006",
+      "name": "Tempestray",
+      "species": "tempestray",
+      "element": "spark",
+      "role": "payoff",
+      "level": null,
+      "owner": "m2",
+      "row": 0,
+      "col": 1,
+      "knack": "detonate",
+      "knackName": "Detonate",
+      "talents": ["slow-burn"],
+      "maxHp": 420,
+      "startHp": 193
+    },
+    {
+      "key": "00000000-0000-4000-8700-000000000007",
+      "name": "Ancientshell",
+      "species": "ancientshell",
+      "element": "grove",
+      "role": "setter",
+      "level": null,
+      "owner": "m2",
+      "row": 1,
+      "col": 1,
+      "knack": "steady-mark",
+      "knackName": "Brand",
+      "talents": ["hardy"],
+      "maxHp": 597,
+      "startHp": 393
+    },
+    {
+      "key": "00000000-0000-4000-8700-000000000012",
+      "name": "Drizzlewt",
+      "species": "drizzlewt",
+      "element": "tide",
+      "role": "support",
+      "level": null,
+      "owner": "m3",
+      "row": 0,
+      "col": 3,
+      "knack": "drizzle",
+      "knackName": "Drizzle",
+      "talents": ["unbothered"],
+      "maxHp": 456,
+      "startHp": 94
+    },
+    {
+      "key": "00000000-0000-4000-8700-000000000013",
+      "name": "Kilnmole",
+      "species": "kilnmole",
+      "element": "ember",
+      "role": "guard",
+      "level": null,
+      "owner": "m3",
+      "row": 1,
+      "col": 3,
+      "knack": "draw-fire",
+      "knackName": "Draw Fire",
+      "talents": ["hardy"],
+      "maxHp": 657,
+      "startHp": 141
+    }
+  ],
+  "names": {
+    "players": {
+      "m1": "Player 1",
+      "m2": "Player 2",
+      "m3": "Player 4"
+    },
+    "creatures": {
+      "00000000-0000-4000-8700-000000000002": "Fogwyrm",
+      "00000000-0000-4000-8700-000000000006": "Tempestray",
+      "00000000-0000-4000-8700-000000000007": "Ancientshell",
+      "00000000-0000-4000-8700-000000000012": "Drizzlewt",
+      "00000000-0000-4000-8700-000000000013": "Kilnmole"
+    }
+  },
+  "abilities": [
+    {
+      "key": "m1:basic",
+      "alias": "m1",
+      "abilityId": "rally",
+      "kind": "rally",
+      "mode": "default",
+      "autoFire": true,
+      "fired": false,
+      "firedAtRound": null,
+      "fireAtRound": null,
+      "defaultRound": 6,
+      "row": null
+    },
+    {
+      "key": "m2:basic",
+      "alias": "m2",
+      "abilityId": "shield-wall",
+      "kind": "shieldWall",
+      "mode": "default",
+      "autoFire": true,
+      "fired": false,
+      "firedAtRound": null,
+      "fireAtRound": null,
+      "defaultRound": 3,
+      "row": 0
+    },
+    {
+      "key": "m3:basic",
+      "alias": "m3",
+      "abilityId": "purge",
+      "kind": "purge",
+      "mode": "default",
+      "autoFire": true,
+      "fired": false,
+      "firedAtRound": null,
+      "fireAtRound": null,
+      "defaultRound": 2,
+      "row": null
+    }
+  ],
+  "events": [
+    {
+      "round": 0,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "resistance",
+        "reaction": "ember"
+      }
+    },
+    {
+      "round": 1,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "round",
+        "round": 1
+      }
+    },
+    {
+      "round": 1,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "heal",
+        "who": "00000000-0000-4000-8700-000000000006",
+        "amount": 23,
+        "by": "00000000-0000-4000-8700-000000000012"
+      }
+    },
+    {
+      "round": 1,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "heal",
+        "who": "00000000-0000-4000-8700-000000000012",
+        "amount": 24,
+        "by": "00000000-0000-4000-8700-000000000012"
+      }
+    },
+    {
+      "round": 1,
+      "turn": 0,
+      "kind": "boss-dodge",
+      "text": "Tidal Colossus dodges Tempestray",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000006",
+        "to": null,
+        "damage": 0,
+        "crit": false,
+        "blocked": false,
+        "dodged": true
+      }
+    },
+    {
+      "round": 1,
+      "turn": 0,
+      "kind": "boss-dodge",
+      "text": "Tidal Colossus dodges Drizzlewt",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000012",
+        "to": null,
+        "damage": 0,
+        "crit": false,
+        "blocked": false,
+        "dodged": true
+      }
+    },
+    {
+      "round": 1,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "bossTurn",
+        "row": 0
+      }
+    },
+    {
+      "round": 1,
+      "turn": 0,
+      "kind": "target",
+      "text": "Fogwyrm (row 2, slot 1) <- plain"
+    },
+    {
+      "round": 1,
+      "turn": 0,
+      "kind": "blocked",
+      "text": "Fogwyrm blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000002",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 1,
+      "turn": 0,
+      "kind": "target",
+      "text": "Ancientshell (row 2, slot 2) <- plain"
+    },
+    {
+      "round": 1,
+      "turn": 0,
+      "kind": "blocked",
+      "text": "Ancientshell blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000007",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 1,
+      "turn": 0,
+      "kind": "target",
+      "text": "Kilnmole (row 2, slot 4) <- plain"
+    },
+    {
+      "round": 1,
+      "turn": 0,
+      "kind": "blocked",
+      "text": "Kilnmole blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000013",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 1,
+      "turn": 1,
+      "kind": "crit",
+      "text": "Fogwyrm crits"
+    },
+    {
+      "round": 1,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000002",
+        "to": null,
+        "damage": 181,
+        "crit": true,
+        "blocked": false,
+        "dodged": false,
+        "critBp": 20000
+      }
+    },
+    {
+      "round": 1,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000007",
+        "to": null,
+        "damage": 82,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 1,
+      "turn": 1,
+      "kind": "mark",
+      "text": "grove x1",
+      "board": {
+        "type": "mark",
+        "element": "grove",
+        "stacks": 1,
+        "sealed": true
+      }
+    },
+    {
+      "round": 1,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000013",
+        "to": null,
+        "damage": 22,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 1,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "bossTurn",
+        "row": 1
+      }
+    },
+    {
+      "round": 1,
+      "turn": 1,
+      "kind": "target",
+      "text": "Fogwyrm (row 2, slot 1) <- plain"
+    },
+    {
+      "round": 1,
+      "turn": 1,
+      "kind": "blocked",
+      "text": "Fogwyrm blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000002",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 1,
+      "turn": 1,
+      "kind": "target",
+      "text": "Ancientshell (row 2, slot 2) <- plain"
+    },
+    {
+      "round": 1,
+      "turn": 1,
+      "kind": "blocked",
+      "text": "Ancientshell blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000007",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 1,
+      "turn": 1,
+      "kind": "target",
+      "text": "Kilnmole (row 2, slot 4) <- plain"
+    },
+    {
+      "round": 1,
+      "turn": 1,
+      "kind": "blocked",
+      "text": "Kilnmole blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000013",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 1,
+      "turn": 2,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "bossTurn",
+        "row": 2
+      }
+    },
+    {
+      "round": 1,
+      "turn": 2,
+      "kind": "target",
+      "text": "Fogwyrm (row 2, slot 1) <- plain"
+    },
+    {
+      "round": 1,
+      "turn": 2,
+      "kind": "blocked",
+      "text": "Fogwyrm blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000002",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 1,
+      "turn": 2,
+      "kind": "target",
+      "text": "Ancientshell (row 2, slot 2) <- plain"
+    },
+    {
+      "round": 1,
+      "turn": 2,
+      "kind": "blocked",
+      "text": "Ancientshell blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000007",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 1,
+      "turn": 2,
+      "kind": "target",
+      "text": "Kilnmole (row 2, slot 4) <- plain"
+    },
+    {
+      "round": 1,
+      "turn": 2,
+      "kind": "blocked",
+      "text": "Kilnmole blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000013",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    }
+  ],
+  "bossHp": 4764,
+  "carry": {
+    "stage": 2,
+    "bossHp": 4764,
+    "shadowHp": 4764,
+    "hp": {
+      "00000000-0000-4000-8700-000000000002": 148,
+      "00000000-0000-4000-8700-000000000006": 193,
+      "00000000-0000-4000-8700-000000000007": 393,
+      "00000000-0000-4000-8700-000000000012": 94,
+      "00000000-0000-4000-8700-000000000013": 141
+    },
+    "out": [
+      "00000000-0000-4000-8700-000000000010",
+      "00000000-0000-4000-8700-000000000011",
+      "00000000-0000-4000-8700-000000000001",
+      "00000000-0000-4000-8700-000000000003",
+      "00000000-0000-4000-8700-000000000008",
+      "00000000-0000-4000-8700-000000000009",
+      "00000000-0000-4000-8700-000000000014"
+    ],
+    "windDone": [],
+    "holdDone": [],
+    "escalation": {
+      "step": 3,
+      "fallStep": 3,
+      "phase": false,
+      "phaseNext": false,
+      "count": 7531
+    },
+    "used": {
+      "ember": 3,
+      "tide": 2
+    },
+    "dealt": {
+      "spark": 8435,
+      "tide": 2688,
+      "ember": 1232,
+      "grove": 2125
+    }
+  },
+  "watching": ["Player 1"],
+  "loot": null
+}

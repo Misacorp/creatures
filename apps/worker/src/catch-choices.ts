@@ -193,6 +193,24 @@ export class CatchChoices {
     });
   }
 
+  /** Combat v2 on: a duplicate's talent goes into its line's book by itself, so there is no Teach. */
+  private get v2(): boolean {
+    return this.deps.rngs.combatV2 === true;
+  }
+
+  /** Recommended: v1's, but under v2 never Teach (Keep, else Fuse, else Release). */
+  private recommend(
+    roll: TalentRoll,
+    creatures: readonly LineCreature[],
+    keep: boolean,
+  ): Recommendation {
+    const rec = recommend(roll, creatures, keep);
+    if (!this.v2 || rec.choice !== 'teach') return rec;
+    if (keep) return { choice: 'keep' };
+    const fuser = creatures.find((c) => canFuse(c.fusionPoints));
+    return fuser !== undefined ? { choice: 'fuse', creatureId: fuser.id } : { choice: 'release' };
+  }
+
   private roll(row: PendingRow): TalentRoll {
     return { talentId: row.talent_id, golden: row.golden === 1 };
   }
@@ -223,13 +241,13 @@ export class CatchChoices {
       createdAt: row.created_at,
       talent,
       offered: {
-        teach: creatures.filter((c) => canTeach(c, roll)).map((c) => c.id),
+        teach: this.v2 ? [] : creatures.filter((c) => canTeach(c, roll)).map((c) => c.id),
         fuse: creatures.filter((c) => canFuse(c.fusionPoints)).map((c) => c.id),
         release: true,
         keep,
       },
       releases: releaseParts(species.rarity, species.element),
-      recommended: recommend(roll, creatures, keep),
+      recommended: this.recommend(roll, creatures, keep),
     };
   }
 
@@ -378,7 +396,7 @@ export class CatchChoices {
     const { creatures, keep } = this.offered(userId, row);
     let choice: ChoiceInput = input;
     if (input.choice === 'recommended') {
-      const rec = recommend(roll, creatures, keep);
+      const rec = this.recommend(roll, creatures, keep);
       choice =
         rec.choice === 'teach' && rec.creatureId !== undefined
           ? { choice: 'teach', creatureId: rec.creatureId }
@@ -392,7 +410,8 @@ export class CatchChoices {
     switch (choice.choice) {
       case 'teach': {
         const target = this.lineCreature(creatures, choice.creatureId);
-        if (!canTeach(target, roll)) {
+        // Under v2 the talent already went into the book at the catch: Teach is never offered.
+        if (this.v2 || !canTeach(target, roll)) {
           throw new GameError(409, 'teach_not_offered');
         }
         // Into the Talent Book, never a slot: the player slots it later from the book (for Bait).

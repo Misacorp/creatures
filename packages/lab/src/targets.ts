@@ -743,3 +743,29 @@ export function comfortOf(targets: readonly RaidTarget[], m: RaidMeasures): numb
   if (!taken.length) return 0;
   return taken.reduce((n, t) => n + Math.min(0.2, marginInside(t, m[t.measure])), 0) / taken.length;
 }
+
+// ---------- the dungeon: proposals (Misa's direction, 2026-11-04) ----------
+
+/**
+ * Proposed v2 measures for the dungeon, in the direction Misa gave on 2026-11-04 (decision `2026-11-04-dungeon-direction-an-easy-base-dungeon`):
+ * the base dungeon fairly easy, the Undercroft the challenge, the way down the choice. **A baseline, not a strict gate**: "100% tweaking the
+ * dungeon to a strict target isn't valuable work since players can change their experience in the long run". They replace the v1 `dungeon-*`
+ * targets (depth growth 1 to 2 a week, a first-week clear of 80%) as the yardstick. No test asserts them yet; the report
+ * (`report -- --dungeon-days`, `dungeonMeasure.ts`) prints the numbers beside them.
+ */
+
+/** A safe daily player (never goes down, or only when sure) gains this much depth a week; read by week band (`WEEK_BANDS`) from week 3 on. */
+export const DUNGEON_SAFE_GAIN_WEEK = { min: 5, max: 7 } as const;
+
+/**
+ * The chance to clear Undercroft level 1 by the team's state (share of HP) at the end of the base floor, for the states players reach:
+ * the choice is meaningful when the chance spans a wide range (not about 0% or 100% everywhere): the best state clears at least `bestMin`,
+ * the worst state at most `worstMax`, so the spread between them is at least `spreadMin` (a proposal).
+ */
+export const DUNGEON_DESCENT_SPREAD = { bestMin: 0.4, worstMax: 0.15, spreadMin: 0.3 } as const;
+
+/** The Undercroft gets harder with depth: the clear chance of level 1 in the same state of the team falls by at least this much from the first depth band to the last that has data. */
+export const DUNGEON_UNDERCROFT_FALL = { minDrop: 0.2 } as const;
+
+/** A safe daily player is rarely stuck: the share of player-weeks with no depth gained, from week 3 on (a proposal; the depth picker is for those). */
+export const DUNGEON_STUCK_WEEKS_MAX = 0.1;

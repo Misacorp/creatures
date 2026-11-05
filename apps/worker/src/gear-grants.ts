@@ -21,6 +21,7 @@ import {
   rollFestivalItem,
   rankGiftParts,
   rollFinaleReward,
+  rollKillBonusItem,
   rollRankGiftItem,
   rollWelcomeKit,
   type Element,
@@ -293,6 +294,35 @@ export function grantRaidFinale(
           parts: {},
           blueprints: [],
         };
+  }).view;
+}
+
+/**
+ * The kill bonus of a combat v2 raid (Misa, 2026-11-04) for a player of a party whose boss fell, in any stage: `RULES.raid.v2.rewards.killBonus`
+ * pieces of epic and rare gear, in that order. Key `raid:<week>:kill`, so a retry or a re-run pays nothing more.
+ */
+export function grantRaidKillBonus(
+  deps: GrantDeps,
+  userId: string,
+  weekId: string,
+  rank: number,
+  bossId: string,
+): GrantView {
+  return grantOnce(deps, userId, `raid:${weekId}:kill`, 'raid_finale', () => {
+    const element = bossElement(bossId);
+    const { epic, rare } = RULES.raid.v2.rewards.killBonus;
+    const rarities: ('epic' | 'rare')[] = [
+      ...Array.from({ length: epic }, () => 'epic' as const),
+      ...Array.from({ length: rare }, () => 'rare' as const),
+    ];
+    return {
+      gear: rarities.map((rarity) => ({
+        item: rollKillBonusItem(deps.rng, rank, element, rarity),
+        origin: { kind: 'raid' as const, boss: bossId, rank },
+      })),
+      parts: {},
+      blueprints: [],
+    };
   }).view;
 }
 

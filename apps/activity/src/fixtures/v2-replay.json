@@ -1,0 +1,7507 @@
+{
+  "rules": 2,
+  "weekId": "2027-W02",
+  "party": 1,
+  "phase": "stage1",
+  "stage": 1,
+  "seed": "a5e6ac1d0afbcce8f69fd7b8cedaea1a",
+  "at": 1800099450000,
+  "boss": {
+    "id": "tidal-colossus",
+    "name": "Tidal Colossus",
+    "element": "tide",
+    "hp": 19300,
+    "atk": 88,
+    "armour": 37,
+    "spd": 30,
+    "rounds": 8,
+    "rows": 3,
+    "cols": 4,
+    "plain": {
+      "pattern": {
+        "anchor": "front",
+        "shape": "row"
+      },
+      "powerBp": 2500
+    },
+    "moves": [
+      {
+        "id": "undertow",
+        "name": "Undertow",
+        "pattern": {
+          "anchor": "front",
+          "shape": "row"
+        },
+        "powerBp": 9000,
+        "every": 3,
+        "turn": 0
+      },
+      {
+        "id": "spray",
+        "name": "Spray",
+        "pattern": {
+          "anchor": "random",
+          "shape": "scatter",
+          "n": 4,
+          "perColumns": 4
+        },
+        "powerBp": 5000,
+        "every": 2,
+        "turn": 0
+      },
+      {
+        "id": "deepwater-spear",
+        "name": "Deepwater Spear",
+        "pattern": {
+          "anchor": "strongest",
+          "shape": "columns",
+          "n": 2,
+          "perColumns": 4
+        },
+        "powerBp": 12000,
+        "every": 3,
+        "turn": 1
+      },
+      {
+        "id": "riptide",
+        "name": "Riptide",
+        "pattern": {
+          "anchor": "random",
+          "shape": "columns",
+          "n": 1,
+          "perColumns": 4
+        },
+        "powerBp": 10800,
+        "every": 4,
+        "turn": 1,
+        "charged": true
+      },
+      {
+        "id": "rogue-wave",
+        "name": "Rogue Wave",
+        "pattern": {
+          "anchor": "payoff",
+          "shape": "row"
+        },
+        "powerBp": 12300,
+        "every": 6,
+        "turn": 1,
+        "charged": true
+      },
+      {
+        "id": "great-wave",
+        "name": "Great Wave",
+        "pattern": {
+          "anchor": "random",
+          "shape": "randomRow"
+        },
+        "powerBp": 13900,
+        "every": 3,
+        "turn": 2,
+        "charged": true
+      },
+      {
+        "id": "backflow",
+        "name": "Backflow",
+        "pattern": {
+          "anchor": "back",
+          "shape": "rows",
+          "n": 2
+        },
+        "powerBp": 8000,
+        "every": 7,
+        "turn": 0
+      }
+    ],
+    "cards": ["adapts", "shake-it-off", "slippery", "breakwater"],
+    "mods": {
+      "adapts": true,
+      "shakeEvery": 3,
+      "wardBp": 24400
+    },
+    "strengthBp": 7200,
+    "escalation": {
+      "name": "Rising Tide",
+      "feed": "hpLost",
+      "per": 2000,
+      "cap": 3,
+      "grow": {
+        "atkBp": 1300,
+        "area": 1
+      },
+      "strengthBp": 7200
+    },
+    "dodgeBp": 1800
+  },
+  "moveNames": {
+    "undertow": "Undertow",
+    "spray": "Spray",
+    "deepwater-spear": "Deepwater Spear",
+    "riptide": "Riptide",
+    "rogue-wave": "Rogue Wave",
+    "great-wave": "Great Wave",
+    "backflow": "Backflow"
+  },
+  "card": {
+    "armour": 37,
+    "cards": [
+      {
+        "id": "adapts",
+        "name": "Reaction Resistance",
+        "asks": "Raid only: from stage 2 it resists your most-used reaction."
+      },
+      {
+        "id": "shake-it-off",
+        "name": "Shake It Off",
+        "asks": "Every 3 rounds the boss clears all its debuffs; can you put them back?"
+      },
+      {
+        "id": "slippery",
+        "name": "Slippery",
+        "asks": "The boss slips away from a quarter of all hits, whatever debuffs it has; can you make hits land?"
+      },
+      {
+        "id": "breakwater",
+        "name": "Breakwater",
+        "asks": "Row Wards are up to 3 times as strong against its Area hits"
+      }
+    ],
+    "strengthBp": 7200,
+    "escalation": {
+      "name": "Rising Tide",
+      "cap": 3,
+      "step": 0
+    },
+    "plain": {
+      "label": "Front Sweep",
+      "shape": "row",
+      "hits": 1
+    },
+    "moves": [
+      {
+        "id": "undertow",
+        "name": "Undertow",
+        "label": "Front Sweep",
+        "shape": "row",
+        "silences": false,
+        "oneShot": false,
+        "every": 3,
+        "turn": 0,
+        "windUp": false,
+        "later": false
+      },
+      {
+        "id": "spray",
+        "name": "Spray",
+        "label": "Barrage",
+        "shape": "scatter",
+        "silences": false,
+        "oneShot": false,
+        "every": 2,
+        "turn": 0,
+        "windUp": false,
+        "later": false
+      },
+      {
+        "id": "deepwater-spear",
+        "name": "Deepwater Spear",
+        "label": "Nemesis Lance",
+        "shape": "columns",
+        "silences": false,
+        "oneShot": false,
+        "every": 3,
+        "turn": 1,
+        "windUp": false,
+        "later": false
+      },
+      {
+        "id": "riptide",
+        "name": "Riptide",
+        "label": "Wild Lance",
+        "shape": "columns",
+        "silences": false,
+        "oneShot": false,
+        "every": 4,
+        "turn": 1,
+        "windUp": true,
+        "later": false
+      },
+      {
+        "id": "rogue-wave",
+        "name": "Rogue Wave",
+        "label": "Payoff Sweep",
+        "shape": "row",
+        "silences": false,
+        "oneShot": false,
+        "every": 6,
+        "turn": 1,
+        "windUp": true,
+        "later": false
+      },
+      {
+        "id": "great-wave",
+        "name": "Great Wave",
+        "label": "Wild Sweep",
+        "shape": "randomRow",
+        "silences": false,
+        "oneShot": false,
+        "every": 3,
+        "turn": 2,
+        "windUp": true,
+        "later": false
+      },
+      {
+        "id": "backflow",
+        "name": "Backflow",
+        "label": "Rear Sweep",
+        "shape": "rows",
+        "silences": false,
+        "oneShot": false,
+        "every": 7,
+        "turn": 0,
+        "windUp": false,
+        "later": false
+      }
+    ]
+  },
+  "rounds": 8,
+  "cleared": true,
+  "kill": false,
+  "bossHpMax": 19300,
+  "bossHpStart": 19300,
+  "bossHpEnd": 9869,
+  "you": "m1",
+  "fighters": [
+    {
+      "key": "00000000-0000-4000-8700-000000000001",
+      "name": "Voltaro",
+      "species": "voltaro",
+      "element": "spark",
+      "role": "setter",
+      "level": null,
+      "owner": "m1",
+      "row": 0,
+      "col": 0,
+      "knack": "zoom",
+      "knackName": "Zoom",
+      "talents": ["shoulder-to-shoulder"],
+      "maxHp": 388,
+      "startHp": 388
+    },
+    {
+      "key": "00000000-0000-4000-8700-000000000002",
+      "name": "Fogwyrm",
+      "species": "fogwyrm",
+      "element": "tide",
+      "role": "guard",
+      "level": null,
+      "owner": "m1",
+      "row": 1,
+      "col": 0,
+      "knack": "wide-reach",
+      "knackName": "Wide Reach",
+      "talents": ["bright-boost"],
+      "maxHp": 539,
+      "startHp": 539
+    },
+    {
+      "key": "00000000-0000-4000-8700-000000000003",
+      "name": "Magmole",
+      "species": "magmole",
+      "element": "ember",
+      "role": "support",
+      "level": null,
+      "owner": "m1",
+      "row": 2,
+      "col": 0,
+      "knack": "wide-warmth",
+      "knackName": "Wide Embrace",
+      "talents": ["brace"],
+      "maxHp": 431,
+      "startHp": 431
+    },
+    {
+      "key": "00000000-0000-4000-8700-000000000006",
+      "name": "Tempestray",
+      "species": "tempestray",
+      "element": "spark",
+      "role": "payoff",
+      "level": null,
+      "owner": "m2",
+      "row": 0,
+      "col": 1,
+      "knack": "detonate",
+      "knackName": "Detonate",
+      "talents": ["slow-burn"],
+      "maxHp": 420,
+      "startHp": 420
+    },
+    {
+      "key": "00000000-0000-4000-8700-000000000007",
+      "name": "Ancientshell",
+      "species": "ancientshell",
+      "element": "grove",
+      "role": "setter",
+      "level": null,
+      "owner": "m2",
+      "row": 1,
+      "col": 1,
+      "knack": "steady-mark",
+      "knackName": "Brand",
+      "talents": ["hardy"],
+      "maxHp": 597,
+      "startHp": 597
+    },
+    {
+      "key": "00000000-0000-4000-8700-000000000008",
+      "name": "Sunfawn",
+      "species": "sunfawn",
+      "element": "grove",
+      "role": "support",
+      "level": null,
+      "owner": "m2",
+      "row": 2,
+      "col": 1,
+      "knack": "sunbeam",
+      "knackName": "Sunbeam",
+      "talents": ["kindred-boost"],
+      "maxHp": 431,
+      "startHp": 431
+    },
+    {
+      "key": "00000000-0000-4000-8700-000000000009",
+      "name": "Ohmouse",
+      "species": "ohmouse",
+      "element": "spark",
+      "role": "guard",
+      "level": null,
+      "owner": "m3",
+      "row": 0,
+      "col": 2,
+      "knack": "catch-the-bolts",
+      "knackName": "Take It All",
+      "talents": ["perfect-timing"],
+      "maxHp": 539,
+      "startHp": 539
+    },
+    {
+      "key": "00000000-0000-4000-8700-000000000010",
+      "name": "Geyserpup",
+      "species": "geyserpup",
+      "element": "tide",
+      "role": "payoff",
+      "level": null,
+      "owner": "m3",
+      "row": 1,
+      "col": 2,
+      "knack": "leave-a-trail",
+      "knackName": "Leave a Trail",
+      "talents": ["momentum"],
+      "maxHp": 323,
+      "startHp": 323
+    },
+    {
+      "key": "00000000-0000-4000-8700-000000000011",
+      "name": "Wickat",
+      "species": "wickat",
+      "element": "ember",
+      "role": "setter",
+      "level": null,
+      "owner": "m3",
+      "row": 2,
+      "col": 2,
+      "knack": "lead-the-way",
+      "knackName": "Lead the Way",
+      "talents": ["sharp-claws"],
+      "maxHp": 388,
+      "startHp": 388
+    },
+    {
+      "key": "00000000-0000-4000-8700-000000000012",
+      "name": "Drizzlewt",
+      "species": "drizzlewt",
+      "element": "tide",
+      "role": "support",
+      "level": null,
+      "owner": "m4",
+      "row": 0,
+      "col": 3,
+      "knack": "drizzle",
+      "knackName": "Drizzle",
+      "talents": ["unbothered"],
+      "maxHp": 456,
+      "startHp": 456
+    },
+    {
+      "key": "00000000-0000-4000-8700-000000000013",
+      "name": "Kilnmole",
+      "species": "kilnmole",
+      "element": "ember",
+      "role": "guard",
+      "level": null,
+      "owner": "m4",
+      "row": 1,
+      "col": 3,
+      "knack": "draw-fire",
+      "knackName": "Draw Fire",
+      "talents": ["hardy"],
+      "maxHp": 657,
+      "startHp": 657
+    },
+    {
+      "key": "00000000-0000-4000-8700-000000000014",
+      "name": "Halcyray",
+      "species": "halcyray",
+      "element": "spark",
+      "role": "support",
+      "level": null,
+      "owner": "m4",
+      "row": 2,
+      "col": 3,
+      "knack": "clear-skies",
+      "knackName": "Clear Skies",
+      "talents": ["crit-chance"],
+      "maxHp": 539,
+      "startHp": 539
+    }
+  ],
+  "actions": null,
+  "events": [
+    {
+      "round": 1,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "round",
+        "round": 1
+      }
+    },
+    {
+      "round": 1,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "boost",
+        "who": "00000000-0000-4000-8700-000000000008",
+        "by": "00000000-0000-4000-8700-000000000003",
+        "bp": 2500
+      }
+    },
+    {
+      "round": 1,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "boost",
+        "who": "00000000-0000-4000-8700-000000000011",
+        "by": "00000000-0000-4000-8700-000000000003",
+        "bp": 2500
+      }
+    },
+    {
+      "round": 1,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "boost",
+        "who": "00000000-0000-4000-8700-000000000006",
+        "by": "00000000-0000-4000-8700-000000000008",
+        "bp": 1500
+      }
+    },
+    {
+      "round": 1,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "boost",
+        "who": "00000000-0000-4000-8700-000000000007",
+        "by": "00000000-0000-4000-8700-000000000008",
+        "bp": 4100
+      }
+    },
+    {
+      "round": 1,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000001",
+        "to": null,
+        "damage": 166,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 1,
+      "turn": 0,
+      "kind": "mark",
+      "text": "spark x1",
+      "board": {
+        "type": "mark",
+        "element": "spark",
+        "stacks": 1,
+        "sealed": false
+      }
+    },
+    {
+      "round": 1,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000006",
+        "to": null,
+        "damage": 247,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 1,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000009",
+        "to": null,
+        "damage": 84,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 1,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000012",
+        "to": null,
+        "damage": 45,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 1,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "bossTurn",
+        "row": 0
+      }
+    },
+    {
+      "round": 1,
+      "turn": 0,
+      "kind": "target",
+      "text": "Fogwyrm (row 2, slot 1) <- plain"
+    },
+    {
+      "round": 1,
+      "turn": 0,
+      "kind": "blocked",
+      "text": "Fogwyrm blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000002",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 1,
+      "turn": 0,
+      "kind": "target",
+      "text": "Ancientshell (row 2, slot 2) <- plain"
+    },
+    {
+      "round": 1,
+      "turn": 0,
+      "kind": "blocked",
+      "text": "Ancientshell blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000007",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 1,
+      "turn": 0,
+      "kind": "target",
+      "text": "Geyserpup (row 2, slot 3) <- plain"
+    },
+    {
+      "round": 1,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "cover",
+        "guard": "00000000-0000-4000-8700-000000000002",
+        "who": "00000000-0000-4000-8700-000000000010",
+        "prevented": 9
+      }
+    },
+    {
+      "round": 1,
+      "turn": 0,
+      "kind": "hit",
+      "text": "Geyserpup takes 4",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000010",
+        "damage": 4,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 1,
+      "turn": 0,
+      "kind": "target",
+      "text": "Kilnmole (row 2, slot 4) <- plain"
+    },
+    {
+      "round": 1,
+      "turn": 0,
+      "kind": "blocked",
+      "text": "Kilnmole blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000013",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 1,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000002",
+        "to": null,
+        "damage": 70,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 1,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000007",
+        "to": null,
+        "damage": 132,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 1,
+      "turn": 1,
+      "kind": "mark",
+      "text": "grove x1",
+      "board": {
+        "type": "mark",
+        "element": "grove",
+        "stacks": 1,
+        "sealed": true
+      }
+    },
+    {
+      "round": 1,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000010",
+        "to": null,
+        "damage": 112,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 1,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000013",
+        "to": null,
+        "damage": 22,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 1,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "bossTurn",
+        "row": 1
+      }
+    },
+    {
+      "round": 1,
+      "turn": 1,
+      "kind": "target",
+      "text": "Fogwyrm (row 2, slot 1) <- plain"
+    },
+    {
+      "round": 1,
+      "turn": 1,
+      "kind": "blocked",
+      "text": "Fogwyrm blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000002",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 1,
+      "turn": 1,
+      "kind": "target",
+      "text": "Ancientshell (row 2, slot 2) <- plain"
+    },
+    {
+      "round": 1,
+      "turn": 1,
+      "kind": "blocked",
+      "text": "Ancientshell blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000007",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 1,
+      "turn": 1,
+      "kind": "target",
+      "text": "Geyserpup (row 2, slot 3) <- plain"
+    },
+    {
+      "round": 1,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "cover",
+        "guard": "00000000-0000-4000-8700-000000000002",
+        "who": "00000000-0000-4000-8700-000000000010",
+        "prevented": 9
+      }
+    },
+    {
+      "round": 1,
+      "turn": 1,
+      "kind": "hit",
+      "text": "Geyserpup takes 4",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000010",
+        "damage": 4,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 1,
+      "turn": 1,
+      "kind": "target",
+      "text": "Kilnmole (row 2, slot 4) <- plain"
+    },
+    {
+      "round": 1,
+      "turn": 1,
+      "kind": "blocked",
+      "text": "Kilnmole blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000013",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 1,
+      "turn": 2,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000003",
+        "to": null,
+        "damage": 22,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 1,
+      "turn": 2,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000008",
+        "to": null,
+        "damage": 63,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 1,
+      "turn": 2,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000011",
+        "to": null,
+        "damage": 74,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 1,
+      "turn": 2,
+      "kind": "mark",
+      "text": "ember x1",
+      "board": {
+        "type": "mark",
+        "element": "ember",
+        "stacks": 1,
+        "sealed": false
+      }
+    },
+    {
+      "round": 1,
+      "turn": 2,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000014",
+        "to": null,
+        "damage": 125,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 1,
+      "turn": 2,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "bossTurn",
+        "row": 2
+      }
+    },
+    {
+      "round": 1,
+      "turn": 2,
+      "kind": "target",
+      "text": "Fogwyrm (row 2, slot 1) <- plain"
+    },
+    {
+      "round": 1,
+      "turn": 2,
+      "kind": "blocked",
+      "text": "Fogwyrm blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000002",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 1,
+      "turn": 2,
+      "kind": "target",
+      "text": "Ancientshell (row 2, slot 2) <- plain"
+    },
+    {
+      "round": 1,
+      "turn": 2,
+      "kind": "blocked",
+      "text": "Ancientshell blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000007",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 1,
+      "turn": 2,
+      "kind": "target",
+      "text": "Geyserpup (row 2, slot 3) <- plain"
+    },
+    {
+      "round": 1,
+      "turn": 2,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "cover",
+        "guard": "00000000-0000-4000-8700-000000000002",
+        "who": "00000000-0000-4000-8700-000000000010",
+        "prevented": 9
+      }
+    },
+    {
+      "round": 1,
+      "turn": 2,
+      "kind": "hit",
+      "text": "Geyserpup takes 4",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000010",
+        "damage": 4,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 1,
+      "turn": 2,
+      "kind": "target",
+      "text": "Kilnmole (row 2, slot 4) <- plain"
+    },
+    {
+      "round": 1,
+      "turn": 2,
+      "kind": "blocked",
+      "text": "Kilnmole blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000013",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 2,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "round",
+        "round": 2
+      }
+    },
+    {
+      "round": 2,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "boost",
+        "who": "00000000-0000-4000-8700-000000000008",
+        "by": "00000000-0000-4000-8700-000000000003",
+        "bp": 2500
+      }
+    },
+    {
+      "round": 2,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "boost",
+        "who": "00000000-0000-4000-8700-000000000011",
+        "by": "00000000-0000-4000-8700-000000000003",
+        "bp": 2500
+      }
+    },
+    {
+      "round": 2,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "boost",
+        "who": "00000000-0000-4000-8700-000000000006",
+        "by": "00000000-0000-4000-8700-000000000008",
+        "bp": 1500
+      }
+    },
+    {
+      "round": 2,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "boost",
+        "who": "00000000-0000-4000-8700-000000000007",
+        "by": "00000000-0000-4000-8700-000000000008",
+        "bp": 4100
+      }
+    },
+    {
+      "round": 2,
+      "turn": 0,
+      "kind": "announce",
+      "text": "Spray (spray) will land on Ancientshell (row 2, slot 2), Ohmouse (row 1, slot 3), Geyserpup (row 2, slot 3), Magmole (row 3, slot 1)",
+      "move": "spray",
+      "slots": [
+        [1, 1],
+        [0, 2],
+        [1, 2],
+        [2, 0]
+      ],
+      "board": {
+        "type": "announce",
+        "move": "spray",
+        "slots": [
+          [1, 1],
+          [0, 2],
+          [1, 2],
+          [2, 0]
+        ]
+      }
+    },
+    {
+      "round": 2,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000001",
+        "to": null,
+        "damage": 166,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 2,
+      "turn": 0,
+      "kind": "mark",
+      "text": "spark x2",
+      "board": {
+        "type": "mark",
+        "element": "spark",
+        "stacks": 2,
+        "sealed": false
+      }
+    },
+    {
+      "round": 2,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000006",
+        "to": null,
+        "damage": 253,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 2,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000009",
+        "to": null,
+        "damage": 84,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 2,
+      "turn": 0,
+      "kind": "crit",
+      "text": "Drizzlewt crits"
+    },
+    {
+      "round": 2,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000012",
+        "to": null,
+        "damage": 130,
+        "crit": true,
+        "blocked": false,
+        "dodged": false,
+        "critBp": 20000
+      }
+    },
+    {
+      "round": 2,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "bossTurn",
+        "row": 0
+      }
+    },
+    {
+      "round": 2,
+      "turn": 0,
+      "kind": "move",
+      "text": "Spray"
+    },
+    {
+      "round": 2,
+      "turn": 0,
+      "kind": "target",
+      "text": "Ancientshell (row 2, slot 2) <- spray"
+    },
+    {
+      "round": 2,
+      "turn": 0,
+      "kind": "dodge",
+      "text": "Ancientshell dodges",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000007",
+        "damage": 0,
+        "crit": false,
+        "blocked": false,
+        "dodged": true
+      }
+    },
+    {
+      "round": 2,
+      "turn": 0,
+      "kind": "target",
+      "text": "Ohmouse (row 1, slot 3) <- spray"
+    },
+    {
+      "round": 2,
+      "turn": 0,
+      "kind": "hit",
+      "text": "Ohmouse takes 30",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000009",
+        "damage": 30,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 2,
+      "turn": 0,
+      "kind": "target",
+      "text": "Geyserpup (row 2, slot 3) <- spray"
+    },
+    {
+      "round": 2,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "cover",
+        "guard": "00000000-0000-4000-8700-000000000002",
+        "who": "00000000-0000-4000-8700-000000000010",
+        "prevented": 18
+      }
+    },
+    {
+      "round": 2,
+      "turn": 0,
+      "kind": "hit",
+      "text": "Geyserpup takes 17",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000010",
+        "damage": 17,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 2,
+      "turn": 0,
+      "kind": "target",
+      "text": "Magmole (row 3, slot 1) <- spray"
+    },
+    {
+      "round": 2,
+      "turn": 0,
+      "kind": "dodge",
+      "text": "Magmole dodges",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000003",
+        "damage": 0,
+        "crit": false,
+        "blocked": false,
+        "dodged": true
+      }
+    },
+    {
+      "round": 2,
+      "turn": 0,
+      "kind": "target",
+      "text": "Fogwyrm (row 2, slot 1) <- plain"
+    },
+    {
+      "round": 2,
+      "turn": 0,
+      "kind": "blocked",
+      "text": "Fogwyrm blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000002",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 2,
+      "turn": 0,
+      "kind": "target",
+      "text": "Ancientshell (row 2, slot 2) <- plain"
+    },
+    {
+      "round": 2,
+      "turn": 0,
+      "kind": "blocked",
+      "text": "Ancientshell blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000007",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 2,
+      "turn": 0,
+      "kind": "target",
+      "text": "Geyserpup (row 2, slot 3) <- plain"
+    },
+    {
+      "round": 2,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "cover",
+        "guard": "00000000-0000-4000-8700-000000000002",
+        "who": "00000000-0000-4000-8700-000000000010",
+        "prevented": 9
+      }
+    },
+    {
+      "round": 2,
+      "turn": 0,
+      "kind": "hit",
+      "text": "Geyserpup takes 4",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000010",
+        "damage": 4,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 2,
+      "turn": 0,
+      "kind": "target",
+      "text": "Kilnmole (row 2, slot 4) <- plain"
+    },
+    {
+      "round": 2,
+      "turn": 0,
+      "kind": "blocked",
+      "text": "Kilnmole blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000013",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 2,
+      "turn": 1,
+      "kind": "boss-dodge",
+      "text": "Tidal Colossus dodges Fogwyrm",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000002",
+        "to": null,
+        "damage": 0,
+        "crit": false,
+        "blocked": false,
+        "dodged": true
+      }
+    },
+    {
+      "round": 2,
+      "turn": 1,
+      "kind": "boss-dodge",
+      "text": "Tidal Colossus dodges Ancientshell",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000007",
+        "to": null,
+        "damage": 0,
+        "crit": false,
+        "blocked": false,
+        "dodged": true
+      }
+    },
+    {
+      "round": 2,
+      "turn": 1,
+      "kind": "mark",
+      "text": "grove x2",
+      "board": {
+        "type": "mark",
+        "element": "grove",
+        "stacks": 2,
+        "sealed": true
+      }
+    },
+    {
+      "round": 2,
+      "turn": 1,
+      "kind": "boss-dodge",
+      "text": "Tidal Colossus dodges Geyserpup",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000010",
+        "to": null,
+        "damage": 0,
+        "crit": false,
+        "blocked": false,
+        "dodged": true
+      }
+    },
+    {
+      "round": 2,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000013",
+        "to": null,
+        "damage": 22,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 2,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "bossTurn",
+        "row": 1
+      }
+    },
+    {
+      "round": 2,
+      "turn": 1,
+      "kind": "target",
+      "text": "Fogwyrm (row 2, slot 1) <- plain"
+    },
+    {
+      "round": 2,
+      "turn": 1,
+      "kind": "blocked",
+      "text": "Fogwyrm blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000002",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 2,
+      "turn": 1,
+      "kind": "target",
+      "text": "Ancientshell (row 2, slot 2) <- plain"
+    },
+    {
+      "round": 2,
+      "turn": 1,
+      "kind": "blocked",
+      "text": "Ancientshell blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000007",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 2,
+      "turn": 1,
+      "kind": "target",
+      "text": "Geyserpup (row 2, slot 3) <- plain"
+    },
+    {
+      "round": 2,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "cover",
+        "guard": "00000000-0000-4000-8700-000000000002",
+        "who": "00000000-0000-4000-8700-000000000010",
+        "prevented": 9
+      }
+    },
+    {
+      "round": 2,
+      "turn": 1,
+      "kind": "hit",
+      "text": "Geyserpup takes 4",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000010",
+        "damage": 4,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 2,
+      "turn": 1,
+      "kind": "target",
+      "text": "Kilnmole (row 2, slot 4) <- plain"
+    },
+    {
+      "round": 2,
+      "turn": 1,
+      "kind": "blocked",
+      "text": "Kilnmole blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000013",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 2,
+      "turn": 2,
+      "kind": "crit",
+      "text": "Magmole crits"
+    },
+    {
+      "round": 2,
+      "turn": 2,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000003",
+        "to": null,
+        "damage": 84,
+        "crit": true,
+        "blocked": false,
+        "dodged": false,
+        "critBp": 20000
+      }
+    },
+    {
+      "round": 2,
+      "turn": 2,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000008",
+        "to": null,
+        "damage": 63,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 2,
+      "turn": 2,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000011",
+        "to": null,
+        "damage": 74,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 2,
+      "turn": 2,
+      "kind": "mark",
+      "text": "ember x2",
+      "board": {
+        "type": "mark",
+        "element": "ember",
+        "stacks": 2,
+        "sealed": false
+      }
+    },
+    {
+      "round": 2,
+      "turn": 2,
+      "kind": "boss-dodge",
+      "text": "Tidal Colossus dodges Halcyray",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000014",
+        "to": null,
+        "damage": 0,
+        "crit": false,
+        "blocked": false,
+        "dodged": true
+      }
+    },
+    {
+      "round": 2,
+      "turn": 2,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "bossTurn",
+        "row": 2
+      }
+    },
+    {
+      "round": 2,
+      "turn": 2,
+      "kind": "target",
+      "text": "Fogwyrm (row 2, slot 1) <- plain"
+    },
+    {
+      "round": 2,
+      "turn": 2,
+      "kind": "blocked",
+      "text": "Fogwyrm blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000002",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 2,
+      "turn": 2,
+      "kind": "target",
+      "text": "Ancientshell (row 2, slot 2) <- plain"
+    },
+    {
+      "round": 2,
+      "turn": 2,
+      "kind": "blocked",
+      "text": "Ancientshell blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000007",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 2,
+      "turn": 2,
+      "kind": "target",
+      "text": "Geyserpup (row 2, slot 3) <- plain"
+    },
+    {
+      "round": 2,
+      "turn": 2,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "cover",
+        "guard": "00000000-0000-4000-8700-000000000002",
+        "who": "00000000-0000-4000-8700-000000000010",
+        "prevented": 9
+      }
+    },
+    {
+      "round": 2,
+      "turn": 2,
+      "kind": "hit",
+      "text": "Geyserpup takes 4",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000010",
+        "damage": 4,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 2,
+      "turn": 2,
+      "kind": "target",
+      "text": "Kilnmole (row 2, slot 4) <- plain"
+    },
+    {
+      "round": 2,
+      "turn": 2,
+      "kind": "blocked",
+      "text": "Kilnmole blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000013",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 3,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "round",
+        "round": 3
+      }
+    },
+    {
+      "round": 3,
+      "turn": 0,
+      "kind": "announce",
+      "text": "Tidal Colossus will shake off its debuffs"
+    },
+    {
+      "round": 3,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "heal",
+        "who": "00000000-0000-4000-8700-000000000009",
+        "amount": 28,
+        "by": "00000000-0000-4000-8700-000000000012"
+      }
+    },
+    {
+      "round": 3,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "boost",
+        "who": "00000000-0000-4000-8700-000000000008",
+        "by": "00000000-0000-4000-8700-000000000003",
+        "bp": 2500
+      }
+    },
+    {
+      "round": 3,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "boost",
+        "who": "00000000-0000-4000-8700-000000000011",
+        "by": "00000000-0000-4000-8700-000000000003",
+        "bp": 2500
+      }
+    },
+    {
+      "round": 3,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "boost",
+        "who": "00000000-0000-4000-8700-000000000006",
+        "by": "00000000-0000-4000-8700-000000000008",
+        "bp": 1500
+      }
+    },
+    {
+      "round": 3,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "boost",
+        "who": "00000000-0000-4000-8700-000000000007",
+        "by": "00000000-0000-4000-8700-000000000008",
+        "bp": 4100
+      }
+    },
+    {
+      "round": 3,
+      "turn": 0,
+      "kind": "announce",
+      "text": "Great Wave (great-wave, Wind-up) will land on Magmole (row 3, slot 1), Sunfawn (row 3, slot 2), Wickat (row 3, slot 3), Halcyray (row 3, slot 4)",
+      "move": "great-wave",
+      "slots": [
+        [2, 0],
+        [2, 1],
+        [2, 2],
+        [2, 3]
+      ],
+      "board": {
+        "type": "announce",
+        "move": "great-wave",
+        "slots": [
+          [2, 0],
+          [2, 1],
+          [2, 2],
+          [2, 3]
+        ]
+      }
+    },
+    {
+      "round": 3,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000001",
+        "to": null,
+        "damage": 166,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 3,
+      "turn": 0,
+      "kind": "mark",
+      "text": "spark x3",
+      "board": {
+        "type": "mark",
+        "element": "spark",
+        "stacks": 3,
+        "sealed": false
+      }
+    },
+    {
+      "round": 3,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000006",
+        "to": null,
+        "damage": 259,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 3,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000009",
+        "to": null,
+        "damage": 84,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 3,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000012",
+        "to": null,
+        "damage": 45,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 3,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "bossTurn",
+        "row": 0
+      }
+    },
+    {
+      "round": 3,
+      "turn": 0,
+      "kind": "move",
+      "text": "Undertow"
+    },
+    {
+      "round": 3,
+      "turn": 0,
+      "kind": "target",
+      "text": "Voltaro (row 1, slot 1) <- undertow"
+    },
+    {
+      "round": 3,
+      "turn": 0,
+      "kind": "hit",
+      "text": "Voltaro takes 74",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000001",
+        "damage": 74,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 3,
+      "turn": 0,
+      "kind": "target",
+      "text": "Tempestray (row 1, slot 2) <- undertow"
+    },
+    {
+      "round": 3,
+      "turn": 0,
+      "kind": "intercept",
+      "text": "Ohmouse intercepts for Tempestray"
+    },
+    {
+      "round": 3,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "intercept",
+        "guard": "00000000-0000-4000-8700-000000000009",
+        "who": "00000000-0000-4000-8700-000000000006"
+      }
+    },
+    {
+      "round": 3,
+      "turn": 0,
+      "kind": "hit",
+      "text": "Ohmouse takes 33",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000006",
+        "damage": 33,
+        "crit": false,
+        "blocked": false,
+        "dodged": false,
+        "by": "00000000-0000-4000-8700-000000000009"
+      }
+    },
+    {
+      "round": 3,
+      "turn": 0,
+      "kind": "target",
+      "text": "Ohmouse (row 1, slot 3) already took a hit of undertow"
+    },
+    {
+      "round": 3,
+      "turn": 0,
+      "kind": "target",
+      "text": "Drizzlewt (row 1, slot 4) <- undertow"
+    },
+    {
+      "round": 3,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "cover",
+        "guard": "00000000-0000-4000-8700-000000000009",
+        "who": "00000000-0000-4000-8700-000000000012",
+        "prevented": 32
+      }
+    },
+    {
+      "round": 3,
+      "turn": 0,
+      "kind": "hit",
+      "text": "Drizzlewt takes 21",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000012",
+        "damage": 21,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 3,
+      "turn": 0,
+      "kind": "target",
+      "text": "Fogwyrm (row 2, slot 1) <- plain"
+    },
+    {
+      "round": 3,
+      "turn": 0,
+      "kind": "blocked",
+      "text": "Fogwyrm blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000002",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 3,
+      "turn": 0,
+      "kind": "target",
+      "text": "Ancientshell (row 2, slot 2) <- plain"
+    },
+    {
+      "round": 3,
+      "turn": 0,
+      "kind": "blocked",
+      "text": "Ancientshell blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000007",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 3,
+      "turn": 0,
+      "kind": "target",
+      "text": "Geyserpup (row 2, slot 3) <- plain"
+    },
+    {
+      "round": 3,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "cover",
+        "guard": "00000000-0000-4000-8700-000000000002",
+        "who": "00000000-0000-4000-8700-000000000010",
+        "prevented": 9
+      }
+    },
+    {
+      "round": 3,
+      "turn": 0,
+      "kind": "hit",
+      "text": "Geyserpup takes 4",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000010",
+        "damage": 4,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 3,
+      "turn": 0,
+      "kind": "target",
+      "text": "Kilnmole (row 2, slot 4) <- plain"
+    },
+    {
+      "round": 3,
+      "turn": 0,
+      "kind": "blocked",
+      "text": "Kilnmole blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000013",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 3,
+      "turn": 1,
+      "kind": "boss-dodge",
+      "text": "Tidal Colossus dodges Fogwyrm",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000002",
+        "to": null,
+        "damage": 0,
+        "crit": false,
+        "blocked": false,
+        "dodged": true
+      }
+    },
+    {
+      "round": 3,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000007",
+        "to": null,
+        "damage": 132,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 3,
+      "turn": 1,
+      "kind": "mark",
+      "text": "grove x3",
+      "board": {
+        "type": "mark",
+        "element": "grove",
+        "stacks": 3,
+        "sealed": true
+      }
+    },
+    {
+      "round": 3,
+      "turn": 1,
+      "kind": "reaction",
+      "text": "Geyserpup cashes ember x1 for +139",
+      "board": {
+        "type": "reaction",
+        "by": "00000000-0000-4000-8700-000000000010",
+        "mark": "ember",
+        "spent": 1,
+        "bonus": 139,
+        "left": 1
+      }
+    },
+    {
+      "round": 3,
+      "turn": 1,
+      "kind": "mark",
+      "text": "tide x1",
+      "board": {
+        "type": "mark",
+        "element": "tide",
+        "stacks": 1,
+        "sealed": false
+      }
+    },
+    {
+      "round": 3,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000010",
+        "to": null,
+        "damage": 265,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 3,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000013",
+        "to": null,
+        "damage": 22,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 3,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "bossTurn",
+        "row": 1
+      }
+    },
+    {
+      "round": 3,
+      "turn": 1,
+      "kind": "move",
+      "text": "Deepwater Spear"
+    },
+    {
+      "round": 3,
+      "turn": 1,
+      "kind": "target",
+      "text": "Tempestray (row 1, slot 2) <- deepwater-spear"
+    },
+    {
+      "round": 3,
+      "turn": 1,
+      "kind": "intercept",
+      "text": "Ohmouse intercepts for Tempestray"
+    },
+    {
+      "round": 3,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "intercept",
+        "guard": "00000000-0000-4000-8700-000000000009",
+        "who": "00000000-0000-4000-8700-000000000006"
+      }
+    },
+    {
+      "round": 3,
+      "turn": 1,
+      "kind": "hit",
+      "text": "Ohmouse takes 49",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000006",
+        "damage": 49,
+        "crit": false,
+        "blocked": false,
+        "dodged": false,
+        "by": "00000000-0000-4000-8700-000000000009"
+      }
+    },
+    {
+      "round": 3,
+      "turn": 1,
+      "kind": "target",
+      "text": "Ancientshell (row 2, slot 2) <- deepwater-spear"
+    },
+    {
+      "round": 3,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "cover",
+        "guard": "00000000-0000-4000-8700-000000000002",
+        "who": "00000000-0000-4000-8700-000000000007",
+        "prevented": 42
+      }
+    },
+    {
+      "round": 3,
+      "turn": 1,
+      "kind": "hit",
+      "text": "Ancientshell takes 33",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000007",
+        "damage": 33,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 3,
+      "turn": 1,
+      "kind": "target",
+      "text": "Sunfawn (row 3, slot 2) <- deepwater-spear"
+    },
+    {
+      "round": 3,
+      "turn": 1,
+      "kind": "hit",
+      "text": "Sunfawn takes 77",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000008",
+        "damage": 77,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 3,
+      "turn": 1,
+      "kind": "target",
+      "text": "Ohmouse (row 1, slot 3) already took a hit of deepwater-spear"
+    },
+    {
+      "round": 3,
+      "turn": 1,
+      "kind": "target",
+      "text": "Geyserpup (row 2, slot 3) <- deepwater-spear"
+    },
+    {
+      "round": 3,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "cover",
+        "guard": "00000000-0000-4000-8700-000000000002",
+        "who": "00000000-0000-4000-8700-000000000010",
+        "prevented": 42
+      }
+    },
+    {
+      "round": 3,
+      "turn": 1,
+      "kind": "hit",
+      "text": "Geyserpup takes 54",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000010",
+        "damage": 54,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 3,
+      "turn": 1,
+      "kind": "target",
+      "text": "Wickat (row 3, slot 3) <- deepwater-spear"
+    },
+    {
+      "round": 3,
+      "turn": 1,
+      "kind": "dodge",
+      "text": "Wickat dodges",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000011",
+        "damage": 0,
+        "crit": false,
+        "blocked": false,
+        "dodged": true
+      }
+    },
+    {
+      "round": 3,
+      "turn": 1,
+      "kind": "target",
+      "text": "Fogwyrm (row 2, slot 1) <- plain"
+    },
+    {
+      "round": 3,
+      "turn": 1,
+      "kind": "blocked",
+      "text": "Fogwyrm blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000002",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 3,
+      "turn": 1,
+      "kind": "target",
+      "text": "Ancientshell (row 2, slot 2) <- plain"
+    },
+    {
+      "round": 3,
+      "turn": 1,
+      "kind": "blocked",
+      "text": "Ancientshell blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000007",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 3,
+      "turn": 1,
+      "kind": "target",
+      "text": "Geyserpup (row 2, slot 3) <- plain"
+    },
+    {
+      "round": 3,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "cover",
+        "guard": "00000000-0000-4000-8700-000000000002",
+        "who": "00000000-0000-4000-8700-000000000010",
+        "prevented": 9
+      }
+    },
+    {
+      "round": 3,
+      "turn": 1,
+      "kind": "hit",
+      "text": "Geyserpup takes 4",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000010",
+        "damage": 4,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 3,
+      "turn": 1,
+      "kind": "target",
+      "text": "Kilnmole (row 2, slot 4) <- plain"
+    },
+    {
+      "round": 3,
+      "turn": 1,
+      "kind": "blocked",
+      "text": "Kilnmole blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000013",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 3,
+      "turn": 2,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000003",
+        "to": null,
+        "damage": 22,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 3,
+      "turn": 2,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000008",
+        "to": null,
+        "damage": 63,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 3,
+      "turn": 2,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000011",
+        "to": null,
+        "damage": 74,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 3,
+      "turn": 2,
+      "kind": "mark",
+      "text": "ember x2",
+      "board": {
+        "type": "mark",
+        "element": "ember",
+        "stacks": 2,
+        "sealed": false
+      }
+    },
+    {
+      "round": 3,
+      "turn": 2,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000014",
+        "to": null,
+        "damage": 125,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 3,
+      "turn": 2,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "bossTurn",
+        "row": 2
+      }
+    },
+    {
+      "round": 3,
+      "turn": 2,
+      "kind": "move",
+      "text": "Great Wave"
+    },
+    {
+      "round": 3,
+      "turn": 2,
+      "kind": "target",
+      "text": "Magmole (row 3, slot 1) <- great-wave"
+    },
+    {
+      "round": 3,
+      "turn": 2,
+      "kind": "hit",
+      "text": "Magmole takes 63",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000003",
+        "damage": 63,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 3,
+      "turn": 2,
+      "kind": "target",
+      "text": "Sunfawn (row 3, slot 2) <- great-wave"
+    },
+    {
+      "round": 3,
+      "turn": 2,
+      "kind": "hit",
+      "text": "Sunfawn takes 94",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000008",
+        "damage": 94,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 3,
+      "turn": 2,
+      "kind": "target",
+      "text": "Wickat (row 3, slot 3) <- great-wave"
+    },
+    {
+      "round": 3,
+      "turn": 2,
+      "kind": "hit",
+      "text": "Wickat takes 116",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000011",
+        "damage": 116,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 3,
+      "turn": 2,
+      "kind": "target",
+      "text": "Halcyray (row 3, slot 4) <- great-wave"
+    },
+    {
+      "round": 3,
+      "turn": 2,
+      "kind": "hit",
+      "text": "Halcyray takes 116",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000014",
+        "damage": 116,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 3,
+      "turn": 2,
+      "kind": "target",
+      "text": "Fogwyrm (row 2, slot 1) <- plain"
+    },
+    {
+      "round": 3,
+      "turn": 2,
+      "kind": "blocked",
+      "text": "Fogwyrm blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000002",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 3,
+      "turn": 2,
+      "kind": "target",
+      "text": "Ancientshell (row 2, slot 2) <- plain"
+    },
+    {
+      "round": 3,
+      "turn": 2,
+      "kind": "blocked",
+      "text": "Ancientshell blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000007",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 3,
+      "turn": 2,
+      "kind": "target",
+      "text": "Geyserpup (row 2, slot 3) <- plain"
+    },
+    {
+      "round": 3,
+      "turn": 2,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "cover",
+        "guard": "00000000-0000-4000-8700-000000000002",
+        "who": "00000000-0000-4000-8700-000000000010",
+        "prevented": 9
+      }
+    },
+    {
+      "round": 3,
+      "turn": 2,
+      "kind": "hit",
+      "text": "Geyserpup takes 4",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000010",
+        "damage": 4,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 3,
+      "turn": 2,
+      "kind": "target",
+      "text": "Kilnmole (row 2, slot 4) <- plain"
+    },
+    {
+      "round": 3,
+      "turn": 2,
+      "kind": "blocked",
+      "text": "Kilnmole blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000013",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 4,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "round",
+        "round": 4
+      }
+    },
+    {
+      "round": 4,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "heal",
+        "who": "00000000-0000-4000-8700-000000000001",
+        "amount": 20,
+        "by": "00000000-0000-4000-8700-000000000012"
+      }
+    },
+    {
+      "round": 4,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "heal",
+        "who": "00000000-0000-4000-8700-000000000009",
+        "amount": 28,
+        "by": "00000000-0000-4000-8700-000000000012"
+      }
+    },
+    {
+      "round": 4,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "heal",
+        "who": "00000000-0000-4000-8700-000000000012",
+        "amount": 21,
+        "by": "00000000-0000-4000-8700-000000000012"
+      }
+    },
+    {
+      "round": 4,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "boost",
+        "who": "00000000-0000-4000-8700-000000000008",
+        "by": "00000000-0000-4000-8700-000000000003",
+        "bp": 2500
+      }
+    },
+    {
+      "round": 4,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "boost",
+        "who": "00000000-0000-4000-8700-000000000011",
+        "by": "00000000-0000-4000-8700-000000000003",
+        "bp": 2500
+      }
+    },
+    {
+      "round": 4,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "boost",
+        "who": "00000000-0000-4000-8700-000000000006",
+        "by": "00000000-0000-4000-8700-000000000008",
+        "bp": 1500
+      }
+    },
+    {
+      "round": 4,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "boost",
+        "who": "00000000-0000-4000-8700-000000000007",
+        "by": "00000000-0000-4000-8700-000000000008",
+        "bp": 4100
+      }
+    },
+    {
+      "round": 4,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "heal",
+        "who": "00000000-0000-4000-8700-000000000007",
+        "amount": 33,
+        "by": "00000000-0000-4000-8700-000000000008"
+      }
+    },
+    {
+      "round": 4,
+      "turn": 0,
+      "kind": "announce",
+      "text": "Spray (spray) will land on Drizzlewt (row 1, slot 4), Sunfawn (row 3, slot 2), Ancientshell (row 2, slot 2), Wickat (row 3, slot 3)",
+      "move": "spray",
+      "slots": [
+        [0, 3],
+        [2, 1],
+        [1, 1],
+        [2, 2]
+      ],
+      "board": {
+        "type": "announce",
+        "move": "spray",
+        "slots": [
+          [0, 3],
+          [2, 1],
+          [1, 1],
+          [2, 2]
+        ]
+      }
+    },
+    {
+      "round": 4,
+      "turn": 0,
+      "kind": "announce",
+      "text": "Riptide (riptide, Wind-up) will land on Tempestray (row 1, slot 2), Ancientshell (row 2, slot 2), Sunfawn (row 3, slot 2)",
+      "move": "riptide",
+      "slots": [
+        [0, 1],
+        [1, 1],
+        [2, 1]
+      ],
+      "board": {
+        "type": "announce",
+        "move": "riptide",
+        "slots": [
+          [0, 1],
+          [1, 1],
+          [2, 1]
+        ]
+      }
+    },
+    {
+      "round": 4,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000001",
+        "to": null,
+        "damage": 166,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 4,
+      "turn": 0,
+      "kind": "mark",
+      "text": "spark x3",
+      "board": {
+        "type": "mark",
+        "element": "spark",
+        "stacks": 3,
+        "sealed": false
+      }
+    },
+    {
+      "round": 4,
+      "turn": 0,
+      "kind": "reaction",
+      "text": "Tempestray cashes tide x1 for +209",
+      "board": {
+        "type": "reaction",
+        "by": "00000000-0000-4000-8700-000000000006",
+        "mark": "tide",
+        "spent": 1,
+        "bonus": 209,
+        "left": 0
+      }
+    },
+    {
+      "round": 4,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000006",
+        "to": null,
+        "damage": 496,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 4,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000009",
+        "to": null,
+        "damage": 84,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 4,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000012",
+        "to": null,
+        "damage": 45,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 4,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "bossTurn",
+        "row": 0
+      }
+    },
+    {
+      "round": 4,
+      "turn": 0,
+      "kind": "move",
+      "text": "Spray"
+    },
+    {
+      "round": 4,
+      "turn": 0,
+      "kind": "target",
+      "text": "Drizzlewt (row 1, slot 4) <- spray"
+    },
+    {
+      "round": 4,
+      "turn": 0,
+      "kind": "intercept",
+      "text": "Ohmouse intercepts for Drizzlewt"
+    },
+    {
+      "round": 4,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "intercept",
+        "guard": "00000000-0000-4000-8700-000000000009",
+        "who": "00000000-0000-4000-8700-000000000012"
+      }
+    },
+    {
+      "round": 4,
+      "turn": 0,
+      "kind": "hit",
+      "text": "Ohmouse takes 12",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000012",
+        "damage": 12,
+        "crit": false,
+        "blocked": false,
+        "dodged": false,
+        "by": "00000000-0000-4000-8700-000000000009"
+      }
+    },
+    {
+      "round": 4,
+      "turn": 0,
+      "kind": "target",
+      "text": "Sunfawn (row 3, slot 2) <- spray"
+    },
+    {
+      "round": 4,
+      "turn": 0,
+      "kind": "hit",
+      "text": "Sunfawn takes 16",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000008",
+        "damage": 16,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 4,
+      "turn": 0,
+      "kind": "target",
+      "text": "Ancientshell (row 2, slot 2) <- spray"
+    },
+    {
+      "round": 4,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "cover",
+        "guard": "00000000-0000-4000-8700-000000000002",
+        "who": "00000000-0000-4000-8700-000000000007",
+        "prevented": 14
+      }
+    },
+    {
+      "round": 4,
+      "turn": 0,
+      "kind": "blocked",
+      "text": "Ancientshell blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000007",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 4,
+      "turn": 0,
+      "kind": "target",
+      "text": "Wickat (row 3, slot 3) <- spray"
+    },
+    {
+      "round": 4,
+      "turn": 0,
+      "kind": "hit",
+      "text": "Wickat takes 38",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000011",
+        "damage": 38,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 4,
+      "turn": 0,
+      "kind": "target",
+      "text": "Fogwyrm (row 2, slot 1) <- plain"
+    },
+    {
+      "round": 4,
+      "turn": 0,
+      "kind": "blocked",
+      "text": "Fogwyrm blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000002",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 4,
+      "turn": 0,
+      "kind": "target",
+      "text": "Ancientshell (row 2, slot 2) <- plain"
+    },
+    {
+      "round": 4,
+      "turn": 0,
+      "kind": "blocked",
+      "text": "Ancientshell blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000007",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 4,
+      "turn": 0,
+      "kind": "target",
+      "text": "Geyserpup (row 2, slot 3) <- plain"
+    },
+    {
+      "round": 4,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "cover",
+        "guard": "00000000-0000-4000-8700-000000000002",
+        "who": "00000000-0000-4000-8700-000000000010",
+        "prevented": 9
+      }
+    },
+    {
+      "round": 4,
+      "turn": 0,
+      "kind": "hit",
+      "text": "Geyserpup takes 4",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000010",
+        "damage": 4,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 4,
+      "turn": 0,
+      "kind": "target",
+      "text": "Kilnmole (row 2, slot 4) <- plain"
+    },
+    {
+      "round": 4,
+      "turn": 0,
+      "kind": "blocked",
+      "text": "Kilnmole blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000013",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 4,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000002",
+        "to": null,
+        "damage": 70,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 4,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000007",
+        "to": null,
+        "damage": 132,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 4,
+      "turn": 1,
+      "kind": "mark",
+      "text": "grove x3",
+      "board": {
+        "type": "mark",
+        "element": "grove",
+        "stacks": 3,
+        "sealed": true
+      }
+    },
+    {
+      "round": 4,
+      "turn": 1,
+      "kind": "reaction",
+      "text": "Geyserpup cashes ember x1 for +139",
+      "board": {
+        "type": "reaction",
+        "by": "00000000-0000-4000-8700-000000000010",
+        "mark": "ember",
+        "spent": 1,
+        "bonus": 139,
+        "left": 1
+      }
+    },
+    {
+      "round": 4,
+      "turn": 1,
+      "kind": "mark",
+      "text": "tide x1",
+      "board": {
+        "type": "mark",
+        "element": "tide",
+        "stacks": 1,
+        "sealed": false
+      }
+    },
+    {
+      "round": 4,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000010",
+        "to": null,
+        "damage": 265,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 4,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000013",
+        "to": null,
+        "damage": 22,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 4,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "bossTurn",
+        "row": 1
+      }
+    },
+    {
+      "round": 4,
+      "turn": 1,
+      "kind": "move",
+      "text": "Riptide"
+    },
+    {
+      "round": 4,
+      "turn": 1,
+      "kind": "target",
+      "text": "Tempestray (row 1, slot 2) <- riptide"
+    },
+    {
+      "round": 4,
+      "turn": 1,
+      "kind": "intercept",
+      "text": "Ohmouse intercepts for Tempestray"
+    },
+    {
+      "round": 4,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "intercept",
+        "guard": "00000000-0000-4000-8700-000000000009",
+        "who": "00000000-0000-4000-8700-000000000006"
+      }
+    },
+    {
+      "round": 4,
+      "turn": 1,
+      "kind": "hit",
+      "text": "Ohmouse takes 43",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000006",
+        "damage": 43,
+        "crit": false,
+        "blocked": false,
+        "dodged": false,
+        "by": "00000000-0000-4000-8700-000000000009"
+      }
+    },
+    {
+      "round": 4,
+      "turn": 1,
+      "kind": "target",
+      "text": "Ancientshell (row 2, slot 2) <- riptide"
+    },
+    {
+      "round": 4,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "cover",
+        "guard": "00000000-0000-4000-8700-000000000002",
+        "who": "00000000-0000-4000-8700-000000000007",
+        "prevented": 38
+      }
+    },
+    {
+      "round": 4,
+      "turn": 1,
+      "kind": "hit",
+      "text": "Ancientshell takes 27",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000007",
+        "damage": 27,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 4,
+      "turn": 1,
+      "kind": "target",
+      "text": "Sunfawn (row 3, slot 2) <- riptide"
+    },
+    {
+      "round": 4,
+      "turn": 1,
+      "kind": "hit",
+      "text": "Sunfawn takes 67",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000008",
+        "damage": 67,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 4,
+      "turn": 1,
+      "kind": "target",
+      "text": "Fogwyrm (row 2, slot 1) <- plain"
+    },
+    {
+      "round": 4,
+      "turn": 1,
+      "kind": "blocked",
+      "text": "Fogwyrm blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000002",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 4,
+      "turn": 1,
+      "kind": "target",
+      "text": "Ancientshell (row 2, slot 2) <- plain"
+    },
+    {
+      "round": 4,
+      "turn": 1,
+      "kind": "blocked",
+      "text": "Ancientshell blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000007",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 4,
+      "turn": 1,
+      "kind": "target",
+      "text": "Geyserpup (row 2, slot 3) <- plain"
+    },
+    {
+      "round": 4,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "cover",
+        "guard": "00000000-0000-4000-8700-000000000002",
+        "who": "00000000-0000-4000-8700-000000000010",
+        "prevented": 9
+      }
+    },
+    {
+      "round": 4,
+      "turn": 1,
+      "kind": "hit",
+      "text": "Geyserpup takes 4",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000010",
+        "damage": 4,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 4,
+      "turn": 1,
+      "kind": "target",
+      "text": "Kilnmole (row 2, slot 4) <- plain"
+    },
+    {
+      "round": 4,
+      "turn": 1,
+      "kind": "blocked",
+      "text": "Kilnmole blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000013",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 4,
+      "turn": 2,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000003",
+        "to": null,
+        "damage": 22,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 4,
+      "turn": 2,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000008",
+        "to": null,
+        "damage": 63,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 4,
+      "turn": 2,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000011",
+        "to": null,
+        "damage": 74,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 4,
+      "turn": 2,
+      "kind": "mark",
+      "text": "ember x2",
+      "board": {
+        "type": "mark",
+        "element": "ember",
+        "stacks": 2,
+        "sealed": false
+      }
+    },
+    {
+      "round": 4,
+      "turn": 2,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000014",
+        "to": null,
+        "damage": 125,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 4,
+      "turn": 2,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "bossTurn",
+        "row": 2
+      }
+    },
+    {
+      "round": 4,
+      "turn": 2,
+      "kind": "target",
+      "text": "Fogwyrm (row 2, slot 1) <- plain"
+    },
+    {
+      "round": 4,
+      "turn": 2,
+      "kind": "blocked",
+      "text": "Fogwyrm blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000002",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 4,
+      "turn": 2,
+      "kind": "target",
+      "text": "Ancientshell (row 2, slot 2) <- plain"
+    },
+    {
+      "round": 4,
+      "turn": 2,
+      "kind": "blocked",
+      "text": "Ancientshell blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000007",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 4,
+      "turn": 2,
+      "kind": "target",
+      "text": "Geyserpup (row 2, slot 3) <- plain"
+    },
+    {
+      "round": 4,
+      "turn": 2,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "cover",
+        "guard": "00000000-0000-4000-8700-000000000002",
+        "who": "00000000-0000-4000-8700-000000000010",
+        "prevented": 9
+      }
+    },
+    {
+      "round": 4,
+      "turn": 2,
+      "kind": "hit",
+      "text": "Geyserpup takes 4",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000010",
+        "damage": 4,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 4,
+      "turn": 2,
+      "kind": "target",
+      "text": "Kilnmole (row 2, slot 4) <- plain"
+    },
+    {
+      "round": 4,
+      "turn": 2,
+      "kind": "blocked",
+      "text": "Kilnmole blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000013",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 5,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "round",
+        "round": 5
+      }
+    },
+    {
+      "round": 5,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "heal",
+        "who": "00000000-0000-4000-8700-000000000001",
+        "amount": 20,
+        "by": "00000000-0000-4000-8700-000000000012"
+      }
+    },
+    {
+      "round": 5,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "heal",
+        "who": "00000000-0000-4000-8700-000000000009",
+        "amount": 28,
+        "by": "00000000-0000-4000-8700-000000000012"
+      }
+    },
+    {
+      "round": 5,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "boost",
+        "who": "00000000-0000-4000-8700-000000000008",
+        "by": "00000000-0000-4000-8700-000000000003",
+        "bp": 2500
+      }
+    },
+    {
+      "round": 5,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "boost",
+        "who": "00000000-0000-4000-8700-000000000011",
+        "by": "00000000-0000-4000-8700-000000000003",
+        "bp": 2500
+      }
+    },
+    {
+      "round": 5,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "boost",
+        "who": "00000000-0000-4000-8700-000000000006",
+        "by": "00000000-0000-4000-8700-000000000008",
+        "bp": 1500
+      }
+    },
+    {
+      "round": 5,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "boost",
+        "who": "00000000-0000-4000-8700-000000000007",
+        "by": "00000000-0000-4000-8700-000000000008",
+        "bp": 4100
+      }
+    },
+    {
+      "round": 5,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "heal",
+        "who": "00000000-0000-4000-8700-000000000007",
+        "amount": 27,
+        "by": "00000000-0000-4000-8700-000000000008"
+      }
+    },
+    {
+      "round": 5,
+      "turn": 0,
+      "kind": "escalation",
+      "text": "Rising Tide: step 1 of 3 (2517 hpLost); next at 4000",
+      "board": {
+        "type": "escalation",
+        "count": 2517,
+        "step": 1,
+        "fall": 1,
+        "phase": false,
+        "phaseNext": false
+      }
+    },
+    {
+      "round": 5,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000001",
+        "to": null,
+        "damage": 166,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 5,
+      "turn": 0,
+      "kind": "mark",
+      "text": "spark x3",
+      "board": {
+        "type": "mark",
+        "element": "spark",
+        "stacks": 3,
+        "sealed": false
+      }
+    },
+    {
+      "round": 5,
+      "turn": 0,
+      "kind": "reaction",
+      "text": "Tempestray cashes tide x1 for +213",
+      "board": {
+        "type": "reaction",
+        "by": "00000000-0000-4000-8700-000000000006",
+        "mark": "tide",
+        "spent": 1,
+        "bonus": 213,
+        "left": 0
+      }
+    },
+    {
+      "round": 5,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000006",
+        "to": null,
+        "damage": 507,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 5,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000009",
+        "to": null,
+        "damage": 84,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 5,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000012",
+        "to": null,
+        "damage": 45,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 5,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "bossTurn",
+        "row": 0
+      }
+    },
+    {
+      "round": 5,
+      "turn": 0,
+      "kind": "target",
+      "text": "Fogwyrm (row 2, slot 1) <- plain"
+    },
+    {
+      "round": 5,
+      "turn": 0,
+      "kind": "blocked",
+      "text": "Fogwyrm blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000002",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 5,
+      "turn": 0,
+      "kind": "target",
+      "text": "Ancientshell (row 2, slot 2) <- plain"
+    },
+    {
+      "round": 5,
+      "turn": 0,
+      "kind": "blocked",
+      "text": "Ancientshell blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000007",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 5,
+      "turn": 0,
+      "kind": "target",
+      "text": "Geyserpup (row 2, slot 3) <- plain"
+    },
+    {
+      "round": 5,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "cover",
+        "guard": "00000000-0000-4000-8700-000000000002",
+        "who": "00000000-0000-4000-8700-000000000010",
+        "prevented": 10
+      }
+    },
+    {
+      "round": 5,
+      "turn": 0,
+      "kind": "hit",
+      "text": "Geyserpup takes 5",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000010",
+        "damage": 5,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 5,
+      "turn": 0,
+      "kind": "target",
+      "text": "Kilnmole (row 2, slot 4) <- plain"
+    },
+    {
+      "round": 5,
+      "turn": 0,
+      "kind": "blocked",
+      "text": "Kilnmole blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000013",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 5,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000002",
+        "to": null,
+        "damage": 70,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 5,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000007",
+        "to": null,
+        "damage": 132,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 5,
+      "turn": 1,
+      "kind": "mark",
+      "text": "grove x3",
+      "board": {
+        "type": "mark",
+        "element": "grove",
+        "stacks": 3,
+        "sealed": true
+      }
+    },
+    {
+      "round": 5,
+      "turn": 1,
+      "kind": "boss-dodge",
+      "text": "Tidal Colossus dodges Geyserpup",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000010",
+        "to": null,
+        "damage": 0,
+        "crit": false,
+        "blocked": false,
+        "dodged": true
+      }
+    },
+    {
+      "round": 5,
+      "turn": 1,
+      "kind": "crit",
+      "text": "Kilnmole crits"
+    },
+    {
+      "round": 5,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000013",
+        "to": null,
+        "damage": 84,
+        "crit": true,
+        "blocked": false,
+        "dodged": false,
+        "critBp": 20000
+      }
+    },
+    {
+      "round": 5,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "bossTurn",
+        "row": 1
+      }
+    },
+    {
+      "round": 5,
+      "turn": 1,
+      "kind": "target",
+      "text": "Fogwyrm (row 2, slot 1) <- plain"
+    },
+    {
+      "round": 5,
+      "turn": 1,
+      "kind": "blocked",
+      "text": "Fogwyrm blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000002",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 5,
+      "turn": 1,
+      "kind": "target",
+      "text": "Ancientshell (row 2, slot 2) <- plain"
+    },
+    {
+      "round": 5,
+      "turn": 1,
+      "kind": "blocked",
+      "text": "Ancientshell blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000007",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 5,
+      "turn": 1,
+      "kind": "target",
+      "text": "Geyserpup (row 2, slot 3) <- plain"
+    },
+    {
+      "round": 5,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "cover",
+        "guard": "00000000-0000-4000-8700-000000000002",
+        "who": "00000000-0000-4000-8700-000000000010",
+        "prevented": 10
+      }
+    },
+    {
+      "round": 5,
+      "turn": 1,
+      "kind": "hit",
+      "text": "Geyserpup takes 5",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000010",
+        "damage": 5,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 5,
+      "turn": 1,
+      "kind": "target",
+      "text": "Kilnmole (row 2, slot 4) <- plain"
+    },
+    {
+      "round": 5,
+      "turn": 1,
+      "kind": "blocked",
+      "text": "Kilnmole blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000013",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 5,
+      "turn": 2,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000003",
+        "to": null,
+        "damage": 22,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 5,
+      "turn": 2,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000008",
+        "to": null,
+        "damage": 63,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 5,
+      "turn": 2,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000011",
+        "to": null,
+        "damage": 74,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 5,
+      "turn": 2,
+      "kind": "mark",
+      "text": "ember x3",
+      "board": {
+        "type": "mark",
+        "element": "ember",
+        "stacks": 3,
+        "sealed": false
+      }
+    },
+    {
+      "round": 5,
+      "turn": 2,
+      "kind": "boss-dodge",
+      "text": "Tidal Colossus dodges Halcyray",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000014",
+        "to": null,
+        "damage": 0,
+        "crit": false,
+        "blocked": false,
+        "dodged": true
+      }
+    },
+    {
+      "round": 5,
+      "turn": 2,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "bossTurn",
+        "row": 2
+      }
+    },
+    {
+      "round": 5,
+      "turn": 2,
+      "kind": "target",
+      "text": "Fogwyrm (row 2, slot 1) <- plain"
+    },
+    {
+      "round": 5,
+      "turn": 2,
+      "kind": "blocked",
+      "text": "Fogwyrm blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000002",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 5,
+      "turn": 2,
+      "kind": "target",
+      "text": "Ancientshell (row 2, slot 2) <- plain"
+    },
+    {
+      "round": 5,
+      "turn": 2,
+      "kind": "blocked",
+      "text": "Ancientshell blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000007",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 5,
+      "turn": 2,
+      "kind": "target",
+      "text": "Geyserpup (row 2, slot 3) <- plain"
+    },
+    {
+      "round": 5,
+      "turn": 2,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "cover",
+        "guard": "00000000-0000-4000-8700-000000000002",
+        "who": "00000000-0000-4000-8700-000000000010",
+        "prevented": 10
+      }
+    },
+    {
+      "round": 5,
+      "turn": 2,
+      "kind": "hit",
+      "text": "Geyserpup takes 5",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000010",
+        "damage": 5,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 5,
+      "turn": 2,
+      "kind": "target",
+      "text": "Kilnmole (row 2, slot 4) <- plain"
+    },
+    {
+      "round": 5,
+      "turn": 2,
+      "kind": "blocked",
+      "text": "Kilnmole blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000013",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 6,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "round",
+        "round": 6
+      }
+    },
+    {
+      "round": 6,
+      "turn": 0,
+      "kind": "announce",
+      "text": "Tidal Colossus will shake off its debuffs"
+    },
+    {
+      "round": 6,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "heal",
+        "who": "00000000-0000-4000-8700-000000000001",
+        "amount": 20,
+        "by": "00000000-0000-4000-8700-000000000012"
+      }
+    },
+    {
+      "round": 6,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "heal",
+        "who": "00000000-0000-4000-8700-000000000009",
+        "amount": 28,
+        "by": "00000000-0000-4000-8700-000000000012"
+      }
+    },
+    {
+      "round": 6,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "boost",
+        "who": "00000000-0000-4000-8700-000000000008",
+        "by": "00000000-0000-4000-8700-000000000003",
+        "bp": 2500
+      }
+    },
+    {
+      "round": 6,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "boost",
+        "who": "00000000-0000-4000-8700-000000000011",
+        "by": "00000000-0000-4000-8700-000000000003",
+        "bp": 2500
+      }
+    },
+    {
+      "round": 6,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "boost",
+        "who": "00000000-0000-4000-8700-000000000006",
+        "by": "00000000-0000-4000-8700-000000000008",
+        "bp": 1500
+      }
+    },
+    {
+      "round": 6,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "boost",
+        "who": "00000000-0000-4000-8700-000000000007",
+        "by": "00000000-0000-4000-8700-000000000008",
+        "bp": 4100
+      }
+    },
+    {
+      "round": 6,
+      "turn": 0,
+      "kind": "announce",
+      "text": "Spray (spray) will land on Kilnmole (row 2, slot 4), Ancientshell (row 2, slot 2), Wickat (row 3, slot 3), Fogwyrm (row 2, slot 1)",
+      "move": "spray",
+      "slots": [
+        [1, 3],
+        [1, 1],
+        [2, 2],
+        [1, 0]
+      ],
+      "board": {
+        "type": "announce",
+        "move": "spray",
+        "slots": [
+          [1, 3],
+          [1, 1],
+          [2, 2],
+          [1, 0]
+        ]
+      }
+    },
+    {
+      "round": 6,
+      "turn": 0,
+      "kind": "announce",
+      "text": "Rogue Wave (rogue-wave, Wind-up) will land on Voltaro (row 1, slot 1), Tempestray (row 1, slot 2), Ohmouse (row 1, slot 3), Drizzlewt (row 1, slot 4)",
+      "move": "rogue-wave",
+      "slots": [
+        [0, 0],
+        [0, 1],
+        [0, 2],
+        [0, 3]
+      ],
+      "board": {
+        "type": "announce",
+        "move": "rogue-wave",
+        "slots": [
+          [0, 0],
+          [0, 1],
+          [0, 2],
+          [0, 3]
+        ]
+      }
+    },
+    {
+      "round": 6,
+      "turn": 0,
+      "kind": "announce",
+      "text": "Great Wave (great-wave, Wind-up) will land on Voltaro (row 1, slot 1), Tempestray (row 1, slot 2), Ohmouse (row 1, slot 3), Drizzlewt (row 1, slot 4)",
+      "move": "great-wave",
+      "slots": [
+        [0, 0],
+        [0, 1],
+        [0, 2],
+        [0, 3]
+      ],
+      "board": {
+        "type": "announce",
+        "move": "great-wave",
+        "slots": [
+          [0, 0],
+          [0, 1],
+          [0, 2],
+          [0, 3]
+        ]
+      }
+    },
+    {
+      "round": 6,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000001",
+        "to": null,
+        "damage": 166,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 6,
+      "turn": 0,
+      "kind": "mark",
+      "text": "spark x3",
+      "board": {
+        "type": "mark",
+        "element": "spark",
+        "stacks": 3,
+        "sealed": false
+      }
+    },
+    {
+      "round": 6,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000006",
+        "to": null,
+        "damage": 278,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 6,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000009",
+        "to": null,
+        "damage": 84,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 6,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000012",
+        "to": null,
+        "damage": 45,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 6,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "bossTurn",
+        "row": 0
+      }
+    },
+    {
+      "round": 6,
+      "turn": 0,
+      "kind": "move",
+      "text": "Undertow"
+    },
+    {
+      "round": 6,
+      "turn": 0,
+      "kind": "target",
+      "text": "Voltaro (row 1, slot 1) <- undertow"
+    },
+    {
+      "round": 6,
+      "turn": 0,
+      "kind": "hit",
+      "text": "Voltaro takes 81",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000001",
+        "damage": 81,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 6,
+      "turn": 0,
+      "kind": "target",
+      "text": "Tempestray (row 1, slot 2) <- undertow"
+    },
+    {
+      "round": 6,
+      "turn": 0,
+      "kind": "intercept",
+      "text": "Ohmouse intercepts for Tempestray"
+    },
+    {
+      "round": 6,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "intercept",
+        "guard": "00000000-0000-4000-8700-000000000009",
+        "who": "00000000-0000-4000-8700-000000000006"
+      }
+    },
+    {
+      "round": 6,
+      "turn": 0,
+      "kind": "hit",
+      "text": "Ohmouse takes 37",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000006",
+        "damage": 37,
+        "crit": false,
+        "blocked": false,
+        "dodged": false,
+        "by": "00000000-0000-4000-8700-000000000009"
+      }
+    },
+    {
+      "round": 6,
+      "turn": 0,
+      "kind": "target",
+      "text": "Ohmouse (row 1, slot 3) already took a hit of undertow"
+    },
+    {
+      "round": 6,
+      "turn": 0,
+      "kind": "target",
+      "text": "Drizzlewt (row 1, slot 4) <- undertow"
+    },
+    {
+      "round": 6,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "cover",
+        "guard": "00000000-0000-4000-8700-000000000009",
+        "who": "00000000-0000-4000-8700-000000000012",
+        "prevented": 35
+      }
+    },
+    {
+      "round": 6,
+      "turn": 0,
+      "kind": "hit",
+      "text": "Drizzlewt takes 25",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000012",
+        "damage": 25,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 6,
+      "turn": 0,
+      "kind": "move",
+      "text": "Spray"
+    },
+    {
+      "round": 6,
+      "turn": 0,
+      "kind": "target",
+      "text": "Kilnmole (row 2, slot 4) <- spray"
+    },
+    {
+      "round": 6,
+      "turn": 0,
+      "kind": "hit",
+      "text": "Kilnmole takes 11",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000013",
+        "damage": 11,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 6,
+      "turn": 0,
+      "kind": "target",
+      "text": "Ancientshell (row 2, slot 2) <- spray"
+    },
+    {
+      "round": 6,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "cover",
+        "guard": "00000000-0000-4000-8700-000000000002",
+        "who": "00000000-0000-4000-8700-000000000007",
+        "prevented": 18
+      }
+    },
+    {
+      "round": 6,
+      "turn": 0,
+      "kind": "blocked",
+      "text": "Ancientshell blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000007",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 6,
+      "turn": 0,
+      "kind": "target",
+      "text": "Wickat (row 3, slot 3) <- spray"
+    },
+    {
+      "round": 6,
+      "turn": 0,
+      "kind": "dodge",
+      "text": "Wickat dodges",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000011",
+        "damage": 0,
+        "crit": false,
+        "blocked": false,
+        "dodged": true
+      }
+    },
+    {
+      "round": 6,
+      "turn": 0,
+      "kind": "target",
+      "text": "Fogwyrm (row 2, slot 1) <- spray"
+    },
+    {
+      "round": 6,
+      "turn": 0,
+      "kind": "hit",
+      "text": "Fogwyrm takes 18",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000002",
+        "damage": 18,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 6,
+      "turn": 0,
+      "kind": "target",
+      "text": "Fogwyrm (row 2, slot 1) <- plain"
+    },
+    {
+      "round": 6,
+      "turn": 0,
+      "kind": "blocked",
+      "text": "Fogwyrm blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000002",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 6,
+      "turn": 0,
+      "kind": "target",
+      "text": "Ancientshell (row 2, slot 2) <- plain"
+    },
+    {
+      "round": 6,
+      "turn": 0,
+      "kind": "blocked",
+      "text": "Ancientshell blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000007",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 6,
+      "turn": 0,
+      "kind": "target",
+      "text": "Geyserpup (row 2, slot 3) <- plain"
+    },
+    {
+      "round": 6,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "cover",
+        "guard": "00000000-0000-4000-8700-000000000002",
+        "who": "00000000-0000-4000-8700-000000000010",
+        "prevented": 10
+      }
+    },
+    {
+      "round": 6,
+      "turn": 0,
+      "kind": "hit",
+      "text": "Geyserpup takes 5",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000010",
+        "damage": 5,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 6,
+      "turn": 0,
+      "kind": "target",
+      "text": "Kilnmole (row 2, slot 4) <- plain"
+    },
+    {
+      "round": 6,
+      "turn": 0,
+      "kind": "blocked",
+      "text": "Kilnmole blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000013",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 6,
+      "turn": 1,
+      "kind": "crit",
+      "text": "Fogwyrm crits"
+    },
+    {
+      "round": 6,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000002",
+        "to": null,
+        "damage": 181,
+        "crit": true,
+        "blocked": false,
+        "dodged": false,
+        "critBp": 20000
+      }
+    },
+    {
+      "round": 6,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000007",
+        "to": null,
+        "damage": 132,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 6,
+      "turn": 1,
+      "kind": "mark",
+      "text": "grove x3",
+      "board": {
+        "type": "mark",
+        "element": "grove",
+        "stacks": 3,
+        "sealed": true
+      }
+    },
+    {
+      "round": 6,
+      "turn": 1,
+      "kind": "boss-dodge",
+      "text": "Tidal Colossus dodges Geyserpup",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000010",
+        "to": null,
+        "damage": 0,
+        "crit": false,
+        "blocked": false,
+        "dodged": true
+      }
+    },
+    {
+      "round": 6,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000013",
+        "to": null,
+        "damage": 22,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 6,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "bossTurn",
+        "row": 1
+      }
+    },
+    {
+      "round": 6,
+      "turn": 1,
+      "kind": "move",
+      "text": "Deepwater Spear"
+    },
+    {
+      "round": 6,
+      "turn": 1,
+      "kind": "target",
+      "text": "Tempestray (row 1, slot 2) <- deepwater-spear"
+    },
+    {
+      "round": 6,
+      "turn": 1,
+      "kind": "intercept",
+      "text": "Ohmouse intercepts for Tempestray"
+    },
+    {
+      "round": 6,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "intercept",
+        "guard": "00000000-0000-4000-8700-000000000009",
+        "who": "00000000-0000-4000-8700-000000000006"
+      }
+    },
+    {
+      "round": 6,
+      "turn": 1,
+      "kind": "hit",
+      "text": "Ohmouse takes 55",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000006",
+        "damage": 55,
+        "crit": false,
+        "blocked": false,
+        "dodged": false,
+        "by": "00000000-0000-4000-8700-000000000009"
+      }
+    },
+    {
+      "round": 6,
+      "turn": 1,
+      "kind": "target",
+      "text": "Ancientshell (row 2, slot 2) <- deepwater-spear"
+    },
+    {
+      "round": 6,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "cover",
+        "guard": "00000000-0000-4000-8700-000000000002",
+        "who": "00000000-0000-4000-8700-000000000007",
+        "prevented": 46
+      }
+    },
+    {
+      "round": 6,
+      "turn": 1,
+      "kind": "hit",
+      "text": "Ancientshell takes 39",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000007",
+        "damage": 39,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 6,
+      "turn": 1,
+      "kind": "target",
+      "text": "Sunfawn (row 3, slot 2) <- deepwater-spear"
+    },
+    {
+      "round": 6,
+      "turn": 1,
+      "kind": "hit",
+      "text": "Sunfawn takes 87",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000008",
+        "damage": 87,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 6,
+      "turn": 1,
+      "kind": "target",
+      "text": "Ohmouse (row 1, slot 3) already took a hit of deepwater-spear"
+    },
+    {
+      "round": 6,
+      "turn": 1,
+      "kind": "target",
+      "text": "Geyserpup (row 2, slot 3) <- deepwater-spear"
+    },
+    {
+      "round": 6,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "cover",
+        "guard": "00000000-0000-4000-8700-000000000002",
+        "who": "00000000-0000-4000-8700-000000000010",
+        "prevented": 46
+      }
+    },
+    {
+      "round": 6,
+      "turn": 1,
+      "kind": "hit",
+      "text": "Geyserpup takes 60",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000010",
+        "damage": 60,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 6,
+      "turn": 1,
+      "kind": "target",
+      "text": "Wickat (row 3, slot 3) <- deepwater-spear"
+    },
+    {
+      "round": 6,
+      "turn": 1,
+      "kind": "hit",
+      "text": "Wickat takes 109",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000011",
+        "damage": 109,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 6,
+      "turn": 1,
+      "kind": "move",
+      "text": "Rogue Wave"
+    },
+    {
+      "round": 6,
+      "turn": 1,
+      "kind": "target",
+      "text": "Voltaro (row 1, slot 1) <- rogue-wave"
+    },
+    {
+      "round": 6,
+      "turn": 1,
+      "kind": "hit",
+      "text": "Voltaro takes 113",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000001",
+        "damage": 113,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 6,
+      "turn": 1,
+      "kind": "target",
+      "text": "Tempestray (row 1, slot 2) <- rogue-wave"
+    },
+    {
+      "round": 6,
+      "turn": 1,
+      "kind": "intercept",
+      "text": "Ohmouse intercepts for Tempestray"
+    },
+    {
+      "round": 6,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "intercept",
+        "guard": "00000000-0000-4000-8700-000000000009",
+        "who": "00000000-0000-4000-8700-000000000006"
+      }
+    },
+    {
+      "round": 6,
+      "turn": 1,
+      "kind": "hit",
+      "text": "Ohmouse takes 56",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000006",
+        "damage": 56,
+        "crit": false,
+        "blocked": false,
+        "dodged": false,
+        "by": "00000000-0000-4000-8700-000000000009"
+      }
+    },
+    {
+      "round": 6,
+      "turn": 1,
+      "kind": "target",
+      "text": "Ohmouse (row 1, slot 3) already took a hit of rogue-wave"
+    },
+    {
+      "round": 6,
+      "turn": 1,
+      "kind": "target",
+      "text": "Drizzlewt (row 1, slot 4) <- rogue-wave"
+    },
+    {
+      "round": 6,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "cover",
+        "guard": "00000000-0000-4000-8700-000000000009",
+        "who": "00000000-0000-4000-8700-000000000012",
+        "prevented": 48
+      }
+    },
+    {
+      "round": 6,
+      "turn": 1,
+      "kind": "hit",
+      "text": "Drizzlewt takes 44",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000012",
+        "damage": 44,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 6,
+      "turn": 1,
+      "kind": "target",
+      "text": "Fogwyrm (row 2, slot 1) <- plain"
+    },
+    {
+      "round": 6,
+      "turn": 1,
+      "kind": "blocked",
+      "text": "Fogwyrm blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000002",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 6,
+      "turn": 1,
+      "kind": "target",
+      "text": "Ancientshell (row 2, slot 2) <- plain"
+    },
+    {
+      "round": 6,
+      "turn": 1,
+      "kind": "blocked",
+      "text": "Ancientshell blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000007",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 6,
+      "turn": 1,
+      "kind": "target",
+      "text": "Geyserpup (row 2, slot 3) <- plain"
+    },
+    {
+      "round": 6,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "cover",
+        "guard": "00000000-0000-4000-8700-000000000002",
+        "who": "00000000-0000-4000-8700-000000000010",
+        "prevented": 10
+      }
+    },
+    {
+      "round": 6,
+      "turn": 1,
+      "kind": "hit",
+      "text": "Geyserpup takes 5",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000010",
+        "damage": 5,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 6,
+      "turn": 1,
+      "kind": "target",
+      "text": "Kilnmole (row 2, slot 4) <- plain"
+    },
+    {
+      "round": 6,
+      "turn": 1,
+      "kind": "blocked",
+      "text": "Kilnmole blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000013",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 6,
+      "turn": 2,
+      "kind": "boss-dodge",
+      "text": "Tidal Colossus dodges Magmole",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000003",
+        "to": null,
+        "damage": 0,
+        "crit": false,
+        "blocked": false,
+        "dodged": true
+      }
+    },
+    {
+      "round": 6,
+      "turn": 2,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000008",
+        "to": null,
+        "damage": 63,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 6,
+      "turn": 2,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000011",
+        "to": null,
+        "damage": 74,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 6,
+      "turn": 2,
+      "kind": "mark",
+      "text": "ember x3",
+      "board": {
+        "type": "mark",
+        "element": "ember",
+        "stacks": 3,
+        "sealed": false
+      }
+    },
+    {
+      "round": 6,
+      "turn": 2,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000014",
+        "to": null,
+        "damage": 125,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 6,
+      "turn": 2,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "bossTurn",
+        "row": 2
+      }
+    },
+    {
+      "round": 6,
+      "turn": 2,
+      "kind": "move",
+      "text": "Great Wave"
+    },
+    {
+      "round": 6,
+      "turn": 2,
+      "kind": "target",
+      "text": "Voltaro (row 1, slot 1) <- great-wave"
+    },
+    {
+      "round": 6,
+      "turn": 2,
+      "kind": "hit",
+      "text": "Voltaro takes 128",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000001",
+        "damage": 128,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 6,
+      "turn": 2,
+      "kind": "target",
+      "text": "Tempestray (row 1, slot 2) <- great-wave"
+    },
+    {
+      "round": 6,
+      "turn": 2,
+      "kind": "intercept",
+      "text": "Ohmouse intercepts for Tempestray"
+    },
+    {
+      "round": 6,
+      "turn": 2,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "intercept",
+        "guard": "00000000-0000-4000-8700-000000000009",
+        "who": "00000000-0000-4000-8700-000000000006"
+      }
+    },
+    {
+      "round": 6,
+      "turn": 2,
+      "kind": "hit",
+      "text": "Ohmouse takes 65",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000006",
+        "damage": 65,
+        "crit": false,
+        "blocked": false,
+        "dodged": false,
+        "by": "00000000-0000-4000-8700-000000000009"
+      }
+    },
+    {
+      "round": 6,
+      "turn": 2,
+      "kind": "target",
+      "text": "Ohmouse (row 1, slot 3) already took a hit of great-wave"
+    },
+    {
+      "round": 6,
+      "turn": 2,
+      "kind": "target",
+      "text": "Drizzlewt (row 1, slot 4) <- great-wave"
+    },
+    {
+      "round": 6,
+      "turn": 2,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "cover",
+        "guard": "00000000-0000-4000-8700-000000000009",
+        "who": "00000000-0000-4000-8700-000000000012",
+        "prevented": 54
+      }
+    },
+    {
+      "round": 6,
+      "turn": 2,
+      "kind": "hit",
+      "text": "Drizzlewt takes 53",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000012",
+        "damage": 53,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 6,
+      "turn": 2,
+      "kind": "target",
+      "text": "Fogwyrm (row 2, slot 1) <- plain"
+    },
+    {
+      "round": 6,
+      "turn": 2,
+      "kind": "blocked",
+      "text": "Fogwyrm blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000002",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 6,
+      "turn": 2,
+      "kind": "target",
+      "text": "Ancientshell (row 2, slot 2) <- plain"
+    },
+    {
+      "round": 6,
+      "turn": 2,
+      "kind": "blocked",
+      "text": "Ancientshell blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000007",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 6,
+      "turn": 2,
+      "kind": "target",
+      "text": "Geyserpup (row 2, slot 3) <- plain"
+    },
+    {
+      "round": 6,
+      "turn": 2,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "cover",
+        "guard": "00000000-0000-4000-8700-000000000002",
+        "who": "00000000-0000-4000-8700-000000000010",
+        "prevented": 10
+      }
+    },
+    {
+      "round": 6,
+      "turn": 2,
+      "kind": "hit",
+      "text": "Geyserpup takes 5",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000010",
+        "damage": 5,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 6,
+      "turn": 2,
+      "kind": "target",
+      "text": "Kilnmole (row 2, slot 4) <- plain"
+    },
+    {
+      "round": 6,
+      "turn": 2,
+      "kind": "blocked",
+      "text": "Kilnmole blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000013",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 7,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "round",
+        "round": 7
+      }
+    },
+    {
+      "round": 7,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "heal",
+        "who": "00000000-0000-4000-8700-000000000001",
+        "amount": 20,
+        "by": "00000000-0000-4000-8700-000000000012"
+      }
+    },
+    {
+      "round": 7,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "heal",
+        "who": "00000000-0000-4000-8700-000000000009",
+        "amount": 28,
+        "by": "00000000-0000-4000-8700-000000000012"
+      }
+    },
+    {
+      "round": 7,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "heal",
+        "who": "00000000-0000-4000-8700-000000000012",
+        "amount": 24,
+        "by": "00000000-0000-4000-8700-000000000012"
+      }
+    },
+    {
+      "round": 7,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "boost",
+        "who": "00000000-0000-4000-8700-000000000008",
+        "by": "00000000-0000-4000-8700-000000000003",
+        "bp": 2500
+      }
+    },
+    {
+      "round": 7,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "boost",
+        "who": "00000000-0000-4000-8700-000000000011",
+        "by": "00000000-0000-4000-8700-000000000003",
+        "bp": 2500
+      }
+    },
+    {
+      "round": 7,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "boost",
+        "who": "00000000-0000-4000-8700-000000000006",
+        "by": "00000000-0000-4000-8700-000000000008",
+        "bp": 1500
+      }
+    },
+    {
+      "round": 7,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "boost",
+        "who": "00000000-0000-4000-8700-000000000007",
+        "by": "00000000-0000-4000-8700-000000000008",
+        "bp": 4100
+      }
+    },
+    {
+      "round": 7,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "heal",
+        "who": "00000000-0000-4000-8700-000000000007",
+        "amount": 38,
+        "by": "00000000-0000-4000-8700-000000000008"
+      }
+    },
+    {
+      "round": 7,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000001",
+        "to": null,
+        "damage": 166,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 7,
+      "turn": 0,
+      "kind": "mark",
+      "text": "spark x3",
+      "board": {
+        "type": "mark",
+        "element": "spark",
+        "stacks": 3,
+        "sealed": false
+      }
+    },
+    {
+      "round": 7,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000006",
+        "to": null,
+        "damage": 284,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 7,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000009",
+        "to": null,
+        "damage": 84,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 7,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000012",
+        "to": null,
+        "damage": 45,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 7,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "bossTurn",
+        "row": 0
+      }
+    },
+    {
+      "round": 7,
+      "turn": 0,
+      "kind": "move",
+      "text": "Backflow"
+    },
+    {
+      "round": 7,
+      "turn": 0,
+      "kind": "target",
+      "text": "Fogwyrm (row 2, slot 1) <- backflow"
+    },
+    {
+      "round": 7,
+      "turn": 0,
+      "kind": "hit",
+      "text": "Fogwyrm takes 46",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000002",
+        "damage": 46,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 7,
+      "turn": 0,
+      "kind": "target",
+      "text": "Magmole (row 3, slot 1) <- backflow"
+    },
+    {
+      "round": 7,
+      "turn": 0,
+      "kind": "hit",
+      "text": "Magmole takes 66",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000003",
+        "damage": 66,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 7,
+      "turn": 0,
+      "kind": "target",
+      "text": "Ancientshell (row 2, slot 2) <- backflow"
+    },
+    {
+      "round": 7,
+      "turn": 0,
+      "kind": "dodge",
+      "text": "Ancientshell dodges",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000007",
+        "damage": 0,
+        "crit": false,
+        "blocked": false,
+        "dodged": true
+      }
+    },
+    {
+      "round": 7,
+      "turn": 0,
+      "kind": "target",
+      "text": "Sunfawn (row 3, slot 2) <- backflow"
+    },
+    {
+      "round": 7,
+      "turn": 0,
+      "kind": "hit",
+      "text": "Sunfawn takes 48",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000008",
+        "damage": 48,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 7,
+      "turn": 0,
+      "kind": "target",
+      "text": "Geyserpup (row 2, slot 3) <- backflow"
+    },
+    {
+      "round": 7,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "cover",
+        "guard": "00000000-0000-4000-8700-000000000002",
+        "who": "00000000-0000-4000-8700-000000000010",
+        "prevented": 31
+      }
+    },
+    {
+      "round": 7,
+      "turn": 0,
+      "kind": "hit",
+      "text": "Geyserpup takes 36",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000010",
+        "damage": 36,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 7,
+      "turn": 0,
+      "kind": "target",
+      "text": "Wickat (row 3, slot 3) <- backflow"
+    },
+    {
+      "round": 7,
+      "turn": 0,
+      "kind": "hit",
+      "text": "Wickat takes 70",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000011",
+        "damage": 70,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 7,
+      "turn": 0,
+      "kind": "target",
+      "text": "Kilnmole (row 2, slot 4) <- backflow"
+    },
+    {
+      "round": 7,
+      "turn": 0,
+      "kind": "hit",
+      "text": "Kilnmole takes 39",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000013",
+        "damage": 39,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 7,
+      "turn": 0,
+      "kind": "target",
+      "text": "Halcyray (row 3, slot 4) <- backflow"
+    },
+    {
+      "round": 7,
+      "turn": 0,
+      "kind": "hit",
+      "text": "Halcyray takes 70",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000014",
+        "damage": 70,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 7,
+      "turn": 0,
+      "kind": "target",
+      "text": "Fogwyrm (row 2, slot 1) <- plain"
+    },
+    {
+      "round": 7,
+      "turn": 0,
+      "kind": "blocked",
+      "text": "Fogwyrm blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000002",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 7,
+      "turn": 0,
+      "kind": "target",
+      "text": "Ancientshell (row 2, slot 2) <- plain"
+    },
+    {
+      "round": 7,
+      "turn": 0,
+      "kind": "dodge",
+      "text": "Ancientshell dodges",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000007",
+        "damage": 0,
+        "crit": false,
+        "blocked": false,
+        "dodged": true
+      }
+    },
+    {
+      "round": 7,
+      "turn": 0,
+      "kind": "target",
+      "text": "Geyserpup (row 2, slot 3) <- plain"
+    },
+    {
+      "round": 7,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "cover",
+        "guard": "00000000-0000-4000-8700-000000000002",
+        "who": "00000000-0000-4000-8700-000000000010",
+        "prevented": 10
+      }
+    },
+    {
+      "round": 7,
+      "turn": 0,
+      "kind": "hit",
+      "text": "Geyserpup takes 5",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000010",
+        "damage": 5,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 7,
+      "turn": 0,
+      "kind": "target",
+      "text": "Kilnmole (row 2, slot 4) <- plain"
+    },
+    {
+      "round": 7,
+      "turn": 0,
+      "kind": "blocked",
+      "text": "Kilnmole blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000013",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 7,
+      "turn": 1,
+      "kind": "boss-dodge",
+      "text": "Tidal Colossus dodges Fogwyrm",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000002",
+        "to": null,
+        "damage": 0,
+        "crit": false,
+        "blocked": false,
+        "dodged": true
+      }
+    },
+    {
+      "round": 7,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000007",
+        "to": null,
+        "damage": 132,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 7,
+      "turn": 1,
+      "kind": "mark",
+      "text": "grove x3",
+      "board": {
+        "type": "mark",
+        "element": "grove",
+        "stacks": 3,
+        "sealed": true
+      }
+    },
+    {
+      "round": 7,
+      "turn": 1,
+      "kind": "boss-dodge",
+      "text": "Tidal Colossus dodges Geyserpup",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000010",
+        "to": null,
+        "damage": 0,
+        "crit": false,
+        "blocked": false,
+        "dodged": true
+      }
+    },
+    {
+      "round": 7,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000013",
+        "to": null,
+        "damage": 22,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 7,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "bossTurn",
+        "row": 1
+      }
+    },
+    {
+      "round": 7,
+      "turn": 1,
+      "kind": "target",
+      "text": "Fogwyrm (row 2, slot 1) <- plain"
+    },
+    {
+      "round": 7,
+      "turn": 1,
+      "kind": "blocked",
+      "text": "Fogwyrm blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000002",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 7,
+      "turn": 1,
+      "kind": "target",
+      "text": "Ancientshell (row 2, slot 2) <- plain"
+    },
+    {
+      "round": 7,
+      "turn": 1,
+      "kind": "blocked",
+      "text": "Ancientshell blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000007",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 7,
+      "turn": 1,
+      "kind": "target",
+      "text": "Geyserpup (row 2, slot 3) <- plain"
+    },
+    {
+      "round": 7,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "cover",
+        "guard": "00000000-0000-4000-8700-000000000002",
+        "who": "00000000-0000-4000-8700-000000000010",
+        "prevented": 10
+      }
+    },
+    {
+      "round": 7,
+      "turn": 1,
+      "kind": "hit",
+      "text": "Geyserpup takes 5",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000010",
+        "damage": 5,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 7,
+      "turn": 1,
+      "kind": "target",
+      "text": "Kilnmole (row 2, slot 4) <- plain"
+    },
+    {
+      "round": 7,
+      "turn": 1,
+      "kind": "blocked",
+      "text": "Kilnmole blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000013",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 7,
+      "turn": 2,
+      "kind": "boss-dodge",
+      "text": "Tidal Colossus dodges Magmole",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000003",
+        "to": null,
+        "damage": 0,
+        "crit": false,
+        "blocked": false,
+        "dodged": true
+      }
+    },
+    {
+      "round": 7,
+      "turn": 2,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000008",
+        "to": null,
+        "damage": 63,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 7,
+      "turn": 2,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000011",
+        "to": null,
+        "damage": 74,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 7,
+      "turn": 2,
+      "kind": "mark",
+      "text": "ember x3",
+      "board": {
+        "type": "mark",
+        "element": "ember",
+        "stacks": 3,
+        "sealed": false
+      }
+    },
+    {
+      "round": 7,
+      "turn": 2,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000014",
+        "to": null,
+        "damage": 125,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 7,
+      "turn": 2,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "bossTurn",
+        "row": 2
+      }
+    },
+    {
+      "round": 7,
+      "turn": 2,
+      "kind": "target",
+      "text": "Fogwyrm (row 2, slot 1) <- plain"
+    },
+    {
+      "round": 7,
+      "turn": 2,
+      "kind": "blocked",
+      "text": "Fogwyrm blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000002",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 7,
+      "turn": 2,
+      "kind": "target",
+      "text": "Ancientshell (row 2, slot 2) <- plain"
+    },
+    {
+      "round": 7,
+      "turn": 2,
+      "kind": "blocked",
+      "text": "Ancientshell blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000007",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 7,
+      "turn": 2,
+      "kind": "target",
+      "text": "Geyserpup (row 2, slot 3) <- plain"
+    },
+    {
+      "round": 7,
+      "turn": 2,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "cover",
+        "guard": "00000000-0000-4000-8700-000000000002",
+        "who": "00000000-0000-4000-8700-000000000010",
+        "prevented": 10
+      }
+    },
+    {
+      "round": 7,
+      "turn": 2,
+      "kind": "hit",
+      "text": "Geyserpup takes 5",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000010",
+        "damage": 5,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 7,
+      "turn": 2,
+      "kind": "target",
+      "text": "Kilnmole (row 2, slot 4) <- plain"
+    },
+    {
+      "round": 7,
+      "turn": 2,
+      "kind": "blocked",
+      "text": "Kilnmole blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000013",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 8,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "round",
+        "round": 8
+      }
+    },
+    {
+      "round": 8,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "heal",
+        "who": "00000000-0000-4000-8700-000000000001",
+        "amount": 20,
+        "by": "00000000-0000-4000-8700-000000000012"
+      }
+    },
+    {
+      "round": 8,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "heal",
+        "who": "00000000-0000-4000-8700-000000000009",
+        "amount": 28,
+        "by": "00000000-0000-4000-8700-000000000012"
+      }
+    },
+    {
+      "round": 8,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "heal",
+        "who": "00000000-0000-4000-8700-000000000012",
+        "amount": 24,
+        "by": "00000000-0000-4000-8700-000000000012"
+      }
+    },
+    {
+      "round": 8,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "boost",
+        "who": "00000000-0000-4000-8700-000000000008",
+        "by": "00000000-0000-4000-8700-000000000003",
+        "bp": 2500
+      }
+    },
+    {
+      "round": 8,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "boost",
+        "who": "00000000-0000-4000-8700-000000000011",
+        "by": "00000000-0000-4000-8700-000000000003",
+        "bp": 2500
+      }
+    },
+    {
+      "round": 8,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "boost",
+        "who": "00000000-0000-4000-8700-000000000006",
+        "by": "00000000-0000-4000-8700-000000000008",
+        "bp": 1500
+      }
+    },
+    {
+      "round": 8,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "boost",
+        "who": "00000000-0000-4000-8700-000000000007",
+        "by": "00000000-0000-4000-8700-000000000008",
+        "bp": 4100
+      }
+    },
+    {
+      "round": 8,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "heal",
+        "who": "00000000-0000-4000-8700-000000000007",
+        "amount": 1,
+        "by": "00000000-0000-4000-8700-000000000008"
+      }
+    },
+    {
+      "round": 8,
+      "turn": 0,
+      "kind": "escalation",
+      "text": "Rising Tide: step 2 of 3 (4285 hpLost); next at 6000",
+      "board": {
+        "type": "escalation",
+        "count": 4285,
+        "step": 2,
+        "fall": 2,
+        "phase": false,
+        "phaseNext": false
+      }
+    },
+    {
+      "round": 8,
+      "turn": 0,
+      "kind": "announce",
+      "text": "Spray (spray) will land on Kilnmole (row 2, slot 4), Fogwyrm (row 2, slot 1), Halcyray (row 3, slot 4), Ancientshell (row 2, slot 2)",
+      "move": "spray",
+      "slots": [
+        [1, 3],
+        [1, 0],
+        [2, 3],
+        [1, 1]
+      ],
+      "board": {
+        "type": "announce",
+        "move": "spray",
+        "slots": [
+          [1, 3],
+          [1, 0],
+          [2, 3],
+          [1, 1]
+        ]
+      }
+    },
+    {
+      "round": 8,
+      "turn": 0,
+      "kind": "announce",
+      "text": "Riptide (riptide, Wind-up) will land on Ohmouse (row 1, slot 3), Geyserpup (row 2, slot 3), Wickat (row 3, slot 3), Drizzlewt (row 1, slot 4), Kilnmole (row 2, slot 4), Halcyray (row 3, slot 4)",
+      "move": "riptide",
+      "slots": [
+        [0, 2],
+        [1, 2],
+        [2, 2],
+        [0, 3],
+        [1, 3],
+        [2, 3]
+      ],
+      "board": {
+        "type": "announce",
+        "move": "riptide",
+        "slots": [
+          [0, 2],
+          [1, 2],
+          [2, 2],
+          [0, 3],
+          [1, 3],
+          [2, 3]
+        ]
+      }
+    },
+    {
+      "round": 8,
+      "turn": 0,
+      "kind": "boss-dodge",
+      "text": "Tidal Colossus dodges Voltaro",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000001",
+        "to": null,
+        "damage": 0,
+        "crit": false,
+        "blocked": false,
+        "dodged": true
+      }
+    },
+    {
+      "round": 8,
+      "turn": 0,
+      "kind": "mark",
+      "text": "spark x3",
+      "board": {
+        "type": "mark",
+        "element": "spark",
+        "stacks": 3,
+        "sealed": false
+      }
+    },
+    {
+      "round": 8,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000006",
+        "to": null,
+        "damage": 284,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 8,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000009",
+        "to": null,
+        "damage": 84,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 8,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000012",
+        "to": null,
+        "damage": 45,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 8,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "bossTurn",
+        "row": 0
+      }
+    },
+    {
+      "round": 8,
+      "turn": 0,
+      "kind": "move",
+      "text": "Spray"
+    },
+    {
+      "round": 8,
+      "turn": 0,
+      "kind": "target",
+      "text": "Kilnmole (row 2, slot 4) <- spray"
+    },
+    {
+      "round": 8,
+      "turn": 0,
+      "kind": "hit",
+      "text": "Kilnmole takes 15",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000013",
+        "damage": 15,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 8,
+      "turn": 0,
+      "kind": "target",
+      "text": "Fogwyrm (row 2, slot 1) <- spray"
+    },
+    {
+      "round": 8,
+      "turn": 0,
+      "kind": "hit",
+      "text": "Fogwyrm takes 22",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000002",
+        "damage": 22,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 8,
+      "turn": 0,
+      "kind": "target",
+      "text": "Halcyray (row 3, slot 4) <- spray"
+    },
+    {
+      "round": 8,
+      "turn": 0,
+      "kind": "hit",
+      "text": "Halcyray takes 46",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000014",
+        "damage": 46,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 8,
+      "turn": 0,
+      "kind": "target",
+      "text": "Ancientshell (row 2, slot 2) <- spray"
+    },
+    {
+      "round": 8,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "cover",
+        "guard": "00000000-0000-4000-8700-000000000002",
+        "who": "00000000-0000-4000-8700-000000000007",
+        "prevented": 21
+      }
+    },
+    {
+      "round": 8,
+      "turn": 0,
+      "kind": "hit",
+      "text": "Ancientshell takes 1",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000007",
+        "damage": 1,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 8,
+      "turn": 0,
+      "kind": "target",
+      "text": "Fogwyrm (row 2, slot 1) <- plain"
+    },
+    {
+      "round": 8,
+      "turn": 0,
+      "kind": "blocked",
+      "text": "Fogwyrm blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000002",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 8,
+      "turn": 0,
+      "kind": "target",
+      "text": "Ancientshell (row 2, slot 2) <- plain"
+    },
+    {
+      "round": 8,
+      "turn": 0,
+      "kind": "blocked",
+      "text": "Ancientshell blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000007",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 8,
+      "turn": 0,
+      "kind": "target",
+      "text": "Geyserpup (row 2, slot 3) <- plain"
+    },
+    {
+      "round": 8,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "cover",
+        "guard": "00000000-0000-4000-8700-000000000002",
+        "who": "00000000-0000-4000-8700-000000000010",
+        "prevented": 11
+      }
+    },
+    {
+      "round": 8,
+      "turn": 0,
+      "kind": "hit",
+      "text": "Geyserpup takes 6",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000010",
+        "damage": 6,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 8,
+      "turn": 0,
+      "kind": "target",
+      "text": "Kilnmole (row 2, slot 4) <- plain"
+    },
+    {
+      "round": 8,
+      "turn": 0,
+      "kind": "blocked",
+      "text": "Kilnmole blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000013",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 8,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000002",
+        "to": null,
+        "damage": 70,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 8,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000007",
+        "to": null,
+        "damage": 132,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 8,
+      "turn": 1,
+      "kind": "mark",
+      "text": "grove x3",
+      "board": {
+        "type": "mark",
+        "element": "grove",
+        "stacks": 3,
+        "sealed": true
+      }
+    },
+    {
+      "round": 8,
+      "turn": 1,
+      "kind": "reaction",
+      "text": "Geyserpup cashes ember x1 for +139",
+      "board": {
+        "type": "reaction",
+        "by": "00000000-0000-4000-8700-000000000010",
+        "mark": "ember",
+        "spent": 1,
+        "bonus": 139,
+        "left": 2
+      }
+    },
+    {
+      "round": 8,
+      "turn": 1,
+      "kind": "mark",
+      "text": "tide x1",
+      "board": {
+        "type": "mark",
+        "element": "tide",
+        "stacks": 1,
+        "sealed": false
+      }
+    },
+    {
+      "round": 8,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000010",
+        "to": null,
+        "damage": 265,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 8,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000013",
+        "to": null,
+        "damage": 22,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 8,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "bossTurn",
+        "row": 1
+      }
+    },
+    {
+      "round": 8,
+      "turn": 1,
+      "kind": "move",
+      "text": "Riptide"
+    },
+    {
+      "round": 8,
+      "turn": 1,
+      "kind": "target",
+      "text": "Ohmouse (row 1, slot 3) <- riptide"
+    },
+    {
+      "round": 8,
+      "turn": 1,
+      "kind": "hit",
+      "text": "Ohmouse takes 98",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000009",
+        "damage": 98,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 8,
+      "turn": 1,
+      "kind": "target",
+      "text": "Geyserpup (row 2, slot 3) <- riptide"
+    },
+    {
+      "round": 8,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "cover",
+        "guard": "00000000-0000-4000-8700-000000000002",
+        "who": "00000000-0000-4000-8700-000000000010",
+        "prevented": 45
+      }
+    },
+    {
+      "round": 8,
+      "turn": 1,
+      "kind": "hit",
+      "text": "Geyserpup takes 58 and is knocked out",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000010",
+        "damage": 58,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 8,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "knockout",
+        "who": "00000000-0000-4000-8700-000000000010"
+      }
+    },
+    {
+      "round": 8,
+      "turn": 1,
+      "kind": "target",
+      "text": "Wickat (row 3, slot 3) <- riptide"
+    },
+    {
+      "round": 8,
+      "turn": 1,
+      "kind": "hit",
+      "text": "Wickat takes 106 and is knocked out",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000011",
+        "damage": 106,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 8,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "knockout",
+        "who": "00000000-0000-4000-8700-000000000011"
+      }
+    },
+    {
+      "round": 8,
+      "turn": 1,
+      "kind": "target",
+      "text": "Drizzlewt (row 1, slot 4) <- riptide"
+    },
+    {
+      "round": 8,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "cover",
+        "guard": "00000000-0000-4000-8700-000000000009",
+        "who": "00000000-0000-4000-8700-000000000012",
+        "prevented": 45
+      }
+    },
+    {
+      "round": 8,
+      "turn": 1,
+      "kind": "hit",
+      "text": "Drizzlewt takes 41",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000012",
+        "damage": 41,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 8,
+      "turn": 1,
+      "kind": "target",
+      "text": "Kilnmole (row 2, slot 4) <- riptide"
+    },
+    {
+      "round": 8,
+      "turn": 1,
+      "kind": "hit",
+      "text": "Kilnmole takes 75",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000013",
+        "damage": 75,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 8,
+      "turn": 1,
+      "kind": "target",
+      "text": "Halcyray (row 3, slot 4) <- riptide"
+    },
+    {
+      "round": 8,
+      "turn": 1,
+      "kind": "hit",
+      "text": "Halcyray takes 106",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000014",
+        "damage": 106,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 8,
+      "turn": 1,
+      "kind": "target",
+      "text": "Fogwyrm (row 2, slot 1) <- plain"
+    },
+    {
+      "round": 8,
+      "turn": 1,
+      "kind": "blocked",
+      "text": "Fogwyrm blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000002",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 8,
+      "turn": 1,
+      "kind": "target",
+      "text": "Ancientshell (row 2, slot 2) <- plain"
+    },
+    {
+      "round": 8,
+      "turn": 1,
+      "kind": "blocked",
+      "text": "Ancientshell blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000007",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 8,
+      "turn": 1,
+      "kind": "target",
+      "text": "Kilnmole (row 2, slot 4) <- plain"
+    },
+    {
+      "round": 8,
+      "turn": 1,
+      "kind": "blocked",
+      "text": "Kilnmole blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000013",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 8,
+      "turn": 2,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000003",
+        "to": null,
+        "damage": 22,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 8,
+      "turn": 2,
+      "kind": "boss-dodge",
+      "text": "Tidal Colossus dodges Sunfawn",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000008",
+        "to": null,
+        "damage": 0,
+        "crit": false,
+        "blocked": false,
+        "dodged": true
+      }
+    },
+    {
+      "round": 8,
+      "turn": 2,
+      "kind": "crit",
+      "text": "Halcyray crits"
+    },
+    {
+      "round": 8,
+      "turn": 2,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000014",
+        "to": null,
+        "damage": 236,
+        "crit": true,
+        "blocked": false,
+        "dodged": false,
+        "critBp": 20000
+      }
+    },
+    {
+      "round": 8,
+      "turn": 2,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "bossTurn",
+        "row": 2
+      }
+    },
+    {
+      "round": 8,
+      "turn": 2,
+      "kind": "target",
+      "text": "Fogwyrm (row 2, slot 1) <- plain"
+    },
+    {
+      "round": 8,
+      "turn": 2,
+      "kind": "blocked",
+      "text": "Fogwyrm blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000002",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 8,
+      "turn": 2,
+      "kind": "target",
+      "text": "Ancientshell (row 2, slot 2) <- plain"
+    },
+    {
+      "round": 8,
+      "turn": 2,
+      "kind": "blocked",
+      "text": "Ancientshell blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000007",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 8,
+      "turn": 2,
+      "kind": "target",
+      "text": "Kilnmole (row 2, slot 4) <- plain"
+    },
+    {
+      "round": 8,
+      "turn": 2,
+      "kind": "blocked",
+      "text": "Kilnmole blocks the hit",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000013",
+        "damage": 0,
+        "crit": false,
+        "blocked": true,
+        "dodged": false
+      }
+    },
+    {
+      "round": 8,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "end",
+        "round": 8,
+        "won": false,
+        "wiped": false,
+        "bossHp": 9869
+      }
+    }
+  ],
+  "names": {
+    "players": {
+      "m1": "Player 1",
+      "m2": "Player 2",
+      "m3": "Player 3",
+      "m4": "Player 4"
+    },
+    "creatures": {
+      "00000000-0000-4000-8700-000000000001": "Voltaro",
+      "00000000-0000-4000-8700-000000000002": "Fogwyrm",
+      "00000000-0000-4000-8700-000000000003": "Magmole",
+      "00000000-0000-4000-8700-000000000006": "Tempestray",
+      "00000000-0000-4000-8700-000000000007": "Ancientshell",
+      "00000000-0000-4000-8700-000000000008": "Sunfawn",
+      "00000000-0000-4000-8700-000000000009": "Ohmouse",
+      "00000000-0000-4000-8700-000000000010": "Geyserpup",
+      "00000000-0000-4000-8700-000000000011": "Wickat",
+      "00000000-0000-4000-8700-000000000012": "Drizzlewt",
+      "00000000-0000-4000-8700-000000000013": "Kilnmole",
+      "00000000-0000-4000-8700-000000000014": "Halcyray"
+    }
+  },
+  "carry": {
+    "stage": 1,
+    "bossHp": 9869,
+    "shadowHp": 9869,
+    "hp": {
+      "00000000-0000-4000-8700-000000000001": 92,
+      "00000000-0000-4000-8700-000000000002": 453,
+      "00000000-0000-4000-8700-000000000003": 302,
+      "00000000-0000-4000-8700-000000000006": 420,
+      "00000000-0000-4000-8700-000000000007": 596,
+      "00000000-0000-4000-8700-000000000008": 42,
+      "00000000-0000-4000-8700-000000000009": 229,
+      "00000000-0000-4000-8700-000000000012": 341,
+      "00000000-0000-4000-8700-000000000013": 517,
+      "00000000-0000-4000-8700-000000000014": 201
+    },
+    "out": ["00000000-0000-4000-8700-000000000010", "00000000-0000-4000-8700-000000000011"],
+    "windDone": [],
+    "holdDone": [],
+    "escalation": {
+      "step": 2,
+      "fallStep": 2,
+      "phase": false,
+      "phaseNext": false,
+      "count": 4886
+    },
+    "used": {
+      "ember": 3,
+      "tide": 2
+    },
+    "dealt": {
+      "spark": 5303,
+      "tide": 1813,
+      "ember": 950,
+      "grove": 1365
+    }
+  }
+}

@@ -31,6 +31,7 @@ import {
   weatherSky,
   dayCreatureXpParts,
   type BossDef,
+  type RaidStage,
   type Rng,
 } from '@creatures/game';
 import {
@@ -57,7 +58,13 @@ import type { Analytics } from './analytics';
 import { awardExperience } from './creature-exp';
 import { awayItems, recordAway } from './while-away';
 import { bumpStat } from './expedition-store';
-import { grantFestivalGear, grantRaidFinale, grantRaidPhase, type GrantDeps } from './gear-grants';
+import {
+  grantFestivalGear,
+  grantRaidFinale,
+  grantRaidKillBonus,
+  grantRaidPhase,
+  type GrantDeps,
+} from './gear-grants';
 import { credit, type LedgerStorage } from './ledger';
 import { loadAutofire, targetOf } from './raid-autofire';
 import { grantFestivalCreature } from './raid-festival';
@@ -117,7 +124,15 @@ export interface StoredSummary {
   /** The engine's player ids in the stored input, and who they were. */
   members: { alias: string; userId: string }[];
   /** A combat v2 stage only (`raid-v2-stage.ts`): the stage, the track's slot, whether the boss fell, the knockouts and the HP removed so far (bp). */
-  v2?: { stage: number; slot: number; kill: boolean; knockouts: number; hpRemovedBp: number };
+  v2?: {
+    stage: number;
+    slot: number;
+    kill: boolean;
+    knockouts: number;
+    hpRemovedBp: number;
+    /** What the stage paid: the HP thresholds it crossed first (ids) and whether the kill bonus was paid. Absent in older rows. */
+    paid?: { thresholds: string[]; killBonus: boolean };
+  };
 }
 
 type PartyRow = {
@@ -597,6 +612,12 @@ export interface PayFacts {
   /** The creatures that fought, with the alias of their owner (null for a guest). */
   fighters: readonly { id: string; ownerAlias: string | null }[];
   bossId: string;
+  /**
+   * A combat v2 stage only (Misa, 2026-11-04): the HP thresholds this stage crossed for the first time, paid now and never again, and
+   * whether the boss fell in it (the kill bonus). Its presence also means no weather: a v2 fight's experience reads none. Without it
+   * (v1) a cleared stage pays its own phase, as before.
+   */
+  v2?: { crossed: readonly ('phase1' | 'phase2')[]; kill: boolean };
 }
 
 /**
@@ -625,35 +646,49 @@ export function payStage(
   const payout = payoutWeek(sql, week.weekId);
   const userOf = new Map(aliases.map((alias, i) => [alias, memberIds[i] as string]));
   const essence: Record<string, number> = {};
-  if (facts.cleared) {
+  // What the stage pays Essence for: v1, its own phase when cleared; v2, each threshold first crossed here, and the finale when the boss falls.
+  const paidStages: RaidStage[] =
+    facts.v2 === undefined
+      ? facts.cleared
+        ? [phase]
+        : []
+      : [
+          ...facts.v2.crossed,
+          ...(phase === 'finale' && facts.cleared ? (['finale'] as const) : []),
+        ];
+  if (paidStages.length > 0) {
     const contribution: Record<string, number> = {};
     for (const alias of aliases) contribution[alias] = facts.contribution(alias);
-    const paid = essenceForStage(phase, aliases, contributionWeights(contribution), payout);
-    for (const alias of aliases) {
-      const amount = paid[alias] ?? 0;
-      const userId = userOf.get(alias) as string;
-      if (amount <= 0) continue;
-      credit(
-        storage,
-        {
-          userId,
-          currency: 'essence',
-          amount,
-          source: 'raid',
-          idempotencyKey: `raid:${week.weekId}:${party}:${phase}`,
-          meta: { week: week.weekId, party, phase },
-        },
-        now,
-      );
-      recordAway(sql, userId, 'raid', { essence: amount }, now);
-      essence[userId] = amount;
+    const weights = contributionWeights(contribution);
+    for (const stage of paidStages) {
+      const paid = essenceForStage(stage, aliases, weights, payout);
+      for (const alias of aliases) {
+        const amount = paid[alias] ?? 0;
+        const userId = userOf.get(alias) as string;
+        if (amount <= 0) continue;
+        credit(
+          storage,
+          {
+            userId,
+            currency: 'essence',
+            amount,
+            source: 'raid',
+            idempotencyKey: `raid:${week.weekId}:${party}:${stage}`,
+            meta: { week: week.weekId, party, phase: stage },
+          },
+          now,
+        );
+        recordAway(sql, userId, 'raid', { essence: amount }, now);
+        essence[userId] = (essence[userId] ?? 0) + amount;
+      }
     }
   }
 
   // --- Creature experience: every creature that fought (guests excluded), by the stage; a cleared one pays
   // half as much again. No treats: the raid pays everyone the same. This runs once per stage, with the
   // result row. ---
-  const day = stageWeather(sql, week.weekId, phase);
+  // A v2 stage reads no weather (Misa, 2026-11-04): its experience has no Boon or Omen in it.
+  const day = facts.v2 === undefined ? stageWeather(sql, week.weekId, phase) : null;
   const stageExperience = raidExperience(phase, facts.cleared, dayCreatureXpParts(false, day));
   for (const slot of facts.fighters) {
     const userId = slot.ownerAlias === null ? undefined : userOf.get(slot.ownerAlias);
@@ -670,8 +705,9 @@ export function payStage(
     if (view !== null) recordAway(sql, userId, 'raid', { xp: stageExperience }, now);
   }
 
-  // --- Gear: scrap for a cleared phase, one gear roll for a won finale (members only) ---
-  if (facts.cleared) {
+  // --- Gear: scrap for a cleared phase, one gear roll for a won finale (members only). A v2 stage pays the scrap of each threshold
+  // first crossed here, the finale's roll when the finale is won, and a kill's bonus: lots of epic and rare gear. ---
+  if (facts.cleared || (facts.v2 !== undefined && (facts.v2.crossed.length > 0 || facts.v2.kill))) {
     const gearDeps: GrantDeps = {
       storage,
       now: deps.now,
@@ -679,7 +715,18 @@ export function payStage(
       analytics: deps.analytics,
     };
     for (const userId of memberIds) {
-      if (phase === 'finale') {
+      if (facts.v2 !== undefined) {
+        for (const crossed of facts.v2.crossed)
+          grantRaidPhase(gearDeps, userId, week.weekId, crossed);
+        if (phase === 'finale' && facts.cleared) {
+          const view = grantRaidFinale(gearDeps, userId, week.weekId, payout.rank, facts.bossId);
+          recordAway(sql, userId, 'raid', { items: awayItems(view) }, now);
+        }
+        if (facts.v2.kill) {
+          const view = grantRaidKillBonus(gearDeps, userId, week.weekId, payout.rank, facts.bossId);
+          recordAway(sql, userId, 'raid', { items: awayItems(view) }, now);
+        }
+      } else if (phase === 'finale') {
         const view = grantRaidFinale(gearDeps, userId, week.weekId, payout.rank, facts.bossId);
         recordAway(sql, userId, 'raid', { items: awayItems(view) }, now);
       } else grantRaidPhase(gearDeps, userId, week.weekId, phase);

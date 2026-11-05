@@ -37,7 +37,7 @@ export function parseArgs(argv) {
     if (arg === '--check') options.check = true;
     else if (arg === '--set') {
       const name = argv[++i];
-      if (name === undefined || !/^[a-z][a-z-]*$/.test(name)) {
+      if (name === undefined || !/^[a-z][a-z0-9-]*$/.test(name)) {
         throw new Error('--set needs a set name such as gear');
       }
       options.set = name;

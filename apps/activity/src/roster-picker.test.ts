@@ -8,6 +8,8 @@ import {
   SHOW_PICKER_EFFECTS,
   allPlaced,
   baseOption,
+  boardFullReason,
+  seatsWord,
   boardTotalLine,
   effectPreview,
   pickerOptions,
@@ -150,6 +152,26 @@ describe('the options of the picker', () => {
       ['d', BOARD_FULL_REASON],
     ]);
     expect(BOARD_FULL_REASON).toBe('3 / 3 placed, remove one first');
+  });
+
+  it("takes the seats of a combat v2 boss's piece as the most a player brings", () => {
+    // Storm Sovereign: two seats a player.
+    const row = rowOf({ 0: mine('a', 'splashet', 4), 1: mine('b', 'cindle', 9) });
+    const options = pickerOptions({ ...base, creatures: owned, row, max: 2 });
+    expect(options.map((o) => [o.id, o.disabled])).toEqual([
+      ['b', null],
+      ['a', null],
+      ['d', boardFullReason(2)],
+      ['c', boardFullReason(2)],
+    ]);
+    expect(boardFullReason(2)).toBe('2 / 2 placed, remove one first');
+    // The recommended tag follows the seats too: two, not three.
+    expect(options.filter((o) => o.recommended)).toHaveLength(2);
+    expect(placedLine(1, 2)).toBe('1 / 2 placed');
+    expect(allPlaced(2, 2)).toBe(true);
+    expect(rosterNote(2, true, 2)).toBeNull();
+    expect(rosterNote(1, true, 2)).toBe('You bring only what you place.');
+    expect([2, 3, 4].map(seatsWord)).toEqual(['two', 'three', 'four']);
   });
 
   it('uses the nickname as the name, as text', () => {

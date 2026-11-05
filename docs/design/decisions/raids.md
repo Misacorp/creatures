@@ -4,9 +4,95 @@ Raid schedule, parties and joining, bosses and the raid curve, the live finale, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-04: Combat v2 dungeon runs read no weather at all [Misa]
+
+ID: `2026-11-04-combat-v2-dungeon-runs-read-no` · Status: current · Amends: `2026-11-04-combat-v2-phase-5-answers-in`
+
+**Decision.** A v2 dungeon run (`RunState.v === 2`) stores no weather at its start, so its experience, treats, scrap and summary read none, and no `weather_use` event is recorded. This replaces the last sentence of the third bullet of `2026-11-04-combat-v2-phase-5-answers-in` (a v2 run no longer keeps the day's weather for rewards). The client shows no sky line on the pre-run card of a v2 run and the treat box says 2x. v1 runs keep their weather.
+
+**Reasoning.** Misa: "let's get rid of dungeon weather too."
+
+## 2026-11-04: Combat v2 kill bonus doubled to two epic and four rare pieces [Misa]
+
+ID: `2026-11-04-combat-v2-kill-bonus-doubled-to` · Status: current · Amends: `2026-11-04-combat-v2-phase-5-answers-in`
+
+**Decision.** `RULES.raid.v2.rewards.killBonus` is two epic and four rare pieces per member of the party that kills the boss (was one epic and two rare). Nothing else about the bonus changes.
+
+**Reasoning.** Misa: "Double the loot."
+
+## 2026-11-04: Combat v2 phase 5 answers in the game: the small boss, threshold payouts, the kill bonus and no fight weather
+
+ID: `2026-11-04-combat-v2-phase-5-answers-in` · Status: current, amended by `2026-11-04-combat-v2-dungeon-runs-read-no`, `2026-11-04-combat-v2-kill-bonus-doubled-to`
+
+**Decision.** The calls decision `2026-11-04-combat-v2-phase-5-answers-small` left open, for v2 weeks (v1 weeks are unchanged):
+
+- **The small boss.** `trackBoss` takes `followSmallParty`; the worker's weekend boss sets it, the lab's calls do not (they keep four columns, so the parity digest holds). The worker's board has one column per player (plus the spare until stage 1), at least one, with no floor of four. HP is x (players / 4)^0.7 and Attack x (players / 4)^0.3 below four as above it.
+- **Thresholds are data** in `RULES.raid.v2.rewards.thresholds`: `hp30` (3,000 bp) and `hp85` (8,500 bp), each naming the stage payout it gives (`pays`: the Essence of that phase and its scrap), so the amounts are today's. A stage pays every threshold its HP removed has reached that no earlier stage of the party stored as paid; a kill crosses all of them. What a stage paid is in its result summary (`v2.paid`: threshold ids and whether the kill bonus was paid), so there is no new column and no migration, and a stage's payout stays idempotent through the result row, the ledger keys (`raid:<week>:<party>:<phase>`) and the gear grant keys. Experience stays per stage with today's "cleared" rule. The finale's own payout (its Essence, gear roll, jackpot, Festival) still goes with a kill in the finale; a boss that falls in stage 1 or 2 pays the thresholds and the bonus, not the finale's payout (as before).
+- **The kill bonus** is `RULES.raid.v2.rewards.killBonus`: one epic and two rare pieces per member of the party that kills the boss, at the finale's item level (3 + Boss Rank) and the boss's element, rolled with the existing gear code (`rollKillBonusItem`, `grantRaidKillBonus`, key `raid:<week>:kill`, source `raid_finale`). A full bag turns pieces into scrap through the grant code as for any grant. Phase 5 tunes the amount.
+- **No weather in v2 fights.** A v2 raid stage's experience reads no weather and records no weather event; a v2 dungeon run's fight input has no weather luck, foe attacks or sky. A v2 dungeon run still stores the day's weather for its scrap and experience rewards (the valley's other systems), not for the fight.
+
+**Reasoning.** Storing the paid thresholds in the result keeps the rule readable and the payout exact without a table, and does not depend on the boss's carried HP (which a test or a tool may set). The kill bonus reuses the finale's roll so its item level follows the Boss Rank like every other raid piece.
+
+## 2026-11-04: Combat v2 phase 5 answers: small parties fight a smaller boss, rewards at HP thresholds with a big kill bonus, no weather in fights **[Misa]**
+
+ID: `2026-11-04-combat-v2-phase-5-answers-small` · Status: current, amended by `2026-11-04-combat-v2-small-raid-parties-curve`
+
+**Decision (Misa).** For combat v2 (`docs/design/combat/balance.md`, section 7):
+
+1. **Small parties fight a smaller boss.**
+   - A party of one to three players faces a boss whose HP and arena follow its players: the HP curve below four players, one piece per player, no simulated guests.
+   - Phase 5 measures and tunes it, since the lab never played under four.
+2. **Raid rewards are paid at HP thresholds,** whichever stage crosses them.
+   - Each threshold of the weekend's HP removed is paid once, when it is first crossed, in stage 1, stage 2 or the finale alike.
+   - The thresholds start at today's 30% and 85%, and phase 5 tunes them.
+   - **The kill bonus is big and exciting: lots of rare and epic gear.**
+3. **No weather in fights.**
+   - Boons and Omens are dropped from combat v2 fights for good.
+   - Weather stays for the valley's other systems.
+   - v1 fights keep theirs until v2 ships.
+
+**Reasoning.** Misa: small parties should get a smaller boss rather than fake players. Paying at thresholds makes rewards follow the HP removed (the raid's measure, decision `2026-10-30-a-failed-raid-boss-returns-next`), so a strong stage 1 is not penalised for crossing a threshold early. A kill should feel like a big moment. Dropping fight weather simplifies combat ("let's simplify").
+
+## 2026-11-03: Combat v2 arenas: how the piece, the seats and the spare are built
+
+ID: `2026-11-03-combat-v2-arenas-how-the-piece` · Status: current
+
+**Decision.** The calls the arena decision (`2026-11-03-combat-v2-arenas-each-boss-defines`) left open:
+
+- **The piece is `piece: { rows: n }` on each raid boss** in `raid-bosses.json`, beside the boss's `rows`. The loader fails (naming the boss) unless `piece.rows` equals the boss's `rows`: a full column is the only shape the engine plays. Another shape (a seat mask) is a new key of `piece` with engine support first. The engine and the lab read only `rows`, so the lab's parity digest is unchanged.
+- **Seats per player = `piece.rows`**, from `slotBossInfo(slot).seats`. It replaces the flat `RULES.raid.teamSize` for placing, the cap (`capPlacements`, `partyPlacements`, `raidTeam` take a limit), the picker and the Raid tab's texts on a v2 week only; a v1 week keeps three.
+- **The spare is one more column while the party has no stored carry and the week is `open`**: `colsFor(members, true)`. A newcomer's join counts them first, so the board they join on already has their own spare. The view says `seats` and `spare`. Once stage 1 stores the carry, the width is `colsFor(v2_players)`, and `compactBoard` (run just before stage 1) moves what stood beyond it into the lowest free slots.
+- **The dev bench's Fill** gives each guest the seats of the week's boss, and a Boss Rank change first trims each player to the new boss's seats (the earliest placed stay), then compacts onto a board that keeps its spare. Fill's default (up to 14 guests) is unchanged: with a spare there is always room, so it adds guests until the player cap.
+- **Not changed:** the boss's numbers (HP and Attack per player, area widening per four columns) use the player count, never the spare. The preview and the boss card draw the board as it stands, spare included.
+
+**Reasoning.** The piece in the data is Misa's first step to varied arenas without a sign-up; keeping `rows` as the engine's arena height and `piece` as the player's share means nothing in the engine or the lab changes. Deriving the spare from the stored carry and the week's status needs no new column or migration. Seats come from one function so the server, the picker and the texts cannot disagree.
+
+## 2026-11-03: Combat v2 arenas: each boss defines one player's piece; the board repeats it per player with one spare until stage 1 **[Misa]**
+
+ID: `2026-11-03-combat-v2-arenas-each-boss-defines` · Status: current
+
+**Decision (Misa).** A combat v2 raid arena is data per boss, built from **one player's piece**:
+
+- Each boss defines the piece one player adds to the arena. Today a piece is one column of the boss's rows (Storm Sovereign 2, Tidal Colossus 3, Cinder Wyrm 4). The data allows other shapes later; each new shape needs engine support first.
+- **The board is the piece repeated once per player, plus one spare piece** kept free until stage 1, so a newcomer can always join by placing. At stage 1 the spare piece goes, and any creature in it moves to a free seat (there is always room).
+- **Each player brings as many creatures as one piece has seats** (2 on Storm Sovereign, 3 on most bosses, 4 on the Cinder Wyrm), and may sit anywhere on the board. A row has one seat per player, so nobody can pile a whole party into one row.
+- **Scaling stays per player:** the weekend's HP and Attack, and the area moves' widening per 4 columns.
+- No sign-up step: players still join by placing (decision `2026-10-26-raids-you-join-by-placing-no`), and players lock at stage 1.
+- Small parties (under four players still fight at four columns) stay an open item for phase 5.
+
+**Reasoning.** Storm Sovereign's board filled at 8 seats because each player could bring 3 creatures on a 2-row arena, and the board only widened when a new player joined, which needed a free seat. One piece per player matches how the lab tuned the bosses (one column per player). The spare piece keeps joining frictionless, and fixed seats per row stop a party stacking one row. Misa wants varying arena layouts that players organise into, kept flexible for the future. A piece in the data is the first form of that, and needs no sign-up. A locked sign-up, then drawing any shape for the player count, was the alternative; it can come later if a boss needs a shape a repeated piece cannot make.
+
+## 2026-11-03: Combat v2 replays keep no Pause or 2x **[Misa]**
+
+ID: `2026-11-03-combat-v2-replays-keep-no-pause` · Status: current
+
+**Decision (Misa).** Combat v2 replays (a stage's replay, the after-action's Watch, the dungeon's room replay on a v2 run) have no Pause and no 2x, the same as v1 replays since 2026-10-14. `PlayerV2` keeps `showControls={false}` by default.
+
+**Reasoning.** Asked when v2 playback was built (v2 fights are longer than v1's); Misa: "No pause or 2x."
+
 ## 2026-11-03: Combat v2 bots and the gate run (phase 4, slice 6): v2 guests, the raid-weekend dev tool and one stat calculation
 
-ID: `2026-11-03-combat-v2-bots-and-the-gate` · Status: current
+ID: `2026-11-03-combat-v2-bots-and-the-gate` · Status: current, amended by `2026-11-03-raid-test-bench-the-staging-raid`
 
 **Decision.** Slice 6 of combat v2 phase 4 (`combat/integration.md`, section 10) builds the bots for the gate, all staging only, and merges the two ways a creature's v2 numbers were worked out. The calls the brief left open:
 

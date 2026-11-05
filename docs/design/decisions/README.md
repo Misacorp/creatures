@@ -23,6 +23,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [direction.md](direction.md): Roadmap calls, Misa's standing direction, naming and tone, content policy, how agents and Misa work.
 
+- 2026-11-05 \[Misa\] CI runs the full check; agents push after quick local checks
 - 2026-11-03 \[Misa\] Valley art goes straight onto the valley branch, not through main
 - 2026-11-03 Sprites up to 128 wide; free backdrop art may have no outline
 - 2026-11-01 \[Misa\] Retro 2026-11-01: group behaviours before naming, a name-blind parity digest, and agent workflow fixes
@@ -36,7 +37,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 - 2026-10-16 roll out fast, balance at the end; slot ladder, golden talents, the weather calendar
 - 2026-10-16 Misa's second round on the revamps: weighted slot pools, training by activity, Boons and Omens (amended)
 - 2026-10-16 Misa's answers to the systems review (they replace parts of its proposals) (amended)
-- 2026-10-16 Misa's direction after the raid retune: supplies now, a systems review, then gear and creature revamps
+- 2026-10-16 Misa's direction after the raid retune: supplies now, a systems review, then gear and creature revamps (amended)
 - 2026-10-13 Compendium contradictions resolved
 - 2026-10-13 Expeditions v2 merged into the daily dungeon branch
 - 2026-10-13 Roadmap reorder, crafting direction, production may change freely (Misa)
@@ -48,6 +49,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [platform.md](platform.md): Hosting, Durable Objects, scheduling, CI and deploys, staging, dependencies, security, database reads, data cleanup, analytics, dev tools, the workbench, player feedback, sockets.
 
+- 2026-11-03 Raid test bench: the staging raid dev tools become four steps \[Misa\]
 - 2026-11-03 The resource library: one data file names every resource
 - 2026-10-30 Prettier's cache, and a cleanup script for agent worktrees
 - 2026-10-29 CI skips the build and tests for documentation-only PRs
@@ -139,6 +141,14 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [combat.md](combat.md): The shared combat engine, abilities, statuses, elements, the balance simulator, balance passes, and combat v2 in the lab.
 
+- 2026-11-04 Combat v2 phase 5 step 3: the dungeon over days in the lab
+- 2026-11-04 \[Misa\] Combat v2 phase 5: weekly players replace 3 in 10, and Misa's server mix
+- 2026-11-04 \[Misa\] Combat v2 small raid parties: curve only, no mechanics
+- 2026-11-04 Combat v2 phase 5 step 2: player habits in the journey simulator
+- 2026-11-04 Combat v2 phase 5, slice 1: the path's weekend plays the game's raid rules (journey.ts)
+- 2026-11-04 Combat v2 phase 5 plan: extend the lab's path into the v2 journey simulator; the valley keeps the roster and economy
+- 2026-11-03 Golden v2 talents read from the line book, numbers x1.25, flags unchanged
+- 2026-11-03 Culling Strike stays as an enabler: in one line's pool per role and per element, never buffed for its solo value \[Misa\]
 - 2026-11-02 Combat v2 engine slice 1: carry keyed by creature key, board events beside the log, live actions as one boost or cut each
 - 2026-11-02 Combat v2 phase 4 plan: the game plays v2 behind a staging flag, rules version stored per week, run and fight
 - 2026-11-01 \[Misa\] Combat v2 icons: shapes, the sword, the Store box, claw Pincer, Leap as a chain
@@ -205,7 +215,14 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [raids.md](raids.md): Raid schedule, parties and joining, bosses and the raid curve, the live finale, raid board and summaries, raid Discord posts.
 
-- 2026-11-03 Combat v2 bots and the gate run (phase 4, slice 6): v2 guests, the raid-weekend dev tool and one stat calculation
+- 2026-11-04 Combat v2 dungeon runs read no weather at all \[Misa\]
+- 2026-11-04 Combat v2 kill bonus doubled to two epic and four rare pieces \[Misa\]
+- 2026-11-04 Combat v2 phase 5 answers in the game: the small boss, threshold payouts, the kill bonus and no fight weather (amended)
+- 2026-11-04 Combat v2 phase 5 answers: small parties fight a smaller boss, rewards at HP thresholds with a big kill bonus, no weather in fights \[Misa\] (amended)
+- 2026-11-03 Combat v2 arenas: how the piece, the seats and the spare are built
+- 2026-11-03 Combat v2 arenas: each boss defines one player's piece; the board repeats it per player with one spare until stage 1 \[Misa\]
+- 2026-11-03 Combat v2 replays keep no Pause or 2x \[Misa\]
+- 2026-11-03 Combat v2 bots and the gate run (phase 4, slice 6): v2 guests, the raid-weekend dev tool and one stat calculation (amended)
 - 2026-11-03 Combat v2 raid weekend (phase 4, slice 3): the grid, the stored shapes, the live finale's replay and the open calls
 - 2026-11-02 Combat v2 raids: players lock when stage 1 begins; no weather in v2 fights until phase 5 \[Misa\]
 - 2026-10-31 Breakwater joins Tidal Colossus from its second lap, beside Slippery \[Misa\]
@@ -275,6 +292,15 @@ Superseded: 1 entry (see the topic file).
 
 [dungeon.md](dungeon.md): The daily dungeon: paths, rooms and rare rooms, the camp, the Undercroft, foes, its screens and payouts.
 
+- 2026-11-05 \[Misa\] The Undercroft curve stays; the skill tree and gear are the tools past depth 40
+- 2026-11-05 Combat v2 dungeon XP: about 120 a run, a step at each landmark; more gear \[Misa\]
+- 2026-11-05 Combat v2 dungeon depth picker built: any unlocked depth, progress only at the current depth (amended)
+- 2026-11-04 \[Misa\] Combat v2 dungeon baseline: easier base floors, a steeper Undercroft
+- 2026-11-04 \[Misa\] Combat v2 dungeon rewards and XP grow with depth, the Undercroft alike (amended)
+- 2026-11-04 \[Misa\] A depth choice before a run, with reward scalars (amended)
+- 2026-11-04 Combat v2 dungeon measures in the lab: safe gain, the descent choice, a four-slot team
+- 2026-11-04 \[Misa\] Dungeon direction: an easy base dungeon, a hard Undercroft, the descent is the choice
+- 2026-11-04 \[Misa\] Combat v2 Undercroft descent revives knocked-out creatures
 - 2026-11-02 Daily dungeon on combat v2 (phase 4, slice 4): the rules version in the run, fighters frozen at the start, what a v2 room folds in
 - 2026-10-22 Foe move lines say what a move hits; "Charged:" replaces "announced a round ahead"
 - 2026-10-22 Molten Shell is a frequent partial Backlash, not a rare full reflect (replaces the reflective shield above)
@@ -345,6 +371,7 @@ Superseded: 1 entry (see the topic file).
 [gear.md](gear.md): Gear items, lines and sets, crafting, dismantling, conversions, the bag and the item picker.
 
 - 2026-11-05 \[Misa\] Rarity is shown by the frame's shape too, and every item's spoken name says it
+- 2026-11-04 \[Misa\] A hidden best-of gear roller: roll X to Y, keep the best N to M
 - 2026-11-03 \[Misa\] Element shards differ by shape (Tide drop, Ember flame, Grove leaf, Spark bolt, Mire drip)
 - 2026-10-31 Gear in combat v2: talents lead early, a balance mid-game, gear leads the endgame; no slot level requirements; gear alone can build crit \[Misa\]
 - 2026-10-31 \[Misa\] Items with no element get an oat-beige coat instead of grey
@@ -416,9 +443,15 @@ Superseded: 1 entry (see the topic file).
 
 [ui.md](ui.md): Navigation and the frame, Home and the notice board, type scale, shared components, look and feel rules that apply across screens.
 
+- 2026-11-05 Dungeon depth picker is a dropdown with the scalars on every row \[Misa\]
+- 2026-11-04 Combat v2: a Guard's pulse of protection through the tiles replaces the bracket \[Misa\]
+- 2026-11-04 Combat v2 fight visuals: the Guard's burst, and boosts and debuffs as a background pattern \[Misa\] (amended)
 - 2026-11-04 Two voices for notes: the Gazette's paper for the valley's stories, the ink Alert for the game (round 23, Q54) \[Misa\]
+- 2026-11-03 Combat v2 fight visuals: Misa's picks \[Misa\] (amended)
+- 2026-11-03 Combat v2 fight options for Misa: reaction callouts with the hit, colours in the text, crit styles and a buffed mark (amended)
+- 2026-11-03 Combat v2 fights made readable: reaction callouts, element-coloured hits, Guard saves, boosts and an optional Knack name (amended)
 - 2026-11-03 Combat v2 client, the dungeon's screens: a v2 room on StageV2's single row, foe cards on the map, Out until the camp swaps it, the Knack on the team setup
-- 2026-11-03 Combat v2 client, third part: fight playback, the replay, the live finale and the results
+- 2026-11-03 Combat v2 client, third part: fight playback, the replay, the live finale and the results (amended)
 - 2026-11-03 Combat v2 client, second part: the raid tab before and between stages
 - 2026-11-03 Combat v2 How to play: six sections beside the shipped set, keyword help from one glossary id
 - 2026-11-02 Combat v2 client, first part: the Knack picker and the creature page follow the data

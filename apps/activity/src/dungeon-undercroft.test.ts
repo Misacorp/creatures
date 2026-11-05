@@ -91,12 +91,9 @@ describe('the descent card words', () => {
       'Foes are from depth 16.',
     );
     expect(descendLines({ ...descent, floors: 1 }, 14)[0]).toContain('1 room with a floor boss');
-    // Combat v2 sends no revive: only the standing heal, and a downed creature stays out until a camp swaps it.
-    const v2 = descendLines({ ...descent, reviveBp: 0 }, 14)[1];
-    expect(v2).toBe(
-      'Your standing creatures catch their breath and heal 20% HP. Downed creatures stay out until a camp swaps them.',
-    );
-    expect(v2).not.toContain('revive');
+    // A descent that sends no revive promises none (combat v2 sends the revive too, decision 2026-11-04).
+    const none = descendLines({ ...descent, reviveBp: 0 }, 14)[1];
+    expect(none).toBe('Your standing creatures catch their breath and heal 20% HP.');
     // A different multiplier is said as such.
     expect(descendLines(descent, 14, 3)[2]).toBe('Fights in the Undercroft reward 3× loot.');
     expect(DESCEND_BUTTON).toBe('Descend');

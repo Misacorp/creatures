@@ -392,16 +392,16 @@ Generated from `packages/lab/src/talents.ts`. One shared library; each line link
 | zipmouse | Momentum, First Pounce, Perfect Timing, Flank Guard, Odd One Out, Deep Ink, Shoulder to Shoulder |
 | mistnewt | Flank Guard, Unbothered, Overheal Spill, Bright Boost, Catch Breath, Shoulder Charge, Rally Cry |
 | ashmole | Kindred Boost, Bright Boost, Shoulder Charge, Easily Provoked, Brace, Hardy, Odd One Out |
-| stormray | Slow Burn, Quick Draw, Edge-walker, Bright Boost, Perfect Timing, Crit Chance, Catch Breath |
-| mossback | Potent Mark, Opportunist, Finisher, Refuse to Fall, Hardy, Brace, Rally Cry |
+| stormray | Slow Burn, Quick Draw, Edge-walker, Bright Boost, Culling Strike, Crit Chance, Catch Breath |
+| mossback | Potent Mark, Opportunist, Finisher, Refuse to Fall, Hardy, Culling Strike, Rally Cry |
 | coralynx | Sharp Claws, Odd One Out, Amplified Crits, Finisher, Quick Draw, First Pounce, Crit Chance |
 | solmane | Front-liner, Deep Ink, Potent Mark, Shoulder to Shoulder, Rally Cry, Sharp Claws, Catch Breath |
 | gaiadrake | Opportunist, Refuse to Fall, Hardy, Catch Breath, Front-liner, Rally Cry, Finisher |
 | aurorix | Bright Boost, Unbothered, Hardy, Edge-walker, Odd One Out, (Momentum), Rally Cry |
-| lanternfin | Triage, Overheal Spill, Catch Breath, Hardy, Rally Cry, Odd One Out, Front-liner |
-| hearthshell | Shoulder Charge, Refuse to Fall, Catch Breath, Brace, Hardy, Odd One Out, Shoulder to Shoulder |
+| lanternfin | Triage, Overheal Spill, Catch Breath, Hardy, Rally Cry, Odd One Out, Culling Strike |
+| hearthshell | Shoulder Charge, Refuse to Fall, Catch Breath, Culling Strike, Hardy, Odd One Out, Shoulder to Shoulder |
 | mudlump | Wicked, Clinging, Shoulder Charge, Brace, Hardy, Long Shadow, Flank Guard |
-| squelch | Wicked, Clinging, Bright Boost, Catch Breath, Hardy, Unbothered, Front-liner |
+| squelch | Wicked, Clinging, Bright Boost, Catch Breath, Hardy, Culling Strike, Front-liner |
 
 | Talent | Text | Roles | Intent |
 | --- | --- | --- | --- |
@@ -432,7 +432,7 @@ Generated from `packages/lab/src/talents.ts`. One shared library; each line link
 | Refuse to Fall | Once per fight (in a raid, once per weekend), a hit that would knock it out leaves it at two fifths of its max HP, or at the HP it had if that was lower. | setter, payoff, guard, support | Survives one Crusher; pairs with healers. Hold On under its one name. Reworked (2026-10-28): it left the creature at 1 HP, which gained about 2% of a team's result, so it now leaves it at two fifths of its max HP. |
 | Catch Breath | Once per fight (in a raid, once per weekend), when a hit drops it below half its max HP, it heals 30% of max HP. | setter, payoff, guard, support | Survives one big hit (Crusher, Payoff Hunter). Not the gear line Second Wind, which is a chance each round to heal. |
 | Unbothered | It cannot be {Silenced}, and has +3% Attack and +6% Max HP. | setter, payoff, guard, support | The silence answer on the creature itself, for row ends and front rows. Reworked (2026-10-28): the immunity alone did nothing on the gauntlet, where a creature can always stand in the middle (a Guard gained nothing), so it carries a little Attack and HP as well, less than Sharp Claws or Hardy. Shrunk (2026-10-28 panel 4, from +6% and +14%): it won a boss by its stats; it should win by its ward. |
-| Culling Strike | A hit that leaves the boss below 5% of its full HP defeats it. The HP removed counts as the killing blow, not as damage. | setter, payoff | Weak alone; it decides who lands the killing blow, which other effects can key on. In no line pool until a killing-blow talent exists. |
+| Culling Strike | A hit that leaves the boss below 5% of its full HP defeats it. The HP removed counts as the killing blow, not as damage. | setter, payoff, guard, support | An enabler: effects are meant to stack on it later (killing-blow triggers, R21.5), so it is not intended to be used alone. A weak result for it alone is expected and is not a reason to buff it; judge it only with the effects that build on it (Misa, 2026-11-03). In the pools of hearthshell, lanternfin, mossback, stormray and squelch. |
 | Wicked | Each debuff it puts on the boss has an 80% chance to add 1 extra stack. | guard, support | Meant for every debuff it puts on the boss; today that is Mired, the only debuff, so no number moves. The shipped line is a chance of an extra stack, and luck is welcome. More stacks per application keeps the debuff up. |
 | Clinging | While it stands, {Mired} fades only every second round, and each stack counts for half as much again. | guard, support | Mire only: the v2 form of the shipped "lasts more turns"; one creature can hold a debuff for the team. Reworked (2026-10-28): slower fading alone gained under a point, so its stacks also count for half as much again (4.5% instead of 3%); it still fades, every second round (every third until 2026-11-01, when Mired began to fade every round), so one creature cannot hold the debuff for the whole fight (Misa). |
 | Bright Boost | Every second {Boost} it gives is doubled. | support | A Support with a visible rhythm instead of a crit chance. |

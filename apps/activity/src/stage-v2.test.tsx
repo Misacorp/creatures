@@ -3,6 +3,7 @@
  * knocked-out one, the announced move on its targets, the numbers over the hit, the turn strip, the boss's move line, and the words (counts
  * with a slash, no boss called a wall or harder, no damage potential).
  */
+import type { ComponentProps } from 'preact';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { foldSetupOf, showOf, stageModelOf } from './fight-v2';
 import { StageV2 } from './StageV2';
@@ -31,6 +32,8 @@ type Replay = ReturnType<typeof replaySample>;
 function draw(
   replay: Replay,
   found: (model: ReturnType<typeof stageModelOf>, k: number) => boolean,
+  knackNames = false,
+  options: Partial<ComponentProps<typeof StageV2>> = {},
 ) {
   const setup = foldSetupOf({
     fighters: replay.fighters,
@@ -41,7 +44,7 @@ function draw(
   const k = model.beats.findIndex((_, i) => found(model, i));
   expect(k).toBeGreaterThanOrEqual(0);
   const beat = k + 1;
-  const show = showOf(replay.events, model.beats[k] as never);
+  const show = showOf(replay.events, model.beats[k] as never, { creatures: setup.creatures });
   const playback: PlaybackV2 = {
     beat,
     total: model.beats.length,
@@ -50,7 +53,7 @@ function draw(
     setPlaying: () => undefined,
     move: () => undefined,
     show,
-    fx: staticFx(cuesOf(show)),
+    fx: staticFx(cuesOf(show, knackNames)),
     intro: null,
   };
   page = createPage();
@@ -66,6 +69,7 @@ function draw(
       place="Stage 1 / 3"
       hpMax={replay.bossHpMax}
       rounds={replay.boss.rounds}
+      {...options}
     />,
   );
   return { p: page, model, beat };
@@ -198,5 +202,155 @@ describe('the live finale page', () => {
     expect(
       byClass(page.root, 'visually-hidden').some((el) => visibleText(el) === 'Round 2 / 8'),
     ).toBe(true);
+  });
+});
+
+describe('what a fight shows besides the numbers', () => {
+  const mixed = () => replaySample({ slot: 4, players: 5, stage: 1, seed: 'fold', party: 'mixed' });
+  const reacts = (m: ReturnType<typeof stageModelOf>, k: number) =>
+    (m.beats[k]?.reacts ?? false) && m.beats[k]?.kind === 'creature';
+
+  it("a reaction's callout is one float: the name in two parts over the hit's total and the bonus on one line", () => {
+    const { p } = draw(mixed(), reacts);
+    const callout = byClass(p.root, 'float-reaction')[0] as never;
+    expect(byClass(callout, 'float-colours').length).toBe(0);
+    expect(byClass(callout, 'rx-name')[0]?.childNodes.length).toBe(2);
+    const numbers = byClass(callout, 'rx-numbers')[0] as never;
+    expect(byClass(numbers, 'rx-num').length).toBe(1);
+    expect(byClass(numbers, 'rx-bonus').length).toBe(1);
+    expect(visibleText(byClass(numbers, 'rx-num')[0] as never)).toMatch(/^\d+!?$/);
+    expect(visibleText(byClass(numbers, 'rx-bonus')[0] as never)).toMatch(/^\+\d+$/);
+    // The hit's own number is not drawn a second time.
+    expect(byClass(p.root, 'float-hit').length).toBe(0);
+  });
+
+  it('every crit number ends with "!" in two hard halves and has no multiplier', () => {
+    const replay = mixed();
+    const { p } = draw(replay, (m, k) =>
+      showOf(replay.events, m.beats[k] as never).floats.some((f) => f.crit && f.tone === 'hit'),
+    );
+    expect(byClass(p.root, 'crit-split').length).toBeGreaterThan(0);
+    for (const el of byClass(p.root, 'crit-split')) expect(visibleText(el)).toMatch(/^\d+!$/);
+    expect(byClass(p.root, 'crit-pop').length).toBe(0);
+    expect(visibleText(p.root)).not.toMatch(/x\d(\.\d)?!/);
+  });
+
+  it('a boosted creature keeps its yellow glow until its next hit', () => {
+    const replay = mixed();
+    const boosted = (m: ReturnType<typeof stageModelOf>, k: number) =>
+      Object.values(m.states[k + 1]?.creatures ?? {}).some((c) => c.boost > 0);
+    const { p, model, beat } = draw(replay, boosted);
+    const n = Object.values(model.states[beat]?.creatures ?? {}).filter((c) => c.boost > 0).length;
+    expect(byClass(p.root, 'fight-boosted').length).toBe(n);
+    expect(byClass(p.root, 'pip').length).toBe(0);
+  });
+
+  it('a boosted creature has arrows drifting up in its background by default; the glow look has none', () => {
+    const replay = mixed();
+    const boosted = (m: ReturnType<typeof stageModelOf>, k: number) =>
+      Object.values(m.states[k + 1]?.creatures ?? {}).some((c) => c.boost > 0 && !c.out);
+    const { p } = draw(replay, boosted);
+    const up = byClass(p.root, 'slot-pattern').filter((el) =>
+      el.getAttribute('class')?.includes('up'),
+    );
+    expect(up.length).toBe(byClass(p.root, 'boost-pattern').length);
+    expect(up.length).toBeGreaterThan(0);
+    page?.unmount();
+    const glow = draw(replay, boosted, false, { boostLook: 'glow' });
+    expect(byClass(glow.p.root, 'slot-pattern').length).toBe(0);
+    expect(byClass(glow.p.root, 'boost-glow').length).toBeGreaterThan(0);
+  });
+
+  it('a silenced creature has the flipped pattern (red arrows drifting down) in its background', () => {
+    const replay = replaySample({ slot: 5, players: 4, stage: 1, seed: 'fold' });
+    const { p, model, beat } = draw(replay, (m, k) =>
+      Object.values(m.states[k + 1]?.creatures ?? {}).some((c) => c.silenced > 0 && !c.out),
+    );
+    const n = Object.values(model.states[beat]?.creatures ?? {}).filter(
+      (c) => c.silenced > 0 && !c.out,
+    ).length;
+    expect(byClass(p.root, 'fight-debuffed').length).toBe(n);
+    const down = byClass(p.root, 'slot-pattern').filter((el) =>
+      el.getAttribute('class')?.includes('down'),
+    );
+    expect(down.length).toBe(n);
+  });
+
+  it("a Guard's save also bursts a shield out of the Guard, on the stage's overlay layer", () => {
+    const replay = mixed();
+    const { p } = draw(
+      replay,
+      (m, k) => showOf(replay.events, m.beats[k] as never).saves.length > 0,
+    );
+    const layer = byClass(p.root, 'stage-bursts')[0];
+    expect(layer).toBeDefined();
+    const bursts = byClass(layer as never, 'guard-burst');
+    expect(bursts.length).toBeGreaterThan(0);
+    for (const b of bursts) expect(byClass(b, 'burst-shield').length).toBe(1);
+  });
+
+  it("a reaction's callout is its name in the content's words over the boss, with the bonus and its two colours", () => {
+    const replay = mixed();
+    const { p } = draw(
+      replay,
+      (m, k) => (m.beats[k]?.reacts ?? false) && m.beats[k]?.kind === 'creature',
+    );
+    const callouts = byClass(p.root, 'float-reaction');
+    expect(callouts.length).toBeGreaterThan(0);
+    const text = visibleText(callouts[0] as never);
+    expect(text).toMatch(
+      /^(Overload|Grounding|Wildfire|Steam|Smother|[A-Z][a-z]+)!\s*(\d+!?)?\+\d+$/,
+    );
+    expect(byClass(callouts[0] as never, 'rx-name')[0]?.childNodes.length).toBe(2);
+  });
+
+  it('a creature\'s hit is a number in its element\'s colour; a crit ends with "!"', () => {
+    const replay = mixed();
+    const { p } = draw(replay, (m, k) =>
+      showOf(replay.events, m.beats[k] as never).floats.some((f) => f.mult !== undefined),
+    );
+    const crit = byClass(p.root, 'float-hit').find((el) =>
+      el.getAttribute('class')?.includes('crit'),
+    );
+    expect(crit).toBeDefined();
+    expect(crit?.getAttribute('class')).toMatch(/el-(tide|ember|grove|spark|mire)/);
+    expect(visibleText(crit as never)).toMatch(/^\d+!$/);
+  });
+
+  it("a Guard's save puts a shield on the covered creature and a pulse through the tiles from the Guard to it; the Guard's tile flashes", () => {
+    const replay = mixed();
+    const { p } = draw(
+      replay,
+      (m, k) => showOf(replay.events, m.beats[k] as never).saves.length > 0,
+    );
+    expect(byClass(p.root, 'float-save').length).toBeGreaterThan(0);
+    const pulses = byClass(p.root, 'slot-pulse');
+    expect(byClass(p.root, 'slot-link').length).toBe(0);
+    const cls = (el: (typeof pulses)[number]) => el.getAttribute('class') ?? '';
+    expect(pulses.filter((el) => cls(el).includes('guard')).length).toBeGreaterThan(0);
+    expect(pulses.filter((el) => cls(el).includes('end')).length).toBeGreaterThan(0);
+    expect(byClass(p.root, 'fight-guarding').length).toBeGreaterThan(0);
+  });
+
+  it('boosts are arrows and heals green numbers, always; a Knack name pops only when the option is on', () => {
+    const replay = mixed();
+    const found = (m: ReturnType<typeof stageModelOf>, k: number) =>
+      showOf(replay.events, m.beats[k] as never).floats.some((f) => f.tone === 'boost') &&
+      showOf(replay.events, m.beats[k] as never, { creatures: m.setup.creatures }).knacks.length >
+        0;
+    const off = draw(replay, found, false);
+    expect(byClass(off.p.root, 'float-boost').length).toBeGreaterThan(0);
+    expect(byClass(off.p.root, 'float-arrows').length).toBeGreaterThan(0);
+    expect(byClass(off.p.root, 'float-knack')).toHaveLength(0);
+    page?.unmount();
+    const on = draw(replay, found, true);
+    const pops = byClass(on.p.root, 'float-knack');
+    expect(pops.length).toBeGreaterThan(0);
+    expect(visibleText(pops[0] as never).length).toBeGreaterThan(0);
+    page?.unmount();
+    const heals = draw(replay, (m, k) =>
+      showOf(replay.events, m.beats[k] as never).floats.some((f) => f.tone === 'heal'),
+    );
+    expect(byClass(heals.p.root, 'float-heal').length).toBeGreaterThan(0);
   });
 });

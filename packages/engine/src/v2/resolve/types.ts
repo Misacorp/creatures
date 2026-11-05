@@ -50,6 +50,11 @@ export interface Placement {
   readonly level: number;
   readonly knack?: string;
   readonly talents?: readonly string[];
+  /**
+   * The ids among `talents` that are golden (R20: the talent's numbers x1.25; a flag has no number, so golden changes nothing
+   * for it). Default none: the lab plays no golden talents.
+   */
+  readonly goldenTalents?: readonly string[];
   readonly row: number;
   readonly col: number;
 }

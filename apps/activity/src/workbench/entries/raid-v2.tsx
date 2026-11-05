@@ -25,6 +25,7 @@ function optionsOf(p: Props): V2SampleOptions {
     bestShareBp: num(p, 'bestSharePct') * 100,
     knockedOut: bool(p, 'knockedOut'),
     swaps,
+    determinationBp: num(p, 'determinationPct') * 100,
   };
 }
 
@@ -116,6 +117,7 @@ const WEEK_CONTROLS = {
   stage: { kind: 'number', min: 0, max: 2 },
   mine: { kind: 'number', min: 0, max: 3 },
   bestSharePct: { kind: 'number', min: 0, max: 100 },
+  determinationPct: { kind: 'number', min: 0, max: 25 },
   knockedOut: { kind: 'toggle' },
   swaps: { kind: 'select', options: SWAP_KINDS },
   tap: { kind: 'number', min: 0, max: 9 },
@@ -127,6 +129,7 @@ const WEEK_DEFAULTS = {
   stage: 0,
   mine: 3,
   bestSharePct: 0,
+  determinationPct: 0,
   knockedOut: false,
   swaps: 'none',
   tap: 0,
@@ -153,6 +156,10 @@ const bossCardV2: Entry = {
     {
       name: 'Between stages: carried HP, one creature out, the boss is back',
       props: { slot: 2, players: 5, stage: 1, knockedOut: true, bestSharePct: 40 },
+    },
+    {
+      name: 'Second lap, a boss failed three times (Determination chip)',
+      props: { slot: 6, players: 5, bestSharePct: 55, determinationPct: 15 },
     },
     { name: 'Swap request asked', props: { players: 5, swaps: 'asked' } },
     { name: 'Swap request waiting for you', props: { players: 5, swaps: 'incoming' } },

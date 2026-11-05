@@ -17,7 +17,7 @@
 import { RULES, slotCount, slotOpensAt, slotsOpen, type CreatureSpecies } from '@creatures/game';
 import { combatV2, knownKnacks, v2TalentWorksFor } from '@creatures/game/combat-v2';
 import type { Analytics } from './analytics';
-import { fightNumbers, slottedTalents } from './fighter-v2';
+import { fightNumbers, slottedGolden, slottedTalents } from './fighter-v2';
 import type { WornBySlot } from './gear-store';
 import { keyTaken, settleSpend } from './keyed-action';
 import { lookupSpend, spend, type LedgerStorage } from './ledger';
@@ -171,6 +171,8 @@ export interface StatsV2Source {
   knack: string | null;
   /** The talents in its open slots, in slot order (ids). */
   talents: readonly string[];
+  /** The ids among `talents` that are golden (the line's book holds them golden). */
+  goldenTalents?: readonly string[];
   worn: WornBySlot | undefined;
 }
 
@@ -190,6 +192,7 @@ export function statsV2Of(c: StatsV2Source): StatsV2View {
       // The page's numbers do not depend on the name.
       nickname: null,
       talents: [...c.talents],
+      goldenTalents: [...(c.goldenTalents ?? [])],
       gear: gearLinesOf(c.species, c.level, c.fusionCount, c.worn),
     },
     'page',
@@ -275,6 +278,7 @@ export class CreatureV2 {
         knack: row.knack,
         // The fight's own helper over what the creature learned (`creature_talents_v2`), never the line's book.
         talents: slottedTalents({ species, level: row.level }, learned),
+        goldenTalents: slottedGolden({ species, level: row.level }, learned),
         worn,
       }),
     };

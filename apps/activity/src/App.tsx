@@ -1,6 +1,6 @@
 import { DiscordSDK } from '@discord/embedded-app-sdk';
 import { setExternalLinkOpener } from './external-link';
-import { setFinaleLiveOffered, setRaidLiveOffered } from './live-flags';
+import { setCombatV2, setFinaleLiveOffered, setRaidLiveOffered } from './live-flags';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import {
   ApiError,
@@ -43,6 +43,7 @@ async function boot(): Promise<Boot> {
   // The finale screen reads this when it opens (it polls as before while it is off).
   setFinaleLiveOffered(config.finaleLive);
   setRaidLiveOffered(config.raidLive);
+  setCombatV2(config.combatV2);
   if (!insideDiscord) {
     // Nobody to show: with no sign-in there is no game and no room.
     return { config, me: null, game: null, participants: aloneParticipants('', 'none') };

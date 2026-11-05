@@ -363,6 +363,10 @@ function tallyEvent(tally: Tally, kind: string, p: Props): void {
       if (typeof p['deepest'] === 'number')
         tally.add('dungeon.deepest', { levels: num(p, 'deepest') });
       for (const m of list(p, 'marks')) tally.add('dungeon.mark', { mark: m });
+      // Combat v2's depth picker: runs played below the player's own depth.
+      if (typeof p['belowOwn'] === 'boolean') {
+        tally.add('dungeon.depth_pick', { below: flag(p, 'belowOwn') });
+      }
       for (const t of list(p, 'team')) {
         const member = record(t);
         tally.add('dungeon.team_species', { species: str(member, 'species') });

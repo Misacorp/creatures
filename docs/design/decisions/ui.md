@@ -4,6 +4,30 @@ Navigation and the frame, Home and the notice board, type scale, shared componen
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-05: Dungeon depth picker is a dropdown with the scalars on every row [Misa]
+
+ID: `2026-11-05-dungeon-depth-picker-is-a-dropdown` · Status: current · Amends: `2026-11-05-combat-v2-dungeon-depth-picker-built`
+
+**Decision.** The depth picker of the combat v2 pre-run card is a dropdown, not the Prev / Next stepper: a trigger in the "Equip on" look (depth, its XP and loot chips, a chevron) that opens the shared bottom sheet `ui/PickSheet` (extracted from `RosterPicker`) with a listbox of every depth from the player's own down to 1, deepest first. Every row, and the trigger, is one line: the depth with a "Your depth" mark on the left, the two scalars as chips in a fixed right-hand column ("1.05x XP", "2.1x loot"; XP to two decimals while under 2x so the landmark steps show, loot to one). The flag and "Landmark" show only at the player's own depth, the one place a landmark's extras pay. A lower pick says "Only depth 23 goes deeper (2.1x loot)." and the own-depth note is "A clear unlocks depth 24." The pick is held as "my own depth" (null) unless a lower depth is chosen, and the start request carries a depth only when it is below the own one, so a stale card never starts a lower run by surprise. While a lower depth's map loads or fails, the picker shows the `PreviewStatus` line and no map. The list opens focused and scrolled to the picked depth. An art-led cave entrance is deferred.
+
+**Reasoning.** Misa (2026-11-05): prefers a dropdown in a form-like card, and the reward scaling must be properly visible when choosing. `FlipNav` is for detail views only; a sheet opened from a page is the allowed layer, and a long range (depth 150) needs a scrolling list. `CreatureList` is creature-shaped, so the list is a small depth listbox with the same roving-focus keys on the shared sheet frame.
+
+## 2026-11-04: Combat v2: a Guard's pulse of protection through the tiles replaces the bracket **[Misa]**
+
+ID: `2026-11-04-combat-v2-a-guard-s-pulse` · Status: current · Amends: `2026-11-04-combat-v2-fight-visuals-the-guard`
+
+**Decision.** Misa: animate the creature rectangles' backgrounds so it looks like the Guard sends a pulse of protection through the creatures it covered, taking the cover's range into account; the shields stay. Built: on a save beat a band of light (three hard bars, no blur) runs through the tile backgrounds of the row, behind the creature, name and chip, from the Guard's tile to each covered creature's tile, across every tile between them (a Wide Reach or Flank Guard cover can be several slots away; empty slots between are lit too). Each tile starts its band 320 ms after the one before it, so it runs on from tile to tile; the covered tile flashes as it lands and the Guard's tile flashes at the start. Several covered creatures get one pulse each and share the tiles near the Guard. The bracket legs (`slot-link`) are gone; the pulse is the link. The shields and the Guard's burst are as before. An intercept (the Guard took the hit) uses the same pulse in the same direction, Guard to creature, because the cue is the same save and it reads as the Guard's protection going out; the other direction was not tried. Reduced motion, and the workbench's held frames: no band, a faint still tint on the Guard's tile and the covered tile. The pulse is clipped to its tile, so nothing shifts, and it is placed by the tile itself, so it follows a sideways scroll. The workbench has a preset for a cover two slots away.
+
+**Reasoning.** A bracket between two tiles said "these are linked" but not that protection flows from the Guard; a pulse through the backgrounds says it, in the same place (behind the foreground) as the arrow patterns, without borders or boxes. Engine untouched.
+
+## 2026-11-04: Combat v2 fight visuals: the Guard's burst, and boosts and debuffs as a background pattern **[Misa]**
+
+ID: `2026-11-04-combat-v2-fight-visuals-the-guard` · Status: current, amended by `2026-11-04-combat-v2-a-guard-s-pulse` · Amends: `2026-11-03-combat-v2-fight-visuals-misa-s`
+
+**Decision.** Misa: the Guard's shield is nice but its green outline is redundant, and the Guard itself should show it does the heavy lifting; a boost should be a pattern in the card's background, not a border. Built: the green ring on the covered creatures' shields is gone. The same shield glyph (without its near-black ink outline, which drew a dark box on the tile) also bursts out of the Guard's own tile at the same moment, scaling from the shields' size to 2.5 times that while it fades, over the same time as they last. It is drawn on the stage's overlay layer (`.stage-bursts`, clipped to the stage, placed from the Guard tile's box, following a sideways scroll of the board), since it outgrows the tile; with reduced motion it is one still, large shield on the Guard. A boosted creature has small hard-edged upward arrows (solid #a98f14, a saturated gold that stays yellow; a see-through yellow over the dusk tile went olive) in its tile's background, on a checkerboard (every other square of a grid has an arrow, none beside another, only corner to corner), drifting slowly up (7 s a loop), behind the creature, name and Knack chip, dimmer than the text, no blur. `boostLook` (a `StageV2` prop and a workbench control) is `pattern` (the default) or `glow` (the earlier inner glow, kept to compare). A debuffed creature has the same pattern flipped: red arrows (#b02f40) drifting down. Reduced motion: the arrows stand still. When a creature is both, the debuff's pattern is drawn. Today the only creature debuff the fight's events carry is silence (`silence` event, the fold's `silenced`), so `debuffed` means silenced; the crossed-out Knack chip stays for the detail. Attack or dodge cuts, Wither's healing cut and Mired are not creature states in the events (Mired is the boss's debuff, Wither a boss rule), so they do not show; a creature debuff event would wire into `debuffed` with no further change to the look. No Settings option for `boostLook` yet (workbench only).
+
+**Reasoning.** Misa asked for fewer borders and boxes so the foreground reads while something extraordinary is visible behind it. The burst makes the Guard, not the covered creature, the centre of the save. Silence fits the debuff look: it blanks the Knack and the role's verb for turns, which is a real lowering, and a glanceable cue on the board complements the chip. Engine and the lab's parity digest untouched.
+
 ## 2026-11-04: Two voices for notes: the Gazette's paper for the valley's stories, the ink Alert for the game (round 23, Q54) **[Misa]**
 
 ID: `2026-11-04-two-voices-for-notes-the-gazette` · Status: current
@@ -11,6 +35,36 @@ ID: `2026-11-04-two-voices-for-notes-the-gazette` · Status: current
 **Decision.** Notes speak in two voices, on purpose (Misa, round 23, Q54: "Let's go with A"). The Gazette's cream paper is the valley telling a story: the welcome-back popup, a place's waiting stories, in-world notes. The ink `ui/Alert` is the game needing the player's attention: errors, warnings, a spend that failed, the full bag. Both close with the same X (`ui/Alert`'s dismiss). The final look of both is settled in the visual revisit Misa set for later (round 19).
 
 **Reasoning.** At a glance the player can tell whether the world is telling them something or the game needs them, and nothing has to be redrawn now; one dismiss behaviour keeps them predictable.
+
+## 2026-11-03: Combat v2 fight visuals: Misa's picks **[Misa]**
+
+ID: `2026-11-03-combat-v2-fight-visuals-misa-s` · Status: current, amended by `2026-11-04-combat-v2-fight-visuals-the-guard` · Amends: `2026-11-03-combat-v2-fight-options-for-misa`
+
+**Decision.** Misa: "Overloads 3 is best. Put the numbers on a single line though. The split two tone crit is amazing and we should note this style down for later use in making text feel special. The crit exclamation point is good and let's standardise it. The shield icon should be really large, like the size of the creature itself or even larger. We need to go flashy here. The yellow glow is good but it could be less opaque and also start from the existing border without a gap." Applied: the reaction callout is the `unit` layout with the `split` colours (one float: the name in the two element colours on top, under it on one line the hit's total and the bonus, "452 +307", the bonus in gold); the other layouts, inks and their `reactionStyle` / `reactionInk` props are removed. A crit is the number with "!" in two hard halves (`crit-split`, the upper half a lighter shade of the hitter's colour), no multiplier; every crit number in v2 playback ends with "!". The style is a shared "special text" (`.special-text`, `ux-patterns.md`). The Guard's save is a large shield (the width of the creature's tile, with a pop, a bright flash and the prevented number on it; still when motion is reduced). The boosted mark is only the yellow inner glow, lighter, inset flush to the tile's border; the pip and `boostMark` are removed. Also: a golden talent shows a star and the word "Golden" beside its gold look everywhere a talent shows (`GoldenMark`), and the stage result rows' Watch button sits clear of the row's border.
+
+**Reasoning.** Misa picked these by screenshot, so the options are gone rather than kept as dead code. The two-tone text feels special and is worth reusing. Colour must not be the only cue for a golden talent (accessibility finding of the valley session's review). Engine untouched.
+
+## 2026-11-03: Combat v2 fight options for Misa: reaction callouts with the hit, colours in the text, crit styles and a buffed mark
+
+ID: `2026-11-03-combat-v2-fight-options-for-misa` · Status: current, amended by `2026-11-03-combat-v2-fight-visuals-misa-s` · Amends: `2026-11-03-combat-v2-fights-made-readable-reaction`
+
+**Decision.** `StageV2` takes options so Misa can pick by screenshot; the shipped look stays the default until he does. `reactionStyle`: `plate` (today), `unit` (one float: name, the hit's total, the bonus), `burst` (the number, the name bursting out under it), `morph` (the number turns into the two colours as the name appears). `reactionInk` puts the two element colours into the letters, no gradient: `bar` (today), `split` word, `outline`, `shadow` (hard drop shadow) or `alternate` letters. `critStyle`: `mult` (today's "x2.6!") or `split` (the number with "!" in two hard halves, the upper a lighter shade). `boostMark`: a creature a Support boosted keeps a yellow inner glow (default) or an up-arrow pip until its next hit; the fold keeps `CreatureState.boost` (added by a `boost` event, spent by the creature's next hit, cleared by a knock-out). A reaction's cue carries its own hit (`FloatCue.hit`) so the callout can hold the number.
+
+**Reasoning.** Misa found the Overload pop-up disconnected from the hit that set it off and asked for the element colours inside the text. The options are props with workbench controls, so no choice is made for him; the board needed a lasting mark for a Boost so players can read it. Engine untouched (parity digest unchanged).
+
+## 2026-11-03: Combat v2 fights made readable: reaction callouts, element-coloured hits, Guard saves, boosts and an optional Knack name
+
+ID: `2026-11-03-combat-v2-fights-made-readable-reaction` · Status: current, amended by `2026-11-03-combat-v2-fight-options-for-misa` · Amends: `2026-11-03-combat-v2-client-third-part-fight`
+
+**Decision.** Misa watched v2 fights on staging and found the creatures' effects mild or invisible. `StageV2` now draws, with the shipped floating-text machinery (`useFxTrail`, `fxRef`, `KoTags`, `FloatsV2`; no second one):
+
+- **Reaction callouts.** The reaction's name from the content (`reactions.json`, found by the mark's element and the hitter's) with its bonus under it and its two element colours as a bar, rising over the boss. A beat that cashes one is held 450 ms longer (`REACTION_HOLD_MS`, inside the round's budget).
+- **A number on the boss for every creature hit,** in the hitter's element colour; a crit bigger with its multiplier ("x2.6!"); a Blocked hit as the shield and 0; "Dodged!" for a dodge.
+- **Guard saves.** A shield rises from each creature a Guard took a hit for or whose cover cut one (with what the cover kept off, "-16"); the Guard's tile flashes and each of the two tiles carries a leg of a bracket towards the other (`FightTile.link`, drawn by `SlotButton`; no measuring, so scrolling cannot misplace it).
+- **Boosts and heals are always on:** two rising arrows with "+15%" on a boosted creature (one float for all its boosts in a beat), heals as green numbers. **Knack names are an option, off by default** (Misa: "I'm afraid the screen might get too cluttered"): Settings, "Fights", "Show Knack names in fights" (`BoardSettings.knackNames`, kept on the device with the board's options; `useKnackNames` lets the stage read it without every screen passing it). The name pops, in gold, where the Knack's chip sits on the tile, for the creature that acts, and for a Support or Guard whose verb boosts or heals at round start; a silenced or knocked-out creature has none.
+- **Engine, board events only** (the fight's digest leaves them out; the lab's parity digest is unchanged): `hit` carries `critBp` on a creature's crit, and three new events: `intercept` (guard, who), `cover` (guard, who, prevented) and `boost` (who, by, bp). The client's parser accepts them. `prevented` is the hit's damage without the Guard's cover less what landed, worked out only when the fight logs.
+
+**Reasoning.** The engine already knew everything the screen was missing except what a Guard saved, a crit's size and who was boosted, so those became board events instead of guesses on the client. Floats are the shipped way a number shows, so each new word is a float tone with its own CSS, not a new layer; a tile carries at most a few at once because each tone has its own height on the tile (hit 22%, boost 36%, save 50%, Knack 62%). The Knack names stay behind an option because a fight has up to a hundred acting beats and Misa feared clutter; everything else is what the fight is, not decoration.
 
 ## 2026-11-03: Combat v2 client, the dungeon's screens: a v2 room on StageV2's single row, foe cards on the map, Out until the camp swaps it, the Knack on the team setup
 
@@ -30,7 +84,7 @@ Not built: rule-card icons on the map's foe, the foe's rule cards in the drawer,
 
 ## 2026-11-03: Combat v2 client, third part: fight playback, the replay, the live finale and the results
 
-ID: `2026-11-03-combat-v2-client-third-part-fight` · Status: current
+ID: `2026-11-03-combat-v2-client-third-part-fight` · Status: current, amended by `2026-11-03-combat-v2-fights-made-readable-reaction`
 
 **Decision.** Phase 4's third client slice (`combat/integration.md`, section 9, "Playback") plays a combat v2 fight on the Raid tab, picked by `rules: 2` (a v1 week behaves as it did). What it is:
 

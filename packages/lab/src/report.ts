@@ -12,6 +12,7 @@ import { KEYWORDS } from './keywords';
 import { FAMILIES, FORM_KNACKS, KNACKS } from './knacks';
 import { withinFormRatio } from './knackUsage';
 import { planBosses, type BossSections } from './bossReport';
+import { planJourney, type JourneyReport } from './journey';
 import { ownabilityMarkdown, ownabilityTable } from './ownability';
 import { SLOT_WEEKS } from './track';
 import type { JobResults, JobSpec, Plan } from './jobs';
@@ -392,6 +393,7 @@ export function planReport(opts: { quick?: boolean } = {}): Plan<Report> {
   const quick = opts.quick ?? false;
   const cards = CARDS.filter((c) => !c.raidOnly);
   const bosses = planBosses({ quick });
+  const journey = planJourney({ quick });
   const best: JobSpec[] = (['raid', 'gauntlet'] as const).flatMap((mode) =>
     cards.map((c): JobSpec => ({
       id: bestId(mode, c.id),
@@ -444,8 +446,9 @@ export function planReport(opts: { quick?: boolean } = {}): Plan<Report> {
     },
   ];
   return {
-    jobs: [...bosses.jobs, ...talents.jobs, ...own],
-    assemble: (results) => assembleReport(quick, results, talents.assemble, bosses.assemble),
+    jobs: [...bosses.jobs, ...journey.jobs, ...talents.jobs, ...own],
+    assemble: (results) =>
+      assembleReport(quick, results, talents.assemble, bosses.assemble, journey.assemble),
   };
 }
 
@@ -454,6 +457,7 @@ function assembleReport(
   results: JobResults,
   talentsOf: (results: JobResults) => TalentSection,
   bossesOf: (results: JobResults) => BossSections,
+  journeyOf: (results: JobResults) => JourneyReport,
 ): Report {
   const seeds = quick ? 4 : 24;
   const md: string[] = [];
@@ -770,6 +774,11 @@ function assembleReport(
       `the committed \`SLOT_WEEKS\` (${SLOT_WEEKS.join(' ')}), the weeks the track was tuned for`,
     ),
   );
+
+  // 13. The journey on the game's raid rules, beside the path's earlier rules.
+  const journey = journeyOf(results);
+  md.push('', ...journey.md);
+  data['journey'] = journey.data;
 
   md.push(
     '',

@@ -484,6 +484,19 @@ export const RULES = {
     v2: {
       liveRoundMs: 30_000,
       determination: { stackBp: 500, maxStacks: 5, fromSlot: 6 },
+      /**
+       * What a v2 weekend pays and when (Misa, 2026-11-04). Each threshold is a share (bp) of the weekend's HP removed; it is paid once,
+       * when first crossed, by whichever stage crosses it (a stage 1 that removes 90% pays both). `pays` names the stage payout it gives
+       * (the Essence of that phase and its scrap); the finale's own payout still goes with the kill. Experience stays per stage.
+       * `killBonus` is the gear a kill gives each member on top: that many items of each rarity, rolled like a finale piece.
+       */
+      rewards: {
+        thresholds: [
+          { id: 'hp30', removedBp: 3_000, pays: 'phase1' },
+          { id: 'hp85', removedBp: 8_500, pays: 'phase2' },
+        ],
+        killBonus: { epic: 2, rare: 4 },
+      },
     },
     /**
      * The "Close one!" rule of the after-action card, both in basis points of the stage's target:
@@ -877,6 +890,45 @@ export const RULES = {
       perDepthBp: { rare: 40, epic: 20 },
       maxBp: { rare: 4_500, epic: 1_800 },
       landmarkBonusBp: { rare: 2_000, epic: 600 },
+    },
+    /**
+     * Combat v2 dungeon rewards grow with depth (Misa, 2026-11-04; first numbers, to tune). Combat v1
+     * runs never read this: they stay rolls 1, keep 1, resources and XP at 1.0x.
+     *
+     * Gear: the hidden best-of roller (`rules/best-of.ts`) rolls `rolls.min` to `rolls.max` pieces and
+     * keeps the best `keep.min` to `keep.max`. `base` is the spec at depth 1; each step of `steps` adds
+     * `add` to one end of the spec for every `every` of the context value past `from`, never above `cap`.
+     * A value other than the context's (`depth`, `undercroftLevel`, `bossRank`) is a lever for later.
+     * The Undercroft pays by its own depth (`undercroftDepth`): the gear is rolled at it, the pack and
+     * the experience are scaled by the deepest level the run reached.
+     */
+    depthRewards: {
+      base: { rolls: { min: 1, max: 2 }, keep: { min: 1, max: 1 } },
+      steps: [
+        // Misa, 2026-11-05: a bit more gear, a tool against the harder Undercroft depths (first numbers; the valley's
+        // econ lab checks them). Before: rolls.max every 8, rolls.min every 16, keep.max every 20 (to 3), keep.min every 40 (to 2).
+        // Rolls max grows by 1 every 6 depths, to 6: more pieces to choose the best from.
+        { field: 'rolls.max', by: 'depth', from: 1, every: 6, add: 1, cap: 6 },
+        // Rolls min by 1 every 12 depths, to 3: a floor under the quality.
+        { field: 'rolls.min', by: 'depth', from: 1, every: 12, add: 1, cap: 3 },
+        // Keep max by 1 every 15 depths, to 4: more pieces kept (the cap rose from 3 so depths 41+ gain too).
+        { field: 'keep.max', by: 'depth', from: 1, every: 15, add: 1, cap: 4 },
+        // Keep min by 1 every 30 depths, to 3.
+        { field: 'keep.min', by: 'depth', from: 1, every: 30, add: 1, cap: 3 },
+      ],
+      /** Pack resources (Bait, Essence, scrap): +`perDepthBp` a depth past 1, at most +`maxBp`. */
+      resources: { perDepthBp: 150, maxBp: 10_000 },
+      /**
+       * Creature experience from a run (Misa, 2026-11-05: drop the payout baseline, a small step per landmark depth
+       * instead of one per depth; first numbers, the valley session checks them in its econ lab). `perRun`: the base
+       * experience a creature that stood in every room of a run gets at depth 1, whatever the number of rooms (a creature
+       * in part of the run gets its share). `nominalBase`: the least a run's full base counts as, so a run cut short pays a
+       * share (a cleared run at depth 1 earns about 220 base in the lab). `landmarkStepBp`: +this much for each landmark depth
+       * (`isLandmark`) at or below the paid depth, no cap (175 = the valley's +0.25% a depth times 7).
+       */
+      xp: { perRun: 120, nominalBase: 200, landmarkStepBp: 175 },
+      /** What a kept piece of each rarity counts for in `dungeonRewardScalars` (its loot number). */
+      rarityWeight: { common: 1, rare: 2, epic: 4 },
     },
     /** A fully cleared landmark depth pays this on top, and its gear drop is guaranteed. */
     landmark: { essence: 2, scrap: 2, glimmer: 1 },

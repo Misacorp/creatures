@@ -1,0 +1,176 @@
+{
+  "rules": 2,
+  "phase": "stage1",
+  "stage": 1,
+  "slot": 6,
+  "cleared": true,
+  "kill": false,
+  "rounds": 8,
+  "boss": {
+    "id": "tidal-colossus",
+    "name": "Tidal Colossus",
+    "hpMax": 19300,
+    "hpStart": 19300,
+    "hpEnd": 9869
+  },
+  "players": [
+    {
+      "displayName": "Player 2",
+      "you": false,
+      "damage": 3973,
+      "knockouts": 0
+    },
+    {
+      "displayName": "Player 3",
+      "you": false,
+      "damage": 2097,
+      "knockouts": 2
+    },
+    {
+      "displayName": "Player 1",
+      "you": true,
+      "damage": 1817,
+      "knockouts": 0
+    },
+    {
+      "displayName": "Player 4",
+      "you": false,
+      "damage": 1544,
+      "knockouts": 0
+    }
+  ],
+  "creatures": [
+    {
+      "name": "Voltaro",
+      "species": "voltaro",
+      "owner": "Player 1",
+      "you": true,
+      "damage": 1162,
+      "hp": 92,
+      "maxHp": 388,
+      "out": false
+    },
+    {
+      "name": "Fogwyrm",
+      "species": "fogwyrm",
+      "owner": "Player 1",
+      "you": true,
+      "damage": 461,
+      "hp": 453,
+      "maxHp": 539,
+      "out": false
+    },
+    {
+      "name": "Magmole",
+      "species": "magmole",
+      "owner": "Player 1",
+      "you": true,
+      "damage": 194,
+      "hp": 302,
+      "maxHp": 431,
+      "out": false
+    },
+    {
+      "name": "Tempestray",
+      "species": "tempestray",
+      "owner": "Player 2",
+      "you": false,
+      "damage": 2608,
+      "hp": 420,
+      "maxHp": 420,
+      "out": false
+    },
+    {
+      "name": "Ancientshell",
+      "species": "ancientshell",
+      "owner": "Player 2",
+      "you": false,
+      "damage": 924,
+      "hp": 596,
+      "maxHp": 597,
+      "out": false
+    },
+    {
+      "name": "Sunfawn",
+      "species": "sunfawn",
+      "owner": "Player 2",
+      "you": false,
+      "damage": 441,
+      "hp": 42,
+      "maxHp": 431,
+      "out": false
+    },
+    {
+      "name": "Ohmouse",
+      "species": "ohmouse",
+      "owner": "Player 3",
+      "you": false,
+      "damage": 672,
+      "hp": 229,
+      "maxHp": 539,
+      "out": false
+    },
+    {
+      "name": "Geyserpup",
+      "species": "geyserpup",
+      "owner": "Player 3",
+      "you": false,
+      "damage": 907,
+      "hp": 0,
+      "maxHp": 323,
+      "out": true
+    },
+    {
+      "name": "Wickat",
+      "species": "wickat",
+      "owner": "Player 3",
+      "you": false,
+      "damage": 518,
+      "hp": 0,
+      "maxHp": 388,
+      "out": true
+    },
+    {
+      "name": "Drizzlewt",
+      "species": "drizzlewt",
+      "owner": "Player 4",
+      "you": false,
+      "damage": 445,
+      "hp": 341,
+      "maxHp": 456,
+      "out": false
+    },
+    {
+      "name": "Kilnmole",
+      "species": "kilnmole",
+      "owner": "Player 4",
+      "you": false,
+      "damage": 238,
+      "hp": 517,
+      "maxHp": 657,
+      "out": false
+    },
+    {
+      "name": "Halcyray",
+      "species": "halcyray",
+      "owner": "Player 4",
+      "you": false,
+      "damage": 861,
+      "hp": 201,
+      "maxHp": 539,
+      "out": false
+    }
+  ],
+  "reactions": {
+    "total": 5,
+    "byMark": {
+      "ember": 3,
+      "tide": 2
+    }
+  },
+  "knockouts": 2,
+  "blocked": 73,
+  "dodges": 20,
+  "intercepts": 8,
+  "healed": 436
+}

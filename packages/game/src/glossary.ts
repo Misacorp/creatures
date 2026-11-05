@@ -278,9 +278,45 @@ export function abilityView(
   };
 }
 
-/** A glossary entry as a popover view. */
-export function entryView(id: string): GlossaryView | undefined {
-  return BY_ID.get(id);
+/**
+ * The shipped entries whose words are wrong under combat v2, each with the entry that says it right (a combat v2 keyword's
+ * where it has one, else an entry written for v2). The Activity opens the counterpart instead while the server plays v2.
+ * Everything not listed reads the same under both rules.
+ */
+export const V2_COUNTERPARTS: Readonly<Record<string, string>> = {
+  'role-setter': 'v2-role-setter',
+  'role-payoff': 'v2-role-payoff',
+  'role-guard': 'v2-role-guard',
+  'role-support': 'v2-role-support',
+  'mark-soaked': 'v2-mark-soaked',
+  'mark-charged': 'v2-mark-charged',
+  'mark-overgrown': 'v2-mark-overgrown',
+  'mark-scorched': 'v2-mark-scorched',
+  'mark-muddied': 'v2-mark-muddied',
+  'reaction-overload': 'v2-reaction-overload',
+  'reaction-grounding': 'v2-reaction-grounding',
+  'reaction-wildfire': 'v2-reaction-wildfire',
+  'reaction-steam': 'v2-reaction-steam',
+  'reaction-smother': 'v2-reaction-smother',
+  'reaction-flare': 'v2-reaction-flare',
+  'element-tide': 'v2-element-tide',
+  'element-ember': 'v2-element-ember',
+  'element-grove': 'v2-element-grove',
+  'element-spark': 'v2-element-spark',
+  'element-mire': 'v2-element-mire',
+  crit: 'kw-crit',
+  'status-mired': 'kw-mired',
+  'boss-rank': 'v2-boss-rank',
+  festival: 'v2-festival',
+  adaptation: 'v2-resistance',
+  'creature-ability': 'v2-knack',
+  level: 'v2-level',
+};
+
+/** A glossary entry as a popover view; with `v2` (the server plays combat v2), the entry's v2 counterpart where it has one. */
+export function entryView(id: string, v2 = false): GlossaryView | undefined {
+  const counterpart = v2 ? V2_COUNTERPARTS[id] : undefined;
+  return BY_ID.get(counterpart ?? id);
 }
 
 const GIMMICK_OPS: readonly string[] = GimmickSchema.options.map((o) => o.entries.op.literal);

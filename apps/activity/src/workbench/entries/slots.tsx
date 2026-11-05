@@ -1,5 +1,5 @@
-import { content } from '@creatures/game';
-import { useMemo, useState } from 'preact/hooks';
+import { content, landmarkBossId } from '@creatures/game';
+import { useMemo, useRef, useState } from 'preact/hooks';
 import { DungeonSetup } from '../../DungeonSetup';
 import { TreatTimesContext } from '../../TreatBox';
 import { DungeonTeam } from '../../DungeonTeam';
@@ -12,9 +12,13 @@ import stateFixture from '../../fixtures/collection-state.json';
 import todayFixture from '../../fixtures/dungeon-today-map.json';
 import { parseGameState, type Creature } from '../../api';
 import { parseDungeonToday } from '../../dungeon-parse';
+import type { DungeonPreview } from '../../dungeon-types';
 import { isComplete, type Slots } from '../../dungeon-team';
 import type { PickerCreature } from '../../roster-picker';
 import { CueRail } from '../../ui/CueRail';
+import { DropChevron } from '../../ui/DropChevron';
+import { DropList } from '../../ui/DropList';
+import { PickSheet } from '../../ui/PickSheet';
 import { PlacedCount } from '../../ui/PlacedCount';
 import { SlotButton } from '../../ui/SlotButton';
 import type { SlotCue } from '../../ui/slot-cue';
@@ -151,14 +155,31 @@ function SetupDemo({ p }: { p: Props }) {
       return { ...from, id: `demo-${String(i)}`, species, level: 3 + i * 2, caughtAt: 1_000 + i };
     });
   }, [num(p, 'owned')]);
-  const today = parseDungeonToday({
+  const v2 = str(p, 'rules') === 'combat v2';
+  const parsed = parseDungeonToday({
     ...todayFixture,
+    ...(v2 ? { rules: 2 } : {}),
     streak: num(p, 'streak'),
     depth: num(p, 'depth'),
     lastTeam: creatures.slice(0, num(p, 'placed')).map((c) => c.id),
     // Without the map the card falls back to the old three-room strip.
     ...(bool(p, 'map') ? {} : { map: null }),
   });
+  // A v2 map carries each foe's card; the stand-in server answers a picked depth with the same map at that depth.
+  const today =
+    v2 && parsed.map != null ? { ...parsed, map: mapV2(parsed.map, num(p, 'depth')) } : parsed;
+  const baseMap = parsed.map;
+  const loadPreview = (depth: number): Promise<DungeonPreview> => {
+    const foeId = landmarkBossId(depth);
+    return baseMap == null
+      ? Promise.reject(new Error('no map'))
+      : Promise.resolve({
+          depth,
+          landmark: foeId !== null,
+          landmarkBoss: foeId === null ? null : { depth, foeId },
+          map: mapV2(baseMap, depth),
+        });
+  };
   return (
     <TreatTimesContext.Provider value={num(p, 'treatTimes')}>
       <DungeonSetup
@@ -170,6 +191,8 @@ function SetupDemo({ p }: { p: Props }) {
         draft={null}
         onDraftChange={() => undefined}
         onEnter={() => undefined}
+        loadPreview={loadPreview}
+        {...(num(p, 'pick') > 0 ? { initialDepth: num(p, 'pick') } : {})}
         onSeeLast={() => undefined}
       />
     </TreatTimesContext.Provider>
@@ -186,7 +209,8 @@ const dungeonSetup: Entry = {
     owned: { kind: 'number', min: 3, max: 8 },
     placed: { kind: 'number', min: 1, max: 3 },
     streak: { kind: 'number', min: 0, max: 30 },
-    depth: { kind: 'number', min: 1, max: 40 },
+    depth: { kind: 'number', min: 1, max: 150 },
+    pick: { kind: 'number', min: 0, max: 150 },
     bait: { kind: 'number', min: 0, max: 100 },
     treatTimes: { kind: 'number', min: 2, max: 4 },
     busy: { kind: 'toggle' },
@@ -200,6 +224,7 @@ const dungeonSetup: Entry = {
     placed: 3,
     streak: 3,
     depth: 1,
+    pick: 0,
     bait: 40,
     treatTimes: 2,
     busy: false,
@@ -224,13 +249,33 @@ const dungeonSetup: Entry = {
       name: 'Combat v2: getting the team ready, with the Knack part (tap a creature, then its Knack)',
       props: { configure: true, rules: 'combat v2' },
     },
+    {
+      name: 'Combat v2, the depth picker at your own depth (23: tap the dropdown for every depth from 23 down, with what each pays)',
+      props: { rules: 'combat v2', depth: 23 },
+    },
+    {
+      name: 'Combat v2, the depth picker below your own (own 23, picking 16: a lower pick does not advance)',
+      props: { rules: 'combat v2', depth: 23, pick: 16 },
+    },
+    {
+      name: 'Combat v2, a deep player (own 60: the list opens scrolled to the picked depth and scrolls)',
+      props: { rules: 'combat v2', depth: 60 },
+    },
+    {
+      name: 'Combat v2, the depth picker at the lowest depth (own 23, picking 1)',
+      props: { rules: 'combat v2', depth: 23, pick: 1 },
+    },
+    {
+      name: 'Combat v2, a landmark below your own depth (own 23, picking 14: the floor boss shows, the bonus is paid once)',
+      props: { rules: 'combat v2', depth: 23, pick: 14 },
+    },
   ],
   render: (p) =>
     bool(p, 'configure') ? (
       <ConfigureSetupDemo key={str(p, 'rules')} v2={str(p, 'rules') === 'combat v2'} />
     ) : (
       <SetupDemo
-        key={`${String(num(p, 'owned'))}-${String(num(p, 'placed'))}-${String(num(p, 'streak'))}-${String(num(p, 'depth'))}-${String(bool(p, 'map'))}`}
+        key={`${String(num(p, 'owned'))}-${String(num(p, 'placed'))}-${String(num(p, 'streak'))}-${String(num(p, 'depth'))}-${String(num(p, 'pick'))}-${String(bool(p, 'map'))}-${str(p, 'rules')}`}
         p={p}
       />
     ),
@@ -625,8 +670,156 @@ const placedCount: Entry = {
   ),
 };
 
+/** The sheet frame on its own, with a short plain list (the creature and depth pickers fill it with theirs). */
+function PickSheetDemo({ p }: { p: Props }) {
+  const [open, setOpen] = useState(bool(p, 'open'));
+  const close = (): void => {
+    setOpen(false);
+  };
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => {
+          setOpen(true);
+        }}
+      >
+        Open the sheet
+      </button>
+      {open && (
+        <PickSheet
+          title="Pick one"
+          {...(bool(p, 'status') ? { status: 'A line under the title.' } : {})}
+          anchor={() => null}
+          onClose={close}
+        >
+          <ul class="roster-list" role="listbox" aria-label="Choices">
+            {['First', 'Second', 'Third'].map((name, i) => (
+              <li
+                key={name}
+                role="option"
+                aria-selected={false}
+                tabIndex={i === 0 ? 0 : -1}
+                class="roster-option"
+                onClick={close}
+              >
+                {name}
+              </li>
+            ))}
+          </ul>
+        </PickSheet>
+      )}
+    </>
+  );
+}
+
+const pickSheet: Entry = {
+  name: 'PickSheet',
+  file: 'apps/activity/src/ui/PickSheet.tsx',
+  group: 'Slots',
+  description:
+    'The bottom sheet every pick-one-from-a-list opens from a page: a title, a Close button, an optional line and the list. Escape, Close or a tap outside closes it, Tab stays inside, and focus goes back to what opened it. The creature picker (RosterPicker) fills it with its list (a dropdown, DropList, is the lighter pick from a page). From a drawer a choice is a drill-in view instead, never a sheet.',
+  controls: { open: { kind: 'toggle' }, status: { kind: 'toggle' } },
+  defaults: { open: true, status: true },
+  presets: [
+    { name: 'Open, with a line under the title', props: {} },
+    { name: 'Open, no line', props: { status: false } },
+  ],
+  render: (p) => (
+    <PickSheetDemo key={`${String(bool(p, 'open'))}-${String(bool(p, 'status'))}`} p={p} />
+  ),
+};
+
+/** The dropdown panel on its own: a trigger in the shared look and a short plain list hanging from it. */
+function DropListDemo({ p }: { p: Props }) {
+  const [open, setOpen] = useState(bool(p, 'open'));
+  const [picked, setPicked] = useState(0);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const names = Array.from({ length: num(p, 'rows') }, (_, i) => `Choice ${String(i + 1)}`);
+  return (
+    <div class="depth-pick">
+      <button
+        ref={trigger}
+        type="button"
+        class="equip-trigger depth-trigger"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => {
+          setOpen(!open);
+        }}
+      >
+        <span class="depth-name">{names[picked] ?? 'Choice 1'}</span>
+        <DropChevron />
+      </button>
+      {open && (
+        <DropList
+          anchor={() => trigger.current}
+          onClose={() => {
+            setOpen(false);
+          }}
+        >
+          <ul class="roster-list" role="listbox" aria-label="Choices">
+            {names.map((name, i) => (
+              <li
+                key={name}
+                role="option"
+                aria-selected={i === picked}
+                tabIndex={i === picked ? 0 : -1}
+                class={i === picked ? 'roster-option on' : 'roster-option'}
+                onClick={() => {
+                  setPicked(i);
+                  setOpen(false);
+                }}
+              >
+                {name}
+              </li>
+            ))}
+          </ul>
+        </DropList>
+      )}
+    </div>
+  );
+}
+
+const dropList: Entry = {
+  name: 'DropList',
+  file: 'apps/activity/src/ui/DropList.tsx',
+  group: 'Slots',
+  description:
+    'The dropdown panel of a pick-one list opened from a page: directly under its trigger (above it when there is no room below), as wide as the trigger, inset from the window edges, at most half the window high with its own scroll. No title, no Close, no backdrop. Escape, Tab, a tap outside or a pick closes it and focus goes back to the trigger. The dungeon depth picker (DepthPicker) fills it with its list. From a drawer a choice is a drill-in view instead.',
+  controls: { open: { kind: 'toggle' }, rows: { kind: 'number', min: 1, max: 40 } },
+  defaults: { open: true, rows: 12 },
+  presets: [
+    { name: 'Open, a long list', props: {} },
+    { name: 'Open, a short list', props: { rows: 3 } },
+  ],
+  render: (p) => (
+    <DropListDemo key={`${String(bool(p, 'open'))}-${String(num(p, 'rows'))}`} p={p} />
+  ),
+};
+
+const dropChevron: Entry = {
+  name: 'DropChevron',
+  file: 'apps/activity/src/ui/DropChevron.tsx',
+  group: 'Slots',
+  description:
+    'The pixel chevron at the right of a trigger that looks like a dropdown: "Equip on" in the item drawer and the depth picker on the dungeon card. Shown here inside the shared trigger look.',
+  controls: { none: { kind: 'toggle' } },
+  defaults: { none: false },
+  presets: [{ name: 'In a trigger', props: {} }],
+  render: () => (
+    <button type="button" class="equip-trigger">
+      <span class="equip-name">Choose one</span>
+      <DropChevron />
+    </button>
+  ),
+};
+
 export const slotEntries: readonly Entry[] = [
   dungeonSetup,
+  pickSheet,
+  dropList,
+  dropChevron,
   creatureConfigurator,
   dungeonTeam,
   slotButton,

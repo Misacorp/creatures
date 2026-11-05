@@ -251,6 +251,48 @@ describe('createResolver', () => {
     ]);
   });
 
+  it('a golden talent has its numbers x1.25 (rounded half up); counts and flags stay; others are unchanged', () => {
+    const gr = createResolver(
+      {
+        ...PACK,
+        talents: {
+          ...PACK.talents,
+          brace: talent('brace', { clinging: true, atkBp: 300 }),
+          deep: talent('deep', { firstMarkExtra: 2 }),
+        },
+      },
+      SHIPPED,
+    );
+    const plain = gr.resolve({
+      ...at,
+      formId: 'wisp',
+      talents: ['sturdy', 'fleet', 'brace', 'deep'],
+    });
+    const gold = gr.resolve({
+      ...at,
+      formId: 'wisp',
+      talents: ['sturdy', 'fleet', 'brace', 'deep'],
+      goldenTalents: ['sturdy', 'brace', 'deep'],
+    });
+    // sturdy 1000 -> 1250, 500 -> 625; fleet is normal (hp 500); brace 300 -> 375 and its flag stays.
+    expect(plain.fxAll).toMatchObject({ hpBp: 1_500, atkBp: 800, firstMarkExtra: 2 });
+    expect(gold.fxAll).toMatchObject({
+      hpBp: 1_250 + 500,
+      atkBp: 625 + 375,
+      dodgeBonusBp: 300,
+      clinging: true,
+      firstMarkExtra: 2,
+    });
+    expect(gold.maxHp).toBe(Math.floor((140 * 11_750) / 10_000));
+    // The silenced stat lines keep the golden numbers too, and the plain ids stay as they are.
+    expect(gold.fxStat).toMatchObject({ hpBp: 1_750, atkBp: 1_000 });
+    expect(gold.talents).toEqual(['sturdy', 'fleet', 'brace', 'deep']);
+    // A golden id that is not among the talents does nothing; none golden equals the default.
+    expect(
+      r.resolve({ ...at, formId: 'wisp', talents: ['sturdy'], goldenTalents: ['fleet'] }).fxAll,
+    ).toEqual(r.resolve({ ...at, formId: 'wisp', talents: ['sturdy'] }).fxAll);
+  });
+
   it('Triage is idle under a Support shape Knack and under no other', () => {
     const triage = ['triage'];
     expect(r.resolve({ ...at, formId: 'nurse', knack: 'widen', talents: triage }).triageIdle).toBe(
@@ -409,6 +451,22 @@ describe('foeAt', () => {
       hp: Math.floor((400 * 12_400) / 10_000),
       atk: 30,
     });
+  });
+
+  it('builds an Undercroft foe with the pack’s Undercroft scale and curve, not the base floors’', () => {
+    const under = {
+      ...PACK,
+      foeUndercroft: {
+        scale: { hpBp: 30_000, atkBp: 15_000 },
+        curve: { hpStepBp: 500, hpCurveBp: 0, atkStepBp: 0, atkCurveBp: 0 },
+      },
+    };
+    // Depth 3: 10000 + 500 x 2 = 11000 on a scale of 30000 (grub: 200 content HP).
+    expect(foeStats(under, SHIPPED, 'grub', 3, true).hp).toBe(Math.floor((600 * 11_000) / 10_000));
+    expect(foeAt(under, SHIPPED, 'grub', 3, { undercroft: true }).hp).toBe(660);
+    expect(foeStats(under, SHIPPED, 'grub', 3).hp).toBe(Math.floor((400 * 12_400) / 10_000));
+    // A pack without Undercroft numbers refuses an Undercroft foe.
+    expect(() => foeStats(PACK, SHIPPED, 'grub', 3, true)).toThrow(/Undercroft/);
   });
 
   it('applies the foe’s own HP and Attack shares, and never goes below 1', () => {

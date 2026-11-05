@@ -1,9 +1,9 @@
 /**
- * The six contract-fixture sets: the single place that says how each one is played and which files
+ * The seven contract-fixture sets: the single place that says how each one is played and which files
  * of `apps/activity/src/fixtures` it owns.
  *
  *     pnpm fixtures:capture                  re-capture every set (writes the files)
- *     pnpm fixtures:capture --set gear       one set: branches, creatures, dungeon, expeditions, gear, games
+ *     pnpm fixtures:capture --set gear       one set: branches, creatures, dungeon, expeditions, gear, games, combat-v2
  *     pnpm fixtures:capture --check          write nothing; exit 1 if any file would change
  *
  * How it works. `test/capture/capture-all.test.ts` plays every set here through the real routes and
@@ -26,6 +26,11 @@
  */
 import { RULES, createSeededRng } from '@creatures/game';
 import { branchesScenarioOptions, runBranchesScenario } from './branches-scenario';
+import {
+  combatV2ScenarioOptions,
+  runV2DungeonScenario,
+  runV2RaidScenario,
+} from './combat-v2-scenario';
 import { creaturesScenarioOptions, runCreaturesScenario } from './creatures-scenario';
 import { dungeonScenarioOptions, runDungeonScenario } from './dungeon-scenario';
 import { runTripsScenario, tripsScenarioOptions } from './expeditions-scenario';
@@ -345,6 +350,36 @@ export const FIXTURE_SETS: readonly FixtureSet[] = [
       ),
       errors: 'games-errors.json',
       requests: 'games-request-bodies.json',
+    },
+  },
+  {
+    name: 'combat-v2',
+    nibble: '7',
+    // Two guilds with the flag on: a raid weekend to the live finale, and a dungeon run's first room.
+    run: async () => {
+      const options = { ...seededRngs('combat-v2'), ...combatV2ScenarioOptions() };
+      const raid = await runCore(nextGuild(), (ctx) => runV2RaidScenario(ctx), options);
+      const dungeon = await runCore(nextGuild(), (ctx) => runV2DungeonScenario(ctx), {
+        ...seededRngs('combat-v2'),
+        ...combatV2ScenarioOptions(),
+      });
+      return merge([raid, dungeon]);
+    },
+    files: {
+      responses: named(
+        'v2-state',
+        'v2-raid-open',
+        'v2-raid-stage1',
+        'v2-replay',
+        'v2-stats',
+        'v2-live',
+        'v2-dungeon-start',
+        'v2-dungeon-today',
+        'v2-dungeon-act-fight',
+        'v2-dungeon-replay',
+      ),
+      errors: 'v2-errors.json',
+      requests: 'v2-request-bodies.json',
     },
   },
 ];

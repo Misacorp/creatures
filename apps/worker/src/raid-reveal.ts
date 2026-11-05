@@ -39,7 +39,10 @@ export function totalEssenceOf(
   return base + jackpotEssenceFor(payoutWeek(sql, weekId));
 }
 
-/** The finales (newest first) whose stored summary lists the user, with that summary. */
+/**
+ * The finales (newest first) whose stored summary lists the user, with that summary. On a combat v2 week the boss can fall in stage 1 or
+ * 2 and nothing more is fought: the stage that killed it counts as that party's finale (its `v2.kill` is set).
+ */
 function finalesOf(
   sql: SqlStorage,
   userId: string,
@@ -49,9 +52,10 @@ function finalesOf(
   const out: { weekId: string; party: number; summary: StoredSummary }[] = [];
   // The text match only narrows the rows; the parsed member list decides.
   const rows = sql
-    .exec<{ week_id: string; party: number; summary: string }>(
-      `SELECT week_id, party, summary FROM raid_results
-       WHERE week_id >= ? AND phase = 'finale' AND instr(summary, ?) > 0
+    .exec<{ week_id: string; party: number; phase: string; summary: string }>(
+      `SELECT week_id, party, phase, summary FROM raid_results
+       WHERE week_id >= ? AND instr(summary, ?) > 0
+         AND (phase = 'finale' OR (phase IN ('stage1', 'stage2') AND instr(summary, '"kill":true') > 0))
        ORDER BY created_at DESC, rowid DESC`,
       sinceWeek,
       `"userId":"${userId}"`,
@@ -59,7 +63,8 @@ function finalesOf(
     .toArray();
   for (const r of rows) {
     const summary = JSON.parse(r.summary) as StoredSummary;
-    if (summary.members.some((m) => m.userId === userId)) {
+    const ends = r.phase === 'finale' || summary.v2?.kill === true;
+    if (ends && summary.members.some((m) => m.userId === userId)) {
       out.push({ weekId: r.week_id, party: r.party, summary });
       if (out.length >= limit) break;
     }

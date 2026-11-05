@@ -523,6 +523,8 @@ export function propsOf(event: AnalyticsEvent): Record<string, unknown> {
         ...(event.marks === undefined
           ? {}
           : { marks: event.marks.slice(0, 2).map((m) => oneOf(UNDERCROFT_MARK_IDS, m, 'fight')) }),
+        ...(event.top === undefined ? {} : { top: int(event.top, 9_999) }),
+        ...(event.belowOwn === undefined ? {} : { belowOwn: bool(event.belowOwn) }),
       };
     case 'dungeon_descend':
       return { level: int(event.level, 3) };

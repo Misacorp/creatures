@@ -7,6 +7,7 @@ import {
   gearContent,
   weatherContent,
 } from '@creatures/game';
+import { combatV2 } from '@creatures/game/combat-v2';
 import type { Option } from './forms';
 
 function options<T extends { id: string }>(
@@ -24,7 +25,6 @@ export const SUPPLY_OPTIONS = options(expeditionContent.supplies, (s) => s.name)
 export const GOAL_OPTIONS = options(expeditionContent.goals, (g) => g.name);
 export const JOURNAL_OPTIONS = options(expeditionContent.journal.entries, (e) => e.title);
 export const BASE_OPTIONS = options(gearContent.bases, (b) => b.name);
-export const BOSS_OPTIONS = options(content.bosses, (b) => b.name);
 export const MODIFIER_OPTIONS = options(dungeonContent.modifiers, (m) => m.name);
 const liveWeather = (kind: 'boon' | 'omen') =>
   weatherContent.filter((d) => d.kind === kind && d.status === 'live');
@@ -45,26 +45,19 @@ export const GATE_OPTIONS: readonly Option[] = ['on', 'off', 'auto'].map((g) => 
   label: g,
 }));
 
-export const PHASE_OPTIONS: readonly Option[] = [
-  { value: 'preparation', label: 'Preparation' },
-  { value: 'phase1', label: 'Phase 1' },
-  { value: 'phase2', label: 'Phase 2' },
-  { value: 'finale', label: 'Finale day' },
-  { value: 'done', label: 'Week done' },
-];
+/**
+ * The Boss Ranks of the raid track, each with its boss ("Rank 8, Storm Sovereign"): one per slot of `raid-track.json`, and a rank
+ * comes with its own boss (the track's order repeats, so the boss of a slot is `order[(slot - 1) % order.length]`).
+ */
+export const RANK_OPTIONS: readonly Option[] = combatV2.raidTrack.slots.map((slot) => {
+  const { order } = combatV2.raidTrack;
+  const bossId = order[(slot.slot - 1) % order.length];
+  const name = content.bosses.find((b) => b.id === bossId)?.name ?? bossId ?? 'unknown boss';
+  return { value: String(slot.slot), label: `Rank ${String(slot.slot)} \u00b7 ${name}` };
+});
 
-export const RESOLVE_OPTIONS: readonly Option[] = [
-  { value: 'phase1', label: 'Phase 1' },
-  { value: 'phase2', label: 'Phase 2' },
-];
-
-/** The steps of a combat v2 weekend, in order (`raid-weekend`). */
-export const WEEKEND_STEP_OPTIONS: readonly Option[] = [
-  { value: 'stage1', label: 'Stage 1' },
-  { value: 'stage2', label: 'Stage 2' },
-  { value: 'finale-start', label: 'Finale starts' },
-  { value: 'finale-end', label: 'Finale ends' },
-];
+/** The most simulated players one fill adds (a party holds 15 players, and the caller is one of them). */
+export const MAX_FILL_PLAYERS = 14;
 
 export const OUTCOME_OPTIONS: readonly Option[] = ['success', 'fail', 'random'].map((o) => ({
   value: o,
@@ -89,5 +82,4 @@ export const LIMITS = {
   maxExplorerRank: RULES.expeditions.rank.xpForRank.length,
   maxExplorerXp: (RULES.expeditions.rank.xpForRank.at(-1) ?? 0) * 2,
   maxSlots: 1 + 1 + RULES.expeditions.slots.thresholds.length,
-  maxBossRank: RULES.raid.scaling.maxRank,
 } as const;

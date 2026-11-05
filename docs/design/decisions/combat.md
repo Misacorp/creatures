@@ -4,6 +4,96 @@ The shared combat engine, abilities, statuses, elements, the balance simulator, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-04: Combat v2 phase 5 step 3: the dungeon over days in the lab
+
+ID: `2026-11-04-combat-v2-phase-5-step-3` · Status: current
+
+**Decision.** The lab simulates the dungeon over days (`packages/lab/src/dungeonDays.ts`, `pnpm --filter @creatures/lab report -- --dungeon-days`): each player of the journey servers (dedicated, mixed, `live10`) runs the daily dungeon over weeks 1 to 24 on the game's v2 rules through `runMap` (the day's map, HP carried, a knocked-out creature out until the camp swaps it, the worker's descent that heals only the standing (`descentBreathOf`, since the worker's `descentBreath` is not exported from the game package), a next Undercroft level only on a cracked floor). Progress is the worker's: one run a day, a retry on the first day after a defeat, a clear locks in depth + 1, a defeat leaves the depth. Levels come from the valley's roster profile, teams from the journey's column logic (prepared and builder players: the lab's all-round line and bench; casual players: their best three, no Knack), talents and Knacks from the habits.
+
+Run frequency is data in `habits.ts` (`DUNGEON_RUNS`): daily players every day, weekly (semi-weekly) players 2 or 3 times a week (a seeded draw per week, equal chance, on seeded days). **Confirmed by Misa, 2026-11-04** (not an assumption). Assumptions, also in `habits.ts` (the lead's, to confirm): prepared players and builders plan their runs (pick rooms, bring a bench, swap at the camp), casual players take the first exit (`dungeonPolicy`); a player descends into the Undercroft while the standing creatures' mean HP share is above 50% (`DESCEND_ABOVE`, the design simulator's own number); a new player runs daily.
+
+**Measured** (8 servers of each kind, daily players, expected speed; weekly in brackets where they differ; the table is in the report): first-week depth 1 clears 13% (dedicated), 5% (mixed), 4% (live10) against the target of at least 80%; median depth growth a week from week 2 to 8: 1.67 / 1.83 / 1.83 against 1 to 2 (weekly players 0.17); fights a run 3.3 (3 to 5.5, passes), 3.3 at depth 8 or more (at most 7, passes); descent rate of the runs that beat the boss at depth 8 or more: 79% / 82% / 78% (20 to 80%, at the top edge), with the first keeper beaten in only about 5% of descents (the v1 simulator had about a third); 90% of the daily players' runs are wipes, because players reach a depth wall (about depth 13 to 14 at week 8, 19 at week 24) and stay there; a run costs 2 to 4 ms of CPU in the lab. The first-week clear is low because the evolution gate fields the all-round line's stage 1 forms below level 15 (weeks 1 and 2), and that team wins 25% at depth 1; the same line at the roster's level from week 3 on clears 90% at depth 1. Nothing in the game was changed and no number was tuned.
+
+**Reasoning.** Balance plan section 2, item 4: the valley owns how fast players level and combat v2 owns the rooms, so the question is whether the dungeon's targets (made on the v1 dungeon and the v1 economy) still hold at the valley's levels. Calling the game's own functions for the map, camp, descent and Undercroft keeps the simulator from drifting from the worker. The worker's v2 descent does not revive a fallen creature, the game's `catchBreath` does, so the lab's run has an option (`standingOnlyDescent`, off by default so earlier lab numbers do not move; the dungeon over days turns it on). Run frequency came from Misa; the policies are what a real player could plausibly do and are data so the report can move them. The first-week and weekly-player numbers are the ones to read first: they say the dungeon's early levels and the casual team are the weak spot, not the depth growth of daily players.
+
+## 2026-11-04: [Misa] Combat v2 phase 5: weekly players replace 3 in 10, and Misa's server mix
+
+ID: `2026-11-04-combat-v2-phase-5-weekly-players` · Status: current
+
+**Decision.** The weekly players' replacement rate of 0.3 (three times in ten a weekly player brings a spare between stages) is confirmed by Misa and no longer an assumption (`REPLACE_CHANCE`, `habits.ts`); the new-player rate stays the lead's assumption. Misa's live server is the one to measure against: 10 players, 3 try-hard (prepared line, daily), 3 daily (builders), 4 semi-weekly (casual, weekly roster), all there from week 1. It is the journey server `live10`, in the `--journey` report under both habit sets.
+
+**Reasoning.** Misa, 2026-11-04: "3 times in 10 seems legit" and "my player base right now is 3 try hard players, 3 daily players and 4 semi weekly players". A server that matches the real one tells more than the coverage mixes, which stay as they are.
+
+## 2026-11-04: [Misa] Combat v2 small raid parties: curve only, no mechanics
+
+ID: `2026-11-04-combat-v2-small-raid-parties-curve` · Status: current · Amends: `2026-11-04-combat-v2-phase-5-answers-small`
+
+**Decision.** Small raid parties are not a priority. Below four players the boss's HP and Attack scale linearly with the players (`players / 4` for both: `SMALL_PARTY_HP_EXPONENT` and `SMALL_PARTY_ATK_EXPONENT`, both 1, in `resolve/track.ts`; `partyBossOf` is used by `trackBoss` with `followSmallParty` and by the lab's `partyBoss`). Four and above keep HP `(p / 4)^0.7` and Attack `(p / 4)^0.3`. No mechanical changes for small parties, such as column-hit counts, seats or cards.
+
+**Reasoning.** Misa, 2026-11-04: "Small groups don't matter as the raid is something that by definition works better with lots of people ... you can accommodate the boss difficulty curve for those if it's trivial. No mechanical changes." Measured: on the old curve a solo player met 38% of the HP and 66% of the Attack with a quarter of the creatures, and small1 and small2 were 100% stuck; on the linear curve small3 matched the four-player server and small1 and small2 improved but stay mostly stuck, which Misa accepts.
+
+## 2026-11-04: Combat v2 phase 5 step 2: player habits in the journey simulator
+
+ID: `2026-11-04-combat-v2-phase-5-step-2` · Status: current
+
+**Decision.** The journey simulator (`packages/lab/src/journey.ts`, new `habits.ts`) models what each kind of player does, as data (`Habits`), and plays the same seeded servers with step 1's "everyone replaces" and with the habits:
+
+- **Replacements** by roster kind (`REPLACE_CHANCE`): daily 1.0, weekly 0.3, new player 1.0. **An assumption to confirm with Misa.** One seeded draw per player and stage break; a player who logs in fills every empty seat from their own spares.
+- **Knacks** per role: best for the board (prepared, builder), none (casual); "first known" is available and has a report row.
+- **Talents** per role: prepared players keep their line as written; builders and casual players roll from the creature's line pool at the valley's rate (the roster profile's open talent slots that week, capped by the level's and the species' slots; the valley's data says random rolls throughout). Golden at the game's chance (`RULES.talents.golden`, 1 in 20), played at the engine's x1.25 (the game's `goldenBp` says 1.5x: the two disagree and are left for the lead to settle).
+- **Placement**: prepared and builder follow the board; casual players stand in random rows of their column.
+- **The finale**: every player's basic ability fires at its default round, dealt rally, shield wall, purge by place in the party as the worker does (Auto fire on, nobody touching it). "Best for the board" for daily players is not modelled (it needs a search per party).
+- **Small parties** fight `partyBossOf` for the party size (what `trackBoss` builds with `followSmallParty`): `wideBoss` on the 0.7 and 0.3 curves from four up, HP and Attack linear in the players (`SMALL_PARTY_HP_EXPONENT`, `SMALL_PARTY_ATK_EXPONENT`, both 1) below four.
+
+**Reasoning.** Step 1 assumed every player replaces; weekly players probably do not, and no retune may happen before the habits are modelled. Measured (40 servers, mixed server's one-weekend kill at slots 8 / 11 / 14): everyone replaces 68% / 53% / 93%; only the replacement habit 25% / 48% / 48%; all habits 45% / 75% / 83%; casual players on their first known Knack 85% / 98% / 100%. Replacement alone is the big drop; the pool talents (more of them than step 1's one), golden talents and the finale's actions give some back, and a casual player's Knack is worth far more than the rest, so the policy matters. The model is not a target: the rates are assumptions, and the balance pass uses it only once Misa has confirmed them.
+
+## 2026-11-04: Combat v2 phase 5, slice 1: the path's weekend plays the game's raid rules (journey.ts)
+
+ID: `2026-11-04-combat-v2-phase-5-slice-1` · Status: current
+
+**Decision.** The lab's path gets a second weekend, `packages/lab/src/journey.ts`, that plays the worker's raid rules with the engine's `stageV2` and its carry: a player brings the seats of the boss's arena piece (`piece.rows`), the party is locked at stage 1 and sets the weekend HP, and between stages each player replaces their own knocked-out creatures from their own spares (the next ranks of their roster, each used once), with Knacks and talents as they fought. The lab's older weekend stays (the tuner and the tuned numbers still use it); the report's "Journey on the game's rules" section plays both on the same seeds. Real party sizes are the valley's coverage servers of 5, 8 and 15 (with one new player who joins in week 4) and parties of one to three. Under four players the engine's `trackBoss` still fights at four columns; `partyBoss` in `journey.ts` is the one place to switch when the smaller boss lands.
+
+**Reasoning.** The simulator must play the code the game plays, or it drifts. Measured: the game's spares (up to a seat's worth each, instead of one shared-bench creature) lift the mixed server's one-weekend kill at slots 8, 11 and 14 from 8%, 23% and 25% to 68%, 53% and 93% (40 servers; limiting the spares to one gives the lab's numbers back), so the track's three misses were partly the lab's bench, not the bosses. No tuned number changed: the balance pass comes after the policies and the dungeon steps.
+
+## 2026-11-04: Combat v2 phase 5 plan: extend the lab's path into the v2 journey simulator; the valley keeps the roster and economy
+
+ID: `2026-11-04-combat-v2-phase-5-plan-extend` · Status: current
+
+**Decision.** Phase 5 follows `docs/design/combat/balance.md`:
+
+- **The v2 journey simulator is the lab's path, extended,** not the v1 journey sim ported. It adds:
+  - the worker's raid rules, shared where possible: seats per piece, locks at stage 1, the spare, replacements from each player's spares;
+  - real party sizes from the valley's coverage;
+  - players' choices as policies: Knacks, talents from pools, placement, the finale's action;
+  - the dungeon over days;
+  - rewards recorded against the valley's assumptions.
+- **The valley keeps the roster and the economy:** levels per week come from its roster profile, and phase 5 hands it reward numbers instead of feeding XP back into levels.
+- **The v1 journey sim stays for the live game** until v2 ships (phase 8); its combat targets retire then.
+- **The gate's measures** (raid by rank, the classic trio, diversity, no dead Knack) become report sections and lab tests. One balance pass follows, run by the tuners, with Misa choosing where numbers trade against feel.
+
+**Reasoning.** The journey sim's strength comes from the v1 economy and v1 combat, which the valley is redesigning. Porting it would rebuild what the valley replaces. The lab's path already plays v2 on the valley's roster with the track, attrition and Determination, so it is the shortest way to a v2 journey. Sharing the worker's rules keeps the simulator from drifting from the game.
+
+## 2026-11-03: Golden v2 talents read from the line book, numbers x1.25, flags unchanged
+
+ID: `2026-11-03-golden-v2-talents-read-from-the` · Status: current
+
+**Decision.** A learned v2 talent is golden when the line's Talent Book (`line_talents`) holds it golden; nothing new is stored per creature (no migration). The engine's `Placement.goldenTalents` (default none) marks the golden ids, and the resolver multiplies every number of a golden talent's effects by 1.25 (rounded half up) before the merge. Flags and the count `firstMarkExtra` stay as they are, so golden is a no-op for talents with no number (the proposal's small golden extras for them are not in the data).
+
+**Reasoning.** A creature learns "the talent of its line's book", and the book already keeps golden once per line and talent (a golden find upgrades it), so reading it there needs no second copy to keep in step and the page's badge already shows the book's value. Golden off by default keeps the lab's parity digest identical. The raid, the dungeon and the creature page all build the fighter through `buildFighter`, so the page shows the fight's numbers.
+
+## 2026-11-03: Culling Strike stays as an enabler: in one line's pool per role and per element, never buffed for its solo value **[Misa]**
+
+ID: `2026-11-03-culling-strike-stays-as-an-enabler` · Status: current
+
+**Decision (Misa).** Culling Strike (`cull`) stays in the talent library and goes into the pools of a few lines, as a trial:
+
+- **Where:** at least one line of each role (Setter, Payoff, Guard, Support) and at least one line of each element (Tide, Ember, Grove, Spark, Mire) has it in its pool. A few lines can cover both splits; the lead picks them with the lab.
+- **What it is:** a utility talent with no payoff of its own today (a hit that leaves the foe below a small share of its HP defeats it). It is an **enabler**: effects are meant to stack on it later (killing-blow triggers, R21.5).
+- **For balance passes:** Culling Strike is **not intended to be used alone**. A weak result for it on its own is expected and is **not a reason to buff it**. Judge it only with the effects that build on it, once they exist. Its `intent` in `talents.json` says the same, so the lab report shows it.
+- It may be dropped later if nothing comes to build on it.
+
+**Reasoning.** It was in the library but in no line's pool, so no creature could find or learn it (found by the valley session, 2026-11-03). Misa wants it in play somewhere so later effects have something to stack on, and wants the note so a balance pass does not misread its solo numbers.
+
 ## 2026-11-02: Combat v2 engine slice 1: carry keyed by creature key, board events beside the log, live actions as one boost or cut each
 
 ID: `2026-11-02-combat-v2-engine-slice-1-the` · Status: current

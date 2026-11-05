@@ -5,7 +5,7 @@ import { content, gearContent, seasonOf } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import { propsOf } from '../src/analytics-props';
 import { loadV2Creatures } from '../src/raid-v2-fighters';
-import { determinationBpFor } from '../src/raid-v2-core';
+import { determinationBpFor, weekendBoss } from '../src/raid-v2-core';
 import { addWeeks, eventTimes, nextDueEvent, weekIndex } from '../src/raid-schedule';
 import { endWeekV2 } from '../src/raid-v2-track';
 import { undoKnackMigration, type CoreContext } from './helpers';
@@ -219,15 +219,54 @@ describe('players lock at stage 1', () => {
         expect(ctx.core.raid.canWatchBoard(early.id, ctx.core.raid.currentWeek(HELSINKI), 1)).toBe(
           false,
         );
-        // Two players fight a boss with the HP of four (a party under four fights at four columns).
+        // Two players fight a boss of two columns, its HP and Attack linear in the players below four (Misa, 2026-11-04).
         const boss = JSON.parse(
           rows<{ input: string }>(
             ctx.sql,
             "SELECT input FROM raid_results WHERE phase = 'stage1'",
           )[0]?.input ?? '{}',
-        ) as { boss: { hp: number; cols: number } };
-        expect(boss.boss.cols).toBe(4);
+        ) as { boss: { hp: number; atk: number; cols: number } };
+        const four = weekendBoss(1, 4);
+        expect(boss.boss.cols).toBe(2);
+        expect(boss.boss.hp).toBe(Math.round(four.hp * (2 / 4)));
+        expect(boss.boss.atk).toBe(Math.round(four.atk * (2 / 4)));
         expect(rows(ctx.sql, 'SELECT v2_players FROM raid_parties')).toEqual([{ v2_players: 2 }]);
+        return Promise.resolve();
+      },
+      { start: V2_WEEK.open, core: V2 },
+    );
+  }, 60_000);
+
+  it('a solo player fights a one-column boss, HP and Attack linear in the players, and four players are unchanged', async () => {
+    await runRaid(
+      (ctx) => {
+        const a = v2Player(ctx, 1, { level: 22 });
+        ctx.core.raid.currentWeek(HELSINKI);
+        joinRaid(ctx, a);
+        // Before stage 1 the board is the player's column and the spare one.
+        expect(ctx.core.raid.view(a.id, HELSINKI).v2).toMatchObject({
+          cols: 2,
+          players: 1,
+          spare: true,
+        });
+        ctx.clock.t = V2_WEEK.stage1 + 5000;
+        ctx.core.raid.runDue(HELSINKI);
+        const boss = JSON.parse(
+          rows<{ input: string }>(
+            ctx.sql,
+            "SELECT input FROM raid_results WHERE phase = 'stage1'",
+          )[0]?.input ?? '{}',
+        ) as { boss: { hp: number; atk: number; cols: number } };
+        const four = weekendBoss(1, 4);
+        expect(boss.boss.cols).toBe(1);
+        expect(boss.boss.hp).toBe(Math.round(four.hp * (1 / 4)));
+        expect(boss.boss.atk).toBe(Math.round(four.atk * (1 / 4)));
+        expect(ctx.core.raid.view(a.id, HELSINKI).v2).toMatchObject({
+          cols: 1,
+          players: 1,
+          spare: false,
+        });
+        expect(weekendBoss(1, 4).cols).toBe(4);
         return Promise.resolve();
       },
       { start: V2_WEEK.open, core: V2 },
@@ -241,9 +280,9 @@ describe('players lock at stage 1', () => {
         ctx.core.raid.currentWeek(HELSINKI);
         joinRaid(ctx, players);
         const view = ctx.core.raid.view(players[0]?.id as string, HELSINKI);
-        // Slot 1 is the Tidal Colossus: 3 rows; six players are six columns, and a slot is column * 3 + row.
-        expect(view.v2).toMatchObject({ rows: 3, cols: 6, players: 6 });
-        expect(view.party?.rowLength).toBe(18);
+        // Slot 1 is the Tidal Colossus: 3 rows; six players are six columns plus the spare one, and a slot is column * 3 + row.
+        expect(view.v2).toMatchObject({ rows: 3, cols: 7, players: 6, seats: 3, spare: true });
+        expect(view.party?.rowLength).toBe(21);
         const slots = rows<{ slot: number; user_id: string }>(
           ctx.sql,
           'SELECT slot, user_id FROM raid_placements ORDER BY slot',
@@ -251,9 +290,9 @@ describe('players lock at stage 1', () => {
         // The first player holds column 0 (slots 0 to 2), the second column 1 (3 to 5), and so on.
         expect(slots.slice(0, 3).every((s) => s.user_id === players[0]?.id)).toBe(true);
         expect(slots.slice(3, 6).every((s) => s.user_id === players[1]?.id)).toBe(true);
-        // A slot beyond the board is refused; the one just inside is not.
+        // A slot beyond the board is refused; the one just inside (the spare column) is not.
         const spare = players[0]?.creatureIds[3] as string;
-        expect(ctx.core.raid.place(players[0]?.id as string, HELSINKI, spare, 18)).toEqual({
+        expect(ctx.core.raid.place(players[0]?.id as string, HELSINKI, spare, 21)).toEqual({
           ok: false,
           status: 400,
           error: 'invalid_slot',

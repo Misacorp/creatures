@@ -42,15 +42,11 @@ import {
   GrantSuppliesBodySchema,
   JournalBodySchema,
   NoBodySchema,
-  RaidBossBodySchema,
-  RaidFestivalBodySchema,
-  RaidLiveBodySchema,
-  RaidPhaseBodySchema,
-  RaidResolveBodySchema,
-  RaidRosterBodySchema,
-  RaidSimulateBodySchema,
-  RaidWeekendBodySchema,
+  RaidFillBodySchema,
+  RaidPlayBodySchema,
+  RaidRankBodySchema,
   ResetAccountBodySchema,
+  ResetRaidsDungeonsBodySchema,
   SetWeatherBodySchema,
   SetBalancesBodySchema,
   SetCraftingXpBodySchema,
@@ -94,16 +90,8 @@ import {
   setSlots,
   slotWipeNotice,
 } from './dev-tools-trips';
-import {
-  raidBoss,
-  raidFestival,
-  raidLive,
-  raidPhase,
-  raidResolve,
-  raidRoster,
-  raidSimulate,
-} from './dev-tools-raid';
-import { raidWeekend } from './dev-tools-raid-weekend';
+import { raidClear, raidFill, raidPlay, raidRank } from './dev-tools-raid-bench';
+import { resetRaidsDungeons } from './dev-tools-reset-raids';
 import {
   errorResponse,
   json,
@@ -215,15 +203,11 @@ const TOOLS: Record<DevActionTool, Tool> = {
   'dungeon-modifiers': tool(DungeonModifiersBodySchema, dungeonModifiers),
   'dungeon-seed': tool(NoBodySchema, dungeonSeed),
   'set-weather': tool(SetWeatherBodySchema, setWeather),
-  'raid-phase': tool(RaidPhaseBodySchema, raidPhase, { movesClock: true }),
-  'raid-resolve': tool(RaidResolveBodySchema, raidResolve),
-  'raid-boss': tool(RaidBossBodySchema, raidBoss),
-  'raid-festival': tool(RaidFestivalBodySchema, raidFestival),
-  'raid-roster': tool(RaidRosterBodySchema, raidRoster),
-  'raid-live': tool(RaidLiveBodySchema, raidLive),
-  'raid-simulate': tool(RaidSimulateBodySchema, raidSimulate),
-  // Staging with COMBAT_V2 on, on a v2 week (404 otherwise, 409 `not_v2`): moves the dev clock through the weekend, so it re-arms the alarm.
-  'raid-weekend': tool(RaidWeekendBodySchema, raidWeekend, { movesClock: true }),
+  // The raid test bench (staging with COMBAT_V2 on only: 404 otherwise). Clearing may move the dev clock back, so it re-arms the alarm.
+  'raid-clear': tool(NoBodySchema, raidClear, { movesClock: true }),
+  'raid-fill': tool(RaidFillBodySchema, raidFill),
+  'raid-rank': tool(RaidRankBodySchema, raidRank),
+  'raid-play': tool(RaidPlayBodySchema, raidPlay, { movesClock: true }),
   // The Games' tools re-arm the alarm afterwards (as a clock move does): a new bot, a show that starts in
   // 15 s or a forgotten day changes what the alarm waits for.
   'games-bots': tool(GamesBotsBodySchema, gamesBots, { movesClock: true }),
@@ -239,6 +223,10 @@ const TOOLS: Record<DevActionTool, Tool> = {
   },
   // Staging with COMBAT_V2 on only (it answers 404 otherwise): every creature rolls its v2 talent, Knacks and finale choices go.
   'combat-v2-convert': tool(NoBodySchema, combatV2Convert),
+  // Wipes every raid and dungeon table of the guild (creatures, gear, balances and the clock stay); the alarm is re-armed.
+  'reset-raids-dungeons': tool(ResetRaidsDungeonsBodySchema, resetRaidsDungeons, {
+    movesClock: true,
+  }),
   // Staging with the valley systems on only (404 otherwise): wipes every player's progress in the guild for a day-0 valley; re-arms the alarm (the dev clock goes back to real time).
   'valley-fresh': tool(NoBodySchema, valleyFresh, { movesClock: true }),
   'reset-account': tool(ResetAccountBodySchema, (ctx) => {

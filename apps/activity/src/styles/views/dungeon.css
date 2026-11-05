@@ -141,6 +141,97 @@
   margin-top: 0.125rem;
 }
 
+/*
+  The depth picker (combat v2): a trigger that looks like a dropdown (the "Equip on" look), the one line about the
+  player's own depth, and the sheet's list. A depth is drawn the same in the trigger and in every row: its name and
+  marks on the left, what it pays as two numbers at the right.
+*/
+.depth-pick {
+  align-self: stretch;
+  margin-bottom: 0.5rem;
+}
+
+button.depth-trigger {
+  width: 100%;
+  max-width: 24rem;
+  margin: 0.25rem 0;
+  min-height: 2.75rem;
+}
+
+.depth-face {
+  display: flex;
+  flex: 1 1 auto;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.depth-line {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.125rem 0.5rem;
+  min-width: 0;
+}
+
+.depth-name {
+  font-size: var(--fs-row);
+  white-space: nowrap;
+}
+
+.depth-landmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.depth-mark {
+  color: var(--gold);
+  font-size: var(--fs-small);
+}
+
+/*
+  What a depth pays: two plain numbers at the right, no box (Misa, 2026-11-05: a framed chip read as an empty icon slot).
+  Each is right-aligned in a column just wide enough for its widest value ("1.14x XP", "5.7x loot"), close together, so
+  the numbers of every row line up without a gap between them. XP is gold, as experience is everywhere in the game.
+*/
+.depth-chips {
+  display: flex;
+  flex: none;
+  gap: 0.5rem;
+  font-size: var(--fs-small);
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.depth-xp,
+.depth-loot {
+  text-align: right;
+}
+
+.depth-xp {
+  min-width: 3.25rem;
+  color: var(--gold);
+}
+
+.depth-loot {
+  min-width: 3.5rem;
+  color: var(--bone);
+}
+
+.roster-option.depth-option {
+  min-height: 2.75rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.depth-pick-note {
+  margin: 0.25rem 0 0;
+  font-size: var(--fs-small);
+  line-height: 1.3;
+}
+
 .dungeon-next {
   margin: 0.5rem 0;
 }

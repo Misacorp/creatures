@@ -4,6 +4,20 @@ Hosting, Durable Objects, scheduling, CI and deploys, staging, dependencies, sec
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-03: Raid test bench: the staging raid dev tools become four steps **[Misa]**
+
+ID: `2026-11-03-raid-test-bench-the-staging-raid` · Status: current · Amends: `2026-11-03-combat-v2-bots-and-the-gate`
+
+**Decision.** The staging raid dev tools are one test bench of four tools (`dev-tools-raid-bench.ts`), all staging with `COMBAT_V2` on and acting on the week the dev clock is in. Misa: "I just want to set up the board and run the fights. Then I want to reset and have the ability to do it all over again."
+
+- **`raid-clear`** deletes everything stored for the week (every table keyed by a week) and creates it again, a fresh combat v2 week whatever it was, with its Boss Rank kept (a week that was played to its end gets its rank, and the track's slot, back). It forces a normal week (a Festival week has no raid). Then nothing may fire by itself: when the game time is past stage 1 the dev clock goes back into the preparation, two days before stage 1 but never behind the real time (the offset cannot be negative); when the real time is already past stage 1 the due events are marked done (`skipped`) for the scheduler to leave alone.
+- **`raid-fill`** adds N simulated players (default as many as fit, 1 to 14) through the placement code, three creatures each, only into empty slots, so the caller's creatures never move. **`raid-rank`** sets the week's slot, boss and the track's slot from `raid-track.json` (a rank comes with its boss); both refuse once anything is fought (`fought`: clear first).
+- **`raid-play`** (`stage1`, `stage2`, `finale`, `live` for the finale) plays that fight now through `Raid.playEventNow`, the scheduler's own stage code with the done marker set, and refuses in plain codes (`already_played`, `play_stage1_first`, `play_stage2_first`, `boss_fell`, `nobody_placed`, `nobody_left`). The finale plays to its end at once, or starts live. The answer names the fight to open and the panel opens its replay at once (the panel's Raid section is an ordered list of steps, not buttons first and forms after).
+- **Removed:** `raid-phase`, `raid-resolve`, `raid-boss`, `raid-festival`, `raid-roster`, `raid-live`, `raid-simulate`, `raid-weekend`, and the clock helper they used (`phaseTarget`). Kept: `reset-raids-dungeons`, `combat-v2-convert`, the clock, the Games' tools. The guests (`createGuest`) stay: the Games' bots are the same players.
+- **A client fix on the way:** `stagePhaseOf` no longer turns a stage name the server already uses (`stage1`, `stage2`) into `finale`.
+
+**Reasoning.** The weekend tool moved the clock through the weekend and needed several settings in one call; the other tools set parts of the week in ways that no longer matched combat v2. What Misa does is a loop: set up, fight, look, start again. Four tools that are the steps of that loop, in that order, with plain refusals, are easier to use than eight tools with options. Playing a stage through the scheduler's own code (not the clock) keeps the fight the real one, and needs no calendar; the done markers keep the scheduler from playing it again. Clearing must not let the calendar fire a stage by itself, so the clock goes back when it can and the due events are marked when it cannot. What the old tools could do and the bench cannot (jump to a phase, toggle a Festival week, play a v1 week, the practice finale, set the roster to an exact size, guests that replace their fallen between stages and ask for a swap) was weighed against that and left out.
+
 ## 2026-11-03: The resource library: one data file names every resource
 
 ID: `2026-11-03-the-resource-library-one-data-file` · Status: current

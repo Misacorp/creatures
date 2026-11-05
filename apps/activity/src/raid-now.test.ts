@@ -21,6 +21,7 @@ function view(patch: {
   next?: RaidView['next'];
   party?: RaidView['party'];
   you?: Partial<RaidView['you']>;
+  v2?: { seats: number };
 }) {
   return {
     schedule,
@@ -34,6 +35,7 @@ function view(patch: {
       team: { creatures: [placed, placed, placed] },
       ...patch.you,
     },
+    ...(patch.v2 === undefined ? {} : { v2: patch.v2 }),
   };
 }
 
@@ -156,6 +158,12 @@ describe('needsPlacement', () => {
   it('is true for a player who has not joined, and while fewer than three are placed', () => {
     expect(needsPlacement(view({ you: { inRoster: false, team: null } }))).toBe(true);
     expect(needsPlacement(view({ you: { team: one } }))).toBe(true);
+  });
+
+  it("counts the seats of a combat v2 boss's piece, not three", () => {
+    const two = { v2: { seats: 2 }, you: { team: { creatures: [placed, placed] } } };
+    expect(needsPlacement(view(two))).toBe(false);
+    expect(needsPlacement(view({ ...two, v2: { seats: 4 } }))).toBe(true);
   });
 
   it('counts only the creatures the player owns', () => {

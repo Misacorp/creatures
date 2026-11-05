@@ -115,6 +115,9 @@ export function takeHit(
   const k = fx(taker);
   // What is left of the hit after each cut, in bp; they multiply (a cut of 0 changes nothing).
   let left = 10_000;
+  // The same without the Guard's cover, only to tell the board what the cover saved (a fight that logs); it never changes the hit.
+  let without = 10_000;
+  let covered: Fighter | undefined;
   if (how === 'area' || how === 'charged') {
     let ward = 0;
     if (s.carries.has('rowAreaCutBp'))
@@ -126,12 +129,15 @@ export function takeHit(
     // Auras of one kind: the largest applies. The creature's own cut is a cut of its own. A boss whose waves break on
     // wards (Breakwater) is cut more by one, up to 75% of a hit.
     const wardMul = s.boss.mods.wardBp ?? 10_000;
-    left = cutOf(left, Math.min(7_500, Math.floor((Math.max(ward, shelter) * wardMul) / 10_000)));
+    const wardCut = Math.min(7_500, Math.floor((Math.max(ward, shelter) * wardMul) / 10_000));
+    left = cutOf(left, wardCut);
     left = cutOf(left, k.areaCutBp ?? 0);
+    without = cutOf(cutOf(without, wardCut), k.areaCutBp ?? 0);
     // Cover: the Guard with the largest cover whose reach includes the taker, with every bonus. A hit a
     // Guard intercepts is not covered again, except Night Watch's and Take It All': they take the hit with their own cover's cut.
     if (watch) {
-      left = cutOf(left, Math.max(coverOf(s, taker, target), k.watchCutBp ?? 0));
+      const cut = Math.max(coverOf(s, taker, target), k.watchCutBp ?? 0);
+      left = cutOf(left, cut);
     } else if (taker.role !== 'guard') {
       const covering = best(
         alive(s),
@@ -142,33 +148,55 @@ export function takeHit(
         if (fx(covering).distanceCoverBp) bump(covering, 'distanceCoverBp');
         if (fx(covering).flankGuard) bump(covering, 'flankGuard');
         left = cutOf(left, coverOf(s, covering, taker));
+        covered = covering;
       }
     }
   }
   // Front-liner: less from every hit in the front row.
   if (k.frontCutBp && taker.row === 0) {
     left = cutOf(left, k.frontCutBp);
+    without = cutOf(without, k.frontCutBp);
     bump(taker, 'frontCutBp');
   }
   // Brace: less from a Charged hit aimed at its own slot, nothing from any other move or the plain attack.
   if (k.braceBp && how === 'charged' && taker === target) {
     left = cutOf(left, k.braceBp);
+    without = cutOf(without, k.braceBp);
     bump(taker, 'braceBp');
   }
   // Long Shadow: the cut on a hit it intercepts grows with the distance to the creature it saved.
   if (k.distanceCoverBp && taker !== target) {
-    left = cutOf(left, k.distanceCoverBp * Math.abs(taker.col - target.col));
+    const shadow = k.distanceCoverBp * Math.abs(taker.col - target.col);
+    left = cutOf(left, shadow);
+    without = cutOf(without, shadow);
     bump(taker, 'distanceCoverBp');
   }
   // Shield Wall (the live finale, R18): the chosen row takes less from every hit this round, one cut among the others.
-  if (s.shieldRows?.has(taker.row)) left = cutOf(left, s.ctx.rules.shieldWallBp);
+  if (s.shieldRows?.has(taker.row)) {
+    left = cutOf(left, s.ctx.rules.shieldWallBp);
+    without = cutOf(without, s.ctx.rules.shieldWallBp);
+  }
   // One cap on every cut together: at most 75% off, before armour.
   dmg = Math.floor((dmg * Math.max(left, 10_000 - R.cutMaxBp)) / 10_000);
   dmg -= ownArmour(taker);
+  // The board is told what the Guard's cover saved: the hit without it, less the hit as it lands (before Refuse to Fall).
+  const saved =
+    covered === undefined || !s.opts.log
+      ? 0
+      : Math.max(
+          0,
+          Math.max(
+            0,
+            Math.floor((proposed * Math.max(without, 10_000 - R.cutMaxBp)) / 10_000) -
+              ownArmour(taker),
+          ) - Math.max(0, dmg),
+        );
   // Sticky Mud counts every hit it takes, Blocked or not.
   if (k.miresOnHit) addMired(s, taker);
   if (dmg <= 0) {
     s.count.blocked++;
+    if (covered !== undefined && saved > 0)
+      emit(s, { type: 'cover', guard: keyOf(covered), who: keyOf(taker), prevented: saved });
     if (s.opts.log)
       log(s, 'blocked', `${taker.name} blocks the hit`, {
         board: bossHitBoard(taker, target, 0, crit, true),
@@ -209,6 +237,8 @@ export function takeHit(
   }
   if (taker.hp === 0) feed(s, 'knockouts');
   if (s.opts.log) {
+    if (covered !== undefined && saved > 0)
+      emit(s, { type: 'cover', guard: keyOf(covered), who: keyOf(taker), prevented: saved });
     log(s, 'hit', `${taker.name} takes ${dmg}${taker.hp === 0 ? ' and is knocked out' : ''}`, {
       board: bossHitBoard(taker, target, dmg, crit, false),
     });

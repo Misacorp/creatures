@@ -70,6 +70,10 @@ A rework of combat so players bring creatures for what their species can do, not
 
 Later, for the endgame (Misa, 2026-10-29): an opt-in harder version of the week's boss (an extra rule card, a better chest), for servers with crafted gear and max-level creatures.
 
+Later (Misa, 2026-11-05): an **art-led dungeon entrance**. The cave opens into a drawn view where the player first picks a depth (the reward scaling visible), and only then sees the day's map, though the map is the same at every depth. It touches the valley's art and places, so it waits for the valley work; until then the depth picker is a dropdown on the pre-run card.
+
+Way down the line (Misa, 2026-11-04): a **dungeon skill tree**. Players pick nodes that fit the dungeon to their needs (camp chances up to guaranteed camps, favoured foe elements, better rewards, healing between rooms, double keepsakes, more elite fights with double rewards, foe modifiers with a payoff, changes to the reward pool or when loot is given) and can reset it with a moderately expensive item built from common pieces. Decision `2026-11-04-dungeon-direction-an-easy-base-dungeon`.
+
 ## Open design questions
 
 - **Payoff:** should the bonus depend on the creature's stats instead of a flat +10%? Misa left this open, and the text now says "hits even harder". Still flat: every reaction in `reactions.json` has `payoffBonusBp: 11000`.

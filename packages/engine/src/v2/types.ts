@@ -447,7 +447,20 @@ export type BoardEvent =
       readonly blocked: boolean;
       readonly dodged: boolean;
       readonly by?: string;
+      /** On a creature's crit: the crit's multiplier in basis points (26_000 is x2.6), after its talents and Knack. */
+      readonly critBp?: number;
     }
+  /** A Guard takes a boss hit aimed at `who` (the hit that follows names the Guard as `by`). */
+  | { readonly type: 'intercept'; readonly guard: string; readonly who: string }
+  /** A Guard's cover cut a boss hit on `who` by `prevented` (what the hit would have done without the cover, less what it did). */
+  | {
+      readonly type: 'cover';
+      readonly guard: string;
+      readonly who: string;
+      readonly prevented: number;
+    }
+  /** A Support's verb adds `bp` (basis points) to the next hit of `who`; `by` is the Support. */
+  | { readonly type: 'boost'; readonly who: string; readonly by: string; readonly bp: number }
   /** A creature's strike-back (not a hit: no crit, ignores armour). */
   | { readonly type: 'counter'; readonly from: string; readonly damage: number }
   /** A mark on the boss is added to or made bigger: its element, its counts now and whether it is sealed. */

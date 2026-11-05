@@ -164,6 +164,29 @@ export interface WeekRow {
   festival: boolean;
 }
 
+/** Every table keyed by a raid week's id, the week's own row last (`rebuildWeekAsV2` clears them for one week). */
+export const WEEK_TABLES = [
+  'raid_party_members',
+  'raid_parties',
+  'raid_opt_outs',
+  'raid_teams',
+  'raid_placements',
+  'raid_results',
+  'raid_events',
+  'raid_swap_requests',
+  'raid_abilities',
+  'raid_autofire',
+  'raid_live',
+  'raid_reveal_seen',
+  'raid_readiness',
+  'raid_team_cache',
+  'raid_festival_grants',
+  'raid_weeks',
+] as const;
+
+/** How a combat v2 finale event plays: by the clock (the scheduler), to its end at once, or live from now (dev tools). */
+type FinaleMode = 'by-time' | 'instant' | 'live';
+
 /** A guard against a runaway loop; a week has four events. */
 const MAX_EVENTS_PER_RUN = 200;
 
@@ -200,6 +223,59 @@ export class Raid {
   /** Dev tools only: forgets the cached readiness bands after a tool changed the roster or the week directly. */
   invalidateReadiness(): void {
     this.readinessCache.invalidate();
+  }
+
+  /**
+   * Dev tools only (`combat-v2-convert`): a week that was created under the old rules is deleted from every table keyed by it and
+   * created again through `ensureWeek`, so it is a combat v2 week (the track's slot and boss). A v2 week, or a week that does not exist
+   * yet, is left alone. Other weeks, the track and the players' creatures and balances are not touched.
+   */
+  rebuildWeekAsV2(weekId: string): { rebuilt: boolean; week: WeekRow | null } {
+    return this.deps.storage.transactionSync(() => {
+      const existing = this.week(weekId);
+      if (existing === null || existing.rules === 2 || this.deps.combatV2 !== true) {
+        return { rebuilt: false, week: existing };
+      }
+      return { rebuilt: true, week: this.recreateWeek(weekId) };
+    });
+  }
+
+  /**
+   * Dev tools only (`raid-clear`, the test bench): everything stored for the week is deleted and the week is created again through
+   * `ensureWeek`, so it is fresh whatever it was (nothing placed, nothing fought, no done marker): a combat v2 week with the track's
+   * slot and boss when the flag is on. Call it inside the tool's transaction.
+   */
+  clearWeek(weekId: string): WeekRow {
+    return this.deps.storage.transactionSync(() => this.recreateWeek(weekId));
+  }
+
+  /** Dev tools only: forgets what the scheduler cached about the next event (after a tool changed the calendar's state directly). */
+  forgetSchedule(): void {
+    this.nextCache = null;
+  }
+
+  private recreateWeek(weekId: string): WeekRow {
+    for (const table of WEEK_TABLES) {
+      this.sql.exec(`DELETE FROM ${table} WHERE week_id = ?`, weekId);
+    }
+    this.readinessCache.invalidate();
+    this.nextCache = null;
+    return this.ensureWeek(weekId);
+  }
+
+  /**
+   * Dev tools only (`raid-play`, the test bench): plays one event of a combat v2 week now, the way the scheduler plays it at its time, and
+   * marks it done so the scheduler never plays it again. A marker left by `raid-clear` is replaced. The finale plays to its end at once
+   * (`instant`) or starts its live fight now (`live`). Call it inside the tool's transaction.
+   */
+  playEventNow(weekId: string, event: 'phase1' | 'phase2' | 'finale', finale: FinaleMode): void {
+    const week = this.week(weekId);
+    if (week === null || week.rules !== 2) throw new Error('not a combat v2 week');
+    this.deps.storage.transactionSync(() => {
+      this.sql.exec('DELETE FROM raid_events WHERE week_id = ? AND event = ?', weekId, event);
+      this.runEventV2(week, event, this.deps.now(), finale);
+    });
+    this.nextCache = null;
   }
 
   private get sql(): SqlStorage {
@@ -523,7 +599,12 @@ export class Raid {
    * stage 2 resolve every party at once; the finale starts each party's live fight (stage 3) and, when no fight is left to wait for,
    * ends the weekend.
    */
-  private runEventV2(week: WeekRow, event: RaidEvent, scheduledAt: number): void {
+  private runEventV2(
+    week: WeekRow,
+    event: RaidEvent,
+    scheduledAt: number,
+    finale: FinaleMode = 'by-time',
+  ): void {
     if (week.festival || week.trackSlot === null) {
       this.markDone(week.weekId, event, 'skipped');
       return;
@@ -536,11 +617,15 @@ export class Raid {
       .toArray();
     if (event === 'finale') {
       const now = this.deps.now();
-      if (now - scheduledAt > LATE_START_LIMIT_MS) {
+      if (
+        finale === 'instant' ||
+        (finale === 'by-time' && now - scheduledAt > LATE_START_LIMIT_MS)
+      ) {
         for (const { party } of parties) resolveFinaleInstantV2(this.deps, v2, party);
       } else {
         // A start a moment after the scheduled time still counts from it (as for a v1 finale).
-        const startedAt = now - scheduledAt <= START_GRACE_MS ? scheduledAt : now;
+        const startedAt =
+          finale === 'live' || now - scheduledAt > START_GRACE_MS ? now : scheduledAt;
         for (const { party } of parties) startFinaleV2(this.deps, v2, party, startedAt);
       }
       this.deps.storage.transactionSync(() => {
@@ -632,13 +717,21 @@ export class Raid {
     if (week.rules === 2 && week.festival) throw new GameError(409, 'festival');
   }
 
-  /** The slots of a combat v2 party's board: the slot's boss's rows by the columns its players make (`max(4, players)`). */
+  /**
+   * The slots of a combat v2 party's board: the slot's boss's rows by the columns its players make (one per player), plus the
+   * spare piece (one more column) until stage 1 locks the players (Misa, 2026-11-03), so a newcomer can always place.
+   */
   private v2Length(week: WeekRow, party: number): number {
     const rows = slotBossInfo(week.trackSlot ?? 1).rows;
-    const players =
-      readPartyCarry(this.sql, week.weekId, party)?.players ??
-      partyMembers(this.sql, week.weekId, party).length;
-    return rows * colsFor(players);
+    const locked = readPartyCarry(this.sql, week.weekId, party)?.players;
+    if (locked !== undefined) return rows * colsFor(locked);
+    const players = partyMembers(this.sql, week.weekId, party).length;
+    return rows * colsFor(players, week.status === 'open');
+  }
+
+  /** The creatures a player may place this week: a combat v2 boss's piece seats, three on a v1 week. */
+  private seats(week: WeekRow): number {
+    return week.rules === 2 ? slotBossInfo(week.trackSlot ?? 1).seats : RULES.raid.teamSize;
   }
 
   /**
@@ -682,11 +775,15 @@ export class Raid {
       }
       // A player never has more than three creatures on the board. Stale rows beyond that (from
       // before this rule) are dropped first, by the one rule in `capPlacements`.
-      const { kept: onBoard, droppedSlots } = this.enforcePlacementCap(week.weekId, userId);
+      const { kept: onBoard, droppedSlots } = this.enforcePlacementCap(
+        week.weekId,
+        userId,
+        this.seats(week),
+      );
       const mine = onBoard.find((p) => p.creature_id === creatureId);
       if (mine?.slot === slot) return null;
       // A creature that is not on the board yet needs a free place among the three.
-      if (mine === undefined && onBoard.length >= RULES.raid.teamSize) {
+      if (mine === undefined && onBoard.length >= this.seats(week)) {
         throw new GameError(409, 'board_full');
       }
       const occupant = this.sql
@@ -795,6 +892,7 @@ export class Raid {
   private enforcePlacementCap(
     weekId: string,
     userId: string,
+    limit: number,
   ): { kept: PlacementRow[]; droppedSlots: number[] } {
     const all = this.sql
       .exec<PlacementRow>(
@@ -803,7 +901,7 @@ export class Raid {
         userId,
       )
       .toArray();
-    const kept = capPlacements(all);
+    const kept = capPlacements(all, new Set(), limit);
     const keptIds = new Set(kept.map((p) => p.creature_id));
     const droppedSlots: number[] = [];
     for (const row of all) {
@@ -1487,17 +1585,18 @@ export class Raid {
         eligiblePlayerIds(this.sql, this.deps.now()).includes(userId);
       return { needed, nextAt };
     }
-    const placed = partyPlacements(this.sql, week.weekId, party).filter(
+    const seats = this.seats(week);
+    const placed = partyPlacements(this.sql, week.weekId, party, seats).filter(
       (p) => p.user_id === userId,
     ).length;
-    // Up to three; a player who owns fewer cannot place more.
+    // Up to the seats of the piece (three on a v1 week); a player who owns fewer cannot place more.
     const could = this.sql
       .exec<{
         n: number;
       }>(
         'SELECT COUNT(*) AS n FROM (SELECT 1 FROM creatures WHERE user_id = ? LIMIT ?)',
         userId,
-        RULES.raid.teamSize,
+        seats,
       )
       .one().n;
     return { needed: placed < could, nextAt };

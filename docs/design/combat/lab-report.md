@@ -1101,6 +1101,299 @@ A slot's tool line (the line the tuner measures: the boss's first answer, or the
 All 15 slots pass.
 
 
+## Journey on the game's rules
+
+The path simulator played with the game's raid rules (`journey.ts`): a player brings the seats of the boss's arena piece (Storm Sovereign 2, Cinder Wyrm 4, the others 3), the party is locked at stage 1 and sets the weekend's HP, and between stages each player replaces their own knocked-out creatures from their own spares (their next-strongest creatures by the roster profile, each once). Every stage is the engine's `stageV2` with its carry, as the worker plays it. "Lab" is the rules the path used before (a column of creatures each, one shared bench). 40 servers of each kind, the same seeds on both rules. Nothing is tuned: the numbers measure how far the game's rules move the track.
+
+### Stuck share and the longest run, with Determination
+
+Stuck is more than 4 weekends on one boss; the target is at most 10%. Slots reached is the median server's furthest slot at week 24.
+
+| Server | Speed | Stuck: lab | Stuck: game | Longest run: lab (median / worst) | Longest run: game | Slots reached: lab | Slots reached: game |
+| --- | --- | ---: | ---: | --- | --- | ---: | ---: |
+| dedicated | slow | 0% | 0% | 3 / 4 | 2 / 4 | 16 | 17 |
+| dedicated | expected | 0% | 0% | 1 / 3 | 1 / 2 | 20 | 20 |
+| dedicated | fast | 0% | 0% | 1 / 3 | 1 / 2 | 20 | 20 |
+| mixed | slow | 83% | 40% | 5 / 10 | 4 / 6 | 9 | 11 |
+| mixed | expected | 5% | 3% | 3 / 6 | 3 / 5 | 14 | 16 |
+| mixed | fast | 35% | 25% | 4 / 7 | 4 / 5 | 15 | 16 |
+| builders | slow | 23% | 0% | 4 / 6 | 3 / 4 | 13 | 16 |
+| builders | expected | 0% | 0% | 3 / 3 | 3 / 3 | 18 | 18 |
+| builders | fast | 0% | 0% | 3 / 3 | 3 / 3 | 18 | 18 |
+
+### Stuck share and the longest run, without Determination
+
+Stuck is more than 4 weekends on one boss; the target is at most 10%. Slots reached is the median server's furthest slot at week 24.
+
+| Server | Speed | Stuck: lab | Stuck: game | Longest run: lab (median / worst) | Longest run: game | Slots reached: lab | Slots reached: game |
+| --- | --- | ---: | ---: | --- | --- | ---: | ---: |
+| dedicated | slow | 13% | 5% | 3 / 6 | 2 / 5 | 15 | 17 |
+| dedicated | expected | 0% | 0% | 1 / 3 | 1 / 2 | 20 | 20 |
+| dedicated | fast | 0% | 0% | 1 / 3 | 1 / 2 | 20 | 20 |
+| mixed | slow | 93% | 93% | 7 / 11 | 6 / 12 | 8 | 10 |
+| mixed | expected | 43% | 15% | 4 / 8 | 3 / 7 | 13 | 16 |
+| mixed | fast | 70% | 53% | 6 / 10 | 5 / 8 | 13 | 16 |
+| builders | slow | 60% | 30% | 5 / 11 | 4 / 9 | 11 | 14 |
+| builders | expected | 0% | 0% | 3 / 3 | 3 / 3 | 18 | 18 |
+| builders | fast | 0% | 0% | 3 / 3 | 3 / 3 | 18 | 18 |
+
+### Weekends to a kill per slot: dedicated, slow roster speed, with Determination
+
+Median weekends fought against the slot (mean in brackets; the share of servers that reached it when under all). Lab rules, then the game's.
+
+| Slot | Boss | Lab | Game | Game: week first fought |
+| ---: | --- | ---: | ---: | ---: |
+| 1 | tidal-colossus | 1 (1.4) | 1 (1.0) | 1 |
+| 2 | cinder-wyrm | 2 (1.6) | 1 (1.1) | 2 |
+| 3 | storm-sovereign | 1 (1.0) | 2 (1.9) | 3 |
+| 4 | old-bogback | 1 (1.0) | 1 (1.0) | 6 |
+| 5 | thornmother | 2 (1.7) | 1 (1.1) | 7 |
+| 6 | tidal-colossus | 1 (1.0) | 1 (1.0) | 8 |
+| 7 | cinder-wyrm | 1 (1.1) | 1 (1.0) | 9 |
+| 8 | storm-sovereign | 1 (1.1) | 1 (1.1) | 11 |
+| 9 | old-bogback | 1 (1.1) | 1 (1.1) | 12 |
+| 10 | thornmother | 1 (1.0) | 1 (1.0) | 13 |
+| 11 | tidal-colossus | 1 (1.4) | 1 (1.3) | 14 |
+| 12 | cinder-wyrm | 1 (1.4) | 1 (1.0) | 16 |
+| 13 | storm-sovereign | 1 (1.0) | 1 (1.0) | 17 |
+| 14 | old-bogback | 2 (2.3) | 1 (1.6) | 18 |
+| 15 | thornmother | 1 (1.0) 75% | 1 (1.0) | 21 |
+| 16 | tidal-colossus | 2 (1.6) 63% | 2 (1.7) 98% | 22 |
+| 17 | cinder-wyrm | 1 (1.0) 5% | 1 (1.0) 73% | 23 |
+| 18 | storm-sovereign | - | 1 (1.2) 45% | 24 |
+
+### Weekends to a kill per slot: dedicated, expected roster speed, with Determination
+
+Median weekends fought against the slot (mean in brackets; the share of servers that reached it when under all). Lab rules, then the game's.
+
+| Slot | Boss | Lab | Game | Game: week first fought |
+| ---: | --- | ---: | ---: | ---: |
+| 1 | tidal-colossus | 1 (1.0) | 1 (1.0) | 1 |
+| 2 | cinder-wyrm | 1 (1.0) | 1 (1.0) | 2 |
+| 3 | storm-sovereign | 1 (1.0) | 1 (1.0) | 3 |
+| 4 | old-bogback | 1 (1.0) | 1 (1.0) | 4 |
+| 5 | thornmother | 1 (1.0) | 1 (1.0) | 6 |
+| 6 | tidal-colossus | 1 (1.0) | 1 (1.0) | 7 |
+| 7 | cinder-wyrm | 1 (1.0) | 1 (1.0) | 8 |
+| 8 | storm-sovereign | 1 (1.0) | 1 (1.0) | 9 |
+| 9 | old-bogback | 1 (1.0) | 1 (1.0) | 11 |
+| 10 | thornmother | 1 (1.0) | 1 (1.0) | 12 |
+| 11 | tidal-colossus | 1 (1.0) | 1 (1.0) | 13 |
+| 12 | cinder-wyrm | 1 (1.0) | 1 (1.0) | 14 |
+| 13 | storm-sovereign | 1 (1.0) | 1 (1.0) | 16 |
+| 14 | old-bogback | 1 (1.0) | 1 (1.0) | 17 |
+| 15 | thornmother | 1 (1.0) | 1 (1.0) | 18 |
+| 16 | tidal-colossus | 1 (1.0) | 1 (1.0) | 19 |
+| 17 | cinder-wyrm | 1 (1.0) | 1 (1.0) | 21 |
+| 18 | storm-sovereign | 1 (1.5) | 1 (1.1) | 22 |
+| 19 | old-bogback | 1 (1.0) 95% | 1 (1.0) | 23 |
+| 20 | thornmother | 1 (1.0) 50% | 1 (1.0) 85% | 24 |
+
+### Weekends to a kill per slot: dedicated, fast roster speed, with Determination
+
+Median weekends fought against the slot (mean in brackets; the share of servers that reached it when under all). Lab rules, then the game's.
+
+| Slot | Boss | Lab | Game | Game: week first fought |
+| ---: | --- | ---: | ---: | ---: |
+| 1 | tidal-colossus | 1 (1.0) | 1 (1.0) | 1 |
+| 2 | cinder-wyrm | 1 (1.0) | 1 (1.0) | 2 |
+| 3 | storm-sovereign | 1 (1.0) | 1 (1.0) | 3 |
+| 4 | old-bogback | 1 (1.0) | 1 (1.0) | 4 |
+| 5 | thornmother | 1 (1.0) | 1 (1.0) | 6 |
+| 6 | tidal-colossus | 1 (1.0) | 1 (1.0) | 7 |
+| 7 | cinder-wyrm | 1 (1.0) | 1 (1.0) | 8 |
+| 8 | storm-sovereign | 1 (1.0) | 1 (1.0) | 9 |
+| 9 | old-bogback | 1 (1.0) | 1 (1.0) | 11 |
+| 10 | thornmother | 1 (1.0) | 1 (1.0) | 12 |
+| 11 | tidal-colossus | 1 (1.0) | 1 (1.0) | 13 |
+| 12 | cinder-wyrm | 1 (1.0) | 1 (1.0) | 14 |
+| 13 | storm-sovereign | 1 (1.0) | 1 (1.0) | 16 |
+| 14 | old-bogback | 1 (1.0) | 1 (1.0) | 17 |
+| 15 | thornmother | 1 (1.0) | 1 (1.0) | 18 |
+| 16 | tidal-colossus | 1 (1.0) | 1 (1.0) | 19 |
+| 17 | cinder-wyrm | 1 (1.0) | 1 (1.0) | 21 |
+| 18 | storm-sovereign | 1 (1.5) | 1 (1.1) | 22 |
+| 19 | old-bogback | 1 (1.0) 98% | 1 (1.0) | 23 |
+| 20 | thornmother | 1 (1.0) 53% | 1 (1.0) 85% | 24 |
+
+### Weekends to a kill per slot: mixed, slow roster speed, with Determination
+
+Median weekends fought against the slot (mean in brackets; the share of servers that reached it when under all). Lab rules, then the game's.
+
+| Slot | Boss | Lab | Game | Game: week first fought |
+| ---: | --- | ---: | ---: | ---: |
+| 1 | tidal-colossus | 1 (1.3) | 1 (1.2) | 1 |
+| 2 | cinder-wyrm | 1 (1.4) | 1 (1.1) | 2 |
+| 3 | storm-sovereign | 3 (3.2) | 3 (2.7) | 3 |
+| 4 | old-bogback | 1 (1.8) | 1 (1.1) | 7 |
+| 5 | thornmother | 2 (2.5) | 1 (1.7) | 8 |
+| 6 | tidal-colossus | 2 (1.9) | 2 (2.5) | 9 |
+| 7 | cinder-wyrm | 1 (1.0) 98% | 1 (1.0) | 13 |
+| 8 | storm-sovereign | 4 (4.3) 98% | 1 (1.7) | 14 |
+| 9 | old-bogback | 3 (3.3) 75% | 2 (2.8) | 17 |
+| 10 | thornmother | 1 (1.0) 20% | 1 (1.0) 88% | 19 |
+| 11 | tidal-colossus | 1 (2.0) 5% | 4 (3.6) 85% | 21 |
+| 12 | cinder-wyrm | - | 1 (1.0) 20% | 24 |
+| 13 | storm-sovereign | - | 2 (1.7) 8% | 23 |
+
+### Weekends to a kill per slot: mixed, expected roster speed, with Determination
+
+Median weekends fought against the slot (mean in brackets; the share of servers that reached it when under all). Lab rules, then the game's.
+
+| Slot | Boss | Lab | Game | Game: week first fought |
+| ---: | --- | ---: | ---: | ---: |
+| 1 | tidal-colossus | 1 (1.0) | 1 (1.0) | 1 |
+| 2 | cinder-wyrm | 1 (1.0) | 1 (1.0) | 2 |
+| 3 | storm-sovereign | 2 (2.0) | 1 (1.1) | 3 |
+| 4 | old-bogback | 1 (1.3) | 1 (1.1) | 4 |
+| 5 | thornmother | 1 (1.4) | 1 (1.2) | 6 |
+| 6 | tidal-colossus | 1 (1.4) | 2 (1.6) | 7 |
+| 7 | cinder-wyrm | 1 (1.0) | 1 (1.0) | 9 |
+| 8 | storm-sovereign | 2 (1.9) | 1 (1.1) | 11 |
+| 9 | old-bogback | 1 (1.4) | 1 (1.0) | 12 |
+| 10 | thornmother | 1 (1.0) | 1 (1.0) | 13 |
+| 11 | tidal-colossus | 2 (2.1) | 1 (1.4) | 14 |
+| 12 | cinder-wyrm | 1 (1.0) 98% | 1 (1.0) | 16 |
+| 13 | storm-sovereign | 2 (2.2) 93% | 1 (1.4) | 17 |
+| 14 | old-bogback | 1 (1.3) 57% | 1 (1.1) | 19 |
+| 15 | thornmother | 1 (1.0) 38% | 1 (1.0) | 21 |
+| 16 | tidal-colossus | 2 (1.8) 30% | 3 (2.6) 93% | 22 |
+| 17 | cinder-wyrm | 1 (1.0) 3% | 1 (1.0) 23% | 23 |
+| 18 | storm-sovereign | - | 1 (1.8) 13% | 24 |
+
+### Weekends to a kill per slot: mixed, fast roster speed, with Determination
+
+Median weekends fought against the slot (mean in brackets; the share of servers that reached it when under all). Lab rules, then the game's.
+
+| Slot | Boss | Lab | Game | Game: week first fought |
+| ---: | --- | ---: | ---: | ---: |
+| 1 | tidal-colossus | 1 (1.0) | 1 (1.0) | 1 |
+| 2 | cinder-wyrm | 1 (1.0) | 1 (1.0) | 2 |
+| 3 | storm-sovereign | 1 (1.1) | 1 (1.0) | 3 |
+| 4 | old-bogback | 1 (1.0) | 1 (1.0) | 4 |
+| 5 | thornmother | 1 (1.0) | 1 (1.0) | 6 |
+| 6 | tidal-colossus | 1 (1.0) | 1 (1.0) | 7 |
+| 7 | cinder-wyrm | 1 (1.0) | 1 (1.0) | 8 |
+| 8 | storm-sovereign | 1 (1.4) | 1 (1.0) | 9 |
+| 9 | old-bogback | 1 (1.1) | 1 (1.0) | 11 |
+| 10 | thornmother | 1 (1.0) | 1 (1.0) | 12 |
+| 11 | tidal-colossus | 1 (1.8) | 1 (1.3) | 13 |
+| 12 | cinder-wyrm | 1 (1.0) | 1 (1.0) | 14 |
+| 13 | storm-sovereign | 3 (3.0) | 1 (1.3) | 16 |
+| 14 | old-bogback | 2 (2.3) 85% | 1 (1.1) | 17 |
+| 15 | thornmother | 1 (1.0) 50% | 1 (1.0) | 18 |
+| 16 | tidal-colossus | 3 (2.5) 38% | 3 (3.4) | 19 |
+| 17 | cinder-wyrm | 1 (1.0) 8% | 1 (1.0) 45% | 23 |
+| 18 | storm-sovereign | 1 (1.0) 3% | 1 (1.8) 30% | 23 |
+
+### Weekends to a kill per slot: builders, slow roster speed, with Determination
+
+Median weekends fought against the slot (mean in brackets; the share of servers that reached it when under all). Lab rules, then the game's.
+
+| Slot | Boss | Lab | Game | Game: week first fought |
+| ---: | --- | ---: | ---: | ---: |
+| 1 | tidal-colossus | 2 (1.6) | 1 (1.1) | 1 |
+| 2 | cinder-wyrm | 1 (1.4) | 1 (1.2) | 2 |
+| 3 | storm-sovereign | 1 (1.0) | 2 (1.8) | 3 |
+| 4 | old-bogback | 1 (1.1) | 1 (1.1) | 6 |
+| 5 | thornmother | 2 (2.5) | 1 (1.4) | 7 |
+| 6 | tidal-colossus | 1 (1.0) | 1 (1.0) | 8 |
+| 7 | cinder-wyrm | 1 (1.0) | 1 (1.0) | 9 |
+| 8 | storm-sovereign | 2 (2.5) | 2 (1.8) | 11 |
+| 9 | old-bogback | 1 (1.3) | 1 (1.2) | 13 |
+| 10 | thornmother | 1 (1.0) | 1 (1.0) | 14 |
+| 11 | tidal-colossus | 2 (2.6) | 2 (2.0) | 16 |
+| 12 | cinder-wyrm | 1 (1.6) 85% | 1 (1.0) | 19 |
+| 13 | storm-sovereign | 2 (1.6) 68% | 1 (1.4) | 21 |
+| 14 | old-bogback | 1 (1.4) 40% | 1 (1.3) 95% | 22 |
+| 15 | thornmother | 1 (1.0) 8% | 1 (1.0) 70% | 22 |
+| 16 | tidal-colossus | 1 (1.0) 5% | 1 (1.7) 57% | 23 |
+| 17 | cinder-wyrm | - | 1 (1.3) 10% | 23 |
+| 18 | storm-sovereign | - | 1 (1.0) 5% | 24 |
+
+### Weekends to a kill per slot: builders, expected roster speed, with Determination
+
+Median weekends fought against the slot (mean in brackets; the share of servers that reached it when under all). Lab rules, then the game's.
+
+| Slot | Boss | Lab | Game | Game: week first fought |
+| ---: | --- | ---: | ---: | ---: |
+| 1 | tidal-colossus | 1 (1.0) | 1 (1.0) | 1 |
+| 2 | cinder-wyrm | 1 (1.0) | 1 (1.0) | 2 |
+| 3 | storm-sovereign | 1 (1.0) | 1 (1.0) | 3 |
+| 4 | old-bogback | 1 (1.0) | 1 (1.0) | 4 |
+| 5 | thornmother | 1 (1.1) | 1 (1.0) | 6 |
+| 6 | tidal-colossus | 1 (1.0) | 1 (1.0) | 7 |
+| 7 | cinder-wyrm | 1 (1.0) | 1 (1.0) | 8 |
+| 8 | storm-sovereign | 1 (1.4) | 1 (1.2) | 9 |
+| 9 | old-bogback | 1 (1.0) | 1 (1.0) | 11 |
+| 10 | thornmother | 1 (1.0) | 1 (1.0) | 12 |
+| 11 | tidal-colossus | 1 (1.0) | 1 (1.0) | 13 |
+| 12 | cinder-wyrm | 1 (1.0) | 1 (1.0) | 14 |
+| 13 | storm-sovereign | 1 (1.1) | 1 (1.0) | 16 |
+| 14 | old-bogback | 1 (1.0) | 1 (1.0) | 17 |
+| 15 | thornmother | 1 (1.0) | 1 (1.0) | 18 |
+| 16 | tidal-colossus | 1 (1.1) | 1 (1.0) | 19 |
+| 17 | cinder-wyrm | 1 (1.0) | 1 (1.0) | 21 |
+| 18 | storm-sovereign | 2 (2.3) 98% | 3 (2.5) | 22 |
+| 19 | old-bogback | 1 (1.0) 5% | 1 (1.0) 23% | 24 |
+| 20 | thornmother | - | 1 (1.0) 5% | 24 |
+
+### Weekends to a kill per slot: builders, fast roster speed, with Determination
+
+Median weekends fought against the slot (mean in brackets; the share of servers that reached it when under all). Lab rules, then the game's.
+
+| Slot | Boss | Lab | Game | Game: week first fought |
+| ---: | --- | ---: | ---: | ---: |
+| 1 | tidal-colossus | 1 (1.0) | 1 (1.0) | 1 |
+| 2 | cinder-wyrm | 1 (1.0) | 1 (1.0) | 2 |
+| 3 | storm-sovereign | 1 (1.0) | 1 (1.0) | 3 |
+| 4 | old-bogback | 1 (1.0) | 1 (1.0) | 4 |
+| 5 | thornmother | 1 (1.0) | 1 (1.0) | 6 |
+| 6 | tidal-colossus | 1 (1.0) | 1 (1.0) | 7 |
+| 7 | cinder-wyrm | 1 (1.0) | 1 (1.0) | 8 |
+| 8 | storm-sovereign | 1 (1.1) | 1 (1.0) | 9 |
+| 9 | old-bogback | 1 (1.0) | 1 (1.0) | 11 |
+| 10 | thornmother | 1 (1.0) | 1 (1.0) | 12 |
+| 11 | tidal-colossus | 1 (1.0) | 1 (1.0) | 13 |
+| 12 | cinder-wyrm | 1 (1.0) | 1 (1.0) | 14 |
+| 13 | storm-sovereign | 1 (1.1) | 1 (1.0) | 16 |
+| 14 | old-bogback | 1 (1.0) | 1 (1.0) | 17 |
+| 15 | thornmother | 1 (1.0) | 1 (1.0) | 18 |
+| 16 | tidal-colossus | 1 (1.1) | 1 (1.0) | 19 |
+| 17 | cinder-wyrm | 1 (1.0) | 1 (1.0) | 21 |
+| 18 | storm-sovereign | 3 (2.7) | 3 (2.7) | 22 |
+| 19 | old-bogback | 1 (1.0) 10% | 1 (1.0) 25% | 24 |
+| 20 | thornmother | - | 1 (1.0) 5% | 24 |
+
+### The mixed server: one weekend at the slot's week (the track's three misses)
+
+The share of mixed servers that kill the boss in one weekend at the week the slot is tuned for (`SLOT_WEEKS`), expected speed, no Determination. The target is at least 21% (slot 1 asks 80%).
+
+| Slot | Boss | Week | Lab | Game |
+| ---: | --- | ---: | ---: | ---: |
+| 8 | storm-sovereign | 9 | 8% | 68% |
+| 11 | tidal-colossus | 13 | 23% | 53% |
+| 14 | old-bogback | 17 | 25% | 93% |
+
+### Real party sizes (game rules, expected speed)
+
+Servers of 5, 8 and 15 players are the valley's coverage servers; the last casual player is a new player who joins in week 4, so the first weeks are one player short. Small parties are one to three daily players on the prepared line. **Known gap:** under four players the engine's `trackBoss` still fights at four columns (guests fill the rest); the smaller boss for small parties is another change, and these rows are information until it lands. The Festival is every 5th week as on the path.
+
+| Server | Determination | Stuck share | Longest run (median / worst) | Slots reached | Weekends: slots 1-5 / 6-10 / 11-15 (median per slot) |
+| --- | --- | ---: | --- | ---: | --- |
+| mixed5 | on | 30% | 4 / 7 | 13 | 1 1 3 1 1 / 1 1 2 1 1 / 2 1 2 1 1 |
+| mixed5 | off | 57% | 5 / 9 | 12 | 1 1 3 1 1 / 1 1 2 1 1 / 2 1 2 1 1 |
+| mixed8 | on | 23% | 3 / 7 | 16 | 1 1 1 1 1 / 2 1 1 1 1 / 3 1 1 1 1 |
+| mixed8 | off | 65% | 6 / 9 | 12 | 1 1 1 1 1 / 3 1 1 1 1 / 6 1 1 1 1 |
+| mixed15 | on | 3% | 1 / 5 | 20 | 1 1 1 1 1 / 1 1 1 1 1 / 1 1 1 1 1 |
+| mixed15 | off | 13% | 1 / 5 | 20 | 1 1 1 1 1 / 1 1 1 1 1 / 1 1 1 1 1 |
+| small1 | on | 100% | 20 / 20 | 1 | 20 / - / - |
+| small1 | off | 100% | 20 / 20 | 1 | 20 / - / - |
+| small2 | on | 100% | 10 / 13 | 3 | 9 9 4 / - / - |
+| small2 | off | 100% | 10 / 13 | 3 | 9 9 4 / - / - |
+| small3 | on | 50% | 4 / 6 | 11 | 1 1 1 1 1 / 4 1 2 2 1 / 3 |
+| small3 | off | 98% | 9 / 14 | 8 | 1 1 1 1 1 / 9 1 2 2 1 / 2 |
+
 ## What this cannot tell
 
 - It is a prototype: gear, heal crits on screen and the raid board UI are simplified or missing; talents are measured one at a time in the per-talent table, and as a share of the team result (one talent per creature, never searched with the Knacks).

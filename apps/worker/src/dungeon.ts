@@ -99,6 +99,7 @@ import type {
   DungeonReplayRoom,
   DungeonReplayView,
   DungeonRunState,
+  DungeonPreview,
   DungeonRunSummary,
   DungeonToday,
   DungeonStartResponse,
@@ -133,6 +134,7 @@ export type {
   DungeonRewards,
   DungeonRoomSummary,
   DungeonRunState,
+  DungeonPreview,
   DungeonRunSummary,
   DungeonStartResponse,
   DungeonStepLog,
@@ -164,6 +166,8 @@ function fingerprintOf(body: RunBody): string {
   return JSON.stringify({
     team: body.team,
     ...(body.treats.length === 0 ? {} : { treats: [...body.treats].sort() }),
+    // Only a picked depth is part of what was asked: a request without one hashes like one before the picker.
+    ...(body.depth === undefined ? {} : { depth: body.depth }),
   });
 }
 
@@ -566,6 +570,13 @@ export class Dungeon {
     if (older.length > 0) throw new GameError(409, 'run_active');
     if (!this.allowance(progress, day, runs).canRun) throw new GameError(409, 'already_run');
     const attempt = runs.length + 1;
+    // --- The depth: the player's own, or (combat v2) any depth they have unlocked ---
+    const v2 = this.deps.combatV2 === true;
+    if (body.depth !== undefined && !v2) throw new GameError(400, 'invalid_body');
+    if (body.depth !== undefined && body.depth > progress.depth) {
+      throw new GameError(400, 'depth_locked');
+    }
+    const depth = body.depth ?? progress.depth;
 
     // --- The team: the caller's own creatures, all different, in the order they stand in the row ---
     if (new Set(body.team).size !== body.team.length) {
@@ -591,7 +602,6 @@ export class Dungeon {
     // line, then the day's weather goes on every sheet. The seats keep what it takes to place the row
     // again after a camp swap or reorder.
     // The rules version is decided now and kept to the run's end (a flag change later never moves it).
-    const v2 = this.deps.combatV2 === true;
     const seats = seatsOf(standing);
     const ids = standing.map((c) => c.id);
     // A v2 row is not folded with places or weather: a v2 fight reads neither (`dungeon-v2.ts`).
@@ -635,7 +645,6 @@ export class Dungeon {
     }
 
     // --- The run: the day's map copied in, and the base fight input frozen ---
-    const depth = progress.depth;
     const map = this.mapFor(day);
     const enrage = dungeonBossEnrage();
     // Between-fight rest (a Scarf line): the share of max HP a standing creature recovers before each fight.
@@ -646,12 +655,13 @@ export class Dungeon {
       player: PLAYER,
       rooms: [],
       abilities: abilityChoices(row),
-      luck: { ...weatherLuck(v2 ? null : wday, RULES.combat.luck) },
+      // A v2 fight has no weather (Misa, 2026-11-04): no Boon or Omen reaches its luck, attacks or sky.
+      luck: { ...(v2 ? RULES.combat.luck : weatherLuck(wday, RULES.combat.luck)) },
       ...(Object.keys(rest).length === 0 ? {} : { rest }),
       ...(!v2 && weatherBossAttacks(wday, 1) > 1
         ? { bossAttacks: weatherBossAttacks(wday, 1) }
         : {}),
-      // Kind Rain, Morning Haze and Bramble Season (stored in the run input; a v2 fight reads no weather).
+      // Kind Rain, Morning Haze and Bramble Season (stored in the run input; v1 only).
       ...(v2 ? {} : skyRunFields(weatherSky(wday))),
       // The combat rules, the boss room's enrage and the depth (a landmark gives the floor boss its
       // signature), stored with the input so a replay is exact.
@@ -672,6 +682,8 @@ export class Dungeon {
       .one().n;
     const st: RunState = {
       v: v2 ? 2 : 1,
+      // A v2 run remembers the player's own depth: a run below it unlocks nothing and pays no landmark bonus.
+      ...(v2 ? { top: progress.depth } : {}),
       ...(v2
         ? {
             fighters: Object.fromEntries(
@@ -681,7 +693,8 @@ export class Dungeon {
         : {}),
       map,
       input,
-      weather: wday,
+      // A v2 run stores no weather (Misa, 2026-11-04): its experience, treats, scrap and summary never read the day's Boon or Omen.
+      weather: v2 ? null : wday,
       seats,
       everyone: row.map((s) => s.id),
       treats: row.filter((s) => treated.has(s.id)).map((s) => s.id),
@@ -748,6 +761,27 @@ export class Dungeon {
     this.sql.exec('DELETE FROM dungeon_drafts WHERE user_id = ?', userId);
     const state = runView({ id, day, attempt, depth, status: 'active', outcome: null }, st);
     return { state, today: this.todayView(userId, day, tz, now) };
+  }
+
+  // --- Preview ---
+
+  /**
+   * The pre-run screen at a depth the player picked below their own (combat v2, no run open): the map with its
+   * foes at that depth, and the landmark's floor boss. Reads one progress row and the day's map (drawn once a day, as `today` does). Anything else is
+   * refused, so the preview is never a way to read a depth the player has not unlocked.
+   */
+  preview(userId: string, depth: number): Outcome<DungeonPreview> {
+    const day = gameDay(this.deps.now(), this.deps.timezone(), RULES.daily.reset);
+    return atomically(this.deps.storage, () => {
+      if (this.deps.combatV2 !== true) throw new GameError(400, 'invalid_body');
+      if (depth > progressOf(this.sql, userId).depth) throw new GameError(400, 'depth_locked');
+      return {
+        depth,
+        landmark: isLandmark(depth),
+        landmarkBoss: this.landmarkBoss(depth),
+        map: mapViewV2(this.mapFor(day), depth),
+      };
+    });
   }
 
   // --- Acts ---

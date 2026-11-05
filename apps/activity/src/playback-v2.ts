@@ -10,6 +10,9 @@ export type SpeedV2 = 1 | 2;
 /** How long each kind of beat stays at 1x, in milliseconds, before a round's budget squeezes it. */
 export const BEAT_MS = { round: 500, creature: 650, boss: 1300, end: 1800 } as const;
 
+/** A beat in which a reaction goes off stays this much longer (at 1x, before a round's budget squeezes it), so the callout lands. */
+export const REACTION_HOLD_MS = 450;
+
 /** No beat is quicker than this: a hit has to be seen. */
 const MIN_BEAT_MS = 140;
 
@@ -26,11 +29,12 @@ export function beatDurations(
   options: { speed: SpeedV2; budgetMs: number },
 ): number[] {
   const rounds = new Map<number, number>();
-  for (const b of beats) rounds.set(b.round, (rounds.get(b.round) ?? 0) + BEAT_MS[b.kind]);
+  const base = (b: BeatV2): number => BEAT_MS[b.kind] + (b.reacts ? REACTION_HOLD_MS : 0);
+  for (const b of beats) rounds.set(b.round, (rounds.get(b.round) ?? 0) + base(b));
   return beats.map((b) => {
-    const total = rounds.get(b.round) ?? BEAT_MS[b.kind];
+    const total = rounds.get(b.round) ?? base(b);
     const squeeze = total > options.budgetMs ? options.budgetMs / total : 1;
-    const ms = Math.max(MIN_BEAT_MS, Math.round(BEAT_MS[b.kind] * squeeze));
+    const ms = Math.max(MIN_BEAT_MS, Math.round(base(b) * squeeze));
     return options.speed === 2 ? Math.max(MIN_BEAT_MS / 2, Math.round(ms / 2)) : ms;
   });
 }
