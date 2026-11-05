@@ -69,7 +69,7 @@ const stateOf = (forge: SettleForge, creatures = forge.anvils.length): SettleSta
   })),
   forge,
 });
-const seeded = (seed = 7): Rng => createSeededRng(seed);
+const seeded = (seed: number | string = 7): Rng => createSeededRng(String(seed));
 
 describe('the anvil ladder', () => {
   it('bounds the anvils by the Forge level and prices each rung in Acorns and scrap', () => {

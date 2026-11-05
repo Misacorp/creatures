@@ -204,6 +204,8 @@ export class ValleySeats {
           seat.seat_id,
         );
       }
+      // A smith posted to an anvil with an order starts on it at once.
+      if (seat.place === 'forge') this.deps.settle.settle(userId, 'now');
       return { seatId: seat.seat_id };
     });
   }
@@ -298,7 +300,8 @@ export class ValleySeats {
       this.deps.settle.settle(userId, 'now');
       const seat = this.seatOf(userId, seatId);
       if (kit !== null) {
-        if (!(KIT_NAMES as readonly string[]).includes(kit)) throw new GameError(400, 'unknown_kit');
+        if (!(KIT_NAMES as readonly string[]).includes(kit))
+          throw new GameError(400, 'unknown_kit');
         if (seat.place === 'forge' ? !isAnvilKit(kit) : !isScoutKit(kit)) {
           throw new GameError(400, 'kit_does_not_fit');
         }

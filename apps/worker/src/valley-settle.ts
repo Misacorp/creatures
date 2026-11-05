@@ -329,9 +329,7 @@ export class ValleySettle {
       })),
       allowance: { store: player.allowance_store, carry: player.allowance_carry },
       seats: seatsIn,
-      ...(forgeIn === null
-        ? {}
-        : { forge: { ...forgeIn.forge, scrapCarry: player.forge_carry } }),
+      ...(forgeIn === null ? {} : { forge: { ...forgeIn.forge, scrapCarry: player.forge_carry } }),
     };
     const watchNight = seatRows.some(
       (seat) => placeProfile(VALLEY_RULES, seat.destination_id)?.night === true,
@@ -608,10 +606,12 @@ export class ValleySettle {
     const world = worldAt(tz, input.to);
     const seatOf = new Map<string, { id: string; kind: 'scouting' | 'smithing' }>();
     for (const seat of input.seats) {
-      if (seat.creature_id !== null) seatOf.set(seat.creature_id, { id: seat.seat_id, kind: 'scouting' });
+      if (seat.creature_id !== null)
+        seatOf.set(seat.creature_id, { id: seat.seat_id, kind: 'scouting' });
     }
     for (const seat of input.anvils) {
-      if (seat.creature_id !== null) seatOf.set(seat.creature_id, { id: seat.seat_id, kind: 'smithing' });
+      if (seat.creature_id !== null)
+        seatOf.set(seat.creature_id, { id: seat.seat_id, kind: 'smithing' });
     }
     const rowOf = new Map(input.rows.map((row) => [row.id, row]));
     const rules = VALLEY_RULES;
@@ -788,7 +788,12 @@ export class ValleySettle {
       const reason = worker === undefined ? null : a.wait_reason;
       const current = mine.find((o) => o.for_team === 1 || o.made < o.count);
       const plain = anvilSpeed(rules, hours, kit, 0);
-      const speed = anvilSpeed(rules, hours, kit, (a.piece_rarity === 1 ? 1 : a.piece_rarity === 2 ? 2 : 0));
+      const speed = anvilSpeed(
+        rules,
+        hours,
+        kit,
+        a.piece_rarity === 1 ? 1 : a.piece_rarity === 2 ? 2 : 0,
+      );
       const held = a.piece_active === 1 && a.piece_progress >= a.piece_need - 1e-6;
       const counts = onFloor.get(a.seat_id) ?? [0, 0, 0];
       return {
@@ -852,7 +857,10 @@ export class ValleySettle {
             worker === undefined || current === undefined
               ? 0
               : (24 * plain) /
-                pieceHours(rules, current.reach === 'rare' || current.reach === 'epic' ? current.reach : 'none'),
+                pieceHours(
+                  rules,
+                  current.reach === 'rare' || current.reach === 'epic' ? current.reach : 'none',
+                ),
         },
       };
     });

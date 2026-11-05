@@ -24,7 +24,13 @@ import { runKeyed, settleSpend } from './keyed-action';
 import { blueprintMarks, creditParts, debitParts, getParts } from './gear-store';
 import { spend, type LedgerStorage } from './ledger';
 import { GameError, atomically, type Outcome } from './outcome';
-import { baseElementIndex, FORGE_LEVEL, ORDER_COLUMNS, type OrderRow, type ValleyForgePass } from './valley-forge';
+import {
+  baseElementIndex,
+  FORGE_LEVEL,
+  ORDER_COLUMNS,
+  type OrderRow,
+  type ValleyForgePass,
+} from './valley-forge';
 import type { ValleySettle } from './valley-settle';
 
 export interface ValleyOrdersDeps {
@@ -187,6 +193,8 @@ export class ValleyOrders {
         input.forTeam ? 1 : 0,
         this.deps.now(),
       );
+      // A smith waiting for an order starts on it at once (the pass at this moment has no time to pay, only to start).
+      this.deps.settle.settle(userId, 'now');
       return { orderId };
     });
   }
@@ -202,14 +210,26 @@ export class ValleyOrders {
       const order = this.orderOf(userId, orderId);
       if (change.count !== undefined) {
         if (order.for_team === 1) throw new GameError(400, 'invalid_count');
-        if (change.count < Math.max(1, order.made) || change.count > VALLEY_RULES.forge.orderCountMax) {
+        if (
+          change.count < Math.max(1, order.made) ||
+          change.count > VALLEY_RULES.forge.orderCountMax
+        ) {
           throw new GameError(400, 'invalid_count');
         }
-        this.sql.exec('UPDATE forge_orders SET count = ? WHERE order_id = ?', change.count, orderId);
+        this.sql.exec(
+          'UPDATE forge_orders SET count = ? WHERE order_id = ?',
+          change.count,
+          orderId,
+        );
       }
       if (change.reach !== undefined) {
-        this.sql.exec('UPDATE forge_orders SET reach = ? WHERE order_id = ?', change.reach, orderId);
+        this.sql.exec(
+          'UPDATE forge_orders SET reach = ? WHERE order_id = ?',
+          change.reach,
+          orderId,
+        );
       }
+      this.deps.settle.settle(userId, 'now');
       return { orderId };
     });
   }
@@ -220,6 +240,7 @@ export class ValleyOrders {
       this.deps.settle.settle(userId, 'now');
       this.orderOf(userId, orderId);
       this.sql.exec('DELETE FROM forge_orders WHERE order_id = ?', orderId);
+      this.deps.settle.settle(userId, 'now');
       return { orderId };
     });
   }
@@ -273,6 +294,8 @@ export class ValleyOrders {
           gain[shardOf(VALLEY_ELEMENTS[to] as Element)] = gained;
           if (!debitParts(this.sql, userId, cost)) throw new GameError(409, 'insufficient_parts');
           creditParts(this.sql, userId, gain);
+          // A smith that waited on this shard goes on at once.
+          this.deps.settle.settle(userId, 'now');
           return { trades, gained };
         },
       );

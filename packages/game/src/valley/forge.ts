@@ -173,6 +173,8 @@ export interface SettleAnvil {
   readonly wait?: AnvilWait | null;
   /** Output: the element index a `shard` wait is for (-1: none, or any). */
   readonly waitElement?: number;
+  /** The moment the current wait began (ms; null: not waiting). */
+  readonly waitSince?: number | null;
 }
 
 /** The player's stockpile an order takes its inputs from (V-FORGE-3): whole scrap, shards by element, Essence. */
@@ -295,6 +297,7 @@ interface WorkAnvil {
   floor: number;
   wait: AnvilWait | null;
   waitElement: number;
+  waitSince: number | null;
   /** What it does in the stretch about to be advanced. */
   mode: 'work' | AnvilWait | 'none';
 }
@@ -324,6 +327,7 @@ export function startForge(forge: SettleForge): ForgeWork {
       floor: a.floor,
       wait: a.wait ?? null,
       waitElement: a.waitElement ?? -1,
+      waitSince: a.waitSince ?? null,
       mode: 'none',
     })),
     scrap: forge.shelf.scrap,
@@ -350,6 +354,7 @@ export function finishForge(work: ForgeWork, previous: SettleForge): SettleForge
       floor: a.floor,
       wait: a.creature < 0 ? null : a.wait,
       waitElement: a.waitElement,
+      waitSince: a.creature < 0 || a.wait === null ? null : a.waitSince,
     })),
     shelf: { scrap: work.scrap, shards: work.shards, essence: work.essence },
     scrapCarry: work.scrapCarry,
@@ -437,12 +442,28 @@ export function forgeInstants(
   for (const a of work.anvils) {
     a.mode = 'none';
     if (!active(a, smiths, at)) continue;
+    const waitWas = a.wait;
+    anvilInstant(rules, work, a, at, rng);
+    // The wait began when the reason first held (the start of the stretch that found it), and ends when work starts.
+    if (a.wait === null) a.waitSince = null;
+    else if (a.wait !== waitWas || a.waitSince === null) a.waitSince = at;
+  }
+}
+
+function anvilInstant(
+  rules: ValleyRules,
+  work: ForgeWork,
+  a: WorkAnvil,
+  at: number,
+  rng: Rng,
+): void {
+  {
     if (a.piece !== null && pieceDone(a.piece)) {
       if (a.floor >= rules.forge.floorPiecesPerAnvil) {
         a.wait = 'floor';
         a.waitElement = -1;
         a.mode = 'floor';
-        continue;
+        return;
       }
       const piece = a.piece;
       a.floor += 1;
@@ -470,7 +491,7 @@ export function forgeInstants(
     if (a.piece === null) {
       if (!tryStart(rules, work, a, rng)) {
         a.mode = a.wait ?? 'idle';
-        continue;
+        return;
       }
     }
     a.wait = null;

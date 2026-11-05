@@ -16,6 +16,7 @@
  */
 import {
   GEAR_SLOTS,
+  RULES,
   VALLEY_ELEMENTS,
   VALLEY_RULES,
   chance,
@@ -128,10 +129,20 @@ const WAITS: readonly string[] = ['idle', 'scrap', 'shard', 'essence', 'floor'];
 const asWait = (reason: string | null): AnvilWait | null =>
   reason !== null && WAITS.includes(reason) ? (reason as AnvilWait) : null;
 
+/**
+ * Combat v2 seam (V-GEAR-3, plan risk 5): today a gear slot opens at a creature level (`RULES.gear.slotUnlockLevel`); V-GEAR-3 opens all
+ * three at level 1 once combat v2's gear ships. "For my team" counts and dresses only the slots a creature may wear now, so no piece
+ * is made for a slot that cannot take it. When the rule changes, this is the one place that follows.
+ */
+export const slotOpenFor = (level: number, slot: GearSlot): boolean =>
+  level >= RULES.gear.slotUnlockLevel[slot];
+
 /** The element index (in `VALLEY_ELEMENTS`) of a base: its tag's element, or -1 for a neutral base (any pile pays). */
 export function baseElementIndex(base: Pick<GearBase, 'tag'>): number {
   const element = tagElement(base.tag);
-  return element === null ? -1 : VALLEY_ELEMENTS.indexOf(element as (typeof VALLEY_ELEMENTS)[number]);
+  return element === null
+    ? -1
+    : VALLEY_ELEMENTS.indexOf(element as (typeof VALLEY_ELEMENTS)[number]);
 }
 
 export interface ValleyForgeDeps {
@@ -190,6 +201,7 @@ export class ValleyForgePass {
       const e = VALLEY_ELEMENTS.indexOf(speciesOf(c.species).element as never);
       if (e < 0) continue;
       for (const slot of GEAR_SLOTS) {
+        if (!slotOpenFor(c.level, slot)) continue;
         if ((worn.get(c.id)?.[slot]?.item_level ?? 0) < limit) weak[e] = (weak[e] ?? 0) + 1;
       }
     }
@@ -206,12 +218,12 @@ export class ValleyForgePass {
     if (anvils.length === 0) return null;
     const orders = this.orders(userId);
     const shelf = this.shelf(userId);
-    const marks =
-      orders.some((o) => o.blueprint_id !== null)
-        ? new Map(knownBlueprints(this.sql, userId).map((b) => [b.baseId, b.marks]))
-        : new Map<string, number>();
+    const marks = orders.some((o) => o.blueprint_id !== null)
+      ? new Map(knownBlueprints(this.sql, userId).map((b) => [b.baseId, b.marks]))
+      : new Map<string, number>();
     const wantsTeam =
-      orders.some((o) => o.for_team === 1) || anvils.some((a) => a.piece_active === 1 && a.piece_team === 1);
+      orders.some((o) => o.for_team === 1) ||
+      anvils.some((a) => a.piece_active === 1 && a.piece_team === 1);
     const pending = new Array<number>(ELEMENT_COUNT).fill(0);
     let weak = new Array<number>(ELEMENT_COUNT).fill(0);
     if (wantsTeam) {
@@ -267,6 +279,7 @@ export class ValleyForgePass {
         floor: a.floor_count,
         wait: asWait(a.wait_reason),
         waitElement: a.wait_element,
+        waitSince: a.wait_since,
       };
     });
     return {
@@ -312,7 +325,7 @@ export class ValleyForgePass {
         piece_progress: a.piece?.progress ?? 0,
         wait_reason: wait,
         wait_element: wait === null ? -1 : (a.waitElement ?? -1),
-        wait_since: wait === null ? null : wait === row.wait_reason ? row.wait_since : to,
+        wait_since: wait === null ? null : (a.waitSince ?? to),
       };
       out.push(next);
       if (JSON.stringify(next) === JSON.stringify(row)) continue;
@@ -441,7 +454,11 @@ export class ValleyForgePass {
       let item: GearItem;
       let wearer: { id: string; slot: GearSlot } | null = null;
       if (row.blueprint_id !== null && gearBase(row.blueprint_id) !== undefined) {
-        item = rollItem(this.deps.rng, { baseId: row.blueprint_id, rarity, itemLevel: row.item_level });
+        item = rollItem(this.deps.rng, {
+          baseId: row.blueprint_id,
+          rarity,
+          itemLevel: row.item_level,
+        });
         // V-FORGE-9: every piece of a blueprint may add a well-thumbed mark (quality raises the chance of better rarity).
         if (chance(this.deps.rng, Math.round(VALLEY_RULES.forge.markChance * 10_000), 10_000)) {
           addMark(this.sql, userId, row.blueprint_id);
@@ -483,7 +500,10 @@ function teamBase(rng: Rng, element: number, itemLevel: number): GearBase {
 
 /** The slots of a team that a piece of an element may dress, weakest first (empty counts as level 0). */
 class TeamTargets {
-  private readonly levels = new Map<string, Map<GearSlot, { level: number; itemId: string | null }>>();
+  private readonly levels = new Map<
+    string,
+    Map<GearSlot, { level: number; itemId: string | null }>
+  >();
 
   constructor(
     sql: SqlStorage,
@@ -514,12 +534,11 @@ class TeamTargets {
       }
     | undefined {
     const limit = weakLimit(VALLEY_RULES, itemLevel);
-    let best:
-      | { member: TeamMember; slot: GearSlot; level: number }
-      | undefined;
+    let best: { member: TeamMember; slot: GearSlot; level: number } | undefined;
     for (const member of this.team) {
       if (VALLEY_ELEMENTS.indexOf(speciesOf(member.species).element as never) !== element) continue;
       for (const slot of GEAR_SLOTS) {
+        if (!slotOpenFor(member.level, slot)) continue;
         const level = this.levels.get(member.id)?.get(slot)?.level ?? 0;
         if (level < limit && level < itemLevel && (best === undefined || level < best.level)) {
           best = { member, slot, level };
