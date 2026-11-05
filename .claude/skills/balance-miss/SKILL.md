@@ -22,6 +22,16 @@ Misa's standing rules (decision `2026-11-05-working-rules-scalars-best-guess-and
 
 Implementer agents cannot start other agents, so the lead splits the work: one implementer runs steps 1, 2 and 4 and writes a draft to the scratchpad (no data changes); the lead runs the fun panel (step 5) on the draft, as a workflow of three reviewers; a second implementer runs steps 6 and 7 on the survivors; the lead does step 8.
 
+## Lessons (keep adding)
+
+- **Point answers at Knacks, not families** (panel 2026-11-05): a family in a card's `answers` lights every Knack in it, measured or not, which breaks P-13.
+- **Check new names against gear lines and talents, not only Knacks** (Echo is a gear line; Kindle is one letter from Kindling).
+- **Every new effect needs a visible beat in the replay** using existing parts (a board event, the Knack-name cue, an existing effect icon, a float). An effect with no board event shows nothing on a phone.
+- **Off-turn strikes (`counter()`) skip armour, dodge and the cap and fire for every copy in the arena:** give them a once-per-boss-turn limit and a row rule, and measure several copies and stacked cards.
+- **Measure close calls at 48 seeds** (24 has about ±0.03 noise); keep SPEC (the lift on the card over a card-free boss) at 1.15 or more as well as beating the classic line.
+- **A card that doesn't bite is a fun problem first:** fix the card (or what it is paired with) before adding answers to it.
+- **Spread new Knacks across forms** so one creature (Tempestray, say) doesn't become the answer to every week.
+
 ## Rules
 
 - Quick local checks, then push; CI runs the full check (decision `2026-11-05-ci-runs-the-full-check-agents`).
