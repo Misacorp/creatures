@@ -4,6 +4,14 @@ The valley and peaceful systems overhaul planned in docs/design/valley/: job pos
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-05: Deeper dungeon XP: today's per-run XP plus a step at each landmark depth (round 26, Q59) **[Misa]**
+
+ID: `2026-11-05-deeper-dungeon-xp-today-s-per` · Status: current
+
+**Decision.** On combat v2 dungeon runs a run pays about 120 XP to a creature that stood in every room, at any depth (normalised per run, not per room); XP steps up at each landmark depth (every 7th) by about +1.75% a landmark, with no cap. Gear, resources and the Undercroft still grow with depth. Misa (Q59, answered in the combat v2 session and relayed from there, 2026-11-05): "Let's drop the dungeon EXP payout baseline and try an EXP increase per landmark depth instead of at each depth. It gives players something small to push for."
+
+**Reasoning.** The lab (`valley/economy/dungeon-depth-xp.md`) showed the first curve sending a daily player's top three to level 30 by week 8 and failing T-1 and T-6; deeper runs alone already failed them. A flat 120 per run with +0.25% a depth kept every target; a landmark step of +1.75% every 7 depths averages the same and gives a small goal to push for. The lab rechecks it on the combat session's commit. Production (combat v1) is unchanged.
+
 ## 2026-11-04: Phase 4 step 1: the valley shell is Game's second frame, one tab state, back control is DrillHead
 
 ID: `2026-11-04-phase-4-step-1-the-valley` · Status: current
