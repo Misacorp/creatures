@@ -97,7 +97,14 @@ export function startState(
   rng: Rng,
   actions: readonly FinaleAction[] = [],
 ): State {
-  const fighters = specs.map(fighterOf);
+  // Heart of the Row (gear): more max HP for a creature that stands in the middle of its row (not column 0 nor the last column).
+  const fighters = specs.map((spec) => {
+    const heart = spec.fxAll.heartHpBp;
+    const middle = heart !== undefined && spec.col > 0 && spec.col < boss.cols - 1;
+    return fighterOf(
+      middle ? { ...spec, maxHp: Math.floor((spec.maxHp * (10_000 + heart)) / 10_000) } : spec,
+    );
+  });
   if (opts.carryHp) for (const f of fighters) f.hp = opts.carryHp.get(f.uid) ?? f.hp;
   // Catch Breath is once per raid weekend: a creature that used it in an earlier stage does not have it again.
   for (const f of fighters) if (opts.carryWindDone?.has(f.uid)) f.secondWindDone = true;

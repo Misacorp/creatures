@@ -12,6 +12,8 @@
  * The scales are the gear plan's verdicts ("scale x4", "scale to twin"); each one is listed in `for-misa.md`. A change
  * of a scale is one edit, here.
  */
+import { content } from '../content';
+import { strongAgainst, strongOver } from '../content/element-chart';
 import { gearLine, gearSet } from '../content/gear';
 import type { GearLine } from '../content/gear-schema';
 import type { Element, Role } from '../content/schema';
@@ -44,6 +46,24 @@ export interface GearFx {
   ignoreSilence?: boolean;
   holdOn?: boolean;
   clinging?: boolean;
+  // Slice 3 (cuts and conditions). The two element tables and the role table are by id.
+  takenCutBp?: number;
+  aimedCutBp?: number;
+  reflectedCutBp?: number;
+  lastStandCutBp?: number;
+  vsElementBp?: Record<string, number>;
+  fromElementCutBp?: Record<string, number>;
+  markingHitBp?: number;
+  markedFoeBp?: number;
+  besideRoleBp?: Record<string, number>;
+  reachLeftBonus?: number;
+  reachRightBonus?: number;
+  shelterBp?: number;
+  keenReactionBp?: number;
+  backRowCritBp?: number;
+  heartHpBp?: number;
+  fourWindsBp?: number;
+  adaptPierceBp?: number;
 }
 
 type GearField = keyof GearFx;
@@ -60,6 +80,13 @@ export interface GearLineFx {
   readonly ownElement?: boolean;
   /** The line works for every role although the data names one (Armour, Misa 2026-10-28). */
   readonly anyRole?: boolean;
+  /**
+   * The field is a table by element: the number goes to every element the line's own element beats (`beats`, Hunter) or that beats
+   * it (`beatenBy`, Ward). The piece's element decides, whoever wears it (gear plan OPEN 8, the recommended reading).
+   */
+  readonly foes?: 'beats' | 'beatenBy';
+  /** The field is a table by role: the number goes to this role (Beside the mark-maker). */
+  readonly beside?: Role;
   /** Added once, whatever the number of copies (Guard's Shadow keeps the Knack's armour cost). */
   readonly once?: GearFx;
 }
@@ -125,6 +152,30 @@ export const GEAR_LINE_FX: Readonly<Record<string, GearLineFx>> = {
   stubborn: { field: 'holdOn', unit: 'flag' },
   // A Retaliate Knack and this line make one counter with the larger chance, not two (OPEN 3).
   riposte: { field: 'retaliateBp', unit: 'bp' },
+  // Slice 3, batch A: the cuts and conditions. Scales are 1 unless said (the plan's "keep").
+  'all-damage-taken': { field: 'takenCutBp', unit: 'bp' },
+  'aimed-ward': { field: 'aimedCutBp', unit: 'bp' },
+  'backdraft-ward': { field: 'reflectedCutBp', unit: 'bp' },
+  'last-stand': { field: 'lastStandCutBp', unit: 'bp' },
+  // OPEN 8: the piece's element, any wearer.
+  hunter: { field: 'vsElementBp', unit: 'bp', foes: 'beats' },
+  ward: { field: 'fromElementCutBp', unit: 'bp', foes: 'beatenBy' },
+  'marking-hit': { field: 'markingHitBp', unit: 'bp' },
+  'marked-foe': { field: 'markedFoeBp', unit: 'bp' },
+  'beside-the-mark-maker': { field: 'besideRoleBp', unit: 'bp', beside: 'setter' },
+  // One side's reach: +2 for a Long Arm; a Flank Guard is +1 on its side and -1 on the other (once, whatever the copies).
+  'long-arm-left': { field: 'reachLeftBonus', unit: 'count', scale: [2, 1] },
+  'long-arm-right': { field: 'reachRightBonus', unit: 'count', scale: [2, 1] },
+  'flank-guard-left': { field: 'reachLeftBonus', unit: 'count', once: { reachRightBonus: -1 } },
+  'flank-guard-right': { field: 'reachRightBonus', unit: 'count', once: { reachLeftBonus: -1 } },
+  sheltered: { field: 'shelterBp', unit: 'bp' },
+  // Top pip 10 points against today's 8, and 5 against 4: with the crit chance lines (gear plan section 1).
+  'keen-reaction': { field: 'keenReactionBp', unit: 'bp', scale: [5, 4] },
+  'back-row-patience': { field: 'backRowCritBp', unit: 'bp', scale: [5, 4] },
+  'heart-of-the-row': { field: 'heartHpBp', unit: 'bp' },
+  // The reaction family's scale (x2 for the cap, OPEN 14), not the plan's x4.
+  'four-winds': { field: 'fourWindsBp', unit: 'bp', scale: REACTION_SCALE },
+  'adaptation-pierce': { field: 'adaptPierceBp', unit: 'bp' },
 };
 
 /** The id a line has in `GEAR_LINE_FX`: an element line without its element. */
@@ -171,7 +222,7 @@ export function gearFx(
   wearer: { role: Role; element: Element },
   items: readonly GearItem[],
 ): GearFx {
-  const out: Record<string, number | boolean> = {};
+  const out: Record<string, number | boolean | Record<string, number>> = {};
   const once = new Set<string>();
   const addTo = (field: string, amount: number): void => {
     const prev = out[field];
@@ -183,7 +234,18 @@ export function gearFx(
     if (entry === undefined) return;
     const got = valueOf(entry, line, value, wearer);
     if (got === undefined) return;
-    if (got === true) out[entry.field] = true;
+    if (entry.foes !== undefined || entry.beside !== undefined) {
+      const table = { ...(out[entry.field] as Record<string, number> | undefined) };
+      const keys =
+        entry.beside !== undefined
+          ? [entry.beside]
+          : (entry.foes === 'beats' ? strongAgainst : strongOver)(
+              content.elementChart,
+              line.element as Element,
+            );
+      for (const key of keys) table[key] = (table[key] ?? 0) + Number(got);
+      out[entry.field] = table;
+    } else if (got === true) out[entry.field] = true;
     else if (entry.field === 'retaliateBp') {
       const prev = out[entry.field];
       out[entry.field] = Math.max(typeof prev === 'number' ? prev : 0, got);

@@ -106,7 +106,13 @@ export function createResolver(pack: FighterPack, shipped: Pick<Shipped, 'creatu
     const names = Object.keys(gear).sort();
     return names.length === 0
       ? ''
-      : names.map((n) => `${n}=${String((gear as Record<string, unknown>)[n])}`).join(',');
+      : names
+          .map((n) => {
+            const value = (gear as Record<string, unknown>)[n];
+            // A table by element or role (Hunter, Ward, Beside the mark-maker) is keyed by its entries, in name order.
+            return `${n}=${typeof value === 'object' && value !== null ? JSON.stringify(Object.entries(value).sort()) : String(value)}`;
+          })
+          .join(',');
   }
 
   function fxOf(

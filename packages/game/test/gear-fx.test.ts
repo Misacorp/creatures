@@ -56,6 +56,29 @@ describe('gearFx: the line to effect map', () => {
     ['wide-stance', 'guard', { reachBonus: 1 }],
     ['stubborn', 'setter', { holdOn: true }],
     ['riposte', 'setter', { retaliateBp: 4000 }],
+    // Slice 3, batch A: the cuts and conditions.
+    ['all-damage-taken', 'guard', { takenCutBp: 800 }],
+    ['aimed-ward', 'guard', { aimedCutBp: 1200 }],
+    ['backdraft-ward', 'guard', { reflectedCutBp: 3500 }],
+    ['last-stand', 'guard', { lastStandCutBp: 2000 }],
+    // The piece's element decides, whoever wears it: Tide beats Ember, Ember is beaten by Tide and Mire.
+    ['tide-hunter', 'guard', { vsElementBp: { ember: 1700 } }],
+    ['ember-ward', 'setter', { fromElementCutBp: { tide: 1700, mire: 1700 } }],
+    ['marking-hit', 'setter', { markingHitBp: 2400 }],
+    ['marked-foe', 'guard', { markedFoeBp: 1500 }],
+    ['beside-the-mark-maker', 'guard', { besideRoleBp: { setter: 1000 } }],
+    ['long-arm-left', 'guard', { reachLeftBonus: 2 }],
+    ['long-arm-right', 'guard', { reachRightBonus: 2 }],
+    ['flank-guard-left', 'guard', { reachLeftBonus: 1, reachRightBonus: -1 }],
+    ['flank-guard-right', 'guard', { reachRightBonus: 1, reachLeftBonus: -1 }],
+    ['sheltered', 'guard', { shelterBp: 600 }],
+    // x1.25: the crit chance lines' scale.
+    ['keen-reaction', 'payoff', { keenReactionBp: 1000 }],
+    ['back-row-patience', 'setter', { backRowCritBp: 500 }],
+    ['heart-of-the-row', 'setter', { heartHpBp: 1200 }],
+    // Scale x2 (the reaction family).
+    ['four-winds', 'payoff', { fourWindsBp: 2000 }],
+    ['adaptation-pierce', 'setter', { adaptPierceBp: 3500 }],
   ];
 
   it.each(cases)('%s for a %s gives its field', (line, role, expected) => {
@@ -95,6 +118,27 @@ describe('gearFx: the line to effect map', () => {
     expect(gearFx(wearer('support'), [hatWith('armor', 0)])).toEqual({ armourBonus: 2 });
   });
 
+  it('settles a row of Hunter and Ward lines into one table by element, copies adding', () => {
+    // Ember beats Grove and Mire; Hunter by the piece's element works for any wearer.
+    const two = gearFx(wearer('setter', 'spark'), [
+      hatWith('ember-hunter', 4),
+      hatWith('ember-hunter', 0),
+    ]);
+    const one = gearFx(wearer('setter', 'spark'), [hatWith('ember-hunter', 4)]);
+    expect(Object.keys(one.vsElementBp ?? {}).length).toBeGreaterThan(0);
+    for (const [foe, bp] of Object.entries(one.vsElementBp ?? {}))
+      expect(two.vsElementBp?.[foe], foe).toBe(bp + 400);
+  });
+
+  it('keeps a Flank Guard line from costing its price twice, and a role line to its role', () => {
+    const both = gearFx(wearer('guard'), [
+      hatWith('flank-guard-left'),
+      hatWith('flank-guard-left'),
+    ]);
+    expect(both).toEqual({ reachLeftBonus: 2, reachRightBonus: -1 });
+    expect(gearFx(wearer('setter'), [hatWith('long-arm-left')])).toEqual({});
+  });
+
   it('gives a Retaliate line as a value to take the larger of, not a sum', () => {
     // Two Riposte lines make one counter with the larger chance (the engine merges it with a Knack's the same way).
     const fx = gearFx(wearer('setter'), [hatWith('riposte', 4), hatWith('riposte', 0)]);
@@ -103,19 +147,14 @@ describe('gearFx: the line to effect map', () => {
 
   it('adds nothing for lines with no v2 hook, stat lines and an empty set of items', () => {
     expect(gearFx(wearer('guard'), [])).toEqual({});
-    for (const line of [
-      'attack',
-      'hp',
-      'crit-chance',
-      'all-damage-taken',
-      'payback',
-      'ember-hunter',
-    ]) {
+    for (const line of ['attack', 'hp', 'crit-chance', 'payback', 'spark-share']) {
       expect(gearFx(wearer('guard'), [hatWith(line)]), line).toEqual({});
     }
     expect(gearLineHasV2Hook('first-pounce')).toBe(true);
     expect(gearLineHasV2Hook('tide-reaction')).toBe(true);
     expect(gearLineHasV2Hook('payback')).toBe(false);
+    for (const line of ['all-damage-taken', 'ember-hunter', 'tide-ward', 'long-arm-left'])
+      expect(gearLineHasV2Hook(line), line).toBe(true);
     expect(gearLineHasV2Hook('attack')).toBe(false);
     expect(gearLineHasV2Hook('no-such-line')).toBe(false);
   });

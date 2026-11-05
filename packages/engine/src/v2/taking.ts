@@ -91,7 +91,9 @@ const cutOf = (left: number, bp: number): number =>
 const coverOf = (s: State, g: Fighter, who: Fighter): number =>
   s.ctx.rules.coverBp +
   (fx(g).coverBonusBp ?? 0) +
-  (fx(g).distanceCoverBp ?? 0) * Math.abs(g.col - who.col);
+  (fx(g).distanceCoverBp ?? 0) * Math.abs(g.col - who.col) +
+  // Sheltered (gear): the cover on a creature is stronger, whoever gives it.
+  (fx(who).shelterBp ?? 0);
 
 /**
  * Damage lands on a creature: every cut it gets for this hit multiplies together (an aura, its own area cut,
@@ -164,6 +166,18 @@ export function takeHit(
     without = cutOf(without, k.braceBp);
     bump(taker, 'braceBp');
   }
+  // Gear cuts (slice 3): every hit, aimed hits, a reflected hit, at a quarter of its HP, the boss's element. Each is one cut among the others.
+  const gearCut = (bp: number | undefined, key: keyof KnackFx): void => {
+    if (!bp) return;
+    left = cutOf(left, bp);
+    without = cutOf(without, bp);
+    bump(taker, key);
+  };
+  gearCut(k.takenCutBp, 'takenCutBp');
+  if (how === 'aimed') gearCut(k.aimedCutBp, 'aimedCutBp');
+  if (how === 'reflected') gearCut(k.reflectedCutBp, 'reflectedCutBp');
+  if (taker.hp * 4 <= taker.maxHp) gearCut(k.lastStandCutBp, 'lastStandCutBp');
+  gearCut(k.fromElementCutBp?.[s.boss.element], 'fromElementCutBp');
   // Long Shadow: the cut on a hit it intercepts grows with the distance to the creature it saved.
   if (k.distanceCoverBp && taker !== target) {
     const shadow = k.distanceCoverBp * Math.abs(taker.col - target.col);

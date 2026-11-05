@@ -69,6 +69,13 @@ function atRowEnd(s: State, f: Fighter): boolean {
   return f.col === 0 || f.col === s.boss.cols - 1;
 }
 
+/** Whether `f`'s row holds creatures of four elements or more (itself included; the fight's creatures, as placed). */
+function fourElementsInRow(s: State, f: Fighter): boolean {
+  const els = new Set<string>();
+  for (const o of s.fighters) if (o.row === f.row) els.add(o.element);
+  return els.size >= 4;
+}
+
 /** `bp` if the effect has a number and its condition holds (counted as held, the report's "holds"), else nothing. */
 function conditional(
   f: Fighter,
@@ -79,6 +86,15 @@ function conditional(
   if (!bp || !holds) return 0;
   bump(f, key);
   return bp;
+}
+
+/** The hit bonus of the `besideRoleBp` lines: each role's number while a living creature of that role stands beside `f`. */
+function besideRoleOf(f: Fighter, k: KnackFx, near: readonly Fighter[]): number {
+  if (!k.besideRoleBp) return 0;
+  let sum = 0;
+  for (const [role, bp] of Object.entries(k.besideRoleBp))
+    if (near.some((o) => o.role === role)) sum += conditional(f, 'besideRoleBp', bp, true);
+  return sum;
 }
 
 function creatureHit(s: State, f: Fighter, shareBp: number): void {
@@ -118,25 +134,39 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
       s.shadowHp * 10_000 < s.boss.hp * R.finisherBelowBp,
     ) +
     conditional(f, 'momentumBp', k.momentumBp, f.momentum) +
-    conditional(f, 'vengefulBp', k.vengefulBp, f.avenged);
+    conditional(f, 'vengefulBp', k.vengefulBp, f.avenged) +
+    // Gear (slice 3): Hunter (the boss's element is one the line's element beats) and Beside the mark-maker (by role).
+    conditional(f, 'vsElementBp', k.vsElementBp?.[s.boss.element], true) +
+    besideRoleOf(f, k, near);
   // A silenced creature does not use up its stored Momentum: what was stored before the silence stays.
   if (!silenced(f)) f.momentum = false;
   // A Rally of the finale (R18) is one more hit boost, inside the same cap.
-  const bonusSum = Math.min(R.maxHitBonusBp, f.boostBp + situational + (s.rally ? R.rallyBp : 0));
+  const bonusBase = f.boostBp + situational + (s.rally ? R.rallyBp : 0);
+  const bonusSum = Math.min(R.maxHitBonusBp, bonusBase);
   const atk = Math.floor((f.atk * (10_000 + (k.atkBp ?? 0))) / 10_000);
   const matched = Math.floor((atk * s.ctx.matchup(f.element, s.boss.element)) / 10_000);
+  // Adaptation Pierce (gear): the boss's resistances weigh less on this creature's hits.
+  const pierceAdapt = (cut: number): number =>
+    k.adaptPierceBp
+      ? Math.floor((cut * (10_000 - Math.min(10_000, k.adaptPierceBp))) / 10_000)
+      : cut;
+  if (k.adaptPierceBp && !s.purged && (s.opts.resistElement === f.element || s.opts.resistReaction))
+    bump(f, 'adaptPierceBp');
   // Element Resistance (a raid weekend, from stage 2): the resisted element's creatures deal less.
   const base =
     s.opts.resistElement === f.element && !s.purged
       ? Math.floor(
           (matched *
-            (10_000 - Math.floor(((10_000 - R.adaptElementBp) * strengthOf(s)) / 10_000))) /
+            (10_000 -
+              pierceAdapt(Math.floor(((10_000 - R.adaptElementBp) * strengthOf(s)) / 10_000)))) /
             10_000,
         )
       : matched;
-  let plain = k.noDamage
-    ? 0
-    : Math.floor((((base * (10_000 + bonusSum)) / 10_000) * shareBp * (k.plainBp ?? 10_000)) / 1e8);
+  const plainOf = (bonus: number): number =>
+    k.noDamage
+      ? 0
+      : Math.floor((((base * (10_000 + bonus)) / 10_000) * shareBp * (k.plainBp ?? 10_000)) / 1e8);
+  let plain = plainOf(bonusSum);
   // 2. The boss rolls dodge (14.4). A hit that deals no damage is not rolled. Setup never misses.
   const bossDodge = f.undodgeable
     ? 0
@@ -178,6 +208,16 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
         cand = entry;
     }
   }
+  // 3a. Marking Hit and Marked Foe (gear): known only now that the reaction is chosen. A hit that sets off no reaction and marks (a
+  // Setter's, or a Knack's) deals more; so does any hit on a marked boss that sets off none. Inside the same cap as the rest.
+  if (!dodged && plain > 0 && cand === undefined && (k.markingHitBp || k.markedFoeBp)) {
+    const marks =
+      k.markingHitBp && (k.marksAs ?? (f.role === 'setter' && !silenced(f) ? 'own' : undefined));
+    const extra =
+      conditional(f, 'markingHitBp', k.markingHitBp, !!marks) +
+      conditional(f, 'markedFoeBp', k.markedFoeBp, s.marks.size > 0);
+    if (extra > 0) plain = plainOf(Math.min(R.maxHitBonusBp, bonusBase + extra));
+  }
   // 3b. Crit (R6.3b): after the dodge and the choice of the reaction (so an effect may read both), before the reaction's bonus,
   // the cap and the armour. Chance and damage stack from the base, the species, the Knack and the talents (R7.1).
   let crit = false;
@@ -188,7 +228,15 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
   // A Sure Crit makes a hit that is not already a crit one, with more extra damage; it is spent below, only if the hit lands.
   let spendsSureCrit = false;
   if (!dodged && plain > 0) {
-    crit = roll(s, R.critChanceBp + f.critChanceBp + (k.critChanceBp ?? 0));
+    // Keen Reaction (on a hit that sets off a reaction) and Back-row Patience (in the back row): gear's crit chance on conditions.
+    const keen = conditional(f, 'keenReactionBp', k.keenReactionBp, cand !== undefined);
+    const backRow = conditional(
+      f,
+      'backRowCritBp',
+      k.backRowCritBp,
+      s.boss.rows > 1 && f.row === s.boss.rows - 1,
+    );
+    crit = roll(s, R.critChanceBp + f.critChanceBp + (k.critChanceBp ?? 0) + keen + backRow);
     if (k.steadyRhythm && (f.hitsMade + 1) % 3 === 0) {
       crit = true;
       rhythmCrit = true;
@@ -219,6 +267,11 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
     // Talents raise the factor, inside the cap (R7): a crit talent on a crit, Hungry always.
     if (crit && k.reactionCritBp) factor = (factor * (10_000 + k.reactionCritBp)) / 10_000;
     if (k.reactionBonusBp) factor = (factor * (10_000 + k.reactionBonusBp)) / 10_000;
+    // Four Winds (gear): a row that holds four elements.
+    if (k.fourWindsBp && fourElementsInRow(s, f)) {
+      factor = (factor * (10_000 + k.fourWindsBp)) / 10_000;
+      bump(f, 'fourWindsBp');
+    }
     // Mark conditions: a mark at x3, a mark set this boss turn, a mark a Setter's talent left.
     const raise = (who: Fighter, key: keyof KnackFx, bp: number | undefined, holds: boolean) => {
       if (bp && holds) {
@@ -235,7 +288,7 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
     // Reaction Resistance: half the bonus at full strength, less below it.
     if (s.opts.resistReaction === el && !s.purged)
       bonus = Math.floor(
-        (bonus * (10_000 - Math.floor((5_000 * strengthOf(s)) / 10_000))) / 10_000,
+        (bonus * (10_000 - pierceAdapt(Math.floor((5_000 * strengthOf(s)) / 10_000)))) / 10_000,
       );
     mark.stacks -= spent;
     if (mark.stacks <= 0) s.marks.delete(el);

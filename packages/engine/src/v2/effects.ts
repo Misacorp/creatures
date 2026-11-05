@@ -201,6 +201,41 @@ export interface KnackFx {
   readonly spillOver?: boolean;
   /** A hit that leaves a foe below this share of its full HP defeats it outright (the HP left is the killing blow, not damage). */
   readonly cullBp?: number;
+  // Gear lines, batch A (docs/design/combat/gear-plan.md, slice 3): cuts and conditions. Gear only; numbers add.
+  /** It takes this much less from every hit (inside the 75% cut cap). */
+  readonly takenCutBp?: number;
+  /** It takes this much less from aimed hits (the plain attack and aimed moves; not area or charged landings). */
+  readonly aimedCutBp?: number;
+  /** It takes this much less from a hit the boss's reflected reaction bounces back at it. */
+  readonly reflectedCutBp?: number;
+  /** While it is at a quarter of its max HP or less, it takes this much less from every hit. */
+  readonly lastStandCutBp?: number;
+  /** Its hits deal this much more to a boss of the element (by element id; the elements the line's own element beats). */
+  readonly vsElementBp?: Record<string, number>;
+  /** It takes this much less from a boss of the element (by element id; the elements that beat the line's own element). */
+  readonly fromElementCutBp?: Record<string, number>;
+  /** Its hit that leaves a mark (no reaction fires, and it marks) deals this much more. */
+  readonly markingHitBp?: number;
+  /** Its hit on a boss that carries a mark deals this much more when it sets off no reaction. */
+  readonly markedFoeBp?: number;
+  /** Its hits deal this much more while a living creature of the role stands beside it (by role id). */
+  readonly besideRoleBp?: Record<string, number>;
+  /** A Guard's reach is this many slots longer on its left (negative: shorter); the reach never goes below 0. */
+  readonly reachLeftBonus?: number;
+  /** A Guard's reach is this many slots longer on its right (negative: shorter). */
+  readonly reachRightBonus?: number;
+  /** A Guard's cover on it is this much stronger (added to the cover's cut). */
+  readonly shelterBp?: number;
+  /** Added to its crit chance on a hit that sets off a reaction. */
+  readonly keenReactionBp?: number;
+  /** Added to its crit chance while it stands in the back row of an arena with more than one row. */
+  readonly backRowCritBp?: number;
+  /** Its max HP is this much higher while it stands in the middle of its row (not a row end; set when the fight starts). */
+  readonly heartHpBp?: number;
+  /** Its reaction bonus factor is this much higher while its row holds creatures of four elements or more. */
+  readonly fourWindsBp?: number;
+  /** The boss's Element Resistance and Reaction Resistance weigh this much less on its hits. */
+  readonly adaptPierceBp?: number;
 }
 
 /**
@@ -247,6 +282,23 @@ export const GEAR_FIELDS: readonly (keyof KnackFx)[] = [
   'ignoreSilence',
   'holdOn',
   'clinging',
+  'takenCutBp',
+  'aimedCutBp',
+  'reflectedCutBp',
+  'lastStandCutBp',
+  'vsElementBp',
+  'fromElementCutBp',
+  'markingHitBp',
+  'markedFoeBp',
+  'besideRoleBp',
+  'reachLeftBonus',
+  'reachRightBonus',
+  'shelterBp',
+  'keenReactionBp',
+  'backRowCritBp',
+  'heartHpBp',
+  'fourWindsBp',
+  'adaptPierceBp',
 ];
 
 /**

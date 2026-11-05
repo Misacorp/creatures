@@ -10,13 +10,32 @@ describe('gear lines under combat v2', () => {
     expect(isEffectLine('hp')).toBe(false);
     expect(isEffectLine('crit-chance')).toBe(false);
     expect(isEffectLine('crit-damage')).toBe(false);
-    expect(isEffectLine('ember-hunter')).toBe(true);
+    // Batch A (gear plan slice 3) has hooks too: Hunter, Ward and the cuts count.
+    expect(isEffectLine('ember-hunter')).toBe(false);
+    expect(isEffectLine('tide-ward')).toBe(false);
     // Lines with a v2 hook count (gear plan slice 1); lines with none yet are marked.
     expect(isEffectLine('first-pounce')).toBe(false);
     expect(isEffectLine('armor')).toBe(false);
     expect(isEffectLine('tide-reaction')).toBe(false);
     expect(isEffectLine('riposte')).toBe(false);
-    expect(isEffectLine('all-damage-taken')).toBe(true);
+    for (const id of [
+      'all-damage-taken',
+      'aimed-ward',
+      'backdraft-ward',
+      'last-stand',
+      'marking-hit',
+      'marked-foe',
+      'beside-the-mark-maker',
+      'long-arm-left',
+      'flank-guard-right',
+      'sheltered',
+      'keen-reaction',
+      'back-row-patience',
+      'heart-of-the-row',
+      'four-winds',
+      'adaptation-pierce',
+    ])
+      expect(isEffectLine(id), id).toBe(false);
     expect(isEffectLine('payback')).toBe(true);
     expect(isEffectLine('lantern-bearer')).toBe(true);
     expect(isEffectLine('no-such-line')).toBe(false);

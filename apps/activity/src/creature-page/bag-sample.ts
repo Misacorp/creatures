@@ -92,7 +92,7 @@ const TABLES: Readonly<Record<GearSlot, readonly Spec[]>> = {
 
 /** The lines each tag's items roll in the sample (real line ids, so the card, the compare and the server agree). */
 const LINE_POOL: Readonly<Record<string, readonly string[]>> = {
-  ember: ['ember-reaction', 'first-pounce', 'ember-hunter'],
+  ember: ['ember-reaction', 'first-pounce', 'ember-tail'],
   tide: ['tide-attunement', 'aimed-ward', 'tide-hunter'],
   grove: ['aimed-ward', 'hp', 'grove-reaction'],
   spark: ['spark-reaction', 'crit-chance', 'spark-attunement'],
