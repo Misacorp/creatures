@@ -94,7 +94,8 @@ describe('the bench and the row of four', () => {
 
   it('the extra creature is brought in by a swap at the camp (it is the only one on the bench)', () => {
     let swaps = 0;
-    for (let i = 0; i < 300; i++) {
+    // Stops at the first swap (a few seeds in).
+    for (let i = 0; i < 300 && swaps === 0; i++) {
       const r = runMap(ALL_ROUND_TEAM, 8, createSeededRng(`camp${i}`), {
         policy: 'smart',
         foes: OLD_FOES,

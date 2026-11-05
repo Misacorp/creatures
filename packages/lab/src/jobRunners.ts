@@ -9,6 +9,7 @@ import { runFourSlotJob } from './fourSlot';
 import { runGateJob, type GateJobArgs } from './gate';
 import { runJourneyJob } from './journey';
 import { runPathJob } from './path';
+import { runRuleJob, type RuleJobArgs } from './ruleCheck';
 import type { Executor, JobOutcome, JobSpec } from './jobs';
 import {
   reportAnswers,
@@ -78,6 +79,8 @@ export function runJob(job: JobSpec, deps: Readonly<Record<string, unknown>>): u
       return runGateJob(job.args as GateJobArgs, deps);
     case 'four-slot':
       return runFourSlotJob(job.args);
+    case 'rules':
+      return runRuleJob(job.args as RuleJobArgs);
     case 'tune-eval':
       return runTuneJob(job.args);
     case 'slot-eval':

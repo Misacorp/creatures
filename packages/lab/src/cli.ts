@@ -9,6 +9,7 @@ import { planFourSlot } from './fourSlot';
 import { planGate } from './gate';
 import { planJourney } from './journey';
 import { planPath, type PathSummary } from './path';
+import { planRules } from './ruleCheck';
 import { ownabilityMarkdown, ownabilityTable } from './ownability';
 import { ROSTER_SPEEDS, type RosterSpeed } from './roster';
 import { inProcessExecutor } from './jobRunners';
@@ -65,6 +66,7 @@ export async function main(args: readonly string[], run: JobRunner = serial): Pr
   if (args.includes('--dungeon-days')) return dungeonDays(args, quick, run);
   if (args.includes('--undercroft-tools')) return undercroftTools(args, quick, run);
   if (args.includes('--four-slot')) return fourSlot(quick, run);
+  if (args.includes('--rules')) return rules(quick, run);
   if (args.includes('--gate')) return gate(quick, run);
   const bossAt = args.indexOf('--boss');
   if (args.includes('--bosses') || bossAt >= 0) {
@@ -224,9 +226,28 @@ async function undercroftTools(
 /** `--gate [--quick]`: the phase 5 gate table (`gate.ts`), to the console (nothing is written). */
 async function gate(quick: boolean, run: JobRunner): Promise<number> {
   const t0 = Date.now();
-  const { value, timings } = await runPlan(planGate({ quick }), run);
-  console.log(value.md.join('\n'));
+  // The boss rules (`ruleCheck.ts`) run in the same pool, after the gate table.
+  const g = planGate({ quick });
+  const r = planRules({ quick });
+  const { value, timings } = await runPlan(
+    {
+      jobs: [...g.jobs, ...r.jobs],
+      assemble: (results) => [...g.assemble(results).md, ...r.assemble(results).md],
+    },
+    run,
+  );
+  console.log(value.join('\n'));
   console.log(`gate in ${secondsSince(t0)} s`);
+  console.log(timings);
+  return 0;
+}
+
+/** `--rules [--quick]`: the boss rules the lab tests used to assert (`ruleCheck.ts`), to the console (nothing is written). */
+async function rules(quick: boolean, run: JobRunner): Promise<number> {
+  const t0 = Date.now();
+  const { value, timings } = await runPlan(planRules({ quick }), run);
+  console.log(value.md.join('\n'));
+  console.log(`rules in ${secondsSince(t0)} s`);
   console.log(timings);
   return 0;
 }
