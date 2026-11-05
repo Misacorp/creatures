@@ -209,10 +209,13 @@ function Stander({
 function Roamers({
   creatures,
   area,
+  dragArea,
   g,
 }: {
   creatures: readonly Creature[];
   area: { x: number; y: number; width: number; height: number };
+  /** Where a hand may put a creature down: the whole scene, not only the meadow it wanders. */
+  dragArea: Rect;
   g: SceneGeometry;
 }) {
   const reduced = usePrefersReducedMotion();
@@ -232,7 +235,7 @@ function Roamers({
           label="at home in the paddock"
           g={g}
           hand={{
-            area,
+            area: dragArea,
             lifted: held?.id === p.key,
             onHold: (x, y) => {
               setHeld({ id: p.key, x, y });
@@ -324,6 +327,7 @@ export function PlaceScene({ cast, onAct }: { cast: Cast; onAct: () => void }) {
                 key={`${String(g.W)}-${String(g.s)}`}
                 creatures={cast.roamers.slice(0, roam.shown)}
                 area={roam.area}
+                dragArea={roam.drag}
                 g={g}
               />
             )}

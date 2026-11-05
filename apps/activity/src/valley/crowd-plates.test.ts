@@ -2,6 +2,7 @@ import { createSeededRng } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import { HOME_NOW, homeInput } from '../workbench/home-sample';
 import { CAST_PLACES, CREATURE_PX, castFor, type CastInput } from './place-cast';
+import { dropPoint } from './creature-drag';
 import { PLATE_MAX_PX, PLATE_ROW_PX, plateGap, roamPlan, standSpots } from './place-plates';
 import { BAND_ROWS, artSize, bandArtBox } from './place-scene';
 import { sceneScale } from './scale';
@@ -97,6 +98,30 @@ describe('nameplates: no two overlap and none leaves the scene, at the phone and
       }
     },
   );
+
+  it('the paddock: on a 1440 px window a hand can drop a creature anywhere on the scene, not only in the meadow', () => {
+    const s = sceneScale(1408);
+    const g = sceneGeometry(1408, BAND_ROWS * s, s);
+    const scene = { W: g.W, H: g.H, s, top: g.top };
+    const box = bandArtBox(g, 'paddock');
+    const c = castFor('paddock', input(), artSize('paddock'), []);
+    const plan = roamPlan(c, box, scene);
+    if (plan === null) throw new Error('the paddock has a meadow');
+    // The wanderers stay in the art's meadow, far narrower than the scene ...
+    expect(plan.area.width).toBeLessThan(g.W / 2);
+    // ... but a drop at 30% of the scene's width (left of the meadow) lands there, at the scene's scale.
+    const pointer = { x: 16 + 1408 * 0.3, y: 56 + 200 };
+    const to = dropPoint(
+      { dx: 0, dy: 0 },
+      pointer.x,
+      pointer.y,
+      { left: 16, top: 56 },
+      s,
+      plan.drag,
+    );
+    expect(to.x * s).toBeCloseTo(1408 * 0.3, -1);
+    expect(to.x).toBeLessThan(plan.area.x);
+  });
 
   it('the paddock: roamers keep their plates apart and inside the scene all the time, and fewer fit in a narrow scene', () => {
     const shown: number[] = [];

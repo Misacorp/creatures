@@ -148,7 +148,7 @@ export function roamPlan(
   cast: Pick<Cast, 'roam' | 'roamers' | 'gate'>,
   art: { x: number; y: number },
   scene: PlateScene,
-): { area: Rect; shown: number } | null {
+): { area: Rect; shown: number; drag: Rect } | null {
   if (cast.roam === null) return null;
   const bounds = standBounds(scene);
   // The meadow stops a sprite short of the gate, where the newcomers wait.
@@ -167,5 +167,6 @@ export function roamPlan(
     limited,
     plateGap(scene.s),
   );
-  return { area, shown: Math.min(cast.roamers.length, fit) };
+  // A hand may put a creature down anywhere on the scene (the wanderers only roam the meadow).
+  return { area, shown: Math.min(cast.roamers.length, fit), drag: bounds };
 }

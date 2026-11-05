@@ -93,7 +93,8 @@ const ROUTES = new Map([
     '/api/away/dismiss',
     () => {
       awayDismissed = true;
-      return state();
+      // The server wraps a state an action returns as `{ state }`.
+      return { state: state() };
     },
   ],
   ['/api/dungeon/today', () => fixture('dungeon-today')],
