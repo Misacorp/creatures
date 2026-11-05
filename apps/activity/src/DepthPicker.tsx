@@ -101,11 +101,8 @@ function DepthList({
             onPick(depth);
           }}
         >
+          {/* The picked row is marked as the creature list marks its chosen row (`roster-option.on`, the gold ring). */}
           <DepthFace depth={depth} own={own} />
-          {/* Always there, so the chips of every row sit in the same place; seen only on the picked one. */}
-          <span class={depth === picked ? 'choice-check' : 'choice-check blank'} aria-hidden="true">
-            {'✓'}
-          </span>
         </li>
       ))}
     </ul>
