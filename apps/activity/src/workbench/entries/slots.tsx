@@ -1,4 +1,4 @@
-import { content } from '@creatures/game';
+import { content, landmarkBossId } from '@creatures/game';
 import { useMemo, useState } from 'preact/hooks';
 import { DungeonSetup } from '../../DungeonSetup';
 import { TreatTimesContext } from '../../TreatBox';
@@ -12,6 +12,7 @@ import stateFixture from '../../fixtures/collection-state.json';
 import todayFixture from '../../fixtures/dungeon-today-map.json';
 import { parseGameState, type Creature } from '../../api';
 import { parseDungeonToday } from '../../dungeon-parse';
+import type { DungeonPreview } from '../../dungeon-types';
 import { isComplete, type Slots } from '../../dungeon-team';
 import type { PickerCreature } from '../../roster-picker';
 import { CueRail } from '../../ui/CueRail';
@@ -151,14 +152,31 @@ function SetupDemo({ p }: { p: Props }) {
       return { ...from, id: `demo-${String(i)}`, species, level: 3 + i * 2, caughtAt: 1_000 + i };
     });
   }, [num(p, 'owned')]);
-  const today = parseDungeonToday({
+  const v2 = str(p, 'rules') === 'combat v2';
+  const parsed = parseDungeonToday({
     ...todayFixture,
+    ...(v2 ? { rules: 2 } : {}),
     streak: num(p, 'streak'),
     depth: num(p, 'depth'),
     lastTeam: creatures.slice(0, num(p, 'placed')).map((c) => c.id),
     // Without the map the card falls back to the old three-room strip.
     ...(bool(p, 'map') ? {} : { map: null }),
   });
+  // A v2 map carries each foe's card; the stand-in server answers a picked depth with the same map at that depth.
+  const today =
+    v2 && parsed.map != null ? { ...parsed, map: mapV2(parsed.map, num(p, 'depth')) } : parsed;
+  const baseMap = parsed.map;
+  const loadPreview = (depth: number): Promise<DungeonPreview> => {
+    const foeId = landmarkBossId(depth);
+    return baseMap == null
+      ? Promise.reject(new Error('no map'))
+      : Promise.resolve({
+          depth,
+          landmark: foeId !== null,
+          landmarkBoss: foeId === null ? null : { depth, foeId },
+          map: mapV2(baseMap, depth),
+        });
+  };
   return (
     <TreatTimesContext.Provider value={num(p, 'treatTimes')}>
       <DungeonSetup
@@ -170,6 +188,8 @@ function SetupDemo({ p }: { p: Props }) {
         draft={null}
         onDraftChange={() => undefined}
         onEnter={() => undefined}
+        loadPreview={loadPreview}
+        {...(num(p, 'pick') > 0 ? { initialDepth: num(p, 'pick') } : {})}
         onSeeLast={() => undefined}
       />
     </TreatTimesContext.Provider>
@@ -187,6 +207,7 @@ const dungeonSetup: Entry = {
     placed: { kind: 'number', min: 1, max: 3 },
     streak: { kind: 'number', min: 0, max: 30 },
     depth: { kind: 'number', min: 1, max: 40 },
+    pick: { kind: 'number', min: 0, max: 40 },
     bait: { kind: 'number', min: 0, max: 100 },
     treatTimes: { kind: 'number', min: 2, max: 4 },
     busy: { kind: 'toggle' },
@@ -200,6 +221,7 @@ const dungeonSetup: Entry = {
     placed: 3,
     streak: 3,
     depth: 1,
+    pick: 0,
     bait: 40,
     treatTimes: 2,
     busy: false,
@@ -224,13 +246,29 @@ const dungeonSetup: Entry = {
       name: 'Combat v2: getting the team ready, with the Knack part (tap a creature, then its Knack)',
       props: { configure: true, rules: 'combat v2' },
     },
+    {
+      name: 'Combat v2, the depth picker at your own depth (23: the arrows step back, nothing changes yet)',
+      props: { rules: 'combat v2', depth: 23 },
+    },
+    {
+      name: 'Combat v2, the depth picker below your own (own 23, picking 16: a lower pick does not advance)',
+      props: { rules: 'combat v2', depth: 23, pick: 16 },
+    },
+    {
+      name: 'Combat v2, the depth picker at the lowest depth (own 23, picking 1)',
+      props: { rules: 'combat v2', depth: 23, pick: 1 },
+    },
+    {
+      name: 'Combat v2, a landmark below your own depth (own 23, picking 14: the floor boss shows, the bonus is paid once)',
+      props: { rules: 'combat v2', depth: 23, pick: 14 },
+    },
   ],
   render: (p) =>
     bool(p, 'configure') ? (
       <ConfigureSetupDemo key={str(p, 'rules')} v2={str(p, 'rules') === 'combat v2'} />
     ) : (
       <SetupDemo
-        key={`${String(num(p, 'owned'))}-${String(num(p, 'placed'))}-${String(num(p, 'streak'))}-${String(num(p, 'depth'))}-${String(bool(p, 'map'))}`}
+        key={`${String(num(p, 'owned'))}-${String(num(p, 'placed'))}-${String(num(p, 'streak'))}-${String(num(p, 'depth'))}-${String(num(p, 'pick'))}-${String(bool(p, 'map'))}-${str(p, 'rules')}`}
         p={p}
       />
     ),

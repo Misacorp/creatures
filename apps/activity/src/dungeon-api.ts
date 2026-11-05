@@ -8,6 +8,7 @@
 import { apiFetch, jsonRequest } from './api';
 import {
   parseDungeonAct,
+  parseDungeonPreview,
   parseDungeonReplay,
   parseDungeonStart,
   parseDungeonTeamSaved,
@@ -16,6 +17,7 @@ import {
 import type {
   DungeonActRequest,
   DungeonActResponse,
+  DungeonPreview,
   DungeonReplay,
   DungeonStartRequest,
   DungeonStartResponse,
@@ -27,6 +29,11 @@ import type {
 /** Today's state: the map, the depth, the streak, and whether a run is possible. */
 export async function fetchDungeonToday(): Promise<DungeonToday> {
   return parseDungeonToday(await apiFetch('/api/dungeon/today'));
+}
+
+/** The pre-run card's map and floor boss at a depth below the player's own (combat v2 only; a locked depth is refused). */
+export async function fetchDungeonPreview(depth: number): Promise<DungeonPreview> {
+  return parseDungeonPreview(await apiFetch(`/api/dungeon/preview?depth=${String(depth)}`));
 }
 
 /**

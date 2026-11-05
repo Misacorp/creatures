@@ -31,6 +31,8 @@ export interface RunBodyInput {
   /** The row, left to right. */
   team: string[];
   treats?: string[];
+  /** Combat v2: the depth to play (absent: the player's own). */
+  depth?: number;
   idempotencyKey: string;
 }
 

@@ -2,7 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { TreatBox } from './TreatBox';
 import type { Creature } from './api';
 import { CreatureConfigurator, type ConfiguratorParts } from './CreatureConfigurator';
+import { DepthPicker } from './DepthPicker';
 import { DungeonPrerun } from './DungeonPrerun';
+import { fetchDungeonPreview } from './dungeon-api';
 import { DungeonTeam } from './DungeonTeam';
 import { TeamCreaturePage, type TeamConfigure } from './TeamCreaturePage';
 import {
@@ -15,7 +17,7 @@ import {
   type Slots,
 } from './dungeon-team';
 import { blockedText, isRetryOffer, RETRY_TEXT } from './dungeon-text';
-import type { DungeonToday } from './dungeon-types';
+import type { DungeonPreview, DungeonToday } from './dungeon-types';
 import { baitCount } from './count-items';
 import { GlossaryTag } from './Glossary';
 import { CountBadge } from './ui/CountBadge';
@@ -47,7 +49,14 @@ interface Props {
   /** Saves the row on the server (`PUT /api/dungeon/team`), debounced; leave out to save nothing. */
   saveDraft?: (team: Slots) => Promise<unknown>;
   /** The player pressed Enter with a complete team, and the creatures they packed a treat for. */
-  onEnter: (slots: Slots, treats: ReadonlySet<string>) => void;
+  onEnter: (slots: Slots, treats: ReadonlySet<string>, depth?: number) => void;
+  /**
+   * Combat v2: the pre-run map at a depth picked below the player's own (the foes' numbers are the depth's). Absent: the real
+   * request. The card shows today's map until the answer arrives, and again if it fails.
+   */
+  loadPreview?: (depth: number) => Promise<DungeonPreview>;
+  /** The depth the picker starts on (the workbench's); absent: the player's own. */
+  initialDepth?: number;
   /** Opens the summary of today's earlier run (the first-day retry offer). */
   onSeeLast: () => void;
   /**
@@ -95,6 +104,8 @@ export function DungeonSetup({
   onDraftChange,
   saveDraft,
   onEnter,
+  loadPreview,
+  initialDepth,
   onSeeLast,
   configure,
 }: Props) {
@@ -108,6 +119,41 @@ export function DungeonSetup({
   const [page, setPage] = useState<string | null>(null);
   /** Back from a page: the tile of the creature shown last gets the focus. */
   const backTo = useRef<string | null>(null);
+  // Combat v2: the depth to play, any the player has unlocked (1 to their own, `today.depth`); their own to begin with.
+  const own = today.depth;
+  const pickDepth = today.rules === 2 && own >= 2;
+  const [pick, setPick] = useState(initialDepth ?? own);
+  const depth = pickDepth ? Math.min(Math.max(1, pick), own) : own;
+  const [preview, setPreview] = useState<DungeonPreview | null>(null);
+  // A depth below their own shows that depth's map and floor boss; the card keeps today's until the answer is in.
+  useEffect(() => {
+    if (!pickDepth || depth >= own) {
+      setPreview(null);
+      return undefined;
+    }
+    let live = true;
+    (loadPreview ?? ((d: number) => fetchDungeonPreview(d)))(depth).then(
+      (answer) => {
+        if (live) setPreview(answer);
+      },
+      () => {
+        if (live) setPreview(null);
+      },
+    );
+    return () => {
+      live = false;
+    };
+  }, [pickDepth, depth, own]);
+  const shownToday: DungeonToday =
+    preview !== null && preview.depth === depth && depth < own
+      ? {
+          ...today,
+          depth,
+          landmark: preview.landmark,
+          landmarkBoss: preview.landmarkBoss,
+          map: preview.map,
+        }
+      : today;
   const [slots, setSlots] = useState<Slots>(() =>
     setupTeam({
       memory: draft,
@@ -210,7 +256,8 @@ export function DungeonSetup({
           </p>
         </section>
       )}
-      <DungeonPrerun today={today} forecast={forecast}>
+      <DungeonPrerun today={shownToday} forecast={forecast} progressDepth={own}>
+        {pickDepth && <DepthPicker own={own} picked={depth} onPick={setPick} />}
         <DungeonTeam
           creatures={pickable}
           slots={slots}
@@ -307,7 +354,9 @@ export function DungeonSetup({
                 onClick={() => {
                   // The run deletes the draft on the server, so a save still waiting is not sent.
                   saver.cancel();
-                  onEnter(slots, new Set([...treats].filter((id) => slots.includes(id))));
+                  const going = new Set([...treats].filter((id) => slots.includes(id)));
+                  if (pickDepth) onEnter(slots, going, depth);
+                  else onEnter(slots, going);
                 }}
               >
                 {/* The Dungeon tab's door, in ink on gold as on the active tab. */}

@@ -142,7 +142,12 @@ export type ResultTone = 'good' | 'bad';
 
 /** The fields of a run summary that the results' title and summary line read. */
 type ResultRun = Pick<DungeonRunSummary, 'cleared' | 'roomsCleared' | 'rooms'> &
-  Partial<Pick<DungeonRunSummary, 'outcome' | 'depth' | 'newDepth' | 'pack' | 'deepest' | 'route'>>;
+  Partial<
+    Pick<
+      DungeonRunSummary,
+      'outcome' | 'depth' | 'newDepth' | 'lower' | 'pack' | 'deepest' | 'route'
+    >
+  >;
 
 /**
  * The title of a finished run, a few words: "Cleared!", "Home safe", "Defeated", or "Lost in the
@@ -191,7 +196,11 @@ export function resultSummary(run: ResultRun): string {
   switch (run.outcome) {
     case 'cleared': {
       const down = floors > 0 ? ` and ${undercroftFloorsText(floors)}` : '';
-      const lead = `You defeated the floor boss and advanced to depth ${String(newDepth)}${down}.`;
+      // A clear below the player's own depth (the picker) unlocks nothing: their depth stays.
+      const lead =
+        run.lower === true
+          ? `You defeated the floor boss at depth ${String(depth)}${down}. You stay at depth ${String(newDepth)}.`
+          : `You defeated the floor boss and advanced to depth ${String(newDepth)}${down}.`;
       return empty ? lead : `${lead} You brought your whole pack home.`;
     }
     case 'home':
@@ -200,7 +209,11 @@ export function resultSummary(run: ResultRun): string {
       const kept = empty ? ' with an empty pack' : ' and kept half of your loot pack';
       if (run.cleared) {
         const below = floors > 0 ? `, then ${undercroftFloorsText(floors)}` : '';
-        return `You defeated the first floor boss and advanced to depth ${String(newDepth)}${below}. You were defeated in the Undercroft${kept}.`;
+        const first =
+          run.lower === true
+            ? `You defeated the first floor boss at depth ${String(depth)}${below}. You stay at depth ${String(newDepth)}.`
+            : `You defeated the first floor boss and advanced to depth ${String(newDepth)}${below}.`;
+        return `${first} You were defeated in the Undercroft${kept}.`;
       }
       const room = lostRoomText(run);
       return `You were defeated ${room === null ? 'on the way to the floor boss' : `in ${room}`}${kept}.`;
@@ -289,7 +302,9 @@ export function runStatusLine(
   const level = state.level ?? 0;
   const maps = [state.map, ...(state.undercroft?.maps ?? [])];
   if (state.pending?.kind === 'descend') {
-    return `Depth ${String(state.pending.newDepth)} · The floor boss is down`;
+    // Below the player's own depth the boss unlocked nothing: the run's depth is still the depth.
+    const shown = state.pending.lower === true ? state.depth : state.pending.newDepth;
+    return `Depth ${String(shown)} · The floor boss is down`;
   }
   // Below the floor boss the depth is not the question: the Undercroft floor is.
   const depth = level > 0 ? undercroftName(level) : `Depth ${String(state.depth)}`;
@@ -392,15 +407,19 @@ export const DESCEND_HOME_BUTTON = CAMP_HOME_BUTTON;
 export const DESCEND_TITLE_CRACKED = 'The floor cracks open';
 
 /** "Depth 15 unlocked" after the day's floor boss; "The floor cracks open" after an Undercroft floor boss (a cracked floor). */
-export function descendTitle(descent: Pick<Descent, 'level' | 'newDepth'>): string {
-  return descent.level <= 1 ? `Depth ${String(descent.newDepth)} unlocked` : DESCEND_TITLE_CRACKED;
+export function descendTitle(descent: Pick<Descent, 'level' | 'newDepth' | 'lower'>): string {
+  if (descent.level > 1) return DESCEND_TITLE_CRACKED;
+  return descent.lower === true
+    ? 'The floor boss is down'
+    : `Depth ${String(descent.newDepth)} unlocked`;
 }
 
 /** The line under the title: a new depth was won (after the day's floor boss), or the floor has cracked (after an Undercroft floor boss). */
-export function descendIntro(descent: Pick<Descent, 'level' | 'newDepth'>): string {
-  return descent.level <= 1
-    ? 'You beat the floor boss and achieved a new depth. Do you dare delve deeper?'
-    : 'Another floor waits below. Do you dare delve deeper?';
+export function descendIntro(descent: Pick<Descent, 'level' | 'newDepth' | 'lower'>): string {
+  if (descent.level > 1) return 'Another floor waits below. Do you dare delve deeper?';
+  return descent.lower === true
+    ? 'You beat the floor boss. This depth is below your own, so your depth stays. Do you dare delve deeper?'
+    : 'You beat the floor boss and achieved a new depth. Do you dare delve deeper?';
 }
 
 /** The title of the Undercroft part of the card. */

@@ -25,7 +25,6 @@ import {
   eventOptionBlock,
   generateUndercroftMap,
   int,
-  isLandmark,
   mapNode,
   mergeMods,
   nodeFoe,
@@ -76,6 +75,7 @@ import {
   heldFolds,
   curseViews,
   keepsakeView,
+  landmarkPays,
   maxHpOfRow,
   treasureView,
   type RunState,
@@ -353,7 +353,7 @@ function bankInto(st: RunState, view: GrantView): void {
  * Essence and scrap (the boss's loot, the full clear's, a landmark's) go into the pack with the rest.
  */
 function openMainChest(env: PathEnv, st: RunState, node: MapNodeLike, depth: number): void {
-  const landmark = isLandmark(depth);
+  const landmark = landmarkPays(st, depth);
   const element = nodeFoe(node, depth)?.element ?? 'tide';
   const view = env.bank('chest', (rng) => {
     const loot = rollDungeonLoot(

@@ -100,6 +100,16 @@ export interface Seat {
   kit: FoldKit;
 }
 
+/** The run plays below the player's own depth (the picker): it unlocks no depth and pays no landmark bonus. */
+export function isLowerRun(st: Pick<RunState, 'top'>, depth: number): boolean {
+  return st.top !== undefined && depth < st.top;
+}
+
+/** A landmark's one-off bonus (Essence, scrap, glimmer, the certain gear drop) is paid only on a run at the player's own depth. */
+export function landmarkPays(st: Pick<RunState, 'top'>, depth: number): boolean {
+  return isLandmark(depth) && !isLowerRun(st, depth);
+}
+
 export interface RunState {
   /**
    * The rules version the run started under, kept to its end: 1 is the v1 combat, 2 is combat v2 (the run began with the
@@ -111,6 +121,12 @@ export interface RunState {
    * joined: its form's stats at its level, its saved Knack, its slotted v2 talents and its gear's stat lines.
    */
   fighters?: Record<string, FighterSpec>;
+  /**
+   * Combat v2 only: the player's own depth (their progress) when the run began. A run played at a lower depth (the
+   * depth picker) is a replay: it earns its depth's rewards but unlocks no depth and pays no landmark bonus
+   * (`isLowerRun`). Absent on a v1 run and on a v2 run stored before the picker (never lower).
+   */
+  top?: number;
   /** The day's map as it was when the run started: a content change during the day never reaches it. */
   map: DungeonMap;
   /**
@@ -453,6 +469,7 @@ function pendingView(st: RunState, depth: number): DungeonPendingView {
       // The descent gets a fallen creature back up on both versions (`catchBreath`).
       reviveBp: RULES.dungeon.undercroft.reviveBp,
       newDepth: depth + 1,
+      ...(isLowerRun(st, depth) ? { lower: true as const } : {}),
       banked: bankedView(st.banked),
     };
   }
@@ -500,6 +517,7 @@ export function runView(meta: RunMeta, st: RunState): DungeonRunState {
     day: meta.day,
     attempt: meta.attempt,
     depth: meta.depth,
+    ...(isLowerRun(st, meta.depth) ? { lower: true as const } : {}),
     landmark: isLandmark(meta.depth),
     status: meta.status,
     outcome: meta.outcome,

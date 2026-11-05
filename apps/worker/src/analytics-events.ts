@@ -437,6 +437,12 @@ export type AnalyticsEvent =
        */
       deepest?: number;
       marks?: readonly string[];
+      /**
+       * Combat v2's depth picker (absent on a v1 run): `depth` above is the depth played, `top` the player's own depth
+       * when the run began, and `belowOwn` whether the pick was below it (a run that unlocks nothing).
+       */
+      top?: number;
+      belowOwn?: boolean;
     }
   | {
       /** The run went down into an Undercroft level (1 is the first). */

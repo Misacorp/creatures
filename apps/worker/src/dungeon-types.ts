@@ -134,6 +134,8 @@ export type DungeonPendingView =
       reviveBp: number;
       /** The depth the player is at now (locked in when the main boss fell). */
       newDepth: number;
+      /** The run plays below the player's own depth (the picker): the boss falling unlocks nothing, so `newDepth` is not a new depth. Absent otherwise. */
+      lower?: true;
       banked: DungeonBankedView;
     };
 
@@ -236,6 +238,8 @@ export interface DungeonRunState {
   day: string;
   attempt: number;
   depth: number;
+  /** True when the run plays below the player's own depth (combat v2's depth picker): its clear unlocks no depth. Absent otherwise. */
+  lower?: true;
   landmark: boolean;
   status: 'active' | 'done';
   outcome: DungeonOutcome | null;
@@ -360,8 +364,10 @@ export interface DungeonRunSummary {
   day: string;
   attempt: number;
   depth: number;
-  /** The depth the player is at after this run (one deeper after a clear). */
+  /** The depth the player is at after this run (one deeper after a clear at their own depth). */
   newDepth: number;
+  /** True when the run was played below the player's own depth (combat v2's depth picker): a clear unlocked no depth. Absent otherwise. */
+  lower?: true;
   /** The floor boss was beaten. */
   cleared: boolean;
   /** Fights cleared. */
@@ -450,6 +456,14 @@ export interface DungeonAttention {
   active: boolean;
   /** When the game day ends: the answer can change then on its own. */
   resetsAt: number;
+}
+
+/** `GET /api/dungeon/preview`: the pre-run screen's depth-dependent part at a picked depth below the player's own. */
+export interface DungeonPreview {
+  depth: number;
+  landmark: boolean;
+  landmarkBoss: DungeonToday['landmarkBoss'];
+  map: DungeonMapView;
 }
 
 export interface DungeonStartResponse {

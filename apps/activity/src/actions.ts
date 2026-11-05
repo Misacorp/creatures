@@ -109,8 +109,9 @@ export const ActionIds = {
   dungeonStart: (
     team: readonly [string, string, string],
     treats: readonly string[] = [],
+    depth?: number,
   ): ActionId =>
-    `dungeon-start:${JSON.stringify(team)}${treats.length === 0 ? '' : `:treats:${[...treats].sort().join(',')}`}`,
+    `dungeon-start:${JSON.stringify(team)}${treats.length === 0 ? '' : `:treats:${[...treats].sort().join(',')}`}${depth === undefined ? '' : `:depth:${String(depth)}`}`,
   /**
    * One step of an open run: the run, the step it stands at and the act. The step moves on with every
    * accepted act, so a key is only ever kept for a retry of the same act at the same step; another act

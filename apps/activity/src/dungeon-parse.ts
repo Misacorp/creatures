@@ -31,6 +31,7 @@ import type {
   DungeonNodeKind,
   DungeonPack,
   DungeonPending,
+  DungeonPreview,
   DungeonReplay,
   DungeonReplayRowEntry,
   DungeonRewards,
@@ -602,6 +603,25 @@ function isReplayRowEntry(value: unknown): value is DungeonReplayRowEntry {
     isInt(value['level']) &&
     isWornIds(value['worn'])
   );
+}
+
+/** `GET /api/dungeon/preview`: a depth, whether it is a landmark and its floor boss, and the day's map at that depth. */
+export function parseDungeonPreview(data: unknown): DungeonPreview {
+  if (
+    !isRecord(data) ||
+    !isCount(data['depth']) ||
+    !isBool(data['landmark']) ||
+    !isLandmarkBoss(data['landmarkBoss']) ||
+    !isMapView(data['map'])
+  ) {
+    throw new Error('the server returned an unexpected dungeon preview');
+  }
+  return {
+    depth: data['depth'],
+    landmark: data['landmark'],
+    landmarkBoss: (data['landmarkBoss'] ?? null) as DungeonPreview['landmarkBoss'],
+    map: data['map'],
+  };
 }
 
 export function parseDungeonToday(data: unknown): DungeonToday {
