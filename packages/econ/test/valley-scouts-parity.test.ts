@@ -31,7 +31,7 @@ import { awayShare } from '../src/curves';
 import { profileById } from '../src/profiles';
 import { RULES, type KitName, type Rules } from '../src/rules';
 import { accrueSeats, collectSeat } from '../src/scouts';
-import { ALL_SERVERS } from '../src/servers';
+import { ALL_SERVERS, type ServerConfig } from '../src/servers';
 import { runServer } from '../src/sim';
 import { R, HOURS_PER_WEEK } from '../src/types';
 import {
@@ -44,8 +44,9 @@ import {
 } from '../src/world';
 
 const H = 3_600_000;
-const config = ALL_SERVERS.find((s) => s.id === 'mixed8');
-if (!config) throw new Error('no mixed8 server');
+const found = ALL_SERVERS.find((s) => s.id === 'mixed8');
+if (!found) throw new Error('no mixed8 server');
+const config: ServerConfig = found;
 /** The lab with fit switched off or fully on, so the average fit share of its set-and-forget player is not in the way. */
 const withFit = (share: number): Rules => ({
   ...RULES,

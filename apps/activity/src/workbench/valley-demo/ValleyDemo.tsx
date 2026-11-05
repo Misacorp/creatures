@@ -57,8 +57,15 @@ function restingVisit(creatures: readonly Creature[], brought: number): ValleyVi
       state: 'resting' as const,
       gained: i % 5 === 4 ? 0 : 20 + ((i * 37) % 160),
       catchUpBp: 10000,
+      seatId: null,
     })),
     allowance: { store: 0, cap: 480, brought },
+    seats: [],
+    seatPrices: { owned: 0, max: 2, next: 0, ladder: [0, 113] },
+    kit: { owned: [], price: 875 },
+    places: [],
+    night: false,
+    special: null,
   };
 }
 
