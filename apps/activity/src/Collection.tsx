@@ -40,6 +40,9 @@ interface Props extends CardActions {
   loadGames?: (creatureId: string) => Promise<CreatureGames>;
   /** Start with the "Needs you" filter on (the Home notice for creatures that need you opened this view). */
   initialNeeds?: boolean;
+  /** A creature whose page should open now (the popover's "View"); `onOpenHandled` says it did, once. */
+  openRequest?: string | null;
+  onOpenHandled?: () => void;
 }
 
 /** How long a card the finder chose stays marked. */
@@ -73,6 +76,8 @@ export function Collection({
   viewerId,
   loadGames,
   initialNeeds = false,
+  openRequest = null,
+  onOpenHandled,
   ...actions
 }: Props) {
   const [filters, setFilters] = useState<Filters>(() => {
@@ -132,6 +137,19 @@ export function Collection({
     if (typeof card?.scrollIntoView === 'function') card.scrollIntoView({ block: 'nearest' });
     card?.focus({ preventScroll: true });
   }, [pageOpen]);
+
+  // The popover's "View": open that creature's page (a creature that is gone is ignored).
+  useEffect(() => {
+    if (openRequest === null) return;
+    const creature = state.creatures.find((c) => c.id === openRequest);
+    if (creature !== undefined) {
+      listScroll.current = 0;
+      returnTo.current = creature.id;
+      flipped.current = false;
+      setPage({ id: creature.id, focus: null, enter: null, focusButton: null });
+    }
+    onOpenHandled?.();
+  }, [openRequest]);
 
   useEffect(() => {
     if (found === null) return undefined;

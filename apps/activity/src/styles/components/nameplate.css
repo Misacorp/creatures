@@ -1,0 +1,40 @@
+/* The shared small label on art (`ui/Nameplate`): ink plate, pixel font, options by modifier class. */
+.nameplate {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  max-width: 9rem;
+  padding: 0 5px;
+  background: var(--ink);
+  color: var(--bone);
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.nameplate-sm {
+  font-size: var(--fs-small);
+}
+
+.nameplate-md {
+  font-size: var(--fs-heading);
+}
+
+.nameplate-gold {
+  color: var(--gold);
+}
+
+.nameplate-bold {
+  font-weight: 700;
+}
+
+/* The level comes first, in yellow. */
+.nameplate-level {
+  flex: none;
+  color: var(--gold);
+}
+
+.nameplate-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

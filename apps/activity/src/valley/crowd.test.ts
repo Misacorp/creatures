@@ -112,8 +112,6 @@ describe('every scene keeps its standing creatures a gap apart', () => {
       ...(base.raid ?? { schedule: {} as never }),
       scene: { boss: { id: 'x', name: 'X' }, party: ids.slice(0, 3) },
     },
-    loungerId: ids[0] ?? null,
-    loungeSpotId: null,
     dungeonTeam: ids.slice(0, 3),
     waiting: [
       { id: 'a', species: 'cindle', shiny: false },

@@ -57,7 +57,6 @@ export function ValleyFrame({
   notices,
   away,
   settings,
-  room,
   children,
 }: {
   view: ValleyView;
@@ -67,7 +66,7 @@ export function ValleyFrame({
   alerts: TabAlerts;
   /** What the places' bubbles and state lines read: the game screen's own state, no request of its own. */
   placeInput: PlaceInput;
-  /** What the scenes read besides that: the lounger, this session's dungeon row, the waiting catches. */
+  /** What the scenes read besides that: this session's dungeon row, the waiting catches. */
   castExtra: CastExtra;
   /** The place whose button takes the focus when the map comes back. */
   focus: PlaceId | null;
@@ -83,8 +82,6 @@ export function ValleyFrame({
   away: ComponentChildren;
   /** The Settings page when it is open (it takes the screen; the rest stays mounted under it); else null. */
   settings: ComponentChildren;
-  /** The living room (the House's page). */
-  room: ComponentChildren;
   /** Today's pages, drawn by the game for the current tab. */
   children: ComponentChildren;
 }) {
@@ -102,12 +99,11 @@ export function ValleyFrame({
           bubbles,
         )
       : null;
-  // Today's page of the place: the House's living room and its two books, then the page the game drew.
+  // Today's page of the place: the House's two books, then the page the game drew.
   const inside = (
     <>
       {view.kind === 'place' && view.place === 'house' && view.book === null && (
         <div class="vy-house">
-          {room}
           <ul class="vy-rows" aria-label="In the house">
             <PlaceRow
               glyph="journal"

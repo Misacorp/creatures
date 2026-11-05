@@ -13,6 +13,7 @@ import { creatureName, getSpecies, speciesName } from '../game';
 import { cssVars } from '../css-vars';
 import { usePrefersReducedMotion } from '../hooks';
 import { SmallCreature } from '../SmallCreature';
+import { Nameplate } from '../ui/Nameplate';
 import { PinnedAct } from './PinnedAct';
 import { SceneFrame, type SceneGeometry } from './SceneFrame';
 import { At, CreatureSprite, SpeechBubble, isStill, useTick } from './parts';
@@ -45,6 +46,7 @@ function infoOf(c: Creature): CreatureInfo {
     element: species?.element ?? 'unknown',
     role: species?.role ?? '',
     shiny: c.shiny,
+    creatureId: c.id,
   };
 }
 
@@ -75,6 +77,12 @@ function Stander({
       >
         <CreatureSprite creature={creature} scale={g.s} flip={flip} />
       </SmallCreature>
+      {/* Always shown under the feet: the level first, in yellow, then the name (text only). */}
+      <span class="vy-feet-plate" aria-hidden="true">
+        <Nameplate size="sm" level={info.level}>
+          {info.name}
+        </Nameplate>
+      </span>
     </At>
   );
 }

@@ -9,11 +9,12 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/ho
 import type { Creature } from '../api';
 import { cssVars } from '../css-vars';
 import { usePrefersReducedMotion } from '../hooks';
+import { Nameplate } from '../ui/Nameplate';
 import { nextMarker } from '../map-view';
 import { scrollBehavior } from '../scroll-to';
 import { useDragScroll } from '../ui/use-drag-scroll';
 import { paint } from './paint';
-import { At, CreatureSprite, Glyph, Plate, SpeechBubble, isStill, useSize, useTick } from './parts';
+import { At, CreatureSprite, Glyph, SpeechBubble, isStill, useSize, useTick } from './parts';
 import { bubbleAt, placeSpoken, type PlaceBubble } from './place-state';
 import {
   MAX_WANDERERS,
@@ -135,7 +136,7 @@ export function ValleyMap({
   const people = useRoamers(creatures.slice(0, MAX_WANDERERS), tick, moving, PADDOCK_ROAM);
 
   // An edge chip for every place out of view, stacked so none overlap (the Places list has every place).
-  const arrows = edgeArrows(order, scrollLeft, size.width);
+  const arrows = fit.pans ? edgeArrows(order, scrollLeft, size.width) : [];
   const needy = new Set<PlaceId>(bubbles.map((b) => b.place));
   const tabY = freeTabs(arrows, scrollLeft, size.width, undefined, undefined, needy, {
     from: -fit.top / s,
@@ -207,7 +208,7 @@ export function ValleyMap({
                       />
                     )}
                     <span class="vy-place-plate" aria-hidden="true">
-                      <Plate>{place.name}</Plate>
+                      <Nameplate bold>{place.name}</Nameplate>
                     </span>
                   </button>
                 </li>

@@ -5,7 +5,6 @@ import {
   CAST_PLACES,
   MAX_ROAMERS,
   castFor,
-  cornerOf,
   fairEntries,
   hasScene,
   type CastInput,
@@ -20,8 +19,6 @@ const ids = (n: number, from = 0) => busy.creatures.slice(from, from + n).map((c
 function inputOf(base: typeof busy, extra: Partial<CastInput> = {}): CastInput {
   return {
     ...base,
-    loungerId: null,
-    loungeSpotId: null,
     dungeonTeam: null,
     waiting: [],
     now: HOME_NOW,
@@ -41,20 +38,10 @@ describe('which places have a scene', () => {
 });
 
 describe('House', () => {
-  it('the lounger stands by the house; its spot picks the corner', () => {
-    const [id] = ids(1);
-    const c = cast('house', busy, { loungerId: id ?? null, loungeSpotId: 'window-sill' });
-    expect(c.stands.map((s) => s.creature.id)).toEqual([id]);
-    expect(cornerOf('window-sill')).toBe(0);
-    expect(cornerOf('window-floor')).toBe(1);
-    expect(cornerOf('couch-left')).toBe(0);
-    expect(cornerOf(null)).toBe(0);
-    expect(cornerOf('no-such-spot')).toBe(0);
-  });
-  it('nobody home: an empty yard and a calm line', () => {
+  it('nobody stands by the house, whoever lounges: the living room is gone from the valley', () => {
     const c = cast('house', busy);
     expect(c.stands).toEqual([]);
-    expect(c.act.kind).toBe('calm');
+    expect(c.act).toEqual({ kind: 'calm', line: 'Your journal and numbers are inside' });
   });
 });
 

@@ -4,7 +4,7 @@ import { SAMPLE_STATE } from '../creature-card-sample';
 import { Game } from '../Game';
 import { aloneParticipants } from '../participants';
 import { PopoverHost } from '../PopoverHost';
-import { byClass, byName, createPage, visibleText, type Page } from '../test-dom';
+import { FakeElement, byClass, byName, createPage, visibleText, type Page } from '../test-dom';
 
 // The fake page has no root element for the look's setting.
 vi.mock('../use-room-mode', () => ({ useRoomMode: () => 'every' }));
@@ -97,7 +97,7 @@ describe('the valley flag in the game', () => {
   it.each([
     ['Cave', 'Dungeon'],
     ['Fairground', 'Valley Games'],
-    ['House', 'Living room'],
+    ['House', 'House'],
     ['Paddock', 'Creatures'],
     ['Forge', 'Workshop'],
     ['Arena', 'Raid'],
@@ -225,7 +225,7 @@ describe('the places’ scenes above today’s page', () => {
   const firstId = SAMPLE_STATE.creatures[0]?.id ?? null;
 
   it.each(SCENE_PLACES)('%s: a band with its scene above the page', (place) => {
-    const p = draw(true, { loungerId: firstId });
+    const p = draw(true);
     open(p, place);
     const bands = byClass(p.root, 'vy-band');
     expect(bands).toHaveLength(1);
@@ -245,11 +245,16 @@ describe('the places’ scenes above today’s page', () => {
     }
   });
 
-  it('House: the lounger stands by the house, as a button that opens its popover', () => {
+  it('House: no living room and no lounger, only Journal and Stats; the flag-off Home keeps its living room', () => {
     const p = draw(true, { loungerId: firstId });
     open(p, 'House');
-    expect(byClass(p.root, 'vy-stand')).toHaveLength(1);
-    expect(byClass(p.root, 'vy-stand-btn')).toHaveLength(1);
+    expect(byClass(p.root, 'vy-stand')).toHaveLength(0);
+    expect(byClass(p.root, 'room-view')).toHaveLength(0);
+    expect(visibleText(p.root)).not.toContain('Living room');
+    expect(byName(p.root, 'button', /^Journal/)).toHaveLength(1);
+    expect(byName(p.root, 'button', /^Stats/)).toHaveLength(1);
+    const off = draw(false, { loungerId: firstId });
+    expect(byClass(off.root, 'room-view').length).toBeGreaterThan(0);
   });
 
   it('Cave: a run waits, so the action says Start the run and goes to the page', () => {
@@ -274,6 +279,50 @@ describe('the places’ scenes above today’s page', () => {
     const home = SAMPLE_STATE.creatures.filter((c) => !c.away && c.busy === null).length;
     const gate = Math.min(2, SAMPLE_STATE.pending.length);
     expect(byClass(p.root, 'vy-stand').length).toBe(Math.min(8, home) + gate);
+  });
+
+  it('Paddock: every creature has its nameplate, the level first, then the name', () => {
+    const p = draw(true);
+    open(p, 'Paddock');
+    const creatures = byClass(p.root, 'small-creature');
+    expect(creatures.length).toBeGreaterThan(0);
+    const stands = byClass(p.root, 'vy-stand').filter(
+      (el) => byClass(el, 'small-creature').length > 0,
+    );
+    expect(stands).toHaveLength(creatures.length);
+    for (const stand of stands) {
+      const plates = byClass(stand, 'nameplate');
+      expect(plates).toHaveLength(1);
+      const kids = (plates[0]?.childNodes ?? []).filter((n) => n instanceof FakeElement);
+      expect(kids[0]?.getAttribute('class')).toBe('nameplate-level');
+      expect(kids[1]?.getAttribute('class')).toBe('nameplate-name');
+      expect(Number(kids[0]?.textContent)).toBeGreaterThan(0);
+    }
+  });
+
+  it('Paddock: "View" in a creature popover opens its page', () => {
+    vi.stubGlobal('window', {
+      innerHeight: 800,
+      innerWidth: 390,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      matchMedia: () => ({
+        matches: false,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+      }),
+      scrollTo: () => undefined,
+      location: { hash: '' },
+    });
+    const p = draw(true);
+    open(p, 'Paddock');
+    const creature = byClass(p.root, 'vy-stand-btn')[0];
+    if (creature === undefined) throw new Error('no creature');
+    p.click(creature);
+    const view = byName(p.root, 'button', 'View')[0];
+    if (view === undefined) throw new Error('no View button');
+    p.click(view);
+    expect(byClass(p.root, 'creature-page').length).toBeGreaterThan(0);
   });
 
   it.each(SCENE_PLACES)(

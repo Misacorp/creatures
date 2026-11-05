@@ -1,10 +1,10 @@
 /**
  * Who stands where in a place's scene (phase 4, step 3), worked out from what the game screen already holds
- * (the creatures, the attention block, the Games view, the raid glance, the lounger and the dungeon row of this
+ * (the creatures, the attention block, the Games view, the raid glance, the dungeon row of this
  * session; no request of its own). Pure: the same input gives the same scene, with no randomness. The game's
  * rules stay on the server; this only says which of the player's own creatures to draw and where.
  *
- * - House: the lounger of the living room, by the house door (its lounge spot picks the corner).
+ * - House: nobody (the living room is dropped in the valley; Journal and Stats are inside).
  * - Cave: the dungeon team standing at the cave mouth while a run waits or the team is set up.
  * - Arena: the raid party the player placed, and the week's boss, once the raid view has loaded on the map.
  * - Fairground: the creatures entered in today's Games, a group for each event.
@@ -16,7 +16,6 @@ import type { Attention, Creature } from '../api';
 import { emptyEvents, showLive } from '../games-view';
 import type { GamesView } from '../games-types';
 import type { RaidGlance } from '../home-view';
-import { ROOM_SPOTS } from '../sprites/room-art';
 import { isAtHome } from './tray-state';
 import type { PlaceBubble } from './place-state';
 import { bubbleAt } from './place-state';
@@ -38,11 +37,8 @@ export const MAX_ROAMERS = 8;
 /** The most creatures drawn standing at the Fairground. */
 export const MAX_AT_FAIR = 9;
 
-/** What the scenes read besides `PlaceInput`: the game's own lounger, this session's dungeon row, the waiting catches. */
+/** What the scenes read besides `PlaceInput`: this session's dungeon row, the waiting catches. */
 export interface CastExtra {
-  loungerId: string | null;
-  /** The id of the lounge spot the player chose (`ROOM_SPOTS`), or null. */
-  loungeSpotId: string | null;
   /** The dungeon setup row of this session (the Dungeon page reports it as it changes); null until it has. */
   dungeonTeam: readonly (string | null)[] | null;
   /** The duplicates waiting for a choice. */
@@ -129,43 +125,9 @@ const plural = (n: number, one: string, many: string): string =>
 
 // --- House ---
 
-/** The three corners of the house's front a lounger can take: right of the door, left of it, in front. */
-function houseCorners(art: Size): { x: number; y: number; flip: boolean }[] {
-  const feet = art.height - 18;
-  return [
-    { x: art.width - 8, y: feet, flip: true },
-    { x: -8, y: feet, flip: false },
-    { x: Math.floor(art.width / 2) - CREATURE_PX / 2, y: art.height - 8, flip: false },
-  ];
-}
-
-/** Which corner a lounge spot is: its place in the living room's list of spots, three ways round. */
-export function cornerOf(spotId: string | null): number {
-  if (spotId === null) return 0;
-  const at = ROOM_SPOTS.findIndex((s) => s.id === spotId);
-  return at < 0 ? 0 : at % 3;
-}
-
-function houseCast(input: CastInput, art: Size): Pick<Cast, 'stands' | 'act'> {
-  const lounger =
-    input.loungerId === null ? undefined : input.creatures.find((c) => c.id === input.loungerId);
-  if (lounger === undefined) {
-    return { stands: [], act: { kind: 'calm', line: 'Nobody is home to lounge' } };
-  }
-  const spot = houseCorners(art)[cornerOf(input.loungeSpotId)];
-  const stands: Stand[] =
-    spot === undefined
-      ? []
-      : [
-          {
-            creature: lounger,
-            x: spot.x,
-            y: spot.y,
-            flip: spot.flip,
-            where: 'lounging by the house',
-          },
-        ];
-  return { stands, act: { kind: 'calm', line: 'Lounging in the living room' } };
+/** The house has no one standing by it: the living room is gone from the valley (Q16); Journal and Stats are inside. */
+function houseCast(): Pick<Cast, 'stands' | 'act'> {
+  return { stands: [], act: { kind: 'calm', line: 'Your journal and numbers are inside' } };
 }
 
 // --- Cave ---
@@ -344,7 +306,7 @@ export function castFor(
   };
   switch (place) {
     case 'house':
-      return { ...base, ...houseCast(input, art) };
+      return { ...base, ...houseCast() };
     case 'cave':
       return { ...base, ...caveCast(input, art, bubbles) };
     case 'arena':

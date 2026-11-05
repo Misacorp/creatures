@@ -1,7 +1,5 @@
 import { useState } from 'preact/hooks';
-import { RoomBand } from '../../AppHead';
 import { Hud } from '../../Hud';
-import { LivingRoom, sceneOf } from '../../LivingRoom';
 import { PopoverHost } from '../../PopoverHost';
 import { WelcomeBack } from '../../valley/gazette/WelcomeBack';
 import type { Balances } from '../../api';
@@ -9,11 +7,9 @@ import { homeAlerts } from '../../home-view';
 import type { Place } from '../../tabs';
 import { ValleyFrame } from '../../valley/ValleyFrame';
 import type { CastExtra } from '../../valley/place-cast';
-import { isAtHome } from '../../valley/tray-state';
 import { isOpenPlace, PLACE_TAB, viewOf, type HomeAt } from '../../valley/valley-nav';
 import { placeOf, type PlaceId } from '../../valley/valley-art';
 import { sampleGearItem } from '../gear-sample';
-import { ROOM_SELF_ID, sampleResidents } from '../data';
 import { creatureCardEntries } from '../entries/creature-card';
 import { AWAY_SAMPLE, HOME_NOW, HOME_TZ, homeInput } from '../home-sample';
 import type { Entry } from '../types';
@@ -38,7 +34,6 @@ export const VALLEY_STARTS = [
 const NOTHING = () => undefined;
 const PURSE: Balances = { bait: 1240, essence: 36 };
 const NO_REF = { current: null };
-const RESIDENTS = sampleResidents(6, false);
 const WAITING = [
   { id: 'w1', species: 'cindle', shiny: false },
   { id: 'w2', species: 'lanternfin', shiny: false },
@@ -73,8 +68,7 @@ export function ValleyDemo({ start, away, day }: { start: string; away: boolean;
   // The purse while the welcome-back numbers count up.
   const [purse, setPurse] = useState<Balances | null>(null);
   const base = homeInput(day, true);
-  // What the scenes draw: the fixture creatures, standing where today's state puts them (the lounger, a dungeon row, a raid party).
-  const home = base.creatures.filter(isAtHome);
+  // What the scenes draw: the fixture creatures, standing where today's state puts them (a dungeon row, a raid party).
   const party = base.creatures.slice(0, 3).map((c) => c.id);
   const input = {
     ...base,
@@ -90,8 +84,6 @@ export function ValleyDemo({ start, away, day }: { start: string; away: boolean;
           },
   };
   const castExtra: CastExtra = {
-    loungerId: home[0]?.id ?? null,
-    loungeSpotId: 'fire-pouf',
     dungeonTeam: day === 'nothing going on' ? null : base.creatures.slice(3, 6).map((c) => c.id),
     waiting: WAITING.slice(0, base.pending),
   };
@@ -105,14 +97,6 @@ export function ValleyDemo({ start, away, day }: { start: string; away: boolean;
       setHomeAt(id);
       setTab('home');
     }
-  };
-  const room: Parameters<typeof LivingRoom>[0] = {
-    residents: RESIDENTS,
-    selfId: ROOM_SELF_ID,
-    instanceId: 'workbench',
-    scene: sceneOf('day'),
-    forecast: input.forecast,
-    ownLoungeXp: 34,
   };
   return (
     <PopoverHost onOpenHowTo={NOTHING}>
@@ -143,7 +127,6 @@ export function ValleyDemo({ start, away, day }: { start: string; away: boolean;
             notices={null}
             away={null}
             settings={null}
-            room={<RoomBand room={room} />}
           >
             {tab === 'workshop' ? pageOf(creatureCardEntries, 'Workshop') : null}
           </ValleyFrame>

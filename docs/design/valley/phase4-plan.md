@@ -63,6 +63,8 @@ Misa: "I don't want my points necessarily addressed immediately. Let's do it whe
 5. **The Signpost's art** (asked of the art session, 2026-11-05): the lowest sign, pointing right, gets its black outline where it crosses the road; the road is shorter and heads more to the right. Merged from `claude/valley-art` when it comes.
 6. **Cropped trees in the valley art** (a screenshot of trees cut off at their edges): a drawing-order or tile-edge bug in the map's art, for the art pass with step 5; checked against the art session's sprites.
 
+**Step 5a landed (2026-11-05):** items 2 to 4 and the desktop fit. One shared label, `ui/Nameplate` (bold or not, a leading level in yellow, size, tone), draws the places' names and, in the scenes, each creature's nameplate under its feet; the map's paddock shows no creature nameplates (no room: see `ux-patterns.md`). "View" is in every creature popover of the player's own creatures. The House holds Journal and Stats only in the valley. From 960 px the valley never pans when its places fit: the grass edges are cropped evenly (at 1100, 1440 and 1920); phones and narrow windows pan. Item 6 (cropped trees) was fixed in the art by the art session.
+
 ## Decided with Misa (round 25)
 
 - **Q57: A.** A place's inside is today's page; nothing is rebuilt as a scene before phase 5 ("We'll ship this all at once so no pointless intermediate steps").

@@ -24,8 +24,6 @@ afterEach(() => {
 const base = homeInput('busy', true);
 const input = (extra: Partial<CastInput>): CastInput => ({
   ...base,
-  loungerId: null,
-  loungeSpotId: null,
   dungeonTeam: null,
   waiting: [],
   now: HOME_NOW,

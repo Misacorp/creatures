@@ -1,6 +1,6 @@
 /**
  * Small shared parts of the valley: a sprite placed on the map, the window-size and clock hooks, the glyph and
- * plain-sprite wrappers and the name plate.
+ * plain-sprite wrappers (the label on art is `ui/Nameplate`).
  */
 import type { ComponentChildren } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
@@ -169,9 +169,4 @@ export function SpeechBubble({
       <span class="vy-bubble-tail" />
     </span>
   );
-}
-
-/** A name plate: bone words in the pixel font on a solid ink plate (buildings, owners, forms). */
-export function Plate({ children }: { children: ComponentChildren }) {
-  return <span class="vy-plate pix">{children}</span>;
 }

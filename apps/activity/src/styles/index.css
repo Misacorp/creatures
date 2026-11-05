@@ -55,6 +55,7 @@
 @import './stage/stage.css';
 @import './stage/units.css';
 @import './stage/stage-grid.css';
+@import './components/nameplate.css';
 @import './components/popover.css';
 @import './stage/ability-popover.css';
 @import './stage/abilities.css';

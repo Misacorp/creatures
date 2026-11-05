@@ -62,6 +62,7 @@ import { choiceResultText } from './talent-view';
 import { DevPanelHost } from './DevPanelHost';
 import { StarterPicker } from './StarterPicker';
 import { navStateFor, type GoOptions } from './nav-state';
+import { useCreatureViewer } from './PopoverHost';
 import { DEFAULT_PLACE, NAV_HOME, isPlace, type Place } from './tabs';
 import { useActionRunner } from './use-action-runner';
 import { useForecast } from './use-forecast';
@@ -182,6 +183,8 @@ export function Game({
   };
   // Every change of place (dock, tray, rail, a Home notice) starts at the top of the new page.
   useScrollTopOnChange(tab);
+  // The creature whose page the popover's "View" asked for: the Creatures page opens it, then clears this.
+  const [viewing, setViewing] = useState<string | null>(null);
   // The place whose button takes the focus when the map comes back from its page.
   const [focusPlace, setFocusPlace] = useState<PlaceId | null>(null);
   const view: ValleyView = viewOf(tab, homeAt);
@@ -462,6 +465,15 @@ export function Game({
     // Only the view changes: the map draws creatures the state already holds, so it loads nothing.
     goTo('home');
   };
+  // "View" in a creature's popover (the valley's scenes): the creature's page, on the Creatures page of the paddock.
+  useCreatureViewer(
+    valleyOn
+      ? (id) => {
+          setViewing(id);
+          openPlace('paddock');
+        }
+      : null,
+  );
   const placeLabelBeforeSettings = valleyOn
     ? valleyTitle(view)
     : tab === NAV_HOME.id
@@ -644,6 +656,10 @@ export function Game({
       {tab === 'collection' && (
         <Collection
           initialNeeds={creaturesNeeds}
+          openRequest={viewing}
+          onOpenHandled={() => {
+            setViewing(null);
+          }}
           state={game}
           gear={gear}
           busy={busy}
@@ -832,8 +848,6 @@ export function Game({
           raid: raidGlance,
         }}
         castExtra={{
-          loungerId: game.loungerId,
-          loungeSpotId: game.loungeSpot?.id ?? null,
           dungeonTeam,
           waiting: game.pending.map((p) => ({ id: p.id, species: p.species, shiny: p.shiny })),
         }}
@@ -844,7 +858,6 @@ export function Game({
         notices={notices}
         away={null}
         settings={settingsPage}
-        room={<RoomBand room={roomProps} />}
       >
         {pages}
       </ValleyFrame>

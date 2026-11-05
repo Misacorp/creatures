@@ -130,20 +130,6 @@ main.card:has(.vy-frame) > .hud {
   image-rendering: pixelated;
 }
 
-/* A name plate: bone on solid ink, the pixel font. */
-.vy-plate {
-  display: inline-block;
-  max-width: 9rem;
-  padding: 0 5px;
-  overflow: hidden;
-  background: var(--ink);
-  color: var(--bone);
-  font-size: var(--fs-heading);
-  line-height: 1.25;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 /* --- The valley --- */
 /* Its own stacking context: the creatures' depth order (`--z`) never rises above a sheet drawn over the valley. */
 .vy-map-view {
@@ -738,6 +724,21 @@ main.card:has(.vy-frame) > .hud {
 .vy-frame .vy-stand-btn:focus-visible {
   outline: none;
   box-shadow: var(--ring);
+}
+
+/* A creature's nameplate under its feet (`ui/Nameplate`): follows the creature, never takes a tap. */
+.vy-feet-plate {
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  margin-top: 2px;
+  transform: translateX(-50%);
+  line-height: 0;
+  pointer-events: none;
+}
+
+.vy-feet-plate .nameplate {
+  max-width: 6.5rem;
 }
 
 /* What waits over a creature (the gate's bubble): above every creature of the scene, whatever their depth. */

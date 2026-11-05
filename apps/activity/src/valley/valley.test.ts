@@ -7,7 +7,7 @@ import { placeScale, skyColumns, SKY_WIDTH } from './place-scene';
 import { sceneGeometry } from './SceneFrame';
 import { sceneScale } from './scale';
 import { isAtHome, trayBadge, trayFor, type TrayInput } from './tray-state';
-import { PLACES, PLACE_IDS, VALLEY_SIZE, placeOf } from './valley-art';
+import { PLACES, PLACE_IDS, TILE, VALLEY_SIZE, placeOf } from './valley-art';
 import {
   PAGE_TITLES,
   PLACE_TAB,
@@ -112,6 +112,25 @@ describe('the map', () => {
     expect(maxScroll(1400)).toBe(0);
     expect(startScroll(390)).toBeGreaterThan(0);
     expect(scrollToPlace('signpost', 390)).toBeLessThanOrEqual(maxScroll(390));
+  });
+
+  it('a desktop never pans: every place shows whole at 1100, 1440 and 1920 px, the grass edges cropped evenly', () => {
+    for (const width of [1100, 1440, 1920]) {
+      const fit = fitValley(width, 800);
+      expect(fit.pans, String(width)).toBe(false);
+      for (const id of readingOrder()) {
+        const r = placeOf(id).rect;
+        // Where the place's edges land in the window (the drawing's margin tiles shift the valley right).
+        const left = fit.left + (r.x + fit.margin.left * TILE) * fit.scale;
+        const right = left + r.width * fit.scale;
+        expect(left, `${id} at ${String(width)}`).toBeGreaterThanOrEqual(0);
+        expect(right, `${id} at ${String(width)}`).toBeLessThanOrEqual(width);
+      }
+    }
+  });
+
+  it('a phone and a narrow window still pan', () => {
+    for (const width of [390, 768, 900]) expect(fitValley(width, 700).pans).toBe(true);
   });
 
   it('shows edge chips only for places out of view, and never over a place', () => {

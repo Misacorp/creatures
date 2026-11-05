@@ -25,7 +25,7 @@ export function isOpenPlace(id: PlaceId): id is OpenPlaceId {
   return (OPEN_PLACES as readonly string[]).includes(id);
 }
 
-/** The tab a place opens (the House opens Home's living room; Journal and Stats are its two entries). */
+/** The tab a place opens (the House opens Home's tab, drawn as its two entries; Journal and Stats are its two entries). */
 export const PLACE_TAB: Readonly<Record<OpenPlaceId, Place>> = {
   cave: 'dungeon',
   fair: 'games',
@@ -40,7 +40,7 @@ export const PLACE_TAB: Readonly<Record<OpenPlaceId, Place>> = {
 export const PAGE_TITLES: Readonly<Record<OpenPlaceId, string>> = {
   cave: 'Dungeon',
   fair: 'Valley Games',
-  house: 'Living room',
+  house: 'House',
   paddock: 'Creatures',
   forge: 'Workshop',
   arena: 'Raid',
@@ -59,7 +59,7 @@ export function soonLine(id: SoonPlaceId): string {
   return SOON_LINES[id];
 }
 
-/** Where Home's tab is drawn from: the map, the House's living room, or a place that is not open yet. */
+/** Where Home's tab is drawn from: the map, the House, or a place that is not open yet. */
 export type HomeAt = 'valley' | 'house' | SoonPlaceId;
 
 /** What the valley shows. */

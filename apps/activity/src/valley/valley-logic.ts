@@ -24,8 +24,33 @@ export interface Fit {
   /** Where the drawing's top-left sits in the window (CSS px; negative when it overhangs). */
   left: number;
   top: number;
-  /** True when the valley is wider than the window: it pans sideways. */
+  /** True when the valley is wider than the window and a phone must pan it sideways (a desktop crops the grass instead). */
   pans: boolean;
+}
+
+/** From this width (CSS px, 60 rem) the game is the whole window and the valley does not pan if its places fit. */
+export const DESKTOP_MIN = 960;
+
+/** Valley pixels beside the outermost places kept in view on a desktop: a place's bubble and name plate. */
+const PLACES_SLACK = 12;
+
+/** The valley pixels from the west edge of the westmost place to the east edge of the eastmost, with a little room. */
+export function placesSpan(): { from: number; to: number } {
+  const from = Math.min(...PLACES.map((p) => p.rect.x));
+  const to = Math.max(...PLACES.map((p) => p.rect.x + p.rect.width));
+  return {
+    from: Math.max(0, from - PLACES_SLACK),
+    to: Math.min(VALLEY_SIZE.width, to + PLACES_SLACK),
+  };
+}
+
+/**
+ * Whether a desktop window shows every place without panning: the window is at least `DESKTOP_MIN` wide and the
+ * span of the places fits it, though the whole drawing may not (its grass edges are cropped, evenly).
+ */
+export function desktopFits(width: number, scale = VALLEY_SCALE): boolean {
+  const span = placesSpan();
+  return width >= DESKTOP_MIN && (span.to - span.from) * scale <= width;
 }
 
 /** How the valley fits a window of `width` x `height` CSS px. */
@@ -33,11 +58,17 @@ export function fitValley(width: number, height: number, scale = VALLEY_SCALE): 
   const tile = TILE * scale;
   const vw = VALLEY_SIZE.width * scale;
   const vh = VALLEY_SIZE.height * scale;
-  const pans = vw > width;
-  const side = pans ? 0 : Math.ceil((width - vw) / 2 / tile);
+  const pans = vw > width && !desktopFits(width, scale);
+  const side = pans ? 0 : Math.max(0, Math.ceil((width - vw) / 2 / tile));
   const updown = Math.max(0, Math.ceil((height - vh) / 2 / tile));
   // Centre the valley itself (not the drawing): the drawing overhangs by its margins.
-  const left = pans ? 0 : Math.floor((width - vw) / 2) - side * tile;
+  // A desktop narrower than the drawing centres the places and crops the grass at both edges.
+  const span = placesSpan();
+  const cropped = Math.min(
+    0,
+    Math.max(width - vw, Math.round((width - (span.from + span.to) * scale) / 2)),
+  );
+  const left = pans ? 0 : vw > width ? cropped : Math.floor((width - vw) / 2) - side * tile;
   // A window shorter than the valley (a phone, with the tray under it) loses the top sky row and the
   // south's grass, never a building: the valley starts one sky row up and is cut at the bottom.
   const top = height < vh ? -tile : Math.floor((height - vh) / 2) - updown * tile;
