@@ -4,6 +4,14 @@ The valley and peaceful systems overhaul planned in docs/design/valley/: job pos
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-05: Phase 5 step 0: one source of numbers, the VALLEY_SYSTEMS flag rule, the lazy-pass skeleton
+
+ID: `2026-11-05-phase-5-step-0-one-source` · Status: current
+
+**Decision.** (1) The lab's accepted rule numbers, their schema and the pure formulas (`awayShare`, `catchUpMultiplier`, `hearthMultiplier`, `masteryBonus`) live in `@creatures/game` (`packages/game/src/valley/`), exported as `VALLEY_RULES`, `ValleyRulesSchema` and the formulas. `@creatures/econ` re-exports them as its defaults (its `RULES`); the tuner's dials and `--set` still work on copies. The report reads the `ASSUMPTION` and `TUNED` comments from the game file now. (2) `VALLEY_SYSTEMS` is one flag, reported as `valleySystems` only when it is "on" and `VALLEY` and `COMBAT_V2` are both "on"; "on" without them is treated as off and logs one config error per isolate (`valley-flag.ts`). (3) `settle(state, from, to, events)` is a pure walk that splits time only at the change points it is given and at away-step boundaries; today it pays idle XP by the away steps as expected values with a fractional carry per creature. It must start at `state.settledAt` (so a repeat at the same `now` is a no-op). (4) The dev tool `valley-fresh` wipes every player's progress in the guild; the valley's guild-level tables are listed in one place, `VALLEY_GUILD_TABLES`. (5) `pnpm --filter @creatures/econ compare <live-report.json>` judges a live report: an expected quantity within 10% of the lab median, a drawn one inside the lab's 10th to 90th percentile; rows are shown, not judged.
+
+**Reasoning.** Two copies of the numbers (the lab's and the server's) would drift, and the month on staging could then disagree with the lab for a reason that is not a bug. One file in the shared package, read by both, makes the lab's report the proof: it is byte-identical before and after the move (report data, server coverage, roster profile and journeys), so nothing was retuned by accident. The flag rule keeps half-states out (Q57): the systems need the valley shell and combat v2's events. The skeleton fixes the two properties every later rule must keep (splitting is invariant; settling twice changes nothing) before the rules are added. Lab weeks, not days, are the lab's resolution, so the compare command takes days that are multiples of 7.
+
 ## 2026-11-05: Polish round: popovers above scenes, View scrolls, the Cave tells the truth, the Journal as list and pages, no ring on return
 
 ID: `2026-11-05-polish-round-popovers-above-scenes-view` · Status: current · Amends: `2026-11-05-phase-4-passes-a-polish-round`
