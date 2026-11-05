@@ -64,8 +64,13 @@ export interface GearLineFx {
   readonly once?: GearFx;
 }
 
-/** The reaction family's scale: the lines were priced for x2 reactions and pay for x4.95 bonuses (gear plan section 1). */
-const REACTION_SCALE = [4, 1] as const;
+/**
+ * The reaction family's scale: the lines were priced for x2 reactions and pay for x4.95 bonuses (gear plan section 1, which
+ * said x4). x2 since 2026-11-06: at x4 three top-pip lines (+308%) took any Payoff to the x3 reaction cap, so the Knack and the
+ * mark stacks stopped mattering; at x2 the best case is +154%, under the cap for a plain Payoff (lab `report -- --gear`, OPEN 14).
+ * Best pick, listed for Misa in docs/design/combat/for-misa.md.
+ */
+const REACTION_SCALE = [2, 1] as const;
 
 /**
  * The lines with a v2 hook, by line id (an element line by its id without the element: `reaction`, not `tide-reaction`).

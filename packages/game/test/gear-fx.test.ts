@@ -48,9 +48,9 @@ describe('gearFx: the line to effect map', () => {
     ['front-liner', 'guard', { frontCutBp: 500 }],
     ['rally-cry', 'setter', { vengefulBp: 2000 }],
     ['momentum', 'setter', { momentumBp: 1875 }],
-    // Scale x4 (the reaction family).
-    ['payoffs-pounce', 'payoff', { reactionBonusBp: 5200 }],
-    ['tide-reaction', 'payoff', { reactionBonusBp: 9600 }],
+    // Scale x2 (the reaction family).
+    ['payoffs-pounce', 'payoff', { reactionBonusBp: 2600 }],
+    ['tide-reaction', 'payoff', { reactionBonusBp: 4800 }],
     // Armour points, for every role.
     ['armor', 'guard', { armourBonus: 9 }],
     ['wide-stance', 'guard', { reachBonus: 1 }],
@@ -89,7 +89,7 @@ describe('gearFx: the line to effect map', () => {
     // A Reaction line helps a wearer of its own element only.
     expect(gearFx(wearer('payoff', 'ember'), [hatWith('tide-reaction')])).toEqual({});
     expect(gearFx(wearer('payoff', 'tide'), [hatWith('tide-reaction')])).toEqual({
-      reactionBonusBp: 9600,
+      reactionBonusBp: 4800,
     });
     // Armour is for every role although the data names the Guard.
     expect(gearFx(wearer('support'), [hatWith('armor', 0)])).toEqual({ armourBonus: 2 });
@@ -127,17 +127,17 @@ describe('gearFx: the line to effect map', () => {
       return itemOf(base.id, 'common', 100, []);
     };
     const two = (setId: string): GearItem[] => [piece(setId, 'hat'), piece(setId, 'scarf')];
-    // Tidepool: Reaction Bonus +8% x4, for a Tide wearer.
+    // Tidepool: Reaction Bonus +8% x2, for a Tide wearer.
     expect(gearFx(wearer('payoff', 'tide'), two('tidepool-finery'))).toEqual({
-      reactionBonusBp: 3200,
+      reactionBonusBp: 1600,
     });
     expect(gearFx(wearer('payoff', 'ember'), two('tidepool-finery'))).toEqual({});
     // Forge-Warm: the same for an Ember wearer.
     expect(gearFx(wearer('payoff', 'ember'), two('forge-warm-kit'))).toEqual({
-      reactionBonusBp: 3200,
+      reactionBonusBp: 1600,
     });
-    // Pounce Set: Payoff's Pounce +5% x4.
-    expect(gearFx(wearer('payoff'), two('pounce-set'))).toEqual({ reactionBonusBp: 2000 });
+    // Pounce Set: Payoff's Pounce +5% x2.
+    expect(gearFx(wearer('payoff'), two('pounce-set'))).toEqual({ reactionBonusBp: 1000 });
     // Warden's Watch: +4 armour; Hearth Helpers: Boost +3 (a Support's).
     expect(gearFx(wearer('guard'), two('wardens-watch'))).toEqual({ armourBonus: 4 });
     expect(gearFx(wearer('support'), two('hearth-helpers'))).toEqual({ boostBonusBp: 300 });
