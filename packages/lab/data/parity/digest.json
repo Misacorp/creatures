@@ -1,6 +1,6 @@
 {
   "format": 2,
-  "overall": "b02e33310e5b4bcf60991aac2e9a86db33efdc164dc707cc2f6451275a2ad7b1",
+  "overall": "96c96429fb149907a4188a5b0c51df861453a7aff7156031616f35def9821bb6",
   "cases": {
     "cull-potential:12000#0": "17b80ca1a6bf81210475e2407fef1a9dcc342e55b61d7d0bf5d97f1e28fa8044",
     "cull-potential:24000#0": "e1dce8e43354ba33f577117566fb2c331d8db1b95d91cbd18b88cc42b7498aff",
@@ -375,8 +375,8 @@
     "foe:flicker-swarm:7#0": "1645bed37154e2048dc1b042121a9ef2c445d8788fe8a54fefc8eadbc723fe22",
     "foe:moss-lurker:1#0": "fb2565165d649f7be34c044cca5e01cf6792608a7b6a0c37e0d8cdff95f5f4e4",
     "foe:moss-lurker:7#0": "b0d97e9ed4b0eb451c76682b4cde1518229a5f7a898a3916cfcfa336ceb7d958",
-    "foe:puddle-imp:1#0": "4dcf7e8bd7a94c71a51bdff1d743a6e2b1e81faf64f799074a1ff982a0e36a21",
-    "foe:puddle-imp:7#0": "bfd34a223540a2d6112750eae958fda9765e5c72a9a1b29aa6d6ac31aeabcfee",
+    "foe:puddle-imp:1#0": "c2eda05300c3e544b6a6d56ea26f2189b4ead894bc91b29db02304ad98e6349a",
+    "foe:puddle-imp:7#0": "9198e1c3a2636ced27be13b3ff6bfab8db2fcb724ac65a9139daaf5e4925de4c",
     "foe:slag-tyrant:1#0": "065b0630285a540b12ae433f127f8329fd079d828b182563115a31262160726c",
     "foe:slag-tyrant:7#0": "af7ae2037682cc6d50a1c03f098b04a088eaa2a4c9981663ca7ef0573a59e326",
     "foe:static-bat:1#0": "dbe03786a485c3c9b345736285fa5a41d8aa77335fc3d9912d803bc2a688e1b1",

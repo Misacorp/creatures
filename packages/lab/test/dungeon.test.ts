@@ -134,21 +134,13 @@ describe('the dungeon foes', () => {
       ).toBe(true);
       expect(q.depth).toBeGreaterThan(0);
       // The game's foe in a form it has: an Undercroft foe is built at the run's depth plus a level, so from depth 9.
-      if (!('old' in q.probe) && q.probe.side === 'undercroft')
+      if (q.probe.side === 'undercroft')
         expect(q.depth, q.foe).toBeGreaterThanOrEqual(8 + RULES.dungeon.undercroft.depthBonus);
     }
     // The three questions about a Guard, a ward and armour are the foes' `needs`.
     expect(FOE_QUESTIONS['moss-lurker']?.mechanic).toBe('family:Reach');
     expect(FOE_QUESTIONS['drift-wisp']?.mechanic).toBe('family:Silence Guard');
     expect(FOE_QUESTIONS['bramble-hound']?.mechanic).toBe('family:Pierce');
-  });
-
-  it('three foes ask nothing in the game (finding 2026-11-05): their questions stay on the old numbers, every other one is on the game’s', () => {
-    const old = Object.values(FOE_QUESTIONS)
-      .filter((q) => 'old' in q.probe)
-      .map((q) => q.foe)
-      .sort();
-    expect(old).toEqual(['puddle-imp']);
   });
 
   it.each(Object.values(FOE_QUESTIONS).map((q) => [q.foe, q] as const))(

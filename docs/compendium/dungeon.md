@@ -32,10 +32,10 @@ Foes have no turn order of their own: in the dungeon **your creatures always act
 
 ### Tide foes
 
-**Puddle Imp** (no trick)
+**Puddle Imp** (Rising Puddle, two more Barrages of splashes every round, up to three times)
 
 - Shipped flavour `(content)`: "Hides in puddles and splashes ankles. Not scary, just very wet."
-- Compendium detail: it lives in the low corners of the dungeon, where the rain collects. Its trick is simply to be in the way.
+- Compendium detail: it lives in the low corners of the dungeon, where the rain collects. Its trick is simply to be in the way, and the puddle keeps rising: every round it splashes twice more, so a Guard's cover matters more the longer the fight runs.
 
 **Drift Wisp** (Sea Mist, every third round, silences the two ends for a turn)
 

@@ -12,7 +12,15 @@
       "plain": { "pattern": { "anchor": "random", "shape": "scatter", "n": 4 }, "powerBp": 4500 },
       "moves": [],
       "cards": [],
-      "asks": "A Barrage of small splashes on four different creatures: they are area hits, so a Guard's cover turns them down (dodge only half as often); armour only wears them down."
+      "escalation": {
+        "name": "Rising Puddle",
+        "feed": "rounds",
+        "per": 1,
+        "cap": 3,
+        "grow": { "hits": 2 }
+      },
+      "asks": "Each round it splashes twice more, every splash on a different creature: they are area hits, so a Guard's cover turns them down (dodge only half as often); armour only wears them down.",
+      "hpBp": 14000
     },
     {
       "id": "drift-wisp",

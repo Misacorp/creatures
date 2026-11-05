@@ -605,6 +605,7 @@ An **Escalating** boss or foe has a meter with a name of its own. It fills from 
 | Molten Shell    | Slag Tyrant     | Reactions cashed      | More armour                                                      | Each reaction heats the shell until it glows.                                    |
 | Tightening Coil | Coil Baron      | Rounds passed         | A harder hit and one more jump                                   | The coil winds tighter with every round.                                         |
 | Swelling Croak  | Bog Toad        | Rounds passed         | A harder hit                                                     | Every croak it swells bigger. Name proposed 2026-11-05, Misa to glance.          |
+| Rising Puddle   | Puddle Imp      | Rounds passed         | Two more Barrages of splashes                                    | The rain keeps collecting. Name proposed 2026-11-05, Misa to glance.             |
 | Hardening Ash   | Ash Sprite      | Rounds passed         | More armour                                                      | The ash packs harder with every round. Name proposed 2026-11-05, Misa to glance. |
 
 ### Second Bloom
