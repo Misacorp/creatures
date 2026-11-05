@@ -4,6 +4,14 @@ Roadmap calls, Misa's standing direction, naming and tone, content policy, how a
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-05: [Misa] CI runs the full check; agents push after quick local checks
+
+ID: `2026-11-05-ci-runs-the-full-check-agents` · Status: current
+
+**Decision.** An agent pushes its branch after the quick local checks for what it changed (`pnpm format:check`, `pnpm decisions check`, and the lint, typecheck and tests of the touched package), and lets CI run the full `pnpm check` on the pushed commit. It no longer waits on a 15-minute local `pnpm check` before every push. A red CI run is fixed on the branch before Misa is told a PR is ready.
+
+**Reasoning.** Misa (2026-11-05): "Remember that CI does checks so you don't have to." Local full checks before every push cost a quarter of an hour per small UI round and held pushes back; CI runs the same `pnpm check` on every PR head anyway. This amends the CLAUDE.md line "Push after the checks pass" for the push itself; nothing reaches `main` without CI green, since Misa merges only green PRs.
+
 ## 2026-11-03: Sprites up to 128 wide; free backdrop art may have no outline
 
 ID: `2026-11-03-sprites-up-to-128-wide-free` · Status: current

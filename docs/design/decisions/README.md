@@ -23,6 +23,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [direction.md](direction.md): Roadmap calls, Misa's standing direction, naming and tone, content policy, how agents and Misa work.
 
+- 2026-11-05 \[Misa\] CI runs the full check; agents push after quick local checks
 - 2026-11-03 Sprites up to 128 wide; free backdrop art may have no outline
 - 2026-11-01 \[Misa\] Retro 2026-11-01: group behaviours before naming, a name-blind parity digest, and agent workflow fixes
 - 2026-10-31 \[Misa\] Valley places: glow on the ground, day and night; posters for each place's own screen
