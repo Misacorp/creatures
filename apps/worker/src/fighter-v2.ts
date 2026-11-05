@@ -4,15 +4,24 @@
  *
  * - **Knack:** the saved one, if its form still knows it (`knownKnacks`); else none.
  * - **Talents:** the learned ones in an open slot (`slotsOpen`), in slot order. The creature's v1 talents are not read.
- * - **Gear (phase 4):** stat lines only. The v1 fold (`applyGear`) is run again over the worn items with no talents and
- *   no place in a row, and only what it gives to Attack, HP, Speed and crit is added; its modifier sheet and its rules
- *   (every effect line, the position lines and the Scarf's rest) are left out. Armour has no v1 line.
+ * - **Gear:** the stat lines (phase 4) and the effect lines that have a v2 hook (`gearFx` of the game package, slice 1 of
+ *   `docs/design/combat/gear-plan.md`). The v1 fold (`applyGear`) is run again over the worn items with no talents and no place
+ *   in a row, and only what it gives to Attack, HP, Speed and crit is added; its modifier sheet and its rules are left out.
+ *   The lines with a hook come as `Placement.gear` (silence blanks them, R12; Armour is a stat line and stays). A line with no
+ *   hook yet counts for nothing. The Scarf's rest works in the dungeon (`dungeon.ts`).
  * - **Fusion** is not read: v2 stats come from the form and the level.
  *
  * The fighter's `uid` and `key` are the creature's id, so a carried HP, a board event and a stored result name it
  * the way the rest of the game does. Its place (`row`, `col`) is the caller's.
  */
-import { applyGear, content, dungeonContent, slotsOpen } from '@creatures/game';
+import {
+  applyGear,
+  content,
+  dungeonContent,
+  gearFx,
+  slotsOpen,
+  type GearFx,
+} from '@creatures/game';
 import { combatV2, knownKnacks } from '@creatures/game/combat-v2';
 import { createResolver, type FighterSpec, type Shipped } from '@creatures/engine/v2';
 import type { TeamCreature } from './raid-teams';
@@ -34,8 +43,10 @@ export const resolver = createResolver(combatV2, SHIPPED);
 /** The owner key of a solo fight's team (the engine never shows it). */
 const OWNER = 'p1';
 
-/** What a creature's worn gear adds to its fight numbers under v2: the stat lines only. */
+/** What a creature's worn gear adds to its fight numbers under v2: the stat lines, and the effect lines with a v2 hook (`fx`). */
 export interface GearStats {
+  /** The effect lines that have a v2 hook, as the engine's effect sheet (`gearFx`). */
+  fx: GearFx;
   hp: number;
   atk: number;
   spd: number;
@@ -45,6 +56,7 @@ export interface GearStats {
 
 /** What no gear adds. */
 export const NO_GEAR: Readonly<GearStats> = {
+  fx: {},
   hp: 0,
   atk: 0,
   spd: 0,
@@ -54,9 +66,10 @@ export const NO_GEAR: Readonly<GearStats> = {
 
 /** The stat lines of a creature's worn gear (see the file comment). All zeros without gear. */
 export function gearStatLines(kit: TeamCreature['kit']): GearStats {
-  if (kit.items.length === 0) return { ...NO_GEAR };
+  if (kit.items.length === 0) return { ...NO_GEAR, fx: {} };
   const folded = applyGear(kit.stats, kit.crit, kit.wearer, kit.items, []);
   return {
+    fx: gearFx(kit.wearer, kit.items),
     hp: folded.stats.hp - kit.stats.hp,
     atk: folded.stats.atk - kit.stats.atk,
     spd: folded.stats.spd - kit.stats.spd,
@@ -142,6 +155,7 @@ export function buildFighter(b: FighterBuild): FighterSpec {
     ...(b.goldenTalents === undefined || b.goldenTalents.length === 0
       ? {}
       : { goldenTalents: [...b.goldenTalents] }),
+    ...(Object.keys(b.gear.fx).length === 0 ? {} : { gear: b.gear.fx }),
     row: b.row,
     col: b.col,
   });
