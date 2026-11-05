@@ -469,8 +469,14 @@ button.gr-play {
   box-shadow: inset 0 0 0 var(--px) var(--rar);
 }
 
+/* A gear offer's border has its rarity's shape (`.rarity-edge`, item-frame.css); the border is drawn inside the box. */
+.gs-offer-art.rarity-edge {
+  --edge-in: var(--px);
+}
+
 .gs-offer-amount {
   position: absolute;
+  z-index: 2;
   right: 0.25rem;
   bottom: 0;
   color: var(--bone);

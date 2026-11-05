@@ -1,7 +1,8 @@
 /*
   The frame of an item: one single border in the rarity colour (like the creature page's slots and picker).
   The item's level is the small pixel "Lv 15" in the bottom-right corner (`.item-lv`), the same everywhere.
-  There are no rarity pips: rarity is the border colour and, where there is room, a rarity badge.
+  Rarity is the border's colour and its shape (`.rarity-edge`, below), so it never rests on colour alone; where
+  there is room a rarity badge says it in words too.
 */
 .item-frame {
   position: relative;
@@ -26,7 +27,8 @@
 /*
   The item level in the image's corner ("Lv 15", pixel font, outlined so it reads on any item colour). Alone in a
   slot or picker cell it is 1rem; inside a frame it is a little smaller (`--lv-size`), and 1rem again in the big frame
-  of an item card. It never takes taps (the image's own button does).
+  of an item card. It never takes taps (the image's own button does). Its outline steps round the corners too (eight
+  directions, not the thin outline's four), so no pixel of the art shows between the letters on a small picture.
 */
 .item-lv {
   position: absolute;
@@ -35,9 +37,15 @@
   color: var(--bone);
   font-size: var(--lv-size, 1rem);
   line-height: 1;
-  text-shadow: var(--ink-outline-thin);
+  text-shadow:
+    var(--ink-outline-thin),
+    2px 2px var(--ink),
+    -2px 2px var(--ink),
+    2px -2px var(--ink),
+    -2px -2px var(--ink);
   white-space: nowrap;
   pointer-events: none;
+  z-index: 2;
 }
 
 .item-frame {
@@ -53,6 +61,97 @@
 .item-frame canvas.sprite.item-slot {
   top: 2px;
   left: 2px;
+}
+
+/*
+  The rarity's shape, like a picture frame's (an accessibility review, 2026-11-05: Common, Rare and Epic could not be
+  told apart without colour). The border keeps its colour and size; only its inner edge changes, one UI pixel
+  (--px) deep, so nothing sticks out of the frame or adds an icon:
+  - Common: the plain line.
+  - Rare: bevelled corners, a stepped pixel diagonal in each inside corner.
+  - Epic: the same corners and a pixel point in the middle of each side, pointing in.
+  Drawn as an overlay in the rarity colour (`::after`), over the art and under the corner marks (slot icon, level,
+  the bag's flag and wearer: `z-index: 2`). It starts at the border's inner edge: a frame's border is drawn outside
+  its box (`--edge-in: 0`), a grid tile's inside it (`--edge-in: var(--px)`, item-tile.css). Put `rarity-edge` on whatever draws an item's rarity border
+  (`ItemFrame` with a `baseId`, `ItemTile`); nothing else draws one.
+*/
+.rarity-edge {
+  --u: var(--px);
+  --c: linear-gradient(var(--rar), var(--rar));
+}
+
+.rarity-edge.rarity-rare::after,
+.rarity-edge.rarity-epic::after {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  inset: var(--edge-in, 0);
+  background-repeat: no-repeat;
+  pointer-events: none;
+}
+
+/* The bevel: in each corner a bar two pixels long on each side of the corner pixel. */
+.rarity-edge.rarity-rare::after {
+  background-image: var(--c), var(--c), var(--c), var(--c), var(--c), var(--c), var(--c), var(--c);
+  background-position:
+    left top,
+    left top,
+    right top,
+    right top,
+    left bottom,
+    left bottom,
+    right bottom,
+    right bottom;
+  background-size:
+    calc(var(--u) * 2) var(--u),
+    var(--u) calc(var(--u) * 2),
+    calc(var(--u) * 2) var(--u),
+    var(--u) calc(var(--u) * 2),
+    calc(var(--u) * 2) var(--u),
+    var(--u) calc(var(--u) * 2),
+    calc(var(--u) * 2) var(--u),
+    var(--u) calc(var(--u) * 2);
+}
+
+/* The bevel, and a point in the middle of each side: three pixels on the border, one more pointing in. */
+.rarity-edge.rarity-epic::after {
+  background-image:
+    var(--c), var(--c), var(--c), var(--c), var(--c), var(--c), var(--c), var(--c), var(--c),
+    var(--c), var(--c), var(--c), var(--c), var(--c), var(--c), var(--c);
+  background-position:
+    left top,
+    left top,
+    right top,
+    right top,
+    left bottom,
+    left bottom,
+    right bottom,
+    right bottom,
+    center top,
+    center top,
+    center bottom,
+    center bottom,
+    left center,
+    left center,
+    right center,
+    right center;
+  background-size:
+    calc(var(--u) * 2) var(--u),
+    var(--u) calc(var(--u) * 2),
+    calc(var(--u) * 2) var(--u),
+    var(--u) calc(var(--u) * 2),
+    calc(var(--u) * 2) var(--u),
+    var(--u) calc(var(--u) * 2),
+    calc(var(--u) * 2) var(--u),
+    var(--u) calc(var(--u) * 2),
+    calc(var(--u) * 3) var(--u),
+    var(--u) calc(var(--u) * 2),
+    calc(var(--u) * 3) var(--u),
+    var(--u) calc(var(--u) * 2),
+    var(--u) calc(var(--u) * 3),
+    calc(var(--u) * 2) var(--u),
+    var(--u) calc(var(--u) * 3),
+    calc(var(--u) * 2) var(--u);
 }
 
 .item-frame.big,
@@ -100,6 +199,7 @@ canvas.sprite.item-slot {
   filter: drop-shadow(1px 0 0 var(--ink)) drop-shadow(-1px 0 0 var(--ink))
     drop-shadow(0 1px 0 var(--ink)) drop-shadow(0 -1px 0 var(--ink));
   pointer-events: none;
+  z-index: 2;
 }
 
 .festival-tag {

@@ -1,6 +1,9 @@
 import { supplyDef } from '@creatures/game';
 import { baitCount, partCountItems, supplyCounts } from '../count-items';
 import { GlossaryTag } from '../Glossary';
+import { isRarity } from '../gear-parse';
+import type { GearRarity } from '../gear-types';
+import { rarityName } from '../gear-view';
 import type { StallOffer, StallPurchase, StallView } from '../games-types';
 import type { IconRef } from '../icon-ref';
 import { LootList } from '../LootList';
@@ -31,9 +34,20 @@ export function offerIcon(offer: Pick<StallOffer, 'kind'>): IconRef {
   }
 }
 
-/** The rarity edge of an offer's tile: a gear piece's rarity, a supply's tier, else plain. */
+/** The rarity of a gear offer (the piece it rolls), or null for any other offer. */
+export function offerRarity(offer: Pick<StallOffer, 'kind' | 'params'>): GearRarity | null {
+  if (offer.kind !== 'gear') return null;
+  const rarity = offer.params['rarity'];
+  return isRarity(rarity) ? rarity : 'common';
+}
+
+/**
+ * The rarity edge of an offer's tile: a gear piece's rarity, in its colour and its shape like every item's border
+ * (`rarity-edge`), a supply's tier (colour only, as in the supply grid: its tier is a word on the card), else plain.
+ */
 export function offerEdge(offer: Pick<StallOffer, 'kind' | 'params'>): string {
-  if (offer.kind === 'gear') return `rarity-${String(offer.params['rarity'] ?? 'common')}`;
+  const rarity = offerRarity(offer);
+  if (rarity !== null) return `rarity-${rarity} rarity-edge`;
   if (offer.kind === 'supply') return tierRarityClass(String(offer.params['tier'] ?? 'basic'));
   return 'rarity-common';
 }
@@ -83,13 +97,17 @@ export function StallOfferTile({
 }) {
   const blocked = offerBlocked(offer, pocket, open);
   const amount = offerAmount(offer);
+  const rarity = offerRarity(offer);
   return (
     <li class={offer.left <= 0 ? 'gs-offer is-sold' : 'gs-offer'}>
       <span class={`gs-offer-art ${offerEdge(offer)}`} aria-hidden="true">
         <GameIcon icon={offerIcon(offer)} scale={4} />
         {amount !== null && <span class="gs-offer-amount pix">{amount}</span>}
       </span>
-      <span class="gs-offer-name">{offer.name}</span>
+      <span class="gs-offer-name">
+        {offer.name}
+        {rarity !== null && <span class="visually-hidden">, {rarityName(rarity)}</span>}
+      </span>
       <span class="gs-offer-meta">
         <CountBadge icon={MEDAL_POINT_ICON} amount={offer.price} label="Price, medal points" />
         <span

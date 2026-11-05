@@ -4,7 +4,7 @@ import { EFFECT_PREFIX, RECOMMENDED_TAG, type PickerOption, type WornItem } from
 import { ElementChip } from '../sprites/ElementChip';
 import { Sprite } from '../sprites/Sprite';
 import { creatureSpriteOrFallback } from '../sprites/creature-sprites';
-import { gearName, rarityName } from '../gear-view';
+import { gearName, itemLabel } from '../gear-view';
 import { getSpecies } from '../game';
 import { ItemThumb } from '../GearArt';
 import { wornSprite } from '../worn-gear';
@@ -187,10 +187,10 @@ function RowContent<T extends PickerOption>({ o, props }: { o: T; props: Creatur
               key={`${w.baseId}-${String(at)}`}
               class="ro-worn"
               role="img"
-              aria-label={`Wearing ${gearName(w.baseId)}, item level ${String(w.itemLevel)}, ${rarityName(w.rarity)}`}
+              aria-label={`Wearing ${itemLabel(w)}`}
               title={`Wearing ${gearName(w.baseId)}`}
             >
-              <ItemThumb item={w} scale={2} />
+              <ItemThumb item={w} scale={3} />
             </span>
           ))}
         </span>
