@@ -7,6 +7,7 @@
  */
 import type { Creature, ValleyVisit } from '../api';
 import { CREATURE_PX, type Stand } from './place-cast';
+import { PLATE_ROW_PX, crowded, plateGap, standBounds, type PlateScene } from './place-plates';
 
 /** A creature at the fire with what it gained this visit. */
 export interface Resting {
@@ -56,38 +57,80 @@ export function firesideOf(resting: readonly Resting[], settledAt: number): Rest
   return out;
 }
 
+/** The fire's art box in its own pixels (the seats are placed from its top-left). */
+export const FIRE_BOX = { width: 56, height: 44 };
+
 /**
- * Where each seat is, in the order they fill, a creature's top-left in scene pixels from the fire art's top-left (the
- * art is 56 wide and 44 high): in front first, then to each side, then a second ring. The plates' gap pushes them
- * apart (`placeStands`), so a narrow scene keeps the first few.
+ * The seats on the ring round the fire, in the order they fill: a creature's top-left in scene pixels from the fire art's
+ * top-left. The ring is an ellipse about the fire's middle (28, 32), a little wider than the stone ring (radii about 24 by
+ * 32, as narrow as a phone's scene (68 scene pixels at scale 5) allows): the front, then front right and left, the sides, and the two behind it. The same at every screen size, because it
+ * is measured from the fire, not from the scene. Each seat is at least a plate's gap from every other at both pixel scales
+ * (3 and 4), so a seat is lost only to the scene's edge.
  */
 export const FIRE_SEATS: readonly { x: number; y: number }[] = [
-  { x: 20, y: 44 },
-  { x: -22, y: 28 },
-  { x: 62, y: 28 },
-  { x: -6, y: 62 },
-  { x: 46, y: 62 },
-  { x: -44, y: 50 },
-  { x: 84, y: 50 },
+  { x: 20, y: 60 },
+  { x: 44, y: 38 },
+  { x: -4, y: 38 },
+  { x: 44, y: 16 },
+  { x: -4, y: 16 },
+  { x: 38, y: -6 },
+  { x: 2, y: -6 },
 ];
 
-/** The stands round the fire for the few who sit there: each faces the fire. */
-export function fireStands(fireside: readonly Resting[]): FireStand[] {
-  return fireside.flatMap((r, i) => {
-    const seat = FIRE_SEATS[i];
-    if (seat === undefined) return [];
-    return [
-      {
+/** A creature sitting at the fire at its real spot in the scene. */
+export interface FireSpot extends FireStand {
+  /** Scene pixels, the creature's top-left. */
+  x: number;
+  y: number;
+}
+
+/**
+ * Who sits where, at the scene's real size: each creature takes the next seat whose creature and plate fit inside the
+ * scene (`standBounds`) and are clear of the seats taken (`crowded`); a seat that does not fit is left empty, so a phone
+ * seats fewer and the ring keeps its shape. A seat is never moved.
+ */
+export function fireSpots(
+  fireside: readonly Resting[],
+  art: { x: number; y: number },
+  scene: PlateScene,
+): FireSpot[] {
+  const bounds = standBounds(scene);
+  const gap = plateGap(scene.s);
+  const out: FireSpot[] = [];
+  let next = 0;
+  for (const r of fireside) {
+    for (; next < FIRE_SEATS.length; next += 1) {
+      const seat = FIRE_SEATS[next];
+      if (seat === undefined) break;
+      const at = { x: art.x + seat.x, y: art.y + seat.y };
+      const inside =
+        at.x >= bounds.x &&
+        at.x < bounds.x + bounds.width &&
+        at.y >= bounds.y &&
+        at.y < bounds.y + bounds.height;
+      if (!inside || out.some((o) => crowded(o, at, gap))) continue;
+      out.push({
         creature: r.creature,
         gained: r.gained,
-        x: seat.x,
-        y: seat.y,
+        ...at,
         flip: seat.x + CREATURE_PX / 2 > FIRE_MIDDLE,
         where:
           r.gained > 0 ? `resting by the fire, gained ${String(r.gained)}` : 'resting by the fire',
-      },
-    ];
-  });
+      });
+      next += 1;
+      break;
+    }
+  }
+  return out;
+}
+
+/** Where the "+N more" button's middle stands: on the ring's front edge, under the front seat's plate (scene pixels). */
+export function moreSpot(art: { x: number; y: number }, s: number): { x: number; y: number } {
+  const front = FIRE_SEATS[0] ?? { x: 20, y: 50 };
+  return {
+    x: art.x + front.x + CREATURE_PX / 2,
+    y: art.y + front.y + CREATURE_PX + Math.ceil(PLATE_ROW_PX / s) + 2,
+  };
 }
 
 /** How many resting creatures are not drawn round the fire. */

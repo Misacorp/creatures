@@ -826,3 +826,14 @@ main.card:has(.vy-frame) > .hud {
   width: var(--pw);
   height: var(--ph);
 }
+
+/* The Bonfire's "+N more": the game's ordinary small button, centred on the ring's front edge (never under 32 px to tap). */
+.vy-more-at {
+  transform: translateX(-50%);
+}
+
+.vy-frame .vy-more {
+  min-height: 2rem;
+  padding: 0.2rem 0.75rem;
+  white-space: nowrap;
+}

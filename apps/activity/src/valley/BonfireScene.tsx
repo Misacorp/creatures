@@ -10,22 +10,20 @@ import type { Creature, ValleyVisit } from '../api';
 import { baseOption } from '../roster-picker';
 import { CreatureList } from '../ui/CreatureList';
 import { Drawer } from '../ui/Drawer';
-import { Nameplate } from '../ui/Nameplate';
 import { PinnedAct } from './PinnedAct';
 import { Stander } from './PlaceScene';
 import { SceneFrame } from './SceneFrame';
 import { At } from './parts';
 import {
   bonfireCalm,
-  fireStands,
+  fireSpots,
+  moreSpot,
   firesideOf,
   moreCount,
   moreLabel,
   restingOf,
-  type FireStand,
 } from './bonfire-cast';
 import { placeArtBox, placeScale, placeSceneDraw } from './place-scene';
-import { standSpots } from './place-plates';
 import { bonfireName } from './valley-places';
 
 /** CSS px at the bottom of the scene the pinned line takes: creatures keep clear of it. */
@@ -46,10 +44,7 @@ export function BonfireScene({
   const [all, setAll] = useState(false);
   const art = bonfireName(level);
   const resting = useMemo(() => restingOf(creatures, visit), [creatures, visit]);
-  const fireside = useMemo(
-    () => fireStands(firesideOf(resting, visit.settledAt)),
-    [resting, visit],
-  );
+  const fireside = useMemo(() => firesideOf(resting, visit.settledAt), [resting, visit]);
   const calm = bonfireCalm(resting);
   const draw = useMemo(() => placeSceneDraw(art), [art]);
   return (
@@ -65,41 +60,39 @@ export function BonfireScene({
         {(g) => {
           const box = placeArtBox(g, art);
           const scene = { W: g.W, H: g.H - Math.ceil(ACT_CSS / g.s), s: g.s, top: g.top };
-          const spots = standSpots<FireStand>(fireside, box, scene);
+          const spots = fireSpots(fireside, box, scene);
           const more = moreCount(resting.length, spots.length);
           return (
             <>
               {spots.map((spot) => (
                 <Stander
-                  key={spot.stand.creature.id}
-                  creature={spot.stand.creature}
+                  key={spot.creature.id}
+                  creature={spot.creature}
                   x={spot.x}
                   y={spot.y}
-                  flip={spot.stand.flip}
-                  label={spot.stand.where}
+                  flip={spot.flip}
+                  label={spot.where}
                   g={g}
-                  gain={spot.stand.gained}
+                  gain={spot.gained}
                 />
               ))}
               {more > 0 && (
                 <At
-                  x={g.X(box.x + Math.floor(box.width / 2))}
-                  y={g.Y(box.y) - 8}
-                  class="vy-feet-plate vy-stand vy-over"
+                  x={g.X(moreSpot(box, g.s).x)}
+                  y={g.Y(moreSpot(box, g.s).y)}
+                  class="vy-more-at vy-stand vy-over"
                   hidden={false}
                 >
                   <button
                     type="button"
-                    class="vy-stand-btn"
+                    class="vy-more"
                     aria-label={`${moreLabel(more)}: show all ${String(resting.length)} resting creatures`}
                     aria-haspopup="dialog"
                     onClick={() => {
                       setAll(true);
                     }}
                   >
-                    <Nameplate size="sm" tone="gold">
-                      {moreLabel(more)}
-                    </Nameplate>
+                    {moreLabel(more)}
                   </button>
                 </At>
               )}

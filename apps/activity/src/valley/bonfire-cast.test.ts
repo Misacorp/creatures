@@ -6,13 +6,15 @@ import {
   MAX_AT_FIRE,
   bonfireCalm,
   bonfireLine,
-  fireStands,
+  FIRE_BOX,
+  fireSpots,
+  moreSpot,
   firesideOf,
   moreCount,
   restingOf,
   totalGained,
 } from './bonfire-cast';
-import { standSpots } from './place-plates';
+import { PLATE_ROW_PX, PLATE_MAX_PX, crowded, plateGap, standBounds } from './place-plates';
 import { placeStates } from './place-state';
 import { trayBadge, trayFor } from './tray-state';
 
@@ -51,15 +53,94 @@ describe('who rests at the fire', () => {
     expect(MAX_AT_FIRE).toBeLessThanOrEqual(FIRE_SEATS.length);
   });
 
-  it('"+N more" counts the resting creatures that are not drawn, after the plates have fitted', () => {
+  it('"+N more" counts the resting creatures that are not drawn, after the seats have fitted', () => {
     const many = restingOf(creatures, visitOf(creatures));
-    const stands = fireStands(firesideOf(many, HOME_NOW));
+    const fireside = firesideOf(many, HOME_NOW);
     const art = { x: 40, y: 26 };
-    const phone = standSpots(stands, art, { W: 130, H: 200, s: 3, top: 6 });
-    const wide = standSpots(stands, art, { W: 500, H: 200, s: 4, top: 4 });
+    const phone = fireSpots(fireside, art, { W: 130, H: 200, s: 3, top: 6 });
+    const wide = fireSpots(fireside, art, { W: 500, H: 200, s: 4, top: 4 });
     expect(phone.length).toBeLessThanOrEqual(wide.length);
+    expect(wide).toHaveLength(MAX_AT_FIRE);
+    expect(fireSpots(fireside, { x: 6, y: 24 }, { W: 68, H: 200, s: 5, top: 4 })).toHaveLength(
+      MAX_AT_FIRE,
+    );
     expect(moreCount(12, phone.length)).toBe(12 - phone.length);
     expect(moreCount(3, 5)).toBe(0);
+  });
+});
+
+describe('the ring round the fire', () => {
+  const many = firesideOf(restingOf(creatures, visitOf(creatures)), HOME_NOW);
+  const centre = { x: FIRE_BOX.width / 2, y: 32 };
+  const scenes = [
+    { W: 68, H: 200, s: 5, top: 4 },
+    { W: 80, H: 200, s: 4, top: 4 },
+    { W: 85, H: 200, s: 4, top: 4 },
+    { W: 130, H: 200, s: 3, top: 6 },
+    { W: 233, H: 200, s: 3, top: 6 },
+    { W: 275, H: 220, s: 4, top: 4 },
+    { W: 360, H: 220, s: 4, top: 4 },
+  ];
+
+  it('every seat is in the band of an ellipse about the fire, the same at every size', () => {
+    for (const seat of FIRE_SEATS) {
+      const dx = (seat.x + 8 - centre.x) / 24;
+      const dy = (seat.y + 8 - centre.y) / 32;
+      const r = Math.hypot(dx, dy);
+      expect(r).toBeGreaterThan(0.85);
+      expect(r).toBeLessThan(1.3);
+    }
+    // Relative to the fire, not the scene: moving the fire moves every spot by the same amount.
+    for (const scene of scenes) {
+      const a = fireSpots(many, { x: 100, y: 30 }, { ...scene, W: 400 });
+      for (const spot of a) {
+        const seat = FIRE_SEATS.find((s) => s.x + 100 === spot.x && s.y + 30 === spot.y);
+        expect(seat).toBeDefined();
+      }
+    }
+  });
+
+  it('plates never overlap, everyone is inside the scene, and a front plate never covers the fire', () => {
+    for (const scene of scenes) {
+      const art = { x: Math.floor(scene.W / 2) - FIRE_BOX.width / 2, y: scene.top + 20 };
+      const spots = fireSpots(many, art, scene);
+      const gap = plateGap(scene.s);
+      const bounds = standBounds(scene);
+      spots.forEach((a, i) => {
+        expect(a.x).toBeGreaterThanOrEqual(bounds.x);
+        expect(a.x).toBeLessThan(bounds.x + bounds.width);
+        expect(a.y).toBeLessThan(bounds.y + bounds.height);
+        spots.slice(i + 1).forEach((b) => {
+          expect(crowded(a, b, gap)).toBe(false);
+        });
+        // A creature whose feet are in the fire box's lower part is in front: its plate (under its feet) is clear of the fire's box.
+        if (a.y + 16 > art.y + FIRE_BOX.height - 8) {
+          const half = PLATE_MAX_PX / scene.s / 2;
+          const plate = {
+            left: a.x + 8 - half,
+            right: a.x + 8 + half,
+            top: a.y + 16,
+            bottom: a.y + 16 + Math.ceil(PLATE_ROW_PX / scene.s),
+          };
+          const overlaps =
+            plate.left < art.x + FIRE_BOX.width &&
+            plate.right > art.x &&
+            plate.top < art.y + FIRE_BOX.height &&
+            plate.bottom > art.y;
+          expect(overlaps, `plate of ${a.creature.id} over the fire at s=${String(scene.s)}`).toBe(
+            false,
+          );
+        }
+      });
+    }
+  });
+
+  it('the "+N more" button sits under the front seat, clear of the creatures', () => {
+    const art = { x: 40, y: 26 };
+    const at = moreSpot(art, 3);
+    const front = fireSpots(many, art, { W: 130, H: 200, s: 3, top: 6 })[0];
+    expect(at.x).toBe((front?.x ?? 0) + 8);
+    expect(at.y).toBeGreaterThan((front?.y ?? 0) + 16);
   });
 });
 
