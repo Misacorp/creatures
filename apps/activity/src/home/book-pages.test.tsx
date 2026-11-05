@@ -69,6 +69,42 @@ describe('the Journal page', () => {
   });
 });
 
+describe('the Journal on a wide window', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('is a list of places on one side and the open place’s pages on the other, not folded headings', () => {
+    vi.stubGlobal('matchMedia', () => ({
+      matches: true,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    }));
+    page = createPage();
+    page.draw(<JournalPage profile={profile} />);
+    expect(byClass(page.root, 'journal-place')).toHaveLength(0);
+    const list = first(byClass(page.root, 'choice-list'));
+    const rows = byName(list, 'button', /\d+ \/ \d+/);
+    expect(rows.length).toBeGreaterThan(1);
+    // The place that has pages is open first; its name heads the panel and the row says it is the chosen one.
+    const panel = first(byClass(page.root, 'side-panel'));
+    const open = visibleText(first(byClass(panel, 'side-panel-title')));
+    expect(rows.filter((row) => row.getAttribute('aria-pressed') === 'true')).toHaveLength(1);
+    expect(byClass(panel, 'journal-page').length).toBeGreaterThan(0);
+    // Choosing another place swaps the panel.
+    const other = first(rows.filter((row) => row.getAttribute('aria-pressed') !== 'true'));
+    page.click(other);
+    expect(visibleText(first(byClass(page.root, 'side-panel-title')))).not.toBe(open);
+  });
+
+  it('on a phone keeps the folded headings', () => {
+    page = createPage();
+    page.draw(<JournalPage profile={profile} />);
+    expect(byClass(page.root, 'journal-place').length).toBeGreaterThan(1);
+    expect(byClass(page.root, 'side-panel')).toHaveLength(0);
+  });
+});
+
 describe('the Journal as a place', () => {
   it('has no Back when opened from the dock, and Back to where it came from when a pin opened it', async () => {
     fetchProfile.mockResolvedValue(profile);

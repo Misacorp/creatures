@@ -182,23 +182,30 @@
 }
 
 /*
-  The Journal on a whole-window desktop: the progress line and bar across the top, the chapters in columns
-  (at least 28 rem each, so a page of text is never a very long line). Chapters open and close on their own,
-  so a column does not wait for its neighbour.
+  The Journal on a whole-window desktop (`Journal.tsx`): the places as a list on the left (the progress line and
+  bar above it), the chosen place's pages on the right in a side panel. The list is narrow and the pages take the
+  rest, but a page of text keeps a readable measure.
 */
 @media (min-width: 60rem) {
-  .journal {
+  .journal-layout.wide.with-panel {
+    grid-template-columns: minmax(16rem, 22rem) minmax(0, 1fr);
+  }
+
+  .journal-layout .side-layout-main {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 28rem), 1fr));
-    gap: 0.5rem 1rem;
-    align-items: start;
+    gap: 0.5rem;
+    align-content: start;
   }
 
-  .journal > :not(.journal-place) {
-    grid-column: 1 / -1;
+  .journal-layout .side-panel {
+    max-width: 48rem;
   }
 
-  .journal > .journal-place {
+  .journal-layout .side-panel-title {
     margin: 0;
+  }
+
+  .journal-panel .side-panel-body {
+    padding-top: 0.5rem;
   }
 }
