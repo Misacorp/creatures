@@ -315,8 +315,16 @@ export function undoGamesIndexMigration(sql: SqlStorage): void {
   sql.exec('DELETE FROM schema_version WHERE version = 42');
 }
 
+/** Puts a database back to before migration 56 (the valley's per-player tables): the tables go. */
+export function undoValleyMigration(sql: SqlStorage): void {
+  sql.exec('DROP TABLE IF EXISTS valley_creatures');
+  sql.exec('DROP TABLE IF EXISTS valley_players');
+  sql.exec('DELETE FROM schema_version WHERE version = 56');
+}
+
 /** Puts a database back to before migration 55 (the v2 live finale's columns). */
 export function undoRaidLiveV2Migration(sql: SqlStorage): void {
+  undoValleyMigration(sql);
   for (const column of ['rules', 'frames']) {
     const present = sql
       .exec("SELECT 1 FROM pragma_table_info('raid_live') WHERE name = ?", column)

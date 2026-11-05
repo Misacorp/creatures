@@ -42,6 +42,7 @@ import { raidLivePacingMigration } from './raid-live-pacing-migration';
 import { raidMigration } from './raid-migration';
 import { raidPlacementCapMigration } from './raid-placement-cap-migration';
 import { raidProgressionMigration } from './raid-progression-migration';
+import { valleyMigration } from './valley-migration';
 import { weatherMigration } from './weather-migration';
 import { workshopConvertMigration } from './workshop-convert-migration';
 import { workshopV2Migration } from './workshop-v2-migration';
@@ -342,6 +343,8 @@ export const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
   raidPartyCarryMigration,
   raidSwapMigration,
   raidLiveV2Migration,
+  // Version 56: the valley's per-player tables, empty until the VALLEY_SYSTEMS flag is on (see valley-migration.ts).
+  valleyMigration,
 ];
 
 /** The schema version of a fresh database. */

@@ -29,7 +29,7 @@ export interface GearRouteContext {
   user: { id: string };
   /** Path parameters of a template route, raw: validated here before use. */
   params: Record<string, string>;
-  core: { gear: Gear; collection: Collection };
+  core: { gear: Gear; collection: Collection; valleySystems: boolean };
 }
 
 /** The two views every action answers with: the gear screen and the collection (creature cards). */
@@ -124,6 +124,8 @@ const routes: Routes<GearRouteContext> = {
       if (dismantle !== undefined) return errorResponse('dismantle_job_removed', 410);
       const body = await parseBody(request, StartJobBodySchema);
       if (body === undefined) return invalidBody();
+      // Treats are off with the valley on; nothing is charged.
+      if (ctx.core.valleySystems && body.treat === true) return errorResponse('treats_off', 400);
       const outcome = ctx.core.gear.startJob(ctx.user.id, body);
       if (!outcome.ok) return failure(outcome);
       return json({ result: outcome.value, ...views(ctx) });
