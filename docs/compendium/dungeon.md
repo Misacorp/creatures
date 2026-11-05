@@ -49,10 +49,10 @@ Foes have no turn order of their own: in the dungeon **your creatures always act
 - Shipped flavour `(content)`: "A glowing bug that nests in warm stones and pops like a tiny firework."
 - Compendium detail: a small bug that gathers in warm stone. Its pop can land on any creature in the row, so no one is safe from it.
 
-**Ash Sprite** (no trick)
+**Ash Sprite** (Hardening Ash, its armour grows +50 every round, up to three times; Fizzle on a mark a reaction leaves)
 
 - Shipped flavour `(content)`: "Drifts out of cold hearths in a puff of grey and sneezes sparks."
-- Compendium detail: a relic of a fire that has gone out, which is why it is cold to touch and sneezes sparks. It is the dungeon's gentle foe.
+- Compendium detail: a relic of a fire that has gone out, which is why it is cold to touch and sneezes sparks. It is the dungeon's gentle foe early on: soft in the first rounds, then the ash packs hard, so small hits fall off it unless a Heat-doubled reaction gets through.
 
 ### Grove foes
 

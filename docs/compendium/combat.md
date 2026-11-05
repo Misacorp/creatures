@@ -592,19 +592,20 @@ A rule card has no element, so the move it adds has the plain label as its name.
 
 An **Escalating** boss or foe has a meter with a name of its own. It fills from something the fight does, grows the boss a step each time it fills, up to a cap, and Mired slows it. (The words are in the keywords section above.) The names are Misa's, approved 2026-10-31 and 2026-11-01. `(content: combat-v2/raid-bosses.json, foes.json)`
 
-| Meter           | Whose           | Fills from            | Each step                                                        | Canon `(compendium detail, not shipped)`                                |
-| --------------- | --------------- | --------------------- | ---------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| Rising Tide     | Tidal Colossus  | HP lost               | A harder hit, and its columns and rows widen                     | The more it is hurt, the higher the water stands.                       |
-| Forge Heat      | Cinder Wyrm     | Reactions cashed      | A harder hit, and one more creature in each volley               | Every reaction is a breath on the coals.                                |
-| Awakening       | Thornmother     | HP lost               | A harder hit, one more jump, thinner bark; halfway, Second Bloom | She wakes by degrees, the way a garden does.                            |
-| Gathering Storm | Storm Sovereign | Rounds passed         | A harder hit and one more jump                                   | The longer it takes, the darker it gets.                                |
-| Maelstrom       | Drowned Warden  | Creatures knocked out | A harder hit                                                     | Each creature that falls lets the water rise. (Was Rising Water.)       |
-| Wisp Fog        | Drift Wisp      | Its own dodges        | It dodges more                                                   | Every miss thickens the fog.                                            |
-| Warm Stones     | Ember Mite      | Marks shed            | A harder hit, and one more creature in each volley               | Each shed mark warms the stones a little more.                          |
-| Static Charge   | Static Bat      | Crits on it           | A harder hit                                                     | Every crit leaves a little charge on its fur.                           |
-| Molten Shell    | Slag Tyrant     | Reactions cashed      | More armour                                                      | Each reaction heats the shell until it glows.                           |
-| Tightening Coil | Coil Baron      | Rounds passed         | A harder hit and one more jump                                   | The coil winds tighter with every round.                                |
-| Swelling Croak  | Bog Toad        | Rounds passed         | A harder hit                                                     | Every croak it swells bigger. Name proposed 2026-11-05, Misa to glance. |
+| Meter           | Whose           | Fills from            | Each step                                                        | Canon `(compendium detail, not shipped)`                                         |
+| --------------- | --------------- | --------------------- | ---------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Rising Tide     | Tidal Colossus  | HP lost               | A harder hit, and its columns and rows widen                     | The more it is hurt, the higher the water stands.                                |
+| Forge Heat      | Cinder Wyrm     | Reactions cashed      | A harder hit, and one more creature in each volley               | Every reaction is a breath on the coals.                                         |
+| Awakening       | Thornmother     | HP lost               | A harder hit, one more jump, thinner bark; halfway, Second Bloom | She wakes by degrees, the way a garden does.                                     |
+| Gathering Storm | Storm Sovereign | Rounds passed         | A harder hit and one more jump                                   | The longer it takes, the darker it gets.                                         |
+| Maelstrom       | Drowned Warden  | Creatures knocked out | A harder hit                                                     | Each creature that falls lets the water rise. (Was Rising Water.)                |
+| Wisp Fog        | Drift Wisp      | Its own dodges        | It dodges more                                                   | Every miss thickens the fog.                                                     |
+| Warm Stones     | Ember Mite      | Marks shed            | A harder hit, and one more creature in each volley               | Each shed mark warms the stones a little more.                                   |
+| Static Charge   | Static Bat      | Crits on it           | A harder hit                                                     | Every crit leaves a little charge on its fur.                                    |
+| Molten Shell    | Slag Tyrant     | Reactions cashed      | More armour                                                      | Each reaction heats the shell until it glows.                                    |
+| Tightening Coil | Coil Baron      | Rounds passed         | A harder hit and one more jump                                   | The coil winds tighter with every round.                                         |
+| Swelling Croak  | Bog Toad        | Rounds passed         | A harder hit                                                     | Every croak it swells bigger. Name proposed 2026-11-05, Misa to glance.          |
+| Hardening Ash   | Ash Sprite      | Rounds passed         | More armour                                                      | The ash packs harder with every round. Name proposed 2026-11-05, Misa to glance. |
 
 ### Second Bloom
 

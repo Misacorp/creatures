@@ -80,13 +80,13 @@ export const FOE_QUESTIONS: Readonly<Record<string, FoeQuestion>> = Object.fromE
         UNDER_ELITE,
         'tidewing/none thornbuck/primed-by-pain pyrelynx/none',
       ],
-      // A long fight of heat: a Guard that builds Heat doubles the Payoff's reaction every few rounds.
+      // Its ash hardens every round: a Guard that builds Heat doubles the Payoff's reaction to get through the armour it grows.
       [
         'ash-sprite',
         'family:Store',
         ['baked-shell'],
-        5,
-        oldNumbers(29_000, 13_000),
+        30,
+        UNDER,
         'tidewing/none kilnmole/baked-shell tempestray/none',
       ],
       // Its hide Blocks small hits: Sense Weakness gets the Payoff's plain hits past it.

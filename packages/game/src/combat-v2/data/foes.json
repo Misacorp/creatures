@@ -63,7 +63,15 @@
       "plain": { "pattern": { "anchor": "front", "shape": "line3" }, "powerBp": 8000 },
       "moves": [],
       "cards": ["fizzle"],
-      "asks": "Ash settles on a mark made by a reaction, so it cannot be cashed at once, and the fight is long: a Guard that builds Heat doubles a reaction every few rounds."
+      "escalation": {
+        "name": "Hardening Ash",
+        "feed": "rounds",
+        "per": 1,
+        "cap": 3,
+        "grow": { "armour": 50 }
+      },
+      "asks": "The ash hardens every round, so small hits fall off it soon: hit it early, and let a Guard that builds Heat double a reaction to get through later. A mark made by a reaction cannot be cashed until after its next turn.",
+      "hpBp": 18000
     },
     {
       "id": "bramble-hound",
