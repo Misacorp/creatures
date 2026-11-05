@@ -5,7 +5,7 @@
  * a win moves it one slot on; after the last boss the track starts again with the next, stronger cards (the slot number is the
  * Boss Rank, and the strength follows the rank up to the cap). Failing a boss keeps the slot (`path.ts` plays that out).
  *
- * What the game will play is data in `@creatures/game/combat-v2` (`raid-track.json`: the order, and per slot 1 to 15 the numbers, the
+ * What the game will play is data in `@creatures/game/combat-v2` (`raid-track.json`: the order, and per slot 1 to 24 the numbers, the
  * strength of the cards, the ramp column and the extra cards, all written out). This file reads it for what it holds and keeps the
  * parts that are only measurement: the arrival weeks, the prepared lines, the mixed answers, the wall flag, and the rank ladder
  * that gives the slots after the data (and the tuner's starting point) their numbers. The track tuner writes the file
@@ -61,7 +61,7 @@ export type SlotTable = Readonly<Record<number, SlotNumbers>>;
 /**
  * Per-slot numbers (slot number to HP, Attack and armour, absolute before cards), from `raid-track.json`. A slot without an entry
  * interpolates the three ranks' numbers (`rankNumbers`). Tuned and written by `node scripts/report.mjs --tune --track --write`
- * (`trackTuner.ts`) for the roster the path says arrives at each slot (`SLOT_WEEKS`); slots 1 to 15 (three laps), later laps follow
+ * (`trackTuner.ts`) for the roster the path says arrives at each slot (`SLOT_WEEKS`); slots 1 to 24 (four laps and a bit: the slots a 24-week journey reaches), later ones follow
  * the high rank's numbers.
  */
 export const SLOT_NUMBERS: SlotTable = Object.fromEntries(
@@ -74,7 +74,9 @@ export const SLOT_NUMBERS: SlotTable = Object.fromEntries(
  * that reaches slot 5 in week 5 fights it first in week 6 (the Festival clock is the server's age in weeks, `path.ts`). The ownability
  * check reads it (`ownability.ts`: a slot's tool line must be ownable and evolved in the week the slot arrives).
  */
-export const SLOT_WEEKS: readonly number[] = [1, 2, 3, 4, 6, 7, 8, 9, 11, 12, 13, 14, 16, 17, 18];
+export const SLOT_WEEKS: readonly number[] = [
+  1, 2, 3, 4, 6, 7, 8, 9, 11, 12, 13, 14, 16, 17, 18, 19, 21, 22, 23, 24, 24, 24, 24, 24,
+];
 
 /**
  * The young-server ramp, a column of the track's data (Misa, 2026-10-30; `docs/design/decisions/raids.md`): a new server has only
@@ -208,6 +210,9 @@ export function slotAnswersOf(slot: number, order: readonly string[] = TRACK_ORD
 export const SLOT_MIXED_ANSWER: Readonly<Record<number, number>> = {
   6: 1, // tidal-colossus
   11: 1, // tidal-colossus
+  16: 1, // tidal-colossus
+  21: 1, // tidal-colossus
+  23: 1, // storm-sovereign
 };
 
 /** The answer the mixed server fields at a slot: `index` (default `SLOT_MIXED_ANSWER`'s entry, else the first answer). */
@@ -224,7 +229,7 @@ export function slotMixedOf(
 }
 
 /**
- * The strength of a slot's cards, by slot (bp), written out in `raid-track.json` for slots 1 to 15 (today the ladder's values:
+ * The strength of a slot's cards, by slot (bp), written out in `raid-track.json` for slots 1 to 24 (today the ladder's values:
  * `rankStrengthBp`). A slot without an entry follows the rank ladder.
  */
 export const SLOT_STRENGTH: Readonly<Record<number, number>> = Object.fromEntries(

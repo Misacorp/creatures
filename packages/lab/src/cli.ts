@@ -345,7 +345,7 @@ async function path(args: readonly string[], quick: boolean, run: JobRunner): Pr
     timings += '\n' + off.timings;
   }
   mds.push(ownabilityOfPath(plain.value.data).join('\n'));
-  // The information measures at the arrival weeks of this path (slots 1 to 15, the committed `SLOT_NUMBERS`).
+  // The information measures at the arrival weeks of this path (slots 1 to 24, the committed `SLOT_NUMBERS`).
   const info = await runPlan(planSlotInfo({ quick, weeks: arrivalWeeksOf(plain.value.data) }), run);
   mds.push(
     [
@@ -365,7 +365,7 @@ async function path(args: readonly string[], quick: boolean, run: JobRunner): Pr
 
 /**
  * The ownability table (`ownability.ts`) at the arrival weeks of this path: the median week a dedicated server arrives at each slot
- * 1 to 15 at the expected speed when the run has it, else the committed `SLOT_WEEKS` (the weeks the track was tuned for).
+ * 1 to 24 at the expected speed when the run has it, else the committed `SLOT_WEEKS` (the weeks the track was tuned for).
  */
 function arrivalWeeksOf(data: readonly PathSummary[]): number[] {
   const dedicated = data.find((d) => d.server === 'dedicated' && d.speed === 'expected');

@@ -495,7 +495,7 @@ const LAB_TRACK = [
 ] as const;
 
 describe('combat v2 raid track', () => {
-  it('loads the shipped track: the order of the bosses and slots 1 to 15', () => {
+  it('loads the shipped track: the order of the bosses and slots 1 to 24', () => {
     expect(combatV2.raidTrack.order).toEqual([
       'tidal-colossus',
       'cinder-wyrm',
@@ -503,21 +503,38 @@ describe('combat v2 raid track', () => {
       'old-bogback',
       'thornmother',
     ]);
-    expect(combatV2.raidTrack.slots.map((s) => s.slot)).toEqual(LAB_TRACK.map((t) => t[0]));
+    expect(combatV2.raidTrack.slots.map((s) => s.slot)).toEqual(
+      Array.from({ length: 24 }, (_, i) => i + 1),
+    );
   });
 
-  it('holds the numbers, strengths, ramp and extra cards the lab had for slots 1 to 15', () => {
-    const got = combatV2.raidTrack.slots.map((s) => [
-      s.slot,
-      s.boss,
-      s.hp,
-      s.atk,
-      s.armour,
-      s.strengthBp,
-      s.cards,
-      s.buildUp,
-      s.extraCards,
-    ]);
+  it('plays slots 16 to 24 at full strength with the boss full set of rules and the escalation', () => {
+    for (const s of combatV2.raidTrack.slots.filter((x) => x.slot > 15)) {
+      expect(s.strengthBp).toBe(10000);
+      expect(s.buildUp).toBe(true);
+      expect(s.cards).toBe(combatV2.raidBosses[s.boss]?.cards.length);
+      // The extra cards of the same boss's last lap before the data's end (a later lap keeps them).
+      expect(s.extraCards).toEqual(
+        combatV2.raidTrack.slots.find((x) => x.slot === s.slot - 5 * Math.ceil((s.slot - 15) / 5))
+          ?.extraCards,
+      );
+    }
+  });
+
+  it('holds the numbers, strengths, ramp and extra cards the lab had for slots 1 to 15 (16 to 24 are tuned by the track tuner)', () => {
+    const got = combatV2.raidTrack.slots
+      .slice(0, 15)
+      .map((s) => [
+        s.slot,
+        s.boss,
+        s.hp,
+        s.atk,
+        s.armour,
+        s.strengthBp,
+        s.cards,
+        s.buildUp,
+        s.extraCards,
+      ]);
     expect(got).toEqual(LAB_TRACK.map((t) => [...t]));
   });
 

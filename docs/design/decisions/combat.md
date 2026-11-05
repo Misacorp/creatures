@@ -4,6 +4,14 @@ The shared combat engine, abilities, statuses, elements, the balance simulator, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-05: Combat v2: the track's tuned table reaches slot 24
+
+ID: `2026-11-05-combat-v2-the-track-s-tuned` · Status: current
+
+**Decision.** `raid-track.json` lists slots 1 to 24, and the track tuner (`report -- --tune --track --slots 16-24 --write`, the journey pass as its second stage) owns the numbers of slots 16 to 24; slots 1 to 15 are unchanged. The new slots are at full strength with the boss's full set of rules and the escalation, and the extra cards the same boss had a lap before (the game's own rule past the data). The tuned HP, Attack and armour: slot 16 12400 / 142 / 55 (Tidal Colossus), 17 11600 / 185 / 52 (Cinder Wyrm), 18 7800 / 90 / 7 (Storm Sovereign), 19 31200 / 123 / 29 (Old Bogback), 20 8000 / 97 / 162 (Thornmother), 21 12400 / 142 / 56, 22 10200 / 199 / 53, 23 7800 / 90 / 8, 24 34300 / 105 / 33. `SLOT_WEEKS` has 24 entries (19, 21, 22, 23, 24, then 24 for slots 21 to 24: a dedicated server at the expected speed has not arrived there before the last week), `SLOT_MIXED_ANSWER` takes the second answer on slots 16, 21 (Tidal Colossus) and 23 (Storm Sovereign), and the parity corpus covers slots 1 to 24. Slot numbers past 24 still follow the boss's own high-rank numbers (the game and the lab agree on that).
+
+**Reasoning.** Before, a slot past 15 took the boss's own high-rank numbers (`slotSpec` in the game, `rankNumbers` in the lab: the two agreed), which the tuner could not touch; the first slots of the fourth lap were harder than the third lap's (Tidal Colossus 19100 HP against 13100). A 24-week journey reaches slot 16 to about 20 at the expected speed and 24 at the fastest, so those slots are the ones in practice. Measured with the full gate (320 servers each): every item that passed still passes with the same numbers, the stuck shares are unchanged (the mixed slow server 3%, every other cell 0%), the one-weekend kills at slots 8, 11 and 14 are unchanged, the worst slot's median weekends to kill is 1 in every cell that had 2 (slots 16 and 18 were the worst), slots reached rise by 1 to 2 for several servers, and the 207 boss rules are all met. The tuner's known content misses at slots 16 and 21 (tool potential 34% and 35% against at least 35%, Tidal Colossus: the tool potential and the classic party's kill rate cannot both be met there) stay a content note. A best pick, tuned by the track tuner and listed in `for-misa.md`.
+
 ## 2026-11-05: [Misa] Combat v2 balance pass: slots 3 and 5 eased, Determination 15% a stack, Night Watch on Hearthshell, the casual miss kept
 
 ID: `2026-11-05-combat-v2-balance-pass-slots-3` · Status: current · Amends: `2026-11-05-combat-v2-phase-5-step-5`

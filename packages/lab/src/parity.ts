@@ -230,8 +230,8 @@ function casualLine(boss: BossDef, key: string): Pick[] {
   );
 }
 
-/** The track's first three laps: between them Slippery, Double Strike, Breakwater, strength, the escalation, Adapts and Element Resistance all appear. */
-const SLOTS = Array.from({ length: 15 }, (_, i) => i + 1);
+/** The track's first four laps and a bit (the slots a 24-week journey reaches): between them Slippery, Double Strike, Breakwater, strength, the escalation, Adapts and Element Resistance all appear. */
+const SLOTS = Array.from({ length: 24 }, (_, i) => i + 1);
 
 export function parityCases(): ParityCase[] {
   const cases: ParityCase[] = [];
