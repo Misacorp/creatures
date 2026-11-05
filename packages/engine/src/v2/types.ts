@@ -65,6 +65,8 @@ export interface Fighter extends FighterSpec {
   undodgeable: boolean;
   /** The round of the last mark it left by intercepting (Primed by Pain: once a round); 0 for none yet. */
   lastPrimeRound: number;
+  /** The round of its last Backlash (it strikes back once a round at most); 0 for none yet. */
+  lastBacklashRound: number;
   damageDealt: number;
   /** Damage its hits dealt to the boss, reactions included, counters not (Element Resistance reads it). */
   hitDamage: number;
@@ -449,6 +451,8 @@ export type BoardEvent =
       readonly by?: string;
       /** On a creature's crit: the crit's multiplier in basis points (26_000 is x2.6), after its talents and Knack. */
       readonly critBp?: number;
+      /** On a creature's hit: this is the reaction's bonus landing as its own hit, right after the plain hit (Aftershock). */
+      readonly bonus?: boolean;
     }
   /** A Guard takes a boss hit aimed at `who` (the hit that follows names the Guard as `by`). */
   | { readonly type: 'intercept'; readonly guard: string; readonly who: string }
@@ -461,8 +465,21 @@ export type BoardEvent =
     }
   /** A Support's verb adds `bp` (basis points) to the next hit of `who`; `by` is the Support. */
   | { readonly type: 'boost'; readonly who: string; readonly by: string; readonly bp: number }
-  /** A creature's strike-back (not a hit: no crit, ignores armour). */
-  | { readonly type: 'counter'; readonly from: string; readonly damage: number }
+  /**
+   * A creature's strike-back (not a hit: no crit, ignores armour). `byKnack`: it is its Knack's own effect (Backlash), so the
+   * board names the Knack on `from`'s tile.
+   */
+  | {
+      readonly type: 'counter';
+      readonly from: string;
+      readonly damage: number;
+      readonly byKnack?: boolean;
+    }
+  /**
+   * The boss cannot dodge the hits of `who` this round (Clear Skies, Pin Down); `by` is the creature whose Knack did it, which the
+   * board names. Nothing on the board changes: it is for the cue, since the only other sign is a missing "Dodged!".
+   */
+  | { readonly type: 'sure'; readonly who: string; readonly by: string }
   /** A mark on the boss is added to or made bigger: its element, its counts now and whether it is sealed. */
   | {
       readonly type: 'mark';
@@ -480,6 +497,8 @@ export type BoardEvent =
       readonly spent: number;
       readonly bonus: number;
       readonly left: number;
+      /** The bonus lands as its own hit (Aftershock): the callout leaves it out, the hit after it carries the number. */
+      readonly split?: boolean;
     }
   /** `who` is healed by `amount` (what was really restored); `by` is the healer, when there is one. */
   | { readonly type: 'heal'; readonly who: string; readonly amount: number; readonly by?: string }
@@ -488,8 +507,8 @@ export type BoardEvent =
   | { readonly type: 'silence'; readonly who: string; readonly turns: number }
   /** A creature's Store (Heat, Calm, Dodge stacks) is now `value`. */
   | { readonly type: 'store'; readonly who: string; readonly value: number }
-  /** The boss's Mired is now `stacks`. */
-  | { readonly type: 'mired'; readonly stacks: number }
+  /** The boss's Mired is now `stacks`; `shook`: it shook off this many stacks just now (Shake It Off). */
+  | { readonly type: 'mired'; readonly stacks: number; readonly shook?: number }
   /**
    * The boss's escalation moved: its feed count, the steps that help it (`step`) and that help the players (`fall`), and the phase
    * (`phaseNext`: announced, it applies at the next round start).

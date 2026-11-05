@@ -256,6 +256,17 @@ export function bossTurn(s: State, turn: number): void {
         shed.push(el);
       }
     if (s.opts.log && shed.length > 0) emit(s, { type: 'shed', marks: shed });
+    // Backlash: the first time the boss sheds a mark in a round, each creature that has it strikes back, once a round (not once per
+    // stack, per mark or per boss turn, so copies and Heavy Prime stacks do not multiply it).
+    if (shed.length > 0 && s.carries.has('backlashBp'))
+      for (const o of alive(s)) {
+        const bp = fx(o).backlashBp;
+        if (!bp || o.lastBacklashRound === s.round) continue;
+        o.lastBacklashRound = s.round;
+        counter(s, o, bp, true);
+        bump(o, 'backlashBp');
+        if (s.bossHp <= 0) return;
+      }
   }
   s.bossTurnsDone++;
   s.reflectArmed = true;

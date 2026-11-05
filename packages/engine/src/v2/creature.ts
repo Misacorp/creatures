@@ -252,6 +252,7 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
           spent,
           bonus,
           left: Math.max(0, mark.stacks),
+          ...(k.splitBonus ? { split: true } : {}),
         },
       });
     for (const o of alive(s)) {
@@ -290,8 +291,13 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
     if (s.carries.has('pierceBesideBp'))
       for (const o of beside(s, f)) pierce = Math.max(pierce, fx(o).pierceBesideBp ?? 0);
     const armour = Math.floor((grown(s).armour * (10_000 - pierce)) / 10_000);
+    const cap = s.boss.mods.capPerHit;
+    // Aftershock: a hit cap holds the plain hit and the reaction's bonus apart (each is held to the cap on its own).
+    const split = k.splitBonus === true && reacted && cap !== undefined;
     let dmg = plain + bonus;
-    if (s.boss.mods.capPerHit !== undefined) dmg = Math.min(dmg, s.boss.mods.capPerHit);
+    if (cap !== undefined)
+      dmg = split ? Math.min(plain, cap) + Math.min(bonus, cap) : Math.min(dmg, cap);
+    const plainHeld = split && cap !== undefined ? Math.min(plain, cap) : plain;
     dmg -= armour;
     if (dmg <= 0) {
       s.count.blocked++;
@@ -322,17 +328,35 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
       f.sureCrits--;
       if (s.opts.log) log(s, 'sure-crit', `${f.name} spends a Sure Crit (${f.sureCrits} left)`);
     }
-    if (s.opts.log && dmg > 0)
+    if (s.opts.log && dmg > 0) {
+      const shown = determined(s, dmg);
+      // Aftershock's bonus is its own number: the plain hit first (armour comes off it first), then the bonus as a second hit.
+      const apart = k.splitBonus === true && reacted && bonus > 0;
+      const plainShown = apart
+        ? Math.min(shown, determined(s, Math.max(0, plainHeld - armour)))
+        : shown;
       emit(s, {
         type: 'hit',
         from: keyOf(f),
         to: null,
-        damage: determined(s, dmg),
+        damage: plainShown,
         crit,
         blocked: false,
         dodged: false,
         ...(crit ? { critBp: critMult } : {}),
       });
+      if (apart && shown > plainShown)
+        emit(s, {
+          type: 'hit',
+          from: keyOf(f),
+          to: null,
+          damage: shown - plainShown,
+          crit: false,
+          blocked: false,
+          dodged: false,
+          bonus: true,
+        });
+    }
     hitBoss(s, f, dmg, true);
   }
   // 5. Mark (R4): a hit that set off a reaction leaves no mark by the base rules.
@@ -362,13 +386,20 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
               emit(s, { type: 'mark', element: other, stacks: m.stacks, sealed: m.sealed });
           }
       addMark(s, el, stacks, { sealed: k.seal ?? false, by: f });
-      if (k.leadBoostBp) {
+      if (k.leadBoostBp || k.leadUndodge) {
         const next = best(
           alive(s),
           (a, b) => a.col - b.col,
           (o) => o.row === f.row && o.col > f.col,
         );
-        if (next) next.boostBp += k.leadBoostBp;
+        if (next) {
+          next.boostBp += k.leadBoostBp ?? 0;
+          // Pin Down: the boss cannot dodge the next creature's hits this round (the flag Clear Skies sets, cleared at round start).
+          if (k.leadUndodge) {
+            next.undodgeable = true;
+            if (s.opts.log) emit(s, { type: 'sure', who: keyOf(next), by: keyOf(f) });
+          }
+        }
       }
     }
   }
@@ -388,12 +419,17 @@ export function creatureTurn(s: State, f: Fighter): void {
  * A counter that ignores armour (Retaliate, Shoulder Charge's strike-back). It is damage and can land the
  * killing blow, but it is not one of the creature's hits: no Culling Strike, no "its hits" talent.
  */
-export function counter(s: State, f: Fighter, shareBp: number): void {
+export function counter(s: State, f: Fighter, shareBp: number, byKnack = false): void {
   // A counter is not a hit: no crit roll, no Sure Crit spent, no Steady Rhythm count, no Culling Strike (R6, R21.7).
   const dmg = Math.floor((f.atk * shareBp) / 10_000);
   if (s.opts.log)
     log(s, 'counter', `${f.name} strikes back for ${dmg}`, {
-      board: { type: 'counter', from: keyOf(f), damage: dmg },
+      board: {
+        type: 'counter',
+        from: keyOf(f),
+        damage: dmg,
+        ...(byKnack ? { byKnack: true } : {}),
+      },
     });
   hitBoss(s, f, dmg, false);
 }
