@@ -137,7 +137,7 @@ describe('the VALLEY_SYSTEMS flag: configuration', () => {
     const ctx = { waitUntil: () => undefined, passThroughOnException: () => undefined } as never;
     const res = await createHandler().fetch?.(
       new Request(`${ORIGIN}/api/config`),
-      { ...env, ...vars } as Env,
+      { ...env, ...vars },
       ctx,
     );
     return (await res?.json()) as Record<string, unknown>;
