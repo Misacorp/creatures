@@ -46,7 +46,16 @@ in the worker.
    split by topic (shared helpers in `test/helpers/`, not a `.test.ts` file), never given a longer timeout. To find
    the slow ones: `cd packages/lab && npx vitest run --reporter=json --outputFile=/tmp/v.json`, then read each
    file's `endTime - startTime` and each test's `duration`. The boss tests were split from one 22 s file into
-   `boss*.test.ts` and `dungeon.test.ts` for this (2026-10-29).
+   `boss*.test.ts` and `dungeon.test.ts` for this (2026-10-29). Since 2026-11-05 the package runs in about 8 s on 4
+   cores (it was 23 to 29 s) by three rules. (a) A test that fights a few thousand weekends and asserts a balance
+   number is a measurement: it lives in the report (`report -- --rules` for the boss rules of `targets.ts`
+   `RULE_TARGETS`, `--gate` for the gate, which prints both), not in the suite; the suite keeps the structure checks
+   and a check of the report's own logic on made-up numbers. (b) A rule that holds for a seeded sample is proved on
+   the smallest sample that shows it (the camp's three choices appear in 40 seeds, not 300), and a command-line test
+   runs one server for real and reuses its result. (c) Test files share their modules inside a worker
+   (`isolate: false` in `packages/lab/vitest.config.ts`): with isolation every file re-imported the whole lab, a third
+   of the CPU. This is safe while no test leaves a mock or a global behind; a run with `--sequence.shuffle` must keep
+   passing. `fsModuleCache` keeps the transforms between local runs.
 7. **Economy lab** (`packages/econ`, the valley's proposed rules). Tests run the model on one or two seeds with
    short horizons and check invariants (no negative balances, conservation, determinism), the tuner on a tiny fake
    model, and the targets and dials as data. Speed budget: the full report (`pnpm --filter @creatures/econ report`,
