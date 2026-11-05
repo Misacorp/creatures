@@ -81,6 +81,12 @@ export const KNOWN_MISSES: readonly KnownMiss[] = [
     target: 'at least 1.5',
     why: 'Accepted by Misa on 2026-11-05 and kept as a miss, not a looser target: the dungeon depth picker already gives casual players meaningful content until they are ready for more depth, the valley rework brings quite passive EXP, and the picker lets any creature crew take on content. The 128-search mean is good to about plus or minus 0.14.',
   },
+  {
+    id: 'dead-knack',
+    measured: 'Cool Head unpicked (1 of 47 Knacks)',
+    target: 'every Knack picked somewhere',
+    why: 'Since the three new Knacks (Pin Down, Backlash, Aftershock) joined the pool on 2026-11-05, no best-team search picks Cool Head; before, one raid Reflective Hide search picked it (3 of its top 5 lines). Borderline and partly search noise, but a Knack only one search ever picked is weak: worked with the balance-miss skill next.',
+  },
 ];
 
 const pct = (x: number): string => `${Math.round(100 * x)}%`;
