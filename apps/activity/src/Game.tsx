@@ -233,6 +233,8 @@ export function Game({
   // The same row as state, so the valley's Cave scene can draw the team standing at the cave mouth (null until the
   // Dungeon page has reported one this session).
   const [dungeonTeam, setDungeonTeam] = useState<Slots | null>(null);
+  // What the Dungeon page last said about today (a run in progress, one to start, neither); null until it has.
+  const [dungeonPhase, setDungeonPhase] = useState<DungeonPhase | null>(null);
 
   // The daily allowance lands once (the server tells the player on one request only): say so on the
   // notice line, which the next action clears.
@@ -797,6 +799,7 @@ export function Game({
             dungeonDraft.current = null;
             if (valleyOn) setDungeonTeam(null);
           }}
+          onPhaseChange={valleyOn ? setDungeonPhase : undefined}
           onCanRunChange={(canRun) => {
             setAttention((now) => ({
               raid: false,
@@ -864,6 +867,7 @@ export function Game({
         }}
         castExtra={{
           dungeonTeam,
+          dungeonPhase,
           waiting: game.pending.map((p) => ({ id: p.id, species: p.species, shiny: p.shiny })),
         }}
         focus={focusPlace}

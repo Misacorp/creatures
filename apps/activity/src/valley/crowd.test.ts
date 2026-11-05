@@ -113,6 +113,7 @@ describe('every scene keeps its standing creatures a gap apart', () => {
       scene: { boss: { id: 'x', name: 'X' }, party: ids.slice(0, 3) },
     },
     dungeonTeam: ids.slice(0, 3),
+    dungeonPhase: null,
     waiting: [
       { id: 'a', species: 'cindle', shiny: false },
       { id: 'b', species: 'cindle', shiny: false },

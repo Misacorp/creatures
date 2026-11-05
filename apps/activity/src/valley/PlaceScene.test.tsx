@@ -25,6 +25,7 @@ const base = homeInput('busy', true);
 const input = (extra: Partial<CastInput>): CastInput => ({
   ...base,
   dungeonTeam: null,
+  dungeonPhase: null,
   waiting: [],
   now: HOME_NOW,
   ...extra,

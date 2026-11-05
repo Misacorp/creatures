@@ -14,12 +14,14 @@ import {
   startDungeonRun,
 } from './dungeon-api';
 import {
+  dungeonPhase,
   initialScreen,
   msUntilReset,
   openRun,
   RESET_GRACE_MS,
   screenAfterAct,
   screenAfterFight,
+  type DungeonPhase,
 } from './dungeon-flow';
 import { replayInput, roomInput, type PlaybackInput } from './dungeon-playback';
 import { buildRunRequest, completeTeam, type Slots } from './dungeon-team';
@@ -74,6 +76,7 @@ export function Dungeon({
   onDraftChange,
   onRunStarted,
   onCanRunChange,
+  onPhaseChange,
   onRunFinished,
   configure,
 }: {
@@ -90,6 +93,8 @@ export function Dungeon({
   onRunStarted: () => void;
   /** Whether a run can start now, whenever today's state is loaded or changes (the tab's pip). */
   onCanRunChange: (canRun: boolean) => void;
+  /** Where today's dungeon stands (a run in progress, one that can start, neither), for the valley's Cave. */
+  onPhaseChange?: ((phase: DungeonPhase) => void) | undefined;
   /** The run's playback ended (or was skipped): balances and the bag changed, so reload them. */
   onRunFinished: () => void;
   /** Getting the team ready on the pre-run card (see `DungeonSetup`); absent: the creature popover only. */
@@ -133,6 +138,17 @@ export function Dungeon({
   useEffect(() => {
     if (today !== null) onCanRunChange(today.canRun);
   }, [today]);
+
+  // The valley's Cave says what the page knows: a run in progress is not "quiet".
+  useEffect(() => {
+    if (today === null || onPhaseChange === undefined) return;
+    const phase = dungeonPhase(
+      view.kind,
+      today.canRun,
+      view.kind === 'fight' && view.summary !== null,
+    );
+    if (phase !== null) onPhaseChange(phase);
+  }, [today, view]);
 
   function accept(next: DungeonToday, screen: 'keep' | 'initial'): void {
     setToday(next);

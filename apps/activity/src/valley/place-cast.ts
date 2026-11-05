@@ -13,6 +13,7 @@
  * Positions are scene pixels from the top-left of the place's art, a creature's own top-left (16 x 16).
  */
 import type { Attention, Creature } from '../api';
+import type { DungeonPhase } from '../dungeon-flow';
 import { emptyEvents, showLive } from '../games-view';
 import type { GamesView } from '../games-types';
 import type { RaidGlance } from '../home-view';
@@ -41,6 +42,8 @@ export const MAX_AT_FAIR = 9;
 export interface CastExtra {
   /** The dungeon setup row of this session (the Dungeon page reports it as it changes); null until it has. */
   dungeonTeam: readonly (string | null)[] | null;
+  /** What the Dungeon page last said about today's run (null until it has): in progress, can start, or neither. */
+  dungeonPhase: DungeonPhase | null;
   /** The duplicates waiting for a choice. */
   waiting: readonly { id: string; species: string; shiny: boolean }[];
 }
@@ -155,7 +158,12 @@ function caveCast(
       ? []
       : [{ creature, x: spot.x, y: spot.y, flip: false, where: 'at the cave mouth' }];
   });
-  if (waits) {
+  // What the cave says is what the dungeon really is. The server's pip alone is "a run can start or is open", so it
+  // cannot tell them apart: the Dungeon page's own word (`dungeonPhase`) does once the page has loaded this session.
+  // A word that disagrees with the pip is stale (a new day began while the player was away): ask the player in.
+  const phase = settledPhase(input.dungeonPhase, input.attention);
+  if (phase === 'active') return { stands, act: { kind: 'step', label: 'Continue the run' } };
+  if (phase === 'ready') {
     return {
       stands,
       act: {
@@ -165,7 +173,25 @@ function caveCast(
       },
     };
   }
-  return { stands, act: { kind: 'calm', line: 'The cave is quiet' } };
+  // Something is up but not known which: no claim either way (and never "quiet").
+  if (waits) return { stands, act: { kind: 'step', label: 'Enter the cave' } };
+  // Nothing is up for certain: the pip says so. Before the first state arrives, no line at all.
+  return {
+    stands,
+    act: { kind: 'calm', line: input.attention === null ? '' : 'The cave is quiet' },
+  };
+}
+
+/** The dungeon's phase to trust: the page's, unless the pip contradicts it (then unknown). */
+function settledPhase(
+  phase: DungeonPhase | null,
+  attention: Attention | null,
+): DungeonPhase | null {
+  if (phase === null) return null;
+  if (attention === null) return phase;
+  if (phase === 'none' && attention.dungeon) return null;
+  if (phase === 'ready' && !attention.dungeon) return 'none';
+  return phase;
 }
 
 // --- Arena ---
@@ -186,7 +212,8 @@ function arenaCast(input: CastInput, art: Size): Pick<Cast, 'stands' | 'act' | '
     return { stands, boss, timing, act: { kind: 'step', label: 'Place your creatures' } };
   }
   // The party stands in the picture: a line that says so would repeat it.
-  const line = party.length > 0 ? '' : input.raid === null ? 'The arena waits' : 'No party placed';
+  // Before the raid has loaded there is nothing to say ("The arena waits" would only repeat the picture).
+  const line = party.length > 0 || input.raid === null ? '' : 'No party placed';
   return { stands, boss, timing, act: { kind: 'calm', line } };
 }
 
@@ -228,7 +255,8 @@ function fairCast(input: CastInput, art: Size): Pick<Cast, 'stands' | 'act'> {
     where: `in ${event}`,
   }));
   const games = input.games;
-  if (games === null) return { stands, act: { kind: 'calm', line: 'The fair is quiet' } };
+  // Not loaded yet: no line ("The fair is quiet" would only repeat the picture).
+  if (games === null) return { stands, act: { kind: 'calm', line: '' } };
   if (showLive(games, input.now)) return { stands, act: { kind: 'step', label: 'Watch the show' } };
   const empty = emptyEvents(games.next, input.creatures).length;
   if (empty > 0 && input.now < games.next.lockAt) {
@@ -246,8 +274,7 @@ function fairCast(input: CastInput, art: Size): Pick<Cast, 'stands' | 'act'> {
     stands,
     act: {
       kind: 'calm',
-      line:
-        entered > 0 ? `Entered in ${plural(entered, 'an event', 'events')}` : 'The fair is quiet',
+      line: entered > 0 ? `Entered in ${plural(entered, 'an event', 'events')}` : '',
     },
   };
 }

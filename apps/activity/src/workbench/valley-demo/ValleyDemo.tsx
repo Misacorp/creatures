@@ -91,6 +91,7 @@ export function ValleyDemo({ start, away, day }: { start: string; away: boolean;
   };
   const castExtra: CastExtra = {
     dungeonTeam: day === 'nothing going on' ? null : base.creatures.slice(3, 6).map((c) => c.id),
+    dungeonPhase: day === 'nothing going on' ? 'none' : 'ready',
     waiting: WAITING.slice(0, base.pending),
   };
   const view = viewOf(tab, homeAt);

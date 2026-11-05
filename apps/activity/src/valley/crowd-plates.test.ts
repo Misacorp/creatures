@@ -42,6 +42,7 @@ describe('nameplates: no two overlap and none leaves the scene, at the phone and
       scene: { boss: { id: 'x', name: 'X' }, party: ids.slice(0, 5) },
     },
     dungeonTeam: ids.slice(0, 5),
+    dungeonPhase: null,
     waiting: [
       { id: 'a', species: 'cindle', shiny: false },
       { id: 'b', species: 'cindle', shiny: false },

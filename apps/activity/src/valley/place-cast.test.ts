@@ -20,6 +20,7 @@ function inputOf(base: typeof busy, extra: Partial<CastInput> = {}): CastInput {
   return {
     ...base,
     dungeonTeam: null,
+    dungeonPhase: null,
     waiting: [],
     now: HOME_NOW,
     ...extra,
@@ -48,7 +49,10 @@ describe('House', () => {
 
 describe('Cave', () => {
   it('a run waits: the team stands at the mouth and the action is Start the run', () => {
-    const c = cast('cave', busy, { dungeonTeam: [ids(1)[0] ?? null, null, ids(1, 2)[0] ?? null] });
+    const c = cast('cave', busy, {
+      dungeonTeam: [ids(1)[0] ?? null, null, ids(1, 2)[0] ?? null],
+      dungeonPhase: 'ready',
+    });
     expect(c.stands.map((s) => s.creature.id)).toEqual([ids(1)[0], ids(1, 2)[0]]);
     expect(c.act).toMatchObject({ kind: 'step', label: 'Start the run' });
     // Deterministic: the same input, the same places.
@@ -60,6 +64,36 @@ describe('Cave', () => {
     const c = cast('cave', quiet);
     expect(c.stands).toEqual([]);
     expect(c.act).toEqual({ kind: 'calm', line: 'The cave is quiet' });
+  });
+  it('a run in progress is never quiet: the action continues it, whatever the pip says', () => {
+    for (const dungeon of [true, false]) {
+      const c = cast(
+        'cave',
+        { ...quiet, attention: { dungeon, raid: false, recheckAt: null } },
+        { dungeonPhase: 'active' },
+      );
+      expect(c.act).toEqual({ kind: 'step', label: 'Continue the run' });
+    }
+  });
+  it('a pip with no word from the Dungeon page yet makes no claim: neither "quiet" nor "Start the run"', () => {
+    const c = cast('cave', {
+      ...quiet,
+      attention: { dungeon: true, raid: false, recheckAt: null },
+    });
+    expect(c.act).toEqual({ kind: 'step', label: 'Enter the cave' });
+    // Nothing known at all: no line.
+    expect(cast('cave', { ...quiet, attention: null }).act).toEqual({ kind: 'calm', line: '' });
+  });
+  it('a word that the pip contradicts is stale: a new day began (or the run ended) while away', () => {
+    const waits = { ...quiet, attention: { dungeon: true, raid: false, recheckAt: null } };
+    expect(cast('cave', waits, { dungeonPhase: 'none' }).act).toEqual({
+      kind: 'step',
+      label: 'Enter the cave',
+    });
+    expect(cast('cave', quiet, { dungeonPhase: 'ready' }).act).toEqual({
+      kind: 'calm',
+      line: 'The cave is quiet',
+    });
   });
   it('a set-up row stands there even with no run waiting; gone creatures are skipped', () => {
     const c = cast('cave', quiet, { dungeonTeam: [ids(1)[0] ?? null, 'gone', null] });
@@ -83,7 +117,7 @@ describe('Arena', () => {
     const c = cast('arena', { ...busy, raid: null, attention: null });
     expect(c.stands).toEqual([]);
     expect(c.boss).toBeNull();
-    expect(c.act).toEqual({ kind: 'calm', line: 'The arena waits' });
+    expect(c.act).toEqual({ kind: 'calm', line: '' });
   });
   it('placed, nothing left to place: a calm line', () => {
     const c = cast('arena', {

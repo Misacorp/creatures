@@ -57,6 +57,7 @@ const ART = { width: 64, height: 54 };
 const input = (extra: Partial<CastInput> = {}): CastInput => ({
   ...base,
   dungeonTeam: null,
+  dungeonPhase: null,
   waiting: [],
   now: HOME_NOW,
   ...extra,

@@ -11,6 +11,7 @@ import {
   runScreenOf,
   screenAfterAct,
   screenAfterFight,
+  dungeonPhase,
 } from './dungeon-flow';
 import {
   sampleActFight,
@@ -115,5 +116,22 @@ describe('what an open run shows', () => {
     expect(screenAfterFight(undefined, sampleStateMid())).toBe('run');
     expect(screenAfterFight(sampleSummary('cleared'), sampleStateMid())).toBe('results');
     expect(screenAfterFight(undefined, sampleStateCamp())).toBe('camp');
+  });
+});
+
+describe('dungeonPhase (what the Cave in the valley says)', () => {
+  it('is unknown while loading', () => {
+    expect(dungeonPhase('loading', true, false)).toBeNull();
+  });
+  it('an open run, and a fight that did not end it, are in progress', () => {
+    expect(dungeonPhase('run', false, false)).toBe('active');
+    expect(dungeonPhase('fight', false, false)).toBe('active');
+  });
+  it('a run that can start is ready; one with nothing to start, or already over, is none', () => {
+    expect(dungeonPhase('setup', true, false)).toBe('ready');
+    expect(dungeonPhase('setup', false, false)).toBe('none');
+    expect(dungeonPhase('fight', false, true)).toBe('none');
+    expect(dungeonPhase('playback', false, false)).toBe('none');
+    expect(dungeonPhase('results', false, false)).toBe('none');
   });
 });

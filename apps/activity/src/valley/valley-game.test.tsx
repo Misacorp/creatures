@@ -263,7 +263,10 @@ describe('the places’ scenes above today’s page', () => {
   it('Cave: a run waits, so the action says Start the run and goes to the page', () => {
     const p = draw(true, { attention: { dungeon: true, raid: false, recheckAt: null } });
     open(p, 'Cave');
-    const act = byName(p.root, 'button', /^Start the run/)[0];
+    // The pip alone cannot tell "can start" from "in progress": before the Dungeon page has said, no claim.
+    expect(byName(p.root, 'button', /^Start the run/)).toHaveLength(0);
+    expect(visibleText(p.root)).not.toContain('quiet');
+    const act = byName(p.root, 'button', /^Enter the cave/)[0];
     if (act === undefined) throw new Error('no pinned action');
     p.click(act);
     expect(byClass(p.root, 'vy-inside')).toHaveLength(1);
