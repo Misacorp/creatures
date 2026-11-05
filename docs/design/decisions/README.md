@@ -518,6 +518,7 @@ Superseded: 1 entry (see the topic file).
 
 [valley.md](valley.md): The valley and peaceful systems overhaul planned in docs/design/valley/: job posts, the bonfire, the commons, the Forge loop, gear, trials, the School, the visitor, the economy lab, and Misa's question rounds.
 
+- 2026-11-06 Phase 5 step 3b: the Forge's anvils on the client
 - 2026-11-06 Phase 5 step 2b: the Signpost's scouts on the client
 - 2026-11-05 Phase 5 step 3: the Forge loop on the server
 - 2026-11-05 Phase 5 step 2: scouts on the server
