@@ -25,7 +25,7 @@ const hatWith = (line: string, tier = 4): GearItem =>
 
 describe('gearFx: the line to effect map', () => {
   // [line, role, expected at tier V (index 4), the field and its number]
-  const cases: [string, Role, Record<string, number | boolean>][] = [
+  const cases: [string, Role, Record<string, number | boolean | Record<string, number>>][] = [
     ['well-fed', 'guard', { healReceivedBp: 3500 }],
     ['cover', 'guard', { coverBonusBp: 1200 }],
     ['boost', 'support', { boostBonusBp: 800 }],
