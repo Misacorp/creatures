@@ -10,6 +10,10 @@ import type { GearRarity } from './gear-types';
 import { InventoryGrid } from './InventoryGrid';
 import { byClass, createPage, type FakeElement, type Page } from './test-dom';
 import { FindItem } from './ui/FindItem';
+import { offerEdge, StallOfferTile } from './games/PrizeStall';
+import type { StallOffer } from './games-types';
+import { itemLabel } from './gear-view';
+import { PopoverHost } from './PopoverHost';
 import { FindBlueprint } from './ui/FindBlueprint';
 import type { MultiSelect } from './ui/multi-select';
 
@@ -34,6 +38,12 @@ const RARITY_WORD: Readonly<Record<GearRarity, string>> = {
 };
 
 const sources = import.meta.glob<string>(['./**/*.tsx', '!./**/*.test.tsx', '!./workbench/**'], {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+});
+
+const sheets = import.meta.glob<string>('./styles/**/*.css', {
   query: '?raw',
   import: 'default',
   eager: true,
@@ -139,12 +149,53 @@ describe('the rarity edge', () => {
       .filter(([, source]) => source.includes('rarity-edge'))
       .map(([file]) => file)
       .sort();
-    expect(drawers).toEqual(['./GearArt.tsx', './ItemTile.tsx']);
+    expect(drawers).toEqual(['./GearArt.tsx', './ItemTile.tsx', './games/PrizeStall.tsx']);
+  });
+
+  it('leaves no other gear border drawn in a rarity colour without its shape', () => {
+    // Every rule that draws a border in the rarity colour (`--rar`), by file. Gear borders get `rarity-edge`; the
+    // rest are not gear, or show their state in words beside it. A new one fails here until it is sorted.
+    const KNOWN: Readonly<Record<string, string>> = {
+      'item-frame.css': 'the item frame: rarity-edge',
+      'item-tile.css': 'the grid tile: rarity-edge',
+      'games-tab.css':
+        'a Prize stall offer: rarity-edge on gear; a supply says its tier on its card',
+      'slot.css':
+        'the gear Slot: no screen passes a rarity (the creature page lists gear with GearList)',
+      'supply-crafting.css': 'supplies: their tier is a word in the row and on the card',
+    };
+    const drawn = Object.entries(sheets)
+      .filter(([, css]) => /var\(--px\)\s+var\(--rar\b/.test(css))
+      .map(([file]) => file.split('/').pop() ?? file)
+      .sort();
+    expect(drawn).toEqual(Object.keys(KNOWN).sort());
   });
 });
 
 describe('the spoken name of an item says its rarity', () => {
   it('on a found item that opens its card', () => {
+    const piece = allBagItems(PAGE_SAMPLE_ID, {}).find((i) => i.rarity === 'epic');
+    expect(piece).toBeDefined();
+    if (piece === undefined) return;
+    page = createPage();
+    page.draw(
+      <PopoverHost onOpenHowTo={() => undefined}>
+        <ul>
+          <FindItem
+            card={piece}
+            baseId={piece.baseId}
+            rarity={piece.rarity}
+            level={piece.itemLevel}
+          />
+        </ul>
+      </PopoverHost>,
+    );
+    const [button] = byClass(page.root, 'find-row-button');
+    expect(button?.getAttribute('aria-label')).toBe(`${itemLabel(piece)}. Details`);
+    expect(button?.getAttribute('aria-label')).toContain(', Epic.');
+  });
+
+  it('on a plain found item, in its rarity badge', () => {
     for (const rarity of RARITIES) {
       page = createPage();
       page.draw(
@@ -152,13 +203,34 @@ describe('the spoken name of an item says its rarity', () => {
           <FindItem baseId="kelp-cap" rarity={rarity} level={4} />
         </ul>,
       );
-      // A plain find (no id) says the rarity in its badge's words, next to the name.
       expect(byClass(page.root, 'rarity-tag').map((t) => t.textContent)).toEqual([
         RARITY_WORD[rarity],
       ]);
       page.unmount();
       page = null;
     }
+  });
+
+  it('on a gear prize in the Valley Games stall', () => {
+    const offer: StallOffer = {
+      id: 'mystery-gear',
+      name: 'Mystery Prize Box',
+      kind: 'gear',
+      price: 9,
+      weeklyLimit: 1,
+      left: 1,
+      params: { rarity: 'rare' },
+    };
+    expect(offerEdge(offer).split(' ')).toEqual(['rarity-rare', 'rarity-edge']);
+    expect(offerEdge({ kind: 'supply', params: { tier: 'basic' } })).not.toContain('rarity-edge');
+    page = createPage();
+    page.draw(
+      <ul>
+        <StallOfferTile offer={offer} pocket={20} open busy={false} onBuy={() => undefined} />
+      </ul>,
+    );
+    const [name] = byClass(page.root, 'gs-offer-name');
+    expect(name?.textContent).toBe('Mystery Prize Box, Rare');
   });
 
   it('on a creature card’s worn gear', () => {

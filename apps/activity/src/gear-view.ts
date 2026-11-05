@@ -82,7 +82,7 @@ export function slotName(slot: GearSlot): string {
 
 /**
  * An item's spoken name, the one way every item picture or button names it: "Kelp Cap, item level 4, Rare". The
- * rarity is always in it, because the picture shows rarity by its frame's colour and shape only (`RarityMark`).
+ * rarity is always in it, because the picture shows rarity by its frame's colour and shape only (`rarity-edge`).
  * The item level is left out for a piece stored before items had levels.
  */
 export function itemLabel(item: {
