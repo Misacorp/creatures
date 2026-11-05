@@ -206,8 +206,8 @@ const dungeonSetup: Entry = {
     owned: { kind: 'number', min: 3, max: 8 },
     placed: { kind: 'number', min: 1, max: 3 },
     streak: { kind: 'number', min: 0, max: 30 },
-    depth: { kind: 'number', min: 1, max: 40 },
-    pick: { kind: 'number', min: 0, max: 40 },
+    depth: { kind: 'number', min: 1, max: 150 },
+    pick: { kind: 'number', min: 0, max: 150 },
     bait: { kind: 'number', min: 0, max: 100 },
     treatTimes: { kind: 'number', min: 2, max: 4 },
     busy: { kind: 'toggle' },
@@ -247,12 +247,16 @@ const dungeonSetup: Entry = {
       props: { configure: true, rules: 'combat v2' },
     },
     {
-      name: 'Combat v2, the depth picker at your own depth (23: the arrows step back, nothing changes yet)',
+      name: 'Combat v2, the depth picker at your own depth (23: tap the dropdown for every depth from 23 down, with what each pays)',
       props: { rules: 'combat v2', depth: 23 },
     },
     {
       name: 'Combat v2, the depth picker below your own (own 23, picking 16: a lower pick does not advance)',
       props: { rules: 'combat v2', depth: 23, pick: 16 },
+    },
+    {
+      name: 'Combat v2, a deep player (own 60: the list opens scrolled to the picked depth and scrolls)',
+      props: { rules: 'combat v2', depth: 60 },
     },
     {
       name: 'Combat v2, the depth picker at the lowest depth (own 23, picking 1)',

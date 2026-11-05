@@ -4,6 +4,14 @@ Navigation and the frame, Home and the notice board, type scale, shared componen
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-05: Dungeon depth picker is a dropdown with the scalars on every row [Misa]
+
+ID: `2026-11-05-dungeon-depth-picker-is-a-dropdown` · Status: current
+
+**Decision.** The depth picker of the combat v2 pre-run card is a dropdown, not the Prev / Next stepper: a trigger in the "Equip on" look (depth, its XP and loot chips, a chevron) that opens the shared bottom sheet `ui/PickSheet` (extracted from `RosterPicker`) with a listbox of every depth from the player's own down to 1, deepest first. Every row, and the trigger, shows the depth with "Your depth" and "Landmark" marks and the two scalars as chips ("1.4x XP", "2.1x loot"). The list opens focused and scrolled to the picked depth. An art-led cave entrance is deferred. Amends `2026-11-05-combat-v2-dungeon-depth-picker-built`.
+
+**Reasoning.** Misa (2026-11-05): prefers a dropdown in a form-like card, and the reward scaling must be properly visible when choosing. `FlipNav` is for detail views only; a sheet opened from a page is the allowed layer, and a long range (depth 150) needs a scrolling list. `CreatureList` is creature-shaped, so the list is a small depth listbox with the same roving-focus keys on the shared sheet frame.
+
 ## 2026-11-04: Combat v2: a Guard's pulse of protection through the tiles replaces the bracket **[Misa]**
 
 ID: `2026-11-04-combat-v2-a-guard-s-pulse` · Status: current · Amends: `2026-11-04-combat-v2-fight-visuals-the-guard`

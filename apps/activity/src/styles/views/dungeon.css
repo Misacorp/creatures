@@ -141,14 +141,70 @@
   margin-top: 0.125rem;
 }
 
-/* The depth picker (combat v2): the shared flip arrows under a heading row, and the one line about the player's own depth. */
+/*
+  The depth picker (combat v2): a trigger that looks like a dropdown (the "Equip on" look), the one line about the
+  player's own depth, and the sheet's list. A depth is drawn the same in the trigger and in every row: its name and
+  marks on one line, what it pays as two chips under it.
+*/
 .depth-pick {
   align-self: stretch;
   margin-bottom: 0.5rem;
 }
 
-.depth-pick .flip-nav {
+button.depth-trigger {
+  width: 100%;
   margin: 0.25rem 0;
+  min-height: 3.25rem;
+}
+
+.depth-face {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.depth-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.125rem 0.5rem;
+}
+
+.depth-name {
+  font-size: var(--fs-row);
+}
+
+.depth-landmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.depth-mark {
+  color: var(--gold);
+  font-size: var(--fs-small);
+}
+
+.depth-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.depth-chips .tag.xp-times {
+  padding: 0.0625rem 0.375rem 0;
+  box-shadow: inset 0 0 0 var(--px) var(--line);
+  color: var(--bone);
+  font-size: var(--fs-row);
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.depth-option .choice-check {
+  flex: none;
+  color: var(--gold);
 }
 
 .depth-pick-note {

@@ -4,7 +4,7 @@
  * (the numbers behind it stay hidden and are tuned there), rounded to one decimal and worded as every
  * multiplier in the game is (`multiplierText`: "1.4x", "2x").
  */
-import { dungeonRewardScalars } from '@creatures/game';
+import { dungeonRewardScalars, isLandmark } from '@creatures/game';
 import { multiplierText } from './xp-boost-view';
 
 /** A multiple to one decimal, as the game words a multiplier: 1.44 is "1.4x", 2 is "2x". */
@@ -16,6 +16,12 @@ export function scalarText(value: number): string {
 export function depthScalarsText(depth: number): string {
   const { xp, loot } = dungeonRewardScalars(depth);
   return `${scalarText(xp)} XP · ${scalarText(loot)} loot`;
+}
+
+/** The two chips of a depth: what it pays against depth 1, "1.4x XP" and "2.1x loot". */
+export function depthScalarChips(depth: number): { xp: string; loot: string } {
+  const { xp, loot } = dungeonRewardScalars(depth);
+  return { xp: `${scalarText(xp)} XP`, loot: `${scalarText(loot)} loot` };
 }
 
 /**
@@ -30,3 +36,12 @@ export function depthPickNote(own: number, picked: number): string {
 
 /** Spoken name of the depth the picker shows, for the arrows' labels ("Depth 16"). */
 export const depthName = (depth: number): string => `Depth ${String(depth)}`;
+
+/** The spoken name of a depth in the picker: "Depth 16, 1.4x XP, 2.1x loot, your depth, landmark". */
+export function depthSpoken(depth: number, own: number): string {
+  const chips = depthScalarChips(depth);
+  const parts = [depthName(depth), chips.xp, chips.loot];
+  if (depth === own) parts.push('your depth');
+  if (isLandmark(depth)) parts.push('landmark');
+  return parts.join(', ');
+}
