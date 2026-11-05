@@ -13,7 +13,7 @@
  */
 import { content } from '@creatures/game';
 import { BOSS_ANSWERS, answerLine } from './bossAnswers';
-import { RAID_BOSS_IDS, raidBossOf, raidMode, weekendPotential } from './bosses';
+import { RAID_BOSS_IDS, raidBossOf, raidMode, weekendPotential, weekendStats } from './bosses';
 import { cpuReport, type CpuRow } from './cpuMeasure';
 import { HABITS } from './habits';
 import type { JobResults, JobSpec, Plan } from './jobs';
@@ -48,7 +48,7 @@ import {
   GATE_WEEKENDS_MAX,
   MIXED_KILL_MIN,
 } from './targets';
-import { TRACK_ORDER } from './track';
+import { TRACK_ORDER, slotBoss } from './track';
 
 // ---------- the items ----------
 
@@ -80,12 +80,6 @@ export const KNOWN_MISSES: readonly KnownMiss[] = [
     measured: '1.41 creatures beyond the top three',
     target: 'at least 1.5',
     why: 'Accepted by Misa on 2026-11-05 and kept as a miss, not a looser target: the dungeon depth picker already gives casual players meaningful content until they are ready for more depth, the valley rework brings quite passive EXP, and the picker lets any creature crew take on content. The 128-search mean is good to about plus or minus 0.14.',
-  },
-  {
-    id: 'dead-knack',
-    measured: 'Cool Head unpicked (1 of 47 Knacks)',
-    target: 'every Knack picked somewhere',
-    why: 'Cool Head now turns a spared crit into a Sure Crit (2026-11-05), and on the track weekends it is picked: 7 of 84 top lines on slot 8, 14 of 84 on slot 13, top line in 2 of 8 searches. But it only works on Double Strike, and the report’s per-card fight is short (about 30 boss hits, 5 crits), so the card-level best-team searches (a lift of about 1.08 on the raid line) still never put it in the top five. Judge it by the weekend searches, not by the card; see for-misa.md.',
   },
 ];
 
@@ -155,10 +149,28 @@ export interface GateWidths {
 
 export interface GateJobArgs {
   readonly quick: boolean;
-  readonly part: 'search' | 'widths' | 'cpu';
+  readonly part: 'search' | 'widths' | 'cpu' | 'weekend';
   readonly boss?: string;
   readonly index?: number;
+  /** The track slot of a `weekend` search. */
+  readonly slot?: number;
 }
+
+/**
+ * The track slots whose weekends the dead-Knack item also reads: the first slot of each boss with the cards the track gives it
+ * (5 Thornmother, 6 Colossus with Slippery, 7 Wyrm, 8 Sovereign with Double Strike, 9 Bogback), and the second lap's Double Strike and
+ * Bogback weeks (13, 14), where the tuned numbers differ.
+ */
+export const WEEKEND_SEARCH_SLOTS: readonly number[] = [5, 6, 7, 8, 9, 13, 14];
+/** The independent weekend-scored searches a slot (full run; the quick run has one). */
+export const WEEKEND_SEARCHES = 3;
+
+/** A weekend-scored search of a track slot: its best lines (as the player's weekend is scored: the share of the boss's HP removed). */
+export interface GateWeekend {
+  readonly lines: readonly (readonly Pick[])[];
+}
+
+const weekendId = (slot: number, i: number) => `gate:weekend:${slot}:${i}`;
 
 const searchId = (boss: string, i: number) => `gate:search:${boss}:${i}`;
 const widthsId = (boss: string) => `gate:widths:${boss}`;
@@ -172,6 +184,26 @@ export function runGateJob(args: GateJobArgs, deps: Readonly<Record<string, unkn
       runs: args.quick ? 4 : 20,
       warmup: args.quick ? 1 : 4,
     });
+  if (args.part === 'weekend') {
+    const slot = args.slot as number;
+    const i = args.index ?? 0;
+    const boss = slotBoss(slot);
+    const mode = raidMode(boss);
+    const score = (line: readonly Pick[], seeds: number, salt: string): Score => {
+      const share = weekendStats(boss, line, seeds, salt).damageShare;
+      return { score: share, damage: share, knockouts: 0, reactions: 0, blocked: 0 };
+    };
+    const ranked = search(boss, mode, {
+      seed: `gate:weekend:${slot}:${i}`,
+      ...(args.quick
+        ? { starts: 10, keep: 3, rounds: 2, seeds: 1, freshSeeds: 2 }
+        : { starts: 100, keep: 10, rounds: 3, seeds: 3, freshSeeds: 8 }),
+      include: [classicFor(mode)],
+      score,
+    });
+    const out: GateWeekend = { lines: ranked.slice(0, 5).map((r) => r.line) };
+    return out;
+  }
   const id = args.boss as string;
   const boss = raidBossOf(id);
   const mode = raidMode(boss);
@@ -231,6 +263,11 @@ export function gateOwnJobs(quick: boolean): JobSpec[] {
         widthsId(boss),
         { quick, part: 'widths', boss },
         Array.from({ length: GATE_SEARCHES }, (_, i) => searchId(boss, i)),
+      ),
+    ),
+    ...WEEKEND_SEARCH_SLOTS.flatMap((slot) =>
+      Array.from({ length: quick ? 1 : WEEKEND_SEARCHES }, (_, index) =>
+        job(weekendId(slot, index), { quick, part: 'weekend', slot, index }),
       ),
     ),
     job(CPU_ID, { quick, part: 'cpu' }),
@@ -350,6 +387,8 @@ export interface GateInputs {
   }[];
   readonly searches: ReadonlyMap<string, readonly GateSearch[]>;
   readonly widths: ReadonlyMap<string, GateWidths | undefined>;
+  /** The weekend-scored searches of the track's slots (`WEEKEND_SEARCH_SLOTS`). */
+  readonly weekends?: readonly GateWeekend[];
   readonly cpu: readonly CpuRow[] | undefined;
 }
 
@@ -508,16 +547,20 @@ export function gateItems(inputs: GateInputs): GateItem[] {
     );
   }
 
-  // No dead Knack: the gate's potential searches' winning teams and the report's best-team searches.
+  // No dead Knack: the gate's potential searches' winning teams, the report's best-team searches, and the best lines of the weekend
+  // searches on the track's slots. The target is unchanged ("every Knack picked somewhere"); the last source widens where "somewhere"
+  // looks, to the weeks a player really plays: a Knack that only pays against one card (Cool Head on Double Strike) is never picked
+  // in the report's short per-card fights, but is on the weeks that carry the card.
   const reportTeams = [...inputs.best.values()].flatMap((r) => r?.top ?? []);
-  const dead = deadKnacks([...allWinning, ...reportTeams]);
+  const weekendTeams = (inputs.weekends ?? []).flatMap((w) => w.lines);
+  const dead = deadKnacks([...allWinning, ...reportTeams, ...weekendTeams]);
   const deadOnPotential = deadKnacks(allWinning);
   const total = Object.keys(KNACKS).length;
   items.push(
     item(
       'dead-knack',
       'No dead Knack',
-      'Knacks no winning team of the potential searches or of the report’s best-team searches picks',
+      'Knacks no winning team of the potential searches, of the report’s best-team searches or of the track weekends’ searches picks',
       `${dead.length ? `${dead.length} of ${total}: ${dead.join(', ')}` : `0 of ${total}`} (the potential searches alone: ${deadOnPotential.length})`,
       '0',
       dead.length === 0 && inputs.searches.size > 0,
@@ -676,12 +719,19 @@ export function inputsFrom(
     );
     widths.set(boss, results.get(widthsId(boss)) as GateWidths | undefined);
   }
+  const weekends = WEEKEND_SEARCH_SLOTS.flatMap((slot) =>
+    Array.from(
+      { length: quick ? 1 : WEEKEND_SEARCHES },
+      (_, i) => results.get(weekendId(slot, i)) as GateWeekend | undefined,
+    ),
+  ).filter((w): w is GateWeekend => w !== undefined);
   return {
     journey,
     best,
     casual,
     searches,
     widths,
+    weekends,
     cpu: results.get(CPU_ID) as CpuRow[] | undefined,
   };
 }
