@@ -6,7 +6,6 @@ import {
   gearName,
   isFestivalBase,
   itemLabel,
-  rarityName,
   slotName,
   type WornItem,
 } from './gear-view';
@@ -115,10 +114,7 @@ export function GearList({
                     (plain ? <Tag class="festival-tag">Festival</Tag> : <FestivalTag />)}
                 </>
               }
-              button={button(
-                slot,
-                `${name}: ${itemLabel(item.baseId, item.itemLevel)}, ${rarityName(item.rarity)}. Change`,
-              )}
+              button={button(slot, `${name}: ${itemLabel(item)}. Change`)}
             >
               {item.lines !== undefined && item.lines.length > 0 && (
                 <span class="find-row-note gear-list-lines">{item.lines.join(' · ')}</span>

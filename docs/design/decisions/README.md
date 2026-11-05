@@ -341,6 +341,7 @@ Superseded: 1 entry (see the topic file).
 
 [gear.md](gear.md): Gear items, lines and sets, crafting, dismantling, conversions, the bag and the item picker.
 
+- 2026-11-05 Rarity is shown by the frame's shape too, and every item's spoken name says it
 - 2026-11-03 \[Misa\] Element shards differ by shape (Tide drop, Ember flame, Grove leaf, Spark bolt, Mire drip)
 - 2026-10-31 Gear in combat v2: talents lead early, a balance mid-game, gear leads the endgame; no slot level requirements; gear alone can build crit \[Misa\]
 - 2026-10-31 \[Misa\] Items with no element get an oat-beige coat instead of grey

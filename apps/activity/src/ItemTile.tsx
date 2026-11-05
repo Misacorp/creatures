@@ -26,8 +26,8 @@ export interface TileChoice {
 
 /**
  * One item in an item grid: the one look for every grid of items (the creature page's item picker and the
- * Workshop bag). A square button, the item's art filling it, its rarity as the single edge, the slot icon at
- * the top left and the item level at the bottom right, and at the top right a small gold flag ("Worn") or the
+ * Workshop bag). A square button, the item's art filling it, its rarity as the single edge (its colour and its
+ * shape, `rarity-edge`), the slot icon at the top left and the item level at the bottom right, and at the top right a small gold flag ("Worn") or the
  * small picture of another creature that wears it. `selected` lights it from inside with a light edge (the
  * item shown, or shown last); `blocked` dims an item that cannot be worn (or that another creature wears). A selected tile scrolls itself into view (when it is selected and again when its details
  * close), so a closed detail never leaves the player lost in a long grid.
@@ -77,7 +77,7 @@ export function ItemTile({
       button.current.scrollIntoView({ block: 'nearest' });
     }
   }, [selected, pressed]);
-  const classes = ['item-tile', `rarity-${item.rarity}`];
+  const classes = ['item-tile', `rarity-${item.rarity}`, 'rarity-edge'];
   if (selected) classes.push('selected');
   if (blocked) classes.push('blocked');
   if (choice?.chosen === true) classes.push('chosen');
