@@ -233,13 +233,14 @@ export function ValleyMap({
                 goTo(a.place);
               }}
             >
-              <span class="vy-edge-head" aria-hidden="true" />
-              <Glyph id={place.glyph} scale={2} />
-              {bubble !== undefined && (
-                <span class="vy-edge-bang pix" aria-hidden="true">
-                  {bubble.count ?? '!'}
-                </span>
-              )}
+              {/* The button is the 44 px target; the drawn chip is the smaller flag inside it. */}
+              <span class="vy-edge-chip" aria-hidden="true">
+                <span class="vy-edge-head" />
+                <Glyph id={place.glyph} scale={2} />
+                {bubble !== undefined && (
+                  <span class="vy-edge-bang pix">{bubble.count ?? '!'}</span>
+                )}
+              </span>
             </button>
           );
         })}

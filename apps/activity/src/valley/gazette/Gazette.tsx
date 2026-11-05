@@ -138,14 +138,23 @@ function StoryText({ story, size }: { story: Story; size: 'lead' | 'brief' }) {
   );
 }
 
-export function Gazette({ stories, date }: { stories: readonly Story[]; date: string }) {
+export function Gazette({
+  stories,
+  date,
+  note,
+}: {
+  stories: readonly Story[];
+  date: string;
+  /** The line under the date (`homeNote`). */
+  note: string;
+}) {
   const [lead, ...briefs] = stories;
   return (
     <article class="gz-paper" aria-label="The Valley Gazette">
       <header class="gz-masthead">
         <h2 class="gz-paper-title pix">The Valley Gazette</h2>
         <p class="gz-dateline pix">{date}</p>
-        <p class="gz-home-note">Everything your creatures found is already home.</p>
+        <p class="gz-home-note">{note}</p>
       </header>
       {lead !== undefined && (
         <section class="gz-lead">

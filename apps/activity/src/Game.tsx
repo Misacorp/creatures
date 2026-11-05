@@ -465,6 +465,11 @@ export function Game({
     // Only the view changes: the map draws creatures the state already holds, so it loads nothing.
     goTo('home');
   };
+  /** The valley: from the Journal or the Stats back to the House's two entries. */
+  const backToHouse = (): void => {
+    setHomeAt('house');
+    goTo('home');
+  };
   // "View" in a creature's popover (the valley's scenes): the creature's page, on the Creatures page of the paddock.
   useCreatureViewer(
     valleyOn
@@ -517,6 +522,18 @@ export function Game({
         onSettings={() => {
           setSettingsOpen(true);
         }}
+        {...(valleyOn && view.kind !== 'valley' && !settingsOpen
+          ? {
+              // The valley's way back lives in the HUD: from a book to the House, from a place to the map.
+              back: {
+                label:
+                  view.kind === 'place' && view.book !== null
+                    ? 'Back to the House'
+                    : 'Back to the valley',
+                onBack: view.kind === 'place' && view.book !== null ? backToHouse : leavePlace,
+              },
+            }
+          : {})}
       />
       {!valleyOn && wide && (roomMode === 'every' || tab === NAV_HOME.id) && (
         <RoomBand room={roomProps} hero={roomMode === 'home'} />
@@ -644,11 +661,9 @@ export function Game({
           {...(valleyOn
             ? {
                 // In the valley the books are the House's two entries: Back returns to the House.
-                onBack: () => {
-                  setHomeAt('house');
-                  goTo('home');
-                },
+                onBack: backToHouse,
                 backLabel: 'to the House',
+                bare: true,
               }
             : {})}
         />

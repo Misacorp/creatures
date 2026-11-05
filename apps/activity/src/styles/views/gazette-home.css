@@ -1,5 +1,5 @@
 /**
- * Coming home (V-RET-4a): what the visit brought in, large, from the paper's place to the purse in steps,
+ * Coming home (V-RET-4a): what the visit brought in, as plates no bigger than a place's label (`ui/Nameplate`, md), from the paper's place to the purse in steps,
  * over everything and never taking a tap. The start and the landing are CSS variables set from the measured
  * places (`--x0 --y0`, `--x1 --y1`); `--row` stacks a second currency below the first.
  */
@@ -13,23 +13,18 @@
 .gz-fly-gain {
   position: absolute;
   left: var(--x0);
-  top: calc(var(--y0) + var(--row, 0) * 3.5rem);
+  top: calc(var(--y0) + var(--row, 0) * 2rem);
   translate: -50% -50%;
   display: block;
   animation: gz-fly var(--flight) steps(14, end) both;
 }
 
-/* The number is the shared count badge on its own dark chip: no outline of its own. */
+/* The number is the shared count badge on its own ink plate, in the size of a place's label (the Nameplate's md). */
 .gz-fly-gain .part-amount {
-  font-size: 3rem;
-  line-height: 1;
+  font-size: var(--fs-heading);
+  font-weight: 700;
+  line-height: 1.25;
   color: var(--gold);
-}
-
-/* The big icon: the badge's own picture, doubled. */
-.gz-fly-gain .part-count > :first-child {
-  scale: 2;
-  margin-inline: 0.5rem;
 }
 
 @keyframes gz-fly {
@@ -37,7 +32,7 @@
     transform: translate(0, 0) scale(0.5);
   }
   15% {
-    transform: translate(0, -2.5rem) scale(1.1);
+    transform: translate(0, -2.5rem) scale(1);
   }
   30% {
     transform: translate(0, -2.5rem) scale(1);
@@ -45,7 +40,7 @@
   100% {
     transform: translate(
         calc(var(--x1) - var(--x0)),
-        calc(var(--y1) - var(--y0) - var(--row, 0) * 3.5rem)
+        calc(var(--y1) - var(--y0) - var(--row, 0) * 2rem)
       )
       scale(0.45);
   }
@@ -54,18 +49,9 @@
 /* Reduced motion and screenshots: no flight; "+N" stands beside the purse. */
 .gz-fly.still .gz-fly-gain {
   left: var(--x1);
-  top: calc(var(--y1) + var(--row, 0) * 2.25rem);
+  top: calc(var(--y1) + var(--row, 0) * 2rem);
   translate: calc(-100% - 3.25rem) -50%;
   animation: none;
-}
-
-.gz-fly.still .gz-fly-gain .part-amount {
-  font-size: var(--fs-title);
-}
-
-.gz-fly.still .gz-fly-gain .part-count > :first-child {
-  scale: 1;
-  margin-inline: 0;
 }
 
 /* The purse lifts and settles when the numbers land. */

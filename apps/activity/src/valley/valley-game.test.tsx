@@ -102,7 +102,7 @@ describe('the valley flag in the game', () => {
     ['Forge', 'Workshop'],
     ['Arena', 'Raid'],
     ['Signpost', 'Expeditions'],
-  ])('on: %s opens its page and "‹ Valley" returns to the map', (place, title) => {
+  ])('on: %s opens its page and the HUD’s "‹" returns to the map', (place) => {
     const p = draw(true);
     expect(byClass(p.root, 'main-nav')).toHaveLength(0);
     expect(byClass(p.root, 'home-page')).toHaveLength(0);
@@ -112,12 +112,15 @@ describe('the valley flag in the game', () => {
     if (door === undefined) return;
     p.click(door);
     expect(byClass(p.root, 'vy-valley')).toHaveLength(0);
-    expect(byClass(p.root, 'drill-title')[0]?.textContent).toBe(title);
-    const back = byClass(p.root, 'drill-back')[0];
-    expect(back?.textContent).toContain('Valley');
+    // The place's name is the HUD's title and the way back is the HUD's "‹": no second title row inside the place.
+    expect(byClass(p.root, 'hud-title')[0]?.textContent).toBe(place);
+    expect(byClass(p.root, 'drill-head')).toHaveLength(0);
+    const back = byClass(p.root, 'hud-back')[0];
+    expect(back?.getAttribute('aria-label')).toBe('Back to the valley');
     if (back === undefined) return;
     p.click(back);
     expect(byClass(p.root, 'vy-valley')).toHaveLength(1);
+    expect(byClass(p.root, 'hud-back')).toHaveLength(0);
   });
 
   it.each([
@@ -132,7 +135,7 @@ describe('the valley flag in the game', () => {
     p.click(door);
     expect(visibleText(p.root)).toContain(line);
     expect(byClass(p.root, 'vy-page')).toHaveLength(0);
-    const back = byClass(p.root, 'drill-back')[0];
+    const back = byClass(p.root, 'hud-back')[0];
     if (back === undefined) throw new Error('no way back');
     p.click(back);
     expect(byClass(p.root, 'vy-valley')).toHaveLength(1);
@@ -144,7 +147,7 @@ describe('the valley flag in the game', () => {
     if (door === undefined) throw new Error('no Forge');
     p.click(door);
     fetched.length = 0;
-    const back = byClass(p.root, 'drill-back')[0];
+    const back = byClass(p.root, 'hud-back')[0];
     if (back === undefined) throw new Error('no way back');
     p.click(back);
     expect(byClass(p.root, 'vy-valley')).toHaveLength(1);
@@ -165,7 +168,7 @@ describe('the valley flag in the game', () => {
     if (bubble === undefined) throw new Error('no bubble');
     p.click(bubble);
     expect(byClass(p.root, 'vy-valley')).toHaveLength(0);
-    expect(byClass(p.root, 'drill-title')[0]?.textContent).toBe('Dungeon');
+    expect(byClass(p.root, 'hud-title')[0]?.textContent).toBe('Cave');
   });
 
   it('on: a waiting duplicate puts a counted bubble on the Paddock', () => {
@@ -184,7 +187,7 @@ describe('the valley flag in the game', () => {
 
   it('on: the Places list says what happens next at each place', () => {
     const p = draw(true, { attention: { dungeon: true, raid: false, recheckAt: null } });
-    const hatch = byName(p.root, 'button', 'Places')[0];
+    const hatch = byName(p.root, 'button', /^Places/)[0];
     if (hatch === undefined) throw new Error('no Places button');
     p.click(hatch);
     const cave = byName(p.root, 'button', /^Cave, .*a run waits$/)[0];
@@ -231,8 +234,8 @@ describe('the places’ scenes above today’s page', () => {
     expect(bands).toHaveLength(1);
     expect(byClass(bands[0] ?? p.root, 'vy-canvas')).toHaveLength(1);
     expect(byClass(p.root, 'vy-inside')).toHaveLength(1);
-    // One pinned action or calm line under the scene.
-    expect(byClass(p.root, 'vy-act')).toHaveLength(1);
+    // At most one pinned action or calm line under the scene (none when a line would only repeat the picture).
+    expect(byClass(p.root, 'vy-act').length).toBeLessThanOrEqual(1);
   });
 
   it('the Forge and the Signpost have no scene (phase 5 posts): today’s page only', () => {
@@ -266,14 +269,33 @@ describe('the places’ scenes above today’s page', () => {
     expect(byClass(p.root, 'vy-inside')).toHaveLength(1);
   });
 
-  it('a calm line has no check mark: a check means done, and "at home" is not', () => {
-    const p = draw(true, { pending: [] });
-    open(p, 'Paddock');
+  it('a calm line has no check mark: a check means done, and "the cave is quiet" is not', () => {
+    const p = draw(true, { attention: { dungeon: false, raid: false, recheckAt: null } });
+    open(p, 'Cave');
     const calm = byClass(p.root, 'vy-calm')[0];
     if (calm === undefined) throw new Error('no calm line');
     const kids = calm.childNodes.filter((n) => n instanceof FakeElement);
     expect(kids).toHaveLength(1);
-    expect(visibleText(calm)).toContain('at home');
+  });
+
+  it('a calm line shows only when it says what the picture does not: not "N at home", not the House’s line', () => {
+    const paddock = draw(true, { pending: [] });
+    open(paddock, 'Paddock');
+    expect(byClass(paddock.root, 'vy-calm')).toHaveLength(0);
+    expect(byClass(paddock.root, 'vy-act')).toHaveLength(0);
+    paddock.unmount();
+    page = null;
+    const house = draw(true);
+    open(house, 'House');
+    expect(byClass(house.root, 'vy-calm')).toHaveLength(0);
+    expect(visibleText(house.root)).not.toContain('inside');
+    house.unmount();
+    page = null;
+    const empty = draw(true, { pending: [], creatures: [] });
+    open(empty, 'Paddock');
+    expect(visibleText(byClass(empty.root, 'vy-calm')[0] ?? empty.root)).toContain(
+      'Nobody is home',
+    );
   });
 
   it('Cave: nothing waiting is a calm line, never a disabled button', () => {

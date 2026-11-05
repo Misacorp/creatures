@@ -95,6 +95,11 @@ export function ValleyDemo({ start, away, day }: { start: string; away: boolean;
   };
   const view = viewOf(tab, homeAt);
   const at = view.kind === 'valley' ? null : view.place;
+  const leave = (): void => {
+    setFocus(at);
+    setHomeAt('valley');
+    setTab('home');
+  };
   const open = (id: PlaceId): void => {
     if (isOpenPlace(id)) {
       setHomeAt(id === 'house' ? 'house' : 'valley');
@@ -119,6 +124,9 @@ export function ValleyDemo({ start, away, day }: { start: string; away: boolean;
             helpRef={NO_REF}
             onHelp={NOTHING}
             onSettings={NOTHING}
+            {...(view.kind === 'valley'
+              ? {}
+              : { back: { label: 'Back to the valley', onBack: leave } })}
           />
           <ValleyFrame
             view={view}
@@ -129,11 +137,7 @@ export function ValleyDemo({ start, away, day }: { start: string; away: boolean;
             castExtra={castExtra}
             focus={focus}
             onOpen={open}
-            onLeave={() => {
-              setFocus(at);
-              setHomeAt('valley');
-              setTab('home');
-            }}
+            onLeave={leave}
             onBook={setTab}
             notices={null}
             away={null}

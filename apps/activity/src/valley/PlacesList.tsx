@@ -1,20 +1,21 @@
 /**
- * The Places list: every place of the valley as a row (its glyph, its name, a short line), in the order of the
- * map (west to east). It is the way to a place that is out of view on a phone, and the keyboard's and screen
+ * The Places list: every place of the valley as a row (its glyph, its name, a short line), with the places that have something
+ * waiting first, then the other open places, then the four not open yet, muted (each group in the map's order, west to east). It is the way to a place that is out of view on a phone, and the keyboard's and screen
  * reader's way round the valley. `PlaceRow` is the one row: the House uses it for its two entries (Journal and
  * Stats) too. The line is a few words: what happens next at the place (`place-state.ts`).
  */
 import { Drawer } from '../ui/Drawer';
 import { Glyph } from './parts';
 import { placeOf, type PlaceId } from './valley-art';
-import { bubbleAt, placeFallback, placeSpoken, type PlaceBubble } from './place-state';
-import { readingOrder } from './valley-logic';
+import { bubbleAt, listOrder, placeFallback, placeSpoken, type PlaceBubble } from './place-state';
+import { isOpenPlace } from './valley-nav';
 
 export function PlaceRow({
   glyph,
   name,
   line,
   label,
+  muted = false,
   onClick,
 }: {
   glyph: string;
@@ -22,13 +23,15 @@ export function PlaceRow({
   line: string;
   /** The row's spoken name (default: the name and the line). */
   label?: string;
+  /** A row for something not open yet: its words are muted (a tone of the row, not another look). */
+  muted?: boolean;
   onClick: () => void;
 }) {
   return (
     <li>
       <button
         type="button"
-        class="vy-row"
+        class={muted ? 'vy-row vy-row-muted' : 'vy-row'}
         aria-label={label ?? `${name}, ${line}`}
         onClick={onClick}
       >
@@ -58,7 +61,7 @@ export function PlacesList({
   return (
     <Drawer open={open} onClose={onClose} title="Places">
       <ul class="vy-rows" aria-label="Places">
-        {readingOrder().map((id) => {
+        {listOrder(bubbles).map((id) => {
           const place = placeOf(id);
           const line = lines[id] ?? placeFallback(id);
           return (
@@ -67,6 +70,7 @@ export function PlacesList({
               glyph={place.glyph}
               name={place.name}
               line={line}
+              muted={!isOpenPlace(id)}
               label={`${placeSpoken(id, bubbleAt(bubbles, id))}. ${line}`}
               onClick={() => {
                 onPlace(id);

@@ -3,14 +3,26 @@
  * moment in which what the visit brought in flies into the HUD's purse as large numbers that count up as they
  * land. Everything is already in the purse before it plays, so skipping it loses nothing. This module is the
  * pure part: the count-up steps, the timing, the mode and the places the numbers fly between. Which currencies
- * the visit brought is `awayGains` (`stories.ts`).
+ * the visit brought is `paperGains` (`stories.ts`): the amounts the paper shows.
  */
+import { resourceName } from '@creatures/game';
+
 /** How many numbers the count-up passes through, and how long the whole flight takes (ms). */
 export const COUNT_STEPS = 10;
 export const FLIGHT_MS = 1100;
-/** How long the purse's bump lasts after the numbers land, and how long "+N" stays beside it under reduced motion. */
+/**
+ * How long the purse's bump lasts after the numbers land, and how long "+N" stays beside the purse under reduced
+ * motion: at least 5 s (or until a tap), long enough to read; the gains are also said in a status region
+ * (`gainsText`), so a screen reader never depends on this note.
+ */
 export const BUMP_MS = 400;
-export const NOTE_MS = 1600;
+export const NOTE_MS = 5000;
+
+/** What the status region says when the moment starts: "Home: +52 Bait, +15 Essence" (the same amounts that fly). */
+export function gainsText(gains: readonly { resource: string; amount: number }[]): string {
+  if (gains.length === 0) return '';
+  return `Home: ${gains.map((g) => `+${String(g.amount)} ${resourceName(g.resource)}`).join(', ')}`;
+}
 
 /**
  * The count-up as a list of whole numbers, slow to start and quick at the end (the numbers rush in as they

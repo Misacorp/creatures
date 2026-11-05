@@ -156,8 +156,11 @@ export function stackTabs(arrows: readonly EdgeArrow[], gap: number): Map<PlaceI
   return out;
 }
 
-/** An edge chip's size in CSS px: a flag with the place's glyph and, when it needs you, a "!" (no name; its label says it). */
-export const EDGE_CHIP = { width: 58, height: 28 } as const;
+/**
+ * An edge chip's tap target in CSS px: at least 44 x 44 (the drawn flag, with the place's glyph and, when it needs
+ * you, a "!", is smaller inside it; no name, its label says it). Chips are stacked a target apart.
+ */
+export const EDGE_CHIP = { width: 58, height: 44 } as const;
 
 /** Valley pixels above a place's rectangle its speech bubble takes, and below it its name plate. */
 const BUBBLE_ABOVE = 26;

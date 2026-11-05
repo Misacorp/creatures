@@ -12,10 +12,13 @@ export function JournalPage({
   profile,
   onBack,
   backLabel = 'to Home',
+  bare = false,
 }: {
   profile: Pick<Profile, 'journal'>;
   onBack?: (() => void) | undefined;
   backLabel?: string;
+  /** The way back is drawn elsewhere (the valley's HUD): Escape still goes back, but no head is drawn. */
+  bare?: boolean;
 }) {
   return (
     <section
@@ -23,7 +26,7 @@ export function JournalPage({
       aria-label="Journal"
       {...(onBack === undefined ? {} : { onKeyDown: onDrillKey(onBack) })}
     >
-      {onBack !== undefined && (
+      {onBack !== undefined && !bare && (
         <DrillHead title="Journal" backLabel={backLabel} onBack={onBack} scroll focus />
       )}
       <Journal profile={profile} />

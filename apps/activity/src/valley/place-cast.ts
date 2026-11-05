@@ -18,7 +18,7 @@ import type { GamesView } from '../games-types';
 import type { RaidGlance } from '../home-view';
 import { isAtHome } from './tray-state';
 import type { PlaceBubble } from './place-state';
-import { bubbleAt } from './place-state';
+import { bubbleAt, raidTiming } from './place-state';
 import type { PlaceId } from './valley-art';
 import type { Rect } from './valley-art';
 
@@ -53,6 +53,8 @@ export interface CastInput extends CastExtra {
   games: GamesView | null;
   raid: RaidGlance | null;
   pending: number;
+  /** The guild's timezone; null before the first full state. */
+  timezone: string | null;
 }
 
 /** One creature standing in a scene. */
@@ -88,6 +90,8 @@ export interface Cast {
   roam: Rect | null;
   /** The week's boss while the raid view is loaded (the arena only). */
   boss: { id: string; name: string } | null;
+  /** When the raid comes ("Saturday", "today", "live now"), for the arena band's small label; null when not known or over. */
+  timing: string | null;
   gate: Newcomer[];
   /** How many catches wait in all (the gate draws at most two). */
   waiting: number;
@@ -125,9 +129,12 @@ const plural = (n: number, one: string, many: string): string =>
 
 // --- House ---
 
-/** The house has no one standing by it: the living room is gone from the valley (Q16); Journal and Stats are inside. */
+/**
+ * The house has no one standing by it: the living room is gone from the valley (Q16); Journal and Stats are its two
+ * rows under the scene, so it says nothing more (a calm line shows only when it says what the picture does not).
+ */
 function houseCast(): Pick<Cast, 'stands' | 'act'> {
-  return { stands: [], act: { kind: 'calm', line: 'Your journal and numbers are inside' } };
+  return { stands: [], act: { kind: 'calm', line: '' } };
 }
 
 // --- Cave ---
@@ -163,7 +170,7 @@ function caveCast(
 
 // --- Arena ---
 
-function arenaCast(input: CastInput, art: Size): Pick<Cast, 'stands' | 'act' | 'boss'> {
+function arenaCast(input: CastInput, art: Size): Pick<Cast, 'stands' | 'act' | 'boss' | 'timing'> {
   const scene = input.raid?.scene ?? null;
   const party = scene === null ? [] : pick(input.creatures, scene.party);
   const spots = row(party.length, Math.floor(art.width / 2) - 6, art.height - 10, 16);
@@ -174,16 +181,13 @@ function arenaCast(input: CastInput, art: Size): Pick<Cast, 'stands' | 'act' | '
       : [{ creature, x: spot.x, y: spot.y, flip: false, where: "in this week's raid party" }];
   });
   const boss = scene === null ? null : scene.boss;
+  const timing = raidTiming(input.raid, input.now, input.timezone);
   if (input.attention?.raid === true) {
-    return { stands, boss, act: { kind: 'step', label: 'Place your creatures' } };
+    return { stands, boss, timing, act: { kind: 'step', label: 'Place your creatures' } };
   }
-  const line =
-    party.length > 0
-      ? 'Your party is in the arena'
-      : input.raid === null
-        ? 'The arena waits'
-        : 'No party placed';
-  return { stands, boss, act: { kind: 'calm', line } };
+  // The party stands in the picture: a line that says so would repeat it.
+  const line = party.length > 0 ? '' : input.raid === null ? 'The arena waits' : 'No party placed';
+  return { stands, boss, timing, act: { kind: 'calm', line } };
 }
 
 // --- Fairground ---
@@ -276,8 +280,9 @@ function paddockCast(
           detail: plural(n, 'one waits', 'wait'),
         }
       : {
+          // The creatures at home are in the picture: a count would repeat it. An empty meadow says so.
           kind: 'calm',
-          line: roamers.length === 0 ? 'Nobody is home' : `${String(roamers.length)} at home`,
+          line: roamers.length === 0 ? 'Nobody is home' : '',
         };
   return { roamers, roam: PADDOCK_ROAM_AREA, gate, waiting: n, act };
 }
@@ -300,6 +305,7 @@ export function castFor(
     roamers: [],
     roam: null,
     boss: null,
+    timing: null,
     gate: [],
     waiting: 0,
     act: { kind: 'calm', line: '' },

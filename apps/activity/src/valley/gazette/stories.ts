@@ -410,3 +410,42 @@ export function awayGains(away: AwaySummary): HomeGain[] {
     ...(essence > 0 ? [{ resource: 'essence', amount: essence }] : []),
   ];
 }
+
+/**
+ * The paper's currencies: what its stories show as count badges, summed per currency, in the purse's order. This is
+ * what flies into the purse, so the numbers that fly are the numbers the player read. A story the paper cut ("...and
+ * N more things") shows nothing, so its currency is not in the flight either (the purse already holds it, and the
+ * count-up starts from the total less only what flies).
+ */
+export function paperGains(stories: readonly Story[]): HomeGain[] {
+  const sum = (key: string): number =>
+    stories.reduce(
+      (total, story) =>
+        total +
+        story.badges.reduce(
+          (n, badge) =>
+            badge.key === key && typeof badge.amount === 'number' ? n + badge.amount : n,
+          0,
+        ),
+      0,
+    );
+  const bait = sum('bait');
+  const essence = sum('essence');
+  return [
+    ...(bait > 0 ? [{ resource: 'bait', amount: bait }] : []),
+    ...(essence > 0 ? [{ resource: 'essence', amount: essence }] : []),
+  ];
+}
+
+/**
+ * The line under the paper's date. When nothing waits to be claimed, everything the creatures found is home; in
+ * phase 4 trips and jobs still wait at their places, so then it says what waits where, in the paper's voice.
+ */
+export function homeNote(away: Pick<AwaySummary, 'tripsWaiting' | 'jobsWaiting'>): string {
+  const trips = away.tripsWaiting > 0;
+  const jobs = away.jobsWaiting > 0;
+  if (trips && jobs) return 'Trips wait at the Signpost, jobs at the Forge.';
+  if (trips) return 'Their trips wait to be claimed at the Signpost.';
+  if (jobs) return 'Their jobs wait to be claimed at the Forge.';
+  return 'Everything your creatures found is already home.';
+}

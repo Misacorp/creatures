@@ -16,12 +16,13 @@ import { Drawer } from '../../ui/Drawer';
 import { isStill } from '../parts';
 import { ComingHome } from './ComingHome';
 import { Gazette } from './Gazette';
-import { flyMode, originOf, purseDisplay, type Point } from './coming-home';
+import { flyMode, gainsText, originOf, purseDisplay, type Point } from './coming-home';
 import {
-  awayGains,
   gazetteDate,
   gazetteOf,
+  homeNote,
   moreLabel,
+  paperGains,
   type AwayWorld,
   type HomeGain,
 } from './stories';
@@ -32,6 +33,11 @@ const FALLBACK_FROM: Point = { x: 195, y: 520 };
 interface Paper {
   away: AwaySummary;
   date: string;
+}
+
+/** The moment of coming home: where it starts and what flies (the amounts the paper showed when it closed). */
+interface Homing {
+  from: Point;
   gains: HomeGain[];
 }
 
@@ -61,7 +67,9 @@ export function WelcomeBack({
 }) {
   const [paper, setPaper] = useState<Paper | null>(null);
   const [open, setOpen] = useState(false);
-  const [homing, setHoming] = useState<Point | null>(null);
+  const [homing, setHoming] = useState<Homing | null>(null);
+  // What the polite status region says by the purse: the gains, once, when the moment starts.
+  const [said, setSaid] = useState('');
   const reduced = usePrefersReducedMotion();
   /** The last payout the paper was shown for: it opens once for each, and a dismissal that failed does not reopen it. */
   const shownFor = useRef<number | null>(null);
@@ -74,26 +82,32 @@ export function WelcomeBack({
   if (hasAwayNotice(away) && shownFor.current !== away.until) {
     shownFor.current = away.until;
     closed.current = false;
+    setSaid('');
     setPaper({
       away,
       date: gazetteDate(now, timezone),
-      gains: awayGains(away),
     });
     setOpen(true);
   }
 
-  const gains = paper?.gains ?? [];
+  const flying = useRef<HomeGain[]>([]);
   const display = (): Balances => {
     const total = balancesRef.current;
     const at = (resource: string, now: number): number => {
-      const g = gains.find((x) => x.resource === resource);
+      const g = flying.current.find((x) => x.resource === resource);
       return g === undefined ? now : purseDisplay(now, g.amount, counted.current[resource] ?? 0);
     };
     return { ...total, bait: at('bait', total.bait), essence: at('essence', total.essence) };
   };
   const mode = useMemo(() => flyMode({ reduced, still: isStill() }), [reduced]);
 
-  if (paper === null) return null;
+  // The status region is mounted before it has anything to say, so a screen reader hears the change.
+  const status = (
+    <div class="visually-hidden" role="status" aria-live="polite">
+      {said}
+    </div>
+  );
+  if (paper === null) return status;
   // Made on every draw from the latest state: the bag may load after the sheet is up.
   const plan = gazetteOf(paper.away, world);
 
@@ -105,11 +119,18 @@ export function WelcomeBack({
     setOpen(false);
     onDismiss(paper.away.until);
     counted.current = {};
-    if (paper.gains.length > 0) setHoming(from);
+    // What flies is what the paper showed, so the numbers the player read are the numbers that land.
+    const gains = paperGains(plan.stories);
+    flying.current = gains;
+    if (gains.length > 0) {
+      setHoming({ from, gains });
+      setSaid(gainsText(gains));
+    }
   };
 
   return (
     <>
+      {status}
       <Drawer
         open={open}
         onClose={close}
@@ -118,12 +139,12 @@ export function WelcomeBack({
         class="gz-sheet"
         footer={<ActionButton label={moreLabel(plan.more)} wide large onClick={close} />}
       >
-        <Gazette stories={plan.stories} date={paper.date} />
+        <Gazette stories={plan.stories} date={paper.date} note={homeNote(paper.away)} />
       </Drawer>
       {homing !== null && (
         <ComingHome
-          gains={gains}
-          from={homing}
+          gains={homing.gains}
+          from={homing.from}
           mode={mode}
           onCount={(resource, n) => {
             counted.current[resource] = n;
