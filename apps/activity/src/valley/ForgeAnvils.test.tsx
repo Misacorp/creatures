@@ -83,7 +83,7 @@ describe('ForgeAnvils', () => {
     const text = visibleText(p.root);
     expect(text).toMatch(/Anvil 1/);
     expect(text).toMatch(/Kelp Cap/);
-    expect(text).toMatch(/Floor 2 of 5/);
+    expect(text).toMatch(/Floor 2 \/ 5/);
     expect(text).toMatch(/Add an order/);
     expect(text).toMatch(/Pick a smith, or drag one here/);
     expect(text).toMatch(/room for 2 anvils/);
@@ -137,7 +137,7 @@ describe('ForgeAnvils', () => {
     const visit = withAnvils(plain, [sampleAnvil('a1', a.id, [sampleOrder('o1', BP, 3)])]);
     const p = draw(visit, 500, [], opened);
     const add = byName(p.root, 'button', /Add an order/)[0];
-    const row = byName(p.root, 'button', /Kelp Cap, 0 of 3/)[0];
+    const row = byName(p.root, 'button', /Kelp Cap, 0 \/ 3/)[0];
     if (add === undefined || row === undefined) throw new Error('no buttons');
     p.click(add);
     p.click(row);

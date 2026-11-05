@@ -7,6 +7,7 @@ import { ItemTile } from '../../ItemTile';
 import { ActionButton } from '../../ui/ActionButton';
 import { BulkBar } from '../../ui/BulkBar';
 import { ChoiceButton, ChoiceList } from '../../ui/ChoiceList';
+import { CountStepper } from '../../ui/CountStepper';
 import { KeywordText } from '../../ui/KeywordText';
 import { FoldRow } from '../../ui/FoldRow';
 import { DrillHead } from '../../ui/DrillHead';
@@ -646,12 +647,48 @@ const selectMenu: Entry = {
   ),
 };
 
+function CountStepperDemo({ p }: { p: Props }) {
+  const [value, setValue] = useState(num(p, 'value'));
+  return (
+    <CountStepper
+      label="pieces"
+      value={value}
+      min={1}
+      max={num(p, 'max')}
+      onChange={setValue}
+      disabled={bool(p, 'disabled')}
+    />
+  );
+}
+
+const countStepper: Entry = {
+  name: 'CountStepper',
+  file: 'apps/activity/src/ui/CountStepper.tsx',
+  group: 'Controls',
+  description:
+    'A small whole-number control: a minus button, the number, a plus button, each a 44 px target. For "how many" when the number is small and exact: the Forge\u2019s order of three pieces. It stops at its smallest and biggest. Tap it in the preview.',
+  controls: {
+    value: { kind: 'number', min: 1, max: 20 },
+    max: { kind: 'number', min: 1, max: 20 },
+    disabled: { kind: 'toggle' },
+  },
+  defaults: { value: 3, max: 10, disabled: false },
+  presets: [
+    { name: 'Three of ten', props: {} },
+    { name: 'At the smallest', props: { value: 1 } },
+    { name: 'At the biggest', props: { value: 10 } },
+    { name: 'Disabled', props: { disabled: true } },
+  ],
+  render: (p) => <CountStepperDemo key={`${String(num(p, 'value'))}`} p={p} />,
+};
+
 export const controlEntries: readonly Entry[] = [
   actionButton,
   bulkBar,
   selectCheck,
   selectMenu,
   choiceList,
+  countStepper,
   drillHead,
   previewStatus,
   toggleButton,

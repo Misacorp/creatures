@@ -53,7 +53,7 @@ describe('the Forge words', () => {
   });
 
   it('the floor says how full it is', () => {
-    expect(floorLine(sampleAnvil('a1', a.id, []))).toBe('Floor 2 of 5');
+    expect(floorLine(sampleAnvil('a1', a.id, []))).toBe('Floor 2 / 5');
     expect(floorLine(fullFloor('a2', a.id, BP))).toBe('Floor full');
   });
 

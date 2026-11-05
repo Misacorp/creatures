@@ -57,7 +57,7 @@ export function orderName(order: ValleyOrderView): string {
 export function orderProgress(order: ValleyOrderView): string {
   return order.forTeam
     ? `${String(order.made)} made`
-    : `${String(order.made)} of ${String(order.count)}`;
+    : `${String(order.made)} / ${String(order.count)}`;
 }
 
 /** What the next piece of an order takes from the shelf, in words: "36 scrap, 1 Tide shard, 25 Essence". */
@@ -150,7 +150,7 @@ export function pieceLine(anvil: ValleyAnvilView): string | null {
 /** The floor's one line: "Floor 2 of 5", or "Floor full". */
 export function floorLine(anvil: ValleyAnvilView): string {
   const f = anvil.floor;
-  return f.full ? 'Floor full' : `Floor ${String(f.count)} of ${String(f.cap)}`;
+  return f.full ? 'Floor full' : `Floor ${String(f.count)} / ${String(f.cap)}`;
 }
 
 /** What the floor holds by rarity, as label and number rows (the tap on the floor's fill). */

@@ -57,7 +57,7 @@ export function BagTools({
     <Accordion
       title="Filter and sort"
       variant="compact"
-      {...(on ? { meta: `${String(shown)} of ${String(total)}`, metaTone: 'gold' as const } : {})}
+      {...(on ? { meta: `${String(shown)} / ${String(total)}`, metaTone: 'gold' as const } : {})}
       class="bag-tools"
       defaultOpen={open}
     >
