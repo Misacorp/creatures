@@ -2,6 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   DEPTH_XP_CURVE,
+  LANDMARK_XP_CURVE,
   V1_XP_CURVE,
   dungeonRunXp,
   interpolate,
@@ -115,6 +116,49 @@ describe('variant B (the flat base with a little growth) and variant C (share wi
     expect(xp('share')).toBeGreaterThan(xp());
     const run = (): string =>
       JSON.stringify(runServer({ ...base, dungeonXp: 'share' }, 4).players.map((p) => p.sources));
+    expect(run()).toBe(run());
+  });
+});
+
+describe('the landmark rule (Q59)', () => {
+  const base = ALL_SERVERS.find((s) => s.id === 'mixed8')!;
+
+  it('gives the reported values at the reported weeks, interpolates and holds', () => {
+    for (const [week, xp] of LANDMARK_XP_CURVE) expect(dungeonRunXp('landmark', week)).toBe(xp);
+    expect(LANDMARK_XP_CURVE.map(([, xp]) => xp)).toEqual([86, 121, 128, 134, 157]);
+    expect(dungeonRunXp('landmark', 6)).toBeCloseTo(124.5, 9);
+    expect(dungeonRunXp('landmark', 0)).toBe(86);
+    expect(dungeonRunXp('landmark', 99)).toBe(157);
+  });
+
+  it('with the default levers is the reported curve, and scales with perRun and the step', () => {
+    for (const week of [1, 4, 8, 12, 24])
+      expect(dungeonRunXp({ landmark: true, perRun: 120, stepBp: 175 }, week)).toBeCloseTo(
+        dungeonRunXp('landmark', week),
+        9,
+      );
+    const at = (perRun: number, stepBp: number): number =>
+      dungeonRunXp({ landmark: true, perRun, stepBp }, 12);
+    expect(at(60, 175)).toBeCloseTo(at(120, 175) / 2, 9);
+    expect(at(120, 350)).toBeGreaterThan(at(120, 175));
+    expect(at(120, 0)).toBeLessThan(at(120, 175));
+    // Week 1 has no landmark (mean depth 2.7), so the step does not move it.
+    expect(dungeonRunXp({ landmark: true, perRun: 120, stepBp: 900 }, 1)).toBeCloseTo(86, 9);
+  });
+
+  it('pays a daily player about what the flat rule does (a little less in week 1) and the same run twice is the same', () => {
+    const xp = (mode?: 'landmark'): number => {
+      const r = runScenario(mode ? { ...base, dungeonXp: mode } : base, 2);
+      const players = playersOf(r, 'daily');
+      return players.reduce((n, p) => n + (p.weeks[7]?.xpDungeon ?? 0), 0) / players.length;
+    };
+    const ratio = xp('landmark') / xp();
+    expect(ratio).toBeGreaterThan(0.9);
+    expect(ratio).toBeLessThan(1.2);
+    const run = (): string =>
+      JSON.stringify(
+        runServer({ ...base, dungeonXp: 'landmark' }, 4).players.map((p) => p.sources),
+      );
     expect(run()).toBe(run());
   });
 });
