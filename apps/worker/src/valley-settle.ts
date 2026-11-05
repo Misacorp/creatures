@@ -257,7 +257,8 @@ export class ValleySettle {
       gain.ribbons,
       row.id,
     );
-    return expToReach(gain.level) + gain.exp - (expToReach(row.level) + row.exp);
+    // Never below 0, even on a row holding more than its level's need (bad data the clamp would shrink).
+    return Math.max(0, expToReach(gain.level) + gain.exp - (expToReach(row.level) + row.exp));
   }
 
   private trackCreature(
