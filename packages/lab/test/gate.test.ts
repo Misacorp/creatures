@@ -5,6 +5,9 @@ import { RAID_BOSS_IDS, raidBossOf } from '../src/bosses';
 import { widthOf } from '../src/raidMeasure';
 import {
   GATE_SEARCHES,
+  WEEKEND_SEARCH_SLOTS,
+  WEEKEND_SEARCHES,
+  gateOwnJobs,
   KILL_SERVERS,
   KNOWN_MISSES,
   RAID_CELLS,
@@ -300,6 +303,25 @@ describe('gateItems', () => {
       expect(items.find((i) => i.id === `diversity:${b}`)?.pass).toBe(false);
     expect(items.find((i) => i.id === 'dead-knack')?.pass).toBe(false);
     expect(items.find((i) => i.id === 'casual')?.pass).toBe(false);
+  });
+
+  it('the weekend searches of the track slots count as a place a Knack is picked', () => {
+    const p = passing();
+    const without = { ...p, best: new Map(), searches: new Map(RAID_BOSS_IDS.map((b) => [b, []])) };
+    const dead = (i: GateInputs) => gateItems(i).find((x) => x.id === 'dead-knack');
+    expect(dead(without)?.measured).toContain('cool-head');
+    const weekends = [{ lines: [[pick('tidewing', 'cool-head')]] }];
+    const with1 = dead({ ...without, weekends });
+    expect(with1?.measured).not.toContain('cool-head');
+    expect(with1?.measured).toContain(`${Object.keys(KNACKS).length - 1} of`);
+  });
+
+  it('the gate plans weekend searches at the track slots, one per slot in a quick run', () => {
+    const ids = gateOwnJobs(true).filter((j) => (j.args as { part: string }).part === 'weekend');
+    expect(ids.map((j) => (j.args as { slot: number }).slot)).toEqual(WEEKEND_SEARCH_SLOTS);
+    expect(
+      gateOwnJobs(false).filter((j) => (j.args as { part: string }).part === 'weekend'),
+    ).toHaveLength(WEEKEND_SEARCH_SLOTS.length * WEEKEND_SEARCHES);
   });
 
   it('the classic line must lose on more than half of the cases, not half', () => {

@@ -4,6 +4,14 @@ The shared combat engine, abilities, statuses, elements, the balance simulator, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-06: Lab gate: dead Knacks are read on the track's weekends too
+
+ID: `2026-11-06-lab-gate-dead-knacks-are-read` · Status: current
+
+**Decision.** The lab gate's `dead-knack` item reads the best five lines of weekend-scored searches at the track slots 5, 6, 7, 8, 9, 13 and 14 (3 seeded searches each, `WEEKEND_SEARCH_SLOTS` in `packages/lab/src/gate.ts`) as well as the potential searches and the report's per-card best-team searches. The target is unchanged: every Knack picked somewhere. `dead-knack` leaves `KNOWN_MISSES`.
+
+**Reasoning.** "No dead Knack" means picked somewhere a player would really play. Cool Head only works on Double Strike, and the report's per-card raid fights are short (about 5 boss crits), so those searches never pick it, while on the track's Double Strike weeks it is in many top lines. The gate was reading the wrong place, not a looser bar. Cost: the full gate went from 91.5 s to 115.7 s. Full gate after: 36 of 37 pass (`dead-knack` 0 of 47; only `casual`, accepted, misses).
+
 ## 2026-11-06: Combat v2: Cool Head turns a spared crit into a Sure Crit
 
 ID: `2026-11-06-combat-v2-cool-head-turns-a` · Status: current
