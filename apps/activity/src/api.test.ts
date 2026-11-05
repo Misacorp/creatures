@@ -659,3 +659,42 @@ describe('the ledger request', () => {
     expect(urls[1]).not.toContain('credits');
   });
 });
+
+describe('the valley block of the state (VALLEY_SYSTEMS)', () => {
+  const base = {
+    serverNow: 1,
+    balances: { bait: 0, essence: 0 },
+    starterChosen: true,
+    creatures: [],
+    expeditions: [],
+    cancelled: [],
+    slots: { total: 3, used: 0, rankSum: 0, tripsFinished: 0, next: null },
+    supplies: {},
+    serverFirsts: [],
+    pending: [],
+    bookSlotBait: 10,
+    loungerId: null,
+  };
+  const valley = {
+    settledAt: 5,
+    arrived: true,
+    awayHours: 2,
+    creatures: [{ id: 'c1', state: 'resting', gained: 30, catchUpBp: 10000 }],
+    allowance: { store: 4, cap: 480, brought: 100 },
+  };
+
+  it('is null when absent (flag off, or an action answer)', () => {
+    expect(parseGameState(base).valley).toBeNull();
+  });
+
+  it('is read strictly when present', () => {
+    expect(parseGameState({ ...base, valley }).valley).toEqual(valley);
+    expect(() => parseGameState({ ...base, valley: { ...valley, extra: 1 } })).toThrow();
+    expect(() =>
+      parseGameState({
+        ...base,
+        valley: { ...valley, creatures: [{ id: 'c1', state: 'asleep' }] },
+      }),
+    ).toThrow();
+  });
+});

@@ -16,6 +16,7 @@ import {
   type LoungeSpot,
   type LoungeXpPush,
   type SessionUser,
+  type ValleyVisit,
 } from './api';
 import { ActionIds } from './actions';
 import { allowanceNotice } from './allowance-text';
@@ -112,6 +113,7 @@ export function Game({
   devTools,
   loungeLive = false,
   valley = false,
+  valleySystems = false,
 }: {
   initial: GameState;
   /** The signed-in player (their id and display name put their own creature in the living room). */
@@ -127,7 +129,7 @@ export function Game({
   loungeLive?: boolean;
   /** The server shows the valley shell (`valley` of `/api/config`): a map of places instead of the dock and tabs. */
   valley?: boolean;
-  /** The valley's base systems are on (`valleySystems` of `/api/config`; phase 5). Unused until step 1. */
+  /** The valley's base systems are on (`valleySystems` of `/api/config`; phase 5): the Bonfire opens and creatures rest. */
   valleySystems?: boolean;
   /** True on staging and local runs, where the server can start a practice finale. */
   showPractice: boolean;
@@ -231,6 +233,12 @@ export function Game({
   useEffect(() => {
     if (game.attention !== null) setAttention(game.attention);
   }, [game.attention]);
+  // The valley's resting creatures also come with GET /api/state only (and only with `VALLEY_SYSTEMS` on): kept like the pips.
+  const [visit, setVisit] = useState<ValleyVisit | null>(initial.valley);
+  useEffect(() => {
+    if (game.valley !== null) setVisit(game.valley);
+  }, [game.valley]);
+  const systems = valleySystems ? visit : null;
   // The setup row of the Dungeon tab, kept while the player is on other tabs (lost on a reload).
   const dungeonDraft = useRef<Slots | null>(null);
   // The same row as state, so the valley's Cave scene can draw the team standing at the cave mouth (null until the
@@ -868,6 +876,7 @@ export function Game({
           attention,
           raid: raidGlance,
         }}
+        visit={systems}
         castExtra={{
           dungeonTeam,
           dungeonPhase,
@@ -900,6 +909,7 @@ export function Game({
         now={Date.now() + offset}
         timezone={timezone.current}
         balances={game.balances}
+        brought={systems === null ? 0 : systems.allowance.brought}
         onDismiss={(until) => {
           void run(() => dismissAway(until)).then(showState);
         }}

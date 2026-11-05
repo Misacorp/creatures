@@ -61,6 +61,22 @@ describe('Nameplate options', () => {
     expect(classes(plate(<Nameplate tone="gold">Games</Nameplate>))).toContain('nameplate-gold');
   });
 
+  it('a gain comes last, in its own part, "+N"; none for 0 or when absent', () => {
+    const el = plate(
+      <Nameplate level={3} gain={42}>
+        Cindle
+      </Nameplate>,
+    );
+    expect(parts(el).map((p) => p.getAttribute('class'))).toEqual([
+      'nameplate-level',
+      'nameplate-name',
+      'nameplate-gain',
+    ]);
+    expect(visibleText(parts(el)[2] as FakeElement)).toBe('+42');
+    expect(parts(plate(<Nameplate gain={0}>Cindle</Nameplate>))).toHaveLength(1);
+    expect(parts(plate(<Nameplate>Cindle</Nameplate>))).toHaveLength(1);
+  });
+
   it('draws the words as text, never as markup', () => {
     const el = plate(<Nameplate>{'<b>Hi</b>'}</Nameplate>);
     expect(visibleText(el)).toBe('<b>Hi</b>');

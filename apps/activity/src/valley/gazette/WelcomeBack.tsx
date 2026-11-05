@@ -16,7 +16,14 @@ import { Drawer } from '../../ui/Drawer';
 import { isStill } from '../parts';
 import { ComingHome } from './ComingHome';
 import { Gazette } from './Gazette';
-import { flyMode, gainsText, originOf, purseDisplay, type Point } from './coming-home';
+import {
+  flyMode,
+  gainsText,
+  originOf,
+  purseDisplay,
+  withAllowance,
+  type Point,
+} from './coming-home';
 import {
   gazetteDate,
   gazetteOf,
@@ -33,6 +40,8 @@ const FALLBACK_FROM: Point = { x: 195, y: 520 };
 interface Paper {
   away: AwaySummary;
   date: string;
+  /** The Acorns the allowance brought home this visit (the valley's systems), flown in with the rest; 0 when none. */
+  brought: number;
 }
 
 /** The moment of coming home: where it starts and what flies (the amounts the paper showed when it closed). */
@@ -47,6 +56,7 @@ export function WelcomeBack({
   now,
   timezone,
   balances,
+  brought = 0,
   onDismiss,
   onPurse,
 }: {
@@ -60,6 +70,8 @@ export function WelcomeBack({
   timezone: string | null;
   /** The purse's totals now (the HUD shows them). */
   balances: Balances;
+  /** The Acorns the allowance brought home with this visit (`valley.allowance.brought`; the valley's systems on), 0 otherwise. */
+  brought?: number;
   /** Dismisses the notice on the server (`POST /api/away/dismiss`, `until` is its last payout): today's call. */
   onDismiss: (until: number) => void;
   /** What the HUD's purse shows while the numbers count up; null when it shows the real totals. */
@@ -86,6 +98,7 @@ export function WelcomeBack({
     setPaper({
       away,
       date: gazetteDate(now, timezone),
+      brought,
     });
     setOpen(true);
   }
@@ -119,8 +132,8 @@ export function WelcomeBack({
     setOpen(false);
     onDismiss(paper.away.until);
     counted.current = {};
-    // What flies is what the paper showed, so the numbers the player read are the numbers that land.
-    const gains = paperGains(plan.stories);
+    // What flies is what the paper showed (and, with the valley's systems, the Acorns the allowance brought home).
+    const gains = withAllowance(paperGains(plan.stories), paper.brought);
     flying.current = gains;
     if (gains.length > 0) {
       setHoming({ from, gains });

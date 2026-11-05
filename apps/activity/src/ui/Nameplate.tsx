@@ -7,7 +7,8 @@ import type { ComponentChildren } from 'preact';
  *
  * Options: `bold` (heavier letters), `level` (a number shown first in yellow; `levelPrefix` writes a word before it,
  * "Lv 14", and with no children the plate is the level alone, as under a creature in the tray), `size` (`sm` or `md`)
- * and `tone` (`bone` words, or `gold`). It is decoration or a caption: it holds text only and no button; the thing it labels
+ * `tone` (`bone` words, or `gold`) and `gain` (a "+N" in green after the name that a long name never hides: the experience a
+ * resting creature gained this visit). It is decoration or a caption: it holds text only and no button; the thing it labels
  * is the button. Text is drawn as text.
  */
 export type NameplateSize = 'sm' | 'md';
@@ -20,6 +21,7 @@ export function Nameplate({
   bold = false,
   size = 'md',
   tone = 'bone',
+  gain,
   class: extra,
 }: {
   children?: ComponentChildren;
@@ -30,6 +32,8 @@ export function Nameplate({
   bold?: boolean;
   size?: NameplateSize;
   tone?: NameplateTone;
+  /** A gain shown last, "+N", in green; nothing for 0 or none. */
+  gain?: number | undefined;
   class?: string | undefined;
 }) {
   const classes = ['nameplate', 'pix', `nameplate-${size}`, `nameplate-${tone}`];
@@ -45,6 +49,7 @@ export function Nameplate({
       {children !== undefined && children !== null && (
         <span class="nameplate-name">{children}</span>
       )}
+      {gain !== undefined && gain > 0 && <span class="nameplate-gain">+{gain}</span>}
     </span>
   );
 }

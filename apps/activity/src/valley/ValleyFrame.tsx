@@ -8,9 +8,10 @@
  */
 import type { ComponentChildren } from 'preact';
 import { useRef, useState } from 'preact/hooks';
-import type { Creature } from '../api';
+import type { Creature, ValleyVisit } from '../api';
 import type { TabAlerts } from '../tab-alerts';
 import { scrollAndFocus } from '../scroll-to';
+import { BonfireScene } from './BonfireScene';
 import { PinnedAct } from './PinnedAct';
 import { PlaceScene, SCENE_ART } from './PlaceScene';
 import { PlaceRow, PlacesList } from './PlacesList';
@@ -48,6 +49,7 @@ export function ValleyFrame({
   alerts,
   placeInput,
   castExtra,
+  visit = null,
   focus,
   onOpen,
   onLeave,
@@ -66,6 +68,8 @@ export function ValleyFrame({
   placeInput: PlaceInput;
   /** What the scenes read besides that: this session's dungeon row, the waiting catches. */
   castExtra: CastExtra;
+  /** The valley's resting creatures and allowance (`VALLEY_SYSTEMS` on): the Bonfire opens with it; null (flag off, or not heard yet) leaves it "not open yet". */
+  visit?: ValleyVisit | null;
   /** The place whose button takes the focus when the map comes back. */
   focus: PlaceId | null;
   /** Opens a place (from the map, the Places list or the tray). */
@@ -84,8 +88,18 @@ export function ValleyFrame({
   children: ComponentChildren;
 }) {
   const [places, setPlaces] = useState(false);
+  // The commons do not exist yet (phase 5 step 6): the fire is the plain one.
+  const bonfireLevel = 1;
   const place = view.kind === 'valley' ? null : placeOf(view.place);
   const bubbles = placeBubbles(alerts, placeInput);
+  // With the valley's systems on, a free creature rests at the fire: the tray says so.
+  const tray: TrayInput =
+    visit === null
+      ? trayInput
+      : {
+          ...trayInput,
+          resting: new Set(visit.creatures.filter((r) => r.state === 'resting').map((r) => r.id)),
+        };
   const insideRef = useRef<HTMLDivElement>(null);
   // The five places with a scene (not while a book of the House is open): the scene above, today's page under it.
   const cast =
@@ -161,8 +175,8 @@ export function ValleyFrame({
               {away !== null && away !== false && <div class="vy-away hb">{away}</div>}
             </div>
             <Tray
-              creatures={trayFor(creatures, trayInput)}
-              input={trayInput}
+              creatures={trayFor(creatures, tray)}
+              input={tray}
               label="Your creatures"
               onPick={() => {
                 onOpen('paddock');
@@ -170,7 +184,17 @@ export function ValleyFrame({
             />
           </>
         )}
-        {view.kind === 'soon' && (
+        {view.kind === 'soon' && view.place === 'bonfire' && visit !== null && (
+          <section class="vy-soon" aria-label={placeLabel(view.place)}>
+            <BonfireScene
+              creatures={creatures}
+              visit={visit}
+              level={bonfireLevel}
+              onLeave={onLeave}
+            />
+          </section>
+        )}
+        {view.kind === 'soon' && !(view.place === 'bonfire' && visit !== null) && (
           <section class="vy-soon" aria-label={placeLabel(view.place)}>
             <SceneFrame
               id={view.place}
@@ -204,8 +228,9 @@ export function ValleyFrame({
       </div>
       <PlacesList
         open={places}
-        lines={placeStates(placeInput)}
+        lines={placeStates({ ...placeInput, visit })}
         bubbles={bubbles}
+        opened={visit === null ? [] : ['bonfire']}
         onClose={() => {
           setPlaces(false);
         }}

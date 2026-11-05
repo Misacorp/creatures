@@ -122,12 +122,12 @@ export function roamMeadow(
 }
 
 /** A cast's standing creatures at the spots they really stand in `scene` (an `art` box's corner added), none hidden but the ones that do not fit. */
-export function standSpots(
-  stands: readonly Stand[],
+export function standSpots<S extends Stand = Stand>(
+  stands: readonly S[],
   art: { x: number; y: number },
   scene: PlateScene,
   fixed: readonly { x: number; y: number }[] = [],
-): { stand: Stand; x: number; y: number }[] {
+): { stand: S; x: number; y: number }[] {
   const spots = placeStands(
     stands.map((st) => ({ x: art.x + st.x, y: art.y + st.y })),
     standBounds(scene),

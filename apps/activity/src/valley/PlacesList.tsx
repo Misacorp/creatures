@@ -47,6 +47,7 @@ export function PlacesList({
   open,
   lines,
   bubbles,
+  opened = [],
   onClose,
   onPlace,
 }: {
@@ -55,13 +56,15 @@ export function PlacesList({
   lines: Partial<Readonly<Record<PlaceId, string>>>;
   /** What waits at the places, for their spoken names. */
   bubbles: readonly PlaceBubble[];
+  /** Places a flag has opened (the Bonfire with `VALLEY_SYSTEMS`): listed with the open places, not muted. */
+  opened?: readonly PlaceId[];
   onClose: () => void;
   onPlace: (id: PlaceId) => void;
 }) {
   return (
     <Drawer open={open} onClose={onClose} title="Places">
       <ul class="vy-rows" aria-label="Places">
-        {listOrder(bubbles).map((id) => {
+        {listOrder(bubbles, opened).map((id) => {
           const place = placeOf(id);
           const line = lines[id] ?? placeFallback(id);
           return (
@@ -70,7 +73,7 @@ export function PlacesList({
               glyph={place.glyph}
               name={place.name}
               line={line}
-              muted={!isOpenPlace(id)}
+              muted={!isOpenPlace(id) && !opened.includes(id)}
               label={`${placeSpoken(id, bubbleAt(bubbles, id))}. ${line}`}
               onClick={() => {
                 onPlace(id);

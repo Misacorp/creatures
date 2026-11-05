@@ -34,3 +34,13 @@ export const ValleyViewSchema = v.strictObject({
 
 export type ValleyCreatureView = v.InferOutput<typeof ValleyCreatureViewSchema>;
 export type ValleyView = v.InferOutput<typeof ValleyViewSchema>;
+
+/**
+ * Reads the `valley` key of `/api/state` (the client's parser): `null` when absent (the flag is off, or an action's answer, which
+ * leaves it out); a strict check otherwise, so anything of another shape is `undefined` (the caller refuses the answer).
+ */
+export function parseValleyView(value: unknown): ValleyView | null | undefined {
+  if (value === undefined || value === null) return null;
+  const result = v.safeParse(ValleyViewSchema, value);
+  return result.success ? result.output : undefined;
+}

@@ -124,12 +124,17 @@ function treesAround(x: number, y: number, art: { width: number; height: number 
   ];
 }
 
+/** Where a place's art stands in its full-screen scene (scene pixels). */
+export function placeArtBox(g: SceneGeometry, name: MapName): ArtBox {
+  const art = artSize(name);
+  return { x: g.cx - Math.floor(art.width / 2), y: g.top + ART_TOP, ...art };
+}
+
 /** The scene: grass everywhere (the valley map's day grass), the sky, the place in the middle, a few trees. */
 export function placeSceneDraw(name: MapName) {
   return (g: SceneGeometry): Placement[] => {
     const art = artSize(name);
-    const x = g.cx - Math.floor(art.width / 2);
-    const y = g.top + ART_TOP;
+    const { x, y } = placeArtBox(g, name);
     return [
       ...grassTo(g),
       ...skyBackdrop(g),
