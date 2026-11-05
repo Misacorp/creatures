@@ -122,6 +122,7 @@ import { ReadMeter, pruneReads, readSourceOfPath, type ReadSource } from './read
 import { liveRng } from './rng';
 import { ValleyFinds } from './valley-finds';
 import { ValleyForgePass } from './valley-forge';
+import { ValleyGazette } from './valley-gazette';
 import { valleyRoutes } from './valley-routes';
 import { ValleyOrders } from './valley-orders';
 import { ValleySeats } from './valley-seats';
@@ -229,7 +230,10 @@ function parseLedgerQuery(url: URL): { limit: number; creditsOf: 'bait' | null }
  */
 function isIntent(method: string, pathname: string): boolean {
   if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS') return false;
-  return pathname !== '/api/room' && !isDevPath(pathname);
+  // Closing the Gazette's paper depends on nothing the pass reads.
+  return (
+    pathname !== '/api/room' && pathname !== '/api/valley/gazette/close' && !isDevPath(pathname)
+  );
 }
 
 const routes: Routes<RequestContext> = {
@@ -446,6 +450,8 @@ export class GuildCore {
   readonly valleySeats: ValleySeats | null;
   /** Anvils, orders and the shard exchange of the valley's Forge (`VALLEY_SYSTEMS`), or null with the flag off. */
   readonly valleyOrders: ValleyOrders | null;
+  /** The welcome-back Gazette's last paper per player (`VALLEY_SYSTEMS`), or null with the flag off. */
+  readonly valleyGazette: ValleyGazette | null;
   /** The `VALLEY_SYSTEMS` flag as the worker resolved it (see `valley-flag.ts`). */
   readonly valleySystems: boolean;
   private postsInFlight: Promise<void> | null = null;
@@ -542,6 +548,7 @@ export class GuildCore {
         analytics: this.analytics,
       });
       const forge = new ValleyForgePass({ storage, now, rng: gearRng });
+      const gazette = new ValleyGazette(storage, now);
       const valley = new ValleySettle({
         storage,
         now,
@@ -549,6 +556,7 @@ export class GuildCore {
         finds,
         choices: this.collection.choices,
         forge,
+        gazette,
       });
       this.valley = valley;
       this.valleySeats = new ValleySeats({
@@ -557,12 +565,15 @@ export class GuildCore {
         timezone: () => this.timezone(),
         settle: valley,
         finds,
+        gazette,
       });
+      this.valleyGazette = gazette;
       this.valleyOrders = new ValleyOrders({ storage, now, settle: valley, forge });
     } else {
       this.valley = null;
       this.valleySeats = null;
       this.valleyOrders = null;
+      this.valleyGazette = null;
     }
     this.gear = new Gear({
       storage,

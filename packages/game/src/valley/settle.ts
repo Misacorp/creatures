@@ -78,6 +78,8 @@ export interface SettleSeat {
   readonly fit: boolean;
   /** V-SCOUT-10: not the player's first scout at this place. */
   readonly second: boolean;
+  /** V-SCOUT-6: the scout is in the destination's deeper area (absent: not). */
+  readonly deep?: boolean;
   /** Effective hours in the store, 0 up to `rules.posts.storeHours` (V-POST-5). */
   readonly storeHours: number;
   readonly scrap: number;
@@ -95,6 +97,8 @@ export interface SeatStretch {
   readonly rates: SeatRates;
   readonly world: ScoutWorld;
   readonly place: PlaceProfile;
+  /** The seat was in the deeper area (V-SCOUT-6): the creature it finds comes from there. */
+  readonly deep: boolean;
 }
 
 /** The world as a function of time: day or night, festival or not, the week's twist, and when it next changes (Infinity: never). */
@@ -219,6 +223,7 @@ function seatWork(
         kit: seat.kit,
         second: seat.second,
         world,
+        deep: seat.deep === true,
       }),
     });
   }
@@ -342,6 +347,7 @@ export function settle(
           rates: w.rates,
           world: scoutWorld,
           place: w.place,
+          deep: seat.deep === true,
         });
         const scrap = payInto(seat.scrap, seat.scrapCarry, picked * w.rates.scrap, Infinity);
         const shards = payInto(seat.shards, seat.shardCarry, picked * w.rates.shards, Infinity);

@@ -1,5 +1,6 @@
 import * as v from 'valibot';
 import { ANVIL_KITS, KIT_NAMES } from './forge';
+import { PaperSchema } from './gazette';
 import { SCOUT_KITS } from './scouts';
 
 /**
@@ -41,6 +42,8 @@ export const ValleySeatViewSchema = v.strictObject({
   fit: v.boolean(),
   /** V-SCOUT-10: not the first of the player's scouts at this place. */
   second: v.boolean(),
+  /** V-SCOUT-6: the scout is in the destination's deeper area (its kit does not work there; coming back up is free). */
+  deep: v.boolean(),
   /** V-POST-12: the creature's scouting hours, its step (0 none, 1 Skilled, 2 Expert, 3 Master) and the bonus in basis points. */
   mastery: v.strictObject({ hours: amount, step: v.picklist([0, 1, 2, 3]), bonusBp: int }),
   /** V-POST-5, V-SCOUT-4: the pack, in effective hours, and what waits in it. `full`: it stopped picking up ("pack full"). */
@@ -203,6 +206,8 @@ export const ValleyViewSchema = v.strictObject({
   night: v.boolean(),
   /** The week's twist (V-SCOUT-11): its destination and id; null with none. */
   special: v.nullable(v.strictObject({ destination: id, twist: id })),
+  /** The welcome-back Gazette's paper (V-RET-0): present only while the last paper is unread; closing it takes it away. */
+  paper: v.optional(PaperSchema),
 });
 
 export type ValleyCreatureView = v.InferOutput<typeof ValleyCreatureViewSchema>;

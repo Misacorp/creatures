@@ -108,6 +108,13 @@ export const ValleyRulesSchema = v.strictObject({
     twistRollsPerExtra: num,
     firstFindHours: pos,
     gateAutoHours: pos,
+    pushOn: v.strictObject({
+      minStep: int,
+      chancePerHour: pos,
+      partsMultiplier: pos,
+      rareMultiplier: pos,
+      residentWeight: pos,
+    }),
     keystoneMeanDays: pos,
     placeAffinity: pos,
     species: v.strictObject({ start: int, dropFromWeek: int, dropEveryWeeks: int, dropCount: int }),

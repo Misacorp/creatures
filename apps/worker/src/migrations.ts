@@ -45,6 +45,7 @@ import { raidProgressionMigration } from './raid-progression-migration';
 import { valleyMigration } from './valley-migration';
 import { valleyScoutsMigration } from './valley-scouts-migration';
 import { valleyForgeMigration } from './valley-forge-migration';
+import { valleyGazetteMigration } from './valley-gazette-migration';
 import { weatherMigration } from './weather-migration';
 import { workshopConvertMigration } from './workshop-convert-migration';
 import { workshopV2Migration } from './workshop-v2-migration';
@@ -351,6 +352,8 @@ export const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
   valleyScoutsMigration,
   // Version 58: the Forge loop: anvils (seats), orders, the floor, the bag counter, smithing hours (see valley-forge-migration.ts).
   valleyForgeMigration,
+  // Version 59: the welcome-back Gazette's last paper per player (see valley-gazette-migration.ts).
+  valleyGazetteMigration,
 ];
 
 /** The schema version of a fresh database. */

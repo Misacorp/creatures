@@ -438,10 +438,19 @@ export class ValleyForgePass {
     to: number,
     team: readonly TeamMember[],
     cap: number,
-  ): { counts: Map<string, number>; brought: number; worn: number } {
+  ): {
+    counts: Map<string, number>;
+    brought: number;
+    worn: number;
+    /** The pieces that came home, best first (for the Gazette). */
+    items: { id: string; baseId: string; rarity: GearRarity; itemLevel: number }[];
+    /** The seat of the first piece (the smith the Gazette names). */
+    firstSeat: string | null;
+  } {
     const counts = new Map<string, number>();
     const rows = this.floorRows(userId);
-    if (rows.length === 0) return { counts, brought: 0, worn: 0 };
+    const items: { id: string; baseId: string; rarity: GearRarity; itemLevel: number }[] = [];
+    if (rows.length === 0) return { counts, brought: 0, worn: 0, items, firstSeat: null };
     let bag = bagItems(this.sql, userId);
     const target = new TeamTargets(this.sql, userId, team, this.deps.rng);
     let brought = 0;
@@ -476,6 +485,7 @@ export class ValleyForgePass {
       });
       bag += 1;
       brought += 1;
+      items.push({ id, baseId: item.baseId, rarity, itemLevel: row.item_level });
       if (wearer !== null) {
         const displaced = target.take(wearer.id, wearer.slot, row.item_level);
         if (displaced !== null) setEquipped(this.sql, displaced, null);
@@ -486,7 +496,13 @@ export class ValleyForgePass {
       this.sql.exec('DELETE FROM forge_floor WHERE piece_id = ?', row.piece_id);
       counts.set(row.seat_id, (counts.get(row.seat_id) ?? 0) + 1);
     }
-    return { counts, brought, worn };
+    return {
+      counts,
+      brought,
+      worn,
+      items,
+      firstSeat: items.length === 0 ? null : (rows[0]?.seat_id ?? null),
+    };
   }
 }
 
