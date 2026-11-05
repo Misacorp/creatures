@@ -74,9 +74,14 @@ describe('nameplates: no two overlap and none leaves the scene, at the phone and
   });
 
   const art = (place: (typeof CAST_PLACES)[number]) =>
-    ({ house: 'house', cave: 'cave', arena: 'arena', fair: 'fairground', paddock: 'paddock' })[
-      place
-    ] as 'house' | 'cave' | 'arena' | 'fairground' | 'paddock';
+    ({
+      house: 'house',
+      cave: 'cave',
+      arena: 'arena',
+      fair: 'fairground',
+      paddock: 'paddock',
+      signpost: 'road',
+    })[place] as 'house' | 'cave' | 'arena' | 'fairground' | 'paddock' | 'road';
 
   it.each(CAST_PLACES.flatMap((place) => scenes.map((sc) => [place, sc.width, sc] as const)))(
     '%s at %i px',

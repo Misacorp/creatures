@@ -56,6 +56,8 @@ export interface PendingCatch {
   shiny: boolean;
   source: 'expedition' | 'festival';
   createdAt: number;
+  /** The valley's Paddock gate (V-SCOUT-3): when the card takes today's Recommended answer by itself (epoch ms); absent: it waits. */
+  autoAt?: number;
   talent: TalentView;
   /** Which buttons are offered, and the creatures Teach and Fuse can go to. */
   offered: { teach: string[]; fuse: string[]; release: boolean; keep: boolean };

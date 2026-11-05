@@ -2,7 +2,7 @@
  * The creature tray: the roster along the bottom of the valley (the party prototype's camp, adapted). Each
  * creature is a button with its sprite, "Lv N" under it, and at most one mark on it, one shape per state: a bag
  * (home with loot), "!" (done at the forge), an up arrow (can evolve), an anvil (working), a dark silhouette
- * with a pack and the destination's element (away), a small "z" (resting at the fire, the valley's systems). A free creature carries no mark; it idles. Two rows on a
+ * with a pack and the destination's element (away), a small "z" (resting at the fire, the valley's systems), the destination's element (scouting). A free creature carries no mark; it idles. Two rows on a
  * phone (more creatures scroll sideways behind a cue), one row on a wide window. Tapping one opens the Paddock.
  */
 import { expeditionContent } from '@creatures/game';
@@ -46,6 +46,7 @@ function Mark({ badge }: { badge: TrayBadge }) {
           <Sprite sprite={glyphOrUnknown('anvil')} scale={2} />
         </span>
       );
+    case 'scouting':
     case 'trip': {
       const element = expeditionContent.destinations.find(
         (d) => d.id === badge.destination,
@@ -74,11 +75,14 @@ export function TrayCreature({
   input,
   index,
   onPick,
+  drag,
 }: {
   creature: Creature;
   input: TrayInput;
   index: number;
   onPick: () => void;
+  /** Given: the creature can be picked up (the Signpost lets a hand carry it to a seat). */
+  drag?: TrayDrag;
 }) {
   const badge = trayBadge(creature, input);
   const sprite = creatureSpriteOrFallback(creature.species);
@@ -89,7 +93,21 @@ export function TrayCreature({
       class={`vy-mon vy-mon-${badge.state}`}
       data-creature={creature.id}
       aria-label={`${badge.label} Opens the Paddock.`}
-      onClick={onPick}
+      onClick={(e) => {
+        // The click that ends a drag is not a tap.
+        if (drag?.consumeClick() === true) {
+          e.preventDefault();
+          return;
+        }
+        onPick();
+      }}
+      {...(drag === undefined
+        ? {}
+        : {
+            onPointerDown: (e: PointerEvent) => {
+              drag.startDrag(creature.id, e);
+            },
+          })}
       ref={cssVars({ '--i': index })}
     >
       <span class="vy-mon-head">
@@ -115,16 +133,25 @@ export function TrayCreature({
   );
 }
 
+/** What lets a hand carry a tray creature: `startDrag` and `consumeClick` of `useDragDrop`. */
+export interface TrayDrag {
+  startDrag: (creatureId: string, event: PointerEvent) => void;
+  consumeClick: () => boolean;
+}
+
 export function Tray({
   creatures,
   input,
   onPick,
   label,
+  drag,
 }: {
   creatures: readonly Creature[];
   input: TrayInput;
   onPick: (id: string) => void;
   label: string;
+  /** Given: each creature can be picked up and carried (what a drop means is the screen's own business). */
+  drag?: TrayDrag;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [more, setMore] = useState(false);
@@ -156,6 +183,7 @@ export function Tray({
               onPick={() => {
                 onPick(c.id);
               }}
+              {...(drag === undefined ? {} : { drag })}
             />
           ))}
         </div>

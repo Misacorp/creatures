@@ -16,6 +16,7 @@ import { TABS, type Tab } from '../tabs';
 import { formatCountdown, formatZoned } from '../time-format';
 import type { ValleyVisit } from '../api';
 import { bonfireLine } from './bonfire-cast';
+import { fullPacks, signpostSystemsLine } from './signpost-view';
 import { placeLabel, readingOrder } from './valley-logic';
 import type { PlaceId } from './valley-art';
 import { OPEN_PLACES, PAGE_TITLES, isOpenPlace, viewOf, type OpenPlaceId } from './valley-nav';
@@ -94,6 +95,17 @@ export function placeBubbles(alerts: TabAlerts, input: PlaceInput): PlaceBubble[
       spoken: spokenOf(def.id, alert, count),
     });
   }
+  // With the valley's systems a full pack is the Signpost's news (V-SCOUT-4: "pack full"); trips are gone, so no tab pip says it.
+  const full = input.visit == null ? 0 : fullPacks(input.visit);
+  if (full > 0 && !out.some((b) => b.place === 'signpost')) {
+    out.push({
+      place: 'signpost',
+      glyph: 'satchel',
+      count: full > 1 ? full : null,
+      spoken:
+        full === 1 ? 'A scout\u2019s pack is full' : `${String(full)} scouts\u2019 packs are full`,
+    });
+  }
   return out;
 }
 
@@ -110,6 +122,8 @@ export function placeSpoken(id: PlaceId, bubble: PlaceBubble | undefined): strin
 const after = (ms: number): string => formatCountdown(ms, 'short');
 
 function signpostLine(input: PlaceInput): string {
+  // With the valley's systems there are scouts at seats, not trips.
+  if (input.visit != null) return signpostSystemsLine(input.visit);
   const { now } = input;
   const { home, choice, out } = tripCounts(input.trips, now);
   const waiting = home.length + choice.length;

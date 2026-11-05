@@ -3,9 +3,14 @@ import { Hud } from '../../Hud';
 import { PopoverHost, useCreatureViewer } from '../../PopoverHost';
 import { WelcomeBack } from '../../valley/gazette/WelcomeBack';
 import type { Balances, Creature, ValleyVisit } from '../../api';
+import type { ScoutKit, ValleySeatView } from '@creatures/game';
 import { homeAlerts } from '../../home-view';
 import type { Place } from '../../tabs';
+import { SignpostSeats, type SignpostStart } from '../../valley/SignpostSeats';
 import { ValleyFrame } from '../../valley/ValleyFrame';
+import { SAMPLE_PLACES, sampleSeat, sampleValley } from '../../valley/signpost-sample';
+import { fitsPlace } from '../../valley/signpost-view';
+import { trayStates } from '../../valley/tray-state';
 import type { CastExtra } from '../../valley/place-cast';
 import { isOpenPlace, PLACE_TAB, viewOf, type HomeAt } from '../../valley/valley-nav';
 import { placeOf, type PlaceId } from '../../valley/valley-art';
@@ -29,10 +34,40 @@ export const VALLEY_STARTS = [
   'fair',
   'school',
   'bonfire',
+  'signpost',
 ] as const;
 
 /** How the demo's valley systems stand: off (the Bonfire is "not open yet"), a small roster resting, or a big one. */
 export const VALLEY_RESTING = ['off', 'few', 'many'] as const;
+
+/** How the demo's scouts stand: systems off, no seat bought, one scout out, two out, or a full pack among two. */
+export const VALLEY_SCOUTS = ['off', 'no seats', 'one scout', 'two scouts', 'a full pack'] as const;
+
+/** What the Signpost's page has open at the start (a picker, a drawer), for the shots. */
+export const VALLEY_OPEN = [
+  'nothing',
+  'scout picker',
+  'destination',
+  'kit',
+  'pack and pace',
+  'buy a seat',
+] as const;
+
+/** The seats of a scouts setting, the first two creatures of the roster posted. */
+function scoutSeats(roster: readonly Creature[], scouts: string): ValleySeatView[] {
+  const [a, b] = roster;
+  if (a === undefined || b === undefined || scouts === 'off' || scouts === 'no seats') return [];
+  const first = sampleSeat('seat-1', 'ember-caves', a.id, scouts === 'a full pack' ? 72 : 30, {
+    fit: true,
+    mastery: { hours: 60, step: 1, bonusBp: 500 },
+    kit: 'satchel',
+  });
+  if (scouts === 'one scout') return [first];
+  return [
+    first,
+    sampleSeat('seat-2', 'tidepools', b.id, scouts === 'a full pack' ? 55 : 12, { second: false }),
+  ];
+}
 
 /** The creatures of a resting roster: `few` is four of the day's, `many` is fourteen (the day's, then copies at other levels). */
 function restingRoster(all: readonly Creature[], resting: string): Creature[] {
@@ -69,6 +104,86 @@ function restingVisit(creatures: readonly Creature[], brought: number): ValleyVi
   };
 }
 
+/** What a `VALLEY_OPEN` setting opens on the Signpost's page at the start. */
+function openAtStart(setting: string): SignpostStart {
+  switch (setting) {
+    case 'scout picker':
+      return { picker: 'seat-1' };
+    case 'destination':
+      return { where: 'seat-1' };
+    case 'kit':
+      return { kit: 'seat-1' };
+    case 'pack and pace':
+      return { detail: 'seat-1' };
+    case 'buy a seat':
+      return { buy: true };
+    default:
+      return {};
+  }
+}
+
+/** A post or a move on the demo's seats, as the server does it: a creature at another seat swaps; a new place empties the pack. */
+function postDemo(
+  seats: readonly ValleySeatView[],
+  creatures: readonly Creature[],
+  body: { seatId: string; creatureId?: string | null; destination?: string },
+): ValleySeatView[] {
+  const target = seats.find((s) => s.id === body.seatId);
+  if (target === undefined) return [...seats];
+  const place = (id: string) => SAMPLE_PLACES.find((p) => p.id === id);
+  const fits = (creatureId: string | null, destination: string): boolean => {
+    const creature = creatures.find((c) => c.id === creatureId);
+    return creature !== undefined && fitsPlace(creature, place(destination));
+  };
+  return seats.map((s) => {
+    let next = s;
+    if (
+      s.id === target.id &&
+      body.destination !== undefined &&
+      body.destination !== s.destination
+    ) {
+      next = sampleSeat(s.id, body.destination, s.creatureId, 0, { kit: s.kit });
+    }
+    if (body.creatureId !== undefined) {
+      const left =
+        s.id === target.id
+          ? body.creatureId
+          : s.creatureId === body.creatureId
+            ? target.creatureId
+            : s.creatureId;
+      if (left !== s.creatureId) {
+        next = sampleSeat(next.id, next.destination, left, left === null ? 0 : 12, {
+          kit: next.kit,
+        });
+      }
+    }
+    return { ...next, fit: next.creatureId !== null && fits(next.creatureId, next.destination) };
+  });
+}
+
+/** `restingVisit` with the scouts: the seats, their prices and kit, and each creature's state at its seat. */
+function demoVisit(
+  creatures: readonly Creature[],
+  seats: readonly ValleySeatView[],
+  owned: readonly ScoutKit[],
+): ValleyVisit {
+  const rest = restingVisit(creatures, 120);
+  const sv = sampleValley(creatures, seats, { kit: { owned: [...owned], price: 875 } });
+  return {
+    ...rest,
+    creatures: rest.creatures.map((c, i) => {
+      const s = sv.creatures[i];
+      return s === undefined ? c : { ...c, state: s.state, seatId: s.seatId };
+    }),
+    seats: sv.seats,
+    seatPrices: sv.seatPrices,
+    kit: sv.kit,
+    places: sv.places,
+    night: sv.night,
+    special: sv.special,
+  };
+}
+
 const NOTHING = () => undefined;
 const PURSE: Balances = { bait: 1240, essence: 36 };
 const NO_REF = { current: null };
@@ -102,11 +217,17 @@ export function ValleyDemo({
   away,
   day,
   resting,
+  scouts = 'off',
+  open: opened = 'nothing',
 }: {
   start: string;
   away: boolean;
   day: string;
   resting: string;
+  /** The Signpost's scouts (phase 5 step 2): one of `VALLEY_SCOUTS`. */
+  scouts?: string;
+  /** What the Signpost's page has open at the start: one of `VALLEY_OPEN`. */
+  open?: string;
 }) {
   const first = VALLEY_STARTS.includes(start as (typeof VALLEY_STARTS)[number])
     ? (start as PlaceId | 'valley')
@@ -122,12 +243,24 @@ export function ValleyDemo({
   // The purse while the welcome-back numbers count up.
   const [purse, setPurse] = useState<Balances | null>(null);
   const planned = homeInput(day, true);
-  // With the valley's systems on the roster rests at the fire, and the allowance brought some Acorns home.
+  const scoutsOn = scouts !== 'off';
+  // With the valley's systems on the roster rests at the fire, and the allowance brought some Acorns home. The scouts' demo
+  // frees every creature of its trips and jobs (a creature cannot scout and be away).
   const base =
-    resting === 'off'
+    resting === 'off' && !scoutsOn
       ? planned
-      : { ...planned, creatures: restingRoster(planned.creatures, resting) };
-  const visit = resting === 'off' ? null : restingVisit(base.creatures, 120);
+      : {
+          ...planned,
+          creatures: restingRoster(planned.creatures, resting === 'off' ? 'many' : resting).map(
+            (c) => (scoutsOn ? { ...c, busy: null, away: false } : c),
+          ),
+        };
+  // The seats and kit live here, so the Signpost's page can be played with in the workbench (no server).
+  const [seats, setSeats] = useState<ValleySeatView[]>(() => scoutSeats(base.creatures, scouts));
+  const [owned, setOwned] = useState<ScoutKit[]>(scouts === 'off' ? [] : ['satchel']);
+  const [acorns, setAcorns] = useState(PURSE.bait);
+  const systems = resting !== 'off' || scoutsOn;
+  const visit = systems ? demoVisit(base.creatures, seats, owned) : null;
   // What the scenes draw: the fixture creatures, standing where today's state puts them (a dungeon row, a raid party).
   const party = base.creatures.slice(0, 3).map((c) => c.id);
   const input = {
@@ -200,6 +333,50 @@ export function ValleyDemo({
             settings={null}
           >
             {tab === 'workshop' ? pageOf(creatureCardEntries, 'Workshop') : null}
+            {tab === 'expeditions' && visit !== null && (
+              <SignpostSeats
+                visit={visit}
+                creatures={base.creatures}
+                trayInput={{
+                  trips: base.trips,
+                  jobs: base.jobs,
+                  now: HOME_NOW,
+                  ...trayStates(visit),
+                }}
+                acorns={acorns}
+                busy={false}
+                start={openAtStart(opened)}
+                onOpenPaddock={() => {
+                  open('paddock');
+                }}
+                actions={{
+                  post: (body) => {
+                    setSeats((now) => postDemo(now, base.creatures, body));
+                    return Promise.resolve(true);
+                  },
+                  setKit: (seatId, kit) => {
+                    setSeats((now) => now.map((s) => (s.id === seatId ? { ...s, kit } : s)));
+                    return Promise.resolve(true);
+                  },
+                  buySeat: () => {
+                    const price = visit.seatPrices.next;
+                    if (price === null || price > acorns) return Promise.resolve(false);
+                    setAcorns(acorns - price);
+                    setSeats((now) => [
+                      ...now,
+                      sampleSeat(`seat-${String(now.length + 1)}`, 'tidepools', null, 0),
+                    ]);
+                    return Promise.resolve(true);
+                  },
+                  buyKit: (kit) => {
+                    if (visit.kit.price > acorns) return Promise.resolve(false);
+                    setAcorns(acorns - visit.kit.price);
+                    setOwned((now) => [...now, kit]);
+                    return Promise.resolve(true);
+                  },
+                }}
+              />
+            )}
           </ValleyFrame>
           {away && (
             <WelcomeBack

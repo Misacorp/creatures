@@ -13,7 +13,7 @@ import type {
   TripCatch,
   TripResult,
 } from './expedition-types';
-import { parseValleyView, type ValleyView as ValleyVisit } from '@creatures/game';
+import { parseValleyView, type ScoutKit, type ValleyView as ValleyVisit } from '@creatures/game';
 import { isExperienceView, isRibbonView, type ExperienceView, type RibbonView } from './experience';
 import { isWornGear } from './gear-parse';
 import {
@@ -763,6 +763,48 @@ export function parseGameState(data: unknown): GameState {
 }
 
 export type { ValleyVisit };
+
+/** What a scout route answers (phase 5 step 2): the player's settled valley, and the game state as usual (its own `valley` is null). */
+export interface ValleyAnswer {
+  valley: ValleyVisit;
+  state: GameState;
+}
+
+function valleyAnswer(data: unknown): ValleyAnswer {
+  const valley = isRecord(data) ? parseValleyView(data['valley']) : undefined;
+  if (valley === undefined || valley === null) {
+    throw new Error('the server returned an unexpected valley answer');
+  }
+  return { valley, state: stateFrom(data) };
+}
+
+/**
+ * Posts a creature to a scout seat, empties it (`creatureId: null`) or points it at another destination (V-POST-1, V-SCOUT-1).
+ * A creature that stands at another seat swaps places with the one here; moving is free, so there is no key.
+ */
+export async function postScout(body: {
+  seatId: string;
+  creatureId?: string | null;
+  destination?: string;
+}): Promise<ValleyAnswer> {
+  return valleyAnswer(await apiFetch('/api/valley/seat', jsonRequest('POST', body)));
+}
+
+/** Buys the player's next scout seat (V-POST-2): a keyed spend of Acorns. */
+export async function buyScoutSeat(idempotencyKey: string): Promise<ValleyAnswer> {
+  return valleyAnswer(
+    await apiFetch('/api/valley/seat/buy', jsonRequest('POST', { idempotencyKey })),
+  );
+}
+
+/** Buys a kit (a keyed spend of Acorns, once each), or sets an owned kit on a seat for free (`null` takes it off). */
+export async function scoutKit(
+  request:
+    | { action: 'buy'; kit: ScoutKit; idempotencyKey: string }
+    | { action: 'set'; seatId: string; kit: ScoutKit | null },
+): Promise<ValleyAnswer> {
+  return valleyAnswer(await apiFetch('/api/valley/kit', jsonRequest('POST', request)));
+}
 
 export function stateFrom(data: unknown): GameState {
   return parseGameState(isRecord(data) ? data['state'] : undefined);

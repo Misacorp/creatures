@@ -1,6 +1,13 @@
 import { bool, str } from '../props';
 import type { Entry } from '../types';
-import { VALLEY_DAYS, VALLEY_RESTING, VALLEY_STARTS, ValleyDemo } from '../valley-demo/ValleyDemo';
+import {
+  VALLEY_DAYS,
+  VALLEY_OPEN,
+  VALLEY_RESTING,
+  VALLEY_SCOUTS,
+  VALLEY_STARTS,
+  ValleyDemo,
+} from '../valley-demo/ValleyDemo';
 
 const valleyShell: Entry = {
   name: 'ValleyFrame',
@@ -13,8 +20,17 @@ const valleyShell: Entry = {
     away: { kind: 'toggle' },
     day: { kind: 'select', options: VALLEY_DAYS },
     resting: { kind: 'select', options: VALLEY_RESTING },
+    scouts: { kind: 'select', options: VALLEY_SCOUTS },
+    open: { kind: 'select', options: VALLEY_OPEN },
   },
-  defaults: { start: 'valley', away: false, day: 'busy', resting: 'off' },
+  defaults: {
+    start: 'valley',
+    away: false,
+    day: 'busy',
+    resting: 'off',
+    scouts: 'off',
+    open: 'nothing',
+  },
   presets: [
     { name: 'The valley', props: {} },
     { name: 'The valley, with the welcome-back Gazette', props: { away: true } },
@@ -33,6 +49,39 @@ const valleyShell: Entry = {
     { name: 'Bonfire, open: many resting (+N more)', props: { start: 'bonfire', resting: 'many' } },
     { name: 'The valley, systems on (the tray says Resting)', props: { resting: 'many' } },
     {
+      name: 'Signpost, systems on: no seat bought yet',
+      props: { start: 'signpost', scouts: 'no seats' },
+    },
+    {
+      name: 'Signpost, systems on: one scout out',
+      props: { start: 'signpost', scouts: 'one scout' },
+    },
+    {
+      name: 'Signpost, systems on: two scouts out',
+      props: { start: 'signpost', scouts: 'two scouts' },
+    },
+    {
+      name: 'Signpost, systems on: a full pack',
+      props: { start: 'signpost', scouts: 'a full pack' },
+    },
+    {
+      name: 'Signpost: the scout picker',
+      props: { start: 'signpost', scouts: 'two scouts', open: 'scout picker' },
+    },
+    {
+      name: 'Signpost: where to scout',
+      props: { start: 'signpost', scouts: 'two scouts', open: 'destination' },
+    },
+    { name: 'Signpost: kit', props: { start: 'signpost', scouts: 'two scouts', open: 'kit' } },
+    {
+      name: 'Signpost: the pack and its pace',
+      props: { start: 'signpost', scouts: 'a full pack', open: 'pack and pace' },
+    },
+    {
+      name: 'Signpost: buy a seat',
+      props: { start: 'signpost', scouts: 'one scout', open: 'buy a seat' },
+    },
+    {
       name: 'The valley, systems on, with the Gazette (Acorns fly in too)',
       props: { resting: 'few', away: true },
     },
@@ -44,6 +93,8 @@ const valleyShell: Entry = {
       away={bool(p, 'away')}
       day={str(p, 'day')}
       resting={str(p, 'resting')}
+      scouts={str(p, 'scouts')}
+      open={str(p, 'open')}
     />
   ),
 };

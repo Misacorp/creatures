@@ -122,9 +122,122 @@ async function answer(route) {
   await route.fulfill({
     status: 200,
     contentType: 'application/json',
-    body: JSON.stringify(make()),
+    body: JSON.stringify(make(route.request())),
   });
 }
+
+// --- The valley's scouts (phase 5 step 2): a small server of its own for the Signpost's three routes ---------
+
+const PLACES = [
+  ['tidepools', 'tide', 'scrap', true],
+  ['ember-caves', 'ember', 'shards', true],
+  ['verdant-hollow', 'grove', 'creatures', true],
+  ['festival-grounds', null, 'rare', false],
+].map(([id, element, rich, open]) => ({
+  id,
+  element,
+  rich,
+  open,
+  night: false,
+  special: id === 'ember-caves',
+}));
+const LADDER = [0, 113, 188, 281, 394, 525];
+/** The Signpost's state of a scenario: the seats (id, destination, creatureId, hours), the kit owned and the creatures' ids. */
+const scouts = { seats: [], owned: [], ids: [] };
+const seatView = (s) => ({
+  id: s.id,
+  destination: s.destination,
+  creatureId: s.creatureId,
+  kit: s.kit ?? null,
+  fit: false,
+  second: false,
+  mastery: { hours: 0, step: 0, bonusBp: 0 },
+  store: {
+    hours: s.creatureId === null ? 0 : s.hours,
+    capHours: 72,
+    full: s.creatureId !== null && s.hours >= 72,
+    wasFull: false,
+    fullInHours: s.creatureId === null || s.hours >= 72 ? null : 72 - s.hours,
+    scrap: Math.round(s.hours * 2),
+    shards: Math.round(s.hours * 0.13),
+    gear: 0,
+    blueprints: 0,
+    pages: 0,
+  },
+  perDay: { scrap: 50, shards: 3, creatures: 0.3, gear: 0.2, blueprints: 0.07, pages: 0.1 },
+});
+/** The server's `valley` block for the scenario's seats; every creature rests unless a seat holds it. */
+const valleyBlock = () => ({
+  settledAt: 1799760000000,
+  arrived: true,
+  awayHours: 6,
+  creatures: scouts.ids.map((id, i) => {
+    const seat = scouts.seats.find((s) => s.creatureId === id);
+    return {
+      id,
+      state: seat === undefined ? 'resting' : 'scouting',
+      gained: 25 + i * 11,
+      catchUpBp: 10000,
+      seatId: seat?.id ?? null,
+    };
+  }),
+  allowance: { store: 0, cap: 480, brought: 0 },
+  seats: scouts.seats.map(seatView),
+  seatPrices: {
+    owned: scouts.seats.length,
+    max: 2,
+    next: scouts.seats.length >= 2 ? null : LADDER[scouts.seats.length],
+    ladder: LADDER,
+  },
+  kit: { owned: scouts.owned, price: 875 },
+  places: PLACES,
+  night: false,
+  special: { destination: 'ember-caves', twist: 'rich-veins' },
+});
+/** Puts the scouts' state into the state the page asks for (and answers each route with it). */
+const syncValley = () => {
+  stateOverride = { ...stateOverride, valley: valleyBlock() };
+  return { valley: valleyBlock(), state: { ...state(), valley: undefined } };
+};
+/** What the Signpost's routes were asked, in order (the body of each). */
+const scoutCalls = [];
+const bodyOf = (request) => JSON.parse(request.postData() ?? '{}');
+ROUTES.set('/api/valley/seat', (request) => {
+  const body = bodyOf(request);
+  scoutCalls.push(['seat', body]);
+  const seat = scouts.seats.find((s) => s.id === body.seatId);
+  if (seat !== undefined) {
+    if (body.destination !== undefined)
+      Object.assign(seat, { destination: body.destination, hours: 0 });
+    if (body.creatureId !== undefined) {
+      const other = scouts.seats.find((s) => s.creatureId === body.creatureId && s !== seat);
+      if (other !== undefined) other.creatureId = seat.creatureId;
+      seat.creatureId = body.creatureId;
+      if (body.creatureId !== null && seat.hours === 0) seat.hours = 12;
+    }
+  }
+  return { seatId: body.seatId, ...syncValley() };
+});
+ROUTES.set('/api/valley/seat/buy', (request) => {
+  scoutCalls.push(['buy', bodyOf(request)]);
+  scouts.seats.push({
+    id: `seat-${String(scouts.seats.length + 1)}`,
+    destination: 'tidepools',
+    creatureId: null,
+    hours: 0,
+  });
+  return { seatId: scouts.seats.at(-1).id, price: 0, ...syncValley() };
+});
+ROUTES.set('/api/valley/kit', (request) => {
+  const body = bodyOf(request);
+  scoutCalls.push(['kit', body]);
+  if (body.action === 'buy') scouts.owned.push(body.kit);
+  else {
+    const seat = scouts.seats.find((s) => s.id === body.seatId);
+    if (seat !== undefined) seat.kit = body.kit;
+  }
+  return { ...syncValley() };
+});
 
 // --- The checklist ----------------------------------------------------------------------------------------
 
@@ -177,7 +290,9 @@ page.on('requestfailed', (r) => {
   if (process.env.DEBUG_E2E) console.log('failed:', r.url(), r.failure()?.errorText);
 });
 page.on('response', async (r) => {
-  console.log('starter:', r.status(), (await r.text()).slice(0, 300));
+  // Debug line for the starter pick only; a body the page already dropped is not an error.
+  if (!r.url().endsWith('/api/starter')) return;
+  console.log('starter:', r.status(), (await r.text().catch(() => '')).slice(0, 300));
 });
 await page.route('**/api/**', answer);
 
@@ -418,6 +533,13 @@ try {
       if (book === 'Journal') {
         // From 60 rem a list of places and the open place's pages beside it; a phone keeps the folded headings.
         const wide = width >= 960;
+        // The Journal loads its entries first: the list is there once it has.
+        if (wide)
+          await page
+            .locator('.journal .choice-list')
+            .first()
+            .waitFor({ timeout: 5000 })
+            .catch(() => undefined);
         const lists = await page.locator('.journal .choice-list').count();
         const panels = await page.locator('.journal .side-panel').count();
         const folds = await page.locator('.journal .journal-place').count();
@@ -744,21 +866,9 @@ try {
       const config = ROUTES.get('/api/config');
       answerOverride.set('/api/config', () => ({ ...config(), valleySystems: true }));
       const creatures = baseState.creatures.map((c) => ({ ...c, busy: null, away: false }));
-      stateOverride = {
-        creatures,
-        valley: {
-          settledAt: 1799760000000,
-          arrived: true,
-          awayHours: 6,
-          creatures: creatures.map((c, i) => ({
-            id: c.id,
-            state: 'resting',
-            gained: 25 + i * 11,
-            catchUpBp: 10000,
-          })),
-          allowance: { store: 0, cap: 480, brought: 0 },
-        },
-      };
+      scouts.seats = [];
+      scouts.ids = creatures.map((c) => c.id);
+      stateOverride = { creatures, valley: valleyBlock() };
     },
     async () => {
       await waitFor(page.locator(VALLEY), 'attached');
@@ -794,6 +904,154 @@ try {
       } else if (drawn !== baseState.creatures.length) {
         throw new Error(`${String(drawn)} drawn, no "+N more" for the rest`);
       }
+    },
+  );
+
+  // The Signpost with the valley's systems on (phase 5 step 2): take a seat, post a scout, move it, drag one on with the fit
+  // previewed, remove it; a full pack. Nothing may overlap (`expectTopmost`) at any width.
+  await scenario(
+    'valley systems on: the Signpost is its scouts: take a seat, post, move, drag with a preview, remove',
+    () => {
+      const config = ROUTES.get('/api/config');
+      answerOverride.set('/api/config', () => ({ ...config(), valleySystems: true }));
+      const creatures = baseState.creatures.map((c) => ({ ...c, busy: null, away: false }));
+      scouts.seats = [];
+      scouts.owned = [];
+      scouts.ids = creatures.map((c) => c.id);
+      scoutCalls.length = 0;
+      stateOverride = { creatures, valley: valleyBlock() };
+    },
+    async () => {
+      await waitFor(page.locator(VALLEY), 'attached');
+      await place('signpost').evaluate((el) => el.click());
+      await waitFor(heading('Signpost'));
+      // Today's Expeditions page is gone: no trips, no explorer to send.
+      if ((await page.getByText(/Send an explorer|Send on a trip/i).count()) > 0)
+        throw new Error('the Expeditions page is still drawn');
+      await shot('signpost-no-seats');
+      // The scene's one step, then the seat to buy (the first is free).
+      const take = page.getByRole('button', { name: /^Take your first seat/ });
+      await waitFor(take);
+      await expectTopmost(take.first(), 'the "Take your first seat" button');
+      await page.getByRole('button', { name: /A new seat/ }).click();
+      await waitFor(page.getByRole('dialog'));
+      await page.getByRole('button', { name: /^Buy the seat/ }).click();
+      await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+      await waitFor(page.getByRole('heading', { name: 'Seat 1' }));
+      if (
+        !scoutCalls.some(
+          ([kind, body]) => kind === 'buy' && typeof body.idempotencyKey === 'string',
+        )
+      )
+        throw new Error('the seat was bought without an idempotency key');
+      // Post a scout from the picker.
+      const slot = page.getByRole('button', { name: /^Seat 1: nobody posted/ });
+      await expectTopmost(slot, 'the empty scout slot');
+      await slot.click();
+      await waitFor(page.getByRole('dialog', { name: /Who scouts/ }));
+      await shot('signpost-picker');
+      const [first, second] = baseState.creatures;
+      await page
+        .getByRole('option')
+        .filter({ hasText: /Sproutle/ })
+        .first()
+        .click();
+      await waitFor(page.getByRole('button', { name: /^Seat 1: Sproutle/ }));
+      if (scoutCalls.at(-1)?.[1].creatureId !== second.id)
+        throw new Error('the post named another creature');
+      // The pack's line, and the tray calls the scout Scouting (no z on it).
+      await waitFor(page.getByRole('button', { name: /^Full in / }));
+      const tray = page.locator(
+        `section[aria-label="Creatures to post"] button[data-creature="${second.id}"]`,
+      );
+      if (!/Scouting/.test((await tray.getAttribute('aria-label')) ?? ''))
+        throw new Error('the tray does not say Scouting');
+      if ((await tray.locator('.vy-zz').count()) > 0) throw new Error('a scout carries the z');
+      // Move it: another destination, from the drawer.
+      await page.getByRole('button', { name: /^Seat 1: scouting Tidepools/ }).click();
+      await waitFor(page.getByRole('dialog'));
+      await shot('signpost-where');
+      await page.getByRole('button', { name: /^Ember Caves/ }).click();
+      await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+      await waitFor(page.getByRole('button', { name: /^Seat 1: scouting Ember Caves/ }));
+      // Drag a resting creature from the tray onto the seat: the seat previews the change before the drop.
+      const mover = page.locator(
+        `section[aria-label="Creatures to post"] button[data-creature="${first.id}"]`,
+      );
+      const card = page.locator('li.sp-seat').first();
+      await mover.scrollIntoViewIfNeeded();
+      const at = await mover.boundingBox();
+      const over = await card.boundingBox();
+      if (at === null || over === null) throw new Error('no boxes to drag between');
+      await page.mouse.move(at.x + at.width / 2, at.y + at.height / 2);
+      await page.mouse.down();
+      await page.mouse.move(at.x + at.width / 2 + 12, at.y + at.height / 2 + 12, { steps: 4 });
+      await page.mouse.move(over.x + over.width / 2, over.y + over.height / 2, { steps: 10 });
+      await waitFor(page.locator('.sp-preview'));
+      await expectTopmost(page.locator('.sp-preview').first(), 'the fit preview');
+      await shot('signpost-drag-preview');
+      await page.mouse.up();
+      await waitFor(page.getByRole('button', { name: /^Seat 1: Cindle/ }));
+      if (scoutCalls.at(-1)?.[1].creatureId !== first.id)
+        throw new Error('the drop posted another creature');
+      // Remove it: back to resting.
+      await page.getByRole('button', { name: /^Seat 1: Cindle/ }).click();
+      await waitFor(page.getByRole('dialog', { name: /Who scouts/ }));
+      await page
+        .getByRole('option')
+        .filter({ hasText: /Back to resting/ })
+        .first()
+        .click();
+      await waitFor(page.getByRole('button', { name: /^Seat 1: nobody posted/ }));
+      if (scoutCalls.at(-1)?.[1].creatureId !== null) throw new Error('remove did not send null');
+      // No two things overlap: every seat card and the tray is the topmost thing at its box.
+      for (const loc of [
+        page.locator('li.sp-seat').first(),
+        page.locator('.sp-page .vy-tray').first(),
+      ]) {
+        await loc.scrollIntoViewIfNeeded();
+        await expectTopmost(loc, 'a Signpost card');
+      }
+      await shot('signpost-one-seat');
+    },
+  );
+
+  await scenario(
+    'valley systems on: a full pack says so on the seat and on the Signpost',
+    () => {
+      const config = ROUTES.get('/api/config');
+      answerOverride.set('/api/config', () => ({ ...config(), valleySystems: true }));
+      const creatures = baseState.creatures.map((c) => ({ ...c, busy: null, away: false }));
+      scouts.seats = [
+        { id: 'seat-1', destination: 'ember-caves', creatureId: creatures[1].id, hours: 80 },
+        { id: 'seat-2', destination: 'tidepools', creatureId: creatures[2].id, hours: 30 },
+      ];
+      scouts.owned = [];
+      scouts.ids = creatures.map((c) => c.id);
+      stateOverride = { creatures, valley: valleyBlock() };
+    },
+    async () => {
+      await waitFor(page.locator(VALLEY), 'attached');
+      // The Signpost's bubble on the map says a pack is full.
+      const bubble = place('signpost');
+      await waitFor(bubble);
+      if (!/pack is full/i.test((await bubble.getAttribute('aria-label')) ?? ''))
+        throw new Error('the Signpost has no full-pack bubble');
+      await bubble.evaluate((el) => el.click());
+      await waitFor(heading('Signpost'));
+      await waitFor(page.getByText('Pack full').first());
+      await waitFor(page.getByRole('heading', { name: 'Seat 2' }));
+      await page
+        .getByRole('button', { name: /^Pack full/ })
+        .first()
+        .click();
+      await waitFor(page.getByRole('dialog', { name: /Pack and pace/ }));
+      await page.waitForTimeout(600);
+      await expectTopmost(page.getByRole('dialog').first(), 'the pack drawer');
+      await shot('signpost-pack');
+      await page.keyboard.press('Escape');
+      await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+      await shot('signpost-two-seats');
     },
   );
 
