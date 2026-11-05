@@ -126,13 +126,13 @@ export const FOE_QUESTIONS: Readonly<Record<string, FoeQuestion>> = Object.fromE
         UNDER_ELITE,
         'tidewing/steady-mark kilnmole/keep-the-heat-in tempestray/detonate',
       ],
-      // It washes every debuff off every third round: a Mired that comes back every round holds it down.
+      // It swells every round and washes every debuff off every third: a Mired that comes back every round slows the swelling.
       [
         'bog-toad',
         'family:Debuff',
         ['squelch-song'],
-        5,
-        oldNumbers(15_000, 13_000),
+        30,
+        UNDER,
         'tidewing/none croakmire/squelch-song tempestray/none',
       ],
       // Black, thick and draining: healing is halved and little gets through its armour, so a boost that reaches the far hitter too

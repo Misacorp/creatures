@@ -80,14 +80,14 @@ Foes have no turn order of their own: in the dungeon **your creatures always act
 
 ### Mire foes
 
-Status: 2026-10-20. Shipped (`docs/design/speed-and-dodge.md` section 5.5). Both foes leave Mired on the creatures they hit. `(content: dungeon-foes.json)`
+Status: 2026-10-20. Shipped (`docs/design/speed-and-dodge.md` section 5.5). In combat v2 (2026-11-05) Mired sits on the foe, never on your creatures: the fen foes are the ones the team Mires, not foes that Mire the team. `(content: dungeon-foes.json, combat-v2 foes.json)`
 
-**Bog Toad** (Mud Spit, every second round, a small shell of mud on one random creature that leaves Mired)
+**Bog Toad** (Mud Spit, every second round, a mouthful of mud on one random creature; Swelling Croak, it swells +50% Attack every round, up to three times; Shake It Off, every third round it washes every debuff off itself)
 
 - Shipped flavour `(content)`: "Sits so still you take it for a stone, then spits a mouthful of mud. It is very sorry afterwards."
-- Compendium detail: a small cousin of Old Bogback, the one the Sunken Fen sends to the dungeon's damp corners. It leaves Mired on whoever it spits at, which is the first taste of the fen's slow ground.
+- Compendium detail: a small cousin of Old Bogback, the one the Sunken Fen sends to the dungeon's damp corners. Its mud is only mud: the team is the one that Mires the toad. A Mired toad swells slower, and it shakes the Mire off every third round, so the Mire has to come back every round. It is the first taste of the fen's slow ground.
 
-**Tar Leech** (Tar Cling, every third round, a heavy hit on the left creature that leaves Mired)
+**Tar Leech** (Tar Cling, every third round, a heavy hit on the left creature)
 
 - Shipped flavour `(content)`: "Black, shiny and slow. It clings to the nearest creature and will not take the hint."
 - Compendium detail: tar that has learned to cling. It is the dungeon's patient foe: it is slow, it is not scary, and it will not let go.

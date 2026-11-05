@@ -1,6 +1,6 @@
 {
   "format": 2,
-  "overall": "e20b422691c521345ac83cba5b305ba6dcd60c24326d1f0cb696858eaea862b2",
+  "overall": "f49f2da50085750ff62c61e231d7a21a173fb5fa2700f8d630f1c0b650c0365a",
   "cases": {
     "cull-potential:12000#0": "17b80ca1a6bf81210475e2407fef1a9dcc342e55b61d7d0bf5d97f1e28fa8044",
     "cull-potential:24000#0": "e1dce8e43354ba33f577117566fb2c331d8db1b95d91cbd18b88cc42b7498aff",
@@ -355,8 +355,8 @@
     "fight:slot9:old-bogback:classic#2": "d579959f02012abd87990b6f665391ab474156bc36bb5edbcd510c7d5b798549",
     "foe:ash-sprite:1#0": "8629ed9da6fedb1b6b8c482ce9dbb13105ec136912a6f267c947a211a710e135",
     "foe:ash-sprite:7#0": "ec653d6db685add4befe357632147bf898aeed2aa1dc1f4487fb407c34609d69",
-    "foe:bog-toad:1#0": "c748c2e32c23f8c13241ca56ce32262321f3ff8bf64da8a37154b7910b856dc2",
-    "foe:bog-toad:7#0": "2fff1161a9195c1817a1bd0a3345390efc4b5d4bffbc61bed22ed2145d5fbe88",
+    "foe:bog-toad:1#0": "7f488b0b6541b3ca6819831e03fc447dcf00c121e797074b71659ea9fb340f0b",
+    "foe:bog-toad:7#0": "7c5d9a963d04fa696b08fe6b0b31e9923ff77f719db5b6b79697655c7e47fc38",
     "foe:bramble-hound:1#0": "94582196f7f357b54f2b86cd32b6f8fb5a58abc6d708fb8898c77a26ca8a6c16",
     "foe:bramble-hound:7#0": "96421da9e9473908dca9a9163fee3da64a17c1c359a69c49e8bfdd33ad537a34",
     "foe:bramble-matron:1#0": "077340838a8379e642e592dc9281bffba88f55635706f9ab69a395a170a197d3",

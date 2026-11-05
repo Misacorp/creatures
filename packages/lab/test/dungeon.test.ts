@@ -148,7 +148,7 @@ describe('the dungeon foes', () => {
       .filter((q) => 'old' in q.probe)
       .map((q) => q.foe)
       .sort();
-    expect(old).toEqual(['ash-sprite', 'bog-toad', 'puddle-imp']);
+    expect(old).toEqual(['ash-sprite', 'puddle-imp']);
   });
 
   it.each(Object.values(FOE_QUESTIONS).map((q) => [q.foe, q] as const))(
