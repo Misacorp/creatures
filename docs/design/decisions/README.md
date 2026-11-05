@@ -23,6 +23,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [direction.md](direction.md): Roadmap calls, Misa's standing direction, naming and tone, content policy, how agents and Misa work.
 
+- 2026-11-05 \[Misa\] Working rules: scalars best-guess and ask later, invent content for misses, fewer decisions for Misa
 - 2026-11-05 \[Misa\] CI runs the full check; agents push after quick local checks
 - 2026-11-03 \[Misa\] Valley art goes straight onto the valley branch, not through main
 - 2026-11-03 Sprites up to 128 wide; free backdrop art may have no outline
