@@ -382,7 +382,14 @@ export function buildBeats(
       starts.push({ from: i, kind: 'boss', round, row: b.row, actor: null });
     } else if (b.type === 'end') {
       starts.push({ from: i, kind: 'end', round, row: 0, actor: null });
-    } else if (b.type === 'hit' && b.from !== null && b.to === null && rows.has(b.from)) {
+    } else if (
+      b.type === 'hit' &&
+      b.from !== null &&
+      b.to === null &&
+      b.bonus !== true &&
+      rows.has(b.from)
+    ) {
+      // (A bonus that lands as its own hit, Aftershock's, is the same creature's turn: it stays in the beat of the hit before it.)
       let from = i;
       while (from > 0 && from - 1 > (last?.from ?? -1) && isLead(events[from - 1] as FightEvent))
         from--;
@@ -597,6 +604,8 @@ export function showOf(
       }
       case 'counter':
         flash.add(null);
+        // A counter that is its Knack's own effect (Backlash) names the Knack on its tile, as a heal or a boost does.
+        if (b.byKnack === true && !knackOwners.has(b.from)) knackOwners.set(b.from, i);
         floats.push({
           i,
           target: null,
@@ -627,6 +636,23 @@ export function showOf(
       case 'intercept':
         saves.push({ i, guard: b.guard, who: b.who, prevented: null });
         break;
+      case 'sure':
+        // The boss cannot dodge `who` this round: nothing on the board changes, so the Knack that did it is named on its tile.
+        if (!knackOwners.has(b.by)) knackOwners.set(b.by, i);
+        break;
+      case 'mired':
+        // Shake It Off: the boss clears its Mired. The same callout a reaction uses, in no element's colours.
+        if (b.shook !== undefined && b.shook > 0)
+          floats.push({
+            i,
+            target: null,
+            text: 'Shakes it off!',
+            tone: 'reaction',
+            crit: false,
+            drift: drift(i),
+            sub: `-${String(b.shook)} Mired`,
+          });
+        break;
       case 'cover':
         saves.push({ i, guard: b.guard, who: b.who, prevented: b.prevented });
         break;
@@ -647,7 +673,8 @@ export function showOf(
           tone: 'reaction',
           crit: false,
           drift: drift(i),
-          sub: `+${String(b.bonus)}`,
+          // Aftershock's bonus lands as its own hit after this one, with its own number, so the callout leaves it out.
+          ...(b.split === true ? {} : { sub: `+${String(b.bonus)}` }),
           ...(trigger === undefined ? {} : { elements: [b.mark, trigger] as const }),
         };
         floats.push(cue);

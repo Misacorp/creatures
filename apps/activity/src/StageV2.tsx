@@ -99,7 +99,11 @@ function FloatsV2({ fx, target }: { fx: readonly FxItem[]; target: string | null
               {cue.tone === 'reaction' ? (
                 <>
                   <span class="float-text rx-name">
-                    <SplitName text={cue.text} elements={[markEl, hitEl]} />
+                    {cue.elements === undefined ? (
+                      cue.text
+                    ) : (
+                      <SplitName text={cue.text} elements={[markEl, hitEl]} />
+                    )}
                   </span>
                   <span class="rx-numbers">
                     {merged !== undefined && (
