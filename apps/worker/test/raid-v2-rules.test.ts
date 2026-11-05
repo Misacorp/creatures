@@ -640,7 +640,14 @@ describe('a fighter', () => {
         const p = v2Player(ctx, 1, { level: 22, creatures: 1 });
         const id = p.creatureIds[0] as string;
         const bare = loadV2Creatures(ctx.sql, [id]).get(id);
-        expect(bare?.gear).toEqual({ hp: 0, atk: 0, spd: 0, critChanceBp: 0, critDamageBp: 0 });
+        expect(bare?.gear).toEqual({
+          fx: {},
+          hp: 0,
+          atk: 0,
+          spd: 0,
+          critChanceBp: 0,
+          critDamageBp: 0,
+        });
         const base = gearContent.bases.find((b) => b.slot === 'hat') ?? gearContent.bases[0];
         const item = giveItem(ctx.sql, p.id, (base as { id: string }).id, { level: 10, lines: [] });
         ctx.sql.exec('UPDATE gear_items SET equipped_on = ? WHERE id = ?', id, item);
