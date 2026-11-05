@@ -1,18 +1,11 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment --
+/* eslint-disable @typescript-eslint/no-unsafe-member-access --
    These tests read parts of response bodies (`Json.body` is `any` on purpose). */
 /**
  * Phase 5 step 1: resting and the lazy pass on the server (migration 56, `valley-settle.ts`). With the flag on every creature earns
  * idle XP by the away steps, the allowance builds in a store that comes home on arrival, and lounge XP, treats and ribbon gates are
  * off; with it off the game is unchanged and no valley row exists.
  */
-import {
-  RULES,
-  VALLEY_RULES,
-  content,
-  ValleyViewSchema,
-  awayShare,
-  expToReach,
-} from '@creatures/game';
+import { RULES, VALLEY_RULES, ValleyViewSchema, awayShare, expToReach } from '@creatures/game';
 import * as v from 'valibot';
 import { describe, expect, it } from 'vitest';
 import { ON, type Json } from './dev-helpers';
@@ -284,8 +277,10 @@ describe('the valley pass in /api/state (flag on)', () => {
         const res = await p.state();
         expect(totalXp(ctx.sql, p.creatureIds[0] as string) - old).toBe(24 * BASE);
         expect(totalXp(ctx.sql, lateId) - expToReach(3)).toBe(12 * BASE);
-        const view = res.body.valley.creatures.find((c: { id: string }) => c.id === lateId);
-        expect(view.gained).toBe(12 * BASE);
+        const view = v
+          .parse(ValleyViewSchema, res.body.valley)
+          .creatures.find((c) => c.id === lateId);
+        expect(view?.gained).toBe(12 * BASE);
       },
       SYSTEMS,
     );
@@ -376,7 +371,7 @@ describe('what the valley replaces (flag on) and what stays (flag off)', () => {
         const p = await newPlayer(ctx, 1);
         ctx.sql.exec(
           'INSERT INTO lounge_rest (creature_id, user_id, day, paid) VALUES (?, ?, ?, 7)',
-          p.creatureIds[0] as string,
+          p.creatureIds[0],
           p.id,
           loungeDay(ctx.clock.t, ctx.core.timezone()).day,
         );
@@ -425,10 +420,10 @@ describe('what the valley replaces (flag on) and what stays (flag off)', () => {
         const p = await newPlayer(ctx, 1);
         const res = await p.state();
         expect(res.status).toBe(200);
-        expect(Object.hasOwn(res.body, 'valley')).toBe(false);
+        expect(Object.hasOwn(res.body as object, 'valley')).toBe(false);
         ctx.sql.exec(
           'INSERT INTO lounge_rest (creature_id, user_id, day, paid) VALUES (?, ?, ?, 7)',
-          p.creatureIds[0] as string,
+          p.creatureIds[0],
           p.id,
           loungeDay(ctx.clock.t, ctx.core.timezone()).day,
         );
