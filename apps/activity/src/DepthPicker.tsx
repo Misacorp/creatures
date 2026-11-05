@@ -8,11 +8,10 @@ import { DropChevron } from './ui/DropChevron';
 import { PickSheet } from './ui/PickSheet';
 import { PreviewStatus } from './ui/PreviewStatus';
 import type { PreviewStatusName } from './use-job-preview';
-import { Tag } from './ui/Tag';
 
 /**
  * What a depth is, drawn the same in the trigger and in every row, on one line: its name and mark on the left, the
- * two chips in a fixed column at the right (so the numbers line up and a jump stands out). The landmark mark is
+ * two plain numbers in a fixed column at the right (so the numbers line up and a jump stands out). The landmark mark is
  * shown only at the player's own depth, the one place a landmark's extras pay.
  */
 function DepthFace({ depth, own }: { depth: number; own: number }) {
@@ -30,8 +29,8 @@ function DepthFace({ depth, own }: { depth: number; own: number }) {
         {depth === own && <span class="depth-mark depth-own">Your depth</span>}
       </span>
       <span class="depth-chips">
-        <Tag class="xp-times depth-xp">{chips.xp}</Tag>
-        <Tag class="xp-times depth-loot">{chips.loot}</Tag>
+        <span class="depth-xp">{chips.xp}</span>
+        <span class="depth-loot">{chips.loot}</span>
       </span>
     </span>
   );
