@@ -427,7 +427,7 @@ export function ForgeAnvils({
               ) : (
                 piece !== null &&
                 anvil.piece !== null && (
-                  <p class="sp-line fg-piece">
+                  <div class="sp-line fg-piece">
                     <Bar
                       value={anvil.piece.progress}
                       max={anvil.piece.need}
@@ -435,7 +435,7 @@ export function ForgeAnvils({
                       class="sp-bar"
                     />
                     <span class="sp-pack-text">{piece}</span>
-                  </p>
+                  </div>
                 )
               )}
               {smith !== undefined && (

@@ -1277,23 +1277,32 @@ try {
       );
       const card = page.locator('li.sp-seat').nth(1);
       await mover.scrollIntoViewIfNeeded();
-      const at = await mover.boundingBox();
-      await card.scrollIntoViewIfNeeded();
-      const over = await card.boundingBox();
-      const from = await mover.boundingBox();
-      if (at === null || over === null || from === null) throw new Error('no boxes to drag');
-      await mover.scrollIntoViewIfNeeded();
       const start = await mover.boundingBox();
-      await page.mouse.move(start.x + start.width / 2, start.y + start.height / 2);
-      await page.mouse.down();
-      await page.mouse.move(start.x + start.width / 2 + 12, start.y + start.height / 2 + 12, {
-        steps: 4,
-      });
       const target = await card.boundingBox();
-      await page.mouse.move(target.x + target.width / 2, target.y + target.height / 2, {
-        steps: 10,
-      });
-      await page.mouse.up();
+      const view = page.viewportSize();
+      if (start === null || target === null || view === null) throw new Error('no boxes to drag');
+      // A drop needs the card on screen with the tray (there is no scroll while carrying): wide pages
+      // drag it; a phone, where the card is screens below the tray, posts the smith from the picker.
+      const reachable = target.y + target.height / 2 < view.height && target.y > 0;
+      if (reachable) {
+        await page.mouse.move(start.x + start.width / 2, start.y + start.height / 2);
+        await page.mouse.down();
+        await page.mouse.move(start.x + start.width / 2 + 12, start.y + start.height / 2 + 12, {
+          steps: 4,
+        });
+        await page.mouse.move(target.x + target.width / 2, target.y + target.height / 2, {
+          steps: 10,
+        });
+        await page.mouse.up();
+      } else {
+        await page.getByRole('button', { name: /^Anvil 2: nobody posted/ }).click();
+        await waitFor(page.getByRole('dialog', { name: /Who smiths/ }));
+        await page
+          .getByRole('option')
+          .filter({ hasText: /Cindle/ })
+          .first()
+          .click();
+      }
       await waitFor(page.getByRole('button', { name: /^Anvil 2: Cindle/ }));
       await shot('forge-two-anvils');
       // The exchange: the rate and the crit are shown, the trade is keyed.
@@ -1319,14 +1328,16 @@ try {
       await tools.click();
       await page.getByRole('button', { name: 'Rare', exact: true }).first().click();
       await page.waitForTimeout(300);
-      await expectTopmost(page.locator('.bag-tools').first(), 'the bag tools');
+      await expectTopmost(tools, 'the bag tools header');
       await shot('forge-bag-filter');
-      // Nothing overlaps: every card and the tray is the topmost thing at its box.
+      // The trade's notice floats at the top of the screen: bring each card to the middle.
       for (const loc of [
         page.locator('li.sp-seat').first(),
         page.locator('.fg-page .vy-tray').first(),
       ]) {
-        await loc.scrollIntoViewIfNeeded();
+        await loc.evaluate((el) => {
+          el.scrollIntoView({ block: 'center' });
+        });
         await expectTopmost(loc, 'a Forge card');
       }
       forgeState.anvils = [];
