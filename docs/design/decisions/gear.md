@@ -4,7 +4,7 @@ Gear items, lines and sets, crafting, dismantling, conversions, the bag and the 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
-## 2026-11-05: Rarity is shown by the frame's shape too, and every item's spoken name says it
+## 2026-11-05: [Misa] Rarity is shown by the frame's shape too, and every item's spoken name says it
 
 ID: `2026-11-05-rarity-is-shown-by-a-shape` · Status: current · Amends: `2026-10-17-one-item-level-indicator-item-card`
 
