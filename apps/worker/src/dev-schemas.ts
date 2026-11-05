@@ -53,6 +53,7 @@ export const DEV_ACTION_TOOLS = [
   'games-reset',
   'analytics-rollup',
   'combat-v2-convert',
+  'valley-fresh',
   'reset-account',
 ] as const;
 export type DevActionTool = (typeof DEV_ACTION_TOOLS)[number];

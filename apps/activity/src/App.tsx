@@ -141,6 +141,7 @@ export function App() {
                   devTools={bootStatus.value.config.devTools || bootStatus.value.me.devTools}
                   loungeLive={bootStatus.value.config.loungeLive}
                   valley={bootStatus.value.config.valley}
+                  valleySystems={bootStatus.value.config.valleySystems}
                 />
                 {bootStatus.value.config.leetSource === 'mock' && (
                   <p class="note">Leet points are simulated until the leet bot API is live</p>

@@ -12,7 +12,8 @@
     "test": "vitest run",
     "report": "node scripts/report.mjs",
     "tune": "node scripts/tune.mjs",
-    "speed": "node scripts/speed.mjs"
+    "speed": "node scripts/speed.mjs",
+    "compare": "node scripts/compare.mjs"
   },
   "dependencies": {
     "@creatures/game": "workspace:*",

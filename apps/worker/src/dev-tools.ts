@@ -63,6 +63,7 @@ import {
 import { devKey, type DevState } from './dev-state';
 import { clockState, clockTool } from './dev-tools-clock';
 import { combatV2Convert } from './dev-tools-combat-v2';
+import { valleyFresh } from './dev-tools-valley';
 import { setWeather } from './dev-tools-weather';
 import { gamesBots, gamesReset, gamesRunNow } from './dev-tools-games';
 import {
@@ -143,6 +144,8 @@ export interface DevToolsDeps {
   weather: Weather;
   /** The `COMBAT_V2` flag: the `combat-v2-convert` tool needs it, and new creatures roll their v2 talent. */
   combatV2: boolean;
+  /** The valley's base systems are on (`VALLEY_SYSTEMS`): the `valley-fresh` tool needs it. */
+  valleySystems: boolean;
   /** Crypto randomness for what the tools roll. */
   rng: Rng;
   gearRng: Rng;
@@ -236,6 +239,8 @@ const TOOLS: Record<DevActionTool, Tool> = {
   },
   // Staging with COMBAT_V2 on only (it answers 404 otherwise): every creature rolls its v2 talent, Knacks and finale choices go.
   'combat-v2-convert': tool(NoBodySchema, combatV2Convert),
+  // Staging with the valley systems on only (404 otherwise): wipes every player's progress in the guild for a day-0 valley; re-arms the alarm (the dev clock goes back to real time).
+  'valley-fresh': tool(NoBodySchema, valleyFresh, { movesClock: true }),
   'reset-account': tool(ResetAccountBodySchema, (ctx) => {
     purgeUser(ctx.sql, ctx.userId, true);
     ctx.state.clearUser(ctx.userId);
@@ -268,6 +273,7 @@ export class DevTools {
       games: d.games,
       weather: d.weather,
       combatV2: d.combatV2,
+      valleySystems: d.valleySystems,
       rng: d.rng,
       gearRng: d.gearRng,
       quirkRng: d.quirkRng,

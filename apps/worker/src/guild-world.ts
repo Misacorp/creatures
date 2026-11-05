@@ -9,6 +9,7 @@ import type { DailyRow } from './analytics-rollup';
 import { GuildCore, type SessionUser } from './guild-core';
 import { DIRECTORY_NAME } from './guild-directory';
 import { LEET_BACKFILL_DAYS, createLeetSourceFromEnv } from './leet';
+import { valleySystemsOn } from './valley-flag';
 
 /**
  * One Durable Object per Discord guild (`idFromName(guildId)`). Holds that guild's state in its
@@ -45,6 +46,7 @@ export class GuildWorld extends DurableObject<Env> {
       raidPractice: env.RAID_PRACTICE === 'on',
       devTools: env.DEV_TOOLS === 'on',
       combatV2: env.COMBAT_V2 === 'on',
+      valleySystems: valleySystemsOn(env),
       // CI sets VERSION to the commit; "dev" (local) keeps the start-up passes on every start.
       ...(env.VERSION !== 'dev' && env.VERSION !== '' ? { build: env.VERSION } : {}),
       live: this.live,

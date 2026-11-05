@@ -56,6 +56,10 @@
   // (valley), and the game opens on a map of places (each opens today's page) instead of the dock and tabs.
   // Nothing else changes on the server. Any other value turns it off. On in staging only until phase 6; a
   // test pins the top level and production to "off".
+  // VALLEY_SYSTEMS: "on" turns on the valley's base systems (docs/design/valley/phase5-plan.md): /api/config tells the
+  // client (valleySystems). It only counts with VALLEY and COMBAT_V2 both "on"; "on" without them is treated as off
+  // and logs a config error once. Any other value turns it off. On in staging only until phase 6; a test pins the top
+  // level and production to "off".
   // DISCORD_PUBLIC_KEY: the Discord app's public key (hex, not a secret). The deploy job fills it from
   // Discord's verify_key; empty (or not 64 hex characters) turns POST /api/discord/interactions off (404),
   // which also turns off /feedback (docs/design/feedback.md).
@@ -73,7 +77,8 @@
     "FINALE_LIVE": "on",
     "RAID_LIVE": "on",
     "COMBAT_V2": "off",
-    "VALLEY": "off"
+    "VALLEY": "off",
+    "VALLEY_SYSTEMS": "off"
   },
   "env": {
     "staging": {
@@ -101,7 +106,8 @@
         "FINALE_LIVE": "on",
         "RAID_LIVE": "on",
         "COMBAT_V2": "on",
-        "VALLEY": "on"
+        "VALLEY": "on",
+        "VALLEY_SYSTEMS": "on"
       }
     },
     "production": {
@@ -129,7 +135,8 @@
         "FINALE_LIVE": "off",
         "RAID_LIVE": "on",
         "COMBAT_V2": "off",
-        "VALLEY": "off"
+        "VALLEY": "off",
+        "VALLEY_SYSTEMS": "off"
       }
     }
   }

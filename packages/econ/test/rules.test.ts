@@ -5,7 +5,7 @@ import { awayShare, catchUpMultiplier, hearthMultiplier, masteryBonus } from '..
 import { PROFILES } from '../src/profiles';
 import { assumptionsFrom, tunedFrom } from '../src/report';
 import { RULES } from '../src/rules';
-import rulesSource from '../src/rules.ts?raw';
+import rulesSource from '../../game/src/valley/rules.ts?raw';
 import { ProfileSchema, RulesSchema } from '../src/schema';
 import { ALL_SERVERS } from '../src/servers';
 
