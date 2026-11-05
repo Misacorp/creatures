@@ -253,6 +253,12 @@ export class FakeElement extends FakeNode {
     this.focused += 1;
     this.doc.activeElement = this;
   }
+  /** What `:focus-visible` answers for the focused element: true (a keyboard user) unless a test sets it to false (a tap). */
+  keyboardFocus = true;
+  matches(selector: string): boolean {
+    if (selector === ':focus-visible') return this.doc.activeElement === this && this.keyboardFocus;
+    throw new Error(`the fake DOM does not support matches(${selector})`);
+  }
   /** There is no layout: every box is empty (components that measure keep their default size). */
   getBoundingClientRect(): { width: number; height: number; left: number; top: number } {
     return { width: 0, height: 0, left: 0, top: 0 };

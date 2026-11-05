@@ -2,6 +2,7 @@ import type { ComponentChildren } from 'preact';
 import { useEffect, useLayoutEffect, useRef } from 'preact/hooks';
 import { glyphOrUnknown } from '../glyphs';
 import { Sprite } from '../sprites/Sprite';
+import { keyboardHasFocus } from './focus-return';
 import { escapeAction, type PopoverNav } from './popover-nav';
 import { popoverCoords, type PopoverSide } from './popover-place';
 
@@ -94,6 +95,8 @@ export function Popover(props: PopoverProps) {
   useEffect(() => {
     const pop = popRef.current;
     if (pop === null) return undefined;
+    // Only a keyboard user gets the focus back on the opener at the end (no ring left after a tap).
+    const byKeyboard = keyboardHasFocus();
     (pop.querySelector<HTMLElement>('button:not(:disabled)') ?? pop).focus();
 
     let tappedOutside = false;
@@ -129,7 +132,11 @@ export function Popover(props: PopoverProps) {
       // it was lost because the button that had it was switched off). A tap elsewhere has already
       // moved focus on, and is left alone.
       const active = document.activeElement;
-      if (!tappedOutside && (active === null || active === document.body || pop.contains(active))) {
+      if (
+        byKeyboard &&
+        !tappedOutside &&
+        (active === null || active === document.body || pop.contains(active))
+      ) {
         latest.current.anchor()?.focus();
       }
     };
