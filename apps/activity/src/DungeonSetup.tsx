@@ -104,7 +104,7 @@ export function DungeonSetup({
   onDraftChange,
   saveDraft,
   onEnter,
-  loadPreview = fetchDungeonPreview,
+  loadPreview,
   initialDepth,
   onSeeLast,
   configure,
@@ -132,7 +132,7 @@ export function DungeonSetup({
       return undefined;
     }
     let live = true;
-    loadPreview(depth).then(
+    (loadPreview ?? ((d: number) => fetchDungeonPreview(d)))(depth).then(
       (answer) => {
         if (live) setPreview(answer);
       },
