@@ -19,8 +19,9 @@ import { TARGET_RANKS, type TargetRank } from './targets';
 import { planTalents, talentTeamId } from './talentReport';
 import type { TeamShareSummary } from './teamShareReport';
 import { writeTrackNumbers } from './trackFile';
+import { journeyPass, journeyPassSummary } from './trackJourney';
 import { planSlotInfo, slotInfoMarkdown, trackSummary, tuneTrack } from './trackTuner';
-import { SLOT_WEEKS, TRACK_ORDER } from './track';
+import { SLOT_NUMBERS, SLOT_WEEKS, TRACK_ORDER } from './track';
 import { summaryAll, tuneBoss, type RankResult } from './tuner';
 
 /** Where the jobs run: `exec` runs one job, `slots` of them at a time (`scripts/report.mjs` sets both from `--jobs`). */
@@ -292,7 +293,7 @@ async function dungeonDays(
  * `--path [--speed slow|expected|fast|all] [--determination] [--quick] [--out <file.md>]`: the path simulator (`path.ts`). It plays many seeded
  * servers (40, or 8 with `--quick`) of each kind through the boss track week by week and prints, per roster speed, the week each
  * slot is reached, the weekends spent on it and the share of servers stuck for more than four weeks on one boss. Nothing is tuned.
- * The path plays with Determination, which is on by default from the second lap (`DETERMINATION`: +5% damage and healing for each failed
+ * The path plays with Determination, which is on by default from the second lap (`DETERMINATION`: +15% damage and healing for each failed
  * weekend on the same boss, at most 5 stacks, from slot 6, reset by a kill). `--determination` also plays the same servers without it and
  * prints that beside it, as a comparison; `--no-determination` prints only the path without it.
  */
@@ -430,23 +431,47 @@ async function tuneTrackCli(
     return 1;
   }
   const [first, last] = range;
-  const result = await tuneTrack({
-    first,
-    last,
-    quick,
-    run,
-  });
-  const written = write ? writeTrackNumbers(TRACK_FILE, result.loop.table, first, last) : undefined;
-  const md = trackSummary(result, {
-    quick,
-    first,
-    last,
-    ...(written ? { write: written } : {}),
-  }).join('\n');
+  // The journey pass (`trackJourney.ts`) eases the slots where the mixed server gets stuck on the v2 journey. By default it follows the
+  // slot tuner; `--journey-only` runs it alone on the committed table; `--no-journey` skips it.
+  const journeyOnly = args.includes('--journey-only');
+  const result = journeyOnly
+    ? undefined
+    : await tuneTrack({
+        first,
+        last,
+        quick,
+        run,
+      });
+  const tuned = result?.loop.table ?? SLOT_NUMBERS;
+  const pass = args.includes('--no-journey')
+    ? undefined
+    : journeyPass(tuned, { first, last, quick });
+  const table = pass?.table ?? tuned;
+  const written = write ? writeTrackNumbers(TRACK_FILE, table, first, last) : undefined;
+  const md = [
+    ...(result
+      ? trackSummary(result, {
+          quick,
+          first,
+          last,
+          ...(written ? { write: written } : {}),
+        })
+      : []),
+    ...(pass ? ['', ...journeyPassSummary(pass, first, last)] : []),
+    ...(!result && written
+      ? [
+          '',
+          `Written: slots ${written.written.join(', ')} (changed: ${written.changed.join(', ') || 'none'}).`,
+        ]
+      : []),
+  ].join('\n');
   console.log(md);
   if (out) {
     writeFileSync(out, md + '\n');
-    writeFileSync(out.replace(/(\.md)?$/, '.json'), JSON.stringify(result, null, 1) + '\n');
+    writeFileSync(
+      out.replace(/(\.md)?$/, '.json'),
+      JSON.stringify(result ?? { journeyPass: pass }, null, 1) + '\n',
+    );
   }
   return 0;
 }

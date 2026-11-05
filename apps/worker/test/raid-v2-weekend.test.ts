@@ -35,7 +35,7 @@ const track = (ctx: CoreContext) =>
 /** A server on its second lap: slot 6 (the Tidal Colossus again, stronger) with two failed weekends behind it. */
 const secondLap = (ctx: CoreContext): void => {
   ctx.sql.exec(
-    'INSERT INTO raid_track (id, slot, best_share_bp, failed_weekends) VALUES (1, 6, 2500, 2)',
+    'INSERT INTO raid_track (id, slot, best_share_bp, failed_weekends) VALUES (1, 6, 2500, 1)',
   );
 };
 
@@ -58,8 +58,8 @@ describe('a combat v2 raid weekend', () => {
         expect(opening.v2).toMatchObject({
           slot: 6,
           bestShareBp: 2500,
-          failedWeekends: 2,
-          determinationBp: 1000,
+          failedWeekends: 1,
+          determinationBp: 1500,
           joiningOpen: true,
           stagesPlayed: 0,
         });
@@ -104,8 +104,8 @@ describe('a combat v2 raid weekend', () => {
         };
         expect(input.version).toBe(2);
         expect(input.boss).toMatchObject({ id: 'tidal-colossus', cols: 4 });
-        // Determination: two failed weekends on a second-lap slot are +10% damage and healing.
-        expect(input.options).toMatchObject({ determinationBp: 1000, log: true });
+        // Determination: one failed weekend on a second-lap slot is +15% damage and healing.
+        expect(input.options).toMatchObject({ determinationBp: 1500, log: true });
         // A creature's id is its key; its owner is an opaque alias.
         expect(new Set(input.fighters.map((f) => f.key))).toEqual(
           new Set(players.flatMap((p) => p.creatureIds.slice(0, 3))),
@@ -301,7 +301,7 @@ describe('a combat v2 raid weekend', () => {
         const final = carryOf(ctx.sql);
         expect(final.stage).toBe(3);
         expect(final.bossHp).toBeGreaterThan(0);
-        expect(track(ctx)).toMatchObject({ slot: 6, failed_weekends: 3 });
+        expect(track(ctx)).toMatchObject({ slot: 6, failed_weekends: 2 });
         // The best share is the better of last time's (25%) and this weekend's, never above 100%.
         const share = Math.floor(
           (((rows<{ hp_max: number }>(ctx.sql, 'SELECT hp_max FROM raid_parties')[0]?.hp_max ?? 1) -
@@ -314,7 +314,7 @@ describe('a combat v2 raid weekend', () => {
           { ladder_won: 0, rank_after: 6 },
         ]);
         expect(eventsOfKind(ctx.sql, 'track_change')).toMatchObject([
-          { slot: 6, kill: false, determination: 3 },
+          { slot: 6, kill: false, determination: 2 },
         ]);
 
         // The next week opens on the same slot, the same boss, with the ghost of the best share.
@@ -324,7 +324,7 @@ describe('a combat v2 raid weekend', () => {
         expect(next.v2).toMatchObject({
           slot: 6,
           bestShareBp: track(ctx)?.best_share_bp,
-          failedWeekends: 3,
+          failedWeekends: 2,
         });
       },
       { start: V2_WEEK.open, core: V2 },

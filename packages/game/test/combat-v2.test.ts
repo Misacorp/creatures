@@ -479,9 +479,9 @@ describe('combat v2 content', () => {
 const LAB_TRACK = [
   [1, 'tidal-colossus', 3_800, 70, 25, 1_833, 0, false, []],
   [2, 'cinder-wyrm', 7_500, 80, 42, 3_000, 1, false, []],
-  [3, 'storm-sovereign', 13_500, 53, 7, 4_167, 2, true, []],
+  [3, 'storm-sovereign', 13_100, 51, 7, 4_167, 2, true, []],
   [4, 'old-bogback', 28_200, 82, 19, 5_333, 2, true, []],
-  [5, 'thornmother', 6_500, 155, 124, 6_500, 1, true, []],
+  [5, 'thornmother', 6_400, 153, 124, 6_500, 1, true, []],
   [6, 'tidal-colossus', 19_300, 88, 37, 7_200, 2, true, ['slippery', 'breakwater']],
   [7, 'cinder-wyrm', 10_200, 185, 48, 7_900, 2, true, []],
   [8, 'storm-sovereign', 7_000, 96, 5, 8_600, 2, true, ['lucky-strike']],

@@ -26,7 +26,7 @@ describe('--path and Determination', () => {
   it('plays with it by default, `--determination` adds the path without it as a comparison, `--no-determination` plays without it only', async () => {
     const log = vi.spyOn(console, 'log').mockImplementation(() => undefined);
     const text = () => log.mock.calls.map((c) => String(c[0])).join('\n');
-    const withDial = 'with Determination (+5% a failed weekend from slot 6, at most 5 stacks)';
+    const withDial = 'with Determination (+15% a failed weekend from slot 6, at most 5 stacks)';
     const run = () => ({ exec: thinExecutor(), slots: 4 });
     try {
       expect(await main(['--path', '--quick'], run())).toBe(0);

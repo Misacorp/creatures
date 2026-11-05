@@ -11,31 +11,31 @@
     "name": "Tidal Colossus",
     "hpMax": 19300,
     "hpStart": 19300,
-    "hpEnd": 9869
+    "hpEnd": 7434
   },
   "players": [
     {
       "displayName": "Player 2",
       "you": false,
-      "damage": 3973,
-      "knockouts": 0
+      "damage": 4913,
+      "knockouts": 1
     },
     {
       "displayName": "Player 3",
       "you": false,
-      "damage": 2097,
+      "damage": 2800,
       "knockouts": 2
     },
     {
       "displayName": "Player 1",
       "you": true,
-      "damage": 1817,
+      "damage": 2327,
       "knockouts": 0
     },
     {
       "displayName": "Player 4",
       "you": false,
-      "damage": 1544,
+      "damage": 1826,
       "knockouts": 0
     }
   ],
@@ -45,8 +45,8 @@
       "species": "voltaro",
       "owner": "Player 1",
       "you": true,
-      "damage": 1162,
-      "hp": 92,
+      "damage": 1634,
+      "hp": 34,
       "maxHp": 388,
       "out": false
     },
@@ -55,8 +55,8 @@
       "species": "fogwyrm",
       "owner": "Player 1",
       "you": true,
-      "damage": 461,
-      "hp": 453,
+      "damage": 463,
+      "hp": 468,
       "maxHp": 539,
       "out": false
     },
@@ -65,8 +65,8 @@
       "species": "magmole",
       "owner": "Player 1",
       "you": true,
-      "damage": 194,
-      "hp": 302,
+      "damage": 230,
+      "hp": 295,
       "maxHp": 431,
       "out": false
     },
@@ -75,7 +75,7 @@
       "species": "tempestray",
       "owner": "Player 2",
       "you": false,
-      "damage": 2608,
+      "damage": 3371,
       "hp": 420,
       "maxHp": 420,
       "out": false
@@ -85,8 +85,8 @@
       "species": "ancientshell",
       "owner": "Player 2",
       "you": false,
-      "damage": 924,
-      "hp": 596,
+      "damage": 1092,
+      "hp": 560,
       "maxHp": 597,
       "out": false
     },
@@ -95,18 +95,18 @@
       "species": "sunfawn",
       "owner": "Player 2",
       "you": false,
-      "damage": 441,
-      "hp": 42,
+      "damage": 450,
+      "hp": 0,
       "maxHp": 431,
-      "out": false
+      "out": true
     },
     {
       "name": "Ohmouse",
       "species": "ohmouse",
       "owner": "Player 3",
       "you": false,
-      "damage": 672,
-      "hp": 229,
+      "damage": 800,
+      "hp": 222,
       "maxHp": 539,
       "out": false
     },
@@ -115,7 +115,7 @@
       "species": "geyserpup",
       "owner": "Player 3",
       "you": false,
-      "damage": 907,
+      "damage": 1384,
       "hp": 0,
       "maxHp": 323,
       "out": true
@@ -125,7 +125,7 @@
       "species": "wickat",
       "owner": "Player 3",
       "you": false,
-      "damage": 518,
+      "damage": 616,
       "hp": 0,
       "maxHp": 388,
       "out": true
@@ -135,8 +135,8 @@
       "species": "drizzlewt",
       "owner": "Player 4",
       "you": false,
-      "damage": 445,
-      "hp": 341,
+      "damage": 525,
+      "hp": 362,
       "maxHp": 456,
       "out": false
     },
@@ -145,8 +145,8 @@
       "species": "kilnmole",
       "owner": "Player 4",
       "you": false,
-      "damage": 238,
-      "hp": 517,
+      "damage": 282,
+      "hp": 646,
       "maxHp": 657,
       "out": false
     },
@@ -155,22 +155,22 @@
       "species": "halcyray",
       "owner": "Player 4",
       "you": false,
-      "damage": 861,
-      "hp": 201,
+      "damage": 1019,
+      "hp": 346,
       "maxHp": 539,
       "out": false
     }
   ],
   "reactions": {
-    "total": 5,
+    "total": 7,
     "byMark": {
-      "ember": 3,
-      "tide": 2
+      "ember": 4,
+      "tide": 3
     }
   },
-  "knockouts": 2,
+  "knockouts": 3,
   "blocked": 73,
   "dodges": 20,
-  "intercepts": 8,
-  "healed": 436
+  "intercepts": 10,
+  "healed": 514
 }

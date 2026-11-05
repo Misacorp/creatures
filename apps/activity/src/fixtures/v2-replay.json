@@ -269,7 +269,7 @@
   "kill": false,
   "bossHpMax": 19300,
   "bossHpStart": 19300,
-  "bossHpEnd": 9869,
+  "bossHpEnd": 7434,
   "you": "m1",
   "fighters": [
     {
@@ -534,7 +534,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000001",
         "to": null,
-        "damage": 166,
+        "damage": 196,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -561,7 +561,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000006",
         "to": null,
-        "damage": 247,
+        "damage": 292,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -576,7 +576,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000009",
         "to": null,
-        "damage": 84,
+        "damage": 100,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -591,7 +591,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000012",
         "to": null,
-        "damage": 45,
+        "damage": 53,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -712,7 +712,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000002",
         "to": null,
-        "damage": 70,
+        "damage": 83,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -727,7 +727,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000007",
         "to": null,
-        "damage": 132,
+        "damage": 156,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -754,7 +754,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000010",
         "to": null,
-        "damage": 112,
+        "damage": 132,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -769,7 +769,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000013",
         "to": null,
-        "damage": 22,
+        "damage": 26,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -890,7 +890,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000003",
         "to": null,
-        "damage": 22,
+        "damage": 26,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -905,7 +905,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000008",
         "to": null,
-        "damage": 63,
+        "damage": 75,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -920,7 +920,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000011",
         "to": null,
-        "damage": 74,
+        "damage": 88,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -947,7 +947,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000014",
         "to": null,
-        "damage": 125,
+        "damage": 148,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -1149,7 +1149,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000001",
         "to": null,
-        "damage": 166,
+        "damage": 196,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -1176,7 +1176,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000006",
         "to": null,
-        "damage": 253,
+        "damage": 299,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -1191,7 +1191,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000009",
         "to": null,
-        "damage": 84,
+        "damage": 100,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -1212,7 +1212,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000012",
         "to": null,
-        "damage": 130,
+        "damage": 154,
         "crit": true,
         "blocked": false,
         "dodged": false,
@@ -1493,7 +1493,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000013",
         "to": null,
-        "damage": 22,
+        "damage": 26,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -1620,7 +1620,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000003",
         "to": null,
-        "damage": 84,
+        "damage": 100,
         "crit": true,
         "blocked": false,
         "dodged": false,
@@ -1636,7 +1636,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000008",
         "to": null,
-        "damage": 63,
+        "damage": 75,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -1651,7 +1651,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000011",
         "to": null,
-        "damage": 74,
+        "damage": 88,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -1814,7 +1814,7 @@
       "board": {
         "type": "heal",
         "who": "00000000-0000-4000-8700-000000000009",
-        "amount": 28,
+        "amount": 30,
         "by": "00000000-0000-4000-8700-000000000012"
       }
     },
@@ -1898,7 +1898,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000001",
         "to": null,
-        "damage": 166,
+        "damage": 196,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -1925,7 +1925,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000006",
         "to": null,
-        "damage": 259,
+        "damage": 306,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -1940,7 +1940,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000009",
         "to": null,
-        "damage": 84,
+        "damage": 100,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -1955,7 +1955,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000012",
         "to": null,
-        "damage": 45,
+        "damage": 53,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -2196,7 +2196,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000007",
         "to": null,
-        "damage": 132,
+        "damage": 156,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -2249,7 +2249,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000010",
         "to": null,
-        "damage": 265,
+        "damage": 313,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -2264,7 +2264,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000013",
         "to": null,
-        "damage": 22,
+        "damage": 26,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -2544,7 +2544,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000003",
         "to": null,
-        "damage": 22,
+        "damage": 26,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -2559,7 +2559,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000008",
         "to": null,
-        "damage": 63,
+        "damage": 75,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -2574,7 +2574,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000011",
         "to": null,
-        "damage": 74,
+        "damage": 88,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -2601,7 +2601,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000014",
         "to": null,
-        "damage": 125,
+        "damage": 148,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -2821,7 +2821,7 @@
       "board": {
         "type": "heal",
         "who": "00000000-0000-4000-8700-000000000001",
-        "amount": 20,
+        "amount": 24,
         "by": "00000000-0000-4000-8700-000000000012"
       }
     },
@@ -2833,7 +2833,7 @@
       "board": {
         "type": "heal",
         "who": "00000000-0000-4000-8700-000000000009",
-        "amount": 28,
+        "amount": 33,
         "by": "00000000-0000-4000-8700-000000000012"
       }
     },
@@ -2912,6 +2912,20 @@
     {
       "round": 4,
       "turn": 0,
+      "kind": "escalation",
+      "text": "Rising Tide: step 1 of 3 (2020 hpLost); next at 4000",
+      "board": {
+        "type": "escalation",
+        "count": 2020,
+        "step": 1,
+        "fall": 1,
+        "phase": false,
+        "phaseNext": false
+      }
+    },
+    {
+      "round": 4,
+      "turn": 0,
       "kind": "announce",
       "text": "Spray (spray) will land on Drizzlewt (row 1, slot 4), Sunfawn (row 3, slot 2), Ancientshell (row 2, slot 2), Wickat (row 3, slot 3)",
       "move": "spray",
@@ -2962,7 +2976,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000001",
         "to": null,
-        "damage": 166,
+        "damage": 196,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -3003,7 +3017,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000006",
         "to": null,
-        "damage": 496,
+        "damage": 586,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -3018,7 +3032,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000009",
         "to": null,
-        "damage": 84,
+        "damage": 100,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -3033,7 +3047,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000012",
         "to": null,
-        "damage": 45,
+        "damage": 53,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -3082,12 +3096,12 @@
       "round": 4,
       "turn": 0,
       "kind": "hit",
-      "text": "Ohmouse takes 12",
+      "text": "Ohmouse takes 14",
       "board": {
         "type": "hit",
         "from": null,
         "to": "00000000-0000-4000-8700-000000000012",
-        "damage": 12,
+        "damage": 14,
         "crit": false,
         "blocked": false,
         "dodged": false,
@@ -3104,12 +3118,12 @@
       "round": 4,
       "turn": 0,
       "kind": "hit",
-      "text": "Sunfawn takes 16",
+      "text": "Sunfawn takes 20",
       "board": {
         "type": "hit",
         "from": null,
         "to": "00000000-0000-4000-8700-000000000008",
-        "damage": 16,
+        "damage": 20,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -3130,7 +3144,7 @@
         "type": "cover",
         "guard": "00000000-0000-4000-8700-000000000002",
         "who": "00000000-0000-4000-8700-000000000007",
-        "prevented": 14
+        "prevented": 18
       }
     },
     {
@@ -3158,12 +3172,12 @@
       "round": 4,
       "turn": 0,
       "kind": "hit",
-      "text": "Wickat takes 38",
+      "text": "Wickat takes 42",
       "board": {
         "type": "hit",
         "from": null,
         "to": "00000000-0000-4000-8700-000000000011",
-        "damage": 38,
+        "damage": 42,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -3226,19 +3240,19 @@
         "type": "cover",
         "guard": "00000000-0000-4000-8700-000000000002",
         "who": "00000000-0000-4000-8700-000000000010",
-        "prevented": 9
+        "prevented": 10
       }
     },
     {
       "round": 4,
       "turn": 0,
       "kind": "hit",
-      "text": "Geyserpup takes 4",
+      "text": "Geyserpup takes 5",
       "board": {
         "type": "hit",
         "from": null,
         "to": "00000000-0000-4000-8700-000000000010",
-        "damage": 4,
+        "damage": 5,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -3274,7 +3288,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000002",
         "to": null,
-        "damage": 70,
+        "damage": 83,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -3289,7 +3303,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000007",
         "to": null,
-        "damage": 132,
+        "damage": 156,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -3342,7 +3356,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000010",
         "to": null,
-        "damage": 265,
+        "damage": 313,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -3357,7 +3371,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000013",
         "to": null,
-        "damage": 22,
+        "damage": 26,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -3406,12 +3420,12 @@
       "round": 4,
       "turn": 1,
       "kind": "hit",
-      "text": "Ohmouse takes 43",
+      "text": "Ohmouse takes 47",
       "board": {
         "type": "hit",
         "from": null,
         "to": "00000000-0000-4000-8700-000000000006",
-        "damage": 43,
+        "damage": 47,
         "crit": false,
         "blocked": false,
         "dodged": false,
@@ -3433,19 +3447,19 @@
         "type": "cover",
         "guard": "00000000-0000-4000-8700-000000000002",
         "who": "00000000-0000-4000-8700-000000000007",
-        "prevented": 38
+        "prevented": 42
       }
     },
     {
       "round": 4,
       "turn": 1,
       "kind": "hit",
-      "text": "Ancientshell takes 27",
+      "text": "Ancientshell takes 31",
       "board": {
         "type": "hit",
         "from": null,
         "to": "00000000-0000-4000-8700-000000000007",
-        "damage": 27,
+        "damage": 31,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -3461,12 +3475,12 @@
       "round": 4,
       "turn": 1,
       "kind": "hit",
-      "text": "Sunfawn takes 67",
+      "text": "Sunfawn takes 75",
       "board": {
         "type": "hit",
         "from": null,
         "to": "00000000-0000-4000-8700-000000000008",
-        "damage": 67,
+        "damage": 75,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -3529,19 +3543,19 @@
         "type": "cover",
         "guard": "00000000-0000-4000-8700-000000000002",
         "who": "00000000-0000-4000-8700-000000000010",
-        "prevented": 9
+        "prevented": 10
       }
     },
     {
       "round": 4,
       "turn": 1,
       "kind": "hit",
-      "text": "Geyserpup takes 4",
+      "text": "Geyserpup takes 5",
       "board": {
         "type": "hit",
         "from": null,
         "to": "00000000-0000-4000-8700-000000000010",
-        "damage": 4,
+        "damage": 5,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -3577,7 +3591,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000003",
         "to": null,
-        "damage": 22,
+        "damage": 26,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -3592,7 +3606,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000008",
         "to": null,
-        "damage": 63,
+        "damage": 75,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -3607,7 +3621,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000011",
         "to": null,
-        "damage": 74,
+        "damage": 88,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -3634,7 +3648,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000014",
         "to": null,
-        "damage": 125,
+        "damage": 148,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -3707,19 +3721,19 @@
         "type": "cover",
         "guard": "00000000-0000-4000-8700-000000000002",
         "who": "00000000-0000-4000-8700-000000000010",
-        "prevented": 9
+        "prevented": 10
       }
     },
     {
       "round": 4,
       "turn": 2,
       "kind": "hit",
-      "text": "Geyserpup takes 4",
+      "text": "Geyserpup takes 5",
       "board": {
         "type": "hit",
         "from": null,
         "to": "00000000-0000-4000-8700-000000000010",
-        "damage": 4,
+        "damage": 5,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -3764,7 +3778,7 @@
       "board": {
         "type": "heal",
         "who": "00000000-0000-4000-8700-000000000001",
-        "amount": 20,
+        "amount": 24,
         "by": "00000000-0000-4000-8700-000000000012"
       }
     },
@@ -3776,7 +3790,7 @@
       "board": {
         "type": "heal",
         "who": "00000000-0000-4000-8700-000000000009",
-        "amount": 28,
+        "amount": 33,
         "by": "00000000-0000-4000-8700-000000000012"
       }
     },
@@ -3836,22 +3850,8 @@
       "board": {
         "type": "heal",
         "who": "00000000-0000-4000-8700-000000000007",
-        "amount": 27,
+        "amount": 31,
         "by": "00000000-0000-4000-8700-000000000008"
-      }
-    },
-    {
-      "round": 5,
-      "turn": 0,
-      "kind": "escalation",
-      "text": "Rising Tide: step 1 of 3 (2517 hpLost); next at 4000",
-      "board": {
-        "type": "escalation",
-        "count": 2517,
-        "step": 1,
-        "fall": 1,
-        "phase": false,
-        "phaseNext": false
       }
     },
     {
@@ -3863,7 +3863,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000001",
         "to": null,
-        "damage": 166,
+        "damage": 196,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -3904,7 +3904,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000006",
         "to": null,
-        "damage": 507,
+        "damage": 599,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -3919,7 +3919,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000009",
         "to": null,
-        "damage": 84,
+        "damage": 100,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -3934,7 +3934,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000012",
         "to": null,
-        "damage": 45,
+        "damage": 53,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -4055,7 +4055,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000002",
         "to": null,
-        "damage": 70,
+        "damage": 83,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -4070,7 +4070,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000007",
         "to": null,
-        "damage": 132,
+        "damage": 156,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -4118,7 +4118,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000013",
         "to": null,
-        "damage": 84,
+        "damage": 100,
         "crit": true,
         "blocked": false,
         "dodged": false,
@@ -4240,7 +4240,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000003",
         "to": null,
-        "damage": 22,
+        "damage": 26,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -4255,7 +4255,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000008",
         "to": null,
-        "damage": 63,
+        "damage": 75,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -4270,7 +4270,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000011",
         "to": null,
-        "damage": 74,
+        "damage": 88,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -4433,7 +4433,7 @@
       "board": {
         "type": "heal",
         "who": "00000000-0000-4000-8700-000000000001",
-        "amount": 20,
+        "amount": 24,
         "by": "00000000-0000-4000-8700-000000000012"
       }
     },
@@ -4445,7 +4445,7 @@
       "board": {
         "type": "heal",
         "who": "00000000-0000-4000-8700-000000000009",
-        "amount": 28,
+        "amount": 33,
         "by": "00000000-0000-4000-8700-000000000012"
       }
     },
@@ -4575,7 +4575,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000001",
         "to": null,
-        "damage": 166,
+        "damage": 196,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -4602,7 +4602,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000006",
         "to": null,
-        "damage": 278,
+        "damage": 328,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -4617,7 +4617,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000009",
         "to": null,
-        "damage": 84,
+        "damage": 100,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -4632,7 +4632,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000012",
         "to": null,
-        "damage": 45,
+        "damage": 53,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -4966,7 +4966,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000002",
         "to": null,
-        "damage": 181,
+        "damage": 214,
         "crit": true,
         "blocked": false,
         "dodged": false,
@@ -4982,7 +4982,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000007",
         "to": null,
-        "damage": 132,
+        "damage": 156,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -5024,7 +5024,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000013",
         "to": null,
-        "damage": 22,
+        "damage": 26,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -5424,7 +5424,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000008",
         "to": null,
-        "damage": 63,
+        "damage": 75,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -5439,7 +5439,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000011",
         "to": null,
-        "damage": 74,
+        "damage": 88,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -5466,7 +5466,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000014",
         "to": null,
-        "damage": 125,
+        "damage": 148,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -5701,7 +5701,7 @@
       "board": {
         "type": "heal",
         "who": "00000000-0000-4000-8700-000000000001",
-        "amount": 20,
+        "amount": 24,
         "by": "00000000-0000-4000-8700-000000000012"
       }
     },
@@ -5713,7 +5713,7 @@
       "board": {
         "type": "heal",
         "who": "00000000-0000-4000-8700-000000000009",
-        "amount": 28,
+        "amount": 33,
         "by": "00000000-0000-4000-8700-000000000012"
       }
     },
@@ -5725,7 +5725,7 @@
       "board": {
         "type": "heal",
         "who": "00000000-0000-4000-8700-000000000012",
-        "amount": 24,
+        "amount": 28,
         "by": "00000000-0000-4000-8700-000000000012"
       }
     },
@@ -5785,8 +5785,22 @@
       "board": {
         "type": "heal",
         "who": "00000000-0000-4000-8700-000000000007",
-        "amount": 38,
+        "amount": 39,
         "by": "00000000-0000-4000-8700-000000000008"
+      }
+    },
+    {
+      "round": 7,
+      "turn": 0,
+      "kind": "escalation",
+      "text": "Rising Tide: step 2 of 3 (4461 hpLost); next at 6000",
+      "board": {
+        "type": "escalation",
+        "count": 4461,
+        "step": 2,
+        "fall": 2,
+        "phase": false,
+        "phaseNext": false
       }
     },
     {
@@ -5798,7 +5812,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000001",
         "to": null,
-        "damage": 166,
+        "damage": 196,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -5825,7 +5839,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000006",
         "to": null,
-        "damage": 284,
+        "damage": 336,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -5840,7 +5854,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000009",
         "to": null,
-        "damage": 84,
+        "damage": 100,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -5855,7 +5869,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000012",
         "to": null,
-        "damage": 45,
+        "damage": 53,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -5881,18 +5895,39 @@
       "round": 7,
       "turn": 0,
       "kind": "target",
+      "text": "Voltaro (row 1, slot 1) <- backflow"
+    },
+    {
+      "round": 7,
+      "turn": 0,
+      "kind": "hit",
+      "text": "Voltaro takes 78",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000001",
+        "damage": 78,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 7,
+      "turn": 0,
+      "kind": "target",
       "text": "Fogwyrm (row 2, slot 1) <- backflow"
     },
     {
       "round": 7,
       "turn": 0,
       "kind": "hit",
-      "text": "Fogwyrm takes 46",
+      "text": "Fogwyrm takes 53",
       "board": {
         "type": "hit",
         "from": null,
         "to": "00000000-0000-4000-8700-000000000002",
-        "damage": 46,
+        "damage": 53,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -5908,15 +5943,54 @@
       "round": 7,
       "turn": 0,
       "kind": "hit",
-      "text": "Magmole takes 66",
+      "text": "Magmole takes 73",
       "board": {
         "type": "hit",
         "from": null,
         "to": "00000000-0000-4000-8700-000000000003",
-        "damage": 66,
+        "damage": 73,
         "crit": false,
         "blocked": false,
         "dodged": false
+      }
+    },
+    {
+      "round": 7,
+      "turn": 0,
+      "kind": "target",
+      "text": "Tempestray (row 1, slot 2) <- backflow"
+    },
+    {
+      "round": 7,
+      "turn": 0,
+      "kind": "intercept",
+      "text": "Ohmouse intercepts for Tempestray"
+    },
+    {
+      "round": 7,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "intercept",
+        "guard": "00000000-0000-4000-8700-000000000009",
+        "who": "00000000-0000-4000-8700-000000000006"
+      }
+    },
+    {
+      "round": 7,
+      "turn": 0,
+      "kind": "hit",
+      "text": "Ohmouse takes 35",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000006",
+        "damage": 35,
+        "crit": false,
+        "blocked": false,
+        "dodged": false,
+        "by": "00000000-0000-4000-8700-000000000009"
       }
     },
     {
@@ -5928,16 +6002,28 @@
     {
       "round": 7,
       "turn": 0,
-      "kind": "dodge",
-      "text": "Ancientshell dodges",
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "cover",
+        "guard": "00000000-0000-4000-8700-000000000002",
+        "who": "00000000-0000-4000-8700-000000000007",
+        "prevented": 34
+      }
+    },
+    {
+      "round": 7,
+      "turn": 0,
+      "kind": "hit",
+      "text": "Ancientshell takes 19",
       "board": {
         "type": "hit",
         "from": null,
         "to": "00000000-0000-4000-8700-000000000007",
-        "damage": 0,
+        "damage": 19,
         "crit": false,
         "blocked": false,
-        "dodged": true
+        "dodged": false
       }
     },
     {
@@ -5950,16 +6036,22 @@
       "round": 7,
       "turn": 0,
       "kind": "hit",
-      "text": "Sunfawn takes 48",
+      "text": "Sunfawn takes 55",
       "board": {
         "type": "hit",
         "from": null,
         "to": "00000000-0000-4000-8700-000000000008",
-        "damage": 48,
+        "damage": 55,
         "crit": false,
         "blocked": false,
         "dodged": false
       }
+    },
+    {
+      "round": 7,
+      "turn": 0,
+      "kind": "target",
+      "text": "Ohmouse (row 1, slot 3) already took a hit of backflow"
     },
     {
       "round": 7,
@@ -5976,19 +6068,19 @@
         "type": "cover",
         "guard": "00000000-0000-4000-8700-000000000002",
         "who": "00000000-0000-4000-8700-000000000010",
-        "prevented": 31
+        "prevented": 34
       }
     },
     {
       "round": 7,
       "turn": 0,
       "kind": "hit",
-      "text": "Geyserpup takes 36",
+      "text": "Geyserpup takes 40",
       "board": {
         "type": "hit",
         "from": null,
         "to": "00000000-0000-4000-8700-000000000010",
-        "damage": 36,
+        "damage": 40,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -6004,12 +6096,45 @@
       "round": 7,
       "turn": 0,
       "kind": "hit",
-      "text": "Wickat takes 70",
+      "text": "Wickat takes 77",
       "board": {
         "type": "hit",
         "from": null,
         "to": "00000000-0000-4000-8700-000000000011",
-        "damage": 70,
+        "damage": 77,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 7,
+      "turn": 0,
+      "kind": "target",
+      "text": "Drizzlewt (row 1, slot 4) <- backflow"
+    },
+    {
+      "round": 7,
+      "turn": 0,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "cover",
+        "guard": "00000000-0000-4000-8700-000000000009",
+        "who": "00000000-0000-4000-8700-000000000012",
+        "prevented": 34
+      }
+    },
+    {
+      "round": 7,
+      "turn": 0,
+      "kind": "hit",
+      "text": "Drizzlewt takes 23",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000012",
+        "damage": 23,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -6024,16 +6149,16 @@
     {
       "round": 7,
       "turn": 0,
-      "kind": "hit",
-      "text": "Kilnmole takes 39",
+      "kind": "dodge",
+      "text": "Kilnmole dodges",
       "board": {
         "type": "hit",
         "from": null,
         "to": "00000000-0000-4000-8700-000000000013",
-        "damage": 39,
+        "damage": 0,
         "crit": false,
         "blocked": false,
-        "dodged": false
+        "dodged": true
       }
     },
     {
@@ -6046,12 +6171,12 @@
       "round": 7,
       "turn": 0,
       "kind": "hit",
-      "text": "Halcyray takes 70",
+      "text": "Halcyray takes 77",
       "board": {
         "type": "hit",
         "from": null,
         "to": "00000000-0000-4000-8700-000000000014",
-        "damage": 70,
+        "damage": 77,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -6087,16 +6212,16 @@
     {
       "round": 7,
       "turn": 0,
-      "kind": "dodge",
-      "text": "Ancientshell dodges",
+      "kind": "blocked",
+      "text": "Ancientshell blocks the hit",
       "board": {
         "type": "hit",
         "from": null,
         "to": "00000000-0000-4000-8700-000000000007",
         "damage": 0,
         "crit": false,
-        "blocked": false,
-        "dodged": true
+        "blocked": true,
+        "dodged": false
       }
     },
     {
@@ -6114,19 +6239,19 @@
         "type": "cover",
         "guard": "00000000-0000-4000-8700-000000000002",
         "who": "00000000-0000-4000-8700-000000000010",
-        "prevented": 10
+        "prevented": 11
       }
     },
     {
       "round": 7,
       "turn": 0,
       "kind": "hit",
-      "text": "Geyserpup takes 5",
+      "text": "Geyserpup takes 6",
       "board": {
         "type": "hit",
         "from": null,
         "to": "00000000-0000-4000-8700-000000000010",
-        "damage": 5,
+        "damage": 6,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -6177,7 +6302,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000007",
         "to": null,
-        "damage": 132,
+        "damage": 156,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -6198,16 +6323,42 @@
     {
       "round": 7,
       "turn": 1,
-      "kind": "boss-dodge",
-      "text": "Tidal Colossus dodges Geyserpup",
+      "kind": "reaction",
+      "text": "Geyserpup cashes ember x1 for +139",
+      "board": {
+        "type": "reaction",
+        "by": "00000000-0000-4000-8700-000000000010",
+        "mark": "ember",
+        "spent": 1,
+        "bonus": 139,
+        "left": 2
+      }
+    },
+    {
+      "round": 7,
+      "turn": 1,
+      "kind": "mark",
+      "text": "tide x1",
+      "board": {
+        "type": "mark",
+        "element": "tide",
+        "stacks": 1,
+        "sealed": false
+      }
+    },
+    {
+      "round": 7,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
       "board": {
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000010",
         "to": null,
-        "damage": 0,
+        "damage": 313,
         "crit": false,
         "blocked": false,
-        "dodged": true
+        "dodged": false
       }
     },
     {
@@ -6219,7 +6370,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000013",
         "to": null,
-        "damage": 22,
+        "damage": 26,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -6244,16 +6395,16 @@
     {
       "round": 7,
       "turn": 1,
-      "kind": "blocked",
-      "text": "Fogwyrm blocks the hit",
+      "kind": "dodge",
+      "text": "Fogwyrm dodges",
       "board": {
         "type": "hit",
         "from": null,
         "to": "00000000-0000-4000-8700-000000000002",
         "damage": 0,
         "crit": false,
-        "blocked": true,
-        "dodged": false
+        "blocked": false,
+        "dodged": true
       }
     },
     {
@@ -6292,19 +6443,19 @@
         "type": "cover",
         "guard": "00000000-0000-4000-8700-000000000002",
         "who": "00000000-0000-4000-8700-000000000010",
-        "prevented": 10
+        "prevented": 11
       }
     },
     {
       "round": 7,
       "turn": 1,
       "kind": "hit",
-      "text": "Geyserpup takes 5",
+      "text": "Geyserpup takes 6",
       "board": {
         "type": "hit",
         "from": null,
         "to": "00000000-0000-4000-8700-000000000010",
-        "damage": 5,
+        "damage": 6,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -6334,11 +6485,26 @@
     {
       "round": 7,
       "turn": 2,
-      "kind": "boss-dodge",
-      "text": "Tidal Colossus dodges Magmole",
+      "kind": "board",
+      "text": "",
       "board": {
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000003",
+        "to": null,
+        "damage": 26,
+        "crit": false,
+        "blocked": false,
+        "dodged": false
+      }
+    },
+    {
+      "round": 7,
+      "turn": 2,
+      "kind": "boss-dodge",
+      "text": "Tidal Colossus dodges Sunfawn",
+      "board": {
+        "type": "hit",
+        "from": "00000000-0000-4000-8700-000000000008",
         "to": null,
         "damage": 0,
         "crit": false,
@@ -6353,24 +6519,9 @@
       "text": "",
       "board": {
         "type": "hit",
-        "from": "00000000-0000-4000-8700-000000000008",
-        "to": null,
-        "damage": 63,
-        "crit": false,
-        "blocked": false,
-        "dodged": false
-      }
-    },
-    {
-      "round": 7,
-      "turn": 2,
-      "kind": "board",
-      "text": "",
-      "board": {
-        "type": "hit",
         "from": "00000000-0000-4000-8700-000000000011",
         "to": null,
-        "damage": 74,
+        "damage": 88,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -6397,7 +6548,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000014",
         "to": null,
-        "damage": 125,
+        "damage": 148,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -6470,19 +6621,19 @@
         "type": "cover",
         "guard": "00000000-0000-4000-8700-000000000002",
         "who": "00000000-0000-4000-8700-000000000010",
-        "prevented": 10
+        "prevented": 11
       }
     },
     {
       "round": 7,
       "turn": 2,
       "kind": "hit",
-      "text": "Geyserpup takes 5",
+      "text": "Geyserpup takes 6",
       "board": {
         "type": "hit",
         "from": null,
         "to": "00000000-0000-4000-8700-000000000010",
-        "damage": 5,
+        "damage": 6,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -6527,7 +6678,7 @@
       "board": {
         "type": "heal",
         "who": "00000000-0000-4000-8700-000000000001",
-        "amount": 20,
+        "amount": 24,
         "by": "00000000-0000-4000-8700-000000000012"
       }
     },
@@ -6539,7 +6690,7 @@
       "board": {
         "type": "heal",
         "who": "00000000-0000-4000-8700-000000000009",
-        "amount": 28,
+        "amount": 33,
         "by": "00000000-0000-4000-8700-000000000012"
       }
     },
@@ -6551,7 +6702,7 @@
       "board": {
         "type": "heal",
         "who": "00000000-0000-4000-8700-000000000012",
-        "amount": 24,
+        "amount": 28,
         "by": "00000000-0000-4000-8700-000000000012"
       }
     },
@@ -6611,44 +6762,30 @@
       "board": {
         "type": "heal",
         "who": "00000000-0000-4000-8700-000000000007",
-        "amount": 1,
+        "amount": 19,
         "by": "00000000-0000-4000-8700-000000000008"
       }
     },
     {
       "round": 8,
       "turn": 0,
-      "kind": "escalation",
-      "text": "Rising Tide: step 2 of 3 (4285 hpLost); next at 6000",
-      "board": {
-        "type": "escalation",
-        "count": 4285,
-        "step": 2,
-        "fall": 2,
-        "phase": false,
-        "phaseNext": false
-      }
-    },
-    {
-      "round": 8,
-      "turn": 0,
       "kind": "announce",
-      "text": "Spray (spray) will land on Kilnmole (row 2, slot 4), Fogwyrm (row 2, slot 1), Halcyray (row 3, slot 4), Ancientshell (row 2, slot 2)",
+      "text": "Spray (spray) will land on Ohmouse (row 1, slot 3), Voltaro (row 1, slot 1), Sunfawn (row 3, slot 2), Drizzlewt (row 1, slot 4)",
       "move": "spray",
       "slots": [
-        [1, 3],
-        [1, 0],
-        [2, 3],
-        [1, 1]
+        [0, 2],
+        [0, 0],
+        [2, 1],
+        [0, 3]
       ],
       "board": {
         "type": "announce",
         "move": "spray",
         "slots": [
-          [1, 3],
-          [1, 0],
-          [2, 3],
-          [1, 1]
+          [0, 2],
+          [0, 0],
+          [2, 1],
+          [0, 3]
         ]
       }
     },
@@ -6656,42 +6793,42 @@
       "round": 8,
       "turn": 0,
       "kind": "announce",
-      "text": "Riptide (riptide, Wind-up) will land on Ohmouse (row 1, slot 3), Geyserpup (row 2, slot 3), Wickat (row 3, slot 3), Drizzlewt (row 1, slot 4), Kilnmole (row 2, slot 4), Halcyray (row 3, slot 4)",
+      "text": "Riptide (riptide, Wind-up) will land on Tempestray (row 1, slot 2), Ancientshell (row 2, slot 2), Sunfawn (row 3, slot 2), Ohmouse (row 1, slot 3), Geyserpup (row 2, slot 3), Wickat (row 3, slot 3)",
       "move": "riptide",
       "slots": [
+        [0, 1],
+        [1, 1],
+        [2, 1],
         [0, 2],
         [1, 2],
-        [2, 2],
-        [0, 3],
-        [1, 3],
-        [2, 3]
+        [2, 2]
       ],
       "board": {
         "type": "announce",
         "move": "riptide",
         "slots": [
+          [0, 1],
+          [1, 1],
+          [2, 1],
           [0, 2],
           [1, 2],
-          [2, 2],
-          [0, 3],
-          [1, 3],
-          [2, 3]
+          [2, 2]
         ]
       }
     },
     {
       "round": 8,
       "turn": 0,
-      "kind": "boss-dodge",
-      "text": "Tidal Colossus dodges Voltaro",
+      "kind": "board",
+      "text": "",
       "board": {
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000001",
         "to": null,
-        "damage": 0,
+        "damage": 196,
         "crit": false,
         "blocked": false,
-        "dodged": true
+        "dodged": false
       }
     },
     {
@@ -6709,13 +6846,27 @@
     {
       "round": 8,
       "turn": 0,
+      "kind": "reaction",
+      "text": "Tempestray cashes tide x1 for +222",
+      "board": {
+        "type": "reaction",
+        "by": "00000000-0000-4000-8700-000000000006",
+        "mark": "tide",
+        "spent": 1,
+        "bonus": 222,
+        "left": 0
+      }
+    },
+    {
+      "round": 8,
+      "turn": 0,
       "kind": "board",
       "text": "",
       "board": {
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000006",
         "to": null,
-        "damage": 284,
+        "damage": 625,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -6730,7 +6881,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000009",
         "to": null,
-        "damage": 84,
+        "damage": 100,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -6745,7 +6896,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000012",
         "to": null,
-        "damage": 45,
+        "damage": 53,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -6771,18 +6922,18 @@
       "round": 8,
       "turn": 0,
       "kind": "target",
-      "text": "Kilnmole (row 2, slot 4) <- spray"
+      "text": "Ohmouse (row 1, slot 3) <- spray"
     },
     {
       "round": 8,
       "turn": 0,
       "kind": "hit",
-      "text": "Kilnmole takes 15",
+      "text": "Ohmouse takes 38",
       "board": {
         "type": "hit",
         "from": null,
-        "to": "00000000-0000-4000-8700-000000000013",
-        "damage": 15,
+        "to": "00000000-0000-4000-8700-000000000009",
+        "damage": 38,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -6792,18 +6943,50 @@
       "round": 8,
       "turn": 0,
       "kind": "target",
-      "text": "Fogwyrm (row 2, slot 1) <- spray"
+      "text": "Voltaro (row 1, slot 1) <- spray"
+    },
+    {
+      "round": 8,
+      "turn": 0,
+      "kind": "dodge",
+      "text": "Voltaro dodges",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000001",
+        "damage": 0,
+        "crit": false,
+        "blocked": false,
+        "dodged": true
+      }
+    },
+    {
+      "round": 8,
+      "turn": 0,
+      "kind": "counter",
+      "text": "Voltaro strikes back for 51",
+      "board": {
+        "type": "counter",
+        "from": "00000000-0000-4000-8700-000000000001",
+        "damage": 51
+      }
+    },
+    {
+      "round": 8,
+      "turn": 0,
+      "kind": "target",
+      "text": "Sunfawn (row 3, slot 2) <- spray"
     },
     {
       "round": 8,
       "turn": 0,
       "kind": "hit",
-      "text": "Fogwyrm takes 22",
+      "text": "Sunfawn takes 24 and is knocked out",
       "board": {
         "type": "hit",
         "from": null,
-        "to": "00000000-0000-4000-8700-000000000002",
-        "damage": 22,
+        "to": "00000000-0000-4000-8700-000000000008",
+        "damage": 24,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -6812,29 +6995,18 @@
     {
       "round": 8,
       "turn": 0,
-      "kind": "target",
-      "text": "Halcyray (row 3, slot 4) <- spray"
-    },
-    {
-      "round": 8,
-      "turn": 0,
-      "kind": "hit",
-      "text": "Halcyray takes 46",
+      "kind": "board",
+      "text": "",
       "board": {
-        "type": "hit",
-        "from": null,
-        "to": "00000000-0000-4000-8700-000000000014",
-        "damage": 46,
-        "crit": false,
-        "blocked": false,
-        "dodged": false
+        "type": "knockout",
+        "who": "00000000-0000-4000-8700-000000000008"
       }
     },
     {
       "round": 8,
       "turn": 0,
       "kind": "target",
-      "text": "Ancientshell (row 2, slot 2) <- spray"
+      "text": "Drizzlewt (row 1, slot 4) <- spray"
     },
     {
       "round": 8,
@@ -6843,8 +7015,8 @@
       "text": "",
       "board": {
         "type": "cover",
-        "guard": "00000000-0000-4000-8700-000000000002",
-        "who": "00000000-0000-4000-8700-000000000007",
+        "guard": "00000000-0000-4000-8700-000000000009",
+        "who": "00000000-0000-4000-8700-000000000012",
         "prevented": 21
       }
     },
@@ -6852,12 +7024,12 @@
       "round": 8,
       "turn": 0,
       "kind": "hit",
-      "text": "Ancientshell takes 1",
+      "text": "Drizzlewt takes 5",
       "board": {
         "type": "hit",
         "from": null,
-        "to": "00000000-0000-4000-8700-000000000007",
-        "damage": 1,
+        "to": "00000000-0000-4000-8700-000000000012",
+        "damage": 5,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -6962,16 +7134,16 @@
     {
       "round": 8,
       "turn": 1,
-      "kind": "board",
-      "text": "",
+      "kind": "boss-dodge",
+      "text": "Tidal Colossus dodges Fogwyrm",
       "board": {
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000002",
         "to": null,
-        "damage": 70,
+        "damage": 0,
         "crit": false,
         "blocked": false,
-        "dodged": false
+        "dodged": true
       }
     },
     {
@@ -6983,7 +7155,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000007",
         "to": null,
-        "damage": 132,
+        "damage": 156,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -7036,7 +7208,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000010",
         "to": null,
-        "damage": 265,
+        "damage": 313,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -7051,7 +7223,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000013",
         "to": null,
-        "damage": 22,
+        "damage": 26,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -7077,22 +7249,79 @@
       "round": 8,
       "turn": 1,
       "kind": "target",
-      "text": "Ohmouse (row 1, slot 3) <- riptide"
+      "text": "Tempestray (row 1, slot 2) <- riptide"
+    },
+    {
+      "round": 8,
+      "turn": 1,
+      "kind": "intercept",
+      "text": "Ohmouse intercepts for Tempestray"
+    },
+    {
+      "round": 8,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "intercept",
+        "guard": "00000000-0000-4000-8700-000000000009",
+        "who": "00000000-0000-4000-8700-000000000006"
+      }
     },
     {
       "round": 8,
       "turn": 1,
       "kind": "hit",
-      "text": "Ohmouse takes 98",
+      "text": "Ohmouse takes 53",
       "board": {
         "type": "hit",
         "from": null,
-        "to": "00000000-0000-4000-8700-000000000009",
-        "damage": 98,
+        "to": "00000000-0000-4000-8700-000000000006",
+        "damage": 53,
+        "crit": false,
+        "blocked": false,
+        "dodged": false,
+        "by": "00000000-0000-4000-8700-000000000009"
+      }
+    },
+    {
+      "round": 8,
+      "turn": 1,
+      "kind": "target",
+      "text": "Ancientshell (row 2, slot 2) <- riptide"
+    },
+    {
+      "round": 8,
+      "turn": 1,
+      "kind": "board",
+      "text": "",
+      "board": {
+        "type": "cover",
+        "guard": "00000000-0000-4000-8700-000000000002",
+        "who": "00000000-0000-4000-8700-000000000007",
+        "prevented": 45
+      }
+    },
+    {
+      "round": 8,
+      "turn": 1,
+      "kind": "hit",
+      "text": "Ancientshell takes 37",
+      "board": {
+        "type": "hit",
+        "from": null,
+        "to": "00000000-0000-4000-8700-000000000007",
+        "damage": 37,
         "crit": false,
         "blocked": false,
         "dodged": false
       }
+    },
+    {
+      "round": 8,
+      "turn": 1,
+      "kind": "target",
+      "text": "Ohmouse (row 1, slot 3) already took a hit of riptide"
     },
     {
       "round": 8,
@@ -7172,81 +7401,6 @@
       "round": 8,
       "turn": 1,
       "kind": "target",
-      "text": "Drizzlewt (row 1, slot 4) <- riptide"
-    },
-    {
-      "round": 8,
-      "turn": 1,
-      "kind": "board",
-      "text": "",
-      "board": {
-        "type": "cover",
-        "guard": "00000000-0000-4000-8700-000000000009",
-        "who": "00000000-0000-4000-8700-000000000012",
-        "prevented": 45
-      }
-    },
-    {
-      "round": 8,
-      "turn": 1,
-      "kind": "hit",
-      "text": "Drizzlewt takes 41",
-      "board": {
-        "type": "hit",
-        "from": null,
-        "to": "00000000-0000-4000-8700-000000000012",
-        "damage": 41,
-        "crit": false,
-        "blocked": false,
-        "dodged": false
-      }
-    },
-    {
-      "round": 8,
-      "turn": 1,
-      "kind": "target",
-      "text": "Kilnmole (row 2, slot 4) <- riptide"
-    },
-    {
-      "round": 8,
-      "turn": 1,
-      "kind": "hit",
-      "text": "Kilnmole takes 75",
-      "board": {
-        "type": "hit",
-        "from": null,
-        "to": "00000000-0000-4000-8700-000000000013",
-        "damage": 75,
-        "crit": false,
-        "blocked": false,
-        "dodged": false
-      }
-    },
-    {
-      "round": 8,
-      "turn": 1,
-      "kind": "target",
-      "text": "Halcyray (row 3, slot 4) <- riptide"
-    },
-    {
-      "round": 8,
-      "turn": 1,
-      "kind": "hit",
-      "text": "Halcyray takes 106",
-      "board": {
-        "type": "hit",
-        "from": null,
-        "to": "00000000-0000-4000-8700-000000000014",
-        "damage": 106,
-        "crit": false,
-        "blocked": false,
-        "dodged": false
-      }
-    },
-    {
-      "round": 8,
-      "turn": 1,
-      "kind": "target",
       "text": "Fogwyrm (row 2, slot 1) <- plain"
     },
     {
@@ -7309,26 +7463,11 @@
     {
       "round": 8,
       "turn": 2,
-      "kind": "board",
-      "text": "",
+      "kind": "boss-dodge",
+      "text": "Tidal Colossus dodges Magmole",
       "board": {
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000003",
-        "to": null,
-        "damage": 22,
-        "crit": false,
-        "blocked": false,
-        "dodged": false
-      }
-    },
-    {
-      "round": 8,
-      "turn": 2,
-      "kind": "boss-dodge",
-      "text": "Tidal Colossus dodges Sunfawn",
-      "board": {
-        "type": "hit",
-        "from": "00000000-0000-4000-8700-000000000008",
         "to": null,
         "damage": 0,
         "crit": false,
@@ -7351,7 +7490,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000014",
         "to": null,
-        "damage": 236,
+        "damage": 279,
         "crit": true,
         "blocked": false,
         "dodged": false,
@@ -7441,7 +7580,7 @@
         "round": 8,
         "won": false,
         "wiped": false,
-        "bossHp": 9869
+        "bossHp": 7434
       }
     }
   ],
@@ -7469,21 +7608,24 @@
   },
   "carry": {
     "stage": 1,
-    "bossHp": 9869,
-    "shadowHp": 9869,
+    "bossHp": 7434,
+    "shadowHp": 7434,
     "hp": {
-      "00000000-0000-4000-8700-000000000001": 92,
-      "00000000-0000-4000-8700-000000000002": 453,
-      "00000000-0000-4000-8700-000000000003": 302,
+      "00000000-0000-4000-8700-000000000001": 34,
+      "00000000-0000-4000-8700-000000000002": 468,
+      "00000000-0000-4000-8700-000000000003": 295,
       "00000000-0000-4000-8700-000000000006": 420,
-      "00000000-0000-4000-8700-000000000007": 596,
-      "00000000-0000-4000-8700-000000000008": 42,
-      "00000000-0000-4000-8700-000000000009": 229,
-      "00000000-0000-4000-8700-000000000012": 341,
-      "00000000-0000-4000-8700-000000000013": 517,
-      "00000000-0000-4000-8700-000000000014": 201
+      "00000000-0000-4000-8700-000000000007": 560,
+      "00000000-0000-4000-8700-000000000009": 222,
+      "00000000-0000-4000-8700-000000000012": 362,
+      "00000000-0000-4000-8700-000000000013": 646,
+      "00000000-0000-4000-8700-000000000014": 346
     },
-    "out": ["00000000-0000-4000-8700-000000000010", "00000000-0000-4000-8700-000000000011"],
+    "out": [
+      "00000000-0000-4000-8700-000000000008",
+      "00000000-0000-4000-8700-000000000010",
+      "00000000-0000-4000-8700-000000000011"
+    ],
     "windDone": [],
     "holdDone": [],
     "escalation": {
@@ -7491,17 +7633,17 @@
       "fallStep": 2,
       "phase": false,
       "phaseNext": false,
-      "count": 4886
+      "count": 6148
     },
     "used": {
-      "ember": 3,
-      "tide": 2
+      "ember": 4,
+      "tide": 3
     },
     "dealt": {
-      "spark": 5303,
-      "tide": 1813,
-      "ember": 950,
-      "grove": 1365
+      "spark": 6758,
+      "tide": 2372,
+      "ember": 1128,
+      "grove": 1542
     }
   }
 }

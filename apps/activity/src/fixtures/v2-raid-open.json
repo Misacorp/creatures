@@ -273,7 +273,7 @@
     "slot": 6,
     "bestShareBp": 2500,
     "failedWeekends": 2,
-    "determinationBp": 1000,
+    "determinationBp": 3000,
     "stagesPlayed": 0,
     "nextStage": 1,
     "joiningOpen": true,

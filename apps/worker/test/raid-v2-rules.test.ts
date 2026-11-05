@@ -588,9 +588,9 @@ describe('the end of the week', () => {
   it('gives Determination from the second lap only, five stacks at most', () => {
     expect(determinationBpFor(5, 4)).toBe(0);
     expect(determinationBpFor(6, 0)).toBe(0);
-    expect(determinationBpFor(6, 2)).toBe(1000);
-    expect(determinationBpFor(11, 5)).toBe(2500);
-    expect(determinationBpFor(11, 9)).toBe(2500);
+    expect(determinationBpFor(6, 2)).toBe(3000);
+    expect(determinationBpFor(11, 5)).toBe(7500);
+    expect(determinationBpFor(11, 9)).toBe(7500);
   });
 
   it('ends the weekend by the rule across parties: at least half of the parties that played won', async () => {

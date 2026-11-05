@@ -170,13 +170,7 @@
       {
         "slot": 5,
         "zone": "back",
-        "creature": {
-          "ownerName": "Player 2",
-          "species": "sunfawn",
-          "name": "Sunfawn",
-          "level": 22,
-          "mine": false
-        }
+        "creature": null
       },
       {
         "slot": 6,
@@ -236,7 +230,7 @@
     "guests": false,
     "bossHp": {
       "max": 19300,
-      "current": 9869
+      "current": 7434
     },
     "adaptation": null,
     "results": [
@@ -249,26 +243,26 @@
         "rounds": 8,
         "bossHpMax": 19300,
         "bossHpStart": 19300,
-        "bossHpEnd": 9869,
-        "damage": 9431,
-        "reactions": 5,
+        "bossHpEnd": 7434,
+        "damage": 11866,
+        "reactions": 7,
         "top": [
           {
             "displayName": "Player 2",
-            "damage": 3973,
-            "contribution": 3973,
+            "damage": 4913,
+            "contribution": 4913,
             "you": false
           },
           {
             "displayName": "Player 3",
-            "damage": 2097,
-            "contribution": 2097,
+            "damage": 2800,
+            "contribution": 2800,
             "you": false
           },
           {
             "displayName": "Player 1",
-            "damage": 1817,
-            "contribution": 1817,
+            "damage": 2327,
+            "contribution": 2327,
             "you": true
           }
         ],
@@ -283,7 +277,7 @@
     "slot": 6,
     "bestShareBp": 2500,
     "failedWeekends": 2,
-    "determinationBp": 1000,
+    "determinationBp": 3000,
     "stagesPlayed": 1,
     "nextStage": 2,
     "joiningOpen": false,
@@ -580,30 +574,33 @@
       "moves": {
         "undertow": [0, 3, 6, 9],
         "spray": null,
-        "deepwater-spear": [3, 4, 5, 6, 9, 10, 11],
+        "deepwater-spear": [3, 4, 6, 9, 10, 11],
         "riptide": null,
         "rogue-wave": null,
         "great-wave": null,
-        "backflow": [0, 1, 2, 3, 4, 5, 6, 9, 10, 11]
+        "backflow": [0, 1, 2, 3, 4, 6, 9, 10, 11]
       }
     },
     "carry": {
       "stage": 1,
-      "bossHp": 9869,
-      "shadowHp": 9869,
+      "bossHp": 7434,
+      "shadowHp": 7434,
       "hp": {
-        "00000000-0000-4000-8700-000000000001": 92,
-        "00000000-0000-4000-8700-000000000002": 453,
-        "00000000-0000-4000-8700-000000000003": 302,
+        "00000000-0000-4000-8700-000000000001": 34,
+        "00000000-0000-4000-8700-000000000002": 468,
+        "00000000-0000-4000-8700-000000000003": 295,
         "00000000-0000-4000-8700-000000000006": 420,
-        "00000000-0000-4000-8700-000000000007": 596,
-        "00000000-0000-4000-8700-000000000008": 42,
-        "00000000-0000-4000-8700-000000000009": 229,
-        "00000000-0000-4000-8700-000000000012": 341,
-        "00000000-0000-4000-8700-000000000013": 517,
-        "00000000-0000-4000-8700-000000000014": 201
+        "00000000-0000-4000-8700-000000000007": 560,
+        "00000000-0000-4000-8700-000000000009": 222,
+        "00000000-0000-4000-8700-000000000012": 362,
+        "00000000-0000-4000-8700-000000000013": 646,
+        "00000000-0000-4000-8700-000000000014": 346
       },
-      "out": ["00000000-0000-4000-8700-000000000010", "00000000-0000-4000-8700-000000000011"],
+      "out": [
+        "00000000-0000-4000-8700-000000000008",
+        "00000000-0000-4000-8700-000000000010",
+        "00000000-0000-4000-8700-000000000011"
+      ],
       "windDone": [],
       "holdDone": [],
       "escalation": {
@@ -611,20 +608,27 @@
         "fallStep": 2,
         "phase": false,
         "phaseNext": false,
-        "count": 4886
+        "count": 6148
       },
       "used": {
-        "ember": 3,
-        "tide": 2
+        "ember": 4,
+        "tide": 3
       },
       "dealt": {
-        "spark": 5303,
-        "tide": 1813,
-        "ember": 950,
-        "grove": 1365
+        "spark": 6758,
+        "tide": 2372,
+        "ember": 1128,
+        "grove": 1542
       }
     },
     "out": [
+      {
+        "creatureId": "00000000-0000-4000-8700-000000000008",
+        "species": "sunfawn",
+        "name": "Sunfawn",
+        "owner": "Player 2",
+        "mine": false
+      },
       {
         "creatureId": "00000000-0000-4000-8700-000000000010",
         "species": "geyserpup",
@@ -646,7 +650,7 @@
         "slot": 0,
         "row": 0,
         "col": 0,
-        "hp": 92,
+        "hp": 34,
         "hpMax": 388,
         "knack": "zoom",
         "knackName": "Zoom"
@@ -656,7 +660,7 @@
         "slot": 1,
         "row": 1,
         "col": 0,
-        "hp": 453,
+        "hp": 468,
         "hpMax": 539,
         "knack": "wide-reach",
         "knackName": "Wide Reach"
@@ -666,7 +670,7 @@
         "slot": 2,
         "row": 2,
         "col": 0,
-        "hp": 302,
+        "hp": 295,
         "hpMax": 431,
         "knack": "wide-warmth",
         "knackName": "Wide Embrace"
@@ -686,27 +690,17 @@
         "slot": 4,
         "row": 1,
         "col": 1,
-        "hp": 596,
+        "hp": 560,
         "hpMax": 597,
         "knack": "steady-mark",
         "knackName": "Brand"
-      },
-      {
-        "creatureId": "00000000-0000-4000-8700-000000000008",
-        "slot": 5,
-        "row": 2,
-        "col": 1,
-        "hp": 42,
-        "hpMax": 431,
-        "knack": "sunbeam",
-        "knackName": "Sunbeam"
       },
       {
         "creatureId": "00000000-0000-4000-8700-000000000009",
         "slot": 6,
         "row": 0,
         "col": 2,
-        "hp": 229,
+        "hp": 222,
         "hpMax": 539,
         "knack": "catch-the-bolts",
         "knackName": "Take It All"
@@ -716,7 +710,7 @@
         "slot": 9,
         "row": 0,
         "col": 3,
-        "hp": 341,
+        "hp": 362,
         "hpMax": 456,
         "knack": "drizzle",
         "knackName": "Drizzle"
@@ -726,7 +720,7 @@
         "slot": 10,
         "row": 1,
         "col": 3,
-        "hp": 517,
+        "hp": 646,
         "hpMax": 657,
         "knack": "draw-fire",
         "knackName": "Draw Fire"
@@ -736,7 +730,7 @@
         "slot": 11,
         "row": 2,
         "col": 3,
-        "hp": 201,
+        "hp": 346,
         "hpMax": 539,
         "knack": "clear-skies",
         "knackName": "Clear Skies"
