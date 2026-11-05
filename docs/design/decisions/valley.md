@@ -4,6 +4,14 @@ The valley and peaceful systems overhaul planned in docs/design/valley/: job pos
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-05: Phase 4 passes; a polish round before phase 5 (round 27, Q60) **[Misa]**
+
+ID: `2026-11-05-phase-4-passes-a-polish-round` · Status: current
+
+**Decision.** Phase 4's gate passes (Misa, Q60: "I think the game does seem playable from the valley map, so good job there"). Before phase 5 a polish round fixes his staging points: the creature popover above everything in a scene, "View" scrolling the Creatures page to that creature, the Cave's line matching a run in progress, the Journal on desktop as a list of places beside the open place's pages, and no keyboard focus ring on a place after Escape back to the map. More scenario tests join the valley's end-to-end walk (a dungeon run in progress, a raid weekend, a full bag, a new player).
+
+**Reasoning.** Misa: "we do need a lot of UX polish here, and testing out different scenarios." On focus rings: "I said previously that we don't really have to take accessibility into account on this level ... it detracts from the experience." Returning from a place moves no focus onto the map's place, so no ring shows after Escape; keyboard users still Tab into the map.
+
 ## 2026-11-05: Phase 4 panel review: the fixes adopted (2026-11-05)
 
 ID: `2026-11-05-phase-4-panel-review-the-fixes` · Status: current

@@ -484,6 +484,7 @@ Superseded: 1 entry (see the topic file).
 
 [valley.md](valley.md): The valley and peaceful systems overhaul planned in docs/design/valley/: job posts, the bonfire, the commons, the Forge loop, gear, trials, the School, the visitor, the economy lab, and Misa's question rounds.
 
+- 2026-11-05 Phase 4 passes; a polish round before phase 5 (round 27, Q60) \[Misa\]
 - 2026-11-05 Phase 4 panel review: the fixes adopted (2026-11-05)
 - 2026-11-05 Creatures in the Paddock's scene can be dragged by hand (phase 4, step 5b)
 - 2026-11-05 Deeper dungeon XP: today's per-run XP plus a step at each landmark depth (round 26, Q59) \[Misa\]

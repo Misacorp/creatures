@@ -6,16 +6,7 @@ Sections: **Waiting on Misa** (asked, not answered), **Queue** (to ask, in order
 
 ## Waiting on Misa
 
-### Q60. Phase 4's gate: can you play the whole game through the valley, with nothing missing?
-
-Status: asked, round 27 (2026-11-05). Phase 4's gate (`roadmap.md`): "The whole game is playable through the valley on staging; nothing is lost from today's game." Staging has 2e7bb3b3 (steps 1 to 5 and the panel's fixes).
-
-**Why it matters.** Passing it starts phase 5: the new systems (posts instead of trips and Workshop jobs, the bonfire, the School, the commons, the visitor and the Market), built on the server and behind flags, which replace today's pages inside the places.
-
-- **A. It passes.** Phase 5 starts with its plan, asked as the next round.
-- **B. Not yet.** Say what is missing or harder than today, and it gets fixed first.
-
-**Lead's pick: A** if every one of today's screens is one tap inside its place and nothing feels missing.
+Nothing waiting.
 
 ## Queue
 
@@ -952,6 +943,21 @@ Status: asked, round 26 (2026-11-04). Challenges the combat v2 decision of 2026-
 **Answer (2026-11-05), given in the combat v2 session and relayed from there:** "Let's drop the dungeon EXP payout baseline and try an EXP increase per landmark depth instead of at each depth. It gives players something small to push for."
 
 Became: close to B. On combat v2 runs a run pays about today's 120 XP to a creature that stood in every room at any depth (normalised per run, not per room); instead of a per-depth bonus, XP steps up at each landmark depth (every 7th) by about +1.75% a landmark, no cap (the same average as B's +0.25% a depth, which kept every target in the lab). Production (v1) unchanged. The combat session builds it as data (`RULES.dungeon.depthRewards.xp`); the lab checks the step size on their commit.
+
+### Q60. Phase 4's gate: can you play the whole game through the valley, with nothing missing?
+
+Status: answered, round 27 (2026-11-05). Phase 4's gate (`roadmap.md`): "The whole game is playable through the valley on staging; nothing is lost from today's game." Staging has 2e7bb3b3 (steps 1 to 5 and the panel's fixes).
+
+**Why it matters.** Passing it starts phase 5: the new systems (posts instead of trips and Workshop jobs, the bonfire, the School, the commons, the visitor and the Market), built on the server and behind flags, which replace today's pages inside the places.
+
+- **A. It passes.** Phase 5 starts with its plan, asked as the next round.
+- **B. Not yet.** Say what is missing or harder than today, and it gets fixed first.
+
+**Lead's pick: A** if every one of today's screens is one tap inside its place and nothing feels missing.
+
+**Answer (2026-11-05): A, with polish to do.** "I think the game does seem playable from the valley map, so good job there." With five points from staging: the creature popover draws behind the Paddock's creatures and nameplates; "View" should scroll the Creatures page to that creature; the Cave says "The cave is quiet" in the middle of a dungeon run; the Journal on desktop is "quite terrible" (a grid of folded place headings with one opened among them, where a list of headings on one side and the pages on the other would be expected); after Escape back to the map, the House shows a keyboard focus ring: "I said previously that we don't really have to take accessibility into account on this level ... it detracts from the experience." And: "Overall, we do need a lot of UX polish here, and testing out different scenarios."
+
+Became: phase 4's gate passes; phase 5 is next, after a polish round on these points and more scenario tests (mid-run dungeon, raid weekend, a full bag, a new player).
 
 ## Withdrawn
 
