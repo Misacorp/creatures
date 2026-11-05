@@ -19,9 +19,9 @@
  * Settling twice at the same `now` changes nothing: the second pass starts where the first stopped and has no time to pay.
  */
 import {
-  RULES,
   VALLEY_RULES,
   addExperience,
+  expToReach,
   settle,
   MAX_RIBBONS,
   type SettleState,
@@ -200,8 +200,7 @@ export class ValleySettle {
     const creatures = rows.map((row, i) => {
       const paid = after.creatures[i];
       const whole = paid?.xp ?? 0;
-      const level = this.payXp(row, whole);
-      const gainedNow = level.atTop ? 0 : whole;
+      const gainedNow = this.payXp(row, whole);
       const visitXp = (newVisit ? 0 : (row.visit_xp ?? 0)) + gainedNow;
       const catchUpBp = row.catchup_bp ?? BP;
       const changed =
@@ -239,12 +238,14 @@ export class ValleySettle {
     };
   }
 
-  /** Pays `whole` XP through the game's level rules with the ribbon gates open; returns whether the creature is at the top. */
-  private payXp(row: CreatureRow, whole: number): { atTop: boolean } {
+  /**
+   * Pays `whole` XP through the game's level rules with the ribbon gates open. Returns the XP the creature really took: less than
+   * `whole` at the top level, or while it waits at its species' cap with the next level's XP already banked (before evolving), so
+   * the fire's "+N" never shows XP that went nowhere.
+   */
+  private payXp(row: CreatureRow, whole: number): number {
+    if (whole === 0 && row.ribbons >= MAX_RIBBONS) return 0;
     const species = speciesOf(row.species);
-    if (whole === 0 && row.ribbons >= MAX_RIBBONS) {
-      return { atTop: row.level >= RULES.experience.maxLevel };
-    }
     const gain = addExperience(
       { level: row.level, exp: row.exp, ribbons: MAX_RIBBONS, levelCap: species.levelCap },
       whole,
@@ -256,7 +257,7 @@ export class ValleySettle {
       gain.ribbons,
       row.id,
     );
-    return { atTop: gain.level >= RULES.experience.maxLevel };
+    return expToReach(gain.level) + gain.exp - (expToReach(row.level) + row.exp);
   }
 
   private trackCreature(

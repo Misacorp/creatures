@@ -15,6 +15,7 @@ import { count, nextGuild, seedPlayer } from './raid-helpers';
 import { DESTINATION_IDS } from '../src/content-ids';
 import { loungeDay } from '../src/lounge-company';
 import { VISIT_GAP_MS, INTENT_MIN_MS, allowanceCap } from '../src/valley-settle';
+import { speciesOf } from '../src/species';
 
 const SYSTEMS = { ...ON, valleySystems: true, combatV2: true, dailyAllowance: true } as const;
 const FLAG_OFF = { ...ON, dailyAllowance: true } as const;
@@ -305,6 +306,27 @@ describe('the valley pass in /api/state (flag on)', () => {
           .one();
         expect(row.level).toBeGreaterThan(gate);
         expect(row.ribbons).toBeGreaterThan(0);
+      },
+      SYSTEMS,
+    );
+  });
+  it('shows no +N for a creature waiting at its species cap with the next level already banked', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await newPlayer(ctx, 1, 1);
+        const id = p.creatureIds[0] as string;
+        const species = ctx.sql
+          .exec<{ species: string }>('SELECT species FROM creatures WHERE id = ?', id)
+          .one().species;
+        const cap = speciesOf(species).levelCap;
+        const need = expToReach(cap + 1) - expToReach(cap);
+        setCreature(ctx, id, { level: cap, exp: need, ribbons: 0 });
+        await p.state();
+        ctx.clock.t += 24 * HOUR;
+        const valley = v.parse(ValleyViewSchema, (await p.state()).body.valley);
+        expect(valley.creatures.find((c) => c.id === id)?.gained).toBe(0);
+        expect(totalXp(ctx.sql, id)).toBe(expToReach(cap) + need);
       },
       SYSTEMS,
     );
