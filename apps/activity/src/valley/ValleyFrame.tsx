@@ -23,7 +23,7 @@ import { placeBubbles, placeStates, type PlaceInput } from './place-state';
 import { castFor, hasScene, type CastExtra } from './place-cast';
 import { artSize, placeScale, placeSceneDraw } from './place-scene';
 import type { TrayInput } from './tray-state';
-import { trayFor, isAtHome } from './tray-state';
+import { trayFor, isAtHome, isScouting, trayStates } from './tray-state';
 import { placeOf, type PlaceId } from './valley-art';
 import { placeLabel } from './valley-logic';
 import { soonLine, type SoonPlaceId, type ValleyView } from './valley-nav';
@@ -91,22 +91,19 @@ export function ValleyFrame({
   // The commons do not exist yet (phase 5 step 6): the fire is the plain one.
   const bonfireLevel = 1;
   const place = view.kind === 'valley' ? null : placeOf(view.place);
-  const bubbles = placeBubbles(alerts, placeInput);
-  // With the valley's systems on, a free creature rests at the fire: the tray says so.
-  const tray: TrayInput =
-    visit === null
-      ? trayInput
-      : {
-          ...trayInput,
-          resting: new Set(visit.creatures.filter((r) => r.state === 'resting').map((r) => r.id)),
-        };
+  const bubbles = placeBubbles(alerts, { ...placeInput, visit });
+  // With the valley's systems on, a free creature rests at the fire and a posted one scouts: the tray says so.
+  const tray: TrayInput = visit === null ? trayInput : { ...trayInput, ...trayStates(visit) };
   const insideRef = useRef<HTMLDivElement>(null);
   // The five places with a scene (not while a book of the House is open): the scene above, today's page under it.
   const cast =
-    view.kind === 'place' && view.book === null && hasScene(view.place)
+    view.kind === 'place' &&
+    view.book === null &&
+    hasScene(view.place) &&
+    (view.place !== 'signpost' || visit !== null)
       ? castFor(
           view.place,
-          { ...placeInput, ...castExtra },
+          { ...placeInput, ...castExtra, visit },
           artSize(SCENE_ART[view.place]),
           bubbles,
         )
@@ -149,7 +146,7 @@ export function ValleyFrame({
           <>
             <div class="vy-map-view">
               <ValleyMap
-                creatures={creatures.filter(isAtHome)}
+                creatures={creatures.filter((c) => isAtHome(c) && !isScouting(c, visit))}
                 at="start"
                 focus={focus}
                 bubbles={bubbles}

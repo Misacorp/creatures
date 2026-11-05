@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { parseGameState } from './api';
 import state from './fixtures/creatures-state.json';
 import {
+  autoAnswerLine,
   duplicateOptions,
   firstPick,
   lineCreatures,
@@ -75,6 +76,16 @@ describe('the choice of a waiting duplicate', () => {
     }));
     expect(firstPick(none)).toBe(`fuse-${String(splashet?.id)}`);
     expect(firstPick([])).toBeNull();
+  });
+});
+
+describe('the gate answers a newcomer by itself (V-SCOUT-3)', () => {
+  it('says when, calmly; nothing for a card that waits for the player', () => {
+    expect(autoAnswerLine({}, 0)).toBeNull();
+    expect(autoAnswerLine({ autoAt: 14 * 3_600_000 }, 0)).toBe(
+      'Answered for you in 14 h. You can choose before then.',
+    );
+    expect(autoAnswerLine({ autoAt: 5 }, 10)).toMatch(/soon/);
   });
 });
 

@@ -123,6 +123,10 @@ export const ActionIds = {
    * One purchase at the Prize Stall: the stall week, the offer and how many were left when it was tapped,
    * so the next purchase of the same offer (fewer left) is another action with its own key.
    */
+  /** Buying the Signpost's next scout seat: the number of seats owned makes it this purchase (the next one is another). */
+  seatBuy: (owned: number): ActionId => `seat-buy:${String(owned)}`,
+  /** Buying one kit (once each). */
+  kitBuy: (kit: string): ActionId => `kit-buy:${kit}`,
   gamesBuy: (week: string, offerId: string, left: number): ActionId =>
     `games-buy:${week}:${offerId}:${String(left)}`,
 };

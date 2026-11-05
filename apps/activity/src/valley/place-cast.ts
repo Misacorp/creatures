@@ -12,7 +12,7 @@
  *
  * Positions are scene pixels from the top-left of the place's art, a creature's own top-left (16 x 16).
  */
-import type { Attention, Creature } from '../api';
+import type { Attention, Creature, ValleyVisit } from '../api';
 import type { DungeonPhase } from '../dungeon-flow';
 import { emptyEvents, showLive } from '../games-view';
 import type { GamesView } from '../games-types';
@@ -20,11 +20,15 @@ import type { RaidGlance } from '../home-view';
 import { isAtHome } from './tray-state';
 import type { PlaceBubble } from './place-state';
 import { bubbleAt, raidTiming } from './place-state';
+import { placeName, scoutsOut, signpostCalm } from './signpost-view';
 import type { PlaceId } from './valley-art';
 import type { Rect } from './valley-art';
 
-/** The five places that have a scene of their own over today's page (not the Signpost or the Forge: phase 5's posts). */
-export const CAST_PLACES = ['house', 'cave', 'arena', 'fair', 'paddock'] as const;
+/**
+ * The places that have a scene of their own over today's page. The Signpost's is drawn only with the valley's systems on (its
+ * scouts stand in it; `ValleyFrame` checks), the Forge's waits for phase 5's anvils.
+ */
+export const CAST_PLACES = ['house', 'cave', 'arena', 'fair', 'paddock', 'signpost'] as const;
 export type CastPlace = (typeof CAST_PLACES)[number];
 
 export function hasScene(id: PlaceId): id is CastPlace {
@@ -58,6 +62,8 @@ export interface CastInput extends CastExtra {
   pending: number;
   /** The guild's timezone; null before the first full state. */
   timezone: string | null;
+  /** The valley's scouts and seats (`VALLEY_SYSTEMS` on): the Signpost's scene is made from it. */
+  visit?: ValleyVisit | null;
 }
 
 /** One creature standing in a scene. */
@@ -314,6 +320,67 @@ function paddockCast(
   return { roamers, roam: PADDOCK_ROAM_AREA, gate, waiting: n, act };
 }
 
+// --- Signpost ---
+
+/** The scouts stand this far apart sideways in front of the signpost (scene pixels). */
+const SCOUT_STEP = 24;
+
+/**
+ * The scouts at their seats in front of the signpost, in the order the seats were bought, each saying where it is out. A free
+ * seat shows nobody (the page under the scene says it is free). The scene's one action is the next step: take the first seat,
+ * or post a scout to a free seat; else a calm line of how many are out.
+ */
+function signpostCast(input: CastInput, art: Size): Pick<Cast, 'stands' | 'act'> {
+  const visit = input.visit;
+  if (visit == null) return { stands: [], act: { kind: 'calm', line: '' } };
+  const scouts = visit.seats.flatMap((seat) => {
+    const creature = input.creatures.find((c) => c.id === seat.creatureId);
+    return creature === undefined ? [] : [{ creature, seat }];
+  });
+  const spots = row(scouts.length, Math.floor(art.width / 2), art.height - 10, SCOUT_STEP);
+  const stands = scouts.flatMap(({ creature, seat }, i) => {
+    const spot = spots[i];
+    return spot === undefined
+      ? []
+      : [
+          {
+            creature,
+            x: spot.x,
+            y: spot.y,
+            flip: i % 2 === 1,
+            where: `scouting at ${placeName(seat.destination)}`,
+          },
+        ];
+  });
+  if (visit.seats.length === 0 && visit.seatPrices.next !== null) {
+    return {
+      stands,
+      act: {
+        kind: 'step',
+        label: 'Take your first seat',
+        ...(visit.seatPrices.next === 0 ? { detail: 'free' } : {}),
+      },
+    };
+  }
+  const free = visit.seats.filter((s) => s.creatureId === null).length;
+  const posted = new Set(visit.seats.map((s) => s.creatureId));
+  const spare = input.creatures.filter((c) => !posted.has(c.id) && isAtHome(c)).length;
+  if (free > 0 && spare > 0) {
+    return {
+      stands,
+      act: {
+        kind: 'step',
+        label: 'Post a scout',
+        detail: plural(free, 'a seat is free', 'seats are free'),
+      },
+    };
+  }
+  return {
+    stands,
+    act: { kind: 'calm', line: scoutsOut(visit) === 0 ? '' : signpostCalm(visit) },
+  };
+}
+
 interface Size {
   width: number;
   height: number;
@@ -348,5 +415,7 @@ export function castFor(
       return { ...base, ...fairCast(input, art) };
     case 'paddock':
       return { ...base, ...paddockCast(input, art) };
+    case 'signpost':
+      return { ...base, ...signpostCast(input, art) };
   }
 }

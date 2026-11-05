@@ -304,6 +304,12 @@ const ERROR_TEXT: Record<string, string> = {
   already_learned: 'That creature has already learned that talent.',
   already_slotted: 'That talent is already in that slot.',
   cancelled: 'That trip was called home when the slots were reset.',
+  // The Signpost's scouts (phase 5 step 2).
+  no_more_seats: 'The Signpost has no more seats for now.',
+  kit_owned: 'You have that kit already.',
+  kit_not_owned: 'You have not bought that kit yet.',
+  unknown_kit: 'That kit does not exist.',
+  unknown_destination: 'That place does not exist.',
   // Any request.
   invalid_body:
     'The server did not understand that. Close and reopen the Activity if it keeps happening.',

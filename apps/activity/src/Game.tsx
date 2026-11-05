@@ -1,10 +1,13 @@
 import type { RefObject } from 'preact';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import {
+  buyScoutSeat,
   chooseStarter,
   dismissAway,
   dismissLevelReset,
   fetchState,
+  postScout,
+  scoutKit,
   setLoungeSpot,
   type Allowance,
   type Attention,
@@ -88,6 +91,9 @@ import type { TeamConfigure } from './TeamCreaturePage';
 import { Alert } from './ui/Alert';
 import { WelcomeBack } from './valley/gazette/WelcomeBack';
 import { ValleyFrame } from './valley/ValleyFrame';
+import { SignpostSeats, type SignpostActions } from './valley/SignpostSeats';
+import { KIT_INFO } from './valley/signpost-view';
+import { trayStates } from './valley/tray-state';
 import { placeOf, type PlaceId } from './valley/valley-art';
 import {
   PLACE_TAB,
@@ -331,6 +337,36 @@ export function Game({
   });
 
   const creatureActions = createCreatureActions({ run, runKeyed, setCurrent, setNotice });
+  /**
+   * The Signpost's scouts (phase 5 step 2): each route answers the settled valley and the state, both taken in at once. Posting and
+   * kit setting are free and repeatable (no key); a seat and a kit are keyed spends. True when the server took it.
+   */
+  const takeValley = (answer: { valley: ValleyVisit; state: GameState } | undefined): boolean => {
+    if (answer === undefined) return false;
+    setCurrent(loaded(answer.state));
+    setVisit(answer.valley);
+    return true;
+  };
+  const signpostActions: SignpostActions = {
+    post: async (body) => takeValley(await run(() => postScout(body))),
+    setKit: async (seatId, kit) =>
+      takeValley(await run(() => scoutKit({ action: 'set', seatId, kit }))),
+    buySeat: async () => {
+      const owned = systems?.seatPrices.owned ?? 0;
+      const ok = takeValley(await runKeyed(ActionIds.seatBuy(owned), (key) => buyScoutSeat(key)));
+      if (ok) setNotice('A new scout seat is yours.');
+      return ok;
+    },
+    buyKit: async (kit) => {
+      const ok = takeValley(
+        await runKeyed(ActionIds.kitBuy(kit), (key) =>
+          scoutKit({ action: 'buy', kit, idempotencyKey: key }),
+        ),
+      );
+      if (ok) setNotice(`The ${KIT_INFO[kit].name} is yours.`);
+      return ok;
+    },
+  };
   /** Wears an item or takes it off (the card's and the dungeon's); true when the server took it. */
   const equipOn = async (gearId: string, creatureId: string | null): Promise<boolean> =>
     (await gearActions.equip(gearId, creatureId)) !== undefined;
@@ -698,7 +734,26 @@ export function Game({
           {...creatureActions}
         />
       )}
-      {tab === 'expeditions' && (
+      {tab === 'expeditions' && valleyOn && valleySystems && systems !== null && (
+        // With the valley's systems on the Signpost is its scouts, not trips (`/api/expeditions` answers 404).
+        <SignpostSeats
+          visit={systems}
+          creatures={game.creatures}
+          trayInput={{
+            trips: game.expeditions,
+            jobs: gear === null ? null : gear.jobs,
+            now: Date.now() + offset,
+            ...trayStates(systems),
+          }}
+          acorns={game.balances.bait}
+          busy={busy}
+          actions={signpostActions}
+          onOpenPaddock={() => {
+            openPlace('paddock');
+          }}
+        />
+      )}
+      {tab === 'expeditions' && !(valleyOn && valleySystems) && (
         <Expeditions
           state={game}
           forecast={forecast}
