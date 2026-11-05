@@ -206,7 +206,7 @@ export function slotOwnability(
   return { slot, bossId, week, answers, tool, unevolved, pass: tool.ownable && !unevolved.length };
 }
 
-/** Every slot with a week: slot `i + 1` at `weeks[i]` (default the committed `SLOT_WEEKS`, slots 1 to 15). */
+/** Every slot with a week: slot `i + 1` at `weeks[i]` (default the committed `SLOT_WEEKS`, slots 1 to 24). */
 export const ownabilityTable = (
   weeks: readonly number[] = SLOT_WEEKS,
   coverage: ServerCoverage = VALLEY_COVERAGE,

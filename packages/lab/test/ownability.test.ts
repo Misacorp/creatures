@@ -194,8 +194,8 @@ describe('the chance', () => {
 });
 
 describe('the track', () => {
-  it('has an arrival week for each slot of three laps, in order', () => {
-    expect(SLOT_WEEKS).toHaveLength(3 * TRACK_ORDER.length);
+  it('has an arrival week for each slot of the tuned track (24), in order', () => {
+    expect(SLOT_WEEKS).toHaveLength(24);
     SLOT_WEEKS.forEach((w, i) => {
       expect(w).toBeGreaterThanOrEqual(1);
       expect(w).toBeLessThanOrEqual(ROSTER_WEEKS);

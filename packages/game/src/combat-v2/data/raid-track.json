@@ -165,6 +165,105 @@
       "cards": 1,
       "buildUp": true,
       "extraCards": []
+    },
+    {
+      "slot": 16,
+      "boss": "tidal-colossus",
+      "hp": 12400,
+      "atk": 142,
+      "armour": 55,
+      "strengthBp": 10000,
+      "cards": 2,
+      "buildUp": true,
+      "extraCards": ["slippery", "breakwater"]
+    },
+    {
+      "slot": 17,
+      "boss": "cinder-wyrm",
+      "hp": 11600,
+      "atk": 185,
+      "armour": 52,
+      "strengthBp": 10000,
+      "cards": 2,
+      "buildUp": true,
+      "extraCards": []
+    },
+    {
+      "slot": 18,
+      "boss": "storm-sovereign",
+      "hp": 7800,
+      "atk": 90,
+      "armour": 7,
+      "strengthBp": 10000,
+      "cards": 2,
+      "buildUp": true,
+      "extraCards": ["lucky-strike"]
+    },
+    {
+      "slot": 19,
+      "boss": "old-bogback",
+      "hp": 31200,
+      "atk": 123,
+      "armour": 29,
+      "strengthBp": 10000,
+      "cards": 2,
+      "buildUp": true,
+      "extraCards": []
+    },
+    {
+      "slot": 20,
+      "boss": "thornmother",
+      "hp": 8000,
+      "atk": 97,
+      "armour": 162,
+      "strengthBp": 10000,
+      "cards": 1,
+      "buildUp": true,
+      "extraCards": []
+    },
+    {
+      "slot": 21,
+      "boss": "tidal-colossus",
+      "hp": 12400,
+      "atk": 142,
+      "armour": 56,
+      "strengthBp": 10000,
+      "cards": 2,
+      "buildUp": true,
+      "extraCards": ["slippery", "breakwater"]
+    },
+    {
+      "slot": 22,
+      "boss": "cinder-wyrm",
+      "hp": 10200,
+      "atk": 199,
+      "armour": 53,
+      "strengthBp": 10000,
+      "cards": 2,
+      "buildUp": true,
+      "extraCards": []
+    },
+    {
+      "slot": 23,
+      "boss": "storm-sovereign",
+      "hp": 7800,
+      "atk": 90,
+      "armour": 8,
+      "strengthBp": 10000,
+      "cards": 2,
+      "buildUp": true,
+      "extraCards": ["lucky-strike"]
+    },
+    {
+      "slot": 24,
+      "boss": "old-bogback",
+      "hp": 34300,
+      "atk": 105,
+      "armour": 33,
+      "strengthBp": 10000,
+      "cards": 2,
+      "buildUp": true,
+      "extraCards": []
     }
   ]
 }
