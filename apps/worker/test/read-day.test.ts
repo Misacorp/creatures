@@ -166,6 +166,8 @@ async function simulateDay(options: {
   scouts?: boolean;
   /** Anvils are posted (the valley's step 3): every player has two, the first three players two as well, with scouts too when `scouts` is on. */
   smiths?: boolean;
+  /** The welcome-back Gazette (the valley's step 4): a player who finds an unread paper closes it, as every opening of the day does. */
+  gazette?: boolean;
   fresh?: boolean;
 }): Promise<DayReads> {
   const reads = new DayReads();
@@ -213,6 +215,27 @@ async function simulateDay(options: {
             readSourceOfPath(path),
             (await env.metered.measure(() => callAs(core, secrets, player, path))).reads,
           );
+        if (options.gazette === true && paths.includes('/api/state')) {
+          const paper = env.metered.sql
+            .exec<{ paper_id: string }>(
+              'SELECT paper_id FROM valley_gazette WHERE user_id = ? AND read_at IS NULL',
+              userId(player),
+            )
+            .toArray()[0];
+          if (paper !== undefined) {
+            reads.add(
+              'request:valley',
+              (
+                await env.metered.measure(() =>
+                  callAs(core, secrets, player, '/api/valley/gazette/close', {
+                    method: 'POST',
+                    body: { paperId: paper.paper_id },
+                  }),
+                )
+              ).reads,
+            );
+          }
+        }
         if (options.combatV2 !== true || !paths.includes('/api/state')) return;
         // Combat v2: a Knack saved on the creature page, and (the first opening of a player) a talent learned.
         const mine = world.creatures[userId(player)] ?? [];
@@ -404,7 +427,29 @@ const VALLEY_SCOUT_DAY_WRITE_BUDGET = 6000;
 // With smiths as well (step 3: two anvils each, a queue of two orders, a stocked shelf, two pieces on each floor; scouts as above): measured 123,488 rows read and 4,541 written.
 const VALLEY_SMITH_DAY_WRITE_BUDGET = 6500;
 
+// With the Gazette (step 4): every arrival writes a paper (a read of the unread one, a write of the log) and each player closes it.
+// Measured 124,132 rows read (123,488 without the Gazette: the papers add about 650, the ten closes about 10 each) and 4,617 written (4,541 without).
+const VALLEY_GAZETTE_DAY_WRITE_BUDGET = 6600;
+
 describe('a day in the life with the valley on', () => {
+  it('reads and writes few rows in a day with the Gazette: scouts and smiths posted, every arrival writes a paper and the player closes it', async () => {
+    const reads = await simulateDay({
+      valleySystems: true,
+      scouts: true,
+      smiths: true,
+      gazette: true,
+      fresh: true,
+    });
+    expect(
+      reads.total,
+      `${reads.describe()}\nBudget: ${String(DAY_BUDGET)} rows.`,
+    ).toBeLessThanOrEqual(DAY_BUDGET);
+    expect(
+      reads.written,
+      `${reads.describe()}\nWrite budget: ${String(VALLEY_GAZETTE_DAY_WRITE_BUDGET)} rows.`,
+    ).toBeLessThanOrEqual(VALLEY_GAZETTE_DAY_WRITE_BUDGET);
+  }, 120_000);
+
   it('reads and writes few rows in a day with smiths and scouts posted (two anvils each, scouts as above)', async () => {
     const reads = await simulateDay({
       valleySystems: true,

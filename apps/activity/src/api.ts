@@ -796,10 +796,9 @@ export async function postScout(body: {
 }
 
 /** Closes the welcome-back Gazette's paper (marks it read; `paperId` is the `id` the state's paper carried). Free and repeatable, no key. */
-export async function closeGazette(paperId: string): Promise<ValleyAnswer> {
-  return valleyAnswer(
-    await apiFetch('/api/valley/gazette/close', jsonRequest('POST', { paperId })),
-  );
+export async function closeGazette(paperId: string): Promise<boolean> {
+  const data = await apiFetch('/api/valley/gazette/close', jsonRequest('POST', { paperId }));
+  return isRecord(data) && data['closed'] === true;
 }
 
 /**

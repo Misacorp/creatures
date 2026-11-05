@@ -151,7 +151,7 @@ describe('the paper of an arrival', () => {
           paperId: paper.id,
         });
         expect(closed.status).toBe(200);
-        expect(view(closed as Json).paper).toBeUndefined();
+        expect(closed.body).toEqual({ closed: true });
         expect(
           (await p.api.call('POST', '/api/valley/gazette/close', { paperId: paper.id })).status,
         ).toBe(200);

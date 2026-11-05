@@ -106,11 +106,8 @@ export const valleyRoutes: Routes<ValleyRouteContext> = {
       if (core.valleyGazette === null) return notFound();
       const body = await parseBody(request, ValleyGazetteCloseBodySchema);
       if (body === undefined) return invalidBody();
-      core.valleyGazette.close(user.id, body.paperId);
-      return json({
-        valley: core.valleyState(user.id),
-        state: core.collection.state(user.id),
-      });
+      // One row written, no pass: the answer is only whether a paper was closed (the client drops its own copy).
+      return json({ closed: core.valleyGazette.close(user.id, body.paperId) });
     },
   },
   '/api/valley/anvil/buy': {

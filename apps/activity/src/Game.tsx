@@ -1036,7 +1036,16 @@ export function Game({
           ? {
               paper: systems?.paper ?? null,
               onClosePaper: (paperId: string) => {
-                void run(() => closeGazette(paperId)).then(takeValley);
+                // The server only marks it read; the client drops its own copy so it does not reopen.
+                void run(() => closeGazette(paperId)).then((closed) => {
+                  if (closed === true) {
+                    setVisit((was) => {
+                      if (was === null) return was;
+                      const { paper: _read, ...rest } = was;
+                      return rest;
+                    });
+                  }
+                });
               },
               onPushOn: async (seatId: string) =>
                 takeValley(await run(() => setScoutDeep(seatId, true))),
