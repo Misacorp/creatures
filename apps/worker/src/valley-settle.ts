@@ -226,7 +226,7 @@ export class ValleySettle {
         arrived: true,
         awayHours: 0,
         rows,
-        seats: [],
+        seats: this.seatRows(userId),
         creatures: rows.map((row) => ({ row, gained: 0, catchUpBp: BP })),
         allowance: { store: 0, cap, brought: 0 },
       });

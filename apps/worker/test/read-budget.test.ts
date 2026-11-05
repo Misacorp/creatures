@@ -23,6 +23,7 @@ import {
   inGuild,
   loungeTick,
   seedHistory,
+  seedSeats,
   seedWorld,
   startLounge,
   type FakeLounge,
@@ -328,6 +329,71 @@ describe('read budget with the valley on', () => {
       if (reads === undefined) throw new Error('the measuring test did not run');
       expectReadsUnder(`valley ${name}`, reads, VALLEY_BUDGET[name].reads);
       expectWritesUnder(`valley ${name}`, reads, VALLEY_BUDGET[name].writes);
+    },
+  );
+});
+
+/**
+ * The valley's scouts (phase 5 step 2): what the same `/api/state` pass reads and writes with scout seats posted, for the seeded
+ * player's 30 creatures: two seats (the Signpost at its first level) and six (its fifth). Each seat adds its row, the posted creature's
+ * mastery, the kit row, the finds' draws, and on an arrival the store coming home (parts, gear, pages and a newcomer or a card at the
+ * gate). The finds are live draws, so the numbers below are the largest of a few runs; the budgets are about 1.5x.
+ */
+const SCOUT_BUDGET = {
+  // A day away with the seeded player's 30 creatures: 828 reads and 63 written without seats (`VALLEY_BUDGET.arrival`).
+  arrival2: { reads: 1400, writes: 130 }, // measured 883-918 reads, 78-84 written (the draws differ run to run)
+  // Ten minutes on, the same visit (778 reads, 31 written without seats here).
+  visit2: { reads: 1200, writes: 55 }, // measured 774-778 reads, 33 written
+  arrival6: { reads: 1600, writes: 210 }, // measured 944-1048 reads, 106-140 written (a store coming home: parts, gear, a newcomer or a card)
+  visit6: { reads: 1300, writes: 100 }, // measured 806-838 reads, 63 written
+} as const;
+
+describe('read budget with scouts posted', () => {
+  const measured: Record<string, ReadReport> = {};
+
+  it('measures an arrival and a look mid-visit with two seats and with six', async () => {
+    await inGuild(
+      async (env) => {
+        const { metered, clock } = env;
+        const world = await seedWorld(env, { valleySystems: true });
+        const { core, secrets } = world;
+        const relog = async (): Promise<void> => {
+          secrets.set(
+            userId(1),
+            await core.createSession(GUILD_ID, { id: userId(1), displayName: 'Player 1' }),
+          );
+        };
+        const state = (): Promise<unknown> => callAs(core, secrets, 1, '/api/state');
+        const mine = world.creatures[userId(1)] ?? [];
+        clock.t += 6 * MINUTE;
+        await callAs(core, secrets, 1, '/api/me');
+        await state();
+        seedSeats(metered.sql, userId(1), mine, 2);
+        clock.t += 24 * 60 * MINUTE;
+        await relog();
+        measured['arrival2'] = (await metered.measure(state)).reads;
+        clock.t += 10 * MINUTE;
+        measured['visit2'] = (await metered.measure(state)).reads;
+        // Four more seats: the Signpost at its fifth level.
+        metered.sql.exec('DELETE FROM valley_seats WHERE user_id = ?', userId(1));
+        seedSeats(metered.sql, userId(1), mine, 6);
+        clock.t += 24 * 60 * MINUTE;
+        await relog();
+        measured['arrival6'] = (await metered.measure(state)).reads;
+        clock.t += 10 * MINUTE;
+        measured['visit6'] = (await metered.measure(state)).reads;
+      },
+      { fresh: true },
+    );
+  }, 60_000);
+
+  it.each(Object.keys(SCOUT_BUDGET) as (keyof typeof SCOUT_BUDGET)[])(
+    'the scouts pass: %s reads and writes few rows',
+    (name) => {
+      const reads = measured[name];
+      if (reads === undefined) throw new Error('the measuring test did not run');
+      expectReadsUnder(`scouts ${name}`, reads, SCOUT_BUDGET[name].reads);
+      expectWritesUnder(`scouts ${name}`, reads, SCOUT_BUDGET[name].writes);
     },
   );
 });
