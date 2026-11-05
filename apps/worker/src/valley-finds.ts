@@ -35,7 +35,6 @@ import {
   type Rng,
   type ScoutSpecial,
   type SeatStretch,
-  type ValleyElement,
 } from '@creatures/game';
 import type { Analytics } from './analytics';
 import type { CatchChoices } from './catch-choices';
@@ -56,7 +55,7 @@ const FINDABLE = content.creatures
   .map((c) => ({
     id: c.id,
     line: c.line,
-    element: c.element as ValleyElement,
+    element: c.element,
     rarity: RARITIES.indexOf(c.rarity) as 0 | 1 | 2,
   }));
 
@@ -243,7 +242,7 @@ export class ValleyFinds {
     const parts: PartsBundle = {};
     if (store.scrap > 0) parts.scrap = store.scrap;
     for (let i = 0; i < store.shards; i++) {
-      const kind = shardOf(shardElement(this.deps.gearRng, place) as Element);
+      const kind = shardOf(shardElement(this.deps.gearRng, place));
       parts[kind] = (parts[kind] ?? 0) + 1;
     }
     const total = store.gear + store.blueprints;
