@@ -585,7 +585,7 @@ export const VALLEY_GLOW_CAMP_CONCEPTS: ConceptSet = {
     },
     road: {
       kind: 'free',
-      note: 'Where the road leaves the camp: a worn dirt path running off the top edge and fraying into the grass at its foot, a wooden signpost with three plank arrows (marks, no words) and a lantern on a hook. The lantern light lies on the path and grass in stepped rings. By day the lantern is unlit and the ground is a dirt patch with pebbles.',
+      note: 'Where the road leaves the camp: a short worn dirt path that leaves the post's foot and bends up to the right, fraying out into the grass (Misa, 2026-11-05: shorter, more to the right), and a wooden signpost with three plank arrows (marks, no words, each fully outlined) and a lantern on a hook. Warm light lies on the ground round the post's foot. By day the lantern is unlit and the ground is a dirt patch with pebbles.',
       sprite: ROAD,
       alts: { day: ROAD_DAY },
     },
