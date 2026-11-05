@@ -144,6 +144,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 [combat.md](combat.md): The shared combat engine, abilities, statuses, elements, the balance simulator, balance passes, and combat v2 in the lab.
 
 - 2026-11-05 \[Misa\] Combat v2 balance pass: slots 3 and 5 eased, Determination 15% a stack, Night Watch on Hearthshell, the casual miss kept
+- 2026-11-05 Lab foe questions test the game's v2 dungeon foes again
 - 2026-11-05 Combat v2 phase 5 step 5: the gate report and known misses (amended)
 - 2026-11-04 Combat v2 phase 5 step 3: the dungeon over days in the lab
 - 2026-11-04 \[Misa\] Combat v2 phase 5: weekly players replace 3 in 10, and Misa's server mix
