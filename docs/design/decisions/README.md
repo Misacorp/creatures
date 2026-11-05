@@ -141,6 +141,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [combat.md](combat.md): The shared combat engine, abilities, statuses, elements, the balance simulator, balance passes, and combat v2 in the lab.
 
+- 2026-11-05 Combat v2 phase 5 step 5: the gate report and known misses
 - 2026-11-04 Combat v2 phase 5 step 3: the dungeon over days in the lab
 - 2026-11-04 \[Misa\] Combat v2 phase 5: weekly players replace 3 in 10, and Misa's server mix
 - 2026-11-04 \[Misa\] Combat v2 small raid parties: curve only, no mechanics

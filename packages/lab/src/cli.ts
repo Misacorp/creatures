@@ -6,6 +6,7 @@ import { planBosses } from './bossReport';
 import { planDungeonDays } from './dungeonMeasure';
 import { planUndercroftTools } from './undercroftTools';
 import { planFourSlot } from './fourSlot';
+import { planGate } from './gate';
 import { planJourney } from './journey';
 import { planPath, type PathSummary } from './path';
 import { ownabilityMarkdown, ownabilityTable } from './ownability';
@@ -64,6 +65,7 @@ export async function main(args: readonly string[], run: JobRunner = serial): Pr
   if (args.includes('--dungeon-days')) return dungeonDays(args, quick, run);
   if (args.includes('--undercroft-tools')) return undercroftTools(args, quick, run);
   if (args.includes('--four-slot')) return fourSlot(quick, run);
+  if (args.includes('--gate')) return gate(quick, run);
   const bossAt = args.indexOf('--boss');
   if (args.includes('--bosses') || bossAt >= 0) {
     // Only the real raid bosses and dungeon foes, to the console (nothing is written).
@@ -215,6 +217,16 @@ async function undercroftTools(
   );
   console.log(value.md.join('\n'));
   console.log(`undercroft tools in ${secondsSince(t0)} s`);
+  console.log(timings);
+  return 0;
+}
+
+/** `--gate [--quick]`: the phase 5 gate table (`gate.ts`), to the console (nothing is written). */
+async function gate(quick: boolean, run: JobRunner): Promise<number> {
+  const t0 = Date.now();
+  const { value, timings } = await runPlan(planGate({ quick }), run);
+  console.log(value.md.join('\n'));
+  console.log(`gate in ${secondsSince(t0)} s`);
   console.log(timings);
   return 0;
 }

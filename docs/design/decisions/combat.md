@@ -4,6 +4,14 @@ The shared combat engine, abilities, statuses, elements, the balance simulator, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-05: Combat v2 phase 5 step 5: the gate report and known misses
+
+ID: `2026-11-05-combat-v2-phase-5-step-5` · Status: current
+
+**Decision.** The phase 5 gate is one report section, `pnpm --filter @creatures/lab report -- --gate` (also in the full report): each gate item of `balance.md` section 3 with its measured value, its target (`targets.ts`, each with its source) and pass or miss. It reads the v2 journey (game rules, `HABITS`, Determination on, the dedicated, mixed and builder servers at three speeds, `live10`), the report's best-team and casual searches, and new potential searches on the five raid bosses (scored on damage potential so they do not saturate at a kill). A gate that misses is not a failing test: it is listed in `KNOWN_MISSES` (`gate.ts`) with the measure, the unchanged target and the reason, printed by the section, and one test checks the list names only real items. The step 6 balance pass empties it. Diversity thresholds (4 lines, 3 element sets, 4 Knack families, top line at most 35%) are the lab's proposal, since the roadmap names the gate and no number. The full run (2026-11-05): 34 of 37 items pass; the three misses are the mixed server on slow rosters (18% stuck against 10%), the Storm Sovereign's winning teams (top line 38% against 35%) and the casual metric (1.36 against 1.5).
+
+**Reasoning.** The gate had to be one place the balance pass can be read against, without copying a measure that already exists: the journey, the best-team searches and the casual searches are reused with the same job ids, so the full report does not run them twice. Turning a miss into a red test would block CI on content the tuners have not touched yet, and loosening a target would hide a content problem (`balance.md` section 4), so the misses are data. Dead Knacks are read on potential as the lab follow-up asked, but on the potential searches alone five Knacks go unpicked; the gate passes only because the report's best-team searches pick them, and the section says so.
+
 ## 2026-11-04: Combat v2 phase 5 step 3: the dungeon over days in the lab
 
 ID: `2026-11-04-combat-v2-phase-5-step-3` · Status: current

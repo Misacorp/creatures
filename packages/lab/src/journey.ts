@@ -499,6 +499,12 @@ export interface JourneyPlanOptions {
   readonly compared?: readonly (typeof COMPARED_SERVERS)[number][];
   readonly sizes?: readonly (typeof SIZE_SERVERS)[number][];
   readonly slots?: readonly number[];
+  /** Only the game's rules (no lab twin), as the gate plays them. */
+  readonly gameOnly?: boolean;
+  /** Only these habits sets on the game's rules (default: step 1's players and the habits). */
+  readonly habitSets?: readonly string[];
+  /** Only these Determination settings (default: on and off). */
+  readonly determinations?: readonly ('on' | 'off')[];
 }
 
 /** A summary of one cell. */
@@ -574,11 +580,12 @@ export function planJourney(options: JourneyPlanOptions): Plan<JourneyReport> {
   const compared = options.compared ?? COMPARED_SERVERS;
   const sizes = options.sizes ?? SIZE_SERVERS;
   const slots = options.slots ?? MIXED_KILL_SLOTS;
-  const dials = ['on', 'off'] as const;
-  const rulesBoth = ['lab', 'game'] as const;
+  const dials = options.determinations ?? (['on', 'off'] as const);
+  const rulesBoth: readonly JourneyRules[] = options.gameOnly ? ['game'] : ['lab', 'game'];
   // The game's rules are played with step 1's players (everyone replaces) and with the habits; the lab's rules have no habits.
+  const gameHabits = options.habitSets ?? [EVERYONE_REPLACES.id, HABITS.id];
   const playedAs = (rules: JourneyRules): readonly string[] =>
-    rules === 'lab' ? [EVERYONE_REPLACES.id] : [EVERYONE_REPLACES.id, HABITS.id];
+    rules === 'lab' ? [EVERYONE_REPLACES.id] : gameHabits;
   const full: JourneyJobArgs[] = [
     ...rulesBoth.flatMap((rules) =>
       playedAs(rules).flatMap((habits) =>
@@ -609,7 +616,9 @@ export function planJourney(options: JourneyPlanOptions): Plan<JourneyReport> {
       ),
     ),
   ];
-  const killSets = [EVERYONE_REPLACES, REPLACE_ONLY, HABITS, HABITS_FIRST_KNACK].map((h) => h.id);
+  const killSets = [EVERYONE_REPLACES, REPLACE_ONLY, HABITS, HABITS_FIRST_KNACK]
+    .map((h) => h.id)
+    .filter((id) => options.habitSets === undefined || options.habitSets.includes(id));
   const killsOf = (
     server: string,
     sets: readonly [JourneyRules, readonly string[]][],
@@ -629,13 +638,11 @@ export function planJourney(options: JourneyPlanOptions): Plan<JourneyReport> {
     );
   const kills: JourneyJobArgs[] = [
     ...killsOf('mixed', [
-      ['lab', [EVERYONE_REPLACES.id]],
+      ...(options.gameOnly ? [] : [['lab', [EVERYONE_REPLACES.id]] as [JourneyRules, string[]]]),
       ['game', killSets],
     ]),
     // Misa's live server: the game's rules only (the lab has no twin of it), step 1's players and the habits.
-    ...(sizes.includes('live10')
-      ? killsOf('live10', [['game', [EVERYONE_REPLACES.id, HABITS.id]]])
-      : []),
+    ...(sizes.includes('live10') ? killsOf('live10', [['game', playedAs('game')]]) : []),
   ];
   const each = (a: JourneyJobArgs): JourneyJobArgs[] =>
     Array.from({ length: n }, (_, index) => ({ ...a, index }));
