@@ -99,6 +99,9 @@ const first = (...reasons: Reason[]): Reason => reasons.find((r) => typeof r ===
 /** The Knack families (`FAMILIES`), each answered or posed by a feature of a boss. "Signature" is one species' twist, so it is not asked for. */
 const FAMILY_CALLS: Readonly<Record<string, Mechanic['calls']>> = {
   Seal: (b) => b.mods.shedMarks && 'it sheds marks after its turns (Clean Scales)',
+  'Punish the clear': (b) =>
+    b.mods.shedMarks &&
+    'it sheds marks after its turns: strike back at the clearing (Clean Scales)',
   Lead: (b) => armoured(b) && 'armour: a boosted hit gets past it',
   'Heavy Prime': (b) =>
     b.armour >= 60 && 'armour that Blocks a Setter’s hit anyway: trade the hit for marks',

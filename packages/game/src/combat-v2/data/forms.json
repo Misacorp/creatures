@@ -2,7 +2,7 @@
   {
     "id": "splashet",
     "armour": 7,
-    "ownKnacks": ["steady-mark", "lead-the-way"]
+    "ownKnacks": ["steady-mark", "lead-the-way", "pin-down"]
   },
   {
     "id": "tidewing",
@@ -95,7 +95,7 @@
   {
     "id": "wickat",
     "armour": 6,
-    "ownKnacks": ["lead-the-way", "steady-mark", "double-mark"]
+    "ownKnacks": ["lead-the-way", "steady-mark", "double-mark", "pin-down"]
   },
   {
     "id": "mistnewt",
@@ -126,7 +126,7 @@
   {
     "id": "bloomback",
     "armour": 14,
-    "ownKnacks": ["all-at-once", "detonate", "leave-a-trail"],
+    "ownKnacks": ["all-at-once", "detonate", "leave-a-trail", "aftershock"],
     "atkBp": 8700
   },
   {
@@ -140,12 +140,12 @@
   {
     "id": "solmane",
     "armour": 10,
-    "ownKnacks": ["lead-the-way", "steady-mark", "crown-of-embers"]
+    "ownKnacks": ["lead-the-way", "steady-mark", "crown-of-embers", "pin-down"]
   },
   {
     "id": "gaiadrake",
     "armour": 24,
-    "ownKnacks": ["detonate", "leave-a-trail", "carry-them"],
+    "ownKnacks": ["detonate", "leave-a-trail", "carry-them", "backlash"],
     "atkBp": 10200
   },
   {

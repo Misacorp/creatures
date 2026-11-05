@@ -489,17 +489,11 @@ describe('combat v2 content gate: keywords', () => {
  * has to leave it.
  */
 const ONE_ANSWER_CARDS: readonly string[] = [
-  'stone-skin',
-  'clean-scales',
-  'reflective-hide',
-  'elusive',
   'bramble-bind',
   'wither',
   'payoff-hunter',
-  'grudge',
   'fizzle',
   'shake-it-off',
-  'breakwater',
 ];
 
 describe('combat v2 content gate: every card has answers', () => {
