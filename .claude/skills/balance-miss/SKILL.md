@@ -18,6 +18,10 @@ Misa's standing rules (decision `2026-11-05-working-rules-scalars-best-guess-and
 7. **Apply.** Data and rules in one commit each; parity `--write` in the same commit as an intended move, with the moved case groups listed; recapture fixtures if they pin the numbers; update player-facing text (glossary, help, compendium) for anything a player sees. Remove the item from `KNOWN_MISSES`. Decision entry (`pnpm decisions new --topic combat`), balance.md section 8 row.
 8. **Queue for Misa.** Add a line to `docs/design/combat/for-misa.md` (create it if missing): what you picked, the one scalar or content item to change if he doesn't like it, and where it lives. Tell him in one short message with the list, not a question per item. Only the large direction (a boss's identity, a new system, a rule players must learn) is a question before acting.
 
+## Who does what
+
+Implementer agents cannot start other agents, so the lead splits the work: one implementer runs steps 1, 2 and 4 and writes a draft to the scratchpad (no data changes); the lead runs the fun panel (step 5) on the draft, as a workflow of three reviewers; a second implementer runs steps 6 and 7 on the survivors; the lead does step 8.
+
 ## Rules
 
 - Quick local checks, then push; CI runs the full check (decision `2026-11-05-ci-runs-the-full-check-agents`).
