@@ -112,7 +112,20 @@ export interface DaysConfig {
    * that clears gives no depth (the depth is already unlocked) and the run after it tries the best depth again.
    */
   readonly stepBack?: number;
+  /**
+   * Tools for the Undercroft report (`undercroftTools.ts`), each a hypothetical the game does not have: `runOptions` are merged into each run
+   * (`levelCamp`, `teamBumpBp`, `mode`), `extraBench` creatures more on the bench of a planner (`EXTRA_BENCH`), and `slots` 4 puts a fourth creature
+   * in the row (the first of the bench; a casual player's fourth best), the arena `runOptions.mode`.
+   */
+  readonly runOptions?: Partial<RunOptions>;
+  readonly extraBench?: number;
+  readonly slots?: number;
 }
+/** The creatures a bigger bench adds, in order (a planner only: a casual player brings no bench). */
+export const EXTRA_BENCH: readonly Pick[] = [
+  { formId: 'tidewing', knack: 'none' },
+  { formId: 'thornbuck', knack: 'none' },
+];
 export const SURE_SHARE = 0.8;
 export const DEFAULT_DAYS: DaysConfig = { descent: 'habit' };
 
@@ -138,11 +151,13 @@ export function teamOf(
   seed: string,
   profile: RosterProfile,
   habits: Habits,
+  tools: { readonly extraBench?: number; readonly slots?: number } = {},
 ): { team: Pick[]; bench: Pick[] } {
   const casual = who.role === 'casual';
+  const size = tools.slots ?? TEAM_SIZE;
   const line: Pick[] = casual
-    ? casualColumn(createSeededRng(`dd:${seed}:casual:${c}`), TEAM_SIZE, 'top3', LEVEL)
-    : [...ALL_ROUND_TEAM, ...ALL_ROUND_BENCH];
+    ? casualColumn(createSeededRng(`dd:${seed}:casual:${c}`), size, 'top3', LEVEL)
+    : [...ALL_ROUND_TEAM, ...ALL_ROUND_BENCH, ...EXTRA_BENCH.slice(0, tools.extraBench ?? 0)];
   const levels = rosterLevels(profile, who.roster, week, speed, line.length, who.joinWeek);
   const owner = `p${c + 1}`;
   const placed = levelledColumn(line, levels).map((p, i): Pick => {
@@ -155,7 +170,7 @@ export function teamOf(
         knack: p.knack,
         ...(p.talents ? { talents: p.talents } : {}),
         row: 0,
-        col: i % TEAM_SIZE,
+        col: i % size,
       },
       habits.knacks[who.role],
     );
@@ -175,7 +190,7 @@ export function teamOf(
       ...(pol.goldenTalents ? { goldenTalents: pol.goldenTalents } : {}),
     };
   });
-  return { team: placed.slice(0, TEAM_SIZE), bench: casual ? [] : placed.slice(TEAM_SIZE) };
+  return { team: placed.slice(0, size), bench: casual ? [] : placed.slice(size) };
 }
 
 /**
@@ -204,7 +219,10 @@ export function dungeonDaysOf(
         log.depthEnd.push(0);
         continue;
       }
-      const { team, bench } = teamOf(who, c, week, speed, seed, profile, habits);
+      const { team, bench } = teamOf(who, c, week, speed, seed, profile, habits, {
+        ...(config.extraBench ? { extraBench: config.extraBench } : {}),
+        ...(config.slots ? { slots: config.slots } : {}),
+      });
       const options: RunOptions = {
         policy: habits.dungeonPolicy[who.role],
         bench,
@@ -221,6 +239,7 @@ export function dungeonDaysOf(
             : {}),
         ...(config.probe ? { probe: true } : {}),
         ...(config.foes ? { foes: config.foes } : {}),
+        ...config.runOptions,
       };
       for (const day of runDays(habits, who.roster, `${seed}:${owner}`, week)) {
         // The first day a player ever ran: a defeat may be tried again that day.

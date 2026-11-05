@@ -4,6 +4,7 @@ import { CARDS } from './cards';
 import { RAID_BOSS_IDS } from './bosses';
 import { planBosses } from './bossReport';
 import { planDungeonDays } from './dungeonMeasure';
+import { planUndercroftTools } from './undercroftTools';
 import { planFourSlot } from './fourSlot';
 import { planJourney } from './journey';
 import { planPath, type PathSummary } from './path';
@@ -61,6 +62,7 @@ export async function main(args: readonly string[], run: JobRunner = serial): Pr
   if (args.includes('--path')) return path(args, quick, run);
   if (args.includes('--journey')) return journey(quick, run);
   if (args.includes('--dungeon-days')) return dungeonDays(args, quick, run);
+  if (args.includes('--undercroft-tools')) return undercroftTools(args, quick, run);
   if (args.includes('--four-slot')) return fourSlot(quick, run);
   const bossAt = args.indexOf('--boss');
   if (args.includes('--bosses') || bossAt >= 0) {
@@ -190,6 +192,29 @@ async function journey(quick: boolean, run: JobRunner): Promise<number> {
   const { value, timings } = await runPlan(planJourney({ quick }), run);
   console.log(value.md.join('\n'));
   console.log(`journey in ${secondsSince(t0)} s`);
+  console.log(timings);
+  return 0;
+}
+
+/** `--undercroft-tools [--quick] [--tools a,b] [--servers n]`: the tools that make the Undercroft past depth 40 easier (`undercroftTools.ts`), to the console (nothing is written). */
+async function undercroftTools(
+  args: readonly string[],
+  quick: boolean,
+  run: JobRunner,
+): Promise<number> {
+  const t0 = Date.now();
+  const tools = flagValue(args, '--tools')?.split(',');
+  const servers = flagValue(args, '--servers');
+  const { value, timings } = await runPlan(
+    planUndercroftTools({
+      quick,
+      ...(tools ? { tools } : {}),
+      ...(servers ? { servers: Number(servers) } : {}),
+    }),
+    run,
+  );
+  console.log(value.md.join('\n'));
+  console.log(`undercroft tools in ${secondsSince(t0)} s`);
   console.log(timings);
   return 0;
 }

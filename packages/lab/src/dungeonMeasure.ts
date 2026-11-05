@@ -20,6 +20,7 @@ import {
 import { OLD_FOES, type FoeKnobs } from './dungeonKnobs';
 import type { JobResults, JobSpec, Plan } from './jobs';
 import { rewardsMeasureMarkdown } from './dungeonRewards';
+import { toolOf } from './undercroftToolSet';
 import { JOURNEY_SERVERS } from './journey';
 import { ROSTER_SPEEDS, type RosterSpeed } from './roster';
 import {
@@ -339,13 +340,17 @@ export interface DungeonDaysJobArgs {
   readonly index: number;
   readonly scenario: string;
   readonly stepBack?: number;
+  /** A tool of the Undercroft report (`undercroftToolSet.ts`), played on top of the scenario. */
+  readonly tool?: string;
 }
 
 export const dungeonDaysJobId = (a: DungeonDaysJobArgs): string =>
-  `dungeon-days:${a.scenario}:${a.server}:${a.speed}:${a.index}${a.stepBack ? `:back${a.stepBack}` : ''}`;
+  `dungeon-days:${a.scenario}:${a.server}:${a.speed}:${a.index}${a.stepBack ? `:back${a.stepBack}` : ''}${a.tool ? `:tool-${a.tool}` : ''}`;
 
 /** The play of the report: the safe player who goes down only when sure (and the probe), at a scenario's foe numbers. */
-export const configOf = (a: Pick<DungeonDaysJobArgs, 'scenario' | 'stepBack'>): DaysConfig => {
+export const configOf = (
+  a: Pick<DungeonDaysJobArgs, 'scenario' | 'stepBack' | 'tool'>,
+): DaysConfig => {
   const s = scenarioOf(a.scenario);
   return {
     descent: 'sure',
@@ -353,6 +358,7 @@ export const configOf = (a: Pick<DungeonDaysJobArgs, 'scenario' | 'stepBack'>): 
     probe: true,
     ...(s.foes ? { foes: s.foes } : {}),
     ...(a.stepBack ? { stepBack: a.stepBack } : {}),
+    ...(a.tool ? toolOf(a.tool).config : {}),
   };
 };
 
