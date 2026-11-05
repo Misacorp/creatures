@@ -1,9 +1,21 @@
-import { EXPEDITION_LENGTHS, ROOM_SPOT_IDS, RULES, content, talentContent } from '@creatures/game';
+import {
+  EXPEDITION_LENGTHS,
+  ROOM_SPOT_IDS,
+  RULES,
+  SCOUT_KITS,
+  VALLEY_RULES,
+  content,
+  placeIds,
+  talentContent,
+} from '@creatures/game';
 import { combatV2 } from '@creatures/game/combat-v2';
 import * as v from 'valibot';
 import { DESTINATION_IDS, GOAL_IDS, SPECIES_IDS, SUPPLY_IDS } from './content-ids';
 import { ROOM_MAX_USERS } from './lounger';
 import { IdempotencyKeySchema, SNOWFLAKE_RE } from './schemas';
+
+/** Every destination a scout seat can be posted to (the lab's six and the two extra shipped places). */
+const VALLEY_PLACE_IDS = placeIds(VALLEY_RULES) as [string, ...string[]];
 
 /** Server-generated ids are random UUIDs; anything else is malformed. */
 const ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -154,3 +166,28 @@ export const RoomBodySchema = v.strictObject({
     v.check((ids) => new Set(ids).size === ids.length),
   ),
 });
+
+// --- The valley's scouts (phase 5 step 2): seats and kit ---
+
+/** Posts a creature to a scout seat (or empties it with `null`) and may point the seat at another destination. */
+export const ValleySeatBodySchema = v.strictObject({
+  seatId: IdSchema,
+  creatureId: v.optional(v.nullable(IdSchema)),
+  destination: v.optional(v.picklist(VALLEY_PLACE_IDS)),
+});
+
+export const ValleySeatBuyBodySchema = v.strictObject({ idempotencyKey: IdempotencyKeySchema });
+
+/** Buys a kit (a keyed spend of Acorns), or sets an owned kit on a seat (free; `null` takes it off). */
+export const ValleyKitBodySchema = v.variant('action', [
+  v.strictObject({
+    action: v.literal('buy'),
+    kit: v.picklist(SCOUT_KITS),
+    idempotencyKey: IdempotencyKeySchema,
+  }),
+  v.strictObject({
+    action: v.literal('set'),
+    seatId: IdSchema,
+    kit: v.nullable(v.picklist(SCOUT_KITS)),
+  }),
+]);

@@ -518,6 +518,7 @@ Superseded: 1 entry (see the topic file).
 
 [valley.md](valley.md): The valley and peaceful systems overhaul planned in docs/design/valley/: job posts, the bonfire, the commons, the Forge loop, gear, trials, the School, the visitor, the economy lab, and Misa's question rounds.
 
+- 2026-11-05 Phase 5 step 2: scouts on the server
 - 2026-11-05 Phase 5 step 1b: the Bonfire opens in the client
 - 2026-11-05 Phase 5 step 1: resting and the lazy pass on the server
 - 2026-11-05 Econ lab after combat v2: cull is taught like any pooled talent; the tempering check reads the median of seeds

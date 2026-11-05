@@ -28,14 +28,32 @@ const visitOf = (list: typeof creatures, at = HOME_NOW): ValleyVisit => ({
   settledAt: at,
   arrived: true,
   awayHours: 3,
-  creatures: list.map((c, i) => ({ id: c.id, state: 'resting', gained: i * 10, catchUpBp: 10000 })),
+  creatures: list.map((c, i) => ({
+    id: c.id,
+    state: 'resting',
+    gained: i * 10,
+    catchUpBp: 10000,
+    seatId: null,
+  })),
   allowance: { store: 0, cap: 480, brought: 0 },
+  seats: [],
+  seatPrices: { owned: 0, max: 2, next: 0, ladder: [0, 113] },
+  kit: { owned: [], price: 875 },
+  places: [],
+  night: false,
+  special: null,
 });
 
 describe('who rests at the fire', () => {
   it('joins the server list to the creatures, skipping ids the client does not hold', () => {
     const visit = visitOf(creatures.slice(0, 3));
-    visit.creatures.push({ id: 'ghost', state: 'resting', gained: 5, catchUpBp: 10000 });
+    visit.creatures.push({
+      id: 'ghost',
+      state: 'resting',
+      gained: 5,
+      catchUpBp: 10000,
+      seatId: null,
+    });
     const resting = restingOf(creatures, visit);
     expect(resting.map((r) => r.creature.id)).toEqual(['c0', 'c1', 'c2']);
     expect(totalGained(resting)).toBe(30);

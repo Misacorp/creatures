@@ -184,6 +184,8 @@ export interface ScanContext {
   tz: string;
   /** Puts a game-clock time on the real clock, for Discord timestamps (they differ only with the dev clock). */
   realAt: (gameMs: number) => number;
+  /** The valley's systems are on: trips are gone (scouts replace them), so a trip DM is never due. */
+  valleySystems?: boolean;
 }
 
 /** True while any player has this kind on and is not blocked. */
@@ -223,7 +225,7 @@ function placeOf(destinationId: string): string {
 }
 
 function tripLines(sql: SqlStorage, ctx: ScanContext): DueLine[] {
-  if (!anyoneOn(sql, 'trip')) return [];
+  if (ctx.valleySystems === true || !anyoneOn(sql, 'trip')) return [];
   const floor = ctx.now - STALE_MS;
   const select = `SELECT e.id, e.user_id, e.destination_id, c.nickname, c.species
     FROM expeditions e
@@ -405,12 +407,17 @@ const earlier = (a: number | null, b: number | null): number | null =>
  * the finale ping, the Prize Stall opening), or null. The alarm wakes then. Cheap: the open trips and jobs
  * are found through partial indexes (`dm-migration.ts`).
  */
-export function nextDmDueAt(sql: SqlStorage, now: number, tz: string): number | null {
+export function nextDmDueAt(
+  sql: SqlStorage,
+  now: number,
+  tz: string,
+  valleySystems = false,
+): number | null {
   if (!anyoneOptedIn(sql)) return null;
   const min = (query: string): number | null =>
     sql.exec<{ at: number | null }>(query, now).one().at ?? null;
   let next: number | null = null;
-  if (anyoneOn(sql, 'trip')) {
+  if (!valleySystems && anyoneOn(sql, 'trip')) {
     next = earlier(
       next,
       min(`SELECT MIN(e.ends_at) AS at FROM expeditions e JOIN dm_prefs p ON p.user_id = e.user_id

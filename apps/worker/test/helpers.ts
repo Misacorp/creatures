@@ -315,8 +315,26 @@ export function undoGamesIndexMigration(sql: SqlStorage): void {
   sql.exec('DELETE FROM schema_version WHERE version = 42');
 }
 
+/** Puts a database back to before migration 57 (the valley's scouts): the seats and kit go, and the columns it added. */
+export function undoValleyScoutsMigration(sql: SqlStorage): void {
+  sql.exec('DROP TABLE IF EXISTS valley_seats');
+  sql.exec('DROP TABLE IF EXISTS valley_kit');
+  for (const [table, column] of [
+    ['valley_creatures', 'scout_hours'],
+    ['valley_players', 'first_scout_done'],
+    ['pending_catches', 'auto_at'],
+  ] as const) {
+    const present = sql
+      .exec(`SELECT 1 FROM pragma_table_info('${table}') WHERE name = ?`, column)
+      .toArray();
+    if (present.length > 0) sql.exec(`ALTER TABLE ${table} DROP COLUMN ${column}`);
+  }
+  sql.exec('DELETE FROM schema_version WHERE version = 57');
+}
+
 /** Puts a database back to before migration 56 (the valley's per-player tables): the tables go. */
 export function undoValleyMigration(sql: SqlStorage): void {
+  undoValleyScoutsMigration(sql);
   sql.exec('DROP TABLE IF EXISTS valley_creatures');
   sql.exec('DROP TABLE IF EXISTS valley_players');
   sql.exec('DELETE FROM schema_version WHERE version = 56');

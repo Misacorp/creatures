@@ -679,8 +679,14 @@ describe('the valley block of the state (VALLEY_SYSTEMS)', () => {
     settledAt: 5,
     arrived: true,
     awayHours: 2,
-    creatures: [{ id: 'c1', state: 'resting', gained: 30, catchUpBp: 10000 }],
+    creatures: [{ id: 'c1', state: 'resting', gained: 30, catchUpBp: 10000, seatId: null }],
     allowance: { store: 4, cap: 480, brought: 100 },
+    seats: [],
+    seatPrices: { owned: 0, max: 2, next: 0, ladder: [0, 113] },
+    kit: { owned: [], price: 875 },
+    places: [],
+    night: false,
+    special: null,
   };
 
   it('is null when absent (flag off, or an action answer)', () => {

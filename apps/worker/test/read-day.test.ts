@@ -39,6 +39,8 @@ import {
   LOUNGERS,
   LOUNGER_FIRST,
   LOUNGE_INSTANCE,
+  PLAYERS,
+  seedSeats,
   boardSwap,
   callAs,
   fakeLounge,
@@ -159,6 +161,8 @@ function playerEvents(start: number, loungeStart: number): Event[] {
 async function simulateDay(options: {
   combatV2?: boolean;
   valleySystems?: boolean;
+  /** Scouts are posted (the valley's step 2): every player has two seats, the first three players six. */
+  scouts?: boolean;
   fresh?: boolean;
 }): Promise<DayReads> {
   const reads = new DayReads();
@@ -170,6 +174,10 @@ async function simulateDay(options: {
   await inGuild(
     async (env: GuildEnv) => {
       const world = await seedWorld(env, options);
+      if (options.scouts === true) {
+        for (let n = 1; n <= PLAYERS; n++)
+          seedSeats(env.metered.sql, userId(n), world.creatures[userId(n)] ?? [], n <= 3 ? 6 : 2);
+      }
       const dayStart = env.clock.t;
       const dayEnd = dayStart + DAY;
       const lounge = fakeLounge();
@@ -384,6 +392,8 @@ describe('a day in the life of a 10-player server', () => {
  */
 // Measured 117,941 rows read (request:state 31,392 of them, 15,652 without the valley's pass) and 3,901 written (request:state 2,571, request:raid 132, request:session 409).
 const VALLEY_DAY_WRITE_BUDGET = 6000;
+// With scouts posted (step 2: two seats each, six for three players): measured 120,284 rows read (request:state 33,482) and 4,225 written (request:state 2,883).
+const VALLEY_SCOUT_DAY_WRITE_BUDGET = 6000;
 
 describe('a day in the life with the valley on', () => {
   it('reads and writes few rows in a day (every opening settles 30 creatures)', async () => {
@@ -396,6 +406,18 @@ describe('a day in the life with the valley on', () => {
       reads.written,
       `${reads.describe()}\nWrite budget: ${String(VALLEY_DAY_WRITE_BUDGET)} rows.`,
     ).toBeLessThanOrEqual(VALLEY_DAY_WRITE_BUDGET);
+  }, 120_000);
+
+  it('reads and writes few rows in a day with scouts posted (two seats each, six for the first three players)', async () => {
+    const reads = await simulateDay({ valleySystems: true, scouts: true, fresh: true });
+    expect(
+      reads.total,
+      `${reads.describe()}\nBudget: ${String(DAY_BUDGET)} rows.`,
+    ).toBeLessThanOrEqual(DAY_BUDGET);
+    expect(
+      reads.written,
+      `${reads.describe()}\nWrite budget: ${String(VALLEY_SCOUT_DAY_WRITE_BUDGET)} rows.`,
+    ).toBeLessThanOrEqual(VALLEY_SCOUT_DAY_WRITE_BUDGET);
   }, 120_000);
 });
 

@@ -86,6 +86,8 @@ describe('migration 56: the valley tables', () => {
           'allowance_store',
           'allowance_carry',
           'visit_allowance',
+          // Migration 57 (scouts): the starter's first scout has had its sure find.
+          'first_scout_done',
         ]);
         expect(columns('valley_creatures')).toEqual([
           'creature_id',
@@ -94,6 +96,8 @@ describe('migration 56: the valley tables', () => {
           'catchup_bp',
           'xp_carry',
           'visit_xp',
+          // Migration 57: the creature's scouting hours.
+          'scout_hours',
         ]);
         expect(
           ctx.sql
@@ -415,7 +419,8 @@ describe('what the valley replaces (flag on) and what stays (flag off)', () => {
           idempotencyKey: newKey('trip-treat'),
           treat: true,
         });
-        expect(trip.body).toEqual({ error: 'treats_off' });
+        // Trips are gone with the valley on (scouts replace them): a 404 before the body is read.
+        expect(trip.status).toBe(404);
         const run = await p.api.call('POST', '/api/dungeon/start', {
           team: p.creatureIds,
           treats: [id],

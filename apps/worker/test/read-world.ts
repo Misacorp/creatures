@@ -8,6 +8,7 @@ import {
   gearContent,
   pickQuirk,
   ribbonsForLevel,
+  VALLEY_RULES,
 } from '@creatures/game';
 import { knownKnacks, v2Pool } from '@creatures/game/combat-v2';
 import { env } from 'cloudflare:workers';
@@ -545,4 +546,40 @@ export async function boardSwap(
       if (!outcome.ok) throw new Error(outcome.error);
     })
   ).reads;
+}
+
+/**
+ * Posts a player's first `seats` creatures to scout seats (the valley's scouts, phase 5 step 2) as a player who has played a while
+ * would have them: one seat per destination in turn, the first with a lure, the player owning every scout kit. The seats start empty
+ * of finds with the pass last run at `NOW`.
+ */
+export function seedSeats(
+  sql: SqlStorage,
+  owner: string,
+  creatureIds: readonly string[],
+  seats: number,
+): void {
+  const places = VALLEY_RULES.scouts.destinations.map((d) => d.id);
+  for (let i = 0; i < seats; i++) {
+    const place = places[i % places.length] as string;
+    sql.exec(
+      `INSERT INTO valley_seats (seat_id, user_id, place, kind, position, destination_id, prev_destination_id, creature_id,
+         kit_id, passed_at) VALUES (?, ?, 'signpost', 'scout', ?, ?, ?, ?, ?, ?)`,
+      crypto.randomUUID(),
+      owner,
+      i + 1,
+      place,
+      place,
+      creatureIds[i] ?? null,
+      i === 0 ? 'lure' : null,
+      NOW,
+    );
+  }
+  for (const kit of ['lure', 'lantern', 'satchel'])
+    sql.exec(
+      'INSERT OR IGNORE INTO valley_kit (user_id, kit_id, bought_at) VALUES (?, ?, ?)',
+      owner,
+      kit,
+      NOW,
+    );
 }
