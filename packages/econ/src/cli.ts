@@ -6,7 +6,7 @@ import { inProcess, runScenarios, type Executor } from './jobs';
 import { buildReportData, renderReport, serverCoverage, type Timings } from './report';
 import { rosterProfile } from './roster';
 import { RULES, type Rules } from './rules';
-import rulesSource from './rules.ts?raw';
+import rulesSource from '../../game/src/valley/rules.ts?raw';
 import { DEFAULT_SEEDS, runScenario, variantSeedsFor, type Results } from './scenarios';
 import { ALL_SERVERS } from './servers';
 import { runServer } from './sim';

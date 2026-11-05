@@ -13,7 +13,7 @@ Before players see the valley's systems, we want to know, for each kind of playe
 Like combat v2's lab (`packages/lab`): a separate, pure package for the **proposed** rules, apart from the shipped simulator (`packages/sim`), so the proposal can change freely. Ported into the game once accepted.
 
 - **Pure and deterministic:** TypeScript strict, no I/O in `src/` (the report script writes files), a seeded RNG from `@creatures/game` (`createSeededRng`); live randomness belongs only to the real server (F-8). Same seed, same report.
-- **Rules as data:** every rate, cap, cost and odds in one file (`src/rules.ts`), each group commented with the rule id it comes from (V-POST-10, V-SCOUT-2...), validated by a schema. System docs cite rule ids; the numbers live here and in the report.
+- **Rules as data:** every rate, cap, cost and odds in one file (`packages/game/src/valley/rules.ts`, read by the lab as its defaults), each group commented with the rule id it comes from (V-POST-10, V-SCOUT-2...), validated by a schema. System docs cite rule ids; the numbers live here and in the report.
 - **Time:** hour by hour for 24 weeks (the valley's targets look at 12; combat v2's roster profile needs 24). Idle gains (XP, scrap, shards, Acorns) accrue as expected values; rare events (a creature, a gear piece, a blueprint, a keystone, a rare find) are seeded draws, and each scenario runs several seeds (example: 20) with the median and a spread reported.
 - **Players** are profiles: when they visit (days and hours), how they set up posts (a few fixed policies: "set and forget", "optimiser"), how generously they give to projects, whether they fight in the dungeon and the raid. Kinds: daily (one evening visit), active (three visits a day), every other day, weekend off, weekly (Sundays), new (joins in week 6), returner (away weeks 5 to 8), hoarder (saves four weeks, then gives it all).
 - **Servers:** 5, 8 and 15 players of mixed kinds; a lone keen player; a hoarder server.
@@ -55,6 +55,6 @@ Combat v2's lab learned this the hard way (its full report went from 585 s to 80
 
 ## How agents use it
 
-1. Change `src/rules.ts` or a policy.
+1. Change `packages/game/src/valley/rules.ts` or a policy.
 2. `pnpm --filter @creatures/econ report` regenerates the report; `pnpm --filter @creatures/econ test` checks the rules (no negative balances, resources conserved, determinism).
 3. Read the targets; propose changes in the system doc and the rules together. Numbers Misa sees go to him as examples of feel ("a weekly player's best creature is level 24 at week 8, a daily player's 26"), never as a list to approve.

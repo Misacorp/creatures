@@ -1,0 +1,272 @@
+import * as v from 'valibot';
+import { VALLEY_ELEMENTS } from './rules';
+
+/** The schema of `RULES` and of the player profiles: strict (no unknown keys), numbers finite, shares inside 0..1. */
+
+const num = v.pipe(v.number(), v.finite(), v.minValue(0));
+const pos = v.pipe(v.number(), v.finite(), v.minValue(0.000001));
+const share = v.pipe(v.number(), v.minValue(0), v.maxValue(1));
+const int = v.pipe(v.number(), v.integer(), v.minValue(0));
+const nums = v.array(num);
+const stepList = v.pipe(
+  v.array(v.strictObject({ until: pos, share })),
+  v.minLength(1),
+  v.check(
+    (steps) => steps.every((s, i) => i === 0 || s.until > (steps[i - 1]?.until ?? 0)),
+    'steps must run forward in time',
+  ),
+  v.check(
+    (steps) => steps.every((s, i) => i === 0 || s.share <= (steps[i - 1]?.share ?? 1)),
+    'steps must never rise',
+  ),
+);
+const odds = v.pipe(
+  v.tuple([share, share, share]),
+  v.check((o) => Math.abs(o[0] + o[1] + o[2] - 1) < 1e-9, 'odds must add up to 1'),
+);
+const rarityRow = v.strictObject({ scrap: num, shards: num, essence: num });
+
+export const ValleyRulesSchema = v.strictObject({
+  horizon: v.strictObject({
+    weeks: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(104)),
+  }),
+  xp: v.strictObject({
+    idlePerHour: pos,
+    maxLevel: int,
+    evolveLevel: int,
+    evolveCostByRarity: v.tuple([pos, pos, pos]),
+    evolveEssence: int,
+  }),
+  away: v.strictObject({ A: stepList, B: stepList, beyond: share }),
+  bonfire: v.strictObject({
+    catchUp: v.strictObject({
+      maxMultiplier: pos,
+      fullAtGap: pos,
+      appliesToFights: v.boolean(),
+    }),
+    hearth: v.strictObject({ perLevel: num }),
+  }),
+  honours: v.strictObject({
+    levels: v.tuple([int, int, int]),
+    bronzePostHours: num,
+    bronzeSmithHours: num,
+    undercroftShare: share,
+  }),
+  posts: v.strictObject({
+    fitBonus: num,
+    fitShare: v.strictObject({ setAndForget: share, optimiser: share }),
+    storeHours: pos,
+    mastery: v.array(v.strictObject({ hours: pos, bonus: num })),
+    masterSmithScrapPerk: num,
+  }),
+  seats: v.strictObject({
+    scoutPrices: nums,
+    anvilPrices: nums,
+    anvilScrap: nums,
+    levelSurcharge: num,
+    scoutByLevel: v.array(int),
+    anvilByLevel: v.array(int),
+  }),
+  kit: v.strictObject({
+    price: int,
+    lure: v.strictObject({ creatures: pos }),
+    lantern: v.strictObject({ rare: pos }),
+    satchel: v.strictObject({ scrap: pos, shards: pos }),
+    tongs: v.strictObject({ speed: pos }),
+    loupe: v.strictObject({ speed: pos, rarityOdds: pos }),
+    buyOrder: v.array(v.picklist(['lure', 'lantern', 'satchel', 'tongs', 'loupe'])),
+    setAndForgetBuys: int,
+  }),
+  scouts: v.strictObject({
+    perHour: v.strictObject({
+      scrap: num,
+      shards: share,
+      creatures: share,
+      gear: share,
+      blueprints: share,
+      pages: share,
+      rareFinds: share,
+    }),
+    richMultiplier: pos,
+    secondScoutCreatures: share,
+    destinations: v.array(
+      v.strictObject({
+        id: v.pipe(v.string(), v.regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)),
+        element: v.nullable(v.picklist(VALLEY_ELEMENTS)),
+        rich: v.picklist(['scrap', 'shards', 'creatures', 'rare', 'none']),
+      }),
+    ),
+    keystoneMeanDays: pos,
+    placeAffinity: pos,
+    species: v.strictObject({ start: int, dropFromWeek: int, dropEveryWeeks: int, dropCount: int }),
+    lines: v.strictObject({
+      first: v.array(
+        v.strictObject({
+          element: v.picklist(VALLEY_ELEMENTS),
+          rarity: v.picklist([0, 1, 2]),
+          forms: v.pipe(v.number(), v.integer(), v.minValue(1)),
+        }),
+      ),
+      drop: v.array(v.picklist([0, 1, 2])),
+      forms: v.tuple([int, int, int]),
+    }),
+    rarity: v.strictObject({ weights: v.tuple([pos, num, num]) }),
+    lureOwnedWeight: num,
+    blueprintPool: int,
+    duplicateBlueprintScrap: int,
+    duplicateCreatureScrap: int,
+  }),
+  forge: v.strictObject({
+    pieceHours: pos,
+    scrap: int,
+    shard: int,
+    reach: v.strictObject({
+      rare: v.strictObject({ hours: pos, essence: int, odds }),
+      epic: v.strictObject({ hours: pos, essence: int, odds }),
+    }),
+    exchange: v.strictObject({ rate: pos, critChance: share, critYield: pos }),
+    baseOdds: odds,
+    tinkerScrapEveryHours: pos,
+    floorPiecesPerAnvil: int,
+    bag: int,
+    slotsPerCreature: int,
+    weakMargin: int,
+    dismantle: v.tuple([rarityRow, rarityRow, rarityRow]),
+    tidyAt: int,
+    foundGearOdds: odds,
+    giveReserveScrap: int,
+    giveReserveShards: int,
+    reachReserveEssence: int,
+  }),
+  acorns: v.strictObject({
+    allowancePerDay: num,
+    leetPerVisitDay: num,
+    smallMomentPerVisitDay: num,
+    start: int,
+    welcomeScrap: int,
+    starterCreatures: int,
+  }),
+  fights: v.strictObject({
+    team: int,
+    dungeon: v.strictObject({
+      xp: num,
+      maxPasses: int,
+      acorns: num,
+      scrap: num,
+      essence: num,
+      gearPieces: num,
+      itemLevel: int,
+    }),
+    raid: v.strictObject({
+      xpPerWeek: num,
+      scrap: num,
+      essenceKill: num,
+      essencePhases: num,
+      gearOnKill: num,
+      bossKillChance: v.strictObject({ all: share, half: share, none: share }),
+    }),
+  }),
+  commons: v.strictObject({
+    places: v.array(v.string()),
+    maxLevel: int,
+    baseSize: pos,
+    levelFactor: v.array(pos),
+    cosmeticFactor: pos,
+    sizeExponent: num,
+    referenceWeight: pos,
+    buildHours: num,
+    weight: v.strictObject({ oneDay: share, fullAtDays: pos }),
+    giftValue: v.strictObject({ acorns: pos, scrap: pos, shards: pos }),
+    costSplit: v.pipe(
+      v.strictObject({ acorns: share, scrap: share, shards: share }),
+      v.check(
+        (s) => Math.abs(s.acorns + s.scrap + s.shards - 1) < 1e-9,
+        'the shares of a project must add up to 1',
+      ),
+    ),
+    placeElement: v.record(v.string(), v.picklist(VALLEY_ELEMENTS)),
+    placeWeights: v.record(v.string(), pos),
+    communalPerHour: num,
+    communalCreaturesPerSeat: pos,
+  }),
+  broker: v.strictObject({
+    seats: int,
+    tiers: v.pipe(v.array(v.strictObject({ rate: pos, critChance: share })), v.length(4)),
+  }),
+  school: v.strictObject({
+    seats: int,
+    slotLevels: v.pipe(v.array(int), v.length(3)),
+    thirdSlotFromRarity: int,
+    price: num,
+    teacherStayDays: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(7)),
+    teacherAnnounceDays: v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(6)),
+  }),
+  gear: v.strictObject({
+    lines: v.pipe(v.array(int), v.length(3)),
+    pipFrom: v.pipe(v.array(int), v.length(4)),
+    topPipChance: share,
+  }),
+  visitor: v.strictObject({
+    arriveDay: v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(6)),
+    leaveHour: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(168)),
+    baseLevel: pos,
+    acorns: num,
+    scrap: num,
+    growth: pos,
+    reserveAcorns: num,
+    reserveScrap: num,
+    maxRerolls: int,
+    goodTop: v.pipe(v.array(int), v.length(3)),
+    blueprintAcorns: num,
+    blueprintShards: num,
+    blueprintPool: v.pipe(v.number(), v.integer(), v.minValue(1)),
+  }),
+  tempering: v.strictObject({
+    on: v.boolean(),
+    minGap: v.strictObject({ setAndForget: int, optimiser: int }),
+    rarityFactor: v.pipe(v.array(num), v.length(3)),
+    baseLevel: pos,
+    scrapPerLevel: num,
+    acornShare: num,
+    reserveScrap: num,
+    reserveForgeWeeks: num,
+    reserveAcorns: num,
+    perVisit: v.strictObject({ setAndForget: int, optimiser: int }),
+    worthInCrafts: v.pipe(v.array(num), v.length(3)),
+  }),
+  idol: v.strictObject({
+    on: v.boolean(),
+    batch: pos,
+    reserveWeeks: num,
+    lookbackWeeks: v.pipe(v.number(), v.integer(), v.minValue(1)),
+    minReserve: num,
+    maxBatches: v.strictObject({ setAndForget: int, optimiser: int }),
+  }),
+  collections: v.strictObject({
+    boards: v.record(
+      v.string(),
+      v.pipe(
+        v.array(v.string()),
+        v.length(5),
+        v.check((b) => b.includes('everyday'), 'a board needs a socket for ordinary idle play'),
+      ),
+    ),
+    landmarkPerRun: share,
+    residentPerArrival: share,
+    pageInSetChance: share,
+    meltEssence: num,
+  }),
+  fire: v.strictObject({
+    start: int,
+    floorPerWeek: num,
+    warmth: v.strictObject({
+      placeLevel: num,
+      forgeLevel: num,
+      collection: num,
+      bossKill: num,
+      masterTitlesPerPoint: pos,
+      cosmetic: num,
+    }),
+    thresholds: v.array(int),
+  }),
+});
