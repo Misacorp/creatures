@@ -50,7 +50,12 @@ const AWAY = {
 
 const baseState = { ...fixture('collection-state'), starterChosen: true };
 let awayDismissed = false;
-const state = () => ({ ...baseState, awayRewards: awayDismissed ? null : AWAY });
+/** Test-only changes to the answers of one scenario (set by `scenario`, cleared after it): never the fixtures themselves. */
+let stateOverride = {};
+const answerOverride = new Map();
+/** Milliseconds a path's answer is held back, to see the page before its data arrives. */
+const delays = new Map();
+const state = () => ({ ...baseState, ...stateOverride, awayRewards: awayDismissed ? null : AWAY });
 
 /** Fixture answers for the pages' own loads, by path; the rest answer `{}` with 404 (the page shows its own error line). */
 const ROUTES = new Map([
@@ -105,7 +110,9 @@ const ROUTES = new Map([
 const unanswered = new Set();
 async function answer(route) {
   const url = new URL(route.request().url());
-  const make = ROUTES.get(url.pathname);
+  const make = answerOverride.get(url.pathname) ?? ROUTES.get(url.pathname);
+  const wait = delays.get(url.pathname);
+  if (wait !== undefined) await new Promise((r) => setTimeout(r, wait));
   if (make === undefined) {
     unanswered.add(`${route.request().method()} ${url.pathname}`);
     await route.fulfill({ status: 404, contentType: 'application/json', body: '{"error":"e2e"}' });
@@ -162,6 +169,15 @@ const ctx = await browser.newContext({
 const page = await ctx.newPage();
 const pageErrors = [];
 page.on('pageerror', (e) => pageErrors.push(e.message));
+page.on('console', (m) => {
+  if (process.env.DEBUG_E2E && m.type() === 'error') console.log('console:', m.text());
+});
+page.on('requestfailed', (r) => {
+  if (process.env.DEBUG_E2E) console.log('failed:', r.url(), r.failure()?.errorText);
+});
+page.on('response', async (r) => {
+  console.log('starter:', r.status(), (await r.text()).slice(0, 300));
+});
 await page.route('**/api/**', answer);
 
 let done = 0;
@@ -398,6 +414,21 @@ try {
         .first()
         .click();
       await waitFor(heading(title));
+      if (book === 'Journal') {
+        // From 60 rem a list of places and the open place's pages beside it; a phone keeps the folded headings.
+        const wide = width >= 960;
+        const lists = await page.locator('.journal .choice-list').count();
+        const panels = await page.locator('.journal .side-panel').count();
+        const folds = await page.locator('.journal .journal-place').count();
+        if (wide && (lists !== 1 || panels !== 1 || folds !== 0))
+          throw new Error(
+            `the wide Journal is not a list and a panel: ${lists}/${panels}/${folds}`,
+          );
+        if (!wide && (lists !== 0 || folds < 2))
+          throw new Error(`the phone Journal lost its folded headings: ${lists}/${folds}`);
+        await page.waitForTimeout(300);
+        await shot('journal');
+      }
       await page.getByRole('button', { name: 'Back to the House' }).click();
       await waitFor(page.getByRole('button', { name: /^Journal/ }));
       await backToValley();
@@ -576,6 +607,165 @@ try {
       await waitFor(page.getByRole('dialog'));
       await page.keyboard.press('Escape');
       await backToValley();
+    },
+  );
+
+  // --- Scenarios: the same game in other states. Each reloads the page with test-only answers ---------------
+
+  /** Runs `run` on a fresh load of the valley with `change` applied to the server's answers; the answers are put back after. */
+  async function scenario(name, change, run) {
+    await step(name, async () => {
+      awayDismissed = true;
+      change();
+      try {
+        await page.goto(`http://localhost:${String(port)}/?frame_id=e2e`);
+        await page.evaluate(() => document.fonts.ready);
+        await run();
+      } finally {
+        stateOverride = {};
+        answerOverride.clear();
+        delays.clear();
+      }
+    });
+  }
+  const textIn = (locator) => locator.first().innerText();
+
+  await scenario(
+    'a dungeon run in progress: the Cave never says it is quiet, and offers to continue the run',
+    () => {
+      stateOverride = { attention: { dungeon: true, raid: false, recheckAt: null } };
+      answerOverride.set('/api/dungeon/today', () => fixture('dungeon-today-active'));
+      delays.set('/api/dungeon/today', 1500);
+    },
+    async () => {
+      await waitFor(page.locator(VALLEY), 'attached');
+      await place('cave').evaluate((el) => el.click());
+      await waitFor(heading('Cave'));
+      // Before the Dungeon page has answered, no claim either way: not quiet, not "Start the run".
+      await waitFor(page.getByRole('button', { name: /^Enter the cave/ }));
+      if ((await page.getByText(/cave is quiet/i).count()) > 0)
+        throw new Error('quiet before known');
+      if ((await page.getByRole('button', { name: /^Start the run/ }).count()) > 0)
+        throw new Error('"Start the run" before the page said what the run is');
+      await shot('cave-before-known');
+      // Then the page says a run is open: the Cave says so.
+      await waitFor(page.getByRole('button', { name: /^Continue the run/ }));
+      if ((await page.getByText(/cave is quiet/i).count()) > 0) throw new Error('quiet mid-run');
+      await page.waitForTimeout(400);
+      await shot('cave-mid-run');
+    },
+  );
+
+  await scenario(
+    'a run waiting to start: the Cave says Start the run',
+    () => {
+      stateOverride = { attention: { dungeon: true, raid: false, recheckAt: null } };
+    },
+    async () => {
+      await place('cave').evaluate((el) => el.click());
+      await waitFor(page.getByRole('button', { name: /^Start the run/ }));
+      if ((await page.getByText(/cave is quiet/i).count()) > 0)
+        throw new Error('quiet with a run waiting');
+    },
+  );
+
+  await scenario(
+    'no run at all (done for today): the Cave is calm',
+    () => {
+      stateOverride = { attention: { dungeon: false, raid: false, recheckAt: null } };
+      answerOverride.set('/api/dungeon/today', () => fixture('dungeon-today-done'));
+    },
+    async () => {
+      await place('cave').evaluate((el) => el.click());
+      await waitFor(page.getByText(/cave is quiet/i));
+      if ((await page.getByRole('button', { name: /^(Start|Continue) the run/ }).count()) > 0)
+        throw new Error('a run is offered with none to run');
+    },
+  );
+
+  // The raid's finale of the fixture week: the state's clock sets "now" (the game keeps the server's offset).
+  const FINALE = fixture('raid-reveal-seen').schedule.finale;
+  for (const [label, now, want] of [
+    ['the weekend raid is today', FINALE - 3 * 3600 * 1000, 'today'],
+    ['the raid is live now', FINALE + 60 * 1000, 'live now'],
+  ]) {
+    await scenario(
+      `a raid weekend: ${label} (the Arena's band says "${want}")`,
+      () => {
+        stateOverride = { serverNow: now };
+        answerOverride.set('/api/raid', () => ({ ...fixture('raid-reveal-seen'), serverNow: now }));
+      },
+      async () => {
+        await place('arena').evaluate((el) => el.click());
+        await waitFor(heading('Arena'));
+        const timing = page.getByRole('img', { name: `Raid: ${want}` });
+        await waitFor(timing);
+        await expectTopmost(timing, `the Arena's "${want}" label`);
+        await page.waitForTimeout(400);
+        await shot(`arena-${want.replace(' ', '-')}`);
+      },
+    );
+  }
+
+  await scenario(
+    'a full bag: the Forge shows its notice and the bag count, and both can be reached',
+    () => {
+      answerOverride.set('/api/gear', () => {
+        const gear = fixture('gear-state');
+        return { ...gear, inventory: { ...gear.inventory, used: gear.inventory.cap, reserved: 0 } };
+      });
+    },
+    async () => {
+      await place('forge').evaluate((el) => el.click());
+      await waitFor(heading('Forge'));
+      const warning = page.locator('[role="status"]', {
+        hasText: 'Gear you find becomes parts until the bag has room.',
+      });
+      await waitFor(warning);
+      await warning.first().scrollIntoViewIfNeeded();
+      await expectTopmost(warning.first(), 'the full-bag notice');
+      const count = await textIn(page.locator('.bag-count.over'));
+      if (!/60 ?\/ ?60/.test(count)) throw new Error(`the bag count says "${count}"`);
+      await shot('forge-full-bag');
+      // The same warning where a run sets off (the Cave's setup), still reachable.
+      await backToValley();
+      await place('cave').evaluate((el) => el.click());
+      await waitFor(page.locator('.bag-full-note'));
+      await page.locator('.bag-full-note').first().scrollIntoViewIfNeeded();
+      await expectTopmost(page.locator('.bag-full-note').first(), "the Cave's full-bag note");
+    },
+  );
+
+  await scenario(
+    'a brand-new player: the starter pick first, then the valley with that one creature',
+    () => {
+      const chosen = baseState.creatures[0];
+      stateOverride = {
+        starterChosen: false,
+        creatures: [],
+        pending: [],
+        loungerId: null,
+        loungeXp: {},
+        attention: null,
+      };
+      answerOverride.set('/api/starter', () => {
+        stateOverride = { creatures: [chosen], pending: [], loungerId: null, loungeXp: {} };
+        // The server wraps a state an action returns as `{ state }`.
+        return { state: state() };
+      });
+    },
+    async () => {
+      const options = page.getByRole('button', { name: /^Choose / });
+      await waitFor(options);
+      if ((await page.locator('button[data-place]').count()) > 0)
+        throw new Error('the valley is drawn before a starter is chosen');
+      await shot('new-player-starter');
+      await options.first().click();
+      await waitFor(page.locator(VALLEY), 'attached');
+      const count = await page.locator('button[data-place]').count();
+      if (count !== 11) throw new Error(`expected 11 places, found ${String(count)}`);
+      await waitFor(page.locator('section[aria-label="Your creatures"] button'));
+      await shot('new-player-valley');
     },
   );
 
