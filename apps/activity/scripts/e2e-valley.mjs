@@ -737,6 +737,66 @@ try {
     },
   );
 
+  // The valley's base systems on (phase 5 step 1): every creature rests, the Bonfire opens with a few round the fire.
+  await scenario(
+    'valley systems on: the Bonfire opens with the resting creatures, their gains and "+N more"',
+    () => {
+      const config = ROUTES.get('/api/config');
+      answerOverride.set('/api/config', () => ({ ...config(), valleySystems: true }));
+      const creatures = baseState.creatures.map((c) => ({ ...c, busy: null, away: false }));
+      stateOverride = {
+        creatures,
+        valley: {
+          settledAt: 1799760000000,
+          arrived: true,
+          awayHours: 6,
+          creatures: creatures.map((c, i) => ({
+            id: c.id,
+            state: 'resting',
+            gained: 25 + i * 11,
+            catchUpBp: 10000,
+          })),
+          allowance: { store: 0, cap: 480, brought: 0 },
+        },
+      };
+    },
+    async () => {
+      await waitFor(page.locator(VALLEY), 'attached');
+      // The tray says each creature rests.
+      await waitFor(
+        page.locator('section[aria-label="Your creatures"] button[aria-label*="Resting"]'),
+      );
+      await shot('tray-resting');
+      await place('bonfire').evaluate((el) => el.click());
+      await waitFor(heading('Bonfire'));
+      // Not the "not open yet" line: creatures sit round the fire, each with its +N on the plate.
+      if ((await page.getByText(/will burn here/).count()) > 0)
+        throw new Error('the Bonfire is still "not open yet"');
+      const plates = page.locator('.vy-feet-plate .nameplate-gain');
+      await waitFor(plates);
+      const drawn = await plates.count();
+      for (let i = 0; i < drawn; i += 1)
+        await expectTopmost(plates.nth(i).locator('xpath=..'), `plate ${String(i)} at the fire`);
+      await page.waitForTimeout(300);
+      await shot('bonfire-open');
+      const more = page.getByRole('button', { name: /more: show all \d+ resting/ });
+      if ((await more.count()) > 0) {
+        await expectTopmost(more.first(), 'the "+N more" button');
+        await more.first().click();
+        await waitFor(page.getByRole('dialog'));
+        const rows = await page.getByRole('dialog').locator('ul li').count();
+        if (rows !== baseState.creatures.length)
+          throw new Error(
+            `the list shows ${String(rows)} of ${String(baseState.creatures.length)}`,
+          );
+        await shot('bonfire-all-resting');
+        await page.keyboard.press('Escape');
+      } else if (drawn !== baseState.creatures.length) {
+        throw new Error(`${String(drawn)} drawn, no "+N more" for the rest`);
+      }
+    },
+  );
+
   await scenario(
     'a brand-new player: the starter pick first, then the valley with that one creature',
     () => {

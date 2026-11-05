@@ -14,6 +14,8 @@ import { explorerName, legEnd, tripCounts, type HomeInput } from '../home-view';
 import { ALERT_TEXT, type TabAlerts } from '../tab-alerts';
 import { TABS, type Tab } from '../tabs';
 import { formatCountdown, formatZoned } from '../time-format';
+import type { ValleyVisit } from '../api';
+import { bonfireLine } from './bonfire-cast';
 import { placeLabel, readingOrder } from './valley-logic';
 import type { PlaceId } from './valley-art';
 import { OPEN_PLACES, PAGE_TITLES, isOpenPlace, viewOf, type OpenPlaceId } from './valley-nav';
@@ -22,7 +24,10 @@ import { OPEN_PLACES, PAGE_TITLES, isOpenPlace, viewOf, type OpenPlaceId } from 
 export type PlaceInput = Pick<
   HomeInput,
   'now' | 'timezone' | 'trips' | 'jobs' | 'creatures' | 'games' | 'pending' | 'attention' | 'raid'
->;
+> & {
+  /** The valley's resting creatures (`VALLEY_SYSTEMS` on): the Bonfire's line is made from it; absent or null leaves the Bonfire "not open yet". */
+  visit?: ValleyVisit | null;
+};
 
 /** A bubble over a place: the glyph of what waits, a count when there is more than one, its spoken words. */
 export interface PlaceBubble {
@@ -188,6 +193,7 @@ export function placeStates(input: PlaceInput): Record<PlaceId, string> {
   const out = {} as Record<PlaceId, string>;
   for (const id of OPEN_PLACES) out[id] = lines[id] ?? placeFallback(id);
   for (const id of ['bonfire', 'school', 'visitor', 'market'] as const) out[id] = placeFallback(id);
+  out.bonfire = bonfireLine(input.visit, input.creatures) ?? out.bonfire;
   return out;
 }
 
@@ -213,12 +219,16 @@ export function raidTiming(
 }
 
 /**
- * The Places list's order: the places with something waiting first, then the other open places, then the four
- * not-yet-open places last; each group in the map's reading order.
+ * The Places list's order: the places with something waiting first, then the other open places (`opened` adds the
+ * places a flag opened, the Bonfire), then the places not open yet last; each group in the map's reading order.
  */
-export function listOrder(bubbles: readonly PlaceBubble[]): PlaceId[] {
+export function listOrder(
+  bubbles: readonly PlaceBubble[],
+  opened: readonly PlaceId[] = [],
+): PlaceId[] {
   const all = readingOrder();
+  const open = (id: PlaceId): boolean => isOpenPlace(id) || opened.includes(id);
   const waiting = all.filter((id) => bubbleAt(bubbles, id) !== undefined);
   const rest = all.filter((id) => bubbleAt(bubbles, id) === undefined);
-  return [...waiting, ...rest.filter(isOpenPlace), ...rest.filter((id) => !isOpenPlace(id))];
+  return [...waiting, ...rest.filter(open), ...rest.filter((id) => !open(id))];
 }

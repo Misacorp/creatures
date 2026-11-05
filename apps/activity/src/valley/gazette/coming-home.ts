@@ -116,3 +116,21 @@ export function coinDelay(i: number, n: number): number {
 export function purseDisplay(total: number, gain: number, counted: number): number {
   return total - gain + Math.min(Math.max(0, counted), gain);
 }
+
+/**
+ * What flies when the paper closes: the paper's gains plus the Acorns the visit's allowance brought home (the valley's
+ * systems; V-POST-5, which has no collect button: the store comes home on arrival). The allowance is the same currency
+ * as Bait, so the two join in one flight; it is already in the purse, as every gain is. Nothing flies for 0.
+ */
+export function withAllowance(
+  gains: readonly { resource: string; amount: number }[],
+  brought: number,
+): { resource: string; amount: number }[] {
+  const extra = Math.max(0, Math.floor(brought));
+  if (extra === 0) return gains.map((g) => ({ ...g }));
+  const has = gains.some((g) => g.resource === 'bait');
+  const merged = gains.map((g) =>
+    g.resource === 'bait' ? { ...g, amount: g.amount + extra } : { ...g },
+  );
+  return has ? merged : [{ resource: 'bait', amount: extra }, ...merged];
+}

@@ -145,7 +145,7 @@ function Draggable({
 }
 
 /** One creature standing at (`x`, `y`) scene pixels: a button that opens its popover. */
-function Stander({
+export function Stander({
   creature,
   x,
   y,
@@ -153,6 +153,7 @@ function Stander({
   label,
   g,
   hand,
+  gain,
 }: {
   creature: Creature;
   x: number;
@@ -162,6 +163,8 @@ function Stander({
   g: SceneGeometry;
   /** Given: a hand can move it (the paddock's roamers). */
   hand?: Hand;
+  /** The experience it gained this visit, "+N" on its nameplate (the Bonfire's resting creatures). */
+  gain?: number;
 }) {
   const info = infoOf(creature);
   const button = (
@@ -197,7 +200,7 @@ function Stander({
         class="vy-feet-plate"
         z={PLATES_Z + depthOf(x, y)}
       >
-        <Nameplate size="sm" level={info.level}>
+        <Nameplate size="sm" level={info.level} gain={gain}>
           {info.name}
         </Nameplate>
       </At>

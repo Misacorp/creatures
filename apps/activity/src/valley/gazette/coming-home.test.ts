@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  withAllowance,
   COUNT_STEPS,
   MAX_COINS,
   MIN_COINS,
@@ -31,6 +32,21 @@ describe('the count-up', () => {
     expect(stepText(0, 3)).toBe('+0');
     expect(stepText(180, 99)).toBe('+180');
     expect(stepText(180, -4)).toBe(`+${String(countSteps(180)[0])}`);
+  });
+});
+
+describe('the allowance flies with the paper', () => {
+  it('joins the Bait of the paper, or flies alone, and adds nothing for 0', () => {
+    expect(withAllowance([{ resource: 'bait', amount: 12 }], 100)).toEqual([
+      { resource: 'bait', amount: 112 },
+    ]);
+    expect(withAllowance([{ resource: 'essence', amount: 3 }], 100)).toEqual([
+      { resource: 'bait', amount: 100 },
+      { resource: 'essence', amount: 3 },
+    ]);
+    expect(withAllowance([{ resource: 'bait', amount: 12 }], 0)).toEqual([
+      { resource: 'bait', amount: 12 },
+    ]);
   });
 });
 

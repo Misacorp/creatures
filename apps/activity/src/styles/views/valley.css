@@ -588,8 +588,16 @@ main.card:has(.vy-frame) > .hud {
   font-size: var(--fs-heading);
 }
 
+/* The small "z" of a resting creature: quiet, in the haze colour, never over the sprite. */
+.vy-zz {
+  color: var(--haze);
+  font-size: var(--fs-heading);
+  line-height: 1;
+}
+
 /* A free creature idles: a one-pixel bob in two steps. */
-.vy-mon-free .vy-mon-body {
+.vy-mon-free .vy-mon-body,
+.vy-mon-resting .vy-mon-body {
   animation: vy-idle 1200ms steps(1) infinite;
   animation-delay: calc(var(--i, 0) * -170ms);
 }
@@ -695,7 +703,8 @@ main.card:has(.vy-frame) > .hud {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .vy-mon-free .vy-mon-body {
+  .vy-mon-free .vy-mon-body,
+  .vy-mon-resting .vy-mon-body {
     animation: none;
   }
 }

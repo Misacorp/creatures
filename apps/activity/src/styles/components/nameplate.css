@@ -38,3 +38,9 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* A gain after the name ("+40"): always whole, in the experience green; a long name is cut, not the gain. */
+.nameplate-gain {
+  flex: none;
+  color: var(--good);
+}

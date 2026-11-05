@@ -2,7 +2,7 @@
  * The creature tray: the roster along the bottom of the valley (the party prototype's camp, adapted). Each
  * creature is a button with its sprite, "Lv N" under it, and at most one mark on it, one shape per state: a bag
  * (home with loot), "!" (done at the forge), an up arrow (can evolve), an anvil (working), a dark silhouette
- * with a pack and the destination's element (away). A free creature carries no mark; it idles. Two rows on a
+ * with a pack and the destination's element (away), a small "z" (resting at the fire, the valley's systems). A free creature carries no mark; it idles. Two rows on a
  * phone (more creatures scroll sideways behind a cue), one row on a wide window. Tapping one opens the Paddock.
  */
 import { expeditionContent } from '@creatures/game';
@@ -56,6 +56,14 @@ function Mark({ badge }: { badge: TrayBadge }) {
         </span>
       );
     }
+    case 'resting':
+      return (
+        <span class="vy-mark">
+          <span class="vy-zz pix" aria-hidden="true">
+            z
+          </span>
+        </span>
+      );
     case 'free':
       return null;
   }

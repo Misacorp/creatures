@@ -13,6 +13,7 @@ import type {
   TripCatch,
   TripResult,
 } from './expedition-types';
+import { parseValleyView, type ValleyView as ValleyVisit } from '@creatures/game';
 import { isExperienceView, isRibbonView, type ExperienceView, type RibbonView } from './experience';
 import { isWornGear } from './gear-parse';
 import {
@@ -529,6 +530,11 @@ export interface GameState {
   loungeXp: Record<string, number>;
   /** What needs the player (the pips on the tabs); present on GET /api/state only, null otherwise or when unknown. */
   attention: Attention | null;
+  /**
+   * The valley's resting creatures and allowance (`VALLEY_SYSTEMS` on; GET /api/state only): null with the flag off and in action
+   * answers.
+   */
+  valley: ValleyVisit | null;
 }
 
 /**
@@ -729,6 +735,8 @@ export function parseGameState(data: unknown): GameState {
   ) {
     throw new Error('the server returned an unexpected game state');
   }
+  const valley = parseValleyView(data['valley']);
+  if (valley === undefined) throw new Error('the server returned an unexpected valley block');
   return {
     serverNow: data['serverNow'],
     balances: data['balances'],
@@ -750,8 +758,11 @@ export function parseGameState(data: unknown): GameState {
     loungeSpot: parseLoungeSpot(data['loungeSpot']),
     loungeXp: parseLoungeXp(data['loungeXp']),
     attention: parseAttention(data['attention']),
+    valley,
   };
 }
+
+export type { ValleyVisit };
 
 export function stateFrom(data: unknown): GameState {
   return parseGameState(isRecord(data) ? data['state'] : undefined);

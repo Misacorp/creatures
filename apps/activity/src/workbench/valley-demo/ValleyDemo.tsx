@@ -2,7 +2,7 @@ import { useState } from 'preact/hooks';
 import { Hud } from '../../Hud';
 import { PopoverHost, useCreatureViewer } from '../../PopoverHost';
 import { WelcomeBack } from '../../valley/gazette/WelcomeBack';
-import type { Balances } from '../../api';
+import type { Balances, Creature, ValleyVisit } from '../../api';
 import { homeAlerts } from '../../home-view';
 import type { Place } from '../../tabs';
 import { ValleyFrame } from '../../valley/ValleyFrame';
@@ -30,6 +30,37 @@ export const VALLEY_STARTS = [
   'school',
   'bonfire',
 ] as const;
+
+/** How the demo's valley systems stand: off (the Bonfire is "not open yet"), a small roster resting, or a big one. */
+export const VALLEY_RESTING = ['off', 'few', 'many'] as const;
+
+/** The creatures of a resting roster: `few` is four of the day's, `many` is fourteen (the day's, then copies at other levels). */
+function restingRoster(all: readonly Creature[], resting: string): Creature[] {
+  if (resting === 'few') return all.slice(0, 4);
+  const out = [...all];
+  for (let i = 0; out.length < 14; i += 1) {
+    const from = all[i % all.length];
+    if (from === undefined) break;
+    out.push({ ...from, id: `${from.id}-r${String(i)}`, level: 3 + ((i * 5) % 17) });
+  }
+  return out;
+}
+
+/** The server's `valley` block for a roster: everyone rests, each with a gain this visit (a few at their cap with none). */
+function restingVisit(creatures: readonly Creature[], brought: number): ValleyVisit {
+  return {
+    settledAt: HOME_NOW,
+    arrived: true,
+    awayHours: 9,
+    creatures: creatures.map((c, i) => ({
+      id: c.id,
+      state: 'resting' as const,
+      gained: i % 5 === 4 ? 0 : 20 + ((i * 37) % 160),
+      catchUpBp: 10000,
+    })),
+    allowance: { store: 0, cap: 480, brought },
+  };
+}
 
 const NOTHING = () => undefined;
 const PURSE: Balances = { bait: 1240, essence: 36 };
@@ -59,7 +90,17 @@ function DemoViewer({ onView }: { onView: () => void }) {
   return null;
 }
 
-export function ValleyDemo({ start, away, day }: { start: string; away: boolean; day: string }) {
+export function ValleyDemo({
+  start,
+  away,
+  day,
+  resting,
+}: {
+  start: string;
+  away: boolean;
+  day: string;
+  resting: string;
+}) {
   const first = VALLEY_STARTS.includes(start as (typeof VALLEY_STARTS)[number])
     ? (start as PlaceId | 'valley')
     : 'valley';
@@ -73,7 +114,13 @@ export function ValleyDemo({ start, away, day }: { start: string; away: boolean;
   const [gone, setGone] = useState(false);
   // The purse while the welcome-back numbers count up.
   const [purse, setPurse] = useState<Balances | null>(null);
-  const base = homeInput(day, true);
+  const planned = homeInput(day, true);
+  // With the valley's systems on the roster rests at the fire, and the allowance brought some Acorns home.
+  const base =
+    resting === 'off'
+      ? planned
+      : { ...planned, creatures: restingRoster(planned.creatures, resting) };
+  const visit = resting === 'off' ? null : restingVisit(base.creatures, 120);
   // What the scenes draw: the fixture creatures, standing where today's state puts them (a dungeon row, a raid party).
   const party = base.creatures.slice(0, 3).map((c) => c.id);
   const input = {
@@ -136,6 +183,7 @@ export function ValleyDemo({ start, away, day }: { start: string; away: boolean;
             alerts={homeAlerts(input)}
             placeInput={input}
             castExtra={castExtra}
+            visit={visit}
             focus={focus}
             onOpen={open}
             onLeave={leave}
@@ -170,6 +218,7 @@ export function ValleyDemo({ start, away, day }: { start: string; away: boolean;
               now={HOME_NOW}
               timezone={HOME_TZ}
               balances={PURSE}
+              brought={visit === null ? 0 : visit.allowance.brought}
               onDismiss={() => {
                 setGone(true);
               }}
