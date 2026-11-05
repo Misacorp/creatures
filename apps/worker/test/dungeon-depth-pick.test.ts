@@ -268,7 +268,7 @@ describe('a landmark’s bonus is one-off (combat v2)', () => {
         const replay = await p.run({ depth: LANDMARK }, { pick: SAFE });
         expect(replay.body.run?.cleared).toBe(true);
         expect(replay.body.run?.landmark).toBe(true); // the depth is a landmark: the floor boss is there
-        expect(paid(replay.body.run?.id as string)).toBe(false);
+        expect(paid(replay.body.run?.id)).toBe(false);
         expect(depthOf(ctx, p.id)).toBe(LANDMARK + 1);
 
         // The same landmark at the player's own depth pays it.
@@ -276,7 +276,7 @@ describe('a landmark’s bonus is one-off (combat v2)', () => {
         ctx.clock.t = AFTER_RESET + DAY;
         const first = await p.run({ depth: LANDMARK }, { pick: SAFE });
         expect(first.body.run?.cleared).toBe(true);
-        expect(paid(first.body.run?.id as string)).toBe(true);
+        expect(paid(first.body.run?.id)).toBe(true);
         expect(depthOf(ctx, p.id)).toBe(LANDMARK + 1);
       },
       V2('pick-landmark'),
