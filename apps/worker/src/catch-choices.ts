@@ -73,6 +73,8 @@ type PendingRow = {
   source: 'expedition' | 'festival';
   source_id: string;
   created_at: number;
+  /** When the server answers it with Recommended (the valley's Paddock gate); null: never by itself. */
+  auto_at: number | null;
 };
 
 type CreatureRow = {
@@ -97,6 +99,8 @@ export interface PendingView {
   /** Where it came from: an expedition or a Festival win. */
   source: 'expedition' | 'festival';
   createdAt: number;
+  /** When the card takes today's Recommended answer by itself (the valley's Paddock gate, V-SCOUT-3). Absent: it waits for the player. */
+  autoAt?: number;
   /** The talent it rolled (the card shows it first). */
   talent: TalentView;
   /** Which of the four buttons are offered, and for Teach and Fuse the creatures they can go to. */
@@ -239,6 +243,7 @@ export class CatchChoices {
       shiny: row.shiny === 1,
       source: row.source,
       createdAt: row.created_at,
+      ...(row.auto_at === null ? {} : { autoAt: row.auto_at }),
       talent,
       offered: {
         teach: this.v2 ? [] : creatures.filter((c) => canTeach(c, roll)).map((c) => c.id),
@@ -275,6 +280,8 @@ export class CatchChoices {
      * learn the talent, for "the better". Absent (or 0): one roll, drawing exactly what it always drew.
      */
     secondLook?: { bp: number; wearer: TalentWearer },
+    /** The valley's Paddock gate: the time the card takes its Recommended answer by itself (UTC ms). Absent: it never does. */
+    autoAt?: number,
   ): { id: string; talent: TalentRoll; looked: boolean; settled: ChoiceResult | null } {
     const species = speciesOf(caught.species);
     const now = this.deps.now();
@@ -291,8 +298,8 @@ export class CatchChoices {
     const looked = rolled?.looked === true;
     const talent = rolled?.roll ?? rollTalent(this.deps.rngs.talent, species.line);
     this.sql.exec(
-      `INSERT INTO pending_catches (id, user_id, line, species, shiny, talent_id, golden, source, source_id, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO pending_catches (id, user_id, line, species, shiny, talent_id, golden, source, source_id, created_at, auto_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       id,
       userId,
       species.line,
@@ -303,6 +310,7 @@ export class CatchChoices {
       source.kind,
       source.id,
       now,
+      autoAt ?? null,
     );
     this.deps.analytics?.record(
       { kind: 'talent_roll', species: species.id, talent: talent.talentId, golden: talent.golden },
@@ -363,6 +371,24 @@ export class CatchChoices {
         },
       ),
     );
+  }
+
+  /**
+   * The valley's Paddock gate (V-SCOUT-3): settles the player's cards whose auto-answer time has come with their Recommended choice,
+   * oldest first. Runs inside the caller's transaction (the lazy pass); each answer is the one "apply Recommended to all" would give.
+   * Returns how many it answered.
+   */
+  autoAnswerDue(userId: string, now: number): number {
+    const due = this.sql
+      .exec<PendingRow>(
+        `SELECT * FROM pending_catches WHERE user_id = ? AND auto_at IS NOT NULL AND auto_at <= ?
+         ORDER BY created_at, rowid`,
+        userId,
+        now,
+      )
+      .toArray();
+    for (const row of due) this.settle(userId, row, { choice: 'recommended' }, true);
+    return due.length;
   }
 
   /** Settles every waiting card with its Recommended choice, oldest first ("apply Recommended to all"). */

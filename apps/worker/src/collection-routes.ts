@@ -130,10 +130,10 @@ export const collectionRoutes: Routes<CollectionRouteContext> = {
   },
   '/api/expeditions': {
     POST: async (request, { user, core }) => {
+      // Trips are gone with the valley on: scouts at their seats replace them (answered before the body is read).
+      if (core.valleySystems) return notFound();
       const body = await parseBody(request, StartExpeditionBodySchema);
       if (body === undefined) return invalidBody();
-      // Treats are off with the valley on (the bonfire's idle XP replaces them); nothing is charged.
-      if (core.valleySystems && body.treat) return errorResponse('treats_off', 400);
       const outcome = core.collection.startExpedition(user.id, body, core.timezone());
       if (!outcome.ok) return failure(outcome);
       return json({ expedition: outcome.value, state: core.collection.state(user.id) });
@@ -141,6 +141,7 @@ export const collectionRoutes: Routes<CollectionRouteContext> = {
   },
   '/api/expeditions/:id/claim': {
     POST: async (request, ctx) => {
+      if (ctx.core.valleySystems) return notFound();
       const id = pathId(ctx);
       if (id === undefined) return invalidId();
       if ((await parseBody(request, ClaimBodySchema)) === undefined) return invalidBody();

@@ -208,6 +208,8 @@ export const VALLEY_RULES = {
     // find rate grows by this much per extra hour. Journal: pages x(1 + bp). Xp: mastery hours count x(1 + bp). Featured: the species
     // weighs that much more.
     twistRollsPerExtra: 0.1,
+    /** The starter's first scout finds something for sure (V-SCOUT-3 note, plan step 2) once its pack holds this many effective hours. */
+    firstFindHours: 1,
     /** V-SCOUT-3: a duplicate waiting at the Paddock gate takes today's Recommended answer by itself after this many hours. */
     gateAutoHours: 24,
     /** V-SCOUT-9: a keystone clock per destination for the whole server: one in about this many days. */

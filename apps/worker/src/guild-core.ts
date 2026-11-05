@@ -120,6 +120,9 @@ import {
 import { MIGRATIONS } from './migrations';
 import { ReadMeter, pruneReads, readSourceOfPath, type ReadSource } from './read-meter';
 import { liveRng } from './rng';
+import { ValleyFinds } from './valley-finds';
+import { valleyRoutes } from './valley-routes';
+import { ValleySeats } from './valley-seats';
 import { ValleySettle } from './valley-settle';
 import type { ValleyView } from '@creatures/game';
 import type { LoungeClient, LoungeResult } from './lounge-discord';
@@ -232,6 +235,7 @@ const routes: Routes<RequestContext> = {
   ...gearRoutes,
   ...dungeonRoutes,
   ...expeditionRoutes,
+  ...valleyRoutes,
   ...raidRoutes,
   ...weatherRoutes,
   ...gamesRoutes,
@@ -374,6 +378,11 @@ export interface GuildCoreOptions {
   /** The valley's base systems (`VALLEY_SYSTEMS` on with `VALLEY` and `COMBAT_V2` on, see `valley-flag.ts`): the `valley-fresh` dev tool can run. */
   valleySystems?: boolean;
   /**
+   * Live randomness for what scouts find (`VALLEY_SYSTEMS`): how many creatures, gear pieces, blueprints and pages each stretch brings
+   * and which species. Defaults to crypto.getRandomValues; separate from the others so a scout's draw never consumes a scripted one.
+   */
+  scoutRng?: Rng;
+  /**
    * The deployed build (the git commit). The start-up passes in `migrate` run once per build instead of
    * on every start. Without one (local dev, tests) they run on every start.
    */
@@ -431,6 +440,8 @@ export class GuildCore {
   readonly allowance: DailyAllowance;
   /** The valley's lazy pass (`VALLEY_SYSTEMS`), or null with the flag off: nothing of it runs and none of its rows are read. */
   readonly valley: ValleySettle | null;
+  /** Seats and kit of the valley's scouts (`VALLEY_SYSTEMS`), or null with the flag off. */
+  readonly valleySeats: ValleySeats | null;
   /** The `VALLEY_SYSTEMS` flag as the worker resolved it (see `valley-flag.ts`). */
   readonly valleySystems: boolean;
   private postsInFlight: Promise<void> | null = null;
@@ -495,7 +506,6 @@ export class GuildCore {
     this.rollup = new AnalyticsRollup({ storage, now: realNow, timezone: () => this.timezone() });
     this.allowance = new DailyAllowance(storage, this.analytics, now, () => this.timezone());
     this.valleySystems = options.valleySystems === true;
-    this.valley = this.valleySystems ? new ValleySettle({ storage, now }) : null;
     const gearRng = options.gearRng ?? liveRng();
     this.gearRng = gearRng;
     this.collection = new Collection({
@@ -514,6 +524,38 @@ export class GuildCore {
       // With the valley on there is no lounge XP and no daily cap to show (the bonfire's idle XP takes over).
       ...(this.valleySystems ? {} : { gameDay: () => loungeDay(this.now(), this.timezone()).day }),
     });
+    // The valley's scouts need the Paddock gate's cards (`collection.choices`), so they come after the collection.
+    if (this.valleySystems) {
+      const finds = new ValleyFinds({
+        storage,
+        now,
+        rng: options.scoutRng ?? liveRng(),
+        gearRng,
+        quirkRng,
+        talentRng,
+        combatV2: options.combatV2 === true,
+        choices: this.collection.choices,
+        analytics: this.analytics,
+      });
+      const valley = new ValleySettle({
+        storage,
+        now,
+        timezone: () => this.timezone(),
+        finds,
+        choices: this.collection.choices,
+      });
+      this.valley = valley;
+      this.valleySeats = new ValleySeats({
+        storage,
+        now,
+        timezone: () => this.timezone(),
+        settle: valley,
+        finds,
+      });
+    } else {
+      this.valley = null;
+      this.valleySeats = null;
+    }
     this.gear = new Gear({
       storage,
       now,
@@ -1172,7 +1214,7 @@ export class GuildCore {
     }
     if (this.options.dmSender != null) {
       // Opted-in players' next trip end, job end, finale ping or stall opening.
-      const dueAt = nextDmDueAt(this.sql, this.now(), this.timezone());
+      const dueAt = nextDmDueAt(this.sql, this.now(), this.timezone(), this.valleySystems);
       if (dueAt !== null) candidates.push(dueAt);
       // A DM that is still due keeps failing to go out: look again later, not in a loop.
       const dmAt = nextDmAt(this.sql);
@@ -1343,6 +1385,7 @@ export class GuildCore {
           now: this.now(),
           tz: this.timezone(),
           realAt: (gameMs) => this.realAt(gameMs),
+          valleySystems: this.valleySystems,
         }),
       );
     } catch (err) {

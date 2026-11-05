@@ -106,6 +106,7 @@ export const ValleyRulesSchema = v.strictObject({
     ),
     nightMultiplier: pos,
     twistRollsPerExtra: num,
+    firstFindHours: pos,
     gateAutoHours: pos,
     keystoneMeanDays: pos,
     placeAffinity: pos,
