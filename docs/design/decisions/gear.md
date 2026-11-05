@@ -4,6 +4,14 @@ Gear items, lines and sets, crafting, dismantling, conversions, the bag and the 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-06: Combat v2 gear effect lines, slice 1: the sheet and the lines with an existing effect
+
+ID: `2026-11-06-combat-v2-gear-effect-lines-slice` · Status: current
+
+**Decision.** Combat v2 reads a creature's worn effect lines as one effect sheet, `Placement.gear`, merged into `fxAll` only (silence blanks it; its Armour stays a stat line). `gearFx` (`packages/game/src/rules/gear-fx.ts`) maps the lines that already have an engine field, with conditions settled before the fight and the gear plan's scales (reaction family x4, the "scale to twin" lines to their top pip, Guard's Shadow x0.3 with armour -10; each in `for-misa.md`). Armour is for every role; a Retaliate line and a Knack's make one counter with the larger chance. Lines with no hook yet keep the "not in the new rules yet" mark. The Scarf's Between-room Rest is on for v2 dungeon runs.
+
+**Reasoning.** It makes the gear Misa already owns count in v2 without new engine rules, and keeps the parity of gear-less fights. Silence-blanking follows R12, and the larger-chance merge follows the plan's OPEN 3. The Rest was silently off in v2 while the client said it worked.
+
 ## 2026-11-05: [Misa] Rarity is shown by the frame's shape too, and every item's spoken name says it
 
 ID: `2026-11-05-rarity-is-shown-by-a-shape` · Status: current · Amends: `2026-10-17-one-item-level-indicator-item-card`

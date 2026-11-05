@@ -8,6 +8,7 @@ import type { CombatV2Pack, KnackDef, TalentDef } from '@creatures/game/combat-v
 import {
   FOE_COLS,
   FOE_ROWS,
+  GEAR_FIELDS,
   createResolver,
   foeAt,
   foeStats,
@@ -318,7 +319,7 @@ describe('createResolver', () => {
     for (const f of fighters)
       expect(Object.keys(f.fxStat)).toEqual(Object.keys(fighters[0]?.fxStat ?? {}));
     // Every effect name any Knack or talent of the pack uses is there, Knacks first.
-    expect(keys[0]).toEqual([
+    expect(keys[0]?.slice(0, 7)).toEqual([
       'hpBp',
       'armourBonus',
       'reachBonus',
@@ -326,6 +327,19 @@ describe('createResolver', () => {
       'atkBp',
       'dodgeBonusBp',
       'boostBonusBp',
+    ]);
+    // Then every effect name gear may give that no Knack or talent of the pack uses (`GEAR_FIELDS`), so gear never changes the shape.
+    expect(keys[0]).toEqual([
+      ...new Set([
+        'hpBp',
+        'armourBonus',
+        'reachBonus',
+        'plainBp',
+        'atkBp',
+        'dodgeBonusBp',
+        'boostBonusBp',
+        ...GEAR_FIELDS,
+      ]),
     ]);
   });
 

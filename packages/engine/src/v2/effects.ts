@@ -215,6 +215,39 @@ export const STAT_FIELDS: ReadonlySet<keyof KnackFx> = new Set<keyof KnackFx>([
 ]);
 
 /**
+ * The effect fields worn gear can give (`Placement.gear`; the game's `gearFx` makes them from the lines that have a v2 hook). The
+ * resolver gives every creature's effects all of them, so adding gear never changes the shape of the effect object (`uniformFx`).
+ * A field a gear line starts to use is added here (a test in the engine checks the game's map against this list).
+ */
+export const GEAR_FIELDS: readonly (keyof KnackFx)[] = [
+  'armourBonus',
+  'reachBonus',
+  'dodgeBonusBp',
+  'areaDodgeBp',
+  'retaliateBp',
+  'besideGuardBp',
+  'areaCutBp',
+  'coverBonusBp',
+  'boostBonusBp',
+  'mendBonusBp',
+  'healReceivedBp',
+  'reactionBonusBp',
+  'firstHitBp',
+  'perKindredBesideBp',
+  'oddOneOutBp',
+  'rowEndBp',
+  'frontCutBp',
+  'vengefulBp',
+  'momentumBp',
+  'ownMarkBp',
+  'braceBp',
+  'miredExtraBp',
+  'ignoreSilence',
+  'holdOn',
+  'clinging',
+];
+
+/**
  * Effect fields whose values add when a Knack and talents combine (a talent may use only these).
  * Numbers add, flags combine (`mergeFx`); a field whose merge is neither is never listed here.
  */
