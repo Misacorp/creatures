@@ -282,7 +282,7 @@ describe('the dropdown panel of the depth picker', () => {
     const el = panel(root);
     expect(el.dataset['placement']).toBe('below');
     expect(el.style.getPropertyValue('--drop-x')).toBe('12px');
-    expect(el.style.getPropertyValue('--drop-y')).toBe('348px');
+    expect(el.style.getPropertyValue('--drop-y')).toBe('344px'); // straight under the trigger (300 + 44), no gap
     expect(el.style.getPropertyValue('--drop-w')).toBe('366px');
     expect(el.style.getPropertyValue('--drop-max')).toBe('400px');
   });

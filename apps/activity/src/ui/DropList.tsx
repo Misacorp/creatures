@@ -2,8 +2,8 @@ import type { ComponentChildren } from 'preact';
 import { useEffect, useLayoutEffect, useRef } from 'preact/hooks';
 import { placePopover } from './popover-place';
 
-/** The gap between the trigger and its panel, and the room kept to the window's edges, in px. */
-const GAP = 4;
+/** The gap between the trigger and its panel (none: the panel hangs straight from it, Misa 2026-11-05), and the room kept to the window's edges, in px. */
+const GAP = 0;
 const EDGE = 8;
 /** Less room than this on both sides and the trigger is scrolled to the middle of the window first, in px. */
 const MIN_ROOM = 200;
