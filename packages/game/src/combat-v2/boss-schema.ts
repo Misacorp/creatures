@@ -17,7 +17,7 @@
  * card: Boss Rank sets it, 10000 is full). A number a card adds or sets is its share at the strength, so a weaker card changes
  * less: a card *asks* for a tool at low strength and *requires* it at high strength (Misa, 2026-10-29). The operations and what
  * each does are documented on `CardOp` in the engine. Each card also has its `asks` (the question it puts to the team; text a
- * player may read) and its `answers`: the Knack families or the talent ids that answer it, so the board only points at tools
+ * player may read) and its `answers`: the Knack families, Knack ids or talent ids that answer it (a Knack id lights that one Knack, a family all of its Knacks), so the board only points at tools
  * that work (P-08, P-13). The raid-only cards (`raidOnly`) mean nothing in one fight: the controlled tests and the lab page
  * leave them out.
  *

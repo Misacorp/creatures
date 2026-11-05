@@ -303,10 +303,13 @@ describe('combat v2 content', () => {
     expect(Object.keys(combatV2.foes).sort()).toEqual(dungeonContent.foes.map((f) => f.id).sort());
   });
 
-  it('every card has at least one answer, from a Knack family or a talent (the baseline and the raid-only cards excepted)', () => {
+  it('every card has at least one answer, from a Knack family, a Knack id or a talent (the baseline and the raid-only cards excepted)', () => {
     for (const c of Object.values(combatV2.cards)) {
       for (const a of c.answers)
-        expect(a in combatV2.families || a in combatV2.talents, `${c.id}: ${a}`).toBe(true);
+        expect(
+          a in combatV2.families || a in combatV2.talents || a in combatV2.knacks,
+          `${c.id}: ${a}`,
+        ).toBe(true);
       if (c.id === 'plain' || c.raidOnly) continue;
       expect(c.answers.length, c.id).toBeGreaterThanOrEqual(1);
     }
@@ -345,13 +348,14 @@ describe('combat v2 content', () => {
     );
   });
 
-  it('rejects a card answer that is neither a Knack family nor a talent', () => {
+  it('rejects a card answer that is no Knack family, Knack id or talent', () => {
     expect(broken((r) => card(r, 'thick-hide').answers.push('Not A Family'))).toThrow(
-      /card "thick-hide" has the answer "Not A Family", which is no Knack family and no talent/,
+      /card "thick-hide" has the answer "Not A Family", which is no Knack family, Knack id or talent/,
     );
-    // A Knack id is not a family.
-    expect(broken((r) => card(r, 'thick-hide').answers.push('tunnel-through'))).toThrow(
-      /no Knack family/,
+    // A Knack id is an answer on its own (it points at that Knack only, not at its whole family).
+    expect(broken((r) => card(r, 'thick-hide').answers.push('tunnel-through'))).not.toThrow();
+    expect(broken((r) => card(r, 'thick-hide').answers.push('tunnel-thru'))).toThrow(
+      /no Knack family, Knack id or talent/,
     );
   });
 

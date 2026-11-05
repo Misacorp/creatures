@@ -408,8 +408,8 @@ export function loadCombatV2(
     if (Object.hasOwn(cards, c.id)) fail(`duplicate card id "${c.id}"`);
     checkWords(`card "${c.id}"`, c.asks);
     for (const a of c.answers) {
-      if (!Object.hasOwn(families, a) && !Object.hasOwn(talents, a))
-        fail(`card "${c.id}" has the answer "${a}", which is no Knack family and no talent`);
+      if (!Object.hasOwn(families, a) && !Object.hasOwn(talents, a) && !Object.hasOwn(knacks, a))
+        fail(`card "${c.id}" has the answer "${a}", which is no Knack family, Knack id or talent`);
     }
     if (new Set(c.answers).size !== c.answers.length) fail(`card "${c.id}" repeats an answer`);
     // The baseline has none, and a raid-only card (Reaction and Element Resistance) is answered by the team's make-up, not a tool.
