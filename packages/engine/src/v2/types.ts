@@ -90,6 +90,16 @@ export interface Fighter extends FighterSpec {
   marksLeft: number;
   /** Times its Support verb has run (Bright Boost: every second is doubled). */
   verbsUsed: number;
+  /** Ember Tail (gear): a bonus on its next hit, stored by a crit and used up by the hit after it (bp). */
+  emberBp: number;
+  /** Shared Warmth (gear): the extra its Support's next boost carries, stored when a creature wearing it is healed by this Support (bp). */
+  warmBp: number;
+  /** Reactions it has set off this fight (the Tidepool and Pounce sets' "first reaction"). */
+  reactionsMade: number;
+  /** Forge-Warm Kit (gear): the last round in which its crits still deal more; 0 for none. */
+  critWindowTo: number;
+  /** The unit (a round, or a boss turn) in which each gear trigger last fired, by effect field: a trigger fires once a unit (`onceIn`). */
+  gearUnit: Record<string, number>;
   /** How often each effect's condition held or its trigger fired this fight, by effect field (the report's "holds"). */
   fires: Record<string, number>;
 }

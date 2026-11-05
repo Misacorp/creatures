@@ -2,7 +2,7 @@
  * Marks, Support verbs and the start of a round (R3 to R5 marks, R8.2 round start, the Support verbs and heals of R10 and the
  * Overheal Spill rule). Round start runs the Support verbs, the round-start Knacks, the escalation step and the announcements.
  */
-import type { KnackFx } from './effects';
+import { GEAR_SHARES, type KnackFx } from './effects';
 import type { Fighter } from './types';
 import * as escalationMod from './escalation';
 import * as boardMod from './board';
@@ -15,12 +15,14 @@ const { beside, inReach, targetsOf, usesRoll } = boardMod;
 const {
   alive,
   aliveBySlot,
+  boostNext,
   bump,
   emit,
   fx,
   keyOf,
   log,
   mostHurt,
+  onceIn,
   roll,
   setStore,
   silenced,
@@ -89,6 +91,12 @@ export function heal(
       amount: real,
       ...(src ? { by: keyOf(src) } : {}),
     });
+  // Shared Warmth (gear): a Support that heals a creature wearing it has a bigger boost next time, once a round.
+  const warmth = fx(target).sharedWarmthBp;
+  if (warmth && real > 0 && src?.role === 'support' && onceIn(src, 'sharedWarmthBp', s.round)) {
+    src.warmBp = Math.max(src.warmBp, warmth);
+    bump(target, 'sharedWarmthBp');
+  }
   const over = amt - real;
   if (over > 0 && src && fx(src).spillOver) {
     const next = mostHurt(alive(s).filter((o) => o !== target && o.row === target.row));
@@ -117,6 +125,16 @@ export function roundStart(s: State): void {
     if (k.bakedShell) setStore(s, f, Math.min(3, f.store + 1));
     if (k.guardMendBp)
       for (const o of alive(s).filter((o) => inReach(s, f, o))) heal(s, o, k.guardMendBp, true, f);
+    // Gear: Second Wind (a chance to heal each round, only while hurt) and Kindling (round 1: the creatures beside it start boosted).
+    if (k.windChanceBp && f.hp < f.maxHp && roll(s, k.windChanceBp)) {
+      bump(f, 'windChanceBp');
+      heal(s, f, GEAR_SHARES.windHealBp, false);
+    }
+    if (k.kindlingBp && s.round === 1)
+      for (const o of beside(s, f)) {
+        boostNext(s, o, f, k.kindlingBp);
+        bump(f, 'kindlingBp');
+      }
   }
   // The escalation steps up (announced), then every move due this round whose targets use a roll (a random anchor,
   // scatter, a random row) or that is Charged is announced: its slots are rolled and shown now, and it lands on exactly
@@ -143,13 +161,15 @@ export function roundStart(s: State): void {
 function supportVerb(s: State, f: Fighter, k: KnackFx): void {
   const R = s.ctx.rules;
   /** `o`'s next hit gets `bp` more (and the board is told). */
-  const give = (o: Fighter, bp: number): void => {
-    o.boostBp += bp;
-    if (s.opts.log && bp > 0) emit(s, { type: 'boost', who: keyOf(o), by: keyOf(f), bp });
-  };
+  const give = (o: Fighter, bp: number): void => boostNext(s, o, f, bp);
   f.verbsUsed++;
   let boost =
     (f.element === 'ember' ? R.supportBoostEmberBp : R.supportBoostBp) + (k.boostBonusBp ?? 0);
+  // Shared Warmth (gear): a creature it healed since its last boost makes this one bigger.
+  if (f.warmBp > 0) {
+    boost += f.warmBp;
+    f.warmBp = 0;
+  }
   // Bright Boost: every second boost it gives is doubled.
   if (k.brightBoost && f.verbsUsed % 2 === 0) {
     boost *= 2;

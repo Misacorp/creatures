@@ -79,6 +79,20 @@ describe('gearFx: the line to effect map', () => {
     // Scale x2 (the reaction family).
     ['four-winds', 'payoff', { fourWindsBp: 2000 }],
     ['adaptation-pierce', 'setter', { adaptPierceBp: 3500 }],
+    // Slice 4, batch B: the triggers and auras.
+    ['payback', 'guard', { paybackBp: 3000 }],
+    ['ember-tail', 'payoff', { emberTailBp: 2000 }],
+    ['overflow', 'payoff', { overflowBp: 1500 }],
+    ['slipstream', 'setter', { slipstreamBp: 1800 }],
+    ['echo', 'payoff', { echoChanceBp: 1200 }],
+    // The gear line's own field; Catch Breath is `secondWindBp`.
+    ['second-wind', 'setter', { windChanceBp: 1200 }],
+    // x0.5: round 1 only.
+    ['kindling', 'support', { kindlingBp: 2000 }],
+    ['shared-warmth', 'guard', { sharedWarmthBp: 300 }],
+    // Scale x2 (the reaction family).
+    ['spark-share', 'support', { sparkShareBp: 3000 }],
+    ['lantern-bearer', 'setter', { lanternBp: 600 }],
   ];
 
   it.each(cases)('%s for a %s gives its field', (line, role, expected) => {
@@ -147,12 +161,27 @@ describe('gearFx: the line to effect map', () => {
 
   it('adds nothing for lines with no v2 hook, stat lines and an empty set of items', () => {
     expect(gearFx(wearer('guard'), [])).toEqual({});
-    for (const line of ['attack', 'hp', 'crit-chance', 'payback', 'spark-share']) {
+    for (const line of ['attack', 'hp', 'crit-chance', 'lingering', 'warm-heart', 'second-breath', 'opening-mark']) {
       expect(gearFx(wearer('guard'), [hatWith(line)]), line).toEqual({});
     }
     expect(gearLineHasV2Hook('first-pounce')).toBe(true);
     expect(gearLineHasV2Hook('tide-reaction')).toBe(true);
-    expect(gearLineHasV2Hook('payback')).toBe(false);
+    // Retired for combat v2 (Warm Heart, Second Breath, Opening Mark) or waiting for the finale's input (Lingering): no hook.
+    for (const line of ['lingering', 'warm-heart', 'second-breath', 'opening-mark'])
+      expect(gearLineHasV2Hook(line), line).toBe(false);
+    for (const line of [
+      'payback',
+      'ember-tail',
+      'overflow',
+      'slipstream',
+      'echo',
+      'second-wind',
+      'kindling',
+      'shared-warmth',
+      'spark-share',
+      'lantern-bearer',
+    ])
+      expect(gearLineHasV2Hook(line), line).toBe(true);
     for (const line of ['all-damage-taken', 'ember-hunter', 'tide-ward', 'long-arm-left'])
       expect(gearLineHasV2Hook(line), line).toBe(true);
     expect(gearLineHasV2Hook('attack')).toBe(false);
@@ -182,6 +211,33 @@ describe('gearFx: the line to effect map', () => {
     expect(gearFx(wearer('support'), two('hearth-helpers'))).toEqual({ boostBonusBp: 300 });
     // One piece is no bonus.
     expect(gearFx(wearer('guard'), [piece('wardens-watch', 'hat')])).toEqual({});
+  });
+
+  it('counts the three-piece effects that have a hook, for three pieces and a wearer of the set element', () => {
+    const three = (setId: string): GearItem[] =>
+      (['hat', 'scarf', 'charm'] as const).map((slot) => {
+        const base = setPieces(setId).find((b) => b.slot === slot);
+        if (base === undefined) throw new Error(`no ${slot} in ${setId}`);
+        return itemOf(base.id, 'common', 100, []);
+      });
+    expect(gearFx(wearer('payoff', 'tide'), three('tidepool-finery'))).toEqual({
+      reactionBonusBp: 1600,
+      unreflectedFirst: true,
+    });
+    // The effect names the wearer's element: a Tide set on an Ember wearer gives neither the bonus nor the effect.
+    expect(gearFx(wearer('payoff', 'ember'), three('tidepool-finery'))).toEqual({});
+    // Crit damage for a round: +20 points today, +30 here.
+    expect(gearFx(wearer('payoff', 'ember'), three('forge-warm-kit'))).toEqual({
+      reactionBonusBp: 1600,
+      critWindowBp: 3000,
+    });
+    // The set's Charm is Payoff's Pounce itself (+10%, x2), on top of the two-piece +5% x2.
+    expect(gearFx(wearer('payoff'), three('pounce-set'))).toEqual({
+      reactionBonusBp: 2000,
+      firstReactionCrit: true,
+    });
+    // A retired three-piece effect adds nothing (Warden's Watch: the two-piece armour and the bell's, no reach).
+    expect(gearFx(wearer('guard'), three('wardens-watch'))).toEqual({ armourBonus: 8 });
   });
 
   it('counts a charm base line (the Warden bell is Armour)', () => {

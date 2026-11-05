@@ -64,6 +64,20 @@ export interface GearFx {
   heartHpBp?: number;
   fourWindsBp?: number;
   adaptPierceBp?: number;
+  // Slice 4 (triggers, auras, three-piece set effects).
+  paybackBp?: number;
+  emberTailBp?: number;
+  overflowBp?: number;
+  slipstreamBp?: number;
+  echoChanceBp?: number;
+  windChanceBp?: number;
+  kindlingBp?: number;
+  sharedWarmthBp?: number;
+  sparkShareBp?: number;
+  lanternBp?: number;
+  unreflectedFirst?: boolean;
+  critWindowBp?: number;
+  firstReactionCrit?: boolean;
 }
 
 type GearField = keyof GearFx;
@@ -176,6 +190,31 @@ export const GEAR_LINE_FX: Readonly<Record<string, GearLineFx>> = {
   // The reaction family's scale (x2 for the cap, OPEN 14), not the plan's x4.
   'four-winds': { field: 'fourWindsBp', unit: 'bp', scale: REACTION_SCALE },
   'adaptation-pierce': { field: 'adaptPierceBp', unit: 'bp' },
+  // Slice 4, batch B: triggers and auras. Scales are 1 unless said; the engine limits each trigger that fires off its wearer's turn.
+  payback: { field: 'paybackBp', unit: 'bp' },
+  'ember-tail': { field: 'emberTailBp', unit: 'bp' },
+  overflow: { field: 'overflowBp', unit: 'bp' },
+  slipstream: { field: 'slipstreamBp', unit: 'bp' },
+  echo: { field: 'echoChanceBp', unit: 'bp' },
+  // The gear line's own field: `secondWindBp` is Catch Breath's.
+  'second-wind': { field: 'windChanceBp', unit: 'bp' },
+  // Round 1 only, so one boost of the Support's own size (x0.5: top pip 20% against today's 40%).
+  kindling: { field: 'kindlingBp', unit: 'bp', scale: [1, 2] },
+  'shared-warmth': { field: 'sharedWarmthBp', unit: 'bp' },
+  // The reaction family's scale (x2), an aura on the neighbours.
+  'spark-share': { field: 'sparkShareBp', unit: 'bp', scale: REACTION_SCALE },
+  'lantern-bearer': { field: 'lanternBp', unit: 'bp' },
+};
+
+/**
+ * The three-piece set effects with a v2 hook (`SET_EFFECTS`, by id). The rest of the three-piece effects are retired for combat v2
+ * (gear plan OPEN 5: four equal a Knack, Hollow Weave's is Returning Tide's) or wait for Lingering (Lantern Night).
+ */
+export const SET_THREE_FX: Readonly<Record<string, GearLineFx>> = {
+  unreflected: { field: 'unreflectedFirst', unit: 'flag' },
+  // +30 points of crit damage against today's 20 (the plan's x1.4 with Amplified Crits, rounded).
+  critWindow: { field: 'critWindowBp', unit: 'bp', scale: [3, 2] },
+  firstReactionCrit: { field: 'firstReactionCrit', unit: 'flag' },
 };
 
 /** The id a line has in `GEAR_LINE_FX`: an element line without its element. */
@@ -260,6 +299,19 @@ export function gearFx(
     const set = gearSet(id);
     if (set === undefined || count < 2) continue;
     for (const entry of set.two.lines) add(gearLine(entry.line), entry.value);
+    // Three pieces: the set's one effect, for a wearer it works for (its element), when it has a v2 hook.
+    const three = Object.hasOwn(SET_THREE_FX, set.three.effect)
+      ? SET_THREE_FX[set.three.effect]
+      : undefined;
+    if (count >= 3 && three !== undefined) {
+      if (set.three.wearerElement !== undefined && set.three.wearerElement !== wearer.element)
+        continue;
+      if (three.unit === 'flag') out[three.field] = true;
+      else {
+        const [num, den] = three.scale ?? [1, 1];
+        addTo(three.field, Math.floor(((set.three.value ?? 0) * num) / den));
+      }
+    }
   }
   return out;
 }

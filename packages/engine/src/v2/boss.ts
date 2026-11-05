@@ -18,8 +18,22 @@ const { AIMED, beside, inReach, targetsOf } = boardMod;
 const { addMark } = marksMod;
 const { feed, grown, miredCut, movesOf } = escalationMod;
 const { critWardOf, dodgeOf, gainSureCrit, takeHit } = takingMod;
-const { alive, best, bump, emit, fx, keyOf, log, roll, setStore, silenced, strengthOf, strong } =
-  stateMod;
+const {
+  alive,
+  best,
+  boostNext,
+  bump,
+  emit,
+  fx,
+  keyOf,
+  log,
+  onceIn,
+  roll,
+  setStore,
+  silenced,
+  strengthOf,
+  strong,
+} = stateMod;
 
 /**
  * One move or plain attack lands. A Charged move lands on the creatures shown at round start and never re-aims (a
@@ -131,6 +145,14 @@ function bossHits(
       // Momentum: its next hit deals more. Perfect Timing: it stores a Sure Crit.
       if (k.momentumBp) t.momentum = true;
       if (k.dodgeCritBp) gainSureCrit(s, t, 'dodgeCritBp');
+      // Slipstream (gear): the strongest creature beside it gets a boost, once a boss turn.
+      if (k.slipstreamBp && onceIn(t, 'slipstreamBp', s.bossTurnsDone + 1)) {
+        const next = best(beside(s, t), (a, b) => b.atk - a.atk || a.col - b.col);
+        if (next) {
+          boostNext(s, next, t, k.slipstreamBp);
+          bump(t, 'slipstreamBp');
+        }
+      }
       continue;
     }
     // Only if the dodge failed: a Guard in reach intercepts, if the hit is one it may take.
@@ -237,6 +259,12 @@ function bossHits(
       watched,
       crit,
     );
+    // Payback (gear): a creature that took a hit for a neighbour hits harder next, once a boss turn.
+    const payback = fx(taker).paybackBp;
+    if (payback && taker !== t && taker.hp > 0 && onceIn(taker, 'paybackBp', s.bossTurnsDone + 1)) {
+      boostNext(s, taker, taker, payback);
+      bump(taker, 'paybackBp');
+    }
     // Cool Head: each crit it spared stores a Sure Crit on the creature it was aimed at, if that one still stands and is not silenced.
     if (spared && t.hp > 0 && !silenced(t)) gainSureCrit(s, t, 'critWardSure', spared);
   }

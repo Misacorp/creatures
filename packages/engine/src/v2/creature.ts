@@ -2,7 +2,7 @@
  * A creature's turn and its hits on the boss (R6 the hit, R6.3b crits, R7 reactions, R7.1 crit damage, R15 the bonus cap, Pierce,
  * Sure Crits, Steady Rhythm, Culling Strike and the killing blow, counters).
  */
-import type { KnackFx } from './effects';
+import { GEAR_SHARES, type KnackFx } from './effects';
 import type { Fighter } from './types';
 import * as marksMod from './marks';
 import * as boardMod from './board';
@@ -16,7 +16,23 @@ const { addMark, heal } = marksMod;
 const { beside } = boardMod;
 const { feed, grown, miredCut } = escalationMod;
 const { takeHit } = takingMod;
-const { alive, best, bump, emit, fx, keyOf, log, roll, setStore, silenced, strengthOf } = stateMod;
+const {
+  alive,
+  aliveBySlot,
+  best,
+  boostNext,
+  bump,
+  bySlot,
+  emit,
+  fx,
+  keyOf,
+  log,
+  onceIn,
+  roll,
+  setStore,
+  silenced,
+  strengthOf,
+} = stateMod;
 
 /** Damage with Determination's share on top (the server's creatures deal more for each failed week on the boss). */
 const determined = (s: State, raw: number): number =>
@@ -137,9 +153,14 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
     conditional(f, 'vengefulBp', k.vengefulBp, f.avenged) +
     // Gear (slice 3): Hunter (the boss's element is one the line's element beats) and Beside the mark-maker (by role).
     conditional(f, 'vsElementBp', k.vsElementBp?.[s.boss.element], true) +
-    besideRoleOf(f, k, near);
+    besideRoleOf(f, k, near) +
+    // Ember Tail (gear): what its last crit stored.
+    conditional(f, 'emberTailBp', k.emberTailBp ? f.emberBp : 0, f.emberBp > 0);
   // A silenced creature does not use up its stored Momentum: what was stored before the silence stays.
-  if (!silenced(f)) f.momentum = false;
+  if (!silenced(f)) {
+    f.momentum = false;
+    f.emberBp = 0;
+  }
   // A Rally of the finale (R18) is one more hit boost, inside the same cap.
   const bonusBase = f.boostBp + situational + (s.rally ? R.rallyBp : 0);
   const bonusSum = Math.min(R.maxHitBonusBp, bonusBase);
@@ -237,6 +258,11 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
       s.boss.rows > 1 && f.row === s.boss.rows - 1,
     );
     crit = roll(s, R.critChanceBp + f.critChanceBp + (k.critChanceBp ?? 0) + keen + backRow);
+    // Pounce Set (gear, three pieces): the first reaction it sets off is a crit (the roll above is drawn all the same).
+    if (k.firstReactionCrit && cand !== undefined && f.reactionsMade === 0 && !crit) {
+      crit = true;
+      bump(f, 'firstReactionCrit');
+    }
     if (k.steadyRhythm && (f.hitsMade + 1) % 3 === 0) {
       crit = true;
       rhythmCrit = true;
@@ -245,7 +271,9 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
     if (spendsSureCrit) crit = true;
     if (crit) {
       const extra = spendsSureCrit ? (k.dodgeCritBp ?? 0) + (k.guardCritBp ?? 0) : 0;
-      critMult = R.critBp + f.critDamageBp + (k.critDamageBp ?? 0) + extra;
+      // Forge-Warm Kit (gear, three pieces): crits deal more for the round after it sets off a reaction.
+      const window = conditional(f, 'critWindowBp', k.critWindowBp, f.critWindowTo >= s.round);
+      critMult = R.critBp + f.critDamageBp + (k.critDamageBp ?? 0) + extra + window;
       plain = Math.floor((plain * critMult) / 10_000);
       if (s.opts.log) log(s, 'crit', `${f.name} crits`);
     }
@@ -272,6 +300,16 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
       factor = (factor * (10_000 + k.fourWindsBp)) / 10_000;
       bump(f, 'fourWindsBp');
     }
+    // Spark-share (gear): the largest aura of a living creature beside it, inside the cap.
+    if (s.carries.has('sparkShareBp')) {
+      let share: Fighter | undefined;
+      for (const o of beside(s, f))
+        if ((fx(o).sparkShareBp ?? 0) > (share ? (fx(share).sparkShareBp ?? 0) : 0)) share = o;
+      if (share) {
+        factor = (factor * (10_000 + (fx(share).sparkShareBp ?? 0))) / 10_000;
+        bump(share, 'sparkShareBp');
+      }
+    }
     // Mark conditions: a mark at x3, a mark set this boss turn, a mark a Setter's talent left.
     const raise = (who: Fighter, key: keyof KnackFx, bp: number | undefined, holds: boolean) => {
       if (bp && holds) {
@@ -293,6 +331,7 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
     mark.stacks -= spent;
     if (mark.stacks <= 0) s.marks.delete(el);
     reacted = true;
+    f.reactionsMade++;
     feed(s, 'reactions');
     s.count.reactions++;
     s.byMark[el] = (s.byMark[el] ?? 0) + 1;
@@ -320,13 +359,32 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
         f.silencedTurns = 0;
       }
     }
-    if (s.boss.mods.reflectFirst && s.reflectArmed) {
+    // Tidepool Finery (gear, three pieces): the first reaction of its own the Hide would reflect is not reflected, and the Hide stays
+    // armed for the next one. Counted only when the Hide is armed, so it is not spent on a reaction nothing would have reflected.
+    const unreflected = k.unreflectedFirst === true && f.gearUnit['unreflectedFirst'] === undefined;
+    if (s.boss.mods.reflectFirst && s.reflectArmed && unreflected) {
+      f.gearUnit['unreflectedFirst'] = 1;
+      bump(f, 'unreflectedFirst');
+      // The board shows it as the damage it spared the creature: a save on its own tile.
+      const spared = Math.floor((bonus * strengthOf(s)) / 10_000);
+      if (spared > 0) emit(s, { type: 'cover', guard: keyOf(f), who: keyOf(f), prevented: spared });
+    } else if (s.boss.mods.reflectFirst && s.reflectArmed) {
       s.reflectArmed = false;
       // Reflective Hide: the card's strength is the share of the bonus that bounces back; the rest lands.
       const back = Math.floor((bonus * strengthOf(s)) / 10_000);
       if (s.opts.log) log(s, 'reflect', `${s.boss.name} reflects ${back} at ${f.name}`);
       takeHit(s, f, back, 'reflected');
       bonus -= back;
+    }
+    // Forge-Warm Kit (gear, three pieces): its crits deal more for this round and the next.
+    if (k.critWindowBp) f.critWindowTo = s.round + 1;
+    // Overflow (gear): the next creature to act has its hit boosted, once a turn.
+    if (k.overflowBp && onceIn(f, 'overflowBp', s.round)) {
+      const next = aliveBySlot(s).find((o) => bySlot(o, f) > 0);
+      if (next) {
+        boostNext(s, next, f, k.overflowBp);
+        bump(f, 'overflowBp');
+      }
     }
     // Leave a Trail: one link per chain, so a reaction on a trail mark leaves no trail.
     if (k.trail && !mark.fromTrail)
@@ -371,6 +429,11 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
     }
     // A hit made while silenced does not use up a first-hit effect (panel 3).
     if (dmg > 0 && !silenced(f)) f.hitsLanded++;
+    // Ember Tail (gear): a crit that lands stores a boost for its next hit (it sets, never adds up).
+    if (dmg > 0 && crit && k.emberTailBp) {
+      f.emberBp = k.emberTailBp;
+      if (s.opts.log) emit(s, { type: 'boost', who: keyOf(f), by: keyOf(f), bp: k.emberTailBp });
+    }
     // A hit that lands (past the dodge and the armour, R20.6) counts for Steady Rhythm and spends a Sure Crit, if it was not
     // a crit already (no Sure Crit was used then). A Blocked hit counts for neither and keeps its Sure Crit (R10).
     if (dmg > 0 && k.steadyRhythm) {
@@ -411,6 +474,25 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
         });
     }
     hitBoss(s, f, dmg, true);
+    // Echo (gear): a hit that lands may hit again for a share of its plain hit after armour. The echo is a second plain hit: no crit,
+    // no reaction, no mark, and not a hit for Culling Strike.
+    if (dmg > 0 && k.echoChanceBp && s.bossHp > 0 && roll(s, k.echoChanceBp)) {
+      const echo = Math.floor((Math.max(0, plain - armour) * GEAR_SHARES.echoBp) / 10_000);
+      if (echo > 0) {
+        bump(f, 'echoChanceBp');
+        if (s.opts.log)
+          emit(s, {
+            type: 'hit',
+            from: keyOf(f),
+            to: null,
+            damage: determined(s, echo),
+            crit: false,
+            blocked: false,
+            dodged: false,
+          });
+        hitBoss(s, f, echo, false);
+      }
+    }
   }
   // 5. Mark (R4): a hit that set off a reaction leaves no mark by the base rules.
   if (!reacted) {

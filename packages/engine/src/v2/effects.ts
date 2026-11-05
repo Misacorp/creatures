@@ -236,7 +236,42 @@ export interface KnackFx {
   readonly fourWindsBp?: number;
   /** The boss's Element Resistance and Reaction Resistance weigh this much less on its hits. */
   readonly adaptPierceBp?: number;
+  // Gear lines, batch B (slice 4): triggers, auras and three-piece set effects. Gear only; numbers add, flags combine.
+  /** After it takes a hit for a neighbour, its next hit deals this much more (once a boss turn). */
+  readonly paybackBp?: number;
+  /** After a crit that lands, its next hit deals this much more. */
+  readonly emberTailBp?: number;
+  /** After it sets off a reaction, the next creature to act has its hit boosted by this much (once a turn). */
+  readonly overflowBp?: number;
+  /** When it dodges, the strongest creature beside it has its next hit boosted by this much (once a boss turn). */
+  readonly slipstreamBp?: number;
+  /** The chance (bp) that a hit of its that lands hits again for `GEAR_SHARES.echoBp` of the plain hit; the echo sets off no reaction. */
+  readonly echoChanceBp?: number;
+  /** The chance (bp) at each round start that it heals `GEAR_SHARES.windHealBp` of its max HP (Second Wind, the gear line; not Catch Breath). */
+  readonly windChanceBp?: number;
+  /** Round 1: the creatures beside it have their first hit boosted by this much. */
+  readonly kindlingBp?: number;
+  /** When a Support heals it, that Support's next boost is this much bigger (once a round). */
+  readonly sharedWarmthBp?: number;
+  /** The creatures beside it have their reaction bonus factor this much higher (an aura: the largest applies; inside the cap). */
+  readonly sparkShareBp?: number;
+  /** The creatures beside it have this much more max HP (an aura: the largest applies; set when the fight starts). */
+  readonly lanternBp?: number;
+  /** Tidepool Finery, three pieces: the first reaction it sets off cannot be reflected. */
+  readonly unreflectedFirst?: boolean;
+  /** Forge-Warm Kit, three pieces: after it sets off a reaction, its crits deal this much more crit damage for a round (this one and the next). */
+  readonly critWindowBp?: number;
+  /** Pounce Set, three pieces: the first reaction it sets off is a crit. */
+  readonly firstReactionCrit?: boolean;
 }
+
+/** The fixed shares of the gear lines whose number is a chance (the line's own number is the chance). One place, so a change is one edit. */
+export const GEAR_SHARES = {
+  /** Echo: the second hit's share of the plain hit (bp). */
+  echoBp: 3_000,
+  /** Second Wind (gear): the heal's share of max HP (bp). */
+  windHealBp: 500,
+} as const;
 
 /**
  * The plain stat lines of a talent or gear line (R12, amended in panel 6): Attack, Max HP, Armour, Speed (as the dodge it gives),
@@ -299,6 +334,19 @@ export const GEAR_FIELDS: readonly (keyof KnackFx)[] = [
   'heartHpBp',
   'fourWindsBp',
   'adaptPierceBp',
+  'paybackBp',
+  'emberTailBp',
+  'overflowBp',
+  'slipstreamBp',
+  'echoChanceBp',
+  'windChanceBp',
+  'kindlingBp',
+  'sharedWarmthBp',
+  'sparkShareBp',
+  'lanternBp',
+  'unreflectedFirst',
+  'critWindowBp',
+  'firstReactionCrit',
 ];
 
 /**

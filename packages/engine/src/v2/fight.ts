@@ -81,6 +81,11 @@ function fighterOf(spec: FighterSpec): Fighter {
     avenged: false,
     marksLeft: 0,
     verbsUsed: 0,
+    emberBp: 0,
+    warmBp: 0,
+    reactionsMade: 0,
+    critWindowTo: 0,
+    gearUnit: {},
     fires: {},
   };
 }
@@ -97,12 +102,18 @@ export function startState(
   rng: Rng,
   actions: readonly FinaleAction[] = [],
 ): State {
-  // Heart of the Row (gear): more max HP for a creature that stands in the middle of its row (not column 0 nor the last column).
+  // Gear's max HP: Heart of the Row (a creature in the middle of its row: not column 0 nor the last column) and Lantern Bearer (an
+  // aura: the creatures beside a bearer, the largest bearer applying). Both add to one share of the spec's max HP.
   const fighters = specs.map((spec) => {
     const heart = spec.fxAll.heartHpBp;
-    const middle = heart !== undefined && spec.col > 0 && spec.col < boss.cols - 1;
+    let share = heart !== undefined && spec.col > 0 && spec.col < boss.cols - 1 ? heart : 0;
+    let lantern = 0;
+    for (const o of specs)
+      if (o !== spec && o.row === spec.row && Math.abs(o.col - spec.col) === 1)
+        lantern = Math.max(lantern, o.fxAll.lanternBp ?? 0);
+    share += lantern;
     return fighterOf(
-      middle ? { ...spec, maxHp: Math.floor((spec.maxHp * (10_000 + heart)) / 10_000) } : spec,
+      share > 0 ? { ...spec, maxHp: Math.floor((spec.maxHp * (10_000 + share)) / 10_000) } : spec,
     );
   });
   if (opts.carryHp) for (const f of fighters) f.hp = opts.carryHp.get(f.uid) ?? f.hp;
