@@ -35,7 +35,11 @@
                 }
               ],
               "strengthBp": 10000,
-              "escalation": null,
+              "escalation": {
+                "name": "Swelling Croak",
+                "cap": 3,
+                "step": 0
+              },
               "plain": {
                 "label": "Front Strike",
                 "shape": "single",
@@ -80,7 +84,11 @@
               "armour": 4,
               "cards": [],
               "strengthBp": 10000,
-              "escalation": null,
+              "escalation": {
+                "name": "Rising Puddle",
+                "cap": 3,
+                "step": 0
+              },
               "plain": {
                 "label": "Barrage",
                 "shape": "scatter",
@@ -173,7 +181,11 @@
                 }
               ],
               "strengthBp": 10000,
-              "escalation": null,
+              "escalation": {
+                "name": "Swelling Croak",
+                "cap": 3,
+                "step": 0
+              },
               "plain": {
                 "label": "Front Strike",
                 "shape": "single",
@@ -275,7 +287,11 @@
                 }
               ],
               "strengthBp": 10000,
-              "escalation": null,
+              "escalation": {
+                "name": "Hardening Ash",
+                "cap": 3,
+                "step": 0
+              },
               "plain": {
                 "label": "Front Slam",
                 "shape": "line3",
@@ -444,7 +460,11 @@
                 }
               ],
               "strengthBp": 10000,
-              "escalation": null,
+              "escalation": {
+                "name": "Hardening Ash",
+                "cap": 3,
+                "step": 0
+              },
               "plain": {
                 "label": "Front Slam",
                 "shape": "line3",
@@ -482,7 +502,11 @@
                 }
               ],
               "strengthBp": 10000,
-              "escalation": null,
+              "escalation": {
+                "name": "Swelling Croak",
+                "cap": 3,
+                "step": 0
+              },
               "plain": {
                 "label": "Front Strike",
                 "shape": "single",
@@ -676,7 +700,11 @@
                 }
               ],
               "strengthBp": 10000,
-              "escalation": null,
+              "escalation": {
+                "name": "Swelling Croak",
+                "cap": 3,
+                "step": 0
+              },
               "plain": {
                 "label": "Front Strike",
                 "shape": "single",
@@ -721,7 +749,11 @@
               "armour": 4,
               "cards": [],
               "strengthBp": 10000,
-              "escalation": null,
+              "escalation": {
+                "name": "Rising Puddle",
+                "cap": 3,
+                "step": 0
+              },
               "plain": {
                 "label": "Barrage",
                 "shape": "scatter",
@@ -814,7 +846,11 @@
                 }
               ],
               "strengthBp": 10000,
-              "escalation": null,
+              "escalation": {
+                "name": "Swelling Croak",
+                "cap": 3,
+                "step": 0
+              },
               "plain": {
                 "label": "Front Strike",
                 "shape": "single",
@@ -916,7 +952,11 @@
                 }
               ],
               "strengthBp": 10000,
-              "escalation": null,
+              "escalation": {
+                "name": "Hardening Ash",
+                "cap": 3,
+                "step": 0
+              },
               "plain": {
                 "label": "Front Slam",
                 "shape": "line3",
@@ -1085,7 +1125,11 @@
                 }
               ],
               "strengthBp": 10000,
-              "escalation": null,
+              "escalation": {
+                "name": "Hardening Ash",
+                "cap": 3,
+                "step": 0
+              },
               "plain": {
                 "label": "Front Slam",
                 "shape": "line3",
@@ -1123,7 +1167,11 @@
                 }
               ],
               "strengthBp": 10000,
-              "escalation": null,
+              "escalation": {
+                "name": "Swelling Croak",
+                "cap": 3,
+                "step": 0
+              },
               "plain": {
                 "label": "Front Strike",
                 "shape": "single",
@@ -1251,7 +1299,11 @@
                   }
                 ],
                 "strengthBp": 10000,
-                "escalation": null,
+                "escalation": {
+                  "name": "Swelling Croak",
+                  "cap": 3,
+                  "step": 0
+                },
                 "plain": {
                   "label": "Front Strike",
                   "shape": "single",
@@ -1296,7 +1348,11 @@
                 "armour": 4,
                 "cards": [],
                 "strengthBp": 10000,
-                "escalation": null,
+                "escalation": {
+                  "name": "Rising Puddle",
+                  "cap": 3,
+                  "step": 0
+                },
                 "plain": {
                   "label": "Barrage",
                   "shape": "scatter",
@@ -1389,7 +1445,11 @@
                   }
                 ],
                 "strengthBp": 10000,
-                "escalation": null,
+                "escalation": {
+                  "name": "Swelling Croak",
+                  "cap": 3,
+                  "step": 0
+                },
                 "plain": {
                   "label": "Front Strike",
                   "shape": "single",
@@ -1491,7 +1551,11 @@
                   }
                 ],
                 "strengthBp": 10000,
-                "escalation": null,
+                "escalation": {
+                  "name": "Hardening Ash",
+                  "cap": 3,
+                  "step": 0
+                },
                 "plain": {
                   "label": "Front Slam",
                   "shape": "line3",
@@ -1660,7 +1724,11 @@
                   }
                 ],
                 "strengthBp": 10000,
-                "escalation": null,
+                "escalation": {
+                  "name": "Hardening Ash",
+                  "cap": 3,
+                  "step": 0
+                },
                 "plain": {
                   "label": "Front Slam",
                   "shape": "line3",
@@ -1698,7 +1766,11 @@
                   }
                 ],
                 "strengthBp": 10000,
-                "escalation": null,
+                "escalation": {
+                  "name": "Swelling Croak",
+                  "cap": 3,
+                  "step": 0
+                },
                 "plain": {
                   "label": "Front Strike",
                   "shape": "single",

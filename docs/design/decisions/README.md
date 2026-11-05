@@ -299,6 +299,7 @@ Superseded: 1 entry (see the topic file).
 
 [dungeon.md](dungeon.md): The daily dungeon: paths, rooms and rare rooms, the camp, the Undercroft, foes, its screens and payouts.
 
+- 2026-11-06 Combat v2 dungeon: Puddle Imp, Ash Sprite and Bog Toad ask their questions
 - 2026-11-05 \[Misa\] The Undercroft curve stays; the skill tree and gear are the tools past depth 40
 - 2026-11-05 Combat v2 dungeon XP: about 120 a run, a step at each landmark; more gear \[Misa\]
 - 2026-11-05 Combat v2 dungeon depth picker built: any unlocked depth, progress only at the current depth (amended)

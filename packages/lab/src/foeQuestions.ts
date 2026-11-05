@@ -7,28 +7,26 @@
  * the report reads them next to the ablation of the best searched team at the depth where that team wins 30% to 90%.
  *
  * Since the dungeon's easier baseline (2026-11-04) a team that carries the tool clears nearly every base-floor foe, and so does the team
- * without it, so a question is asked where the game's foes are still hard: the Undercroft, often as an elite. Five foes ask little or
- * nothing before that: puddle-imp, ash-sprite and bog-toad ask nothing at any depth or form the game has (`oldNumbers`: they keep the foe
- * numbers before the baseline as a stand-in, so the proof of their question is not lost), and static-bat and flicker-swarm ask only from
- * Undercroft depth 50, as an elite. The findings are in `docs/design/combat/balance.md` section 8 (2026-11-05).
+ * without it, so a question is asked where the game's foes are still hard: the Undercroft, often as an elite. Two foes ask
+ * nothing before that: static-bat and flicker-swarm ask only from Undercroft depth 50, as an elite. (Puddle-imp, ash-sprite and bog-toad
+ * asked nothing until 2026-11-05, when each got an escalation of its own and the HP that lets it run; their questions are the game's now.) The findings are in `docs/design/combat/balance.md` section 8 (2026-11-05).
  */
 import { RULES } from '@creatures/game';
 import { answerLine, withoutTool } from './bossAnswers';
 import { gauntletStats } from './dungeon';
-import { OLD_FOES, packOf } from './dungeonKnobs';
+import { packOf } from './dungeonKnobs';
 import { foeAt } from './foes';
 import type { Pick } from './search';
 
 /** The form of the foe a question is asked against. */
-export type QuestionProbe =
+export interface QuestionProbe {
   /** The game's foe at the depth: the base floors' or the Undercroft's numbers, as a normal foe or an elite. */
-  | { readonly side: 'base' | 'undercroft'; readonly elite: boolean }
-  /** The foe numbers before 2026-11-04, with HP and Attack scaled (bp of its own): a foe whose question the game's foes no longer ask anywhere. */
-  | { readonly old: true; readonly hpBp: number; readonly atkBp: number };
+  readonly side: 'base' | 'undercroft';
+  readonly elite: boolean;
+}
 
 const UNDER: QuestionProbe = { side: 'undercroft', elite: false };
 const UNDER_ELITE: QuestionProbe = { side: 'undercroft', elite: true };
-const oldNumbers = (hpBp: number, atkBp: number): QuestionProbe => ({ old: true, hpBp, atkBp });
 
 export interface FoeQuestion {
   readonly foe: string;
@@ -52,13 +50,13 @@ export const FOE_QUESTION_GAP = 0.25;
 export const FOE_QUESTIONS: Readonly<Record<string, FoeQuestion>> = Object.fromEntries(
   (
     [
-      // A Barrage of splashes lands on every creature of a small team at once: a Guard with Wide Reach beside the others covers them all (an area hit).
+      // A Barrage of splashes lands on every creature of a small team at once, two more Barrages every round: a Guard with Wide Reach beside the others covers them all (an area hit).
       [
         'puddle-imp',
         'family:Reach',
         ['wide-reach'],
-        5,
-        oldNumbers(20_000, 16_000),
+        30,
+        UNDER,
         'tidewing/steady-mark thornbuck/wide-reach tempestray/detonate',
         'tidewing/steady-mark pyrelynx/none tempestray/detonate',
       ],
@@ -80,13 +78,13 @@ export const FOE_QUESTIONS: Readonly<Record<string, FoeQuestion>> = Object.fromE
         UNDER_ELITE,
         'tidewing/none thornbuck/primed-by-pain pyrelynx/none',
       ],
-      // A long fight of heat: a Guard that builds Heat doubles the Payoff's reaction every few rounds.
+      // Its ash hardens every round: a Guard that builds Heat doubles the Payoff's reaction to get through the armour it grows.
       [
         'ash-sprite',
         'family:Store',
         ['baked-shell'],
-        5,
-        oldNumbers(29_000, 13_000),
+        30,
+        UNDER,
         'tidewing/none kilnmole/baked-shell tempestray/none',
       ],
       // Its hide Blocks small hits: Sense Weakness gets the Payoff's plain hits past it.
@@ -126,13 +124,13 @@ export const FOE_QUESTIONS: Readonly<Record<string, FoeQuestion>> = Object.fromE
         UNDER_ELITE,
         'tidewing/steady-mark kilnmole/keep-the-heat-in tempestray/detonate',
       ],
-      // It washes every debuff off every third round: a Mired that comes back every round holds it down.
+      // It swells every round and washes every debuff off every third: a Mired that comes back every round slows the swelling.
       [
         'bog-toad',
         'family:Debuff',
         ['squelch-song'],
-        5,
-        oldNumbers(15_000, 13_000),
+        30,
+        UNDER,
         'tidewing/none croakmire/squelch-song tempestray/none',
       ],
       // Black, thick and draining: healing is halved and little gets through its armour, so a boost that reaches the far hitter too
@@ -216,17 +214,9 @@ export interface FoeQuestionResult {
   readonly gap: number;
 }
 
-/** The foe a question is asked against: the game's foe at the depth (an elite with the elite's boost), or the old numbers for a foe that asks nothing now. */
+/** The foe a question is asked against: the game's foe at the depth (an elite with the elite's boost). */
 export function questionFoe(q: FoeQuestion) {
   const p = q.probe;
-  if ('old' in p) {
-    const base = foeAt(q.foe, q.depth, {}, packOf(OLD_FOES.base, 'base'));
-    return {
-      ...base,
-      hp: Math.max(1, Math.round((base.hp * p.hpBp) / 10_000)),
-      atk: Math.max(1, Math.round((base.atk * p.atkBp) / 10_000)),
-    };
-  }
   const base = foeAt(q.foe, q.depth, {}, packOf(undefined, p.side));
   if (!p.elite) return base;
   const e = RULES.dungeon.elite;
@@ -240,8 +230,6 @@ export function questionFoe(q: FoeQuestion) {
 /** A question's foe in words, for the report: its depth and the form it takes. */
 export function probeText(q: FoeQuestion): string {
   const p = q.probe;
-  if ('old' in p)
-    return `depth ${q.depth}, numbers before 2026-11-04 at ${p.hpBp / 100}% HP and ${p.atkBp / 100}% Attack (the game's foe asks nothing)`;
   return `${p.side === 'undercroft' ? 'Undercroft' : 'base floor'} ${p.elite ? 'elite' : 'foe'} at depth ${q.depth}`;
 }
 

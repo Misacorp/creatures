@@ -53,7 +53,7 @@
           "id": "bog-toad",
           "name": "Bog Toad",
           "element": "mire",
-          "hpMax": 13
+          "hpMax": 19
         },
         "modifier": {
           "id": "flooded",
@@ -165,7 +165,7 @@
         "id": "bog-toad",
         "name": "Bog Toad",
         "element": "mire",
-        "hpMax": 13
+        "hpMax": 19
       },
       "modifier": {
         "id": "flooded",
@@ -257,7 +257,11 @@
           }
         ],
         "strengthBp": 10000,
-        "escalation": null,
+        "escalation": {
+          "name": "Swelling Croak",
+          "cap": 3,
+          "step": 0
+        },
         "plain": {
           "label": "Front Strike",
           "shape": "single",
