@@ -1,5 +1,5 @@
 {
-  "scale": { "hpBp": 12650, "atkBp": 225000 },
+  "scale": { "hpBp": 10600, "atkBp": 225000 },
   "curve": { "hpStepBp": 200, "hpCurveBp": 0, "atkStepBp": 0, "atkCurveBp": 0 },
   "undercroft": {
     "scale": { "hpBp": 20700, "atkBp": 225000 },

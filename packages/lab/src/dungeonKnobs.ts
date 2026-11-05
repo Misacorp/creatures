@@ -3,7 +3,7 @@
  * (phase 5, balance.md section 2 item 4; Misa, 2026-11-04: the base dungeon fairly easy, the Undercroft the challenge).
  *
  * The game's v2 foes (`foes.json`, written from the lab's `base55-u1` option, decision "Combat v2 dungeon baseline"):
- * - the base floors: HP 12650 bp of the content's numbers (55% of the shipped engine's), +200 bp a depth above 1, no square; Attack
+ * - the base floors: HP 10600 bp of the content's numbers (46% of the shipped engine's; was 12650 until the idle foes' HP doses, 2026-11-05), +200 bp a depth above 1, no square; Attack
  *   225000 bp, flat;
  * - the Undercroft has a scale and a curve of its own (`undercroft`): HP 20700 bp (90%), +300 bp a depth and +2 bp a depth squared. Its foes
  *   are built at the run's depth plus `RULES.dungeon.undercroft.depthBonus` (1) for each level, with that curve.
