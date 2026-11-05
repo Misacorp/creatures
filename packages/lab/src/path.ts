@@ -24,10 +24,12 @@ import {
   type PlayerKind,
 } from './raidMeasure';
 import { raidBench, weekendStatsOf } from './bosses';
+import { withGear } from './gear';
 import type { JobResults, JobSpec, Plan } from './jobs';
 import {
   ROSTER_WEEKS,
   levelledColumn,
+  rosterGearLevel,
   rosterLevels,
   type RosterKind,
   type RosterProfile,
@@ -112,6 +114,8 @@ export interface PathRun {
    * entry when absent. The tuner sets it to measure each answer; the dedicated and builder servers always field the slot's prepared line.
    */
   readonly mixedAnswer?: number;
+  /** Play with gear (`gear.ts`): every creature wears the roster's average item level of the week (`rosterGearLevel`). Absent or false: no gear, as before. */
+  readonly gear?: boolean;
 }
 
 export interface WalkOptions {
@@ -321,22 +325,35 @@ export function serverWeekend(
   // One more creature than the column holds: the bench's.
   playerColumns(server, base, slot, week, speed, seed, profile, run, 1).forEach(
     ({ column, levels }, c) => {
+      const il = run.gear
+        ? rosterGearLevel(
+            profile,
+            (server.players[c] as PathPlayer).roster,
+            week,
+            speed,
+            (server.players[c] as PathPlayer).joinWeek,
+          )
+        : undefined;
       column.forEach((pick, r) =>
-        placements.push({
-          owner: `p${c + 1}`,
-          formId: pick.formId,
-          level: pick.level ?? 1,
-          knack: pick.knack,
-          ...(pick.talents ? { talents: pick.talents } : {}),
-          row: r,
-          col: c,
-        }),
+        placements.push(
+          withGear(
+            {
+              owner: `p${c + 1}`,
+              formId: pick.formId,
+              level: pick.level ?? 1,
+              knack: pick.knack,
+              ...(pick.talents ? { talents: pick.talents } : {}),
+              row: r,
+              col: c,
+            },
+            il,
+          ),
+        ),
       );
       bench.push(
-        ...raidBench(1, levels[rows] ?? levels[levels.length - 1] ?? 1).map((x) => ({
-          ...x,
-          owner: `p${c + 1}`,
-        })),
+        ...raidBench(1, levels[rows] ?? levels[levels.length - 1] ?? 1).map((x) =>
+          withGear({ ...x, owner: `p${c + 1}` }, il),
+        ),
       );
     },
   );

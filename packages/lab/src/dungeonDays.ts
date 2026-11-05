@@ -40,6 +40,7 @@ import { casualColumn } from './raidMeasure';
 import {
   ROSTER_WEEKS,
   levelledColumn,
+  rosterGearLevel,
   rosterLevels,
   type RosterKind,
   type RosterProfile,
@@ -120,6 +121,8 @@ export interface DaysConfig {
   readonly runOptions?: Partial<RunOptions>;
   readonly extraBench?: number;
   readonly slots?: number;
+  /** Everyone plays with gear at the roster's item level of the week (`gear.ts`). Default off: no gear, as before. */
+  readonly gear?: boolean;
 }
 /** The creatures a bigger bench adds, in order (a planner only: a casual player brings no bench). */
 export const EXTRA_BENCH: readonly Pick[] = [
@@ -151,7 +154,7 @@ export function teamOf(
   seed: string,
   profile: RosterProfile,
   habits: Habits,
-  tools: { readonly extraBench?: number; readonly slots?: number } = {},
+  tools: { readonly extraBench?: number; readonly slots?: number; readonly gear?: boolean } = {},
 ): { team: Pick[]; bench: Pick[] } {
   const casual = who.role === 'casual';
   const size = tools.slots ?? TEAM_SIZE;
@@ -160,6 +163,9 @@ export function teamOf(
     : [...ALL_ROUND_TEAM, ...ALL_ROUND_BENCH, ...EXTRA_BENCH.slice(0, tools.extraBench ?? 0)];
   const levels = rosterLevels(profile, who.roster, week, speed, line.length, who.joinWeek);
   const owner = `p${c + 1}`;
+  const itemLevel = tools.gear
+    ? rosterGearLevel(profile, who.roster, week, speed, who.joinWeek)
+    : undefined;
   const placed = levelledColumn(line, levels).map((p, i): Pick => {
     const level = p.level ?? 1;
     const base = withKnackPolicy(
@@ -188,6 +194,7 @@ export function teamOf(
       level: pol.level,
       ...(pol.talents ? { talents: pol.talents } : {}),
       ...(pol.goldenTalents ? { goldenTalents: pol.goldenTalents } : {}),
+      ...(itemLevel === undefined ? {} : { itemLevel }),
     };
   });
   return { team: placed.slice(0, size), bench: casual ? [] : placed.slice(size) };
@@ -222,6 +229,7 @@ export function dungeonDaysOf(
       const { team, bench } = teamOf(who, c, week, speed, seed, profile, habits, {
         ...(config.extraBench ? { extraBench: config.extraBench } : {}),
         ...(config.slots ? { slots: config.slots } : {}),
+        ...(config.gear ? { gear: true } : {}),
       });
       const options: RunOptions = {
         policy: habits.dungeonPolicy[who.role],

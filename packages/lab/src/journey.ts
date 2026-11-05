@@ -38,6 +38,7 @@ import {
 } from '@creatures/engine/v2';
 import { raidBench } from './bosses';
 import { world, resolvePlacement } from './fight';
+import { withGear } from './gear';
 import {
   EVERYONE_REPLACES,
   HABITS,
@@ -74,7 +75,13 @@ import {
   type ServerPath,
 } from './path';
 import { MIXED_ORDERS, type PlayerKind } from './raidMeasure';
-import { ROSTER_SPEEDS, type RosterKind, type RosterProfile, type RosterSpeed } from './roster';
+import {
+  ROSTER_SPEEDS,
+  rosterGearLevel,
+  type RosterKind,
+  type RosterProfile,
+  type RosterSpeed,
+} from './roster';
 import { MIXED_KILL_MIN } from './targets';
 import { SLOT_WEEKS, slotBoss, trackSlot } from './track';
 import type { BossDef, Placement } from './types';
@@ -229,13 +236,19 @@ export function journeyWeekend(
       const slotsOf = (formId: string, level: number): number =>
         talentSlotsFor(profile, who.roster, week, who.joinWeek, formId, level);
       // The talents of a creature (seat or spare) as the player's policy has them; a seat's Knack follows the Knack policy too.
+      const il = run.gear
+        ? rosterGearLevel(profile, who.roster, week, speed, who.joinWeek)
+        : undefined;
       const policy = (p: Placement, where: string): Placement =>
-        withTalentPolicy(
-          p,
-          habits.talents[who.role],
-          slotsOf(p.formId, p.level),
-          habits.golden,
-          `${seed}:${owner}:${p.formId}:${where}`,
+        withGear(
+          withTalentPolicy(
+            p,
+            habits.talents[who.role],
+            slotsOf(p.formId, p.level),
+            habits.golden,
+            `${seed}:${owner}:${p.formId}:${where}`,
+          ),
+          il,
         );
       let team = column.slice(0, seats).map((pick, r): Placement =>
         policy(
@@ -429,10 +442,12 @@ export interface JourneyJobArgs {
   readonly slot?: number;
   /** The habits set of the game's rules (`HABIT_SETS`); the lab's rules have none. Absent: step 1's. */
   readonly habits?: string;
+  /** Play with gear (`gear.ts`, game rules only). Absent: no gear; the job id is then what it always was. */
+  readonly gear?: boolean;
 }
 
 export const journeyJobId = (a: JourneyJobArgs): string =>
-  `journey:${a.rules}:${a.server}:${a.speed}:${a.determination}:${a.slot ?? 'path'}:${a.habits ?? EVERYONE_REPLACES.id}:${a.index}`;
+  `journey:${a.rules}:${a.server}:${a.speed}:${a.determination}:${a.slot ?? 'path'}:${a.habits ?? EVERYONE_REPLACES.id}:${a.index}${a.gear ? ':gear' : ''}`;
 
 const serverOf = (id: string): JourneyServer => {
   const s = JOURNEY_SERVERS.find((x) => x.id === id);
@@ -444,7 +459,10 @@ const serverOf = (id: string): JourneyServer => {
 export function runJourneyJob(args: unknown): ServerPath | { won: boolean } {
   const a = args as JourneyJobArgs;
   const server = serverOf(a.server);
-  const run: PathRun = a.determination === 'off' ? { determination: 'off' } : {};
+  const run: PathRun = {
+    ...(a.determination === 'off' ? { determination: 'off' as const } : {}),
+    ...(a.gear ? { gear: true } : {}),
+  };
   const habits = habitsOf(a.habits);
   if (a.slot !== undefined) {
     const week = SLOT_WEEKS[a.slot - 1] ?? 1;
@@ -505,6 +523,8 @@ export interface JourneyPlanOptions {
   readonly habitSets?: readonly string[];
   /** Only these Determination settings (default: on and off). */
   readonly determinations?: readonly ('on' | 'off')[];
+  /** Everyone plays with gear at the roster's item level (`gear.ts`; the game's rules only, the lab's twin has none). Default off. */
+  readonly gear?: boolean;
 }
 
 /** A summary of one cell. */
@@ -586,6 +606,8 @@ export function planJourney(options: JourneyPlanOptions): Plan<JourneyReport> {
   const gameHabits = options.habitSets ?? [EVERYONE_REPLACES.id, HABITS.id];
   const playedAs = (rules: JourneyRules): readonly string[] =>
     rules === 'lab' ? [EVERYONE_REPLACES.id] : gameHabits;
+  const gearOn = (a: JourneyJobArgs): JourneyJobArgs =>
+    options.gear && a.rules === 'game' ? { ...a, gear: true } : a;
   const full: JourneyJobArgs[] = [
     ...rulesBoth.flatMap((rules) =>
       playedAs(rules).flatMap((habits) =>
@@ -615,7 +637,7 @@ export function planJourney(options: JourneyPlanOptions): Plan<JourneyReport> {
         })),
       ),
     ),
-  ];
+  ].map(gearOn);
   const killSets = [EVERYONE_REPLACES, REPLACE_ONLY, HABITS, HABITS_FIRST_KNACK]
     .map((h) => h.id)
     .filter((id) => options.habitSets === undefined || options.habitSets.includes(id));
@@ -643,7 +665,7 @@ export function planJourney(options: JourneyPlanOptions): Plan<JourneyReport> {
     ]),
     // Misa's live server: the game's rules only (the lab has no twin of it), step 1's players and the habits.
     ...(sizes.includes('live10') ? killsOf('live10', [['game', playedAs('game')]]) : []),
-  ];
+  ].map(gearOn);
   const each = (a: JourneyJobArgs): JourneyJobArgs[] =>
     Array.from({ length: n }, (_, index) => ({ ...a, index }));
   const jobs: JobSpec[] = [...full, ...kills].flatMap(each).map((args) => ({

@@ -693,13 +693,14 @@ export function inputsFrom(
 export const GATE_JOURNEY_SERVERS = 320;
 
 /** The journey options the gate reads: the game's rules, the habits, the three kinds and the party sizes. */
-export const gateJourneyOptions = (quick: boolean) =>
+export const gateJourneyOptions = (quick: boolean, gear = false) =>
   ({
     quick,
     servers: quick ? journeyServers(true) : GATE_JOURNEY_SERVERS,
     gameOnly: true,
     habitSets: [HABITS.id],
     sizes: SIZE_SERVERS,
+    ...(gear ? { gear: true } : {}),
   }) as const;
 
 /**
@@ -707,9 +708,14 @@ export const gateJourneyOptions = (quick: boolean) =>
  * journey's first servers (job ids carry the server index: indices 0 to 39 are shared, the gate adds the rest up to its 320). The plan
  * adds the gate's own jobs and those extra servers; alone (`--gate`) it carries everything.
  */
-export function planGate(opts: { quick: boolean; inReport?: boolean }): Plan<GateSection> {
+export function planGate(opts: {
+  quick: boolean;
+  inReport?: boolean;
+  /** The journey plays with gear (`gear.ts`; `--gate --gear`). Default off. */
+  gear?: boolean;
+}): Plan<GateSection> {
   const { quick } = opts;
-  const journey = planJourney(gateJourneyOptions(quick));
+  const journey = planJourney(gateJourneyOptions(quick, opts.gear));
   const own = gateOwnJobs(quick);
   const reportJourney = new Set(planJourney({ quick }).jobs.map((j) => j.id));
   return {

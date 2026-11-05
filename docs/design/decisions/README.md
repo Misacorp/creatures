@@ -379,6 +379,7 @@ Superseded: 1 entry (see the topic file).
 
 [gear.md](gear.md): Gear items, lines and sets, crafting, dismantling, conversions, the bag and the item picker.
 
+- 2026-11-06 Combat v2 gear slice 2: the lab plays gear
 - 2026-11-06 Combat v2 gear effect lines, slice 1: the sheet and the lines with an existing effect
 - 2026-11-05 \[Misa\] Rarity is shown by the frame's shape too, and every item's spoken name says it
 - 2026-11-04 \[Misa\] A hidden best-of gear roller: roll X to Y, keep the best N to M

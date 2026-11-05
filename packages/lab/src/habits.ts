@@ -18,6 +18,7 @@
  */
 import { RULES, content, createSeededRng, int, type Rng } from '@creatures/game';
 import type { FinaleAction, FinaleActionKind, Placement } from '@creatures/engine/v2';
+import type { GearedPlacement } from './gear';
 import { FORM_KNACKS } from './knacks';
 import type { PlayerRole } from './path';
 import { rosterWeek, talentSlotsAt, type RosterKind, type RosterProfile } from './roster';
@@ -210,13 +211,18 @@ export function withTalentPolicy(
     policy === 'pools'
       ? shuffled(createSeededRng(`talents:${key}`), legalTalents(p.formId)).slice(0, slots)
       : (p.talents ?? []);
-  const rest: Placement = {
+  const rest: GearedPlacement = {
     owner: p.owner,
     formId: p.formId,
     level: p.level,
     ...(p.knack === undefined ? {} : { knack: p.knack }),
     row: p.row,
     col: p.col,
+    // The gear a creature wears stays on it (`gear.ts`: both its effect sheet and its stat adds).
+    ...(p.gear === undefined ? {} : { gear: p.gear }),
+    ...((p as GearedPlacement).gearStats === undefined
+      ? {}
+      : { gearStats: (p as GearedPlacement).gearStats }),
   };
   if (talents.length === 0) return rest;
   const rng = createSeededRng(`golden:${key}`);

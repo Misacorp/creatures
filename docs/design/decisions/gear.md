@@ -4,6 +4,14 @@ Gear items, lines and sets, crafting, dismantling, conversions, the bag and the 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-06: Combat v2 gear slice 2: the lab plays gear
+
+ID: `2026-11-06-combat-v2-gear-slice-2-the` · Status: current
+
+**Decision.** The lab plays gear (`packages/lab/src/gear.ts`, `gearReport.ts`), off by default so every existing number and the parity digest stay as they were. A creature wears three pieces (a Hat and a Scarf of its element, its role's Charm) at an item level taken from the roster profile's `gear` (times the speed's factor), as **expected values, never rolled**: each line of the game's pool (`linePool`) is worn with the chance its weight gives, at the pips the valley's thresholds (`VALLEY_RULES.gear.pipFrom`) and the game's tier weights allow, times a rarity factor. Effect lines and stat lines go through the game's own `gearFx` and `applyGear`, so the lab cannot drift from the worker. The lab owns only three starts, each one edit in `gear.ts`: `RARITY_FACTOR` (1 / 0.73 / 0.70, the plan's section 3), `POOL_LEVEL_DIVISOR` (the game's pool gates read at item level / 5, the plan's OPEN 10 "times five") and `rarityMix` (which rarities the three pieces are by item level). `--gear` plays the journey, the dungeon days and the gate with gear; `report -- --gear` prints the with and without table, the per-line power table and OPEN 14's numbers. No game number moved. OPEN 14's numbers are in `gear-plan.md` section 6; the proposals are in `for-misa.md`.
+
+**Reasoning.** Slice 1 made the lines count in fights but nobody had measured what a full worn set does to the track, the dungeon or any line's worth, and the gear plan says to measure before moving a gear number. Expected values keep the report deterministic and cheap (a full gear report runs in about half a minute) and avoid a second source of luck on top of the fights'. Reading the game's own functions, data and the valley's own thresholds means a later change to a line value or a pip threshold shows up in the lab with no lab edit. The single-line power table is a planner's view (every line at chance 1, worn by every creature it fits), the loadout is the typical player's.
+
 ## 2026-11-06: Combat v2 gear effect lines, slice 1: the sheet and the lines with an existing effect
 
 ID: `2026-11-06-combat-v2-gear-effect-lines-slice` · Status: current
