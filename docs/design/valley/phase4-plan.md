@@ -52,6 +52,16 @@ The prototype (`apps/activity/src/proto/valley/`, `proto/welcome/`, dev only) is
 4. **The Gazette** from today's away notice, closing with the currencies flying into the purse (V-RET-4a, Q56).
 5. **Desktop and accessibility** (at 1100 px the map still pans sideways, because the valley is 1152 px wide and the card has padding; decide whether a desktop fits or keeps panning), the panel at both widths, the gate's end-to-end checklist, then Misa on staging.
 
+## Misa on staging (2026-11-05), for when the time is right
+
+Misa: "I don't want my points necessarily addressed immediately. Let's do it when the time is right."
+
+1. **Move creatures by hand in the Paddock:** drag a creature and drop it anywhere; it carries on wandering from there. Creatures may overlap ("which is fine"), so the point is reaching the one underneath. Lead: with step 5's accessibility work (a drag never replaces the tap; keyboard users get the creature list).
+2. **Nameplates and levels always shown** over each creature in the valley's scenes.
+3. **"View" in a creature's popover:** goes to its creature page (a side panel on desktop). Applies everywhere the popover opens.
+4. **The House:** "The living room was supposed to be dropped" (Q16: the lounge mechanic goes). Lead's call: the House stops showing today's living room and lounger now (no intermediate step, Q57); in phase 4 it holds Journal and Stats; its later purpose is the player's own home (housing and decorations, parked under "Later" in `roadmap.md`), and in phase 5 the bonfire takes over resting.
+5. **Cropped trees in the valley art** (a screenshot of trees cut off at their edges): a drawing-order or tile-edge bug in the map's art, for the art pass with step 5; checked against the art session's sprites.
+
 ## Decided with Misa (round 25)
 
 - **Q57: A.** A place's inside is today's page; nothing is rebuilt as a scene before phase 5 ("We'll ship this all at once so no pointless intermediate steps").

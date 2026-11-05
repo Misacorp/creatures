@@ -295,3 +295,5 @@ Round 25 answered the same day: **Q56: B** ("definitely ... have the currency fl
 **2026-11-05: Q59 answered** in the combat v2 session (relayed): today's 120 XP per run at any depth plus a step at each landmark depth (every 7th, about +1.75%), close to the lead's B. The combat session builds it as data; the lab rechecks the step on their commit.
 
 **Staging (2026-11-05):** Misa asked; merged main (#123, the School teacher art; the branch's newer cupola and bell kept) and deployed ad01345e (`deployed.mjs` confirms). With `VALLEY` on, staging opens on the valley: phase 4 steps 1 to 4 to try. Step 5 (desktop, accessibility, the panel, the end-to-end checklist) is next.
+
+**Misa on staging (2026-11-05):** five points, "when the time is right": drag creatures in the Paddock (overlap is fine, reaching the one underneath is the point), always-visible nameplates and levels, a "View" in the creature popover (creature page; a side panel on desktop), the House without the living room (Q16 dropped the lounge; lead: Journal and Stats now, the player's home later), and cropped trees in the map art. Written into `phase4-plan.md`; planned with step 5.
