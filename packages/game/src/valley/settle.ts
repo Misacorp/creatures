@@ -1,5 +1,16 @@
 import { VALLEY_RULES, type AwayCurve, type ValleyRules } from './rules';
 import { awayShare } from './formulas';
+import type { Rng } from '../rng';
+import {
+  finishForge,
+  forgeAdvance,
+  forgeBoundary,
+  forgeInstants,
+  startForge,
+  type ForgeHours,
+  type MadePiece,
+  type SettleForge,
+} from './forge';
 import {
   QUIET_WORLD,
   masteryHoursOf,
@@ -46,6 +57,8 @@ export interface SettleCreature {
   readonly joinedAt?: number;
   /** The creature's scouting hours (V-POST-12): effective hours it has worked at a scout seat (default 0). */
   readonly scoutHours?: number;
+  /** The creature's smithing hours (V-POST-12): effective hours it has worked at an anvil (default 0). */
+  readonly smithHours?: number;
 }
 
 /** The allowance store (V-POST-5): whole Acorns waiting, and the fraction not yet paid into them (0 up to 1). */
@@ -104,6 +117,14 @@ export interface SettleState {
   readonly seats?: readonly SettleSeat[];
   /** What the seats picked up in this pass, by stretch, in time order (output only; never an input of the next pass). */
   readonly stretches?: readonly SeatStretch[];
+  /** Absent: no anvils (step 3, V-FORGE-1 to 5): the queues, the shelf, the pieces on their way and the floors. */
+  readonly forge?: SettleForge;
+  /** Output only: the pieces that reached a floor in this pass, in time order. */
+  readonly made?: readonly MadePiece[];
+  /** Output only: the orders that made their last piece in this pass (they leave the queue). */
+  readonly finishedOrders?: readonly string[];
+  /** Output only: effective anvil hours by what the anvils did in this pass (T-4). */
+  readonly forgeHours?: ForgeHours;
 }
 
 /** A change point the caller knows about. A visit restarts the away steps, and may bring a new hearth multiplier. */
@@ -118,6 +139,8 @@ export interface SettleOptions {
   readonly curve?: AwayCurve;
   /** Absent: always day, no festival, no twist. */
   readonly world?: WorldClock;
+  /** The randomness for the rarity of a piece when it starts (required when an anvil can start one). */
+  readonly rng?: Rng;
 }
 
 /** A tolerance so a total that is a whole number in exact arithmetic is not left a hair short by rounding (and splits agree). */
@@ -250,6 +273,8 @@ export function settle(
   let { lastVisitAt, hearth, creatures } = state;
   let allowance = state.allowance;
   let seats = state.seats;
+  const forge =
+    state.forge !== undefined && state.forge.anvils.length > 0 ? startForge(state.forge) : null;
   const stretches: SeatStretch[] = [];
   const world = options.world;
   const allowanceCap = (rules.acorns.allowancePerDay / 24) * rules.posts.storeHours;
@@ -260,6 +285,10 @@ export function settle(
     for (let e = due[next]; e !== undefined && e.at <= cursor; e = due[++next]) {
       lastVisitAt = e.at;
       if (e.hearth !== undefined) hearth = e.hearth;
+    }
+    if (forge !== null) {
+      if (options.rng === undefined) throw new RangeError('a pass with anvils needs an rng');
+      forgeInstants(rules, forge, smithsOf(creatures), cursor, options.rng);
     }
     if (cursor >= to) break;
     const share = awayShare(rules, curve, (cursor - lastVisitAt) / HOUR_MS);
@@ -279,6 +308,9 @@ export function settle(
             world?.nextChange(cursor) ?? Number.POSITIVE_INFINITY,
             nextSeatBoundary(rules, work, scoutWorld, share, cursor),
           ),
+      forge === null
+        ? Number.POSITIVE_INFINITY
+        : forgeBoundary(rules, forge, smithsOf(creatures), share, cursor),
     );
     const hours = (boundary - cursor) / HOUR_MS;
     const gain = rules.xp.idlePerHour * hearth * share * hours;
@@ -330,6 +362,15 @@ export function settle(
         });
       }
     }
+    if (forge !== null && hours > 0) {
+      const grown = forgeAdvance(rules, forge, smithsOf(creatures), share * hours);
+      if (grown.size > 0) {
+        creatures = creatures.map((c, i) => {
+          const more = grown.get(i);
+          return more === undefined ? c : { ...c, smithHours: (c.smithHours ?? 0) + more };
+        });
+      }
+    }
     cursor = boundary;
   }
   return {
@@ -340,5 +381,21 @@ export function settle(
     ...(allowance === undefined ? {} : { allowance }),
     ...(seats === undefined ? {} : { seats }),
     ...(stretches.length === 0 ? {} : { stretches }),
+    ...(forge === null || state.forge === undefined
+      ? {}
+      : {
+          forge: finishForge(forge, state.forge),
+          ...(forge.made.length === 0 ? {} : { made: forge.made }),
+          ...(forge.finished.length === 0 ? {} : { finishedOrders: forge.finished }),
+          forgeHours: forge.hours,
+        }),
   };
 }
+
+const smithsOf = (
+  creatures: readonly SettleCreature[],
+): { smithHours: number; joinedAt?: number }[] =>
+  creatures.map((c) => ({
+    smithHours: c.smithHours ?? 0,
+    ...(c.joinedAt === undefined ? {} : { joinedAt: c.joinedAt }),
+  }));

@@ -34,7 +34,7 @@
  */
 import { content, ribbonsForLevel, slotsOpen, wearBlock } from '@creatures/game';
 import type { Analytics } from './analytics';
-import { rowToItem, type GearRow } from './gear-store';
+import { rowToItem, setEquipped, type GearRow } from './gear-store';
 import { credit, type LedgerStorage } from './ledger';
 
 /** The old training price from level L to L + 1: `OLD_TRAINING_BASE + OLD_TRAINING_PER_LEVEL x L`. */
@@ -155,7 +155,7 @@ function resetPlayer(deps: LevelResetDeps, userId: string): void {
         // stays blocked
       }
       if (!blocked) continue;
-      sql.exec('UPDATE gear_items SET equipped_on = NULL WHERE id = ?', row.id);
+      setEquipped(sql, row.id, null);
       notice.unequipped += 1;
     }
   }

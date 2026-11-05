@@ -118,6 +118,20 @@ describe('migration 57: seats, kit and the new columns', () => {
           'deep',
           'communal',
           'passed_at',
+          // Migration 58 (the Forge): what an anvil keeps besides.
+          'floor_count',
+          'piece_active',
+          'piece_order',
+          'piece_blueprint',
+          'piece_team',
+          'piece_element',
+          'piece_rarity',
+          'piece_reach',
+          'piece_need',
+          'piece_progress',
+          'wait_reason',
+          'wait_element',
+          'wait_since',
         ]);
         expect(columns('valley_kit')).toEqual(['user_id', 'kit_id', 'bought_at']);
         expect(columns('pending_catches')).toContain('auto_at');
@@ -722,7 +736,7 @@ describe('kit (V-SCOUT-5, V-POST-11)', () => {
     );
   });
 
-  it('refuses a kit without the Acorns and a kit of the Forge, and rejects odd bodies', async () => {
+  it('refuses a kit without the Acorns and an unknown kit, and rejects odd bodies', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
@@ -732,7 +746,7 @@ describe('kit (V-SCOUT-5, V-POST-11)', () => {
         expect(poor.status).toBe(409);
         expect(poor.body).toEqual({ error: 'insufficient_funds' });
         expect(
-          (await body({ action: 'buy', kit: 'tongs', idempotencyKey: newKey('kit') })).status,
+          (await body({ action: 'buy', kit: 'anvil', idempotencyKey: newKey('kit') })).status,
         ).toBe(400);
         expect((await body({ action: 'sell', kit: 'lure' })).status).toBe(400);
         expect((await body({ action: 'buy', kit: 'lure' })).status).toBe(400);

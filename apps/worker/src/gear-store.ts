@@ -7,6 +7,7 @@ import {
   GEAR_SLOTS,
   PART_KINDS,
   RULES,
+  VALLEY_RULES,
   gearLine,
   itemOf,
   type GearItem,
@@ -200,8 +201,80 @@ export function countPendingCrafts(sql: SqlStorage, userId: string): number {
     .one().n;
 }
 
-/** True if an item can take one more: items and crafts still to be claimed are below the cap. */
+// --- The bag counter (V-GEAR-6, migration 58) ---
+
+/**
+ * With the valley's systems on the bag holds `VALLEY_RULES.forge.bag` items and worn ones do not count. Its size is a stored counter
+ * (`valley_bag`), kept in step by every insert, delete, equip and unequip below, so it is one row to read, never a count over the
+ * items. Databases of cores with the flag off are never marked, so none of this runs there (flag off: no statement is added).
+ */
+const bagTracked = new WeakSet<object>();
+
+/** Turns the counter on for a database (called once when the valley's systems are on). */
+export function trackBag(sql: SqlStorage): void {
+  bagTracked.add(sql);
+}
+
+export const bagIsTracked = (sql: SqlStorage): boolean => bagTracked.has(sql);
+
+/** The bag's size (items not worn), from its counter; the counter is made from a count the first time. Only with the counter on. */
+export function bagItems(sql: SqlStorage, userId: string): number {
+  const row = sql
+    .exec<{ items: number }>('SELECT items FROM valley_bag WHERE user_id = ?', userId)
+    .toArray()[0];
+  if (row !== undefined) return row.items;
+  const items = sql
+    .exec<{
+      n: number;
+    }>('SELECT COUNT(*) AS n FROM gear_items WHERE user_id = ? AND equipped_on IS NULL', userId)
+    .one().n;
+  sql.exec('INSERT INTO valley_bag (user_id, items) VALUES (?, ?)', userId, items);
+  return items;
+}
+
+function bagAdjust(sql: SqlStorage, userId: string, delta: number): void {
+  if (!bagTracked.has(sql) || delta === 0) return;
+  // The counter is made from a count first when the player has none yet (so the change is applied once, to the right base).
+  bagItems(sql, userId);
+  sql.exec('UPDATE valley_bag SET items = MAX(0, items + ?) WHERE user_id = ?', delta, userId);
+}
+
+/**
+ * Puts an item on a creature (`creatureId`), or takes it off (null), keeping the bag's counter in step: an item leaves the bag when it
+ * is worn and returns when it comes off.
+ */
+export function setEquipped(sql: SqlStorage, itemId: string, creatureId: string | null): void {
+  const before = bagTracked.has(sql)
+    ? sql
+        .exec<{ user_id: string; equipped_on: string | null }>(
+          'SELECT user_id, equipped_on FROM gear_items WHERE id = ?',
+          itemId,
+        )
+        .toArray()[0]
+    : undefined;
+  sql.exec('UPDATE gear_items SET equipped_on = ? WHERE id = ?', creatureId, itemId);
+  if (before !== undefined && (before.equipped_on === null) !== (creatureId === null)) {
+    bagAdjust(sql, before.user_id, creatureId === null ? 1 : -1);
+  }
+}
+
+/** Deletes an item (dismantled, melted), keeping the bag's counter in step. */
+export function deleteItem(sql: SqlStorage, itemId: string): void {
+  const before = bagTracked.has(sql)
+    ? sql
+        .exec<{ user_id: string; equipped_on: string | null }>(
+          'SELECT user_id, equipped_on FROM gear_items WHERE id = ?',
+          itemId,
+        )
+        .toArray()[0]
+    : undefined;
+  sql.exec('DELETE FROM gear_items WHERE id = ?', itemId);
+  if (before !== undefined && before.equipped_on === null) bagAdjust(sql, before.user_id, -1);
+}
+
+/** True if an item can take one more: items and crafts still to be claimed are below the cap (the valley's bag: items not worn, below its 200). */
 export function hasRoom(sql: SqlStorage, userId: string): boolean {
+  if (bagTracked.has(sql)) return bagItems(sql, userId) < VALLEY_RULES.forge.bag;
   return countItems(sql, userId) + countPendingCrafts(sql, userId) < RULES.gear.inventoryCap;
 }
 
@@ -244,6 +317,7 @@ export function insertItem(
     meta.source,
     meta.now,
   );
+  bagAdjust(sql, userId, 1);
   return id;
 }
 

@@ -1,4 +1,5 @@
 import * as v from 'valibot';
+import { ANVIL_KITS, KIT_NAMES } from './forge';
 import { SCOUT_KITS } from './scouts';
 
 /**
@@ -6,8 +7,8 @@ import { SCOUT_KITS } from './scouts';
  * Bonfire reads it. Strict, so the client half and the server tests share one definition. Absent from the answer with the flag off.
  */
 
-/** Where a creature is: resting at the bonfire (V-BON-1), or posted to a scout seat (V-POST-1; it earns the same idle XP, V-POST-3). */
-export const VALLEY_CREATURE_STATES = ['resting', 'scouting'] as const;
+/** Where a creature is: resting at the bonfire (V-BON-1), or posted to a scout seat or an anvil (V-POST-1; it earns the same idle XP, V-POST-3). */
+export const VALLEY_CREATURE_STATES = ['resting', 'scouting', 'smithing'] as const;
 export type ValleyCreatureState = (typeof VALLEY_CREATURE_STATES)[number];
 
 const int = v.pipe(v.number(), v.integer(), v.minValue(0));
@@ -66,6 +67,88 @@ export const ValleySeatViewSchema = v.strictObject({
   }),
 });
 
+const mastery = v.strictObject({ hours: amount, step: v.picklist([0, 1, 2, 3]), bonusBp: int });
+const rarity = v.picklist([0, 1, 2]);
+/** The element ids the valley's shards come in. */
+const element = v.pipe(v.string(), v.minLength(1), v.maxLength(16));
+
+/** What an order asks of the shelf for its next piece, and what it waits on now (V-FORGE-3, 4): `waiting` is the first input the shelf lacks. */
+export const ValleyOrderViewSchema = v.strictObject({
+  id,
+  /** The blueprint's base (null: "for my team"). */
+  blueprintId: v.nullable(id),
+  forTeam: v.boolean(),
+  count: int,
+  made: int,
+  reach: v.picklist(['none', 'rare', 'epic']),
+  needs: v.strictObject({
+    scrap: int,
+    /** The element of the shard (null: any pile, or a team order with nothing to dress yet). */
+    shardElement: v.nullable(element),
+    shard: int,
+    essence: int,
+  }),
+  waiting: v.nullable(v.picklist(['scrap', 'shard', 'essence'])),
+});
+
+/** One anvil (V-POST-1, V-FORGE-1 to 5, 7, 8, V-RET-9): its smith, its queue, the piece in hand, why it tinkers, its floor and its pace. */
+export const ValleyAnvilViewSchema = v.strictObject({
+  id,
+  creatureId: v.nullable(id),
+  kit: v.nullable(v.picklist(ANVIL_KITS)),
+  /** V-POST-12: the smith's smithing hours, its step and the bonus in basis points. */
+  mastery,
+  orders: v.pipe(v.array(ValleyOrderViewSchema), v.maxLength(8)),
+  /** The piece being made (null: none in hand): its rarity is drawn when it starts, so a loupe or Reach shows at once. */
+  piece: v.nullable(
+    v.strictObject({
+      orderId: v.nullable(id),
+      rarity,
+      progress: amount,
+      need: amount,
+      /** Hours of work left at the pace as things stand (null: paused). */
+      leftHours: v.nullable(amount),
+    }),
+  ),
+  /** Why the smith tinkers now (V-FORGE-2; null: working or no smith). `shardElement` is the pile a `shard` wait is for. */
+  tinkering: v.nullable(
+    v.strictObject({
+      reason: v.picklist(['idle', 'scrap', 'shard', 'essence', 'floor']),
+      shardElement: v.nullable(element),
+      /** Hours the wait has lasted (a bubble over the Forge appears after a day, V-FORGE-4); null: unknown. */
+      sinceHours: v.nullable(amount),
+    }),
+  ),
+  /** V-FORGE-5: what waits on the floor (about three days), by rarity; `full` pauses the anvil. */
+  floor: v.strictObject({
+    count: int,
+    cap: int,
+    full: v.boolean(),
+    byRarity: v.tuple([int, int, int]),
+  }),
+  /** Pieces a day at the pace of the current order with the full away share (0: no smith or no order). */
+  perDay: v.strictObject({ pieces: amount }),
+});
+
+/** The Forge: the shelf, the bag, the fire and the exchange (V-FORGE-3, 7, 10, V-GEAR-6). */
+export const ValleyForgeViewSchema = v.strictObject({
+  /** The stockpile an order takes its inputs from: scrap, Essence and a pile of shards of each element. */
+  shelf: v.strictObject({
+    scrap: int,
+    essence: int,
+    shards: v.record(element, int),
+  }),
+  /** V-GEAR-6: items in the bag (worn ones do not count) and what it holds. */
+  bag: v.strictObject({ count: int, cap: int }),
+  /** The fire's level: the item level of every piece that comes out (V-FORGE-7). */
+  fireLevel: int,
+  /** V-FORGE-10: `rate` shards of another element for 1, with a `critChance` (basis points) of `critYield`. */
+  exchange: v.strictObject({ rate: int, critBp: int, critYield: int }),
+  /** The most orders an anvil's queue holds, and the most pieces one order asks for. */
+  queueMax: int,
+  orderCountMax: int,
+});
+
 /** A destination as the Signpost draws it (V-SCOUT-2, 8, 11). */
 export const ValleyPlaceViewSchema = v.strictObject({
   id,
@@ -99,9 +182,19 @@ export const ValleyViewSchema = v.strictObject({
     next: v.nullable(int),
     ladder: v.pipe(v.array(int), v.maxLength(16)),
   }),
-  /** The player's kit (V-SCOUT-5, V-POST-11): the kit bought, and what a new one costs in Acorns. */
+  /** The player's anvils, in the order they were bought (V-POST-2, V-FORGE-6). */
+  anvils: v.pipe(v.array(ValleyAnvilViewSchema), v.maxLength(8)),
+  /** The anvil price ladder: anvils owned, the most the Forge's level allows, the next anvil's price (null: none left) and every price. */
+  anvilPrices: v.strictObject({
+    owned: int,
+    max: int,
+    next: v.nullable(v.strictObject({ acorns: int, scrap: int })),
+    ladder: v.pipe(v.array(v.strictObject({ acorns: int, scrap: int })), v.maxLength(16)),
+  }),
+  forge: ValleyForgeViewSchema,
+  /** The player's kit (V-SCOUT-5, V-FORGE-8, V-POST-11): the kit bought, and what a new one costs in Acorns. */
   kit: v.strictObject({
-    owned: v.pipe(v.array(v.picklist(SCOUT_KITS)), v.maxLength(8)),
+    owned: v.pipe(v.array(v.picklist(KIT_NAMES)), v.maxLength(8)),
     price: int,
   }),
   /** The destinations, with the profile and the opening hours each shows (V-RET-9). */
@@ -114,6 +207,9 @@ export const ValleyViewSchema = v.strictObject({
 
 export type ValleyCreatureView = v.InferOutput<typeof ValleyCreatureViewSchema>;
 export type ValleySeatView = v.InferOutput<typeof ValleySeatViewSchema>;
+export type ValleyOrderView = v.InferOutput<typeof ValleyOrderViewSchema>;
+export type ValleyAnvilView = v.InferOutput<typeof ValleyAnvilViewSchema>;
+export type ValleyForgeView = v.InferOutput<typeof ValleyForgeViewSchema>;
 export type ValleyPlaceView = v.InferOutput<typeof ValleyPlaceViewSchema>;
 export type ValleyView = v.InferOutput<typeof ValleyViewSchema>;
 

@@ -18,6 +18,7 @@ import {
   invalidBody,
   invalidId,
   json,
+  notFound,
   parseBody,
   pathId,
   type Handler,
@@ -116,6 +117,8 @@ const routes: Routes<GearRouteContext> = {
   },
   '/api/workshop/jobs': {
     POST: async (request, ctx) => {
+      // With the valley's systems on, jobs are gone: anvils, orders and tinkering replace them (answered before the body is read).
+      if (ctx.core.valleySystems) return notFound();
       // Improve and Enchant are gone (gear v2): an old client gets a clear answer, and nothing is charged.
       const removed = await parseBody(request.clone(), RemovedJobKindSchema);
       if (removed !== undefined) return errorResponse('job_kind_removed', 410);
@@ -124,8 +127,6 @@ const routes: Routes<GearRouteContext> = {
       if (dismantle !== undefined) return errorResponse('dismantle_job_removed', 410);
       const body = await parseBody(request, StartJobBodySchema);
       if (body === undefined) return invalidBody();
-      // Treats are off with the valley on; nothing is charged.
-      if (ctx.core.valleySystems && body.treat === true) return errorResponse('treats_off', 400);
       const outcome = ctx.core.gear.startJob(ctx.user.id, body);
       if (!outcome.ok) return failure(outcome);
       return json({ result: outcome.value, ...views(ctx) });
@@ -133,6 +134,7 @@ const routes: Routes<GearRouteContext> = {
   },
   '/api/workshop/jobs/:id/claim': {
     POST: async (request, ctx) => {
+      if (ctx.core.valleySystems) return notFound();
       const id = pathId(ctx);
       if (id === undefined) return invalidId();
       const body = await parseBody(request, ClaimJobBodySchema);

@@ -8,12 +8,14 @@
  * Moving a creature and setting kit are free and need no key. The identity is always the session's user.
  */
 import {
+  KIT_NAMES,
   VALLEY_RULES,
+  isAnvilKit,
   isScoutKit,
   placeOpen,
   placeProfile,
   seatPrice,
-  type ScoutKit,
+  type KitName,
 } from '@creatures/game';
 import { runKeyed, settleSpend } from './keyed-action';
 import { spend, type LedgerStorage } from './ledger';
@@ -36,7 +38,7 @@ export interface SeatBought {
   price: number;
 }
 export interface KitBought {
-  kit: ScoutKit;
+  kit: KitName;
   price: number;
 }
 
@@ -149,7 +151,7 @@ export class ValleySeats {
 
   /**
    * V-POST-1: posts a creature to a seat, or empties it (`creatureId` null), and may point the seat at another destination
-   * (V-SCOUT-1). Moving is free and loses nothing: the creature's scouting hours stay with it, and a creature already at another seat
+   * (V-SCOUT-1; an anvil has no destination). Moving is free and loses nothing: the creature's scouting hours stay with it, and a creature already at another seat
    * leaves it (that seat takes this seat's creature when it had one, so a drag onto an occupied seat is a swap). A seat that changes
    * destination brings its store home first, so nothing is turned into another place's finds.
    */
@@ -161,6 +163,9 @@ export class ValleySeats {
       this.deps.settle.settle(userId, 'now');
       const seat = this.seatOf(userId, input.seatId);
       const now = this.deps.now();
+      if (input.destination !== undefined && seat.place !== 'signpost') {
+        throw new GameError(400, 'not_a_scout_seat');
+      }
       if (input.destination !== undefined && input.destination !== seat.destination_id) {
         const place = placeProfile(VALLEY_RULES, input.destination);
         if (place === undefined) throw new GameError(400, 'unknown_destination');
@@ -199,6 +204,8 @@ export class ValleySeats {
           seat.seat_id,
         );
       }
+      // A smith posted to an anvil with an order starts on it at once.
+      if (seat.place === 'forge') this.deps.settle.settle(userId, 'now');
       return { seatId: seat.seat_id };
     });
   }
@@ -243,7 +250,7 @@ export class ValleySeats {
   }
 
   /** V-POST-11, V-SCOUT-5: buys a kit once with Acorns (keyed spend); it can then be set on any seat for free. */
-  buyKit(userId: string, kit: ScoutKit, key: string): Outcome<KitBought> {
+  buyKit(userId: string, kit: KitName, key: string): Outcome<KitBought> {
     return atomically(this.deps.storage, () => {
       this.deps.settle.settle(userId, 'now');
       return runKeyed(
@@ -284,13 +291,20 @@ export class ValleySeats {
     });
   }
 
-  /** V-SCOUT-5: sets (or clears) the kit on a seat; one at a time, switching between owned kit is free. */
-  setKit(userId: string, seatId: string, kit: ScoutKit | null): Outcome<{ seatId: string }> {
+  /**
+   * V-SCOUT-5, V-FORGE-8: sets (or clears) the kit on a seat; one at a time, switching between owned kit is free. A scout's seat takes
+   * the lure, lantern and satchel, an anvil the tongs and the loupe.
+   */
+  setKit(userId: string, seatId: string, kit: KitName | null): Outcome<{ seatId: string }> {
     return atomically(this.deps.storage, () => {
       this.deps.settle.settle(userId, 'now');
       const seat = this.seatOf(userId, seatId);
       if (kit !== null) {
-        if (!isScoutKit(kit)) throw new GameError(400, 'unknown_kit');
+        if (!(KIT_NAMES as readonly string[]).includes(kit))
+          throw new GameError(400, 'unknown_kit');
+        if (seat.place === 'forge' ? !isAnvilKit(kit) : !isScoutKit(kit)) {
+          throw new GameError(400, 'kit_does_not_fit');
+        }
         const have = this.sql
           .exec('SELECT 1 FROM valley_kit WHERE user_id = ? AND kit_id = ?', userId, kit)
           .toArray();

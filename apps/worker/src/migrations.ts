@@ -44,6 +44,7 @@ import { raidPlacementCapMigration } from './raid-placement-cap-migration';
 import { raidProgressionMigration } from './raid-progression-migration';
 import { valleyMigration } from './valley-migration';
 import { valleyScoutsMigration } from './valley-scouts-migration';
+import { valleyForgeMigration } from './valley-forge-migration';
 import { weatherMigration } from './weather-migration';
 import { workshopConvertMigration } from './workshop-convert-migration';
 import { workshopV2Migration } from './workshop-v2-migration';
@@ -348,6 +349,8 @@ export const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
   valleyMigration,
   // Version 57: scouts' seats and kit, scouting hours, the Paddock gate's auto-answer time (see valley-scouts-migration.ts).
   valleyScoutsMigration,
+  // Version 58: the Forge loop: anvils (seats), orders, the floor, the bag counter, smithing hours (see valley-forge-migration.ts).
+  valleyForgeMigration,
 ];
 
 /** The schema version of a fresh database. */

@@ -23,6 +23,7 @@ import {
   inGuild,
   loungeTick,
   seedHistory,
+  seedAnvils,
   seedSeats,
   seedWorld,
   startLounge,
@@ -394,6 +395,78 @@ describe('read budget with scouts posted', () => {
       if (reads === undefined) throw new Error('the measuring test did not run');
       expectReadsUnder(`scouts ${name}`, reads, SCOUT_BUDGET[name].reads);
       expectWritesUnder(`scouts ${name}`, reads, SCOUT_BUDGET[name].writes);
+    },
+  );
+});
+
+/**
+ * The valley's Forge (phase 5 step 3): what the same `/api/state` pass reads and writes with anvils posted, for the seeded player's 30
+ * creatures: two anvils (the Forge at its first level), each with a queue of two orders, two pieces on the floor, a stocked shelf and a
+ * kit; and the same with two scouts posted as well. An anvil adds its row, its orders, the shelf (the parts and the Essence balance),
+ * the blueprint marks, the weak slots of the team (one read of what is worn) and, on an arrival, the floors coming home (each piece
+ * rolled, inserted into the bag, its floor row deleted). The rarity draws are live, so the numbers below are the largest of a few runs;
+ * the budgets are about 1.5x.
+ */
+const FORGE_BUDGET = {
+  // A day away: 828 reads and 63 written without anvils (`VALLEY_BUDGET.arrival`).
+  arrival2: { reads: 1400, writes: 165 }, // measured 939 reads, 110 written (the floors' four pieces come home: each rolled, inserted, its row deleted)
+  // Ten minutes on, the same visit.
+  visit2: { reads: 1200, writes: 60 }, // measured 783 reads, 40 written
+  // Two anvils and two scouts together.
+  arrival2s2: { reads: 1500, writes: 175 }, // measured 978 reads, 116 written
+  visit2s2: { reads: 1300, writes: 95 }, // measured 850 reads, 61 written
+} as const;
+
+describe('read budget with anvils posted', () => {
+  const measured: Record<string, ReadReport> = {};
+
+  it('measures an arrival and a look mid-visit with two anvils, and with two anvils and two scouts', async () => {
+    await inGuild(
+      async (env) => {
+        const { metered, clock } = env;
+        const world = await seedWorld(env, { valleySystems: true });
+        const { core, secrets } = world;
+        const relog = async (): Promise<void> => {
+          secrets.set(
+            userId(1),
+            await core.createSession(GUILD_ID, { id: userId(1), displayName: 'Player 1' }),
+          );
+        };
+        const state = (): Promise<unknown> => callAs(core, secrets, 1, '/api/state');
+        const mine = world.creatures[userId(1)] ?? [];
+        clock.t += 6 * MINUTE;
+        await callAs(core, secrets, 1, '/api/me');
+        await state();
+        seedAnvils(metered.sql, userId(1), mine, 2);
+        clock.t += 24 * 60 * MINUTE;
+        await relog();
+        measured['arrival2'] = (await metered.measure(state)).reads;
+        clock.t += 10 * MINUTE;
+        measured['visit2'] = (await metered.measure(state)).reads;
+        // Two scouts as well (the anvils' smiths are the last creatures, the scouts the first).
+        seedSeats(metered.sql, userId(1), mine, 2);
+        metered.sql.exec(
+          'UPDATE valley_seats SET floor_count = 2 WHERE user_id = ? AND place = ?',
+          userId(1),
+          'forge',
+        );
+        clock.t += 24 * 60 * MINUTE;
+        await relog();
+        measured['arrival2s2'] = (await metered.measure(state)).reads;
+        clock.t += 10 * MINUTE;
+        measured['visit2s2'] = (await metered.measure(state)).reads;
+      },
+      { fresh: true },
+    );
+  }, 60_000);
+
+  it.each(Object.keys(FORGE_BUDGET) as (keyof typeof FORGE_BUDGET)[])(
+    'the forge pass: %s reads and writes few rows',
+    (name) => {
+      const reads = measured[name];
+      if (reads === undefined) throw new Error('the measuring test did not run');
+      expectReadsUnder(`forge ${name}`, reads, FORGE_BUDGET[name].reads);
+      expectWritesUnder(`forge ${name}`, reads, FORGE_BUDGET[name].writes);
     },
   );
 });

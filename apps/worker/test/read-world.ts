@@ -583,3 +583,80 @@ export function seedSeats(
       NOW,
     );
 }
+
+/**
+ * Posts a player's last `anvils` creatures (counting from the end of the roster, so they are not the scouts) to anvils (the valley's
+ * Forge, phase 5 step 3) as a player who has played a while would have them: each with a queue of a blueprint order and a "for my
+ * team" order, a stocked shelf, the tongs on the first and the loupe on the second, two pieces already on each floor and the player
+ * owning both anvil kit. The anvils start with the pass last run at `NOW`.
+ */
+export function seedAnvils(
+  sql: SqlStorage,
+  owner: string,
+  creatureIds: readonly string[],
+  anvils: number,
+): void {
+  sql.exec(
+    `INSERT OR IGNORE INTO blueprints (user_id, base_id, rarity, learned_at) VALUES (?, 'kelp-cap', 'common', ?)`,
+    owner,
+    NOW,
+  );
+  for (const [kind, amount] of [
+    ['scrap', 5000],
+    ['tide-shard', 400],
+    ['ember-shard', 400],
+    ['grove-shard', 400],
+    ['spark-shard', 400],
+    ['mire-shard', 400],
+  ] as const)
+    sql.exec(
+      `INSERT INTO parts (user_id, kind, amount) VALUES (?, ?, ?)
+       ON CONFLICT(user_id, kind) DO UPDATE SET amount = excluded.amount`,
+      owner,
+      kind,
+      amount,
+    );
+  for (let i = 0; i < anvils; i++) {
+    const seatId = crypto.randomUUID();
+    sql.exec(
+      `INSERT INTO valley_seats (seat_id, user_id, place, kind, position, destination_id, prev_destination_id, creature_id,
+         kit_id, passed_at, floor_count) VALUES (?, ?, 'forge', 'anvil', ?, 'forge', 'forge', ?, ?, ?, 2)`,
+      seatId,
+      owner,
+      i + 1,
+      creatureIds[creatureIds.length - 1 - i] ?? null,
+      i === 0 ? 'tongs' : i === 1 ? 'loupe' : null,
+      NOW,
+    );
+    sql.exec(
+      `INSERT INTO forge_orders (order_id, seat_id, user_id, position, blueprint_id, element, count, reach, for_team, created_at)
+       VALUES (?, ?, ?, 1, 'kelp-cap', 0, 99, 'none', 0, ?), (?, ?, ?, 2, NULL, -1, 0, 'none', 1, ?)`,
+      crypto.randomUUID(),
+      seatId,
+      owner,
+      NOW,
+      crypto.randomUUID(),
+      seatId,
+      owner,
+      NOW,
+    );
+    for (let n = 0; n < 2; n++) {
+      sql.exec(
+        `INSERT INTO forge_floor (piece_id, user_id, seat_id, blueprint_id, for_team, element, rarity, item_level, made_at)
+         VALUES (?, ?, ?, 'kelp-cap', 0, 0, ?, 1, ?)`,
+        crypto.randomUUID(),
+        owner,
+        seatId,
+        n,
+        NOW,
+      );
+    }
+  }
+  for (const kit of ['tongs', 'loupe'])
+    sql.exec(
+      'INSERT OR IGNORE INTO valley_kit (user_id, kit_id, bought_at) VALUES (?, ?, ?)',
+      owner,
+      kit,
+      NOW,
+    );
+}

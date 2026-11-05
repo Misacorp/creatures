@@ -266,7 +266,7 @@ function tripLines(sql: SqlStorage, ctx: ScanContext): DueLine[] {
 }
 
 function jobLines(sql: SqlStorage, ctx: ScanContext): DueLine[] {
-  if (!anyoneOn(sql, 'job')) return [];
+  if (ctx.valleySystems === true || !anyoneOn(sql, 'job')) return [];
   return sql
     .exec<{
       id: string;
@@ -431,7 +431,7 @@ export function nextDmDueAt(
              AND p.blocked_at IS NULL AND p.trip_on_at IS NOT NULL`),
     );
   }
-  if (anyoneOn(sql, 'job')) {
+  if (!valleySystems && anyoneOn(sql, 'job')) {
     next = earlier(
       next,
       min(`SELECT MIN(j.ends_at) AS at FROM workshop_jobs j JOIN dm_prefs p ON p.user_id = j.user_id

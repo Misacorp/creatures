@@ -121,7 +121,9 @@ import { MIGRATIONS } from './migrations';
 import { ReadMeter, pruneReads, readSourceOfPath, type ReadSource } from './read-meter';
 import { liveRng } from './rng';
 import { ValleyFinds } from './valley-finds';
+import { ValleyForgePass } from './valley-forge';
 import { valleyRoutes } from './valley-routes';
+import { ValleyOrders } from './valley-orders';
 import { ValleySeats } from './valley-seats';
 import { ValleySettle } from './valley-settle';
 import type { ValleyView } from '@creatures/game';
@@ -442,6 +444,8 @@ export class GuildCore {
   readonly valley: ValleySettle | null;
   /** Seats and kit of the valley's scouts (`VALLEY_SYSTEMS`), or null with the flag off. */
   readonly valleySeats: ValleySeats | null;
+  /** Anvils, orders and the shard exchange of the valley's Forge (`VALLEY_SYSTEMS`), or null with the flag off. */
+  readonly valleyOrders: ValleyOrders | null;
   /** The `VALLEY_SYSTEMS` flag as the worker resolved it (see `valley-flag.ts`). */
   readonly valleySystems: boolean;
   private postsInFlight: Promise<void> | null = null;
@@ -537,12 +541,14 @@ export class GuildCore {
         choices: this.collection.choices,
         analytics: this.analytics,
       });
+      const forge = new ValleyForgePass({ storage, now, rng: gearRng });
       const valley = new ValleySettle({
         storage,
         now,
         timezone: () => this.timezone(),
         finds,
         choices: this.collection.choices,
+        forge,
       });
       this.valley = valley;
       this.valleySeats = new ValleySeats({
@@ -552,9 +558,11 @@ export class GuildCore {
         settle: valley,
         finds,
       });
+      this.valleyOrders = new ValleyOrders({ storage, now, settle: valley, forge });
     } else {
       this.valley = null;
       this.valleySeats = null;
+      this.valleyOrders = null;
     }
     this.gear = new Gear({
       storage,
