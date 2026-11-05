@@ -45,7 +45,7 @@ export interface ValleyMapProps {
   at: 'start' | PlaceId;
   /** Goes into a place. */
   onPlace: (id: PlaceId) => void;
-  /** The place whose button takes the focus on mount (back from its page). */
+  /** Set when the map comes back from a place's page: the focus rests on the map (no ring), not on that place's button. */
   focus: PlaceId | null;
   /** What waits at the places (from today's pips): a bubble over each, and a mark on its edge chip. */
   bubbles?: readonly PlaceBubble[];
@@ -104,12 +104,11 @@ export function ValleyMap({
   const [scrollLeft, setScrollLeft] = useScrollLeft(scrollerRef);
   const order = readingOrder();
 
-  // Focus a place's button on mount (back from its page), without a jump.
+  // Back from a place's page the focus rests on the map itself, never on the place's button: a ring on the House
+  // after Escape "detracts from the experience" (Misa, 2026-11-05). Tab goes on from here into the places.
   useEffect(() => {
     if (focus === null) return;
-    wrapRef.current
-      ?.querySelector<HTMLElement>(`[data-place="${focus}"]`)
-      ?.focus({ preventScroll: true });
+    wrapRef.current?.focus({ preventScroll: true });
   }, []);
 
   const goTo = (id: PlaceId): void => {
@@ -152,7 +151,7 @@ export function ValleyMap({
   });
 
   return (
-    <div ref={wrapRef} class={`vy-valley${fit.pans ? ' pans' : ''}`}>
+    <div ref={wrapRef} class={`vy-valley${fit.pans ? ' pans' : ''}`} tabIndex={-1}>
       <div
         class="vy-scroller"
         ref={(el) => {

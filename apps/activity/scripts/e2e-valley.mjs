@@ -466,6 +466,46 @@ try {
     await backToValley();
   });
 
+  await step(
+    'back to the map from the House (Escape, then the HUD back) leaves no ring on any place',
+    async () => {
+      for (const how of ['Escape', 'back']) {
+        await place('house').focus();
+        await page.keyboard.press('Enter');
+        await waitFor(heading('House'));
+        if (how === 'Escape') await page.keyboard.press('Escape');
+        else await hudBack().click();
+        await waitFor(page.locator(VALLEY), 'attached');
+        await page.waitForTimeout(200);
+        const at = await page.evaluate(() => {
+          const el = document.activeElement;
+          if (el === null) return { on: 'nothing', ring: false };
+          const css = getComputedStyle(el);
+          return {
+            on: el.getAttribute('data-place') ?? el.className,
+            ring:
+              css.boxShadow !== 'none' ||
+              (css.outlineStyle !== 'none' && css.outlineWidth !== '0px'),
+          };
+        });
+        if (
+          at.on === 'house' ||
+          (await page.locator('button[data-place]:focus-visible').count()) > 0
+        )
+          throw new Error(`a place holds the focus after ${how}: ${JSON.stringify(at)}`);
+        if (at.ring) throw new Error(`a ring shows after ${how}: ${JSON.stringify(at)}`);
+      }
+      await shot('map-after-escape');
+      // The keyboard still walks into the map, and its stops keep their rings.
+      await page.keyboard.press('Tab');
+      const ring = await page.evaluate(() => {
+        const el = document.activeElement;
+        return el?.matches('button[data-place]:focus-visible') === true;
+      });
+      if (!ring) throw new Error('Tab from the map did not reach a place with a ring');
+    },
+  );
+
   await step('edge chips on a phone are at least 44 px tall and wide', async () => {
     const small = await page.evaluate(
       () =>

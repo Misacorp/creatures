@@ -148,6 +148,11 @@ main.card:has(.vy-frame) > .hud {
   min-height: 0;
 }
 
+/* The map holds the focus when it comes back from a place: no ring on the map itself (its places keep theirs). */
+.vy-valley:focus {
+  outline: none;
+}
+
 .vy-scroller {
   position: absolute;
   inset: 0;
