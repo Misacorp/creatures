@@ -7,7 +7,7 @@
  *    the stuck share) and in the dungeon (the safe player's depth gained a week, the Undercroft's first level cleared by the team's state);
  * 3. the per-line power table: each line the v2 engine counts (and the stat lines), worn by the creatures it fits on a real weekend,
  *    against no gear: the share of the boss's HP the weekend removes;
- * 4. gear-plan OPEN 14, the reaction cap and the x4 reaction lines, from the engine's own factor and the lines' own numbers.
+ * 4. gear-plan OPEN 14, the reaction cap and the reaction lines, from the engine's own factor and the lines' own numbers.
  *
  * The model is expected values (no rolling), so the report is deterministic; the fights are seeded. Everything reads the game's data.
  */
@@ -419,9 +419,9 @@ function reactionMarkdown(): string[] {
       cap,
     );
   const md = [
-    '#### OPEN 14: the reaction cap and the x4 reaction lines',
+    '#### OPEN 14: the reaction cap and the reaction lines',
     '',
-    `The engine's reaction bonus factor is the Knack's own factor times each stack it spends, times the gear's Reaction bonus, **capped at x${cap}** (\`maxBonusFactorBp\`, R7). The gear lines are scaled x4 (\`REACTION_SCALE\`). What a creature wears: ${wear.map((w) => `week ${w.week}: +${(w.bp / 100).toFixed(1)}% (typical Payoff, Tide, the expected loadout)`).join('; ')}; at best (a Reaction line at the top pip on the Hat, the Scarf and the Pounce Charm, no rarity factor, no set): **+${(best / 100).toFixed(1)}%**.`,
+    `The engine's reaction bonus factor is the Knack's own factor times each stack it spends, times the gear's Reaction bonus, **capped at x${cap}** (\`maxBonusFactorBp\`, R7). The gear lines carry the reaction family's scale (\`REACTION_SCALE\` in the game's gear-fx.ts). What a creature wears: ${wear.map((w) => `week ${w.week}: +${(w.bp / 100).toFixed(1)}% (typical Payoff, Tide, the expected loadout)`).join('; ')}; at best (a Reaction line at the top pip on the Hat, the Scarf and the Pounce Charm, no rarity factor, no set): **+${(best / 100).toFixed(1)}%**.`,
     '',
     `| Knack | Stacks | No gear | Typical, week 12 | Typical, week 24 | Best case | Room under the cap left by the best case |`,
     `| --- | ---: | ---: | ---: | ---: | ---: | ---: |`,
