@@ -56,6 +56,10 @@ const MOMENTS = [
   'a boosted and a silenced creature',
   'a Knack acts',
   'a boss that sheds marks',
+  'the boss cannot dodge (Pin Down)',
+  'a strike back (Backlash)',
+  'a bonus as its own hit (Aftershock)',
+  'the boss shakes off its Mired',
   'the end',
   'beat number',
 ] as const;
@@ -126,6 +130,26 @@ function momentBeat(
       return at((k) => (shows[k]?.cashed.length ?? 0) > 0);
     case 'a boss that sheds marks':
       return at((k) => (states[k + 1]?.expiring.length ?? 0) > 0);
+    case 'the boss cannot dodge (Pin Down)':
+      return at((k) =>
+        events
+          .slice(model.beats[k]?.from, model.beats[k]?.to)
+          .some((e) => e.board?.type === 'sure'),
+      );
+    case 'a strike back (Backlash)':
+      return at((k) =>
+        events
+          .slice(model.beats[k]?.from, model.beats[k]?.to)
+          .some((e) => e.board?.type === 'counter' && e.board.byKnack === true),
+      );
+    case 'a bonus as its own hit (Aftershock)':
+      return at((k) =>
+        events
+          .slice(model.beats[k]?.from, model.beats[k]?.to)
+          .some((e) => e.board?.type === 'hit' && e.board.bonus === true),
+      );
+    case 'the boss shakes off its Mired':
+      return at((k) => shows[k]?.floats.some((f) => f.text === 'Shakes it off!') === true);
     case 'the end':
       return beats.length;
     case 'beat number':
@@ -164,7 +188,8 @@ const boostLookOf = (p: Props): 'pattern' | 'glow' =>
 function optionsOf(p: Props): FightSampleOptions {
   const stage = num(p, 'stage');
   return {
-    party: str(p, 'party') === 'mixed' ? 'mixed' : 'rows',
+    party:
+      str(p, 'party') === 'mixed' ? 'mixed' : str(p, 'party') === 'answers' ? 'answers' : 'rows',
     slot: num(p, 'slot'),
     players: num(p, 'players'),
     stage: stage >= 3 ? 3 : stage === 2 ? 2 : 1,
@@ -436,7 +461,7 @@ const CONTROLS = {
   players: { kind: 'number', min: 1, max: 15 },
   stage: { kind: 'number', min: 1, max: 3 },
   seed: { kind: 'text', maxLength: 12 },
-  party: { kind: 'select', options: ['rows', 'mixed'] },
+  party: { kind: 'select', options: ['rows', 'mixed', 'answers'] },
   knackNames: { kind: 'toggle' },
   boostLook: { kind: 'select', options: ['pattern', 'glow'] },
   moment: { kind: 'select', options: MOMENTS },
@@ -479,7 +504,7 @@ const stageV2: Entry = {
   file: 'apps/activity/src/StageV2.tsx',
   group: 'Creatures & game pieces',
   description:
-    "The combat v2 fight stage, played from a real fight (every event is the engine's own, from the shipped bosses and creatures): the boss above its HP bar with a tick per stage, the move it just made, the marks on it oldest first, Mired, what it resists and the Escalating meter, the turn strip lighting the step on, and the v2 board with each creature's HP, a silenced creature's Knack crossed out with the turns left, knocked-out ones greyed and the move announced at round start on each creature it will land on. What a fight shows: a reaction's name in its two colours over the boss with the hit's total and the bonus under it on one line (the beat is held a moment longer), a number on the boss for every hit in the hitter's element colour (a crit ending with \"!\" in two hard halves), a Guard's save (a shield on the covered creature with what the cover kept off, the Guard's own shield bursting out of its tile to 2.5 times the size while it fades, the Guard's tile flashing and a pulse of protection running through the tiles' backgrounds, across every tile of the row between them, to the covered creature), \"Dodged!\", heals as green numbers, boosts as rising arrows (a boosted creature also has small yellow arrows drifting up in its tile's background, `boostLook` `pattern` by default, or the inner `glow`; a silenced creature has the same pattern flipped, red arrows drifting down), and, only when the Knack names option is on (Settings, off by default), the Knack's name popping on the creature that acts. The `party` control swaps the sample for a mixed party (Guards and Supports among the Setters and Payoffs) so every one of these happens. Views: held still at a moment of the fight (a crit, a Blocked hit, a silenced creature, a knock-out, a cashed mark, a Guard save, a dodge, a heal, a boost, a Knack acting), playing by itself like the replay, the live finale with the player's action button (Rally, Shield Wall with its row picker, Purge) and Auto fire, a stage's result card, and the Raid tab's pick of the finale action.",
+    "The combat v2 fight stage, played from a real fight (every event is the engine's own, from the shipped bosses and creatures): the boss above its HP bar with a tick per stage, the move it just made, the marks on it oldest first, Mired, what it resists and the Escalating meter, the turn strip lighting the step on, and the v2 board with each creature's HP, a silenced creature's Knack crossed out with the turns left, knocked-out ones greyed and the move announced at round start on each creature it will land on. What a fight shows: a reaction's name in its two colours over the boss with the hit's total and the bonus under it on one line (the beat is held a moment longer), a number on the boss for every hit in the hitter's element colour (a crit ending with \"!\" in two hard halves), a Guard's save (a shield on the covered creature with what the cover kept off, the Guard's own shield bursting out of its tile to 2.5 times the size while it fades, the Guard's tile flashing and a pulse of protection running through the tiles' backgrounds, across every tile of the row between them, to the covered creature), \"Dodged!\", heals as green numbers, boosts as rising arrows (a boosted creature also has small yellow arrows drifting up in its tile's background, `boostLook` `pattern` by default, or the inner `glow`; a silenced creature has the same pattern flipped, red arrows drifting down), and, only when the Knack names option is on (Settings, off by default), the Knack's name popping on the creature that acts. The `party` control swaps the sample for a mixed party (Guards and Supports among the Setters and Payoffs) so every one of these happens. The `answers` party (Tidal Colossus, slot 6, with Clean Scales and Stone Skin on top) shows the second answers: Pin Down, the Knack's name on the creature whose Knack made the boss unable to dodge (nothing else on the board changes); Backlash, a number on the boss from a creature acting off its own turn with its Knack's name on its tile; Aftershock, the reaction callout with the hit and the bonus as a second number beside it; and Shake It Off, the reaction callout on the boss reading \"Shakes it off!\" with the Mired it cleared. The Knack names option shows the names. Views: held still at a moment of the fight (a crit, a Blocked hit, a silenced creature, a knock-out, a cashed mark, a Guard save, a dodge, a heal, a boost, a Knack acting), playing by itself like the replay, the live finale with the player's action button (Rally, Shield Wall with its row picker, Purge) and Auto fire, a stage's result card, and the Raid tab's pick of the finale action.",
   controls: CONTROLS,
   defaults: DEFAULTS,
   presets: [
@@ -544,6 +569,32 @@ const stageV2: Entry = {
     {
       name: 'The same beat with Knack names on',
       props: { slot: 4, players: 5, party: 'mixed', moment: 'a Knack acts', knackNames: true },
+    },
+    {
+      name: 'Pin Down: the Setter leaves its mark and its Knack name shows; the hits after it cannot be dodged (Knack names on)',
+      props: {
+        slot: 6,
+        party: 'answers',
+        moment: 'the boss cannot dodge (Pin Down)',
+        knackNames: true,
+      },
+    },
+    {
+      name: 'Backlash: the boss sheds a mark and the Payoff strikes back off its turn, its Knack name on its tile (Knack names on)',
+      props: { slot: 6, party: 'answers', moment: 'a strike back (Backlash)', knackNames: true },
+    },
+    {
+      name: 'Aftershock: the reaction callout with the plain hit, then the bonus as its own number',
+      props: {
+        slot: 6,
+        party: 'answers',
+        moment: 'a bonus as its own hit (Aftershock)',
+        knackNames: true,
+      },
+    },
+    {
+      name: 'Shake It Off: the boss clears its Mired, the callout says how much (Tidal Colossus)',
+      props: { slot: 6, party: 'answers', moment: 'the boss shakes off its Mired' },
     },
     {
       name: 'Playing: a mixed party, stage 1 (reactions, saves, heals and boosts, by itself)',

@@ -11,7 +11,6 @@
  *
  * A gate that misses is not a failing test: it is listed in `KNOWN_MISSES` (and printed) until the balance pass clears it or Misa accepts it.
  */
-import { performance } from 'node:perf_hooks';
 import { content } from '@creatures/game';
 import { BOSS_ANSWERS, answerLine } from './bossAnswers';
 import { RAID_BOSS_IDS, raidBossOf, raidMode, weekendPotential } from './bosses';
@@ -163,7 +162,7 @@ const CPU_ID = 'gate:cpu';
 export function runGateJob(args: GateJobArgs, deps: Readonly<Record<string, unknown>>): unknown {
   if (args.part === 'cpu')
     return cpuReport({
-      now: () => performance.now(),
+      now: () => (globalThis as unknown as { performance: { now(): number } }).performance.now(),
       runs: args.quick ? 4 : 20,
       warmup: args.quick ? 1 : 4,
     });

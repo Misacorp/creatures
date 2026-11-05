@@ -357,12 +357,15 @@ export function guessClass(fx: KnackFx, roles: readonly Role[]): Class {
       'marksAs',
       'seal',
       'leadBoostBp',
+      'leadUndodge',
+      'backlashBp',
       'minStacks',
       'trail',
       'reactionBonusBp',
       'reactionCritBp',
       'bakedShell',
       'spendAllBp',
+      'splitBonus',
     )
   ) {
     return ['marks', roles, 'rule'];

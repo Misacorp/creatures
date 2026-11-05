@@ -177,7 +177,10 @@ function supportVerb(s: State, f: Fighter, k: KnackFx): void {
       addMark(s, f.element, 1, { by: f });
       return;
     case 'clearSkies':
-      for (const o of beside(s, f)) o.undodgeable = true;
+      for (const o of beside(s, f)) {
+        o.undodgeable = true;
+        if (s.opts.log) emit(s, { type: 'sure', who: keyOf(o), by: keyOf(f) });
+      }
       return;
     case 'sunbeam':
       for (const o of alive(s).filter((o) => o.col === f.col && o.row < f.row)) {

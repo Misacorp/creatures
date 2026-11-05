@@ -69,6 +69,7 @@ function fighterOf(spec: FighterSpec): Fighter {
     boostBp: 0,
     undodgeable: false,
     lastPrimeRound: 0,
+    lastBacklashRound: 0,
     damageDealt: 0,
     hitDamage: 0,
     watchTurn: -1,
@@ -189,9 +190,13 @@ export function playFight(
     // Shake It Off: announced at round start, the boss clears every debuff when its round ends.
     if (s.boss.mods.shakeEvery && s.round % s.boss.mods.shakeEvery === 0 && s.mired > 0) {
       // Shake It Off clears the card's strength's share of the Mired (all of it at full strength).
+      const before = s.mired;
       s.mired -= Math.min(s.mired, Math.round((s.mired * strengthOf(s)) / 10_000));
       if (s.opts.log) log(s, 'shake', `${boss.name} shakes off its debuffs`);
-      if (s.opts.log) log(s, 'mired', `Mired x${s.mired}`);
+      if (s.opts.log)
+        log(s, 'mired', `Mired x${s.mired}`, {
+          board: { type: 'mired', stacks: s.mired, shook: before - s.mired },
+        });
     }
   }
   if (opts.log) {

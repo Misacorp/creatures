@@ -12,35 +12,35 @@
     "name": "Stone Skin",
     "asks": "No hit deals more than a cap; can you hit often?",
     "ops": [{ "op": "cap", "value": 260 }],
-    "answers": ["Flurry"]
+    "answers": ["Flurry", "aftershock"]
   },
   {
     "id": "clean-scales",
     "name": "Clean Scales",
     "asks": "Marks are shed at the end of every boss turn; are Setter and Payoff in the same row?",
     "ops": [{ "op": "flag", "mod": "shedMarks" }],
-    "answers": ["Seal"]
+    "answers": ["Seal", "backlash"]
   },
   {
     "id": "reflective-hide",
     "name": "Reflective Hide",
     "asks": "The first reaction after each boss turn bounces back; can your Payoff take it?",
     "ops": [{ "op": "flag", "mod": "reflectFirst" }],
-    "answers": ["Sustain"]
+    "answers": ["Sustain", "twin-strike", "curl-up"]
   },
   {
     "id": "elusive",
     "name": "Elusive",
     "asks": "The boss is quick: it dodges more often, and debuffs that slow it work as usual; can you make hits land?",
     "ops": [{ "op": "add", "stat": "spd", "value": 300 }],
-    "answers": ["Support shape"]
+    "answers": ["clear-skies", "pin-down"]
   },
   {
     "id": "slippery",
     "name": "Slippery",
     "asks": "The boss slips away from a quarter of all hits, whatever debuffs it has; can you make hits land?",
     "ops": [{ "op": "set", "stat": "dodgeBp", "value": 2500 }],
-    "answers": ["Support shape", "Detonator"]
+    "answers": ["clear-skies", "Detonator", "pin-down"]
   },
   {
     "id": "lucky-strike",
@@ -75,7 +75,7 @@
   {
     "id": "payoff-hunter",
     "name": "Payoff Hunter",
-    "asks": "Every 3 rounds it slams the strongest Payoff (aimed) and the slots beside it (area); is a Guard there?",
+    "asks": "Every 3 rounds it slams the strongest Payoff (aimed) and the slots beside it (area); is a Guard there? A Guard there takes it.",
     "ops": [
       {
         "op": "move",
@@ -90,7 +90,7 @@
     "name": "Grudge",
     "asks": "It hits whoever dealt the most last round.",
     "ops": [{ "op": "plain", "aim": { "anchor": "grudge", "shape": "single" }, "raiseBp": 5000 }],
-    "answers": ["Taunt"]
+    "answers": ["Taunt", "circle-round", "curl-up"]
   },
   {
     "id": "great-wave",
@@ -150,7 +150,7 @@
     "name": "Breakwater",
     "asks": "Row Wards are up to 3 times as strong against its Area hits",
     "ops": [{ "op": "mod", "mod": "wardBp", "base": 10000, "plus": 20000 }],
-    "answers": ["Row Ward"]
+    "answers": ["Row Ward", "night-watch"]
   },
   {
     "id": "adapts",

@@ -23,32 +23,33 @@ Status: written 2026-10-31, with the names Misa approved on 2026-10-31 and 2026-
 
 A family is a kind of trick. Misa renamed one family: Ward is now **Silence Guard**, because Row Ward is damage reduction and this one is different.
 
-| Family        | The rule `(content: combat-v2/knacks.json)`                                    | Knacks                                                          |
-| ------------- | ------------------------------------------------------------------------------ | --------------------------------------------------------------- |
-| Seal          | Its marks are not shed.                                                        | Brand                                                           |
-| Lead          | Boosts the next creature after it marks.                                       | Lead the Way                                                    |
-| Heavy Prime   | Gives up its damage for more mark stacks (Setters only).                       | Feed the Marks, Double Mark                                     |
-| Self Prime    | A non-Setter that marks what it can cash.                                      | Self-Starter                                                    |
-| Guard Prime   | A Guard that marks, at a cost to its Guard role (P-02).                        | Primed by Pain, Drop Guard                                      |
-| Support Prime | A Support that marks instead of its boost and heal.                            | Stack Up                                                        |
-| Detonator     | A Payoff that spends several stacks.                                           | All In, Detonate                                                |
-| Chain         | After a reaction, leaves a mark of its own element.                            | Leave a Trail                                                   |
-| Flurry        | Several smaller hits.                                                          | Twin Strike                                                     |
-| Reach         | Changes how far a Guard covers.                                                | Wide Reach                                                      |
-| Intercept     | Changes which hits it takes for others (a non-Guard only when no Guard can).   | Night Watch, Take It All, Unlikely Guardian                     |
-| Taunt         | Draws the plain attack.                                                        | Draw Fire                                                       |
-| Evasion       | Its own dodge, with Retaliate or a Store.                                      | Zoom, Zigzag                                                    |
-| Evasion aura  | Dodge for the creatures beside it or in its row (the largest aura applies).    | Mist Veil, Rolling Fog                                          |
-| Row Ward      | Cuts area damage for its row or the creatures beside it (the largest applies). | Barricade, Living Shelter                                       |
-| Silence Guard | Keeps the creatures beside it from being silenced.                             | Lantern Glow                                                    |
-| Pierce        | Ignores some boss armour.                                                      | Sense Weakness, Find the Gap                                    |
-| Luck          | Trades hit size for crits, or takes the sting out of a boss crit.              | Wild Swing, Cool Head                                           |
-| Partner       | A bonus on its hits while a given role is, or is not, beside it.               | Reliably Covered, Territorial                                   |
-| Support shape | Changes where a Support's boost and heal land, or replaces them.               | Clear Skies, Sunbeam, Curl Up, Wide Embrace, Drizzle, Starlight |
-| Sustain       | Heals, on a reaction or at round start.                                        | Returning Tide, Clear the Air, Hearth                           |
-| Store         | Fills over the fight, spends at 3.                                             | Eye of the Storm, Boiling Point                                 |
-| Debuff        | Puts a debuff on the boss.                                                     | Sticky Mud, Squelch Song                                        |
-| Signature     | An epic's own twist on a family, on one species only.                          | Crown of Embers                                                 |
+| Family           | The rule `(content: combat-v2/knacks.json)`                                    | Knacks                                                          |
+| ---------------- | ------------------------------------------------------------------------------ | --------------------------------------------------------------- |
+| Seal             | Its marks are not shed.                                                        | Brand                                                           |
+| Lead             | Helps the next creature in its row after it marks.                             | Lead the Way, Pin Down                                          |
+| Heavy Prime      | Gives up its damage for more mark stacks (Setters only).                       | Feed the Marks, Double Mark                                     |
+| Self Prime       | A non-Setter that marks what it can cash.                                      | Self-Starter                                                    |
+| Guard Prime      | A Guard that marks, at a cost to its Guard role (P-02).                        | Primed by Pain, Drop Guard                                      |
+| Support Prime    | A Support that marks instead of its boost and heal.                            | Stack Up                                                        |
+| Detonator        | A Payoff that spends several stacks.                                           | All In, Detonate, Aftershock                                    |
+| Chain            | After a reaction, leaves a mark of its own element.                            | Leave a Trail                                                   |
+| Punish the clear | Strikes back when the boss clears what is on it.                               | Backlash                                                        |
+| Flurry           | Several smaller hits.                                                          | Twin Strike                                                     |
+| Reach            | Changes how far a Guard covers.                                                | Wide Reach                                                      |
+| Intercept        | Changes which hits it takes for others (a non-Guard only when no Guard can).   | Night Watch, Take It All, Unlikely Guardian                     |
+| Taunt            | Draws the plain attack.                                                        | Draw Fire                                                       |
+| Evasion          | Its own dodge, with Retaliate or a Store.                                      | Zoom, Zigzag                                                    |
+| Evasion aura     | Dodge for the creatures beside it or in its row (the largest aura applies).    | Mist Veil, Rolling Fog                                          |
+| Row Ward         | Cuts area damage for its row or the creatures beside it (the largest applies). | Barricade, Living Shelter                                       |
+| Silence Guard    | Keeps the creatures beside it from being silenced.                             | Lantern Glow                                                    |
+| Pierce           | Ignores some boss armour.                                                      | Sense Weakness, Find the Gap                                    |
+| Luck             | Trades hit size for crits, or takes the sting out of a boss crit.              | Wild Swing, Cool Head                                           |
+| Partner          | A bonus on its hits while a given role is, or is not, beside it.               | Reliably Covered, Territorial                                   |
+| Support shape    | Changes where a Support's boost and heal land, or replaces them.               | Clear Skies, Sunbeam, Curl Up, Wide Embrace, Drizzle, Starlight |
+| Sustain          | Heals, on a reaction or at round start.                                        | Returning Tide, Clear the Air, Hearth                           |
+| Store            | Fills over the fight, spends at 3.                                             | Eye of the Storm, Boiling Point                                 |
+| Debuff           | Puts a debuff on the boss.                                                     | Sticky Mud, Squelch Song                                        |
+| Signature        | An epic's own twist on a family, on one species only.                          | Crown of Embers                                                 |
 
 ## Knacks
 
@@ -70,6 +71,22 @@ Each entry: the family, the forms that know it, the player text, and a line of c
 - Text `(content: combat-v2/knacks.json)`: "After it leaves a mark, the next creature to act in its row gets +20% on that hit."
 - Canon `(compendium detail, not shipped)`: Splashet and Wickat go first and look back. The next creature in the row follows the glow, like a lantern held up for the friend behind.
 - Design `(design)`: Rewards putting the Payoff right after the Setter in a row.
+
+### Pin Down
+
+- Family: Lead.
+- Forms: Splashet, Wickat, Solmane; kept when evolving by Tidewing.
+- Text `(content: combat-v2/knacks.json)`: "After it leaves a {Mark}, the boss cannot dodge the next creature to act in its row this round."
+- Canon `(compendium detail, not shipped)`: Splashet plants a wet paw on the boss's foot and holds it still, just long enough for the friend behind. Wickat and Solmane do it with a warm weight, like a hand on a shoulder.
+- Design `(design)`: The Setter's third pick beside Brand and Lead the Way. It answers a boss that dodges (the Elusive and Slippery cards): the Setter's own hit may miss, its mark still lands, and the hit after it cannot. A flag cleared every round, so copies do not stack. Added 2026-11-05 (second answers).
+
+### Backlash
+
+- Family: Punish the clear.
+- Forms: Gaiadrake.
+- Text `(content: combat-v2/knacks.json)`: "When the boss sheds a {Mark}, this creature strikes back for 20% of its Attack, ignoring armour. Once a round."
+- Canon `(compendium detail, not shipped)`: When the boss shrugs a mark off, Gaiadrake's roots snap back like a branch let go: no hurry, no malice, just the spring in the wood.
+- Design `(design)`: The second answer to the Clean Scales card for a team that does not Seal: the Payoff turns the boss's own clearing into damage. A counter, not a hit; once a round for each creature, so copies and big stacks do not pile it up. Below Brand's lift on every stack of cards measured. Added 2026-11-05 (second answers).
 
 ### Feed the Marks
 
@@ -121,6 +138,14 @@ Each entry: the family, the forms that know it, the player text, and a line of c
 - Text `(content: combat-v2/knacks.json)`: "{Spend}s all the stacks of the mark it cashes. Weak on 1 stack, strong on 2 or 3."
 - Canon `(compendium detail, not shipped)`: One big pop instead of several small ones. Stormray's thunder, or Cindle's pounce once the marks have piled up.
 - Design `(design)`: Pays off two Setters. Poor on a single stack.
+
+### Aftershock
+
+- Family: Detonator.
+- Forms: Bloomback.
+- Text `(content: combat-v2/knacks.json)`: "{Spend}s all the stacks of the mark it cashes, with a smaller bonus than Detonate. A hit cap holds its hit and its bonus apart."
+- Canon `(compendium detail, not shipped)`: Bloomback's flower opens, and a heartbeat later the seeds fall: two thuds, not one.
+- Design `(design)`: Detonate's quieter cousin for a boss that caps a hit (the Stone Skin card): the reaction's bonus lands as its own hit, so the cap cuts each half on its own. Its bonus is 90% of Detonate's, so Detonate stays the pick on a boss with no cap. Added 2026-11-05 (second answers).
 
 ### Twin Strike
 
@@ -481,27 +506,27 @@ Words for what a boss does and how it changes. The moves themselves are in the "
 
 A rule card is a question a boss asks: can you land big hits, can you take a crit, who stands at the ends of the rows? The card says what it asks and which families answer it, so a player can prepare. A card asks at a low boss rank and requires only later, so a team without the answer still does real work. `(design: decisions, 2026-10-29, "rule cards ask before they require")` Misa approved all the cards, with one rename: Lucky Strike is now **Double Strike**. The plain baseline (no card) is not listed. The two raid-only cards have no written answer yet.
 
-| Card                | The question it asks `(content: combat-v2/cards.json)`                                                                       | Answers                  | Old name     |
-| ------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ------------------------ | ------------ |
-| Thick Hide          | Small hits are Blocked; can you land big ones?                                                                               | Pierce, Detonator        |              |
-| Stone Skin          | No hit deals more than a cap; can you hit often?                                                                             | Flurry                   |              |
-| Clean Scales        | Marks are shed at the end of every boss turn; are Setter and Payoff in the same row?                                         | Seal                     |              |
-| Reflective Hide     | The first reaction after each boss turn bounces back; can your Payoff take it?                                               | Sustain                  |              |
-| Elusive             | The boss is quick: it dodges more often, and debuffs that slow it work as usual; can you make hits land?                     | Support shape            |              |
-| Slippery            | The boss slips away from a quarter of all hits, whatever debuffs it has; can you make hits land?                             | Support shape, Detonator |              |
-| Double Strike       | The boss's hits sometimes Crit for double damage; can you turn them away or take the sting out?                              | Luck, Evasion aura       | Lucky Strike |
-| Bramble Bind        | The ends of every row are silenced; who stands at the ends?                                                                  | Silence Guard            |              |
-| Wither              | Healing is halved; can you prevent damage instead?                                                                           | Taunt                    |              |
-| Payoff Hunter       | Every 3 rounds it slams the strongest Payoff (aimed) and the slots beside it (area); is a Guard there?                       | Reach                    |              |
-| Grudge              | It hits whoever dealt the most last round.                                                                                   | Taunt                    |              |
-| Full Sweep          | Every 3 rounds a Wind-up sweep of a row; who stands there?                                                                   | Intercept, Row Ward      | Great Wave   |
-| Swarm               | Its plain attack becomes a Barrage of 4 small hits; does armour or dodge hold?                                               | Evasion, Evasion aura    |              |
-| Crusher             | One huge hit on the strongest every third round.                                                                             | Reach, Sustain           |              |
-| Fizzle              | A mark left by a reaction cannot be cashed until after the next boss turn; do your chains cross rows?                        | Chain                    |              |
-| Shake It Off        | Every 3 rounds the boss clears all its debuffs; can you put them back?                                                       | Debuff                   |              |
-| Breakwater          | Row Wards are up to 3 times as strong against its Area hits                                                                  | Row Ward                 |              |
-| Reaction Resistance | Raid only: from stage 2 it resists your most-used reaction.                                                                  | none written (raid only) |              |
-| Element Resistance  | Raid only: from stage 2 the element that dealt the most damage hits it a quarter softer; is your team more than one element? | none written (raid only) |              |
+| Card                | The question it asks `(content: combat-v2/cards.json)`                                                                         | Answers                          | Old name     |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------ | -------------------------------- | ------------ |
+| Thick Hide          | Small hits are Blocked; can you land big ones?                                                                                 | Pierce, Detonator                |              |
+| Stone Skin          | No hit deals more than a cap; can you hit often?                                                                               | Flurry, Aftershock               |              |
+| Clean Scales        | Marks are shed at the end of every boss turn; are Setter and Payoff in the same row?                                           | Seal, Backlash                   |              |
+| Reflective Hide     | The first reaction after each boss turn bounces back; can your Payoff take it?                                                 | Sustain, Twin Strike, Curl Up    |              |
+| Elusive             | The boss is quick: it dodges more often, and debuffs that slow it work as usual; can you make hits land?                       | Clear Skies, Pin Down            |              |
+| Slippery            | The boss slips away from a quarter of all hits, whatever debuffs it has; can you make hits land?                               | Clear Skies, Detonator, Pin Down |              |
+| Double Strike       | The boss's hits sometimes Crit for double damage; can you turn them away or take the sting out?                                | Luck, Evasion aura               | Lucky Strike |
+| Bramble Bind        | The ends of every row are silenced; who stands at the ends?                                                                    | Silence Guard                    |              |
+| Wither              | Healing is halved; can you prevent damage instead?                                                                             | Taunt                            |              |
+| Payoff Hunter       | Every 3 rounds it slams the strongest Payoff (aimed) and the slots beside it (area); is a Guard there? A Guard there takes it. | Reach                            |              |
+| Grudge              | It hits whoever dealt the most last round.                                                                                     | Taunt, Returning Tide, Curl Up   |              |
+| Full Sweep          | Every 3 rounds a Wind-up sweep of a row; who stands there?                                                                     | Intercept, Row Ward              | Great Wave   |
+| Swarm               | Its plain attack becomes a Barrage of 4 small hits; does armour or dodge hold?                                                 | Evasion, Evasion aura            |              |
+| Crusher             | One huge hit on the strongest every third round.                                                                               | Reach, Sustain                   |              |
+| Fizzle              | A mark left by a reaction cannot be cashed until after the next boss turn; do your chains cross rows?                          | Chain                            |              |
+| Shake It Off        | Every 3 rounds the boss clears all its debuffs; can you put them back?                                                         | Debuff                           |              |
+| Breakwater          | Row Wards are up to 3 times as strong against its Area hits                                                                    | Row Ward, Night Watch            |              |
+| Reaction Resistance | Raid only: from stage 2 it resists your most-used reaction.                                                                    | none written (raid only)         |              |
+| Element Resistance  | Raid only: from stage 2 the element that dealt the most damage hits it a quarter softer; is your team more than one element?   | none written (raid only)         |              |
 
 Some cards give the boss a move (Bramble Bind, Payoff Hunter, Full Sweep, Crusher). Those moves are in the move library, under "Card moves" in the "Moves" section below. The card Full Sweep (was Great Wave) adds the move Wild Sweep; the Tidal Colossus keeps its tide move Great Wave, because a card's name never equals a move's name (the content gate checks it). The card's id is still `great-wave`.
 

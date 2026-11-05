@@ -24,6 +24,3 @@ declare module 'node:crypto' {
 }
 declare const console: { log(text: string): void; error(text: string): void };
 declare function structuredClone<T>(value: T): T;
-declare module 'node:perf_hooks' {
-  export const performance: { now(): number };
-}

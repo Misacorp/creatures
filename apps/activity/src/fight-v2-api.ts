@@ -209,7 +209,8 @@ export function isBoardEvent(value: unknown): value is BoardEvent {
         isBool(value['blocked']) &&
         isBool(value['dodged']) &&
         (value['by'] === undefined || isStr(value['by'])) &&
-        (value['critBp'] === undefined || isCount(value['critBp']))
+        (value['critBp'] === undefined || isCount(value['critBp'])) &&
+        (value['bonus'] === undefined || isBool(value['bonus']))
       );
     case 'intercept':
       return isStr(value['guard']) && isStr(value['who']);
@@ -218,7 +219,13 @@ export function isBoardEvent(value: unknown): value is BoardEvent {
     case 'boost':
       return isStr(value['who']) && isStr(value['by']) && isCount(value['bp']);
     case 'counter':
-      return isStr(value['from']) && isCount(value['damage']);
+      return (
+        isStr(value['from']) &&
+        isCount(value['damage']) &&
+        (value['byKnack'] === undefined || isBool(value['byKnack']))
+      );
+    case 'sure':
+      return isStr(value['who']) && isStr(value['by']);
     case 'mark':
       return isStr(value['element']) && isCount(value['stacks']) && isBool(value['sealed']);
     case 'shed':
@@ -229,7 +236,8 @@ export function isBoardEvent(value: unknown): value is BoardEvent {
         isStr(value['mark']) &&
         isCount(value['spent']) &&
         isCount(value['bonus']) &&
-        isCount(value['left'])
+        isCount(value['left']) &&
+        (value['split'] === undefined || isBool(value['split']))
       );
     case 'heal':
       return (
@@ -244,7 +252,7 @@ export function isBoardEvent(value: unknown): value is BoardEvent {
     case 'store':
       return isStr(value['who']) && isCount(value['value']);
     case 'mired':
-      return isCount(value['stacks']);
+      return isCount(value['stacks']) && (value['shook'] === undefined || isCount(value['shook']));
     case 'escalation':
       return (
         isCount(value['count']) &&

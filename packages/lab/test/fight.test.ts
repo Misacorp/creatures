@@ -238,6 +238,7 @@ describe('R11 and line talent pools (Misa, 2026-10-27)', () => {
     expect(knacksOf('tidewing')).toEqual([
       'steady-mark',
       'lead-the-way',
+      'pin-down',
       'double-mark',
       'circle-round',
     ]);

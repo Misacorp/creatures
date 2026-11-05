@@ -30,8 +30,23 @@ export interface KnackFx {
   readonly seal?: boolean;
   /** After it marks, the next creature to act in its row gets this boost (bp). */
   readonly leadBoostBp?: number;
+  /**
+   * After it leaves a mark, the boss cannot dodge the next creature to act in its row this round (Pin Down). A flag cleared at
+   * every round start, so several copies do not stack.
+   */
+  readonly leadUndodge?: boolean;
   /** Payoff: spend every stack of the mark; each extra stack adds this share of the bonus. */
   readonly spendAllBp?: number;
+  /**
+   * Payoff: a hit cap holds its plain hit and its reaction bonus apart (each is held to the cap on its own), and the bonus is its own
+   * number on the board (Aftershock).
+   */
+  readonly splitBonus?: boolean;
+  /**
+   * The first time the boss sheds a mark in a round, it strikes back for this share of its Attack: a counter (ignores armour, dodge
+   * and the hit cap), once a round per creature whatever the number of marks or boss turns (Backlash).
+   */
+  readonly backlashBp?: number;
   /** Payoff: its reaction bonus is scaled by this (bp) before stacks count. */
   readonly bonusBp?: number;
   /** Payoff: sets off a reaction only when the mark has at least this many stacks. */

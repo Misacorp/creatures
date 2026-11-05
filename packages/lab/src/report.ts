@@ -30,7 +30,6 @@ import { LINE_POOLS, TALENTS, talentPool } from './talents';
 import { LAB_RULES } from './rules';
 import { ELEMENTS, formStats, triggers } from './species';
 import {
-  CLASSIC_LINE,
   GAUNTLET,
   LEVEL,
   RAID,
@@ -95,7 +94,10 @@ export const ANSWERS: Readonly<Record<string, readonly (readonly [string, string
   ],
   'stone-skin': [
     ['Twin Strike', 'tidewing/steady-mark tempestray/twin-strike thornbuck/wide-reach'],
+    // The Detonator that holds its hit and its bonus apart: each is cut by the cap on its own.
+    ['Aftershock', 'voltaro/zoom bloomback/aftershock thornbuck/wide-reach'],
   ],
+  // Brand is the gauntlet's answer; Backlash is measured in a raid (`RAID_ANSWERS`), where a mark can cross a boss turn.
   'clean-scales': [['Brand (Seal)', 'tidewing/steady-mark tempestray/none thornbuck/wide-reach']],
   'reflective-hide': [
     ['Returning Tide', 'tidewing/circle-round tempestray/none thornbuck/wide-reach'],
@@ -104,12 +106,16 @@ export const ANSWERS: Readonly<Record<string, readonly (readonly [string, string
       'Clear the Air in the middle',
       'tidewing/steady-mark halcyray/clear-the-air tempestray/detonate',
     ],
+    // Two smaller hits: the bounce takes a share of the first one's bonus only.
+    ['Twin Strike', 'tidewing/steady-mark tempestray/twin-strike thornbuck/wide-reach'],
+    ['Curl Up beside both', 'tidewing/steady-mark sunfawn/curl-up tempestray/none'],
   ],
   elusive: [
     [
       'Clear Skies beside both hitters',
       'tidewing/steady-mark halcyray/clear-skies tempestray/none',
     ],
+    ['Pin Down', 'tidewing/pin-down tempestray/none thornbuck/wide-reach'],
   ],
   slippery: [
     [
@@ -120,12 +126,14 @@ export const ANSWERS: Readonly<Record<string, readonly (readonly [string, string
       'All In (marks are never dodged)',
       'tidewing/steady-mark tempestray/all-at-once thornbuck/wide-reach',
     ],
+    ['Pin Down', 'tidewing/pin-down tempestray/none thornbuck/wide-reach'],
   ],
   breakwater: [
     [
       'Barricade on a Kilnmole in the row',
       'tidewing/steady-mark kilnmole/keep-the-heat-in tempestray/none',
     ],
+    ['Night Watch', 'tidewing/steady-mark tempestray/none thornbuck/night-watch'],
   ],
   'lucky-strike': [
     ['Cool Head in the middle', 'tidewing/steady-mark thornbuck/cool-head tempestray/none'],
@@ -139,7 +147,20 @@ export const ANSWERS: Readonly<Record<string, readonly (readonly [string, string
   'payoff-hunter': [
     ['Guard beside the Payoff', 'tidewing/steady-mark tempestray/none thornbuck/wide-reach'],
   ],
-  grudge: [['Draw Fire', 'tidewing/steady-mark tempestray/none kilnmole/draw-fire']],
+  fizzle: [
+    // A trail mark waits one boss turn: with one row the follower cashes it a round later, so the chain still pays.
+    [
+      'Leave a Trail, cashed a round later',
+      'tidewing/steady-mark tempestray/leave-a-trail bloomback/none',
+    ],
+  ],
+  grudge: [
+    // The Guard acts first in the row: the plain attack aims at whoever dealt the most last round, and Draw Fire's Taunt
+    // only draws it from a Guard that has already acted (a Guard last, the aim is made before it has a round of damage).
+    ['Draw Fire, the Guard first', 'kilnmole/draw-fire tidewing/steady-mark tempestray/none'],
+    ['Returning Tide', 'tidewing/circle-round tempestray/none thornbuck/wide-reach'],
+    ['Curl Up beside both', 'tidewing/steady-mark sunfawn/curl-up tempestray/none'],
+  ],
   'great-wave': [
     ['Night Watch', 'tidewing/steady-mark tempestray/none thornbuck/night-watch'],
     [
@@ -156,6 +177,27 @@ export const ANSWERS: Readonly<Record<string, readonly (readonly [string, string
   crusher: [
     ['Guard beside the Payoff', 'tidewing/steady-mark tempestray/none thornbuck/wide-reach'],
     ['Hearth', 'tidewing/steady-mark tempestray/none hearthshell/hearth'],
+  ],
+};
+
+/**
+ * Cards the lab measures with another card beside them, because alone they have nothing to answer: Breakwater only strengthens Row
+ * Wards against an Area hit, and the lab's boss has none (the track pairs it only with the Tidal Colossus, which sweeps with Wind-ups).
+ */
+export const ANSWER_WITH: Readonly<Record<string, readonly string[]>> = {
+  breakwater: ['great-wave'],
+};
+
+/**
+ * Intended answers that need a raid's three rows (twelve picks, row by row), measured in the raid against the classic raid line: a
+ * mark only crosses a boss turn when the Setter and the Payoff stand in different rows.
+ */
+export const RAID_ANSWERS: Readonly<Record<string, readonly (readonly [string, string])[]>> = {
+  'clean-scales': [
+    [
+      'Backlash on the Payoffs, Setters unsealed',
+      'voltaro/none thornbuck/wide-reach voltaro/none thornbuck/wide-reach gaiadrake/backlash gaiadrake/backlash gaiadrake/backlash gaiadrake/backlash voltaro/none gaiadrake/backlash voltaro/none gaiadrake/backlash',
+    ],
   ],
 };
 
@@ -227,10 +269,22 @@ export function reportAnswers(cardId: string, quick: boolean): AnswerRows {
   const rows: string[] = [];
   let working = 0,
     answers = 0;
-  for (const [label, spec] of ANSWERS[cardId] ?? []) {
-    const boss = bossFor(GAUNTLET, [cardId]);
-    const a = evaluate(boss, line(spec), GAUNTLET, seeds, `ans:${cardId}`);
-    const cl = evaluate(boss, CLASSIC_LINE, GAUNTLET, seeds, `ans:${cardId}`);
+  const measured: [string, string, Mode][] = [
+    ...(ANSWERS[cardId] ?? []).map(([label, spec]): [string, string, Mode] => [
+      label,
+      spec,
+      GAUNTLET,
+    ]),
+    ...(RAID_ANSWERS[cardId] ?? []).map(([label, spec]): [string, string, Mode] => [
+      `${label} (raid)`,
+      spec,
+      RAID,
+    ]),
+  ];
+  for (const [label, spec, mode] of measured) {
+    const boss = bossFor(mode, [cardId, ...(ANSWER_WITH[cardId] ?? [])]);
+    const a = evaluate(boss, line(spec), mode, seeds, `ans:${cardId}`);
+    const cl = evaluate(boss, classicFor(mode), mode, seeds, `ans:${cardId}`);
     answers++;
     if (a.score > cl.score) working++;
     rows.push(
@@ -534,7 +588,10 @@ function assembleReport(
     `**${working} of ${answers} intended answers beat the classic line on their card.**`,
     '',
     `No intended answer yet: ${cards
-      .filter((c) => c.id !== 'plain' && !(ANSWERS[c.id]?.length ?? 0))
+      .filter(
+        (c) =>
+          c.id !== 'plain' && !(ANSWERS[c.id]?.length ?? 0) && !(RAID_ANSWERS[c.id]?.length ?? 0),
+      )
       .map((c) => c.name)
       .join(
         ', ',
