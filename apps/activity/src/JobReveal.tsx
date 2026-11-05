@@ -54,7 +54,7 @@ function DismantleRow({ result }: { result: Extract<JobResult, { kind: 'dismantl
       <ul class="jr-items" aria-label="Taken apart">
         {result.items.map((item, index) => (
           <li key={`${item.baseId}-${String(index)}`}>
-            <ItemThumb item={item} scale={result.items.length > 12 ? 3 : 4} />
+            <ItemThumb item={item} scale={result.items.length > 12 ? 3 : 4} spoken />
           </li>
         ))}
       </ul>

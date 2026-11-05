@@ -80,9 +80,18 @@ export function slotName(slot: GearSlot): string {
   return capitalize(slot);
 }
 
-/** "Kelp Cap, item level 4", for spoken labels. */
-export function itemLabel(baseId: string, itemLevel: number): string {
-  return `${gearName(baseId)}, item level ${String(itemLevel)}`;
+/**
+ * An item's spoken name, the one way every item picture or button names it: "Kelp Cap, item level 4, Rare". The
+ * rarity is always in it, because the picture shows rarity by its frame's colour and shape only (`rarity-edge`).
+ * The item level is left out for a piece stored before items had levels.
+ */
+export function itemLabel(item: {
+  baseId: string;
+  rarity: GearRarity;
+  itemLevel?: number | undefined;
+}): string {
+  const level = item.itemLevel === undefined ? '' : `, item level ${String(item.itemLevel)}`;
+  return `${gearName(item.baseId)}${level}, ${rarityName(item.rarity)}`;
 }
 
 /**
@@ -941,7 +950,7 @@ export function grantsForWeek(
 export function lootItemName(item: { baseId: string; itemLevel?: number }): string {
   return item.itemLevel === undefined
     ? gearName(item.baseId)
-    : itemLabel(item.baseId, item.itemLevel);
+    : `${gearName(item.baseId)}, item level ${String(item.itemLevel)}`;
 }
 
 export function lootIsEmpty(loot: GrantLoot): boolean {

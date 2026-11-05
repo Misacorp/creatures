@@ -245,7 +245,7 @@ export function useDismantleFlow(props: DismantleFlowProps): {
             <ul class="dismantle-items" aria-label={`${String(items.length)} items to take apart`}>
               {items.map((item) => (
                 <li key={item.id}>
-                  <ItemThumb item={item} scale={items.length > 12 ? 3 : 4} />
+                  <ItemThumb item={item} scale={items.length > 12 ? 3 : 4} spoken />
                 </li>
               ))}
             </ul>

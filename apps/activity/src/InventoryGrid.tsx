@@ -1,7 +1,7 @@
 import type { Creature } from './api';
 import { creatureName } from './game';
 import type { GearItem } from './gear-types';
-import { gearName, rarityName, slotName, sortItems } from './gear-view';
+import { gearName, itemLabel, slotName, sortItems } from './gear-view';
 import { ItemTile } from './ItemTile';
 import type { MultiSelect } from './ui/multi-select';
 import type { SelectHint } from './ui/select-hint';
@@ -58,10 +58,8 @@ export function InventoryGrid({
         {ordered.map((item, index) => {
           const wearer = creatures.find((c) => c.id === item.equippedOn);
           const label = [
-            gearName(item.baseId),
+            itemLabel(item),
             slotName(item.slot),
-            `item level ${String(item.itemLevel)}`,
-            rarityName(item.rarity),
             wearer === undefined ? null : `worn by ${creatureName(wearer)}`,
           ]
             .filter((part) => part !== null)

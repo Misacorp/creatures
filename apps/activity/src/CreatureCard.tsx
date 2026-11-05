@@ -16,7 +16,7 @@ import { CardMedals, CardRibbons } from './CreatureHonours';
 import { experienceLabel } from './CreatureProgress';
 import { creatureName } from './game';
 import type { GearState } from './gear-types';
-import { gearName, itemLabel, slotName } from './gear-view';
+import { itemLabel, slotName } from './gear-view';
 import { ItemThumb } from './GearArt';
 import { ActionButton } from './ui/ActionButton';
 import { ArmchairIcon } from './ui/ArmchairIcon';
@@ -146,7 +146,7 @@ export function CreatureCard({
               ? `${slotName(slot)}: opens at level ${String(opens[slot])}`
               : worn === undefined
                 ? `${slotName(slot)}: empty`
-                : `${slotName(slot)}: ${itemLabel(worn.baseId, worn.itemLevel)}`;
+                : `${slotName(slot)}: ${itemLabel(worn)}`;
             return (
               <li key={slot}>
                 <button
@@ -154,11 +154,7 @@ export function CreatureCard({
                   class={locked ? 'cc-slot locked' : 'cc-slot'}
                   disabled={locked}
                   aria-label={label}
-                  title={
-                    worn === undefined
-                      ? undefined
-                      : `${gearName(worn.baseId)}, item level ${String(worn.itemLevel)}`
-                  }
+                  title={worn === undefined ? undefined : itemLabel(worn)}
                   onClick={() => {
                     onOpen({ part: 'gear', slot });
                   }}

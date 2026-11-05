@@ -4,6 +4,14 @@ Gear items, lines and sets, crafting, dismantling, conversions, the bag and the 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-05: [Misa] Rarity is shown by the frame's shape too, and every item's spoken name says it
+
+ID: `2026-11-05-rarity-is-shown-by-a-shape` · Status: current · Amends: `2026-10-17-one-item-level-indicator-item-card`
+
+**Decision.** Every real item's picture shows its rarity by its border's shape as well as its colour, like a picture frame (`rarity-edge`, `item-frame.css`): Common keeps the plain line, Rare gets bevelled corners (a stepped pixel diagonal in each inside corner), Epic the same corners and a pixel point in the middle of each side, pointing in. Only the border's inner edge changes, one UI pixel (`--px`) deep, in the rarity colour, drawn as an overlay over the art and under the corner marks (slot icon, level, the bag's flag and wearer); the frame keeps its size and nothing sticks out. `ItemFrame` (given a `baseId`), `ItemTile` and the Valley Games Prize stall's gear offer (whose name now also says its rarity to screen readers) put the class on; a picture with no `baseId` (a blueprint, a How to play illustration) is not an item and keeps the plain line. A guard test (`rarity-edge.test.tsx`) fails if any other file puts it on, and lists every stylesheet that draws a border in a rarity colour (supplies and the unused gear `Slot` keep colour only, with their reason), so a new one has to be sorted. The spoken name of every item now comes from `itemLabel(item)`, which always ends in the rarity ("Kelp Cap, item level 4, Rare"): the creature card's gear slots lacked it, and the items to take apart (`DismantleDrawer`, `JobReveal`) had no spoken name at all (`ItemThumb spoken`). Two legibility fixes came with it: the item level's outline now steps round the corners (eight directions), so art no longer shows between the letters, and the creature list's worn item is drawn at the card's size (scale 3, its margin cut to its ring so the row keeps its width) with the frame's usual level size instead of the smaller 0.75rem one.
+
+**Reasoning.** An accessibility review (deuteranopia, low vision) found Common, Rare and Epic could not be told apart without colour on gear tiles, creature cards and finds; the pips that once did this were dropped on 2026-10-17 to keep one corner label. A first try hung a small shape (stone, diamond, crown) from the top edge; Misa found it too busy next to the level and slot icons and asked for the border alone to change, "simple but elegant", like a plain or an ornate picture frame, same colour and about the same size. Bevels for Rare and bevels plus points for Epic read as a step up each time, and stay clear of the corners' icons.
+
 ## 2026-11-03: [Misa] Element shards differ by shape (Tide drop, Ember flame, Grove leaf, Spark bolt, Mire drip)
 
 ID: `2026-11-03-element-shards-differ-by-shape-tide` · Status: current
@@ -261,7 +269,7 @@ ID: `2026-10-17-workshop-bag-polish-misa-s-feedback` · Status: current · Amend
 
 ## 2026-10-17: one item-level indicator; item card and compact rows (polish v6)
 
-ID: `2026-10-17-one-item-level-indicator-item-card` · Status: current, amended by `2026-10-17-workshop-bag-polish-misa-s-feedback` · Amends: `2026-10-17-creature-rarity-by-name-colour-gear`
+ID: `2026-10-17-one-item-level-indicator-item-card` · Status: current, amended by `2026-10-17-workshop-bag-polish-misa-s-feedback`, `2026-11-05-rarity-is-shown-by-a-shape` · Amends: `2026-10-17-creature-rarity-by-name-colour-gear`
 
 Misa's changes after polish v5, with the lead's decision on item levels.
 
