@@ -273,7 +273,7 @@ export class ValleyOrders {
             throw new Error('the exchange rate must be a whole number of shards');
           }
           const held = getParts(this.sql, userId);
-          const shards = VALLEY_ELEMENTS.map((e) => held[shardOf(e as Element)]);
+          const shards = VALLEY_ELEMENTS.map((e) => held[shardOf(e)]);
           const trades = exchangeShards(
             VALLEY_RULES,
             this.deps.forge.rng,

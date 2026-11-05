@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment --
+/* eslint-disable @typescript-eslint/no-unsafe-member-access --
    These tests read parts of response bodies (`Json.body` is `any` on purpose). */
 /**
  * Phase 5 step 3: the Forge loop on the server (migration 58, `valley-forge.ts`, `valley-orders.ts`, the anvil, order and exchange

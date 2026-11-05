@@ -828,7 +828,7 @@ export class ValleySettle {
           a.piece_active === 1
             ? {
                 orderId: a.piece_order,
-                rarity: (a.piece_rarity === 1 ? 1 : a.piece_rarity === 2 ? 2 : 0) as 0 | 1 | 2,
+                rarity: a.piece_rarity === 1 ? 1 : a.piece_rarity === 2 ? 2 : 0,
                 progress: a.piece_progress,
                 need: a.piece_need,
                 leftHours:

@@ -140,9 +140,7 @@ export const slotOpenFor = (level: number, slot: GearSlot): boolean =>
 /** The element index (in `VALLEY_ELEMENTS`) of a base: its tag's element, or -1 for a neutral base (any pile pays). */
 export function baseElementIndex(base: Pick<GearBase, 'tag'>): number {
   const element = tagElement(base.tag);
-  return element === null
-    ? -1
-    : VALLEY_ELEMENTS.indexOf(element as (typeof VALLEY_ELEMENTS)[number]);
+  return element === null ? -1 : VALLEY_ELEMENTS.indexOf(element);
 }
 
 export interface ValleyForgeDeps {
@@ -175,7 +173,7 @@ export class ValleyForgePass {
     const held = getParts(this.sql, userId);
     return {
       scrap: held.scrap,
-      shards: VALLEY_ELEMENTS.map((e) => held[shardOf(e as Element)]),
+      shards: VALLEY_ELEMENTS.map((e) => held[shardOf(e)]),
       essence: getBalance(this.sql, userId, 'essence'),
     };
   }
@@ -198,7 +196,7 @@ export class ValleyForgePass {
     const worn = equippedByCreature(this.sql, userId);
     const limit = weakLimit(VALLEY_RULES, FIRE_LEVEL);
     for (const c of team) {
-      const e = VALLEY_ELEMENTS.indexOf(speciesOf(c.species).element as never);
+      const e = VALLEY_ELEMENTS.indexOf(speciesOf(c.species).element);
       if (e < 0) continue;
       for (const slot of GEAR_SLOTS) {
         if (!slotOpenFor(c.level, slot)) continue;
@@ -382,7 +380,7 @@ export class ValleyForgePass {
     };
     move('scrap', was.scrap, now.scrap);
     for (const [e, element] of VALLEY_ELEMENTS.entries()) {
-      move(shardOf(element as Element), was.shards[e] ?? 0, now.shards[e] ?? 0);
+      move(shardOf(element), was.shards[e] ?? 0, now.shards[e] ?? 0);
     }
     if (Object.keys(cost).length > 0 && !debitParts(this.sql, userId, cost)) {
       throw new Error('the Forge pass spent more than the shelf held');
@@ -494,7 +492,7 @@ export class ValleyForgePass {
 
 /** A base for a team piece with nobody to wear it: any base of its element the item level allows. */
 function teamBase(rng: Rng, element: number, itemLevel: number): GearBase {
-  const el = (VALLEY_ELEMENTS[element] ?? null) as Element | null;
+  const el = VALLEY_ELEMENTS[element] ?? null;
   return dropBase(rng, el, itemLevel);
 }
 
@@ -536,7 +534,7 @@ class TeamTargets {
     const limit = weakLimit(VALLEY_RULES, itemLevel);
     let best: { member: TeamMember; slot: GearSlot; level: number } | undefined;
     for (const member of this.team) {
-      if (VALLEY_ELEMENTS.indexOf(speciesOf(member.species).element as never) !== element) continue;
+      if (VALLEY_ELEMENTS.indexOf(speciesOf(member.species).element) !== element) continue;
       for (const slot of GEAR_SLOTS) {
         if (!slotOpenFor(member.level, slot)) continue;
         const level = this.levels.get(member.id)?.get(slot)?.level ?? 0;
