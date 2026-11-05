@@ -67,6 +67,10 @@ Misa: "I don't want my points necessarily addressed immediately. Let's do it whe
 
 **Step 5b landed (2026-11-05):** item 1 (creatures in the Paddock's scene can be dragged and dropped; a tap still opens the popover; `valley/creature-drag.ts`), the accessibility pass (every button on the map, the Places list, the Gazette and the pinned action has a spoken name; Tab walks the places in reading order and every stop shows a focus ring; Left and Right walk the map as on the Expeditions world map; the Gazette, the coming-home moment and the map's idle motion stop under reduced motion) and the gate's end-to-end checklist, `pnpm --filter @creatures/activity e2e:valley` (`docs/design/testing.md`, layer 8): every row of the table above on the real game with captured fixtures. What is left: Misa on staging.
 
+## Later: Paddock polish (Misa, 2026-11-05)
+
+"The paddock kind of could use some polish, but let's do it later": a picked-up creature wriggles as it is lifted, casts a drop shadow while held, and lands with a little settle; check the depth order while dragging and after a drop.
+
 ## Later, from the combat v2 session (2026-11-05)
 
 Misa would like an art-led dungeon entrance: the Cave opens into a drawn view where the player first picks a depth (its reward scaling visible) and then sees the day's map. Deferred because it touches the valley's places and art (noted in `docs/roadmap.md` on `combat-v2-phase4-gate`). Today combat v2's depth picker is a dropdown on the pre-run card (`DepthPicker.tsx`, `dungeonRewardScalars` in `@creatures/game`, the start route's optional `depth`); the Cave's scene can call the same pieces when it is built.
