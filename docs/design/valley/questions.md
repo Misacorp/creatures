@@ -6,7 +6,16 @@ Sections: **Waiting on Misa** (asked, not answered), **Queue** (to ask, in order
 
 ## Waiting on Misa
 
-Nothing waiting.
+### Q60. Phase 4's gate: can you play the whole game through the valley, with nothing missing?
+
+Status: asked, round 27 (2026-11-05). Phase 4's gate (`roadmap.md`): "The whole game is playable through the valley on staging; nothing is lost from today's game." Staging has 2e7bb3b3 (steps 1 to 5 and the panel's fixes).
+
+**Why it matters.** Passing it starts phase 5: the new systems (posts instead of trips and Workshop jobs, the bonfire, the School, the commons, the visitor and the Market), built on the server and behind flags, which replace today's pages inside the places.
+
+- **A. It passes.** Phase 5 starts with its plan, asked as the next round.
+- **B. Not yet.** Say what is missing or harder than today, and it gets fixed first.
+
+**Lead's pick: A** if every one of today's screens is one tap inside its place and nothing feels missing.
 
 ## Queue
 
