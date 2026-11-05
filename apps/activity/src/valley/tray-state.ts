@@ -12,7 +12,7 @@ import { destinationName } from '../trip-view';
 
 /** One state per creature, the most pressing first. `free` has no mark. */
 export type TrayState =
-  'loot' | 'ready' | 'evolve' | 'resting' | 'scouting' | 'job' | 'trip' | 'free';
+  'loot' | 'ready' | 'evolve' | 'resting' | 'scouting' | 'smithing' | 'job' | 'trip' | 'free';
 
 export interface TrayBadge {
   state: TrayState;
@@ -31,6 +31,8 @@ export interface TrayInput {
   resting?: ReadonlySet<string>;
   /** The creatures posted to a scout seat (`VALLEY_SYSTEMS` on), each with the destination it scouts; absent with the flag off. */
   scouting?: ReadonlyMap<string, string>;
+  /** The creatures posted to an anvil at the Forge (`VALLEY_SYSTEMS` on); absent with the flag off. */
+  smithing?: ReadonlySet<string>;
 }
 
 export function trayBadge(c: Creature, input: TrayInput): TrayBadge {
@@ -70,6 +72,9 @@ export function trayBadge(c: Creature, input: TrayInput): TrayBadge {
       label: say(`Scouting at ${destinationName(scouting)}.`),
     };
   }
+  if (input.smithing?.has(c.id) === true) {
+    return { state: 'smithing', destination: null, label: say('Smithing at the Forge.') };
+  }
   if (input.resting?.has(c.id) === true) {
     return { state: 'resting', destination: null, label: say('Resting at the fire.') };
   }
@@ -84,6 +89,7 @@ const ORDER: readonly TrayState[] = [
   'free',
   'job',
   'scouting',
+  'smithing',
   'trip',
 ];
 
@@ -95,11 +101,14 @@ export function trayFor(creatures: readonly Creature[], input: TrayInput): Creat
   );
 }
 
-/** What the valley's systems add to the tray's input: who rests at the fire, and who scouts where. */
-export function trayStates(visit: ValleyVisit): Pick<TrayInput, 'resting' | 'scouting'> {
+/** What the valley's systems add to the tray's input: who rests at the fire, who scouts where, and who smiths. */
+export function trayStates(
+  visit: ValleyVisit,
+): Pick<TrayInput, 'resting' | 'scouting' | 'smithing'> {
   const seats = new Map(visit.seats.map((s) => [s.creatureId, s.destination]));
   return {
     resting: new Set(visit.creatures.filter((r) => r.state === 'resting').map((r) => r.id)),
+    smithing: new Set(visit.creatures.filter((r) => r.state === 'smithing').map((r) => r.id)),
     scouting: new Map(
       visit.creatures.flatMap((r) => {
         const where = r.state === 'scouting' ? seats.get(r.id) : undefined;
@@ -112,6 +121,11 @@ export function trayStates(visit: ValleyVisit): Pick<TrayInput, 'resting' | 'sco
 /** Whether the server says a creature stands at a scout seat (it does not wander the paddock then). */
 export function isScouting(c: Pick<Creature, 'id'>, visit: ValleyVisit | null): boolean {
   return visit?.creatures.some((r) => r.id === c.id && r.state === 'scouting') === true;
+}
+
+/** Whether the server says a creature stands at an anvil (it does not wander the paddock then). */
+export function isSmithing(c: Pick<Creature, 'id'>, visit: ValleyVisit | null): boolean {
+  return visit?.creatures.some((r) => r.id === c.id && r.state === 'smithing') === true;
 }
 
 /** Whether a creature wanders the paddock on the map: it is at home and not at work. */

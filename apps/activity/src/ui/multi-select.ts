@@ -86,6 +86,8 @@ export function useMultiSelect(
   /** Selects the item and starts the mode (a long press, the corner checkbox's first tap, "Select"). */
   add: (id: string) => void;
   range: (id: string) => void;
+  /** Selects exactly these items (the bag's "Select all" of a filter). */
+  setAll: (ids: readonly string[]) => void;
   clear: () => void;
 } {
   const [raw, setRaw] = useState<Selection>(() =>
@@ -107,6 +109,9 @@ export function useMultiSelect(
     },
     range: (id) => {
       setRaw((now) => rangeTo(pruned(now, valid), id, order));
+    },
+    setAll: (ids) => {
+      setRaw({ ids: new Set(ids), anchor: ids[ids.length - 1] ?? null });
     },
     clear: () => {
       setRaw(NO_SELECTION);

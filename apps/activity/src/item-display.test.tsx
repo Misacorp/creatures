@@ -38,6 +38,7 @@ const NO_PICK: MultiSelect = {
   toggle: () => undefined,
   add: () => undefined,
   range: () => undefined,
+  setAll: () => undefined,
   clear: () => undefined,
 };
 

@@ -166,6 +166,48 @@ const seatView = (s) => ({
   },
   perDay: { scrap: 50, shards: 3, creatures: 0.3, gear: 0.2, blueprints: 0.07, pages: 0.1 },
 });
+/** The Forge's state of a scenario (phase 5 step 3): the anvils (id, creatureId, kit, orders), the shelf and the order counter. */
+const forgeState = {
+  anvils: [],
+  shelf: { scrap: 120, essence: 30, shards: { tide: 4, ember: 7, grove: 0, spark: 2, mire: 3 } },
+  nextOrder: 1,
+};
+const ANVIL_LADDER = [
+  { acorns: 0, scrap: 0 },
+  { acorns: 123, scrap: 38 },
+];
+const orderView = (o) => ({
+  id: o.id,
+  blueprintId: o.blueprintId ?? null,
+  forTeam: o.blueprintId === undefined || o.blueprintId === null,
+  count: o.count,
+  made: 0,
+  reach: o.reach,
+  needs: {
+    scrap: 36,
+    shardElement: o.blueprintId === undefined || o.blueprintId === null ? null : 'tide',
+    shard: 1,
+    essence: o.reach === 'rare' ? 25 : o.reach === 'epic' ? 70 : 0,
+  },
+  waiting: null,
+});
+const anvilView = (a) => ({
+  id: a.id,
+  creatureId: a.creatureId,
+  kit: a.kit ?? null,
+  mastery: { hours: 0, step: 0, bonusBp: 0 },
+  orders: a.orders.map(orderView),
+  piece:
+    a.creatureId !== null && a.orders.length > 0
+      ? { orderId: a.orders[0].id, rarity: 0, progress: 6, need: 16, leftHours: 10 }
+      : null,
+  tinkering:
+    a.creatureId !== null && a.orders.length === 0
+      ? { reason: 'idle', shardElement: null, sinceHours: 3 }
+      : null,
+  floor: { count: 2, cap: 5, full: false, byRarity: [2, 0, 0] },
+  perDay: { pieces: a.creatureId !== null && a.orders.length > 0 ? 1.5 : 0 },
+});
 /** The server's `valley` block for the scenario's seats; every creature rests unless a seat holds it. */
 const valleyBlock = () => ({
   settledAt: 1799760000000,
@@ -173,28 +215,26 @@ const valleyBlock = () => ({
   awayHours: 6,
   creatures: scouts.ids.map((id, i) => {
     const seat = scouts.seats.find((s) => s.creatureId === id);
+    const anvil = forgeState.anvils.find((a) => a.creatureId === id);
     return {
       id,
-      state: seat === undefined ? 'resting' : 'scouting',
+      state: seat !== undefined ? 'scouting' : anvil !== undefined ? 'smithing' : 'resting',
       gained: 25 + i * 11,
       catchUpBp: 10000,
-      seatId: seat?.id ?? null,
+      seatId: seat?.id ?? anvil?.id ?? null,
     };
   }),
   allowance: { store: 0, cap: 480, brought: 0 },
-  anvils: [],
+  anvils: forgeState.anvils.map(anvilView),
   anvilPrices: {
-    owned: 0,
+    owned: forgeState.anvils.length,
     max: 2,
-    next: { acorns: 0, scrap: 0 },
-    ladder: [
-      { acorns: 0, scrap: 0 },
-      { acorns: 123, scrap: 38 },
-    ],
+    next: ANVIL_LADDER[forgeState.anvils.length] ?? null,
+    ladder: ANVIL_LADDER,
   },
   forge: {
-    shelf: { scrap: 0, essence: 0, shards: { tide: 0, ember: 0, grove: 0, spark: 0, mire: 0 } },
-    bag: { count: 0, cap: 200 },
+    shelf: forgeState.shelf,
+    bag: { count: 34, cap: 200 },
     fireLevel: 1,
     exchange: { rate: 3, critBp: 1000, critYield: 2 },
     queueMax: 3,
@@ -223,6 +263,12 @@ const bodyOf = (request) => JSON.parse(request.postData() ?? '{}');
 ROUTES.set('/api/valley/seat', (request) => {
   const body = bodyOf(request);
   scoutCalls.push(['seat', body]);
+  const anvil = forgeState.anvils.find((a) => a.id === body.seatId);
+  if (anvil !== undefined && body.creatureId !== undefined) {
+    const other = forgeState.anvils.find((a) => a.creatureId === body.creatureId && a !== anvil);
+    if (other !== undefined) other.creatureId = anvil.creatureId;
+    anvil.creatureId = body.creatureId;
+  }
   const seat = scouts.seats.find((s) => s.id === body.seatId);
   if (seat !== undefined) {
     if (body.destination !== undefined)
@@ -251,10 +297,69 @@ ROUTES.set('/api/valley/kit', (request) => {
   scoutCalls.push(['kit', body]);
   if (body.action === 'buy') scouts.owned.push(body.kit);
   else {
-    const seat = scouts.seats.find((s) => s.id === body.seatId);
+    const seat =
+      scouts.seats.find((s) => s.id === body.seatId) ??
+      forgeState.anvils.find((a) => a.id === body.seatId);
     if (seat !== undefined) seat.kit = body.kit;
   }
   return { ...syncValley() };
+});
+
+/** What the Forge's routes were asked, in order (the route and the body of each). */
+const forgeCalls = [];
+ROUTES.set('/api/valley/anvil/buy', (request) => {
+  forgeCalls.push(['anvil/buy', bodyOf(request)]);
+  const next = ANVIL_LADDER[forgeState.anvils.length];
+  forgeState.shelf.scrap -= next.scrap;
+  forgeState.anvils.push({
+    id: `anvil-${String(forgeState.anvils.length + 1)}`,
+    creatureId: null,
+    kit: null,
+    orders: [],
+  });
+  return { seatId: forgeState.anvils.at(-1).id, ...syncValley() };
+});
+ROUTES.set('/api/valley/order', (request) => {
+  const body = bodyOf(request);
+  forgeCalls.push(['order', body]);
+  if (body.action === 'add') {
+    const anvil = forgeState.anvils.find((a) => a.id === body.seatId);
+    anvil.orders.push({
+      id: `order-${String(forgeState.nextOrder++)}`,
+      blueprintId: body.forTeam ? null : body.blueprintId,
+      count: body.count ?? 1,
+      reach: body.reach ?? 'none',
+    });
+  } else if (body.action === 'edit') {
+    for (const a of forgeState.anvils) {
+      const order = a.orders.find((o) => o.id === body.orderId);
+      if (order !== undefined)
+        Object.assign(order, {
+          count: body.count ?? order.count,
+          reach: body.reach ?? order.reach,
+        });
+    }
+  } else {
+    for (const a of forgeState.anvils) a.orders = a.orders.filter((o) => o.id !== body.orderId);
+  }
+  return { ...syncValley() };
+});
+ROUTES.set('/api/valley/exchange', (request) => {
+  const body = bodyOf(request);
+  forgeCalls.push(['exchange', body]);
+  const shards = forgeState.shelf.shards;
+  const from =
+    body.from ??
+    Object.keys(shards)
+      .filter((e) => e !== body.to)
+      .sort((x, y) => shards[y] - shards[x])[0];
+  shards[from] -= 3 * body.times;
+  shards[body.to] += body.times;
+  return {
+    trades: Array.from({ length: body.times }, () => ({})),
+    gained: body.times,
+    ...syncValley(),
+  };
 });
 
 // --- The checklist ----------------------------------------------------------------------------------------
@@ -552,12 +657,11 @@ try {
         // From 60 rem a list of places and the open place's pages beside it; a phone keeps the folded headings.
         const wide = width >= 960;
         // The Journal loads its entries first: the list is there once it has.
-        if (wide)
-          await page
-            .locator('.journal .choice-list')
-            .first()
-            .waitFor({ timeout: 5000 })
-            .catch(() => undefined);
+        await page
+          .locator(wide ? '.journal .choice-list' : '.journal .journal-place')
+          .first()
+          .waitFor({ timeout: 5000 })
+          .catch(() => undefined);
         const lists = await page.locator('.journal .choice-list').count();
         const panels = await page.locator('.journal .side-panel').count();
         const folds = await page.locator('.journal .journal-place').count();
@@ -1070,6 +1174,162 @@ try {
       await page.keyboard.press('Escape');
       await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
       await shot('signpost-two-seats');
+    },
+  );
+
+  // The Forge with the valley's systems on (phase 5 step 3): buy an anvil, post a smith, order, edit, remove, a second anvil, the exchange.
+  await scenario(
+    'valley systems on: the Forge is its anvils: buy one, post a smith, add, edit and remove an order, a second anvil, the exchange',
+    () => {
+      const config = ROUTES.get('/api/config');
+      answerOverride.set('/api/config', () => ({ ...config(), valleySystems: true }));
+      const creatures = baseState.creatures.map((c) => ({ ...c, busy: null, away: false }));
+      scouts.seats = [];
+      scouts.owned = [];
+      scouts.ids = creatures.map((c) => c.id);
+      forgeState.anvils = [];
+      forgeState.nextOrder = 1;
+      forgeCalls.length = 0;
+      // Acorns for the second anvil (123).
+      stateOverride = {
+        creatures,
+        balances: { ...baseState.balances, bait: 1000 },
+        valley: valleyBlock(),
+      };
+    },
+    async () => {
+      await waitFor(page.locator(VALLEY), 'attached');
+      await place('forge').evaluate((el) => el.click());
+      await waitFor(heading('Forge'));
+      // Today's job slots are gone.
+      if ((await page.getByText(/Craft supplies/).count()) > 0)
+        throw new Error('the Workshop still draws supply crafts');
+      await waitFor(page.getByRole('button', { name: /A new anvil/ }));
+      const take = page.getByRole('button', { name: /^Take your first anvil/ });
+      await waitFor(take);
+      await expectTopmost(take.first(), 'the "Take your first anvil" button');
+      await shot('forge-no-anvils');
+      await page.getByRole('button', { name: /A new anvil/ }).click();
+      await waitFor(page.getByRole('dialog'));
+      await page.getByRole('button', { name: /^Buy the anvil/ }).click();
+      await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+      await waitFor(page.getByRole('heading', { name: 'Anvil 1' }));
+      if (!forgeCalls.some(([k, b]) => k === 'anvil/buy' && typeof b.idempotencyKey === 'string'))
+        throw new Error('the anvil was bought without an idempotency key');
+      // Post a smith from the picker.
+      const slot = page.getByRole('button', { name: /^Anvil 1: nobody posted/ });
+      await slot.scrollIntoViewIfNeeded();
+      await expectTopmost(slot, 'the empty smith slot');
+      await slot.click();
+      await waitFor(page.getByRole('dialog', { name: /Who smiths/ }));
+      await page
+        .getByRole('option')
+        .filter({ hasText: /Sproutle/ })
+        .first()
+        .click();
+      await waitFor(page.getByRole('button', { name: /^Anvil 1: Sproutle/ }));
+      const [first, second] = baseState.creatures;
+      const tray = page.locator(
+        `section[aria-label="Creatures to post"] button[data-creature="${second.id}"]`,
+      );
+      if (!/Smithing/.test((await tray.getAttribute('aria-label')) ?? ''))
+        throw new Error('the tray does not say Smithing');
+      if ((await tray.locator('.vy-zz').count()) > 0) throw new Error('a smith carries the z');
+      await waitFor(page.getByText(/Tinkering/));
+      await shot('forge-one-smith-tinkering');
+      // Add an order: a blueprint, one more, Reach for Rare.
+      await page.getByRole('button', { name: /^Add an order/ }).click();
+      await waitFor(page.getByRole('dialog', { name: /Add an order/ }));
+      await page.getByRole('button', { name: /What to make: nothing chosen/ }).click();
+      await page.locator('ul[aria-label="Blueprints"] button').nth(1).click();
+      await page.getByRole('button', { name: /One more piece/ }).click();
+      await page.getByRole('button', { name: /Reach for Rare/ }).click();
+      await page.waitForTimeout(400);
+      await expectTopmost(page.getByRole('dialog').first(), 'the order editor');
+      await shot('forge-order-editor');
+      await page.getByRole('button', { name: /^Add to the queue/ }).click();
+      await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+      const added = forgeCalls.at(-1)?.[1];
+      if (added?.action !== 'add' || added.count !== 2 || added.reach !== 'rare')
+        throw new Error(`the order was ${JSON.stringify(added)}`);
+      await waitFor(page.locator('button.fg-order'));
+      await shot('forge-one-smith-at-work');
+      // Edit it, then take it off.
+      await page.locator('button.fg-order').first().click();
+      await waitFor(page.getByRole('dialog', { name: /Change the order/ }));
+      await page.getByRole('button', { name: /One more piece/ }).click();
+      await page.getByRole('button', { name: /^Save/ }).click();
+      await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+      if (forgeCalls.at(-1)?.[1].count !== 3) throw new Error('the edit did not send count 3');
+      await page.locator('button.fg-order').first().click();
+      await waitFor(page.getByRole('dialog', { name: /Change the order/ }));
+      await page.getByRole('button', { name: /Take it off the queue/ }).click();
+      await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+      if (forgeCalls.at(-1)?.[1].action !== 'remove') throw new Error('remove was not sent');
+      // A second anvil, a smith dragged on from the tray.
+      await page.getByRole('button', { name: /A new anvil/ }).click();
+      await waitFor(page.getByRole('dialog'));
+      await page.getByRole('button', { name: /^Buy the anvil/ }).click();
+      await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+      await waitFor(page.getByRole('heading', { name: 'Anvil 2' }));
+      const mover = page.locator(
+        `section[aria-label="Creatures to post"] button[data-creature="${first.id}"]`,
+      );
+      const card = page.locator('li.sp-seat').nth(1);
+      await mover.scrollIntoViewIfNeeded();
+      const at = await mover.boundingBox();
+      await card.scrollIntoViewIfNeeded();
+      const over = await card.boundingBox();
+      const from = await mover.boundingBox();
+      if (at === null || over === null || from === null) throw new Error('no boxes to drag');
+      await mover.scrollIntoViewIfNeeded();
+      const start = await mover.boundingBox();
+      await page.mouse.move(start.x + start.width / 2, start.y + start.height / 2);
+      await page.mouse.down();
+      await page.mouse.move(start.x + start.width / 2 + 12, start.y + start.height / 2 + 12, {
+        steps: 4,
+      });
+      const target = await card.boundingBox();
+      await page.mouse.move(target.x + target.width / 2, target.y + target.height / 2, {
+        steps: 10,
+      });
+      await page.mouse.up();
+      await waitFor(page.getByRole('button', { name: /^Anvil 2: Cindle/ }));
+      await shot('forge-two-anvils');
+      // The exchange: the rate and the crit are shown, the trade is keyed.
+      await page
+        .getByRole('button', { name: /^Trade/ })
+        .first()
+        .click();
+      await waitFor(page.getByRole('dialog', { name: /Trade shards/ }));
+      await page.waitForTimeout(400);
+      if (!/10% chance to get 2/.test(await page.getByRole('dialog').innerText()))
+        throw new Error('the exchange does not show the crit chance');
+      await expectTopmost(page.getByRole('dialog').first(), 'the exchange drawer');
+      await shot('forge-exchange');
+      await page.getByRole('button', { name: /^Trade \d/ }).click();
+      await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+      const traded = forgeCalls.at(-1);
+      if (traded?.[0] !== 'exchange' || typeof traded[1].idempotencyKey !== 'string')
+        throw new Error('the trade was sent without an idempotency key');
+      // The bag's filter and sort, with the count against the cap.
+      await waitFor(page.getByText(/Bag: \d+ \/ \d+/));
+      const tools = page.getByRole('button', { name: /Filter and sort/ });
+      await tools.scrollIntoViewIfNeeded();
+      await tools.click();
+      await page.getByRole('button', { name: 'Rare', exact: true }).first().click();
+      await page.waitForTimeout(300);
+      await expectTopmost(page.locator('.bag-tools').first(), 'the bag tools');
+      await shot('forge-bag-filter');
+      // Nothing overlaps: every card and the tray is the topmost thing at its box.
+      for (const loc of [
+        page.locator('li.sp-seat').first(),
+        page.locator('.fg-page .vy-tray').first(),
+      ]) {
+        await loc.scrollIntoViewIfNeeded();
+        await expectTopmost(loc, 'a Forge card');
+      }
+      forgeState.anvils = [];
     },
   );
 

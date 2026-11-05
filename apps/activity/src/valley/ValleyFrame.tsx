@@ -23,7 +23,7 @@ import { placeBubbles, placeStates, type PlaceInput } from './place-state';
 import { castFor, hasScene, type CastExtra } from './place-cast';
 import { artSize, placeScale, placeSceneDraw } from './place-scene';
 import type { TrayInput } from './tray-state';
-import { trayFor, isAtHome, isScouting, trayStates } from './tray-state';
+import { trayFor, isAtHome, isScouting, isSmithing, trayStates } from './tray-state';
 import { placeOf, type PlaceId } from './valley-art';
 import { placeLabel } from './valley-logic';
 import { soonLine, type SoonPlaceId, type ValleyView } from './valley-nav';
@@ -100,7 +100,7 @@ export function ValleyFrame({
     view.kind === 'place' &&
     view.book === null &&
     hasScene(view.place) &&
-    (view.place !== 'signpost' || visit !== null)
+    ((view.place !== 'signpost' && view.place !== 'forge') || visit !== null)
       ? castFor(
           view.place,
           { ...placeInput, ...castExtra, visit },
@@ -146,7 +146,9 @@ export function ValleyFrame({
           <>
             <div class="vy-map-view">
               <ValleyMap
-                creatures={creatures.filter((c) => isAtHome(c) && !isScouting(c, visit))}
+                creatures={creatures.filter(
+                  (c) => isAtHome(c) && !isScouting(c, visit) && !isSmithing(c, visit),
+                )}
                 at="start"
                 focus={focus}
                 bubbles={bubbles}

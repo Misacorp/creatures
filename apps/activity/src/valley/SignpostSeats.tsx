@@ -18,8 +18,6 @@ import { baseOption, type PickerOption } from '../roster-picker';
 import { dropOutcome } from '../slot-outcome';
 import { TOUCH_HOLD_MS } from '../dnd-core';
 import { useDragDrop } from '../use-drag-drop';
-import { ActionButton } from '../ui/ActionButton';
-import { Alert } from '../ui/Alert';
 import { Bar } from '../ui/Bar';
 import { ChoiceButton, ChoiceList } from '../ui/ChoiceList';
 import { DataTable } from '../ui/DataTable';
@@ -30,6 +28,7 @@ import { onDrillKey } from '../ui/drill-keys';
 import { RosterPicker } from '../ui/RosterPicker';
 import { Slot, SlotRow } from '../ui/Slot';
 import { Tag } from '../ui/Tag';
+import { SlotText, SpendConfirm, seatAt } from './seat-parts';
 import { Tray } from './Tray';
 import { trayFor, type TrayInput } from './tray-state';
 import {
@@ -50,14 +49,9 @@ import {
 /** The sentinel row of the creature picker that empties a seat. */
 const REMOVE_ID = '';
 
-/** The most a seat's drop target is found by: the seat card under a point. */
-function seatAt(x: number, y: number): string | null {
-  if (typeof document === 'undefined') return null;
-  for (const el of document.elementsFromPoint(x, y)) {
-    const card = el.closest<HTMLElement>('[data-seat]');
-    if (card !== null) return card.dataset['seat'] ?? null;
-  }
-  return null;
+/** Why a price in Acorns cannot be paid; null when it can. */
+function shortReason(acorns: number, price: number): string | null {
+  return price > acorns ? `You have ${String(acorns)} Acorns; this costs ${String(price)}.` : null;
 }
 
 /** What the page asks the game to do; each answers whether the server took it. */
@@ -81,53 +75,6 @@ export interface SignpostStart {
   kit?: string;
   detail?: string;
   buy?: boolean;
-}
-
-/** One cost and the one button that spends it, with the reason it cannot be pressed. */
-function SpendConfirm({
-  text,
-  label,
-  price,
-  acorns,
-  busy,
-  onConfirm,
-}: {
-  text: string;
-  label: string;
-  price: number;
-  acorns: number;
-  busy: boolean;
-  onConfirm: () => void;
-}) {
-  const short = price > acorns;
-  return (
-    <div class="dr-stack">
-      <p class="prose">{text}</p>
-      {short && (
-        <Alert level="info">
-          {`You have ${String(acorns)} Acorns; this costs ${String(price)}.`}
-        </Alert>
-      )}
-      <ActionButton
-        label={label}
-        detail={seatPriceText(price)}
-        wide
-        large
-        disabled={busy || short}
-        onClick={onConfirm}
-      />
-    </div>
-  );
-}
-
-/** The slot's two small lines: a name, and under it what matters. Text only. */
-function SlotText({ name, sub }: { name: string; sub?: string }) {
-  return (
-    <span class="sp-slot">
-      <strong class="pix sp-slot-name">{name}</strong>
-      {sub !== undefined && <span class="sp-slot-sub">{sub}</span>}
-    </span>
-  );
 }
 
 export function SignpostSeats({
@@ -529,8 +476,8 @@ export function SignpostSeats({
               <SpendConfirm
                 text={`${KIT_INFO[buyingKit].line} You keep it, and can put it on any seat.`}
                 label="Buy"
-                price={kitPrice}
-                acorns={acorns}
+                price={seatPriceText(kitPrice)}
+                reason={shortReason(acorns, kitPrice)}
                 busy={busy}
                 onConfirm={() => {
                   const kind = buyingKit;
@@ -574,8 +521,8 @@ export function SignpostSeats({
           <SpendConfirm
             text="Another scout can explore a place for you, all day long."
             label="Buy the seat"
-            price={nextPrice}
-            acorns={acorns}
+            price={seatPriceText(nextPrice)}
+            reason={shortReason(acorns, nextPrice)}
             busy={busy}
             onConfirm={() => {
               void actions.buySeat().then((ok) => {

@@ -13,7 +13,12 @@ import type {
   TripCatch,
   TripResult,
 } from './expedition-types';
-import { parseValleyView, type ScoutKit, type ValleyView as ValleyVisit } from '@creatures/game';
+import {
+  parseValleyView,
+  type ReachId,
+  type KitName,
+  type ValleyView as ValleyVisit,
+} from '@creatures/game';
 import { isExperienceView, isRibbonView, type ExperienceView, type RibbonView } from './experience';
 import { isWornGear } from './gear-parse';
 import {
@@ -800,10 +805,48 @@ export async function buyScoutSeat(idempotencyKey: string): Promise<ValleyAnswer
 /** Buys a kit (a keyed spend of Acorns, once each), or sets an owned kit on a seat for free (`null` takes it off). */
 export async function scoutKit(
   request:
-    | { action: 'buy'; kit: ScoutKit; idempotencyKey: string }
-    | { action: 'set'; seatId: string; kit: ScoutKit | null },
+    | { action: 'buy'; kit: KitName; idempotencyKey: string }
+    | { action: 'set'; seatId: string; kit: KitName | null },
 ): Promise<ValleyAnswer> {
   return valleyAnswer(await apiFetch('/api/valley/kit', jsonRequest('POST', request)));
+}
+
+/** One order of an anvil's queue (V-FORGE-1): what to add, change or take off. Free and repeatable, so no key. */
+export type OrderRequest =
+  | { action: 'add'; seatId: string; blueprintId: string; count: number; reach?: ReachId }
+  | { action: 'add'; seatId: string; forTeam: true; reach?: ReachId }
+  | { action: 'edit'; orderId: string; count?: number; reach?: ReachId }
+  | { action: 'remove'; orderId: string };
+
+/** Buys the player's next anvil (V-POST-2, V-FORGE-6): a keyed spend of Acorns and scrap. */
+export async function buyAnvil(idempotencyKey: string): Promise<ValleyAnswer> {
+  return valleyAnswer(
+    await apiFetch('/api/valley/anvil/buy', jsonRequest('POST', { idempotencyKey })),
+  );
+}
+
+/** Adds, changes or removes an order of an anvil's queue; the answer carries the settled valley (the order takes effect at once). */
+export async function postOrder(request: OrderRequest): Promise<ValleyAnswer> {
+  return valleyAnswer(await apiFetch('/api/valley/order', jsonRequest('POST', request)));
+}
+
+/** What the exchange answers besides the valley: the shards it gave in all (a crit gives more than one). */
+export interface ExchangeAnswer extends ValleyAnswer {
+  trades: number;
+  gained: number;
+}
+
+/** Trades shards for the element `to` (V-FORGE-10), paid from `from` (omitted: the biggest pile that can pay); a keyed spend. */
+export async function exchangeShards(request: {
+  to: string;
+  from?: string | null;
+  times: number;
+  idempotencyKey: string;
+}): Promise<ExchangeAnswer> {
+  const data = await apiFetch('/api/valley/exchange', jsonRequest('POST', request));
+  const trades = isRecord(data) && Array.isArray(data['trades']) ? data['trades'].length : 0;
+  const gained = isRecord(data) && typeof data['gained'] === 'number' ? data['gained'] : 0;
+  return { ...valleyAnswer(data), trades, gained };
 }
 
 export function stateFrom(data: unknown): GameState {

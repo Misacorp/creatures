@@ -20,15 +20,24 @@ import type { RaidGlance } from '../home-view';
 import { isAtHome } from './tray-state';
 import type { PlaceBubble } from './place-state';
 import { bubbleAt, raidTiming } from './place-state';
+import { forgeCalm } from './forge-view';
 import { placeName, scoutsOut, signpostCalm } from './signpost-view';
 import type { PlaceId } from './valley-art';
 import type { Rect } from './valley-art';
 
 /**
- * The places that have a scene of their own over today's page. The Signpost's is drawn only with the valley's systems on (its
- * scouts stand in it; `ValleyFrame` checks), the Forge's waits for phase 5's anvils.
+ * The places that have a scene of their own over today's page. The Signpost's and the Forge's are drawn only with the valley's
+ * systems on (the scouts and the smiths stand in them; `ValleyFrame` checks).
  */
-export const CAST_PLACES = ['house', 'cave', 'arena', 'fair', 'paddock', 'signpost'] as const;
+export const CAST_PLACES = [
+  'house',
+  'cave',
+  'arena',
+  'fair',
+  'paddock',
+  'signpost',
+  'forge',
+] as const;
 export type CastPlace = (typeof CAST_PLACES)[number];
 
 export function hasScene(id: PlaceId): id is CastPlace {
@@ -381,6 +390,62 @@ function signpostCast(input: CastInput, art: Size): Pick<Cast, 'stands' | 'act'>
   };
 }
 
+// --- Forge ---
+
+/** The smiths stand this far apart sideways in front of the forge (scene pixels). */
+const SMITH_STEP = 24;
+
+/**
+ * The smiths at their anvils in front of the forge, in the order the anvils were bought, each saying which anvil. A free anvil shows
+ * nobody (the page under the scene says it is free). The scene's one action is the next step: take the first anvil, or post a smith to a
+ * free anvil; else a calm line of how many smiths are at work.
+ */
+function forgeCast(input: CastInput, art: Size): Pick<Cast, 'stands' | 'act'> {
+  const visit = input.visit;
+  if (visit == null) return { stands: [], act: { kind: 'calm', line: '' } };
+  const smiths = visit.anvils.flatMap((anvil, n) => {
+    const creature = input.creatures.find((c) => c.id === anvil.creatureId);
+    return creature === undefined ? [] : [{ creature, n }];
+  });
+  // Right of the door: the anvil stands at its left, and a smith in front of it would hide it.
+  const spots = row(smiths.length, Math.floor(art.width / 2) + 10, art.height - 10, SMITH_STEP);
+  const stands = smiths.flatMap(({ creature, n }, i) => {
+    const spot = spots[i];
+    return spot === undefined
+      ? []
+      : [
+          {
+            creature,
+            x: spot.x,
+            y: spot.y,
+            flip: i % 2 === 1,
+            where: `smithing at anvil ${String(n + 1)}`,
+          },
+        ];
+  });
+  if (visit.anvils.length === 0 && visit.anvilPrices.next !== null) {
+    const free = visit.anvilPrices.next.acorns === 0 && visit.anvilPrices.next.scrap === 0;
+    return {
+      stands,
+      act: { kind: 'step', label: 'Take your first anvil', ...(free ? { detail: 'free' } : {}) },
+    };
+  }
+  const free = visit.anvils.filter((a) => a.creatureId === null).length;
+  const posted = new Set(visit.anvils.map((a) => a.creatureId));
+  const spare = input.creatures.filter((c) => !posted.has(c.id) && isAtHome(c)).length;
+  if (free > 0 && spare > 0) {
+    return {
+      stands,
+      act: {
+        kind: 'step',
+        label: 'Post a smith',
+        detail: plural(free, 'an anvil is free', 'anvils are free'),
+      },
+    };
+  }
+  return { stands, act: { kind: 'calm', line: smiths.length === 0 ? '' : forgeCalm(visit) } };
+}
+
 interface Size {
   width: number;
   height: number;
@@ -417,5 +482,7 @@ export function castFor(
       return { ...base, ...paddockCast(input, art) };
     case 'signpost':
       return { ...base, ...signpostCast(input, art) };
+    case 'forge':
+      return { ...base, ...forgeCast(input, art) };
   }
 }

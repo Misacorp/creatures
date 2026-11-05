@@ -3,10 +3,24 @@ import { Hud } from '../../Hud';
 import { PopoverHost, useCreatureViewer } from '../../PopoverHost';
 import { WelcomeBack } from '../../valley/gazette/WelcomeBack';
 import type { Balances, Creature, ValleyVisit } from '../../api';
-import type { ScoutKit, ValleySeatView } from '@creatures/game';
+import type { KitName, ValleySeatView } from '@creatures/game';
 import { homeAlerts } from '../../home-view';
 import type { Place } from '../../tabs';
+import { GEAR_STATE, SAMPLE_GEAR } from '../../creature-card-sample';
+import type { GearActions } from '../../gear-actions';
+import type { OrderRequest } from '../../api';
+import type { ValleyAnvilView, ValleyOrderView } from '@creatures/game';
 import { SignpostSeats, type SignpostStart } from '../../valley/SignpostSeats';
+import {
+  fullFloor,
+  sampleAnvil,
+  sampleOrder,
+  shardWait,
+  withAnvils,
+} from '../../valley/forge-sample';
+import { SHARD_ELEMENTS } from '../../valley/forge-view';
+import type { ForgeStart } from '../../valley/ForgeAnvils';
+import { Workshop, type ForgeMode } from '../../Workshop';
 import { ValleyFrame } from '../../valley/ValleyFrame';
 import { SAMPLE_PLACES, sampleSeat, sampleValley } from '../../valley/signpost-sample';
 import { fitsPlace } from '../../valley/signpost-view';
@@ -43,7 +57,17 @@ export const VALLEY_RESTING = ['off', 'few', 'many'] as const;
 /** How the demo's scouts stand: systems off, no seat bought, one scout out, two out, or a full pack among two. */
 export const VALLEY_SCOUTS = ['off', 'no seats', 'one scout', 'two scouts', 'a full pack'] as const;
 
-/** What the Signpost's page has open at the start (a picker, a drawer), for the shots. */
+/** How the demo's anvils stand (phase 5 step 3): systems off, no anvil bought, one smith at work, two anvils, a smith tinkering, a full floor. */
+export const VALLEY_FORGE = [
+  'off',
+  'no anvils',
+  'one smith',
+  'two anvils',
+  'tinkering',
+  'full floor',
+] as const;
+
+/** What the Signpost's or the Forge's page has open at the start (a picker, a drawer), for the shots. */
 export const VALLEY_OPEN = [
   'nothing',
   'scout picker',
@@ -51,6 +75,14 @@ export const VALLEY_OPEN = [
   'kit',
   'pack and pace',
   'buy a seat',
+  'order editor',
+  'edit an order',
+  'exchange',
+  'floor and pace',
+  'anvil kit',
+  'smith picker',
+  'buy an anvil',
+  'bag filter',
 ] as const;
 
 /** The seats of a scouts setting, the first two creatures of the roster posted. */
@@ -140,6 +172,97 @@ function openAtStart(setting: string): SignpostStart {
   }
 }
 
+/** What a `VALLEY_OPEN` setting opens on the Forge's page at the start. */
+function forgeStartOf(setting: string): ForgeStart {
+  switch (setting) {
+    case 'exchange':
+      return { exchange: true };
+    case 'floor and pace':
+      return { floor: 'anvil-1' };
+    case 'anvil kit':
+      return { kit: 'anvil-1' };
+    case 'smith picker':
+      return { picker: 'anvil-1' };
+    case 'buy an anvil':
+      return { buy: true };
+    case 'bag filter':
+      return { bag: true };
+    default:
+      return {};
+  }
+}
+
+const BLUEPRINT = SAMPLE_GEAR.blueprints[0]?.baseId ?? 'kelp-cap';
+
+/** The anvils of a forge setting, the first two creatures of the roster posted. */
+function forgeAnvils(roster: readonly Creature[], forge: string): ValleyAnvilView[] {
+  const [a, b] = roster;
+  if (a === undefined || b === undefined || forge === 'off' || forge === 'no anvils') return [];
+  switch (forge) {
+    case 'one smith':
+      return [
+        sampleAnvil('anvil-1', a.id, [
+          sampleOrder('order-1', BLUEPRINT, 3, { made: 1 }),
+          sampleOrder('order-2', null, 1),
+        ]),
+      ];
+    case 'tinkering':
+      return [shardWait('anvil-1', a.id, BLUEPRINT, 5), sampleAnvil('anvil-2', b.id, [])];
+    case 'full floor':
+      return [fullFloor('anvil-1', a.id, BLUEPRINT), sampleAnvil('anvil-2', null, [])];
+    default:
+      return [
+        sampleAnvil('anvil-1', a.id, [sampleOrder('order-1', BLUEPRINT, 3, { made: 1 })], {
+          kit: 'tongs',
+        }),
+        sampleAnvil('anvil-2', b.id, [sampleOrder('order-2', null, 2, { reach: 'rare' })]),
+      ];
+  }
+}
+
+/** What the demo's shelf holds: scrap for some pieces and a few shards. */
+const DEMO_SHELF = {
+  scrap: 120,
+  essence: 30,
+  shards: { tide: 4, ember: 7, grove: 0, spark: 2, mire: 3 },
+};
+
+/** The orders after a request, as the server changes them (the demo has no server). */
+function orderDemo(anvils: readonly ValleyAnvilView[], request: OrderRequest): ValleyAnvilView[] {
+  return anvils.map((anvil) => {
+    let orders: ValleyOrderView[] = anvil.orders;
+    if (request.action === 'add' && anvil.id === request.seatId) {
+      const n = anvils.flatMap((x) => x.orders).length + 1;
+      orders = [
+        ...orders,
+        sampleOrder(
+          `order-${String(n)}`,
+          'forTeam' in request ? null : request.blueprintId,
+          'forTeam' in request ? 1 : request.count,
+          { reach: request.reach ?? 'none' },
+        ),
+      ];
+    } else if (request.action === 'edit') {
+      orders = orders.map((o) =>
+        o.id === request.orderId
+          ? {
+              ...o,
+              count: request.count ?? o.count,
+              reach: request.reach ?? o.reach,
+              needs: {
+                ...o.needs,
+                essence: { none: 0, rare: 25, epic: 70 }[request.reach ?? o.reach],
+              },
+            }
+          : o,
+      );
+    } else if (request.action === 'remove') {
+      orders = orders.filter((o) => o.id !== request.orderId);
+    }
+    return orders === anvil.orders ? anvil : { ...anvil, orders };
+  });
+}
+
 /** A post or a move on the demo's seats, as the server does it: a creature at another seat swaps; a new place empties the pack. */
 function postDemo(
   seats: readonly ValleySeatView[],
@@ -183,7 +306,7 @@ function postDemo(
 function demoVisit(
   creatures: readonly Creature[],
   seats: readonly ValleySeatView[],
-  owned: readonly ScoutKit[],
+  owned: readonly KitName[],
 ): ValleyVisit {
   const rest = restingVisit(creatures, 120);
   const sv = sampleValley(creatures, seats, { kit: { owned: [...owned], price: 875 } });
@@ -203,6 +326,18 @@ function demoVisit(
 }
 
 const NOTHING = () => undefined;
+/** The Workshop's buttons do nothing here (the bag's and the blueprints' flows have their own workbench pages). */
+const DEMO_GEAR_ACTIONS: GearActions = {
+  equip: () => Promise.resolve(undefined),
+  equipBest: () => Promise.resolve(undefined),
+  checkDismantle: () => Promise.resolve({ locked: [] }),
+  dismantlePile: () => Promise.resolve(undefined),
+  dismissNotice: () => Promise.resolve(undefined),
+  startJob: () => Promise.resolve(undefined),
+  previewCraft: () => new Promise(() => undefined),
+  previewDismantle: () => new Promise(() => undefined),
+  claimJob: () => Promise.resolve(undefined),
+};
 const PURSE: Balances = { bait: 1240, essence: 36 };
 const NO_REF = { current: null };
 const WAITING = [
@@ -237,6 +372,7 @@ export function ValleyDemo({
   resting,
   scouts = 'off',
   open: opened = 'nothing',
+  forge = 'off',
 }: {
   start: string;
   away: boolean;
@@ -246,6 +382,8 @@ export function ValleyDemo({
   scouts?: string;
   /** What the Signpost's page has open at the start: one of `VALLEY_OPEN`. */
   open?: string;
+  /** The Forge's anvils (phase 5 step 3): one of `VALLEY_FORGE`. */
+  forge?: string;
 }) {
   const first = VALLEY_STARTS.includes(start as (typeof VALLEY_STARTS)[number])
     ? (start as PlaceId | 'valley')
@@ -262,23 +400,41 @@ export function ValleyDemo({
   const [purse, setPurse] = useState<Balances | null>(null);
   const planned = homeInput(day, true);
   const scoutsOn = scouts !== 'off';
+  const forgeOn = forge !== 'off';
   // With the valley's systems on the roster rests at the fire, and the allowance brought some Acorns home. The scouts' demo
   // frees every creature of its trips and jobs (a creature cannot scout and be away).
   const base =
-    resting === 'off' && !scoutsOn
+    resting === 'off' && !scoutsOn && !forgeOn
       ? planned
       : {
           ...planned,
           creatures: restingRoster(planned.creatures, resting === 'off' ? 'many' : resting).map(
-            (c) => (scoutsOn ? { ...c, busy: null, away: false } : c),
+            (c) => (scoutsOn || forgeOn ? { ...c, busy: null, away: false } : c),
           ),
         };
   // The seats and kit live here, so the Signpost's page can be played with in the workbench (no server).
   const [seats, setSeats] = useState<ValleySeatView[]>(() => scoutSeats(base.creatures, scouts));
-  const [owned, setOwned] = useState<ScoutKit[]>(scouts === 'off' ? [] : ['satchel']);
+  const [owned, setOwned] = useState<KitName[]>(scouts === 'off' ? [] : ['satchel']);
   const [acorns, setAcorns] = useState(PURSE.bait);
-  const systems = resting !== 'off' || scoutsOn;
-  const visit = systems ? demoVisit(base.creatures, seats, owned) : null;
+  // The anvils, the shelf and the shards live here too, so the Forge's page can be played with.
+  const [anvils, setAnvils] = useState<ValleyAnvilView[]>(() => forgeAnvils(base.creatures, forge));
+  const [shelf, setShelf] = useState(DEMO_SHELF);
+  const systems = resting !== 'off' || scoutsOn || forgeOn;
+  const scoutVisit = systems ? demoVisit(base.creatures, seats, owned) : null;
+  const visit =
+    scoutVisit === null
+      ? null
+      : withAnvils(
+          {
+            ...scoutVisit,
+            forge: {
+              ...scoutVisit.forge,
+              shelf,
+              bag: { count: 34, cap: 200 },
+            },
+          },
+          anvils,
+        );
   // What the scenes draw: the fixture creatures, standing where today's state puts them (a dungeon row, a raid party).
   const party = base.creatures.slice(0, 3).map((c) => c.id);
   const input = {
@@ -350,7 +506,110 @@ export function ValleyDemo({
             away={null}
             settings={null}
           >
-            {tab === 'workshop' ? pageOf(creatureCardEntries, 'Workshop') : null}
+            {tab === 'workshop' && !(forgeOn && visit !== null)
+              ? pageOf(creatureCardEntries, 'Workshop')
+              : null}
+            {tab === 'workshop' && forgeOn && visit !== null && (
+              <Workshop
+                state={{ ...GEAR_STATE, creatures: [...base.creatures], balances: PURSE }}
+                gear={SAMPLE_GEAR}
+                failed={false}
+                offset={0}
+                busy={false}
+                reveal={null}
+                actions={DEMO_GEAR_ACTIONS}
+                onRetry={NOTHING}
+                onClaimed={NOTHING}
+                onDismissReveal={NOTHING}
+                forge={
+                  {
+                    visit,
+                    trayInput: {
+                      trips: base.trips,
+                      jobs: base.jobs,
+                      now: HOME_NOW,
+                      ...trayStates(visit),
+                    },
+                    acorns,
+                    onOpenPaddock: () => {
+                      open('paddock');
+                    },
+                    start: forgeStartOf(opened),
+                    ...(opened === 'order editor'
+                      ? { orderStart: { anvilId: 'anvil-1', baseId: BLUEPRINT } }
+                      : opened === 'edit an order'
+                        ? { orderStart: { anvilId: 'anvil-1', orderId: 'order-1' } }
+                        : {}),
+                    actions: {
+                      post: (body) => {
+                        setAnvils((now) => {
+                          const target = now.find((x) => x.id === body.seatId);
+                          return now.map((x) =>
+                            x.id === body.seatId
+                              ? { ...x, creatureId: body.creatureId }
+                              : x.creatureId === body.creatureId
+                                ? { ...x, creatureId: target?.creatureId ?? null }
+                                : x,
+                          );
+                        });
+                        return Promise.resolve(true);
+                      },
+                      setKit: (seatId, kit) => {
+                        setAnvils((now) => now.map((x) => (x.id === seatId ? { ...x, kit } : x)));
+                        return Promise.resolve(true);
+                      },
+                      buyKit: (kit) => {
+                        if (visit.kit.price > acorns) return Promise.resolve(false);
+                        setAcorns(acorns - visit.kit.price);
+                        setOwned((now) => [...now, kit]);
+                        return Promise.resolve(true);
+                      },
+                      buyAnvil: () => {
+                        const price = visit.anvilPrices.next;
+                        if (price === null || price.acorns > acorns || price.scrap > shelf.scrap) {
+                          return Promise.resolve(false);
+                        }
+                        setAcorns(acorns - price.acorns);
+                        setShelf({ ...shelf, scrap: shelf.scrap - price.scrap });
+                        setAnvils((now) => [
+                          ...now,
+                          sampleAnvil(`anvil-${String(now.length + 1)}`, null, []),
+                        ]);
+                        return Promise.resolve(true);
+                      },
+                      order: (request) => {
+                        setAnvils((now) => orderDemo(now, request));
+                        return Promise.resolve(true);
+                      },
+                      exchange: ({ to, from, times }) => {
+                        const rate = visit.forge.exchange.rate;
+                        const pay =
+                          from ??
+                          [...SHARD_ELEMENTS]
+                            .filter((e) => e !== to)
+                            .sort((x, y) => shelf.shards[y] - shelf.shards[x])[0];
+                        if (
+                          pay === undefined ||
+                          shelf.shards[pay as keyof typeof shelf.shards] < rate * times
+                        ) {
+                          return Promise.resolve(false);
+                        }
+                        const key = pay as keyof typeof shelf.shards;
+                        setShelf({
+                          ...shelf,
+                          shards: {
+                            ...shelf.shards,
+                            [key]: shelf.shards[key] - rate * times,
+                            [to]: (shelf.shards[to as keyof typeof shelf.shards] ?? 0) + times,
+                          },
+                        });
+                        return Promise.resolve(true);
+                      },
+                    },
+                  } satisfies ForgeMode
+                }
+              />
+            )}
             {tab === 'expeditions' && visit !== null && (
               <SignpostSeats
                 visit={visit}

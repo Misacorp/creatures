@@ -16,6 +16,7 @@ import { TABS, type Tab } from '../tabs';
 import { formatCountdown, formatZoned } from '../time-format';
 import type { ValleyVisit } from '../api';
 import { bonfireLine } from './bonfire-cast';
+import { forgeSystemsLine, fullFloors, longWaits } from './forge-view';
 import { fullPacks, signpostSystemsLine } from './signpost-view';
 import { placeLabel, readingOrder } from './valley-logic';
 import type { PlaceId } from './valley-art';
@@ -106,6 +107,23 @@ export function placeBubbles(alerts: TabAlerts, input: PlaceInput): PlaceBubble[
         full === 1 ? 'A scout\u2019s pack is full' : `${String(full)} scouts\u2019 packs are full`,
     });
   }
+  // The Forge's news (V-FORGE-4, V-FORGE-5): a full floor, or a shortage that has lasted more than a day; never in the return walk.
+  const floors = input.visit == null ? 0 : fullFloors(input.visit);
+  const waits = input.visit == null ? 0 : longWaits(input.visit);
+  if (floors + waits > 0 && !out.some((b) => b.place === 'forge')) {
+    const n = floors + waits;
+    out.push({
+      place: 'forge',
+      glyph: 'anvil',
+      count: n > 1 ? n : null,
+      spoken:
+        floors > 0
+          ? floors === 1
+            ? 'A floor is full'
+            : `${String(floors)} floors are full`
+          : 'An anvil has waited on an input for a day',
+    });
+  }
   return out;
 }
 
@@ -137,6 +155,8 @@ function signpostLine(input: PlaceInput): string {
 }
 
 function forgeLine(input: PlaceInput): string | null {
+  // With the valley's systems there are smiths at anvils, not timed jobs.
+  if (input.visit != null) return forgeSystemsLine(input.visit);
   if (input.jobs === null) return null;
   const { now } = input;
   const open = openJobs(input.jobs);
