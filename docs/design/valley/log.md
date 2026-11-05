@@ -297,3 +297,5 @@ Round 25 answered the same day: **Q56: B** ("definitely ... have the currency fl
 **Staging (2026-11-05):** Misa asked; merged main (#123, the School teacher art; the branch's newer cupola and bell kept) and deployed ad01345e (`deployed.mjs` confirms). With `VALLEY` on, staging opens on the valley: phase 4 steps 1 to 4 to try. Step 5 (desktop, accessibility, the panel, the end-to-end checklist) is next.
 
 **Misa on staging (2026-11-05):** five points, "when the time is right": drag creatures in the Paddock (overlap is fine, reaching the one underneath is the point), always-visible nameplates and levels, a "View" in the creature popover (creature page; a side panel on desktop), the House without the living room (Q16 dropped the lounge; lead: Journal and Stats now, the player's home later), and cropped trees in the map art. Written into `phase4-plan.md`; planned with step 5.
+
+Misa added: nameplates sit under the creature on an ink background, level first in yellow; and eventually each player gets their own decoratable house on the map, toward the south (`systems/later.md`).
