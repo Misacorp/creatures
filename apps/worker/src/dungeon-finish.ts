@@ -40,7 +40,15 @@ import { mapViewV2 } from './dungeon-v2-view';
 import { awardExperience } from './creature-exp';
 import { grantDungeonRun, grantDungeonStreak, type GrantDeps } from './gear-grants';
 import { SUPPLIES_PER_RUN } from './dungeon-path';
-import { currentHp, heldViews, runNode, treasureView, type RunState } from './dungeon-state';
+import {
+  currentHp,
+  heldViews,
+  isLowerRun,
+  landmarkPays,
+  runNode,
+  treasureView,
+  type RunState,
+} from './dungeon-state';
 import type {
   DungeonMapView,
   DungeonOutcome,
@@ -286,7 +294,8 @@ function payRun(
 ): DungeonRewards {
   const { day, attempt, depth } = row;
   const cleared = outcome === 'cleared' || st.bossCleared;
-  const landmark = cleared && isLandmark(depth);
+  // A landmark's bonus is one-off: a run replayed below the player's own depth (the picker) does not pay it again.
+  const landmark = cleared && landmarkPays(st, depth);
   // A run that went down (or was offered the way down) opened the main boss's chest at that moment:
   // its gear, shard and supply are paid (`banked`) and its extras are in the pack, so nothing of the
   // chest is rolled or added again here.
@@ -497,6 +506,7 @@ export function summarise(
     cleared: outcome === 'cleared' || st.bossCleared,
     deepest: st.deepest,
     roomsCleared: st.roomsCleared,
+    ...(isLowerRun(st, row.depth) ? { lower: true as const } : {}),
     landmark: isLandmark(row.depth),
     streak: args.streak,
     createdAt: row.created_at,
@@ -569,6 +579,7 @@ function logRun(
       packKept: totalOf(kept),
       deepest: st.deepest,
       marks: st.marks,
+      ...(st.top === undefined ? {} : { top: st.top, belowOwn: isLowerRun(st, summary.depth) }),
     },
     userId,
   );

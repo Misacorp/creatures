@@ -3,6 +3,17 @@ import * as v from 'valibot';
 import { IdSchema } from './collection-schemas';
 import { IdempotencyKeySchema } from './schemas';
 
+/** A depth: a whole number from 1. The upper end (the player's own depth) is the server's check. */
+export const DepthSchema = v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(9_999));
+
+/** `GET /api/dungeon/preview?depth=N`: the depth as digits (no sign, no point, no exponent). */
+export const PreviewDepthSchema = v.pipe(
+  v.string(),
+  v.regex(/^[1-9]\d{0,3}$/),
+  v.transform(Number),
+  DepthSchema,
+);
+
 /**
  * The body of `POST /api/dungeon/run`. Strict: unknown keys are rejected, so a client can never send
  * a user id, a seed, stats or anything else the server decides. An old body that still carries
@@ -21,6 +32,11 @@ export const RunBodySchema = v.strictObject({
    * Each is a creature of `team`, once; the server checks that. Absent: no treats.
    */
   treats: v.optional(v.pipe(v.array(IdSchema), v.maxLength(RULES.dungeon.teamSize)), []),
+  /**
+   * Combat v2 only: the depth to play, any depth the player has unlocked (1 up to their own depth; the server checks the
+   * upper end). Absent: their own depth. A combat v1 server refuses a body that carries it (`depth_not_allowed`).
+   */
+  depth: v.optional(DepthSchema),
   idempotencyKey: IdempotencyKeySchema,
 });
 export type RunBody = v.InferOutput<typeof RunBodySchema>;

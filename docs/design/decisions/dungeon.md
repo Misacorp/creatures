@@ -4,6 +4,22 @@ The daily dungeon: paths, rooms and rare rooms, the camp, the Undercroft, foes, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-05: Combat v2 dungeon depth picker built: any unlocked depth, progress only at the current depth
+
+ID: `2026-11-05-combat-v2-dungeon-depth-picker-built` · Status: current · Amends: `2026-11-04-a-depth-choice-before-a-run`
+
+**Decision.** The depth picker is built, on combat v2 only (production plays v1 with the flag off and does not change). The pre-run card shows "Depth to play" with the shared flip arrows and the position ("16 / 23"), the scalars of the picked depth ("1.4x XP · 2.1x loot", one decimal, from `dungeonRewardScalars`, which the client calls itself: the numbers ship in the same package as the server's, so there is no field to keep in step) and one line that names the player's own depth and says a lower pick does not take them deeper. The rules:
+
+- **Which depths.** 1 to the player's own depth (their progress). Default: their own. The picker is hidden at depth 1.
+- **The run plays entirely at the picked depth:** foes, map, gear item level and odds, rewards, and the Undercroft (its depth follows the run's depth). The run row's `depth` is the picked depth; `RunState.top` keeps the player's own depth from the start, which marks a pick below it (`lower`).
+- **Progress.** Only a clear at the player's own depth unlocks the next one. A clear at a lower depth unlocks nothing; the depth write was already a `MAX`, so it needed no change, and the run's summary, state and descent card say `lower` so the screens do not claim a new depth.
+- **A landmark's bonus is one-off.** The game had no explicit "first clear" flag: a landmark's extras (the full clear's Essence is separate; the landmark's Essence, scrap, glimmer, and the certain gear drop with its better odds) were paid on every clear at a landmark depth, and the ladder made that once per landmark per player. A replay of a landmark below the player's own depth does not pay them (`landmarkPays`); the floor boss is still there. The landmark bonus is therefore paid exactly once per landmark, by the clear that takes the player past it.
+- **Unchanged:** the daily run count, the retry after a first-day defeat, streaks (a lower run counts as the day's run for the streak), keepsakes, camps and treats.
+- **Server.** `POST /api/dungeon/start` takes an optional `depth` (strict integer, 1 to 9999 by schema; above the player's own depth it is refused as `depth_locked`). On v1 the field is refused as `depth_not_allowed` rather than ignored: ignoring it would silently put the player at a depth they did not pick. A new read-only `GET /api/dungeon/preview?depth=N` gives the card's map, landmark and floor boss at a depth below the player's own (so a foe's numbers in a room's drawer are the picked depth's); it reads the progress row and the day's map and writes nothing new. The depth is part of the start's idempotency fingerprint and the client's action key. Identity always comes from the session.
+- **Analytics.** The `dungeon_run` event gains `top` (the player's own depth at the start) and `belowOwn` (the pick was below it), v2 runs only; the rollup counts `dungeon.depth_pick` by `below`. The depth played is the event's existing `depth`.
+
+**Reasoning.** Misa (2026-11-05): "I think it would be a good idea to bring that in so players can choose their difficulty." The earlier decision asked for scalars; this builds it with the smallest rules that keep the ladder honest: replaying must never advance depth or farm a one-off bonus. The state stays one run row (no new hot-path reads: the start already reads the progress row, the preview one row more). The shared flip arrows fit a range of tens of depths where a segmented control would not, and show the position for free.
+
 ## 2026-11-04: [Misa] Combat v2 dungeon baseline: easier base floors, a steeper Undercroft
 
 ID: `2026-11-04-combat-v2-dungeon-baseline-easier-base` · Status: current
@@ -24,7 +40,7 @@ ID: `2026-11-04-combat-v2-dungeon-rewards-and-xp` · Status: current
 
 ## 2026-11-04: [Misa] A depth choice before a run, with reward scalars
 
-ID: `2026-11-04-a-depth-choice-before-a-run` · Status: current · Amends: `2026-10-16-misa-s-direction-after-the-raid`
+ID: `2026-11-04-a-depth-choice-before-a-run` · Status: current, amended by `2026-11-05-combat-v2-dungeon-depth-picker-built` · Amends: `2026-10-16-misa-s-direction-after-the-raid`
 
 **Decision.** Before a run a player may pick any depth they have already unlocked. The picker shows how the pick changes the rewards as simple scalars, for example "2.4x XP, 3.7x loot". It is the tool for a player stuck on a depth: step back, still earn, come back stronger. This amends the 2026-10-16 depth picker (which asked for a likelihood-of-success hint like the raid's): scalars are enough. Not built yet; it comes with the dungeon work after phase 5's measures.
 

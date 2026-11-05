@@ -141,6 +141,22 @@
   margin-top: 0.125rem;
 }
 
+/* The depth picker (combat v2): the shared flip arrows under a heading row, and the one line about the player's own depth. */
+.depth-pick {
+  align-self: stretch;
+  margin-bottom: 0.5rem;
+}
+
+.depth-pick .flip-nav {
+  margin: 0.25rem 0;
+}
+
+.depth-pick-note {
+  margin: 0.25rem 0 0;
+  font-size: var(--fs-small);
+  line-height: 1.3;
+}
+
 .dungeon-next {
   margin: 0.5rem 0;
 }

@@ -61,6 +61,8 @@ Each change keeps the lab's parity digest identical (`cd packages/lab && node sc
 
 The dungeon keeps its single row and today's order (R8.7): the line acts, then the foe takes one turn. Rooms use `foeAt(depth)` from `foes.json`, a landmark room adds the foe's signature move, the floor boss ends the day. Between rooms only HP carries (R14); a knocked-out creature stays out until the camp swaps in a fresh one (the way down into the Undercroft is the exception: it gets it back up, (decision `2026-11-04-combat-v2-undercroft-descent-revives-knocked`)); the camp keeps today's choices (rest, swap, keepsake, push on or head home). Creature finale abilities are not used. The foes' numbers are data in `foes.json` (decision `2026-11-04-combat-v2-dungeon-baseline-easier-base`): the base floors at HP 12650 bp of the content's (55% of the shipped engine's) with +200 bp a depth and Attack flat, and the Undercroft with a scale and curve of its own (HP 20700 bp, +300 bp a depth, +2 bp a depth squared; `foeAt` with `undercroft: true`, the depth being the run's plus 1 for each level).
 
+The depth picker (2026-11-05, decision `2026-11-05-combat-v2-dungeon-depth-picker-built`): a v2 run may start at any depth from 1 to the player's own and plays entirely at it; only a clear at the player's own depth unlocks the next, and a landmark's bonus is not paid again by a replay of it. `RunState.top` stores the player's own depth at the start (a pick below it is `lower`).
+
 ## 7. Analytics
 
 New events (`analytics-events.ts`, `analytics-props.ts`, the rollup and `docs/design/analytics.md`; content ids, enums and integers only):

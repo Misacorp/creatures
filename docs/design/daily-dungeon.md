@@ -34,6 +34,7 @@ No real-time backend is needed.
 - **Depth ladder (personal):**
   - Each player has a **dungeon depth**, like the raid Boss Rank but personal.
   - Clearing all rooms gives +1 depth. Failing keeps the same depth.
+  - **Depth picker (combat v2 only, 2026-11-05):** before a run the player may pick any depth from 1 to their own (default: their own). The run plays entirely at that depth (foes, map, gear, rewards, the Undercroft). Only a clear at their own depth gives +1; a clear below it unlocks nothing and does not pay a landmark's bonus again (it is paid once, by the clear that takes the player past the landmark). The card shows the pick's XP and loot against depth 1 (`dungeonRewardScalars`, "1.4x XP · 2.1x loot"). The start request carries `depth`; combat v1 refuses it. Decision `2026-11-05-combat-v2-dungeon-depth-picker-built`.
   - Depth scales the foes with its own step, tuned by the sim.
   - Every 7th depth is a "landmark" with a better reward chest.
   - This is the "get better over time" loop of the solo mode.
