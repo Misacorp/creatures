@@ -106,6 +106,22 @@ export interface RunOptions {
   readonly mode?: Mode;
   /** Foe numbers moved for a report (`dungeonKnobs.ts`): the game's own when absent. */
   readonly foes?: FoeKnobs;
+  /**
+   * A camp in Undercroft level 1 (a hypothetical skill tree node, `undercroftTools.ts`), played as the game's camp (`atCamp`: swap, keepsake or Rest, one choice):
+   * `first` after the level's first floor, `middle` after the middle floor of its floors of two, `keeper` as the game's own carved-door camp (a
+   * `camp` mark: a room of its own before the keeper). `both` is a hypothetical: the camp also Rests after a swap or a keepsake. `restBp` is a
+   * hypothetical Rest (the game's is `RULES.dungeon.camp.restBp`).
+   */
+  readonly levelCamp?: {
+    readonly at: 'first' | 'middle' | 'keeper';
+    readonly both?: boolean;
+    readonly restBp?: number;
+  };
+  /**
+   * An approximation of better gear: the whole team's HP and Attack up by this many basis points. The lab's fights have no team stat folds, so (as
+   * for keepsakes, `foeFold`) the foe's HP is divided by the Attack bump and the foe's Attack by the HP bump. Close, not exact.
+   */
+  readonly teamBumpBp?: number;
 }
 
 /** The pack the run's rooms paid, in units (Bait, Essence and scrap), as the worker counts it. */
@@ -146,6 +162,8 @@ export interface RunResult {
   readonly keepsakes: number;
   /** What happened at the camp: 'rest', 'swap', 'keepsake', or none (a run that did not reach it). */
   readonly camp: string | null;
+  /** Camps met (the day's, and the Undercroft's with `levelCamp` or a camp mark). */
+  readonly camps: number;
   /** The state of the team when the floor boss fell (null: not cleared), and the units in the pack then. */
   readonly floorEnd: {
     readonly share: number;
@@ -265,6 +283,7 @@ export function runMap(
   let fights = 0;
   let played = 0;
   let campChoice: string | null = null;
+  let camps = 0;
   let lookSeed = 0;
 
   const uids = (): string[] => placements.map((p, i) => `${p.owner}:${p.formId}:${String(i)}`);
@@ -295,6 +314,11 @@ export function runMap(
 
   const foeFor = (id: string, d: number, kind: MapNode['kind'], signature: boolean): BossDef => {
     const fold = foeFold(held, curses, row);
+    if (options.teamBumpBp) {
+      const bump = 10_000 + options.teamBumpBp;
+      fold.hpBp = Math.max(1, Math.floor((fold.hpBp * 10_000) / bump));
+      fold.atkBp = Math.max(1, Math.floor((fold.atkBp * 10_000) / bump));
+    }
     const arena = foeAt(id, d, { signature }, level > 0 ? underPack : basePack);
     const base: BossDef = { ...arena, rows: mode.rows, cols: mode.cols };
     const elite = kind === 'elite' ? RULES.dungeon.elite : { hpBp: 10_000, atkBp: 10_000 };
@@ -380,11 +404,34 @@ export function runMap(
       for (const e of c.effects) curses.push({ stat: e.stat, bp: e.bp });
   };
 
+  /** The camp's Rest: the game's (`campRest`), or a hypothetical share of max HP for the standing (`levelCamp.restBp`). */
+  const rest = (): void => {
+    const ids = uids();
+    const now = Object.fromEntries(ids.map((u) => [u, hpOf(u)]));
+    const max = maxRecord();
+    const bp = options.levelCamp?.restBp;
+    const healed =
+      level > 0 && bp !== undefined
+        ? Object.fromEntries(
+            ids.map((u) => [
+              u,
+              (now[u] ?? 0) <= 0
+                ? 0
+                : Math.min(max[u] ?? 0, (now[u] ?? 0) + Math.floor(((max[u] ?? 0) * bp) / 10_000)),
+            ]),
+          )
+        : campRest(now, max);
+    hp = new Map(Object.entries(healed));
+  };
+
   const atCamp = (): void => {
+    camps++;
     if (!restOn) {
       campChoice = 'none';
       return;
     }
+    // A camp in the Undercroft that also heals: Rest on top of the one choice.
+    const alsoRest = level > 0 && options.levelCamp?.both === true;
     const ids = uids();
     const downs = ids.filter((u) => hpOf(u) <= 0);
     const weakest = [...standing()].sort(
@@ -400,6 +447,7 @@ export function runMap(
         placements = toPlacements(row, mode);
         hp = new Map([...hp].filter(([u]) => uids().includes(u)));
         campChoice = 'swap';
+        if (alsoRest) rest();
         return;
       }
     }
@@ -412,11 +460,11 @@ export function runMap(
       if (best !== undefined) {
         held.push(best);
         campChoice = 'keepsake';
+        if (alsoRest) rest();
         return;
       }
     }
-    const healed = campRest(Object.fromEntries(ids.map((u) => [u, hpOf(u)])), maxRecord());
-    hp = new Map(Object.entries(healed));
+    rest();
     campChoice = 'rest';
   };
 
@@ -453,9 +501,17 @@ export function runMap(
   };
 
   /** Walk one map to its last room; true when its floor boss (or keeper) is beaten. */
-  const walk = (map: DungeonMap, d: number, keeper: boolean): boolean => {
+  const walk = (map: DungeonMap, d: number, keeper: boolean, campFloor?: number): boolean => {
     let at: string | null = null;
+    let campMet = false;
     for (;;) {
+      // A camp that stands between floors (the Undercroft's `levelCamp`): met once, after the floor it follows.
+      if (campFloor !== undefined && !campMet && at !== null) {
+        if (mapNode(map, at)?.floor === campFloor) {
+          campMet = true;
+          atCamp();
+        }
+      }
       const node = choose(map, at, d);
       if (node === undefined) return false;
       at = node.id;
@@ -519,17 +575,25 @@ export function runMap(
       if (threshold !== undefined && health() <= threshold) going = false;
       if (options.descendShare !== undefined && shareBefore <= options.descendShare) going = false;
       if (!going && options.probe !== true) break;
+      const floors = undercroftBaseFloors(depth, lv);
+      const camp = lv === 1 ? options.levelCamp : undefined;
       const under = generateUndercroftMap(rng, {
         level: lv,
-        floors: undercroftBaseFloors(depth, lv),
-        marks: [],
+        floors,
+        marks: camp?.at === 'keeper' ? ['camp'] : [],
       });
+      const campFloor =
+        camp === undefined || camp.at === 'keeper'
+          ? undefined
+          : camp.at === 'first'
+            ? 0
+            : Math.floor((floors - 1) / 2);
       if (going) entered++;
       level = lv;
       counting = going;
       if (going) deepestLevel = lv;
       const packIn = unitsOf(pack);
-      const won = walk(under, depth + bonus * lv, true);
+      const won = walk(under, depth + bonus * lv, true, campFloor);
       const gain = won ? unitsOf(pack) - packIn : 0;
       const lost = won ? 0 : unitsOf(pack) - unitsOf(keptOnDefeat(pack));
       levelLog.push({
@@ -558,6 +622,7 @@ export function runMap(
     knockouts: knocked(),
     keepsakes: held.length,
     camp: campChoice,
+    camps,
     floorEnd,
     levelLog,
     reward: {
