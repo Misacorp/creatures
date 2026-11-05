@@ -261,6 +261,12 @@ export const VALLEY_RULES = {
     // ASSUMPTION: the floor holds about three days of pieces (V-FORGE-5): ceil(72 / 16) per anvil.
     floorPiecesPerAnvil: 5,
     bag: 200,
+    // Step 3 (the server's reading of V-FORGE-1 and V-FORGE-9; the lab models neither a queue nor marks): an anvil's queue holds at most
+    // this many orders (posts.md example), an order asks for at most this many pieces, and each piece of a blueprint adds a well-thumbed
+    // mark with this chance (1 in 10: "with many more rolls it must fill more slowly", gear.md V-GEAR-9).
+    queueMax: 3,
+    orderCountMax: 99,
+    markChance: 0.1,
     // ASSUMPTION: three gear slots per creature (the shipped game's Hat, Scarf and Charm).
     slotsPerCreature: 3,
     // ASSUMPTION: a slot is "weaker" (so "for my team" makes pieces for it) when its item level is this far below the fire.

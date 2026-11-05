@@ -315,8 +315,42 @@ export function undoGamesIndexMigration(sql: SqlStorage): void {
   sql.exec('DELETE FROM schema_version WHERE version = 42');
 }
 
+/** Puts a database back to before migration 58 (the Forge loop): its tables go, and the columns it added. */
+export function undoValleyForgeMigration(sql: SqlStorage): void {
+  for (const table of ['forge_orders', 'forge_floor', 'valley_bag'])
+    sql.exec(`DROP TABLE IF EXISTS ${table}`);
+  const has = (table: string, column: string): boolean =>
+    sql.exec(`SELECT 1 FROM pragma_table_info('${table}') WHERE name = ?`, column).toArray().length >
+    0;
+  for (const column of [
+    'floor_count',
+    'piece_active',
+    'piece_order',
+    'piece_blueprint',
+    'piece_team',
+    'piece_element',
+    'piece_rarity',
+    'piece_reach',
+    'piece_need',
+    'piece_progress',
+    'wait_reason',
+    'wait_element',
+    'wait_since',
+  ]) {
+    if (has('valley_seats', column)) sql.exec(`ALTER TABLE valley_seats DROP COLUMN ${column}`);
+  }
+  for (const [table, column] of [
+    ['valley_creatures', 'smith_hours'],
+    ['valley_players', 'forge_carry'],
+  ] as const) {
+    if (has(table, column)) sql.exec(`ALTER TABLE ${table} DROP COLUMN ${column}`);
+  }
+  sql.exec('DELETE FROM schema_version WHERE version = 58');
+}
+
 /** Puts a database back to before migration 57 (the valley's scouts): the seats and kit go, and the columns it added. */
 export function undoValleyScoutsMigration(sql: SqlStorage): void {
+  undoValleyForgeMigration(sql);
   sql.exec('DROP TABLE IF EXISTS valley_seats');
   sql.exec('DROP TABLE IF EXISTS valley_kit');
   for (const [table, column] of [

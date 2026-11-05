@@ -25,30 +25,47 @@
  * Settling twice at the same `now` changes nothing: the second pass starts where the first stopped and has no time to pay.
  */
 import {
+  KIT_NAMES,
+  VALLEY_ELEMENTS,
   VALLEY_RULES,
+  anvilLimit,
+  anvilPrice,
+  anvilSpeed,
   addExperience,
   expToReach,
   masteryBonus,
   placeIds,
   placeOpen,
   placeProfile,
+  pieceHours,
   seatLimit,
   seatPrice,
   seatRates,
   settle,
   MAX_RIBBONS,
   SCOUT_KITS,
+  type AnvilKit,
   type PlaceProfile,
   type ScoutKit,
   type SettleSeat,
   type SettleState,
+  type ValleyAnvilView,
   type ValleySeatView,
   type ValleyView,
 } from '@creatures/game';
 import type { CatchChoices } from './catch-choices';
+import { bagItems, trackBag } from './gear-store';
 import { credit, type LedgerStorage } from './ledger';
 import { speciesOf } from './species';
 import type { ValleyFinds } from './valley-finds';
+import {
+  ANVIL_COLUMNS,
+  FIRE_LEVEL,
+  FORGE_LEVEL,
+  orderView,
+  type AnvilColumns,
+  type ValleyForgePass,
+} from './valley-forge';
 import { scoutClock, specialOfWeek, worldAt } from './valley-world';
 
 /** Without a request for this long, the next one is a new visit: the "+N" starts again and the allowance store comes home. */
@@ -75,6 +92,7 @@ type PlayerRow = {
   allowance_carry: number;
   visit_allowance: number;
   first_scout_done: number;
+  forge_carry: number;
 };
 
 type CreatureRow = {
@@ -89,9 +107,10 @@ type CreatureRow = {
   catchup_bp: number | null;
   visit_xp: number | null;
   scout_hours: number | null;
+  smith_hours: number | null;
 };
 
-export type SeatRow = {
+export type SeatRow = AnvilColumns & {
   seat_id: string;
   position: number;
   destination_id: string;
@@ -112,7 +131,7 @@ export type SeatRow = {
 export const SIGNPOST_LEVEL = 1;
 /** The seat columns the pass and the routes read. */
 export const SEAT_COLUMNS = `seat_id, position, destination_id, prev_destination_id, creature_id, kit_id, store_hours, scrap,
-  scrap_carry, shards, shard_carry, gear_finds, blueprint_finds, page_finds`;
+  scrap_carry, shards, shard_carry, gear_finds, blueprint_finds, page_finds, ${ANVIL_COLUMNS}`;
 
 /** The store's size in Acorns (V-POST-5: `storeHours` of the hourly rate). */
 export const allowanceCap = (): number =>
@@ -127,6 +146,8 @@ export interface ValleySettleDeps {
   readonly finds: ValleyFinds;
   /** The Paddock gate's cards (duplicates). */
   readonly choices: CatchChoices;
+  /** The anvils' part of the pass: orders, the shelf, the floors and the live rarity draws. */
+  readonly forge: ValleyForgePass;
 }
 
 const masteryStep = (hours: number): 0 | 1 | 2 | 3 => {
@@ -137,9 +158,14 @@ const masteryStep = (hours: number): 0 | 1 | 2 | 3 => {
 
 const kitOfRow = (kit: string | null): ScoutKit | null =>
   kit !== null && (SCOUT_KITS as readonly string[]).includes(kit) ? (kit as ScoutKit) : null;
+const anvilKitOfRow = (kit: string | null): AnvilKit | null =>
+  kit === 'tongs' || kit === 'loupe' ? kit : null;
 
 export class ValleySettle {
-  constructor(private readonly deps: ValleySettleDeps) {}
+  constructor(private readonly deps: ValleySettleDeps) {
+    // The bag is a stored counter of the items not worn (V-GEAR-6): every gear insert, delete and equip keeps it in step from now on.
+    trackBag(deps.storage.sql);
+  }
 
   private get sql(): SqlStorage {
     return this.deps.storage.sql;
@@ -155,7 +181,7 @@ export class ValleySettle {
       const player = this.sql
         .exec<PlayerRow>(
           `SELECT settled_at, last_visit_at, hearth_at_visit_bp, visit_started_at, allowance_store,
-                  allowance_carry, visit_allowance, first_scout_done FROM valley_players WHERE user_id = ?`,
+                  allowance_carry, visit_allowance, first_scout_done, forge_carry FROM valley_players WHERE user_id = ?`,
           userId,
         )
         .toArray()[0];
@@ -170,7 +196,7 @@ export class ValleySettle {
     return this.sql
       .exec<CreatureRow>(
         `SELECT c.id, c.species, c.level, c.exp, c.ribbons, c.caught_at, v.creature_id AS tracked,
-                v.xp_carry, v.catchup_bp, v.visit_xp, v.scout_hours
+                v.xp_carry, v.catchup_bp, v.visit_xp, v.scout_hours, v.smith_hours
          FROM creatures c LEFT JOIN valley_creatures v ON v.creature_id = c.id
          WHERE c.user_id = ? ORDER BY c.caught_at, c.rowid`,
         userId,
@@ -178,16 +204,21 @@ export class ValleySettle {
       .toArray();
   }
 
-  seatRows(userId: string): SeatRow[] {
-    return this.sql
+  /** The player's seats: the scouts' at the Signpost and the smiths' anvils at the Forge, each in the order bought. */
+  seats(userId: string): { scouts: SeatRow[]; anvils: SeatRow[] } {
+    const all = this.sql
       .exec<SeatRow>(
         `SELECT ${SEAT_COLUMNS} FROM valley_seats WHERE user_id = ? ORDER BY position`,
         userId,
       )
       .toArray();
+    return {
+      scouts: all.filter((seat) => seat.place === 'signpost'),
+      anvils: all.filter((seat) => seat.place === 'forge'),
+    };
   }
 
-  private ownedKit(userId: string): ScoutKit[] {
+  private ownedKit(userId: string): (typeof KIT_NAMES)[number][] {
     return this.sql
       .exec<{ kit_id: string }>(
         'SELECT kit_id FROM valley_kit WHERE user_id = ? ORDER BY bought_at, kit_id',
@@ -195,7 +226,9 @@ export class ValleySettle {
       )
       .toArray()
       .flatMap((r) => {
-        const kit = kitOfRow(r.kit_id);
+        const kit = (KIT_NAMES as readonly string[]).includes(r.kit_id)
+          ? (r.kit_id as (typeof KIT_NAMES)[number])
+          : null;
         return kit === null ? [] : [kit];
       });
   }
@@ -219,14 +252,16 @@ export class ValleySettle {
         now,
       );
       const rows = this.creatureRows(userId);
-      for (const row of rows) this.trackCreature(userId, row.id, 0, BP, 0, 0);
+      for (const row of rows) this.trackCreature(userId, row.id, 0, BP, 0, 0, 0);
+      const seats = this.seats(userId);
       return this.view({
         userId,
         to: now,
         arrived: true,
         awayHours: 0,
         rows,
-        seats: this.seatRows(userId),
+        seats: seats.scouts,
+        anvils: seats.anvils,
         creatures: rows.map((row) => ({ row, gained: 0, catchUpBp: BP })),
         allowance: { store: 0, cap, brought: 0 },
       });
@@ -236,13 +271,15 @@ export class ValleySettle {
     const newVisit = to - player.last_visit_at >= VISIT_GAP_MS;
     if (!force && to - player.settled_at < INTENT_MIN_MS && !newVisit) {
       const rows = this.creatureRows(userId);
+      const seats = this.seats(userId);
       return this.view({
         userId,
         to: player.settled_at,
         arrived: false,
         awayHours: 0,
         rows,
-        seats: this.seatRows(userId),
+        seats: seats.scouts,
+        anvils: seats.anvils,
         creatures: rows.map((row) => ({
           row,
           gained: row.visit_xp ?? 0,
@@ -254,7 +291,7 @@ export class ValleySettle {
     // The Paddock gate: duplicates whose day is up take their Recommended answer first (V-SCOUT-3).
     this.deps.choices.autoAnswerDue(userId, to);
     const rows = this.creatureRows(userId);
-    const seatRows = this.seatRows(userId);
+    const { scouts: seatRows, anvils: anvilRows } = this.seats(userId);
     const tz = this.deps.timezone();
     const indexOf = new Map(rows.map((row, i) => [row.id, i]));
     const rowOf = new Map(rows.map((row) => [row.id, row]));
@@ -275,6 +312,8 @@ export class ValleySettle {
         shardCarry: seat.shard_carry,
       };
     });
+    const team = rows.map((row) => ({ id: row.id, species: row.species, level: row.level }));
+    const forgeIn = this.deps.forge.load(userId, anvilRows, team, indexOf);
     const before: SettleState = {
       settledAt: player.settled_at,
       lastVisitAt: player.last_visit_at,
@@ -285,10 +324,14 @@ export class ValleySettle {
         capXp: Number.POSITIVE_INFINITY,
         catchUp: (row.catchup_bp ?? BP) / BP,
         scoutHours: row.scout_hours ?? 0,
+        smithHours: row.smith_hours ?? 0,
         ...(row.tracked === null ? { joinedAt: row.caught_at } : {}),
       })),
       allowance: { store: player.allowance_store, carry: player.allowance_carry },
       seats: seatsIn,
+      ...(forgeIn === null
+        ? {}
+        : { forge: { ...forgeIn.forge, scrapCarry: player.forge_carry } }),
     };
     const watchNight = seatRows.some(
       (seat) => placeProfile(VALLEY_RULES, seat.destination_id)?.night === true,
@@ -298,7 +341,10 @@ export class ValleySettle {
       player.settled_at,
       to,
       [{ at: to, kind: 'visit', hearth: player.hearth_at_visit_bp / BP }],
-      seatRows.length === 0 ? {} : { world: scoutClock(tz, watchNight) },
+      {
+        ...(seatRows.length === 0 ? {} : { world: scoutClock(tz, watchNight) }),
+        ...(forgeIn === null ? {} : { rng: this.deps.forge.rng }),
+      },
     );
 
     let visitAllowance = newVisit ? 0 : player.visit_allowance;
@@ -328,6 +374,33 @@ export class ValleySettle {
     // Scouts: the live draws of the stretches, then each store that is due comes home.
     const seatsOut = this.scoutFinds(userId, to, newVisit, player, seatRows, after, rowOf, tz);
 
+    // The Forge: what the anvils did is written back, then the floors come home when it is time (an arrival, or a floor that filled).
+    let anvilsOut: readonly SeatRow[] = anvilRows;
+    let piecesHome = 0;
+    if (forgeIn !== null) {
+      anvilsOut = this.deps.forge.save(userId, to, forgeIn, after);
+      const capFloor = VALLEY_RULES.forge.floorPiecesPerAnvil;
+      const floorDue = newVisit || anvilsOut.some((a) => a.floor_count >= capFloor);
+      if (floorDue && anvilsOut.some((a) => a.floor_count > 0)) {
+        const home = this.deps.forge.collect(userId, to, team, VALLEY_RULES.forge.bag);
+        piecesHome = home.brought;
+        if (home.counts.size > 0) {
+          for (const [seatId, n] of home.counts) {
+            this.sql.exec(
+              'UPDATE valley_seats SET floor_count = MAX(0, floor_count - ?) WHERE seat_id = ?',
+              n,
+              seatId,
+            );
+          }
+          anvilsOut = anvilsOut.map((a) => ({
+            ...a,
+            floor_count: Math.max(0, a.floor_count - (home.counts.get(a.seat_id) ?? 0)),
+          }));
+        }
+      }
+    }
+    void piecesHome;
+
     const creatures = rows.map((row, i) => {
       const paid = after.creatures[i];
       const whole = paid?.xp ?? 0;
@@ -335,16 +408,30 @@ export class ValleySettle {
       const visitXp = (newVisit ? 0 : (row.visit_xp ?? 0)) + gainedNow;
       const catchUpBp = row.catchup_bp ?? BP;
       const scoutHours = paid?.scoutHours ?? 0;
+      const smithHours = paid?.smithHours ?? 0;
       const changed =
         row.tracked === null ||
         whole > 0 ||
         newVisit ||
         (paid?.carry ?? 0) !== (row.xp_carry ?? 0) ||
-        scoutHours !== (row.scout_hours ?? 0);
+        scoutHours !== (row.scout_hours ?? 0) ||
+        smithHours !== (row.smith_hours ?? 0);
       if (changed) {
-        this.trackCreature(userId, row.id, paid?.carry ?? 0, catchUpBp, visitXp, scoutHours);
+        this.trackCreature(
+          userId,
+          row.id,
+          paid?.carry ?? 0,
+          catchUpBp,
+          visitXp,
+          scoutHours,
+          smithHours,
+        );
       }
-      return { row: { ...row, scout_hours: scoutHours }, gained: visitXp, catchUpBp };
+      return {
+        row: { ...row, scout_hours: scoutHours, smith_hours: smithHours },
+        gained: visitXp,
+        catchUpBp,
+      };
     });
 
     if (newVisit) {
@@ -358,7 +445,7 @@ export class ValleySettle {
     }
     this.sql.exec(
       `UPDATE valley_players SET settled_at = ?, last_visit_at = ?, visit_started_at = ?, allowance_store = ?,
-         allowance_carry = ?, visit_allowance = ?, first_scout_done = ? WHERE user_id = ?`,
+         allowance_carry = ?, visit_allowance = ?, first_scout_done = ?, forge_carry = ? WHERE user_id = ?`,
       to,
       to,
       newVisit ? to : player.visit_started_at,
@@ -366,6 +453,7 @@ export class ValleySettle {
       carry,
       visitAllowance,
       seatsOut.firstDone ? 1 : player.first_scout_done,
+      after.forge?.scrapCarry ?? player.forge_carry,
       userId,
     );
     // A newcomer from a scout is on the roster already: show it at the fire in this very answer.
@@ -381,6 +469,7 @@ export class ValleySettle {
       awayHours: newVisit ? Math.floor((to - player.last_visit_at) / HOUR_MS) : 0,
       rows: [...creatures.map((c) => c.row), ...extra.map((c) => c.row)],
       seats: seatsOut.rows,
+      anvils: anvilsOut,
       fullSeats: seatsOut.full,
       creatures: [...creatures, ...extra],
       allowance: { store, cap, brought: visitAllowance },
@@ -509,6 +598,7 @@ export class ValleySettle {
     awayHours: number;
     rows: readonly CreatureRow[];
     seats: readonly SeatRow[];
+    anvils: readonly SeatRow[];
     /** Seats whose pack was full when this pass found it (it came home, so the stored pack is empty). */
     fullSeats?: ReadonlySet<string>;
     creatures: readonly { row: CreatureRow; gained: number; catchUpBp: number }[];
@@ -516,9 +606,12 @@ export class ValleySettle {
   }): ValleyView {
     const tz = this.deps.timezone();
     const world = worldAt(tz, input.to);
-    const seatOf = new Map<string, string>();
+    const seatOf = new Map<string, { id: string; kind: 'scouting' | 'smithing' }>();
     for (const seat of input.seats) {
-      if (seat.creature_id !== null) seatOf.set(seat.creature_id, seat.seat_id);
+      if (seat.creature_id !== null) seatOf.set(seat.creature_id, { id: seat.seat_id, kind: 'scouting' });
+    }
+    for (const seat of input.anvils) {
+      if (seat.creature_id !== null) seatOf.set(seat.creature_id, { id: seat.seat_id, kind: 'smithing' });
     }
     const rowOf = new Map(input.rows.map((row) => [row.id, row]));
     const rules = VALLEY_RULES;
@@ -581,17 +674,18 @@ export class ValleySettle {
       arrived: input.arrived,
       awayHours: input.awayHours,
       creatures: input.creatures.map(({ row, gained, catchUpBp }) => {
-        const seatId = seatOf.get(row.id) ?? null;
+        const at = seatOf.get(row.id);
         return {
           id: row.id,
-          state: seatId === null ? ('resting' as const) : ('scouting' as const),
+          state: at === undefined ? ('resting' as const) : at.kind,
           gained,
           catchUpBp,
-          seatId,
+          seatId: at?.id ?? null,
         };
       }),
       allowance: input.allowance,
       seats: seatViews,
+      ...this.forgeView(input, rowOf),
       seatPrices: {
         owned,
         max: seatLimit(rules, SIGNPOST_LEVEL),
@@ -648,19 +742,148 @@ export class ValleySettle {
     catchUpBp: number,
     visitXp: number,
     scoutHours: number,
+    smithHours: number,
   ): void {
     this.sql.exec(
-      `INSERT INTO valley_creatures (creature_id, user_id, catchup_bp, xp_carry, visit_xp, scout_hours)
-       VALUES (?, ?, ?, ?, ?, ?)
+      `INSERT INTO valley_creatures (creature_id, user_id, catchup_bp, xp_carry, visit_xp, scout_hours, smith_hours)
+       VALUES (?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(creature_id) DO UPDATE SET xp_carry = excluded.xp_carry, visit_xp = excluded.visit_xp,
-         catchup_bp = excluded.catchup_bp, scout_hours = excluded.scout_hours`,
+         catchup_bp = excluded.catchup_bp, scout_hours = excluded.scout_hours, smith_hours = excluded.smith_hours`,
       creatureId,
       userId,
       catchUpBp,
       carry,
       visitXp,
       scoutHours,
+      smithHours,
     );
+  }
+
+  /** The anvils, their price ladder and the Forge's shelf, bag and exchange (the `anvils`, `anvilPrices` and `forge` of the view). */
+  private forgeView(
+    input: { userId: string; to: number; anvils: readonly SeatRow[] },
+    rowOf: ReadonlyMap<string, CreatureRow>,
+  ): Pick<ValleyView, 'anvils' | 'anvilPrices' | 'forge'> {
+    const rules = VALLEY_RULES;
+    const shelf = this.deps.forge.shelf(input.userId);
+    const orders = input.anvils.length === 0 ? [] : this.deps.forge.orders(input.userId);
+    const onFloor = new Map<string, [number, number, number]>();
+    if (input.anvils.some((a) => a.floor_count > 0)) {
+      for (const r of this.sql
+        .exec<{ seat_id: string; rarity: number; n: number }>(
+          'SELECT seat_id, rarity, COUNT(*) AS n FROM forge_floor WHERE user_id = ? GROUP BY seat_id, rarity',
+          input.userId,
+        )
+        .toArray()) {
+        const counts = onFloor.get(r.seat_id) ?? [0, 0, 0];
+        counts[Math.min(2, Math.max(0, r.rarity))] = r.n;
+        onFloor.set(r.seat_id, counts);
+      }
+    }
+    const anvils: ValleyAnvilView[] = input.anvils.map((a) => {
+      const worker = a.creature_id === null ? undefined : rowOf.get(a.creature_id);
+      const hours = worker?.smith_hours ?? 0;
+      const kit = anvilKitOfRow(a.kit_id);
+      const mine = orders.filter((o) => o.seat_id === a.seat_id);
+      const reason = worker === undefined ? null : a.wait_reason;
+      const current = mine.find((o) => o.for_team === 1 || o.made < o.count);
+      const plain = anvilSpeed(rules, hours, kit, 0);
+      const speed = anvilSpeed(rules, hours, kit, (a.piece_rarity === 1 ? 1 : a.piece_rarity === 2 ? 2 : 0));
+      const held = a.piece_active === 1 && a.piece_progress >= a.piece_need - 1e-6;
+      const counts = onFloor.get(a.seat_id) ?? [0, 0, 0];
+      return {
+        id: a.seat_id,
+        creatureId: a.creature_id,
+        kit,
+        mastery: {
+          hours,
+          step: masteryStep(hours),
+          bonusBp: Math.round(masteryBonus(rules, hours + 1e-9) * BP),
+        },
+        orders: mine.map((o) => {
+          const teamElement = a.wait_reason === 'shard' ? a.wait_element : -1;
+          const seen = orderView(o, shelf, o.for_team === 1 ? teamElement : o.element);
+          return {
+            id: o.order_id,
+            blueprintId: o.blueprint_id,
+            forTeam: o.for_team === 1,
+            count: o.count,
+            made: o.made,
+            reach: o.reach === 'rare' || o.reach === 'epic' ? o.reach : ('none' as const),
+            needs: {
+              scrap: seen.needs.scrap,
+              shardElement: VALLEY_ELEMENTS[seen.needs.element] ?? null,
+              shard: seen.needs.shard,
+              essence: seen.needs.essence,
+            },
+            waiting: seen.waiting,
+          };
+        }),
+        piece:
+          a.piece_active === 1
+            ? {
+                orderId: a.piece_order,
+                rarity: (a.piece_rarity === 1 ? 1 : a.piece_rarity === 2 ? 2 : 0) as 0 | 1 | 2,
+                progress: a.piece_progress,
+                need: a.piece_need,
+                leftHours:
+                  held || worker === undefined
+                    ? null
+                    : Math.max(0, a.piece_need - a.piece_progress) / speed,
+              }
+            : null,
+        tinkering:
+          reason === null
+            ? null
+            : {
+                reason: reason as 'idle' | 'scrap' | 'shard' | 'essence' | 'floor',
+                shardElement: VALLEY_ELEMENTS[a.wait_element] ?? null,
+                sinceHours:
+                  a.wait_since === null ? null : Math.max(0, (input.to - a.wait_since) / HOUR_MS),
+              },
+        floor: {
+          count: a.floor_count,
+          cap: rules.forge.floorPiecesPerAnvil,
+          full: a.floor_count >= rules.forge.floorPiecesPerAnvil,
+          byRarity: counts,
+        },
+        perDay: {
+          pieces:
+            worker === undefined || current === undefined
+              ? 0
+              : (24 * plain) /
+                pieceHours(rules, current.reach === 'rare' || current.reach === 'epic' ? current.reach : 'none'),
+        },
+      };
+    });
+    const ladder: { acorns: number; scrap: number }[] = [];
+    for (let n = 0; n < anvilLimit(rules, FORGE_LEVEL); n++) {
+      const price = anvilPrice(rules, n, FORGE_LEVEL);
+      if (price !== null) ladder.push(price);
+    }
+    const shards: Record<string, number> = {};
+    for (const [e, element] of VALLEY_ELEMENTS.entries()) shards[element] = shelf.shards[e] ?? 0;
+    return {
+      anvils,
+      anvilPrices: {
+        owned: input.anvils.length,
+        max: anvilLimit(rules, FORGE_LEVEL),
+        next: anvilPrice(rules, input.anvils.length, FORGE_LEVEL),
+        ladder,
+      },
+      forge: {
+        shelf: { scrap: shelf.scrap, essence: shelf.essence, shards },
+        bag: { count: bagItems(this.sql, input.userId), cap: rules.forge.bag },
+        fireLevel: FIRE_LEVEL,
+        exchange: {
+          rate: rules.forge.exchange.rate,
+          critBp: Math.round(rules.forge.exchange.critChance * BP),
+          critYield: rules.forge.exchange.critYield,
+        },
+        queueMax: rules.forge.queueMax,
+        orderCountMax: rules.forge.orderCountMax,
+      },
+    };
   }
 }
 

@@ -2,7 +2,8 @@ import {
   EXPEDITION_LENGTHS,
   ROOM_SPOT_IDS,
   RULES,
-  SCOUT_KITS,
+  KIT_NAMES,
+  VALLEY_ELEMENTS,
   VALLEY_RULES,
   content,
   placeIds,
@@ -182,12 +183,48 @@ export const ValleySeatBuyBodySchema = v.strictObject({ idempotencyKey: Idempote
 export const ValleyKitBodySchema = v.variant('action', [
   v.strictObject({
     action: v.literal('buy'),
-    kit: v.picklist(SCOUT_KITS),
+    kit: v.picklist(KIT_NAMES),
     idempotencyKey: IdempotencyKeySchema,
   }),
   v.strictObject({
     action: v.literal('set'),
     seatId: IdSchema,
-    kit: v.nullable(v.picklist(SCOUT_KITS)),
+    kit: v.nullable(v.picklist(KIT_NAMES)),
   }),
 ]);
+
+// --- The valley's Forge (phase 5 step 3): anvils, orders and the exchange ---
+
+export const ValleyAnvilBuyBodySchema = v.strictObject({ idempotencyKey: IdempotencyKeySchema });
+
+const ReachSchema = v.picklist(['none', 'rare', 'epic']);
+
+/**
+ * An anvil's queue: adds an order (a blueprint and a count, or "for my team": no blueprint, no count), changes one's count or Reach,
+ * or takes one off. The counts are bounded by the rules in the handler; here the shape and the lengths.
+ */
+export const ValleyOrderBodySchema = v.variant('action', [
+  v.strictObject({
+    action: v.literal('add'),
+    seatId: IdSchema,
+    blueprintId: v.optional(v.pipe(v.string(), v.minLength(1), v.maxLength(64))),
+    forTeam: v.optional(v.boolean(), false),
+    count: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(999))),
+    reach: v.optional(ReachSchema, 'none'),
+  }),
+  v.strictObject({
+    action: v.literal('edit'),
+    orderId: IdSchema,
+    count: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(999))),
+    reach: v.optional(ReachSchema),
+  }),
+  v.strictObject({ action: v.literal('remove'), orderId: IdSchema }),
+]);
+
+/** The shard exchange: `times` trades for the element `to`, paid from `from` (null: the biggest pile that can pay). */
+export const ValleyExchangeBodySchema = v.strictObject({
+  to: v.picklist(VALLEY_ELEMENTS),
+  from: v.optional(v.nullable(v.picklist(VALLEY_ELEMENTS)), null),
+  times: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(20)), 1),
+  idempotencyKey: IdempotencyKeySchema,
+});

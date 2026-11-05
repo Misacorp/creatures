@@ -18,6 +18,7 @@
  */
 import {
   RULES,
+  VALLEY_RULES,
   craftLevelNeeded,
   effectiveStats,
   nextSkillXp,
@@ -32,10 +33,13 @@ import { dismantleLocks } from './dismantle-worn';
 import { conversionPending, dismissNotice, pendingNotice } from './gear-convert';
 import { grantWelcomeKit, recentGrants } from './gear-grants';
 import {
+  bagIsTracked,
+  bagItems,
   getParts,
   knownBlueprints,
   ownedItems,
   rowToItem,
+  setEquipped,
   viewOrSkip,
   type GearRow,
   type JobRow,
@@ -170,11 +174,14 @@ export class Gear {
     return {
       serverNow: now,
       balances: getBalances(this.sql, userId),
-      inventory: {
-        cap: RULES.gear.inventoryCap,
-        used: rows.length,
-        reserved: open.filter((j) => j.kind === 'craft').length,
-      },
+      // With the valley's systems on the bag holds 200 and worn items do not count (V-GEAR-6).
+      inventory: bagIsTracked(this.sql)
+        ? { cap: VALLEY_RULES.forge.bag, used: bagItems(this.sql, userId), reserved: 0 }
+        : {
+            cap: RULES.gear.inventoryCap,
+            used: rows.length,
+            reserved: open.filter((j) => j.kind === 'craft').length,
+          },
       items: rows.flatMap((row) => viewOrSkip('item', () => itemView(this.sql, row))),
       slotOpens: { ...RULES.gear.slotUnlockLevel },
       parts: getParts(this.sql, userId),
@@ -282,7 +289,7 @@ export class Gear {
               row.equipped_on,
             )
             .toArray()[0];
-          this.sql.exec('UPDATE gear_items SET equipped_on = NULL WHERE id = ?', row.id);
+          setEquipped(this.sql, row.id, null);
           this.recordEquip(row, was?.species ?? '', 'unequip', false, userId);
         }
       } else if (row.equipped_on !== creature.id) {
@@ -300,9 +307,9 @@ export class Gear {
           .toArray()[0];
         // Clear first: (equipped_on, slot) is unique, so a creature can never wear two items of a slot.
         if (displaced !== undefined) {
-          this.sql.exec('UPDATE gear_items SET equipped_on = NULL WHERE id = ?', displaced.id);
+          setEquipped(this.sql, displaced.id, null);
         }
-        this.sql.exec('UPDATE gear_items SET equipped_on = ? WHERE id = ?', creature.id, row.id);
+        setEquipped(this.sql, row.id, creature.id);
         this.recordEquip(row, creature.species, 'equip', displaced !== undefined, userId);
       }
       const fresh = ownedItem(this.sql, userId, gearId);
@@ -372,19 +379,15 @@ export class Gear {
       for (const move of moves) {
         const old = worn.get(move.creatureId)?.[move.slot];
         if (old !== undefined)
-          this.sql.exec('UPDATE gear_items SET equipped_on = NULL WHERE id = ?', old);
+          setEquipped(this.sql, old, null);
         if (move.itemId !== null) {
-          this.sql.exec('UPDATE gear_items SET equipped_on = NULL WHERE id = ?', move.itemId);
+          setEquipped(this.sql, move.itemId, null);
         }
       }
       const changes: { creatureId: string; slot: GearSlot; itemId: string }[] = [];
       for (const move of moves) {
         if (move.itemId === null) continue;
-        this.sql.exec(
-          'UPDATE gear_items SET equipped_on = ? WHERE id = ?',
-          move.creatureId,
-          move.itemId,
-        );
+        setEquipped(this.sql, move.itemId, move.creatureId);
         changes.push({ creatureId: move.creatureId, slot: move.slot, itemId: move.itemId });
         const row = byId.get(move.itemId);
         if (row !== undefined) {

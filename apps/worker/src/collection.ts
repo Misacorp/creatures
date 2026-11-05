@@ -45,6 +45,7 @@ import {
   openJobOf,
   openJobsByCreature,
   rowToItem,
+  setEquipped,
   wornGearView,
   wornRows,
   type GearRow,
@@ -851,7 +852,7 @@ export class Collection {
       .exec<GearRow>('SELECT * FROM gear_items WHERE equipped_on = ?', creatureId)
       .toArray()) {
       if (wearBlock(rowToItem(row), { level, role }) === null) continue;
-      this.sql.exec('UPDATE gear_items SET equipped_on = NULL WHERE id = ?', row.id);
+      setEquipped(this.sql, row.id, null);
       off += 1;
     }
     return off;

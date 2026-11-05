@@ -42,7 +42,7 @@ import {
   type Rng,
 } from '@creatures/game';
 import type { Analytics } from './analytics';
-import { creditParts, insertItem } from './gear-store';
+import { creditParts, insertItem, setEquipped } from './gear-store';
 import { credit, type LedgerStorage } from './ledger';
 import { readLadder } from './raid-ladder';
 
@@ -208,7 +208,7 @@ function convertPlayer(deps: ConvertDeps, userId: string, rank: number): void {
     });
     notice.converted += 1;
     if (block === null) {
-      sql.exec('UPDATE gear_items SET equipped_on = ? WHERE id = ?', wearer.id, row.id);
+      setEquipped(sql, row.id, wearer.id);
     } else {
       notice.unequipped.push({
         id: row.id,
