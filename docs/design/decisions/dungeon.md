@@ -4,6 +4,14 @@ The daily dungeon: paths, rooms and rare rooms, the camp, the Undercroft, foes, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-05: [Misa] The Undercroft curve stays; the skill tree and gear are the tools past depth 40
+
+ID: `2026-11-05-the-undercroft-curve-stays-the-skill` · Status: current
+
+**Decision.** The combat v2 Undercroft keeps its curve (90% HP, +3% a depth, +0.02% a depth squared). Past depth 40, where a healthy team beats level 1 only about 20% of the time, the answer is tools, not a softer curve: a skill tree node that guarantees a camp in the Undercroft, and gear that grows with depth (decision `2026-11-05-combat-v2-dungeon-xp-about-120`). Until the skill tree exists, going down deep is a risk most teams should decline.
+
+**Reasoning.** Misa (2026-11-05): "Let's keep the curve and rely on the skill tree and gear." The lab (`report -- --undercroft-tools`, balance.md section 8 row 4f) measured each tool for a healthy team at depth 41+: a camp alone 28%, gear about 10% stronger alone 35%, a camp with that gear 44% (as good as removing the curve's depth-squared term), while a bigger bench, four slots and the depth picker barely help. The problem starts only around week 8, so it can wait for the skill tree.
+
 ## 2026-11-05: Combat v2 dungeon XP: about 120 a run, a step at each landmark; more gear **[Misa]**
 
 ID: `2026-11-05-combat-v2-dungeon-xp-about-120` · Status: current · Amends: `2026-11-04-combat-v2-dungeon-rewards-and-xp`
