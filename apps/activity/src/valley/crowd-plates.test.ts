@@ -114,7 +114,7 @@ describe('nameplates: no two overlap and none leaves the scene, at the phone and
       const gap = plateGap(sc.scene.s);
       const rngs = Array.from({ length: plan.shown }, (_, i) => createSeededRng(`n-${String(i)}`));
       const slots = crowdSlots(plan.area, gap);
-      let ws: Walker[] = rngs.map((rng, i) => {
+      const ws: Walker[] = rngs.map((rng, i) => {
         const w = newWalker(rng, plan.area, { index: i, of: plan.shown });
         const slot = slots[i];
         return slot === undefined ? w : { ...w, x: slot.x, y: slot.y };
