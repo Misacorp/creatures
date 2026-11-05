@@ -109,3 +109,61 @@ describe('settle', () => {
     expect(JSON.stringify(s)).toBe(copy);
   });
 });
+
+describe('settle: catch-up, joining creatures and the allowance store', () => {
+  const withStore = (): SettleState => ({
+    ...start(2),
+    allowance: { store: 0, carry: 0 },
+  });
+
+  it('multiplies only idle XP by the creature catch-up held since the visit', () => {
+    const s = settle(
+      {
+        ...start(2),
+        creatures: [
+          { xp: 0, carry: 0, capXp: Infinity, catchUp: 3 },
+          start(1).creatures[0] as never,
+        ],
+      },
+      0,
+      10 * H,
+      [],
+    );
+    expect(total(s, 0)).toBeCloseTo(150, 6);
+    expect(total(s, 1)).toBeCloseTo(50, 6);
+  });
+
+  it('pays a creature nothing before it joined, and splits there', () => {
+    const joined = { xp: 0, carry: 0, capXp: Infinity, joinedAt: 6 * H };
+    const state = { ...start(1), creatures: [joined] };
+    expect(total(settle(state, 0, 10 * H, []))).toBeCloseTo(20, 6);
+    const half = settle(state, 0, 3 * H, []);
+    expect(total(half)).toBe(0);
+    expect(total(settle(half, 3 * H, 10 * H, []))).toBeCloseTo(20, 6);
+  });
+
+  it('builds the allowance by the away steps and stops at the store size (three days)', () => {
+    const day = VALLEY_RULES.acorns.allowancePerDay;
+    const one = settle(withStore(), 0, 24 * H, []);
+    expect(one.allowance?.store).toBe(day);
+    // The store holds storeHours of the hourly rate and nothing more.
+    const cap = (day / 24) * VALLEY_RULES.posts.storeHours;
+    const long = settle(withStore(), 0, 400 * H, [{ at: 400 * H, kind: 'visit' }]);
+    expect(long.allowance?.store).toBe(cap);
+    expect(long.allowance?.carry).toBe(0);
+    // A state without a store builds none.
+    expect(settle(start(), 0, 24 * H, []).allowance).toBeUndefined();
+  });
+
+  it('keeps the allowance invariant under splitting and unchanged by a repeat', () => {
+    const events = [{ at: 60 * H, kind: 'visit' as const }];
+    const whole = settle(withStore(), 0, 300 * H, events);
+    for (const b of [5.5 * H, 59 * H, 60 * H, 111 * H]) {
+      const second = settle(settle(withStore(), 0, b, events), b, 300 * H, events);
+      const a = whole.allowance as { store: number; carry: number };
+      const c = second.allowance as { store: number; carry: number };
+      expect(c.store + c.carry).toBeCloseTo(a.store + a.carry, 6);
+    }
+    expect(settle(whole, 300 * H, 300 * H, events)).toEqual(whole);
+  });
+});
