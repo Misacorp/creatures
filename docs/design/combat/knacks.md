@@ -64,7 +64,7 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 | gaiadrake | Detonate, Leave a Trail, Unlikely Guardian |
 | aurorix | Starlight, Clear Skies, Eye of the Storm |
 | lanternfin | Lantern Glow, Clear the Air, Sunbeam |
-| hearthshell | Draw Fire, Barricade, Hearth |
+| hearthshell | Draw Fire, Barricade, Hearth, Night Watch |
 | mudlump | Sticky Mud, Wide Reach |
 | bogwarden | Sticky Mud, Wide Reach, Draw Fire |
 | squelch | Squelch Song, Stack Up |
@@ -174,7 +174,7 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 - **Text:** Each boss turn it {Intercept}s the first {Wind-up} hit in its row, taking a quarter of it.
 - **Family:** Intercept
-- **Forms:** thornbuck
+- **Forms:** thornbuck, hearthshell
 - **Intent (for contributors, never shown to players):** Answers telegraphed big hits (Wild Sweep, Judgement Bolt). One hit a boss turn, and the hit it takes is cut to a quarter (the most any cut can take), so it is no longer a liability (panel 4; 2026-10-31: the cover cut of 40% left it tied with no Knack outside Wild Sweep and behind Primed by Pain on it).
 
 ### Sunbeam

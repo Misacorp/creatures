@@ -158,7 +158,7 @@ describe('the builder server', () => {
   });
 });
 
-describe('Determination (on by default from the second lap, at most +25%)', () => {
+describe('Determination (on by default from the second lap, at most +75%)', () => {
   /** A fight that is won once the server has at least `need` stacks: the stacks the walk gave it are recorded. */
   const needing = (need: number) => {
     const seen: [number, number, number][] = [];
@@ -175,7 +175,7 @@ describe('Determination (on by default from the second lap, at most +25%)', () =
     expect(seen.length).toBeGreaterThan(10);
     expect(seen.every(([, , stacks]) => stacks === 0)).toBe(true);
     // The default dial is Misa's (2026-10-30, panel 6): +5% a stack, at most 5 stacks (+25%), from slot 6, the second lap.
-    expect(DETERMINATION).toEqual({ stackBp: 500, maxStacks: 5, fromSlot: 6 });
+    expect(DETERMINATION).toEqual({ stackBp: 1500, maxStacks: 5, fromSlot: 6 });
     expect(determinationOf({})).toBe(DETERMINATION);
     expect(determinationOf({ determination: 'off' })).toBeUndefined();
   });
@@ -277,7 +277,7 @@ describe('Determination (on by default from the second lap, at most +25%)', () =
     const b = await run(on);
     expect(a.md.join('\n')).toContain('without Determination');
     expect(b.md.join('\n')).toContain(
-      'with Determination (+5% a failed weekend from slot 6, at most 5 stacks)',
+      'with Determination (+15% a failed weekend from slot 6, at most 5 stacks)',
     );
   }, 60_000);
 });

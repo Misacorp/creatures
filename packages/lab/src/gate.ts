@@ -9,7 +9,7 @@
  * potential so that they do not saturate at a kill, `weekendPotential`), the winning teams' diversity and the dead Knacks read from them,
  * and the classic line against the best at the real party sizes.
  *
- * A gate that misses is not a failing test: it is listed in `KNOWN_MISSES` (and printed) until the balance pass (step 6) clears it.
+ * A gate that misses is not a failing test: it is listed in `KNOWN_MISSES` (and printed) until the balance pass clears it or Misa accepts it.
  */
 import { performance } from 'node:perf_hooks';
 import { content } from '@creatures/game';
@@ -22,6 +22,7 @@ import {
   COMPARED_SERVERS,
   MIXED_KILL_SLOTS,
   SIZE_SERVERS,
+  journeyServers,
   planJourney,
   type JourneyReport,
 } from './journey';
@@ -71,27 +72,15 @@ export interface KnownMiss {
 }
 
 /**
- * The gates that miss at the last full run of `report -- --gate` (2026-11-05). No target was loosened. Each is one item id of
+ * The gates that miss at the last full run of `report -- --gate` (2026-11-05, after the balance pass). No target was loosened. Each is one item id of
  * `gateItemIds()`; `test/gate.test.ts` checks that the list names only real ones.
  */
 export const KNOWN_MISSES: readonly KnownMiss[] = [
   {
-    id: 'raid-stuck:mixed:slow',
-    measured: '18% of servers stuck',
-    target: 'at most 10%',
-    why: 'The mixed server on slow rosters has fewer strong creatures at each slot than the track was tuned for; the track tuner has to run on the journey\u2019s rosters and party sizes (balance pass, "slow servers getting stuck").',
-  },
-  {
-    id: 'diversity:storm-sovereign',
-    measured: '5 winning teams, 7 lines, 4 element sets, 6 families, top line sproutle 38%',
-    target: 'top line at most 35% (and 4 lines, 3 element sets, 4 families)',
-    why: 'One line (Sproutle) holds more of the winning creatures than the share allowed: the boss\u2019s second answer is too narrow, which is the content item "second answers" of the balance pass (P-13).',
-  },
-  {
     id: 'casual',
-    measured: '1.36 creatures beyond the top three',
+    measured: '1.41 creatures beyond the top three',
     target: 'at least 1.5',
-    why: 'Phase 1 accepted 1.41 and set 1.5 for phase 5; the number needs content (more roles a casual roster can fill with its lower levels) or a Knack rework, not a looser target. The 128-search mean is good to about plus or minus 0.14.',
+    why: 'Accepted by Misa on 2026-11-05 and kept as a miss, not a looser target: the dungeon depth picker already gives casual players meaningful content until they are ready for more depth, the valley rework brings quite passive EXP, and the picker lets any creature crew take on content. The 128-search mean is good to about plus or minus 0.14.',
   },
 ];
 
@@ -572,7 +561,7 @@ export function gateMarkdown(
   const md: string[] = [
     '## The phase 5 gate',
     '',
-    `Each gate item of \`balance.md\` section 3 on the v2 journey (the game's rules with the habits, \`HABITS\`; Determination on; ${quick ? 'a quick run: a sketch' : 'the full run'}). Targets are in \`targets.ts\`; a miss is never turned into a looser target. **${items.length - misses} of ${items.length} pass, ${misses} miss.**`,
+    `Each gate item of \`balance.md\` section 3 on the v2 journey (the game's rules with the habits, \`HABITS\`; Determination on; ${quick ? 'a quick run: a sketch, 8 servers of each kind' : `the full run, ${GATE_JOURNEY_SERVERS} servers of each kind in the journey`}). Targets are in \`targets.ts\`; a miss is never turned into a looser target. **${items.length - misses} of ${items.length} pass, ${misses} miss.**`,
     '',
     '| Group | Item | Measured | Target | Result |',
     '| --- | --- | --- | --- | --- |',
@@ -581,7 +570,7 @@ export function gateMarkdown(
         `| ${i.group} | ${cell(i.label)} | ${cell(i.measured)} | ${cell(i.target)} | ${i.pass ? 'pass' : 'MISS'} |`,
     ),
     '',
-    '### Known misses (`KNOWN_MISSES`, cleared by the balance pass)',
+    '### Known misses (`KNOWN_MISSES`: kept on purpose, accepted by Misa)',
     '',
   ];
   if (known.length === 0) md.push('None.');
@@ -692,25 +681,36 @@ export function inputsFrom(
   };
 }
 
+/**
+ * Servers of each kind in the gate's journey (full run): the stuck share is a share of servers, and 40 left it noisy (one draw of the
+ * same track read 18% and about 30%); 320 servers are good to about plus or minus 5 points at 95%. The rest of the report keeps 40.
+ */
+export const GATE_JOURNEY_SERVERS = 320;
+
 /** The journey options the gate reads: the game's rules, the habits, the three kinds and the party sizes. */
 export const gateJourneyOptions = (quick: boolean) =>
   ({
     quick,
+    servers: quick ? journeyServers(true) : GATE_JOURNEY_SERVERS,
     gameOnly: true,
     habitSets: [HABITS.id],
     sizes: SIZE_SERVERS,
   }) as const;
 
 /**
- * The gate as a plan. In the full report (`inReport`) the journey, best-team and casual jobs are the report's own (same ids), so the plan
- * adds only the gate's own jobs; alone (`--gate`) it carries them too.
+ * The gate as a plan. In the full report (`inReport`) the best-team and casual jobs are the report's own (same ids), and so are the
+ * journey's first servers (job ids carry the server index: indices 0 to 39 are shared, the gate adds the rest up to its 320). The plan
+ * adds the gate's own jobs and those extra servers; alone (`--gate`) it carries everything.
  */
 export function planGate(opts: { quick: boolean; inReport?: boolean }): Plan<GateSection> {
   const { quick } = opts;
   const journey = planJourney(gateJourneyOptions(quick));
   const own = gateOwnJobs(quick);
+  const reportJourney = new Set(planJourney({ quick }).jobs.map((j) => j.id));
   return {
-    jobs: opts.inReport ? own : [...own, ...journey.jobs, ...bestJobs(quick), ...casualJobs(quick)],
+    jobs: opts.inReport
+      ? [...own, ...journey.jobs.filter((j) => !reportJourney.has(j.id))]
+      : [...own, ...journey.jobs, ...bestJobs(quick), ...casualJobs(quick)],
     assemble: (results) => {
       const inputs = inputsFrom(results, quick, journey.assemble(results).data);
       const items = gateItems(inputs);

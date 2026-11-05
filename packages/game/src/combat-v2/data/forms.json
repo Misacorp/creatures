@@ -161,7 +161,7 @@
   {
     "id": "hearthshell",
     "armour": 40,
-    "ownKnacks": ["draw-fire", "keep-the-heat-in", "hearth"]
+    "ownKnacks": ["draw-fire", "keep-the-heat-in", "hearth", "night-watch"]
   },
   {
     "id": "mudlump",

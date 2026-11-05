@@ -26,8 +26,8 @@
     {
       "slot": 3,
       "boss": "storm-sovereign",
-      "hp": 13500,
-      "atk": 53,
+      "hp": 13100,
+      "atk": 51,
       "armour": 7,
       "strengthBp": 4167,
       "cards": 2,
@@ -48,8 +48,8 @@
     {
       "slot": 5,
       "boss": "thornmother",
-      "hp": 6500,
-      "atk": 155,
+      "hp": 6400,
+      "atk": 153,
       "armour": 124,
       "strengthBp": 6500,
       "cards": 1,
