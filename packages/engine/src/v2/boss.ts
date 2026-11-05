@@ -206,11 +206,27 @@ function bossHits(
     // A boss crit (R7.1): rolled for each hit that lands on a creature, after the dodge and the intercept and before the cuts
     // and the armour, so Cool Head, the cover, Brace and armour all work on the doubled hit. A one-shot never crits.
     let crit = false;
+    let spared: Fighter | undefined;
     if (!move.oneShotBp && proposed > 0 && roll(s, s.boss.critChanceBp ?? 0)) {
       crit = true;
-      const ward = critWardOf(s, taker);
-      proposed += Math.floor((proposed * (R.critBp - 10_000) * (10_000 - ward)) / 1e8);
+      const { ward, by } = critWardOf(s, taker);
+      const extra = Math.floor((proposed * (R.critBp - 10_000)) / 1e4);
+      const kept = Math.floor((proposed * (R.critBp - 10_000) * (10_000 - ward)) / 1e8);
+      proposed += kept;
       if (s.opts.log) log(s, 'boss-crit', `${s.boss.name} crits ${taker.name}`);
+      if (ward > 0 && by) {
+        // A fully spared crit is shown as a plain hit, and the Guard's save as a cover beat (Cool Head).
+        if (ward >= 10_000) crit = false;
+        if (s.opts.log && extra > kept)
+          emit(s, {
+            type: 'cover',
+            guard: keyOf(by),
+            who: keyOf(taker),
+            prevented: extra - kept,
+            byKnack: true,
+          });
+        if (fx(by).critWardSure) spared = by;
+      }
     }
     takeHit(
       s,
@@ -221,6 +237,8 @@ function bossHits(
       watched,
       crit,
     );
+    // Cool Head: each crit it spared stores a Sure Crit on the creature it was aimed at, if that one still stands and is not silenced.
+    if (spared && t.hp > 0 && !silenced(t)) gainSureCrit(s, t, 'critWardSure', spared);
   }
 }
 

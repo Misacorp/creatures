@@ -78,6 +78,7 @@ const ANSWERS_KNACKS: Readonly<Record<string, string>> = {
   gaiadrake: 'backlash',
   croakmire: 'squelch-song',
   tempestray: 'detonate',
+  thornbuck: 'cool-head',
 };
 
 /** The cards the party of the second answers meets on top of the slot's own: marks are shed, a hit is capped. */

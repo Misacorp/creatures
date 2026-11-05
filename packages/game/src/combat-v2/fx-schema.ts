@@ -75,6 +75,7 @@ export const FxSchema = v.pipe(
     dodgeCritBp: v.exactOptional(Int),
     guardCritBp: v.exactOptional(Int),
     critWardBp: v.exactOptional(Int),
+    critWardSure: v.exactOptional(v.boolean()),
     lowHpAtkBp: v.exactOptional(Int),
     areaCutBp: v.exactOptional(Int),
     holdOn: v.exactOptional(v.boolean()),

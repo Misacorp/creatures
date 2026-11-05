@@ -270,6 +270,7 @@
     "lines": [
       "A counter on the creature, built up by something that happened to it, like a dodge.",
       "Its next hit that lands and is not already a crit spends one and is a crit.",
+      "It deals the extra of the creature that spends it, whoever gave it: some creatures crit harder than others.",
       "It is not a Store, and not a lasting buff."
     ],
     "section": "v2-armour"

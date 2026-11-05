@@ -1,6 +1,6 @@
 {
   "format": 2,
-  "overall": "b3a09e7805fe4f2da9a228d55a8a6107806eb98e305f3bc8f5cb89afcfda3e10",
+  "overall": "158f68ffacbaa1745898342ea95ce398f6cf6a6a9f072092b77137b98bb19d60",
   "cases": {
     "cull-potential:12000#0": "17b80ca1a6bf81210475e2407fef1a9dcc342e55b61d7d0bf5d97f1e28fa8044",
     "cull-potential:24000#0": "e1dce8e43354ba33f577117566fb2c331d8db1b95d91cbd18b88cc42b7498aff",
@@ -466,8 +466,8 @@
     "gauntlet:grudge:classic#1": "c8ea9270e673e5637bf1ac4cb46e55fbcdfdb3fb4c8e4cd62639f7c620dde6ed",
     "gauntlet:grudge:classic#2": "474287ff21e1491b3c57647b859576598f40fe71718e6d0eebb92839bf6941f5",
     "gauntlet:lucky-strike:answer0#0": "78be75d41bfe90d077b3057861d8df3f950c9a5d04a74191030962c7a6968a22",
-    "gauntlet:lucky-strike:answer0#1": "8c72f45f6bcaa0ef15dea8d249250fbf710b9213366b809a06ec312b922fd168",
-    "gauntlet:lucky-strike:answer0#2": "818ee3e478e7daa52ae7d9e5c2d8ebc7f39b86c87adfdb56b91b110e3e848a57",
+    "gauntlet:lucky-strike:answer0#1": "3913f8129599b52a46ab8e7074aab7cb9637d4cc26ca7e47eb6e1bed47b711a0",
+    "gauntlet:lucky-strike:answer0#2": "4be967c64ff5d9d0182e990673b27b1a7e206e9c700701d52430fb5ee6186b67",
     "gauntlet:lucky-strike:answer1#0": "26bde3743512677f873f7a14c40b167a5c4e69cfcdb0c90387a1eae00533bd98",
     "gauntlet:lucky-strike:answer1#1": "10377259b696e9d25a0233e0f482644126ed08d2ab01c727c25ef213df1725ce",
     "gauntlet:lucky-strike:answer1#2": "8fd8d3bc96a083cf2d133ac9677d734d9a293516048ead0d964bddf8628e493c",

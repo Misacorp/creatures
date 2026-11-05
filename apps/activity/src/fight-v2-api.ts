@@ -215,7 +215,12 @@ export function isBoardEvent(value: unknown): value is BoardEvent {
     case 'intercept':
       return isStr(value['guard']) && isStr(value['who']);
     case 'cover':
-      return isStr(value['guard']) && isStr(value['who']) && isCount(value['prevented']);
+      return (
+        isStr(value['guard']) &&
+        isStr(value['who']) &&
+        isCount(value['prevented']) &&
+        (value['byKnack'] === undefined || isBool(value['byKnack']))
+      );
     case 'boost':
       return isStr(value['who']) && isStr(value['by']) && isCount(value['bp']);
     case 'counter':

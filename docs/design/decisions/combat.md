@@ -4,6 +4,14 @@ The shared combat engine, abilities, statuses, elements, the balance simulator, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-06: Combat v2: Cool Head turns a spared crit into a Sure Crit
+
+ID: `2026-11-06-combat-v2-cool-head-turns-a` · Status: current
+
+**Decision.** Cool Head keeps its ward (crits on it and on the creatures beside it deal no extra damage) and adds: each crit it spares stores one Sure Crit (shared cap `sureCritMax`) on the creature the crit was aimed at (`target`, not the Guard that took it), only if that creature still stands and is not silenced (R12.2). One store per warded crit however many Cool Heads (the flag is read from the ward's giver). A Sure Crit deals the spender's own crit extra (a Perfect Timing creature's is 3x); the keyword row says so. The replay shows the save as the existing `cover` board event (new optional `byKnack`, so the Knack's name pops on the Cool Head creature) and a fully spared boss crit is drawn as a plain hit, not a crit. Double Strike's `answers` are now by Knack id (`cool-head`, `hide-in-mist`; Rolling Fog is not measured as an answer, and the family "Luck" lit Wild Swing). Cool Head stays on thornbuck only.
+
+**Reasoning.** The card costs the classic line only 6-11%, so a ward alone could not reach any answer bar and the Guard slot is crowded (Wide Reach, Draw Fire). Turning the spared crit into a Sure Crit chains it into Perfect Timing, Hold the Line and Payoff crits without a bare number. Giving it to the creature aimed at (not the taker) makes a Payoff beside the Guard the placement choice. Measured on Storm Sovereign weekends (96 runs): damage share slot 8 0.770 (Wide Reach 0.642, none 0.635), slot 13 0.759 (0.584, 0.564); in the weekend-scored searches Cool Head is in 7 of 84 top lines on slot 8 and 14 of 84 on slot 13, the top line in 2 of 8 searches, so it is not an always-pick; no effect on any week without Double Strike. The gate's `dead-knack` still misses: the report's per-card fights are short (about 5 boss crits) and the Knack's card lift there is about 1.08, so no top-five line carries it; the miss stays in `KNOWN_MISSES` with that reason. Parity moved only `gauntlet:lucky-strike:answer0#1` and `#2` (the Cool Head answer line).
+
 ## 2026-11-06: Combat v2 second answers: answers by Knack id, Pin Down, Backlash, Aftershock, and what stays one-answer
 
 ID: `2026-11-06-combat-v2-second-answers-answers-by` · Status: current

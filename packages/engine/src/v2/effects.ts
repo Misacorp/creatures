@@ -125,6 +125,8 @@ export interface KnackFx {
   readonly guardCritBp?: number;
   /** Crits on it, and on the creatures beside it, deal this much less extra damage (an aura: the largest applies). */
   readonly critWardBp?: number;
+  /** Each crit its ward spares stores a Sure Crit on the creature the crit was aimed at (Cool Head). */
+  readonly critWardSure?: boolean;
   /** Its hits deal this much more while it is below half its max HP. */
   readonly lowHpAtkBp?: number;
   /** It takes this much less from area hits and charged landings (its own; adds to an aura). */

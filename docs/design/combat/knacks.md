@@ -375,10 +375,10 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 ### Cool Head
 
-- **Text:** {Crit}s on it and on the creatures {Beside} it deal no extra damage.
+- **Text:** {Crit}s on it and on the creatures {Beside} it deal no extra damage; each crit it spares stores a {Sure Crit} on the creature it was aimed at.
 - **Family:** Luck
 - **Forms:** thornbuck
-- **Intent (for contributors, never shown to players):** The answer to a boss that crits (Double Strike): a Guard that keeps a crit to a plain hit for itself and its neighbours (2026-10-31: at half it was tied with no Knack on every card but Double Strike, and barely ahead there). Nothing against a boss that never crits.
+- **Intent (for contributors, never shown to players):** The answer to a boss that crits (Double Strike): a Guard that keeps a crit to a plain hit for itself and its neighbours, and turns each spared crit into a Sure Crit for the creature it was aimed at, so it asks for a Payoff beside the Guard. A Sure Crit deals the spender's own crit extra (a Perfect Timing creature's is 3x). Nothing against a boss that never crits (2026-10-31: at half the ward alone was tied with no Knack on every card but Double Strike).
 
 ## Combat talents
 

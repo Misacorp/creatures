@@ -85,7 +85,7 @@ export const KNOWN_MISSES: readonly KnownMiss[] = [
     id: 'dead-knack',
     measured: 'Cool Head unpicked (1 of 47 Knacks)',
     target: 'every Knack picked somewhere',
-    why: 'Since the three new Knacks (Pin Down, Backlash, Aftershock) joined the pool on 2026-11-05, no best-team search picks Cool Head; before, one raid Reflective Hide search picked it (3 of its top 5 lines). Borderline and partly search noise, but a Knack only one search ever picked is weak: worked with the balance-miss skill next.',
+    why: 'Cool Head now turns a spared crit into a Sure Crit (2026-11-05), and on the track weekends it is picked: 7 of 84 top lines on slot 8, 14 of 84 on slot 13, top line in 2 of 8 searches. But it only works on Double Strike, and the report’s per-card fight is short (about 30 boss hits, 5 crits), so the card-level best-team searches (a lift of about 1.08 on the raid line) still never put it in the top five. Judge it by the weekend searches, not by the card; see for-misa.md.',
   },
 ];
 
