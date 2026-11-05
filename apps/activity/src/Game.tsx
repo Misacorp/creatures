@@ -127,6 +127,8 @@ export function Game({
   loungeLive?: boolean;
   /** The server shows the valley shell (`valley` of `/api/config`): a map of places instead of the dock and tabs. */
   valley?: boolean;
+  /** The valley's base systems are on (`valleySystems` of `/api/config`; phase 5). Unused until step 1. */
+  valleySystems?: boolean;
   /** True on staging and local runs, where the server can start a practice finale. */
   showPractice: boolean;
   /** The daily Bait allowance the server paid when the Activity opened; null when there is none to tell. */
