@@ -78,7 +78,11 @@ describe('names', () => {
   it('names items from the content and keeps an unknown id readable', () => {
     expect(gearName('kelp-cap')).toBe('Kelp Cap');
     expect(gearName('mystery')).toBe('mystery');
-    expect(itemLabel('kelp-cap', 2)).toBe('Kelp Cap, item level 2');
+    expect(itemLabel({ baseId: 'kelp-cap', rarity: 'rare', itemLevel: 2 })).toBe(
+      'Kelp Cap, item level 2, Rare',
+    );
+    // A piece stored before items had levels still says its rarity.
+    expect(itemLabel({ baseId: 'kelp-cap', rarity: 'epic' })).toBe('Kelp Cap, Epic');
     expect(slotName('scarf')).toBe('Scarf');
   });
 
@@ -530,7 +534,7 @@ describe('grants and loot', () => {
   });
 
   it('names a dropped item with its item level when it has one, and plainly otherwise', () => {
-    expect(lootItemName({ baseId: 'trail-cap', itemLevel: 3 })).toBe(itemLabel('trail-cap', 3));
+    expect(lootItemName({ baseId: 'trail-cap', itemLevel: 3 })).toBe('Trail Cap, item level 3');
     // A grant stored before gear v2 has no item level.
     expect(lootItemName({ baseId: 'trail-cap' })).toBe(gearName('trail-cap'));
   });

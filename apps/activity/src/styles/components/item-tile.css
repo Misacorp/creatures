@@ -57,6 +57,7 @@ button.item-tile.selected:active:not(:disabled) {
 
 .item-tile-flag {
   position: absolute;
+  z-index: 2;
   top: 0.1875rem;
   right: 0.3125rem;
   color: var(--gold);
@@ -73,6 +74,7 @@ button.item-tile.blocked canvas.sprite.item-tile-wearer {
 
 .item-tile-wearer {
   position: absolute;
+  z-index: 2;
   top: 0.1875rem;
   right: 0.1875rem;
 }
@@ -83,6 +85,11 @@ button.item-tile.blocked canvas.sprite.item-tile-wearer {
   icon's corner, the gold ring of a chosen tile and the hold cue (while a long press is held the tile steps down in size
   and its ring fills in a few steps; no motion under reduced motion: the ring just shows).
 */
+
+/* A tile's rarity border is drawn inside it, so the rarity's shape (`.rarity-edge`, item-frame.css) starts inside it. */
+button.item-tile.rarity-edge {
+  --edge-in: var(--px);
+}
 
 /* The slot icon of a bag tile sits at the bottom left, so the checkbox at the top left never covers it. */
 .bag-grid canvas.sprite.item-slot {

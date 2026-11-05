@@ -6,7 +6,15 @@ import { GLOSSARY_IDS, PART_KINDS, gearBase, tagElement, type PartKind } from '@
 import type { ComponentChildren } from 'preact';
 import { GlossaryTag } from './Glossary';
 import { itemArt } from './gear-sprites';
-import { isFestivalBase, itemSet, partName, partsEntries, rarityName, slotName } from './gear-view';
+import {
+  isFestivalBase,
+  itemLabel,
+  itemSet,
+  partName,
+  partsEntries,
+  rarityName,
+  slotName,
+} from './gear-view';
 import { glyphOrUnknown } from './glyphs';
 import { capitalize, elementName } from './game';
 import type { GearRarity, GearSlot, PartsBundle } from './gear-types';
@@ -68,14 +76,19 @@ export function ItemCorners({ level, baseId }: { level: number; baseId: string }
 
 /**
  * The frame around an item sprite: one single border in the rarity colour and, when the level is known, the
- * item's corners (`ItemCorners`: the slot's icon at the top left, the item level at the bottom right). Rarity is the border colour (and a rarity badge where there is
- * room), never pips. A Festival piece (it is a base, not a rarity: pass its `baseId`) also gets a
- * lantern-gold dashed outline.
+ * item's corners (`ItemCorners`: the slot's icon at the top left, the item level at the bottom right). Rarity is
+ * the border's colour and its shape (`rarity-edge`, item-frame.css: a plain line for Common, bevelled corners for
+ * Rare, bevelled corners and a point in the middle of each side for Epic), so it never rests on colour alone; the
+ * name and a rarity badge say it in words where there is room. A picture with no `baseId` (a blueprint, a How to
+ * play illustration) is not an item and keeps the plain line. A Festival piece (it is a base, not a rarity: pass
+ * its `baseId`) also gets a lantern-gold dashed outline. `label` makes the frame an image with that spoken name,
+ * for a picture with no name beside it (a list of items to take apart).
  */
 export function ItemFrame({
   rarity,
   baseId,
   level,
+  label,
   children,
   class: extra,
 }: {
@@ -83,13 +96,17 @@ export function ItemFrame({
   baseId?: string;
   /** The item's level; leave out when the item does not exist yet (a blueprint) or the level is not known. */
   level?: number;
+  /** The spoken name, when nothing beside the picture names the item. Without it the frame is decoration. */
+  label?: string;
   children: ComponentChildren;
   class?: string;
 }) {
   const festival = baseId !== undefined && isFestivalBase(baseId);
+  const edge = baseId === undefined ? '' : ' rarity-edge';
   return (
     <span
-      class={`item-frame rarity-${rarity}${festival ? ' festival' : ''}${extra === undefined ? '' : ` ${extra}`}`}
+      class={`item-frame rarity-${rarity}${edge}${festival ? ' festival' : ''}${extra === undefined ? '' : ` ${extra}`}`}
+      {...(label === undefined ? {} : { role: 'img', 'aria-label': label })}
     >
       {children}
       {level !== undefined &&
@@ -105,15 +122,18 @@ export function ItemFrame({
 /**
  * The square picture of an item: its sprite in the rarity frame with the item level in the corner. The one
  * way a piece is drawn small (a row, a grid of items to take apart, a worn slot, the item card's head).
- * `itemLevel` is left out for a piece stored before items had levels.
+ * `itemLevel` is left out for a piece stored before items had levels. `spoken` names the picture for screen readers
+ * ("Kelp Cap, item level 4, Rare"), for a picture with no name beside it; otherwise it is decoration.
  */
 export function ItemThumb({
   item,
   scale,
+  spoken = false,
   class: extra,
 }: {
   item: { baseId: string; rarity: GearRarity; itemLevel?: number | undefined };
   scale: number;
+  spoken?: boolean;
   class?: string;
 }) {
   return (
@@ -121,6 +141,7 @@ export function ItemThumb({
       rarity={item.rarity}
       baseId={item.baseId}
       {...(item.itemLevel === undefined ? {} : { level: item.itemLevel })}
+      {...(spoken ? { label: itemLabel(item) } : {})}
       {...(extra === undefined ? {} : { class: extra })}
     >
       <ItemSprite baseId={item.baseId} scale={scale} />

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Creature } from '../api';
 import type { GearItem, GearSlot } from '../gear-types';
-import { itemLabel, rarityName, setPiecesWith, slotName } from '../gear-view';
+import { itemLabel, setPiecesWith, slotName } from '../gear-view';
 import { ItemCard } from '../ItemCard';
 import { ItemTile } from '../ItemTile';
 import { CloseGlyph, Drawer } from '../ui/Drawer';
@@ -242,7 +242,7 @@ export function ItemPickerDrawer({
             <ItemTile
               key={cell.item.id}
               item={cell.item}
-              label={`${itemLabel(cell.item.baseId, cell.item.itemLevel)}, ${rarityName(cell.item.rarity)}${cell.worn ? ', worn now' : ''}${cell.wornBy === null ? '' : `, worn by ${cell.wornBy}`}${cell.blocked === null ? '' : `. ${cell.blocked}`}`}
+              label={`${itemLabel(cell.item)}${cell.worn ? ', worn now' : ''}${cell.wornBy === null ? '' : `, worn by ${cell.wornBy}`}${cell.blocked === null ? '' : `. ${cell.blocked}`}`}
               selected={cell.item.id === shown?.item.id}
               pressed={cell.item.id === selected?.item.id}
               blocked={dimmed(cell)}

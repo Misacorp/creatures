@@ -210,8 +210,9 @@
   place-items: center;
 }
 
+/* The worn item is drawn at the creature card's size (scale 3), so its level and rarity mark read; its margin is just its ring, so the row keeps its room. */
 .ro-worn .item-frame {
-  --lv-size: 0.75rem;
+  margin: var(--px);
 }
 
 /*

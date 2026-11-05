@@ -5,7 +5,7 @@ import { gearBase } from '@creatures/game';
 import { FestivalTag, ItemThumb, RarityTag, SlotTag } from '../GearArt';
 import type { GearItem, GearRarity, LootPiece } from '../gear-types';
 import { GearItemsContext } from '../gear-items-context';
-import { gearName, isFestivalBase, itemLabel, rarityName } from '../gear-view';
+import { gearName, isFestivalBase, itemLabel } from '../gear-view';
 import { ItemCard } from '../ItemCard';
 import { usePopoverTrigger } from '../PopoverHost';
 import { FindList, FindRow } from './FindRow';
@@ -137,7 +137,7 @@ export function FindItem({
     item === undefined || host === null
       ? undefined
       : {
-          label: `${itemLabel(item.baseId, item.itemLevel)}, ${rarityName(item.rarity)}. Details`,
+          label: `${itemLabel(item)}. Details`,
           expanded: open,
           ref,
           onClick: () => {
