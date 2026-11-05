@@ -11,9 +11,10 @@ import { addDays, gameDay } from '../src/time';
 import { USER_ID, runCore } from './helpers';
 import { captureConsole } from './kit';
 import { HELSINKI, MINUTE, nextGuild, rows, seedPlayer } from './raid-helpers';
-import { describeReads, expectReadsUnder, type ReadReport } from './read-meter';
+import { describeReads, expectReadsUnder, expectWritesUnder, type ReadReport } from './read-meter';
 import {
   BUILD,
+  GUILD_ID,
   HISTORY_DAYS,
   TODAY,
   callAs,
@@ -249,4 +250,84 @@ describe('rows read counter', () => {
       expect(days).not.toContain(addDays(today, -91));
     });
   });
+});
+
+/**
+ * The valley's lazy pass (phase 5 step 1, `valley-settle.ts`): what `/api/state` reads and writes with `VALLEY_SYSTEMS` on, for a
+ * player with 30 creatures (the seeded guild's size; the plan's example is about 15). A pass reads the player row and the creatures
+ * with their valley rows, and writes each creature's carry and the player row; the rows written have their own allowance (plan risk
+ * 2). Every number is next to its measure; the budgets are about 1.5x.
+ */
+const VALLEY_BUDGET = {
+  // The whole request, `/api/state` with 30 creatures (657 reads without the valley). First look: the player row and a row per creature.
+  open: { reads: 1000, writes: 125 }, // measured 665 reads, 81 written
+  // A day away: settles every creature (the XP through the level rules), pays the allowance, clears rows of creatures that left.
+  arrival: { reads: 1250, writes: 95 }, // measured 828 reads, 63 written
+  // Ten minutes into the visit: a pass writes each creature's carry and the player row.
+  visit: { reads: 1100, writes: 50 }, // measured 723 reads, 31 written
+  // A look within a minute of the last pass answers from what is stored and writes nothing.
+  quick: { reads: 1050, writes: 5 }, // measured 692 reads, 1 written (the meter's own flush is not counted)
+  // The pass before an intent (a dismiss of a card that is not there), with the request's own reads.
+  intent: { reads: 860, writes: 85 }, // measured 572 reads, 56 written
+} as const;
+
+describe('read budget with the valley on', () => {
+  const measured: Record<string, ReadReport> = {};
+
+  it('measures the first look, an arrival, a look mid-visit, a repeat within a minute and an intent', async () => {
+    await inGuild(
+      async (env) => {
+        const { metered, clock } = env;
+        const world = await seedWorld(env, { valleySystems: true });
+        const { core, secrets } = world;
+        // Sessions idle out when the clock jumps by hours: the player signs in again at each step.
+        const relog = async (): Promise<void> => {
+          secrets.set(
+            userId(1),
+            await core.createSession(GUILD_ID, { id: userId(1), displayName: 'Player 1' }),
+          );
+        };
+        const state = (): Promise<unknown> => callAs(core, secrets, 1, '/api/state');
+        // Warm: today's one-off work (the week's rows, the draws) is not the valley's.
+        clock.t += 6 * MINUTE;
+        await callAs(core, secrets, 1, '/api/me');
+        // The same state read by an object with the flag off, to tell what the pass adds.
+        measured['baseline'] = (
+          await metered.measure(() =>
+            callAs(env.mk(BUILD, { combatV2: true }), secrets, 1, '/api/state'),
+          )
+        ).reads;
+        measured['open'] = (await metered.measure(state)).reads;
+        // A day away: an arrival settles 30 creatures and brings the allowance home.
+        clock.t += 24 * 60 * MINUTE;
+        await relog();
+        measured['arrival'] = (await metered.measure(state)).reads;
+        // Ten minutes on, the same visit: a pass that writes the carries.
+        clock.t += 10 * MINUTE;
+        measured['visit'] = (await metered.measure(state)).reads;
+        // A repeat within the minute answers from what is stored.
+        clock.t += 10_000;
+        measured['quick'] = (await metered.measure(state)).reads;
+        // The pass before an intent (the request's own work is a dismiss of a card that is not there).
+        clock.t += 5 * MINUTE;
+        await relog();
+        measured['intent'] = (
+          await metered.measure(() =>
+            callAs(core, secrets, 1, '/api/away/dismiss', { method: 'POST', body: { until: 1 } }),
+          )
+        ).reads;
+      },
+      { fresh: true },
+    );
+  }, 60_000);
+
+  it.each(Object.keys(VALLEY_BUDGET) as (keyof typeof VALLEY_BUDGET)[])(
+    'the valley pass: %s reads and writes few rows',
+    (name) => {
+      const reads = measured[name];
+      if (reads === undefined) throw new Error('the measuring test did not run');
+      expectReadsUnder(`valley ${name}`, reads, VALLEY_BUDGET[name].reads);
+      expectWritesUnder(`valley ${name}`, reads, VALLEY_BUDGET[name].writes);
+    },
+  );
 });

@@ -22,7 +22,7 @@ export interface DungeonRouteContext {
   user: { id: string };
   /** Path parameters of a template route, raw: validated here before use. */
   params: Record<string, string>;
-  core: { dungeon: Dungeon };
+  core: { dungeon: Dungeon; valleySystems: boolean };
 }
 
 /**
@@ -61,6 +61,8 @@ export const dungeonRoutes: Routes<DungeonRouteContext> = {
     POST: async (request, ctx) => {
       const body = await parseBody(request, StartBodySchema);
       if (body === undefined) return invalidBody();
+      // Treats are off with the valley on; nothing is charged.
+      if (ctx.core.valleySystems && body.treats.length > 0) return errorResponse('treats_off', 400);
       const outcome = ctx.core.dungeon.start(ctx.user.id, body);
       if (!outcome.ok) return failure(outcome);
       return json(outcome.value);

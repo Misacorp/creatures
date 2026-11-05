@@ -376,13 +376,17 @@ export interface World {
  */
 export async function seedWorld(
   { metered, clock, mk }: GuildEnv,
-  options: { combatV2?: boolean } = {},
+  options: { combatV2?: boolean; valleySystems?: boolean } = {},
 ): Promise<World> {
-  // The Worker's own start: the schema and the one-off passes of this build.
-  const core = mk(BUILD, options.combatV2 === true ? { combatV2: true } : {});
+  // The Worker's own start: the schema and the one-off passes of this build. The valley systems need combat v2 (`valley-flag.ts`).
+  const core = mk(BUILD, {
+    ...(options.combatV2 === true || options.valleySystems === true ? { combatV2: true } : {}),
+    ...(options.valleySystems === true ? { valleySystems: true } : {}),
+  });
   core.migrate();
   const creatures = seedPlayers(metered.sql, metered.storage);
-  if (options.combatV2 === true) seedV2(metered.sql, metered.storage, creatures);
+  if (options.combatV2 === true || options.valleySystems === true)
+    seedV2(metered.sql, metered.storage, creatures);
   seedHistory(metered.sql, metered.storage, TODAY, HISTORY_DAYS, creatures);
   const secrets = new Map<string, string>();
   for (let n = 1; n <= PLAYERS; n++) {
