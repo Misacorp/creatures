@@ -162,11 +162,19 @@ describe('the words of the depth picker', () => {
       newDepth: 23,
       lower: true as const,
     };
+    const own = {
+      outcome: run.outcome,
+      cleared: true,
+      roomsCleared: 5,
+      rooms: [],
+      depth: 16,
+      newDepth: 23,
+    };
     expect(resultSummary(run)).toContain(
       'You defeated the floor boss at depth 16. You stay at depth 23.',
     );
     expect(resultSummary(run)).not.toContain('advanced');
-    expect(resultSummary({ ...run, lower: undefined })).toContain('advanced to depth 23');
+    expect(resultSummary({ ...own })).toContain('advanced to depth 23');
   });
 
   it('shows the run’s own depth on the strip at a lower descent', () => {
