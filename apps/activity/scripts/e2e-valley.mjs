@@ -226,6 +226,9 @@ try {
     if (reduced) await shot('gains-note');
   });
 
+  // The coming-home moment is over before the HUD is measured or shot (its plates fly over the purse).
+  await page.locator('.gz-fly').waitFor({ state: 'detached', timeout: 15000 });
+
   await step('nothing on the map takes focus on load', async () => {
     const focused = await page.evaluate(() => {
       const el = document.activeElement;
@@ -323,6 +326,28 @@ try {
         throw new Error('the HUD has no way back to the valley');
       if ((await page.locator('.vy-page .drill-head').count()) > 0)
         throw new Error('a second title row is still inside the place');
+      // Nothing overflows its parent: back, title, purse and cog share one row; the title gives way first.
+      const hud = await page.evaluate(() => {
+        const bar = document.querySelector('header.hud');
+        if (bar === null) return null;
+        const box = bar.getBoundingClientRect();
+        const inside = (sel) => {
+          const el = bar.querySelector(sel);
+          if (el === null) return false;
+          const r = el.getBoundingClientRect();
+          return r.left >= box.left - 0.5 && r.right <= box.right + 0.5 && r.width > 0;
+        };
+        const title = bar.querySelector('h1.hud-title');
+        return {
+          back: inside('.hud-back'),
+          purse: inside('.currency-pile'),
+          cog: inside('.hud-gear'),
+          scrolls: bar.scrollWidth > bar.clientWidth,
+          titleCut: title !== null && title.scrollWidth > title.clientWidth,
+        };
+      });
+      if (hud === null || !hud.back || !hud.purse || !hud.cog || hud.scrolls)
+        throw new Error(`the HUD overflows at ${String(width)} px: ${JSON.stringify(hud)}`);
       if (id === 'paddock' || id === 'arena') await page.waitForTimeout(400);
       if (id === 'paddock' || id === 'arena' || id === 'forge') await shot(`place-${id}`);
       // The page loaded from its fixtures: no error line is showing in it.
