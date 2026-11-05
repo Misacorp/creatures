@@ -5,7 +5,8 @@
  * under it (`PinnedAct`), which takes you to the part of the page that does it. Tapping a creature opens its
  * popover, as everywhere (`SmallCreature`). The paddock's creatures wander (not with reduced motion).
  */
-import { useMemo } from 'preact/hooks';
+import type { ComponentChildren } from 'preact';
+import { useMemo, useRef, useState } from 'preact/hooks';
 import { bossArt } from '../art';
 import type { Creature } from '../api';
 import type { CreatureInfo } from '../creature-info';
@@ -14,6 +15,7 @@ import { cssVars } from '../css-vars';
 import { usePrefersReducedMotion } from '../hooks';
 import { SmallCreature } from '../SmallCreature';
 import { Nameplate } from '../ui/Nameplate';
+import { dropPoint, pastThreshold, type Grab } from './creature-drag';
 import { PinnedAct } from './PinnedAct';
 import { SceneFrame, sceneGeometry, type SceneGeometry } from './SceneFrame';
 import { At, CreatureSprite, SpeechBubble, isStill, useTick } from './parts';
@@ -22,7 +24,7 @@ import { BAND_ROWS, bandArtBox, bandScale, bandSceneDraw } from './place-scene';
 import { plateGap, roamPlan, standSpots } from './place-plates';
 import { useRoamers } from './use-roamers';
 import { depthOf } from './valley-logic';
-import { placeOf } from './valley-art';
+import { placeOf, type Rect } from './valley-art';
 import type { MapName } from './valley-places';
 
 /** The sprite each scene stands its place's art from. */
@@ -36,6 +38,9 @@ export const SCENE_ART: Readonly<Record<CastPlace, MapName>> = {
 
 /** The nameplates' layer: above every creature (`depthOf` stays below it). */
 const PLATES_Z = 500000;
+
+/** A creature held by a hand: above every creature, below the nameplates. */
+const LIFTED_Z = PLATES_Z - 1;
 
 /** Roamers step 8 times a second. */
 const TICK_MS = 125;
@@ -54,6 +59,90 @@ function infoOf(c: Creature): CreatureInfo {
   };
 }
 
+/** What lets a hand move a creature: the meadow it stays in, and where it is held and put down. */
+interface Hand {
+  area: Rect;
+  /** Held right now: drawn above every creature. */
+  lifted: boolean;
+  onHold: (x: number, y: number) => void;
+  onDrop: () => void;
+}
+
+/**
+ * Wraps a creature so a mouse or a finger can pick it up and put it down anywhere in the meadow. A press that
+ * moves less than a few pixels stays a tap (the popover opens as before); a drag swallows the click that ends it.
+ * No long press. Pointer capture keeps the drag with the creature when the pointer leaves it.
+ */
+function Draggable({
+  hand,
+  x,
+  y,
+  g,
+  children,
+}: {
+  hand: Hand;
+  x: number;
+  y: number;
+  g: SceneGeometry;
+  children: ComponentChildren;
+}) {
+  const grab = useRef<Grab | null>(null);
+  const dragging = useRef(false);
+  const swallow = useRef(false);
+  const boxOf = (el: HTMLElement): { left: number; top: number } =>
+    (el.closest('.vy-scene') ?? el).getBoundingClientRect();
+  const end = (e: PointerEvent): void => {
+    if (grab.current === null || e.pointerId !== grab.current.id) return;
+    grab.current = null;
+    if (!dragging.current) return;
+    dragging.current = false;
+    swallow.current = true;
+    setTimeout(() => {
+      swallow.current = false;
+    }, 0);
+    hand.onDrop();
+  };
+  return (
+    <span
+      class={`vy-drag${hand.lifted ? ' lifted' : ''}`}
+      onPointerDown={(e) => {
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
+        const box = boxOf(e.currentTarget);
+        grab.current = {
+          id: e.pointerId,
+          px: e.clientX,
+          py: e.clientY,
+          dx: x - (e.clientX - box.left) / g.s,
+          dy: y - (e.clientY - box.top) / g.s,
+        };
+        dragging.current = false;
+      }}
+      onPointerMove={(e) => {
+        const start = grab.current;
+        if (start === null || e.pointerId !== start.id) return;
+        if (!dragging.current) {
+          if (!pastThreshold(start, e.clientX, e.clientY)) return;
+          dragging.current = true;
+          e.currentTarget.setPointerCapture(e.pointerId);
+        }
+        const to = dropPoint(start, e.clientX, e.clientY, boxOf(e.currentTarget), g.s, hand.area);
+        hand.onHold(to.x, to.y);
+        e.preventDefault();
+      }}
+      onPointerUp={end}
+      onPointerCancel={end}
+      onClickCapture={(e) => {
+        if (!swallow.current) return;
+        swallow.current = false;
+        e.stopPropagation();
+        e.preventDefault();
+      }}
+    >
+      {children}
+    </span>
+  );
+}
+
 /** One creature standing at (`x`, `y`) scene pixels: a button that opens its popover. */
 function Stander({
   creature,
@@ -62,6 +151,7 @@ function Stander({
   flip,
   label,
   g,
+  hand,
 }: {
   creature: Creature;
   x: number;
@@ -69,19 +159,35 @@ function Stander({
   flip: boolean;
   label: string;
   g: SceneGeometry;
+  /** Given: a hand can move it (the paddock's roamers). */
+  hand?: Hand;
 }) {
   const info = infoOf(creature);
+  const button = (
+    <SmallCreature
+      info={info}
+      id={`scene-${creature.id}`}
+      class="vy-stand-btn"
+      label={`${info.name}, level ${String(info.level)}, ${label}`}
+    >
+      <CreatureSprite creature={creature} scale={g.s} flip={flip} />
+    </SmallCreature>
+  );
   return (
     <>
-      <At x={g.X(x)} y={g.Y(y)} class="vy-stand" z={depthOf(x, y)}>
-        <SmallCreature
-          info={info}
-          id={`scene-${creature.id}`}
-          class="vy-stand-btn"
-          label={`${info.name}, level ${String(info.level)}, ${label}`}
-        >
-          <CreatureSprite creature={creature} scale={g.s} flip={flip} />
-        </SmallCreature>
+      <At
+        x={g.X(x)}
+        y={g.Y(y)}
+        class="vy-stand"
+        z={hand?.lifted === true ? LIFTED_Z : depthOf(x, y)}
+      >
+        {hand === undefined ? (
+          button
+        ) : (
+          <Draggable hand={hand} x={x} y={y} g={g}>
+            {button}
+          </Draggable>
+        )}
       </At>
       {/* The nameplate, always shown under the feet (level first, in yellow, then the name): on a layer above every creature so a neighbour never hides it, in the creatures' own depth order. */}
       <At
@@ -111,7 +217,8 @@ function Roamers({
   const reduced = usePrefersReducedMotion();
   const moving = !reduced && !isStill();
   const tick = useTick(TICK_MS, moving);
-  const people = useRoamers(creatures, tick, moving, area, plateGap(g.s));
+  const [held, setHeld] = useState<{ id: string; x: number; y: number } | null>(null);
+  const people = useRoamers(creatures, tick, moving, area, plateGap(g.s), held);
   return (
     <>
       {people.map((p) => (
@@ -123,6 +230,16 @@ function Roamers({
           flip={p.flip}
           label="at home in the paddock"
           g={g}
+          hand={{
+            area,
+            lifted: held?.id === p.key,
+            onHold: (x, y) => {
+              setHeld({ id: p.key, x, y });
+            },
+            onDrop: () => {
+              setHeld(null);
+            },
+          }}
         />
       ))}
     </>

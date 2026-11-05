@@ -4,6 +4,14 @@ The valley and peaceful systems overhaul planned in docs/design/valley/: job pos
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-05: Creatures in the Paddock's scene can be dragged by hand (phase 4, step 5b)
+
+ID: `2026-11-05-creatures-in-the-paddock-s-scene` · Status: current
+
+**Decision.** A mouse or a finger can pick up a creature that wanders the Paddock's scene and drop it anywhere in the meadow (clamped); it wanders on from there. A press that moves under the drag-scroll threshold (4 px) stays a tap and opens the popover; there is no long press (kept for selecting elsewhere). While held it is drawn above the others with its nameplate. Display only: positions are client-side and never saved. Creatures may overlap after a drop. The valley's end-to-end checklist is a Playwright script (`pnpm --filter @creatures/activity e2e:valley`) over the real game on captured fixtures, outside `check:changed`.
+
+**Reasoning.** Misa, on staging: "drag and drop creatures in the paddock ... it's hard to select one if you can't move the other creature on top of it out of the way." Keyboard and screen-reader users already reach every creature through the tray and the creature list, so dragging adds nothing they need. The e2e script needs a browser and takes about 30 s, so it runs by hand for valley changes rather than in every check.
+
 ## 2026-11-05: Deeper dungeon XP: today's per-run XP plus a step at each landmark depth (round 26, Q59) **[Misa]**
 
 ID: `2026-11-05-deeper-dungeon-xp-today-s-per` · Status: current

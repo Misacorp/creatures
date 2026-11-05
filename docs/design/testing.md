@@ -55,6 +55,18 @@ in the worker.
    fails when over. Over budget is a finding: speed the model up or move a check down a layer, do not raise it
    quietly. A quick look is `report -- --scenario <id> --seeds 5` (a second or two); changing numbers is the tuner's
    job (`tune -- --dials a,b`), not an agent's edit-and-rerun loop.
+8. **The valley's end-to-end checklist** (`apps/activity/scripts/e2e-valley.mjs`, Playwright; the repo's only browser
+   test, so layer 3 still says "without end-to-end browser tests" for the server contract). The real game in
+   Chromium with `VALLEY` on, the Discord SDK swapped for a stub (`scripts/e2e/discord-sdk-stub.mjs`) and every
+   `/api/*` call answered from the captured fixtures, so nothing in the game is mocked. It walks each row of
+   "Where each of today's screens lives" (`docs/design/valley/phase4-plan.md`): the Gazette with an away notice
+   and its closing, every place's button having a spoken name, Left and Right on the map, each of the seven open
+   places showing today's page with no error line and going back, Journal and Stats from the House, the four
+   places not open yet and their lines, the Places list, and a creature dragged in the Paddock (a tap still opens
+   its popover). Run `pnpm --filter @creatures/activity e2e:valley` (about 30 s; `--width 1100`, `--reduced`,
+   `--out <dir>` for its shots). It needs a browser, so it is **not in `check:changed` or `check`**: run it by
+   hand for any change to the valley's shell, scenes, map or Gazette, and before the valley's gate. A new row in
+   the plan's table adds a step to it. `CHROME` and `PLAYWRIGHT_PATH` as in `scripts/shoot.mjs`.
 
 **Rules**
 

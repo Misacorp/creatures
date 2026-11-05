@@ -75,4 +75,16 @@ describe('PlaceScene', () => {
     const p = draw(castFor('arena', input({ raid: null }), ART, []));
     expect(byClass(p.root, 'vy-region-box')).toHaveLength(0);
   });
+
+  it('the paddock’s roamers can be picked up by hand; creatures standing elsewhere cannot', () => {
+    const paddock = draw(castFor('paddock', input({}), ART, []));
+    const roamers = byClass(paddock.root, 'vy-drag');
+    expect(roamers.length).toBeGreaterThan(0);
+    // The way to a creature stays its button (Enter and Space open the popover), inside the wrapper.
+    expect(byName(roamers[0] ?? paddock.root, 'button', /level/)).toHaveLength(1);
+    paddock.unmount();
+    page = null;
+    const house = draw(castFor('house', input({}), ART, []));
+    expect(byClass(house.root, 'vy-drag')).toHaveLength(0);
+  });
 });

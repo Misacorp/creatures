@@ -726,6 +726,24 @@ main.card:has(.vy-frame) > .hud {
   box-shadow: var(--ring);
 }
 
+/* A creature a hand can pick up (the paddock's roamers): no page scroll or text selection starts from it. */
+.vy-drag {
+  display: block;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: grab;
+}
+
+.vy-frame .vy-drag .vy-stand-btn {
+  cursor: inherit;
+}
+
+.vy-drag.lifted,
+.vy-frame .vy-drag.lifted .vy-stand-btn {
+  cursor: grabbing;
+}
+
 /* A creature's nameplate under its feet (`ui/Nameplate`), centred on the feet: never takes a tap. */
 .vy-feet-plate {
   transform: translateX(-50%);

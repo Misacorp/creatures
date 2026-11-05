@@ -2,7 +2,8 @@
  * Creatures wandering inside an area (the valley map's paddock and the Paddock's scene): seeded waypoints from
  * the creature's id, one pixel a tick, a hop on every other step, resting at each waypoint. No `Math.random`;
  * the same creature wanders the same way. The caller drives the tick (`useTick`) and passes `moving` false for
- * reduced motion, where they stand still.
+ * reduced motion, where they stand still. `held` is a creature picked up by hand (`creature-drag.ts`): it stays
+ * where it is held and carries on wandering from where it is put down.
  */
 import { createSeededRng, type Rng } from '@creatures/game';
 import { useRef } from 'preact/hooks';
@@ -36,6 +37,7 @@ export function useRoamers<C extends Pick<Creature, 'id' | 'species' | 'shiny'>>
   moving: boolean,
   area: Rect,
   gap: Gap = MIN_GAP,
+  held: { id: string; x: number; y: number } | null = null,
 ): Person<C>[] {
   const walkers = useRef(new Map<string, { w: Walker; rng: Rng }>());
   const lastTick = useRef(0);
@@ -51,8 +53,14 @@ export function useRoamers<C extends Pick<Creature, 'id' | 'species' | 'shiny'>>
     const slot = slots[Math.floor((i * slots.length) / Math.max(1, creatures.length))];
     walkers.current.set(c.id, { w: slot === undefined ? w : { ...w, x: slot.x, y: slot.y }, rng });
   }
+  // A creature held by a hand stands where it is held; let go, it wanders on from there.
+  const hold = held === null ? undefined : walkers.current.get(held.id);
+  if (held !== null && hold !== undefined) {
+    hold.w = { ...hold.w, x: held.x, y: held.y, tx: held.x, ty: held.y, rest: 4, steps: 0 };
+  }
   for (let n = 0; n < steps; n++) {
     for (const c of creatures) {
+      if (held !== null && c.id === held.id) continue;
       const entry = walkers.current.get(c.id);
       if (entry === undefined) continue;
       const others = creatures

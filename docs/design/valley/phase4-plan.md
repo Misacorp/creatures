@@ -65,6 +65,8 @@ Misa: "I don't want my points necessarily addressed immediately. Let's do it whe
 
 **Step 5a landed (2026-11-05):** items 2 to 4 and the desktop fit. One shared label, `ui/Nameplate` (bold or not, a leading level in yellow, size, tone), draws the places' names and, in the scenes, each creature's nameplate under its feet; the map's paddock shows no creature nameplates (no room: see `ux-patterns.md`). "View" is in every creature popover of the player's own creatures. The House holds Journal and Stats only in the valley. From 960 px the valley never pans when its places fit: the grass edges are cropped evenly (at 1100, 1440 and 1920); phones and narrow windows pan. Item 6 (cropped trees) was fixed in the art by the art session.
 
+**Step 5b landed (2026-11-05):** item 1 (creatures in the Paddock's scene can be dragged and dropped; a tap still opens the popover; `valley/creature-drag.ts`), the accessibility pass (every button on the map, the Places list, the Gazette and the pinned action has a spoken name; Tab walks the places in reading order and every stop shows a focus ring; Left and Right walk the map as on the Expeditions world map; the Gazette, the coming-home moment and the map's idle motion stop under reduced motion) and the gate's end-to-end checklist, `pnpm --filter @creatures/activity e2e:valley` (`docs/design/testing.md`, layer 8): every row of the table above on the real game with captured fixtures. What is left: Misa on staging.
+
 ## Decided with Misa (round 25)
 
 - **Q57: A.** A place's inside is today's page; nothing is rebuilt as a scene before phase 5 ("We'll ship this all at once so no pointless intermediate steps").
