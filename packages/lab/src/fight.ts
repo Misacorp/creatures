@@ -7,6 +7,7 @@
 import { content } from '@creatures/game';
 import { combatV2 } from '@creatures/game/combat-v2';
 import { createResolver, fightV2, weekendV2 } from '@creatures/engine/v2';
+import type { GearedPlacement } from './gear';
 import { LAB_RULES } from './rules';
 import { ELEMENTS, SHIPPED } from './species';
 import type { BossDef, FightOptions, FightResult, Placement } from './types';
@@ -18,13 +19,30 @@ export { resistedElement } from '@creatures/engine/v2';
  * Max HP set. One resolver for the whole lab, so its memos (merged effects, stats by form and level) are worked out once.
  */
 const resolver = createResolver(combatV2, SHIPPED);
-const { resolve } = resolver;
 
-/** One placement as the engine's weekend creature (no uid yet): `journey.ts` builds its own stage inputs from these. */
-export const resolvePlacement = resolve;
+/**
+ * One placement as the engine's weekend creature (no uid yet): `journey.ts` builds its own stage inputs from these. A placement that
+ * wears gear (`withGear`, `gear.ts`) has its stat lines added to HP, Attack, Speed and crit here, as the worker's `buildFighter` does;
+ * its effect sheet (`Placement.gear`) the engine's resolver already merged. A placement with no gear resolves exactly as before.
+ */
+export const resolvePlacement = (p: Placement): ReturnType<typeof resolver.resolve> => {
+  const r = resolver.resolve(p);
+  const g = (p as GearedPlacement).gearStats;
+  if (g === undefined) return r;
+  return {
+    ...r,
+    maxHp: r.maxHp + g.hp,
+    atk: r.atk + g.atk,
+    spd: r.spd + g.spd,
+    critChanceBp: r.critChanceBp + g.critChanceBp,
+    critDamageBp: r.critDamageBp + g.critDamageBp,
+  };
+};
+const resolve = resolvePlacement;
 
 /** The creatures of a line-up, as a fight takes them: each one's uid is its owner, form and place in the line (`owner:formId:index`). */
-export const { placeFighters } = resolver;
+export const placeFighters = (placements: readonly Placement[]) =>
+  placements.map((p, i) => ({ ...resolve(p), uid: `${p.owner}:${p.formId}:${i}` }));
 
 /** What the engine reads besides the creatures: the lab's rules numbers, the shipped element chart and the elements' order. */
 export const world = {

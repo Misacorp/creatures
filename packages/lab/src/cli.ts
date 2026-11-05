@@ -7,6 +7,7 @@ import { planDungeonDays } from './dungeonMeasure';
 import { planUndercroftTools } from './undercroftTools';
 import { planFourSlot } from './fourSlot';
 import { planGate } from './gate';
+import { gearMarkdown } from './gearReport';
 import { planJourney } from './journey';
 import { planPath, type PathSummary } from './path';
 import { planRules } from './ruleCheck';
@@ -63,12 +64,15 @@ export async function main(args: readonly string[], run: JobRunner = serial): Pr
     return tune(args, quick, run);
   }
   if (args.includes('--path')) return path(args, quick, run);
-  if (args.includes('--journey')) return journey(quick, run);
+  const gear = args.includes('--gear');
+  if (args.includes('--journey')) return journey(quick, run, gear);
   if (args.includes('--dungeon-days')) return dungeonDays(args, quick, run);
   if (args.includes('--undercroft-tools')) return undercroftTools(args, quick, run);
   if (args.includes('--four-slot')) return fourSlot(quick, run);
   if (args.includes('--rules')) return rules(quick, run);
-  if (args.includes('--gate')) return gate(quick, run);
+  if (args.includes('--gate')) return gate(quick, run, gear);
+  // `--gear` alone: the gear report block (`gearReport.ts`); with `--journey`, `--dungeon-days` or `--gate` it plays that report with gear.
+  if (gear) return gearCli(quick);
   const bossAt = args.indexOf('--boss');
   if (args.includes('--bosses') || bossAt >= 0) {
     // Only the real raid bosses and dungeon foes, to the console (nothing is written).
@@ -191,10 +195,22 @@ async function tune(args: readonly string[], quick: boolean, run: JobRunner): Pr
   return 0;
 }
 
-/** `--journey [--quick]`: the journey on the game's rules (`journey.ts`), beside the lab's, to the console (nothing is written). */
-async function journey(quick: boolean, run: JobRunner): Promise<number> {
+/** `--gear [--quick]`: the gear report (`gearReport.ts`), to the console (nothing is written). */
+function gearCli(quick: boolean): number {
   const t0 = Date.now();
-  const { value, timings } = await runPlan(planJourney({ quick }), run);
+  console.log(gearMarkdown(quick).join('\n'));
+  console.log(`gear in ${secondsSince(t0)} s`);
+  return 0;
+}
+
+/** `--journey [--quick] [--gear]`: the journey on the game's rules (`journey.ts`), beside the lab's, to the console (nothing is written). */
+async function journey(quick: boolean, run: JobRunner, gear = false): Promise<number> {
+  const t0 = Date.now();
+  // With gear the journey plays the game's rules only (the lab's twin has no gear).
+  const { value, timings } = await runPlan(
+    planJourney({ quick, ...(gear ? { gear: true, gameOnly: true } : {}) }),
+    run,
+  );
   console.log(value.md.join('\n'));
   console.log(`journey in ${secondsSince(t0)} s`);
   console.log(timings);
@@ -225,10 +241,10 @@ async function undercroftTools(
 }
 
 /** `--gate [--quick]`: the phase 5 gate table (`gate.ts`), to the console (nothing is written). */
-async function gate(quick: boolean, run: JobRunner): Promise<number> {
+async function gate(quick: boolean, run: JobRunner, gear = false): Promise<number> {
   const t0 = Date.now();
   // The boss rules (`ruleCheck.ts`) run in the same pool, after the gate table.
-  const g = planGate({ quick });
+  const g = planGate({ quick, ...(gear ? { gear: true } : {}) });
   const r = planRules({ quick });
   const { value, timings } = await runPlan(
     {
@@ -279,6 +295,7 @@ async function dungeonDays(
       ...(scenarios ? { scenarios } : {}),
       ...(stepBack > 0 ? { stepBack } : {}),
       ...(args.includes('--rewards') ? { rewards: true } : {}),
+      ...(args.includes('--gear') ? { gear: true } : {}),
       ...(servers ? { servers: Number(servers) } : {}),
     }),
     run,
