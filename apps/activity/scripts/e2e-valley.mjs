@@ -514,6 +514,26 @@ try {
       await page.waitForTimeout(300);
       await shot('paddock-popover');
       await expectTopmost(page.getByRole('dialog').first(), 'the creature popover (Paddock)');
+      await page.getByRole('dialog').getByRole('button', { name: 'View' }).click();
+      await waitFor(page.locator('.creature-page'));
+      await page.waitForTimeout(1200);
+      const pageTop = await page.evaluate(() => ({
+        y: window.scrollY,
+        top: document.querySelector('.creature-page')?.getBoundingClientRect().top ?? null,
+        hud: document.querySelector('header.hud')?.getBoundingClientRect().bottom ?? 0,
+      }));
+      // On a wide window the scene and the page may both fit: the page then is in view without a scroll.
+      if (pageTop.top === null || pageTop.top > 600 || pageTop.top < pageTop.hud - 2)
+        throw new Error(`"View" left the creature's page at ${JSON.stringify(pageTop)}`);
+      // The scene's band is taller than the window's top: on a phone the page has to have moved up under the HUD.
+      if (width < 700 && pageTop.top > pageTop.hud + 40)
+        throw new Error(`"View" did not scroll down to the creature: ${JSON.stringify(pageTop)}`);
+      await shot('paddock-view');
+      await backToValley();
+      await place('paddock').evaluate((el) => el.click());
+      await waitFor(heading('Paddock'));
+      await mon.first().click();
+      await waitFor(page.getByRole('dialog'));
       await page.keyboard.press('Escape');
       await backToValley();
     },

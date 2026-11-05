@@ -23,7 +23,7 @@ import type { CatchChoiceActions } from './find-view';
 import { PENDING_CATCHES_ID, PendingCatches } from './PendingCatches';
 import type { GearState } from './gear-types';
 import { creatureName } from './game';
-import { pageScrollY, scrollAndFocus, scrollPageTo } from './scroll-to';
+import { pageScrollY, scrollAndFocus, scrollPageTo, scrollToSoon } from './scroll-to';
 import { flipOver, type FlipProps, type FlipStep } from './ui/flip-logic';
 import { FlipLive } from './ui/Flipper';
 
@@ -104,6 +104,8 @@ export function Collection({
   // The creature whose page was open last: its card is marked on the list until another page opens.
   const [lastViewed, setLastViewed] = useState<string | null>(null);
   const wasOpen = useRef(false);
+  // "View" from a scene opened the page: scroll down to it (the scene's band stays above it) once it is drawn.
+  const scrollToPage = useRef(false);
   // The page was flipped to other creatures: the list then scrolls to the one the page ended on.
   const flipped = useRef(false);
   // A creature that is gone (released, say) cannot have a page: show the list.
@@ -116,8 +118,12 @@ export function Collection({
       : state.creatures.find((creature) => creature.id === evolvingId);
 
   useLayoutEffect(() => {
-    if (pageOpen) {
+    if (pageOpen && page !== null) {
       wasOpen.current = true;
+      if (scrollToPage.current) {
+        scrollToPage.current = false;
+        scrollToSoon(`${cardDomId(page.id)}-page`);
+      }
       return;
     }
     if (!wasOpen.current) return;
@@ -146,6 +152,7 @@ export function Collection({
       listScroll.current = 0;
       returnTo.current = creature.id;
       flipped.current = false;
+      scrollToPage.current = true;
       setPage({ id: creature.id, focus: null, enter: null, focusButton: null });
     }
     onOpenHandled?.();

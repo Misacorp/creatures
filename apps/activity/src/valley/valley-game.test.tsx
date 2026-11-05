@@ -355,6 +355,37 @@ describe('the places’ scenes above today’s page', () => {
     expect(byClass(p.root, 'creature-page').length).toBeGreaterThan(0);
   });
 
+  it('Paddock: "View" scrolls down to the creature\'s page, below the scene', () => {
+    vi.stubGlobal('window', {
+      innerHeight: 800,
+      innerWidth: 390,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      matchMedia: () => ({
+        matches: false,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+      }),
+      scrollTo: () => undefined,
+      location: { hash: '' },
+    });
+    // The two frames the scroll waits for (after the place's own jump to the top) run at once here.
+    vi.stubGlobal('requestAnimationFrame', (run: () => void) => {
+      run();
+      return 0;
+    });
+    const p = draw(true);
+    open(p, 'Paddock');
+    const creature = byClass(p.root, 'vy-stand-btn')[0];
+    if (creature === undefined) throw new Error('no creature');
+    p.click(creature);
+    const view = byName(p.root, 'button', 'View')[0];
+    if (view === undefined) throw new Error('no View button');
+    p.click(view);
+    const shown = byClass(p.root, 'creature-page')[0];
+    expect(shown?.scrolled).toBeGreaterThan(0);
+  });
+
   it.each(SCENE_PLACES)(
     '%s: opening it asks for nothing the flag-off page does not',
     async (place, dock) => {
