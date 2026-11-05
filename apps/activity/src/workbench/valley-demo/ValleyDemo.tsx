@@ -1,6 +1,6 @@
 import { useState } from 'preact/hooks';
 import { Hud } from '../../Hud';
-import { PopoverHost } from '../../PopoverHost';
+import { PopoverHost, useCreatureViewer } from '../../PopoverHost';
 import { WelcomeBack } from '../../valley/gazette/WelcomeBack';
 import type { Balances } from '../../api';
 import { homeAlerts } from '../../home-view';
@@ -53,6 +53,12 @@ function titleOf(at: PlaceId | null): string {
 /** The days the demo can show: what the places say on a busy day, a crowded one, with nothing waiting, and with nothing going on. */
 export const VALLEY_DAYS = ['busy', 'crowded', 'nothing waiting', 'nothing going on'] as const;
 
+/** Registers what "View" does, as the game does (here: the paddock's page). */
+function DemoViewer({ onView }: { onView: () => void }) {
+  useCreatureViewer(onView);
+  return null;
+}
+
 export function ValleyDemo({ start, away, day }: { start: string; away: boolean; day: string }) {
   const first = VALLEY_STARTS.includes(start as (typeof VALLEY_STARTS)[number])
     ? (start as PlaceId | 'valley')
@@ -100,6 +106,11 @@ export function ValleyDemo({ start, away, day }: { start: string; away: boolean;
   };
   return (
     <PopoverHost onOpenHowTo={NOTHING}>
+      <DemoViewer
+        onView={() => {
+          open('paddock');
+        }}
+      />
       <div class="wb-valley">
         <main class="card">
           <Hud

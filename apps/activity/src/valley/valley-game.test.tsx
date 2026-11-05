@@ -286,14 +286,12 @@ describe('the places’ scenes above today’s page', () => {
     open(p, 'Paddock');
     const creatures = byClass(p.root, 'small-creature');
     expect(creatures.length).toBeGreaterThan(0);
-    const stands = byClass(p.root, 'vy-stand').filter(
-      (el) => byClass(el, 'small-creature').length > 0,
-    );
-    expect(stands).toHaveLength(creatures.length);
-    for (const stand of stands) {
-      const plates = byClass(stand, 'nameplate');
-      expect(plates).toHaveLength(1);
-      const kids = (plates[0]?.childNodes ?? []).filter((n) => n instanceof FakeElement);
+    const plates = byClass(p.root, 'vy-feet-plate');
+    expect(plates).toHaveLength(creatures.length);
+    for (const holder of plates) {
+      const plate = byClass(holder, 'nameplate');
+      expect(plate).toHaveLength(1);
+      const kids = (plate[0]?.childNodes ?? []).filter((n) => n instanceof FakeElement);
       expect(kids[0]?.getAttribute('class')).toBe('nameplate-level');
       expect(kids[1]?.getAttribute('class')).toBe('nameplate-name');
       expect(Number(kids[0]?.textContent)).toBeGreaterThan(0);

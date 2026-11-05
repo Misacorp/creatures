@@ -726,15 +726,9 @@ main.card:has(.vy-frame) > .hud {
   box-shadow: var(--ring);
 }
 
-/* A creature's nameplate under its feet (`ui/Nameplate`): follows the creature, never takes a tap. */
+/* A creature's nameplate under its feet (`ui/Nameplate`), centred on the feet: never takes a tap. */
 .vy-feet-plate {
-  position: absolute;
-  left: 50%;
-  top: 100%;
-  margin-top: 2px;
   transform: translateX(-50%);
-  line-height: 0;
-  pointer-events: none;
 }
 
 .vy-feet-plate .nameplate {

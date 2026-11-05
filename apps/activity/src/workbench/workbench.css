@@ -558,7 +558,8 @@
 
 /* As the app card (`components/main-nav.css`): from 60 rem the game's own card is the whole window. */
 @media (min-width: 60rem) {
-  .wb-frame-stage:has(> main.card) {
+  .wb-frame-stage:has(> main.card),
+  .wb-frame-stage:has(> .wb-valley) {
     width: 100%;
     margin: 0;
     padding: 0;

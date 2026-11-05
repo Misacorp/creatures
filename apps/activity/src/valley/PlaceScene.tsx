@@ -17,7 +17,7 @@ import { Nameplate } from '../ui/Nameplate';
 import { PinnedAct } from './PinnedAct';
 import { SceneFrame, type SceneGeometry } from './SceneFrame';
 import { At, CreatureSprite, SpeechBubble, isStill, useTick } from './parts';
-import type { Cast, CastPlace } from './place-cast';
+import { CREATURE_PX, type Cast, type CastPlace } from './place-cast';
 import { BAND_ROWS, bandArtBox, bandScale, bandSceneDraw } from './place-scene';
 import { useRoamers } from './use-roamers';
 import { depthOf } from './valley-logic';
@@ -32,6 +32,9 @@ export const SCENE_ART: Readonly<Record<CastPlace, MapName>> = {
   fair: 'fairground',
   paddock: 'paddock',
 };
+
+/** The nameplates' layer: above every creature (`depthOf` stays below it). */
+const PLATES_Z = 500000;
 
 /** Roamers step 8 times a second. */
 const TICK_MS = 125;
@@ -68,22 +71,29 @@ function Stander({
 }) {
   const info = infoOf(creature);
   return (
-    <At x={g.X(x)} y={g.Y(y)} class="vy-stand" z={depthOf(x, y)}>
-      <SmallCreature
-        info={info}
-        id={`scene-${creature.id}`}
-        class="vy-stand-btn"
-        label={`${info.name}, level ${String(info.level)}, ${label}`}
+    <>
+      <At x={g.X(x)} y={g.Y(y)} class="vy-stand" z={depthOf(x, y)}>
+        <SmallCreature
+          info={info}
+          id={`scene-${creature.id}`}
+          class="vy-stand-btn"
+          label={`${info.name}, level ${String(info.level)}, ${label}`}
+        >
+          <CreatureSprite creature={creature} scale={g.s} flip={flip} />
+        </SmallCreature>
+      </At>
+      {/* The nameplate, always shown under the feet (level first, in yellow, then the name): on a layer above every creature so a neighbour never hides it, in the creatures' own depth order. */}
+      <At
+        x={g.X(x + CREATURE_PX / 2)}
+        y={g.Y(y + CREATURE_PX) + 2}
+        class="vy-feet-plate"
+        z={PLATES_Z + depthOf(x, y)}
       >
-        <CreatureSprite creature={creature} scale={g.s} flip={flip} />
-      </SmallCreature>
-      {/* Always shown under the feet: the level first, in yellow, then the name (text only). */}
-      <span class="vy-feet-plate" aria-hidden="true">
         <Nameplate size="sm" level={info.level}>
           {info.name}
         </Nameplate>
-      </span>
-    </At>
+      </At>
+    </>
   );
 }
 
