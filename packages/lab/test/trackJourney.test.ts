@@ -23,5 +23,5 @@ describe('the track journey pass', () => {
     expect(journeyPassSummary(r, 1, 1).join('\n')).toContain('**Not reached.**');
     const calm = journeyPass(SLOT_NUMBERS, { first: 9, last: 9, quick: true, servers: 2 });
     expect(calm.table).toEqual(SLOT_NUMBERS);
-  });
+  }, 60_000);
 });

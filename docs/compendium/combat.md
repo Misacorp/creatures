@@ -174,7 +174,7 @@ Each entry: the family, the forms that know it, the player text, and a line of c
 ### Night Watch
 
 - Family: Intercept.
-- Forms: Thornbuck.
+- Forms: Thornbuck, Hearthshell.
 - Text `(content: combat-v2/knacks.json)`: "Each boss turn it {Intercept}s the first {Wind-up} hit in its row, taking a quarter of it."
 - Canon `(compendium detail, not shipped)`: The stag whose antlers shelter its herd stands in the way of the big, announced hit and takes the worst of it.
 - Design `(design)`: Answers telegraphed big hits.
