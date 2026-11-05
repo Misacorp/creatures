@@ -18,6 +18,7 @@ import {
   expeditionContent,
   gearBase,
   gearLine,
+  gearLineHasV2Hook,
   gearSet,
   jobDuration,
   jobHours,
@@ -113,12 +114,14 @@ export interface WornItem {
 }
 
 /**
- * Whether a line is a fight effect that combat v2 does not read yet: only a line's stat (Attack, HP, Speed, crit,
- * an Attunement, the item's own stats) counts (R12, `integration.md` section 2). A line that is no fight effect at all
- * (a trip or Workshop rule, a rest line) is not "not in the new rules": it works as it did.
+ * Whether a line is a fight effect that combat v2 does not read yet: a line's stat (Attack, HP, Speed, crit, an Attunement,
+ * the item's own stats) counts (R12, `integration.md` section 2), and so does every effect line with a v2 hook (`gearLineHasV2Hook`
+ * of the game package, gear plan slice 1). A line that is no fight effect at all (a trip or Workshop rule, a rest line) is not
+ * "not in the new rules": it works as it did.
  */
 export function isEffectLine(lineId: string): boolean {
   const kind = gearLine(lineId)?.effect.kind;
+  if (gearLineHasV2Hook(lineId)) return false;
   return (
     kind === 'hunter' ||
     kind === 'ward' ||

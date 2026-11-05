@@ -1,4 +1,4 @@
-import { gearContent } from '@creatures/game';
+import { gearContent, gearLineHasV2Hook } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import { isEffectLine, wornItemOf } from './gear-view';
 import { pageScene } from './creature-page/sample';
@@ -11,11 +11,18 @@ describe('gear lines under combat v2', () => {
     expect(isEffectLine('crit-chance')).toBe(false);
     expect(isEffectLine('crit-damage')).toBe(false);
     expect(isEffectLine('ember-hunter')).toBe(true);
-    expect(isEffectLine('first-pounce')).toBe(true);
+    // Lines with a v2 hook count (gear plan slice 1); lines with none yet are marked.
+    expect(isEffectLine('first-pounce')).toBe(false);
+    expect(isEffectLine('armor')).toBe(false);
+    expect(isEffectLine('tide-reaction')).toBe(false);
+    expect(isEffectLine('riposte')).toBe(false);
+    expect(isEffectLine('all-damage-taken')).toBe(true);
+    expect(isEffectLine('payback')).toBe(true);
+    expect(isEffectLine('lantern-bearer')).toBe(true);
     expect(isEffectLine('no-such-line')).toBe(false);
   });
 
-  it('is decided by the kind of the line in the content: stat, item and trip lines are not marked', () => {
+  it('is decided by the kind of the line and the v2 hook: stat, item, trip and hooked lines are not marked', () => {
     const marked = new Set([
       'hunter',
       'ward',
@@ -28,7 +35,9 @@ describe('gear lines under combat v2', () => {
     const kinds = new Set<string>();
     for (const line of gearContent.lines) {
       kinds.add(line.effect.kind);
-      expect(isEffectLine(line.id), line.id).toBe(marked.has(line.effect.kind));
+      expect(isEffectLine(line.id), line.id).toBe(
+        marked.has(line.effect.kind) && !gearLineHasV2Hook(line.id),
+      );
     }
     // Both sides exist in the content, so the test proves something.
     expect([...kinds].some((k) => marked.has(k))).toBe(true);
