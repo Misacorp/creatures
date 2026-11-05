@@ -380,6 +380,7 @@ Superseded: 1 entry (see the topic file).
 
 [gear.md](gear.md): Gear items, lines and sets, crafting, dismantling, conversions, the bag and the item picker.
 
+- 2026-11-06 Combat v2 gear slice 4: triggers, auras and three-piece sets
 - 2026-11-06 Combat v2 gear slice 3: new effects for the cut and condition lines
 - 2026-11-06 Combat v2 gear slice 2: the lab plays gear
 - 2026-11-06 Combat v2 gear effect lines, slice 1: the sheet and the lines with an existing effect

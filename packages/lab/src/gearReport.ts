@@ -457,14 +457,14 @@ export function gearMarkdown(quick: boolean): string[] {
   return [
     '## Gear in the lab (slice 2: the lab plays gear; no game number moved)',
     '',
-    `The model: three pieces a creature (Hat and Scarf of its element, its role's Charm), lines per rarity ${LINES_PER_RARITY.common} / ${LINES_PER_RARITY.rare} / ${LINES_PER_RARITY.epic} (the valley's), rarity factors ${RARITY_FACTOR.common} / ${RARITY_FACTOR.rare} / ${RARITY_FACTOR.epic} (the plan's start), the item level from the roster profile's \`gear\`, expected values through the game's \`gearFx\` and \`applyGear\`. Only lines the v2 engine counts (slice 1) and the plain stat lines do anything; the rest of the pool is dead weight in the loadout (as in the game today). A seeded ${quick ? 'quick run, a sketch' : 'full run'}.`,
+    `The model: three pieces a creature (Hat and Scarf of its element, its role's Charm), lines per rarity ${LINES_PER_RARITY.common} / ${LINES_PER_RARITY.rare} / ${LINES_PER_RARITY.epic} (the valley's), rarity factors ${RARITY_FACTOR.common} / ${RARITY_FACTOR.rare} / ${RARITY_FACTOR.epic} (the plan's start), the item level from the roster profile's \`gear\`, expected values through the game's \`gearFx\` and \`applyGear\`. Only lines the v2 engine counts (slices 1, 3 and 4) and the plain stat lines do anything; the rest of the pool is dead weight in the loadout (as in the game today). A seeded ${quick ? 'quick run, a sketch' : 'full run'}.`,
     '',
     ...loadoutsMarkdown(),
     ...raidMarkdown(n),
     ...dungeonMarkdown(dungeonN),
     ...GEAR_WEEKS.slice(1, 2).flatMap((w) => powerMarkdown(w, seeds)),
     ...reactionMarkdown(),
-    `Model limits: no set bonuses worn, no trigger lines, auras or three-piece effects (slice 4), a typical creature rolls the pool's weights (a planner who keeps the best lines does better, see the power table), the pool is the game's item level 1 to 20 gates read at item level / 5.`,
+    `Model limits: no set bonuses worn (so no two- or three-piece effects), a typical creature rolls the pool's weights (a planner who keeps the best lines does better, see the power table), the pool is the game's item level 1 to 20 gates read at item level / 5.`,
     '',
     `Bases at item level 54, a Tide Payoff: ${(['hat', 'scarf', 'charm'] as const).map((s) => baseOf(s, { role: 'payoff', element: 'tide' }, 54).name).join(', ')}.`,
   ];

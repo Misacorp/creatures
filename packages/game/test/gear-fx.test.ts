@@ -161,7 +161,15 @@ describe('gearFx: the line to effect map', () => {
 
   it('adds nothing for lines with no v2 hook, stat lines and an empty set of items', () => {
     expect(gearFx(wearer('guard'), [])).toEqual({});
-    for (const line of ['attack', 'hp', 'crit-chance', 'lingering', 'warm-heart', 'second-breath', 'opening-mark']) {
+    for (const line of [
+      'attack',
+      'hp',
+      'crit-chance',
+      'lingering',
+      'warm-heart',
+      'second-breath',
+      'opening-mark',
+    ]) {
       expect(gearFx(wearer('guard'), [hatWith(line)]), line).toEqual({});
     }
     expect(gearLineHasV2Hook('first-pounce')).toBe(true);

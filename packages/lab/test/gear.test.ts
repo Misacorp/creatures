@@ -95,6 +95,25 @@ describe('loadoutAt', () => {
     expect(lab).toBeGreaterThan(0);
     expect(singleLineLoadout(line, 100, 'epic', 'payoff', 'ember').fx).toEqual({});
   });
+
+  it('gives each trigger and aura line of slice 4 an effect for a wearer it fits (the power table measures them)', () => {
+    const lines: [string, string, string][] = [
+      ['payback', 'guard', 'paybackBp'],
+      ['ember-tail', 'payoff', 'emberTailBp'],
+      ['overflow', 'payoff', 'overflowBp'],
+      ['slipstream', 'setter', 'slipstreamBp'],
+      ['echo', 'payoff', 'echoChanceBp'],
+      ['second-wind', 'setter', 'windChanceBp'],
+      ['kindling', 'support', 'kindlingBp'],
+      ['shared-warmth', 'guard', 'sharedWarmthBp'],
+      ['spark-share', 'support', 'sparkShareBp'],
+      ['lantern-bearer', 'setter', 'lanternBp'],
+    ];
+    for (const [line, role, field] of lines) {
+      const fx = singleLineLoadout(line, 100, 'epic', role as never, 'tide').fx;
+      expect((fx as unknown as Record<string, number>)[field], line).toBeGreaterThan(0);
+    }
+  });
 });
 
 describe('withGear', () => {

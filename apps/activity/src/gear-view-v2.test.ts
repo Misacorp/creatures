@@ -36,8 +36,23 @@ describe('gear lines under combat v2', () => {
       'adaptation-pierce',
     ])
       expect(isEffectLine(id), id).toBe(false);
-    expect(isEffectLine('payback')).toBe(true);
-    expect(isEffectLine('lantern-bearer')).toBe(true);
+    // Batch B (slice 4): the triggers, auras and set effects have hooks too, so no combat line is marked but the four with none.
+    for (const id of [
+      'payback',
+      'ember-tail',
+      'overflow',
+      'slipstream',
+      'echo',
+      'second-wind',
+      'kindling',
+      'shared-warmth',
+      'spark-share',
+      'lantern-bearer',
+    ])
+      expect(isEffectLine(id), id).toBe(false);
+    // Left without a hook: Lingering (the finale's input has no creature to extend), and the lines the plan retires for v2.
+    for (const id of ['lingering', 'warm-heart', 'second-breath', 'opening-mark'])
+      expect(isEffectLine(id), id).toBe(true);
     expect(isEffectLine('no-such-line')).toBe(false);
   });
 

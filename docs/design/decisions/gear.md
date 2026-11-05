@@ -4,6 +4,14 @@ Gear items, lines and sets, crafting, dismantling, conversions, the bag and the 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-06: Combat v2 gear slice 4: triggers, auras and three-piece sets
+
+ID: `2026-11-06-combat-v2-gear-slice-4-triggers` · Status: current
+
+**Decision.** The trigger, aura and three-piece lines count in combat v2: Payback, Ember Tail, Overflow, Slipstream, Echo, Second Wind (its own field, `windChanceBp`), Kindling, Shared Warmth, Spark-share, Lantern Bearer, and the Tidepool, Forge-Warm and Pounce three-piece effects. Triggers off the wearer's turn fire once a turn; auras take the largest neighbour. Lingering is not built, and the five three-piece effects equal to a Knack get no replacement until Misa asks (OPEN 5 and 9). The client's "not in the new rules yet" mark now shows only Lingering, Warm Heart, Second Breath and Opening Mark.
+
+**Reasoning.** Each effect is read at one place and shows on the replay through an existing beat (a boost, a heal, a hit, a save, a crit multiplier), so no UI was added. Once-a-turn limits follow the balance-miss lesson on off-turn strikes. Lingering extends a player's finale input, which no creature owns. New three-piece effects are new rules for players to learn, so they are Misa's call. The lab's power table has no new line above +1.5 (Unbothered is +10.8): no always-pick.
+
 ## 2026-11-06: Combat v2 gear slice 3: new effects for the cut and condition lines
 
 ID: `2026-11-06-combat-v2-gear-slice-3-new` · Status: current
