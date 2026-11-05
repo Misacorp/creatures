@@ -16,6 +16,8 @@ import type { DungeonPreview } from '../../dungeon-types';
 import { isComplete, type Slots } from '../../dungeon-team';
 import type { PickerCreature } from '../../roster-picker';
 import { CueRail } from '../../ui/CueRail';
+import { DropChevron } from '../../ui/DropChevron';
+import { PickSheet } from '../../ui/PickSheet';
 import { PlacedCount } from '../../ui/PlacedCount';
 import { SlotButton } from '../../ui/SlotButton';
 import type { SlotCue } from '../../ui/slot-cue';
@@ -206,8 +208,8 @@ const dungeonSetup: Entry = {
     owned: { kind: 'number', min: 3, max: 8 },
     placed: { kind: 'number', min: 1, max: 3 },
     streak: { kind: 'number', min: 0, max: 30 },
-    depth: { kind: 'number', min: 1, max: 40 },
-    pick: { kind: 'number', min: 0, max: 40 },
+    depth: { kind: 'number', min: 1, max: 150 },
+    pick: { kind: 'number', min: 0, max: 150 },
     bait: { kind: 'number', min: 0, max: 100 },
     treatTimes: { kind: 'number', min: 2, max: 4 },
     busy: { kind: 'toggle' },
@@ -247,12 +249,16 @@ const dungeonSetup: Entry = {
       props: { configure: true, rules: 'combat v2' },
     },
     {
-      name: 'Combat v2, the depth picker at your own depth (23: the arrows step back, nothing changes yet)',
+      name: 'Combat v2, the depth picker at your own depth (23: tap the dropdown for every depth from 23 down, with what each pays)',
       props: { rules: 'combat v2', depth: 23 },
     },
     {
       name: 'Combat v2, the depth picker below your own (own 23, picking 16: a lower pick does not advance)',
       props: { rules: 'combat v2', depth: 23, pick: 16 },
+    },
+    {
+      name: 'Combat v2, a deep player (own 60: the list opens scrolled to the picked depth and scrolls)',
+      props: { rules: 'combat v2', depth: 60 },
     },
     {
       name: 'Combat v2, the depth picker at the lowest depth (own 23, picking 1)',
@@ -663,8 +669,87 @@ const placedCount: Entry = {
   ),
 };
 
+/** The sheet frame on its own, with a short plain list (the creature and depth pickers fill it with theirs). */
+function PickSheetDemo({ p }: { p: Props }) {
+  const [open, setOpen] = useState(bool(p, 'open'));
+  const close = (): void => {
+    setOpen(false);
+  };
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => {
+          setOpen(true);
+        }}
+      >
+        Open the sheet
+      </button>
+      {open && (
+        <PickSheet
+          title="Pick one"
+          {...(bool(p, 'status') ? { status: 'A line under the title.' } : {})}
+          anchor={() => null}
+          onClose={close}
+        >
+          <ul class="roster-list" role="listbox" aria-label="Choices">
+            {['First', 'Second', 'Third'].map((name, i) => (
+              <li
+                key={name}
+                role="option"
+                aria-selected={false}
+                tabIndex={i === 0 ? 0 : -1}
+                class="roster-option"
+                onClick={close}
+              >
+                {name}
+              </li>
+            ))}
+          </ul>
+        </PickSheet>
+      )}
+    </>
+  );
+}
+
+const pickSheet: Entry = {
+  name: 'PickSheet',
+  file: 'apps/activity/src/ui/PickSheet.tsx',
+  group: 'Slots',
+  description:
+    'The bottom sheet every pick-one-from-a-list opens from a page: a title, a Close button, an optional line and the list. Escape, Close or a tap outside closes it, Tab stays inside, and focus goes back to what opened it. The creature picker (RosterPicker) and the dungeon depth picker (DepthPicker, see DungeonSetup) fill it with their lists. From a drawer a choice is a drill-in view instead, never a sheet.',
+  controls: { open: { kind: 'toggle' }, status: { kind: 'toggle' } },
+  defaults: { open: true, status: true },
+  presets: [
+    { name: 'Open, with a line under the title', props: {} },
+    { name: 'Open, no line', props: { status: false } },
+  ],
+  render: (p) => (
+    <PickSheetDemo key={`${String(bool(p, 'open'))}-${String(bool(p, 'status'))}`} p={p} />
+  ),
+};
+
+const dropChevron: Entry = {
+  name: 'DropChevron',
+  file: 'apps/activity/src/ui/DropChevron.tsx',
+  group: 'Slots',
+  description:
+    'The pixel chevron at the right of a trigger that looks like a dropdown: "Equip on" in the item drawer and the depth picker on the dungeon card. Shown here inside the shared trigger look.',
+  controls: { none: { kind: 'toggle' } },
+  defaults: { none: false },
+  presets: [{ name: 'In a trigger', props: {} }],
+  render: () => (
+    <button type="button" class="equip-trigger">
+      <span class="equip-name">Choose one</span>
+      <DropChevron />
+    </button>
+  ),
+};
+
 export const slotEntries: readonly Entry[] = [
   dungeonSetup,
+  pickSheet,
+  dropChevron,
   creatureConfigurator,
   dungeonTeam,
   slotButton,

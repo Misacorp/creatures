@@ -4,6 +4,14 @@ Navigation and the frame, Home and the notice board, type scale, shared componen
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-05: Dungeon depth picker is a dropdown with the scalars on every row [Misa]
+
+ID: `2026-11-05-dungeon-depth-picker-is-a-dropdown` · Status: current · Amends: `2026-11-05-combat-v2-dungeon-depth-picker-built`
+
+**Decision.** The depth picker of the combat v2 pre-run card is a dropdown, not the Prev / Next stepper: a trigger in the "Equip on" look (depth, its XP and loot chips, a chevron) that opens the shared bottom sheet `ui/PickSheet` (extracted from `RosterPicker`) with a listbox of every depth from the player's own down to 1, deepest first. Every row, and the trigger, is one line: the depth with a "Your depth" mark on the left, the two scalars as chips in a fixed right-hand column ("1.05x XP", "2.1x loot"; XP to two decimals while under 2x so the landmark steps show, loot to one). The flag and "Landmark" show only at the player's own depth, the one place a landmark's extras pay. A lower pick says "Only depth 23 goes deeper (2.1x loot)." and the own-depth note is "A clear unlocks depth 24." The pick is held as "my own depth" (null) unless a lower depth is chosen, and the start request carries a depth only when it is below the own one, so a stale card never starts a lower run by surprise. While a lower depth's map loads or fails, the picker shows the `PreviewStatus` line and no map. The list opens focused and scrolled to the picked depth. An art-led cave entrance is deferred.
+
+**Reasoning.** Misa (2026-11-05): prefers a dropdown in a form-like card, and the reward scaling must be properly visible when choosing. `FlipNav` is for detail views only; a sheet opened from a page is the allowed layer, and a long range (depth 150) needs a scrolling list. `CreatureList` is creature-shaped, so the list is a small depth listbox with the same roving-focus keys on the shared sheet frame.
+
 ## 2026-11-04: Combat v2: a Guard's pulse of protection through the tiles replaces the bracket **[Misa]**
 
 ID: `2026-11-04-combat-v2-a-guard-s-pulse` · Status: current · Amends: `2026-11-04-combat-v2-fight-visuals-the-guard`
