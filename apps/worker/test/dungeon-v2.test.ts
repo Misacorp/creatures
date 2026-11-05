@@ -10,7 +10,7 @@ import {
   createSeededRng,
   dungeonContent,
   dungeonResourceBp,
-  dungeonXpBp,
+  dungeonRunXp,
   scaleBp,
   undercroftDepth,
 } from '@creatures/game';
@@ -707,9 +707,10 @@ describe('v2 rewards grow with depth, the Undercroft by its own depth (Misa, 202
         });
         expect(summary.pack.found.scrap).toBeGreaterThan(raw.pack.scrap);
         expect(summary.pack.kept).toMatchObject(summary.pack.found);
+        const topBase = Math.max(0, ...Object.values(raw.earned).map((x) => x.base));
         for (const e of summary.rewards.experience) {
           const earned = raw.earned[e.creatureId];
-          expect(e.gained).toBe(scaleBp(earned?.base ?? 0, dungeonXpBp(DEEP)));
+          expect(e.gained).toBe(dungeonRunXp(earned?.base ?? 0, DEEP, topBase));
         }
         expect(summary.rewards.experience.length).toBeGreaterThan(0);
         // Nothing in the payload names the rule.

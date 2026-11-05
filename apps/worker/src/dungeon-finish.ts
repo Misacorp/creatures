@@ -14,7 +14,7 @@ import {
   dungeonExperience,
   dungeonGearSpec,
   dungeonResourceBp,
-  dungeonXpBp,
+  dungeonRunXp,
   isLandmark,
   keptOnDefeat,
   mapView,
@@ -207,6 +207,7 @@ export function finishRun(
   const dayEffects = xpDayEffects(st.weather);
   const days = dayParts(dayXpEffects(st.weather));
   const treatTimes = xpWeather(st.weather).treatMultiplier;
+  const topBase = Math.max(0, ...Object.values(st.earned).map((e) => e.base));
   for (const id of st.everyone) {
     const treat = st.treats.includes(id);
     // One list of parts gives the amount and the breakdown.
@@ -217,7 +218,7 @@ export function finishRun(
     if (earned === undefined || earned.base <= 0) continue;
     const gained = dungeonExperience(
       st.v === 2
-        ? { ...earned, base: scaleBp(earned.base, dungeonXpBp(rewardDepthOf(st, depth))) }
+        ? { ...earned, base: dungeonRunXp(earned.base, rewardDepthOf(st, depth), topBase) }
         : earned,
       parts,
     );

@@ -9,7 +9,9 @@ import {
   dungeonRewardScalars,
   dungeonRewardSpec,
   dungeonResourceBp,
+  dungeonRunXp,
   dungeonXpBp,
+  rewardDepth,
   rollBestOf,
   rollDungeonItem,
   rollDungeonLoot,
@@ -122,12 +124,12 @@ describe('the v2 dungeon spec by depth', () => {
       expect(s.rolls.max).toBeGreaterThanOrEqual(prev.rolls.max);
       expect(s.keep.max).toBeGreaterThanOrEqual(prev.keep.max);
       expect(s.rolls.max).toBeLessThanOrEqual(6);
-      expect(s.keep.max).toBeLessThanOrEqual(3);
+      expect(s.keep.max).toBeLessThanOrEqual(4);
       expect(s.keep.max).toBeLessThanOrEqual(s.rolls.max);
       prev = s;
     }
     expect(dungeonRewardSpec({ depth: 60 }).rolls.max).toBe(6);
-    expect(dungeonRewardSpec({ depth: 60 }).keep.max).toBe(3);
+    expect(dungeonRewardSpec({ depth: 60 }).keep.max).toBe(4);
   });
 
   it('the Undercroft is paid at its own depth', () => {
@@ -140,7 +142,8 @@ describe('the v2 dungeon spec by depth', () => {
     );
     // Resources and XP follow the deeper depth too.
     expect(dungeonResourceBp(under)).toBeGreaterThan(dungeonResourceBp(depth));
-    expect(dungeonXpBp(under)).toBeGreaterThan(dungeonXpBp(depth));
+    // Steps by landmark: the deeper depth never pays less.
+    expect(dungeonXpBp(under)).toBeGreaterThanOrEqual(dungeonXpBp(depth));
   });
 
   it('a v2 chest can keep more than one piece and v1 is one plain roll', () => {
@@ -175,11 +178,9 @@ describe('the v2 dungeon spec by depth', () => {
 describe('resources, XP and the picker scalars', () => {
   it('start at 1.0x, grow with depth and stop at their caps', () => {
     expect(dungeonResourceBp(1)).toBe(10_000);
-    expect(dungeonXpBp(1)).toBe(10_000);
     expect(dungeonResourceBp(11)).toBe(
       10_000 + 10 * RULES.dungeon.depthRewards.resources.perDepthBp,
     );
-    expect(dungeonXpBp(10_000)).toBe(10_000 + RULES.dungeon.depthRewards.xp.maxBp);
     expect(scaleBp(10, 11_500)).toBe(12);
     expect(scaleBp(1, 11_500)).toBe(1);
   });
@@ -193,5 +194,47 @@ describe('resources, XP and the picker scalars', () => {
       expect(s.loot).toBeGreaterThan(prev.loot);
       prev = s;
     }
+  });
+});
+
+describe('v2 dungeon experience: about perRun a run, a step at each landmark (Misa, 2026-11-05)', () => {
+  const xp = RULES.dungeon.depthRewards.xp;
+
+  it('steps by landmark, not by depth', () => {
+    expect(dungeonXpBp(1)).toBe(10_000);
+    expect(dungeonXpBp(6)).toBe(10_000);
+    expect(dungeonXpBp(7)).toBe(10_000 + xp.landmarkStepBp);
+    expect(dungeonXpBp(13)).toBe(10_000 + xp.landmarkStepBp);
+    expect(dungeonXpBp(14)).toBe(10_000 + 2 * xp.landmarkStepBp);
+    // No cap.
+    expect(dungeonXpBp(700)).toBe(10_000 + 100 * xp.landmarkStepBp);
+  });
+
+  it('a creature in every room gets perRun at depth 1, whatever the rooms add up to', () => {
+    const full = xp.nominalBase;
+    expect(dungeonRunXp(full, 1, full)).toBe(xp.perRun);
+    // A longer run (more rooms, the Undercroft) is its own full base: still perRun.
+    expect(dungeonRunXp(full * 2, 1, full * 2)).toBe(xp.perRun);
+    expect(dungeonRunXp(full * 3, 1, full * 3)).toBe(xp.perRun);
+  });
+
+  it('a creature in part of the run gets its share', () => {
+    expect(dungeonRunXp(150, 1, 300)).toBe(xp.perRun / 2);
+    // A run cut short is a share of the nominal run, not a full payout.
+    expect(dungeonRunXp(50, 1, 50)).toBe(Math.round((50 * xp.perRun) / xp.nominalBase));
+    expect(dungeonRunXp(0, 1, 300)).toBe(0);
+  });
+
+  it('applies the landmark steps, and the Undercroft pays at its depth', () => {
+    const full = xp.nominalBase;
+    expect(dungeonRunXp(full, 6, full)).toBe(xp.perRun);
+    expect(dungeonRunXp(full, 7, full)).toBe(
+      Math.round((xp.perRun * (10_000 + xp.landmarkStepBp)) / 10_000),
+    );
+    expect(dungeonRunXp(full, 14, full)).toBeGreaterThan(dungeonRunXp(full, 7, full));
+    const under = rewardDepth(10, 2);
+    expect(dungeonRunXp(full, under, full)).toBe(
+      Math.round((xp.perRun * dungeonXpBp(under)) / 10_000),
+    );
   });
 });

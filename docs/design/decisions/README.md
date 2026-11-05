@@ -288,8 +288,9 @@ Superseded: 1 entry (see the topic file).
 
 [dungeon.md](dungeon.md): The daily dungeon: paths, rooms and rare rooms, the camp, the Undercroft, foes, its screens and payouts.
 
+- 2026-11-05 Combat v2 dungeon XP: about 120 a run, a step at each landmark; more gear \[Misa\]
 - 2026-11-04 \[Misa\] Combat v2 dungeon baseline: easier base floors, a steeper Undercroft
-- 2026-11-04 \[Misa\] Combat v2 dungeon rewards and XP grow with depth, the Undercroft alike
+- 2026-11-04 \[Misa\] Combat v2 dungeon rewards and XP grow with depth, the Undercroft alike (amended)
 - 2026-11-04 \[Misa\] A depth choice before a run, with reward scalars
 - 2026-11-04 Combat v2 dungeon measures in the lab: safe gain, the descent choice, a four-slot team
 - 2026-11-04 \[Misa\] Dungeon direction: an easy base dungeon, a hard Undercroft, the descent is the choice

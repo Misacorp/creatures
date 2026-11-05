@@ -31,9 +31,30 @@ export function dungeonResourceBp(depth: number): number {
   return growthBp(depth, RULES.dungeon.depthRewards.resources);
 }
 
-/** The multiplier (basis points, 10000 = 1.0x) of a v2 run's creature experience at a depth. */
+/** How many landmark depths (`isLandmark`) are at or below `depth`. */
+export function landmarksReached(depth: number): number {
+  return Math.floor(Math.max(0, depth) / RULES.dungeon.landmarkEvery);
+}
+
+/**
+ * The multiplier (basis points, 10000 = 1.0x) of a v2 run's creature experience at a depth: a step of
+ * `landmarkStepBp` for each landmark depth reached (Misa, 2026-11-05).
+ */
 export function dungeonXpBp(depth: number): number {
-  return growthBp(depth, RULES.dungeon.depthRewards.xp);
+  return 10_000 + RULES.dungeon.depthRewards.xp.landmarkStepBp * landmarksReached(depth);
+}
+
+/**
+ * The base experience a v2 run pays a creature that earned `earnedBase` at the room prices of `RULES.experience.dungeon`:
+ * its share of the run's full base (`runBase`) of `perRun`, times the landmark steps at the paid `depth`, in one rounding.
+ * The run's full base is the most any creature of the row earned (one that stood in every room), but never less than
+ * `nominalBase`, so a run cut short by a defeat pays a share and a longer run (more rooms, a trip into the Undercroft)
+ * still pays `perRun` to a creature that stood in every room. The room prices only set the shares.
+ */
+export function dungeonRunXp(earnedBase: number, depth: number, topEarnedBase: number): number {
+  const runBase = Math.max(topEarnedBase, earnedBase, RULES.dungeon.depthRewards.xp.nominalBase);
+  const num = earnedBase * RULES.dungeon.depthRewards.xp.perRun * dungeonXpBp(depth);
+  return Math.floor((num + (runBase * 10_000) / 2) / (runBase * 10_000));
 }
 
 /** `n` times `bp` / 10000, rounded half up (whole amounts only). */

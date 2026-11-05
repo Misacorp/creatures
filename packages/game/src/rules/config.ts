@@ -905,19 +905,28 @@ export const RULES = {
     depthRewards: {
       base: { rolls: { min: 1, max: 2 }, keep: { min: 1, max: 1 } },
       steps: [
-        // Rolls max grows by 1 every 8 depths, to 6: more pieces to choose the best from.
-        { field: 'rolls.max', by: 'depth', from: 1, every: 8, add: 1, cap: 6 },
-        // Rolls min by 1 every 16 depths, to 3: a floor under the quality.
-        { field: 'rolls.min', by: 'depth', from: 1, every: 16, add: 1, cap: 3 },
-        // Keep max by 1 every 20 depths, to 3: more pieces kept.
-        { field: 'keep.max', by: 'depth', from: 1, every: 20, add: 1, cap: 3 },
-        // Keep min by 1 every 40 depths, to 2.
-        { field: 'keep.min', by: 'depth', from: 1, every: 40, add: 1, cap: 2 },
+        // Misa, 2026-11-05: a bit more gear, a tool against the harder Undercroft depths (first numbers; the valley's
+        // econ lab checks them). Before: rolls.max every 8, rolls.min every 16, keep.max every 20 (to 3), keep.min every 40 (to 2).
+        // Rolls max grows by 1 every 6 depths, to 6: more pieces to choose the best from.
+        { field: 'rolls.max', by: 'depth', from: 1, every: 6, add: 1, cap: 6 },
+        // Rolls min by 1 every 12 depths, to 3: a floor under the quality.
+        { field: 'rolls.min', by: 'depth', from: 1, every: 12, add: 1, cap: 3 },
+        // Keep max by 1 every 15 depths, to 4: more pieces kept (the cap rose from 3 so depths 41+ gain too).
+        { field: 'keep.max', by: 'depth', from: 1, every: 15, add: 1, cap: 4 },
+        // Keep min by 1 every 30 depths, to 3.
+        { field: 'keep.min', by: 'depth', from: 1, every: 30, add: 1, cap: 3 },
       ],
       /** Pack resources (Bait, Essence, scrap): +`perDepthBp` a depth past 1, at most +`maxBp`. */
       resources: { perDepthBp: 150, maxBp: 10_000 },
-      /** Creature experience from a run: +`perDepthBp` a depth past 1, at most +`maxBp`. */
-      xp: { perDepthBp: 100, maxBp: 10_000 },
+      /**
+       * Creature experience from a run (Misa, 2026-11-05: drop the payout baseline, a small step per landmark depth
+       * instead of one per depth; first numbers, the valley session checks them in its econ lab). `perRun`: the base
+       * experience a creature that stood in every room of a run gets at depth 1, whatever the number of rooms (a creature
+       * in part of the run gets its share). `nominalBase`: the least a run's full base counts as, so a run cut short pays a
+       * share (a cleared run at depth 1 earns about 220 base in the lab). `landmarkStepBp`: +this much for each landmark depth
+       * (`isLandmark`) at or below the paid depth, no cap (175 = the valley's +0.25% a depth times 7).
+       */
+      xp: { perRun: 120, nominalBase: 200, landmarkStepBp: 175 },
       /** What a kept piece of each rarity counts for in `dungeonRewardScalars` (its loot number). */
       rarityWeight: { common: 1, rare: 2, epic: 4 },
     },

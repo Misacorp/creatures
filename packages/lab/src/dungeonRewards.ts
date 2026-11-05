@@ -1,7 +1,7 @@
 /**
  * What a combat v2 dungeon run pays by depth (Misa, 2026-11-04: rewards and XP grow with depth, the Undercroft alike; the hidden best-of gear roller).
  * A report only: no test asserts these numbers. The gear is the game's own dice (`rollDungeonLoot`, `rollUndercroftChest`) rolled many times on seeded
- * streams; the pack and experience are the lab's runs (`dungeonDays.ts`, `RunResult.reward`) with the game's depth scale (`dungeonResourceBp`, `dungeonXpBp`).
+ * streams; the pack and experience are the lab's runs (`dungeonDays.ts`, `RunResult.reward`) with the game's depth scale (`dungeonResourceBp`, `dungeonRunXp`).
  * Approximations: a creature of the row is taken to have stood in every room of the run (a top creature does, a knocked-out one earns less), and the
  * experience of mystery rooms, the day's weather and treats are left out.
  */
@@ -11,7 +11,8 @@ import {
   createSeededRng,
   dungeonGearSpec,
   dungeonResourceBp,
-  dungeonXpBp,
+  dungeonRewardScalars,
+  dungeonRunXp,
   isLandmark,
   rewardDepth,
   rollDungeonLoot,
@@ -140,7 +141,7 @@ const packV2 = (r: DayRun): number => {
 const packV1 = (r: DayRun): number =>
   r.reward.kept.bait + r.reward.kept.essence + r.reward.kept.scrap;
 const xpV2 = (r: DayRun): number =>
-  scaleBp(r.reward.xp, dungeonXpBp(rewardDepth(r.depth, r.reward.deepest)));
+  dungeonRunXp(r.reward.xp, rewardDepth(r.depth, r.reward.deepest), r.reward.xp);
 
 /** Pack units and experience a cleared run pays by depth band, v1 against v2. */
 export function runRewardsMarkdown(players: readonly PlayerDays[]): string[] {
@@ -244,6 +245,22 @@ export function descentMarkdown(players: readonly PlayerDays[]): string[] {
   return out;
 }
 
+/** What the depth picker would show (`dungeonRewardScalars`): the experience and loot scalars against depth 1. */
+export function scalarsMarkdown(): string[] {
+  const md = [
+    '#### Picker scalars (`dungeonRewardScalars`, against depth 1)',
+    '',
+    '| Depth | XP | Loot |',
+    '| ---: | ---: | ---: |',
+  ];
+  for (const d of [1, 7, 14, 21, 40, 60]) {
+    const s = dungeonRewardScalars(d);
+    md.push(`| ${String(d)} | ${f(s.xp, 2)}x | ${f(s.loot, 2)}x |`);
+  }
+  md.push('');
+  return md;
+}
+
 /** The whole rewards section of the dungeon report. */
 export function rewardsMeasureMarkdown(players: readonly PlayerDays[]): string[] {
   const spec = [1, 8, 21, 41, 61].map((d) => `${String(d)}: ${JSON.stringify(dungeonGearSpec(d))}`);
@@ -254,7 +271,8 @@ export function rewardsMeasureMarkdown(players: readonly PlayerDays[]): string[]
     ...runRewardsMarkdown(players),
     ...xpDayMarkdown(players),
     ...descentMarkdown(players),
-    `Spec by depth (rolls, keep): ${spec.join('; ')}. Resources +${String(RULES.dungeon.depthRewards.resources.perDepthBp / 100)}% a depth, XP +${String(RULES.dungeon.depthRewards.xp.perDepthBp / 100)}% a depth.`,
+    ...scalarsMarkdown(),
+    `Spec by depth (rolls, keep): ${spec.join('; ')}. Resources +${String(RULES.dungeon.depthRewards.resources.perDepthBp / 100)}% a depth, XP about ${String(RULES.dungeon.depthRewards.xp.perRun)} a full run, +${String(RULES.dungeon.depthRewards.xp.landmarkStepBp / 100)}% a landmark depth (Misa, 2026-11-05).`,
     '',
   ];
 }
