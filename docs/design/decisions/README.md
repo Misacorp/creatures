@@ -518,6 +518,7 @@ Superseded: 1 entry (see the topic file).
 
 [valley.md](valley.md): The valley and peaceful systems overhaul planned in docs/design/valley/: job posts, the bonfire, the commons, the Forge loop, gear, trials, the School, the visitor, the economy lab, and Misa's question rounds.
 
+- 2026-11-05 Phase 5 step 1: resting and the lazy pass on the server
 - 2026-11-05 The month runs on staging; no keeper at launch; passes and the fair after phase 5 (round 28, Q61-Q63) \[Misa\]
 - 2026-11-05 Phase 5 step 0: one source of numbers, the VALLEY_SYSTEMS flag rule, the lazy-pass skeleton
 - 2026-11-05 Polish round: popovers above scenes, View scrolls, the Cave tells the truth, the Journal as list and pages, no ring on return
