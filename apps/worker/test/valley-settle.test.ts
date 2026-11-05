@@ -88,6 +88,8 @@ describe('migration 56: the valley tables', () => {
           'visit_allowance',
           // Migration 57 (scouts): the starter's first scout has had its sure find.
           'first_scout_done',
+          // Migration 58: tinkering scrap not yet whole.
+          'forge_carry',
         ]);
         expect(columns('valley_creatures')).toEqual([
           'creature_id',
@@ -98,6 +100,8 @@ describe('migration 56: the valley tables', () => {
           'visit_xp',
           // Migration 57: the creature's scouting hours.
           'scout_hours',
+          // Migration 58: the creature's smithing hours.
+          'smith_hours',
         ]);
         expect(
           ctx.sql
@@ -434,7 +438,8 @@ describe('what the valley replaces (flag on) and what stays (flag off)', () => {
           treat: true,
           idempotencyKey: newKey('job-treat'),
         });
-        expect(job.body).toEqual({ error: 'treats_off' });
+        // Workshop jobs are gone with the valley on (anvils replace them): a 404 before the body is read.
+        expect(job.status).toBe(404);
       },
       SYSTEMS,
     );
