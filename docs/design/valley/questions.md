@@ -6,7 +6,38 @@ Sections: **Waiting on Misa** (asked, not answered), **Queue** (to ask, in order
 
 ## Waiting on Misa
 
-Nothing waiting.
+### Q61. Where should the simulated month run?
+
+Status: asked, round 28 (2026-11-05). Touches: phase 5's gate and step 10 (`phase5-plan.md`).
+
+**Why it matters.** Phase 5 ends when bots play a month of the real valley on staging and the numbers match the lab. Where that runs decides whether you can walk into the month-old valley yourself.
+
+- **A. On your staging server.** Seven bots become your neighbours; the clock jumps a month in about an hour; you play along and walk into a month-old valley. Your staging progress is wiped at the start.
+- **B. On a hidden test server.** You get the report and screenshots; your staging game is untouched.
+
+**Lead's pick: A.** The gate is about feel as well as numbers, and you can see the month for yourself.
+
+### Q62. The Paddock's keeper post has no job yet. What happens to it?
+
+Status: asked, round 28 (2026-11-05). Touches: `systems/posts.md` (a keeper at the Paddock), G-6.
+
+**Why it matters.** Every other place has a job for the creatures posted there; the Paddock's keeper has none in the docs or the lab.
+
+- **A. No keeper at launch.** The Paddock holds the roster and the gate; keepers come later as content.
+- **B. Design it now** (for example: new catches arrive a little stronger), which adds a lab round before the commons step.
+
+**Lead's pick: A** (G-6: base systems first; the lab works without it).
+
+### Q63. When do dungeon passes and the Wednesday fair get built?
+
+Status: asked, round 28 (2026-11-05). Touches: Q7 (dungeon passes), Q8 (the weekly fair), the art-led dungeon entrance you asked the combat session for.
+
+**Why it matters.** The lab assumes both, but neither is in phase 5's list of systems; they sit next to combat v2's dungeon work.
+
+- **A. After phase 5's gate, before launch,** together with combat v2's Cave entrance.
+- **B. Inside phase 5,** which pushes the gate back by about two steps.
+
+**Lead's pick: A.** The month's comparison already applies the passes the lab assumes, and the Cave entrance belongs with them.
 
 ## Queue
 
