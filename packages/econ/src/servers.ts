@@ -1,0 +1,308 @@
+import { RULES, type AwayCurve } from './rules';
+import { profileById } from './profiles';
+import type { DungeonXp } from './dungeonXp';
+import type { PlayerProfile } from './schema';
+
+/**
+ * The id of the variant of a server with tempering switched the other way from the rules' default (`mixed8-notemper` when tempering is
+ * on by default, `mixed8-temper` when it is off): the report sets the two side by side.
+ */
+export const temperingVariantId = (base: string): string =>
+  `${base}-${RULES.tempering.on ? 'notemper' : 'temper'}`;
+
+/**
+ * The id of the variant of a server with the idol switched the other way from the rules' default (`mixed8-noidol` when the idol is on by
+ * default, `mixed8-idol` when it is off): the report sets the two side by side.
+ */
+export const idolVariantId = (base: string): string =>
+  `${base}-${RULES.idol.on ? 'noidol' : 'idol'}`;
+
+/** The id of the side of a study that has the idol out of the way (the tempering study runs on it, as it was before the idol). */
+export const idolOffId = (base: string): string => (RULES.idol.on ? idolVariantId(base) : base);
+
+/** The servers the lab runs (model.md "Servers"): who plays, and the server's dials. */
+/**
+ * When the broker's seat exists (V-FORGE-11): from day one, never, once the server has built the Market (paid in Acorns and scrap, the
+ * shards being what is short), or once it has built the Market paid like the other projects (Acorns, scrap and shards).
+ */
+export type BrokerMode = 'always' | 'never' | 'market' | 'market-shards';
+
+export type BossDial = 'all' | 'half' | 'none';
+export type Policy = PlayerProfile['policy'];
+
+export interface ServerConfig {
+  readonly id: string;
+  /** The name the random draws are keyed by (variants of a server share it); the id when missing. */
+  readonly seedKey?: string;
+  readonly label: string;
+  /** One entry per player: a profile id, and optionally a policy replacing the profile's default. */
+  readonly players: readonly { readonly profile: string; readonly policy?: Policy }[];
+  /** How often the server kills its weekly boss (the fire's dial; combat is not simulated). */
+  readonly bossKills: BossDial;
+  readonly weeks: number;
+  readonly curve: AwayCurve;
+  /** Whether communal seats exist (V-COM-14; Misa is unsure they are fun). */
+  readonly communalSeats: boolean;
+  /** The generosity dial: replaces every player's share of income given to projects (a hoarder still saves first). */
+  readonly giveShare?: number;
+  /** Whether the Forge's shard exchange exists (Q34). */
+  readonly shardExchange: boolean;
+  /** Replaces the scouts' creature chance an hour (a sensitivity run for T-1). */
+  readonly creatureRate?: number;
+  /** Replaces the fire's time floor, in levels a week (the "slow floor" variants set `SLOW_FLOOR`; the default is none, Q40 B). */
+  readonly fireFloor?: number;
+  /** The broker's seat: from day one (the default), never, or only after the server builds the Market (a communal project). */
+  readonly broker?: BrokerMode;
+  /** Whether the weekly visitor comes (V-VIS; default yes). */
+  readonly visitor?: boolean;
+  /** Whether tempering at the Forge exists (default: `rules.tempering.on`; the report runs the other value beside it). */
+  readonly tempering?: boolean;
+  /** Whether the idol (a placeholder scrap sink) is in the valley (default: `rules.idol.on`; the report runs the other value beside it). */
+  readonly idol?: boolean;
+  /** Dungeon XP by the player's week (a study variant, off by default; see `dungeonXp.ts`). */
+  readonly dungeonXp?: DungeonXp;
+  /** How the School's teacher picks its talent (default `few`; `several` is the first draft, kept as a variant for the comparison). */
+  readonly teacherRule?: 'few' | 'several';
+  /** Whether catch-up also multiplies what the dungeon and the raid pay (a sensitivity run for T-2d). */
+  readonly catchUpFights?: boolean;
+}
+
+const server = (
+  id: string,
+  label: string,
+  players: Record<string, number>,
+  more: Partial<ServerConfig> = {},
+): ServerConfig => ({
+  id,
+  label,
+  players: Object.entries(players).flatMap(([profile, n]) =>
+    Array.from({ length: n }, () => ({ profile })),
+  ),
+  bossKills: 'half',
+  weeks: 24,
+  curve: 'B',
+  communalSeats: true,
+  shardExchange: true,
+  ...more,
+});
+
+const withPolicy = (
+  config: ServerConfig,
+  policy: Policy,
+  id: string,
+  label: string,
+): ServerConfig => ({
+  ...config,
+  id,
+  label,
+  players: config.players.map((p) => ({ ...p, policy })),
+});
+
+/** The mixed server of 8: one of each kind but the hoarder, two daily players. */
+const EIGHT = {
+  daily: 2,
+  active: 1,
+  'every-other-day': 1,
+  'weekend-off': 1,
+  weekly: 1,
+  new: 1,
+  returner: 1,
+};
+
+const MIXED_8 = server('mixed8', 'Mixed server of 8', EIGHT, { seedKey: 'mixed8' });
+
+const MIXED_15 = server('mixed15', 'Mixed server of 15', {
+  daily: 4,
+  active: 2,
+  'every-other-day': 2,
+  'weekend-off': 2,
+  weekly: 3,
+  new: 1,
+  returner: 1,
+});
+
+const FIVE = { daily: 2, active: 1, 'every-other-day': 1, weekly: 1 };
+const MIXED_5 = server('mixed5', 'Mixed server of 5', FIVE);
+
+export const SERVERS: readonly ServerConfig[] = [
+  MIXED_5,
+  MIXED_8,
+  MIXED_15,
+  server('lone', 'A lone keen player', { active: 1 }),
+  server('hoarder', 'A hoarder server (4 hoarders, 4 daily)', { hoarder: 4, daily: 4 }),
+];
+
+/** The slow time floor of Q37 B (levels a week), kept for the fire's comparison now that the default has none (Q40 B). */
+export const SLOW_FLOOR = 1.875;
+
+/** Variants of the mixed server of 8 for the targets and the fire. */
+export const VARIANTS: readonly ServerConfig[] = [
+  { ...MIXED_8, id: 'mixed8-all', label: 'Mixed 8, every boss killed', bossKills: 'all' },
+  { ...MIXED_8, id: 'mixed8-none', label: 'Mixed 8, no boss killed', bossKills: 'none' },
+  withPolicy(MIXED_8, 'setAndForget', 'mixed8-sf', 'Mixed 8, everyone set-and-forget'),
+  withPolicy(MIXED_8, 'optimiser', 'mixed8-opt', 'Mixed 8, everyone an optimiser'),
+  withPolicy(
+    { ...MIXED_8, shardExchange: false },
+    'setAndForget',
+    'mixed8-sf-noexchange',
+    'Mixed 8, set-and-forget, no shard exchange',
+  ),
+  withPolicy(
+    { ...MIXED_8, shardExchange: false },
+    'optimiser',
+    'mixed8-opt-noexchange',
+    'Mixed 8, optimisers, no shard exchange',
+  ),
+  {
+    ...MIXED_8,
+    id: 'mixed8-noexchange',
+    label: 'Mixed 8, no shard exchange',
+    shardExchange: false,
+  },
+  // The broker without a seat (the exchange is a tap only), and the broker as a project the server builds (the Market, when anvils start to wait).
+  {
+    ...MIXED_8,
+    id: 'mixed8-nobroker',
+    label: 'Mixed 8, no broker (the exchange is a tap)',
+    broker: 'never',
+  },
+  {
+    ...MIXED_5,
+    id: 'mixed5-market',
+    label: 'Mixed 5, the Market as a project',
+    seedKey: 'mixed5',
+    broker: 'market',
+  },
+  { ...MIXED_8, id: 'mixed8-market', label: 'Mixed 8, the Market as a project', broker: 'market' },
+  {
+    ...MIXED_8,
+    id: 'mixed8-market-shards',
+    label: 'Mixed 8, the Market paid like the other projects (with shards)',
+    broker: 'market-shards',
+  },
+  {
+    ...MIXED_15,
+    id: 'mixed15-market',
+    label: 'Mixed 15, the Market as a project',
+    seedKey: 'mixed15',
+    broker: 'market',
+  },
+  // The same servers with no weekly visitor (V-VIS), for "with and without" (the draws are shared: the seed key stays the server's).
+  {
+    ...MIXED_8,
+    id: 'mixed8-novisitor',
+    label: 'Mixed 8, no weekly visitor',
+    visitor: false,
+  },
+  {
+    ...MIXED_15,
+    id: 'mixed15-novisitor',
+    seedKey: 'mixed15',
+    label: 'Mixed 15, no weekly visitor',
+    visitor: false,
+  },
+  // The mixed server of 8 (and the one that kills every boss) with tempering switched the other way from the rules' default, for "with and without".
+  {
+    ...MIXED_8,
+    id: temperingVariantId('mixed8'),
+    label: `Mixed 8, tempering ${RULES.tempering.on ? 'off' : 'on'}, no idol`,
+    tempering: !RULES.tempering.on,
+    idol: false,
+  },
+  {
+    ...MIXED_8,
+    id: temperingVariantId('mixed8-all'),
+    label: `Mixed 8, every boss killed, tempering ${RULES.tempering.on ? 'off' : 'on'}, no idol`,
+    bossKills: 'all',
+    seedKey: 'mixed8',
+    tempering: !RULES.tempering.on,
+    idol: false,
+  },
+  // The mixed server of 8 (and the one that kills every boss) with the idol switched the other way from the rules' default, for "with and without".
+  {
+    ...MIXED_8,
+    id: idolVariantId('mixed8'),
+    label: `Mixed 8, idol ${RULES.idol.on ? 'off' : 'on'}`,
+    idol: !RULES.idol.on,
+  },
+  {
+    ...MIXED_8,
+    id: idolVariantId('mixed8-all'),
+    label: `Mixed 8, every boss killed, idol ${RULES.idol.on ? 'off' : 'on'}`,
+    bossKills: 'all',
+    seedKey: 'mixed8',
+    idol: !RULES.idol.on,
+  },
+  // The School's teacher with the first draft of the pick rule (any number of players from 2 to all but one), for the comparison.
+  {
+    ...MIXED_8,
+    id: 'mixed8-teacherold',
+    label: 'Mixed 8, the teacher picks any talent that benefits several',
+    teacherRule: 'several',
+  },
+  {
+    ...MIXED_8,
+    id: 'mixed8-slowfloor',
+    label: 'Mixed 8, with a slow time floor',
+    fireFloor: SLOW_FLOOR,
+  },
+  {
+    ...MIXED_8,
+    id: 'mixed8-all-slowfloor',
+    label: 'Mixed 8, every boss killed, slow time floor',
+    bossKills: 'all',
+    fireFloor: SLOW_FLOOR,
+  },
+  {
+    ...MIXED_8,
+    id: 'mixed8-none-slowfloor',
+    label: 'Mixed 8, no boss killed, slow time floor',
+    bossKills: 'none',
+    fireFloor: SLOW_FLOOR,
+  },
+  {
+    ...MIXED_8,
+    id: 'mixed8-creatures2',
+    label: "Mixed 8, creatures at 2% an hour (the docs' table)",
+    creatureRate: 0.02,
+  },
+  withPolicy(
+    { ...MIXED_8, creatureRate: 0.02 },
+    'optimiser',
+    'mixed8-creatures2-opt',
+    'Mixed 8, creatures at 2% an hour, everyone an optimiser',
+  ),
+  {
+    ...MIXED_8,
+    id: 'mixed8-catchfights',
+    label: 'Mixed 8, catch-up also on fight XP',
+    catchUpFights: true,
+  },
+  { ...MIXED_8, id: 'mixed8-give10', label: 'Mixed 8, everyone gives 10%', giveShare: 0.1 },
+  { ...MIXED_8, id: 'mixed8-give60', label: 'Mixed 8, everyone gives 60%', giveShare: 0.6 },
+  { ...MIXED_8, id: 'mixed8-curveA', label: 'Mixed 8, away curve A', curve: 'A' },
+  {
+    ...MIXED_8,
+    id: 'mixed8-nocommunal',
+    label: 'Mixed 8, no communal seats',
+    communalSeats: false,
+  },
+  // A new player's table needs weeks since joining up to 24: the server runs 30 weeks so the week 6 joiner has 25.
+  {
+    ...MIXED_8,
+    id: 'mixed8-long',
+    label: 'Mixed 8, 30 weeks (for the new-player table)',
+    weeks: 30,
+  },
+];
+
+export const ALL_SERVERS: readonly ServerConfig[] = [...SERVERS, ...VARIANTS];
+
+export const playerProfile = (
+  entry: ServerConfig['players'][number],
+  giveShare?: number,
+): PlayerProfile => {
+  const base = profileById(entry.profile);
+  const withPolicy = entry.policy ? { ...base, policy: entry.policy } : base;
+  return giveShare === undefined ? withPolicy : { ...withPolicy, giveShare };
+};

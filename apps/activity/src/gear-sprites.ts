@@ -10,6 +10,7 @@ import {
   gearBase,
   gearContent,
   gearSet,
+  resourceIcon,
   type GearBase,
   type GearSlot,
   type PartKind,
@@ -398,7 +399,9 @@ export const BUNDLED_PART_ICONS: Readonly<Record<PartKind, SpriteDef>> = {
   glimmer,
 };
 
-/** The icon of a part kind, or a plain scrap icon for a kind that has none. */
+/** The icon of a part kind (named by the resource library), or a plain scrap icon for a kind that has none. */
 export function partIcon(kind: string): SpriteDef {
-  return Object.hasOwn(BUNDLED_PART_ICONS, kind) ? BUNDLED_PART_ICONS[kind as PartKind] : scrap;
+  const icon = resourceIcon(kind);
+  const part = icon?.kind === 'part' ? icon.part : kind;
+  return Object.hasOwn(BUNDLED_PART_ICONS, part) ? BUNDLED_PART_ICONS[part as PartKind] : scrap;
 }

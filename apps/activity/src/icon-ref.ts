@@ -1,3 +1,4 @@
+import { resourceIcon } from '@creatures/game';
 import type { PartKind } from './gear-types';
 
 /**
@@ -11,3 +12,11 @@ export type IconRef =
   | { kind: 'part'; part: PartKind }
   | { kind: 'gear'; baseId: string }
   | { kind: 'element'; element: string };
+
+/** The icon of a resource from the resource library (a plain diamond for an id it does not know). */
+export function resourceIconRef(id: string): IconRef {
+  const icon = resourceIcon(id);
+  if (icon === undefined) return { kind: 'glyph', id: 'unknown' };
+  // The library names a part icon by part kind: the same ids.
+  return icon.kind === 'part' ? { kind: 'part', part: icon.part as PartKind } : icon;
+}

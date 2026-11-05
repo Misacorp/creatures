@@ -224,6 +224,7 @@ export function DungeonMap({
                     setOpenId(node.id);
                   }}
                 >
+                  <span class="dmap-disc" aria-hidden="true" />
                   <Sprite
                     sprite={glyphOrUnknown(nodeGlyphOf(node))}
                     scale={node.kind === 'boss' ? 4 : 3}

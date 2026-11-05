@@ -9,6 +9,8 @@ import {
   initialScroll,
   panStep,
   roomScale,
+  HERO_MAX_SCALE,
+  HERO_SLACK,
   spotRect,
   type RoomGeometry,
   type SpotClaim,
@@ -16,6 +18,18 @@ import {
 import { ROOM_SPOTS } from './sprites/room-art';
 
 describe('roomScale', () => {
+  it('goes up to the hero scale when asked (Home in the home room mode)', () => {
+    expect(roomScale(1439, HERO_MAX_SCALE)).toEqual({ scale: 4, scroll: false });
+    // The hero is asked with `HERO_SLACK` more, so a scrollbar does not drop 1440 from 5 to 4.
+    expect(roomScale(1425 + HERO_SLACK, HERO_MAX_SCALE)).toEqual({ scale: 5, scroll: false });
+    expect(roomScale(1423 + HERO_SLACK, HERO_MAX_SCALE)).toEqual({ scale: 4, scroll: false });
+    expect(roomScale(1440, HERO_MAX_SCALE)).toEqual({ scale: 5, scroll: false });
+    expect(roomScale(1728, HERO_MAX_SCALE)).toEqual({ scale: 6, scroll: false });
+    expect(roomScale(1920, HERO_MAX_SCALE)).toEqual({ scale: 6, scroll: false });
+    expect(roomScale(1920)).toEqual({ scale: 4, scroll: false });
+    expect(roomScale(390, HERO_MAX_SCALE)).toEqual({ scale: 3, scroll: true });
+  });
+
   it('picks the largest integer scale from 2 to 4 at which the whole room fits', () => {
     expect(roomScale(576)).toEqual({ scale: 2, scroll: false });
     expect(roomScale(863)).toEqual({ scale: 2, scroll: false });

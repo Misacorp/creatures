@@ -18,6 +18,8 @@ export interface CreatureInfo {
   /** Whose creature it is (a player's display name, as text); left out for your own team. */
   ownerName?: string;
   shiny?: boolean;
+  /** The id of one of the player's own creatures, which has a page: the popover then offers "View". */
+  creatureId?: string;
   /** The owner holds the "first on server" record for this creature's species or line (the same tag as a creature card's). */
   firstOnServer?: boolean;
   /** The owner's Crafting level and this creature's Explorer rank, when known. */

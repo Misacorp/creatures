@@ -1,4 +1,4 @@
-import { RULES } from '@creatures/game';
+import { RULES, resourceName } from '@creatures/game';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Creature, GameState } from './api';
 import {
@@ -410,12 +410,12 @@ export function CreaturePage({
                     wide
                     large
                     label="Evolve"
-                    detail={`${String(evolveShort.cost)} Essence`}
+                    detail={`${String(evolveShort.cost)} ${resourceName('essence')}`}
                     disabled
                     onClick={() => undefined}
                   />
                   <p class="muted ribbon-note">
-                    Short of Essence: you have {String(evolveShort.have)} /{' '}
+                    Short of {resourceName('essence')}: you have {String(evolveShort.have)} /{' '}
                     {String(evolveShort.cost)}.{' '}
                     <GlossaryTag entry="essence" look="help" class="ribbon-help" />
                   </p>

@@ -1,3 +1,4 @@
+import type { ComponentChildren } from 'preact';
 import { useEffect, useMemo, useRef } from 'preact/hooks';
 import { CreatureIcon } from './CreatureIcon';
 import { cssVars } from './css-vars';
@@ -7,7 +8,13 @@ import { scrollBehavior } from './scroll-to';
 import { drawSprites } from './room-canvas';
 import { Sprite } from './sprites/Sprite';
 import { useDragScroll } from './ui/use-drag-scroll';
-import { MAP_SIZE, logoRect, mapPlacements } from './sprites/world-map-art';
+import {
+  GRASS_TILE,
+  MAP_SIZE,
+  logoRect,
+  mapPlacements,
+  worldSprite,
+} from './sprites/world-map-art';
 import { logoOf } from './sprites/world-map-logos';
 
 /** The width assumed until the map has been measured (and where there is no layout). */
@@ -27,6 +34,11 @@ export interface WorldMapProps {
   width?: number;
   /** The pixel scale (2 or 3). Default: the largest whole scale that fits `width` (desktop fixes it). */
   scale?: number;
+  /**
+   * Things drawn on the map itself, in the map's pixels at the map's scale, over its canvas and under the
+   * markers' buttons (the valley prototype stands creatures on it). Decoration unless it holds a button.
+   */
+  overlay?: (scale: number) => ComponentChildren;
 }
 
 /**
@@ -36,10 +48,19 @@ export interface WorldMapProps {
  * the place's pixel-art logo over its landmark. Left and Right move along that order. A map that pans can
  * be dragged with a mouse too (a finger scrolls it anyway); a short press stays a click on a marker.
  */
-export function WorldMap({ places, selected, night, onPick, width, scale: fixed }: WorldMapProps) {
+export function WorldMap({
+  places,
+  selected,
+  night,
+  onPick,
+  width,
+  scale: fixed,
+  overlay,
+}: WorldMapProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const moreRef = useRef<HTMLCanvasElement>(null);
   const measured = useElementWidth(rootRef, FALLBACK_WIDTH);
   const available = width ?? measured;
   const scale = fixed ?? mapScale(available);
@@ -53,6 +74,21 @@ export function WorldMap({ places, selected, night, onPick, width, scale: fixed 
     const ctx = canvasRef.current?.getContext('2d');
     if (ctx) drawSprites(ctx, placements, scale, 0, { width: pixelWidth, height: pixelHeight });
   }, [placements, scale, pixelWidth, pixelHeight]);
+
+  // A window wider than the map: the map goes on in grass, east of its edge (the sea stays at the west edge, next
+  // to the rail), so no dark bar shows beside it. The grass tiles continue the map's own grid (its width is a
+  // whole number of tiles). The 6 px are the map's side padding (world-map.css).
+  const more = Math.max(0, Math.floor(available - 6 - pixelWidth));
+  useEffect(() => {
+    const ctx = moreRef.current?.getContext('2d');
+    if (!ctx || more === 0) return;
+    const grass = worldSprite('grass');
+    const tiles = [];
+    for (let y = 0; y < MAP_SIZE.height; y += GRASS_TILE) {
+      for (let x = 0; x * scale < more; x += GRASS_TILE) tiles.push({ sprite: grass, x, y });
+    }
+    drawSprites(ctx, tiles, scale, 0, { width: more, height: pixelHeight });
+  }, [more, scale, pixelHeight]);
 
   /** Left and Right move focus along the reading order from the marker `from` and bring it into view. */
   const onArrow = (from: string, event: KeyboardEvent): void => {
@@ -73,6 +109,7 @@ export function WorldMap({ places, selected, night, onPick, width, scale: fixed 
   const vars = cssVars({
     '--wm-w': `${String(pixelWidth)}px`,
     '--wm-h': `${String(pixelHeight)}px`,
+    '--wm-more': `${String(more)}px`,
   });
   const classes = ['world-map'];
   if (night) classes.push('night');
@@ -95,6 +132,16 @@ export function WorldMap({ places, selected, night, onPick, width, scale: fixed 
             height={pixelHeight}
             aria-hidden="true"
           />
+          {more > 0 && (
+            <canvas
+              ref={moreRef}
+              class="world-map-more"
+              width={more}
+              height={pixelHeight}
+              aria-hidden="true"
+            />
+          )}
+          {overlay?.(scale)}
           <ul class="world-map-places pix-panel" aria-label="Places on the map">
             {ordered.map((place) => (
               <li key={place.id}>

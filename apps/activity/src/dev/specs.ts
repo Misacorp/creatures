@@ -23,6 +23,7 @@ import {
   SPECIES_OPTIONS,
   SUPPLY_OPTIONS,
 } from './options';
+import { resourceName } from '@creatures/game';
 
 const HOUR = 3_600_000;
 const MAX_AMOUNT = 1_000_000_000;
@@ -66,8 +67,8 @@ export const GOODS_SPECS: readonly ToolSpec[] = [
     tool: 'set-balances',
     label: 'Set Bait and Essence',
     fields: [
-      int('bait', 'Bait', 0, MAX_AMOUNT, true),
-      int('essence', 'Essence', 0, MAX_AMOUNT, true),
+      int('bait', resourceName('bait'), 0, MAX_AMOUNT, true),
+      int('essence', resourceName('essence'), 0, MAX_AMOUNT, true),
     ],
     needOne: true,
   },

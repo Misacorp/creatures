@@ -14,6 +14,7 @@ import { ribbonName } from './experience';
 import { creatureName, speciesName } from './game';
 import { loaded, type Loaded } from './loaded-state';
 import * as talentApi from './talent-api';
+import { resourceName } from '@creatures/game';
 
 /** What `Game` gives the actions: how to run a guarded action, and where the answer goes. */
 export interface CreatureDeps {
@@ -87,7 +88,7 @@ export function createCreatureActions(deps: CreatureDeps): CreatureActions {
         .runKeyed(
           ActionIds.evolve(creature.id, species),
           (key) => server.evolveCreature(creature.id, species, key),
-          { currency: 'Essence' },
+          { currency: resourceName('essence') },
         )
         .then((done) => {
           if (done === undefined) return;
@@ -142,7 +143,7 @@ export function createCreatureActions(deps: CreatureDeps): CreatureActions {
         .runKeyed(
           ActionIds.talentLearnV2(creature.id, talentId),
           (key) => v2Server.learnTalentV2(creature.id, talentId, key),
-          { currency: 'Bait' },
+          { currency: resourceName('bait') },
         )
         .then((done) => {
           if (done === undefined) return;

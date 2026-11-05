@@ -8,10 +8,11 @@ import { INCOME_FETCH, baitIncome, incomeRow } from './ledger-text';
 import { compactCount } from './number-format';
 import { DataTable } from './ui/DataTable';
 import { Popover, popupProps } from './ui/Popover';
+import { resourceName } from '@creatures/game';
 
 /** What assistive technology says for the button: both amounts. */
 export function currencyLabel(balances: Balances): string {
-  return `Currencies: ${String(balances.bait)} Bait, ${String(balances.essence)} Essence`;
+  return `Currencies: ${String(balances.bait)} ${resourceName('bait')}, ${String(balances.essence)} ${resourceName('essence')}`;
 }
 
 /**
@@ -63,14 +64,14 @@ function IncomeList({ load }: { load: () => Promise<LedgerEntry[]> }) {
     };
   }, []);
   return (
-    <section class="income" aria-label="Recent Bait income">
-      <h3 class="income-title pix">Recent Bait income</h3>
+    <section class="income" aria-label={`Recent ${resourceName('bait')} income`}>
+      <h3 class="income-title pix">Recent {resourceName('bait')} income</h3>
       {entries === 'failed' ? (
         <p class="small muted">Could not load the history.</p>
       ) : entries === null ? (
         <p class="small muted">Loading...</p>
       ) : entries.length === 0 ? (
-        <p class="small muted">No Bait has come in yet.</p>
+        <p class="small muted">No {resourceName('bait')} has come in yet.</p>
       ) : (
         // The shared data table: where it came from, then the amount in its own column (2026-10-28: as one
         // line, "+30 · leet on 2026-10-23 with 4 players" wrapped mid-phrase).
@@ -150,8 +151,18 @@ export function CurrencyPile({
           }}
         >
           <ul class="currency-lines">
-            <CurrencyLine glyph="bait" amount={balances.bait} entry="bait" name="Bait" />
-            <CurrencyLine glyph="gem" amount={balances.essence} entry="essence" name="Essence" />
+            <CurrencyLine
+              glyph="bait"
+              amount={balances.bait}
+              entry="bait"
+              name={resourceName('bait')}
+            />
+            <CurrencyLine
+              glyph="gem"
+              amount={balances.essence}
+              entry="essence"
+              name={resourceName('essence')}
+            />
           </ul>
           <IncomeList load={loadLedger} />
           <LeetWarning status={leetSync} />

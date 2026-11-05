@@ -9,6 +9,7 @@ import {
   undercroftBaseFloors,
   undercroftOpen,
   type Role,
+  resourceName,
 } from '@creatures/game';
 import type { TrackStep, TrackUnlock } from './progress-track';
 import type { IconRef } from './icon-ref';
@@ -63,7 +64,7 @@ export function modifierActs(modifier: { id: string }, rules: 1 | 2 | undefined)
 /** What a landmark gives. Words, not numbers (the amounts are the server's). */
 export const LANDMARK_UNLOCKS: readonly TrackUnlock[] = [
   { icon: 'anvil', text: 'Gear drop' },
-  { icon: 'gem', text: 'Bonus Essence' },
+  { icon: 'gem', text: `Bonus ${resourceName('essence')}` },
 ];
 
 /** The rooms (rows of its map) a run's first Undercroft floor has before its floor boss at `depth` (0 while the Undercroft is shut), from the rules. */

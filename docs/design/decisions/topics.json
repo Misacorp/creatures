@@ -58,5 +58,10 @@
     "id": "ui",
     "title": "UI patterns and the app shell",
     "scope": "Navigation and the frame, Home and the notice board, type scale, shared components, look and feel rules that apply across screens."
+  },
+  {
+    "id": "valley",
+    "title": "The valley rework",
+    "scope": "The valley and peaceful systems overhaul planned in docs/design/valley/: job posts, the bonfire, the commons, the Forge loop, gear, trials, the School, the visitor, the economy lab, and Misa's question rounds."
   }
 ]

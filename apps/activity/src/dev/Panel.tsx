@@ -24,15 +24,65 @@ import {
 import './dev.css';
 import { buildRows, readBuildInfo } from '../build-info';
 import { openExternalLink } from '../external-link';
+import { isLook, LOOKS, ROOM_MODES, type LookId, type RoomMode } from '../looks';
 import { resetLocalFlags } from './flags';
+import { chooseLook, chooseRoom, storedLook, storedRoom } from './look-prefs';
 import type { CreatureChoice, ToolSpec } from './forms';
 import { CLOCK_SPECS, GOODS_SPECS, RESET_ACCOUNT_SPEC, orderedSections } from './specs';
 import { ToolForm } from './ToolForm';
 import { COMBAT_LAB_URL } from './combat-lab-link';
+import { PROTOTYPE_URL } from './prototype-link';
 import { WORKBENCH_URL } from './workbench-link';
 import { Replay } from '../Replay';
 import { Accordion } from '../ui/Accordion';
 import { DataTable } from '../ui/DataTable';
+
+/** The "Look" section: which look and room band mode this device tries (remembered on the device). */
+function LookSwitch(): JSX.Element {
+  const [look, setLook] = useState<LookId>(() => storedLook());
+  const [room, setRoom] = useState<RoomMode>(() => storedRoom());
+  return (
+    <div class="dev-fields">
+      <label class="dev-field">
+        Look
+        <select
+          value={look}
+          onChange={(e) => {
+            const value = e.currentTarget.value;
+            if (!isLook(value)) return;
+            setLook(value);
+            chooseLook(value);
+          }}
+        >
+          {LOOKS.map((id) => (
+            <option key={id} value={id}>
+              {id}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label class="dev-field">
+        Room band
+        <select
+          value={room}
+          onChange={(e) => {
+            const value = e.currentTarget.value;
+            const mode = ROOM_MODES.find((m) => m === value);
+            if (mode === undefined) return;
+            setRoom(mode);
+            chooseRoom(mode);
+          }}
+        >
+          {ROOM_MODES.map((mode) => (
+            <option key={mode} value={mode}>
+              {mode}
+            </option>
+          ))}
+        </select>
+      </label>
+    </div>
+  );
+}
 
 /** A string only this module tree contains: the production build test searches the output for it. */
 const DEV_PANEL_MARKER = 'DEV_PANEL_MARKER_7f3a';
@@ -132,6 +182,18 @@ function CombatLabLink({ onStatus }: { onStatus: (status: Status) => void }): JS
       name="Combat lab"
       url={COMBAT_LAB_URL}
       blurb="Set up a combat v2 prototype fight, run it and read what happened step by step. It opens in your browser, no sign-in."
+      onStatus={onStatus}
+    />
+  );
+}
+
+/** The link to the clickable concept prototypes (the valley, the party). */
+function PrototypeLink({ onStatus }: { onStatus: (status: Status) => void }): JSX.Element {
+  return (
+    <PageLink
+      name="Prototypes"
+      url={PROTOTYPE_URL}
+      blurb="Two clickable concepts for the game's next look: the valley as the menu, and your creatures running the show. Sample data only. It opens in your browser, no sign-in."
       onStatus={onStatus}
     />
   );
@@ -337,6 +399,13 @@ export default function DevPanel({ tab, creatures, onChanged }: DevPanelProps): 
               </div>
               <ToolForm spec={RESET_ACCOUNT_SPEC} choices={choices} busy={busy} onRun={run} />
             </Section>
+            <Section title="Look" open={sectionOpen('look', false)} onToggle={toggle('look')}>
+              <LookSwitch />
+              <p class="dev-hint">
+                Tries a visual style on this device (kept until you change it). Room band: every
+                place, or Home only on a wide window.
+              </p>
+            </Section>
             <Section
               title="Component workbench"
               open={sectionOpen('workbench', false)}
@@ -350,6 +419,13 @@ export default function DevPanel({ tab, creatures, onChanged }: DevPanelProps): 
               onToggle={toggle('combat-lab')}
             >
               <CombatLabLink onStatus={setStatus} />
+            </Section>
+            <Section
+              title="Prototypes"
+              open={sectionOpen('prototypes', false)}
+              onToggle={toggle('prototypes')}
+            >
+              <PrototypeLink onStatus={setStatus} />
             </Section>
             {orderedSections(tab).map((section) => (
               <Section

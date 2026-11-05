@@ -16,7 +16,7 @@ import {
   type Rng,
 } from '@creatures/game';
 import { combatV2, knownKnacks } from '@creatures/game/combat-v2';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { canonicalDims } from '../src/analytics-rollup';
 import { propsOf } from '../src/analytics-props';
 import { knackLocked, statsV2Of, talentsLocked } from '../src/creature-v2';
@@ -26,6 +26,7 @@ import { equippedByCreature } from '../src/gear-store';
 import { giveItem } from './gear-helpers';
 import { formStats } from '@creatures/engine/v2';
 import { createHandler } from '../src/index';
+import { resetValleySystemsLog } from '../src/valley-flag';
 import { loadCreatures, loadCreaturesById } from '../src/raid-teams';
 import { grantFirstTalent, learnedOf, lineBook } from '../src/talent-v2-store';
 import wranglerText from '../wrangler.jsonc?raw';
@@ -82,6 +83,93 @@ describe('the COMBAT_V2 flag: configuration', () => {
     const other = { ...env, COMBAT_V2: 'true' } as Env;
     const odd = await handler.fetch?.(new Request(`${ORIGIN}/api/config`), other, ctx);
     expect(Object.hasOwn((await odd?.json()) as Record<string, unknown>, 'combatV2')).toBe(false);
+  });
+});
+
+describe('the VALLEY flag: configuration', () => {
+  it('is off at the top level and in production, and on only in staging', () => {
+    const config = parseWrangler();
+    expect(config.vars['VALLEY']).toBe('off');
+    expect(config.env['production']?.vars['VALLEY']).toBe('off');
+    expect(config.env['staging']?.vars['VALLEY']).toBe('on');
+    const on = Object.entries(config.env)
+      .filter(([, e]) => e.vars['VALLEY'] === 'on')
+      .map(([name]) => name);
+    expect(on).toEqual(['staging']);
+  });
+
+  it('is off in the environment the tests run in (the top level)', () => {
+    expect(env.VALLEY).toBe('off');
+  });
+
+  it('tells the client through /api/config only when on (absent, never false)', async () => {
+    const handler = createHandler();
+    const ctx = { waitUntil: () => undefined, passThroughOnException: () => undefined } as never;
+    const off = await callHandler(handler, new Request(`${ORIGIN}/api/config`));
+    expect(Object.hasOwn(await off.json<Record<string, unknown>>(), 'valley')).toBe(false);
+    const onEnv = { ...env, VALLEY: 'on' } as Env;
+    const on = await handler.fetch?.(new Request(`${ORIGIN}/api/config`), onEnv, ctx);
+    expect(((await on?.json()) as Record<string, unknown>)['valley']).toBe(true);
+    const other = { ...env, VALLEY: 'true' } as Env;
+    const odd = await handler.fetch?.(new Request(`${ORIGIN}/api/config`), other, ctx);
+    expect(Object.hasOwn((await odd?.json()) as Record<string, unknown>, 'valley')).toBe(false);
+  });
+});
+
+describe('the VALLEY_SYSTEMS flag: configuration', () => {
+  it('is off at the top level and in production, and on only in staging', () => {
+    const config = parseWrangler();
+    expect(config.vars['VALLEY_SYSTEMS']).toBe('off');
+    expect(config.env['production']?.vars['VALLEY_SYSTEMS']).toBe('off');
+    expect(config.env['staging']?.vars['VALLEY_SYSTEMS']).toBe('on');
+    const on = Object.entries(config.env)
+      .filter(([, e]) => e.vars['VALLEY_SYSTEMS'] === 'on')
+      .map(([name]) => name);
+    expect(on).toEqual(['staging']);
+    // Where it is on, the flags it needs are on too.
+    expect(config.env['staging']?.vars['VALLEY']).toBe('on');
+    expect(config.env['staging']?.vars['COMBAT_V2']).toBe('on');
+  });
+
+  it('is off in the environment the tests run in (the top level)', () => {
+    expect(env.VALLEY_SYSTEMS).toBe('off');
+  });
+
+  async function configWith(vars: Record<string, string>): Promise<Record<string, unknown>> {
+    const ctx = { waitUntil: () => undefined, passThroughOnException: () => undefined } as never;
+    const res = await createHandler().fetch?.(
+      new Request(`${ORIGIN}/api/config`),
+      { ...env, ...vars },
+      ctx,
+    );
+    return (await res?.json()) as Record<string, unknown>;
+  }
+
+  it('tells the client through /api/config only when on with VALLEY and COMBAT_V2 on (absent, never false)', async () => {
+    resetValleySystemsLog();
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const off = await callHandler(createHandler(), new Request(`${ORIGIN}/api/config`));
+    expect(Object.hasOwn(await off.json<Record<string, unknown>>(), 'valleySystems')).toBe(false);
+    const all = { VALLEY: 'on', COMBAT_V2: 'on', VALLEY_SYSTEMS: 'on' };
+    expect((await configWith(all))['valleySystems']).toBe(true);
+    expect(errors).not.toHaveBeenCalled();
+    // Any other value is off.
+    expect(
+      Object.hasOwn(await configWith({ ...all, VALLEY_SYSTEMS: 'true' }), 'valleySystems'),
+    ).toBe(false);
+    errors.mockRestore();
+  });
+
+  it('treats "on" as off without VALLEY or COMBAT_V2, and logs one config error', async () => {
+    resetValleySystemsLog();
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    for (const missing of ['VALLEY', 'COMBAT_V2']) {
+      const vars = { VALLEY: 'on', COMBAT_V2: 'on', VALLEY_SYSTEMS: 'on', [missing]: 'off' };
+      expect(Object.hasOwn(await configWith(vars), 'valleySystems')).toBe(false);
+    }
+    expect(errors).toHaveBeenCalledTimes(1);
+    expect(String(errors.mock.calls[0]?.[0])).toContain('VALLEY_SYSTEMS');
+    errors.mockRestore();
   });
 });
 

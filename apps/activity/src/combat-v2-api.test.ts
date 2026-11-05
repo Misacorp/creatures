@@ -88,3 +88,29 @@ describe('the combat v2 flag of /api/config', () => {
     vi.unstubAllGlobals();
   });
 });
+
+describe('the valley flag of /api/config', () => {
+  it('is on only for an explicit true', async () => {
+    const base = { discordClientId: '1', environment: 'local', version: 'dev', leetSource: 'mock' };
+    vi.stubGlobal('fetch', () => Promise.resolve(Response.json({ ...base, valley: true })));
+    expect((await fetchConfig()).valley).toBe(true);
+    vi.stubGlobal('fetch', () => Promise.resolve(Response.json(base)));
+    expect((await fetchConfig()).valley).toBe(false);
+    vi.stubGlobal('fetch', () => Promise.resolve(Response.json({ ...base, valley: 'on' })));
+    expect((await fetchConfig()).valley).toBe(false);
+    vi.unstubAllGlobals();
+  });
+});
+
+describe('the valleySystems flag of /api/config', () => {
+  it('is on only for an explicit true', async () => {
+    const base = { discordClientId: '1', environment: 'local', version: 'dev', leetSource: 'mock' };
+    vi.stubGlobal('fetch', () => Promise.resolve(Response.json({ ...base, valleySystems: true })));
+    expect((await fetchConfig()).valleySystems).toBe(true);
+    vi.stubGlobal('fetch', () => Promise.resolve(Response.json(base)));
+    expect((await fetchConfig()).valleySystems).toBe(false);
+    vi.stubGlobal('fetch', () => Promise.resolve(Response.json({ ...base, valleySystems: 'on' })));
+    expect((await fetchConfig()).valleySystems).toBe(false);
+    vi.unstubAllGlobals();
+  });
+});

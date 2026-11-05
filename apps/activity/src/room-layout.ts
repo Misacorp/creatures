@@ -8,6 +8,13 @@ import { EDGE_TILE_WIDTH, ROOM_SIZE, SPOT_SIZE, type RoomSpot } from './sprites/
 
 export const MIN_SCALE = 2;
 export const MAX_SCALE = 4;
+/** The largest scale of Home's hero room (`room` mode `home`, a wide window): 6 gives 1728 px of art at 1920. */
+export const HERO_MAX_SCALE = 6;
+/**
+ * How many px narrower than a scale the window may be for the hero room to still use it: 1440 px is exactly
+ * scale 5, so without it a scrollbar (15 px) would flip the hero between 5 and 4. The room's end walls are plain.
+ */
+export const HERO_SLACK = 16;
 /** The scale used when the room does not fit and scrolls sideways. */
 export const SCROLL_SCALE = 3;
 /** How fast the idle pan moves, in CSS pixels per second. */
@@ -16,11 +23,14 @@ export const PAN_SPEED = 8;
 const PAN_MAX_STEP_MS = 250;
 
 /**
- * The largest integer scale (2 to 4) at which the whole room fits in `containerWidth` CSS pixels. When
- * even scale 2 does not fit (phones), the room is shown at scale 3 and scrolls sideways.
+ * The largest integer scale (2 to `maxScale`, 4 unless given) at which the whole room fits in `containerWidth` CSS
+ * pixels. When even scale 2 does not fit (phones), the room is shown at scale 3 and scrolls sideways.
  */
-export function roomScale(containerWidth: number): { scale: number; scroll: boolean } {
-  for (let scale = MAX_SCALE; scale >= MIN_SCALE; scale--) {
+export function roomScale(
+  containerWidth: number,
+  maxScale: number = MAX_SCALE,
+): { scale: number; scroll: boolean } {
+  for (let scale = maxScale; scale >= MIN_SCALE; scale--) {
     if (ROOM_SIZE.width * scale <= containerWidth) return { scale, scroll: false };
   }
   return { scale: SCROLL_SCALE, scroll: true };

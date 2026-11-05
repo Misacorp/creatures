@@ -8,7 +8,7 @@
  * Text never exceeds Discord's limits (`truncateMessage`): 2,000 characters for a plain message, and
  * the embed limits for the raid posts, which are embeds with the boss's portrait and a play button.
  */
-import type { Gimmick, TurnOrder } from '@creatures/game';
+import { resourceName, type Gimmick, type TurnOrder } from '@creatures/game';
 
 /** Discord's message length limit, in UTF-16 code units. */
 export const MAX_MESSAGE_CHARS = 2000;
@@ -297,7 +297,7 @@ export function formatBossReveal(post: RevealPost): PostMessage {
   ];
   if (post.festivalCreature !== null) {
     lines.push(
-      `🎉 Festival week: ${escapeMarkdown(post.festivalCreature)} for every winner, and bonus Essence.`,
+      `🎉 Festival week: ${escapeMarkdown(post.festivalCreature)} for every winner, and bonus ${resourceName('essence')}.`,
     );
   }
   const fields: EmbedField[] = [];

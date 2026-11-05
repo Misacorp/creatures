@@ -7,7 +7,8 @@ import { useEffect, useRef } from 'preact/hooks';
  * (`onDrillKey`): the head only draws. `level` is the title's heading level (3 in a drawer; 4 under a card's
  * own heading). `scroll` brings the head to the top of the screen when the view opens (a drawer view that
  * was entered scrolled down); `focus` puts the focus on Back (the button that opened the view is gone, so
- * Escape would otherwise have nothing to hear it). The title is text.
+ * Escape would otherwise have nothing to hear it). The title is text. `word` is the button's visible word
+ * ("Back" unless a page is opened from the valley, whose way back says "Valley").
  */
 export function DrillHead({
   title,
@@ -17,6 +18,7 @@ export function DrillHead({
   scroll = false,
   focus = false,
   disabled = false,
+  word = 'Back',
 }: {
   title: string;
   onBack: () => void;
@@ -25,6 +27,7 @@ export function DrillHead({
   scroll?: boolean;
   focus?: boolean;
   disabled?: boolean;
+  word?: string;
 }) {
   const head = useRef<HTMLDivElement>(null);
   const back = useRef<HTMLButtonElement>(null);
@@ -42,7 +45,7 @@ export function DrillHead({
         disabled={disabled}
         onClick={onBack}
       >
-        <span aria-hidden="true">‹</span> Back
+        <span aria-hidden="true">‹</span> {word}
         <span class="visually-hidden"> {backLabel}</span>
       </button>
       <Title class="drill-title">{title}</Title>

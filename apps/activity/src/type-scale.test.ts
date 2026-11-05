@@ -36,6 +36,8 @@ const ALLOWED: Readonly<Record<string, number>> = {
   'stage/effects.css': 2,
   'stage/move-track.css': 1,
   'stage/units.css': 2,
+  'views/gazette-home.css': 1, // the big "+N" of the coming-home moment (3 rem, art-sized)
+  'views/gazette.css': 2, // the Gazette's masthead and headline story: pixel display type, like the pixel heading
   'views/how-to-play.css': 6,
   'views/living-room.css': 2,
 };

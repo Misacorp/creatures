@@ -5,6 +5,7 @@ import {
   mapPlaces,
   mapReadingOrder,
   mapScale,
+  mapScaleWide,
   mapScrolls,
   nextMarker,
   placeLabel,
@@ -168,5 +169,24 @@ describe('nextMarker', () => {
     expect(nextMarker(ids, null, -1)).toBe('c');
     expect(nextMarker(ids, 'zzz', 1)).toBe('a');
     expect(nextMarker([], 'a', 1)).toBeNull();
+  });
+});
+
+describe('mapScaleWide', () => {
+  it('is the largest whole scale that fits the width, from 2 to 4', () => {
+    expect(mapScaleWide(600, 5000)).toBe(2);
+    expect(mapScaleWide(1103, 5000)).toBe(2);
+    expect(mapScaleWide(1104, 5000)).toBe(3);
+    expect(mapScaleWide(1471, 5000)).toBe(3);
+    expect(mapScaleWide(1472, 5000)).toBe(4);
+    expect(mapScaleWide(3000, 5000)).toBe(4);
+  });
+
+  it('takes 4 only where the height fits it too, and never shrinks below the width scale', () => {
+    // A 1920 x 1080 window has about 840 px under the HUD and the room band: 4 (1152 px tall) does not fit.
+    expect(mapScaleWide(1700, 840)).toBe(3);
+    expect(mapScaleWide(1700, 1152)).toBe(4);
+    expect(mapScaleWide(1700, 100)).toBe(3);
+    expect(mapScaleWide(1000, 100)).toBe(2);
   });
 });

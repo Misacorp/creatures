@@ -51,6 +51,7 @@ export const DEV_ACTION_TOOLS = [
   'raid-play',
   'combat-v2-convert',
   'reset-raids-dungeons',
+  'valley-fresh',
   'reset-account',
 ] as const;
 export type DevActionTool = (typeof DEV_ACTION_TOOLS)[number];

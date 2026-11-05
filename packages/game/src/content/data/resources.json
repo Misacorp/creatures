@@ -1,0 +1,264 @@
+[
+  {
+    "id": "bait",
+    "kind": "currency",
+    "name": "Bait",
+    "plural": "Bait",
+    "icon": {
+      "kind": "glyph",
+      "id": "bait"
+    },
+    "glossary": "bait"
+  },
+  {
+    "id": "essence",
+    "kind": "currency",
+    "name": "Essence",
+    "plural": "Essence",
+    "icon": {
+      "kind": "glyph",
+      "id": "gem"
+    },
+    "glossary": "essence"
+  },
+  {
+    "id": "scrap",
+    "kind": "material",
+    "name": "Scrap",
+    "plural": "Scrap",
+    "icon": {
+      "kind": "part",
+      "part": "scrap"
+    },
+    "glossary": "part-scrap"
+  },
+  {
+    "id": "tide-shard",
+    "kind": "shard",
+    "name": "Tide Shard",
+    "plural": "Tide Shards",
+    "icon": {
+      "kind": "part",
+      "part": "tide-shard"
+    },
+    "glossary": "part-tide-shard"
+  },
+  {
+    "id": "ember-shard",
+    "kind": "shard",
+    "name": "Ember Shard",
+    "plural": "Ember Shards",
+    "icon": {
+      "kind": "part",
+      "part": "ember-shard"
+    },
+    "glossary": "part-ember-shard"
+  },
+  {
+    "id": "grove-shard",
+    "kind": "shard",
+    "name": "Grove Shard",
+    "plural": "Grove Shards",
+    "icon": {
+      "kind": "part",
+      "part": "grove-shard"
+    },
+    "glossary": "part-grove-shard"
+  },
+  {
+    "id": "spark-shard",
+    "kind": "shard",
+    "name": "Spark Shard",
+    "plural": "Spark Shards",
+    "icon": {
+      "kind": "part",
+      "part": "spark-shard"
+    },
+    "glossary": "part-spark-shard"
+  },
+  {
+    "id": "mire-shard",
+    "kind": "shard",
+    "name": "Mire Shard",
+    "plural": "Mire Shards",
+    "icon": {
+      "kind": "part",
+      "part": "mire-shard"
+    },
+    "glossary": "part-mire-shard"
+  },
+  {
+    "id": "glimmer",
+    "kind": "material",
+    "name": "Glimmer",
+    "plural": "Glimmer",
+    "icon": {
+      "kind": "part",
+      "part": "glimmer"
+    },
+    "glossary": "part-glimmer"
+  },
+  {
+    "id": "lure-basic",
+    "kind": "supply",
+    "name": "Plain Lure",
+    "plural": "Plain Lures",
+    "icon": {
+      "kind": "supply",
+      "id": "lure"
+    }
+  },
+  {
+    "id": "lure-good",
+    "kind": "supply",
+    "name": "Sweet Lure",
+    "plural": "Sweet Lures",
+    "icon": {
+      "kind": "supply",
+      "id": "lure"
+    }
+  },
+  {
+    "id": "lure-great",
+    "kind": "supply",
+    "name": "Golden Lure",
+    "plural": "Golden Lures",
+    "icon": {
+      "kind": "supply",
+      "id": "lure"
+    }
+  },
+  {
+    "id": "map-scrap-basic",
+    "kind": "supply",
+    "name": "Map Scrap",
+    "plural": "Map Scrap",
+    "icon": {
+      "kind": "supply",
+      "id": "map-scrap"
+    }
+  },
+  {
+    "id": "map-scrap-good",
+    "kind": "supply",
+    "name": "Inked Map",
+    "plural": "Inked Maps",
+    "icon": {
+      "kind": "supply",
+      "id": "map-scrap"
+    }
+  },
+  {
+    "id": "map-scrap-great",
+    "kind": "supply",
+    "name": "Trail Atlas",
+    "plural": "Trail Atlass",
+    "icon": {
+      "kind": "supply",
+      "id": "map-scrap"
+    }
+  },
+  {
+    "id": "lantern-basic",
+    "kind": "supply",
+    "name": "Candle Lantern",
+    "plural": "Candle Lanterns",
+    "icon": {
+      "kind": "supply",
+      "id": "lantern"
+    }
+  },
+  {
+    "id": "lantern-good",
+    "kind": "supply",
+    "name": "Glow Lantern",
+    "plural": "Glow Lanterns",
+    "icon": {
+      "kind": "supply",
+      "id": "lantern"
+    }
+  },
+  {
+    "id": "lantern-great",
+    "kind": "supply",
+    "name": "Moon Lantern",
+    "plural": "Moon Lanterns",
+    "icon": {
+      "kind": "supply",
+      "id": "lantern"
+    }
+  },
+  {
+    "id": "satchel-basic",
+    "kind": "supply",
+    "name": "Small Satchel",
+    "plural": "Small Satchels",
+    "icon": {
+      "kind": "supply",
+      "id": "satchel"
+    }
+  },
+  {
+    "id": "satchel-good",
+    "kind": "supply",
+    "name": "Sturdy Satchel",
+    "plural": "Sturdy Satchels",
+    "icon": {
+      "kind": "supply",
+      "id": "satchel"
+    }
+  },
+  {
+    "id": "satchel-great",
+    "kind": "supply",
+    "name": "Explorer's Pack",
+    "plural": "Explorer's Packs",
+    "icon": {
+      "kind": "supply",
+      "id": "satchel"
+    }
+  },
+  {
+    "id": "medal",
+    "kind": "prize",
+    "name": "Medal",
+    "plural": "Medals",
+    "icon": {
+      "kind": "glyph",
+      "id": "medal-point"
+    },
+    "glossary": "games-medals"
+  },
+  {
+    "id": "medal-point",
+    "kind": "prize",
+    "name": "Medal point",
+    "plural": "Medal points",
+    "icon": {
+      "kind": "glyph",
+      "id": "medal-point"
+    }
+  },
+  {
+    "id": "pin",
+    "kind": "prize",
+    "name": "Pin",
+    "plural": "Pins",
+    "icon": {
+      "kind": "glyph",
+      "id": "medal-point"
+    },
+    "glossary": "games-pins"
+  },
+  {
+    "id": "journal",
+    "kind": "collectible",
+    "name": "Journal",
+    "plural": "Journal pages",
+    "icon": {
+      "kind": "glyph",
+      "id": "journal"
+    },
+    "glossary": "journal"
+  }
+]

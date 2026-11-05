@@ -4,11 +4,12 @@
  * sends counts; this only words them. Plain text, short and warm.
  */
 import type { LevelResetNotice } from './api';
+import { resourceName } from '@creatures/game';
 
 /** The lines of the card: the headline, then one short line for each side effect that happened. */
 export function levelResetLines(notice: LevelResetNotice): string[] {
   const lines = [
-    `Creatures now grow by doing things. Every creature's level was halved and you got back the Bait those levels cost: ${String(notice.bait)} Bait.`,
+    `Creatures now grow by doing things. Every creature's level was halved and you got back the ${resourceName('bait')} those levels cost: ${String(notice.bait)} ${resourceName('bait')}.`,
   ];
   if (notice.unequipped > 0) {
     lines.push(

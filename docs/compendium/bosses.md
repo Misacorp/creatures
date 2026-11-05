@@ -18,6 +18,18 @@ Read `README.md` for the tags. Every boss has one element, and four of the bosse
 
 `(content: bosses.json, adaptations.json)`
 
+### Battlegrounds `(compendium detail, not shipped)`
+
+Each boss is met far from the valley, where its threat gathers, before it can reach home: the raid is proactive defence (Misa, valley plan rounds, 2026-10-29 and 2026-10-30; `docs/design/valley/systems/defence.md`).
+
+| Boss            | Battleground                                 |
+| --------------- | -------------------------------------------- |
+| Tidal Colossus  | a drowned sea gate past the Tidepools' shelf |
+| Cinder Wyrm     | a caldera below the Ember Caves              |
+| Thornmother     | an ancient temple swallowed by roots         |
+| Storm Sovereign | a thunderous mountaintop above Storm Ridge   |
+| Old Bogback     | a sunken shrine in the Sunken Fen            |
+
 Each boss keeps its trick from the table and has two new moves, listed under its fighting style below. Each boss also has two **rank-gated moves**: they only join the fight when the server's Boss Rank reaches a number (rank 4 and rank 7 today), so a boss changes how it fights as the ranks climb. These are the moves that punish a way of lining up: a Payoff left out in the open, Payoffs stacked in one row, one carry that does everything, or no Guard to cover. `(content: bosses.json fromRank)` Each boss also has two retreat lines, shown when it pulls back at the end of a phase `(content: bosses.json retreat)`.
 
 All five fight for twelve finale rounds. `(content: bosses.json finaleRounds)` All five are sized **huge** in art, which means about 20 to 24 pixels on a 24 by 24 grid. `(content: bosses-lore.json, m6-look.md, creatures.md)`

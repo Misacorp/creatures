@@ -360,6 +360,8 @@ export interface GuildCoreOptions {
    * can run. Off (the default): none of it exists. See `docs/design/combat/integration.md`.
    */
   combatV2?: boolean;
+  /** The valley's base systems (`VALLEY_SYSTEMS` on with `VALLEY` and `COMBAT_V2` on, see `valley-flag.ts`): the `valley-fresh` dev tool can run. */
+  valleySystems?: boolean;
   /**
    * The deployed build (the git commit). The start-up passes in `migrate` run once per build instead of
    * on every start. Without one (local dev, tests) they run on every start.
@@ -572,6 +574,7 @@ export class GuildCore {
             games: this.games,
             weather: this.weather,
             combatV2: options.combatV2 === true,
+            valleySystems: options.valleySystems === true,
             rng: options.raidRng ?? liveRng(),
             gearRng,
             quirkRng,

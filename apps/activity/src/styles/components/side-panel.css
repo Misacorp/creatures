@@ -1,16 +1,10 @@
 /*
   A main area with a side panel beside it on a wide screen (`ui/WideLayout.tsx`, `ui/SidePanel.tsx`): the
   Expeditions world map and the Valley Games show. From 60 rem (`WIDE_QUERY` in `ui/wide-layout.ts`) the app
-  card is wider while such a screen shows (its base width is in `base/base.css`); the main area is full
+  card is the whole window (`main-nav.css`); the main area is full
   width until there is a panel, then the screen is two columns, the main area on the left and the panel
   (24 rem) on the right.
 */
-@media (min-width: 60rem) {
-  main.card:has(.side-layout.wide) {
-    width: min(84rem, 100% - 1.25rem);
-  }
-}
-
 .side-layout {
   min-width: 0;
 }

@@ -48,3 +48,19 @@ export function scrollPageTo(top: number): void {
 export function scrollToTop(): void {
   scrollPageTo(0);
 }
+
+/**
+ * Scrolls the element with this id to the top of the view after the next two frames: the game's own jump to the
+ * top of a new place (an effect that runs after the next frame) has happened by then. Guarded like the rest.
+ */
+export function scrollToSoon(id: string): void {
+  if (typeof requestAnimationFrame !== 'function') return;
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      const el = typeof document === 'undefined' ? null : document.getElementById(id);
+      if (el !== null && typeof el.scrollIntoView === 'function') {
+        el.scrollIntoView({ block: 'start', behavior: scrollBehavior() });
+      }
+    });
+  });
+}

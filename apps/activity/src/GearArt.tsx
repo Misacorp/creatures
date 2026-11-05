@@ -2,7 +2,14 @@ import { baitCount, partBadge } from './count-items';
 import { CountBadge } from './ui/CountBadge';
 import { GameIcon } from './ui/GameIcon';
 import { Tag } from './ui/Tag';
-import { GLOSSARY_IDS, PART_KINDS, gearBase, tagElement, type PartKind } from '@creatures/game';
+import {
+  GLOSSARY_IDS,
+  PART_KINDS,
+  gearBase,
+  tagElement,
+  type PartKind,
+  resourceName,
+} from '@creatures/game';
 import type { ComponentChildren } from 'preact';
 import { GlossaryTag } from './Glossary';
 import { itemArt } from './gear-sprites';
@@ -282,7 +289,9 @@ export function CostList({
     <ul class="cost-list" aria-label="Cost">
       {essence !== undefined && (
         <li class={short(essence, essenceHave ?? 0) ? 'short' : undefined}>
-          <GlossaryTag entry="essence">{String(essence)} Essence</GlossaryTag>
+          <GlossaryTag entry="essence">
+            {String(essence)} {resourceName('essence')}
+          </GlossaryTag>
           {short(essence, essenceHave ?? 0) && <span class="visually-hidden"> (not enough)</span>}
         </li>
       )}
@@ -292,7 +301,7 @@ export function CostList({
           {short(bait, baitHave ?? 0) && (
             <>
               <span class="cost-name">(have {baitHave ?? 0})</span>
-              <span class="visually-hidden"> Not enough Bait.</span>
+              <span class="visually-hidden"> Not enough {resourceName('bait')}.</span>
             </>
           )}
         </li>

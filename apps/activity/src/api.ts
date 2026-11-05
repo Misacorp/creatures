@@ -55,6 +55,10 @@ export interface AppConfig {
   raidLive: boolean;
   /** True when the server plays combat v2 (`COMBAT_V2`, staging only for now): the creature page offers Knacks and the v2 talents. */
   combatV2: boolean;
+  /** True when the server shows the valley shell (`VALLEY`, staging only until phase 6): a map of places instead of the dock and tabs. */
+  valley: boolean;
+  /** True when the valley's base systems are on (`VALLEY_SYSTEMS`, needs `VALLEY` and `COMBAT_V2`; staging only until phase 6). Nothing reads it yet. */
+  valleySystems: boolean;
 }
 
 export interface SessionUser {
@@ -217,6 +221,8 @@ export async function fetchConfig(): Promise<AppConfig> {
     finaleLive: data['finaleLive'] === true,
     raidLive: data['raidLive'] === true,
     combatV2: data['combatV2'] === true,
+    valley: data['valley'] === true,
+    valleySystems: data['valleySystems'] === true,
   };
 }
 

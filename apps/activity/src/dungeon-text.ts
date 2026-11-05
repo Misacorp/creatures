@@ -3,7 +3,7 @@
  * depth and streak lines, the results headline. Plain text only; creature names and foe names can
  * carry player text and must be rendered as text.
  */
-import { RULES, dungeonContent } from '@creatures/game';
+import { RULES, dungeonContent, resourceName } from '@creatures/game';
 import { ApiError } from './api';
 import type {
   DungeonErrorCode,
@@ -28,7 +28,7 @@ export const DUNGEON_ERROR_TEXT: Readonly<Record<DungeonErrorCode, string>> = {
   already_run: "You already used today's run. A new one opens when the day resets.",
   key_conflict: 'That clashed with an earlier request. Check your picks and try again.',
   invalid_treat: 'A treat can only go to a creature in the team, once.',
-  insufficient_funds: 'Not enough Bait for those treats.',
+  insufficient_funds: `Not enough ${resourceName('bait')} for those treats.`,
   run_active: 'Your run is still open. Carry on from the map.',
   stale_step: 'Your run moved on in another window. The map was refreshed.',
   invalid_act: "That can't be done right now. The map was refreshed.",
@@ -37,7 +37,7 @@ export const DUNGEON_ERROR_TEXT: Readonly<Record<DungeonErrorCode, string>> = {
 
 /** The message for a failed dungeon request; any other failure gets the game's usual text. */
 export function dungeonErrorText(err: unknown): string {
-  return errorText(err, 'Bait', DUNGEON_ERROR_TEXT);
+  return errorText(err, resourceName('bait'), DUNGEON_ERROR_TEXT);
 }
 
 /** The codes that say the screen showed an old state: load today again and show what is there. */
@@ -237,9 +237,9 @@ export function resultSummary(run: ResultRun): string {
 // --- The pack and the run strip ---
 
 const PACK_KINDS = [
-  ['bait', 'Bait'],
-  ['essence', 'Essence'],
-  ['scrap', 'Scrap'],
+  ['bait', resourceName('bait')],
+  ['essence', resourceName('essence')],
+  ['scrap', resourceName('scrap')],
 ] as const;
 
 /** The shards of a pack as [part kind, amount], without the empty ones. */

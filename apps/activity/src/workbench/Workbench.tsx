@@ -233,6 +233,18 @@ function FrameView() {
     };
   }, []);
   const entry = findEntry(view.component);
+  // `?bare=1`: the entry straight in the page, no stage, so it sees the window as the game does.
+  if (new URLSearchParams(window.location.search).has('bare')) {
+    return (
+      <PopoverHost onOpenHowTo={() => undefined}>
+        {entry === null ? (
+          <p class="muted">No such component.</p>
+        ) : (
+          <Preview>{entry.render(viewProps(entry, view))}</Preview>
+        )}
+      </PopoverHost>
+    );
+  }
   return (
     <PopoverHost onOpenHowTo={() => undefined}>
       <div class="wb-frame-wrap" ref={wrap}>

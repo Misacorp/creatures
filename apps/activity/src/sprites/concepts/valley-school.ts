@@ -129,15 +129,15 @@ const BELL_DAY = { m: '#e6d8c0', a: '#bfae9e', u: '#c99a58' };
 
 const SCHOOL_BELL: SpriteDef = {
   palette: BELL_PALETTE,
-  rows: ['mmmmaa', 'maaaaa', 'mauuaa', 'mauuaa', 'maaaaa', 'mmmmaa'],
+  rows: ['mmmmmm', 'maaaam', 'mauuam', 'mauuam', 'maaaam', 'mmmmmm'],
 };
 const SCHOOL_BELL_LEFT: SpriteDef = {
   palette: BELL_PALETTE,
-  rows: ['mmmmaa', 'maaaaa', 'mauuaa', 'muuaaa', 'maaaaa', 'mmmmaa'],
+  rows: ['mmmmmm', 'maaaam', 'mauuam', 'muuaam', 'maaaam', 'mmmmmm'],
 };
 const SCHOOL_BELL_RIGHT: SpriteDef = {
   palette: BELL_PALETTE,
-  rows: ['mmmmaa', 'maaaaa', 'mauuaa', 'maauua', 'maaaaa', 'mmmmaa'],
+  rows: ['mmmmmm', 'maaaam', 'mauuam', 'maauum', 'maaaam', 'mmmmmm'],
 };
 
 /**
@@ -169,7 +169,7 @@ const TEACHER_CAP: SpriteDef = {
 const CAP_BAND_ROW = 5;
 
 /** The first row where x 5 to 10 are all filled (the head top), as `wearing()` finds it. */
-function headTop(grid: readonly (readonly string[])[]): number {
+export function headTop(grid: readonly (readonly string[])[]): number {
   for (let y = 0; y <= 6; y++) {
     if ([5, 6, 7, 8, 9, 10].every((x) => (grid[y]?.[x] ?? '.') !== '.')) return y;
   }
@@ -181,7 +181,7 @@ function headTop(grid: readonly (readonly string[])[]): number {
  * row 0, never so low that its band passes row 7), so ears, antlers and the dome stay readable beside the
  * board, and the face (rows 8 to 10, x 3 to 12) is never painted. `flip` hangs the tassel on the left.
  */
-function withCap(creature: SpriteDef, flip = false, low = false): SpriteDef {
+export function withCap(creature: SpriteDef, flip = false, low = false): SpriteDef {
   const grid = expandRows(creature).map((row) => [...row]);
   const top = Math.max(
     0,

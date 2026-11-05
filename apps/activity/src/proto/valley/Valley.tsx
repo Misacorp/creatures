@@ -1,0 +1,643 @@
+/**
+ * The valley prototype, round 2 (the hybrid): the valley and the full-screen places of round 1's direction,
+ * with the party prototype's creature tray as the one thing always on screen along the bottom. Tap a creature:
+ * its card shows over the valley and the places it can go now light up (the others dim, with one word); tap a
+ * lit place and you go in with it. Inside a place the tray holds the creatures that place is about, and the
+ * one main action is pinned at the bottom of the scene. "◀ Valley" is always in the same top-left corner.
+ *
+ * Each step of the tour opens on its moment; playing on from there moves the tour forward with real local state.
+ */
+import { useEffect, useRef, useState } from 'preact/hooks';
+import type { Creature } from '../../api';
+import { CurrencyPile } from '../../CurrencyPile';
+import { creatureName } from '../../game';
+import { SettingsButton } from '../../Hud';
+import { usePrefersReducedMotion } from '../../hooks';
+import { PopoverHost } from '../../PopoverHost';
+import { ElementChip } from '../../sprites/ElementChip';
+import { Drawer } from '../../ui/Drawer';
+import {
+  TOUR,
+  elementOf,
+  claimJob,
+  claimTrip,
+  creatureOf,
+  placeRaid,
+  sendTrip,
+  tripsHome,
+  worldAtStep,
+  type ProtoWorld,
+  type SendTripChoice,
+} from '../world';
+import { ArenaScene } from './ArenaScene';
+import { BonfireScene } from './BonfireScene';
+import { ForgeScene, type ForgeMoment } from './ForgeScene';
+import { HAUL_FRAMES, HaulCaption, HaulOnGround, haulOf } from './Haul';
+import { HouseScene } from './HouseScene';
+import { MarketScene } from './MarketScene';
+import { CreatureSprite, Glyph, isStill } from './parts';
+import { CaveScene, FairScene, PaddockScene } from './PeekScenes';
+import { SchoolScene } from './SchoolScene';
+import { SignpostScene, type SendPicks } from './SignpostScene';
+import { masteryOf, workOf } from './mastery';
+import { Tray } from './Tray';
+import { VisitorScene } from './VisitorScene';
+import { placeStates } from './place-state';
+import { placesFor, trayBadge, trayFor } from './tray-state';
+import { placeOf, type PlaceId } from './valley-art';
+import {
+  bubblesOf,
+  lookOf,
+  lookParams,
+  placeLabel,
+  readingOrder,
+  weekClock,
+  type WeekClock,
+  heldOnEntering,
+} from './valley-logic';
+import { ValleyMap } from './ValleyMap';
+import { ZoomCut } from './ZoomCut';
+import type { Cast, Welcome } from '../welcome/highlights';
+import type { Waiting } from '../welcome/PlaceStories';
+import { storiesAt, unseenMarkers } from '../welcome/place-stories';
+import { WelcomeSheet } from '../welcome/WelcomeSheet';
+import { ComingHome } from '../welcome/ComingHome';
+import { flyMode, flyParam, purseDisplay, type HomeGain, type Point } from '../welcome/coming-home';
+import { markerBubbles, startsClosed } from '../welcome/welcome-world';
+
+/** Where the player is, and the moment a place opens on. */
+export interface View {
+  world: ProtoWorld;
+  scene: 'valley' | PlaceId;
+  /** The valley's view: the start (the middle) or centred on a place. */
+  at: 'start' | PlaceId;
+  /** The place whose button has the focus on coming back. */
+  focus: PlaceId | null;
+  /** A trip's haul open at the signpost. */
+  haul: string | null;
+  /** Just sent: walking off along the east road. */
+  departing: Creature | null;
+  forge: ForgeMoment;
+  houseChoosing: boolean;
+  send: SendPicks;
+  /** The creature picked in the tray. */
+  held: string | null;
+}
+
+/**
+ * A welcome-back popup to show on opening (the "Welcome back" prototype, `proto/welcome/`): the world it
+ * plays in, who and what its stories name, and what to tell. Closing it leaves the valley
+ * with the rest as markers over their places.
+ */
+export interface WelcomeSetup {
+  world: ProtoWorld;
+  cast: Cast;
+  welcome: Welcome;
+  /** The visit's own weekday and time (the visitor's stall is open or shuttered by it); else the world's clock. */
+  clock?: WeekClock;
+  /** The bonfire's place level at this visit (the grand hearth from 2); else 1. */
+  bonfireLevel?: number;
+  /** What the visit brought into the purse: it flies in when the popup closes (V-RET-4a). */
+  home?: readonly HomeGain[];
+}
+
+const NO_SEND: SendPicks = { place: null, supply: null };
+
+function base(world: ProtoWorld): View {
+  return {
+    world,
+    scene: 'valley',
+    at: 'start',
+    focus: null,
+    haul: null,
+    departing: null,
+    forge: null,
+    houseChoosing: false,
+    send: NO_SEND,
+    held: null,
+  };
+}
+
+/** Each step opens on its moment: a fixed world and a fixed view (screenshots never catch a frame between). */
+export function viewAtStep(step: number): View {
+  const world = worldAtStep(step);
+  switch (step) {
+    case 2:
+      return { ...base(world), at: 'signpost', haul: TOUR.claimTripId };
+    case 3:
+      return {
+        ...base(world),
+        scene: 'signpost',
+        send: { place: TOUR.send.destination, supply: TOUR.send.supply },
+        held: TOUR.send.creatureId,
+      };
+    case 4:
+      return { ...base(claimJob(world, TOUR.claimJobId)), scene: 'forge', forge: 'reveal' };
+    case 5: {
+      const [first, second] = TOUR.raidCreatureIds;
+      const placed = first === undefined ? world : placeRaid(world, first);
+      return { ...base(placed), scene: 'arena', held: second ?? null };
+    }
+    case 6:
+      return { ...base(world), scene: 'house', houseChoosing: true };
+    case 7:
+      return { ...base(world), at: 'cave' };
+    default:
+      return base(world);
+  }
+}
+
+export function Valley({
+  step,
+  setStep,
+  welcome,
+}: {
+  step: number;
+  setStep: (n: number) => void;
+  /** Open on a welcome-back popup over the valley; its markers stand in for the world's needs. */
+  welcome?: WelcomeSetup;
+}) {
+  const [view, setView] = useState<View>(() =>
+    welcome === undefined ? viewAtStep(step) : base(welcome.world),
+  );
+  const [welcomeOpen, setWelcomeOpen] = useState(
+    () =>
+      welcome !== undefined &&
+      welcome.welcome.show &&
+      !(typeof window !== 'undefined' && startsClosed(window.location.hash)),
+  );
+  /** The coming-home moment: where the paper was when the popup closed; null when none plays. */
+  const [homing, setHoming] = useState<Point | null>(null);
+  /** The purse bumps while this is true (the numbers just landed). */
+  const [bump, setBump] = useState(false);
+  /** How much Bait of the visit's gain has landed in the purse so far (its count-up; display only). */
+  const [landed, setLanded] = useState(0);
+  const liveStep = useRef(step);
+  const [zoom, setZoom] = useState<PlaceId | null>(null);
+  const pending = useRef<(() => void) | null>(null);
+  const [hatch, setHatch] = useState(false);
+  /** The places whose waiting stories were told and left (a welcome-back marker is gone once its place was seen). */
+  const [seen, setSeen] = useState<PlaceId[]>([]);
+  const reduced = usePrefersReducedMotion();
+  const still = reduced || isStill();
+
+  useEffect(() => {
+    if (liveStep.current === step) return;
+    liveStep.current = step;
+    setView(viewAtStep(step));
+  }, [step]);
+  const progress = (n: number): void => {
+    if (n <= liveStep.current) return;
+    liveStep.current = n;
+    setStep(n);
+  };
+
+  // The haul's frames: the sack opens, then one thing pops out per frame.
+  const [haulFrame, setHaulFrame] = useState(0);
+  useEffect(() => {
+    if (view.haul === null) return undefined;
+    if (still) {
+      setHaulFrame(HAUL_FRAMES);
+      return undefined;
+    }
+    setHaulFrame(0);
+    let frame = 0;
+    const id = window.setInterval(() => {
+      frame += 1;
+      setHaulFrame(frame);
+      if (frame >= HAUL_FRAMES) window.clearInterval(id);
+    }, 140);
+    return () => {
+      window.clearInterval(id);
+    };
+  }, [view.haul, still]);
+
+  const world = view.world;
+  // The valley's light and who is at the stall: day by default (`&night=1` shows night), the visitor by the
+  // visit's weekday (else the world's clock in its timezone), the bonfire by its place level (`&bonfire=2`).
+  const look = lookOf({
+    clock: welcome?.clock ?? weekClock(world.now, world.timezone),
+    bonfireLevel: welcome?.bonfireLevel,
+    params: typeof window === 'undefined' ? {} : lookParams(window.location.hash),
+  });
+  const setWorld = (w: ProtoWorld): void => {
+    setView((v) => ({ ...v, world: w }));
+  };
+  const setHeld = (id: string | null): void => {
+    setView((v) => ({ ...v, held: id }));
+  };
+
+  const enter = (id: PlaceId, withCreature: string | null = null): void => {
+    setHatch(false);
+    if (id === 'signpost' && tripsHome(world).length > 0 && withCreature === null) {
+      const trip = tripsHome(world)[0];
+      setView((v) => ({
+        ...v,
+        scene: 'valley',
+        at: 'signpost',
+        haul: trip?.id ?? null,
+        held: null,
+      }));
+      return;
+    }
+    const go = (): void => {
+      setView((v) => ({
+        ...v,
+        scene: id,
+        haul: null,
+        forge: null,
+        houseChoosing: id === 'house' && withCreature !== null,
+        send: NO_SEND,
+        held: heldOnEntering(id, withCreature),
+      }));
+    };
+    if (still) go();
+    else {
+      pending.current = go;
+      setZoom(id);
+    }
+  };
+
+  const leave = (): void => {
+    const from = view.scene;
+    if (from === 'valley') return;
+    // Leaving a place counts what waited there as seen: nothing needs a tap (F-1).
+    setSeen((list) => (list.includes(from) ? list : [...list, from]));
+    setView((v) => ({ ...v, scene: 'valley', at: from, focus: from, held: null }));
+  };
+
+  const claim = (): void => {
+    if (view.haul === null) return;
+    const after = claimTrip(world, view.haul);
+    setView((v) => ({ ...v, world: { ...after, haul: null }, haul: null, focus: 'signpost' }));
+    progress(3);
+  };
+
+  const send = (choice: SendTripChoice): void => {
+    const after = sendTrip(world, choice);
+    setView((v) => ({
+      ...v,
+      world: after,
+      scene: 'valley',
+      at: 'signpost',
+      focus: 'signpost',
+      held: null,
+      departing: creatureOf(after, choice.creatureId),
+    }));
+    progress(4);
+  };
+
+  // The tray: in the valley a tap holds a creature (its card, the places it can go); in a place it picks.
+  const inValley = view.scene === 'valley';
+  const heldCreature =
+    view.held === null ? undefined : world.creatures.find((c) => c.id === view.held);
+  const lit = inValley && heldCreature !== undefined ? placesFor(world, heldCreature) : null;
+  const onTray = (id: string): void => {
+    if (view.scene === 'house') {
+      const c = world.creatures.find((x) => x.id === id);
+      if (c?.evolution?.available === true) setView((v) => ({ ...v, houseChoosing: true }));
+      return;
+    }
+    setHeld(view.held === id ? null : id);
+  };
+  const onPlace = (id: PlaceId): void => {
+    const pick = lit !== null && lit[id].ok && view.held !== null ? view.held : null;
+    if (
+      pick !== null &&
+      id === 'signpost' &&
+      trayBadge(world, creatureOf(world, pick)).state === 'loot'
+    ) {
+      enter(id);
+      return;
+    }
+    enter(id, pick);
+  };
+
+  const markers = welcome === undefined ? [] : unseenMarkers(welcome.welcome.markers, seen);
+  const waitingAt = (place: PlaceId): Waiting | undefined => {
+    if (welcome === undefined) return undefined;
+    const stories = storiesAt(welcome.welcome.markers, place, seen);
+    return stories.length === 0
+      ? undefined
+      : { stories, cast: welcome.cast, items: welcome.world.items };
+  };
+  const haul = view.haul === null ? null : haulOf(world, view.haul);
+  let body;
+  switch (view.scene) {
+    case 'valley':
+      body = (
+        <>
+          <ValleyMap
+            key={`${view.at}-${String(view.focus)}`}
+            world={world}
+            at={view.at}
+            focus={view.focus}
+            departing={view.departing}
+            bubbles={welcome === undefined ? undefined : markerBubbles(markers)}
+            look={look}
+            onPlace={onPlace}
+            lit={lit}
+            haulOpen={haul !== null}
+            overlay={
+              haul === null
+                ? undefined
+                : (g) => <HaulOnGround things={haul.things} frame={haulFrame} {...g} />
+            }
+          />
+          {haul !== null && view.haul !== null && (
+            <HaulCaption world={world} tripId={view.haul} view={haul.view} onClaim={claim} />
+          )}
+          {haul === null && heldCreature !== undefined && (
+            <CreatureCard
+              creature={heldCreature}
+              world={world}
+              onClose={() => {
+                setHeld(null);
+              }}
+            />
+          )}
+        </>
+      );
+      break;
+    case 'forge':
+      body = (
+        <ForgeScene
+          world={world}
+          setWorld={setWorld}
+          moment={view.forge}
+          held={view.held}
+          setHeld={setHeld}
+          onLeave={leave}
+          onProgress={() => {
+            progress(5);
+          }}
+          waiting={waitingAt('forge')}
+        />
+      );
+      break;
+    case 'arena':
+      body = (
+        <ArenaScene
+          world={world}
+          setWorld={setWorld}
+          held={view.held}
+          setHeld={setHeld}
+          onLeave={leave}
+          onDone={leave}
+          onProgress={() => {
+            progress(6);
+          }}
+          waiting={waitingAt('arena')}
+        />
+      );
+      break;
+    case 'house':
+      body = (
+        <HouseScene
+          key={String(view.houseChoosing)}
+          world={world}
+          setWorld={setWorld}
+          choosing={view.houseChoosing}
+          onLeave={leave}
+          onDone={leave}
+          onProgress={() => {
+            progress(7);
+          }}
+          waiting={waitingAt('house')}
+        />
+      );
+      break;
+    case 'signpost':
+      body = (
+        <SignpostScene
+          world={world}
+          picks={view.send}
+          held={view.held}
+          onSend={send}
+          onLeave={leave}
+          waiting={waitingAt('signpost')}
+        />
+      );
+      break;
+    case 'cave':
+      body = <CaveScene world={world} onLeave={leave} waiting={waitingAt('cave')} />;
+      break;
+    case 'fair':
+      body = <FairScene world={world} onLeave={leave} waiting={waitingAt('fair')} />;
+      break;
+    case 'paddock':
+      body = <PaddockScene world={world} onLeave={leave} waiting={waitingAt('paddock')} />;
+      break;
+    case 'bonfire':
+      body = (
+        <BonfireScene world={world} onLeave={leave} waiting={waitingAt('bonfire')} look={look} />
+      );
+      break;
+    case 'school':
+      body = (
+        <SchoolScene world={world} onLeave={leave} waiting={waitingAt('school')} look={look} />
+      );
+      break;
+    case 'visitor':
+      body = (
+        <VisitorScene world={world} onLeave={leave} waiting={waitingAt('visitor')} look={look} />
+      );
+      break;
+    case 'market':
+      body = (
+        <MarketScene
+          world={world}
+          setWorld={setWorld}
+          held={view.held}
+          setHeld={setHeld}
+          onLeave={leave}
+          waiting={waitingAt('market')}
+          look={look}
+        />
+      );
+      break;
+  }
+
+  // While the coming-home numbers fly the purse counts up to the total (the total was in already).
+  const bait = welcome?.home?.find((g) => g.resource === 'bait')?.amount ?? 0;
+  const counting =
+    homing !== null &&
+    bait > 0 &&
+    flyMode({
+      reduced,
+      still: isStill(),
+      param: flyParam(typeof window === 'undefined' ? '' : window.location.hash),
+    }) !== 'still';
+  const purseBalances = counting
+    ? { ...world.balances, bait: purseDisplay(world.balances.bait, bait, landed) }
+    : world.balances;
+  const bubbles = welcome === undefined ? bubblesOf(world) : markerBubbles(markers);
+  const states = placeStates(world, look);
+  const where = view.scene === 'valley' ? null : placeOf(view.scene);
+  return (
+    <PopoverHost onOpenHowTo={() => undefined}>
+      <div class={`pv pv-at-${view.scene}`}>
+        <div class="pv-main">
+          {body}
+          <div class="pv-hud">
+            {where !== null && (
+              <button
+                type="button"
+                class="pv-back"
+                aria-label={`Back to the valley (leave the ${where.name})`}
+                onClick={leave}
+              >
+                <span class="pv-back-head" aria-hidden="true" />
+                <span class="pix">Valley</span>
+              </button>
+            )}
+            <button
+              type="button"
+              class="pv-hatch"
+              aria-label="Places"
+              title="Places"
+              aria-haspopup="dialog"
+              onClick={() => {
+                setHatch(true);
+              }}
+            >
+              <Glyph id="flag" scale={3} />
+            </button>
+            <div class={`pv-hud-end${bump ? ' pv-bump' : ''}`}>
+              <CurrencyPile balances={purseBalances} loadLedger={() => Promise.resolve([])} />
+              <SettingsButton onSettings={() => undefined} />
+            </div>
+          </div>
+          {zoom !== null && (
+            <ZoomCut
+              place={zoom}
+              look={look}
+              onDone={() => {
+                setZoom(null);
+                pending.current?.();
+                pending.current = null;
+              }}
+            />
+          )}
+        </div>
+        <Tray
+          world={world}
+          creatures={trayFor(world, view.scene)}
+          held={view.held}
+          onPick={onTray}
+          label={where === null ? 'Your creatures' : `Your creatures for the ${where.name}`}
+          mastery={(c) => {
+            const kind = workOf(view.scene);
+            return kind === null ? null : { step: masteryOf(c, kind), kind };
+          }}
+        />
+        {welcome !== undefined && (
+          <WelcomeSheet
+            welcome={welcome.welcome}
+            cast={welcome.cast}
+            items={welcome.world.items}
+            open={welcomeOpen}
+            onClose={(paperAt) => {
+              setWelcomeOpen(false);
+              if ((welcome.home?.length ?? 0) > 0) {
+                setLanded(0);
+                setHoming(paperAt);
+              }
+            }}
+          />
+        )}
+        {welcome !== undefined && homing !== null && (
+          <ComingHome
+            gains={welcome.home ?? []}
+            from={homing}
+            mode={flyMode({
+              reduced,
+              still: isStill(),
+              param: flyParam(typeof window === 'undefined' ? '' : window.location.hash),
+            })}
+            onCount={(resource, counted) => {
+              if (resource === 'bait') setLanded(counted);
+            }}
+            onLand={() => {
+              if (!reduced) setBump(true);
+            }}
+            onDone={() => {
+              setHoming(null);
+              setBump(false);
+            }}
+          />
+        )}
+        <Drawer
+          open={hatch}
+          onClose={() => {
+            setHatch(false);
+          }}
+          title="Places"
+        >
+          <ul class="pv-hatch-list" aria-label="Places">
+            {[
+              ...bubbles.map((b) => b.place),
+              ...readingOrder().filter((id) => !bubbles.some((b) => b.place === id)),
+            ].map((id) => {
+              const bubble = bubbles.find((b) => b.place === id);
+              const place = placeOf(id);
+              return (
+                <li key={id}>
+                  <button
+                    type="button"
+                    class={`pv-hatch-row${bubble === undefined ? '' : ' needs'}`}
+                    aria-label={placeLabel(id, bubble)}
+                    onClick={() => {
+                      if (view.scene !== 'valley') leave();
+                      enter(id);
+                    }}
+                  >
+                    <Glyph id={place.glyph} scale={3} />
+                    <span class="pv-hatch-name pix">{place.name}</span>
+                    <span class="pv-hatch-what">{bubble?.spoken ?? states[id]}</span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </Drawer>
+      </div>
+    </PopoverHost>
+  );
+}
+
+/** A held creature's card, over the valley just above the tray (not a page): who it is and what it is doing. */
+function CreatureCard({
+  creature,
+  world,
+  onClose,
+}: {
+  creature: Creature;
+  world: ProtoWorld;
+  onClose: () => void;
+}) {
+  const badge = trayBadge(world, creature);
+  const where = Object.entries(placesFor(world, creature))
+    .filter(([id, v]) => v.ok && id !== 'paddock')
+    .map(([id]) => placeOf(id as PlaceId).name);
+  return (
+    <section class="pv-card" aria-label={`${creatureName(creature)}'s card`}>
+      <span class="pv-card-sprite">
+        <CreatureSprite creature={creature} scale={4} />
+      </span>
+      <span class="pv-card-text">
+        <span class="pv-card-name pix">
+          {creatureName(creature)} <span class="pv-card-lv">Lv {creature.level}</span>
+        </span>
+        <ElementChip element={elementOf(creature.species)} as="plain" />
+        <span class="pv-card-state">{badge.label.split('. ').slice(1).join('. ')}</span>
+        <span class="pv-card-where">
+          {where.length === 0 ? 'Nowhere to go now.' : `Can go: ${where.join(', ')}.`}
+        </span>
+      </span>
+      <button type="button" class="pv-card-close" aria-label="Put down" onClick={onClose}>
+        <span aria-hidden="true">×</span>
+      </button>
+    </section>
+  );
+}

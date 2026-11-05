@@ -4,7 +4,7 @@
  * plain text (it can contain player names). The server decides every outcome; these helpers only
  * decide what to show and which buttons to offer.
  */
-import { content, RULES, type FinaleAbilityDef } from '@creatures/game';
+import { content, RULES, type FinaleAbilityDef, resourceName } from '@creatures/game';
 import { SLOW_PACE, describeEvent, type EventNames, type FightEvent } from '@creatures/engine';
 import type {
   LiveAbility,
@@ -595,7 +595,7 @@ export function revealSummary(
         ? 'The boss held on. Out of time, it enraged. Not cleared.'
         : 'The boss held on. Not cleared.',
     cleared: reveal.cleared,
-    essence: `You got ${String(reveal.essence)} Essence`,
+    essence: `You got ${String(reveal.essence)} ${resourceName('essence')}`,
     rank,
     festival,
   };

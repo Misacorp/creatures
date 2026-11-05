@@ -55,6 +55,7 @@
 @import './stage/stage.css';
 @import './stage/units.css';
 @import './stage/stage-grid.css';
+@import './components/nameplate.css';
 @import './components/popover.css';
 @import './stage/ability-popover.css';
 @import './stage/abilities.css';
@@ -106,6 +107,7 @@
 @import './views/expeditions/supply-crafting.css';
 @import './views/expeditions/world-map.css';
 @import './components/side-panel.css';
+@import './components/columns.css';
 @import './views/expeditions/world.css';
 @import './components/progress-track.css';
 @import './components/recipe-card.css';
@@ -136,4 +138,7 @@
 @import './views/games-show.css';
 @import './views/games-tab.css';
 @import './views/home.css';
+@import './views/valley.css';
+@import './views/gazette.css';
+@import './views/gazette-home.css';
 @import './views/settings.css';

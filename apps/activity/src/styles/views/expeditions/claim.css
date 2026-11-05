@@ -180,3 +180,32 @@
 .journal-place {
   margin: 0.5rem 0;
 }
+
+/*
+  The Journal on a whole-window desktop (`Journal.tsx`): the places as a list on the left (the progress line and
+  bar above it), the chosen place's pages on the right in a side panel. The list is narrow and the pages take the
+  rest, but a page of text keeps a readable measure.
+*/
+@media (min-width: 60rem) {
+  .journal .journal-layout.wide.with-panel {
+    grid-template-columns: minmax(16rem, 22rem) minmax(0, 1fr);
+  }
+
+  .journal-layout .side-layout-main {
+    display: grid;
+    gap: 0.5rem;
+    align-content: start;
+  }
+
+  .journal-layout .side-panel {
+    max-width: 48rem;
+  }
+
+  .journal-layout .side-panel-title {
+    margin: 0;
+  }
+
+  .journal-panel .side-panel-body {
+    padding-top: 0.5rem;
+  }
+}

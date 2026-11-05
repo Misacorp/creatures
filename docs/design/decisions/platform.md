@@ -18,6 +18,14 @@ ID: `2026-11-03-raid-test-bench-the-staging-raid` · Status: current · Amends: 
 
 **Reasoning.** The weekend tool moved the clock through the weekend and needed several settings in one call; the other tools set parts of the week in ways that no longer matched combat v2. What Misa does is a loop: set up, fight, look, start again. Four tools that are the steps of that loop, in that order, with plain refusals, are easier to use than eight tools with options. Playing a stage through the scheduler's own code (not the clock) keeps the fight the real one, and needs no calendar; the done markers keep the scheduler from playing it again. Clearing must not let the calendar fire a stage by itself, so the clock goes back when it can and the due events are marked when it cannot. What the old tools could do and the bench cannot (jump to a phase, toggle a Festival week, play a v1 week, the practice finale, set the roster to an exact size, guests that replace their fallen between stages and ask for a swap) was weighed against that and left out.
 
+## 2026-11-03: The resource library: one data file names every resource
+
+ID: `2026-11-03-the-resource-library-one-data-file` · Status: current
+
+**Decision.** Every resource a player holds (currencies, materials, shards, supplies, prizes, journal pages) is one entry in `packages/game/src/content/data/resources.json`: stable `id` (the storage key), `kind`, `name`, `plural`, `icon` and its glossary entry. Screens and the worker's player-facing text read names and icons through `resourceName`, `resourceAmount` and `resourceIcon` from `@creatures/game` (`partName` and `partIcon` delegate). The prose in content JSON is not templated: `pnpm resources rename <id> <Name> [<plural>]` updates the entry and rewrites the word in the content text, printing every line it changed, and a test checks every resource's glossary title matches the library. Today's names are unchanged. See `docs/design/resource-library.md`.
+
+**Reasoning.** Misa (valley Q13): Acorns is fine, but there must be a generic source of truth so the name is easy to change later. Names were hard-coded in about 25 UI files and in the glossary; a rename would have been a hunt. Templating prose would make the content files unreadable for little gain, so a script does the one-off rewrite and a test keeps the glossary honest. Ids stay as they are (no migration).
+
 ## 2026-10-30: Prettier's cache, and a cleanup script for agent worktrees
 
 ID: `2026-10-30-prettier-s-cache-and-a-cleanup` · Status: current

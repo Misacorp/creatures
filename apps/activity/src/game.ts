@@ -14,6 +14,7 @@ import {
   quirkText,
   type CreatureSpecies,
   type Rarity,
+  resourceName,
 } from '@creatures/game';
 import { ApiError, type CatchResult, type Creature, type ServerFirst } from './api';
 
@@ -128,12 +129,13 @@ export function evolutionText(
   if (evolution.available) {
     return {
       available: true,
-      label: `Evolve (${String(evolution.essence)} Essence)`,
+      label: `Evolve (${String(evolution.essence)} ${resourceName('essence')})`,
     };
   }
   const needs: string[] = [];
   if (level < evolution.level) needs.push(`level ${String(evolution.level)}`);
-  if (essence < evolution.essence) needs.push(`${String(evolution.essence)} Essence`);
+  if (essence < evolution.essence)
+    needs.push(`${String(evolution.essence)} ${resourceName('essence')}`);
   return {
     available: false,
     label: `Evolve into ${target}: needs ${needs.length === 0 ? 'more progress' : needs.join(' and ')}`,
@@ -183,7 +185,7 @@ export function catchBadgeTags(entry: CatchResult): { text: string; entry: strin
     badges.push({ text: `Fused ★${String(entry.fusionCount ?? 0)}`, entry: 'fusion' });
   }
   if (entry.outcome === 'converted') {
-    badges.push({ text: `+${String(entry.bait ?? 0)} Bait`, entry: 'bait' });
+    badges.push({ text: `+${String(entry.bait ?? 0)} ${resourceName('bait')}`, entry: 'bait' });
   }
   if (entry.shiny) badges.push({ text: 'Shiny!', entry: 'shiny' });
   if (entry.firstOnServer) badges.push({ text: 'First on server!', entry: 'first-on-server' });
@@ -201,7 +203,7 @@ export function isFirstOnServer(creature: Creature, firsts: readonly ServerFirst
 }
 
 const ERROR_TEXT: Record<string, string> = {
-  insufficient_funds: 'Not enough Bait.',
+  insufficient_funds: `Not enough ${resourceName('bait')}.`,
   creature_away: 'That creature is away on an expedition.',
   slots_full: 'All expedition slots are in use.',
   starter_already_chosen: 'You already chose a starter.',
@@ -268,7 +270,7 @@ const ERROR_TEXT: Record<string, string> = {
   item_in_job: 'That item is in a Workshop job. Claim the job first.',
   item_locked:
     'A creature that is away or busy still needs something it wears. Dismantle it when they are back.',
-  insufficient_essence: 'You do not have enough Essence for that.',
+  insufficient_essence: `You do not have enough ${resourceName('essence')} for that.`,
   gear_conversion_pending:
     'Your old gear is still being converted to the new gear. Try again in a little while.',
   blueprint_unknown: 'You have not learned that blueprint.',
@@ -329,7 +331,7 @@ const NICKNAME_REASONS: Record<string, string> = {
  */
 export function errorText(
   err: unknown,
-  currency = 'Bait',
+  currency = resourceName('bait'),
   table?: Readonly<Record<string, string>>,
 ): string {
   if (err instanceof ApiError) {
