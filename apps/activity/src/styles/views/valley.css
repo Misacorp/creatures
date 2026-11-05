@@ -696,10 +696,14 @@ main.card:has(.vy-frame) > .hud {
 }
 
 /* --- A place's scene as a band above today's page (the five places whose work stays) --- */
+/* Its own stacking context, like the map's: the creatures' depth order (`--z`, a bubble's 1000000) stays inside the
+   scene and never rises above the page popover layer (panel review, 2026-11-05: a creature's popover drew under the
+   Paddock's creatures and plates). */
 .vy-scene-box {
   position: absolute;
   inset: 0;
   overflow: hidden;
+  isolation: isolate;
 }
 
 .vy-interior.vy-band {

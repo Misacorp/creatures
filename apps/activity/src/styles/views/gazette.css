@@ -18,6 +18,7 @@
 /* --- A picture: the valley round a place, with creatures on it --- */
 .gz-scene {
   position: relative;
+  isolation: isolate; /* the actors' depth (`--z`) stays inside the picture, under any popover */
   overflow: hidden;
   background: #9cd8fb;
 }

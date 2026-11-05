@@ -189,6 +189,34 @@ const shot = (name) =>
 const waitFor = (locator, state = 'visible') => locator.first().waitFor({ state, timeout: 10000 });
 /** The map's list of place buttons: it has no box of its own (the buttons are placed over the art). */
 const VALLEY = 'ul[aria-label="The valley"]';
+/** The element at the centre of `locator`'s box is the locator's own element (or inside it): nothing is drawn over it. */
+const expectTopmost = async (locator, what) => {
+  const box = await locator.boundingBox();
+  if (box === null) throw new Error(`${what} has no box`);
+  // A grid of points over the box (a plate over the title is near the top, not in the middle).
+  const points = [];
+  for (let i = 0; i < 12; i += 1)
+    for (let j = 0; j < 8; j += 1)
+      points.push({
+        x: box.x + (box.width * (i + 0.5)) / 12,
+        y: box.y + (box.height * (j + 0.5)) / 8,
+      });
+  // Plates and layers that take no touches still draw: let every element be hit while the points are tried.
+  const lift = await page.addStyleTag({ content: '* { pointer-events: auto !important; }' });
+  const hits = await locator.evaluate(
+    (el, ats) =>
+      ats
+        .map((at) => document.elementFromPoint(at.x, at.y))
+        .filter((top) => top === null || !(top === el || el.contains(top)))
+        .map((top) => `${top?.tagName ?? 'nothing'}.${String(top?.className)}`)
+        .filter((v, i, all) => all.indexOf(v) === i),
+    points,
+  );
+  await lift.evaluate((node) => {
+    node.remove();
+  });
+  if (hits.length > 0) throw new Error(`${what} is covered by ${hits.join(' | ')}`);
+};
 const backToValley = async () => {
   await hudBack().click();
   await waitFor(page.locator(VALLEY), 'attached');
@@ -483,6 +511,9 @@ try {
       // A press that hardly moves is a tap.
       await mon.first().click();
       await waitFor(page.getByRole('dialog'));
+      await page.waitForTimeout(300);
+      await shot('paddock-popover');
+      await expectTopmost(page.getByRole('dialog').first(), 'the creature popover (Paddock)');
       await page.keyboard.press('Escape');
       await backToValley();
     },
