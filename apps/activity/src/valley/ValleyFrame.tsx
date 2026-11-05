@@ -11,7 +11,6 @@ import { useRef, useState } from 'preact/hooks';
 import type { Creature } from '../api';
 import type { TabAlerts } from '../tab-alerts';
 import { scrollAndFocus } from '../scroll-to';
-import { DrillHead } from '../ui/DrillHead';
 import { PinnedAct } from './PinnedAct';
 import { PlaceScene, SCENE_ART } from './PlaceScene';
 import { PlaceRow, PlacesList } from './PlacesList';
@@ -26,13 +25,7 @@ import type { TrayInput } from './tray-state';
 import { trayFor, isAtHome } from './tray-state';
 import { placeOf, type PlaceId } from './valley-art';
 import { placeLabel } from './valley-logic';
-import {
-  PAGE_TITLES,
-  isOpenPlace,
-  soonLine,
-  type SoonPlaceId,
-  type ValleyView,
-} from './valley-nav';
+import { soonLine, type SoonPlaceId, type ValleyView } from './valley-nav';
 import type { GlowName } from './valley-places';
 
 /** The sprite of a place that is not open yet. */
@@ -42,6 +35,11 @@ const SOON_ART: Readonly<Record<SoonPlaceId, GlowName>> = {
   visitor: 'visitor',
   market: 'market',
 };
+
+/** The Places button's spoken name: how many places have something waiting ("Places, 2 waiting"). */
+export function placesLabel(waiting: number): string {
+  return waiting === 0 ? 'Places' : `Places, ${String(waiting)} waiting`;
+}
 
 export function ValleyFrame({
   view,
@@ -146,7 +144,7 @@ export function ValleyFrame({
               <button
                 type="button"
                 class="vy-hatch"
-                aria-label="Places"
+                aria-label={placesLabel(bubbles.length)}
                 title="Places"
                 aria-haspopup="dialog"
                 onClick={() => {
@@ -154,6 +152,11 @@ export function ValleyFrame({
                 }}
               >
                 <Glyph id="flag" scale={3} />
+                {bubbles.length > 0 && (
+                  <span class="vy-hatch-count pix" aria-hidden="true">
+                    {bubbles.length}
+                  </span>
+                )}
               </button>
               {away !== null && away !== false && <div class="vy-away hb">{away}</div>}
             </div>
@@ -169,13 +172,6 @@ export function ValleyFrame({
         )}
         {view.kind === 'soon' && (
           <section class="vy-soon" aria-label={placeLabel(view.place)}>
-            <DrillHead
-              title="Not open yet"
-              backLabel={`(leave the ${placeOf(view.place).name})`}
-              word="Valley"
-              onBack={onLeave}
-              focus
-            />
             <SceneFrame
               id={view.place}
               label={placeLabel(view.place)}
@@ -188,15 +184,6 @@ export function ValleyFrame({
         )}
         {view.kind === 'place' && (
           <div class="vy-page">
-            {view.book === null && isOpenPlace(view.place) && (
-              <DrillHead
-                title={PAGE_TITLES[view.place]}
-                backLabel={`(leave the ${placeOf(view.place).name})`}
-                word="Valley"
-                onBack={onLeave}
-                focus
-              />
-            )}
             {cast !== null && (
               <PlaceScene
                 cast={cast}

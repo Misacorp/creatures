@@ -23,6 +23,7 @@ export function HomeBook({
   tripsFinished,
   onBack,
   backLabel = 'to Home',
+  bare = false,
 }: {
   page: BookPage;
   creatures: readonly Creature[];
@@ -31,6 +32,8 @@ export function HomeBook({
   /** Where Back goes; absent for a place opened from the navigation (a place shows no Back). */
   onBack?: (() => void) | undefined;
   backLabel?: string;
+  /** The way back is drawn elsewhere (the valley's HUD): Escape still goes back, but no head is drawn. */
+  bare?: boolean;
 }) {
   const loaded = useLoaded(fetchProfile, [tripsFinished]);
   const profile = loaded.value;
@@ -40,6 +43,7 @@ export function HomeBook({
         profile={profile}
         {...(onBack === undefined ? {} : { onBack })}
         backLabel={backLabel}
+        bare={bare}
       />
     ) : (
       <StatsPage
@@ -47,6 +51,7 @@ export function HomeBook({
         creatures={creatures}
         {...(onBack === undefined ? {} : { onBack })}
         backLabel={backLabel}
+        bare={bare}
       />
     );
   }
@@ -56,7 +61,7 @@ export function HomeBook({
       aria-label={TITLES[page]}
       {...(onBack === undefined ? {} : { onKeyDown: onDrillKey(onBack) })}
     >
-      {onBack !== undefined && (
+      {onBack !== undefined && !bare && (
         <DrillHead title={TITLES[page]} backLabel={backLabel} onBack={onBack} scroll focus />
       )}
       {loaded.failed ? (

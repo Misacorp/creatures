@@ -10,7 +10,7 @@ import { SmallCreature } from '../../SmallCreature';
 import type { CreatureInfo } from '../../creature-info';
 import { At, CreatureSprite, useSize } from '../parts';
 import { paint } from '../paint';
-import { placeOf, valleyDrawing, type PlaceId } from '../valley-art';
+import { TILE, placeOf, valleyDrawing, type PlaceId, type Placement } from '../valley-art';
 import type { CastMember, Scene } from './stories';
 
 const NO_MARGIN = { left: 4, top: 4, right: 4, bottom: 4 };
@@ -31,6 +31,38 @@ function doorOf(place: PlaceId): { x: number; y: number } {
   if (known !== undefined) return known;
   const rect = placeOf(place).rect;
   return { x: rect.x + rect.width / 2, y: rect.y + rect.height };
+}
+
+/** A window onto the valley, in valley pixels. */
+export interface View {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+}
+
+/**
+ * The picture's placements without the objects the window would cut: ground tiles (a whole tile of the grid) may
+ * run past the edge, but a building, tree or sign that crosses it is left out, so no neighbour shows half drawn
+ * (a spear of the Market at the Arena's edge). What stands over the door (the picture's own place) always stays.
+ */
+export function wholeObjects(
+  placements: readonly Placement[],
+  view: View,
+  door: { x: number; y: number },
+): Placement[] {
+  return placements.filter((p) => {
+    const width = p.sprite.rows[0]?.length ?? 0;
+    const height = p.sprite.rows.length;
+    const ground = width === TILE && height === TILE && p.x % TILE === 0 && p.y % TILE === 0;
+    if (ground) return true;
+    const inside =
+      p.x >= view.x0 && p.y >= view.y0 && p.x + width <= view.x1 && p.y + height <= view.y1;
+    const outside =
+      p.x >= view.x1 || p.y >= view.y1 || p.x + width <= view.x0 || p.y + height <= view.y0;
+    const hasDoor = door.x >= p.x && door.x < p.x + width && door.y >= p.y && door.y < p.y + height;
+    return inside || outside || hasDoor;
+  });
 }
 
 /** A creature sprite is this many pixels high. */
@@ -120,7 +152,15 @@ export function SceneCrop({ scene, class: extra }: { scene: Scene; class?: strin
     canvas.height = size.height;
     const ox = cx - (door.x + drawing.ox) * s;
     const oy = cy - (door.y + drawing.oy) * s;
-    paint(ctx, drawing.placements, s, ox, oy);
+    // The window in valley pixels (the drawing's own coordinates), so the objects it would cut can be left out.
+    const view = {
+      x0: -ox / s,
+      y0: -oy / s,
+      x1: (size.width - ox) / s,
+      y1: (size.height - oy) / s,
+    };
+    const at = { x: door.x + drawing.ox, y: door.y + drawing.oy };
+    paint(ctx, wholeObjects(drawing.placements, view, at), s, ox, oy);
   }, [drawing, door.x, door.y, s, size.width, size.height, cx, cy]);
 
   return (

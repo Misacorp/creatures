@@ -4,7 +4,7 @@ import { PopoverHost } from '../../PopoverHost';
 import { SAMPLE_STATE } from '../../creature-card-sample';
 import { sampleGearItem } from '../../workbench/gear-sample';
 import type { AwayWorld } from './stories';
-import { byClass, byName, createPage, type FakeElement, type Page } from '../../test-dom';
+import { byClass, byName, createPage, find, type FakeElement, type Page } from '../../test-dom';
 import { WelcomeBack } from './WelcomeBack';
 
 let page: Page | null = null;
@@ -87,8 +87,9 @@ describe('the welcome-back Gazette in the game', () => {
     const { p } = drawBack({ ...BUSY, tripsWaiting: 2, jobsWaiting: 1 });
     expect(byClass(p.root, 'gz-paper')).toHaveLength(1);
     expect(byClass(p.root, 'gz-dateline')[0]?.textContent).toBe('Wednesday 4 November');
+    // Trips and jobs still wait to be claimed: the line says where, not that everything is home.
     expect(byClass(p.root, 'gz-home-note')[0]?.textContent).toBe(
-      'Everything your creatures found is already home.',
+      'Trips wait at the Signpost, jobs at the Forge.',
     );
     expect(byClass(p.root, 'gz-headline')[0]?.textContent).not.toContain('A NEWCOMER');
     expect(byClass(p.root, 'gz-headline')[0]?.textContent).toMatch(/^[A-Z ]+ CAME FROM THE RAID$/);
@@ -157,6 +158,41 @@ describe('the welcome-back Gazette in the game', () => {
     expect(byClass(p.root, 'gz-fly')[0]?.getAttribute('class')).toContain('still');
     expect(byClass(p.root, 'gz-coin')).toHaveLength(0);
     expect(byClass(p.root, 'part-amount').map((a) => a.textContent)).toEqual(['+57', '+96']);
+  });
+
+  it('under reduced motion the note stays at least 5 seconds, and a tap still ends it', () => {
+    vi.useFakeTimers();
+    const { p } = drawBack(BUSY, { reduced: true });
+    p.click(first(byName(p.root, 'button', /more thing|Into the valley/)));
+    p.update(() => vi.advanceTimersByTime(4900));
+    expect(byClass(p.root, 'gz-fly')).toHaveLength(1);
+    p.update(() => vi.advanceTimersByTime(200));
+    expect(byClass(p.root, 'gz-fly')).toHaveLength(0);
+    const again = drawBack({ ...BUSY, until: 120 }, { reduced: true });
+    again.p.click(first(byName(again.p.root, 'button', /more thing|Into the valley/)));
+    again.p.event(again.p.document.body, 'pointerdown', {});
+    expect(byClass(again.p.root, 'gz-fly')).toHaveLength(0);
+  });
+
+  it.each([false, true])(
+    'a polite status region says the gains in words (reduced motion %s)',
+    (reduced) => {
+      const { p } = drawBack(BUSY, { reduced });
+      const region = find(p.root, (el) => el.getAttribute('role') === 'status')[0];
+      expect(region?.getAttribute('aria-live')).toBe('polite');
+      expect(region?.textContent).toBe('');
+      p.click(first(byName(p.root, 'button', /more thing|Into the valley/)));
+      expect(region?.textContent).toBe('Home: +57 Bait, +96 Essence');
+      // The flying layer itself stays out of the reading order: the region is how the gains are told.
+      expect(byClass(p.root, 'gz-fly')[0]?.getAttribute('aria-hidden')).toBe('true');
+    },
+  );
+
+  it('the note under the date says everything is home only when no trip or job waits', () => {
+    const { p } = drawBack(BUSY);
+    expect(byClass(p.root, 'gz-home-note')[0]?.textContent).toBe(
+      'Everything your creatures found is already home.',
+    );
   });
 
   it('a tap anywhere finishes the moment', () => {

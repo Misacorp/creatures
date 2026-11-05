@@ -321,6 +321,21 @@ main.card:has(.vy-frame) > .hud {
   box-shadow: var(--ring);
 }
 
+/* How many places have something waiting, on the Places button: the same cream tag as an edge chip's. */
+.vy-hatch-count {
+  position: absolute;
+  top: -0.25rem;
+  right: -0.25rem;
+  min-width: 1rem;
+  padding: 0 3px;
+  background: #fbf3df;
+  box-shadow: 0 0 0 var(--px) var(--ink);
+  color: var(--ink);
+  font-size: var(--fs-small);
+  line-height: 1.1;
+  text-align: center;
+}
+
 /* The "While you were away" paper over the map (the welcome-back Gazette replaces it in a later step). */
 .vy-away {
   position: absolute;
@@ -347,32 +362,53 @@ main.card:has(.vy-frame) > .hud {
 }
 
 /* --- Edge chips: a ribbon on the valley's edge for every place out of view --- */
-.vy-edge {
+/* The button is the tap target (44 px at least, in both directions); the drawn flag is the chip inside it. */
+.vy-frame .vy-edge,
+.vy-frame .vy-edge:is(:hover, :active) {
   position: absolute;
   z-index: 20;
-  top: calc(var(--ey) - 0.875rem);
+  top: calc(var(--ey) - 1.375rem);
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  min-height: 1.75rem;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
   max-width: 9rem;
-  padding: 0 5px;
-  background: var(--ink);
+  padding: 0;
+  background: transparent;
   border: 0;
   border-radius: 0;
   box-shadow: none;
+  filter: none;
+  transform: none;
   color: var(--bone);
 }
 
-/* A chip is a flag on a pole, not a raised button: no bevel, a notch on its inner end. */
 .vy-edge-left {
   left: 0;
-  padding-right: 10px;
-  clip-path: polygon(0 0, 100% 0, calc(100% - 6px) 50%, 100% 100%, 0 100%);
+  justify-content: flex-start;
 }
 
 .vy-edge-right {
   right: 0;
+  justify-content: flex-end;
+}
+
+.vy-edge-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  min-height: 1.75rem;
+  padding: 0 5px;
+  background: var(--ink);
+}
+
+/* A chip is a flag on a pole, not a raised button: no bevel, a notch on its inner end. */
+.vy-edge-left .vy-edge-chip {
+  padding-right: 10px;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 6px) 50%, 100% 100%, 0 100%);
+}
+
+.vy-edge-right .vy-edge-chip {
   flex-direction: row-reverse;
   padding-left: 10px;
   clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 6px 50%);
@@ -445,7 +481,7 @@ main.card:has(.vy-frame) > .hud {
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: 72px;
-  grid-template-rows: repeat(2, 80px);
+  grid-template-rows: repeat(2, 84px);
   gap: 2px 4px;
   justify-content: center;
   min-width: min-content;
@@ -453,7 +489,7 @@ main.card:has(.vy-frame) > .hud {
 
 @media (min-width: 900px) {
   .vy-tray-grid {
-    grid-template-rows: 80px;
+    grid-template-rows: 84px;
     grid-auto-columns: 80px;
   }
 }
@@ -496,7 +532,7 @@ main.card:has(.vy-frame) > .hud {
 .vy-mon {
   position: relative;
   display: grid;
-  grid-template-rows: 18px 48px 14px;
+  grid-template-rows: 18px 48px 18px;
   justify-items: center;
   align-items: end;
   width: 100%;
@@ -525,9 +561,7 @@ main.card:has(.vy-frame) > .hud {
 }
 
 .vy-mon-lv {
-  font-size: var(--fs-row);
-  line-height: 14px;
-  color: #fbf3df;
+  line-height: 0;
 }
 
 .vy-mark {
@@ -639,6 +673,10 @@ main.card:has(.vy-frame) > .hud {
   text-align: left;
 }
 
+.vy-row-muted {
+  opacity: 0.6;
+}
+
 .vy-row-name {
   font-size: var(--fs-heading);
 }
@@ -724,6 +762,11 @@ main.card:has(.vy-frame) > .hud {
 .vy-frame .vy-stand-btn:focus-visible {
   outline: none;
   box-shadow: var(--ring);
+}
+
+/* A prop of a scene (a rail, the feed box, the rim) in the creatures' depth order: art, never a tap. */
+.vy-prop {
+  pointer-events: none;
 }
 
 /* A creature a hand can pick up (the paddock's roamers): no page scroll or text selection starts from it. */

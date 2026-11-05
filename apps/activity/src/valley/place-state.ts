@@ -14,7 +14,7 @@ import { explorerName, legEnd, tripCounts, type HomeInput } from '../home-view';
 import { ALERT_TEXT, type TabAlerts } from '../tab-alerts';
 import { TABS, type Tab } from '../tabs';
 import { formatCountdown, formatZoned } from '../time-format';
-import { placeLabel } from './valley-logic';
+import { placeLabel, readingOrder } from './valley-logic';
 import type { PlaceId } from './valley-art';
 import { OPEN_PLACES, PAGE_TITLES, isOpenPlace, viewOf, type OpenPlaceId } from './valley-nav';
 
@@ -189,4 +189,36 @@ export function placeStates(input: PlaceInput): Record<PlaceId, string> {
   for (const id of OPEN_PLACES) out[id] = lines[id] ?? placeFallback(id);
   for (const id of ['bonfire', 'school', 'visitor', 'market'] as const) out[id] = placeFallback(id);
   return out;
+}
+
+/** How long after the finale begins the raid still counts as live (ms): the glance holds the start times only. */
+export const LIVE_WINDOW_MS = 30 * 60 * 1000;
+
+/**
+ * When the week's raid comes, as the Arena band's small label: "live now" while the finale plays, "today" on the
+ * guild's day of the finale, else its weekday ("Saturday"). Nothing once it is over, before the raid view has
+ * loaded, or while the timezone is not known (never a guessed day). No HP: that stays on the raid page.
+ */
+export function raidTiming(
+  raid: HomeInput['raid'],
+  now: number,
+  timezone: string | null,
+): string | null {
+  if (raid === null || timezone === null) return null;
+  const finale = raid.schedule.finale;
+  if (now >= finale) return now < finale + LIVE_WINDOW_MS ? 'live now' : null;
+  const [today] = formatZoned(now, timezone, 'long').split(' ');
+  const [day] = formatZoned(finale, timezone, 'long').split(' ');
+  return day === undefined ? null : day === today ? 'today' : day;
+}
+
+/**
+ * The Places list's order: the places with something waiting first, then the other open places, then the four
+ * not-yet-open places last; each group in the map's reading order.
+ */
+export function listOrder(bubbles: readonly PlaceBubble[]): PlaceId[] {
+  const all = readingOrder();
+  const waiting = all.filter((id) => bubbleAt(bubbles, id) !== undefined);
+  const rest = all.filter((id) => bubbleAt(bubbles, id) === undefined);
+  return [...waiting, ...rest.filter(isOpenPlace), ...rest.filter((id) => !isOpenPlace(id))];
 }

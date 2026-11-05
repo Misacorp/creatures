@@ -88,6 +88,7 @@ h1.hud-title {
 */
 .hud button.howto-open,
 .hud button.hud-gear,
+.hud button.hud-back,
 .hud button.currency-pile {
   position: relative;
   min-height: 2.25rem;
@@ -95,6 +96,7 @@ h1.hud-title {
 
 .hud button.howto-open::after,
 .hud button.hud-gear::after,
+.hud button.hud-back::after,
 .hud button.currency-pile::after {
   position: absolute;
   inset: -0.25rem 0;
@@ -102,15 +104,31 @@ h1.hud-title {
 }
 
 .hud button.howto-open,
-.hud button.hud-gear {
+.hud button.hud-gear,
+.hud button.hud-back {
   min-width: 2.75rem;
   padding: 0;
 }
 
 /* The cog is drawn like the currency pile beside it: the same height, the same dark box, one line round it. */
 .hud button.currency-pile,
-.hud button.hud-gear {
+.hud button.hud-gear,
+.hud button.hud-back {
   height: 2.25rem;
+}
+
+/* The valley's way back, before the place's name: the cog's box with a "‹" in it. The ring shows for the keyboard only (:focus-visible). */
+.hud button.hud-back {
+  flex: none;
+  background: var(--ink);
+  box-shadow: inset 0 0 0 var(--px) var(--line);
+  color: var(--bone);
+  font-size: var(--fs-title);
+  line-height: 1;
+}
+
+.hud button.hud-back:focus:not(:focus-visible) {
+  box-shadow: inset 0 0 0 var(--px) var(--line);
 }
 
 .hud button.hud-gear {

@@ -4,6 +4,14 @@ The valley and peaceful systems overhaul planned in docs/design/valley/: job pos
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-05: Phase 4 panel review: the fixes adopted (2026-11-05)
+
+ID: `2026-11-05-phase-4-panel-review-the-fixes` · Status: current
+
+**Decision.** The panel's adopted rows (`docs/design/valley/reviews/2026-11-05-phase4-shell.md`) are built. The way back from a place, Journal and Stats is a "‹" in the HUD (`Hud`'s `back`) and the row under the HUD goes; scene props (rails, feed box, trough, arena rim, fairground posts) are cut from the art and drawn in the creatures' depth order; a calm line shows only when it adds to the picture; edge chips are 44 px targets; the Places button carries the count of waiting places and the list puts them first and the four not-yet-open ones last, muted; the Gazette's note says what waits where when trips or jobs wait; what flies into the purse is what the paper shows (a story the paper cuts brings no number to the flight); the flight's plates are the size of a place label; the reduced-motion note lasts 5 s or until a tap and the gains go to a polite status region; the tray's level and the arena's timing label ("Saturday", "today", "live now", no HP) use the shared `Nameplate`; Gazette pictures leave out neighbours their window would cut. Row 8's "+15 against 96" was the count-up caught mid-way (step 4 of 10), not a wrong sum; the real gap (a cut story's currency) is what was fixed. Row 17 found every scene already scales by a whole number; a test now holds it. Row 14's ring on the Paddock came from the end-to-end script's own Arrow key before its last shot.
+
+**Reasoning.** Each row came from the panel (owner's proxy, Sanni, Joonas, Aino, Eero) and was adopted by the lead. The "live now" window is 30 minutes after the finale's start because the raid glance holds start times only; the timing label is a client-side guess to a label, never a rule.
+
 ## 2026-11-05: Creatures in the Paddock's scene can be dragged by hand (phase 4, step 5b)
 
 ID: `2026-11-05-creatures-in-the-paddock-s-scene` · Status: current

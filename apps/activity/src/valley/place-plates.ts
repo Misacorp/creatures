@@ -140,6 +140,9 @@ export function standSpots(
   });
 }
 
+/** From this pixel scale up (700 px wide and more) the roamers use the meadow's whole height. */
+const WIDE_SCALE = 4;
+
 /** How the paddock's roamers fare in `scene`: their meadow and how many are drawn. */
 export function roamPlan(
   cast: Pick<Cast, 'roam' | 'roamers' | 'gate'>,
@@ -152,8 +155,14 @@ export function roamPlan(
   const gate = cast.gate[0];
   const right = gate === undefined ? Infinity : art.x + gate.x - CREATURE_PX;
   const limited = { ...bounds, width: Math.max(1, Math.min(bounds.width, right - bounds.x + 1)) };
+  // At wide widths (a scale of 4) the band has room: the creatures roam the meadow down to the foot of the scene.
+  const top = art.y + cast.roam.y;
+  const height =
+    scene.s >= WIDE_SCALE
+      ? Math.max(cast.roam.height, bounds.y + bounds.height - top)
+      : cast.roam.height;
   const { area, fit } = roamMeadow(
-    { ...cast.roam, x: art.x + cast.roam.x, y: art.y + cast.roam.y },
+    { ...cast.roam, x: art.x + cast.roam.x, y: top, height },
     cast.roamers.length,
     limited,
     plateGap(scene.s),

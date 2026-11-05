@@ -120,14 +120,14 @@ async function answer(route) {
 
 // --- The checklist ----------------------------------------------------------------------------------------
 
-/** The seven places that open today's page: the place, its page's title, and the row of the plan's table. */
+/** The seven places that open today's page: the place, its name (the HUD's title), and the row of the plan's table. */
 const OPEN = [
-  ['paddock', 'Creatures', 'Creatures list, filters, creature page; waiting catches'],
-  ['forge', 'Workshop', 'Workshop'],
-  ['signpost', 'Expeditions', 'Expeditions'],
-  ['cave', 'Dungeon', 'Dungeon'],
-  ['arena', 'Raid', 'Raid'],
-  ['fair', 'Valley Games', 'Valley Games'],
+  ['paddock', 'Paddock', 'Creatures list, filters, creature page; waiting catches'],
+  ['forge', 'Forge', 'Workshop'],
+  ['signpost', 'Signpost', 'Expeditions'],
+  ['cave', 'Cave', 'Dungeon'],
+  ['arena', 'Arena', 'Raid'],
+  ['fair', 'Fairground', 'Valley Games'],
   ['house', 'House', 'House (Journal and Stats)'],
 ];
 /** The four places not open yet and what a tap on each says. */
@@ -180,15 +180,17 @@ async function step(name, run) {
 }
 
 const place = (id) => page.locator(`button[data-place="${id}"]`);
-const heading = (text) => page.locator('h3.drill-title', { hasText: text });
+/** The HUD's title (the page's one h1): the place's name, or the book's. */
+const heading = (text) => page.locator('h1.hud-title', { hasText: text });
+/** The valley's way back, in the HUD before the title. */
+const hudBack = () => page.locator('header.hud button.hud-back');
+const shot = (name) =>
+  page.screenshot({ path: join(out, `${name}-${String(width)}${reduced ? '-reduced' : ''}.png`) });
 const waitFor = (locator, state = 'visible') => locator.first().waitFor({ state, timeout: 10000 });
 /** The map's list of place buttons: it has no box of its own (the buttons are placed over the art). */
 const VALLEY = 'ul[aria-label="The valley"]';
 const backToValley = async () => {
-  await page
-    .getByRole('button', { name: /^Valley/ })
-    .first()
-    .click();
+  await hudBack().click();
   await waitFor(page.locator(VALLEY), 'attached');
 };
 
@@ -220,7 +222,30 @@ try {
     if (sent instanceof Error) throw sent;
     await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
     await waitFor(page.locator(VALLEY), 'attached');
+    // The still of the coming-home note (reduced motion: "+N" by the purse, at least five seconds).
+    if (reduced) await shot('gains-note');
   });
+
+  // The coming-home moment is over before the HUD is measured or shot (its plates fly over the purse).
+  await page.locator('.gz-fly').waitFor({ state: 'detached', timeout: 15000 });
+
+  await step('nothing on the map takes focus on load', async () => {
+    const focused = await page.evaluate(() => {
+      const el = document.activeElement;
+      return el === null || el === document.body
+        ? null
+        : (el.getAttribute('aria-label') ?? el.className);
+    });
+    if (focused !== null) throw new Error(`the map took focus on load: ${focused}`);
+  });
+
+  if (reduced) {
+    await step('reduced motion: the gains are said in a polite status region', async () => {
+      const text = await page.locator('[role="status"][aria-live="polite"]').allInnerTexts();
+      if (!text.some((t) => t.startsWith('Home: +') && t.includes('Bait') && t.includes('Essence')))
+        throw new Error(`no gains in the status regions: ${JSON.stringify(text)}`);
+    });
+  }
 
   await step('every button on the map has a spoken name', async () => {
     const nameless = await page.evaluate(() =>
@@ -287,10 +312,44 @@ try {
     },
   );
 
+  await step('the Places button says how many places wait', async () => {
+    const name = await page.locator('button.vy-hatch').getAttribute('aria-label');
+    if (name === null || !/^Places(, \d+ waiting)?$/.test(name)) throw new Error(`name: ${name}`);
+    await shot('map-places-count');
+  });
+
   for (const [id, title, row] of OPEN) {
-    await step(`${row}: ${id} opens today's page ("${title}") and goes back`, async () => {
+    await step(`${row}: ${id} opens today's page (HUD "${title}") and goes back`, async () => {
       await place(id).evaluate((el) => el.click());
       await waitFor(heading(title));
+      if ((await hudBack().getAttribute('aria-label')) !== 'Back to the valley')
+        throw new Error('the HUD has no way back to the valley');
+      if ((await page.locator('.vy-page .drill-head').count()) > 0)
+        throw new Error('a second title row is still inside the place');
+      // Nothing overflows its parent: back, title, purse and cog share one row; the title gives way first.
+      const hud = await page.evaluate(() => {
+        const bar = document.querySelector('header.hud');
+        if (bar === null) return null;
+        const box = bar.getBoundingClientRect();
+        const inside = (sel) => {
+          const el = bar.querySelector(sel);
+          if (el === null) return false;
+          const r = el.getBoundingClientRect();
+          return r.left >= box.left - 0.5 && r.right <= box.right + 0.5 && r.width > 0;
+        };
+        const title = bar.querySelector('h1.hud-title');
+        return {
+          back: inside('.hud-back'),
+          purse: inside('.currency-pile'),
+          cog: inside('.hud-gear'),
+          scrolls: bar.scrollWidth > bar.clientWidth,
+          titleCut: title !== null && title.scrollWidth > title.clientWidth,
+        };
+      });
+      if (hud === null || !hud.back || !hud.purse || !hud.cog || hud.scrolls)
+        throw new Error(`the HUD overflows at ${String(width)} px: ${JSON.stringify(hud)}`);
+      if (id === 'paddock' || id === 'arena') await page.waitForTimeout(400);
+      if (id === 'paddock' || id === 'arena' || id === 'forge') await shot(`place-${id}`);
       // The page loaded from its fixtures: no error line is showing in it.
       await page.waitForTimeout(600);
       const alerts = await page.locator('.vy-page [role="alert"]').allInnerTexts();
@@ -311,10 +370,7 @@ try {
         .first()
         .click();
       await waitFor(heading(title));
-      await page
-        .getByRole('button', { name: /^(Back|House)/ })
-        .first()
-        .click();
+      await page.getByRole('button', { name: 'Back to the House' }).click();
       await waitFor(page.getByRole('button', { name: /^Journal/ }));
       await backToValley();
     }
@@ -328,22 +384,75 @@ try {
     });
   }
 
-  await step('the Places list opens, names all eleven places and opens one', async () => {
-    await page.getByRole('button', { name: 'Places', exact: true }).click();
-    const rows = page.locator('ul[aria-label="Places"] button.vy-row');
-    await waitFor(rows);
-    const n = await rows.count();
-    if (n !== 11) throw new Error(`expected 11 rows, found ${String(n)}`);
-    await rows.filter({ hasText: 'Forge' }).first().click();
-    await waitFor(heading('Workshop'));
+  await step(
+    'the Places list opens, names all eleven places, the new four last, and opens one',
+    async () => {
+      await page.getByRole('button', { name: /^Places/ }).click();
+      const rows = page.locator('ul[aria-label="Places"] button.vy-row');
+      await waitFor(rows);
+      const n = await rows.count();
+      if (n !== 11) throw new Error(`expected 11 rows, found ${String(n)}`);
+      const muted = await rows.evaluateAll((els) =>
+        els.map((el) => el.classList.contains('vy-row-muted')),
+      );
+      if (muted.slice(0, 7).some(Boolean) || muted.slice(7).some((m) => !m))
+        throw new Error(`the four places not open yet are not last and muted: ${muted.join()}`);
+      await shot('places-list');
+      await rows.last().scrollIntoViewIfNeeded();
+      await shot('places-list-end');
+      await rows.filter({ hasText: 'Forge' }).first().click();
+      await waitFor(heading('Forge'));
+      await backToValley();
+    },
+  );
+
+  await step(
+    'a place opened with a tap focuses its back control with no ring; Escape goes back',
+    async () => {
+      await place('cave').click({ force: true });
+      await waitFor(heading('Cave'));
+      const state = await page.evaluate(() => {
+        const el = document.activeElement;
+        return {
+          back: el?.classList.contains('hud-back') === true,
+          ring: el?.matches(':focus-visible') === true,
+        };
+      });
+      if (!state.back) throw new Error('the focus did not move to the HUD back control');
+      if (state.ring) throw new Error('a ring shows on the back control after a tap');
+      await page.keyboard.press('Escape');
+      await waitFor(page.locator(VALLEY), 'attached');
+    },
+  );
+
+  await step('a place opened with the keyboard shows the ring on its back control', async () => {
+    await place('fair').focus();
+    await page.keyboard.press('Enter');
+    await waitFor(heading('Fairground'));
+    const ring = await page.evaluate(
+      () =>
+        document.activeElement?.classList.contains('hud-back') === true &&
+        document.activeElement.matches(':focus-visible'),
+    );
+    if (!ring) throw new Error('no ring on the back control for the keyboard');
     await backToValley();
+  });
+
+  await step('edge chips on a phone are at least 44 px tall and wide', async () => {
+    const small = await page.evaluate(
+      () =>
+        [...document.querySelectorAll('.vy-edge')]
+          .map((el) => el.getBoundingClientRect())
+          .filter((r) => r.width < 43.5 || r.height < 43.5).length,
+    );
+    if (small > 0) throw new Error(`${String(small)} edge chips are under 44 px`);
   });
 
   await step(
     'a creature in the Paddock can be dragged and dropped, and a tap still opens its popover',
     async () => {
       await place('paddock').evaluate((el) => el.click());
-      await waitFor(heading('Creatures'));
+      await waitFor(heading('Paddock'));
       const mon = page.locator('.vy-drag button.vy-stand-btn');
       await waitFor(mon);
       const centre = async () => {
@@ -379,10 +488,11 @@ try {
     },
   );
 
+  // The map as a player sees it (nothing focused), then the keyboard's own walk for the focus shot.
+  await page.screenshot({ path: join(out, `valley-${String(width)}.png`) });
   await place('forge').focus();
   await page.keyboard.press('ArrowLeft');
   await page.screenshot({ path: join(out, `focus-map-${String(width)}.png`) });
-  await page.screenshot({ path: join(out, `valley-${String(width)}.png`) });
   console.log(`\n${String(done)} items passed`);
   if (pageErrors.length > 0) console.log(`page errors: ${pageErrors.join(' | ')}`);
   if (unanswered.size > 0) {

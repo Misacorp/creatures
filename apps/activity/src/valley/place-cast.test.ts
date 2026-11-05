@@ -41,7 +41,8 @@ describe('House', () => {
   it('nobody stands by the house, whoever lounges: the living room is gone from the valley', () => {
     const c = cast('house', busy);
     expect(c.stands).toEqual([]);
-    expect(c.act).toEqual({ kind: 'calm', line: 'Your journal and numbers are inside' });
+    // Journal and Stats are the two rows under the scene: no line that repeats them.
+    expect(c.act).toEqual({ kind: 'calm', line: '' });
   });
 });
 
@@ -89,7 +90,8 @@ describe('Arena', () => {
       ...quiet,
       raid: { ...(quiet.raid ?? { schedule: {} as never }), scene },
     });
-    expect(c.act).toEqual({ kind: 'calm', line: 'Your party is in the arena' });
+    // The party stands in the picture: no line that repeats it.
+    expect(c.act).toEqual({ kind: 'calm', line: '' });
   });
 });
 

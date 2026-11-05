@@ -15,6 +15,7 @@ import { Sprite } from '../sprites/Sprite';
 import { creatureSpriteOrFallback } from '../sprites/creature-sprites';
 import { PACK_ART } from '../sprites/pack-art';
 import { GameIcon } from '../ui/GameIcon';
+import { Nameplate } from '../ui/Nameplate';
 import { UpArrow } from './parts';
 import { trayBadge, type TrayBadge, type TrayInput } from './tray-state';
 
@@ -99,7 +100,9 @@ export function TrayCreature({
           </span>
         )}
       </span>
-      <span class="vy-mon-lv pix">Lv {creature.level}</span>
+      <span class="vy-mon-lv">
+        <Nameplate size="sm" level={creature.level} levelPrefix="Lv" />
+      </span>
     </button>
   );
 }

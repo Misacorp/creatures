@@ -18,10 +18,11 @@ import { Nameplate } from '../ui/Nameplate';
 import { dropPoint, pastThreshold, type Grab } from './creature-drag';
 import { PinnedAct } from './PinnedAct';
 import { SceneFrame, sceneGeometry, type SceneGeometry } from './SceneFrame';
-import { At, CreatureSprite, SpeechBubble, isStill, useTick } from './parts';
+import { At, CreatureSprite, Pic, SpeechBubble, isStill, useTick } from './parts';
 import { CREATURE_PX, type Cast, type CastPlace } from './place-cast';
 import { BAND_ROWS, bandArtBox, bandScale, bandSceneDraw } from './place-scene';
 import { plateGap, roamPlan, standSpots } from './place-plates';
+import { frontProps, propDepth } from './place-props';
 import { useRoamers } from './use-roamers';
 import { depthOf } from './valley-logic';
 import { placeOf, type Rect } from './valley-art';
@@ -276,7 +277,10 @@ export function PlaceScene({ cast, onAct }: { cast: Cast; onAct: () => void }) {
       rows={BAND_ROWS}
       act={
         cast.act.kind === 'calm' ? (
-          <PinnedAct calm={cast.act.line} />
+          // A calm line that would only repeat the picture is empty: then there is nothing under the scene.
+          cast.act.line === '' ? null : (
+            <PinnedAct calm={cast.act.line} />
+          )
         ) : (
           <PinnedAct label={cast.act.label} detail={cast.act.detail} onClick={onAct} />
         )
@@ -292,6 +296,18 @@ export function PlaceScene({ cast, onAct }: { cast: Cast; onAct: () => void }) {
         const roam = roamPlan(cast, laid, scene);
         return (
           <>
+            {/* The place's props (rails, feed box, rim) in the creatures' depth order: by their bottom edge. */}
+            {frontProps(art).map((prop) => (
+              <At
+                key={`${String(prop.x)}-${String(prop.y)}`}
+                x={g.X(laid.x + prop.x)}
+                y={g.Y(laid.y + prop.y)}
+                class="vy-prop"
+                z={propDepth(laid.x, laid.y, prop)}
+              >
+                <Pic sprite={prop.sprite} scale={g.s} />
+              </At>
+            ))}
             {standSpots(cast.stands, laid, scene, gate).map((spot) => (
               <Stander
                 key={spot.stand.creature.id}
@@ -357,6 +373,22 @@ export function PlaceScene({ cast, onAct }: { cast: Cast; onAct: () => void }) {
                     '--ph': `${String(24 * g.s)}px`,
                   })}
                 />
+              </At>
+            )}
+            {cast.timing !== null && (
+              // When the raid comes, under the boss: the shared label, small; no HP (that stays on the raid page).
+              <At
+                x={g.X(box.x + box.width - 6 + 12)}
+                y={g.Y(box.y + box.height - 30 + 24) + 2}
+                class="vy-feet-plate"
+                z={PLATES_Z}
+                hidden={false}
+              >
+                <span role="img" aria-label={`Raid: ${cast.timing}`}>
+                  <Nameplate size="sm" tone={cast.timing === 'live now' ? 'gold' : 'bone'}>
+                    {cast.timing}
+                  </Nameplate>
+                </span>
               </At>
             )}
           </>
