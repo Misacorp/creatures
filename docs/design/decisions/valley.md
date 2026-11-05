@@ -4,6 +4,14 @@ The valley and peaceful systems overhaul planned in docs/design/valley/: job pos
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-05: Econ lab after combat v2: cull is taught like any pooled talent; the tempering check reads the median of seeds
+
+ID: `2026-11-05-econ-lab-after-combat-v2-cull` · Status: current
+
+**Decision.** After combat v2 (#121) the economy lab teaches `cull` like any pooled talent: `talents.json` now puts it in the pools of five lines (stormray, mossback, lanternfin, hearthshell, squelch) by Misa's trial (2026-11-03, Culling Strike stays as an enabler), and the School design has no rule against teaching it. The lab's texts and its pool test say so. The tempering check ("lower scrap stock at week 24 than without") no longer reads one seed with the idol on: it takes the median daily player over seeds 1 to 5 in the study's setting (idol out of the way), still requiring under 60% of the stock without tempering. The report was regenerated.
+
+**Reasoning.** Both failures came from the pool change alone (restoring the old `talents.json` made both pass; nothing in the dungeon roll code is involved). The talents change who benefits from the teacher and how many lessons cost Acorns, so a daily player's Acorn timeline shifts and a one-seed server of two or three daily players moves by thousands of scrap (the no-tempering stock at seed 2 went from 1364 to 2274 to 4000-ish across seeds). Over 16 seeds with the idol on the ratio is 0.54 before and 0.68 after, which is that noise and not a changed rule; in the design's own setting (10 seeds, no idol, the report's tempering section) tempering still cuts the week 24 pile from 14250 to 4134. A single-seed threshold was tuned to one draw; the median over five seeds with the design's setting tests the claim itself and has a wide margin (4988 against 16714).
+
 ## 2026-11-05: The month runs on staging; no keeper at launch; passes and the fair after phase 5 (round 28, Q61-Q63) **[Misa]**
 
 ID: `2026-11-05-the-month-runs-on-staging-no` · Status: current

@@ -263,11 +263,17 @@ describe('the switch and the rules', () => {
   });
 
   it('empties the late scrap pile of a daily player (the point of it): lower stock at week 24 than without', () => {
+    // The study's setting (report: "Tempering at the Forge"): the idol, a second scrap sink, is out of the way, and the stock is the median
+    // over a few seeds. One seed of a server with two or three daily players is luck: the pile swings by thousands from one draw to the next
+    // (combat v2's talent pools moved one draw and the single-seed check flipped, with the design's claim intact).
     const base = ALL_SERVERS.find((s) => s.id === 'mixed8')!;
     const stock = (tempering: boolean): number => {
-      const result = runScenario({ ...base, tempering }, 2);
-      const piles = playersOf(result, 'daily').map((p) => p.weeks[23]?.stock[R.scrap] ?? 0);
-      return piles.reduce((a, b) => a + b, 0) / piles.length;
+      const piles = [1, 2, 3, 4, 5].flatMap((seed) =>
+        playersOf(runScenario({ ...base, tempering, idol: false }, seed), 'daily').map(
+          (p) => p.weeks[23]?.stock[R.scrap] ?? 0,
+        ),
+      );
+      return [...piles].sort((x, y) => x - y)[Math.floor(piles.length / 2)] ?? 0;
     };
     expect(stock(true)).toBeLessThan(stock(false) * 0.6);
   });

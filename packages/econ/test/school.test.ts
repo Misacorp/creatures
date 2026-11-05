@@ -7,6 +7,7 @@ import { activeCounts } from '../src/scouts';
 import { drawTalent, learningPrice, openSlots, startLearning, stepSchool } from '../src/school';
 import { ALL_SERVERS } from '../src/servers';
 import { runServer } from '../src/sim';
+import { combatV2 } from '@creatures/game/combat-v2';
 import { TALENT_IDS, poolOf } from '../src/talents';
 import { R } from '../src/types';
 import { addCreature, createPlayer, createServer, creditShard } from '../src/world';
@@ -84,12 +85,18 @@ const serverOf = (n: number, lines: number[]) => {
 const talentOutside = (line: number) => TALENT_IDS.findIndex((_, t) => !poolOf(line).includes(t));
 
 describe('the visiting teacher (V-SCH-11 to V-SCH-13)', () => {
-  it('has real pools of 7 and never teaches cull', () => {
+  it('has the real pools of 7, cull included where talents.json puts it', () => {
     expect(TALENT_IDS).toHaveLength(34);
     for (let l = 0; l < RULES.scouts.species.start; l++) expect(poolOf(l)).toHaveLength(7);
     const cull = TALENT_IDS.indexOf('cull');
     expect(cull).toBeGreaterThanOrEqual(0);
-    for (let l = 0; l < 40; l++) expect(poolOf(l)).not.toContain(cull);
+    // Every launch line's pool is one of the real pools of talents.json, and cull is in some of them (the owner's trial).
+    const real = Object.values(combatV2.pools).map((ids) =>
+      ids.map((id) => TALENT_IDS.indexOf(id)),
+    );
+    const lines = Array.from({ length: RULES.scouts.species.start }, (_, l) => poolOf(l));
+    for (const pool of lines) expect(real).toContainEqual(pool);
+    expect(lines.some((pool) => pool.includes(cull))).toBe(true);
   });
 
   it('draws a talent that benefits someone, never everyone, preferring several; deterministically', () => {
