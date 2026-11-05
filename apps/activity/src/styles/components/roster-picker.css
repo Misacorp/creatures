@@ -271,8 +271,25 @@
   color: var(--bone);
 }
 
-/* The panel scrolls, not the list inside it. */
+/*
+  The panel scrolls, not the list inside it. In a dropdown the rows sit on the panel itself, one faint line between
+  them, not as boxes with gaps (Misa, 2026-11-05); the picked row keeps the list's gold ring (`roster-option.on`).
+*/
 .drop-panel .roster-list {
   overflow: visible;
-  gap: 0.25rem;
+  gap: 0;
+}
+
+.drop-panel .roster-option {
+  background: none;
+  box-shadow: none;
+}
+
+.drop-panel .roster-option + .roster-option {
+  border-top: var(--px) solid var(--line);
+}
+
+.drop-panel .roster-option.on,
+.drop-panel .roster-option:focus-visible {
+  box-shadow: inset 0 0 0 var(--px) var(--gold);
 }
