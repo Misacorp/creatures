@@ -54,6 +54,7 @@ export function sampleSeat(
     kit: null,
     fit: false,
     second: false,
+    deep: false,
     mastery: { hours: 20, step: 0, bonusBp: 0 },
     store: {
       hours: held,

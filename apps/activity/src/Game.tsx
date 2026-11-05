@@ -3,6 +3,8 @@ import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import {
   buyAnvil,
   buyScoutSeat,
+  closeGazette,
+  setScoutDeep,
   chooseStarter,
   dismissAway,
   dismissLevelReset,
@@ -1029,6 +1031,17 @@ export function Game({
           void run(() => dismissAway(until)).then(showState);
         }}
         onPurse={setPurse}
+        // With the valley's systems on the paper is the server's (`valley.paper`); absent otherwise, today's notice is the source.
+        {...(valleySystems
+          ? {
+              paper: systems?.paper ?? null,
+              onClosePaper: (paperId: string) => {
+                void run(() => closeGazette(paperId)).then(takeValley);
+              },
+              onPushOn: async (seatId: string) =>
+                takeValley(await run(() => setScoutDeep(seatId, true))),
+            }
+          : {})}
       />
     </>
   ) : (

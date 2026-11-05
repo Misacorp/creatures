@@ -10,6 +10,7 @@ import { useState } from 'preact/hooks';
 import { getSpecies, speciesName } from '../../game';
 import { SmallCreature } from '../../SmallCreature';
 import type { CreatureInfo } from '../../creature-info';
+import { ActionButton } from '../../ui/ActionButton';
 import { CountBadgeList } from '../../ui/CountBadge';
 import { FindBlueprint } from '../../ui/FindBlueprint';
 import { FindItem } from '../../ui/FindItem';
@@ -138,15 +139,32 @@ function StoryText({ story, size }: { story: Story; size: 'lead' | 'brief' }) {
   );
 }
 
+/**
+ * The paper's one choice at its end (V-RET-3, the valley's systems on): what happened, what it costs, and one button. Once taken the
+ * button gives way to the line `taken`. Letting the paper close without it lets the choice go.
+ */
+export interface GazetteChoice {
+  text: string;
+  trade: string;
+  label: string;
+  /** Said once the choice was taken (null: not yet). */
+  taken: string | null;
+  busy: boolean;
+  onTake: () => void;
+}
+
 export function Gazette({
   stories,
   date,
   note,
+  choice = null,
 }: {
   stories: readonly Story[];
   date: string;
   /** The line under the date (`homeNote`). */
   note: string;
+  /** The paper's one decision, shown after the stories (absent: none). */
+  choice?: GazetteChoice | null;
 }) {
   const [lead, ...briefs] = stories;
   return (
@@ -171,6 +189,17 @@ export function Gazette({
             </section>
           ))}
         </div>
+      )}
+      {choice !== null && (
+        <section class="gz-choice" aria-label="A choice">
+          <p class="gz-blurb">{choice.taken ?? choice.text}</p>
+          {choice.taken === null && (
+            <>
+              <p class="gz-choice-trade">{choice.trade}</p>
+              <ActionButton label={choice.label} onClick={choice.onTake} disabled={choice.busy} />
+            </>
+          )}
+        </section>
       )}
     </article>
   );
