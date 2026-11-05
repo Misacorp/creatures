@@ -1,6 +1,6 @@
 # Phase 5 plan: the base systems, server-side
 
-Status: **current** (lead, 2026-11-05). Phase 4 passed on 2026-11-05 (Q60) and its polish round is merged. The valley and combat v2 ship together at phase 6 with a **reset**; nothing is migrated (decision `2026-10-31-valley-the-reset-replaces-the-migration`). So phase 5 builds only the final systems: no bridges from today's economy and no throwaway steps (Q57). Questions for Misa: Q61 to Q63 (round 28).
+Status: **current** (lead, 2026-11-05). Phase 4 passed on 2026-11-05 (Q60) and its polish round is merged. The valley and combat v2 ship together at phase 6 with a **reset**; nothing is migrated (decision `2026-10-31-valley-the-reset-replaces-the-migration`). So phase 5 builds only the final systems: no bridges from today's economy and no throwaway steps (Q57). Decided with Misa (round 28): the month runs on his staging server (Q61: A); no keeper at launch (Q62: A); dungeon passes and the fair after phase 5 (Q63: A).
 
 ## The gate
 
@@ -144,7 +144,7 @@ For the lead (technical; recorded in the `valley` decisions as they are settled)
 6. **PRs to main every few steps** with the flag off, so migrations land empty and conflicts stay small.
 7. **Building on "proposed" docs:** build to the rule IDs as decided; a rule that is wrong on staging goes to Misa as a question.
 
-For Misa: Q61 to Q63 in `questions.md` (round 28).
+For Misa: answered in round 28 (Q61 to Q63). He is "eager to get this rework out into the wild. Or at least merged into main": open a PR to main of the branch (flags off in production) when he asks.
 
 ## 5. Gate checklist
 

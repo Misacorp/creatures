@@ -4,6 +4,14 @@ The valley and peaceful systems overhaul planned in docs/design/valley/: job pos
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-05: The month runs on staging; no keeper at launch; passes and the fair after phase 5 (round 28, Q61-Q63) **[Misa]**
+
+ID: `2026-11-05-the-month-runs-on-staging-no` · Status: current
+
+**Decision.** Phase 5's simulated month runs on Misa's staging server with bots as neighbours, his staging progress wiped at its start (Q61: A). No keeper post at launch; the Paddock holds the roster and the gate (Q62: A). Dungeon passes and the Wednesday fair are built after phase 5's gate and before launch, with combat v2's art-led Cave entrance (Q63: A). Misa: "for 61, let's do 'the staging server', that's perfectly fine. For 62, let's just not have a keeper at launch. I'm eager to get this rework out into the wild. Or at least merged into main. ... let's absolutely do it. But after phase five."
+
+**Reasoning.** The gate is about feel as well as numbers, so Misa walks into the month-old valley himself. G-6, base systems first; the lab works without a keeper. The lab's month already assumes the passes, so the comparison holds without them. His wish to get the rework merged sooner supports the plan's PRs to main every few steps with the flags off.
+
 ## 2026-11-05: Polish round: popovers above scenes, View scrolls, the Cave tells the truth, the Journal as list and pages, no ring on return
 
 ID: `2026-11-05-polish-round-popovers-above-scenes-view` · Status: current · Amends: `2026-11-05-phase-4-passes-a-polish-round`

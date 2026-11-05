@@ -6,38 +6,7 @@ Sections: **Waiting on Misa** (asked, not answered), **Queue** (to ask, in order
 
 ## Waiting on Misa
 
-### Q61. Where should the simulated month run?
-
-Status: asked, round 28 (2026-11-05). Touches: phase 5's gate and step 10 (`phase5-plan.md`).
-
-**Why it matters.** Phase 5 ends when bots play a month of the real valley on staging and the numbers match the lab. Where that runs decides whether you can walk into the month-old valley yourself.
-
-- **A. On your staging server.** Seven bots become your neighbours; the clock jumps a month in about an hour; you play along and walk into a month-old valley. Your staging progress is wiped at the start.
-- **B. On a hidden test server.** You get the report and screenshots; your staging game is untouched.
-
-**Lead's pick: A.** The gate is about feel as well as numbers, and you can see the month for yourself.
-
-### Q62. The Paddock's keeper post has no job yet. What happens to it?
-
-Status: asked, round 28 (2026-11-05). Touches: `systems/posts.md` (a keeper at the Paddock), G-6.
-
-**Why it matters.** Every other place has a job for the creatures posted there; the Paddock's keeper has none in the docs or the lab.
-
-- **A. No keeper at launch.** The Paddock holds the roster and the gate; keepers come later as content.
-- **B. Design it now** (for example: new catches arrive a little stronger), which adds a lab round before the commons step.
-
-**Lead's pick: A** (G-6: base systems first; the lab works without it).
-
-### Q63. When do dungeon passes and the Wednesday fair get built?
-
-Status: asked, round 28 (2026-11-05). Touches: Q7 (dungeon passes), Q8 (the weekly fair), the art-led dungeon entrance you asked the combat session for.
-
-**Why it matters.** The lab assumes both, but neither is in phase 5's list of systems; they sit next to combat v2's dungeon work.
-
-- **A. After phase 5's gate, before launch,** together with combat v2's Cave entrance.
-- **B. Inside phase 5,** which pushes the gate back by about two steps.
-
-**Lead's pick: A.** The month's comparison already applies the passes the lab assumes, and the Cave entrance belongs with them.
+Nothing waiting.
 
 ## Queue
 
@@ -989,6 +958,51 @@ Status: answered, round 27 (2026-11-05). Phase 4's gate (`roadmap.md`): "The who
 **Answer (2026-11-05): A, with polish to do.** "I think the game does seem playable from the valley map, so good job there." With five points from staging: the creature popover draws behind the Paddock's creatures and nameplates; "View" should scroll the Creatures page to that creature; the Cave says "The cave is quiet" in the middle of a dungeon run; the Journal on desktop is "quite terrible" (a grid of folded place headings with one opened among them, where a list of headings on one side and the pages on the other would be expected); after Escape back to the map, the House shows a keyboard focus ring: "I said previously that we don't really have to take accessibility into account on this level ... it detracts from the experience." And: "Overall, we do need a lot of UX polish here, and testing out different scenarios."
 
 Became: phase 4's gate passes; phase 5 is next, after a polish round on these points and more scenario tests (mid-run dungeon, raid weekend, a full bag, a new player).
+
+### Q61. Where should the simulated month run?
+
+Status: answered, round 28 (2026-11-05). Touches: phase 5's gate and step 10 (`phase5-plan.md`).
+
+**Why it matters.** Phase 5 ends when bots play a month of the real valley on staging and the numbers match the lab. Where that runs decides whether you can walk into the month-old valley yourself.
+
+- **A. On your staging server.** Seven bots become your neighbours; the clock jumps a month in about an hour; you play along and walk into a month-old valley. Your staging progress is wiped at the start.
+- **B. On a hidden test server.** You get the report and screenshots; your staging game is untouched.
+
+**Lead's pick: A.** The gate is about feel as well as numbers, and you can see the month for yourself.
+
+**Answer (2026-11-05): A.** "for 61, let's do 'the staging server', that's perfectly fine."
+
+Became: the simulated month runs on Misa's staging server with seven bots as neighbours; his staging progress is wiped at the start (step 10).
+
+### Q62. The Paddock's keeper post has no job yet. What happens to it?
+
+Status: answered, round 28 (2026-11-05). Touches: `systems/posts.md` (a keeper at the Paddock), G-6.
+
+**Why it matters.** Every other place has a job for the creatures posted there; the Paddock's keeper has none in the docs or the lab.
+
+- **A. No keeper at launch.** The Paddock holds the roster and the gate; keepers come later as content.
+- **B. Design it now** (for example: new catches arrive a little stronger), which adds a lab round before the commons step.
+
+**Lead's pick: A** (G-6: base systems first; the lab works without it).
+
+**Answer (2026-11-05): A.** "For 62, let's just not have a keeper at launch. I'm eager to get this rework out into the wild. Or at least merged into main."
+
+Became: no keeper at launch; the Paddock holds the roster and the gate; keepers are later content.
+
+### Q63. When do dungeon passes and the Wednesday fair get built?
+
+Status: answered, round 28 (2026-11-05). Touches: Q7 (dungeon passes), Q8 (the weekly fair), the art-led dungeon entrance you asked the combat session for.
+
+**Why it matters.** The lab assumes both, but neither is in phase 5's list of systems; they sit next to combat v2's dungeon work.
+
+- **A. After phase 5's gate, before launch,** together with combat v2's Cave entrance.
+- **B. Inside phase 5,** which pushes the gate back by about two steps.
+
+**Lead's pick: A.** The month's comparison already applies the passes the lab assumes, and the Cave entrance belongs with them.
+
+**Answer (2026-11-05): A.** "let's absolutely do it. But after phase five."
+
+Became: dungeon passes and the Wednesday fair are built after phase 5's gate and before launch, together with combat v2's art-led Cave entrance.
 
 ## Withdrawn
 
