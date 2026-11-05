@@ -4,9 +4,24 @@ The shared combat engine, abilities, statuses, elements, the balance simulator, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-05: [Misa] Combat v2 balance pass: slots 3 and 5 eased, Determination 15% a stack, Night Watch on Hearthshell, the casual miss kept
+
+ID: `2026-11-05-combat-v2-balance-pass-slots-3` · Status: current · Amends: `2026-11-05-combat-v2-phase-5-step-5`
+
+**Decision.** Misa answered the three misses of the gate (2026-11-05).
+
+- **Slow servers getting stuck: option 2.** Only slots 3 and 5 are eased (slot 3 HP 13500 to 13100, Attack 53 to 51; slot 5 HP 6500 to 6400, Attack 155 to 153); slots 9 and 11 keep their numbers. Determination is 15% damage and healing a stack (`RULES.raid.v2.determination.stackBp` 1500; still from slot 6, at most 5 stacks, so at most +75%). The lab reads the game's rule instead of a copy, so they cannot drift. The tuner has a journey pass (`trackJourney.ts`, `--tune --track` with `--journey-only` and `--no-journey`); the committed numbers are option 2's, not the pass's full easing.
+- **The Storm Sovereign's narrow answers: "A is good".** Hearthshell also knows the Knack Night Watch (`forms.json`, `ownKnacks`).
+- **The casual metric: keep the miss.** `casual` stays in `KNOWN_MISSES` (1.41 creatures beyond the top three, target 1.5, no looser target).
+- **The gate's journey reads 320 servers of each kind** (the rest of the report 40; the stuck share on 40 servers was noisy: one track read 18% on one draw and about 30% on another). In the full report the first 40 servers of each cell are the report's own jobs and the gate adds indices 40 to 319 by job id. A full `--gate` run takes about 170 s on 4 cores.
+
+Measured, full `report -- --gate` at 320 servers: 36 of 37 pass. Mixed slow stuck 3% (was 18% on 40 servers), mixed one-weekend kill at slot 11 85% and `live10` 73%, small1 stuck 14%, small2 0%, the Storm Sovereign's top line Sproutle 32% (target 35%), all 207 boss rules met. Parity moved only for slots 3 and 5 and the Determination cases, and gained four Night Watch / Hearthshell sweep cases.
+
+**Reasoning.** Option 2 gets the mixed slow stuck share to about 3% (limit 10%) with the smallest change to the track: slots 9 and 11 stay as they were, so the one-weekend kills at slot 11 do not move (the wide easing of 9 and 11 would have made them easier for everyone). A stronger Determination helps exactly the servers that fail a boss again and again, and nobody else. Night Watch on Hearthshell gives the Storm Sovereign a second answer that is not Sproutle's line without moving anything else. On the casual metric Misa said: "Keep the casual miss (... the dungeon depth picker still gives them meaningful content to play until they're ready for the depth increase)", and then: "The depth picker helps a lot and I wouldn't be too concerned about slower players not having meaningful content or ways to develop creatures, because the valley rework will introduce quite passive EXP and the dungeon depth picker will introduce a way to tackle it with any creature crew." So the number stays honest in the report and the target stays at 1.5.
+
 ## 2026-11-05: Combat v2 phase 5 step 5: the gate report and known misses
 
-ID: `2026-11-05-combat-v2-phase-5-step-5` · Status: current
+ID: `2026-11-05-combat-v2-phase-5-step-5` · Status: current, amended by `2026-11-05-combat-v2-balance-pass-slots-3`
 
 **Decision.** The phase 5 gate is one report section, `pnpm --filter @creatures/lab report -- --gate` (also in the full report): each gate item of `balance.md` section 3 with its measured value, its target (`targets.ts`, each with its source) and pass or miss. It reads the v2 journey (game rules, `HABITS`, Determination on, the dedicated, mixed and builder servers at three speeds, `live10`), the report's best-team and casual searches, and new potential searches on the five raid bosses (scored on damage potential so they do not saturate at a kill). A gate that misses is not a failing test: it is listed in `KNOWN_MISSES` (`gate.ts`) with the measure, the unchanged target and the reason, printed by the section, and one test checks the list names only real items. The step 6 balance pass empties it. Diversity thresholds (4 lines, 3 element sets, 4 Knack families, top line at most 35%) are the lab's proposal, since the roadmap names the gate and no number. The full run (2026-11-05): 34 of 37 items pass; the three misses are the mixed server on slow rosters (18% stuck against 10%), the Storm Sovereign's winning teams (top line 38% against 35%) and the casual metric (1.36 against 1.5).
 

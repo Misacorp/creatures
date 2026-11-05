@@ -78,7 +78,7 @@ export interface KnownMiss {
 export const KNOWN_MISSES: readonly KnownMiss[] = [
   {
     id: 'casual',
-    measured: '1.36 creatures beyond the top three',
+    measured: '1.41 creatures beyond the top three',
     target: 'at least 1.5',
     why: 'Accepted by Misa on 2026-11-05 and kept as a miss, not a looser target: the dungeon depth picker already gives casual players meaningful content until they are ready for more depth, the valley rework brings quite passive EXP, and the picker lets any creature crew take on content. The 128-search mean is good to about plus or minus 0.14.',
   },
@@ -570,7 +570,7 @@ export function gateMarkdown(
         `| ${i.group} | ${cell(i.label)} | ${cell(i.measured)} | ${cell(i.target)} | ${i.pass ? 'pass' : 'MISS'} |`,
     ),
     '',
-    '### Known misses (`KNOWN_MISSES`, cleared by the balance pass)',
+    '### Known misses (`KNOWN_MISSES`: kept on purpose, accepted by Misa)',
     '',
   ];
   if (known.length === 0) md.push('None.');
