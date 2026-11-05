@@ -3,6 +3,7 @@ import { TreatBox } from './TreatBox';
 import type { Creature } from './api';
 import { CreatureConfigurator, type ConfiguratorParts } from './CreatureConfigurator';
 import { DepthPicker } from './DepthPicker';
+import type { PreviewStatusName } from './use-job-preview';
 import { DungeonPrerun } from './DungeonPrerun';
 import { fetchDungeonPreview } from './dungeon-api';
 import { DungeonTeam } from './DungeonTeam';
@@ -122,22 +123,33 @@ export function DungeonSetup({
   // Combat v2: the depth to play, any the player has unlocked (1 to their own, `today.depth`); their own to begin with.
   const own = today.depth;
   const pickDepth = today.rules === 2 && own >= 2;
-  const [pick, setPick] = useState(initialDepth ?? own);
-  const depth = pickDepth ? Math.min(Math.max(1, pick), own) : own;
+  // `null` is "my own depth", whatever it is when the card is used: a card left open while the depth moves on then
+  // starts the new own depth, never a lower run by surprise.
+  const [pick, setPick] = useState<number | null>(initialDepth ?? null);
+  const depth = pickDepth && pick !== null ? Math.min(Math.max(1, pick), own) : own;
   const [preview, setPreview] = useState<DungeonPreview | null>(null);
-  // A depth below their own shows that depth's map and floor boss; the card keeps today's until the answer is in.
+  const [previewStatus, setPreviewStatus] = useState<PreviewStatusName>('idle');
+  // A depth below their own shows that depth's map and floor boss. Until the answer is in (or if it fails) the card
+  // says so under the picker and does not show the own depth's map as if it were the picked depth's.
   useEffect(() => {
     if (!pickDepth || depth >= own) {
       setPreview(null);
+      setPreviewStatus('idle');
       return undefined;
     }
     let live = true;
+    setPreview(null);
+    setPreviewStatus('loading');
     (loadPreview ?? ((d: number) => fetchDungeonPreview(d)))(depth).then(
       (answer) => {
-        if (live) setPreview(answer);
+        if (!live) return;
+        setPreview(answer);
+        setPreviewStatus('ready');
       },
       () => {
-        if (live) setPreview(null);
+        if (!live) return;
+        setPreview(null);
+        setPreviewStatus('failed');
       },
     );
     return () => {
@@ -153,7 +165,10 @@ export function DungeonSetup({
           landmarkBoss: preview.landmarkBoss,
           map: preview.map,
         }
-      : today;
+      : pickDepth && depth < own
+        ? // The picked depth's map is not here yet (or failed): draw no map rather than the own depth's.
+          { ...today, depth, landmark: false, landmarkBoss: null, map: null }
+        : today;
   const [slots, setSlots] = useState<Slots>(() =>
     setupTeam({
       memory: draft,
@@ -257,7 +272,16 @@ export function DungeonSetup({
         </section>
       )}
       <DungeonPrerun today={shownToday} forecast={forecast} progressDepth={own}>
-        {pickDepth && <DepthPicker own={own} picked={depth} onPick={setPick} />}
+        {pickDepth && (
+          <DepthPicker
+            own={own}
+            picked={depth}
+            status={previewStatus}
+            onPick={(picked) => {
+              setPick(picked >= own ? null : picked);
+            }}
+          />
+        )}
         <DungeonTeam
           creatures={pickable}
           slots={slots}
@@ -355,7 +379,8 @@ export function DungeonSetup({
                   // The run deletes the draft on the server, so a save still waiting is not sent.
                   saver.cancel();
                   const going = new Set([...treats].filter((id) => slots.includes(id)));
-                  if (pickDepth) onEnter(slots, going, depth);
+                  // Only a depth below the player's own is asked for; the own depth is the server's say.
+                  if (pickDepth && depth < own) onEnter(slots, going, depth);
                   else onEnter(slots, going);
                 }}
               >

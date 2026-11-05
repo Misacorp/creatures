@@ -6,16 +6,22 @@ import { glyphOrUnknown } from './glyphs';
 import { Sprite } from './sprites/Sprite';
 import { DropChevron } from './ui/DropChevron';
 import { PickSheet } from './ui/PickSheet';
+import { PreviewStatus } from './ui/PreviewStatus';
+import type { PreviewStatusName } from './use-job-preview';
 import { Tag } from './ui/Tag';
 
-/** What a depth is, drawn the same in the trigger and in every row: its name, its marks and what it pays. */
+/**
+ * What a depth is, drawn the same in the trigger and in every row, on one line: its name and mark on the left, the
+ * two chips in a fixed column at the right (so the numbers line up and a jump stands out). The landmark mark is
+ * shown only at the player's own depth, the one place a landmark's extras pay.
+ */
 function DepthFace({ depth, own }: { depth: number; own: number }) {
   const chips = depthScalarChips(depth);
   return (
     <span class="depth-face">
       <span class="depth-line">
         <span class="depth-name">{depthName(depth)}</span>
-        {isLandmark(depth) && (
+        {depth === own && isLandmark(depth) && (
           <span class="depth-landmark">
             <Sprite sprite={glyphOrUnknown('flag')} scale={2} />
             <span class="depth-mark">Landmark</span>
@@ -24,8 +30,8 @@ function DepthFace({ depth, own }: { depth: number; own: number }) {
         {depth === own && <span class="depth-mark depth-own">Your depth</span>}
       </span>
       <span class="depth-chips">
-        <Tag class="xp-times">{chips.xp}</Tag>
-        <Tag class="xp-times">{chips.loot}</Tag>
+        <Tag class="xp-times depth-xp">{chips.xp}</Tag>
+        <Tag class="xp-times depth-loot">{chips.loot}</Tag>
       </span>
     </span>
   );
@@ -97,11 +103,10 @@ function DepthList({
           }}
         >
           <DepthFace depth={depth} own={own} />
-          {depth === picked && (
-            <span class="choice-check" aria-hidden="true">
-              {'✓'}
-            </span>
-          )}
+          {/* Always there, so the chips of every row sit in the same place; seen only on the picked one. */}
+          <span class={depth === picked ? 'choice-check' : 'choice-check blank'} aria-hidden="true">
+            {'✓'}
+          </span>
         </li>
       ))}
     </ul>
@@ -120,12 +125,15 @@ export function DepthPicker({
   own,
   picked,
   onPick,
+  status = 'idle',
 }: {
   /** The player's own depth: the highest one they may pick. */
   own: number;
   /** The depth picked, 1 to `own`. */
   picked: number;
   onPick: (depth: number) => void;
+  /** The preview of a lower depth: loading or failed shows its line under the picker. */
+  status?: PreviewStatusName;
 }) {
   const [open, setOpen] = useState(false);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -152,10 +160,14 @@ export function DepthPicker({
       <p class="muted depth-pick-note" role="status">
         {depthPickNote(own, picked)}
       </p>
+      <PreviewStatus
+        status={status}
+        what="that depth's map"
+        loading="Loading that depth's map..."
+      />
       {open && (
         <PickSheet
           title="Depth to play"
-          status={`Deepest first. You have reached depth ${String(own)}.`}
           class="depth-sheet"
           anchor={() => trigger.current}
           onClose={() => {

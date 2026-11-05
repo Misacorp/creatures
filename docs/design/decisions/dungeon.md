@@ -24,7 +24,7 @@ ID: `2026-11-05-combat-v2-dungeon-xp-about-120` · Status: current · Amends: `2
 
 ## 2026-11-05: Combat v2 dungeon depth picker built: any unlocked depth, progress only at the current depth
 
-ID: `2026-11-05-combat-v2-dungeon-depth-picker-built` · Status: current · Amends: `2026-11-04-a-depth-choice-before-a-run`
+ID: `2026-11-05-combat-v2-dungeon-depth-picker-built` · Status: current, amended by `2026-11-05-dungeon-depth-picker-is-a-dropdown` · Amends: `2026-11-04-a-depth-choice-before-a-run`
 
 **Decision.** The depth picker is built, on combat v2 only (production plays v1 with the flag off and does not change). The pre-run card shows "Depth to play" with the shared flip arrows and the position ("16 / 23"), the scalars of the picked depth ("1.4x XP · 2.1x loot", one decimal, from `dungeonRewardScalars`, which the client calls itself: the numbers ship in the same package as the server's, so there is no field to keep in step) and one line that names the player's own depth and says a lower pick does not take them deeper. The rules:
 

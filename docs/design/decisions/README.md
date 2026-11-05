@@ -290,7 +290,7 @@ Superseded: 1 entry (see the topic file).
 
 - 2026-11-05 \[Misa\] The Undercroft curve stays; the skill tree and gear are the tools past depth 40
 - 2026-11-05 Combat v2 dungeon XP: about 120 a run, a step at each landmark; more gear \[Misa\]
-- 2026-11-05 Combat v2 dungeon depth picker built: any unlocked depth, progress only at the current depth
+- 2026-11-05 Combat v2 dungeon depth picker built: any unlocked depth, progress only at the current depth (amended)
 - 2026-11-04 \[Misa\] Combat v2 dungeon baseline: easier base floors, a steeper Undercroft
 - 2026-11-04 \[Misa\] Combat v2 dungeon rewards and XP grow with depth, the Undercroft alike (amended)
 - 2026-11-04 \[Misa\] A depth choice before a run, with reward scalars (amended)
