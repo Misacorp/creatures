@@ -19,6 +19,7 @@ import {
   gateMarkdown,
   listCheck,
   planGate,
+  GATE_JOURNEY_SERVERS,
   winningTeams,
   type GateInputs,
   type GateSearch,
@@ -29,6 +30,7 @@ import {
   JOURNEY_SERVERS,
   MIXED_KILL_SLOTS,
   journeyOf,
+  journeyServers,
   planJourney,
   type JourneyCellData,
 } from '../src/journey';
@@ -359,9 +361,23 @@ describe('the gate plan', () => {
     }
   });
 
-  it("reads the report's own journey jobs: every game cell of the gate is a job of the full journey", () => {
+  it("reads the report's own journey jobs for its first servers and adds the rest", () => {
     const full = new Set(planJourney({ quick: false }).jobs.map((j) => j.id));
-    for (const j of planJourney(gateJourneyOptions(false)).jobs) expect(full.has(j.id)).toBe(true);
+    const gateJobs = planJourney(gateJourneyOptions(false)).jobs;
+    const shared = gateJobs.filter((j) => full.has(j.id));
+    const extra = gateJobs.filter((j) => !full.has(j.id));
+    expect(shared.length).toBeGreaterThan(0);
+    for (const j of shared)
+      expect((j.args as { index: number }).index).toBeLessThan(journeyServers(false));
+    for (const j of extra)
+      expect((j.args as { index: number }).index).toBeGreaterThanOrEqual(journeyServers(false));
+    expect(gateJobs.length).toBe(shared.length * (GATE_JOURNEY_SERVERS / journeyServers(false)));
+    // In the report the gate's plan carries exactly the extras, none twice.
+    const inReport = planGate({ quick: false, inReport: true }).jobs;
+    const extraIds = new Set(extra.map((j) => j.id));
+    for (const id of extraIds) expect(inReport.some((j) => j.id === id)).toBe(true);
+    expect(inReport.filter((j) => full.has(j.id))).toHaveLength(0);
+    validateJobs([...planJourney({ quick: false }).jobs, ...inReport]);
   });
 });
 
