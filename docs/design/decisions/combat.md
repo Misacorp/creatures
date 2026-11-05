@@ -4,6 +4,14 @@ The shared combat engine, abilities, statuses, elements, the balance simulator, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-05: Lab foe questions test the game's v2 dungeon foes again
+
+ID: `2026-11-05-lab-foe-questions-test-the-game` · Status: current
+
+**Decision.** The lab's foe questions, the classic-line tests and the shipped-map run tests (camp, plan and bench, Undercroft order) test the game's v2 foes again; the stopgap of the old foe numbers (`OLD_PACK`) is gone. A question is asked of the game's foe in a form it has: the Undercroft's numbers, often as an elite (`RULES.dungeon.elite`), at a depth where the team with the tool wins at least 55% of its fights and 25 points more than without it (thresholds unchanged). Run tests ask at depth 64 on the base floors (their HP stops growing at about depth 56) or at depth 20 for the Undercroft's order. Findings, foes that ask nothing in the game: puddle-imp, ash-sprite and bog-toad (the team with and without the tool clears them at every depth to 100, normal or elite, base floors and Undercroft); their three questions stay on the old foe numbers (`OLD_FOES`, with a test that names them) until their cards change. static-bat and flicker-swarm ask only from Undercroft elite depth 50. One threshold changed its claim: "the classic line is under 0.1 by depth 5" is "under 0.35 at depth 64", because the classic line is above 0.1 at every base depth now.
+
+**Reasoning.** Against the easier base every team clears, so tests pinned to the old numbers proved things about foes the game no longer has. The Undercroft and the deep base floors are where the game's foes still separate good play from bad, and they use only numbers the game has (the Undercroft curve, the elite boost), so nothing is invented. A foe that asks nothing is a content finding for the balance pass, not a reason to delete the proof of its question. `OLD_FOES` stays for the report's `old-shipped` scenario.
+
 ## 2026-11-05: Combat v2 phase 5 step 5: the gate report and known misses
 
 ID: `2026-11-05-combat-v2-phase-5-step-5` · Status: current

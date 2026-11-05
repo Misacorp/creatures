@@ -1,17 +1,34 @@
 /**
  * What each dungeon foe asks, as a measured question (Misa, 2026-10-29: every dungeon foe measurably calls for at least one
  * mechanic; panel 5 found 12 of 15 that called for nothing, because the best searched team beats an ordinary foe whatever
- * it carries). A question is a team of three with a tool and the same team without it, at a depth and with a share of the
- * foe's HP and Attack (the stronger form it takes in an elite room or deeper down, where a fight is a close one). The foe
+ * it carries). A question is a team of three with a tool and the same team without it, against the foe at a depth and in a form
+ * the game has: the base floors' numbers or the Undercroft's, as a normal foe or as an elite (`RULES.dungeon.elite`). The foe
  * calls for the tool's mechanic when the team with it wins clearly more fights (`FOE_QUESTION_GAP`). Each foe has one, and
  * the report reads them next to the ablation of the best searched team at the depth where that team wins 30% to 90%.
+ *
+ * Since the dungeon's easier baseline (2026-11-04) a team that carries the tool clears nearly every base-floor foe, and so does the team
+ * without it, so a question is asked where the game's foes are still hard: the Undercroft, often as an elite. Five foes ask little or
+ * nothing before that: puddle-imp, ash-sprite and bog-toad ask nothing at any depth or form the game has (`oldNumbers`: they keep the foe
+ * numbers before the baseline as a stand-in, so the proof of their question is not lost), and static-bat and flicker-swarm ask only from
+ * Undercroft depth 50, as an elite. The findings are in `docs/design/combat/balance.md` section 8 (2026-11-05).
  */
-import { answerLine } from './bossAnswers';
+import { RULES } from '@creatures/game';
+import { answerLine, withoutTool } from './bossAnswers';
 import { gauntletStats } from './dungeon';
-import { OLD_PACK } from './dungeonKnobs';
+import { OLD_FOES, packOf } from './dungeonKnobs';
 import { foeAt } from './foes';
 import type { Pick } from './search';
-import { withoutTool } from './bossAnswers';
+
+/** The form of the foe a question is asked against. */
+export type QuestionProbe =
+  /** The game's foe at the depth: the base floors' or the Undercroft's numbers, as a normal foe or an elite. */
+  | { readonly side: 'base' | 'undercroft'; readonly elite: boolean }
+  /** The foe numbers before 2026-11-04, with HP and Attack scaled (bp of its own): a foe whose question the game's foes no longer ask anywhere. */
+  | { readonly old: true; readonly hpBp: number; readonly atkBp: number };
+
+const UNDER: QuestionProbe = { side: 'undercroft', elite: false };
+const UNDER_ELITE: QuestionProbe = { side: 'undercroft', elite: true };
+const oldNumbers = (hpBp: number, atkBp: number): QuestionProbe => ({ old: true, hpBp, atkBp });
 
 export interface FoeQuestion {
   readonly foe: string;
@@ -19,10 +36,9 @@ export interface FoeQuestion {
   readonly mechanic: string;
   /** The Knacks that are the tool (taken off the team in the "without" run). */
   readonly tool: readonly string[];
+  /** The foe's depth: for the Undercroft, the depth its foes are built at (the run's depth plus the level). */
   readonly depth: number;
-  /** The foe's HP and Attack in bp of its own at that depth (10000 is the foe as it stands). */
-  readonly hpBp: number;
-  readonly atkBp: number;
+  readonly probe: QuestionProbe;
   /** The team with the tool (rows of three, a row of the dungeon). */
   readonly team: string;
   /** The team without it, when taking the Knack off is not what the question is about (a Guard at all: a third hitter instead). */
@@ -42,8 +58,7 @@ export const FOE_QUESTIONS: Readonly<Record<string, FoeQuestion>> = Object.fromE
         'family:Reach',
         ['wide-reach'],
         5,
-        20_000,
-        16_000,
+        oldNumbers(20_000, 16_000),
         'tidewing/steady-mark thornbuck/wide-reach tempestray/detonate',
         'tidewing/steady-mark pyrelynx/none tempestray/detonate',
       ],
@@ -52,9 +67,8 @@ export const FOE_QUESTIONS: Readonly<Record<string, FoeQuestion>> = Object.fromE
         'drift-wisp',
         'family:Silence Guard',
         ['lantern-glow'],
-        4,
-        10_000,
-        10_000,
+        25,
+        UNDER,
         'tidewing/steady-mark lanternfin/lantern-glow tempestray/detonate',
       ],
       // Marks are shed after every boss turn: a Guard that marks as it takes a hit marks after the shedding.
@@ -62,9 +76,8 @@ export const FOE_QUESTIONS: Readonly<Record<string, FoeQuestion>> = Object.fromE
         'ember-mite',
         'family:Guard Prime',
         ['primed-by-pain'],
-        5,
-        10_000,
-        13_000,
+        10,
+        UNDER_ELITE,
         'tidewing/none thornbuck/primed-by-pain pyrelynx/none',
       ],
       // A long fight of heat: a Guard that builds Heat doubles the Payoff's reaction every few rounds.
@@ -73,8 +86,7 @@ export const FOE_QUESTIONS: Readonly<Record<string, FoeQuestion>> = Object.fromE
         'family:Store',
         ['baked-shell'],
         5,
-        29_000,
-        13_000,
+        oldNumbers(29_000, 13_000),
         'tidewing/none kilnmole/baked-shell tempestray/none',
       ],
       // Its hide Blocks small hits: Sense Weakness gets the Payoff's plain hits past it.
@@ -82,9 +94,8 @@ export const FOE_QUESTIONS: Readonly<Record<string, FoeQuestion>> = Object.fromE
         'bramble-hound',
         'family:Pierce',
         ['tunnel-through'],
-        4,
-        10_000,
-        10_000,
+        20,
+        UNDER,
         'tidewing/steady-mark magmole/tunnel-through tempestray/detonate',
       ],
       // A Guard beside the Payoff takes the aimed grab; with a third hitter instead, it lands on the strongest.
@@ -92,9 +103,8 @@ export const FOE_QUESTIONS: Readonly<Record<string, FoeQuestion>> = Object.fromE
         'moss-lurker',
         'family:Reach',
         ['wide-reach'],
-        5,
-        10_000,
-        10_000,
+        24,
+        UNDER,
         'tidewing/steady-mark tempestray/detonate thornbuck/wide-reach',
         'tidewing/steady-mark tempestray/detonate pyrelynx/none',
       ],
@@ -103,9 +113,8 @@ export const FOE_QUESTIONS: Readonly<Record<string, FoeQuestion>> = Object.fromE
         'static-bat',
         'family:Evasion',
         ['zoom'],
-        5,
-        25_000,
-        10_000,
+        53,
+        UNDER_ELITE,
         'voltaro/zoom thornbuck/none tempestray/none',
       ],
       // Sparks everywhere: a row ward cuts every area hit.
@@ -113,9 +122,8 @@ export const FOE_QUESTIONS: Readonly<Record<string, FoeQuestion>> = Object.fromE
         'flicker-swarm',
         'family:Row Ward',
         ['keep-the-heat-in'],
-        5,
-        20_000,
-        13_000,
+        54,
+        UNDER_ELITE,
         'tidewing/steady-mark kilnmole/keep-the-heat-in tempestray/detonate',
       ],
       // It washes every debuff off every third round: a Mired that comes back every round holds it down.
@@ -124,8 +132,7 @@ export const FOE_QUESTIONS: Readonly<Record<string, FoeQuestion>> = Object.fromE
         'family:Debuff',
         ['squelch-song'],
         5,
-        15_000,
-        13_000,
+        oldNumbers(15_000, 13_000),
         'tidewing/none croakmire/squelch-song tempestray/none',
       ],
       // Black, thick and draining: healing is halved and little gets through its armour, so a boost that reaches the far hitter too
@@ -134,9 +141,8 @@ export const FOE_QUESTIONS: Readonly<Record<string, FoeQuestion>> = Object.fromE
         'tar-leech',
         'family:Support shape',
         ['wide-warmth'],
-        7,
-        14_000,
-        10_000,
+        26,
+        UNDER_ELITE,
         'croakmire/wide-warmth tidewing/steady-mark tempestray/detonate',
       ],
       // The gates open on the whole line: Take It All takes the sweeps.
@@ -144,9 +150,8 @@ export const FOE_QUESTIONS: Readonly<Record<string, FoeQuestion>> = Object.fromE
         'drowned-warden',
         'family:Intercept',
         ['catch-the-bolts'],
-        7,
-        10_000,
-        13_000,
+        30,
+        UNDER_ELITE,
         'tidewing/none ohmouse/catch-the-bolts tempestray/none',
       ],
       // Its shell thickens with every reaction: a Mired that comes back every round holds the Molten Shell down.
@@ -154,9 +159,8 @@ export const FOE_QUESTIONS: Readonly<Record<string, FoeQuestion>> = Object.fromE
         'slag-tyrant',
         'family:Debuff',
         ['squelch-song'],
-        7,
-        8_000,
-        10_000,
+        30,
+        UNDER,
         'tidewing/steady-mark croakmire/squelch-song tempestray/detonate',
       ],
       // She silences the ends: a Guard that marks as it takes a hit does the Setter's work.
@@ -164,9 +168,8 @@ export const FOE_QUESTIONS: Readonly<Record<string, FoeQuestion>> = Object.fromE
         'bramble-matron',
         'family:Guard Prime',
         ['primed-by-pain'],
-        7,
-        8_000,
-        10_000,
+        12,
+        UNDER_ELITE,
         'tidewing/none thornbuck/primed-by-pain pyrelynx/none',
       ],
       // A race against a charge that builds: Heat doubles the reactions.
@@ -174,9 +177,8 @@ export const FOE_QUESTIONS: Readonly<Record<string, FoeQuestion>> = Object.fromE
         'coil-baron',
         'family:Store',
         ['baked-shell'],
-        7,
-        10_000,
-        10_000,
+        10,
+        UNDER_ELITE,
         'tidewing/none kilnmole/baked-shell tempestray/none',
       ],
       // A heavy sweep announced at round start: Night Watch takes the first Wind-up hit of each boss turn.
@@ -184,14 +186,13 @@ export const FOE_QUESTIONS: Readonly<Record<string, FoeQuestion>> = Object.fromE
         'fen-lurker',
         'family:Intercept',
         ['night-watch'],
-        7,
-        9_000,
-        10_000,
+        35,
+        UNDER,
         'tidewing/none thornbuck/night-watch tempestray/none',
       ],
     ] as const
   ).map(
-    ([foe, mechanic, tool, depth, hpBp, atkBp, team, ...rest]) =>
+    ([foe, mechanic, tool, depth, probe, team, ...rest]) =>
       [
         foe,
         {
@@ -199,8 +200,7 @@ export const FOE_QUESTIONS: Readonly<Record<string, FoeQuestion>> = Object.fromE
           mechanic,
           tool,
           depth,
-          hpBp,
-          atkBp,
+          probe,
           team,
           ...(rest[0] ? { without: rest[0] } : {}),
         } satisfies FoeQuestion,
@@ -216,17 +216,33 @@ export interface FoeQuestionResult {
   readonly gap: number;
 }
 
-/**
- * The foe at the question's depth with its HP and Attack scaled: from the numbers before the dungeon's baseline of 2026-11-04 (`OLD_PACK`),
- * which the questions were tuned on (a foe's question only shows when the fight is hard enough).
- */
+/** The foe a question is asked against: the game's foe at the depth (an elite with the elite's boost), or the old numbers for a foe that asks nothing now. */
 export function questionFoe(q: FoeQuestion) {
-  const base = foeAt(q.foe, q.depth, {}, OLD_PACK);
+  const p = q.probe;
+  if ('old' in p) {
+    const base = foeAt(q.foe, q.depth, {}, packOf(OLD_FOES.base, 'base'));
+    return {
+      ...base,
+      hp: Math.max(1, Math.round((base.hp * p.hpBp) / 10_000)),
+      atk: Math.max(1, Math.round((base.atk * p.atkBp) / 10_000)),
+    };
+  }
+  const base = foeAt(q.foe, q.depth, {}, packOf(undefined, p.side));
+  if (!p.elite) return base;
+  const e = RULES.dungeon.elite;
   return {
     ...base,
-    hp: Math.max(1, Math.round((base.hp * q.hpBp) / 10_000)),
-    atk: Math.max(1, Math.round((base.atk * q.atkBp) / 10_000)),
+    hp: Math.max(1, Math.floor((base.hp * e.hpBp) / 10_000)),
+    atk: Math.max(1, Math.floor((base.atk * e.atkBp) / 10_000)),
   };
+}
+
+/** A question's foe in words, for the report: its depth and the form it takes. */
+export function probeText(q: FoeQuestion): string {
+  const p = q.probe;
+  if ('old' in p)
+    return `depth ${q.depth}, numbers before 2026-11-04 at ${p.hpBp / 100}% HP and ${p.atkBp / 100}% Attack (the game's foe asks nothing)`;
+  return `${p.side === 'undercroft' ? 'Undercroft' : 'base floor'} ${p.elite ? 'elite' : 'foe'} at depth ${q.depth}`;
 }
 
 /** `fights` seeded fights of the team with its tool and without it, on the same seeds. */
