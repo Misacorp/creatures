@@ -60,7 +60,8 @@ Misa: "I don't want my points necessarily addressed immediately. Let's do it whe
 2. **Nameplates and levels always shown** for each creature in the valley's scenes. Misa: "Show the nameplate below the creature and the level on the left of the nameplate in a yellow color. You might want to use an inky background for the nameplate." So: a nameplate under the creature's feet on an ink background, the level first in yellow, then the name.
 3. **"View" in a creature's popover:** goes to its creature page (a side panel on desktop). Applies everywhere the popover opens.
 4. **The House:** "The living room was supposed to be dropped" (Q16: the lounge mechanic goes). Lead's call: the House stops showing today's living room and lounger now (no intermediate step, Q57); in phase 4 it holds Journal and Stats; its later purpose is the player's own home (housing and decorations, parked under "Later" in `roadmap.md`), and in phase 5 the bonfire takes over resting. Misa: "eventually I want player homes to have a space on the map. Each player gets their own house and it can be decorated. These can be rendered toward the south of the map, for example." (Recorded in `systems/later.md`.)
-5. **Cropped trees in the valley art** (a screenshot of trees cut off at their edges): a drawing-order or tile-edge bug in the map's art, for the art pass with step 5; checked against the art session's sprites.
+5. **The Signpost's art** (asked of the art session, 2026-11-05): the lowest sign, pointing right, gets its black outline where it crosses the road; the road is shorter and heads more to the right. Merged from `claude/valley-art` when it comes.
+6. **Cropped trees in the valley art** (a screenshot of trees cut off at their edges): a drawing-order or tile-edge bug in the map's art, for the art pass with step 5; checked against the art session's sprites.
 
 ## Decided with Misa (round 25)
 
