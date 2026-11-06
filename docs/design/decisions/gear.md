@@ -4,6 +4,14 @@ Gear items, lines and sets, crafting, dismantling, conversions, the bag and the 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-06: [Misa] Gear and cards: Lingering and three lines retired, weak lines buffed, Shake It Off and Wither accepted
+
+ID: `2026-11-06-gear-and-cards-lingering-and-three` · Status: current
+
+**Decision.** Misa answered the phase 5 questions (2026-11-06). Shake It Off stays a one-answer card ("do not lean on a debuff"). Wither's second answer is placement: its card says "A Guard in the middle holds." and the lab measures a Guard in the middle beside Draw Fire. The Lingering line and Lantern Night's three-piece effect are retired: the line leaves the item data, sets may have no three-piece effect, and the two signature talents that used Lingering now give Mend 3% (Watcher Above, Aurorix) and Cover 9% (Fire That Lasts, Hearthshell). Warm Heart, Second Breath and Opening Mark are removed from the item data; an owned item that held a removed line gets a fresh random line of its own pool at the next server start (the existing start-up normalisation, no migration; one pass per deploy, live randomness, no duplicate and no second special line). Payback, Echo, Overflow, Slipstream and Shared Warmth are buffed (Payback x6, Echo x4, Overflow x8, Slipstream x6, Shared Warmth x8; the once-per-turn limits stay), and Guard's Shadow keeps no armour price at x0.6. The v1 engine still reads the three removed effects so stored fights and replays stay exact; nothing can set them any more.
+
+**Reasoning.** Content changes are not held back by what players already own, and a removed modifier is replaced by a fresh roll. The power table at week 12 (lab `report -- --gear`) gave +1.3 to +1.5 points of boss HP for Overflow, Shared Warmth, Echo and Slipstream (all were 0.3 or less), +1.1 for Guard's Shadow (was -3.0) and +0.3 for Payback, which fires only when a creature takes a hit for a neighbour, so even x25 reaches +0.5 and a bigger number is not the fix. The leaders are unchanged (Unbothered +10.8, Wide Stance +9.4, Stubborn +6.6). Removing the engine's v1 reads would change how stored fights replay, so they stay. The v1 sim's tiny-size headline numbers moved with the smaller line pools (dice, recorded in `packages/sim/test/run.test.ts`).
+
 ## 2026-11-06: Combat v2 gear slice 4: triggers, auras and three-piece sets
 
 ID: `2026-11-06-combat-v2-gear-slice-4-triggers` · Status: current
