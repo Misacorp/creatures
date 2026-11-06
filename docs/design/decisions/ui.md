@@ -4,6 +4,14 @@ Navigation and the frame, Home and the notice board, type scale, shared componen
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-06: [Misa] One pan hint, the same on every sideways-scrolling map; a popover never opens after a drag
+
+ID: `2026-11-06-one-pan-hint-the-same-on` · Status: current
+
+**Decision.** Misa (2026-11-06): "add a hint and make it a single one that is uniform on all scrolling maps." `ui/PanHint` is that hint: a stepped fade and a small gold arrow at each edge with more to see, shown only while the box really pans, gone for the rest of the session once the player scrolls that map (memory in the page, no storage). It is on the Expeditions world map, the valley map (beside its edge chips) and the living room; `pan-hint-guard.test.ts` fails on a panning map without it. Second ask the same day: "make sure a popover doesn't open after a drag, only a click." `ui/drag-click-guard.ts` swallows the one click that follows any drag (`useDragDrop`, the Paddock's creature drag, `useDragScroll`), wherever it lands. On popover width Misa said to narrow it only if that needs no extra rules: the shared 17rem (`min(17rem, 100% - 8px)`) was left as it is, because a narrower fixed width would be a new number that every creature, item and tag popover has to fit.
+
+**Reasoning.** Each map had its own cue or none (the valley's edge chips name places out of view; the world map and the room had nothing), so a phone player could not tell they pan. One shared component keeps the cue the same and quiet. A click guard in one shared place covers every draggable, including ones whose element is drawn again at the drop, where a per-component flag is lost.
+
 ## 2026-11-06: Closing a drawer or popover gives the focus back only to a keyboard user
 
 ID: `2026-11-06-closing-a-drawer-or-popover-gives` · Status: current

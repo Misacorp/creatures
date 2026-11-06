@@ -50,6 +50,7 @@ import { WeatherCalendar } from './WeatherCalendar';
 import { RoomTrophy } from './games/RoomTrophy';
 import type { BoardRow } from './games-types';
 import type { Forecast } from './weather-types';
+import { PanHint } from './ui/PanHint';
 
 const scenes = new Map<RoomPhase, RoomScene>();
 
@@ -529,6 +530,7 @@ export function LivingRoom({
           )}
         </div>
       </div>
+      <PanHint target={viewRef} id="living-room" />
       {!picks && <p class="room-count pix">{residents.length} here</p>}
       {picks && (
         <p class="room-pick pix">

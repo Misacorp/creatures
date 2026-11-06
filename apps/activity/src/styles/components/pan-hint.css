@@ -1,0 +1,109 @@
+/*
+  The pan hint (ui/PanHint.tsx): the one cue that a map pans sideways. A layer laid over the scrolling box
+  (its place comes from the box's offsets, written as --ph-* by the component) that takes no taps. Each edge
+  with more to see gets a fade in four hard steps, as pixel art draws a gradient, and a small gold stepped
+  arrow (the arrowhead of the valley's edge chips) halfway down. It is never focusable, so it has no ring.
+  Under reduced motion the arrow holds still.
+*/
+.pan-hint {
+  --pan-hint-bg: rgb(5 8 24 / 0.55);
+  position: absolute;
+  z-index: 15;
+  top: var(--ph-top, 0);
+  left: var(--ph-left, 0);
+  width: var(--ph-width, 100%);
+  height: var(--ph-height, 100%);
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.pan-hint.off {
+  display: none;
+}
+
+.pan-hint-edge {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 24px;
+}
+
+.pan-hint-left {
+  left: 0;
+  background: linear-gradient(
+    to right,
+    var(--pan-hint-bg) 0 6px,
+    rgb(5 8 24 / 0.35) 6px 12px,
+    rgb(5 8 24 / 0.18) 12px 18px,
+    rgb(5 8 24 / 0.07) 18px 24px
+  );
+}
+
+.pan-hint-right {
+  right: 0;
+  background: linear-gradient(
+    to left,
+    var(--pan-hint-bg) 0 6px,
+    rgb(5 8 24 / 0.35) 6px 12px,
+    rgb(5 8 24 / 0.18) 12px 18px,
+    rgb(5 8 24 / 0.07) 18px 24px
+  );
+}
+
+.pan-hint-edge::after {
+  content: '';
+  position: absolute;
+  top: calc(50% - 8px);
+  width: 8px;
+  height: 16px;
+  background: var(--gold, #f2c14e);
+  clip-path: polygon(
+    0 0,
+    25% 0,
+    25% 12.5%,
+    50% 12.5%,
+    50% 25%,
+    75% 25%,
+    75% 37.5%,
+    100% 37.5%,
+    100% 62.5%,
+    75% 62.5%,
+    75% 75%,
+    50% 75%,
+    50% 87.5%,
+    25% 87.5%,
+    25% 100%,
+    0 100%
+  );
+}
+
+.pan-hint-left::after {
+  left: 4px;
+  transform: scaleX(-1);
+}
+
+.pan-hint-right::after {
+  right: 4px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pan-hint-left::after {
+    animation: pan-hint-nudge-left 1.2s steps(2) infinite;
+  }
+
+  .pan-hint-right::after {
+    animation: pan-hint-nudge-right 1.2s steps(2) infinite;
+  }
+}
+
+@keyframes pan-hint-nudge-left {
+  50% {
+    transform: translateX(-3px) scaleX(-1);
+  }
+}
+
+@keyframes pan-hint-nudge-right {
+  50% {
+    transform: translateX(3px);
+  }
+}
