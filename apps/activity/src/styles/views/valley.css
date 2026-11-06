@@ -164,7 +164,8 @@ main.card:has(.vy-frame) > .hud {
 .vy-scroller {
   position: absolute;
   inset: 0;
-  overflow: hidden;
+  /* Clipped, not just hidden: a hidden box still scrolls when a place's button takes the focus, which on a window that fits the map slid it sideways and showed a bare strip at the other edge. */
+  overflow: clip;
   scrollbar-width: none;
 }
 

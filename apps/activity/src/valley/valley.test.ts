@@ -7,7 +7,18 @@ import { placeScale, skyColumns, SKY_WIDTH } from './place-scene';
 import { sceneGeometry } from './SceneFrame';
 import { sceneScale } from './scale';
 import { isAtHome, trayBadge, trayFor, type TrayInput } from './tray-state';
-import { PLACES, PLACE_IDS, TILE, VALLEY_SIZE, placeOf } from './valley-art';
+import { tileFrame } from '../games/art/tiles';
+import {
+  PLACES,
+  PLACE_IDS,
+  TILE,
+  VALLEY_COLS,
+  VALLEY_ROWS,
+  VALLEY_SIZE,
+  featureGrid,
+  placeOf,
+  valleyDrawing,
+} from './valley-art';
 import {
   PAGE_TITLES,
   PLACE_TAB,
@@ -92,6 +103,23 @@ describe('where today’s pages live', () => {
 });
 
 describe('the map', () => {
+  it('lets every road that leaves the valley reach the edge of the drawing', () => {
+    const grid = featureGrid();
+    const dirt = (c: number, r: number): boolean => grid[r]?.[c]?.tile === 'dirt';
+    // The two roads from the west reach the valley's east edge; the road out of the south reaches its bottom.
+    expect(dirt(VALLEY_COLS - 1, 9)).toBe(true);
+    expect(dirt(VALLEY_COLS - 1, 18)).toBe(true);
+    expect(dirt(26, VALLEY_ROWS - 1)).toBe(true);
+    // In a margin they go on: the drawing at a wide window has dirt in the last column of rows 9 and 18.
+    const wide = valleyDrawing({ left: 5, top: 0, right: 5, bottom: 2 });
+    const lastCol = (VALLEY_COLS + 9) * TILE;
+    const roadAt = (x: number, y: number): boolean =>
+      wide.placements.some((p) => p.x === x && p.y === y && p.sprite === tileFrame('dirt'));
+    expect(roadAt(lastCol - TILE, 9 * TILE)).toBe(true);
+    expect(roadAt(lastCol - TILE, 18 * TILE)).toBe(true);
+    expect(roadAt((5 + 26) * TILE, (VALLEY_ROWS + 1) * TILE)).toBe(true);
+  });
+
   it('has a rectangle for every place, inside the valley', () => {
     expect(PLACES).toHaveLength(11);
     for (const p of PLACES) {

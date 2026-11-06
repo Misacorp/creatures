@@ -183,7 +183,7 @@ export function featureGrid(): Cell[][] {
     fill(c, 2, 1, 1, { tile: c % 2 === 0 ? 'hillsA' : 'hillsB' });
   // Roads.
   const dirt: Cell = { tile: 'dirt' };
-  fill(3, 9, 32, 1, dirt);
+  fill(3, 9, 33, 1, dirt);
   fill(3, 7, 1, 2, dirt);
   fill(15, 8, 1, 1, dirt);
   fill(10, 10, 1, 8, dirt);
@@ -270,6 +270,15 @@ export interface ValleyDrawing {
 }
 
 /**
+ * Roads that leave the valley go on through the margin to the window's edge, never ending in the grass: the two
+ * roads that cross it from the west go on east (the high road and the road out), the road south goes on south.
+ */
+function marginRoad(col: number, row: number): boolean {
+  if (col >= VALLEY_COLS && (row === 9 || row === 18)) return true;
+  return row >= VALLEY_ROWS && col === 26;
+}
+
+/**
  * The valley with `margin` extra tiles on each side (left, top, right, bottom) of sky, hills and grass, so a
  * window wider or taller than the valley shows more of the world, not a dark bar. `frame` is the water's frame.
  */
@@ -297,8 +306,7 @@ export function valleyDrawing(
         if (cell !== null) out.push({ sprite: cellSprite(cell, frame), x, y });
       } else if (row === 2) {
         out.push({ sprite: tileFrame(col % 2 === 0 ? 'hillsA' : 'hillsB'), x, y });
-      } else if (row === 18 && col >= VALLEY_COLS) {
-        // The road out keeps going east.
+      } else if (marginRoad(col, row)) {
         out.push({ sprite: tileFrame('dirt'), x, y });
       }
     }
@@ -309,7 +317,7 @@ export function valleyDrawing(
       const col = c - margin.left;
       const row = r - margin.top;
       if (col >= 0 && col < VALLEY_COLS && row >= 0 && row < VALLEY_ROWS) continue;
-      if (row === 18 && col >= VALLEY_COLS) continue;
+      if (marginRoad(col, row)) continue;
       const decor = marginDecor(col, row);
       if (decor !== null) out.push({ ...decor, x: decor.x + ox, y: decor.y + oy });
     }
