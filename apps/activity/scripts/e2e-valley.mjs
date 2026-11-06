@@ -1446,6 +1446,8 @@ try {
         const paper = page.locator('article[aria-label="The Valley Gazette"]');
         await waitFor(paper);
         await waitFor(page.locator('h3.gz-headline'));
+        // The sheet slides up and the paper unfolds: measure once it is still.
+        await page.waitForTimeout(800);
         const tag = kind.replace(' ', '-');
         await expectTopmost(page.locator('.gz-masthead').first(), 'the masthead');
         await expectTopmost(page.locator('h3.gz-headline').first(), 'the headline');
