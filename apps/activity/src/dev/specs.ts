@@ -100,6 +100,16 @@ export const RESET_ACCOUNT_SPEC: ToolSpec = {
   hint: 'Deletes all your data on this server (creatures, gear, trips, raid).',
 };
 
+/**
+ * The roster preset tool. Its form is its own component (`RosterPresets.tsx`: the player list comes from the server and the
+ * confirmation word is the picked player's name), so this spec only names the tool and the label of its status line.
+ */
+export const ROSTER_PRESET_SPEC: ToolSpec = {
+  tool: 'apply-roster-preset',
+  label: 'Roster preset',
+  fields: [],
+};
+
 const CREATURES_SPECS: readonly ToolSpec[] = [
   {
     tool: 'grant-creature',
@@ -352,6 +362,7 @@ export const ALL_SPECS: readonly ToolSpec[] = [
   ...CLOCK_SPECS,
   ...GOODS_SPECS,
   RESET_ACCOUNT_SPEC,
+  ROSTER_PRESET_SPEC,
   ...SECTIONS.flatMap((s) => s.specs),
 ];
 

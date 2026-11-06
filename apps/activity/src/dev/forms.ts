@@ -43,6 +43,7 @@ export const DEV_TOOL_IDS = [
   'raid-play',
   'combat-v2-convert',
   'reset-raids-dungeons',
+  'apply-roster-preset',
   'reset-account',
 ] as const;
 export type DevToolId = (typeof DEV_TOOL_IDS)[number];

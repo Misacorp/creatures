@@ -31,6 +31,7 @@ const ERROR_SENTENCES: Readonly<Record<string, string>> = {
   play_stage1_first: 'Play stage 1 first.',
   play_stage2_first: 'Play stage 2 first.',
   boss_fell: 'The boss already fell.',
+  confirm_mismatch: 'The name you typed is not the one picked. Nothing was changed.',
   festival: 'This is a Festival week, with no raid. Clear the board first.',
 };
 
@@ -137,6 +138,95 @@ export function eventLine(event: DevEvent): string {
   return `${time} ${event.kind}${props}`;
 }
 
+/** A player of the guild the roster presets can be given to, with what they own now. */
+export interface PresetPlayer {
+  userId: string;
+  name: string;
+  creatures: number;
+  items: number;
+}
+
+/** A roster preset in numbers (the server's `presetSummary`), for the picker. */
+export interface PresetInfo {
+  id: string;
+  name: string;
+  creatures: number;
+  minLevel: number;
+  maxLevel: number;
+  items: number;
+}
+
+/** What the preset picker lists: the guild's players and the presets. */
+export interface PresetChoices {
+  players: PresetPlayer[];
+  presets: PresetInfo[];
+}
+
+export function parsePresetChoices(data: unknown): PresetChoices | null {
+  if (!isRecord(data) || !Array.isArray(data['players']) || !Array.isArray(data['presets'])) {
+    return null;
+  }
+  const players: PresetPlayer[] = [];
+  for (const p of data['players'] as unknown[]) {
+    if (
+      !isRecord(p) ||
+      typeof p['userId'] !== 'string' ||
+      typeof p['name'] !== 'string' ||
+      !isNum(p['creatures']) ||
+      !isNum(p['items'])
+    ) {
+      return null;
+    }
+    players.push({
+      userId: p['userId'],
+      name: p['name'],
+      creatures: p['creatures'],
+      items: p['items'],
+    });
+  }
+  const presets: PresetInfo[] = [];
+  for (const p of data['presets'] as unknown[]) {
+    if (
+      !isRecord(p) ||
+      typeof p['id'] !== 'string' ||
+      typeof p['name'] !== 'string' ||
+      !isNum(p['creatures']) ||
+      !isNum(p['minLevel']) ||
+      !isNum(p['maxLevel']) ||
+      !isNum(p['items'])
+    ) {
+      return null;
+    }
+    presets.push({
+      id: p['id'],
+      name: p['name'],
+      creatures: p['creatures'],
+      minLevel: p['minLevel'],
+      maxLevel: p['maxLevel'],
+      items: p['items'],
+    });
+  }
+  return { players, presets };
+}
+
+/** The guild's players and the presets, or null when the call failed. */
+export async function fetchPresetChoices(): Promise<PresetChoices | null> {
+  try {
+    return parsePresetChoices(await apiFetch('/api/dev/players'));
+  } catch {
+    return null;
+  }
+}
+
+/** What a preset gives, in one line: "18 creatures, level 11 to 25, 22 items". */
+export function presetLine(p: PresetInfo): string {
+  const levels =
+    p.minLevel === p.maxLevel
+      ? `level ${String(p.maxLevel)}`
+      : `level ${String(p.minLevel)} to ${String(p.maxLevel)}`;
+  return `${String(p.creatures)} creatures, ${levels}, ${String(p.items)} items`;
+}
+
 const RESULT_LIMIT = 300;
 
 /** The fight a Play button opens: the stage's week, party and the name the replay route takes. */
@@ -192,6 +282,13 @@ export function describeBench(tool: DevToolId, result: unknown): string | null {
       const name = stage === 3 ? 'The finale' : `Stage ${String(stage)}`;
       if (result['live'] === true) return `${name} started live.`;
       return `${name} played.${result['bossFell'] === true ? ' The boss fell.' : ''}`;
+    }
+    case 'apply-roster-preset': {
+      const players = num(result, 'players');
+      const creatures = num(result, 'creatures');
+      const items = num(result, 'items');
+      if (players === null || creatures === null || items === null) return null;
+      return `Given to ${String(players)} ${players === 1 ? 'player' : 'players'}: ${String(creatures)} creatures and ${String(items)} items in all.`;
     }
     default:
       return null;

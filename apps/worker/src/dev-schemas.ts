@@ -1,13 +1,15 @@
 /**
  * Request bodies of the dev tools (`/api/dev/*`, staging only: see `dev-tools.ts` and
  * `docs/design/dev-tools.md`). Every body is a strict object: unknown keys are rejected, ids are
- * picklists of the shipped content, and every number has a range. Nothing here takes a user id: the
- * tools always act on the session's player and guild.
+ * picklists of the shipped content, and every number has a range. The tools act on the session's player and
+ * guild; the one exception is `apply-roster-preset`, which may name another player of the same guild (checked
+ * against the guild's players, and confirmed by typing their name).
  */
 import { RULES, dungeonContent, expeditionContent, weatherContent } from '@creatures/game';
 import { combatV2 } from '@creatures/game/combat-v2';
 import * as v from 'valibot';
 import { IdSchema } from './collection-schemas';
+import { PRESET_IDS } from './dev-presets';
 import { BASE_IDS, DESTINATION_IDS, GOAL_IDS, SPECIES_IDS, SUPPLY_IDS } from './content-ids';
 
 /** The most one clock call may move the clock: 30 days. */
@@ -52,12 +54,13 @@ export const DEV_ACTION_TOOLS = [
   'combat-v2-convert',
   'reset-raids-dungeons',
   'valley-fresh',
+  'apply-roster-preset',
   'reset-account',
 ] as const;
 export type DevActionTool = (typeof DEV_ACTION_TOOLS)[number];
 
 /** Read-only tools (GET). Not logged. */
-export const DEV_READ_TOOLS = ['state', 'events'] as const;
+export const DEV_READ_TOOLS = ['state', 'events', 'players'] as const;
 
 const int = (min: number, max: number) =>
   v.pipe(v.number(), v.integer(), v.minValue(min), v.maxValue(max));
@@ -276,6 +279,26 @@ export const GamesBotsBodySchema = v.strictObject({ count: v.optional(int(1, MAX
 export const GamesRunNowBodySchema = v.strictObject({
   showInSeconds: v.optional(int(5, 120)),
 });
+
+// --- Roster presets ---
+
+/**
+ * Replace one player's creatures and gear bag with a preset, or every player's. The only dev tool that names a player
+ * other than the caller: the id must be one of the guild's players (checked in the tool), and `confirm` must be what the
+ * panel makes the manager type: the player's name, or `everyone`.
+ */
+export const ApplyRosterPresetBodySchema = v.union([
+  v.strictObject({
+    preset: v.picklist(PRESET_IDS),
+    userId: v.pipe(v.string(), v.minLength(1), v.maxLength(64)),
+    confirm: v.pipe(v.string(), v.maxLength(200)),
+  }),
+  v.strictObject({
+    preset: v.picklist(PRESET_IDS),
+    everyone: v.literal(true),
+    confirm: v.pipe(v.string(), v.maxLength(200)),
+  }),
+]);
 
 // --- The account ---
 

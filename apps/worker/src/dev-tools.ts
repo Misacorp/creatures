@@ -27,6 +27,7 @@ import * as v from 'valibot';
 import type { Analytics } from './analytics';
 import { DevError, purgeUser, type ToolCtx } from './dev-context';
 import {
+  ApplyRosterPresetBodySchema,
   ClockBodySchema,
   DEV_ACTION_TOOLS,
   DEV_READ_TOOLS,
@@ -61,6 +62,7 @@ import {
 import { devKey, type DevState } from './dev-state';
 import { clockState, clockTool } from './dev-tools-clock';
 import { combatV2Convert } from './dev-tools-combat-v2';
+import { applyRosterPreset, playersView } from './dev-tools-presets';
 import { valleyFresh } from './dev-tools-valley';
 import { setWeather } from './dev-tools-weather';
 import { gamesBots, gamesReset, gamesRunNow } from './dev-tools-games';
@@ -232,6 +234,8 @@ const TOOLS: Record<DevActionTool, Tool> = {
   }),
   // Staging with the valley systems on only (404 otherwise): wipes every player's progress in the guild for a day-0 valley; re-arms the alarm (the dev clock goes back to real time).
   'valley-fresh': tool(NoBodySchema, valleyFresh, { movesClock: true }),
+  // Staging with COMBAT_V2 on only: replaces one player's (or everyone's) creatures and gear bag with a preset (`dev-presets.ts`).
+  'apply-roster-preset': tool(ApplyRosterPresetBodySchema, applyRosterPreset),
   'reset-account': tool(ResetAccountBodySchema, (ctx) => {
     purgeUser(ctx.sql, ctx.userId, true);
     ctx.state.clearUser(ctx.userId);
@@ -339,6 +343,11 @@ export class DevTools {
     };
   }
 
+  /** The guild's players and the roster presets: what the panel's preset picker lists. */
+  players(userId: string) {
+    return playersView(this.ctx(userId));
+  }
+
   /** The last 50 analytics events of this guild: kind, time and props. Never an actor. */
   events() {
     const rows = this.deps.storage.sql
@@ -412,6 +421,7 @@ export const devRoutes: Routes<DevRouteContext> = {
       const toolId = params['tool'];
       if (dev === null || toolId === undefined || !READ_IDS.has(toolId)) return notFound();
       if (!(await mayUseDevTools(core, user.id))) return notFound();
+      if (toolId === 'players') return json(dev.players(user.id));
       return json(toolId === 'state' ? dev.state(user.id) : dev.events());
     },
     POST: async (request, { user, params, core }) => {
