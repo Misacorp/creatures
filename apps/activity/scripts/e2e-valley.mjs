@@ -526,11 +526,33 @@ const COMMONS_BOARDS = {
   paddock: ['resident:1', 'resident:2', 'resident:3', 'resident:4', 'everyday'],
   school: ['page:1', 'page:2', 'page:3', 'page:4', 'everyday'],
 };
-/** The units each part of a project of `size` needs: the shares 0.4, 0.4 and 0.2 over the parts' values 1, 0.5 and 2 (the Market's: 0.5 and 0.5, no shards). */
+/**
+ * The units each part of a project of `size` needs: the shares 0.4, 0.4 and 0.2 over the parts' values 1, 0.5 and 2. The Market's
+ * (V-COM-15): 0.5 and 0.5 of Acorns and scrap, and shards of any element, one value each (`MARKET_SHARD`), may fill the whole of it.
+ */
+const MARKET_SHARD = 0.25;
 const needsOf = (size, id = '') =>
   id === 'market'
-    ? { acorns: size * 0.5, scrap: size, shards: 0 }
+    ? { acorns: size * 0.5, scrap: size, shards: size / MARKET_SHARD }
     : { acorns: size * 0.4, scrap: size * 0.8, shards: size * 0.1 };
+const valueOfPart = (part, id) =>
+  part === 'shards' && id === 'market' ? MARKET_SHARD : PART_VALUE[part];
+/** How much of a project is filled, in Acorns' worth (the Market's never past its size). */
+const filledOf = (p, id) => {
+  const need = needsOf(p.size, id);
+  const sum = ['acorns', 'scrap', 'shards'].reduce(
+    (total, part) => total + Math.min(p.have[part], need[part]) * valueOfPart(part, id),
+    0,
+  );
+  return id === 'market' ? Math.min(p.size, sum) : sum;
+};
+/** The units a part still takes (the Market's no more than what the project still lacks). */
+const roomOfPart = (p, id, part) => {
+  const own = Math.max(0, needsOf(p.size, id)[part] - p.have[part]);
+  return id === 'market'
+    ? Math.min(own, Math.max(0, p.size - filledOf(p, id)) / valueOfPart(part, id))
+    : own;
+};
 const PART_VALUE = { acorns: 1, scrap: 0.5, shards: 2 };
 const placeOf = (id) => ({
   level: 1,
@@ -587,13 +609,7 @@ const commonsBlock = () => ({
   places: COMMONS_PLACES.map((id) => {
     const p = placeOf(id);
     const open = p.state === 'open';
-    const need = needsOf(p.size, id);
-    const progress = open
-      ? ['acorns', 'scrap', 'shards'].reduce(
-          (sum, part) => sum + Math.min(p.have[part], need[part]) * PART_VALUE[part],
-          0,
-        )
-      : 0;
+    const progress = open ? filledOf(p, id) : 0;
     return {
       id,
       level: p.level,
@@ -605,11 +621,12 @@ const commonsBlock = () => ({
             size: p.size,
             progress,
             needs: {
-              acorns: Math.max(0, need.acorns - p.have.acorns),
-              scrap: Math.max(0, need.scrap - p.have.scrap),
-              shards: Math.max(0, need.shards - p.have.shards),
+              acorns: roomOfPart(p, id, 'acorns'),
+              scrap: roomOfPart(p, id, 'scrap'),
+              shards: roomOfPart(p, id, 'shards'),
             },
             shardElement: COMMONS_ELEMENT[id],
+            anyShard: id === 'market' ? MARKET_SHARD : null,
             cosmetic: false,
           }
         : null,
@@ -653,13 +670,17 @@ ROUTES.set('/api/valley/gift', (request) => {
   const p = placeOf(body.place);
   const need = needsOf(p.size, body.place);
   const part = body.currency;
-  const own = body.element === COMMONS_ELEMENT[body.place];
+  // The Market counts shards of every element in full (V-COM-15); other places count only their own so.
+  const own = body.place === 'market' || body.element === COMMONS_ELEMENT[body.place];
   const units = part === 'shards' && !own ? Math.floor(body.amount / 3) : body.amount;
-  const room = Math.max(0, Math.ceil(need[part] - p.have[part] - 1e-9));
+  const room = Math.max(0, Math.ceil(roomOfPart(p, body.place, part) - 1e-9));
   const taken = Math.min(units, room);
   const spent = part === 'shards' && !own ? taken * 3 : taken;
   const have = { ...p.have, [part]: p.have[part] + taken };
-  const done = ['acorns', 'scrap', 'shards'].every((k) => have[k] >= need[k] - 1e-9);
+  const done =
+    body.place === 'market'
+      ? filledOf({ ...p, have }, 'market') >= p.size - 1e-9
+      : ['acorns', 'scrap', 'shards'].every((k) => have[k] >= need[k] - 1e-9);
   commonsState.places[body.place] = done
     ? {
         ...p,
@@ -671,12 +692,12 @@ ROUTES.set('/api/valley/gift', (request) => {
         keepsakes: p.keepsakes + 1,
         given: 0,
       }
-    : { ...p, have, given: p.given + taken * PART_VALUE[part] };
+    : { ...p, have, given: p.given + taken * valueOfPart(part, body.place) };
   return {
     place: body.place,
     currency: part,
     spent,
-    value: taken * PART_VALUE[part],
+    value: taken * valueOfPart(part, body.place),
     levelUp: done,
     level: commonsState.places[body.place].level,
     ...syncValley(),
@@ -2234,7 +2255,7 @@ try {
   );
 
   await scenario(
-    "valley systems on: the Market's project is built with the board (Acorns and scrap only)",
+    "valley systems on: the Market's project is built with the board (Acorns, scrap and shards of any kind)",
     () => {
       const creatures = commonsOn();
       commonsScene({
@@ -2265,8 +2286,16 @@ try {
         await board.scrollIntoViewIfNeeded();
         await expectTopmost(board, 'the Market board');
         await waitFor(board.getByText(/Still needed: .*Acorns, .*scrap/));
-        if ((await board.getByText(/shards/i).count()) > 0)
-          throw new Error('the Market board asks for shards');
+        // Shards of any kind count too (V-COM-15): a line says so, and "Still needed" names no shard part.
+        await waitFor(board.getByText(/Shards of any kind count too/));
+        const needLine = await board
+          .locator('p', { hasText: /^Still needed:/ })
+          .first()
+          .innerText();
+        if (/shard/i.test(needLine))
+          throw new Error(`the Market board names a shard part: ${needLine}`);
+        await expectTopmost(board.getByText(/Shards of any kind count too/), 'the shard line');
+        await shot('mshards-board');
         if ((await page.getByRole('button', { name: /^Broker/ }).count()) > 0)
           throw new Error('a broker seat stands before the Market is built');
         await board.getByRole('button', { name: /^Give/ }).click();
@@ -2274,9 +2303,35 @@ try {
         await page.waitForTimeout(500);
         await expectTopmost(page.getByRole('dialog').first(), 'the Market give drawer');
         const rows = await page.getByRole('dialog').getByRole('button').allInnerTexts();
-        if (rows.some((r) => /shard/i.test(r)))
-          throw new Error(`the give list offers shards: ${rows.join(' | ')}`);
-        await page.keyboard.press('Escape');
+        // The shelf holds Ember 7, Tide 4, Mire 3, Spark 2 (Grove 0): every pile held, the biggest first, none for Grove.
+        const shardRows = rows.filter((r) => /shards/i.test(r));
+        const order = ['Ember', 'Tide', 'Mire', 'Spark'].map((n) =>
+          shardRows.findIndex((r) => r.startsWith(`${n} shards`)),
+        );
+        if (order.join() !== '0,1,2,3' || shardRows.length !== 4)
+          throw new Error(`the give list offers shards in the wrong order: ${rows.join(' | ')}`);
+        await shot('mshards-give-list');
+        // Give Ember shards (any element counts in full): the gift names the element, one keyed gift.
+        await page
+          .getByRole('dialog')
+          .getByRole('button', { name: /^Ember shards/ })
+          .click();
+        await waitFor(page.getByRole('dialog').getByRole('button', { name: /^Give/ }));
+        await page.waitForTimeout(300);
+        await expectTopmost(page.getByRole('dialog').first(), 'the Market shard amount');
+        await shot('mshards-give-amount');
+        await page.getByRole('dialog').getByRole('button', { name: /^Give/ }).click();
+        await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+        const gift = commonsCalls.find(([k]) => k === 'gift')?.[1];
+        if (
+          gift === undefined ||
+          gift.place !== 'market' ||
+          gift.currency !== 'shards' ||
+          gift.element !== 'ember' ||
+          gift.amount !== 7 ||
+          typeof gift.idempotencyKey !== 'string'
+        )
+          throw new Error(`the shard gift was wrong: ${JSON.stringify(gift)}`);
         await backToValley();
       } finally {
         marketOff();
