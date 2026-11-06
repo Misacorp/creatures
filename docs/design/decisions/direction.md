@@ -4,6 +4,40 @@ Roadmap calls, Misa's standing direction, naming and tone, content policy, how a
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-06: The reset: no warning post, the wipe runs when Misa asks, no server rank or bosses in the record [Misa]
+
+ID: `2026-11-06-the-reset-no-warning-post-the` · Status: current · Amends: `2026-11-06-the-reset-settlers-appear-on-every`
+
+**Decision.** Misa accepted the reset plan (`docs/design/reset.md`) with the lead's picks, and three changes:
+
+- **No warning post from the game.** Misa tells players himself, then asks an agent to do the wipe; the agent opens the PR that turns the switch on and Misa merges it.
+- **The record keeps nothing per server**: no Boss Rank, no bosses beaten.
+- **The one-time card in the game stays**, for players who open it without knowing what happened. There is no Discord post.
+
+The lead's picks that stand: the wipe waits at most 24 hours for the goodbye DMs; the name kept is the display name on the switch day; a Monday is the best switch day; and the earlier technical calls (record in the live game only, private notes left out, no double leet pay, save before wipe, DM to everyone once, a name check before cross-server use, anonymous usage counts kept).
+
+**Reasoning.** Misa, 2026-11-06: "Let's go with your recommendation but not have any warning. I'll just communicate it myself and ask you to do the wipe. Combat is getting reworked so no need to store the server rank or boss info. 13 I suppose it's good to have that kind of a message if players open the game but don't know what's up."
+
+## 2026-11-06: The settlers' record keeps eight feats; firsts on the server are read by catch date [Misa]
+
+ID: `2026-11-06-the-settlers-record-keeps-eight-feats` · Status: current · Amends: `2026-11-06-the-reset-settlers-appear-on-every`
+
+**Decision.** The settlers' record keeps each player's creatures (species, nickname, level, shiny, catch day, quirk) and exactly eight feats: deepest dungeon depth cleared, the creature lines they were first on the server to catch, blueprints owned, creatures owned, highest level creature (with its name), total creature levels, best Crafting level (with the creature's name) and best Explorer rank (with the creature's name). "First on the server" is read from catch dates, not `server_firsts`: per line, the creature with the earliest `caught_at` (starters and dev-tool creatures excluded) credits its owner, named by the line's first form. Details in `docs/design/reset.md` section 1.
+
+**Reasoning.** Misa, 2026-11-06: "Let's only keep a handful", listing these eight, and "check this by catch date because some of them show weird due to evolutions". Creatures are never deleted outside the staging dev tools, so every catch date is still there. Deepest depth comes from cleared runs because `dungeon_progress.depth` holds the next depth unlocked.
+
+## 2026-11-06: The reset: settlers appear on every server, each player gets their record by DM, and a hidden trace of who was there is kept [Misa]
+
+ID: `2026-11-06-the-reset-settlers-appear-on-every` · Status: current, amended by `2026-11-06-the-reset-no-warning-post-the`, `2026-11-06-the-settlers-record-keeps-eight-feats` · Amends: `2026-11-06-the-settlers-record-lives-in-a`
+
+**Decision.** Misa's answers on the reset plan (`docs/design/reset.md`):
+
+1. **Settlers can appear on every server**, not only their own (Misa: "nice lore, though whatever is technically the easiest would be best"; one archive for all servers makes this no harder). Before settler names and nicknames are used anywhere, an agent reads the list once and Misa can strike any name.
+2. **Each player gets their record as one Discord DM, not in the game.** Sent on the switch day from the same snapshot that is archived, so the DM says exactly what is kept. It goes to every player once, also to those with reminder DMs off: it is a one-off goodbye Misa asked for, not a reminder kind. A player whose DMs are closed simply does not get it. The DM keeps to Discord's 2,000-character limit (feats and the most notable creatures, then "and N more"), escapes markdown and sends `allowed_mentions: { parse: [] }`. The server wipes once its DMs are sent or after a time limit, so a stuck DM never blocks the reset.
+3. **A trace of which player was there is kept but shown to no one.** The record keeps a keyed hash (HMAC) of each Discord ID, never the ID. Later, when players get an identity in the game, a returning settler can be matched to get a pioneer tag, and the record can grant a future house decoration. The HMAC key is a Worker secret that must never be lost or rotated, or the link breaks.
+
+**Reasoning.** Misa, 2026-11-06: "1 B since it's nice lore", "DM it to each player on Discord but not in game", "Let's keep a trace that which player was there but we don't have to show it to anyone. Later, when we give players themselves an identity, we can attach a pioneer tag to them or something. It can also grant a future house decoration." The name check covers the one new risk of option 1: text typed for friends reaching strangers.
+
 ## 2026-11-06: Overnight sessions: quiet until news, then one message with every open question [Misa]
 
 ID: `2026-11-06-overnight-sessions-quiet-until-news-then` · Status: current
