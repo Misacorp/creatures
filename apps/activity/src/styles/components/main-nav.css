@@ -127,6 +127,11 @@ h1.hud-title {
   line-height: 1;
 }
 
+/* Inside the box: a ring outside it would cover the title's first letter. */
+.hud button.hud-back:focus-visible {
+  outline-offset: calc(var(--px) * -2);
+}
+
 .hud button.hud-back:focus:not(:focus-visible) {
   box-shadow: inset 0 0 0 var(--px) var(--line);
 }
