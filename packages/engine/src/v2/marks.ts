@@ -26,34 +26,28 @@ const {
   roll,
   setStore,
   silenced,
-  strengthOf,
-  strong,
 } = stateMod;
 
 export function addMark(
   s: State,
   element: string,
   stacks: number,
-  opts: { sealed?: boolean; fromTrail?: boolean; fizzle?: boolean; by?: Fighter } = {},
+  opts: { sealed?: boolean; fromTrail?: boolean; by?: Fighter } = {},
 ): void {
   const R = s.ctx.rules;
   const m = s.marks.get(element);
-  const after =
-    opts.fizzle && s.boss.mods.fizzle && strong(s, strengthOf(s)) ? s.bossTurnsDone + 1 : 0;
   if (m) {
     m.turnSet = s.bossTurnsDone;
     if (opts.by) m.owners.add(opts.by.uid);
     m.stacks = Math.min(R.maxStacks, m.stacks + stacks);
     // A mark is sealed if any of its counts was left sealed (R8).
     m.sealed ||= opts.sealed ?? false;
-    m.cashableAfterTurns = Math.max(m.cashableAfterTurns, after);
   } else {
     s.marks.set(element, {
       stacks: Math.min(R.maxStacks, stacks),
       age: s.markAge++,
       sealed: opts.sealed ?? false,
       fromTrail: opts.fromTrail ?? false,
-      cashableAfterTurns: after,
       turnSet: s.bossTurnsDone,
       owners: new Set(opts.by ? [opts.by.uid] : []),
     });

@@ -36,6 +36,7 @@ const DUNGEON_FOES = [
   'ember-mite',
   'static-bat',
   'puddle-imp',
+  'ash-sprite',
   'drowned-warden',
   'slag-tyrant',
 ] as const;
@@ -61,6 +62,8 @@ const MOMENTS = [
   'a strike back (Backlash)',
   'a bonus as its own hit (Aftershock)',
   'the boss shakes off its Mired',
+  'the boss fizzles',
+  'a reaction is blocked (Fizzle)',
   'the end',
   'beat number',
 ] as const;
@@ -157,6 +160,10 @@ function momentBeat(
       );
     case 'the boss shakes off its Mired':
       return at((k) => shows[k]?.floats.some((f) => f.text === 'Shakes it off!') === true);
+    case 'the boss fizzles':
+      return at((k) => shows[k]?.floats.some((f) => f.text === 'Fizzle!') === true);
+    case 'a reaction is blocked (Fizzle)':
+      return at((k) => shows[k]?.floats.some((f) => f.text === 'Fizzled!') === true);
     case 'the end':
       return beats.length;
     case 'beat number':
@@ -272,11 +279,12 @@ function DungeonRoomHeld({ p }: { p: Props }) {
         level,
         seed,
         carried,
+        ...(bool(p, 'reactions') ? { species: ['thornbuck', 'tidewing', 'tempestray'] } : {}),
         ...(foe === 'drowned-warden' || foe === 'slag-tyrant'
           ? { signature: depth % 7 === 0 }
           : {}),
       }),
-    [foe, depth, level, seed, carried.join(',')],
+    [foe, depth, level, seed, carried.join(','), bool(p, 'reactions')],
   );
   const fight = useMemo(() => roomFightV2(room, row), [room, row]);
   const model = useMemo(
@@ -477,6 +485,7 @@ const CONTROLS = {
   open: { kind: 'number', min: 0, max: 3 },
   ability: { kind: 'select', options: ['rally', 'shield-wall', 'purge'] },
   foe: { kind: 'select', options: DUNGEON_FOES },
+  reactions: { kind: 'toggle' },
   depth: { kind: 'number', min: 1, max: 40 },
   level: { kind: 'number', min: 1, max: 40 },
   hp1: { kind: 'number', min: 0, max: 100 },
@@ -499,6 +508,7 @@ const DEFAULTS = {
   open: 0,
   ability: 'rally',
   foe: 'bramble-hound',
+  reactions: false,
   depth: 3,
   level: 22,
   hp1: 100,
@@ -675,6 +685,28 @@ const stageV2: Entry = {
         depth: 7,
         level: 26,
         moment: 'marks and an announced move',
+      },
+    },
+    {
+      name: 'Dungeon room: the Ash Sprite fizzles (no reactions until its next turn)',
+      props: {
+        view: 'dungeon room',
+        foe: 'ash-sprite',
+        reactions: true,
+        depth: 40,
+        level: 14,
+        moment: 'the boss fizzles',
+      },
+    },
+    {
+      name: 'Dungeon room: a reaction is blocked by Fizzle (the mark stays)',
+      props: {
+        view: 'dungeon room',
+        foe: 'ash-sprite',
+        reactions: true,
+        depth: 40,
+        level: 14,
+        moment: 'a reaction is blocked (Fizzle)',
       },
     },
     {

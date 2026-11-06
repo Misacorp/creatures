@@ -27,6 +27,8 @@ export interface BossMoveView {
   shape: MoveDef['shape'];
   silences: boolean;
   oneShot: boolean;
+  /** Fizzle: no targets, the boss is immune to reactions until its next turn. */
+  fizzles: boolean;
   /** Due every this many rounds. */
   every: number;
   /** The boss turn it lands on (0 is after row 1). */
@@ -68,6 +70,7 @@ export function bossCardView(boss: BossDef, carry: StageCarry | null): BossCardV
     const shape = def?.shape ?? m.pattern.shape;
     const silences = def?.silences ?? m.silenceTurns !== undefined;
     const oneShot = def?.oneShot === true || m.oneShotBp !== undefined;
+    const fizzles = def?.fizzles === true || m.fizzles === true;
     return {
       id: m.id,
       name: m.name,
@@ -76,10 +79,12 @@ export function bossCardView(boss: BossDef, carry: StageCarry | null): BossCardV
         anchor: def?.anchor ?? m.pattern.anchor,
         silences,
         oneShot,
+        fizzles,
       }),
       shape,
       silences,
       oneShot,
+      fizzles,
       every: m.every,
       turn: Math.min(m.turn ?? last, last),
       windUp: m.charged === true,

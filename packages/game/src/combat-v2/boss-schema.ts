@@ -76,6 +76,7 @@ export const BossMoveSchema = v.pipe(
     strengthBp: v.exactOptional(v.pipe(Int, v.minValue(0))),
     oneShotBp: v.exactOptional(Count),
     charged: v.exactOptional(v.boolean()),
+    fizzles: v.exactOptional(v.boolean()),
   }),
   v.readonly(),
 );
@@ -191,7 +192,7 @@ const cardOpOf = <M extends v.GenericSchema>(move: M) =>
     v.pipe(
       v.strictObject({
         op: v.literal('flag'),
-        mod: v.picklist(['shedMarks', 'reflectFirst', 'fizzle', 'adapts', 'adaptsElement']),
+        mod: v.picklist(['shedMarks', 'reflectFirst', 'adapts', 'adaptsElement']),
       }),
       v.readonly(),
     ),

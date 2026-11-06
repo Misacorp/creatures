@@ -143,6 +143,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [combat.md](combat.md): The shared combat engine, abilities, statuses, elements, the balance simulator, balance passes, and combat v2 in the lab.
 
+- 2026-11-06 \[Misa\] Fizzle becomes a telegraphed boss move: immune to reactions every second turn
 - 2026-11-06 Lab gate: dead Knacks are read on the track's weekends too
 - 2026-11-06 Combat v2: Cool Head turns a spared crit into a Sure Crit
 - 2026-11-06 Combat v2 second answers: answers by Knack id, Pin Down, Backlash, Aftershock, and what stays one-answer

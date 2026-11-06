@@ -78,7 +78,8 @@ export const FOE_QUESTIONS: Readonly<Record<string, FoeQuestion>> = Object.fromE
         UNDER_ELITE,
         'tidewing/none thornbuck/primed-by-pain pyrelynx/none',
       ],
-      // Its ash hardens every round: a Guard that builds Heat doubles the Payoff's reaction to get through the armour it grows.
+      // Its ash hardens every round and every second round it fizzles (reactions fail until its next turn): a Guard that builds Heat doubles the Payoff's reaction to get through the armour it grows.
+      // Its HP is 16000 since the Fizzle move (2026-11-06; 18000 made the team with the tool win 0.40 at depth 30).
       [
         'ash-sprite',
         'family:Store',

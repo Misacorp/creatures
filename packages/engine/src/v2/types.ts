@@ -247,6 +247,11 @@ export interface BossMove {
    * (Night Watch, Intercept area hits too); a Row Ward, Barricade and Brace read it.
    */
   readonly charged?: boolean;
+  /**
+   * Fizzle: instead of hitting, the boss becomes immune to reactions from this turn until its next boss turn begins. A reaction that
+   * would have been set off does not happen and the mark is not spent. At a lower strength it takes hold that share of the times.
+   */
+  readonly fizzles?: boolean;
 }
 
 /** What fills an escalation (the boss's Store). */
@@ -350,7 +355,7 @@ export interface BossDef {
   readonly dodgeBp?: number;
   /**
    * The strength of the boss's rule cards and gates (bp, default 10000 = full): reflection returns this share of the
-   * reaction's bonus, Shake It Off clears this share of the Mired, Clean Scales and Fizzle take hold on this share of the
+   * reaction's bonus, Shake It Off clears this share of the Mired, Clean Scales takes hold on this share of the
    * marks, Reaction Resistance halves the bonus by this share (a cut of half at full strength), Element Resistance cuts a quarter
    * at full strength and this share of that below it; cards that change a number (armour, Speed, the cap, healing, an
    * added move's power) are built with it (`applyCard`, `cards.ts`).
@@ -376,8 +381,6 @@ export interface BossMods {
   readonly reflectFirst?: boolean;
   /** Healing is scaled by this (Wither). */
   readonly healBp?: number;
-  /** A mark left by a reaction cannot be cashed until after the next boss turn (Fizzle). */
-  readonly fizzle?: boolean;
   /** Every this many rounds the boss clears all its debuffs at the end of the round; announced at round start (Shake It Off). */
   readonly shakeEvery?: number;
   /** In a raid weekend, from stage 2 the boss resists the reaction used most so far (Adapts). */
@@ -501,6 +504,16 @@ export type BoardEvent =
     }
   /** Marks the boss shed (Clean Scales), by element. */
   | { readonly type: 'shed'; readonly marks: readonly string[] }
+  /**
+   * Fizzle: `on`, the boss is immune to reactions until its next boss turn; `off`, that turn began; `blocked`, a Payoff `by` would have
+   * cashed the `mark` and could not (the mark stays).
+   */
+  | {
+      readonly type: 'fizzle';
+      readonly state: 'on' | 'off' | 'blocked';
+      readonly by?: string;
+      readonly mark?: string;
+    }
   /** A Payoff cashes a mark: the element, the counts spent, the bonus damage and the counts left on it (0: the mark is gone). */
   | {
       readonly type: 'reaction';

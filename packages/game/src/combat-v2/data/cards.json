@@ -133,10 +133,16 @@
   },
   {
     "id": "fizzle",
-    "name": "Fizzle",
-    "asks": "A mark left by a reaction cannot be cashed until after the next boss turn; do your chains cross rows?",
-    "ops": [{ "op": "flag", "mod": "fizzle" }],
-    "answers": ["Chain"]
+    "name": "Quench",
+    "asks": "Every second round the boss fizzles: until its next turn a reaction on it fails and keeps the mark. Are your reactions in a row it leaves alone, or ready the turn after?",
+    "ops": [
+      {
+        "op": "move",
+        "scale": "gate",
+        "move": { "id": "fizzle", "every": 2, "powerBp": 0 }
+      }
+    ],
+    "answers": ["puddle-maker", "twin-strike"]
   },
   {
     "id": "shake-it-off",

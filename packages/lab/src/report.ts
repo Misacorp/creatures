@@ -152,11 +152,13 @@ export const ANSWERS: Readonly<Record<string, readonly (readonly [string, string
     ['Guard beside the Payoff', 'tidewing/steady-mark tempestray/none thornbuck/wide-reach'],
   ],
   fizzle: [
-    // A trail mark waits one boss turn: with one row the follower cashes it a round later, so the chain still pays.
+    // A blocked reaction keeps its mark. Self-Starter's Payoff marks on the blocked turn (it set off no reaction), so the next round has more to cash.
     [
-      'Leave a Trail, cashed a round later',
-      'tidewing/steady-mark tempestray/leave-a-trail bloomback/none',
+      'Self-Starter marks on the blocked turn',
+      'bloomback/none sunfawn/curl-up geyserpup/puddle-maker',
     ],
+    // The marks pile up while it fizzles, and a Payoff that hits twice cashes two stacks the round after.
+    ['Twin Strike cashes the pile', 'tidewing/none tempestray/twin-strike hearthshell/draw-fire'],
   ],
   grudge: [
     // The Guard acts first in the row: the plain attack aims at whoever dealt the most last round, and Draw Fire's Taunt

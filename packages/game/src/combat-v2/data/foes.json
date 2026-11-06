@@ -78,8 +78,8 @@
         "cap": 3,
         "grow": { "armour": 50 }
       },
-      "asks": "The ash hardens every round, so small hits fall off it soon: hit it early, and let a Guard that builds Heat double a reaction to get through later. A mark made by a reaction cannot be cashed until after its next turn.",
-      "hpBp": 18000
+      "asks": "The ash hardens every round, so small hits fall off it soon: hit it early, and let a Guard that builds Heat double a reaction to get through later. Every second round it fizzles: until its next turn a reaction on it fails and keeps the mark.",
+      "hpBp": 16000
     },
     {
       "id": "bramble-hound",

@@ -4,7 +4,7 @@ import { combatGlyph, moveGlyphId } from './combat-glyphs';
 import { elementSlug } from './art';
 import { glyphOrUnknown } from './glyphs';
 import { usePopoverHost } from './PopoverHost';
-import { AIMED_WHEN_IT_COMES, litMove } from './raid-board-v2';
+import { AIMED_WHEN_IT_COMES, NO_TARGETS, litMove } from './raid-board-v2';
 import { bossHpWords, rankLabel } from './raid-progress';
 import type { RaidView } from './raid-api';
 import type { BossCardV2 as CardView, BossMoveV2 } from './raid-v2-api';
@@ -135,7 +135,9 @@ export function BossCardV2({
   const element = elementSlug(boss.element);
   const moves = card.moves;
   const tapped = moves.find((m) => m.id === lit);
-  const aimedLater = tapped !== undefined && litMove(v2.preview, tapped).slots === null;
+  const noTargets = tapped?.fizzles === true;
+  const aimedLater =
+    tapped !== undefined && !noTargets && litMove(v2.preview, tapped).slots === null;
   return (
     <section
       class={`raid-section boss-card boss-card-v2 el-${element}`}
@@ -225,6 +227,11 @@ export function BossCardV2({
             </li>
           ))}
         </ul>
+      )}
+      {noTargets && (
+        <p class="muted small boss-aimed" role="status">
+          {NO_TARGETS}
+        </p>
       )}
       {aimedLater && (
         <p class="muted small boss-aimed" role="status">

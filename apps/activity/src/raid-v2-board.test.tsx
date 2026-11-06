@@ -158,6 +158,9 @@ describe('the tapped move', () => {
     expect(pic('rowEnds', true)).toBe('silence_ends');
     expect(pic('single', false, true)).toBe('shape-one-shot');
     expect(pic('nonsense')).toBe('unknown');
+    expect(moveGlyphId({ shape: 'all', silences: false, oneShot: false, fizzles: true })).toBe(
+      'reflect_first_reaction',
+    );
   });
 });
 

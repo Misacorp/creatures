@@ -64,7 +64,9 @@ export function previewMoves(input: StageInputV2, carry: StageCarry): MovePrevie
   const moves: Record<string, readonly string[] | null> = {};
   for (const m of movesOf(s)) {
     moves[m.id] =
-      m.charged || usesRoll(m.pattern) ? null : targetsOf(s, m.pattern, false).map(keyOf);
+      m.fizzles || m.charged || usesRoll(m.pattern)
+        ? null
+        : targetsOf(s, m.pattern, false).map(keyOf);
   }
   return {
     plain: aim === undefined ? null : keyOf(aim),

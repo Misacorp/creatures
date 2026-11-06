@@ -276,10 +276,26 @@ export function bossTurn(s: State, turn: number): void {
   const ageAtStart = s.markAge;
   const last = s.boss.rows - 1;
   if (s.opts.log) emit(s, { type: 'bossTurn', row: turn });
+  // Fizzle's immunity ends as the boss's next turn begins.
+  if (s.fizzled) {
+    s.fizzled = false;
+    if (s.opts.log) emit(s, { type: 'fizzle', state: 'off' });
+  }
   for (const m of movesOf(s)) {
     if (s.bossHp <= 0) return;
     if (s.round % m.every === 0 && (m.turn ?? last) === turn) {
       if (s.opts.log) log(s, 'move', m.name);
+      if (m.fizzles) {
+        // Fizzle deals no damage and has no targets: the boss is immune to reactions until its next turn (the strength's share of the times).
+        if (strong(s, m.strengthBp ?? strengthOf(s))) {
+          s.fizzled = true;
+          if (s.opts.log)
+            log(s, 'fizzle', `${s.boss.name} fizzles: reactions fail until its next turn`, {
+              board: { type: 'fizzle', state: 'on' },
+            });
+        }
+        continue;
+      }
       bossHits(s, m, false);
     }
   }

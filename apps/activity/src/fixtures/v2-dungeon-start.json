@@ -53,6 +53,7 @@
                   "shape": "scatter",
                   "silences": false,
                   "oneShot": false,
+                  "fizzles": false,
                   "every": 2,
                   "turn": 0,
                   "windUp": false,
@@ -144,6 +145,7 @@
                   "shape": "rowEnds",
                   "silences": true,
                   "oneShot": false,
+                  "fizzles": false,
                   "every": 1,
                   "turn": 0,
                   "windUp": false,
@@ -199,6 +201,7 @@
                   "shape": "scatter",
                   "silences": false,
                   "oneShot": false,
+                  "fizzles": false,
                   "every": 2,
                   "turn": 0,
                   "windUp": false,
@@ -250,6 +253,7 @@
                   "shape": "line3",
                   "silences": false,
                   "oneShot": false,
+                  "fizzles": false,
                   "every": 3,
                   "turn": 0,
                   "windUp": false,
@@ -282,8 +286,8 @@
               "cards": [
                 {
                   "id": "fizzle",
-                  "name": "Fizzle",
-                  "asks": "A mark left by a reaction cannot be cashed until after the next boss turn; do your chains cross rows?"
+                  "name": "Quench",
+                  "asks": "Every second round the boss fizzles: until its next turn a reaction on it fails and keeps the mark. Are your reactions in a row it leaves alone, or ready the turn after?"
                 }
               ],
               "strengthBp": 10000,
@@ -297,7 +301,21 @@
                 "shape": "line3",
                 "hits": 1
               },
-              "moves": []
+              "moves": [
+                {
+                  "id": "fizzle",
+                  "name": "Fizzle",
+                  "label": "No reactions",
+                  "shape": "all",
+                  "silences": false,
+                  "oneShot": false,
+                  "fizzles": true,
+                  "every": 2,
+                  "turn": 0,
+                  "windUp": false,
+                  "later": false
+                }
+              ]
             }
           },
           "modifier": {
@@ -358,6 +376,7 @@
                   "shape": "rowEnds",
                   "silences": true,
                   "oneShot": false,
+                  "fizzles": false,
                   "every": 1,
                   "turn": 0,
                   "windUp": false,
@@ -423,6 +442,7 @@
                   "shape": "line3",
                   "silences": false,
                   "oneShot": false,
+                  "fizzles": false,
                   "every": 2,
                   "turn": 0,
                   "windUp": false,
@@ -455,8 +475,8 @@
               "cards": [
                 {
                   "id": "fizzle",
-                  "name": "Fizzle",
-                  "asks": "A mark left by a reaction cannot be cashed until after the next boss turn; do your chains cross rows?"
+                  "name": "Quench",
+                  "asks": "Every second round the boss fizzles: until its next turn a reaction on it fails and keeps the mark. Are your reactions in a row it leaves alone, or ready the turn after?"
                 }
               ],
               "strengthBp": 10000,
@@ -470,7 +490,21 @@
                 "shape": "line3",
                 "hits": 1
               },
-              "moves": []
+              "moves": [
+                {
+                  "id": "fizzle",
+                  "name": "Fizzle",
+                  "label": "No reactions",
+                  "shape": "all",
+                  "silences": false,
+                  "oneShot": false,
+                  "fizzles": true,
+                  "every": 2,
+                  "turn": 0,
+                  "windUp": false,
+                  "later": false
+                }
+              ]
             }
           },
           "modifier": {
@@ -520,6 +554,7 @@
                   "shape": "scatter",
                   "silences": false,
                   "oneShot": false,
+                  "fizzles": false,
                   "every": 2,
                   "turn": 0,
                   "windUp": false,
@@ -582,6 +617,7 @@
                   "shape": "all",
                   "silences": false,
                   "oneShot": false,
+                  "fizzles": false,
                   "every": 3,
                   "turn": 0,
                   "windUp": false,
@@ -718,6 +754,7 @@
                   "shape": "scatter",
                   "silences": false,
                   "oneShot": false,
+                  "fizzles": false,
                   "every": 2,
                   "turn": 0,
                   "windUp": false,
@@ -809,6 +846,7 @@
                   "shape": "rowEnds",
                   "silences": true,
                   "oneShot": false,
+                  "fizzles": false,
                   "every": 1,
                   "turn": 0,
                   "windUp": false,
@@ -864,6 +902,7 @@
                   "shape": "scatter",
                   "silences": false,
                   "oneShot": false,
+                  "fizzles": false,
                   "every": 2,
                   "turn": 0,
                   "windUp": false,
@@ -915,6 +954,7 @@
                   "shape": "line3",
                   "silences": false,
                   "oneShot": false,
+                  "fizzles": false,
                   "every": 3,
                   "turn": 0,
                   "windUp": false,
@@ -947,8 +987,8 @@
               "cards": [
                 {
                   "id": "fizzle",
-                  "name": "Fizzle",
-                  "asks": "A mark left by a reaction cannot be cashed until after the next boss turn; do your chains cross rows?"
+                  "name": "Quench",
+                  "asks": "Every second round the boss fizzles: until its next turn a reaction on it fails and keeps the mark. Are your reactions in a row it leaves alone, or ready the turn after?"
                 }
               ],
               "strengthBp": 10000,
@@ -962,7 +1002,21 @@
                 "shape": "line3",
                 "hits": 1
               },
-              "moves": []
+              "moves": [
+                {
+                  "id": "fizzle",
+                  "name": "Fizzle",
+                  "label": "No reactions",
+                  "shape": "all",
+                  "silences": false,
+                  "oneShot": false,
+                  "fizzles": true,
+                  "every": 2,
+                  "turn": 0,
+                  "windUp": false,
+                  "later": false
+                }
+              ]
             }
           },
           "modifier": {
@@ -1023,6 +1077,7 @@
                   "shape": "rowEnds",
                   "silences": true,
                   "oneShot": false,
+                  "fizzles": false,
                   "every": 1,
                   "turn": 0,
                   "windUp": false,
@@ -1088,6 +1143,7 @@
                   "shape": "line3",
                   "silences": false,
                   "oneShot": false,
+                  "fizzles": false,
                   "every": 2,
                   "turn": 0,
                   "windUp": false,
@@ -1120,8 +1176,8 @@
               "cards": [
                 {
                   "id": "fizzle",
-                  "name": "Fizzle",
-                  "asks": "A mark left by a reaction cannot be cashed until after the next boss turn; do your chains cross rows?"
+                  "name": "Quench",
+                  "asks": "Every second round the boss fizzles: until its next turn a reaction on it fails and keeps the mark. Are your reactions in a row it leaves alone, or ready the turn after?"
                 }
               ],
               "strengthBp": 10000,
@@ -1135,7 +1191,21 @@
                 "shape": "line3",
                 "hits": 1
               },
-              "moves": []
+              "moves": [
+                {
+                  "id": "fizzle",
+                  "name": "Fizzle",
+                  "label": "No reactions",
+                  "shape": "all",
+                  "silences": false,
+                  "oneShot": false,
+                  "fizzles": true,
+                  "every": 2,
+                  "turn": 0,
+                  "windUp": false,
+                  "later": false
+                }
+              ]
             }
           },
           "modifier": {
@@ -1185,6 +1255,7 @@
                   "shape": "scatter",
                   "silences": false,
                   "oneShot": false,
+                  "fizzles": false,
                   "every": 2,
                   "turn": 0,
                   "windUp": false,
@@ -1247,6 +1318,7 @@
                   "shape": "all",
                   "silences": false,
                   "oneShot": false,
+                  "fizzles": false,
                   "every": 3,
                   "turn": 0,
                   "windUp": false,
@@ -1317,6 +1389,7 @@
                     "shape": "scatter",
                     "silences": false,
                     "oneShot": false,
+                    "fizzles": false,
                     "every": 2,
                     "turn": 0,
                     "windUp": false,
@@ -1408,6 +1481,7 @@
                     "shape": "rowEnds",
                     "silences": true,
                     "oneShot": false,
+                    "fizzles": false,
                     "every": 1,
                     "turn": 0,
                     "windUp": false,
@@ -1463,6 +1537,7 @@
                     "shape": "scatter",
                     "silences": false,
                     "oneShot": false,
+                    "fizzles": false,
                     "every": 2,
                     "turn": 0,
                     "windUp": false,
@@ -1514,6 +1589,7 @@
                     "shape": "line3",
                     "silences": false,
                     "oneShot": false,
+                    "fizzles": false,
                     "every": 3,
                     "turn": 0,
                     "windUp": false,
@@ -1546,8 +1622,8 @@
                 "cards": [
                   {
                     "id": "fizzle",
-                    "name": "Fizzle",
-                    "asks": "A mark left by a reaction cannot be cashed until after the next boss turn; do your chains cross rows?"
+                    "name": "Quench",
+                    "asks": "Every second round the boss fizzles: until its next turn a reaction on it fails and keeps the mark. Are your reactions in a row it leaves alone, or ready the turn after?"
                   }
                 ],
                 "strengthBp": 10000,
@@ -1561,7 +1637,21 @@
                   "shape": "line3",
                   "hits": 1
                 },
-                "moves": []
+                "moves": [
+                  {
+                    "id": "fizzle",
+                    "name": "Fizzle",
+                    "label": "No reactions",
+                    "shape": "all",
+                    "silences": false,
+                    "oneShot": false,
+                    "fizzles": true,
+                    "every": 2,
+                    "turn": 0,
+                    "windUp": false,
+                    "later": false
+                  }
+                ]
               }
             },
             "modifier": {
@@ -1622,6 +1712,7 @@
                     "shape": "rowEnds",
                     "silences": true,
                     "oneShot": false,
+                    "fizzles": false,
                     "every": 1,
                     "turn": 0,
                     "windUp": false,
@@ -1687,6 +1778,7 @@
                     "shape": "line3",
                     "silences": false,
                     "oneShot": false,
+                    "fizzles": false,
                     "every": 2,
                     "turn": 0,
                     "windUp": false,
@@ -1719,8 +1811,8 @@
                 "cards": [
                   {
                     "id": "fizzle",
-                    "name": "Fizzle",
-                    "asks": "A mark left by a reaction cannot be cashed until after the next boss turn; do your chains cross rows?"
+                    "name": "Quench",
+                    "asks": "Every second round the boss fizzles: until its next turn a reaction on it fails and keeps the mark. Are your reactions in a row it leaves alone, or ready the turn after?"
                   }
                 ],
                 "strengthBp": 10000,
@@ -1734,7 +1826,21 @@
                   "shape": "line3",
                   "hits": 1
                 },
-                "moves": []
+                "moves": [
+                  {
+                    "id": "fizzle",
+                    "name": "Fizzle",
+                    "label": "No reactions",
+                    "shape": "all",
+                    "silences": false,
+                    "oneShot": false,
+                    "fizzles": true,
+                    "every": 2,
+                    "turn": 0,
+                    "windUp": false,
+                    "later": false
+                  }
+                ]
               }
             },
             "modifier": {
@@ -1784,6 +1890,7 @@
                     "shape": "scatter",
                     "silences": false,
                     "oneShot": false,
+                    "fizzles": false,
                     "every": 2,
                     "turn": 0,
                     "windUp": false,
@@ -1846,6 +1953,7 @@
                     "shape": "all",
                     "silences": false,
                     "oneShot": false,
+                    "fizzles": false,
                     "every": 3,
                     "turn": 0,
                     "windUp": false,

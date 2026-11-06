@@ -146,6 +146,7 @@ const behaviourOf = (m: BossMoveDef): string =>
     anchor: m.pattern.anchor,
     silences: m.silenceTurns !== undefined,
     oneShot: m.oneShotBp !== undefined,
+    fizzles: m.fizzles === true,
   });
 
 /** The moves the cards add (`move` operations), in the order of the cards. */
@@ -242,6 +243,8 @@ function resolveMove(
     return fail(`${owner}: "${use.id}" is a one-shot, so its use needs oneShotBp`);
   if (lib.oneShot !== true && use.oneShotBp !== undefined)
     return fail(`${owner}: "${use.id}" is not a one-shot, so its use has no oneShotBp`);
+  if (lib.fizzles === true && (use.powerBp !== 0 || use.windUp === true))
+    return fail(`${owner}: "${use.id}" is a Fizzle, so its use has powerBp 0 and no Wind-up`);
   const pattern: PatternDef = {
     anchor: lib.anchor,
     shape: lib.shape,
@@ -261,6 +264,7 @@ function resolveMove(
     ...(use.strengthBp === undefined ? {} : { strengthBp: use.strengthBp }),
     ...(use.oneShotBp === undefined ? {} : { oneShotBp: use.oneShotBp }),
     ...(use.windUp === undefined ? {} : { charged: use.windUp }),
+    ...(lib.fizzles === true ? { fizzles: true } : {}),
   };
 }
 

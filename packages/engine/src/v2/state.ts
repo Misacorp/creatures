@@ -74,8 +74,6 @@ export interface Mark {
   sealed: boolean;
   /** Left by Leave a Trail: a reaction on it leaves no further trail (the chain cap, R5). */
   fromTrail: boolean;
-  /** With Fizzle, a mark left by a reaction cannot be cashed until this many boss turns have passed. */
-  cashableAfterTurns: number;
   /** The boss turns done when a count was last added: "set this boss turn" means equal to now (Quick Draw). */
   turnSet: number;
   /** Creatures that left a count on it (Potent Mark). */
@@ -108,6 +106,8 @@ export interface State {
   round: number;
   turn: number;
   bossTurnsDone: number;
+  /** Fizzle: the boss is immune to reactions from the turn it fires until its next boss turn begins. */
+  fizzled: boolean;
   reflectArmed: boolean;
   /**
    * The boss's escalation (its Store, R22): units fed by events this stage, the units carried from earlier stages, the

@@ -93,6 +93,8 @@ const ANCHORLESS_SHAPES: readonly Pattern['shape'][] = ['scatter', 'randomRow', 
 const tauntable = (b: BossDef) =>
   !ANCHORLESS_SHAPES.includes(b.plain.pattern.shape) && b.plain.pattern.anchor !== 'front';
 const armoured = (boss: BossDef) => boss.armour >= 38;
+/** The boss has a Fizzle move: it turns reactions away every second round. */
+const fizzles = (boss: BossDef) => boss.moves.some((m) => m.fizzles === true);
 
 const first = (...reasons: Reason[]): Reason => reasons.find((r) => typeof r === 'string');
 
@@ -115,7 +117,7 @@ const FAMILY_CALLS: Readonly<Record<string, Mechanic['calls']>> = {
     ),
   Chain: (b) =>
     first(
-      b.mods.fizzle && 'Fizzle holds a mark made by a reaction',
+      fizzles(b) && 'Fizzle turns reactions away every second round',
       b.mods.reflectFirst && 'it reflects the first reaction: a trail needs another Payoff',
     ),
   Flurry: (b) => b.mods.capPerHit !== undefined && 'no hit deals more than a cap',
@@ -159,7 +161,7 @@ const FAMILY_CALLS: Readonly<Record<string, Mechanic['calls']>> = {
 
 const KEYWORD_CALLS: Readonly<Record<string, Mechanic['calls']>> = {
   Mark: (b) =>
-    (b.mods.shedMarks || b.mods.fizzle || b.mods.reflectFirst || b.mods.adapts) &&
+    (b.mods.shedMarks || fizzles(b) || b.mods.reflectFirst || b.mods.adapts) &&
     'it acts on marks and reactions',
   Reaction: (b) =>
     (b.mods.reflectFirst || b.mods.adapts || b.escalation?.feed === 'reactions') &&
@@ -255,7 +257,7 @@ const RULE_CALLS: readonly Mechanic[] = [
     calls: (b) =>
       first(
         b.mods.shedMarks && 'it sheds marks',
-        b.mods.fizzle && 'Fizzle holds marks',
+        fizzles(b) && 'Fizzle turns reactions away',
         b.mods.reflectFirst && 'it reflects the first reaction',
       ),
   },
@@ -305,10 +307,7 @@ const RULE_CALLS: readonly Mechanic[] = [
 const TALENT_CALLS: Readonly<Record<(typeof MODIFIER_CATEGORIES)[number], Mechanic['calls']>> = {
   damage: (b) => (b.mods.capPerHit !== undefined || armoured(b)) && 'hits must be worth landing',
   marks: (b) =>
-    (b.mods.shedMarks ||
-      b.mods.fizzle ||
-      b.mods.reflectFirst ||
-      b.escalation?.feed === 'reactions') &&
+    (b.mods.shedMarks || fizzles(b) || b.mods.reflectFirst || b.escalation?.feed === 'reactions') &&
     'it acts on marks and reactions',
   protection: (b) =>
     attacksOf(b).some((a) => dealsDamage(a) && a.powerBp >= 12_000) && 'heavy hits',

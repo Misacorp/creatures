@@ -223,10 +223,17 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
       if (
         s.ctx.triggers(f.element, el) &&
         m.stacks >= (k.minStacks ?? 1) &&
-        s.bossTurnsDone >= m.cashableAfterTurns &&
         (cand === undefined || m.age < cand[1].age)
       )
         cand = entry;
+    }
+    // Fizzle: while the boss is immune to reactions the mark stays where it is and nothing is cashed (the hit is a plain one).
+    if (cand !== undefined && s.fizzled) {
+      if (s.opts.log)
+        log(s, 'fizzle', `${f.name}'s ${cand[0]} reaction fizzles`, {
+          board: { type: 'fizzle', state: 'blocked', by: keyOf(f), mark: cand[0] },
+        });
+      cand = undefined;
     }
   }
   // 3a. Marking Hit and Marked Foe (gear): known only now that the reaction is chosen. A hit that sets off no reaction and marks (a
@@ -391,7 +398,6 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
       addMark(s, f.element, 1, {
         sealed: k.seal ?? false,
         fromTrail: true,
-        fizzle: true,
         by: f,
       });
   }
