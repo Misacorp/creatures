@@ -129,6 +129,17 @@ export const VALLEY_RULES = {
     bronzeSmithHours: 24,
     // ASSUMPTION: combat is not simulated, so this share of dungeon runs counts as an Undercroft clear (or 2+ levels deep).
     undercroftShare: 0.3,
+    // Step 9c picks (2026-11-06, trials.md V-TRIAL-2, 4, 5): see `trials.ts`.
+    // The School's daily ceremony, guild-local hour (the valley's evening; graduation is told in the next return walk, V-TRIAL-4).
+    ceremonyHour: 17,
+    // Silver's combat box: the Undercroft keepers (levels) a run beat with the creature in the team ("clear the Undercroft", V-TRIAL-2).
+    undercroftLevels: 1,
+    // V-TRIAL-5: the single-piece routes (a Rare piece made for Silver, an Epic for Gold) count over days of the creature's own
+    // smithing, so swapping creatures through anvils gains nothing: this many effective hours at an anvil (3 days, 14 days).
+    rareRouteSmithHours: 72,
+    epicRouteSmithHours: 336,
+    // Gold's "a week at a communal seat": the effective hours credited to the commons' projects from the creature's own seat.
+    teacherHours: 168,
   },
 
   /** V-POST-2 seats: each player's own seats, bought with Acorns, dearer each time and at a higher place level. */

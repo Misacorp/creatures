@@ -11,3 +11,4 @@ export * from './commons';
 export * from './visitor';
 export * from './visitor-view';
 export * from './school';
+export * from './trials';

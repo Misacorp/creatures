@@ -545,6 +545,7 @@ Superseded: 1 entry (see the topic file).
 
 - 2026-11-06 Learning on a card costs the School's price times the slot it fills, in Acorns, with the valley systems on
 - 2026-11-06 Phase 5 step 9a: the School's teacher and lessons
+- 2026-11-06 Trials (step 9c): the boxes, where each ticks, and the ceremony
 - 2026-11-06 Phase 5 step 8b: the visitor's screens
 - 2026-11-06 The visitor's weekly blueprint is drawn from the craftable bases for now (scouts can find them too)
 - 2026-11-06 The visitor prices a piece on its stored item level, and rerolls with the shipped line roller

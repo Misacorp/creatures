@@ -25,6 +25,7 @@ import type { ValleyCommons } from './valley-commons';
 import { BROKER_ANY, SEAT_COLUMNS, type SeatRow, type ValleySettle } from './valley-settle';
 import { hasDeepArea, type ValleyFinds } from './valley-finds';
 import type { ValleyGazette } from './valley-gazette';
+import type { ValleyTrials } from './valley-trials';
 import { worldAt } from './valley-world';
 
 export interface ValleySeatsDeps {
@@ -37,6 +38,8 @@ export interface ValleySeatsDeps {
   readonly gazette: ValleyGazette;
   /** The Signpost's level bounds the seats (V-COM-10); the communal seats belong to a place of the commons (V-POST-13). */
   readonly commons: ValleyCommons;
+  /** Trials: a way found deeper is Silver's "go further" (V-TRIAL-2). */
+  readonly trials: ValleyTrials;
 }
 
 /** What a bought seat or kit answers (stored for a retry). */
@@ -304,6 +307,9 @@ export class ValleySeats {
           throw new GameError(409, 'no_way_deeper');
         }
         this.deps.gazette.clearDecision(userId);
+        if (seat.creature_id !== null) {
+          this.deps.trials.tickEvent(userId, [seat.creature_id], 'further', this.deps.now());
+        }
       }
       this.bringHome(userId, seat, this.deps.now());
       this.sql.exec(

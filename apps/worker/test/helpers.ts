@@ -3,6 +3,8 @@ import { expect } from 'vitest';
 import { env } from 'cloudflare:workers';
 import { runInDurableObject } from 'cloudflare:test';
 import { GAMES_TABLES } from '../src/games-migration';
+import { MIGRATIONS } from '../src/migrations';
+import { valleyTrialsMigration } from '../src/valley-trials-migration';
 import { GuildCore, type GuildCoreOptions } from '../src/guild-core';
 import { DiscordError, type DiscordApi, type GuildApi } from '../src/discord';
 import { createHandler } from '../src/index';
@@ -326,8 +328,21 @@ export function undoValleySchoolMigration(sql: SqlStorage): void {
   sql.exec('DELETE FROM schema_version WHERE version = 65');
 }
 
+/**
+ * Puts a database back to before the trials' migration (`creature_trials`, the last one at step 9c): the table goes. Its version is read from
+ * its place in the list, so it stays right whatever migrations other steps put before it.
+ */
+export function undoValleyTrialsMigration(sql: SqlStorage): void {
+  sql.exec('DROP TABLE IF EXISTS creature_trials');
+  sql.exec(
+    'DELETE FROM schema_version WHERE version = ?',
+    MIGRATIONS.indexOf(valleyTrialsMigration) + 1,
+  );
+}
+
 /** Puts a database back to before migration 64 (the weekly visitor): his tables go. */
 export function undoValleyVisitorMigration(sql: SqlStorage): void {
+  undoValleyTrialsMigration(sql);
   undoValleySchoolMigration(sql);
   sql.exec('DROP TABLE IF EXISTS visitor_rerolls');
   sql.exec('DROP TABLE IF EXISTS visitor_weeks');

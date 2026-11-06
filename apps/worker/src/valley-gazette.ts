@@ -80,6 +80,14 @@ export class PaperRecorder {
     if (this.log.lessons.length < LOG_CAPS.lessons) this.log.lessons.push({ creatureId, talentId });
   }
 
+  /** A creature graduated at the School's ceremony (V-TRIAL-4): its honour (1 Bronze, 2 Silver, 3 Gold). */
+  graduate(creatureId: string, honour: 1 | 2 | 3): void {
+    this.log.graduateCount += 1;
+    if (this.log.graduates.length < LOG_CAPS.graduates) {
+      this.log.graduates.push({ creatureId, honour });
+    }
+  }
+
   /** Gear a scout's pack held when it came home, the best kept. */
   gear(item: PaperItem, by: string | null): void {
     this.log.gearCount += 1;

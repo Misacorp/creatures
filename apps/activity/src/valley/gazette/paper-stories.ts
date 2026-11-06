@@ -41,6 +41,7 @@ const PAIR_MOMENTS: readonly ((a: string, b: string) => string)[] = [
   (a, b) => `${a} chased ${b} round the fire`,
 ];
 
+const honourName = (tier: number): string => ['Bronze', 'Silver', 'Gold'][tier - 1] ?? 'Bronze';
 const plural = (n: number, one: string, many: string): string => (n === 1 ? one : many);
 const num = (n: number): string => String(n);
 const upper = (text: string): string => text.toUpperCase();
@@ -78,6 +79,7 @@ const PLACE_OF: Record<PaperHeadline['kind'], PlaceId> = {
   visitor: 'visitor',
   teacher: 'school',
   lesson: 'school',
+  graduation: 'school',
 };
 
 /** The stories of the server's paper, the biggest first (as the server ranked them), and what it left untold. */
@@ -273,6 +275,19 @@ function storyOf(h: PaperHeadline, paper: Paper, byId: ReadonlyMap<string, Creat
         scene: scene(members),
       };
     }
+    case 'graduation':
+      // V-TRIAL-4: the School's ceremony is told in the paper, several in one line ("Three of yours graduated at the School").
+      return {
+        ...base,
+        headline: upper(
+          h.count === 1
+            ? `${first ?? 'One of yours'} graduated at the School`
+            : `${num(h.count)} of yours graduated at the School`,
+        ),
+        blurb: h.step === null ? '' : `${honourName(h.step)} honours.`,
+        finds: [],
+        scene: scene(members),
+      };
     case 'moment': {
       const turn = h.turn ?? 0;
       const second = members[1]?.name;

@@ -113,6 +113,7 @@ export const LOG_CAPS = {
   xp: 3,
   packs: 6,
   lessons: 3,
+  graduates: 6,
 } as const;
 
 const by = v.nullable(id);
@@ -187,6 +188,18 @@ export const PaperLogSchema = v.strictObject({
     [],
   ),
   lessonCount: v.optional(int, 0),
+  /**
+   * Creatures that graduated at the School's ceremony (V-TRIAL-4), the first few with the honour each earned (1 Bronze, 2 Silver, 3 Gold);
+   * `graduateCount` counts them all. The stored log of an older paper has none.
+   */
+  graduates: v.optional(
+    v.pipe(
+      v.array(v.strictObject({ creatureId: id, honour: v.picklist([1, 2, 3]) })),
+      v.maxLength(LOG_CAPS.graduates),
+    ),
+    [],
+  ),
+  graduateCount: v.optional(int, 0),
 });
 export type PaperLog = v.InferOutput<typeof PaperLogSchema>;
 
@@ -210,6 +223,8 @@ export const emptyLog = (): PaperLog => ({
   teacher: null,
   lessons: [],
   lessonCount: 0,
+  graduates: [],
+  graduateCount: 0,
 });
 
 const rank = (rarity: PaperRarity): number => RARITIES.indexOf(rarity);
@@ -271,6 +286,8 @@ export function mergeLogs(base: PaperLog, more: PaperLog): PaperLog {
     teacher: more.teacher ?? base.teacher,
     lessons: [...base.lessons, ...more.lessons].slice(0, LOG_CAPS.lessons),
     lessonCount: base.lessonCount + more.lessonCount,
+    graduates: [...base.graduates, ...more.graduates].slice(0, LOG_CAPS.graduates),
+    graduateCount: base.graduateCount + more.graduateCount,
   };
 }
 
@@ -294,6 +311,7 @@ export const HEADLINE_KINDS = [
   'visitor',
   'teacher',
   'lesson',
+  'graduation',
 ] as const;
 export type HeadlineKind = (typeof HEADLINE_KINDS)[number];
 
@@ -315,6 +333,7 @@ const GROUP_OF: Record<HeadlineKind, HighlightGroup> = {
   // The School's news is about creatures (the visitor's `server` story would always outrank it: both are here from Friday).
   teacher: 'creature',
   lesson: 'creature',
+  graduation: 'creature',
 };
 
 /** One of a paper's headlines, as data: the client words it (names, places) and draws its scene from the creatures. */
@@ -328,7 +347,7 @@ export const PaperHeadlineSchema = v.strictObject({
   creatureIds: v.pipe(v.array(id), v.maxLength(3)),
   /** The species of a newcomer (for its face), else null. */
   species: v.nullable(id),
-  /** The mastery step reached (1 Skilled, 2 Expert, 3 Master), else null. */
+  /** The mastery step reached (1 Skilled, 2 Expert, 3 Master), or for a graduation the best honour earned (1 Bronze, 2 Silver, 3 Gold), else null. */
   step: v.nullable(v.picklist([1, 2, 3])),
   /** The best rarity among its pieces, else null. */
   rarity: v.nullable(v.picklist(RARITIES)),
@@ -407,6 +426,14 @@ export function headlinesOf(log: PaperLog): PaperHeadline[] {
       ...blank('lesson', HIGHLIGHT_WEIGHT.lesson, log.lessonCount),
       creatureIds: crew(...log.lessons.map((l) => l.creatureId)),
       talent: lesson.talentId,
+    });
+  }
+  if (log.graduateCount > 0 && log.graduates[0] !== undefined) {
+    const top = Math.max(...log.graduates.map((g) => g.honour)) as 1 | 2 | 3;
+    out.push({
+      ...blank('graduation', HIGHLIGHT_WEIGHT.graduation, log.graduateCount),
+      creatureIds: crew(...log.graduates.map((g) => g.creatureId)),
+      step: top,
     });
   }
   const first = log.newcomers[0];

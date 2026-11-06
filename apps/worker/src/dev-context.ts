@@ -8,6 +8,7 @@ import type { Games } from './games';
 import type { LedgerStorage } from './ledger';
 import type { Raid } from './raid';
 import type { SchoolWeeks } from './valley-school';
+import type { ValleyTrials } from './valley-trials';
 import type { VisitorWeeks } from './valley-visitor';
 import type { Weather } from './weather';
 
@@ -56,6 +57,8 @@ export interface ToolCtx {
   visitor: VisitorWeeks | null;
   /** The School's teacher weeks (the `school-teacher` tool); null with the valley systems off. */
   school: SchoolWeeks | null;
+  /** Trials and graduation (the `trials-*` tools); null with the valley systems off. */
+  trials: ValleyTrials | null;
   /** Crypto randomness for the things the tools roll (guest teams, gear, the day's seed). */
   rng: Rng;
   gearRng: Rng;
