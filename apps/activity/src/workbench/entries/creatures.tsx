@@ -21,7 +21,7 @@ import { loungeSample } from '../../creature-card-sample';
 import { SmallCreature } from '../../SmallCreature';
 import { GearList } from '../../GearList';
 import { sampleItem } from '../../creature-page/bag-sample';
-import type { ReadinessBand, RaidView } from '../../raid-api';
+import type { PhaseResultView, ReadinessBand, RaidView } from '../../raid-api';
 import { READINESS_BANDS } from '../../raid-api';
 import { turnChips } from '../../replay';
 import { Sprite } from '../../sprites/Sprite';
@@ -142,7 +142,55 @@ const bossCard: Entry = {
 };
 
 /** The sample week with the season week and the next event the page asks for. */
+const KILLS = ['none', 'stage 1', 'stage 2'] as const;
+
+/** A stage result row for the timeline's tick. */
+const stageResult = (phase: 'phase1' | 'phase2', cleared: boolean): PhaseResultView => ({
+  phase,
+  at: 1,
+  cleared,
+  rounds: 5,
+  bossHpMax: 100,
+  bossHpStart: 100,
+  bossHpEnd: 0,
+  damage: 100,
+  reactions: 2,
+  top: [],
+  essence: 12,
+  rankChange: null,
+  festivalGrant: null,
+});
+
+/** A combat v2 week whose boss fell in stage 1 or 2: no stage is left, the finale has no result. */
+function killedView(kill: 'stage 1' | 'stage 2'): RaidView {
+  const { view } = raidV2Sample({
+    slot: 1,
+    players: 4,
+    stagesPlayed: 0,
+    mine: 3,
+    bestShareBp: 0,
+    knockedOut: false,
+    swaps: 'none',
+    determinationBp: 0,
+  });
+  if (view.v2 === undefined || view.party === null) return view;
+  const one = kill === 'stage 1';
+  return {
+    ...view,
+    next: one ? { event: 'phase2', at: view.schedule.phase2 } : null,
+    v2: { ...view.v2, nextStage: 4, stagesPlayed: one ? 1 : 2 },
+    party: {
+      ...view.party,
+      results: one
+        ? [stageResult('phase1', true)]
+        : [stageResult('phase1', false), stageResult('phase2', true)],
+    },
+  };
+}
+
 function timelineView(p: Props): RaidView {
+  const kill = KILLS.find((k) => k === str(p, 'killedIn'));
+  if (kill === 'stage 1' || kill === 'stage 2') return killedView(kill);
   const week = num(p, 'seasonWeek');
   const next = str(p, 'next');
   const event = (['phase1', 'phase2', 'finale'] as const).find((e) => e === next);
@@ -162,8 +210,9 @@ const raidTimeline: Entry = {
   controls: {
     seasonWeek: { kind: 'number', min: 0, max: 5 },
     next: { kind: 'select', options: ['phase1', 'phase2', 'finale', NONE] },
+    killedIn: { kind: 'select', options: KILLS },
   },
-  defaults: { seasonWeek: 3, next: 'phase1' },
+  defaults: { seasonWeek: 3, next: 'phase1', killedIn: 'none' },
   presets: [
     { name: 'Week 3 of the season', props: {} },
     { name: 'First week of the season', props: { seasonWeek: 1 } },
@@ -171,6 +220,14 @@ const raidTimeline: Entry = {
     { name: 'No season (an old week: no pips)', props: { seasonWeek: 0 } },
     { name: 'Phase 2 comes next', props: { next: 'phase2' } },
     { name: 'The week is over (nothing next)', props: { next: NONE } },
+    {
+      name: 'Combat v2: the boss fell in stage 1 (later steps read "Boss down")',
+      props: { killedIn: 'stage 1' },
+    },
+    {
+      name: 'Combat v2: the boss fell in stage 2 (the finale reads "Boss down")',
+      props: { killedIn: 'stage 2' },
+    },
   ],
   render: (p) => (
     <RaidTimeline

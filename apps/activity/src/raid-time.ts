@@ -67,3 +67,26 @@ export function scheduleSteps(
     state: stateOf(index),
   }));
 }
+
+/** What a step after the boss's fall says in place of its time: it did not happen. */
+export const BOSS_DOWN_WHEN = 'Boss down';
+
+/**
+ * A combat v2 party's boss can fall in stage 1 or 2: the stages after it are not played. Those steps are over (the same
+ * look as any past step) and say "Boss down" instead of a time that never comes. `killedIn` is the stage that killed it
+ * (`earlyKillStage`), or null for any other week, which keeps the steps as they are.
+ */
+export function withEarlyKill(
+  steps: readonly ScheduleStep[],
+  killedIn: RaidEventId | null,
+): ScheduleStep[] {
+  if (killedIn === null) return [...steps];
+  const at = RAID_EVENT_IDS.indexOf(killedIn);
+  return steps.map((step, index) =>
+    index > at
+      ? { ...step, state: 'done', when: BOSS_DOWN_WHEN, until: null }
+      : index === at
+        ? { ...step, state: 'done' }
+        : step,
+  );
+}

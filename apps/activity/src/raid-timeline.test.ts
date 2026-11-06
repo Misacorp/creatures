@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { PhaseResultView } from './raid-api';
 import {
   CLEARED_GLYPH,
+  earlyKillStage,
   MISSED_GLYPH,
   showFullResults,
   stepMark,
@@ -52,6 +53,27 @@ describe('showFullResults', () => {
     expect(showFullResults([])).toBe(false);
     expect(showFullResults([result('phase1', true), result('phase2', true)])).toBe(false);
     expect(showFullResults([result('phase1', true), result('finale', false)])).toBe(true);
+  });
+});
+
+describe('earlyKillStage', () => {
+  const week = (nextStage: number, ...results: PhaseResultView[]) => ({
+    rules: 2 as const,
+    v2: { nextStage },
+    party: { results },
+  });
+
+  it('names the stage that killed the boss when no stage is left and the finale has no result', () => {
+    expect(earlyKillStage(week(4, result('phase1', true)))).toBe('phase1');
+    expect(earlyKillStage(week(4, result('phase1', false), result('phase2', true)))).toBe('phase2');
+  });
+
+  it('is null while the party still has a stage to play, after a finale and on a v1 week', () => {
+    expect(earlyKillStage(week(2, result('phase1', false)))).toBeNull();
+    expect(earlyKillStage(week(4, result('phase1', false), result('finale', true)))).toBeNull();
+    expect(earlyKillStage(week(4))).toBeNull();
+    expect(earlyKillStage({ party: { results: [result('phase1', true)] } })).toBeNull();
+    expect(earlyKillStage({ rules: 2, party: null })).toBeNull();
   });
 });
 

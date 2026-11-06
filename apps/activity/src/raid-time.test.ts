@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { scheduleSteps } from './raid-time';
+import { BOSS_DOWN_WHEN, scheduleSteps, withEarlyKill } from './raid-time';
 
 // Friday 2026-10-09 13:37 in Helsinki (UTC+3 in October) is 10:37 UTC.
 const FRIDAY = Date.UTC(2026, 9, 9, 10, 37);
@@ -64,5 +64,36 @@ describe('scheduleSteps', () => {
       expect(steps.map((s) => s.when)).toEqual(labels);
       expect(steps[0]?.until).toBe('Fri 13:37');
     }
+  });
+});
+
+describe('withEarlyKill', () => {
+  const steps = scheduleSteps(schedule, { event: 'phase2' }, 'Europe/Helsinki', 2);
+
+  it('keeps every step of a week with no early kill', () => {
+    expect(withEarlyKill(steps, null)).toEqual(steps);
+  });
+
+  it('makes the killing stage and the steps after it over, the later ones with "Boss down" for their time', () => {
+    const killed = withEarlyKill(steps, 'phase1');
+    expect(killed.map((s) => s.state)).toEqual(['done', 'done', 'done', 'done']);
+    expect(killed.map((s) => s.when)).toEqual([
+      'Mon 13:37',
+      'Fri 13:37',
+      BOSS_DOWN_WHEN,
+      BOSS_DOWN_WHEN,
+    ]);
+    expect(killed.map((s) => s.title)).toEqual(['Preparation', 'Stage 1', 'Stage 2', 'Finale']);
+  });
+
+  it('leaves only the finale unplayed after a stage 2 kill', () => {
+    const killed = withEarlyKill(steps, 'phase2');
+    expect(killed.map((s) => s.when)).toEqual([
+      'Mon 13:37',
+      'Fri 13:37',
+      'Sat 13:37',
+      BOSS_DOWN_WHEN,
+    ]);
+    expect(killed[3]?.state).toBe('done');
   });
 });
