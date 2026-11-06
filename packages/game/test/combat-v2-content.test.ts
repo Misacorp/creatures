@@ -407,6 +407,27 @@ describe('combat v2 content gate: unique names (P-06)', () => {
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
+// Knack text length
+// ---------------------------------------------------------------------------------------------------------------------
+
+/**
+ * A Knack's text runs to two lines at most at 390 px ("On the board", Text rule in docs/design/ux-patterns.md): never clipped,
+ * so the content is short enough. Measured 2026-11-06 in the Knack picker (the narrowest place: the name shares its first line)
+ * at 390 px with every Knack: all texts up to 100 characters (keyword braces not counted) fit two lines, the first that ran to
+ * three was 108. A text with several keyword chips needs more room per character, so 100 is the cap, not a guess above it.
+ */
+const KNACK_TEXT_MAX = 100;
+
+describe('Knack text length', () => {
+  it(`is at most ${String(KNACK_TEXT_MAX)} characters, so it fits two lines at 390 px`, () => {
+    const tooLong = Object.values(pack.knacks)
+      .map((k) => ({ id: k.id, length: k.text.replace(/[{}]/g, '').length }))
+      .filter((k) => k.length > KNACK_TEXT_MAX);
+    expect(tooLong).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
 // Keywords
 // ---------------------------------------------------------------------------------------------------------------------
 

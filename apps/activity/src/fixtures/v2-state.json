@@ -474,7 +474,7 @@
           "id": "leave-a-trail",
           "name": "Leave a Trail",
           "family": "Chain",
-          "text": "After its {Reaction}, it leaves 1 stack of its own element's mark. A reaction on that mark leaves no further trail."
+          "text": "After its {Reaction}, it leaves 1 stack of its element's mark. That mark's reaction leaves no trail."
         },
         {
           "id": "wild-swing",

@@ -116,7 +116,7 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 ### Leave a Trail
 
-- **Text:** After its {Reaction}, it leaves 1 stack of its own element's mark. A reaction on that mark leaves no further trail.
+- **Text:** After its {Reaction}, it leaves 1 stack of its element's mark. That mark's reaction leaves no trail.
 - **Family:** Chain
 - **Forms:** geyserpup, stormray, tempestray, cindle, pyrelynx, bloomback, coralynx, gaiadrake
 - **Intent (for contributors, never shown to players):** Cross-element chains: a reaction primes the next one for another Payoff.
@@ -151,7 +151,7 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 ### Eye of the Storm
 
-- **Text:** {Store} Calm: +1 for each reaction anywhere. At round start with 3 Calm, the creatures beside it get +45% and it spends all.
+- **Text:** {Store} Calm: +1 per reaction anywhere. At 3 at round start: creatures beside it get +45%, spends all.
 - **Family:** Store
 - **Forms:** halcyray, aurorix
 - **Intent (for contributors, never shown to players):** A reaction-heavy line gets a burst every few rounds.
@@ -235,7 +235,7 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 ### Boiling Point
 
-- **Text:** {Store} Heat: +1 at round start and each time it or a creature in its reach takes damage. At 3, the next {Reaction} by a creature beside it deals double bonus.
+- **Text:** {Store} Heat: +1 per round and per hit in its {Reach}. At 3, next {Reaction} beside it deals double bonus.
 - **Family:** Store
 - **Forms:** kilnmole
 - **Intent (for contributors, never shown to players):** A Guard beside a Payoff in a hard fight.
@@ -375,7 +375,7 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 ### Cool Head
 
-- **Text:** {Crit}s on it and on the creatures {Beside} it deal no extra damage; each crit it spares stores a {Sure Crit} on the creature it was aimed at.
+- **Text:** {Crit}s on it and creatures {Beside} it deal no extra damage; a spared crit stores a {Sure Crit} there.
 - **Family:** Luck
 - **Forms:** thornbuck
 - **Intent (for contributors, never shown to players):** The answer to a boss that crits (Double Strike): a Guard that keeps a crit to a plain hit for itself and its neighbours, and turns each spared crit into a Sure Crit for the creature it was aimed at, so it asks for a Payoff beside the Guard. A Sure Crit deals the spender's own crit extra (a Perfect Timing creature's is 3x). Nothing against a boss that never crits (2026-10-31: at half the ward alone was tied with no Knack on every card but Double Strike).
