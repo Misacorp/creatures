@@ -511,7 +511,8 @@ describe('making pieces (V-FORGE-3, 4, 5, 7, 9)', () => {
             p.id,
           )
           .toArray();
-        expect(items.every((i) => i.base_id === HAT && i.item_level === 1)).toBe(true);
+        // Pieces come out at the fire's level: the valley's fire starts at `fire.start` (V-COM-13, V-FORGE-7).
+        expect(items.every((i) => i.base_id === HAT && i.item_level === R.fire.start)).toBe(true);
         expect(home.forge.bag).toEqual({ count: 3, cap: R.forge.bag });
         expect(counter(ctx.sql, p.id)).toBe(3);
         // The order made its count and left the queue; the smith tinkers now.

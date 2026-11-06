@@ -86,7 +86,13 @@ describe('valley-fresh: the wipe', () => {
 
   it('lists the valley tables it clears in one place: the server middle so far, and every listed table exists', async () => {
     // Step 5 (migration 60) added the server's middle; later steps add theirs to the same list.
-    expect(VALLEY_GUILD_TABLES).toEqual(['valley_server']);
+    expect(VALLEY_GUILD_TABLES).toEqual([
+      'valley_server',
+      'valley_places',
+      'valley_collections',
+      'valley_fire_log',
+      'valley_keystones',
+    ]);
     await runCore(nextGuild(), (ctx) => {
       for (const table of VALLEY_GUILD_TABLES) {
         expect(count(ctx.sql, 'sqlite_master', `type = 'table' AND name = '${table}'`), table).toBe(

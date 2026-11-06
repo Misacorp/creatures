@@ -121,8 +121,10 @@ import { MIGRATIONS } from './migrations';
 import { ReadMeter, pruneReads, readSourceOfPath, type ReadSource } from './read-meter';
 import { liveRng } from './rng';
 import { ValleyBonfire } from './valley-bonfire';
+import { ValleyCommons } from './valley-commons';
 import { ValleyFinds } from './valley-finds';
 import { ValleyForgePass } from './valley-forge';
+import { ValleyGifts } from './valley-gifts';
 import { ValleyGazette } from './valley-gazette';
 import { valleyRoutes } from './valley-routes';
 import { ValleyOrders } from './valley-orders';
@@ -455,6 +457,8 @@ export class GuildCore {
   readonly valleyGazette: ValleyGazette | null;
   /** The server's middle, who is online and the raid's pause of posts (`VALLEY_SYSTEMS`), or null with the flag off. */
   readonly valleyBonfire: ValleyBonfire | null;
+  /** Gifts to the commons' projects (`VALLEY_SYSTEMS`), or null with the flag off. */
+  readonly valleyGifts: ValleyGifts | null;
   /** The `VALLEY_SYSTEMS` flag as the worker resolved it (see `valley-flag.ts`). */
   readonly valleySystems: boolean;
   private postsInFlight: Promise<void> | null = null;
@@ -532,6 +536,7 @@ export class GuildCore {
       gearRng,
       branchesOf: options.branchesOf,
       ...(options.combatV2 === true ? { combatV2: true } : {}),
+      ...(this.valleySystems ? { valleySystems: true } : {}),
       tripRng: options.tripRng ?? liveRng(),
       weather: this.weather,
       // With the valley on there is no lounge XP and no daily cap to show (the bonfire's idle XP takes over).
@@ -559,6 +564,7 @@ export class GuildCore {
         timezone: () => this.timezone(),
       });
       this.valleyBonfire = bonfire;
+      const commons = new ValleyCommons({ storage, now, roll: () => finds.roll() });
       const valley = new ValleySettle({
         storage,
         now,
@@ -568,6 +574,7 @@ export class GuildCore {
         forge,
         gazette,
         bonfire,
+        commons,
       });
       this.valley = valley;
       this.valleySeats = new ValleySeats({
@@ -577,13 +584,16 @@ export class GuildCore {
         settle: valley,
         finds,
         gazette,
+        commons,
       });
       this.valleyGazette = gazette;
-      this.valleyOrders = new ValleyOrders({ storage, now, settle: valley, forge });
+      this.valleyOrders = new ValleyOrders({ storage, now, settle: valley, forge, commons });
+      this.valleyGifts = new ValleyGifts({ storage, now, settle: valley, commons });
     } else {
       this.valley = null;
       this.valleySeats = null;
       this.valleyOrders = null;
+      this.valleyGifts = null;
       this.valleyGazette = null;
       this.valleyBonfire = null;
     }
@@ -593,6 +603,7 @@ export class GuildCore {
       rng: gearRng,
       analytics: this.analytics,
       weather: this.weather,
+      ...(this.valleySystems ? { valleySystems: true } : {}),
     });
     this.dungeon = new Dungeon({
       storage,

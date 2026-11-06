@@ -16,7 +16,6 @@
  */
 import {
   GEAR_SLOTS,
-  RULES,
   VALLEY_ELEMENTS,
   VALLEY_RULES,
   chance,
@@ -61,11 +60,6 @@ import {
 import { debit, getBalance, type LedgerStorage } from './ledger';
 import { speciesOf } from './species';
 import type { SeatRow } from './valley-settle';
-
-/** The Forge's level until the commons (step 6) can raise it: it bounds the anvils (V-FORGE-6, V-COM-10). */
-export const FORGE_LEVEL = 1;
-/** The fire's level until the commons (step 6): the item level of every piece the Forge makes (V-FORGE-7). */
-export const FIRE_LEVEL = 1;
 
 const RARITIES: readonly GearRarity[] = ['common', 'rare', 'epic'];
 const ELEMENT_COUNT = VALLEY_ELEMENTS.length;
@@ -129,14 +123,6 @@ const WAITS: readonly string[] = ['idle', 'scrap', 'shard', 'essence', 'floor'];
 const asWait = (reason: string | null): AnvilWait | null =>
   reason !== null && WAITS.includes(reason) ? (reason as AnvilWait) : null;
 
-/**
- * Combat v2 seam (V-GEAR-3, plan risk 5): today a gear slot opens at a creature level (`RULES.gear.slotUnlockLevel`); V-GEAR-3 opens all
- * three at level 1 once combat v2's gear ships. "For my team" counts and dresses only the slots a creature may wear now, so no piece
- * is made for a slot that cannot take it. When the rule changes, this is the one place that follows.
- */
-export const slotOpenFor = (level: number, slot: GearSlot): boolean =>
-  level >= RULES.gear.slotUnlockLevel[slot];
-
 /** The element index (in `VALLEY_ELEMENTS`) of a base: its tag's element, or -1 for a neutral base (any pile pays). */
 export function baseElementIndex(base: Pick<GearBase, 'tag'>): number {
   const element = tagElement(base.tag);
@@ -191,15 +177,14 @@ export class ValleyForgePass {
   /**
    * "For my team": the weak slots by element (empty, or below the weak limit of the fire), counted over the player's creatures.
    */
-  weakByElement(userId: string, team: readonly TeamMember[]): number[] {
+  weakByElement(userId: string, team: readonly TeamMember[], fireLevel: number): number[] {
     const weak = new Array<number>(ELEMENT_COUNT).fill(0);
     const worn = equippedByCreature(this.sql, userId);
-    const limit = weakLimit(VALLEY_RULES, FIRE_LEVEL);
+    const limit = weakLimit(VALLEY_RULES, fireLevel);
     for (const c of team) {
       const e = VALLEY_ELEMENTS.indexOf(speciesOf(c.species).element);
       if (e < 0) continue;
       for (const slot of GEAR_SLOTS) {
-        if (!slotOpenFor(c.level, slot)) continue;
         if ((worn.get(c.id)?.[slot]?.item_level ?? 0) < limit) weak[e] = (weak[e] ?? 0) + 1;
       }
     }
@@ -212,6 +197,8 @@ export class ValleyForgePass {
     anvils: readonly SeatRow[],
     team: readonly TeamMember[],
     indexOf: ReadonlyMap<string, number>,
+    /** The fire's level: the item level of every piece the anvils finish (V-FORGE-7, V-COM-13). */
+    fireLevel: number,
   ): ForgeLoad | null {
     if (anvils.length === 0) return null;
     const orders = this.orders(userId);
@@ -225,7 +212,7 @@ export class ValleyForgePass {
     const pending = new Array<number>(ELEMENT_COUNT).fill(0);
     let weak = new Array<number>(ELEMENT_COUNT).fill(0);
     if (wantsTeam) {
-      weak = this.weakByElement(userId, team);
+      weak = this.weakByElement(userId, team, fireLevel);
       for (const a of anvils) {
         if (a.piece_active === 1 && a.piece_team === 1 && a.piece_element >= 0) {
           pending[a.piece_element] = (pending[a.piece_element] ?? 0) + 1;
@@ -287,7 +274,7 @@ export class ValleyForgePass {
         scrapCarry: 0,
         weak,
         pending,
-        fireLevel: FIRE_LEVEL,
+        fireLevel,
       },
       orders,
       anvils,
@@ -474,7 +461,7 @@ export class ValleyForgePass {
         const pick = target.pick(row.element, row.item_level);
         const base = pick?.base ?? teamBase(this.deps.rng, row.element, row.item_level);
         item = rollItem(this.deps.rng, { baseId: base.id, rarity, itemLevel: row.item_level });
-        if (pick !== undefined && wearBlock(item, pick.wearer) === null) {
+        if (pick !== undefined && wearBlock(item, pick.wearer, true) === null) {
           wearer = { id: pick.wearer.id, slot: pick.slot };
         }
       }
@@ -552,7 +539,6 @@ class TeamTargets {
     for (const member of this.team) {
       if (VALLEY_ELEMENTS.indexOf(speciesOf(member.species).element) !== element) continue;
       for (const slot of GEAR_SLOTS) {
-        if (!slotOpenFor(member.level, slot)) continue;
         const level = this.levels.get(member.id)?.get(slot)?.level ?? 0;
         if (level < limit && level < itemLevel && (best === undefined || level < best.level)) {
           best = { member, slot, level };

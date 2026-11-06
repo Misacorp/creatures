@@ -92,6 +92,10 @@ describe('migration 56: the valley tables', () => {
           'forge_carry',
           // Migration 60: the level the creatures catch up toward, fixed at the visit.
           'catch_target',
+          // Migration 61: the days of the last seven the player visited and the day they joined (V-COM-5).
+          'visit_mask',
+          'mask_day',
+          'joined_day',
         ]);
         expect(columns('valley_creatures')).toEqual([
           'creature_id',

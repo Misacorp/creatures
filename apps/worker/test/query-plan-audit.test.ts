@@ -59,6 +59,11 @@ const SMALL_BY_DESIGN: Record<string, string> = {
   lounge_message: 'one row: the lounge message of the guild',
   lounge_instances: 'the Activity instances open right now (a few)',
   lounge_company: 'one row per player who lounges with company (players, at most a few dozen)',
+  valley_places:
+    'one row per place of the valley (five today; a new place is content, never a row per player)',
+  valley_keystones: 'one row per scouting destination (seven today), a clock each',
+  valley_collections:
+    'one row per socket that has been set: five sockets on each board of five places, 25 rows for good',
 };
 
 /**
@@ -400,6 +405,76 @@ describe('query plan audit', () => {
     expect(result.seen, 'statements recorded').toBeGreaterThan(40);
     // The valley's own statements ran (a refactor that stops running them would pass for nothing).
     for (const table of ['valley_players', 'valley_creatures'])
+      expect(
+        result.statements.some((q) => q.includes(table)),
+        table,
+      ).toBe(true);
+    expect(result.found, scanMessage(result.found)).toEqual([]);
+  }, 60_000);
+
+  it("plans the commons' statements (a gift, a gift that finishes a level, a communal seat credited, a keystone and a collection, a post) without a whole-table scan", async () => {
+    const result = await audit({ valleySystems: true, fresh: true }, async (env, world) => {
+      const { clock, metered } = env;
+      const { core, secrets } = world;
+      const relog = async (): Promise<void> => {
+        secrets.set(
+          userId(1),
+          await core.createSession(GUILD_ID, { id: userId(1), displayName: 'Player 1' }),
+        );
+      };
+      const post = (path: string, body: unknown): Promise<unknown> =>
+        callAs(core, secrets, 1, path, { method: 'POST', body });
+      clock.t += 6 * MINUTE;
+      await callAs(core, secrets, 1, '/api/state');
+      core.credit({
+        userId: userId(1),
+        currency: 'bait',
+        amount: 5000,
+        source: 'test',
+        idempotencyKey: 'plan-funds',
+      });
+      const mine = world.creatures[userId(1)] ?? [];
+      await post('/api/valley/communal', { place: 'bonfire', creatureId: mine[0] });
+      await post('/api/valley/gift', {
+        place: 'bonfire',
+        currency: 'acorns',
+        amount: 5,
+        idempotencyKey: 'plan-gift-1',
+      });
+      // A level finishes, with a keystone ringing for a scout and the bonfire's communal seat credited at the next arrival.
+      const size = metered.sql
+        .exec<{ size: number }>("SELECT size FROM valley_places WHERE place = 'bonfire'")
+        .one().size;
+      metered.sql.exec(
+        "UPDATE valley_places SET have_scrap = 1e9, have_shards = 1e9, have_acorns = ? WHERE place = 'bonfire'",
+        size * 0.4 - 0.5,
+      );
+      await post('/api/valley/gift', {
+        place: 'bonfire',
+        currency: 'acorns',
+        amount: 1,
+        idempotencyKey: 'plan-gift-2',
+      });
+      seedSeats(metered.sql, userId(1), mine.slice(1), 1);
+      metered.sql.exec('UPDATE valley_keystones SET ready_at = 0');
+      metered.sql.exec(
+        "UPDATE valley_seats SET store_hours = 10 WHERE user_id = ? AND place = 'commons'",
+        userId(1),
+      );
+      clock.t += 24 * 60 * MINUTE;
+      await relog();
+      await callAs(core, secrets, 1, '/api/state');
+    });
+
+    expect(result.seen, 'statements recorded').toBeGreaterThan(40);
+    // The commons' own statements ran (a refactor that stops running them would pass for nothing).
+    for (const table of [
+      'valley_places',
+      'valley_gifts',
+      'valley_fire_log',
+      'valley_keystones',
+      'valley_collections',
+    ])
       expect(
         result.statements.some((q) => q.includes(table)),
         table,

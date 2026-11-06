@@ -46,6 +46,7 @@ import { valleyMigration } from './valley-migration';
 import { valleyScoutsMigration } from './valley-scouts-migration';
 import { valleyForgeMigration } from './valley-forge-migration';
 import { valleyBonfireMigration } from './valley-bonfire-migration';
+import { valleyCommonsMigration } from './valley-commons-migration';
 import { valleyGazetteMigration } from './valley-gazette-migration';
 import { weatherMigration } from './weather-migration';
 import { workshopConvertMigration } from './workshop-convert-migration';
@@ -357,6 +358,8 @@ export const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
   valleyGazetteMigration,
   // Version 60: the server's middle, the catch-up target, small-moment turns and the raid placements by player (see valley-bonfire-migration.ts).
   valleyBonfireMigration,
+  // Version 61: the commons: places, gifts, collections, the fire's log, keystone clocks, visit days (see valley-commons-migration.ts).
+  valleyCommonsMigration,
 ];
 
 /** The schema version of a fresh database. */

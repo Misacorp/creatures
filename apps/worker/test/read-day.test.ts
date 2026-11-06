@@ -168,6 +168,8 @@ async function simulateDay(options: {
   smiths?: boolean;
   /** The welcome-back Gazette (the valley's step 4): a player who finds an unread paper closes it, as every opening of the day does. */
   gazette?: boolean;
+  /** The commons (the valley's step 6): every player has a communal seat at the bonfire and gives to its project on their first opening. */
+  commons?: boolean;
   fresh?: boolean;
 }): Promise<DayReads> {
   const reads = new DayReads();
@@ -187,6 +189,19 @@ async function simulateDay(options: {
         for (let n = 1; n <= PLAYERS; n++)
           seedAnvils(env.metered.sql, userId(n), world.creatures[userId(n)] ?? [], 2);
       }
+      if (options.commons === true) {
+        for (let n = 1; n <= PLAYERS; n++) {
+          env.metered.sql.exec(
+            `INSERT INTO valley_seats (seat_id, user_id, place, kind, position, destination_id, prev_destination_id, creature_id,
+               communal, passed_at) VALUES (?, ?, 'commons', 'communal', 0, 'bonfire', 'bonfire', ?, 1, ?)`,
+            crypto.randomUUID(),
+            userId(n),
+            world.creatures[userId(n)]?.[5] ?? null,
+            env.clock.t,
+          );
+        }
+      }
+      const gave = new Set<number>();
       const dayStart = env.clock.t;
       const dayEnd = dayStart + DAY;
       const lounge = fakeLounge();
@@ -215,6 +230,32 @@ async function simulateDay(options: {
             readSourceOfPath(path),
             (await env.metered.measure(() => callAs(core, secrets, player, path))).reads,
           );
+        if (options.commons === true && paths.includes('/api/state') && !gave.has(player)) {
+          gave.add(player);
+          core.credit({
+            userId: userId(player),
+            currency: 'bait',
+            amount: 50,
+            source: 'test',
+            idempotencyKey: `commons-day-${String(player)}`,
+          });
+          reads.add(
+            'request:valley',
+            (
+              await env.metered.measure(() =>
+                callAs(core, secrets, player, '/api/valley/gift', {
+                  method: 'POST',
+                  body: {
+                    place: 'bonfire',
+                    currency: 'acorns',
+                    amount: 3,
+                    idempotencyKey: `commons-day-gift-${String(player)}`,
+                  },
+                }),
+              )
+            ).reads,
+          );
+        }
         if (options.gazette === true && paths.includes('/api/state')) {
           const paper = env.metered.sql
             .exec<{ paper_id: string }>(
@@ -438,7 +479,30 @@ const VALLEY_SMITH_DAY_WRITE_BUDGET = 6500;
 // Measured 124,132 rows read (123,488 without the Gazette: the papers add about 650, the ten closes about 10 each) and 4,617 written (4,541 without).
 const VALLEY_GAZETTE_DAY_WRITE_BUDGET = 6600;
 
+// With the commons (step 6: a communal seat each, a gift each, the Gazette, smiths and scouts as above): measured 134,016 rows read (124,132 without the commons:
+// every pass reads the places, the fire, the sockets, the clocks and the player's gift rows, and the ten gifts settle first) and 5,098 written (4,617 without).
+const VALLEY_COMMONS_DAY_WRITE_BUDGET = 7000;
+
 describe('a day in the life with the valley on', () => {
+  it('reads and writes few rows in a day with the commons: a communal seat for each player, a gift each, the Gazette, scouts and smiths posted', async () => {
+    const reads = await simulateDay({
+      valleySystems: true,
+      scouts: true,
+      smiths: true,
+      gazette: true,
+      commons: true,
+      fresh: true,
+    });
+    expect(
+      reads.total,
+      `${reads.describe()}\nBudget: ${String(DAY_BUDGET)} rows.`,
+    ).toBeLessThanOrEqual(DAY_BUDGET);
+    expect(
+      reads.written,
+      `${reads.describe()}\nWrite budget: ${String(VALLEY_COMMONS_DAY_WRITE_BUDGET)} rows.`,
+    ).toBeLessThanOrEqual(VALLEY_COMMONS_DAY_WRITE_BUDGET);
+  }, 120_000);
+
   it('reads and writes few rows in a day with the Gazette: scouts and smiths posted, every arrival writes a paper and the player closes it', async () => {
     const reads = await simulateDay({
       valleySystems: true,

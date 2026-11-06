@@ -694,3 +694,105 @@ describe('read budget with the bonfire', () => {
     expect(middleWrites).toBeLessThanOrEqual(BONFIRE_BUDGET.middle.writes);
   });
 });
+
+/**
+ * The commons (phase 5 step 6, `valley-commons.ts`, `valley-gifts.ts`): what a look, a gift and an arrival with a communal seat read and
+ * write, for the seeded player's 30 creatures (each pass settles them all; the commons add a few rows on top, V-COM-8):
+ * - a look mid-visit: the places (one row each), the fire's last row and its last five, the collections' set sockets, the keystone
+ *   clocks, the player's own gift rows and the weight of the server;
+ * - a gift: the pass before it, then the project's row, the gift row and the purse; a gift that finishes a level also reads the helpers'
+ *   names for the plaque and writes the place's row and the fire's;
+ * - an arrival with a communal seat: the seat row, then the credit into the project (the place row and the gift row).
+ * The daily job that writes the weight reads no more than the middle's (`BONFIRE_BUDGET.middle`: the columns come from the same rows).
+ */
+const COMMONS_BUDGET = {
+  // Ten minutes into the visit: a pass (723 reads and 54 written without the commons, `VALLEY_BUDGET.visit`), so the commons add about 45 reads.
+  look: { reads: 1150, writes: 85 }, // measured 768 reads, 55 written
+  // The pass before the gift (a settle), then the project's row, the gift row and the Acorns' purse.
+  gift: { reads: 1150, writes: 110 }, // measured 758 reads, 71 written
+  // A gift that finishes the level: the helpers' names for the plaque, the place's row and the fire's row.
+  levelUp: { reads: 1200, writes: 110 }, // measured 782 reads, 73 written
+  // A day away with a communal seat holding 20 hours: the seat's row and the credit into the project.
+  arrivalCommunal: { reads: 1300, writes: 110 }, // measured 859 reads, 71 written
+} as const;
+
+describe('read budget with the commons', () => {
+  const measured: Record<string, ReadReport> = {};
+
+  it('measures a look, a gift, a gift that finishes a level and an arrival with a communal seat', async () => {
+    await inGuild(
+      async (env) => {
+        const { metered, clock } = env;
+        const world = await seedWorld(env, { valleySystems: true });
+        const { core, secrets } = world;
+        const relog = async (): Promise<void> => {
+          secrets.set(
+            userId(1),
+            await core.createSession(GUILD_ID, { id: userId(1), displayName: 'Player 1' }),
+          );
+        };
+        const state = (): Promise<unknown> => callAs(core, secrets, 1, '/api/state');
+        const mine = world.creatures[userId(1)] ?? [];
+        clock.t += 6 * MINUTE;
+        await callAs(core, secrets, 1, '/api/me');
+        await state();
+        core.credit({
+          userId: userId(1),
+          currency: 'bait',
+          amount: 5000,
+          source: 'test',
+          idempotencyKey: 'commons-budget-funds',
+        });
+        clock.t += 10 * MINUTE;
+        measured['look'] = (await metered.measure(state)).reads;
+        clock.t += 10 * MINUTE;
+        const gift = (amount: number, key: string): Promise<unknown> =>
+          callAs(core, secrets, 1, '/api/valley/gift', {
+            method: 'POST',
+            body: { place: 'bonfire', currency: 'acorns', amount, idempotencyKey: key },
+          });
+        measured['gift'] = (await metered.measure(() => gift(5, 'commons-gift-1'))).reads;
+        // The project is one gift from done: every part is full but the Acorns.
+        const open = metered.sql
+          .exec<{ size: number }>("SELECT size FROM valley_places WHERE place = 'bonfire'")
+          .one();
+        metered.sql.exec(
+          "UPDATE valley_places SET have_scrap = 1e9, have_shards = 1e9, have_acorns = ? WHERE place = 'bonfire'",
+          open.size * 0.4 - 0.5,
+        );
+        for (let p = 2; p <= 6; p++) {
+          metered.sql.exec(
+            'INSERT OR IGNORE INTO valley_gifts (user_id, place, project, given_milli, plaque) VALUES (?, ?, 1, 1000, 1)',
+            userId(p),
+            'bonfire',
+          );
+        }
+        clock.t += 10 * MINUTE;
+        measured['levelUp'] = (await metered.measure(() => gift(1, 'commons-gift-2'))).reads;
+        // A communal seat holding a day of work, credited at the arrival after a day away.
+        metered.sql.exec(
+          `INSERT INTO valley_seats (seat_id, user_id, place, kind, position, destination_id, prev_destination_id, creature_id,
+             communal, store_hours, passed_at) VALUES (?, ?, 'commons', 'communal', 0, 'forge', 'forge', ?, 1, 20, ?)`,
+          crypto.randomUUID(),
+          userId(1),
+          mine[0] ?? null,
+          clock.t,
+        );
+        clock.t += 24 * 60 * MINUTE;
+        await relog();
+        measured['arrivalCommunal'] = (await metered.measure(state)).reads;
+      },
+      { fresh: true },
+    );
+  }, 60_000);
+
+  it.each(Object.keys(COMMONS_BUDGET) as (keyof typeof COMMONS_BUDGET)[])(
+    'the commons: %s reads and writes few rows',
+    (name) => {
+      const reads = measured[name];
+      if (reads === undefined) throw new Error('the measuring test did not run');
+      expectReadsUnder(`commons ${name}`, reads, COMMONS_BUDGET[name].reads);
+      expectWritesUnder(`commons ${name}`, reads, COMMONS_BUDGET[name].writes);
+    },
+  );
+});

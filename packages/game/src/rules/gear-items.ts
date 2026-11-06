@@ -472,14 +472,17 @@ export type WearBlock =
 /**
  * Whether a creature can wear an item, or why not. Three rules: a role-locked Charm only goes on its
  * role; a slot opens at a creature level (Hat 1, Scarf 7, Charm 13); and the item's level may not
- * exceed the creature's level.
+ * exceed the creature's level. With `relaxed` (the valley's systems, V-GEAR-3: "item level is quality, not a requirement") the slot
+ * unlock levels and the item-level rule do not apply; a role-locked Charm still goes only on its role.
  */
 export function wearBlock(
   item: Pick<GearItem, 'slot' | 'tag' | 'itemLevel'>,
   creature: { level: number; role: Role },
+  relaxed = false,
 ): WearBlock | null {
   const role = tagRole(item.tag);
   if (role !== null && role !== creature.role) return { reason: 'role', role };
+  if (relaxed) return null;
   const opens = RULES.gear.slotUnlockLevel[item.slot];
   if (creature.level < opens) return { reason: 'slot_locked', needs: opens };
   if (creature.level < item.itemLevel) return { reason: 'item_level', needs: item.itemLevel };
@@ -1188,6 +1191,7 @@ export interface EquipMove {
 export function planEquipBest(
   creatures: readonly BestCreature[],
   candidates: readonly BestCandidate[],
+  relaxed = false,
 ): EquipMove[] {
   type Pair = {
     creature: BestCreature;
@@ -1198,7 +1202,7 @@ export function planEquipBest(
   const pairs: Pair[] = [];
   for (const creature of creatures) {
     for (const candidate of candidates) {
-      if (wearBlock(candidate.item, creature) !== null) continue;
+      if (wearBlock(candidate.item, creature, relaxed) !== null) continue;
       pairs.push({
         creature,
         candidate,

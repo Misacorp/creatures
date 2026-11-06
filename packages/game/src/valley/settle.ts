@@ -95,6 +95,17 @@ export interface SettleSeat {
   readonly shardCarry: number;
 }
 
+/**
+ * A communal seat (V-POST-13, V-COM-14): a creature's work for the server's open project. It only gathers effective hours (up to the
+ * store's size); the caller credits them to the project when the contributor visits.
+ */
+export interface SettleCommunal {
+  readonly id: string;
+  /** The index in `creatures` of the posted creature; -1: an empty seat. */
+  readonly creature: number;
+  readonly storeHours: number;
+}
+
 /** What a stretch of one seat picked up, for the live draws (V-POST-14): `hours` of effective work at `rates`, in `world`. */
 export interface SeatStretch {
   readonly seat: string;
@@ -128,6 +139,8 @@ export interface SettleState {
   readonly seats?: readonly SettleSeat[];
   /** What the seats picked up in this pass, by stretch, in time order (output only; never an input of the next pass). */
   readonly stretches?: readonly SeatStretch[];
+  /** Absent: no communal seats. */
+  readonly communal?: readonly SettleCommunal[];
   /** Absent: no anvils (step 3, V-FORGE-1 to 5): the queues, the shelf, the pieces on their way and the floors. */
   readonly forge?: SettleForge;
   /** Output only: the pieces that reached a floor in this pass, in time order. */
@@ -342,6 +355,7 @@ export function settle(
   let { lastVisitAt, hearth, creatures } = state;
   let allowance = state.allowance;
   let seats = state.seats;
+  let communal = state.communal;
   const forge =
     state.forge !== undefined && state.forge.anvils.length > 0 ? startForge(state.forge) : null;
   const stretches: SeatStretch[] = [];
@@ -435,6 +449,22 @@ export function settle(
         });
       }
     }
+    if (communal !== undefined && communal.length > 0 && hours > 0) {
+      const effective = share * hours;
+      const at = cursor;
+      communal = communal.map((seat) => {
+        const worker = creatures[seat.creature];
+        if (worker === undefined || isAway(away, seat.creature, at)) return seat;
+        if (worker.joinedAt !== undefined && worker.joinedAt > at) return seat;
+        const picked = Math.min(effective, Math.max(0, rules.posts.storeHours - seat.storeHours));
+        if (picked <= 0) return seat;
+        const filled = seat.storeHours + picked;
+        return {
+          ...seat,
+          storeHours: rules.posts.storeHours - filled < EPSILON ? rules.posts.storeHours : filled,
+        };
+      });
+    }
     if (forge !== null && hours > 0) {
       const grown = forgeAdvance(rules, forge, smithsOf(creatures, away, cursor), share * hours);
       if (grown.size > 0) {
@@ -453,6 +483,7 @@ export function settle(
     creatures,
     ...(allowance === undefined ? {} : { allowance }),
     ...(seats === undefined ? {} : { seats }),
+    ...(communal === undefined ? {} : { communal }),
     ...(stretches.length === 0 ? {} : { stretches }),
     ...(forge === null || state.forge === undefined
       ? {}
