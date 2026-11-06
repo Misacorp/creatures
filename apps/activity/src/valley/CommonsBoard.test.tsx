@@ -21,6 +21,7 @@ import {
   withCommons,
 } from './commons-sample';
 import type { GiveRow } from './commons-view';
+import { marketPlace } from './market-sample';
 import { sampleValley } from './signpost-sample';
 
 let page: Page | null = null;
@@ -165,6 +166,29 @@ describe('CommonsBoard: an open project', () => {
     p.click(button(p, /^Give \d+ Mire shards/));
     expect(calls.gives[0]?.row.per).toBe(3);
     expect(calls.gives[0]?.units).toBe(2);
+  });
+
+  it('the Market takes shards of any kind: the board says so, the drawer lists the biggest pile first, and a gift names the element', () => {
+    const market = marketPlace('being built');
+    const { page: p, calls } = draw('market', [market]);
+    expect(visibleText(p.root)).toMatch(/Still needed: 190 Acorns, 380 scrap/);
+    expect(visibleText(p.root)).toMatch(
+      /Shards of any kind count too, as many as you like: 4 shards count as 1 Acorn/,
+    );
+    p.click(button(p, /^Give/));
+    const names = byName(p.root, 'button', /shards|Acorns|Scrap/).map((el) => visibleText(el));
+    // The shelf holds Mire 7, Tide 4, Ember 4, Grove 1: Mire (the biggest) comes first among the shards.
+    const order = ['Mire', 'Tide', 'Ember', 'Grove'].map((n) =>
+      names.findIndex((t) => t.startsWith(`${n} shards`)),
+    );
+    expect(order.every((i) => i >= 0)).toBe(true);
+    expect([...order].sort((x, y) => x - y)).toEqual(order);
+    p.click(button(p, /^Mire shards/));
+    expect(visibleText(p.root)).toMatch(/4 shards count as 1 Acorn/);
+    p.click(button(p, /^Give \d+ Mire shards/));
+    expect(calls.gives[0]?.place).toBe('market');
+    expect(calls.gives[0]?.row).toMatchObject({ part: 'shards', element: 'mire', per: 1 });
+    expect(calls.gives[0]?.units).toBe(7);
   });
 
   it('a part the player cannot pay is listed with its reason and cannot be opened', () => {

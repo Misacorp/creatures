@@ -739,6 +739,7 @@ describe('the valley block of the state (VALLEY_SYSTEMS)', () => {
           progress: 100,
           needs: { acorns: 100, scrap: 200, shards: 30 },
           shardElement: 'ember',
+          anyShard: null,
           cosmetic: false,
         },
         buildDaysLeft: 0,

@@ -67,7 +67,12 @@ export function marketPlace(preset: string): ValleyCommonsPlace {
             ? null
             : {
                 ...place.project,
-                needs: { acorns: 190, scrap: 380, shards: 0 },
+                // Shards of any kind may fill what is left (the rest in value, a shard counts `anyShard`).
+                needs: {
+                  acorns: 190,
+                  scrap: 380,
+                  shards: Math.ceil(380 / (place.project.anyShard ?? 1)),
+                },
                 shardElement: 'mire',
               },
       };

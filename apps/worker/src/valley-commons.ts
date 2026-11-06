@@ -29,7 +29,7 @@ import {
   isOneShot,
   mayOpenProject,
   nextThreshold,
-  partNeeds,
+  anyShardValue,
   partRoom,
   projectDone,
   projectProgress,
@@ -39,6 +39,7 @@ import {
   warmthMilli,
   WARMTH_SOURCES,
   type ProjectHave,
+  type ProjectPart,
   type ValleyCommonsView,
   type WarmthSource,
 } from '@creatures/game';
@@ -520,15 +521,13 @@ export class ValleyCommons {
                 size: row.size,
                 progress: projectProgress(rules, row.size, haveOf(row), id),
                 needs: (() => {
-                  const need = partNeeds(rules, row.size, id);
                   const have = haveOf(row);
-                  return {
-                    acorns: Math.max(0, need.acorns - have.acorns),
-                    scrap: Math.max(0, need.scrap - have.scrap),
-                    shards: Math.max(0, need.shards - have.shards),
-                  };
+                  const room = (part: ProjectPart): number =>
+                    partRoom(rules, row.size, have, part, id);
+                  return { acorns: room('acorns'), scrap: room('scrap'), shards: room('shards') };
                 })(),
                 shardElement: rules.commons.placeElement[id] ?? 'ember',
+                anyShard: anyShardValue(rules, id) ?? null,
                 cosmetic: row.level >= rules.commons.maxLevel,
               }
             : null,

@@ -31,6 +31,7 @@ import {
   collectionOf,
   commonsOf,
   giftPrice,
+  anyShardLine,
   giveRows,
   levelLine,
   percentFilled,
@@ -41,6 +42,7 @@ import {
   socketsSet,
   stateLine,
   stateTag,
+  shardWorth,
   stillNeeded,
   yourPart,
   type GiveRow,
@@ -177,6 +179,7 @@ export function CommonsBoard({
 
   // --- The pieces of the card ---
   const needs = stillNeeded(p);
+  const anyShards = anyShardLine(p);
   const mine = yourPart(p);
   const percent = percentFilled(p);
   const card = (
@@ -204,6 +207,7 @@ export function CommonsBoard({
             <span class="sp-pack-text">{percent}%</span>
           </div>
           {needs !== '' && <p class="cm-need">Still needed: {needs}</p>}
+          {anyShards !== '' && <p class="cm-need">{anyShards}</p>}
         </div>
       ) : (
         <p class="cm-need">{stateLine(p)}</p>
@@ -315,7 +319,10 @@ export function CommonsBoard({
           <ChoiceButton
             key={r.id}
             label={r.name}
-            line={r.reason ?? `You have ${String(r.held)}`}
+            line={
+              r.reason ??
+              `You have ${String(r.held)}${r.worth === undefined ? '' : `. ${shardWorth(r.worth)}`}`
+            }
             disabled={busy || r.reason !== null}
             onClick={() => {
               setRowId(r.id);
@@ -350,7 +357,11 @@ export function CommonsBoard({
           </button>
         </div>
         <SpendConfirm
-          text={`Gifts count in full, whoever gives. The project still takes ${String(row.max)} of this.`}
+          text={
+            row.worth === undefined
+              ? `Gifts count in full, whoever gives. The project still takes ${String(row.max)} of this.`
+              : `Gifts count in full, whoever gives. ${shardWorth(row.worth)}; the project still takes up to ${String(row.max)}.`
+          }
           label="Give"
           price={giftPrice(row, Math.min(units, Math.max(row.max, 1)))}
           reason={row.reason}
