@@ -1,6 +1,8 @@
 import type { ComponentChildren } from 'preact';
 import { DrillHead } from './DrillHead';
 import { onDrillKey } from './drill-keys';
+import type { Say } from '../resource-count';
+import { SayLine } from './CountBadge';
 import type { Wizard } from './use-wizard';
 
 /*
@@ -111,7 +113,7 @@ export function WizardFooter<Id extends string>({
 }: {
   wizard?: Wizard<Id> | undefined;
   /** Why the current step cannot go on; null when it can. Disables the button and is said above it. */
-  blocked?: string | null;
+  blocked?: string | Say | null;
   /** A request is out: the button is disabled. */
   busy?: boolean;
   /** Disabled for a reason that is not said here. */
@@ -142,7 +144,7 @@ export function WizardFooter<Id extends string>({
       {before}
       {blocked !== null && reasonShown && (
         <p class="reason" role="status">
-          {blocked}
+          {typeof blocked === 'string' ? blocked : <SayLine say={blocked} />}
         </p>
       )}
       {extra}

@@ -6,7 +6,15 @@ import { SupplyCrafting } from './SupplyCrafting';
 import { SHORT_NOTE_MS, TreatBox, TreatTimesContext } from './TreatBox';
 import { SAMPLE_GEAR, sampleRoster } from './creature-card-sample';
 import { pickerOptions } from './gear-view';
-import { byClass, byName, createPage, visibleText, type FakeElement, type Page } from './test-dom';
+import {
+  badgesIn,
+  byClass,
+  byName,
+  createPage,
+  visibleText,
+  type FakeElement,
+  type Page,
+} from './test-dom';
 
 let page: Page | null = null;
 
@@ -35,8 +43,9 @@ describe('the Bait cost of a job', () => {
       <CostList cost={{ scrap: 2 }} have={SAMPLE_GEAR.parts} bait={12} baitHave={3} />,
     );
     expect(byClass(short, 'short')).toHaveLength(1);
-    expect(visibleText(short)).toContain('(have 3)');
-    expect(visibleText(short)).toContain('Not enough Bait.');
+    // What the player has is a Bait icon and a number in brackets, never the word.
+    expect(visibleText(short)).toContain('(3)');
+    expect(badgesIn(short)).toContainEqual(['Bait', '3']);
   });
 });
 

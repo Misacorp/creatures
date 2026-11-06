@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { parseGameState, type LevelResetNotice } from './api';
 import stateOffer from './fixtures/expedition-state-offer.json';
 import { levelResetLines } from './level-reset-notice';
+import { sayParts } from './resource-count';
 
 const notice = (over: Partial<LevelResetNotice> = {}): LevelResetNotice => ({
   creatures: 3,
@@ -13,19 +14,23 @@ const notice = (over: Partial<LevelResetNotice> = {}): LevelResetNotice => ({
 
 describe('the level reset card', () => {
   it('says what happened in one warm sentence, with the Bait', () => {
-    expect(levelResetLines(notice())).toEqual([
-      "Creatures now grow by doing things. Every creature's level was halved and you got back the Bait those levels cost: 825 Bait.",
+    expect(levelResetLines(notice()).map(sayParts)).toEqual([
+      [
+        "Creatures now grow by doing things. Every creature's level was halved and you got back what those levels cost: ",
+        ['bait', 825],
+        '.',
+      ],
     ]);
   });
 
   it('adds a line for worn items and talents only when there were some', () => {
     expect(levelResetLines(notice({ unequipped: 1, talentsToBook: 1 })).slice(1)).toEqual([
-      'One worn item went back to your bag, because its creature is below its level now.',
-      'One talent rests in its Talent Book until its slot opens again.',
+      ['One worn item went back to your bag, because its creature is below its level now.'],
+      ['One talent rests in its Talent Book until its slot opens again.'],
     ]);
     expect(levelResetLines(notice({ unequipped: 4, talentsToBook: 2 })).slice(1)).toEqual([
-      '4 worn items went back to your bag, because their creatures are below their levels now.',
-      '2 talents rest in their Talent Books until their slots open again.',
+      ['4 worn items went back to your bag, because their creatures are below their levels now.'],
+      ['2 talents rest in their Talent Books until their slots open again.'],
     ]);
   });
 });

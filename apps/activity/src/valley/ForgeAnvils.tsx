@@ -14,8 +14,8 @@ import type { AnvilKit, ValleyAnvilView, ValleyOrderView } from '@creatures/game
 import type { Creature, ValleyVisit } from '../api';
 import { creatureName } from '../game';
 import { PartCount } from '../GearArt';
-import { GlossaryTag } from '../Glossary';
 import { busyReason } from '../gear-view';
+import { acornCount, resourceCount, sayText, type Say } from '../resource-count';
 import { baseOption, type PickerOption } from '../roster-picker';
 import { dropOutcome } from '../slot-outcome';
 import { TOUCH_HOLD_MS } from '../dnd-core';
@@ -23,6 +23,7 @@ import { useDragDrop } from '../use-drag-drop';
 import { Alert } from '../ui/Alert';
 import { Bar } from '../ui/Bar';
 import { ChoiceButton, ChoiceList } from '../ui/ChoiceList';
+import { CountBadge, PriceLine, SayLine } from '../ui/CountBadge';
 import { DataTable } from '../ui/DataTable';
 import { DragGhost } from '../ui/DragGhost';
 import { Drawer } from '../ui/Drawer';
@@ -36,17 +37,17 @@ import { CommonsFire } from './CommonsFire';
 import { SlotText, SpendConfirm, seatAt } from './seat-parts';
 import { Tray } from './Tray';
 import { trayFor, type TrayInput } from './tray-state';
-import { RAID_PAUSE, percentOf, seatPriceText } from './signpost-view';
+import { RAID_PAUSE, percentOf, seatPrice } from './signpost-view';
 import {
   ANVIL_KIT_INFO,
   ANVIL_KIT_ORDER,
   SHARD_ELEMENTS,
   anvilBuyReason,
   anvilName,
-  anvilPriceText,
+  anvilPrice,
   floorLine,
   floorRows,
-  needsText,
+  needsItems,
   orderName,
   orderProgress,
   orderWait,
@@ -112,7 +113,7 @@ function Shelf({ visit }: { visit: ValleyVisit }) {
         );
       })}
       <li class={shelf.essence === 0 ? 'none' : undefined}>
-        <GlossaryTag entry="essence">{`${String(shelf.essence)} Essence`}</GlossaryTag>
+        <CountBadge {...resourceCount('essence', shelf.essence, { entry: 'essence' })} />
       </li>
     </ul>
   );
@@ -130,6 +131,7 @@ function OrderRow({
 }) {
   const wait = orderWait(order);
   const reach = reachName(order.reach);
+  const needs: Say = needsItems(order);
   return (
     <li>
       <button
@@ -137,7 +139,7 @@ function OrderRow({
         class="sp-line sp-pack fg-order"
         aria-haspopup="dialog"
         disabled={disabled}
-        aria-label={`${orderName(order)}, ${orderProgress(order)}${reach === '' ? '' : ', ' + reach}. ${wait ?? 'Takes ' + needsText(order)}. Change the order`}
+        aria-label={`${orderName(order)}, ${orderProgress(order)}${reach === '' ? '' : ', ' + reach}. ${wait === null ? 'Takes ' + sayText(needs) : sayText(wait)}. Change the order`}
         onClick={(event) => {
           onOpen(event.currentTarget);
         }}
@@ -145,9 +147,9 @@ function OrderRow({
         <span class="fg-order-text">
           <strong class="pix fg-order-name">{orderName(order)}</strong>
           <span class="fg-order-sub">
-            {[orderProgress(order), reach, wait ?? needsText(order)]
-              .filter((part) => part !== '')
-              .join(' · ')}
+            {[orderProgress(order), reach].filter((part) => part !== '').join(' · ')}
+            {' · '}
+            <SayLine say={wait ?? needs} />
           </span>
         </span>
       </button>
@@ -407,7 +409,9 @@ export function ForgeAnvils({
                 <>
                   <p class="sp-line fg-tinker" role="status">
                     <Tag kind="badge">Tinkering</Tag>
-                    <span>{tinker}</span>
+                    <span>
+                      <SayLine say={tinker} />
+                    </span>
                   </p>
                   {anvil.tinkering?.reason === 'shard' && (
                     <button
@@ -482,7 +486,9 @@ export function ForgeAnvils({
               }}
             >
               <span class="pix sp-buy-name">A new anvil</span>
-              <span class="sp-buy-price">{anvilPriceText(nextPrice)}</span>
+              <span class="sp-buy-price">
+                <PriceLine price={anvilPrice(nextPrice)} />
+              </span>
             </button>
           )}
         </li>
@@ -549,9 +555,14 @@ export function ForgeAnvils({
                     <ChoiceButton
                       key={kind}
                       label={
-                        owned
-                          ? ANVIL_KIT_INFO[kind].name
-                          : `${ANVIL_KIT_INFO[kind].name}, ${seatPriceText(visit.kit.price)}`
+                        owned ? (
+                          ANVIL_KIT_INFO[kind].name
+                        ) : (
+                          <>
+                            {ANVIL_KIT_INFO[kind].name},{' '}
+                            <PriceLine price={seatPrice(visit.kit.price)} />
+                          </>
+                        )
                       }
                       line={ANVIL_KIT_INFO[kind].line}
                       selected={kitAnvil.kit === kind}
@@ -599,10 +610,10 @@ export function ForgeAnvils({
               <SpendConfirm
                 text={`${ANVIL_KIT_INFO[buyingKit].line} You keep it, and can put it on any anvil.`}
                 label="Buy"
-                price={seatPriceText(visit.kit.price)}
+                price={seatPrice(visit.kit.price)}
                 reason={
                   visit.kit.price > acorns
-                    ? `You have ${String(acorns)} Acorns; this costs ${String(visit.kit.price)}.`
+                    ? { have: [acornCount(acorns)], cost: [acornCount(visit.kit.price)] }
                     : null
                 }
                 busy={busy}
@@ -648,7 +659,7 @@ export function ForgeAnvils({
           <SpendConfirm
             text="Another smith can make gear for you, one piece after another."
             label="Buy the anvil"
-            price={anvilPriceText(nextPrice)}
+            price={anvilPrice(nextPrice)}
             reason={buyReason}
             busy={busy}
             onConfirm={() => {

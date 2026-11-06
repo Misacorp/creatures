@@ -6,6 +6,7 @@ import { Sprite } from '../sprites/Sprite';
 import { creatureSpriteOrFallback } from '../sprites/creature-sprites';
 import type { TalentView } from '../talent-types';
 import { TalentChip } from '../TalentChip';
+import { CountBadge, type CountItem } from './CountBadge';
 import { Tag } from './Tag';
 
 /** What a found creature's card shows. `FindCard` (a trip's find) builds it from a `Find`; a Festival creature builds it too. */
@@ -17,7 +18,7 @@ export interface FoundCreature {
   /** The talent is new to every creature of its line the player has (or the creature itself is new): a green New. */
   talentNew: boolean;
   /** Small badges after the name ("New!", "Duplicate", "First on server!"); one with an `entry` opens its help. */
-  badges: readonly { text: string; entry: string | null }[];
+  badges: readonly { text: string; entry: string | null; item?: CountItem }[];
 }
 
 /**
@@ -55,8 +56,13 @@ export function FindCreature({
           <span class="find-tags">
             {def !== undefined && <ElementChip element={def.element} role={def.role} />}
             {creature.badges.map((b) => (
-              <Tag key={b.text} kind="badge" {...(b.entry === null ? {} : { entry: b.entry })}>
+              <Tag
+                key={b.item?.key ?? b.text}
+                kind="badge"
+                {...(b.entry === null ? {} : { entry: b.entry })}
+              >
                 {b.text}
+                {b.item !== undefined && <CountBadge {...b.item} size="inline" />}
               </Tag>
             ))}
             {creature.shiny && (

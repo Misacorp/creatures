@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { effectiveStats, content } from '@creatures/game';
 import type { Creature } from './api';
 import { sampleCreature } from './creature-card-sample';
-import { evolutionText, creatureAbilityText } from './game';
+import { creatureAbilityText } from './game';
 import { abilityDef } from './live';
 import { evolveButtonLabel, evolveForms, evolveTargets } from './evolve-view';
 import { creatureNeeds } from './creature-needs';
@@ -91,25 +91,13 @@ describe('the forms of an evolution', () => {
 });
 
 describe('the words around a line that grows two ways', () => {
-  it('says just "Evolve" on the buttons, and names both forms when it is not ready', () => {
-    const evolution = branching.evolution!;
-    expect(evolutionText(15, evolution, 50)).toEqual({
-      available: true,
-      label: 'Evolve (20 Essence)',
-    });
-    expect(evolutionText(10, { ...evolution, available: false }, 50).label).toBe(
-      'Evolve into Thornbuck or Sunfawn: needs level 15',
-    );
-    // A line with one form says the same: the evolve screen names the form.
-    expect(evolutionText(15, single.evolution!, 50).label).toBe('Evolve (20 Essence)');
-  });
-
   it('says "Evolve" in the needs of the card, for one form or two', () => {
     const [need] = creatureNeeds(branching, SAMPLE_STATE);
     expect(need).toMatchObject({
       kind: 'evolve',
       label: 'Evolve',
-      detail: '20 Essence',
+      detail: '',
+      cost: [expect.objectContaining({ key: 'essence', amount: 20 })],
     });
     const [one] = creatureNeeds(single, SAMPLE_STATE);
     expect(one?.label).toBe('Evolve');

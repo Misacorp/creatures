@@ -5,7 +5,7 @@
  * runner (see `actions.ts`). The screen never changes a balance itself. Mirrors `gear-actions.ts`.
  */
 import { ActionIds } from './actions';
-import type { ActionRunner } from './action-runner';
+import type { ActionRunner, Notice } from './action-runner';
 import * as api from './api';
 import { ApiError, type Creature, type GameState } from './api';
 import * as v2Api from './combat-v2-api';
@@ -25,7 +25,7 @@ export interface CreatureDeps {
   /** Replaces the state on screen. */
   setCurrent: (next: Loaded | ((now: Loaded) => Loaded)) => void;
   /** Writes the line under the tabs. */
-  setNotice: (text: string | null) => void;
+  setNotice: (text: Notice | null) => void;
   /** The server calls, replaceable in tests. */
   server?: {
     earnRibbon: typeof api.earnRibbon;

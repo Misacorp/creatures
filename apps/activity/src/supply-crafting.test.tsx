@@ -3,6 +3,7 @@ import { SAMPLE_GEAR, sampleRoster } from './creature-card-sample';
 import type { GearState } from './gear-types';
 import { SupplyCrafting } from './SupplyCrafting';
 import {
+  badgesIn,
   byClass,
   byName,
   byRole,
@@ -156,7 +157,8 @@ describe('the compact supply picker', () => {
   it('draws the Bait of a lure as a chip beside the parts', () => {
     const root = draw({}, 5);
     const cost = byClass(root, 'cost-list')[0];
-    expect(cost === undefined ? '' : visibleText(cost)).toContain('Bait');
+    // Bait is a badge (icon and number), not a word in the line.
+    expect(cost === undefined ? [] : badgesIn(cost).map(([name]) => name)).toContain('Bait');
     expect(byClass(root, 'bait-cost')).toHaveLength(0);
   });
 

@@ -1,5 +1,7 @@
 import type { LevelResetNotice } from './api';
 import { levelResetLines } from './level-reset-notice';
+import { sayText } from './resource-count';
+import { SayLine } from './ui/CountBadge';
 
 /**
  * The one-time card after levels were halved and the Bait refunded. The server remembers the dismissal,
@@ -18,11 +20,13 @@ export function LevelResetCard({
   return (
     <section class="wipe-notice" role="status" aria-labelledby="level-reset-title">
       <h3 id="level-reset-title">Creatures grow differently now</h3>
-      <p>{headline}</p>
+      <p>{headline !== undefined && <SayLine say={headline} />}</p>
       {more.length > 0 && (
         <ul class="muted">
           {more.map((line) => (
-            <li key={line}>{line}</li>
+            <li key={sayText(line)}>
+              <SayLine say={line} />
+            </li>
           ))}
         </ul>
       )}

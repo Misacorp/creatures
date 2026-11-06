@@ -47,8 +47,8 @@ describe('the push-on cards', () => {
   });
 
   it('names what each goal can bring, from the content', () => {
-    expect(cards[0]?.rewards.map((r) => r.text)).toEqual([
-      `${String(goalDef('forage')?.reward.parts?.scrap)} Scrap`,
+    expect(cards[0]?.rewards.map((r) => [r.item?.key, r.item?.amount])).toEqual([
+      ['scrap', goalDef('forage')?.reward.parts?.scrap],
     ]);
     for (const card of cards) {
       expect(card.rewards.length, card.id).toBeGreaterThan(0);
@@ -77,7 +77,10 @@ describe('what a goal can bring', () => {
       const lines = rewardLines(goal.reward);
       expect(lines.length, goal.id).toBeGreaterThan(0);
       for (const line of lines) {
-        expect(line.text.length, `${goal.id} ${line.key}`).toBeGreaterThan(3);
+        // A part is an icon and a number; every other line is words.
+        if (line.item === undefined) {
+          expect(line.text.length, `${goal.id} ${line.key}`).toBeGreaterThan(3);
+        } else expect(line.text).toBe('');
         expect(line.icon.kind).toMatch(/^(glyph|part)$/);
       }
       // One line for each thing the reward names (parts give one per kind).
@@ -97,9 +100,14 @@ describe('what a goal can bring', () => {
       'Bonus explorer XP',
     ]);
     expect(rewardLines({ supply: true })[0]?.text).toBe('A supply');
-    expect(rewardLines({ parts: { 'ember-shard': 2, scrap: 1 } }).map((l) => l.text)).toEqual([
-      '1 Scrap',
-      '2 Ember Shard',
+    expect(
+      rewardLines({ parts: { 'ember-shard': 2, scrap: 1 } }).map((l) => [
+        l.item?.key,
+        l.item?.amount,
+      ]),
+    ).toEqual([
+      ['scrap', 1],
+      ['ember-shard', 2],
     ]);
   });
 });

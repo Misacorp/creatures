@@ -26,7 +26,7 @@ export function ChoiceButton({
   selected,
   buttonRef,
 }: {
-  label: string;
+  label: ComponentChildren;
   /** What it does: plain text, or text with `KeywordText` chips in it (a Knack's). */
   line: ComponentChildren;
   disabled: boolean;

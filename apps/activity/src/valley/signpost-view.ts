@@ -12,8 +12,10 @@ import {
 } from '@creatures/game';
 import type { Creature, ValleyVisit } from '../api';
 import { creatureName, elementName, getSpecies } from '../game';
+import { acornCount, anyShardMark, priceOf, resourceMark, type Price } from '../resource-count';
 import { destinationName } from '../trip-view';
 import { formatCountdown } from '../time-format';
+import type { CountItem } from '../ui/CountBadge';
 
 const plural = (n: number, one: string, many: string): string =>
   n === 1 ? one : `${String(n)} ${many}`;
@@ -110,12 +112,24 @@ export function packLine(seat: ValleySeatView): string {
   return `Full in ${formatCountdown(seat.store.fullInHours * 3_600_000, 'short')}`;
 }
 
-/** The pack's names of finds with their counts, nothing for a kind with none: "12 scrap", "3 shards". */
-export function packContents(seat: ValleySeatView): { label: string; count: number }[] {
+/** A row of a seat's table: a label (a resource has its icon as `mark` instead, never its name) and a value. */
+export interface SeatRow {
+  label: string;
+  mark?: CountItem;
+  value: string;
+}
+
+const SCRAP_MARK = resourceMark('scrap');
+const SHARDS_MARK = anyShardMark();
+
+/** The pack's finds with their counts, nothing for a kind with none (scrap and shards by their icons). */
+export function packContents(
+  seat: ValleySeatView,
+): { label: string; mark?: CountItem; count: number }[] {
   const s = seat.store;
-  const rows = [
-    { label: 'Scrap', count: s.scrap },
-    { label: 'Shards', count: s.shards },
+  const rows: { label: string; mark?: CountItem; count: number }[] = [
+    { label: 'Scrap', mark: SCRAP_MARK, count: s.scrap },
+    { label: 'Shards', mark: SHARDS_MARK, count: s.shards },
     { label: 'Gear', count: s.gear },
     { label: 'Blueprints', count: s.blueprints },
     { label: 'Journal pages', count: s.pages },
@@ -131,11 +145,11 @@ export function perDayText(n: number): string {
 }
 
 /** What a seat brings a day (V-RET-9), as label and number rows, scrap and shards first, the rare finds last. */
-export function perDayRows(seat: ValleySeatView): { label: string; value: string }[] {
+export function perDayRows(seat: ValleySeatView): SeatRow[] {
   const d = seat.perDay;
   return [
-    { label: 'Scrap', value: perDayText(d.scrap) },
-    { label: 'Shards', value: perDayText(d.shards) },
+    { label: 'Scrap', mark: SCRAP_MARK, value: perDayText(d.scrap) },
+    { label: 'Shards', mark: SHARDS_MARK, value: perDayText(d.shards) },
     { label: 'Creatures', value: perDayText(d.creatures) },
     { label: 'Gear', value: perDayText(d.gear) },
     { label: 'Blueprints', value: perDayText(d.blueprints) },
@@ -224,6 +238,5 @@ export function signpostCalm(visit: ValleyVisit): string {
   return out === 1 ? '1 scout out' : `${String(out)} scouts out`;
 }
 
-/** What the next seat costs, in words ("free" for the first). */
-export const seatPriceText = (price: number): string =>
-  price === 0 ? 'free' : `${String(price)} Acorns`;
+/** What the next seat costs, as Acorns with their icon ("free" for the first). */
+export const seatPrice = (price: number): Price => priceOf([acornCount(price)]);

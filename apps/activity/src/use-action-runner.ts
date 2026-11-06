@@ -5,7 +5,12 @@
  */
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { createKeyStore, isStaleError, type KeyStore } from './actions';
-import { createActionRunner, type ActionRunner, type ActionRunnerConfig } from './action-runner';
+import {
+  createActionRunner,
+  type ActionRunner,
+  type ActionRunnerConfig,
+  type Notice,
+} from './action-runner';
 import { errorText } from './game';
 
 /**
@@ -19,10 +24,10 @@ type RunnerOptions = Partial<
 interface ActionRunnerView {
   busy: boolean;
   error: string | null;
-  notice: string | null;
+  notice: Notice | null;
   setBusy: (busy: boolean) => void;
   setError: (text: string | null) => void;
-  setNotice: (text: string | null) => void;
+  setNotice: (text: Notice | null) => void;
   inFlight: ActionRunner['inFlight'];
   run: ActionRunner['run'];
   runKeyed: ActionRunner['runKeyed'];
@@ -31,7 +36,7 @@ interface ActionRunnerView {
 export function useActionRunner(options: RunnerOptions = {}): ActionRunnerView {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<Notice | null>(null);
   const mounted = useRef(true);
   const latest = useRef(options);
   latest.current = options;

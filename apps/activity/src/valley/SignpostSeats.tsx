@@ -14,12 +14,14 @@ import type { ScoutKit, ValleySeatView } from '@creatures/game';
 import type { Creature, ValleyVisit } from '../api';
 import { creatureName } from '../game';
 import { busyReason } from '../gear-view';
+import { acornCount, type ShortOf } from '../resource-count';
 import { baseOption, type PickerOption } from '../roster-picker';
 import { dropOutcome } from '../slot-outcome';
 import { TOUCH_HOLD_MS } from '../dnd-core';
 import { useDragDrop } from '../use-drag-drop';
 import { Bar } from '../ui/Bar';
 import { ChoiceButton, ChoiceList } from '../ui/ChoiceList';
+import { PriceLine } from '../ui/CountBadge';
 import { DataTable } from '../ui/DataTable';
 import { DragGhost } from '../ui/DragGhost';
 import { Drawer } from '../ui/Drawer';
@@ -29,7 +31,7 @@ import { RosterPicker } from '../ui/RosterPicker';
 import { Slot, SlotRow } from '../ui/Slot';
 import { Tag } from '../ui/Tag';
 import { CommonsBoard, type CommonsActions, type CommonsStart } from './CommonsBoard';
-import { SlotText, SpendConfirm, seatAt } from './seat-parts';
+import { SlotText, SpendConfirm, seatAt, seatDataRows } from './seat-parts';
 import { Tray } from './Tray';
 import { trayFor, type TrayInput } from './tray-state';
 import {
@@ -44,7 +46,7 @@ import {
   packLine,
   perDayRows,
   placeName,
-  seatPriceText,
+  seatPrice,
 } from './signpost-view';
 
 /** The sentinel row of the creature picker that empties a seat. */
@@ -54,8 +56,8 @@ const REMOVE_ID = '';
 const COMMUNAL_DROP = 'communal:signpost';
 
 /** Why a price in Acorns cannot be paid; null when it can. */
-function shortReason(acorns: number, price: number): string | null {
-  return price > acorns ? `You have ${String(acorns)} Acorns; this costs ${String(price)}.` : null;
+function shortReason(acorns: number, price: number): ShortOf | null {
+  return price > acorns ? { have: [acornCount(acorns)], cost: [acornCount(price)] } : null;
 }
 
 /** What the page asks the game to do; each answers whether the server took it. */
@@ -351,7 +353,9 @@ export function SignpostSeats({
               }}
             >
               <span class="pix sp-buy-name">A new seat</span>
-              <span class="sp-buy-price">{seatPriceText(nextPrice)}</span>
+              <span class="sp-buy-price">
+                <PriceLine price={seatPrice(nextPrice)} />
+              </span>
             </button>
           )}
         </li>
@@ -452,9 +456,13 @@ export function SignpostSeats({
                     <ChoiceButton
                       key={kind}
                       label={
-                        owned
-                          ? KIT_INFO[kind].name
-                          : `${KIT_INFO[kind].name}, ${seatPriceText(kitPrice)}`
+                        owned ? (
+                          KIT_INFO[kind].name
+                        ) : (
+                          <>
+                            {KIT_INFO[kind].name}, <PriceLine price={seatPrice(kitPrice)} />
+                          </>
+                        )
                       }
                       line={KIT_INFO[kind].line}
                       selected={kitSeat.kit === kind}
@@ -502,7 +510,7 @@ export function SignpostSeats({
               <SpendConfirm
                 text={`${KIT_INFO[buyingKit].line} You keep it, and can put it on any seat.`}
                 label="Buy"
-                price={seatPriceText(kitPrice)}
+                price={seatPrice(kitPrice)}
                 reason={shortReason(acorns, kitPrice)}
                 busy={busy}
                 onConfirm={() => {
@@ -547,7 +555,7 @@ export function SignpostSeats({
           <SpendConfirm
             text="Another scout can explore a place for you, all day long."
             label="Buy the seat"
-            price={seatPriceText(nextPrice)}
+            price={seatPrice(nextPrice)}
             reason={shortReason(acorns, nextPrice)}
             busy={busy}
             onConfirm={() => {
@@ -572,10 +580,13 @@ export function SeatNumbers({ seat }: { seat: ValleySeatView }) {
       {held.length === 0 ? (
         <p class="muted">Nothing yet.</p>
       ) : (
-        <DataTable rows={held.map((r) => ({ label: r.label, value: String(r.count) }))} tabular />
+        <DataTable
+          rows={seatDataRows(held.map((r) => ({ ...r, value: String(r.count) })))}
+          tabular
+        />
       )}
       <h4 class="pix sp-sub">A day brings</h4>
-      <DataTable rows={perDayRows(seat)} tabular />
+      <DataTable rows={seatDataRows(perDayRows(seat))} tabular />
       <h4 class="pix sp-sub">What makes it</h4>
       <DataTable
         rows={[

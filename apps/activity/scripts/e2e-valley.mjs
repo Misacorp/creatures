@@ -1958,10 +1958,7 @@ try {
         await page.waitForTimeout(500);
         await expectTopmost(page.getByRole('dialog').first(), 'the give drawer');
         await shot('commons-give-list');
-        await page
-          .getByRole('dialog')
-          .getByRole('button', { name: /^Acorns/ })
-          .click();
+        await page.getByRole('dialog').getByRole('button', { name: /^Bait/ }).click();
         await waitFor(page.getByRole('dialog').getByRole('button', { name: /^Give/ }));
         await page.waitForTimeout(300);
         await expectTopmost(page.getByRole('dialog').first(), 'the give amount');
@@ -2152,12 +2149,9 @@ try {
         await shot('commons-bonfire-board');
         // The give flow is a drill-in of the same drawer: one dialog at all times.
         await page.getByRole('dialog').getByRole('button', { name: /^Give/ }).click();
-        await waitFor(page.getByRole('dialog').getByRole('button', { name: /^Acorns/ }));
+        await waitFor(page.getByRole('dialog').getByRole('button', { name: /^Bait/ }));
         if ((await page.getByRole('dialog').count()) !== 1) throw new Error('two layers are up');
-        await page
-          .getByRole('dialog')
-          .getByRole('button', { name: /^Acorns/ })
-          .click();
+        await page.getByRole('dialog').getByRole('button', { name: /^Bait/ }).click();
         await page.getByRole('dialog').getByRole('button', { name: /^Give/ }).click();
         // The gift lands and the drawer is back on the board.
         await waitFor(page.getByRole('dialog').getByText(/You gave/));
@@ -2285,16 +2279,25 @@ try {
         await shot('market-building');
         await board.scrollIntoViewIfNeeded();
         await expectTopmost(board, 'the Market board');
-        await waitFor(board.getByText(/Still needed: .*Acorns, .*scrap/));
-        // Shards of any kind count too (V-COM-15): a line says so, and "Still needed" names no shard part.
-        await waitFor(board.getByText(/Shards of any kind count too/));
+        // What is needed is icons and numbers (Acorns, scrap), never words.
+        await waitFor(board.getByText(/Still needed:/));
+        // Shards of any kind count too (V-COM-15): a line says so with the any-shard icon, and "Still needed" names no shard part.
+        await waitFor(board.getByText(/counts too, as many as you like/));
         const needLine = await board
           .locator('p', { hasText: /^Still needed:/ })
           .first()
           .innerText();
-        if (/shard/i.test(needLine))
-          throw new Error(`the Market board names a shard part: ${needLine}`);
-        await expectTopmost(board.getByText(/Shards of any kind count too/), 'the shard line');
+        if (/shard|acorn|scrap/i.test(needLine))
+          throw new Error(`the Market board spells a resource out: ${needLine}`);
+        if (
+          (await board
+            .locator('p', { hasText: /^Still needed:/ })
+            .first()
+            .locator('[role="img"]')
+            .count()) !== 2
+        )
+          throw new Error('the Market board should need exactly Acorns and scrap, as icons');
+        await expectTopmost(board.getByText(/counts too, as many as you like/), 'the shard line');
         await shot('mshards-board');
         if ((await page.getByRole('button', { name: /^Broker/ }).count()) > 0)
           throw new Error('a broker seat stands before the Market is built');
@@ -2302,11 +2305,17 @@ try {
         await waitFor(dialogOf(/Give to the project/));
         await page.waitForTimeout(500);
         await expectTopmost(page.getByRole('dialog').first(), 'the Market give drawer');
-        const rows = await page.getByRole('dialog').getByRole('button').allInnerTexts();
+        // A row is an icon and a number: its name is the icon's spoken label ("Ember Shards: 7").
+        const rows = await page
+          .getByRole('dialog')
+          .getByRole('button')
+          .evaluateAll((els) =>
+            els.map((e) => e.querySelector('[role="img"]')?.getAttribute('aria-label') ?? ''),
+          );
         // The shelf holds Ember 7, Tide 4, Mire 3, Spark 2 (Grove 0): every pile held, the biggest first, none for Grove.
-        const shardRows = rows.filter((r) => /shards/i.test(r));
+        const shardRows = rows.filter((r) => /shard/i.test(r));
         const order = ['Ember', 'Tide', 'Mire', 'Spark'].map((n) =>
-          shardRows.findIndex((r) => r.startsWith(`${n} shards`)),
+          shardRows.findIndex((r) => r.startsWith(`${n} Shard`)),
         );
         if (order.join() !== '0,1,2,3' || shardRows.length !== 4)
           throw new Error(`the give list offers shards in the wrong order: ${rows.join(' | ')}`);
@@ -2314,7 +2323,7 @@ try {
         // Give Ember shards (any element counts in full): the gift names the element, one keyed gift.
         await page
           .getByRole('dialog')
-          .getByRole('button', { name: /^Ember shards/ })
+          .getByRole('button', { name: /^Ember Shard/ })
           .click();
         await waitFor(page.getByRole('dialog').getByRole('button', { name: /^Give/ }));
         await page.waitForTimeout(300);
@@ -2375,9 +2384,7 @@ try {
         const posted = scoutCalls.filter(([k]) => k === 'seat').at(-1)?.[1];
         if (posted?.seatId !== 'broker-1' || typeof posted.creatureId !== 'string')
           throw new Error(`the broker was ${JSON.stringify(posted)}`);
-        await waitFor(
-          page.getByText(/Swaps spare shards 12 for 5, with a 10% chance of one extra/),
-        );
+        await waitFor(page.getByText(/Swaps\s+12\s+for\s+5, with a 10% chance of one extra/));
         await page.waitForTimeout(300);
         await shot('market-broker-posted');
         // What it trades toward: a drawer of choices, one tap.
@@ -2390,7 +2397,7 @@ try {
         await shot('market-trade-toward');
         await page
           .getByRole('dialog')
-          .getByRole('button', { name: /^Grove shards/ })
+          .getByRole('button', { name: /^Grove Shard/ })
           .click();
         await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
         const sent = commonsCalls.find(([k]) => k === 'broker')?.[1];
@@ -2452,7 +2459,7 @@ try {
         await waitFor(heading('Forge'));
         // Before: the wait line says the Market will trade once the valley builds it; there is no exchange tap at the Forge.
         const before = page.getByText(
-          /Waiting for Grove shards for 3 h\. The Market will trade for them once the valley builds it\./,
+          /Waiting for\s+for 3 h\. The Market will trade for them once the valley builds it\./,
         );
         await waitFor(before);
         await before.first().scrollIntoViewIfNeeded();
@@ -2486,7 +2493,7 @@ try {
         await waitFor(page.locator(VALLEY), 'attached');
         await place('forge').evaluate((el) => el.click());
         await waitFor(heading('Forge'));
-        const after = page.getByText(/Waiting for Grove shards for 3 h/);
+        const after = page.getByText(/Waiting for\s+for 3 h/);
         await waitFor(after);
         await after.first().scrollIntoViewIfNeeded();
         await expectTopmost(after.first(), 'the wait line after the Market');
@@ -2503,13 +2510,20 @@ try {
         await waitFor(page.getByRole('dialog', { name: /Trade shards/ }));
         await page.waitForTimeout(500);
         const text = await page.getByRole('dialog').innerText();
-        if (!/10% chance to get 2/.test(text))
+        if (!/10% chance to get\s+2/.test(text))
           throw new Error('the exchange does not show the crit chance');
-        if (!/Grove shards\s+You get/.test(text))
+        // The shard to get is its icon (Grove) with a number, then "You get".
+        if (
+          !/You get/.test(text) ||
+          (await page
+            .getByRole('dialog')
+            .locator('[role="img"][aria-label^="Grove Shard"]')
+            .count()) === 0
+        )
           throw new Error(`the exchange did not start on Grove: ${text}`);
         await expectTopmost(page.getByRole('dialog').first(), 'the exchange drawer');
         await shot('q64-market-exchange');
-        await page.getByRole('button', { name: /^Trade \d/ }).click();
+        await page.getByRole('button', { name: /^Trade.*× \d/ }).click();
         await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
         const traded = forgeCalls.at(-1);
         if (

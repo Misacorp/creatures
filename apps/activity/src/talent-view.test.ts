@@ -5,7 +5,14 @@ import stateAfter from './fixtures/creatures-state-after.json';
 import chooseFuse from './fixtures/creatures-choose-fuse.json';
 import chooseRelease from './fixtures/creatures-choose-release.json';
 import chooseTeach from './fixtures/creatures-choose-teach.json';
-import { bookActions, bookRows, choiceResultText, slotTitle, talentTextParts } from './talent-view';
+import {
+  bookActions,
+  bookRows,
+  choiceResultText,
+  releasedParts,
+  slotTitle,
+  talentTextParts,
+} from './talent-view';
 
 const after = parseGameState(stateAfter);
 describe('what Recommended says and what happened', () => {
@@ -17,9 +24,11 @@ describe('what Recommended says and what happened', () => {
     expect(choiceResultText(chooseFuse.result as never, creatures)).toBe(
       'Fused Splashet into Splashet: +1 fusion, Fusion 1 · 1/4.',
     );
-    expect(choiceResultText(chooseRelease.result as never, creatures)).toBe(
-      'Released Splashet for 3 Scrap.',
-    );
+    // The parts a release gave back are icons and numbers after the sentence, never words in it.
+    expect(choiceResultText(chooseRelease.result as never, creatures)).toBe('Released Splashet.');
+    expect(releasedParts(chooseRelease.result as never).map((i) => [i.key, i.amount])).toEqual([
+      ['scrap', 3],
+    ]);
     expect(
       choiceResultText({ ...(chooseFuse.result as object), auto: true } as never, creatures),
     ).toMatch(/^Recommended: Fused/);
@@ -80,9 +89,7 @@ describe('the lines of a claim', () => {
   it('tells what the server settled for the player, one sentence for each', () => {
     expect(autoSettledLines(undefined, [])).toEqual([]);
     const lines = autoSettledLines([chooseRelease.result as never], after.creatures);
-    expect(lines).toEqual([
-      'An older waiting catch was settled for you. Released Splashet for 3 Scrap.',
-    ]);
+    expect(lines).toEqual(['An older waiting catch was settled for you. Released Splashet.']);
   });
 });
 

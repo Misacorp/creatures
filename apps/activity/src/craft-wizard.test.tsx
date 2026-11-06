@@ -196,7 +196,9 @@ describe('gear crafting in the job drawer', () => {
     expect(text).toContain('Common 100%');
     expect(text).toContain('Reach for Rare');
     expect(text).toContain('Rare 60%');
-    expect(text).toContain('25 Essence');
+    // The Essence a reach takes is an icon and a number (25), never the word.
+    expect(text).toContain('25');
+    expect(text).not.toContain('Essence');
     expect(text).toContain('Epic 30%');
     expect(radios(root).every((r) => !r.hasAttribute('disabled'))).toBe(true);
   });
@@ -238,7 +240,8 @@ describe('gear crafting in the job drawer', () => {
     expect(footerButton(root).hasAttribute('disabled')).toBe(false);
     chooseReach(root, 'rare');
     expect(footerButton(root).hasAttribute('disabled')).toBe(true);
-    expect(footerText(root)).toContain('Needs 15 more Essence.');
+    expect(footerText(root)).toContain('Needs 15 more.');
+    expect(footerText(root)).not.toContain('Essence');
     // Going back to a plain craft frees it again.
     chooseReach(root, 'none');
     expect(footerButton(root).hasAttribute('disabled')).toBe(false);
