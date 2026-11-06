@@ -4,6 +4,14 @@ The valley and peaceful systems overhaul planned in docs/design/valley/: job pos
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-06: Patchwork pieces: blueprints that take any shard, with scrap [Misa]
+
+ID: `2026-11-06-patchwork-pieces-blueprints-that-take-any` · Status: current
+
+**Decision.** A few blueprints, one per slot (Hat, Scarf, Charm), known to every player from the start, take shards of any element plus scrap. The piece's element is the shard's; the anvil uses the element the player holds most of unless the order names one. They roll Common or Uncommon only, with fewer good lines than proper blueprints, so they never replace them. Their costs show as icons (decision `2026-11-06-costs-show-the-resource-s-icon`). "Patchwork" is a working name.
+
+**Reasoning.** Misa (2026-11-06): "offering more stuff to craft that actually uses resources that are available ... items that can be crafted with any shard, and ... the game automatically picks the shard that they have most of, unless otherwise specified." A waiting anvil gets real work instead of tinkering, a lopsided shard pile has a use, and scrap gets a second sink, which the lab needs: with spare shards going to the Market, T-7/T-7b (the scrap pile) failed on the shipped design.
+
 ## 2026-11-06: The Market takes shards of any element, with no cap **[Misa]**
 
 ID: `2026-11-06-the-market-takes-shards-of-any` · Status: current · Amends: `2026-11-06-the-market-is-the-second-guided`

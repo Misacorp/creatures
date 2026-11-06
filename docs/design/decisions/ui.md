@@ -4,6 +4,14 @@ Navigation and the frame, Home and the notice board, type scale, shared componen
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-06: Costs show the resource's icon and a number, never its name [Misa]
+
+ID: `2026-11-06-costs-show-the-resource-s-icon` · Status: current
+
+**Decision.** Wherever the game shows an amount of Acorns, scrap or shards as a cost, a price, a need or a holding (spend buttons, project boards, the Give drawer, orders, the exchange, the broker, ribbon and evolve buttons, recipes), it shows the resource's icon from the resource library with the number, never the resource's name in words. Shards show their element's shard icon. One shared component draws it everywhere. Glossary and help pages that explain what a resource is may still name it.
+
+**Reasoning.** Misa (2026-11-06): "Use the shard icons to indicate cost. Don't spell them out anywhere. Same for acorns and scrap." Icons read faster than words and keep cards short; one component keeps them the same everywhere.
+
 ## 2026-11-06: [Misa] One pan hint, the same on every sideways-scrolling map; a popover never opens after a drag
 
 ID: `2026-11-06-one-pan-hint-the-same-on` · Status: current
