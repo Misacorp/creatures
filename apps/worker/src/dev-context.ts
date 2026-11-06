@@ -7,6 +7,7 @@ import type { DevState } from './dev-state';
 import type { Games } from './games';
 import type { LedgerStorage } from './ledger';
 import type { Raid } from './raid';
+import type { VisitorWeeks } from './valley-visitor';
 import type { Weather } from './weather';
 
 /** What a new creature draws its talents with: the quirk and talent rngs, and the `COMBAT_V2` flag. */
@@ -50,6 +51,8 @@ export interface ToolCtx {
   combatV2: boolean;
   /** The valley's base systems are on (`VALLEY_SYSTEMS` with `VALLEY` and `COMBAT_V2`: the `valley-fresh` tool needs it). */
   valleySystems: boolean;
+  /** The weekly visitor's weeks (the `visitor-arrive` tool); null with the valley systems off. */
+  visitor: VisitorWeeks | null;
   /** Crypto randomness for the things the tools roll (guest teams, gear, the day's seed). */
   rng: Rng;
   gearRng: Rng;

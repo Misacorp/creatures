@@ -56,6 +56,7 @@ export const DEV_ACTION_TOOLS = [
   'combat-v2-convert',
   'reset-raids-dungeons',
   'valley-fresh',
+  'visitor-arrive',
   'apply-roster-preset',
   'reset-account',
 ] as const;

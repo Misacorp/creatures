@@ -542,6 +542,9 @@ Superseded: 1 entry (see the topic file).
 
 [valley.md](valley.md): The valley and peaceful systems overhaul planned in docs/design/valley/: job posts, the bonfire, the commons, the Forge loop, gear, trials, the School, the visitor, the economy lab, and Misa's question rounds.
 
+- 2026-11-06 The visitor's weekly blueprint is drawn from the craftable bases for now (scouts can find them too)
+- 2026-11-06 The visitor prices a piece on its stored item level, and rerolls with the shipped line roller
+- 2026-11-06 The visitor's arrival is made by whatever sees him first, and one alarm a week wakes the object for it
 - 2026-11-06 Patchwork pieces built: the plainest piece of the shard's element, Rare at best
 - 2026-11-06 Patchwork pieces: blueprints that take any shard, with scrap \[Misa\] (amended)
 - 2026-11-06 The Market takes shards of any element, with no cap \[Misa\]

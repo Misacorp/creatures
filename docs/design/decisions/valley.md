@@ -4,6 +4,30 @@ The valley and peaceful systems overhaul planned in docs/design/valley/: job pos
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-06: The visitor's weekly blueprint is drawn from the craftable bases for now (scouts can find them too)
+
+ID: `2026-11-06-the-visitor-s-weekly-blueprint-is` · Status: current
+
+**Decision.** The week's blueprint (`visitor_weeks.blueprint_id`) is drawn with the server's live gear dice from the craftable bases (`rollBlueprint`, the same pick a scout's find uses), so scouts can find the same blueprints. V-VIS-5's "found nowhere else" needs a pool of pieces of his own, with names and art; that is Misa's call and comes later. One bought already known adds a mark (V-FORGE-9), and a copy past the most marks turns into scrap, as every other source does. Price: `blueprintAcorns` Acorns and `blueprintShards` shards of any element, one shard at a time from the biggest pile (the lab's `payShards`, `anyShardPayment` in `@creatures/game`).
+
+**Reasoning.** It ships the weekly purchase and its once-a-week limit now without waiting on new content. The draw is made once per week for the server (everyone sees the same stock, V-VIS-5), so swapping the pool later changes one call.
+
+## 2026-11-06: The visitor prices a piece on its stored item level, and rerolls with the shipped line roller
+
+ID: `2026-11-06-the-visitor-prices-a-piece-on` · Status: current
+
+**Decision.** A reroll is priced on the piece's stored item level (`gear_items.item_level`) against `visitor.baseLevel`, with the shared `rerollPrice` (`@creatures/game`, which the lab now imports). Pieces made with the systems on carry the number the Forge's fire sets, clamped to the shipped 1 to 20 by `rollItem`; the lab's valley runs to about 100 and the remap of OPEN 10 (shipped = valley / 5) is not made yet. So today a piece is priced from 0.1x to 2x the base (`baseLevel` 10), and when the remap lands the divisor goes in one place (the price's `itemLevel` argument). The reroll rolls every line again with `rollLines` at the piece's stored level (the pools and tiers of the shipped game: tier V from item level 20), keeping rarity and level, and the odds shown (`rerollOdds`) come from the same pool and tier weights.
+
+**Reasoning.** Pricing on the stored number is the only scale a stored piece has now; converting by five would price a fresh fire-10 piece like a level-50 one. The lab's pips (`pipFrom` 10, 25, 50, 80) are the remap's concern and nothing in the worker reads them yet.
+
+## 2026-11-06: The visitor's arrival is made by whatever sees him first, and one alarm a week wakes the object for it
+
+ID: `2026-11-06-the-visitor-s-arrival-is-made` · Status: current
+
+**Decision.** The week's row (`visitor_weeks`, keyed by the guild-local Monday) is made by whatever sees him here first: the alarm, a read of him, a spend at his stall, or a returning player's paper. His days are `visitor.arriveDay` 00:00 to `visitor.leaveHour` (Thursday to Sunday 23:00) of the guild's wall clock, DST-safe. The object's alarm gets one extra candidate, the next Thursday 00:00 (`VisitorWeeks.nextArrivalAt`, a pure time with no read), so it wakes once a week to make the row and queue the one post (`discord_posts` key `visitor:<week>`, the announce channel, fixed text with no amounts and nothing a player typed). The alarm path reads one row only while he is here. The paper's line is added only when a paper is being written anyway (an arrival after `WELCOME_AFTER_HOURS`), once per player per week (`visitor_rerolls.told`). The staging tool `visitor-arrive` sets `forced` on the week's row, so he counts as here until the week ends.
+
+**Reasoning.** `maintain` runs at the game day's reset (13:37), not at Thursday 00:00, so nothing else wakes the object then; one alarm a week is the cheapest way for the post to go out when he comes. Making the row lazily as well keeps a lost alarm harmless. Reads stay at one or two primary-key rows a request.
+
 ## 2026-11-06: Patchwork pieces built: the plainest piece of the shard's element, Rare at best
 
 ID: `2026-11-06-patchwork-pieces-built-the-plainest-piece` · Status: current · Amends: `2026-11-06-patchwork-pieces-blueprints-that-take-any`

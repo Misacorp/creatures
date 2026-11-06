@@ -263,6 +263,26 @@ export function setEquipped(sql: SqlStorage, itemId: string, creatureId: string 
   }
 }
 
+/**
+ * Replaces an item's rolled lines (the weekly visitor's reroll, V-VIS-2). Rarity, item level, base and owner stay as they are, so the
+ * bag's counter is not touched. Returns false when there is no such item.
+ */
+export function setItemLines(
+  sql: SqlStorage,
+  itemId: string,
+  lines: readonly { id: string; tier: number }[],
+): boolean {
+  return (
+    sql
+      .exec(
+        'UPDATE gear_items SET lines_json = ? WHERE id = ? RETURNING id',
+        JSON.stringify(lines.map((l) => ({ id: l.id, tier: l.tier }))),
+        itemId,
+      )
+      .toArray().length > 0
+  );
+}
+
 /** Deletes an item (dismantled, melted), keeping the bag's counter in step. */
 export function deleteItem(sql: SqlStorage, itemId: string): void {
   const before = bagTracked.has(sql)

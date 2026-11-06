@@ -71,6 +71,7 @@ import { ValleyBonfire } from './valley-bonfire';
 import { ValleyCommons, type CommonsSnapshot } from './valley-commons';
 import { hasDeepArea, type ValleyFinds } from './valley-finds';
 import { PaperRecorder, paperItem, type ValleyGazette } from './valley-gazette';
+import type { VisitorWeeks } from './valley-visitor';
 import { scoutClock, specialOfWeek, worldAt } from './valley-world';
 
 /** Without a request for this long, the next one is a new visit: the "+N" starts again and the allowance store comes home. */
@@ -172,6 +173,8 @@ export interface ValleySettleDeps {
   readonly bonfire: ValleyBonfire;
   /** The valley's places, the fire, the collections and the keystones (V-COM, V-SCOUT-9). */
   readonly commons: ValleyCommons;
+  /** The weekly visitor's weeks: the paper mentions him once a week while he is here (V-VIS-1); absent in tests that do not need him. */
+  readonly visitor?: VisitorWeeks;
 }
 
 const masteryStep = (hours: number): 0 | 1 | 2 | 3 => {
@@ -650,6 +653,8 @@ export class ValleySettle {
       // One or two resting creatures' small moment (V-BON-9), told in the paper when there is one (a short absence has none, so nothing
       // is used up): picked by live draws, weighted toward creatures that have not featured lately, and remembered so they rest next time.
       if (awayHours >= WELCOME_AFTER_HOURS) {
+        // V-VIS-1: the paper says the visitor is here, once a week per player.
+        if (this.deps.visitor?.tellIfHere(userId, to) === true) rec.visitor();
         const resting = rows.filter((row) => !seated.has(row.id) && row.tracked !== null);
         const day = Math.floor(to / DAY_MS);
         const moment = ValleyBonfire.pickMoments(

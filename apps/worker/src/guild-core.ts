@@ -130,6 +130,7 @@ import { valleyRoutes } from './valley-routes';
 import { ValleyOrders } from './valley-orders';
 import { ValleySeats } from './valley-seats';
 import { ValleySettle } from './valley-settle';
+import { ValleyVisitor, VisitorWeeks } from './valley-visitor';
 import type { ValleyView } from '@creatures/game';
 import type { LoungeClient, LoungeResult } from './lounge-discord';
 import { nextRaidBoundary, raidStageAt } from './lounge-raid';
@@ -460,6 +461,10 @@ export class GuildCore {
   readonly valleyBonfire: ValleyBonfire | null;
   /** Gifts to the commons' projects (`VALLEY_SYSTEMS`), or null with the flag off. */
   readonly valleyGifts: ValleyGifts | null;
+  /** The weekly visitor's reads and spends (`VALLEY_SYSTEMS`), or null with the flag off. */
+  readonly valleyVisitor: ValleyVisitor | null;
+  /** The visitor's weeks: his arrival, its post and the alarm for it (`VALLEY_SYSTEMS`), or null with the flag off. */
+  readonly valleyVisitorWeeks: VisitorWeeks | null;
   /** The `VALLEY_SYSTEMS` flag as the worker resolved it (see `valley-flag.ts`). */
   readonly valleySystems: boolean;
   private postsInFlight: Promise<void> | null = null;
@@ -566,6 +571,13 @@ export class GuildCore {
       });
       this.valleyBonfire = bonfire;
       const commons = new ValleyCommons({ storage, now, roll: () => finds.roll() });
+      const visitorWeeks = new VisitorWeeks({
+        storage,
+        now,
+        timezone: () => this.timezone(),
+        rng: gearRng,
+      });
+      this.valleyVisitorWeeks = visitorWeeks;
       const valley = new ValleySettle({
         storage,
         now,
@@ -576,6 +588,7 @@ export class GuildCore {
         gazette,
         bonfire,
         commons,
+        visitor: visitorWeeks,
       });
       this.valley = valley;
       this.valleySeats = new ValleySeats({
@@ -590,11 +603,20 @@ export class GuildCore {
       this.valleyGazette = gazette;
       this.valleyOrders = new ValleyOrders({ storage, now, settle: valley, forge, commons });
       this.valleyGifts = new ValleyGifts({ storage, now, settle: valley, commons });
+      this.valleyVisitor = new ValleyVisitor({
+        storage,
+        now,
+        settle: valley,
+        weeks: visitorWeeks,
+        rng: gearRng,
+      });
     } else {
       this.valley = null;
       this.valleySeats = null;
       this.valleyOrders = null;
       this.valleyGifts = null;
+      this.valleyVisitor = null;
+      this.valleyVisitorWeeks = null;
       this.valleyGazette = null;
       this.valleyBonfire = null;
     }
@@ -682,6 +704,7 @@ export class GuildCore {
             weather: this.weather,
             combatV2: options.combatV2 === true,
             valleySystems: options.valleySystems === true,
+            visitor: this.valleyVisitorWeeks,
             rng: options.raidRng ?? liveRng(),
             gearRng,
             quirkRng,
@@ -1284,6 +1307,10 @@ export class GuildCore {
       const offset = this.devOffset();
       candidates.push(this.nextRollupAt(from - offset) + offset);
     }
+    // The weekly visitor's arrival (Thursday 00:00 guild-local): one wake a week, so his post goes out when he comes.
+    if (this.valleyVisitorWeeks !== null && this.storedGuildId() !== null) {
+      candidates.push(this.valleyVisitorWeeks.nextArrivalAt(this.now()));
+    }
     // The valley's weather of the next game day is drawn at the daily reset (13:37 guild-local).
     if (this.weather.enabled && this.storedGuildId() !== null) {
       const { hour, minute } = RULES.daily.reset;
@@ -1316,6 +1343,15 @@ export class GuildCore {
       this.raid.settleDueLive();
     } catch (err) {
       console.error('raid catch-up failed', err instanceof Error ? err.name : 'unknown');
+    }
+  }
+
+  /** Makes the week's visitor row (and queues his post) if he is here and none exists. Failures never reach callers. */
+  private ensureVisitor(): void {
+    try {
+      this.valleyVisitorWeeks?.ensureArrival(this.now());
+    } catch (err) {
+      console.error('visitor arrival failed', err instanceof Error ? err.name : 'unknown');
     }
   }
 
@@ -1778,6 +1814,8 @@ export class GuildCore {
     // The Games' lock and awards, before the posts go out (the award queues the podium post).
     this.catchUpGames();
     this.scanDmDue();
+    // The visitor's arrival is queued before the posts go out (a row read only while he is here).
+    this.ensureVisitor();
     await this.deliverPosts();
     await this.deliverDms();
     await this.runLounge();

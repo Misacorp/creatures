@@ -259,6 +259,22 @@ export const ValleyGiftBodySchema = v.strictObject({
   idempotencyKey: IdempotencyKeySchema,
 });
 
+/** The weekly visitor's reroll of one of the caller's own pieces, worn or in the bag (V-VIS-2). */
+export const ValleyVisitorRerollBodySchema = v.strictObject({
+  itemId: IdSchema,
+  idempotencyKey: IdempotencyKeySchema,
+});
+
+/** Buying the week's blueprint from the visitor (V-VIS-5): once a week per player. */
+export const ValleyVisitorBlueprintBodySchema = v.strictObject({
+  idempotencyKey: IdempotencyKeySchema,
+});
+
+/** The visitor's read: no query, or the one piece the player asks the price and odds of (`?item=<id>`). */
+export const ValleyVisitorQuerySchema = v.strictObject({
+  item: v.optional(IdSchema),
+});
+
 /** Posts a creature to the caller's communal seat at a place (it opens the seat the first time), or empties it with `null`. */
 export const ValleyCommunalBodySchema = v.strictObject({
   place: v.picklist(COMMONS_PLACE_IDS),

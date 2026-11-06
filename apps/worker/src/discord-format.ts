@@ -669,3 +669,17 @@ export function formatStagePostV2(post: StagePostV2): PostMessage {
     fields,
   });
 }
+
+/**
+ * Thursday: the weekly visitor has come to the valley (phase 5 step 8, V-VIS-1; the game's "where is Xur" moment). The game's voice, no
+ * amounts, and nothing a player typed: the text is fixed.
+ */
+export function formatVisitorPost(): PostMessage {
+  return message({
+    title: '🧳 A visitor has come to the valley',
+    description:
+      'Someone with a heavy pack is waiting at the crossroads. Bring a piece of gear and they will look it over again. They never stay for long.',
+    color: POST_COLOURS.plain,
+    fields: [],
+  });
+}

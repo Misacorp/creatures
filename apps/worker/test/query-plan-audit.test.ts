@@ -673,6 +673,61 @@ describe('query plan audit', () => {
     expect(result.found, scanMessage(result.found)).toEqual([]);
   }, 60_000);
 
+  it("plans the visitor's statements (the first look of the week, a look at a piece, a reroll, the blueprint, the alarm, a return that is told he is here) without a whole-table scan", async () => {
+    const result = await audit({ valleySystems: true, fresh: true }, async (env, world) => {
+      const { clock } = env;
+      const relog = async (): Promise<void> => {
+        world.secrets.set(
+          userId(1),
+          await world.core.createSession(GUILD_ID, { id: userId(1), displayName: 'Player 1' }),
+        );
+      };
+      const post = (path: string, body: unknown): Promise<unknown> =>
+        callAs(world.core, world.secrets, 1, path, { method: 'POST', body });
+      clock.t += 6 * MINUTE;
+      await callAs(world.core, world.secrets, 1, '/api/state');
+      // Thursday afternoon: he is here.
+      clock.t += 2 * 24 * 60 * MINUTE;
+      await relog();
+      const sql = env.metered.sql;
+      sql.exec(
+        "UPDATE balances SET amount = 100000 WHERE user_id = ? AND currency = 'bait'",
+        userId(1),
+      );
+      sql.exec(
+        "INSERT INTO parts (user_id, kind, amount) VALUES (?, 'scrap', 100000), (?, 'mire-shard', 500) ON CONFLICT(user_id, kind) DO UPDATE SET amount = excluded.amount",
+        userId(1),
+        userId(1),
+      );
+      const item = sql
+        .exec<{ id: string }>('SELECT id FROM gear_items WHERE user_id = ? LIMIT 1', userId(1))
+        .one().id;
+      await callAs(world.core, world.secrets, 1, '/api/valley/visitor');
+      await callAs(world.core, world.secrets, 1, `/api/valley/visitor?item=${item}`);
+      await post('/api/valley/visitor/reroll', {
+        itemId: item,
+        idempotencyKey: 'audit-visitor-reroll-0001',
+      });
+      await post('/api/valley/visitor/blueprint', { idempotencyKey: 'audit-visitor-bp-0001' });
+      clock.t += MINUTE;
+      // The alarm's own check (the whole alarm also runs the daily clean-up, which the other audits leave to its own).
+      world.core.valleyVisitorWeeks?.ensureArrival(clock.t);
+      world.core.valleyVisitorWeeks?.nextArrivalAt(clock.t);
+      sql.exec('UPDATE visitor_rerolls SET told = 0 WHERE user_id = ?', userId(1));
+      clock.t += 12 * 60 * MINUTE;
+      await relog();
+      await callAs(world.core, world.secrets, 1, '/api/state');
+    });
+
+    expect(result.seen, 'statements recorded').toBeGreaterThan(40);
+    for (const table of ['visitor_weeks', 'visitor_rerolls', 'gear_items'])
+      expect(
+        result.statements.some((q) => q.includes(table)),
+        table,
+      ).toBe(true);
+    expect(result.found, scanMessage(result.found)).toEqual([]);
+  }, 60_000);
+
   it("plans the Gazette's statements (an arrival that writes a paper, a joined one, a look with it unread, taking a way deeper, closing it) without a whole-table scan", async () => {
     const result = await audit({ valleySystems: true, fresh: true }, async (env, world) => {
       const { clock } = env;

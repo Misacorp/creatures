@@ -882,3 +882,110 @@ describe('read budget with the broker', () => {
     },
   );
 });
+
+/**
+ * The weekly visitor (phase 5 step 8, `valley-visitor.ts`): what a look at him, a reroll, a blueprint, the alarm during his days and the
+ * paper's mention of him read and write. A look reads the week's row (`visitor_weeks` by its key) and the player's (`visitor_rerolls` by
+ * its key), and the first look of a week makes the week's row and queues his post; the spends add the ledger and parts rows of any
+ * keyed spend. The alarm reads one row while he is here and none outside his days. The valley's own settle before a spend is the
+ * pass of `VALLEY_BUDGET`; the numbers here are the whole request.
+ */
+const VISITOR_BUDGET = {
+  // The first look of the week: the week's row is made, the blueprint drawn and the post queued.
+  first: { reads: 40, writes: 12 }, // measured 26 reads (the request's own: the session, the raid and Games checks; his two rows are 3 of them), 7 written (the week's row, the player's pass and the request's own counters)
+  // A look with a piece asked about (its price and odds).
+  look: { reads: 45, writes: 4 }, // measured 28 reads, 2 written (the request's own counters)
+  // A reroll: the valley's pass before a spend (as `VALLEY_BUDGET.visit`) and the answer's own state.
+  reroll: { reads: 1150, writes: 120 }, // measured 749 reads, 78 written (the debit, the scrap, the item's lines and the rerolls row are about 8 of them)
+  blueprint: { reads: 1150, writes: 70 }, // measured 765 reads, 43 written
+  // The alarm's own check while he is here (his row exists).
+  alarm: { reads: 40, writes: 4 }, // measured 25 reads, none of them the visitor's once his row exists
+  // A return after twelve hours inside his days: the pass tells him once.
+  arrival: { reads: 1300, writes: 100 }, // measured 864 reads, 67 written (the pass of `VALLEY_BUDGET.arrival`; the paper's line adds the told row)
+} as const;
+
+describe('read budget with the visitor', () => {
+  const measured: Record<string, ReadReport> = {};
+
+  it('measures a look, a reroll, a blueprint, the alarm and a return while he is here', async () => {
+    await inGuild(
+      async (env) => {
+        const { metered, clock } = env;
+        const world = await seedWorld(env, { valleySystems: true });
+        const { core, secrets } = world;
+        const relog = async (): Promise<void> => {
+          secrets.set(
+            userId(1),
+            await core.createSession(GUILD_ID, { id: userId(1), displayName: 'Player 1' }),
+          );
+        };
+        const state = (): Promise<unknown> => callAs(core, secrets, 1, '/api/state');
+        clock.t += 6 * MINUTE;
+        await callAs(core, secrets, 1, '/api/me');
+        await state();
+        // Thursday afternoon: he is here. Funds and a piece to reroll.
+        clock.t += 2 * 24 * 60 * MINUTE;
+        await relog();
+        const id = userId(1);
+        metered.sql.exec(
+          "UPDATE balances SET amount = 100000 WHERE user_id = ? AND currency = 'bait'",
+          id,
+        );
+        metered.sql.exec(
+          "INSERT INTO parts (user_id, kind, amount) VALUES (?, 'scrap', 100000), (?, 'mire-shard', 500) ON CONFLICT(user_id, kind) DO UPDATE SET amount = excluded.amount",
+          id,
+          id,
+        );
+        const item = metered.sql
+          .exec<{ id: string }>('SELECT id FROM gear_items WHERE user_id = ? LIMIT 1', id)
+          .one().id;
+        clock.t += MINUTE;
+        measured['first'] = (
+          await metered.measure(() => callAs(core, secrets, 1, '/api/valley/visitor'))
+        ).reads;
+        clock.t += MINUTE;
+        measured['look'] = (
+          await metered.measure(() => callAs(core, secrets, 1, `/api/valley/visitor?item=${item}`))
+        ).reads;
+        clock.t += MINUTE;
+        measured['reroll'] = (
+          await metered.measure(() =>
+            callAs(core, secrets, 1, '/api/valley/visitor/reroll', {
+              method: 'POST',
+              body: { itemId: item, idempotencyKey: 'budget-reroll-key' },
+            }),
+          )
+        ).reads;
+        clock.t += MINUTE;
+        measured['blueprint'] = (
+          await metered.measure(() =>
+            callAs(core, secrets, 1, '/api/valley/visitor/blueprint', {
+              method: 'POST',
+              body: { idempotencyKey: 'budget-blueprint-key' },
+            }),
+          )
+        ).reads;
+        clock.t += MINUTE;
+        await core.alarm();
+        clock.t += MINUTE;
+        measured['alarm'] = (await metered.measure(() => core.alarm())).reads;
+        // Twelve hours away, still inside his days (Friday 03:00 Helsinki): the paper tells him.
+        metered.sql.exec('UPDATE visitor_rerolls SET told = 0 WHERE user_id = ?', id);
+        clock.t += 12 * 60 * MINUTE;
+        await relog();
+        measured['arrival'] = (await metered.measure(state)).reads;
+      },
+      { fresh: true },
+    );
+  }, 60_000);
+
+  it.each(Object.keys(VISITOR_BUDGET) as (keyof typeof VISITOR_BUDGET)[])(
+    'the visitor: %s reads and writes few rows',
+    (name) => {
+      const reads = measured[name];
+      if (reads === undefined) throw new Error('the measuring test did not run');
+      expectReadsUnder(`visitor ${name}`, reads, VISITOR_BUDGET[name].reads);
+      expectWritesUnder(`visitor ${name}`, reads, VISITOR_BUDGET[name].writes);
+    },
+  );
+});

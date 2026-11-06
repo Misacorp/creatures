@@ -168,6 +168,8 @@ export const PaperLogSchema = v.strictObject({
    * It is the one story that does not wait for three hours away.
    */
   market: v.optional(v.boolean(), false),
+  /** The weekly visitor is in the valley (V-VIS-1: told once a week to each player whose return falls while he is here). */
+  visitor: v.optional(v.boolean(), false),
 });
 export type PaperLog = v.InferOutput<typeof PaperLogSchema>;
 
@@ -187,6 +189,7 @@ export const emptyLog = (): PaperLog => ({
   moment: null,
   brought: { acorns: 0, scrap: 0, shards: 0 },
   market: false,
+  visitor: false,
 });
 
 const rank = (rarity: PaperRarity): number => RARITIES.indexOf(rarity);
@@ -244,6 +247,7 @@ export function mergeLogs(base: PaperLog, more: PaperLog): PaperLog {
       shards: base.brought.shards + more.brought.shards,
     },
     market: base.market || more.market,
+    visitor: base.visitor || more.visitor,
   };
 }
 
@@ -264,6 +268,7 @@ export const HEADLINE_KINDS = [
   'allowance',
   'moment',
   'market-open',
+  'visitor',
 ] as const;
 export type HeadlineKind = (typeof HEADLINE_KINDS)[number];
 
@@ -281,6 +286,7 @@ const GROUP_OF: Record<HeadlineKind, HighlightGroup> = {
   allowance: 'server',
   moment: 'creature',
   'market-open': 'server',
+  visitor: 'server',
 };
 
 /** One of a paper's headlines, as data: the client words it (names, places) and draws its scene from the creatures. */
@@ -361,6 +367,7 @@ const crew = (...ids: (string | null)[]): string[] =>
 export function headlinesOf(log: PaperLog): PaperHeadline[] {
   const out: PaperHeadline[] = [];
   if (log.market) out.push(blank('market-open', HIGHLIGHT_WEIGHT.marketOpen, 0));
+  if (log.visitor) out.push(blank('visitor', HIGHLIGHT_WEIGHT.visitor, 0));
   const first = log.newcomers[0];
   if (log.newcomerCount > 0 && first !== undefined) {
     out.push({

@@ -64,6 +64,11 @@ export class PaperRecorder {
     this.log.duplicates += 1;
   }
 
+  /** The visitor is in the valley (V-VIS-1): one line in the paper. */
+  visitor(): void {
+    this.log.visitor = true;
+  }
+
   /** Gear a scout's pack held when it came home, the best kept. */
   gear(item: PaperItem, by: string | null): void {
     this.log.gearCount += 1;

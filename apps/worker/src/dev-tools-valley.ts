@@ -17,7 +17,7 @@ import { DevError, purgeUser, type ToolCtx } from './dev-context';
  * The valley's tables that are NOT keyed by `user_id` (the guild-level ones), cleared whole. Per-player valley tables carry a
  * `user_id` column and are cleared by `purgeUser` with everything else, so they need no entry. Step 5 added `valley_server` (the
  * server's middle); step 6 added the commons' `valley_places`, `valley_collections`, `valley_fire_log` and `valley_keystones`
- * (`valley_gifts` has a `user_id`, so `purgeUser` clears it); later steps add theirs here, in one place.
+ * (`valley_gifts` has a `user_id`, so `purgeUser` clears it); step 8 added the visitor's `visitor_weeks` (`visitor_rerolls` has a `user_id`); later steps add theirs here, in one place.
  */
 export const VALLEY_GUILD_TABLES: readonly string[] = [
   'valley_server',
@@ -25,6 +25,7 @@ export const VALLEY_GUILD_TABLES: readonly string[] = [
   'valley_collections',
   'valley_fire_log',
   'valley_keystones',
+  'visitor_weeks',
 ];
 
 export interface ValleyFreshResult {
@@ -50,4 +51,29 @@ export function valleyFresh(ctx: ToolCtx): ValleyFreshResult {
   ctx.raid.invalidateReadiness();
   ctx.offset.set(0);
   return { players: ids.length, tablesCleared: [...VALLEY_GUILD_TABLES] };
+}
+
+export interface VisitorArriveResult {
+  /** The guild-local Monday of the week he was brought for. */
+  weekKey: string;
+  /** The week's blueprint (a craftable base id). */
+  blueprintId: string;
+  /** Whether his arrival post was queued (false: no channel known, or the week already had its post). */
+  posted: boolean;
+}
+
+/**
+ * The `visitor-arrive` dev tool (staging only, with the valley systems on; 404 otherwise): brings the weekly visitor now for the current
+ * week, whatever the weekday, so his stall can be tried at any time. He stays until the week ends (Monday 00:00 guild-local); the
+ * tool is safe to repeat (the week's blueprint and its post are made once).
+ */
+export function visitorArrive(ctx: ToolCtx): VisitorArriveResult {
+  if (!ctx.valleySystems || ctx.visitor === null) throw new DevError(404, 'not_found');
+  const now = ctx.visitor.arriveNow(ctx.now);
+  if (now.row === null) throw new DevError(409, 'not_here');
+  return {
+    weekKey: now.weekKey,
+    blueprintId: now.row.blueprint_id,
+    posted: now.row.posted_at !== null,
+  };
 }

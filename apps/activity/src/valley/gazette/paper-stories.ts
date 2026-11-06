@@ -75,6 +75,7 @@ const PLACE_OF: Record<PaperHeadline['kind'], PlaceId> = {
   allowance: 'bonfire',
   moment: 'bonfire',
   'market-open': 'market',
+  visitor: 'signpost',
 };
 
 /** The stories of the server's paper, the biggest first (as the server ranked them), and what it left untold. */
@@ -233,6 +234,15 @@ function storyOf(h: PaperHeadline, paper: Paper, byId: ReadonlyMap<string, Creat
         ...base,
         headline: 'THE MARKET OPENS: SHARDS CHANGE HANDS AT LAST',
         blurb: 'Your anvils can trade for what they wait on.',
+        finds: [],
+        scene: scene([]),
+      };
+    case 'visitor':
+      // V-VIS-1: the weekly visitor is at the crossroads (step 8b draws his stall; the paper only says he is here).
+      return {
+        ...base,
+        headline: 'A VISITOR IS AT THE CROSSROADS',
+        blurb: 'They will look over a piece of your gear. They never stay for long.',
         finds: [],
         scene: scene([]),
       };

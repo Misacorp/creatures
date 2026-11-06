@@ -4,6 +4,7 @@
  * Each answer carries the player's settled valley (`valley`, the same shape as `/api/state`'s) and the usual embedded `state`.
  */
 import type { ValleyView } from '@creatures/game';
+import * as v from 'valibot';
 import type { Collection } from './collection';
 import {
   ValleyAnvilBuyBodySchema,
@@ -17,12 +18,16 @@ import {
   ValleyOrderBodySchema,
   ValleySeatBodySchema,
   ValleySeatBuyBodySchema,
+  ValleyVisitorBlueprintBodySchema,
+  ValleyVisitorQuerySchema,
+  ValleyVisitorRerollBodySchema,
 } from './collection-schemas';
 import { failure, invalidBody, json, notFound, parseBody, type Routes } from './http';
 import type { ValleyGazette } from './valley-gazette';
 import type { ValleyGifts } from './valley-gifts';
 import type { ValleyOrders } from './valley-orders';
 import type { ValleySeats } from './valley-seats';
+import type { ValleyVisitor } from './valley-visitor';
 
 export interface ValleyRouteContext {
   user: { id: string };
@@ -38,6 +43,8 @@ export interface ValleyRouteContext {
     valleyGifts: ValleyGifts | null;
     /** The welcome-back Gazette's papers (null with the flag off). */
     valleyGazette: ValleyGazette | null;
+    /** The weekly visitor's read, rerolls and blueprint (null with the flag off). */
+    valleyVisitor: ValleyVisitor | null;
     /** The caller's valley as `/api/state` shows it (null with the flag off). */
     valleyState(userId: string): ValleyView | null;
   };
@@ -222,6 +229,50 @@ export const valleyRoutes: Routes<ValleyRouteContext> = {
       const body = await parseBody(request, ValleyBrokerBodySchema);
       if (body === undefined) return invalidBody();
       const outcome = core.valleySeats.setBrokerToward(user.id, body.seatId, body.toward);
+      if (!outcome.ok) return failure(outcome);
+      return json({
+        ...outcome.value,
+        valley: core.valleyState(user.id),
+        state: core.collection.state(user.id),
+      });
+    },
+  },
+  '/api/valley/visitor': {
+    GET: (request, { user, core }) => {
+      if (core.valleyVisitor === null) return notFound();
+      const params = new URL(request.url).searchParams;
+      const keys = [...params.keys()];
+      if (new Set(keys).size !== keys.length) return invalidBody();
+      const query = v.safeParse(ValleyVisitorQuerySchema, Object.fromEntries(params));
+      if (!query.success) return invalidBody();
+      const outcome = core.valleyVisitor.view(user.id, query.output.item);
+      if (!outcome.ok) return failure(outcome);
+      return json(outcome.value);
+    },
+  },
+  '/api/valley/visitor/reroll': {
+    POST: async (request, { user, core }) => {
+      if (core.valleyVisitor === null) return notFound();
+      const body = await parseBody(request, ValleyVisitorRerollBodySchema);
+      if (body === undefined) return invalidBody();
+      const outcome = core.valleyVisitor.reroll(user.id, {
+        itemId: body.itemId,
+        key: body.idempotencyKey,
+      });
+      if (!outcome.ok) return failure(outcome);
+      return json({
+        ...outcome.value,
+        valley: core.valleyState(user.id),
+        state: core.collection.state(user.id),
+      });
+    },
+  },
+  '/api/valley/visitor/blueprint': {
+    POST: async (request, { user, core }) => {
+      if (core.valleyVisitor === null) return notFound();
+      const body = await parseBody(request, ValleyVisitorBlueprintBodySchema);
+      if (body === undefined) return invalidBody();
+      const outcome = core.valleyVisitor.buyBlueprint(user.id, body.idempotencyKey);
       if (!outcome.ok) return failure(outcome);
       return json({
         ...outcome.value,

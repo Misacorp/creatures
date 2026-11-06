@@ -8,3 +8,4 @@ export * from './forge';
 export * from './gazette';
 export * from './bonfire';
 export * from './commons';
+export * from './visitor';
