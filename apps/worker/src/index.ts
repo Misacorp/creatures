@@ -87,8 +87,7 @@ export function createHandler(overrides: Partial<HandlerDeps> = {}): ExportedHan
           version: env.VERSION,
           ...(branch === undefined ? {} : { branch }),
           leetSource: env.LEET_SOURCE,
-          // Staging only: lets the client load the dev panel. Absent (not false) everywhere else.
-          ...(env.DEV_TOOLS === 'on' ? { devTools: true } : {}),
+          // The dev panel flag is not here: the config is public, and the panel is for server managers only (`/api/me` says it).
           // The live sockets: the lounge's (LOUNGE_LIVE), the finale's (FINALE_LIVE) and the raid board's (RAID_LIVE). Absent, not false.
           ...(env.LOUNGE_LIVE === 'on' ? { loungeLive: true } : {}),
           ...(env.FINALE_LIVE === 'on' ? { finaleLive: true } : {}),

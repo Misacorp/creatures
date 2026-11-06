@@ -106,24 +106,67 @@ export function slotBossInfo(slot: number): { bossId: string; rows: number; seat
 }
 
 /**
+ * The arena of a slot's boss as one week plays it: the board's rows, the creatures one player brings (`seats`) and the creatures the boss's
+ * own piece holds (`pieceSeats`). They are the same unless the dev tools' seats-per-player override is set (`seatOverride`, staging only,
+ * `dev-tools-raid-seats.ts`): then `seats` is the override and everything that reads the arena (the board's width, the placement cap, the
+ * stages, the view) follows it. This is the one place the override enters; there is no second path.
+ */
+export interface Arena {
+  bossId: string;
+  rows: number;
+  seats: number;
+  pieceSeats: number;
+}
+
+export function arenaOf(slot: number, seatOverride: number | null): Arena {
+  const { bossId, rows, seats } = slotBossInfo(slot);
+  return { bossId, rows, seats: seatOverride ?? seats, pieceSeats: seats };
+}
+
+/**
  * The columns of a board for `players` players: one piece each, with no floor of four (a party under four fights a smaller boss, Misa
  * 2026-11-04). `spare` adds the spare piece that stays free until stage 1, so a newcomer can always join. Never under one column.
+ * With an `arena` a piece is `seats` creatures laid in columns of `rows`, so a piece wider than the boss's own (the seats override)
+ * makes the board wider: `ceil(pieces * seats / rows)`. A boss's own piece is one full column (`seats` equals `rows`), the same as before.
  */
-export const colsFor = (players: number, spare = false): number =>
-  Math.max(1, players + (spare ? 1 : 0));
+export function colsFor(
+  players: number,
+  spare = false,
+  arena?: Pick<Arena, 'rows' | 'seats'>,
+): number {
+  const pieces = Math.max(1, players + (spare ? 1 : 0));
+  return arena === undefined ? pieces : Math.max(1, Math.ceil((pieces * arena.seats) / arena.rows));
+}
+
+/**
+ * The players a boss is sized for. HP and Attack follow the players of a party under four (Misa, 2026-11-04), and the boss is as wide as
+ * the board (one column per player). With the boss's own piece that is the real players. With the seats override (dev tools, a few testers
+ * who bring many creatures each) it is **ceil(seats on the board / the boss's own seats per player)**, so three testers bringing eight
+ * creatures each (24 seats) against a three-seat piece fight what eight players would. Because a boss's piece is a full column
+ * (`seats` equals `rows`, checked by the loader), this equals the board's width without the spare piece: `colsFor(players, false, arena)`.
+ */
+export const effectivePlayers = (
+  players: number,
+  arena: Pick<Arena, 'seats' | 'pieceSeats'>,
+): number => Math.max(1, Math.ceil((players * arena.seats) / arena.pieceSeats));
 
 /** The creatures a player brings to a slot's boss: the seats of its arena piece. */
 export const seatsFor = (slot: number): number => slotBossInfo(slot).seats;
 
-/** The creatures a player may place on a week: the piece's seats on a v2 week, `RULES.raid.teamSize` on a v1 week (or none stored). */
-export function seatsOfWeek(sql: SqlStorage, weekId: string): number {
+/**
+ * The creatures a player may place on a week: the piece's seats on a v2 week (the seats override when one is set), `RULES.raid.teamSize`
+ * on a v1 week (or none stored).
+ */
+export function seatsOfWeek(sql: SqlStorage, weekId: string, seatOverride: number | null): number {
   const row = sql
     .exec<{ rules_version: number; track_slot: number | null }>(
       'SELECT rules_version, track_slot FROM raid_weeks WHERE week_id = ?',
       weekId,
     )
     .toArray()[0];
-  return row?.rules_version === 2 ? seatsFor(row.track_slot ?? 1) : RULES.raid.teamSize;
+  return row?.rules_version === 2
+    ? arenaOf(row.track_slot ?? 1, seatOverride).seats
+    : RULES.raid.teamSize;
 }
 
 /** A slot's place on the grid. */
@@ -135,7 +178,7 @@ export const gridPlace = (slot: number, rows: number): { row: number; col: numbe
 /** The slot number of a place on the grid. */
 export const slotAt = (row: number, col: number, rows: number): number => col * rows + row;
 
-/** The slot's boss for `players` players, as it fights: one column per player, also under four (the HP and Attack curves continue). */
+/** The slot's boss for `players` players (see `effectivePlayers`), as it fights: one column per player, also under four (the HP and Attack curves continue). */
 export function weekendBoss(slot: number, players: number): BossDef {
   return trackBoss(combatV2, SHIPPED_V2, slot, { players, followSmallParty: true });
 }

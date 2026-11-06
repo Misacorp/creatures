@@ -5,8 +5,8 @@
  *
  * - `__DEV_TOOLS_BUILD__`: a build-time constant (`vite.config.ts`). In a production build it is the
  *   literal `false`, so the `import()` below is dead code and the panel is not in the bundle at all.
- * - `enabled`: the server said `devTools: true` (only the staging Worker does; `/api/config` and
- *   `/api/me`). Every dev route refuses with a 404 anyway when the server's gate is off.
+ * - `enabled`: the server said `devTools: true` in `/api/me` (only the staging Worker does, and only to a
+ *   server manager). Every dev route refuses with a 404 anyway when the server's gate is off.
  */
 import type { JSX } from 'preact';
 import type { Creature } from './api';

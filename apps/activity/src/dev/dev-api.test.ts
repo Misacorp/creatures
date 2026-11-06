@@ -92,7 +92,9 @@ describe('parsing the server answers', () => {
       gameDay: '2026-10-13',
       raid: { weekId: '2026-W42', status: 'prep', bossId: null },
       guests: 3,
+      raidSeats: null,
     });
+    expect(parseDevState({ ...state, raidSeats: 6 })?.raidSeats).toBe(6);
     expect(parseDevState({ ...state, raid: null })?.raid).toBeNull();
     expect(parseDevState({ clock: {} })).toBeNull();
     expect(parseDevState(null)).toBeNull();
@@ -135,6 +137,7 @@ describe('clockRows', () => {
     gameDay: 'Mon',
     raid: { weekId: '2026-W43', status: 'open', bossId: 'bog-king' },
     guests: 3,
+    raidSeats: null,
   };
 
   it('gives every fact its own short row', () => {
@@ -145,8 +148,16 @@ describe('clockRows', () => {
       { label: 'Raid week', value: '2026-W43' },
       { label: 'Raid status', value: 'open' },
       { label: 'Raid boss', value: 'bog-king' },
+      { label: 'Creatures per player', value: 'default' },
       { label: 'Simulated players', value: '3' },
     ]);
+  });
+
+  it('shows the creatures-per-player override when one is set', () => {
+    expect(clockRows({ ...view, raidSeats: 6 })).toContainEqual({
+      label: 'Creatures per player',
+      value: '6',
+    });
   });
 
   it('says none without a raid week and leaves out the players when there are none', () => {
@@ -158,6 +169,16 @@ describe('clockRows', () => {
   it('shows a dash for a raid without a boss yet', () => {
     const rows = clockRows({ ...view, raid: { weekId: '2026-W43', status: 'prep', bossId: null } });
     expect(rows.find((r) => r.label === 'Raid boss')?.value).toBe('-');
+  });
+});
+
+describe('the creatures-per-player answer', () => {
+  it("says the number, or that the boss's own piece is back", () => {
+    expect(describeBench('raid-seats', { seats: 6 })).toBe('Creatures per player: 6.');
+    expect(describeBench('raid-seats', { seats: null })).toBe(
+      "Creatures per player: the boss's own piece again.",
+    );
+    expect(describeBench('raid-seats', {})).toBeNull();
   });
 });
 

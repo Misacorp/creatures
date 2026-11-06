@@ -11,9 +11,15 @@
  * - `raid-play`: plays stage 1, stage 2 or the finale now, by the scheduler's own code, and marks the event done so the calendar never
  *   plays it again. The finale plays to its end at once, or (`live`) starts its live fight now. The answer says which fight to open.
  */
+import { content } from '@creatures/game';
 import type * as v from 'valibot';
 import { DevError, type ToolCtx } from './dev-context';
-import type { RaidFillBodySchema, RaidPlayBodySchema, RaidRankBodySchema } from './dev-schemas';
+import type {
+  RaidFillBodySchema,
+  RaidPlayBodySchema,
+  RaidRankBodySchema,
+  RaidSeatsBodySchema,
+} from './dev-schemas';
 import { GUEST_PREFIX, createGuest, guestId, referenceLevel } from './dev-tools-raid';
 import { GUEST_CREATURES_V2, ensureV2Talents, placeCreaturesV2 } from './dev-tools-raid-v2';
 import { gameNow, retreatTo } from './dev-tools-clock';
@@ -21,7 +27,7 @@ import { MAX_BENCH_PLAYERS } from './dev-schemas';
 import type { WeekRow } from './raid';
 import { partyMembers, partyOf } from './raid-roster';
 import { eventTimes, weekIdFor } from './raid-schedule';
-import { colsFor, readTrack, seatsFor, slotBossInfo, weekCarries } from './raid-v2-core';
+import { arenaOf, colsFor, readTrack, slotBossInfo, weekCarries } from './raid-v2-core';
 import { compactBoard } from './raid-v2-stage';
 import { capPlacements, type PlacementRow } from './raid-teams';
 
@@ -39,6 +45,10 @@ const STAGE_NO: Record<Stage, number> = { stage1: 1, stage2: 2, finale: 3 };
 
 /** How far before stage 1 a cleared week's clock is put when it has to move back: still in the preparation, with days to spare. */
 const BACK_BEFORE_STAGE1_MS = 2 * 86_400_000;
+/** A guest owns one creature per line (the content's non-Festival lines): the most it can have. */
+const GUEST_MAX_CREATURES = new Set(
+  content.creatures.filter((c) => c.festival !== true).map((c) => c.line),
+).size;
 /** The first guest numbers tried (`dev-guest-1` and up); the Games' bots use the same ones. */
 const MAX_GUEST_NUMBER = 40;
 
@@ -223,6 +233,10 @@ function guestsOnBoard(ctx: ToolCtx, weekId: string): Set<string> {
   );
 }
 
+/** The creatures a guest owns for a board of `seats` per player: the seats to place and as many spares, but no more lines than the content has. */
+const guestCreatures = (seats: number): number =>
+  Math.min(Math.max(GUEST_CREATURES_V2, seats * 2), GUEST_MAX_CREATURES);
+
 /**
  * `count` more simulated players (default as many as fit, at most `MAX_BENCH_PLAYERS`) place the first creatures of the boss's piece (its seats: two to four) in the board's
  * empty slots through the placement code. A guest takes whatever room is left. The caller's creatures never
@@ -235,17 +249,19 @@ export function raidFill(ctx: ToolCtx, body: Body<typeof RaidFillBodySchema>) {
   const wanted = body.count ?? MAX_BENCH_PLAYERS;
   const level = referenceLevel(ctx);
   const there = guestsOnBoard(ctx, week.weekId);
+  // The creatures a guest brings: the boss's piece, or the seats override.
+  const seats = arenaOf(week.trackSlot ?? 1, week.seatOverride).seats;
   let added = 0;
   for (let n = 1; n <= MAX_GUEST_NUMBER && added < wanted; n++) {
     const id = guestId(n);
     if (there.has(id)) continue;
-    createGuest(ctx, n, level, GUEST_CREATURES_V2);
+    createGuest(ctx, n, level, guestCreatures(seats));
     ensureV2Talents(ctx, id);
     const first = ctx.sql
       .exec<{ id: string }>(
         'SELECT id FROM creatures WHERE user_id = ? ORDER BY caught_at, rowid LIMIT ?',
         id,
-        seatsFor(week.trackSlot ?? 1),
+        seats,
       )
       .toArray()
       .map((r) => r.id);
@@ -266,6 +282,46 @@ export function raidFill(ctx: ToolCtx, body: Body<typeof RaidFillBodySchema>) {
 // --- Boss and rank ---
 
 /**
+ * Fits the open board to the arena of `slot` (its rows and the seats a player brings, the override applied): a player's placements beyond
+ * the seats come off (the earliest placed stay, `capPlacements`), and a placement beyond the board's new width moves to the first free
+ * slot or comes off when none is free, as stage 1 does for a player who left. The board is still open, so it keeps its spare piece.
+ */
+function refitBoard(ctx: ToolCtx, weekId: string, slot: number, seatOverride: number | null): void {
+  const arena = arenaOf(slot, seatOverride);
+  const parties = ctx.sql
+    .exec<{ party: number }>(
+      'SELECT party FROM raid_parties WHERE week_id = ? ORDER BY party',
+      weekId,
+    )
+    .toArray();
+  for (const { party } of parties) {
+    const all = ctx.sql
+      .exec<PlacementRow>(
+        'SELECT rowid, slot, user_id, creature_id FROM raid_placements WHERE week_id = ? AND party = ? ORDER BY rowid',
+        weekId,
+        party,
+      )
+      .toArray();
+    const kept = new Set(capPlacements(all, new Set(), arena.seats).map((p) => p.creature_id));
+    for (const p of all) {
+      if (kept.has(p.creature_id)) continue;
+      ctx.sql.exec(
+        'DELETE FROM raid_placements WHERE week_id = ? AND creature_id = ?',
+        weekId,
+        p.creature_id,
+      );
+    }
+    compactBoard(
+      ctx.sql,
+      weekId,
+      party,
+      arena.rows,
+      colsFor(partyMembers(ctx.sql, weekId, party).length, true, arena),
+    );
+  }
+}
+
+/**
  * Sets the week's Boss Rank, and the boss that rank comes with, and the server's track slot. Only on a week that has not been fought:
  * after that, `raid-clear` first. The board's shape follows the new boss (its rows), so a placement beyond the new board moves to the
  * first free slot (or comes off when none is free), as stage 1 does for a player who left.
@@ -276,42 +332,35 @@ export function raidRank(ctx: ToolCtx, body: Body<typeof RaidRankBodySchema>) {
   requireQuiet(ctx, week);
   setWeekRank(ctx, week.weekId, body.rank);
   setTrackSlot(ctx, body.rank, true);
-  const { rows, seats } = slotBossInfo(body.rank);
-  const parties = ctx.sql
-    .exec<{ party: number }>(
-      'SELECT party FROM raid_parties WHERE week_id = ? ORDER BY party',
-      week.weekId,
-    )
-    .toArray();
-  for (const { party } of parties) {
-    // The new boss's piece may have fewer seats than a player placed: the earliest placed stay (`capPlacements`).
-    const all = ctx.sql
-      .exec<PlacementRow>(
-        'SELECT rowid, slot, user_id, creature_id FROM raid_placements WHERE week_id = ? AND party = ? ORDER BY rowid',
-        week.weekId,
-        party,
-      )
-      .toArray();
-    const kept = new Set(capPlacements(all, new Set(), seats).map((p) => p.creature_id));
-    for (const p of all) {
-      if (kept.has(p.creature_id)) continue;
-      ctx.sql.exec(
-        'DELETE FROM raid_placements WHERE week_id = ? AND creature_id = ?',
-        week.weekId,
-        p.creature_id,
-      );
-    }
-    // The board is still open, so it keeps its spare piece.
-    compactBoard(
-      ctx.sql,
-      week.weekId,
-      party,
-      rows,
-      colsFor(partyMembers(ctx.sql, week.weekId, party).length, true),
-    );
-  }
+  refitBoard(ctx, week.weekId, body.rank, week.seatOverride);
   ctx.raid.invalidateReadiness();
   return { weekId: week.weekId, ...rankAnswer(ctx, week.weekId) };
+}
+
+// --- Creatures per player ---
+
+/**
+ * Sets how many creatures each player brings to the raid: a number of seats (1 to 8), or null for the boss's own piece. It is kept for the
+ * guild (staging dev state), so it applies to the current week and to every later week until it is set back. Only on a week that has not
+ * been fought (`409 fought`: clear the board first; the setting stays through a clear). The board is refitted at once. The boss is sized
+ * for the seats on the board (`effectivePlayers` in `raid-v2-core.ts`).
+ */
+export function raidSeats(ctx: ToolCtx, body: Body<typeof RaidSeatsBodySchema>) {
+  requireBench(ctx);
+  const week = benchWeek(ctx);
+  if (fought(ctx, week)) throw new DevError(409, 'fought');
+  requireQuiet(ctx, week);
+  ctx.state.writeRaidSeats(body.seats);
+  const slot = week.trackSlot ?? 1;
+  refitBoard(ctx, week.weekId, slot, body.seats);
+  ctx.raid.invalidateReadiness();
+  const arena = arenaOf(slot, body.seats);
+  return {
+    weekId: week.weekId,
+    seats: body.seats,
+    seatsPerPlayer: arena.seats,
+    pieceSeats: arena.pieceSeats,
+  };
 }
 
 // --- Play a stage ---

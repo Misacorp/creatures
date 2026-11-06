@@ -51,9 +51,10 @@ export function storeAutofire(
   userId: string,
   target: string,
   on: boolean,
+  seatOverride: number | null,
 ): void {
   if (target !== BASIC_TARGET) {
-    const team = raidTeam(sql, weekId, userId, seatsOfWeek(sql, weekId));
+    const team = raidTeam(sql, weekId, userId, seatsOfWeek(sql, weekId, seatOverride));
     if (!team.some((c) => c.id === target)) throw new GameError(409, 'not_your_creature');
   }
   sql.exec(
