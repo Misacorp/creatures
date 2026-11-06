@@ -1,4 +1,6 @@
 import { expect } from 'vitest';
+import type { GuildApi } from '../src/discord';
+import { PERMISSION_ADMINISTRATOR } from '../src/discord-permissions';
 import { ORIGIN, tokenFor, type CoreContext } from './helpers';
 import { sessionCaller, type Json as KitJson } from './kit';
 import { seedPlayer, type SeedOptions } from './raid-helpers';
@@ -7,8 +9,19 @@ import { seedPlayer, type SeedOptions } from './raid-helpers';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type Json = KitJson<any>;
 
-/** A guild core with the dev tools on (and the practice finale, as on staging). */
-export const ON = { devTools: true, raidPractice: true } as const;
+/** A Discord guild API in which every player is an Administrator: the dev tools are for server managers only. */
+export const MANAGERS_API: GuildApi = {
+  getGuildOwnerId: () => Promise.resolve('999999999999999999'),
+  getGuildRoles: (guildId) =>
+    Promise.resolve([
+      { id: guildId, permissions: '0' },
+      { id: 'admins', permissions: String(PERMISSION_ADMINISTRATOR) },
+    ]),
+  getGuildMember: () => Promise.resolve({ roles: ['admins'] }),
+};
+
+/** A guild core with the dev tools on (and the practice finale, as on staging), whose players all manage the server. */
+export const ON = { devTools: true, raidPractice: true, guildApi: MANAGERS_API } as const;
 
 export interface Dev {
   id: string;

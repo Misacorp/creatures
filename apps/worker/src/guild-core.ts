@@ -28,7 +28,7 @@ import { pruneOldData } from './old-data';
 import { pruneAway } from './while-away';
 import { maintainedDay, markMaintained, markStartupPasses, startupPassesRan } from './maintenance';
 import { DevState } from './dev-state';
-import { DevTools, devRoutes, isDevPath } from './dev-tools';
+import { DevTools, devRoutes, isDevPath, mayUseDevTools } from './dev-tools';
 import { DiscordError, type GuildApi } from './discord';
 import { canManageGuild } from './discord-permissions';
 import {
@@ -262,8 +262,9 @@ const routes: Routes<RequestContext> = {
         // The allowance this request is the first to tell the player about (null on every later one).
         allowance: core.allowance.takeNotice(user.id),
         leetSync: core.leetSyncStatus(),
-        // Staging only: lets the client load the dev panel. Absent (not false) everywhere else.
-        ...(core.dev === null ? {} : { devTools: true }),
+        // Staging only, and only for a player who can manage the server: lets the client load the dev
+        // panel. Absent (not false) everywhere else.
+        ...((await mayUseDevTools(core, user.id)) ? { devTools: true } : {}),
       });
     },
   },
@@ -635,6 +636,10 @@ export class GuildCore {
       gearRng,
       ...(options.combatV2 === true ? { combatV2: true } : {}),
       ...(options.readinessRng === undefined ? {} : { readinessRng: options.readinessRng }),
+      // Staging only: the dev tools' seats-per-player override. Without the dev tools nothing is read.
+      ...(this.devState === null
+        ? {}
+        : { seatOverride: () => this.devState?.readRaidSeats() ?? null }),
     });
     this.games = new Games({
       storage,

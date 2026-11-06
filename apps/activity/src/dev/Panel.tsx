@@ -28,7 +28,14 @@ import { isLook, LOOKS, ROOM_MODES, type LookId, type RoomMode } from '../looks'
 import { resetLocalFlags } from './flags';
 import { chooseLook, chooseRoom, storedLook, storedRoom } from './look-prefs';
 import type { CreatureChoice, ToolSpec } from './forms';
-import { CLOCK_SPECS, GOODS_SPECS, RESET_ACCOUNT_SPEC, orderedSections } from './specs';
+import {
+  CLOCK_SPECS,
+  GOODS_SPECS,
+  RESET_ACCOUNT_SPEC,
+  ROSTER_PRESET_SPEC,
+  orderedSections,
+} from './specs';
+import { RosterPresets } from './RosterPresets';
 import { ToolForm } from './ToolForm';
 import { COMBAT_LAB_URL } from './combat-lab-link';
 import { PROTOTYPE_URL } from './prototype-link';
@@ -213,6 +220,8 @@ export default function DevPanel({ tab, creatures, onChanged }: DevPanelProps): 
   const [opened, setOpened] = useState<Record<string, boolean>>({});
   /** The fight a Play button opened: its replay is on screen over the game. */
   const [watch, setWatch] = useState<WatchTarget | null>(null);
+  /** Counts the tools that ran, so lists that show what players own are read again. */
+  const [ran, setRan] = useState(0);
   const inFlight = useRef(false);
 
   const choices = useMemo<CreatureChoice[]>(
@@ -260,6 +269,7 @@ export default function DevPanel({ tab, creatures, onChanged }: DevPanelProps): 
         setOpen(false);
       }
       reloadView();
+      setRan((n) => n + 1);
       if (spec.tool === 'analytics-rollup' && events !== null) loadEvents();
       onChanged();
     });
@@ -398,6 +408,19 @@ export default function DevPanel({ tab, creatures, onChanged }: DevPanelProps): 
                 </button>
               </div>
               <ToolForm spec={RESET_ACCOUNT_SPEC} choices={choices} busy={busy} onRun={run} />
+            </Section>
+            <Section
+              title="Playtest"
+              open={sectionOpen('playtest', false)}
+              onToggle={toggle('playtest')}
+            >
+              <RosterPresets
+                busy={busy}
+                version={ran}
+                onApply={(body) => {
+                  run(ROSTER_PRESET_SPEC, body);
+                }}
+              />
             </Section>
             <Section title="Look" open={sectionOpen('look', false)} onToggle={toggle('look')}>
               <LookSwitch />

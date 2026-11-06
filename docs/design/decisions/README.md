@@ -51,6 +51,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [platform.md](platform.md): Hosting, Durable Objects, scheduling, CI and deploys, staging, dependencies, security, database reads, data cleanup, analytics, dev tools, the workbench, player feedback, sockets.
 
+- 2026-11-06 Dev tools: server managers only, roster presets, creatures-per-player override \[Misa\]
 - 2026-11-05 The lab's tests share modules between files, and boss rule measurements live in the report
 - 2026-11-03 Raid test bench: the staging raid dev tools become four steps \[Misa\]
 - 2026-11-03 The resource library: one data file names every resource
@@ -144,6 +145,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [combat.md](combat.md): The shared combat engine, abilities, statuses, elements, the balance simulator, balance passes, and combat v2 in the lab.
 
+- 2026-11-06 Combat v2 goes live with the valley rework in one reset \[Misa\]
 - 2026-11-06 Talents' raid share back in band: Opportunist +50%, Steady Rhythm without its crit bonus
 - 2026-11-06 \[Misa\] Fizzle becomes a telegraphed boss move: immune to reactions every second turn
 - 2026-11-06 Lab gate: dead Knacks are read on the track's weekends too

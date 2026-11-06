@@ -116,6 +116,10 @@ body:has(.nav-tray) .dev-fab {
   margin: 0 0 0.45rem;
 }
 
+.dev-form + .dev-step {
+  margin-top: 0.6rem;
+}
+
 .dev-step .dev-hint {
   margin: 0.2rem 0 0;
 }

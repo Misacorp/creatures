@@ -139,7 +139,7 @@ export function App() {
                   onHelp={openHowTo}
                   allowance={bootStatus.value.me.allowance}
                   showPractice={bootStatus.value.config.environment !== 'production'}
-                  devTools={bootStatus.value.config.devTools || bootStatus.value.me.devTools}
+                  devTools={bootStatus.value.me.devTools}
                   loungeLive={bootStatus.value.config.loungeLive}
                   valley={bootStatus.value.config.valley}
                   valleySystems={bootStatus.value.config.valleySystems}

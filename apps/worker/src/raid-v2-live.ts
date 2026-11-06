@@ -369,7 +369,8 @@ export function settleLiveV2(deps: LiveDeps, weekId: string, party: number, now:
     const ownerOf = new Map(row.input.fighters.map((f) => [f.key ?? f.uid, f.owner]));
     settleStageV2(
       deps,
-      { weekId, trackSlot: week.track_slot },
+      // Settling reads the week's id and slot only (the fight was built, with the arena it was played on, when it started).
+      { weekId, trackSlot: week.track_slot, seatOverride: null },
       party,
       3,
       {

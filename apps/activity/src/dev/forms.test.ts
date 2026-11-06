@@ -7,6 +7,7 @@ import {
   LIMITS,
   OMEN_OPTIONS,
   RANK_OPTIONS,
+  SEATS_OPTIONS,
   SPECIES_OPTIONS,
 } from './options';
 import { ALL_SPECS, CLOCK_SPECS, GOODS_SPECS, SECTIONS, orderedSections } from './specs';
@@ -277,6 +278,7 @@ describe('the Raid test bench', () => {
       'Clear the board',
       'Fill the empty spots',
       'Boss and Boss Rank',
+      'Creatures per player',
       'Play stage 1',
       'Play stage 2',
       'Play the finale',
@@ -317,6 +319,23 @@ describe('the Raid test bench', () => {
     );
     expect(body('raid-rank', 'Boss and Boss Rank', { rank: '8' })).toEqual({ rank: 8 });
     expect(problem('raid-rank', 'Boss and Boss Rank', { rank: '99' })).toMatch(/pick one/);
+  });
+
+  it('sets the creatures per player to a number from 1 to 8, or back to the default (null)', () => {
+    expect(SEATS_OPTIONS.map((o) => o.value)).toEqual([
+      'default',
+      '1',
+      '2',
+      '3',
+      '4',
+      '5',
+      '6',
+      '7',
+      '8',
+    ]);
+    expect(body('raid-seats', 'Creatures per player')).toEqual({ seats: null });
+    expect(body('raid-seats', 'Creatures per player', { seats: '5' })).toEqual({ seats: 5 });
+    expect(problem('raid-seats', 'Creatures per player', { seats: '9' })).toMatch(/pick one/);
   });
 
   it('plays a stage by name, the finale at once or live', () => {

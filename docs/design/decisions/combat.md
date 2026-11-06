@@ -4,6 +4,14 @@ The shared combat engine, abilities, statuses, elements, the balance simulator, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-06: Combat v2 goes live with the valley rework in one reset [Misa]
+
+ID: `2026-11-06-combat-v2-goes-live-with-the` · Status: current
+
+**Decision.** Combat v2 does not go live on its own. It goes live with the valley rework, in the one reset Misa decided on 2026-10-31 (phase 6 of the combat roadmap), so players reset once. Until then, staging gets the tools for a playtest with a few testers: the dev tools only for server managers (Misa), roster presets that give any player creatures and gear, and an override of how many creatures each player brings to a raid.
+
+**Reasoning.** Misa, 2026-11-06: "I think we could wait for the valley rework. The dev tooling needs some work because I don't want testers to have access to dev tools. Just me." Going first alone would mean two resets or bringing back the old migration plan (about a week of work).
+
 ## 2026-11-06: Talents' raid share back in band: Opportunist +50%, Steady Rhythm without its crit bonus
 
 ID: `2026-11-06-talents-raid-share-back-in-band` · Status: current

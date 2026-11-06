@@ -6,6 +6,8 @@
  *   `wrangler.jsonc` sets for the staging environment only. With it off the Worker and the Durable Object
  *   both answer a plain 404 before anything else (not hidden: unknown routes answer 401 first), and `GuildCore` never builds
  *   a `DevTools`, so none of this code can run. A test pins production and the top level to "off".
+ * - **Managers only.** On top of the var, only a player who can manage the Discord server (`mayUseDevTools`)
+ *   reaches a dev route; anyone else gets the same plain 404, and `/api/me` does not say `devTools`.
  * - **Scope.** A tool acts on the caller's own guild (the Durable Object it runs in) and, for per-player
  *   tools, on the caller's own player data. Identity comes from the verified session, as for every route;
  *   no body carries a user id. Requests are rate-limited like any other.
@@ -25,6 +27,7 @@ import * as v from 'valibot';
 import type { Analytics } from './analytics';
 import { DevError, purgeUser, type ToolCtx } from './dev-context';
 import {
+  ApplyRosterPresetBodySchema,
   ClockBodySchema,
   DEV_ACTION_TOOLS,
   DEV_READ_TOOLS,
@@ -45,6 +48,7 @@ import {
   RaidFillBodySchema,
   RaidPlayBodySchema,
   RaidRankBodySchema,
+  RaidSeatsBodySchema,
   ResetAccountBodySchema,
   ResetRaidsDungeonsBodySchema,
   SetWeatherBodySchema,
@@ -59,6 +63,7 @@ import {
 import { devKey, type DevState } from './dev-state';
 import { clockState, clockTool } from './dev-tools-clock';
 import { combatV2Convert } from './dev-tools-combat-v2';
+import { applyRosterPreset, playersView } from './dev-tools-presets';
 import { valleyFresh } from './dev-tools-valley';
 import { setWeather } from './dev-tools-weather';
 import { gamesBots, gamesReset, gamesRunNow } from './dev-tools-games';
@@ -90,7 +95,7 @@ import {
   setSlots,
   slotWipeNotice,
 } from './dev-tools-trips';
-import { raidClear, raidFill, raidPlay, raidRank } from './dev-tools-raid-bench';
+import { raidClear, raidFill, raidPlay, raidRank, raidSeats } from './dev-tools-raid-bench';
 import { resetRaidsDungeons } from './dev-tools-reset-raids';
 import {
   errorResponse,
@@ -100,6 +105,7 @@ import {
   readLimitedText,
   type Routes,
 } from './http';
+import { DiscordError } from './discord';
 import type { LedgerStorage } from './ledger';
 import type { Games } from './games';
 import type { Raid } from './raid';
@@ -208,6 +214,8 @@ const TOOLS: Record<DevActionTool, Tool> = {
   'raid-fill': tool(RaidFillBodySchema, raidFill),
   'raid-rank': tool(RaidRankBodySchema, raidRank),
   'raid-play': tool(RaidPlayBodySchema, raidPlay, { movesClock: true }),
+  // Creatures per player (staging with COMBAT_V2 on only): kept in dev state, applies to this week and later ones.
+  'raid-seats': tool(RaidSeatsBodySchema, raidSeats),
   // The Games' tools re-arm the alarm afterwards (as a clock move does): a new bot, a show that starts in
   // 15 s or a forgotten day changes what the alarm waits for.
   'games-bots': tool(GamesBotsBodySchema, gamesBots, { movesClock: true }),
@@ -229,6 +237,8 @@ const TOOLS: Record<DevActionTool, Tool> = {
   }),
   // Staging with the valley systems on only (404 otherwise): wipes every player's progress in the guild for a day-0 valley; re-arms the alarm (the dev clock goes back to real time).
   'valley-fresh': tool(NoBodySchema, valleyFresh, { movesClock: true }),
+  // Staging with COMBAT_V2 on only: replaces one player's (or everyone's) creatures and gear bag with a preset (`dev-presets.ts`).
+  'apply-roster-preset': tool(ApplyRosterPresetBodySchema, applyRosterPreset),
   'reset-account': tool(ResetAccountBodySchema, (ctx) => {
     purgeUser(ctx.sql, ctx.userId, true);
     ctx.state.clearUser(ctx.userId);
@@ -321,6 +331,7 @@ export class DevTools {
       raid:
         week === null ? null : { weekId: week.weekId, status: week.status, bossId: week.bossId },
       guests,
+      raidSeats: ctx.state.readRaidSeats(),
       flags: {
         night: flag(devKey.night(userId)) ?? 'auto',
         festival: flag(devKey.festival(userId)) ?? 'auto',
@@ -334,6 +345,11 @@ export class DevTools {
       },
       tools: DEV_ACTION_TOOLS,
     };
+  }
+
+  /** The guild's players and the roster presets: what the panel's preset picker lists. */
+  players(userId: string) {
+    return playersView(this.ctx(userId));
   }
 
   /** The last 50 analytics events of this guild: kind, time and props. Never an actor. */
@@ -364,7 +380,34 @@ export interface DevRouteContext {
   user: { id: string };
   /** Path parameters of a template route, raw: matched against the tool lists before use. */
   params: Record<string, string>;
-  core: { dev: DevTools | null };
+  core: DevAccessCore & { dev: DevTools | null };
+}
+
+/** What the manager gate needs from the guild core: the tools and the (cached) Discord permission check. */
+export interface DevAccessCore {
+  dev: DevTools | null;
+  canManageServer(userId: string, options?: { fresh?: boolean }): Promise<boolean>;
+}
+
+/**
+ * The manager gate (2026-11-06, on top of the `DEV_TOOLS` var): the dev tools are for the people who can
+ * manage the Discord server (the owner, Administrator or Manage Server) and nobody else, so testers never
+ * see them. It reuses `canManageServer` (the 60 s per-player cache of the raid channel check), so a player
+ * costs three Discord reads a minute at most, and only on staging. Fails closed: when Discord cannot
+ * answer, or anything else goes wrong, the answer is "no". No user id is written anywhere.
+ */
+export async function mayUseDevTools(core: DevAccessCore, userId: string): Promise<boolean> {
+  if (core.dev === null) return false;
+  try {
+    return await core.canManageServer(userId);
+  } catch (err) {
+    // Only the error kind is logged.
+    console.error(
+      'dev tools permission check failed',
+      err instanceof DiscordError ? err.kind : 'error',
+    );
+    return false;
+  }
 }
 
 /** A POST body: nothing (an empty object) or a small JSON object. `undefined`: refuse it. */
@@ -377,16 +420,19 @@ async function readToolBody(request: Request): Promise<unknown> {
 
 export const devRoutes: Routes<DevRouteContext> = {
   '/api/dev/:tool': {
-    GET: (_request, { user, params, core }) => {
+    GET: async (_request, { user, params, core }) => {
       const dev = core.dev;
       const toolId = params['tool'];
       if (dev === null || toolId === undefined || !READ_IDS.has(toolId)) return notFound();
+      if (!(await mayUseDevTools(core, user.id))) return notFound();
+      if (toolId === 'players') return json(dev.players(user.id));
       return json(toolId === 'state' ? dev.state(user.id) : dev.events());
     },
     POST: async (request, { user, params, core }) => {
       const dev = core.dev;
       const toolId = params['tool'];
       if (dev === null || toolId === undefined || !TOOL_IDS.has(toolId)) return notFound();
+      if (!(await mayUseDevTools(core, user.id))) return notFound();
       const raw = await readToolBody(request);
       if (raw === undefined) return errorResponse('invalid_body', 400);
       const outcome = await dev.run(toolId, user.id, raw);

@@ -51,8 +51,6 @@ export interface AppConfig {
   branch: string | null;
   /** "mock" while leet points are simulated; anything else means a real leet source. */
   leetSource: string;
-  /** True only on staging, where the server has the dev tools on (the debug panel loads). */
-  devTools: boolean;
   /** True when the server offers the lounge's live socket (`LOUNGE_LIVE`). */
   loungeLive: boolean;
   /** True when the server offers the finale's live socket (`FINALE_LIVE`; off in production for now). */
@@ -108,7 +106,7 @@ export interface Me {
   /** The allowance this request paid, or null when there is nothing new to tell. */
   allowance: Allowance | null;
   leetSync: LeetSyncStatus;
-  /** True only on staging, where the server has the dev tools on. */
+  /** True only on staging, and only for a player who can manage the server (the debug panel loads). */
   devTools: boolean;
 }
 
@@ -222,7 +220,6 @@ export async function fetchConfig(): Promise<AppConfig> {
     version: data['version'],
     branch: typeof data['branch'] === 'string' ? data['branch'] : null,
     leetSource: data['leetSource'],
-    devTools: data['devTools'] === true,
     loungeLive: data['loungeLive'] === true,
     finaleLive: data['finaleLive'] === true,
     raidLive: data['raidLive'] === true,

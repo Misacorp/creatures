@@ -27,12 +27,13 @@ import { openSwaps, type SwapRequestRow } from './raid-swap';
 import { partyPlacements } from './raid-teams';
 import { speciesOf } from './species';
 import {
+  arenaOf,
   colsFor,
+  effectivePlayers,
   determinationBpFor,
   gridPlace,
   readPartyCarry,
   readTrack,
-  slotBossInfo,
   weekendBoss,
   type PartyCarry,
 } from './raid-v2-core';
@@ -99,7 +100,7 @@ export interface RaidV2Part {
   /** The arena: rows of the slot's boss and the columns (one per player); a slot is `col * rows + row`. */
   rows: number;
   cols: number;
-  /** The creatures one player brings: the seats of the boss's arena piece (a column of `rows`, today). */
+  /** The creatures one player brings: the seats of the boss's arena piece (a column of `rows`, today), or the dev tools' seats-per-player override. */
   seats: number;
   /** The board includes the spare piece (one free column) that stays until stage 1 locks the players, so a newcomer can always join. */
   spare: boolean;
@@ -286,7 +287,8 @@ export function buildRaidViewV2(
   const names = displayNames(sql);
   const slot = week.trackSlot ?? 1;
   const track = readTrack(sql);
-  const { rows, seats } = slotBossInfo(slot);
+  const arena = arenaOf(slot, week.seatOverride);
+  const { rows, seats } = arena;
   const schedule = raid.schedule(week.weekId, tz);
   const pending = nextPendingEvent(week.status);
   const progression = readWeekProgression(sql, week.weekId);
@@ -334,7 +336,7 @@ export function buildRaidViewV2(
   > = {
     stagesPlayed: 0,
     nextStage: 1,
-    cols: colsFor(1, week.status === 'open'),
+    cols: colsFor(1, week.status === 'open', arena),
     spare: week.status === 'open',
     players: 0,
     boss: null,
@@ -351,7 +353,7 @@ export function buildRaidViewV2(
     const players = stored?.players ?? Math.max(1, members.length);
     // The spare piece stays until stage 1 locks the players (the carry is stored then).
     const spare = stored === null && week.status === 'open';
-    const cols = colsFor(players, spare);
+    const cols = colsFor(players, spare, arena);
     const length = rows * cols;
     const placements = partyPlacements(sql, week.weekId, shownParty, seats);
     // One load for the board and its move preview: the creatures with their slotted talents and gear lines, a few statements however many.
@@ -403,7 +405,7 @@ export function buildRaidViewV2(
       }
     }
     if (myParty !== null) team = { creatures: mine };
-    const boss = weekendBoss(slot, players);
+    const boss = weekendBoss(slot, effectivePlayers(players, arena));
     const out = stored === null ? [] : stored.carry.out;
     const outRows =
       out.length === 0
@@ -507,7 +509,7 @@ export function buildRaidViewV2(
     }
   }
   const autofire = loadAutofire(sql, week.weekId);
-  const defaultBoss = v2Party.boss ?? weekendBoss(slot, 1);
+  const defaultBoss = v2Party.boss ?? weekendBoss(slot, effectivePlayers(1, arena));
   const failed = track?.slot === slot ? track.failedWeekends : 0;
 
   return {
