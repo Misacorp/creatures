@@ -51,6 +51,7 @@ import {
   RaidSeatsBodySchema,
   ResetAccountBodySchema,
   ResetRaidsDungeonsBodySchema,
+  SchoolTeacherBodySchema,
   SetWeatherBodySchema,
   SetBalancesBodySchema,
   SetCraftingXpBodySchema,
@@ -64,7 +65,8 @@ import { devKey, type DevState } from './dev-state';
 import { clockState, clockTool } from './dev-tools-clock';
 import { combatV2Convert } from './dev-tools-combat-v2';
 import { applyRosterPreset, playersView } from './dev-tools-presets';
-import { valleyFresh, visitorArrive } from './dev-tools-valley';
+import { schoolTeacher, valleyFresh, visitorArrive } from './dev-tools-valley';
+import type { SchoolWeeks } from './valley-school';
 import type { VisitorWeeks } from './valley-visitor';
 import { setWeather } from './dev-tools-weather';
 import { gamesBots, gamesReset, gamesRunNow } from './dev-tools-games';
@@ -143,6 +145,8 @@ export interface DevToolsDeps {
   valleySystems: boolean;
   /** The weekly visitor's weeks (the `visitor-arrive` tool); null with the valley systems off. */
   visitor: VisitorWeeks | null;
+  /** The School's teacher weeks (the `school-teacher` tool); null with the valley systems off. */
+  school: SchoolWeeks | null;
   /** Crypto randomness for what the tools roll. */
   rng: Rng;
   gearRng: Rng;
@@ -242,6 +246,8 @@ const TOOLS: Record<DevActionTool, Tool> = {
   'valley-fresh': tool(NoBodySchema, valleyFresh, { movesClock: true }),
   // Staging with the valley systems on only (404 otherwise): brings the weekly visitor now for the current week, whatever the weekday.
   'visitor-arrive': tool(NoBodySchema, visitorArrive),
+  // Staging with the valley systems on only (404 otherwise): brings the School's teacher now (`arrive`) or announces next week's now (`announce`).
+  'school-teacher': tool(SchoolTeacherBodySchema, schoolTeacher),
   // Staging with COMBAT_V2 on only: replaces one player's (or everyone's) creatures and gear bag with a preset (`dev-presets.ts`).
   'apply-roster-preset': tool(ApplyRosterPresetBodySchema, applyRosterPreset),
   'reset-account': tool(ResetAccountBodySchema, (ctx) => {
@@ -278,6 +284,7 @@ export class DevTools {
       combatV2: d.combatV2,
       valleySystems: d.valleySystems,
       visitor: d.visitor,
+      school: d.school,
       rng: d.rng,
       gearRng: d.gearRng,
       quirkRng: d.quirkRng,

@@ -17,7 +17,7 @@ import { DevError, purgeUser, type ToolCtx } from './dev-context';
  * The valley's tables that are NOT keyed by `user_id` (the guild-level ones), cleared whole. Per-player valley tables carry a
  * `user_id` column and are cleared by `purgeUser` with everything else, so they need no entry. Step 5 added `valley_server` (the
  * server's middle); step 6 added the commons' `valley_places`, `valley_collections`, `valley_fire_log` and `valley_keystones`
- * (`valley_gifts` has a `user_id`, so `purgeUser` clears it); step 8 added the visitor's `visitor_weeks` (`visitor_rerolls` has a `user_id`); later steps add theirs here, in one place.
+ * (`valley_gifts` has a `user_id`, so `purgeUser` clears it); step 8 added the visitor's `visitor_weeks` (`visitor_rerolls` has a `user_id`); step 9 added the School's `school_weeks` (`school_students` has a `user_id`); later steps add theirs here, in one place.
  */
 export const VALLEY_GUILD_TABLES: readonly string[] = [
   'valley_server',
@@ -26,6 +26,7 @@ export const VALLEY_GUILD_TABLES: readonly string[] = [
   'valley_fire_log',
   'valley_keystones',
   'visitor_weeks',
+  'school_weeks',
 ];
 
 export interface ValleyFreshResult {
@@ -74,6 +75,41 @@ export function visitorArrive(ctx: ToolCtx): VisitorArriveResult {
   return {
     weekKey: now.weekKey,
     blueprintId: now.row.blueprint_id,
+    posted: now.row.posted_at !== null,
+  };
+}
+
+export interface SchoolTeacherResult {
+  /** The guild-local Monday of the stay the teacher was made for. */
+  weekKey: string;
+  /** Where he stands now: here (brought) or announced. */
+  phase: 'here' | 'announced';
+  /** The week's talent (an id), or null when no talent benefits anyone on the server. */
+  talentId: string | null;
+  /** Whether the announcement post was queued (false: no channel known, no talent, or the week already had its post). */
+  posted: boolean;
+}
+
+/**
+ * The `school-teacher` dev tool (staging only, with the valley systems on; 404 otherwise). `arrive` brings the School's teacher now for the
+ * current week's stay, whatever the weekday (he then counts as here until the week ends); `announce` announces next week's teacher now
+ * (it counts as announced until his stay). Either makes the week's row if there is none (the talent drawn by the band rule from the
+ * server's books with live dice, the announcement post queued once) and is safe to repeat.
+ */
+export function schoolTeacher(
+  ctx: ToolCtx,
+  body: { mode: 'arrive' | 'announce' },
+): SchoolTeacherResult {
+  if (!ctx.valleySystems || ctx.school === null) throw new DevError(404, 'not_found');
+  const now =
+    body.mode === 'arrive' ? ctx.school.arriveNow(ctx.now) : ctx.school.announceNow(ctx.now);
+  if (now.weekKey === null || now.row === null || now.phase === 'away') {
+    throw new DevError(409, 'not_here');
+  }
+  return {
+    weekKey: now.weekKey,
+    phase: now.phase,
+    talentId: now.row.talent_id,
     posted: now.row.posted_at !== null,
   };
 }

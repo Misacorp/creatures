@@ -989,3 +989,127 @@ describe('read budget with the visitor', () => {
     },
   );
 });
+
+/**
+ * The School's teacher (phase 5 step 9a, `valley-school.ts`): the weekly pick, a look, seating a student, the alarm while he is announced
+ * or here, and the return on which a lesson is learned. The pick is the one costly read of the week: it reads every creature's line
+ * (`SELECT DISTINCT user_id, line FROM creatures`, one row per creature of the server) and every book entry (`line_talents`), once a week,
+ * on a server of 15 with full rosters (the world of these tests). Everything after it reads the week's row by its key. The valley's own
+ * settle before a seat is the pass of `VALLEY_BUDGET`; the numbers here are the whole request.
+ */
+const SCHOOL_BUDGET = {
+  // The first look of the week: the pick over the whole server, the row and (with a channel) the post.
+  pick: { reads: 2500, writes: 80 }, // measured 1925 reads (1330 of them the books, 390 the creatures' lines: once a week), 56 written (the pass of a first look, the week's row)
+  // A look with the row made.
+  look: { reads: 250, writes: 45 }, // measured 182 reads, 29 written (the valley's pass of this player: the first of the object's life here; the School's own part is the week's row and the player's creatures and book, about 51 rows)
+  // Seating a student: the valley's pass before and after, the seat row and the checks.
+  seat: { reads: 1100, writes: 90 }, // measured 801 reads, 62 written (the valley's pass before and after, the seat row and the two seat moves)
+  // The alarm's own check while he is here (his row exists).
+  alarm: { reads: 40, writes: 4 }, // measured 26 reads (the week's row is one of them), none written
+  // A return after twelve hours on which the student's morning has come: the pass learns the lesson and sends it home.
+  arrival: { reads: 1100, writes: 100 }, // measured 783 reads, 72 written (the pass of `VALLEY_BUDGET.arrival`; the lesson adds the seat's rows, the book entry and the player's week row)
+} as const;
+
+describe('read budget with the School', () => {
+  const measured: Record<string, ReadReport> = {};
+
+  it('measures the weekly pick, a look, a seat, the alarm and a return with a lesson', async () => {
+    await inGuild(
+      async (env) => {
+        const { metered, clock } = env;
+        const world = await seedWorld(env, { valleySystems: true });
+        const { core, secrets } = world;
+        clock.t += 6 * MINUTE;
+        await callAs(core, secrets, 1, '/api/me');
+        await callAs(core, secrets, 1, '/api/state');
+        // Four players have found little: their books keep only what their creatures learned, so the teacher has students (the rest hold
+        // whole pools, as a month of catches leaves them).
+        metered.sql.exec(
+          `DELETE FROM line_talents WHERE user_id IN (?, ?, ?, ?) AND NOT EXISTS (
+             SELECT 1 FROM creature_talents_v2 t JOIN creatures c ON c.id = t.creature_id
+             WHERE c.user_id = line_talents.user_id AND c.line = line_talents.line AND t.talent_id = line_talents.talent_id)`,
+          userId(1),
+          userId(2),
+          userId(3),
+          userId(4),
+        );
+        // The world's first alarm made this week's row from the full books (no talent): it is drawn again from these.
+        metered.sql.exec('DELETE FROM school_weeks');
+        // The teacher is here (a Tuesday afternoon).
+        clock.t += MINUTE;
+        measured['pick'] = (
+          await metered.measure(() => callAs(core, secrets, 1, '/api/valley/school'))
+        ).reads;
+        clock.t += MINUTE;
+        measured['look'] = (
+          await metered.measure(() => callAs(core, secrets, 1, '/api/valley/school'))
+        ).reads;
+        // The student is one of the four who found little: the first of them the teacher benefits.
+        let student = 0;
+        let first: string | undefined;
+        for (const n of [1, 2, 3, 4]) {
+          const view = (await callAs(core, secrets, n, '/api/valley/school')) as {
+            wouldLearn: string[];
+          };
+          if (view.wouldLearn[0] !== undefined) {
+            student = n;
+            first = view.wouldLearn[0];
+            break;
+          }
+        }
+        if (first === undefined) throw new Error('the world has no student for the teacher');
+        clock.t += MINUTE;
+        measured['seat'] = (
+          await metered.measure(() =>
+            callAs(core, secrets, student, '/api/valley/school/seat', {
+              method: 'POST',
+              body: { index: 0, creatureId: first },
+            }),
+          )
+        ).reads;
+        clock.t += MINUTE;
+        await core.alarm();
+        clock.t += MINUTE;
+        measured['alarm'] = (await metered.measure(() => core.alarm())).reads;
+        // Twelve hours later the next morning has come: the pass learns the lesson.
+        clock.t += 12 * 60 * MINUTE;
+        secrets.set(
+          userId(student),
+          await core.createSession(GUILD_ID, {
+            id: userId(student),
+            displayName: `Player ${String(student)}`,
+          }),
+        );
+        measured['arrival'] = (
+          await metered.measure(() => callAs(core, secrets, student, '/api/state'))
+        ).reads;
+        // The lesson was learned and the student is home.
+        expect(
+          metered.sql
+            .exec<{ n: number }>(
+              'SELECT COUNT(*) AS n FROM valley_seats WHERE user_id = ? AND place = ? AND creature_id IS NOT NULL',
+              userId(student),
+              'school',
+            )
+            .one().n,
+        ).toBe(0);
+        expect(
+          metered.sql
+            .exec<{ n: number }>('SELECT COALESCE(SUM(lessons), 0) AS n FROM school_students')
+            .one().n,
+        ).toBe(1);
+      },
+      { fresh: true },
+    );
+  }, 60_000);
+
+  it.each(Object.keys(SCHOOL_BUDGET) as (keyof typeof SCHOOL_BUDGET)[])(
+    'the School: %s reads and writes few rows',
+    (name) => {
+      const reads = measured[name];
+      if (reads === undefined) throw new Error('the measuring test did not run');
+      expectReadsUnder(`school ${name}`, reads, SCHOOL_BUDGET[name].reads);
+      expectWritesUnder(`school ${name}`, reads, SCHOOL_BUDGET[name].writes);
+    },
+  );
+});

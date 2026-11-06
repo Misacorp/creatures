@@ -71,6 +71,7 @@ import { ValleyBonfire } from './valley-bonfire';
 import { ValleyCommons, type CommonsSnapshot } from './valley-commons';
 import { hasDeepArea, type ValleyFinds } from './valley-finds';
 import { PaperRecorder, paperItem, type ValleyGazette } from './valley-gazette';
+import type { SchoolLessons, SchoolWeeks } from './valley-school';
 import type { VisitorWeeks } from './valley-visitor';
 import { scoutClock, specialOfWeek, worldAt } from './valley-world';
 
@@ -175,6 +176,8 @@ export interface ValleySettleDeps {
   readonly commons: ValleyCommons;
   /** The weekly visitor's weeks: the paper mentions him once a week while he is here (V-VIS-1); absent in tests that do not need him. */
   readonly visitor?: VisitorWeeks;
+  /** The School's teacher and lessons (V-SCH-11, 13): the paper mentions the teacher once a week; students whose morning has come learn in the pass. Absent in tests that do not need them. */
+  readonly school?: { readonly weeks: SchoolWeeks; readonly lessons: SchoolLessons };
 }
 
 const masteryStep = (hours: number): 0 | 1 | 2 | 3 => {
@@ -241,7 +244,14 @@ export class ValleySettle {
   seats(
     userId: string,
     commons?: CommonsSnapshot,
-  ): { scouts: SeatRow[]; anvils: SeatRow[]; communal: SeatRow[]; broker: SeatRow | null } {
+  ): {
+    scouts: SeatRow[];
+    anvils: SeatRow[];
+    communal: SeatRow[];
+    broker: SeatRow | null;
+    /** The School's student seats (V-SCH-13): their creatures only; the School's own code reads the rest. */
+    school: SeatRow[];
+  } {
     const all = this.sql
       .exec<SeatRow>(
         `SELECT ${SEAT_COLUMNS} FROM valley_seats WHERE user_id = ? ORDER BY position`,
@@ -274,6 +284,7 @@ export class ValleySettle {
       anvils: all.filter((seat) => seat.place === 'forge'),
       communal: all.filter((seat) => seat.place === 'commons'),
       broker,
+      school: all.filter((seat) => seat.place === 'school'),
     };
   }
 
@@ -386,6 +397,7 @@ export class ValleySettle {
       anvils: anvilRows,
       communal: communalRows,
       broker: brokerRow,
+      school: schoolRows,
     } = this.seats(userId, commons);
     const tz = this.deps.timezone();
     const indexOf = new Map(rows.map((row, i) => [row.id, i]));
@@ -648,6 +660,11 @@ export class ValleySettle {
       };
     });
 
+    // V-SCH-13: a student whose morning has come learns now and goes back to its post (read only when a creature sits at the School).
+    if (this.deps.school !== undefined && schoolRows.some((seat) => seat.creature_id !== null)) {
+      this.deps.school.lessons.learnDue(userId, to, rec);
+    }
+
     if (rec !== undefined) {
       const awayHours = Math.floor((to - player.last_visit_at) / HOUR_MS);
       // One or two resting creatures' small moment (V-BON-9), told in the paper when there is one (a short absence has none, so nothing
@@ -655,6 +672,9 @@ export class ValleySettle {
       if (awayHours >= WELCOME_AFTER_HOURS) {
         // V-VIS-1: the paper says the visitor is here, once a week per player.
         if (this.deps.visitor?.tellIfHere(userId, to) === true) rec.visitor();
+        // V-SCH-11: the paper says the School's teacher is announced or here, once per teacher week per player.
+        const teaching = this.deps.school?.weeks.tellIfNews(userId, to) ?? null;
+        if (teaching !== null) rec.teacher(teaching);
         const resting = rows.filter((row) => !seated.has(row.id) && row.tracked !== null);
         const day = Math.floor(to / DAY_MS);
         const moment = ValleyBonfire.pickMoments(

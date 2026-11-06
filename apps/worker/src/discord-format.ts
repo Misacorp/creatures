@@ -683,3 +683,17 @@ export function formatVisitorPost(): PostMessage {
     fields: [],
   });
 }
+
+/**
+ * Friday: the School's visiting teacher is announced (phase 5 step 9, V-SCH-11). The talent's name is content (never typed by a player;
+ * escaped all the same) and the days are Discord time stamps, so each reader sees them in their own time. No amounts.
+ */
+export function formatTeacherPost(talentName: string, from: number, until: number): PostMessage {
+  const stamp = (at: number): string => `<t:${String(Math.floor(at / 1000))}:D>`;
+  return message({
+    title: '🎓 A teacher is coming to the School',
+    description: `They will teach **${escapeMarkdown(talentName)}**. They are at the School from ${stamp(from)} to ${stamp(until)}. Creatures seated there learn it by the next morning, if it fits their line.`,
+    color: POST_COLOURS.plain,
+    fields: [],
+  });
+}

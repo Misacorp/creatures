@@ -1,3 +1,4 @@
+import { learningPrice as gameLearningPrice, teacherCandidates } from '@creatures/game';
 import { fightTeam } from './honours';
 import { note } from './journey';
 import type { Rules } from './rules';
@@ -32,8 +33,7 @@ export function openSlots(rules: Rules, c: Creature): number {
 }
 
 /** The Acorns a first learning of this slot costs. */
-export const learningPrice = (rules: Rules, slot: number): number =>
-  rules.school.price * Math.max(1, slot);
+export const learningPrice = (rules: Rules, slot: number): number => gameLearningPrice(rules, slot);
 
 /**
  * The server's day (at 00:00): announces the next teacher's talent `teacherAnnounceDays` ahead and, on the Monday of the arrival, records the
@@ -76,23 +76,8 @@ export function teacherDay(
 export function drawTalent(server: Server, joined: readonly Player[]): number | null {
   const n = joined.length;
   const counts = TALENT_IDS.map((_, t) => joined.filter((p) => benefits(p, t)).length);
-  const some = counts.flatMap((c, t) => (c >= 1 ? [t] : []));
-  if (some.length === 0) return null;
-  const old = server.config.teacherRule === 'several';
-  const cap = old ? n - 1 : Math.max(2, Math.floor(n * 0.25));
-  const band = some.filter(
-    (t) => (counts[t] ?? 0) >= 2 && (counts[t] ?? 0) <= cap && (counts[t] ?? 0) < n,
-  );
-  const one = some.filter((t) => counts[t] === 1 && n > 1);
-  const fewest = Math.min(...some.map((t) => counts[t] ?? 0));
-  const from =
-    band.length > 0
-      ? band
-      : one.length > 0
-        ? one
-        : old
-          ? []
-          : some.filter((t) => counts[t] === fewest);
+  // The band rule is the game's (`teacherCandidates`, shared with the server's weekly pick).
+  const from = teacherCandidates(counts, n, server.config.teacherRule ?? 'few');
   if (from.length === 0) return null;
   return from[Math.floor(uniform(server.teacherRng) * from.length)] ?? null;
 }

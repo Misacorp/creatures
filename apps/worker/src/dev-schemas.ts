@@ -57,6 +57,7 @@ export const DEV_ACTION_TOOLS = [
   'reset-raids-dungeons',
   'valley-fresh',
   'visitor-arrive',
+  'school-teacher',
   'apply-roster-preset',
   'reset-account',
 ] as const;
@@ -312,5 +313,8 @@ export const ResetAccountBodySchema = v.strictObject({ confirm: v.literal('RESET
 
 /** Wipes every raid and dungeon of the guild: the word must be typed. */
 export const ResetRaidsDungeonsBodySchema = v.strictObject({ confirm: v.literal('reset') });
+
+/** Brings the School's teacher now for this week's stay, or announces next week's teacher now (V-SCH-11). */
+export const SchoolTeacherBodySchema = v.strictObject({ mode: v.picklist(['arrive', 'announce']) });
 
 export const NoBodySchema = Empty;

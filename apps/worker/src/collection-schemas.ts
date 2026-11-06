@@ -275,6 +275,12 @@ export const ValleyVisitorQuerySchema = v.strictObject({
   item: v.optional(IdSchema),
 });
 
+/** Seats a creature at one of the caller's School student seats (V-SCH-13), or empties the seat with `null`. */
+export const ValleySchoolSeatBodySchema = v.strictObject({
+  index: v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(9)),
+  creatureId: v.nullable(IdSchema),
+});
+
 /** Posts a creature to the caller's communal seat at a place (it opens the seat the first time), or empties it with `null`. */
 export const ValleyCommunalBodySchema = v.strictObject({
   place: v.picklist(COMMONS_PLACE_IDS),

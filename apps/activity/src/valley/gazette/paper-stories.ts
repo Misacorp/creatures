@@ -76,6 +76,8 @@ const PLACE_OF: Record<PaperHeadline['kind'], PlaceId> = {
   moment: 'bonfire',
   'market-open': 'market',
   visitor: 'visitor',
+  teacher: 'school',
+  lesson: 'school',
 };
 
 /** The stories of the server's paper, the biggest first (as the server ranked them), and what it left untold. */
@@ -246,6 +248,31 @@ function storyOf(h: PaperHeadline, paper: Paper, byId: ReadonlyMap<string, Creat
         finds: [],
         scene: scene([]),
       };
+    case 'teacher': {
+      // V-SCH-11: a teacher is announced or at the School (step 9b draws the lectern; the paper only names the talent).
+      const talent = (h.talent ?? 'a talent').replace(/-/g, ' ');
+      return {
+        ...base,
+        headline: upper(`A teacher is coming to the School: ${talent}`),
+        blurb: 'Seat a creature there and it may learn it by morning.',
+        finds: [],
+        scene: scene([]),
+      };
+    }
+    case 'lesson': {
+      // V-SCH-13: the lesson is learned; the creature is back at its post.
+      const talent = (h.talent ?? 'a talent').replace(/-/g, ' ');
+      return {
+        ...base,
+        headline: upper(
+          h.count > 1
+            ? `${first ?? 'A creature'} and ${num(h.count - 1)} more learned ${talent} at the School`
+            : `${first ?? 'A creature'} learned ${talent} at the School`,
+        ),
+        finds: [],
+        scene: scene(members),
+      };
+    }
     case 'moment': {
       const turn = h.turn ?? 0;
       const second = members[1]?.name;

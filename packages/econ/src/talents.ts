@@ -1,4 +1,4 @@
-import { content } from '@creatures/game';
+import { content, wouldBenefit } from '@creatures/game';
 import { combatV2 } from '@creatures/game/combat-v2';
 import type { Player } from './types';
 import { uniform } from './util';
@@ -49,5 +49,10 @@ export function foundTalent(p: Player, line: number): void {
 
 /** Whether the talent would benefit the player: a line they own has it in its pool and their book for that line lacks it. */
 export function benefits(p: Player, talent: number): boolean {
-  return p.book.some((book, line) => !book.has(talent) && poolOf(line).includes(talent));
+  // The rule is the game's (`wouldBenefit`, shared with the server's teacher); the lab's lines are the indexes of its book.
+  return wouldBenefit(
+    // (`flatMap` skips the holes of a sparse book.)
+    p.book.flatMap((book, line) => [{ pool: poolOf(line), book }]),
+    talent,
+  );
 }

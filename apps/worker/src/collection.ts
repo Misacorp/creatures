@@ -364,7 +364,12 @@ export class Collection {
     });
     this.v2 =
       deps.combatV2 === true
-        ? new CreatureV2({ storage: deps.storage, now: deps.now, analytics: deps.analytics })
+        ? new CreatureV2({
+            storage: deps.storage,
+            now: deps.now,
+            analytics: deps.analytics,
+            ...(deps.valleySystems === true ? { valleySystems: true } : {}),
+          })
         : null;
     this.choices = new CatchChoices({
       storage: deps.storage,

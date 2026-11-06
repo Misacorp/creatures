@@ -130,6 +130,7 @@ import { valleyRoutes } from './valley-routes';
 import { ValleyOrders } from './valley-orders';
 import { ValleySeats } from './valley-seats';
 import { ValleySettle } from './valley-settle';
+import { SchoolLessons, SchoolWeeks, ValleySchool } from './valley-school';
 import { ValleyVisitor, VisitorWeeks } from './valley-visitor';
 import type { ValleyView } from '@creatures/game';
 import type { LoungeClient, LoungeResult } from './lounge-discord';
@@ -465,6 +466,10 @@ export class GuildCore {
   readonly valleyVisitor: ValleyVisitor | null;
   /** The visitor's weeks: his arrival, its post and the alarm for it (`VALLEY_SYSTEMS`), or null with the flag off. */
   readonly valleyVisitorWeeks: VisitorWeeks | null;
+  /** The School's teacher: reads, seats and lessons (`VALLEY_SYSTEMS`), or null with the flag off. */
+  readonly valleySchool: ValleySchool | null;
+  /** The School's weeks: the weekly pick, its announcement post and the alarm for it (`VALLEY_SYSTEMS`), or null with the flag off. */
+  readonly valleySchoolWeeks: SchoolWeeks | null;
   /** The `VALLEY_SYSTEMS` flag as the worker resolved it (see `valley-flag.ts`). */
   readonly valleySystems: boolean;
   private postsInFlight: Promise<void> | null = null;
@@ -578,6 +583,18 @@ export class GuildCore {
         rng: gearRng,
       });
       this.valleyVisitorWeeks = visitorWeeks;
+      const schoolWeeks = new SchoolWeeks({
+        storage,
+        now,
+        timezone: () => this.timezone(),
+        rng: talentRng,
+      });
+      const schoolLessons = new SchoolLessons({
+        storage,
+        timezone: () => this.timezone(),
+        weeks: schoolWeeks,
+      });
+      this.valleySchoolWeeks = schoolWeeks;
       const valley = new ValleySettle({
         storage,
         now,
@@ -589,6 +606,7 @@ export class GuildCore {
         bonfire,
         commons,
         visitor: visitorWeeks,
+        school: { weeks: schoolWeeks, lessons: schoolLessons },
       });
       this.valley = valley;
       this.valleySeats = new ValleySeats({
@@ -603,6 +621,14 @@ export class GuildCore {
       this.valleyGazette = gazette;
       this.valleyOrders = new ValleyOrders({ storage, now, settle: valley, forge, commons });
       this.valleyGifts = new ValleyGifts({ storage, now, settle: valley, commons });
+      this.valleySchool = new ValleySchool({
+        storage,
+        now,
+        timezone: () => this.timezone(),
+        settle: valley,
+        weeks: schoolWeeks,
+        lessons: schoolLessons,
+      });
       this.valleyVisitor = new ValleyVisitor({
         storage,
         now,
@@ -617,6 +643,8 @@ export class GuildCore {
       this.valleyGifts = null;
       this.valleyVisitor = null;
       this.valleyVisitorWeeks = null;
+      this.valleySchool = null;
+      this.valleySchoolWeeks = null;
       this.valleyGazette = null;
       this.valleyBonfire = null;
     }
@@ -705,6 +733,7 @@ export class GuildCore {
             combatV2: options.combatV2 === true,
             valleySystems: options.valleySystems === true,
             visitor: this.valleyVisitorWeeks,
+            school: this.valleySchoolWeeks,
             rng: options.raidRng ?? liveRng(),
             gearRng,
             quirkRng,
@@ -1311,6 +1340,10 @@ export class GuildCore {
     if (this.valleyVisitorWeeks !== null && this.storedGuildId() !== null) {
       candidates.push(this.valleyVisitorWeeks.nextArrivalAt(this.now()));
     }
+    // The School's teacher is announced on Friday 00:00 guild-local: one wake a week, so the announcement post goes out then.
+    if (this.valleySchoolWeeks !== null && this.storedGuildId() !== null) {
+      candidates.push(this.valleySchoolWeeks.nextAnnounceAt(this.now()));
+    }
     // The valley's weather of the next game day is drawn at the daily reset (13:37 guild-local).
     if (this.weather.enabled && this.storedGuildId() !== null) {
       const { hour, minute } = RULES.daily.reset;
@@ -1352,6 +1385,15 @@ export class GuildCore {
       this.valleyVisitorWeeks?.ensureArrival(this.now());
     } catch (err) {
       console.error('visitor arrival failed', err instanceof Error ? err.name : 'unknown');
+    }
+  }
+
+  /** Makes the week's teacher row (and queues the announcement) if it is announced or here and none exists. Failures never reach callers. */
+  private ensureTeacher(): void {
+    try {
+      this.valleySchoolWeeks?.ensureAnnounced(this.now());
+    } catch (err) {
+      console.error('teacher announcement failed', err instanceof Error ? err.name : 'unknown');
     }
   }
 
@@ -1816,6 +1858,8 @@ export class GuildCore {
     this.scanDmDue();
     // The visitor's arrival is queued before the posts go out (a row read only while he is here).
     this.ensureVisitor();
+    // The School's teacher is announced and queued the same way (a row read only while he is announced or here).
+    this.ensureTeacher();
     await this.deliverPosts();
     await this.deliverDms();
     await this.runLounge();

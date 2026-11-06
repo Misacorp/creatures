@@ -49,6 +49,7 @@ import { valleyBonfireMigration } from './valley-bonfire-migration';
 import { valleyCommonsMigration } from './valley-commons-migration';
 import { valleyMarketMigration } from './valley-market-migration';
 import { valleyMarketOpenMigration } from './valley-market-open-migration';
+import { valleySchoolMigration } from './valley-school-migration';
 import { valleyVisitorMigration } from './valley-visitor-migration';
 import { valleyGazetteMigration } from './valley-gazette-migration';
 import { weatherMigration } from './weather-migration';
@@ -369,6 +370,8 @@ export const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
   valleyMarketOpenMigration,
   // Version 64: the weekly visitor: his weeks and each player's rerolls (see valley-visitor-migration.ts).
   valleyVisitorMigration,
+  // Version 65: the School's weekly teacher: his weeks, each player's lessons and the student seat's home (see valley-school-migration.ts).
+  valleySchoolMigration,
 ];
 
 /** The schema version of a fresh database. */

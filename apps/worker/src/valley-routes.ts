@@ -17,6 +17,7 @@ import {
   ValleyKitBodySchema,
   ValleyOrderBodySchema,
   ValleySeatBodySchema,
+  ValleySchoolSeatBodySchema,
   ValleySeatBuyBodySchema,
   ValleyVisitorBlueprintBodySchema,
   ValleyVisitorQuerySchema,
@@ -26,6 +27,7 @@ import { failure, invalidBody, json, notFound, parseBody, type Routes } from './
 import type { ValleyGazette } from './valley-gazette';
 import type { ValleyGifts } from './valley-gifts';
 import type { ValleyOrders } from './valley-orders';
+import type { ValleySchool } from './valley-school';
 import type { ValleySeats } from './valley-seats';
 import type { ValleyVisitor } from './valley-visitor';
 
@@ -45,6 +47,8 @@ export interface ValleyRouteContext {
     valleyGazette: ValleyGazette | null;
     /** The weekly visitor's read, rerolls and blueprint (null with the flag off). */
     valleyVisitor: ValleyVisitor | null;
+    /** The School's teacher: the read and the student seats (null with the flag off). */
+    valleySchool: ValleySchool | null;
     /** The caller's valley as `/api/state` shows it (null with the flag off). */
     valleyState(userId: string): ValleyView | null;
   };
@@ -273,6 +277,33 @@ export const valleyRoutes: Routes<ValleyRouteContext> = {
       const body = await parseBody(request, ValleyVisitorBlueprintBodySchema);
       if (body === undefined) return invalidBody();
       const outcome = core.valleyVisitor.buyBlueprint(user.id, body.idempotencyKey);
+      if (!outcome.ok) return failure(outcome);
+      return json({
+        ...outcome.value,
+        valley: core.valleyState(user.id),
+        state: core.collection.state(user.id),
+      });
+    },
+  },
+  '/api/valley/school': {
+    GET: (request, { user, core }) => {
+      if (core.valleySchool === null) return notFound();
+      // No query: anything after the path is refused rather than ignored.
+      if ([...new URL(request.url).searchParams.keys()].length > 0) return invalidBody();
+      const outcome = core.valleySchool.view(user.id);
+      if (!outcome.ok) return failure(outcome);
+      return json(outcome.value);
+    },
+  },
+  '/api/valley/school/seat': {
+    POST: async (request, { user, core }) => {
+      if (core.valleySchool === null) return notFound();
+      const body = await parseBody(request, ValleySchoolSeatBodySchema);
+      if (body === undefined) return invalidBody();
+      const outcome = core.valleySchool.seat(user.id, {
+        index: body.index,
+        creatureId: body.creatureId,
+      });
       if (!outcome.ok) return failure(outcome);
       return json({
         ...outcome.value,

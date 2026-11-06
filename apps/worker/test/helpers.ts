@@ -315,8 +315,20 @@ export function undoGamesIndexMigration(sql: SqlStorage): void {
   sql.exec('DELETE FROM schema_version WHERE version = 42');
 }
 
+/** Puts a database back to before migration 65 (the School's teacher): its tables and the seat's home column go. */
+export function undoValleySchoolMigration(sql: SqlStorage): void {
+  sql.exec('DROP TABLE IF EXISTS school_students');
+  sql.exec('DROP TABLE IF EXISTS school_weeks');
+  const has = sql
+    .exec("SELECT 1 FROM pragma_table_info('valley_seats') WHERE name = 'home_seat_id'")
+    .toArray();
+  if (has.length > 0) sql.exec('ALTER TABLE valley_seats DROP COLUMN home_seat_id');
+  sql.exec('DELETE FROM schema_version WHERE version = 65');
+}
+
 /** Puts a database back to before migration 64 (the weekly visitor): his tables go. */
 export function undoValleyVisitorMigration(sql: SqlStorage): void {
+  undoValleySchoolMigration(sql);
   sql.exec('DROP TABLE IF EXISTS visitor_rerolls');
   sql.exec('DROP TABLE IF EXISTS visitor_weeks');
   sql.exec('DELETE FROM schema_version WHERE version = 64');

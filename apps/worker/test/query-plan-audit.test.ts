@@ -787,6 +787,51 @@ describe('query plan audit', () => {
     expect(result.found, scanMessage(result.found)).toEqual([]);
   }, 60_000);
 
+  it("plans the School's statements (the weekly pick, a look, a seat, the alarm, a return with a lesson) without a whole-table scan", async () => {
+    const result = await audit({ valleySystems: true, fresh: true }, async (env, world) => {
+      const { clock, metered } = env;
+      const { core, secrets } = world;
+      clock.t += 6 * MINUTE;
+      await callAs(core, secrets, 1, '/api/state');
+      // Player 1 has found little (the book keeps only what its creatures learned), so the teacher has a student.
+      metered.sql.exec(
+        `DELETE FROM line_talents WHERE user_id = ? AND NOT EXISTS (
+           SELECT 1 FROM creature_talents_v2 t JOIN creatures c ON c.id = t.creature_id
+           WHERE c.user_id = line_talents.user_id AND c.line = line_talents.line AND t.talent_id = line_talents.talent_id)`,
+        userId(1),
+      );
+      metered.sql.exec('DELETE FROM school_weeks');
+      clock.t += MINUTE;
+      const seen = (await callAs(core, secrets, 1, '/api/valley/school')) as {
+        wouldLearn: string[];
+      };
+      const first = seen.wouldLearn[0];
+      if (first !== undefined) {
+        await callAs(core, secrets, 1, '/api/valley/school/seat', {
+          method: 'POST',
+          body: { index: 0, creatureId: first },
+        });
+      }
+      await core.alarm();
+      // The next morning: the pass learns the lesson.
+      clock.t += 12 * 60 * MINUTE;
+      secrets.set(
+        userId(1),
+        await core.createSession(GUILD_ID, { id: userId(1), displayName: 'Player 1' }),
+      );
+      await callAs(core, secrets, 1, '/api/state');
+    });
+
+    expect(result.seen, 'statements recorded').toBeGreaterThan(40);
+    // The School's own statements ran (a refactor that stops running them would pass for nothing).
+    for (const table of ['school_weeks', 'school_students', 'line_talents'])
+      expect(
+        result.statements.some((q) => q.includes(table)),
+        table,
+      ).toBe(true);
+    expect(result.found, scanMessage(result.found)).toEqual([]);
+  }, 60_000);
+
   it('sees a full scan, an indexed search and an aliased scan in this SQLite (the detector works)', async () => {
     await inGuild(({ metered }) => {
       const plan = (query: string): string[] =>

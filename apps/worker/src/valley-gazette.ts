@@ -69,6 +69,17 @@ export class PaperRecorder {
     this.log.visitor = true;
   }
 
+  /** The School's teacher is announced or here (V-SCH-11): one line in the paper, with the talent's id. */
+  teacher(talentId: string): void {
+    this.log.teacher = talentId;
+  }
+
+  /** A creature learned a talent at the School (V-SCH-13): the first few are named, the rest are counted. */
+  lesson(creatureId: string, talentId: string): void {
+    this.log.lessonCount += 1;
+    if (this.log.lessons.length < LOG_CAPS.lessons) this.log.lessons.push({ creatureId, talentId });
+  }
+
   /** Gear a scout's pack held when it came home, the best kept. */
   gear(item: PaperItem, by: string | null): void {
     this.log.gearCount += 1;
