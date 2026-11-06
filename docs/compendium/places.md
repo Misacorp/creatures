@@ -803,3 +803,11 @@ A late place, like the Moonlit Reef, but with its own door. The Old Crossroads s
 ### Items and content needed to ship
 
 Void element (chart, marks), four named creatures with stats and lore, a destination entry (flags for access and night), the two banners moved into `data/`, journal pages, push-on text, a glossary entry, and an entry in the weekly rotation. Listed in the set's `notes`.
+
+## The Market (valley, phase 5 step 7)
+
+The valley's place for shards and trades, drawn as a striped-awning stall with a tall teal crystal on a post beside it. Until the server builds it the map says "A market will open here, for shards and trades." (`valley-nav.ts`); while it is built the page shows the scaffolding and the project board like every place; once built it is the **broker's** stall. Numbers (rates, bonus chance, size of the project) live in `VALLEY_RULES` (`broker`, `commons.oneShot`), never here.
+
+- **The broker `(design: forge.md V-FORGE-11)`:** the creature at the stall. It "trades for you, all the time": the shelf never waits on a shard while it has spare ones of another element to pay with. A bonus shard now and then is the exchange's good luck. Its title as it learns is "trading", in the same three steps as every post.
+- **Words in the game `(content: market-view.ts)`:** the seat is "Broker"; the creature's slot "Post a broker"; the setting "Trades toward" (a drawer: "What the orders need", or one element's shards); the one line "Trades 12 for 5, 10% bonus" (a ratio, never a decimal); the tray says "Trading". No keeper at launch (Q62): the broker is a creature of the player's own.
+- **`(compendium detail, not shipped)`:** the stall's keeper is never seen, only their crates, stamped with chalk marks nobody can read; the crystal is how the traders find the stall from the road. A server that never builds it still has the Forge's exchange tap.

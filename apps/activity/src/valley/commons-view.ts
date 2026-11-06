@@ -22,13 +22,7 @@ const plural = (n: number, one: string, many: string): string =>
   n === 1 ? one : `${String(n)} ${many}`;
 
 /** The places that have a project, in the valley's order. */
-export type CommonsPlaceId =
-  | 'bonfire'
-  | 'forge'
-  | 'signpost'
-  | 'paddock'
-  | 'school'
-  | 'market';
+export type CommonsPlaceId = 'bonfire' | 'forge' | 'signpost' | 'paddock' | 'school' | 'market';
 
 /** What each place is called on its board. */
 export const COMMONS_NAMES: Readonly<Record<string, string>> = {
@@ -245,7 +239,8 @@ export function giveRows(p: ValleyCommonsPlace, purse: Purse, rate: number): Giv
     ),
   ];
   // A project that takes no shards (the Market's) lists none: a row that is always "full" would only be noise.
-  if (VALLEY_RULES.commons.oneShot[p.id]?.costSplit.shards === 0) return rows.filter((r) => r.part !== 'shards');
+  if (VALLEY_RULES.commons.oneShot[p.id]?.costSplit.shards === 0)
+    return rows.filter((r) => r.part !== 'shards');
   for (const element of ELEMENTS) {
     if (element === project.shardElement) continue;
     const held = purse.shards[element] ?? 0;

@@ -43,7 +43,8 @@ export function marketState(visit: ValleyVisit | null | undefined): MarketState 
 export function rateText(rate: number): string {
   for (let n = 1; n <= 10; n++) {
     const paid = rate * n;
-    if (Math.abs(paid - Math.round(paid)) < 1e-6) return `${String(Math.round(paid))} for ${String(n)}`;
+    if (Math.abs(paid - Math.round(paid)) < 1e-6)
+      return `${String(Math.round(paid))} for ${String(n)}`;
   }
   return `${rate.toFixed(1)} for 1`;
 }
@@ -74,8 +75,14 @@ export function brokerLine(seat: Broker): string {
 export function brokerRows(seat: Broker): { label: string; value: string }[] {
   const rows = [
     { label: 'Rate', value: `${rateText(seat.terms.rate)} shards` },
-    { label: 'Bonus shard', value: `${bonusText(seat.terms.critBp)} of trades give ${String(seat.terms.critYield)}` },
-    { label: 'Trading', value: seat.mastery.step === 0 ? masteryName(0) : masteryName(seat.mastery.step) },
+    {
+      label: 'Bonus shard',
+      value: `${bonusText(seat.terms.critBp)} of trades give ${String(seat.terms.critYield)}`,
+    },
+    {
+      label: 'Trading',
+      value: seat.mastery.step === 0 ? masteryName(0) : masteryName(seat.mastery.step),
+    },
     { label: 'Trades toward', value: towardName(seat.toward) },
   ];
   if (seat.next !== null) {

@@ -504,8 +504,8 @@ export class ValleyCommons {
         : row !== undefined && isOneShot(rules, id) && row.level >= 2
           ? 'done'
           : row === undefined || (row.done_at === null && !mayOpenProject(rules, id, level))
-          ? 'waiting'
-          : 'building';
+            ? 'waiting'
+            : 'building';
       const own = row === undefined ? undefined : mine.get(`${id}:${String(row.project)}`);
       const given = open ? Math.round((own?.given ?? 0) / 1000) : 0;
       return {

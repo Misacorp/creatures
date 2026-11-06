@@ -2,7 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { VALLEY_RULES } from '@creatures/game';
 import { homeInput } from '../workbench/home-sample';
 import { sampleCommons, withCommons } from './commons-sample';
-import { COMMONS_NAMES, giveRows, levelLine, stateLine, stateTag, stillNeeded } from './commons-view';
+import {
+  COMMONS_NAMES,
+  giveRows,
+  levelLine,
+  stateLine,
+  stateTag,
+  stillNeeded,
+} from './commons-view';
 import {
   brokerLine,
   brokerRows,
@@ -11,7 +18,13 @@ import {
   rateText,
   towardName,
 } from './market-view';
-import { marketPlace, presetMarket, sampleBroker, withMarket, withMarketPlace } from './market-sample';
+import {
+  marketPlace,
+  presetMarket,
+  sampleBroker,
+  withMarket,
+  withMarketPlace,
+} from './market-sample';
 import { placeStates } from './place-state';
 import { sampleValley } from './signpost-sample';
 import { isTrading, trayBadge, trayFor, trayStates } from './tray-state';
@@ -102,7 +115,10 @@ describe('the tray and the Places list', () => {
     const visit = visitOf('open with a broker');
     expect(isTrading(a, visit)).toBe(true);
     const input = { trips: [], jobs: [], now: 0, ...trayStates(visit) };
-    expect(trayBadge(a, input)).toMatchObject({ state: 'trading', label: expect.stringMatching(/Trading at the Market/) });
+    expect(trayBadge(a, input)).toMatchObject({
+      state: 'trading',
+      label: expect.stringMatching(/Trading at the Market/),
+    });
     expect(trayFor(free, input).map((c) => c.id)).toContain(a.id);
     expect(trayStates(visitOf('open, free seat')).trading?.size).toBe(0);
   });

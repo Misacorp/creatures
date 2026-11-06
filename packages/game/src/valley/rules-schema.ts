@@ -209,7 +209,10 @@ export const ValleyRulesSchema = v.strictObject({
     costSplit: costSplitSchema,
     oneShot: v.record(
       v.string(),
-      v.strictObject({ sizeLevel: v.pipe(v.number(), v.integer(), v.minValue(1)), costSplit: costSplitSchema }),
+      v.strictObject({
+        sizeLevel: v.pipe(v.number(), v.integer(), v.minValue(1)),
+        costSplit: costSplitSchema,
+      }),
     ),
     placeElement: v.record(v.string(), v.picklist(VALLEY_ELEMENTS)),
     placeWeights: v.record(v.string(), pos),

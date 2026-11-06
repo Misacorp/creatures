@@ -445,8 +445,7 @@ export function Game({
   /** The Market's broker (phase 5 step 7): posting and setting what it trades toward are free; each answer's `valley` and state are taken in at once. */
   const marketActions: MarketActions = {
     post: async (body) => takeValley(await run(() => postScout(body))),
-    setToward: async (seatId, toward) =>
-      takeValley(await run(() => setBroker({ seatId, toward }))),
+    setToward: async (seatId, toward) => takeValley(await run(() => setBroker({ seatId, toward }))),
   };
   /** Wears an item or takes it off (the card's and the dungeon's); true when the server took it. */
   const equipOn = async (gearId: string, creatureId: string | null): Promise<boolean> =>

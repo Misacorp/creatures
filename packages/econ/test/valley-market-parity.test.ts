@@ -117,7 +117,10 @@ describe('the Market against the lab (V-FORGE-11)', () => {
 
   it('the lab: shard waits fall once the Market is built, below what they were and below a server with no broker', () => {
     const built = labs.filter((l) => l !== null);
-    expect(built.length, 'the Market was built in at least two of the three seeds').toBeGreaterThanOrEqual(2);
+    expect(
+      built.length,
+      'the Market was built in at least two of the three seeds',
+    ).toBeGreaterThanOrEqual(2);
     for (const l of built) {
       expect(l.weeksAfter).toBeGreaterThan(2);
       // Less than half of what a server with no broker waits (the lab's medians: about 0.04 against 0.27).
@@ -139,8 +142,14 @@ describe('the Market against the lab (V-FORGE-11)', () => {
     );
     // Report, never silent: the numbers are in the failure message.
     const note = `lab left ${labLeft.toFixed(2)} of the no-broker waiting; pass left ${passLeft.toFixed(2)} (without ${median(without.map((w) => w.waiting)).toFixed(2)}, with ${median(withIt.map((w) => w.waiting)).toFixed(2)})`;
-    expect(without.every((w) => w.waiting > 0.5), note).toBe(true);
-    expect(withIt.every((w, i) => w.made > (without[i]?.made ?? 0)), note).toBe(true);
+    expect(
+      without.every((w) => w.waiting > 0.5),
+      note,
+    ).toBe(true);
+    expect(
+      withIt.every((w, i) => w.made > (without[i]?.made ?? 0)),
+      note,
+    ).toBe(true);
     expect(passLeft, note).toBeLessThanOrEqual(labLeft + 0.15);
     // The same rules: the broker's rate and crits are the lab's tiers.
     expect(VALLEY_RULES.broker.tiers).toHaveLength(4);

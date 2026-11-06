@@ -304,7 +304,9 @@ describe('the broker at work (V-FORGE-11)', () => {
         expect(mire).toBeLessThan(60);
         // The shards paid are the mire that left; the rate holds on average (about 2.4 for 1 at the start).
         const tide = part(ctx.sql, p.id, 'tide-shard');
-        expect(60 - mire).toBeGreaterThanOrEqual(Math.floor((pieces + tide) * R.broker.tiers[3]!.rate));
+        expect(60 - mire).toBeGreaterThanOrEqual(
+          Math.floor((pieces + tide) * R.broker.tiers[3]!.rate),
+        );
         expect(tradeHours(ctx.sql, trader)).toBeGreaterThan(40);
         expect(valley.market?.seat?.mastery.hours).toBeGreaterThan(40);
         expect(valley.market?.seat?.mastery.step).toBeGreaterThanOrEqual(1);
@@ -318,8 +320,14 @@ describe('the broker at work (V-FORGE-11)', () => {
       nextGuild(),
       async (ctx) => {
         const p = await shortOnTide(ctx, 1);
-        ctx.sql.exec("UPDATE parts SET amount = ? WHERE user_id = ? AND kind = 'mire-shard'", R.forge.giveReserveShards, p.id);
-        expect((await post(p, { seatId: p.brokerId, creatureId: p.creatureIds[1] })).status).toBe(200);
+        ctx.sql.exec(
+          "UPDATE parts SET amount = ? WHERE user_id = ? AND kind = 'mire-shard'",
+          R.forge.giveReserveShards,
+          p.id,
+        );
+        expect((await post(p, { seatId: p.brokerId, creatureId: p.creatureIds[1] })).status).toBe(
+          200,
+        );
         ctx.clock.t += 40 * HOUR;
         const valley = await view(p);
         expect(part(ctx.sql, p.id, 'mire-shard')).toBe(R.forge.giveReserveShards);

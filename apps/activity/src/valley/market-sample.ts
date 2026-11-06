@@ -35,7 +35,11 @@ const tier = (n: number): { rate: number; critBp: number; critYield: number } =>
 };
 
 /** The broker's seat as the server sends it: `step` is its creature's trading step (0 to 3). */
-export function sampleBroker(creatureId: string | null, step: 0 | 1 | 2 | 3 = 0, extra: Partial<Broker> = {}): Broker {
+export function sampleBroker(
+  creatureId: string | null,
+  step: 0 | 1 | 2 | 3 = 0,
+  extra: Partial<Broker> = {},
+): Broker {
   const hours = [0, 60, 200, 520][step] ?? 0;
   const next = VALLEY_RULES.posts.mastery[step];
   return {

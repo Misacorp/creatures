@@ -835,7 +835,7 @@ describe('the valley block of the state (VALLEY_SYSTEMS)', () => {
       ]);
     });
 
-    it("setting what the broker trades toward sends the seat and the element (or null), with no key", async () => {
+    it('setting what the broker trades toward sends the seat and the element (or null), with no key', async () => {
       const bodies: unknown[] = [];
       vi.stubGlobal('fetch', (path: string, init: RequestInit) => {
         bodies.push([path, JSON.parse(init.body as string) as unknown]);

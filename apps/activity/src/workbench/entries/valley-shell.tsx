@@ -221,7 +221,10 @@ const valleyShell: Entry = {
       name: 'The valley, commons: the grand bonfire on the map, the Forge building in the Places list',
       props: { resting: 'few', commons: 'bonfire level 3' },
     },
-    { name: 'Market, not open yet (the guided start has not reached it)', props: { start: 'market' } },
+    {
+      name: 'Market, not open yet (the guided start has not reached it)',
+      props: { start: 'market' },
+    },
     {
       name: 'Market, systems on: not open yet',
       props: { start: 'market', market: 'not open' },
@@ -251,7 +254,7 @@ const valleyShell: Entry = {
       props: { start: 'market', market: 'master broker', open: 'trade toward' },
     },
     {
-      name: 'Market: the broker\'s rates and next step',
+      name: "Market: the broker's rates and next step",
       props: { start: 'market', market: 'open with a broker', open: 'broker rates' },
     },
     {

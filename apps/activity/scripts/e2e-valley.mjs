@@ -2274,7 +2274,7 @@ try {
   );
 
   await scenario(
-    "valley systems on: the Market is built: post the broker, what it trades toward, its rates",
+    'valley systems on: the Market is built: post the broker, what it trades toward, its rates',
     () => {
       const creatures = commonsOn();
       commonsScene({ market: { level: 2, state: 'done', plaque: ['Ada', 'You'], keepsakes: 1 } });

@@ -149,12 +149,7 @@ export function ValleyFrame({
     marketAt !== null &&
     marketAt !== 'waiting';
   const marketCast = marketPage
-    ? castFor(
-        'market',
-        { ...placeInput, ...castExtra, visit },
-        artSize(SCENE_ART.market),
-        bubbles,
-      )
+    ? castFor('market', { ...placeInput, ...castExtra, visit }, artSize(SCENE_ART.market), bubbles)
     : null;
   // Today's page of the place: the House's two books, then the page the game drew.
   const inside = (
@@ -293,9 +288,7 @@ export function ValleyFrame({
             </div>
           </div>
         )}
-        {view.kind === 'soon' &&
-          !(view.place === 'bonfire' && visit !== null) &&
-          !marketPage && (
+        {view.kind === 'soon' && !(view.place === 'bonfire' && visit !== null) && !marketPage && (
           <section class="vy-soon" aria-label={placeLabel(view.place)}>
             <SceneFrame
               id={view.place}

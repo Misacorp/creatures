@@ -20,7 +20,13 @@ import { DragGhost } from '../ui/DragGhost';
 import { Drawer } from '../ui/Drawer';
 import { RosterPicker } from '../ui/RosterPicker';
 import { Slot, SlotRow } from '../ui/Slot';
-import { CommonsBoard, REMOVE_ID, seatOptions, type CommonsActions, type CommonsStart } from './CommonsBoard';
+import {
+  CommonsBoard,
+  REMOVE_ID,
+  seatOptions,
+  type CommonsActions,
+  type CommonsStart,
+} from './CommonsBoard';
 import { SlotText, seatAt } from './seat-parts';
 import { Tray } from './Tray';
 import { trayFor, type TrayInput } from './tray-state';
@@ -179,7 +185,9 @@ export function MarketPage({
                   }}
                 >
                   <SlotText
-                    name={seat.toward === null ? 'The orders' : `${elementName(seat.toward)} shards`}
+                    name={
+                      seat.toward === null ? 'The orders' : `${elementName(seat.toward)} shards`
+                    }
                     sub="Trades toward"
                   />
                 </Slot>,

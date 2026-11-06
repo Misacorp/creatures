@@ -571,9 +571,12 @@ export class ValleySettle {
     }
 
     const seated = new Set(
-      [...seatRows, ...anvilRows, ...communalRows, ...(brokerRow === null ? [] : [brokerRow])].flatMap((seat) =>
-        seat.creature_id === null ? [] : [seat.creature_id],
-      ),
+      [
+        ...seatRows,
+        ...anvilRows,
+        ...communalRows,
+        ...(brokerRow === null ? [] : [brokerRow]),
+      ].flatMap((seat) => (seat.creature_id === null ? [] : [seat.creature_id])),
     );
     // The XP each creature earned is paid through the level rules first; the levels they reach decide the catch-up fixed at this visit.
     const payments = rows.map((row, i) => {
@@ -747,7 +750,10 @@ export class ValleySettle {
       seats: seatsOut.rows,
       anvils: anvilsOut,
       communal: this.seats(userId).communal,
-      broker: brokerRow === null ? null : { ...brokerRow, shard_carry: after.broker?.credit ?? brokerRow.shard_carry },
+      broker:
+        brokerRow === null
+          ? null
+          : { ...brokerRow, shard_carry: after.broker?.credit ?? brokerRow.shard_carry },
       commons,
       paused,
       fullSeats: seatsOut.full,
@@ -1135,7 +1141,8 @@ export class ValleySettle {
     const open = this.deps.commons.levelIn(input.commons, 'market') >= 2;
     const seat = input.broker;
     if (!open || seat === null) return { open, seat: null };
-    const hours = (seat.creature_id === null ? undefined : rowOf.get(seat.creature_id))?.trade_hours ?? 0;
+    const hours =
+      (seat.creature_id === null ? undefined : rowOf.get(seat.creature_id))?.trade_hours ?? 0;
     const terms = (h: number): { rate: number; critBp: number; critYield: number } => {
       const t = brokerTermsAt(rules, h);
       return {

@@ -580,7 +580,8 @@ export function ValleyDemo({
         );
   const withBlock =
     plainVisit === null || block === null ? plainVisit : withCommons(plainVisit, block);
-  const visit = withBlock === null || brokerSeat === null ? withBlock : withMarket(withBlock, brokerSeat);
+  const visit =
+    withBlock === null || brokerSeat === null ? withBlock : withMarket(withBlock, brokerSeat);
   const marketActions: MarketActions = {
     post: (body) => {
       setBrokerSeat((now) =>
@@ -714,7 +715,9 @@ export function ValleyDemo({
                   acorns,
                   ...(commonsStart === undefined ? {} : { commonsStart }),
                 })}
-            {...(marketStartOf(opened) === undefined ? {} : { marketStart: marketStartOf(opened) as MarketStart })}
+            {...(marketStartOf(opened) === undefined
+              ? {}
+              : { marketStart: marketStartOf(opened) as MarketStart })}
             focus={focus}
             onOpen={open}
             onLeave={leave}

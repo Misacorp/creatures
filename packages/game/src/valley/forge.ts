@@ -709,7 +709,10 @@ function brokerWants(
   }
   if (teamAnvils > 0) {
     for (let e = 0; e < want.length; e++) {
-      const pieces = Math.min((work.weak[e] ?? 0) - (work.pending[e] ?? 0), teamAnvils * BROKER_AHEAD);
+      const pieces = Math.min(
+        (work.weak[e] ?? 0) - (work.pending[e] ?? 0),
+        teamAnvils * BROKER_AHEAD,
+      );
       if (pieces > 0) want[e] = (want[e] ?? 0) + pieces * rules.forge.shard;
     }
   }
