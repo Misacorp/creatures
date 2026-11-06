@@ -4,6 +4,14 @@ Gear items, lines and sets, crafting, dismantling, conversions, the bag and the 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-06: Three-piece sets on combat v2 and Deep Tracks [Misa]
+
+ID: `2026-11-06-three-piece-sets-on-combat-v2` · Status: current
+
+**Decision.** The five three-piece set effects that combat v2 had retired are built, as v2 effects of their own, behind the staging `COMBAT_V2` flag (Misa approved 2026-11-06). Warden's Watch: +1 reach each side, adding to Wide Reach. Hollow Weave (Grove wearer): the wearer heals itself 3% of max HP whenever it cashes Grounding, on top of any heal-on-reaction Knack. Ridge Copper (Spark wearer): its Overload also leaves Charged afterwards (a trail), two stacks with Leave a Trail. Hearth Helpers: its boost also lands two slots away, three with Wide Embrace, nobody boosted twice. First Footprints is the new mechanic **Deep Tracks**: a wearer's marks can stack past x3, one more for each living, unsilenced creature on the team with the set (one wearer x4, two x5); every other addition keeps x3 but never cuts a mark already above it; a reaction that spends more than three stacks raises the bonus factor's cap by `overstackCapPerStackBp` (10000, in `rules.json`) for each stack past three. No diminishing return. The v2 texts and effects live in `SET_THREE_V2` (`packages/game/src/rules/gear-fx.ts`), apart from `gear-sets.json`, so v1 keeps every effect id and set text; the client reads the v2 text while the server plays v2. Silence blanks all five (gear effects are in `fxAll`).
+
+**Reasoning.** Misa: "a more powerful mark that adds its mark up to a stack of four instead of three ... not the same design slot as Brand ... let players have their fun and balance as needed later"; the set needs the blueprint to be learned, so the power sits behind owning and wearing three pieces. Deep Tracks replaces the v2 meaning of `sealMark` (a Brand twin) with a different job: Brand keeps marks from being shed, Deep Tracks makes them deeper. Counting live wearers keeps the effect honest in a raid team (a lone wearer gets x4, a full row of setters more) and lets silence or a knock-out cut it. Raising the factor cap per extra stack is needed or a deeper mark would be capped back to the same bonus by the x3 cap and add nothing to Detonate or All In. The "with the Knack" parts are told apart in the engine by separate fields (`trailSet` against `trail`, `boostReachSet` against `wideWarmth`), so no Knack id is needed in the game's fold. Hollow Weave is its own heal field (`healOnCashBp`) because Returning Tide's `healOnReactionBp` heals the casher only for a mark of the carrier's element, so it never fires for a Grove Payoff cashing Grounding.
+
 ## 2026-11-06: [Misa] Gear and cards: Lingering and three lines retired, weak lines buffed, Shake It Off and Wither accepted
 
 ID: `2026-11-06-gear-and-cards-lingering-and-three` · Status: current

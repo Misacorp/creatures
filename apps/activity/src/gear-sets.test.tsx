@@ -87,6 +87,29 @@ describe('the set helpers', () => {
     );
   });
 
+  it('reads the v2 text of the five sets with a combat v2 effect while the server plays v2', () => {
+    const set = itemSet('firstfoot-cap');
+    if (set === undefined) throw new Error('no set');
+    expect(setBonusRows(set, 3, false)[1]?.text).toBe(
+      'Its first mark each fight cannot be replaced.',
+    );
+    expect(setBonusRows(set, 3, true)[1]?.text).toMatch(
+      /^Deep Tracks: its marks can stack past x3/,
+    );
+    expect(setBonusRows(set, 2, true)[1]?.active).toBe(false);
+    // A set without a v2 effect of its own keeps its text, and the two-piece row never changes.
+    const forge = itemSet('forge-warm-bonnet');
+    if (forge === undefined) throw new Error('no set');
+    expect(setBonusRows(forge, 3, true)).toEqual(setBonusRows(forge, 3, false));
+    const worn = [
+      { baseId: 'firstfoot-cap', slot: 'hat' as const },
+      { baseId: 'firstfoot-scarf', slot: 'scarf' as const },
+      { baseId: 'firstfoot-print', slot: 'charm' as const },
+    ];
+    expect(activeSetLine(worn, true)).toContain('Deep Tracks');
+    expect(activeSetLine(worn, false)).toContain('cannot be replaced');
+  });
+
   it('has text for every set that fits a compact card (no line breaks, kept short)', () => {
     for (const set of gearContent.sets) {
       for (const text of [set.two.text, ...(set.three === undefined ? [] : [set.three.text])]) {

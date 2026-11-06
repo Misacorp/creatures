@@ -381,6 +381,7 @@ Superseded: 1 entry (see the topic file).
 
 [gear.md](gear.md): Gear items, lines and sets, crafting, dismantling, conversions, the bag and the item picker.
 
+- 2026-11-06 Three-piece sets on combat v2 and Deep Tracks \[Misa\]
 - 2026-11-06 \[Misa\] Gear and cards: Lingering and three lines retired, weak lines buffed, Shake It Off and Wither accepted
 - 2026-11-06 Combat v2 gear slice 4: triggers, auras and three-piece sets
 - 2026-11-06 Combat v2 gear slice 3: new effects for the cut and condition lines

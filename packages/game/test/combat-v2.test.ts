@@ -161,6 +161,7 @@ describe('combat v2 content', () => {
     expect(Object.keys(combatV2.foes)).toHaveLength(foes.foes.length);
     expect(Object.keys(combatV2.keywords)).toHaveLength(keywords.length);
     expect(combatV2.rules.maxStacks).toBe(3);
+    expect(combatV2.rules.overstackCapPerStackBp).toBe(10_000);
     for (const p of Object.values(combatV2.pools)) expect(p).toHaveLength(7);
   });
 
