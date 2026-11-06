@@ -139,11 +139,6 @@ export function Workshop({
   const [cardFlow, setCardFlow] = useState(initialCardDismantle !== undefined);
   const [backFromFlow, setBackFromFlow] = useState(false);
   // The one-time hint about selecting several: gone for good once dismissed or once anything was selected.
-  // With the valley's Forge the bag is the valley's (its own cap, worn pieces not counted); this is the one place it shows.
-  const bag: GearState['inventory'] =
-    forge === undefined
-      ? gear.inventory
-      : { used: forge.visit.forge.bag.count, cap: forge.visit.forge.bag.cap, reserved: 0 };
   const [hintOpen, setHintOpen] = useState(() => !selectHintRetired(BAG_HINT));
   useEffect(() => {
     if (selection.active) {
@@ -163,6 +158,11 @@ export function Workshop({
       <p class="muted">Opening the Workshop...</p>
     );
   }
+  // With the valley's Forge the bag is the valley's (its own cap, worn pieces not counted); this is the one place it shows.
+  const bag: GearState['inventory'] =
+    forge === undefined
+      ? gear.inventory
+      : { used: forge.visit.forge.bag.count, cap: forge.visit.forge.bag.cap, reserved: 0 };
   const selected = gear.items.find((i) => i.id === selectedId) ?? null;
   const picked = itemsWithIds(gear.items, selection.ids);
   // The drawer flips through the bag's items in the grid's order.

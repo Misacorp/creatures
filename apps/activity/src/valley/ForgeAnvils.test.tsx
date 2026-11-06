@@ -86,7 +86,9 @@ describe('ForgeAnvils', () => {
     expect(text).toMatch(/Floor 2 \/ 5/);
     expect(text).toMatch(/Add an order/);
     expect(text).toMatch(/Pick a smith, or drag one here/);
-    expect(text).toMatch(/room for 2 anvils/);
+    expect(text).toMatch(/no more anvils/);
+    // The bag's count shows once, by the Gear heading (the Workshop), not on the shelf.
+    expect(text).not.toMatch(/Bag/);
   });
 
   it('a smith that cannot go on says Tinkering with why, and the shelf button offers the trade for that shard', () => {
