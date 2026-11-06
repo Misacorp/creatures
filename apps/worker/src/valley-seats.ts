@@ -20,7 +20,8 @@ import {
 import { runKeyed, settleSpend } from './keyed-action';
 import { spend, type LedgerStorage } from './ledger';
 import { GameError, atomically, type Outcome } from './outcome';
-import { SEAT_COLUMNS, SIGNPOST_LEVEL, type SeatRow, type ValleySettle } from './valley-settle';
+import type { ValleyCommons } from './valley-commons';
+import { SEAT_COLUMNS, type SeatRow, type ValleySettle } from './valley-settle';
 import { hasDeepArea, type ValleyFinds } from './valley-finds';
 import type { ValleyGazette } from './valley-gazette';
 import { worldAt } from './valley-world';
@@ -33,6 +34,8 @@ export interface ValleySeatsDeps {
   readonly finds: ValleyFinds;
   /** The Gazette's paper: a way deeper is taken from its decision (V-RET-3, V-SCOUT-6). */
   readonly gazette: ValleyGazette;
+  /** The Signpost's level bounds the seats (V-COM-10); the communal seats belong to a place of the commons (V-POST-13). */
+  readonly commons: ValleyCommons;
 }
 
 /** What a bought seat or kit answers (stored for a retry). */
@@ -97,7 +100,7 @@ export class ValleySeats {
               userId,
             )
             .one();
-          const price = seatPrice(VALLEY_RULES, owned.n, SIGNPOST_LEVEL);
+          const price = seatPrice(VALLEY_RULES, owned.n, this.deps.commons.levelOf('signpost'));
           if (price === null) throw new GameError(409, 'no_more_seats');
           const grant = (): string => this.insertSeat(userId, (owned.last ?? 0) + 1);
           const seatId =
@@ -209,6 +212,70 @@ export class ValleySeats {
       }
       // A smith posted to an anvil with an order starts on it at once.
       if (seat.place === 'forge') this.deps.settle.settle(userId, 'now');
+      return { seatId: seat.seat_id };
+    });
+  }
+
+  /**
+   * V-POST-13, V-COM-14: posts a creature to the caller's communal seat at a place of the commons (it opens the seat the first time:
+   * one per player per place), or empties it with `null`. It is an extra seat, never one of the player's own: the creature leaves any
+   * seat it stood at (that seat takes this one's creature, so a drag is a swap, as at any seat). Free.
+   */
+  postCommunal(
+    userId: string,
+    place: string,
+    creatureId: string | null,
+  ): Outcome<{ seatId: string }> {
+    return atomically(this.deps.storage, () => {
+      if (!VALLEY_RULES.commons.places.includes(place)) throw new GameError(404, 'not_found');
+      this.deps.settle.settle(userId, 'now');
+      const now = this.deps.now();
+      let seat = this.sql
+        .exec<{ seat_id: string; creature_id: string | null }>(
+          `SELECT seat_id, creature_id FROM valley_seats WHERE user_id = ? AND place = 'commons' AND destination_id = ?`,
+          userId,
+          place,
+        )
+        .toArray()[0];
+      if (seat === undefined) {
+        const seatId = crypto.randomUUID();
+        this.sql.exec(
+          `INSERT INTO valley_seats (seat_id, user_id, place, kind, position, destination_id, prev_destination_id, communal, passed_at)
+           VALUES (?, ?, 'commons', 'communal', 0, ?, ?, 1, ?)`,
+          seatId,
+          userId,
+          place,
+          place,
+          now,
+        );
+        seat = { seat_id: seatId, creature_id: null };
+      }
+      if (creatureId !== seat.creature_id) {
+        if (creatureId !== null) {
+          this.ownsCreature(userId, creatureId);
+          const other = this.sql
+            .exec<{ seat_id: string }>(
+              'SELECT seat_id FROM valley_seats WHERE creature_id = ? AND user_id = ?',
+              creatureId,
+              userId,
+            )
+            .toArray()[0];
+          if (other !== undefined) {
+            this.sql.exec(
+              'UPDATE valley_seats SET creature_id = ? WHERE seat_id = ?',
+              seat.creature_id,
+              other.seat_id,
+            );
+          }
+        }
+        this.sql.exec(
+          'UPDATE valley_seats SET creature_id = ? WHERE seat_id = ?',
+          creatureId,
+          seat.seat_id,
+        );
+      }
+      // A creature moved from or to an anvil changes what the Forge does at once.
+      this.deps.settle.settle(userId, 'now');
       return { seatId: seat.seat_id };
     });
   }
@@ -336,6 +403,7 @@ export class ValleySeats {
     return atomically(this.deps.storage, () => {
       this.deps.settle.settle(userId, 'now');
       const seat = this.seatOf(userId, seatId);
+      if (seat.place === 'commons') throw new GameError(400, 'kit_does_not_fit');
       if (kit !== null) {
         if (!(KIT_NAMES as readonly string[]).includes(kit))
           throw new GameError(400, 'unknown_kit');

@@ -1,5 +1,6 @@
 import * as v from 'valibot';
 import { ANVIL_KITS, KIT_NAMES } from './forge';
+import { ValleyCommonsViewSchema } from './commons';
 import { PaperSchema } from './gazette';
 import { SCOUT_KITS } from './scouts';
 
@@ -8,8 +9,8 @@ import { SCOUT_KITS } from './scouts';
  * Bonfire reads it. Strict, so the client half and the server tests share one definition. Absent from the answer with the flag off.
  */
 
-/** Where a creature is: resting at the bonfire (V-BON-1), or posted to a scout seat or an anvil (V-POST-1; it earns the same idle XP, V-POST-3). */
-export const VALLEY_CREATURE_STATES = ['resting', 'scouting', 'smithing'] as const;
+/** Where a creature is: resting at the bonfire (V-BON-1), or posted to a scout seat, an anvil or a communal seat (`helping`, V-POST-13; V-POST-1; it earns the same idle XP, V-POST-3). */
+export const VALLEY_CREATURE_STATES = ['resting', 'scouting', 'smithing', 'helping'] as const;
 export type ValleyCreatureState = (typeof VALLEY_CREATURE_STATES)[number];
 
 const int = v.pipe(v.number(), v.integer(), v.minValue(0));
@@ -241,6 +242,8 @@ export const ValleyViewSchema = v.strictObject({
   night: v.boolean(),
   /** The week's twist (V-SCOUT-11): its destination and id; null with none. */
   special: v.nullable(v.strictObject({ destination: id, twist: id })),
+  /** The commons (phase 5 step 6): the places and their projects, the collections, the fire, the hearth, keystones and communal seats. */
+  commons: v.optional(ValleyCommonsViewSchema),
   /** The welcome-back Gazette's paper (V-RET-0): present only while the last paper is unread; closing it takes it away. */
   paper: v.optional(PaperSchema),
 });

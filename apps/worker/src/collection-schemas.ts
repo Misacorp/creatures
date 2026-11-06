@@ -1,5 +1,6 @@
 import {
   EXPEDITION_LENGTHS,
+  GIFT_CURRENCIES,
   ROOM_SPOT_IDS,
   RULES,
   KIT_NAMES,
@@ -17,6 +18,7 @@ import { IdempotencyKeySchema, SNOWFLAKE_RE } from './schemas';
 
 /** Every destination a scout seat can be posted to (the lab's six and the two extra shipped places). */
 const VALLEY_PLACE_IDS = placeIds(VALLEY_RULES) as [string, ...string[]];
+const COMMONS_PLACE_IDS = VALLEY_RULES.commons.places as unknown as [string, ...string[]];
 
 /** Server-generated ids are random UUIDs; anything else is malformed. */
 const ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -235,4 +237,22 @@ export const ValleyExchangeBodySchema = v.strictObject({
   from: v.optional(v.nullable(v.picklist(VALLEY_ELEMENTS)), null),
   times: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(20)), 1),
   idempotencyKey: IdempotencyKeySchema,
+});
+
+/**
+ * A gift to a place's open project (V-COM-1, 5): Acorns, scrap or shards (a keyed spend). Shards name their element (the place's own
+ * counts in full, another at the exchange's rate); the other two currencies take no element.
+ */
+export const ValleyGiftBodySchema = v.strictObject({
+  place: v.picklist(COMMONS_PLACE_IDS),
+  currency: v.picklist(GIFT_CURRENCIES),
+  element: v.optional(v.picklist(VALLEY_ELEMENTS)),
+  amount: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(1_000_000)),
+  idempotencyKey: IdempotencyKeySchema,
+});
+
+/** Posts a creature to the caller's communal seat at a place (it opens the seat the first time), or empties it with `null`. */
+export const ValleyCommunalBodySchema = v.strictObject({
+  place: v.picklist(COMMONS_PLACE_IDS),
+  creatureId: v.nullable(IdSchema),
 });

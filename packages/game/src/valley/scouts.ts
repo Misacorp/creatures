@@ -119,6 +119,8 @@ export interface SeatRates {
   readonly gear: number;
   readonly blueprints: number;
   readonly pages: number;
+  /** The "everyday" rare find that fills a collection socket (V-COM-12). */
+  readonly rareFinds: number;
 }
 
 export interface SeatRateInput {
@@ -145,6 +147,7 @@ export const NO_RATES: SeatRates = {
   gear: 0,
   blueprints: 0,
   pages: 0,
+  rareFinds: 0,
 };
 
 /** V-SCOUT-2, 5, 7, 8, 10, 11 and V-POST-4: the rates of one seat. The lab's `collectSeat` is this, with the average fit. */
@@ -181,6 +184,7 @@ export function seatRates(rules: ValleyRules, input: SeatRateInput): SeatRates {
     gear: rate.gear * rare,
     blueprints: rate.blueprints * rare,
     pages: rate.pages * rare * pages,
+    rareFinds: rate.rareFinds * rare,
   };
 }
 

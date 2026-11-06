@@ -36,6 +36,7 @@ import {
   masteryBonus,
   catchUpBpOf,
   catchUpTarget,
+  shiftMask,
   xpAtLevel,
   WELCOME_AFTER_HOURS,
   placeIds,
@@ -52,6 +53,7 @@ import {
   type AwayWindow,
   type PlaceProfile,
   type ScoutKit,
+  type SettleCommunal,
   type SettleSeat,
   type SettleState,
   type ValleyAnvilView,
@@ -64,13 +66,12 @@ import { credit, type LedgerStorage } from './ledger';
 import { speciesOf } from './species';
 import {
   ANVIL_COLUMNS,
-  FIRE_LEVEL,
-  FORGE_LEVEL,
   orderView,
   type AnvilColumns,
   type ValleyForgePass,
 } from './valley-forge';
 import { ValleyBonfire } from './valley-bonfire';
+import { ValleyCommons, type CommonsSnapshot } from './valley-commons';
 import { hasDeepArea, type ValleyFinds } from './valley-finds';
 import { PaperRecorder, paperItem, type ValleyGazette } from './valley-gazette';
 import { scoutClock, specialOfWeek, worldAt } from './valley-world';
@@ -103,6 +104,10 @@ type PlayerRow = {
   forge_carry: number;
   /** The level the creatures catch up toward, fixed at the last visit (0: none yet). */
   catch_target: number;
+  /** The days of the last seven the player visited (bit 0 is `mask_day`, a UTC day number) and the day they joined (V-COM-5). */
+  visit_mask: number;
+  mask_day: number;
+  joined_day: number;
 };
 
 type CreatureRow = {
@@ -141,8 +146,6 @@ export type SeatRow = AnvilColumns & {
   deep: number;
 };
 
-/** The Signpost's level until the commons (step 6) can raise it: it bounds the seats (V-COM-10). */
-export const SIGNPOST_LEVEL = 1;
 /** The seat columns the pass and the routes read. */
 export const SEAT_COLUMNS = `seat_id, position, destination_id, prev_destination_id, creature_id, kit_id, store_hours, scrap,
   scrap_carry, shards, shard_carry, gear_finds, blueprint_finds, page_finds, deep, ${ANVIL_COLUMNS}`;
@@ -166,6 +169,8 @@ export interface ValleySettleDeps {
   readonly gazette: ValleyGazette;
   /** The server's middle, who is online and who is in the raid (`valley-bonfire.ts`). */
   readonly bonfire: ValleyBonfire;
+  /** The valley's places, the fire, the collections and the keystones (V-COM, V-SCOUT-9). */
+  readonly commons: ValleyCommons;
 }
 
 const masteryStep = (hours: number): 0 | 1 | 2 | 3 => {
@@ -199,7 +204,8 @@ export class ValleySettle {
       const player = this.sql
         .exec<PlayerRow>(
           `SELECT settled_at, last_visit_at, hearth_at_visit_bp, visit_started_at, allowance_store,
-                  allowance_carry, visit_allowance, first_scout_done, forge_carry, catch_target
+                  allowance_carry, visit_allowance, first_scout_done, forge_carry, catch_target,
+                  visit_mask, mask_day, joined_day
            FROM valley_players WHERE user_id = ?`,
           userId,
         )
@@ -223,8 +229,8 @@ export class ValleySettle {
       .toArray();
   }
 
-  /** The player's seats: the scouts' at the Signpost and the smiths' anvils at the Forge, each in the order bought. */
-  seats(userId: string): { scouts: SeatRow[]; anvils: SeatRow[] } {
+  /** The player's seats: the scouts' at the Signpost, the smiths' anvils at the Forge, and the communal seats (V-POST-13), each in the order bought. */
+  seats(userId: string): { scouts: SeatRow[]; anvils: SeatRow[]; communal: SeatRow[] } {
     const all = this.sql
       .exec<SeatRow>(
         `SELECT ${SEAT_COLUMNS} FROM valley_seats WHERE user_id = ? ORDER BY position`,
@@ -234,6 +240,7 @@ export class ValleySettle {
     return {
       scouts: all.filter((seat) => seat.place === 'signpost'),
       anvils: all.filter((seat) => seat.place === 'forge'),
+      communal: all.filter((seat) => seat.place === 'commons'),
     };
   }
 
@@ -259,16 +266,22 @@ export class ValleySettle {
     force: boolean,
   ): ValleyView {
     const cap = allowanceCap();
+    // The places, the fire and the hearth: one read of a few rows (a project whose build days are past opens here).
+    const commons = this.deps.commons.load(now);
+    const today = ValleyCommons.dayOf(now);
     if (player === undefined) {
       // The first pass of a player: the valley opens now, nothing is owed for the time before.
       this.sql.exec(
-        `INSERT INTO valley_players (user_id, settled_at, last_visit_at, hearth_at_visit_bp, visit_started_at)
-         VALUES (?, ?, ?, ?, ?)`,
+        `INSERT INTO valley_players (user_id, settled_at, last_visit_at, hearth_at_visit_bp, visit_started_at,
+                                     visit_mask, mask_day, joined_day)
+         VALUES (?, ?, ?, ?, ?, 1, ?, ?)`,
         userId,
         now,
         now,
-        BP,
+        this.deps.commons.hearth(commons),
         now,
+        today,
+        today,
       );
       const rows = this.creatureRows(userId);
       // V-BON-2: a creature caught before the valley opened catches up from the first moment, toward the same target as at any visit.
@@ -290,7 +303,9 @@ export class ValleySettle {
         rows,
         seats: seats.scouts,
         anvils: seats.anvils,
-        paused: this.pausedAt(userId, now, seats.scouts, seats.anvils),
+        communal: seats.communal,
+        commons,
+        paused: this.pausedAt(userId, now, seats.scouts, [...seats.anvils, ...seats.communal]),
         creatures: rows.map((row) => ({ row, gained: 0, catchUpBp: first.bpOf(row.level) })),
         allowance: { store: 0, cap, brought: 0 },
       });
@@ -309,7 +324,12 @@ export class ValleySettle {
         rows,
         seats: seats.scouts,
         anvils: seats.anvils,
-        paused: this.pausedAt(userId, player.settled_at, seats.scouts, seats.anvils),
+        communal: seats.communal,
+        commons,
+        paused: this.pausedAt(userId, player.settled_at, seats.scouts, [
+          ...seats.anvils,
+          ...seats.communal,
+        ]),
         creatures: rows.map((row) => ({
           row,
           gained: row.visit_xp ?? 0,
@@ -321,7 +341,7 @@ export class ValleySettle {
     // The Paddock gate: duplicates whose day is up take their Recommended answer first (V-SCOUT-3).
     this.deps.choices.autoAnswerDue(userId, to);
     const rows = this.creatureRows(userId);
-    const { scouts: seatRows, anvils: anvilRows } = this.seats(userId);
+    const { scouts: seatRows, anvils: anvilRows, communal: communalRows } = this.seats(userId);
     const tz = this.deps.timezone();
     const indexOf = new Map(rows.map((row, i) => [row.id, i]));
     const rowOf = new Map(rows.map((row) => [row.id, row]));
@@ -344,7 +364,20 @@ export class ValleySettle {
       };
     });
     const team = rows.map((row) => ({ id: row.id, species: row.species, level: row.level }));
-    const forgeIn = this.deps.forge.load(userId, anvilRows, team, indexOf);
+    const forgeIn = this.deps.forge.load(
+      userId,
+      anvilRows,
+      team,
+      indexOf,
+      this.deps.commons.fireLevel(commons),
+    );
+    // V-BON-7: the hearth is fixed at each visit and held until the next, from the bonfire's level.
+    const hearthNow = newVisit ? this.deps.commons.hearth(commons) : player.hearth_at_visit_bp;
+    const communalIn: SettleCommunal[] = communalRows.map((seat) => ({
+      id: seat.seat_id,
+      creature: seat.creature_id === null ? -1 : (indexOf.get(seat.creature_id) ?? -1),
+      storeHours: seat.store_hours,
+    }));
     const before: SettleState = {
       settledAt: player.settled_at,
       lastVisitAt: player.last_visit_at,
@@ -363,6 +396,7 @@ export class ValleySettle {
       })),
       allowance: { store: player.allowance_store, carry: player.allowance_carry },
       seats: seatsIn,
+      ...(communalIn.length === 0 ? {} : { communal: communalIn }),
       ...(forgeIn === null ? {} : { forge: { ...forgeIn.forge, scrapCarry: player.forge_carry } }),
     };
     // V-POST-7: a creature in the raid is away from the first stage's lock to the end of the finale; its post pauses for that time.
@@ -370,7 +404,7 @@ export class ValleySettle {
       userId,
       player.settled_at,
       to,
-      [...seatRows, ...anvilRows].some((seat) => seat.creature_id !== null),
+      [...seatRows, ...anvilRows, ...communalRows].some((seat) => seat.creature_id !== null),
     );
     const away: AwayWindow[] = raid.flatMap((w) => {
       const creature = indexOf.get(w.creatureId);
@@ -386,7 +420,7 @@ export class ValleySettle {
       before,
       player.settled_at,
       to,
-      [{ at: to, kind: 'visit', hearth: player.hearth_at_visit_bp / BP }],
+      [{ at: to, kind: 'visit', hearth: hearthNow / BP }],
       {
         ...(seatRows.length === 0 ? {} : { world: scoutClock(tz, watchNight) }),
         ...(forgeIn === null ? {} : { rng: this.deps.forge.rng }),
@@ -424,6 +458,10 @@ export class ValleySettle {
     // Scouts: the live draws of the stretches, then each store that is due comes home.
     const seatsOut = this.scoutFinds(userId, to, newVisit, player, seatRows, after, rowOf, tz, rec);
 
+    // The commons: what scouting turned up for the collections (V-COM-12), the keystones the server's clocks have rung for a scout posted
+    // there (V-SCOUT-9, at an arrival), and the communal seats' work credited to their projects (V-COM-14, at an arrival or a full store).
+    this.commonsWork(userId, to, newVisit, commons, seatsOut, communalRows, after.communal ?? [], paused);
+
     // The Forge: what the anvils did is written back, then the floors come home when it is time (an arrival, or a floor that filled).
     let anvilsOut: readonly SeatRow[] = anvilRows;
     let piecesHome = 0;
@@ -456,7 +494,7 @@ export class ValleySettle {
     void piecesHome;
 
     const seated = new Set(
-      [...seatRows, ...anvilRows].flatMap((seat) =>
+      [...seatRows, ...anvilRows, ...communalRows].flatMap((seat) =>
         seat.creature_id === null ? [] : [seat.creature_id],
       ),
     );
@@ -583,7 +621,8 @@ export class ValleySettle {
     }
     this.sql.exec(
       `UPDATE valley_players SET settled_at = ?, last_visit_at = ?, visit_started_at = ?, allowance_store = ?,
-         allowance_carry = ?, visit_allowance = ?, first_scout_done = ?, forge_carry = ?, catch_target = ? WHERE user_id = ?`,
+         allowance_carry = ?, visit_allowance = ?, first_scout_done = ?, forge_carry = ?, catch_target = ?,
+         hearth_at_visit_bp = ?, visit_mask = ?, mask_day = ? WHERE user_id = ?`,
       to,
       to,
       newVisit ? to : player.visit_started_at,
@@ -593,6 +632,10 @@ export class ValleySettle {
       seatsOut.firstDone ? 1 : player.first_scout_done,
       after.forge?.scrapCarry ?? player.forge_carry,
       fix.target,
+      hearthNow,
+      // V-COM-5: the day is marked as visited (the daily job counts the last seven to weigh the server's active players).
+      newVisit ? shiftMask(player.visit_mask, player.mask_day, today) | 1 : player.visit_mask,
+      newVisit ? today : player.mask_day,
       userId,
     );
     // A newcomer from a scout is on the roster already: show it at the fire in this very answer.
@@ -609,6 +652,8 @@ export class ValleySettle {
       rows: [...creatures.map((c) => c.row), ...extra.map((c) => c.row)],
       seats: seatsOut.rows,
       anvils: anvilsOut,
+      communal: this.seats(userId).communal,
+      commons,
       paused,
       fullSeats: seatsOut.full,
       creatures: [...creatures, ...extra],
@@ -630,9 +675,17 @@ export class ValleySettle {
     rowOf: ReadonlyMap<string, CreatureRow>,
     tz: string,
     rec: PaperRecorder | undefined,
-  ): { rows: SeatRow[]; newcomers: number; firstDone: boolean; full: ReadonlySet<string> } {
+  ): {
+    rows: SeatRow[];
+    newcomers: number;
+    firstDone: boolean;
+    full: ReadonlySet<string>;
+    /** The collection finds the stretches turned up (V-COM-12). */
+    finds: { everyday: number; residents: number; pages: number };
+  } {
+    const noFinds = { everyday: 0, residents: 0, pages: 0 };
     if (seatRows.length === 0) {
-      return { rows: [], newcomers: 0, firstDone: false, full: new Set() };
+      return { rows: [], newcomers: 0, firstDone: false, full: new Set(), finds: noFinds };
     }
     const world = worldAt(tz, to);
     const stretches = after.stretches ?? [];
@@ -660,7 +713,7 @@ export class ValleySettle {
             },
             to,
           );
-    const arrivals = drawn?.arrivals ?? { newcomers: 0, duplicates: 0 };
+    const arrivals = drawn?.arrivals ?? { newcomers: 0, duplicates: 0, residents: 0 };
     const out: SeatRow[] = [];
     const fullSeats = new Set<string>();
     for (const [i, row] of seatRows.entries()) {
@@ -748,7 +801,58 @@ export class ValleySettle {
       newcomers: arrivals.newcomers,
       firstDone: arrivals.newcomers + arrivals.duplicates > 0,
       full: fullSeats,
+      finds: {
+        everyday: drawn?.collection.everyday ?? 0,
+        residents: arrivals.residents,
+        pages: drawn?.collection.pages ?? 0,
+      },
     };
+  }
+
+  /**
+   * The commons' part of a pass (V-COM-12, V-SCOUT-9, V-COM-14): sets the collection finds scouting turned up (a spare melts into
+   * Essence), checks the keystone clocks for the destinations the player has a working scout at (an arrival only), and credits the
+   * communal seats' stored hours to their projects (an arrival, or a store that filled). Keeps the seats' stores in step.
+   */
+  private commonsWork(
+    userId: string,
+    to: number,
+    newVisit: boolean,
+    commons: CommonsSnapshot,
+    scouting: { rows: readonly SeatRow[]; finds: { everyday: number; residents: number; pages: number } },
+    communalRows: readonly SeatRow[],
+    stores: readonly SettleCommunal[],
+    paused: ReadonlySet<string>,
+  ): void {
+    const finds = scouting.finds;
+    if (finds.everyday + finds.residents + finds.pages > 0) {
+      this.deps.commons.setFinds(userId, commons, finds, to, () => this.deps.finds.roll());
+    }
+    if (newVisit) {
+      const posted = new Set(
+        scouting.rows.flatMap((seat) =>
+          seat.creature_id !== null && !paused.has(seat.creature_id) ? [seat.destination_id] : [],
+        ),
+      );
+      this.deps.commons.keystones(userId, commons, posted, to);
+    }
+    const cap = VALLEY_RULES.posts.storeHours;
+    const credit: { place: string; hours: number }[] = [];
+    for (const [i, row] of communalRows.entries()) {
+      const hours = stores[i]?.storeHours ?? row.store_hours;
+      const due = hours > 0 && (newVisit || hours >= cap - 1e-9);
+      if (due) credit.push({ place: row.destination_id, hours });
+      const next = due ? 0 : hours;
+      if (next !== row.store_hours) {
+        this.sql.exec(
+          'UPDATE valley_seats SET store_hours = ?, passed_at = ? WHERE seat_id = ?',
+          next,
+          to,
+          row.seat_id,
+        );
+      }
+    }
+    if (credit.length > 0) this.deps.commons.creditCommunal(userId, commons, credit, to);
   }
 
   /** What `/api/state` carries: the creatures' places and the seats, the ladder, the kit and the places (V-RET-9). */
@@ -760,6 +864,10 @@ export class ValleySettle {
     rows: readonly CreatureRow[];
     seats: readonly SeatRow[];
     anvils: readonly SeatRow[];
+    /** The caller's communal seats (V-POST-13). */
+    communal: readonly SeatRow[];
+    /** The places, the fire and the hearth this answer reads. */
+    commons: CommonsSnapshot;
     /** The creatures whose post is paused now because they are in the raid (V-POST-7). */
     paused: ReadonlySet<string>;
     /** Seats whose pack was full when this pass found it (it came home, so the stored pack is empty). */
@@ -769,7 +877,11 @@ export class ValleySettle {
   }): ValleyView {
     const tz = this.deps.timezone();
     const world = worldAt(tz, input.to);
-    const seatOf = new Map<string, { id: string; kind: 'scouting' | 'smithing' }>();
+    const seatOf = new Map<string, { id: string; kind: 'scouting' | 'smithing' | 'helping' }>();
+    for (const seat of input.communal) {
+      if (seat.creature_id !== null)
+        seatOf.set(seat.creature_id, { id: seat.seat_id, kind: 'helping' });
+    }
     for (const seat of input.seats) {
       if (seat.creature_id !== null)
         seatOf.set(seat.creature_id, { id: seat.seat_id, kind: 'scouting' });
@@ -839,8 +951,9 @@ export class ValleySettle {
     });
     const owned = input.seats.length;
     const ladder: number[] = [];
-    for (let n = 0; n < seatLimit(rules, SIGNPOST_LEVEL); n++) {
-      const price = seatPrice(rules, n, SIGNPOST_LEVEL);
+    const signpost = this.deps.commons.levelIn(input.commons, 'signpost');
+    for (let n = 0; n < seatLimit(rules, signpost); n++) {
+      const price = seatPrice(rules, n, signpost);
       if (price !== null) ladder.push(price);
     }
     const special = specialOfWeek(tz, input.to);
@@ -865,8 +978,8 @@ export class ValleySettle {
       ...this.forgeView(input, rowOf),
       seatPrices: {
         owned,
-        max: seatLimit(rules, SIGNPOST_LEVEL),
-        next: seatPrice(rules, owned, SIGNPOST_LEVEL),
+        max: seatLimit(rules, signpost),
+        next: seatPrice(rules, owned, signpost),
         ladder,
       },
       kit: { owned: this.ownedKit(input.userId), price: rules.kit.price },
@@ -886,6 +999,17 @@ export class ValleySettle {
       }),
       night: world.night,
       special: { destination: special.destination, twist: special.twist },
+      commons: this.deps.commons.view(
+        input.userId,
+        input.commons,
+        input.communal.map((seat) => ({
+          seat_id: seat.seat_id,
+          creature_id: seat.creature_id,
+          destination_id: seat.destination_id,
+          store_hours: seat.store_hours,
+        })),
+        input.to,
+      ),
       ...(paper === null ? {} : { paper }),
     };
   }
@@ -972,7 +1096,13 @@ export class ValleySettle {
 
   /** The anvils, their price ladder and the Forge's shelf, bag and exchange (the `anvils`, `anvilPrices` and `forge` of the view). */
   private forgeView(
-    input: { userId: string; to: number; anvils: readonly SeatRow[]; paused: ReadonlySet<string> },
+    input: {
+      userId: string;
+      to: number;
+      anvils: readonly SeatRow[];
+      paused: ReadonlySet<string>;
+      commons: CommonsSnapshot;
+    },
     rowOf: ReadonlyMap<string, CreatureRow>,
   ): Pick<ValleyView, 'anvils' | 'anvilPrices' | 'forge'> {
     const rules = VALLEY_RULES;
@@ -1077,8 +1207,9 @@ export class ValleySettle {
       };
     });
     const ladder: { acorns: number; scrap: number }[] = [];
-    for (let n = 0; n < anvilLimit(rules, FORGE_LEVEL); n++) {
-      const price = anvilPrice(rules, n, FORGE_LEVEL);
+    const forgeLevel = this.deps.commons.levelIn(input.commons, 'forge');
+    for (let n = 0; n < anvilLimit(rules, forgeLevel); n++) {
+      const price = anvilPrice(rules, n, forgeLevel);
       if (price !== null) ladder.push(price);
     }
     const shards: Record<string, number> = {};
@@ -1087,14 +1218,14 @@ export class ValleySettle {
       anvils,
       anvilPrices: {
         owned: input.anvils.length,
-        max: anvilLimit(rules, FORGE_LEVEL),
-        next: anvilPrice(rules, input.anvils.length, FORGE_LEVEL),
+        max: anvilLimit(rules, forgeLevel),
+        next: anvilPrice(rules, input.anvils.length, forgeLevel),
         ladder,
       },
       forge: {
         shelf: { scrap: shelf.scrap, essence: shelf.essence, shards },
         bag: { count: bagItems(this.sql, input.userId), cap: rules.forge.bag },
-        fireLevel: FIRE_LEVEL,
+        fireLevel: this.deps.commons.fireLevel(input.commons),
         exchange: {
           rate: rules.forge.exchange.rate,
           critBp: Math.round(rules.forge.exchange.critChance * BP),

@@ -62,11 +62,6 @@ import { debit, getBalance, type LedgerStorage } from './ledger';
 import { speciesOf } from './species';
 import type { SeatRow } from './valley-settle';
 
-/** The Forge's level until the commons (step 6) can raise it: it bounds the anvils (V-FORGE-6, V-COM-10). */
-export const FORGE_LEVEL = 1;
-/** The fire's level until the commons (step 6): the item level of every piece the Forge makes (V-FORGE-7). */
-export const FIRE_LEVEL = 1;
-
 const RARITIES: readonly GearRarity[] = ['common', 'rare', 'epic'];
 const ELEMENT_COUNT = VALLEY_ELEMENTS.length;
 
@@ -191,10 +186,10 @@ export class ValleyForgePass {
   /**
    * "For my team": the weak slots by element (empty, or below the weak limit of the fire), counted over the player's creatures.
    */
-  weakByElement(userId: string, team: readonly TeamMember[]): number[] {
+  weakByElement(userId: string, team: readonly TeamMember[], fireLevel: number): number[] {
     const weak = new Array<number>(ELEMENT_COUNT).fill(0);
     const worn = equippedByCreature(this.sql, userId);
-    const limit = weakLimit(VALLEY_RULES, FIRE_LEVEL);
+    const limit = weakLimit(VALLEY_RULES, fireLevel);
     for (const c of team) {
       const e = VALLEY_ELEMENTS.indexOf(speciesOf(c.species).element);
       if (e < 0) continue;
@@ -212,6 +207,8 @@ export class ValleyForgePass {
     anvils: readonly SeatRow[],
     team: readonly TeamMember[],
     indexOf: ReadonlyMap<string, number>,
+    /** The fire's level: the item level of every piece the anvils finish (V-FORGE-7, V-COM-13). */
+    fireLevel: number,
   ): ForgeLoad | null {
     if (anvils.length === 0) return null;
     const orders = this.orders(userId);
@@ -225,7 +222,7 @@ export class ValleyForgePass {
     const pending = new Array<number>(ELEMENT_COUNT).fill(0);
     let weak = new Array<number>(ELEMENT_COUNT).fill(0);
     if (wantsTeam) {
-      weak = this.weakByElement(userId, team);
+      weak = this.weakByElement(userId, team, fireLevel);
       for (const a of anvils) {
         if (a.piece_active === 1 && a.piece_team === 1 && a.piece_element >= 0) {
           pending[a.piece_element] = (pending[a.piece_element] ?? 0) + 1;
@@ -287,7 +284,7 @@ export class ValleyForgePass {
         scrapCarry: 0,
         weak,
         pending,
-        fireLevel: FIRE_LEVEL,
+        fireLevel,
       },
       orders,
       anvils,

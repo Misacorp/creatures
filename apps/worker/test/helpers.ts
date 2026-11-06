@@ -315,8 +315,28 @@ export function undoGamesIndexMigration(sql: SqlStorage): void {
   sql.exec('DELETE FROM schema_version WHERE version = 42');
 }
 
+/** Puts a database back to before migration 61 (the commons): its tables and columns go. */
+export function undoValleyCommonsMigration(sql: SqlStorage): void {
+  for (const table of [
+    'valley_places',
+    'valley_gifts',
+    'valley_collections',
+    'valley_fire_log',
+    'valley_keystones',
+  ])
+    sql.exec(`DROP TABLE IF EXISTS ${table}`);
+  const has = (table: string, column: string): boolean =>
+    sql.exec(`SELECT 1 FROM pragma_table_info('${table}') WHERE name = ?`, column).toArray()
+      .length > 0;
+  for (const column of ['visit_mask', 'mask_day', 'joined_day'])
+    if (has('valley_players', column)) sql.exec(`ALTER TABLE valley_players DROP COLUMN ${column}`);
+  if (has('valley_server', 'weight')) sql.exec('ALTER TABLE valley_server DROP COLUMN weight');
+  sql.exec('DELETE FROM schema_version WHERE version = 61');
+}
+
 /** Puts a database back to before migration 60 (the bonfire in full): its table, columns and index go. */
 export function undoValleyBonfireMigration(sql: SqlStorage): void {
+  undoValleyCommonsMigration(sql);
   sql.exec('DROP TABLE IF EXISTS valley_server');
   sql.exec('DROP INDEX IF EXISTS raid_placements_user');
   const has = (table: string, column: string): boolean =>

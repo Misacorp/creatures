@@ -17,9 +17,13 @@
 import {
   MAX_ONLINE,
   RULES,
+  VALLEY_RULES,
+  activeWeightOf,
+  maskDays,
   momentWeight,
   pickByWeight,
   serverMiddleOf,
+  shiftMask,
   topThreeMean,
   type AwayWindow,
   type ValleyOnline,
@@ -73,18 +77,32 @@ export class ValleyBonfire {
   }
 
   /**
-   * Writes the server's middle (V-BON-2): the median of the top-three means of the players who visited in the last `ACTIVE_DAYS`.
-   * Called once a game day by `maintain`; a day with no active player leaves the last value standing.
+   * Writes the server's middle (V-BON-2): the median of the top-three means of the players who visited in the last `ACTIVE_DAYS`,
+   * and in the same row the server's active weight (V-COM-5: each of those players counted by how many of the last seven days they
+   * visited, a weekly player about 0.4), which sizes the commons' next projects. The weight comes from columns of the same rows, so it
+   * costs no read of its own and no row of its own (V-COM-8). Called once a game day by `maintain`; a day with no active player
+   * leaves the last values standing.
    */
-  writeMiddle(now: number): { middle: number; players: number } {
+  writeMiddle(now: number): { middle: number; players: number; weight: number } {
     const day = gameDay(now, this.deps.timezone(), RULES.daily.reset);
+    const today = Math.floor(now / DAY_MS);
     const active = this.sql
-      .exec<{ user_id: string }>(
-        'SELECT user_id FROM valley_players WHERE last_visit_at >= ? LIMIT ?',
+      .exec<{ user_id: string; visit_mask: number; mask_day: number; joined_day: number }>(
+        `SELECT user_id, visit_mask, mask_day, joined_day FROM valley_players WHERE last_visit_at >= ? LIMIT ?`,
         now - ACTIVE_DAYS * DAY_MS,
         MAX_ACTIVE,
       )
       .toArray();
+    const weight = active.reduce(
+      (sum, p) =>
+        sum +
+        activeWeightOf(
+          VALLEY_RULES,
+          maskDays(shiftMask(p.visit_mask, p.mask_day, today)),
+          today - p.joined_day,
+        ),
+      0,
+    );
     const means = active.map((player) =>
       topThreeMean(
         this.sql
@@ -93,16 +111,18 @@ export class ValleyBonfire {
           .map((row) => row.level),
       ),
     );
-    if (means.length === 0) return { middle: this.middle(), players: 0 };
+    if (means.length === 0) return { middle: this.middle(), players: 0, weight: 0 };
     const middle = serverMiddleOf(means);
     this.sql.exec(
-      `INSERT INTO valley_server (id, middle, day, players) VALUES (1, ?, ?, ?)
-       ON CONFLICT(id) DO UPDATE SET middle = excluded.middle, day = excluded.day, players = excluded.players`,
+      `INSERT INTO valley_server (id, middle, day, players, weight) VALUES (1, ?, ?, ?, ?)
+       ON CONFLICT(id) DO UPDATE SET middle = excluded.middle, day = excluded.day, players = excluded.players,
+         weight = excluded.weight`,
       middle,
       day,
       means.length,
+      weight,
     );
-    return { middle, players: means.length };
+    return { middle, players: means.length, weight };
   }
 
   /**

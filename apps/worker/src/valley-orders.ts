@@ -26,11 +26,11 @@ import { spend, type LedgerStorage } from './ledger';
 import { GameError, atomically, type Outcome } from './outcome';
 import {
   baseElementIndex,
-  FORGE_LEVEL,
   ORDER_COLUMNS,
   type OrderRow,
   type ValleyForgePass,
 } from './valley-forge';
+import type { ValleyCommons } from './valley-commons';
 import type { ValleySettle } from './valley-settle';
 
 export interface ValleyOrdersDeps {
@@ -38,6 +38,8 @@ export interface ValleyOrdersDeps {
   readonly now: () => number;
   readonly settle: ValleySettle;
   readonly forge: ValleyForgePass;
+  /** The Forge's level bounds the anvils (V-FORGE-6, V-COM-10). */
+  readonly commons: ValleyCommons;
 }
 
 export interface AnvilBought {
@@ -82,7 +84,7 @@ export class ValleyOrders {
               userId,
             )
             .one();
-          const price = anvilPrice(VALLEY_RULES, owned.n, FORGE_LEVEL);
+          const price = anvilPrice(VALLEY_RULES, owned.n, this.deps.commons.levelOf('forge'));
           if (price === null) throw new GameError(409, 'no_more_anvils');
           const grant = (): string => {
             if (price.scrap > 0 && !debitParts(this.sql, userId, { scrap: price.scrap })) {

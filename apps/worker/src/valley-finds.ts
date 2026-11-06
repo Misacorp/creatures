@@ -89,8 +89,10 @@ export interface SeatStore {
 export interface DrawnFinds {
   /** Per seat id: the gear, blueprint and page finds to add to the store. */
   readonly stores: Map<string, { gear: number; blueprints: number; pages: number }>;
-  /** Creatures that arrived in this pass: new species and duplicates left at the gate. */
-  readonly arrivals: { newcomers: number; duplicates: number };
+  /** Creatures that arrived in this pass: new species and duplicates left at the gate (`residents`: arrivals that were a rare resident with its token, V-COM-12). */
+  readonly arrivals: { newcomers: number; duplicates: number; residents: number };
+  /** The collection finds this pass's scouting turned up (V-COM-12): everyday rare finds and journal pages that belong to the School's set. */
+  readonly collection: { everyday: number; pages: number };
 }
 
 export class ValleyFinds {
@@ -128,14 +130,21 @@ export class ValleyFinds {
   ): DrawnFinds {
     const rng = this.deps.rng;
     const stores = new Map<string, { gear: number; blueprints: number; pages: number }>();
-    const arrivals = { newcomers: 0, duplicates: 0 };
+    const arrivals = { newcomers: 0, duplicates: 0, residents: 0 };
+    const collection = { everyday: 0, pages: 0 };
     const owned = this.ownedLines(userId);
     for (const stretch of stretches) {
       const store = stores.get(stretch.seat) ?? { gear: 0, blueprints: 0, pages: 0 };
       store.gear += poissonDraw(rng, stretch.hours * stretch.rates.gear);
       store.blueprints += poissonDraw(rng, stretch.hours * stretch.rates.blueprints);
-      store.pages += poissonDraw(rng, stretch.hours * stretch.rates.pages);
+      const pages = poissonDraw(rng, stretch.hours * stretch.rates.pages);
+      store.pages += pages;
       stores.set(stretch.seat, store);
+      // V-COM-12: a share of the pages belongs to the School's set, and an everyday rare find now and then fills a socket of its own.
+      for (let n = 0; n < pages; n++) {
+        if (uniform(rng) < VALLEY_RULES.collections.pageInSetChance) collection.pages += 1;
+      }
+      collection.everyday += poissonDraw(rng, stretch.hours * stretch.rates.rareFinds);
       const creatures = poissonDraw(rng, stretch.hours * stretch.rates.creatures);
       for (let n = 0; n < creatures; n++) {
         this.arrive(userId, stretch.seat, stretch.place, owned, {
@@ -169,7 +178,7 @@ export class ValleyFinds {
           : { paper: { rec: options.paper.rec, by: options.paper.byOf(first.seat) } }),
       });
     }
-    return { stores, arrivals };
+    return { stores, arrivals, collection };
   }
 
   private arrive(
@@ -184,10 +193,12 @@ export class ValleyFinds {
       special: ScoutSpecial | null;
       needNew: boolean;
       at: number;
-      arrivals: { newcomers: number; duplicates: number };
+      arrivals: { newcomers: number; duplicates: number; residents: number };
       paper?: { rec: PaperRecorder; by: string | null };
     },
   ): void {
+    // V-COM-12: an arrival is a rare resident with its token now and then (it sets itself into the Paddock's collection).
+    if (uniform(this.deps.rng) < VALLEY_RULES.collections.residentPerArrival) o.arrivals.residents += 1;
     const dest = expeditionContent.destinations.find((d) => d.id === place.id);
     const residents = new Set(o.deep ? (dest?.deep.species ?? []) : (dest?.species ?? []));
     const rarityUp = o.deep ? 1 + (dest?.deep.rarityUpBp ?? 0) / 10_000 : 1;

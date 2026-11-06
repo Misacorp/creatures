@@ -7,8 +7,10 @@ import type { ValleyView } from '@creatures/game';
 import type { Collection } from './collection';
 import {
   ValleyAnvilBuyBodySchema,
+  ValleyCommunalBodySchema,
   ValleyDeepBodySchema,
   ValleyExchangeBodySchema,
+  ValleyGiftBodySchema,
   ValleyGazetteCloseBodySchema,
   ValleyKitBodySchema,
   ValleyOrderBodySchema,
@@ -17,6 +19,7 @@ import {
 } from './collection-schemas';
 import { failure, invalidBody, json, notFound, parseBody, type Routes } from './http';
 import type { ValleyGazette } from './valley-gazette';
+import type { ValleyGifts } from './valley-gifts';
 import type { ValleyOrders } from './valley-orders';
 import type { ValleySeats } from './valley-seats';
 
@@ -30,6 +33,8 @@ export interface ValleyRouteContext {
     valleySeats: ValleySeats | null;
     /** Anvils, orders and the exchange (null with the flag off). */
     valleyOrders: ValleyOrders | null;
+    /** Gifts to the commons' projects (null with the flag off). */
+    valleyGifts: ValleyGifts | null;
     /** The welcome-back Gazette's papers (null with the flag off). */
     valleyGazette: ValleyGazette | null;
     /** The caller's valley as `/api/state` shows it (null with the flag off). */
@@ -174,6 +179,42 @@ export const valleyRoutes: Routes<ValleyRouteContext> = {
         times: body.times,
         key: body.idempotencyKey,
       });
+      if (!outcome.ok) return failure(outcome);
+      return json({
+        ...outcome.value,
+        valley: core.valleyState(user.id),
+        state: core.collection.state(user.id),
+      });
+    },
+  },
+  '/api/valley/gift': {
+    POST: async (request, { user, core }) => {
+      if (core.valleyGifts === null) return notFound();
+      const body = await parseBody(request, ValleyGiftBodySchema);
+      if (body === undefined) return invalidBody();
+      // Shards name their element; the other currencies take none.
+      if ((body.currency === 'shards') !== (body.element !== undefined)) return invalidBody();
+      const outcome = core.valleyGifts.give(user.id, {
+        place: body.place,
+        currency: body.currency,
+        ...(body.element === undefined ? {} : { element: body.element }),
+        amount: body.amount,
+        key: body.idempotencyKey,
+      });
+      if (!outcome.ok) return failure(outcome);
+      return json({
+        ...outcome.value,
+        valley: core.valleyState(user.id),
+        state: core.collection.state(user.id),
+      });
+    },
+  },
+  '/api/valley/communal': {
+    POST: async (request, { user, core }) => {
+      if (core.valleySeats === null) return notFound();
+      const body = await parseBody(request, ValleyCommunalBodySchema);
+      if (body === undefined) return invalidBody();
+      const outcome = core.valleySeats.postCommunal(user.id, body.place, body.creatureId);
       if (!outcome.ok) return failure(outcome);
       return json({
         ...outcome.value,
