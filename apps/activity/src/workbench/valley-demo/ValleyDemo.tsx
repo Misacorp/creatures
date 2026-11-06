@@ -2,6 +2,7 @@ import { useState } from 'preact/hooks';
 import { Hud } from '../../Hud';
 import { PopoverHost, useCreatureViewer } from '../../PopoverHost';
 import { WelcomeBack } from '../../valley/gazette/WelcomeBack';
+import { samplePaper, VALLEY_PAPERS } from './paper-sample';
 import type { Balances, Creature, ValleyVisit } from '../../api';
 import type { KitName, ValleySeatView } from '@creatures/game';
 import { homeAlerts } from '../../home-view';
@@ -53,6 +54,7 @@ export const VALLEY_STARTS = [
 
 /** How the demo's valley systems stand: off (the Bonfire is "not open yet"), a small roster resting, or a big one. */
 export const VALLEY_RESTING = ['off', 'few', 'many'] as const;
+export { VALLEY_PAPERS };
 
 /** How the demo's scouts stand: systems off, no seat bought, one scout out, two out, or a full pack among two. */
 export const VALLEY_SCOUTS = ['off', 'no seats', 'one scout', 'two scouts', 'a full pack'] as const;
@@ -373,6 +375,7 @@ export function ValleyDemo({
   scouts = 'off',
   open: opened = 'nothing',
   forge = 'off',
+  paper = 'off',
 }: {
   start: string;
   away: boolean;
@@ -384,6 +387,8 @@ export function ValleyDemo({
   open?: string;
   /** The Forge's anvils (phase 5 step 3): one of `VALLEY_FORGE`. */
   forge?: string;
+  /** The welcome-back Gazette on the server's paper (phase 5 step 4): one of `VALLEY_PAPERS`. */
+  paper?: string;
 }) {
   const first = VALLEY_STARTS.includes(start as (typeof VALLEY_STARTS)[number])
     ? (start as PlaceId | 'valley')
@@ -655,6 +660,29 @@ export function ValleyDemo({
               />
             )}
           </ValleyFrame>
+          {paper !== 'off' && (
+            <WelcomeBack
+              away={null}
+              world={{
+                creatures: input.creatures,
+                items: null,
+                blueprints: null,
+                tray: { trips: input.trips, jobs: input.jobs, now: HOME_NOW },
+                games: input.games,
+                raid: input.raid,
+              }}
+              now={HOME_NOW}
+              timezone={HOME_TZ}
+              balances={PURSE}
+              paper={gone ? null : samplePaper(paper, input.creatures, HOME_NOW)}
+              onClosePaper={() => {
+                setGone(true);
+              }}
+              onPushOn={() => Promise.resolve(true)}
+              onDismiss={() => undefined}
+              onPurse={setPurse}
+            />
+          )}
           {away && (
             <WelcomeBack
               away={gone ? null : AWAY_SAMPLE}
