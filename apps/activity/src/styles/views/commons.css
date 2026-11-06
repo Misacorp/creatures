@@ -1,0 +1,211 @@
+/*
+  The commons' boards (valley/CommonsBoard.tsx, valley/CommonsFire.tsx, valley/Keepsakes.tsx) in the family of the seat cards
+  (signpost.css): a board is a `.sp-seat` card with its own few lines. Nothing here is positioned over anything else.
+*/
+.cm-board {
+  align-content: start;
+}
+
+/* On a wide window a board is as wide as a seat card beside it, not the whole page. */
+@media (min-width: 45rem) {
+  .cm-board:not(.cm-sheet) {
+    max-width: 34rem;
+  }
+}
+
+.cm-helper {
+  display: grid;
+  grid-template-columns: minmax(0, 11rem) minmax(0, 1fr);
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* In the Bonfire's drawer the board is the drawer's own content: no card frame inside a frame. */
+.cm-sheet {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+/* It takes the focus when a drill-in closes (so Escape still reaches the sheet), never a ring. */
+.cm-sheet:focus {
+  outline: none;
+}
+
+.cm-level,
+.cm-need,
+.cm-mine {
+  margin: 0;
+  font-size: var(--fs-row);
+}
+
+.cm-need {
+  color: var(--haze);
+}
+
+.cm-mine {
+  color: var(--gold);
+}
+
+.cm-project {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.cm-bar {
+  padding: 0.25rem 0.5rem;
+  background: var(--night);
+  box-shadow: 0 0 0 var(--px) var(--ink);
+  font-size: var(--fs-row);
+}
+
+.cm-bar .sp-bar {
+  flex: 1 1 5rem;
+  min-width: 3rem;
+  margin: 0;
+}
+
+button.cm-row {
+  justify-content: space-between;
+}
+
+.cm-row .sp-bar + .sp-pack-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cm-row-note {
+  flex: none;
+  font-size: var(--fs-small);
+}
+
+.cm-amount {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.cm-names,
+.cm-sockets {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cm-names {
+  grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
+}
+
+.cm-names li {
+  min-width: 0;
+  overflow: hidden;
+  padding: 0.25rem 0.5rem;
+  background: var(--night);
+  box-shadow: 0 0 0 var(--px) var(--ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* A socket: set ones are solid, open ones a dashed outline (as an empty seat). */
+.cm-socket {
+  display: grid;
+  gap: 0.125rem;
+  min-width: 0;
+  padding: 0.5rem 0.625rem;
+  outline: var(--px) dashed var(--bone);
+  outline-offset: calc(var(--px) * -1);
+}
+
+.cm-socket.set {
+  background: var(--night);
+  box-shadow: 0 0 0 var(--px) var(--ink);
+  outline: none;
+}
+
+.cm-socket-line {
+  color: var(--haze);
+  font-size: var(--fs-small);
+}
+
+.cm-socket.set .cm-socket-line {
+  color: var(--gold);
+}
+
+/* The Forge's fire: the flame at a pixel scale that grows with the fire, then its words. */
+button.cm-fire {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 3.5rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--dusk);
+  box-shadow: var(--frame);
+  color: var(--bone);
+  text-align: left;
+}
+
+.cm-flame {
+  display: flex;
+  flex: none;
+  align-items: flex-end;
+  justify-content: center;
+  width: 2.5rem;
+  height: 3.5rem;
+}
+
+.cm-fire-text {
+  display: grid;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.cm-fire-name {
+  font-size: var(--fs-row);
+}
+
+.cm-fire-line {
+  color: var(--haze);
+  font-size: var(--fs-small);
+}
+
+.cm-log {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The House's shelf of keepsakes: one small badge for each finished level you helped build. */
+.cm-shelf {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cm-keepsake {
+  display: grid;
+  gap: 0.125rem;
+  min-width: 0;
+  padding: 0.5rem 0.625rem;
+  background: var(--night);
+  box-shadow: 0 0 0 var(--px) var(--ink);
+}
+
+.cm-keepsake-name {
+  font-size: var(--fs-row);
+}
+
+.cm-keepsake-line {
+  color: var(--haze);
+  font-size: var(--fs-small);
+}

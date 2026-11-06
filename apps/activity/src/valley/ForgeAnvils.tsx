@@ -33,6 +33,8 @@ import { onDrillKey } from '../ui/drill-keys';
 import { RosterPicker } from '../ui/RosterPicker';
 import { Slot, SlotRow } from '../ui/Slot';
 import { Tag } from '../ui/Tag';
+import { CommonsBoard, type CommonsActions, type CommonsStart } from './CommonsBoard';
+import { CommonsFire } from './CommonsFire';
 import { SlotText, SpendConfirm, seatAt } from './seat-parts';
 import { Tray } from './Tray';
 import { trayFor, type TrayInput } from './tray-state';
@@ -67,6 +69,9 @@ import type { OrderRequest } from '../api';
 /** The sentinel row of the creature picker that empties an anvil. */
 const REMOVE_ID = '';
 
+/** The id of the card a hand drops a creature on to help build (the project board's communal seat). */
+const COMMUNAL_DROP = 'communal:forge';
+
 /** An order editor to open: a new order on an anvil, or an order that exists. */
 export type OrderOpen =
   | { kind: 'add'; anvilId: string; opener: HTMLElement | null }
@@ -95,6 +100,10 @@ export interface ForgeStart {
   exchange?: boolean;
   /** The bag's "Filter and sort" starts open (the Workshop draws it). */
   bag?: boolean;
+  /** The project board's drawer or picker to open (the commons). */
+  commons?: CommonsStart;
+  /** The fire's numbers start open. */
+  fire?: boolean;
 }
 
 /** The shelf as one row of counts: scrap, the five shards and Essence. */
@@ -167,6 +176,7 @@ export function ForgeAnvils({
   actions,
   onOrder,
   onOpenPaddock,
+  commons,
   start = {},
 }: {
   visit: ValleyVisit;
@@ -183,6 +193,8 @@ export function ForgeAnvils({
   onOrder: (open: OrderOpen) => void;
   /** A tap on a tray creature: the Paddock, as everywhere in the valley. */
   onOpenPaddock: () => void;
+  /** The Forge's project board and the communal seat on it (a hand can carry a creature onto the card); absent leaves the page as before. */
+  commons?: CommonsActions;
   start?: ForgeStart;
 }) {
   const [picking, setPicking] = useState<string | null>(start.picker ?? null);
@@ -206,6 +218,10 @@ export function ForgeAnvils({
     locate: (p) => seatAt(p.x, p.y),
     onDrop: (creatureId, anvilId) => {
       if (anvilId === null) return dropOutcome('none', null, null, 'Cancelled.');
+      if (anvilId === COMMUNAL_DROP && commons !== undefined) {
+        void commons.post('forge', creatureId);
+        return dropOutcome('valid', null, null, '');
+      }
       const anvil = anvilOf(anvilId);
       if (anvil === undefined || anvil.creatureId === creatureId) {
         return dropOutcome('none', null, null, '');
@@ -267,6 +283,7 @@ export function ForgeAnvils({
         onPick={onOpenPaddock}
         drag={drag}
       />
+      <CommonsFire visit={visit} start={start.fire === true} />
       <div class="fg-shelf">
         <Shelf visit={visit} />
         <div class="fg-shelf-line">
@@ -480,6 +497,19 @@ export function ForgeAnvils({
           )}
         </li>
       </ul>
+      {commons !== undefined && (
+        <CommonsBoard
+          place="forge"
+          visit={visit}
+          creatures={creatures}
+          acorns={acorns}
+          busy={busy}
+          actions={commons}
+          dropId={COMMUNAL_DROP}
+          over={drag.drag?.over === COMMUNAL_DROP}
+          {...(start.commons === undefined ? {} : { start: start.commons })}
+        />
+      )}
       <DragGhost
         ghostRef={drag.ghostRef}
         creature={

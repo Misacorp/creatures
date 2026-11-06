@@ -10,6 +10,7 @@ import type { Creature, ValleyVisit } from '../api';
 import { baseOption } from '../roster-picker';
 import { CreatureList } from '../ui/CreatureList';
 import { Drawer } from '../ui/Drawer';
+import { CommonsBoard, type CommonsActions, type CommonsStart } from './CommonsBoard';
 import { PinnedAct } from './PinnedAct';
 import { Stander } from './PlaceScene';
 import { SceneFrame } from './SceneFrame';
@@ -18,14 +19,17 @@ import {
   atTheFire,
   bonfireCalm,
   fireSpots,
+  lamplighterSpot,
   moreSpot,
   moreCount,
   moreLabel,
   restingOf,
   visitorsOf,
 } from './bonfire-cast';
+import { commonsOf, daysLeft, hearthLine, percentFilled, placeOf } from './commons-view';
 import { placeArtBox, placeScale, placeSceneDraw } from './place-scene';
-import { bonfireName } from './valley-places';
+import { scaffoldSteps, scaffoldUp } from './scaffold';
+import { GRAND_LEVEL, bonfireName, glowSprite } from './valley-places';
 
 /** One creature's line in the list of everyone resting: its XP this visit, and that it is warming up while it catches up. */
 function restingNote(gained: number, warm: boolean): string {
@@ -33,22 +37,35 @@ function restingNote(gained: number, warm: boolean): string {
   return warm ? `${xp}, warming up` : xp;
 }
 
-/** CSS px at the bottom of the scene the pinned line takes: creatures keep clear of it. */
+/** CSS px at the bottom of the scene the pinned button takes (and, with the calm line above it, both): creatures keep clear of them. */
 const ACT_CSS = 72;
+const ACT_CSS_TWO = 124;
 
 export function BonfireScene({
   creatures,
   visit,
   level,
   onLeave,
+  commons,
+  acorns = 0,
+  busy = false,
+  start = {},
 }: {
   creatures: readonly Creature[];
   visit: ValleyVisit;
   /** The bonfire's place level (1 until the commons grow it). */
   level: number;
   onLeave: () => void;
+  /** The hearth's project board (the commons): its gifts and its communal seat; absent leaves the scene as it was. */
+  commons?: CommonsActions;
+  /** The player's Acorns (the `bait` balance). */
+  acorns?: number;
+  busy?: boolean;
+  /** The board's sheet starts open on this (the workbench shows each). */
+  start?: CommonsStart & { sheet?: boolean };
 }) {
   const [all, setAll] = useState(false);
+  const [sheet, setSheet] = useState(start.sheet === true || start.view !== undefined);
   const art = bonfireName(level);
   const resting = useMemo(() => restingOf(creatures, visit), [creatures, visit]);
   const visitors = useMemo(() => visitorsOf(visit), [visit]);
@@ -56,8 +73,47 @@ export function BonfireScene({
     () => atTheFire(resting, visitors, visit.settledAt),
     [resting, visitors, visit],
   );
-  const calm = bonfireCalm(resting);
-  const draw = useMemo(() => placeSceneDraw(art), [art]);
+  const block = commonsOf(visit);
+  const place = placeOf(block, 'bonfire');
+  const hearth = block === null ? null : hearthLine(block.hearthBp);
+  // The calm line says what the picture does not: the visit's gain, and the hearth's bonus.
+  const calm = [
+    bonfireCalm(resting),
+    hearth === null ? '' : hearth.replace('The hearth adds', 'Hearth adds'),
+  ]
+    .filter((line) => line !== '')
+    .join(' · ');
+  // The scaffolding rises round the fire as the project fills (V-COM-6).
+  const steps = place?.state === 'open' ? scaffoldSteps(percentFilled(place) / 100) : 0;
+  const draw = useMemo(() => {
+    const base = placeSceneDraw(art);
+    if (steps === 0) return base;
+    const sprite = glowSprite(art);
+    return (g: Parameters<typeof base>[0]) => {
+      const box = placeArtBox(g, art);
+      return [...base(g), { sprite: scaffoldUp(sprite, steps), x: box.x, y: box.y }];
+    };
+  }, [art, steps]);
+  const helperId = block?.communal.find((c) => c.place === 'bonfire')?.creatureId ?? null;
+  const helper = helperId === null ? undefined : creatures.find((c) => c.id === helperId);
+  const act =
+    commons === undefined || place === undefined ? null : place.state === 'open' ? (
+      <PinnedAct
+        label="Help build the hearth"
+        detail={`${String(percentFilled(place))}%`}
+        onClick={() => {
+          setSheet(true);
+        }}
+      />
+    ) : (
+      <PinnedAct
+        label="The hearth"
+        detail={place.state === 'building' ? daysLeft(place.buildDaysLeft) : ''}
+        onClick={() => {
+          setSheet(true);
+        }}
+      />
+    );
   return (
     <>
       <SceneFrame
@@ -66,12 +122,26 @@ export function BonfireScene({
         draw={draw}
         scaleFor={(width, height) => placeScale(width, height, art)}
         onLeave={onLeave}
-        act={calm === '' ? null : <PinnedAct calm={calm} />}
+        act={
+          calm === '' && act === null ? null : (
+            <>
+              {calm !== '' && <PinnedAct calm={calm} />}
+              {act}
+            </>
+          )
+        }
       >
         {(g) => {
           const box = placeArtBox(g, art);
-          const scene = { W: g.W, H: g.H - Math.ceil(ACT_CSS / g.s), s: g.s, top: g.top };
-          const spots = fireSpots(fireside, box, scene);
+          const actCss =
+            (calm !== '' ? 1 : 0) + (act === null ? 0 : 1) === 2 ? ACT_CSS_TWO : ACT_CSS;
+          const scene = { W: g.W, H: g.H - Math.ceil(actCss / g.s), s: g.s, top: g.top };
+          const grand = level >= GRAND_LEVEL;
+          const spots = fireSpots(fireside, box, scene, {
+            grand,
+            lamplighter: helper !== undefined,
+          });
+          const lamp = lamplighterSpot(box, grand);
           // "+N more" counts the player's own resting creatures that did not get a seat (a visitor's seat is not one of them).
           const more = moreCount(resting.length, spots.filter((s) => s.owner === undefined).length);
           return (
@@ -90,10 +160,20 @@ export function BonfireScene({
                   {...(spot.owner === undefined ? {} : { owner: spot.owner })}
                 />
               ))}
+              {helper !== undefined && (
+                <Stander
+                  creature={helper}
+                  x={lamp.x}
+                  y={lamp.y}
+                  flip
+                  label="lighting the lanterns, helping build the hearth"
+                  g={g}
+                />
+              )}
               {more > 0 && (
                 <At
-                  x={g.X(moreSpot(box, g.s).x)}
-                  y={g.Y(moreSpot(box, g.s).y)}
+                  x={g.X(moreSpot(box, g.s, grand).x)}
+                  y={g.Y(moreSpot(box, g.s, grand).y)}
                   class="vy-more-at vy-stand vy-over"
                   hidden={false}
                 >
@@ -132,6 +212,26 @@ export function BonfireScene({
           class="flat"
         />
       </Drawer>
+      {commons !== undefined && place !== undefined && (
+        <CommonsBoard
+          place="bonfire"
+          host="sheet"
+          open={sheet}
+          onClose={() => {
+            setSheet(false);
+          }}
+          visit={visit}
+          creatures={creatures}
+          acorns={acorns}
+          busy={busy}
+          actions={commons}
+          {...(start.view === undefined
+            ? {}
+            : {
+                start: { view: start.view, ...(start.row === undefined ? {} : { row: start.row }) },
+              })}
+        />
+      )}
     </>
   );
 }

@@ -132,6 +132,9 @@ export const ActionIds = {
   /** One run of trades at the shard exchange: what it asks, and how many shards of the target the player held (so the next run is another action). */
   exchange: (to: string, from: string | null, times: number, held: number): ActionId =>
     `exchange:${to}:${from ?? '*'}:${String(times)}:${String(held)}`,
+  /** One gift to a place's project: what it gives, and how much of that part the project still took (so the next gift of the same size is another action). */
+  gift: (place: string, part: string, amount: number, room: number): ActionId =>
+    `gift:${place}:${part}:${String(amount)}:${String(room)}`,
   gamesBuy: (week: string, offerId: string, left: number): ActionId =>
     `games-buy:${week}:${offerId}:${String(left)}`,
 };

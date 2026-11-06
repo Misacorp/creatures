@@ -31,6 +31,7 @@ import {
   type ForgeStart,
   type OrderOpen,
 } from './valley/ForgeAnvils';
+import type { CommonsActions } from './valley/CommonsBoard';
 import { OrderEditor } from './valley/OrderEditor';
 import type { TrayInput } from './valley/tray-state';
 import type { ValleyVisit } from './api';
@@ -51,6 +52,8 @@ export interface ForgeMode {
   trayInput: TrayInput;
   acorns: number;
   actions: ForgeActions;
+  /** The Forge's project board (the commons): its gifts and its communal seat; absent shows no board. */
+  commons?: CommonsActions;
   onOpenPaddock: () => void;
   /** What the page and the editor have open at the start (the workbench shows each). */
   start?: ForgeStart;
@@ -237,6 +240,7 @@ export function Workshop({
               setOrderOpen(open);
             }}
             onOpenPaddock={forge.onOpenPaddock}
+            {...(forge.commons === undefined ? {} : { commons: forge.commons })}
             {...(forge.start === undefined ? {} : { start: forge.start })}
           />
         </Column>

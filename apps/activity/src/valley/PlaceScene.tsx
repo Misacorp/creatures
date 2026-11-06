@@ -26,7 +26,8 @@ import { frontProps, propDepth } from './place-props';
 import { useRoamers } from './use-roamers';
 import { depthOf } from './valley-logic';
 import { WARMING_FLAME, placeOf, type Rect } from './valley-art';
-import type { MapName } from './valley-places';
+import { scaffoldUp } from './scaffold';
+import { glowSprite, type MapName } from './valley-places';
 
 /** The sprite each scene stands its place's art from. */
 export const SCENE_ART: Readonly<Record<CastPlace, MapName>> = {
@@ -276,12 +277,17 @@ export function PlaceScene({ cast, onAct }: { cast: Cast; onAct: () => void }) {
   const bossId = cast.boss?.id ?? null;
   // The boss stands beside the art: the pair is centred in the band, not the art alone.
   const aside = bossId === null ? 0 : BOSS_ASIDE;
+  const steps = cast.scaffold;
   const draw = useMemo(
     () =>
       bandSceneDraw(
         art,
-        (box) =>
-          bossId === null
+        (box) => [
+          // The scaffolding rises in front of the place as its project fills (V-COM-6).
+          ...(steps === 0
+            ? []
+            : [{ sprite: scaffoldUp(glowSprite(art), steps), x: box.x, y: box.y }]),
+          ...(bossId === null
             ? []
             : [
                 {
@@ -289,10 +295,11 @@ export function PlaceScene({ cast, onAct }: { cast: Cast; onAct: () => void }) {
                   x: box.x + box.width - 6,
                   y: box.y + box.height - 30,
                 },
-              ],
+              ]),
+        ],
         aside,
       ),
-    [art, bossId, aside],
+    [art, bossId, aside, steps],
   );
   const name = placeOf(cast.place).name;
   return (

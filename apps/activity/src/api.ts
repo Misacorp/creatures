@@ -863,6 +863,39 @@ export async function exchangeShards(request: {
   return { ...valleyAnswer(data), trades, gained };
 }
 
+/** What a gift answers besides the valley: what it cost the player, and whether it raised the place. */
+export interface GiftAnswer extends ValleyAnswer {
+  spent: number;
+  levelUp: boolean;
+  level: number;
+}
+
+/**
+ * Gives Acorns, scrap or shards to a place's open project (V-COM-1, 5): a keyed spend. Shards name their element; a part that is full
+ * takes only what it needs, so `spent` can be less than `amount` (the rest stays with the player).
+ */
+export async function giveToProject(request: {
+  place: string;
+  currency: 'acorns' | 'scrap' | 'shards';
+  element?: string;
+  amount: number;
+  idempotencyKey: string;
+}): Promise<GiftAnswer> {
+  const data = await apiFetch('/api/valley/gift', jsonRequest('POST', request));
+  const spent = isRecord(data) && typeof data['spent'] === 'number' ? data['spent'] : 0;
+  const levelUp = isRecord(data) && data['levelUp'] === true;
+  const level = isRecord(data) && typeof data['level'] === 'number' ? data['level'] : 0;
+  return { ...valleyAnswer(data), spent, levelUp, level };
+}
+
+/** Posts a creature to the player's communal seat at a place (it opens the seat the first time), or empties it with `null` (V-COM-14). Free, so no key. */
+export async function postCommunal(body: {
+  place: string;
+  creatureId: string | null;
+}): Promise<ValleyAnswer> {
+  return valleyAnswer(await apiFetch('/api/valley/communal', jsonRequest('POST', body)));
+}
+
 export function stateFrom(data: unknown): GameState {
   return parseGameState(isRecord(data) ? data['state'] : undefined);
 }

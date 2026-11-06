@@ -519,6 +519,7 @@ Superseded: 1 entry (see the topic file).
 
 [valley.md](valley.md): The valley and peaceful systems overhaul planned in docs/design/valley/: job posts, the bonfire, the commons, the Forge loop, gear, trials, the School, the visitor, the economy lab, and Misa's question rounds.
 
+- 2026-11-06 Phase 5 step 6b: the commons on the client (one project board for every place, the give drawer, scaffolding, helpers, plaque, collections, the fire, the grand bonfire, keepsakes)
 - 2026-11-06 Phase 5 step 6: the commons on the server (places and projects, gifts, plaque and keepsake, levels bound seats, communal seats, keystones and collections, the fire, the hearth)
 - 2026-11-06 Phase 5 step 5: the bonfire in full and fights (catch-up fixed per visit and fading, the middle once a day, small moments, who is online, a raider's post pauses)
 - 2026-11-06 Phase 5 step 4: the Gazette on real output, push on, one ranking

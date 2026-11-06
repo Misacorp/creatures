@@ -28,6 +28,7 @@ import { onDrillKey } from '../ui/drill-keys';
 import { RosterPicker } from '../ui/RosterPicker';
 import { Slot, SlotRow } from '../ui/Slot';
 import { Tag } from '../ui/Tag';
+import { CommonsBoard, type CommonsActions, type CommonsStart } from './CommonsBoard';
 import { SlotText, SpendConfirm, seatAt } from './seat-parts';
 import { Tray } from './Tray';
 import { trayFor, type TrayInput } from './tray-state';
@@ -48,6 +49,9 @@ import {
 
 /** The sentinel row of the creature picker that empties a seat. */
 const REMOVE_ID = '';
+
+/** The id of the card a hand drops a creature on to help build (the project board's communal seat). */
+const COMMUNAL_DROP = 'communal:signpost';
 
 /** Why a price in Acorns cannot be paid; null when it can. */
 function shortReason(acorns: number, price: number): string | null {
@@ -75,6 +79,8 @@ export interface SignpostStart {
   kit?: string;
   detail?: string;
   buy?: boolean;
+  /** The project board's drawer or picker to open (the commons). */
+  commons?: CommonsStart;
 }
 
 export function SignpostSeats({
@@ -85,6 +91,7 @@ export function SignpostSeats({
   busy,
   actions,
   onOpenPaddock,
+  commons,
   start = {},
 }: {
   visit: ValleyVisit;
@@ -97,6 +104,8 @@ export function SignpostSeats({
   actions: SignpostActions;
   /** A tap on a tray creature: the Paddock, as everywhere in the valley. */
   onOpenPaddock: () => void;
+  /** The Signpost's project board and the communal seat on it (a hand can carry a creature onto the card); absent leaves the page as before. */
+  commons?: CommonsActions;
   start?: SignpostStart;
 }) {
   const [picking, setPicking] = useState<string | null>(start.picker ?? null);
@@ -121,6 +130,10 @@ export function SignpostSeats({
     locate: (p) => seatAt(p.x, p.y),
     onDrop: (creatureId, seatId) => {
       if (seatId === null) return dropOutcome('none', null, null, 'Cancelled.');
+      if (seatId === COMMUNAL_DROP && commons !== undefined) {
+        void commons.post('signpost', creatureId);
+        return dropOutcome('valid', null, null, '');
+      }
       const seat = seatOf(seatId);
       if (seat === undefined || seat.creatureId === creatureId) {
         return dropOutcome('none', null, null, '');
@@ -343,6 +356,19 @@ export function SignpostSeats({
           )}
         </li>
       </ul>
+      {commons !== undefined && (
+        <CommonsBoard
+          place="signpost"
+          visit={visit}
+          creatures={creatures}
+          acorns={acorns}
+          busy={busy}
+          actions={commons}
+          dropId={COMMUNAL_DROP}
+          over={drag.drag?.over === COMMUNAL_DROP}
+          {...(start.commons === undefined ? {} : { start: start.commons })}
+        />
+      )}
       <DragGhost
         ghostRef={drag.ghostRef}
         creature={

@@ -284,12 +284,20 @@ const valleyBlock = () => ({
   creatures: scouts.ids.map((id, i) => {
     const seat = scouts.seats.find((s) => s.creatureId === id);
     const anvil = forgeState.anvils.find((a) => a.creatureId === id);
+    const helps = Object.entries(commonsState.communal).find(([, creatureId]) => creatureId === id);
     return {
       id,
-      state: seat !== undefined ? 'scouting' : anvil !== undefined ? 'smithing' : 'resting',
+      state:
+        seat !== undefined
+          ? 'scouting'
+          : anvil !== undefined
+            ? 'smithing'
+            : helps !== undefined
+              ? 'helping'
+              : 'resting',
       gained: 25 + i * 11,
       catchUpBp: bonfire.warm.has(id) ? 24000 : 10000,
-      seatId: seat?.id ?? anvil?.id ?? null,
+      seatId: seat?.id ?? anvil?.id ?? (helps === undefined ? null : `communal-${helps[0]}`),
     };
   }),
   online: bonfire.online,
@@ -321,6 +329,7 @@ const valleyBlock = () => ({
   night: false,
   special: { destination: 'ember-caves', twist: 'rich-veins' },
   ...(gazette.paper === null ? {} : { paper: gazette.paper }),
+  ...(commonsState.on ? { commons: commonsBlock() } : {}),
 });
 /** Puts the scouts' state into the state the page asks for (and answers each route with it). */
 const syncValley = () => {
@@ -430,6 +439,216 @@ ROUTES.set('/api/valley/exchange', (request) => {
     gained: body.times,
     ...syncValley(),
   };
+});
+
+/**
+ * The commons of a scenario (phase 5 step 6b): each place's level, project (its size and what each part has taken), build days, plaque and
+ * keepsakes, the collections' finders, the fire, and the communal seats. `commonsBlock` makes the server's `valley.commons` from it.
+ */
+const commonsState = {
+  on: false,
+  hearthBp: 10000,
+  fire: {
+    level: 12,
+    milli: 12400,
+    next: 25,
+    recent: [
+      { source: 'place', place: 'forge', at: 1799700000000 },
+      { source: 'collection', place: 'signpost', at: 1799600000000 },
+    ],
+  },
+  places: {},
+  sockets: {},
+  communal: {},
+};
+const COMMONS_PLACES = ['bonfire', 'forge', 'signpost', 'paddock', 'school'];
+const COMMONS_ELEMENT = {
+  bonfire: 'ember',
+  forge: 'ember',
+  signpost: 'grove',
+  paddock: 'tide',
+  school: 'spark',
+};
+const COMMONS_BOARDS = {
+  forge: [
+    'keystone:tidepools',
+    'keystone:ember-caves',
+    'keystone:verdant-hollow',
+    'keystone:storm-ridge',
+    'everyday',
+  ],
+  signpost: [
+    'keystone:sunken-fen',
+    'keystone:old-crossroads',
+    'keystone:tidepools',
+    'keystone:storm-ridge',
+    'everyday',
+  ],
+  bonfire: ['landmark:1', 'landmark:2', 'landmark:3', 'landmark:4', 'everyday'],
+  paddock: ['resident:1', 'resident:2', 'resident:3', 'resident:4', 'everyday'],
+  school: ['page:1', 'page:2', 'page:3', 'page:4', 'everyday'],
+};
+/** The units each part of a project of `size` needs: the shares 0.4, 0.4 and 0.2 over the parts' values 1, 0.5 and 2. */
+const needsOf = (size) => ({ acorns: size * 0.4, scrap: size * 0.8, shards: size * 0.1 });
+const PART_VALUE = { acorns: 1, scrap: 0.5, shards: 2 };
+const placeOf = (id) => ({
+  level: 1,
+  state: 'waiting',
+  size: 0,
+  have: { acorns: 0, scrap: 0, shards: 0 },
+  given: 0,
+  buildDays: 0,
+  plaque: [],
+  keepsakes: 0,
+  ...commonsState.places[id],
+});
+/** The commons' places, a few of them open or built, for a scenario that wants the boards. */
+const commonsScene = (overrides = {}) => {
+  commonsState.on = true;
+  commonsState.hearthBp = 10000;
+  commonsState.communal = {};
+  commonsCalls.length = 0;
+  commonsState.sockets = {
+    forge: [null, 'Mia', null, null, 'Ada'],
+    signpost: [null, null, null, null, null],
+  };
+  commonsState.places = {
+    bonfire: {
+      level: 1,
+      state: 'open',
+      size: 400,
+      have: { acorns: 60, scrap: 100, shards: 4 },
+      given: 60,
+    },
+    forge: {
+      level: 2,
+      state: 'building',
+      buildDays: 2,
+      plaque: ['Ada', 'Mia', 'Tobias'],
+      keepsakes: 1,
+    },
+    signpost: {
+      level: 2,
+      state: 'open',
+      size: 900,
+      have: { acorns: 120, scrap: 200, shards: 20 },
+      plaque: ['Ada', 'Mia', 'Tobias', 'You'],
+      keepsakes: 1,
+    },
+    paddock: { level: 1, state: 'open', size: 600, have: { acorns: 180, scrap: 360, shards: 45 } },
+    school: { level: 1, state: 'waiting' },
+    ...overrides,
+  };
+};
+const commonsBlock = () => ({
+  places: COMMONS_PLACES.map((id) => {
+    const p = placeOf(id);
+    const open = p.state === 'open';
+    const need = needsOf(p.size);
+    const progress = open
+      ? ['acorns', 'scrap', 'shards'].reduce(
+          (sum, part) => sum + Math.min(p.have[part], need[part]) * PART_VALUE[part],
+          0,
+        )
+      : 0;
+    return {
+      id,
+      level: p.level,
+      max: 5,
+      cosmetic: 0,
+      state: p.state,
+      project: open
+        ? {
+            size: p.size,
+            progress,
+            needs: {
+              acorns: Math.max(0, need.acorns - p.have.acorns),
+              scrap: Math.max(0, need.scrap - p.have.scrap),
+              shards: Math.max(0, need.shards - p.have.shards),
+            },
+            shardElement: COMMONS_ELEMENT[id],
+            cosmetic: false,
+          }
+        : null,
+      buildDaysLeft: p.state === 'building' ? p.buildDays : 0,
+      mine: {
+        given: Math.round(p.given),
+        shareBp: p.given > 0 && open ? Math.round((p.given / Math.max(1, progress)) * 10000) : 0,
+      },
+      plaque: p.plaque,
+      keepsakes: p.keepsakes,
+    };
+  }),
+  collections: COMMONS_PLACES.map((id) => {
+    const finders = commonsState.sockets[id] ?? [];
+    return {
+      place: id,
+      sockets: COMMONS_BOARDS[id].map((source, k) => ({
+        source,
+        set: finders[k] !== undefined && finders[k] !== null,
+        finder: finders[k] ?? null,
+      })),
+      done: false,
+    };
+  }),
+  fire: commonsState.fire,
+  hearthBp: commonsState.hearthBp,
+  keystones: { found: 1, meanDays: 21 },
+  communal: COMMONS_PLACES.map((id) => ({
+    place: id,
+    seatId: id in commonsState.communal ? `communal-${id}` : null,
+    creatureId: commonsState.communal[id] ?? null,
+    storeHours: 0,
+    perDay: 6,
+  })),
+});
+/** What the commons' routes were asked, in order (the route and the body of each). */
+const commonsCalls = [];
+ROUTES.set('/api/valley/gift', (request) => {
+  const body = bodyOf(request);
+  commonsCalls.push(['gift', body]);
+  const p = placeOf(body.place);
+  const need = needsOf(p.size);
+  const part = body.currency;
+  const own = body.element === COMMONS_ELEMENT[body.place];
+  const units = part === 'shards' && !own ? Math.floor(body.amount / 3) : body.amount;
+  const room = Math.max(0, Math.ceil(need[part] - p.have[part] - 1e-9));
+  const taken = Math.min(units, room);
+  const spent = part === 'shards' && !own ? taken * 3 : taken;
+  const have = { ...p.have, [part]: p.have[part] + taken };
+  const done = ['acorns', 'scrap', 'shards'].every((k) => have[k] >= need[k] - 1e-9);
+  commonsState.places[body.place] = done
+    ? {
+        ...p,
+        have: { acorns: 0, scrap: 0, shards: 0 },
+        level: p.level + 1,
+        state: 'building',
+        buildDays: 3,
+        plaque: [...p.plaque, 'You'].sort(),
+        keepsakes: p.keepsakes + 1,
+        given: 0,
+      }
+    : { ...p, have, given: p.given + taken * PART_VALUE[part] };
+  return {
+    place: body.place,
+    currency: part,
+    spent,
+    value: taken * PART_VALUE[part],
+    levelUp: done,
+    level: commonsState.places[body.place].level,
+    ...syncValley(),
+  };
+});
+ROUTES.set('/api/valley/communal', (request) => {
+  const body = bodyOf(request);
+  commonsCalls.push(['communal', body]);
+  for (const [place, creatureId] of Object.entries(commonsState.communal)) {
+    if (creatureId === body.creatureId && place !== body.place) {
+      commonsState.communal[place] = commonsState.communal[body.place] ?? null;
+    }
+  }
+  commonsState.communal[body.place] = body.creatureId;
+  return { seatId: `communal-${body.place}`, ...syncValley() };
 });
 
 // --- The checklist ----------------------------------------------------------------------------------------
@@ -1622,6 +1841,312 @@ try {
         bonfire.raid = new Set();
         scouts.seats = [];
         forgeState.anvils = [];
+      }
+    },
+  );
+
+  // The commons on the client (phase 5 step 6b): the project boards, gifts, communal seats, the plaque, collections, the fire, the hearth.
+  const commonsOn = () => {
+    const config = ROUTES.get('/api/config');
+    answerOverride.set('/api/config', () => ({ ...config(), valleySystems: true }));
+    const creatures = baseState.creatures.map((c) => ({ ...c, busy: null, away: false }));
+    scouts.seats = [];
+    scouts.owned = [];
+    scouts.ids = creatures.map((c) => c.id);
+    forgeState.anvils = [];
+    return creatures;
+  };
+  const commonsOff = () => {
+    commonsState.on = false;
+    commonsState.communal = {};
+    commonsState.hearthBp = 10000;
+  };
+  const dialogOf = (name) => page.getByRole('dialog', { name });
+
+  await scenario(
+    "valley systems on: the Signpost's project board: give Acorns, post a helper, the plaque and the collection",
+    () => {
+      const creatures = commonsOn();
+      commonsScene();
+      stateOverride = {
+        creatures,
+        balances: { ...baseState.balances, bait: 1000 },
+        valley: valleyBlock(),
+      };
+    },
+    async () => {
+      try {
+        await waitFor(page.locator(VALLEY), 'attached');
+        await place('signpost').evaluate((el) => el.click());
+        await waitFor(heading('Signpost'));
+        const board = page.locator('section[aria-label="Signpost project"]');
+        await waitFor(board);
+        // The scaffolding stands round the road as the project fills.
+        await page.waitForTimeout(300);
+        await shot('commons-signpost-scaffolding');
+        await board.scrollIntoViewIfNeeded();
+        await expectTopmost(board, 'the Signpost board');
+        await shot('commons-signpost-board');
+        // Give: the list, then the amount, then the one confirm.
+        await board.getByRole('button', { name: /^Give/ }).click();
+        await waitFor(dialogOf(/Give to the project/));
+        await page.waitForTimeout(500);
+        await expectTopmost(page.getByRole('dialog').first(), 'the give drawer');
+        await shot('commons-give-list');
+        await page
+          .getByRole('dialog')
+          .getByRole('button', { name: /^Acorns/ })
+          .click();
+        await waitFor(page.getByRole('dialog').getByRole('button', { name: /^Give/ }));
+        await page.waitForTimeout(300);
+        await expectTopmost(page.getByRole('dialog').first(), 'the give amount');
+        await shot('commons-give-amount');
+        await page
+          .getByRole('dialog')
+          .getByRole('button', { name: /One fewer/ })
+          .click();
+        await page.getByRole('dialog').getByRole('button', { name: /^Give/ }).click();
+        await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+        const gift = commonsCalls.find(([k]) => k === 'gift')?.[1];
+        if (
+          gift === undefined ||
+          gift.place !== 'signpost' ||
+          gift.currency !== 'acorns' ||
+          gift.amount !== 239 ||
+          typeof gift.idempotencyKey !== 'string'
+        )
+          throw new Error(`the gift was ${JSON.stringify(gift)}`);
+        await waitFor(board.getByText(/You gave/));
+        // A helper on the communal seat: the shared picker, then the slot and the tray say so.
+        const seat = board.getByRole('button', { name: /^Signpost: nobody helps/ });
+        await seat.scrollIntoViewIfNeeded();
+        await expectTopmost(seat, 'the empty helper slot');
+        await seat.click();
+        await waitFor(dialogOf(/Who helps build/));
+        await page
+          .getByRole('option')
+          .filter({ hasText: /Sproutle/ })
+          .first()
+          .click();
+        await waitFor(board.getByRole('button', { name: /^Signpost: Sproutle.*helping/ }));
+        const posted = commonsCalls.find(([k]) => k === 'communal')?.[1];
+        if (posted?.place !== 'signpost' || typeof posted.creatureId !== 'string')
+          throw new Error(`the helper was ${JSON.stringify(posted)}`);
+        const second = baseState.creatures[1];
+        const tray = page.locator(
+          `section[aria-label="Creatures to post"] button[data-creature="${second.id}"]`,
+        );
+        if (!/Helping/.test((await tray.getAttribute('aria-label')) ?? ''))
+          throw new Error('the tray does not say Helping');
+        await board.scrollIntoViewIfNeeded();
+        await shot('commons-signpost-helper');
+        // The plaque of the last finished level: names, no amounts.
+        await board.getByRole('button', { name: /The plaque of level 2/ }).click();
+        await waitFor(dialogOf(/Plaque, level 2/));
+        await page.waitForTimeout(500);
+        await expectTopmost(page.getByRole('dialog').first(), 'the plaque');
+        if (
+          (await page
+            .getByRole('dialog')
+            .getByText(/\d+%|\bAcorns\b/)
+            .count()) > 0
+        )
+          throw new Error('the plaque shows an amount');
+        await shot('commons-plaque');
+        await page.keyboard.press('Escape');
+        await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+        // The collection board with its five sockets.
+        await board.getByRole('button', { name: /Stones of the Roads/ }).click();
+        await waitFor(dialogOf(/Stones of the Roads/));
+        await page.waitForTimeout(500);
+        await expectTopmost(page.getByRole('dialog').first(), 'the collection board');
+        if ((await page.getByRole('dialog').locator('.cm-socket').count()) !== 5)
+          throw new Error('the board does not have five sockets');
+        await shot('commons-collection');
+        await page.keyboard.press('Escape');
+        await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+      } finally {
+        commonsOff();
+      }
+    },
+  );
+
+  await scenario(
+    'valley systems on: the Forge shows its fire and a project being built; a Paddock board is open',
+    () => {
+      const creatures = commonsOn();
+      commonsScene();
+      stateOverride = {
+        creatures,
+        balances: { ...baseState.balances, bait: 1000 },
+        valley: valleyBlock(),
+      };
+    },
+    async () => {
+      try {
+        await waitFor(page.locator(VALLEY), 'attached');
+        // The Places list mentions a project only while it is being built.
+        await page.locator('button.vy-hatch').click();
+        await waitFor(page.getByRole('dialog'));
+        const forgeRow = page
+          .getByRole('dialog')
+          .getByText(/the Forge is being built, 2 days left/);
+        await waitFor(forgeRow);
+        await page.waitForTimeout(500);
+        await shot('commons-places-list');
+        await page.keyboard.press('Escape');
+        await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+        await place('forge').evaluate((el) => el.click());
+        await waitFor(heading('Forge'));
+        const fire = page.getByRole('button', { name: /^The fire\./ });
+        await waitFor(fire);
+        await expectTopmost(fire, 'the fire');
+        await shot('commons-forge-fire');
+        const board = page.locator('section[aria-label="Forge project"]');
+        await board.scrollIntoViewIfNeeded();
+        await waitFor(board.getByText(/being built, 2 days left/));
+        await expectTopmost(board, 'the Forge board');
+        await shot('commons-forge-building');
+        await fire.scrollIntoViewIfNeeded();
+        await fire.click();
+        await waitFor(dialogOf(/The fire/));
+        await page.waitForTimeout(500);
+        await expectTopmost(page.getByRole('dialog').first(), 'the fire drawer');
+        await shot('commons-forge-fire-numbers');
+        await page.keyboard.press('Escape');
+        await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+        await hudBack().click();
+        await waitFor(page.locator(VALLEY), 'attached');
+        await place('paddock').evaluate((el) => el.click());
+        await waitFor(heading('Paddock'));
+        const paddock = page.locator('section[aria-label="Paddock project"]');
+        await waitFor(paddock);
+        // The scaffolding stands high round the Paddock: its project is three quarters full.
+        await page.waitForTimeout(300);
+        await shot('commons-paddock-scaffolding');
+        // A helper at the Paddock stands at its rails (it does not wander the meadow).
+        await paddock.getByRole('button', { name: /^Paddock: nobody helps/ }).click();
+        await waitFor(dialogOf(/Who helps build/));
+        await page
+          .getByRole('option')
+          .filter({ hasText: /Sproutle/ })
+          .first()
+          .click();
+        await waitFor(paddock.getByRole('button', { name: /^Paddock: Sproutle.*helping/ }));
+        await page.waitForTimeout(400);
+        await shot('commons-paddock-helper');
+        await paddock.scrollIntoViewIfNeeded();
+        await expectTopmost(paddock, 'the Paddock board');
+        await shot('commons-paddock-board');
+      } finally {
+        commonsOff();
+      }
+    },
+  );
+
+  await scenario(
+    'valley systems on: the Bonfire at level 3 has the grand hearth, shows its bonus, and its board opens in one drawer',
+    () => {
+      const creatures = commonsOn();
+      commonsScene({
+        bonfire: {
+          level: 3,
+          state: 'open',
+          size: 900,
+          have: { acorns: 120, scrap: 200, shards: 20 },
+          given: 0,
+          plaque: ['Ada', 'Mia'],
+          keepsakes: 1,
+        },
+      });
+      commonsState.hearthBp = 10800;
+      stateOverride = {
+        creatures,
+        balances: { ...baseState.balances, bait: 1000 },
+        valley: valleyBlock(),
+      };
+    },
+    async () => {
+      try {
+        await waitFor(page.locator(VALLEY), 'attached');
+        await place('bonfire').evaluate((el) => el.click());
+        await waitFor(heading('Bonfire'));
+        await waitFor(page.getByText(/Hearth adds 8% to every creature/));
+        const act = page.getByRole('button', { name: /^Help build the hearth/ });
+        await waitFor(act);
+        await expectTopmost(act, 'the hearth button');
+        const plates = page.locator('.vy-feet-plate .nameplate');
+        for (let i = 0; i < (await plates.count()); i += 1)
+          await expectTopmost(plates.nth(i), `plate ${String(i)} at the fire`);
+        await page.waitForTimeout(300);
+        await shot('commons-bonfire-level3');
+        await act.click();
+        await waitFor(dialogOf(/^Bonfire/));
+        await page.waitForTimeout(500);
+        await expectTopmost(page.getByRole('dialog').first(), 'the Bonfire board');
+        await shot('commons-bonfire-board');
+        // The give flow is a drill-in of the same drawer: one dialog at all times.
+        await page.getByRole('dialog').getByRole('button', { name: /^Give/ }).click();
+        await waitFor(page.getByRole('dialog').getByRole('button', { name: /^Acorns/ }));
+        if ((await page.getByRole('dialog').count()) !== 1) throw new Error('two layers are up');
+        await page
+          .getByRole('dialog')
+          .getByRole('button', { name: /^Acorns/ })
+          .click();
+        await page.getByRole('dialog').getByRole('button', { name: /^Give/ }).click();
+        // The gift lands and the drawer is back on the board.
+        await waitFor(page.getByRole('dialog').getByText(/You gave/));
+        if (!commonsCalls.some(([k, b]) => k === 'gift' && b.place === 'bonfire'))
+          throw new Error('no gift to the hearth');
+        // A helper at the fire (the lamplighter) is a drill-in of the same drawer too.
+        await page
+          .getByRole('dialog')
+          .getByRole('button', { name: /^Bonfire: nobody helps/ })
+          .click();
+        await waitFor(page.getByRole('dialog').getByRole('option').first());
+        if ((await page.getByRole('dialog').count()) !== 1) throw new Error('two layers are up');
+        await page
+          .getByRole('dialog')
+          .getByRole('option')
+          .filter({ hasText: /Sproutle/ })
+          .first()
+          .click();
+        await waitFor(page.getByRole('dialog').getByRole('button', { name: /helping/ }));
+        await page.keyboard.press('Escape');
+        await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+        await page.waitForTimeout(300);
+        await shot('commons-bonfire-lamplighter');
+        // The map draws the grand bonfire too.
+        await hudBack().click();
+        await waitFor(page.locator(VALLEY), 'attached');
+        await shot('commons-map-level3');
+      } finally {
+        commonsOff();
+      }
+    },
+  );
+
+  await scenario(
+    'valley systems on: the House shelves the keepsakes of the levels the player helped build',
+    () => {
+      const creatures = commonsOn();
+      commonsScene();
+      stateOverride = { creatures, valley: valleyBlock() };
+    },
+    async () => {
+      try {
+        await waitFor(page.locator(VALLEY), 'attached');
+        await place('house').evaluate((el) => el.click());
+        await waitFor(heading('House'));
+        const shelf = page.locator('section[aria-label="Keepsakes"]');
+        await waitFor(shelf);
+        await expectTopmost(shelf, 'the keepsake shelf');
+        await page.waitForTimeout(300);
+        await shot('commons-keepsakes');
+        await hudBack().click();
+        await waitFor(page.locator(VALLEY), 'attached');
+      } finally {
+        commonsOff();
       }
     },
   );
