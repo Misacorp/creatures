@@ -11,8 +11,16 @@ import {
   type ValleyCommonsView,
 } from '@creatures/game';
 import type { ValleyVisit } from '../api';
-import { elementName } from '../game';
+import {
+  acornCount,
+  anyShardCount,
+  anyShardMark,
+  scrapCount,
+  shardCount,
+  type Say,
+} from '../resource-count';
 import { destinationName } from '../trip-view';
+import type { CountItem } from '../ui/CountBadge';
 import { shardName } from './forge-view';
 
 type ValleyCollectionView = ValleyCommonsView['collections'][number];
@@ -84,44 +92,44 @@ export function percentFilled(p: ValleyCommonsPlace): number {
 /** One unit of a part, as the board counts it: whole units, never below 1 while something is needed. */
 export const unitsLeft = (need: number): number => (need <= 1e-9 ? 0 : Math.ceil(need - 1e-9));
 
-/** The parts' words for a count ("40 Acorns", "12 scrap", "3 Grove shards"). */
-export function partWords(part: ProjectPart, count: number, element: string): string {
+/** A part as the badge of a count ("40 [acorn]", "12 [scrap]", "3 [grove shard]"): its icon and the number, never its name. */
+export function partItem(part: ProjectPart, count: number, element: string): CountItem {
   switch (part) {
     case 'acorns':
-      return `${String(count)} ${count === 1 ? 'Acorn' : 'Acorns'}`;
+      return acornCount(count);
     case 'scrap':
-      return `${String(count)} scrap`;
+      return scrapCount(count);
     case 'shards':
-      return `${String(count)} ${elementName(element)} ${count === 1 ? 'shard' : 'shards'}`;
+      return shardCount(element, count);
   }
 }
 
-/** What the open project still needs, in words ("40 Acorns, 12 scrap, 3 Grove shards"); empty with none open or nothing left. */
-export function stillNeeded(p: ValleyCommonsPlace): string {
+/** What the open project still needs, as badges (Acorns, scrap, shards); empty with none open or nothing left. */
+export function stillNeeded(p: ValleyCommonsPlace): CountItem[] {
   const project = p.project;
-  if (project === null) return '';
-  const out: string[] = [];
+  if (project === null) return [];
+  const out: CountItem[] = [];
   const acorns = unitsLeft(project.needs.acorns);
   const scrap = unitsLeft(project.needs.scrap);
   // A place that takes shards of any kind (the Market) does not name a shard part: they stand in for the rest (`anyShardLine`).
   const shards = project.anyShard === null ? unitsLeft(project.needs.shards) : 0;
-  if (acorns > 0) out.push(partWords('acorns', acorns, ''));
-  if (scrap > 0) out.push(partWords('scrap', scrap, ''));
-  if (shards > 0) out.push(partWords('shards', shards, project.shardElement));
-  return out.join(', ');
+  if (acorns > 0) out.push(partItem('acorns', acorns, ''));
+  if (scrap > 0) out.push(partItem('scrap', scrap, ''));
+  if (shards > 0) out.push(partItem('shards', shards, project.shardElement));
+  return out;
 }
 
-/** What shards of any kind count for, in words ("4 shards count as 1 Acorn", "1 shard counts as 2 Acorns"). */
-export function shardWorth(value: number): string {
-  if (value >= 1) return `1 shard counts as ${String(value)} ${value === 1 ? 'Acorn' : 'Acorns'}`;
-  return `${String(Math.round(1 / value))} shards count as 1 Acorn`;
+/** What shards of any kind count for: "[4 shards] = [1 Acorn]", "[1 shard] = [2 Acorns]". */
+export function shardWorth(value: number): Say {
+  if (value >= 1) return [anyShardCount(1), ' = ', acornCount(value)];
+  return [anyShardCount(Math.round(1 / value)), ' = ', acornCount(1)];
 }
 
 /** The board's line for a project that takes shards of any kind; empty for the others. */
-export function anyShardLine(p: ValleyCommonsPlace): string {
+export function anyShardLine(p: ValleyCommonsPlace): Say {
   const value = p.project?.anyShard ?? null;
-  if (value === null || p.project === null) return '';
-  return `Shards of any kind count too, as many as you like: ${shardWorth(value)}.`;
+  if (value === null || p.project === null) return [];
+  return [anyShardMark(), ' counts too, as many as you like: ', ...shardWorth(value), '.'];
 }
 
 /** The place's state in a few words, for its tag. */
@@ -187,8 +195,12 @@ export interface GiveRow {
   id: string;
   part: ProjectPart;
   element: string | null;
-  /** The row's name ("Acorns", "Grove shards", "Mire shards, 3 for 1"). */
+  /** The row's name for assistive technology ("Acorns", "Grove shards", "Mire shards, 3 for 1"); the screen draws `item`. */
   name: string;
+  /** What the player holds of it, as a badge (the icon and the number). */
+  item: CountItem;
+  /** What the exchange takes for one, for a shard of another element ("[3 shards] = [1 Grove shard]"); null otherwise. */
+  trade: Say | null;
   /** What the player holds of it. */
   held: number;
   /** The most units the stepper offers: what the project still takes and the player can pay. */
@@ -242,7 +254,12 @@ export function giveRows(p: ValleyCommonsPlace, purse: Purse, rate: number): Giv
             ? 'You have none'
             : `You need ${String(per)} for one`
           : null;
-    return { id, part, element, name, held, max, per, reason };
+    const item = partItem(part, held, element ?? '');
+    const trade: Say | null =
+      part === 'shards' && per > 1 && element !== null && project.anyShard === null
+        ? [shardCount(element, per), ' = ', shardCount(project.shardElement, 1)]
+        : null;
+    return { id, part, element, name, item, trade, held, max, per, reason };
   };
   // A project that takes shards of any element (the Market): one row for each element the player holds, the biggest pile first (so the
   // pile that waits longest is the one suggested), each counted at the project's one value. None held: one row that says so.
@@ -306,12 +323,9 @@ export function giveRows(p: ValleyCommonsPlace, purse: Purse, rate: number): Giv
   return rows;
 }
 
-/** The price line of a gift ("12 Acorns", "3 Grove shards for 1"): the player's own cost, never more than the project takes. */
-export function giftPrice(row: GiveRow, units: number): string {
-  const spent = units * row.per;
-  if (row.part === 'acorns') return `${String(spent)} Acorns`;
-  if (row.part === 'scrap') return `${String(spent)} scrap`;
-  return partWords('shards', spent, row.element ?? '');
+/** The price of a gift as a badge ("12 Acorns", "3 Grove shards"): the player's own cost, never more than the project takes. */
+export function giftPrice(row: GiveRow, units: number): CountItem {
+  return partItem(row.part, units * row.per, row.element ?? '');
 }
 
 // --- The plaque ---

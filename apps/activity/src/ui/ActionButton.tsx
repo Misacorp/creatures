@@ -1,3 +1,5 @@
+import { CostLine, type CountItem } from './CountBadge';
+
 /**
  * The big gold action button of a creature (Earn a ribbon, Evolve, Answer a waiting catch, Fill a talent
  * slot): the words in the heading size, and an optional small detail (a cost, the reason it cannot be used)
@@ -13,6 +15,7 @@
 export function ActionButton({
   label,
   detail,
+  cost,
   onClick,
   disabled = false,
   wide = false,
@@ -21,6 +24,8 @@ export function ActionButton({
   label: string;
   /** The small words next to or under the label; nothing is drawn (and no room kept) when empty. */
   detail?: string | undefined;
+  /** What it costs, as count badges (an icon and a number, never the resource's name): drawn after the detail. */
+  cost?: readonly CountItem[] | undefined;
   onClick: () => void;
   disabled?: boolean | undefined;
   /** The full width of its place. */
@@ -29,16 +34,21 @@ export function ActionButton({
   large?: boolean | undefined;
 }) {
   const note = detail?.trim() ?? '';
+  const priced = cost !== undefined && cost.length > 0;
   const classes = ['primary', 'action-btn'];
   if (wide) classes.push('wide');
   if (large) classes.push('large');
   return (
     <button type="button" class={classes.join(' ')} disabled={disabled} onClick={onClick}>
       <span class="ab-label">{label}</span>
-      {note !== '' && (
+      {(note !== '' || priced) && (
         <>
-          {/* A space between the two, so the button's name reads "Evolve 20 Essence" (the box drops it). */}{' '}
-          <small class="ab-detail">{note}</small>
+          {/* A space between the two, so the button's name reads "Evolve, Essence: 20" (the box drops it). */}{' '}
+          <small class="ab-detail">
+            {note}
+            {note !== '' && priced ? ' ' : ''}
+            {priced && <CostLine items={cost} />}
+          </small>
         </>
       )}
     </button>

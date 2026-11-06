@@ -7,7 +7,22 @@ import type { ReachId, ValleyAnvilView, ValleyForgeView, ValleyOrderView } from 
 import type { ValleyVisit } from '../api';
 import { elementName } from '../game';
 import { gearName } from '../gear-view';
+import {
+  acornCount,
+  anyShardCount,
+  anyShardMark,
+  essenceAmount,
+  priceOf,
+  resourceMark,
+  scrapCount,
+  shardCount,
+  shardMark,
+  type Price,
+  type Say,
+  type ShortOf,
+} from '../resource-count';
 import { formatCountdown } from '../time-format';
+import type { CountItem } from '../ui/CountBadge';
 
 const plural = (n: number, one: string, many: string): string =>
   n === 1 ? one : `${String(n)} ${many}`;
@@ -15,7 +30,7 @@ const plural = (n: number, one: string, many: string): string =>
 /** The shard elements, in the order the shelf lists them. */
 export const SHARD_ELEMENTS = ['tide', 'ember', 'grove', 'spark', 'mire'] as const;
 
-/** A shard pile's name ("Tide shards"). */
+/** A shard pile's name for assistive technology ("Tide shards"); the screen shows the shard's icon, never this. */
 export const shardName = (element: string): string => `${elementName(element)} shards`;
 
 /** The anvils' two kit items (V-FORGE-8), in the order the picker lists them. */
@@ -32,15 +47,19 @@ export const PIECE_RARITIES = ['Common', 'Rare', 'Epic'] as const;
 export const anvilName = (visit: ValleyVisit, anvil: ValleyAnvilView): string =>
   `Anvil ${String(visit.anvils.indexOf(anvil) + 1)}`;
 
-/** The Reach choices (V-FORGE-1, 8), with what they cost in Essence (from the server's order views the price is in the rules; shown as words). */
-export const REACH_CHOICES: readonly { id: ReachId; name: string; line: string }[] = [
-  { id: 'none', name: 'No Reach', line: 'A plain piece, the quickest way.' },
+/** The Reach choices (V-FORGE-1, 8), with what they cost in Essence (from the server's order views the price is in the rules; shown as an icon and a number). */
+export const REACH_CHOICES: readonly { id: ReachId; name: string; line: Say }[] = [
+  { id: 'none', name: 'No Reach', line: ['A plain piece, the quickest way.'] },
   {
     id: 'rare',
     name: 'Reach for Rare',
-    line: 'Slower, 25 Essence a piece, a good chance of Rare.',
+    line: ['Slower, ', essenceAmount(25), ' a piece, a good chance of Rare.'],
   },
-  { id: 'epic', name: 'Reach for Epic', line: 'Slowest, 70 Essence a piece, a chance of Epic.' },
+  {
+    id: 'epic',
+    name: 'Reach for Epic',
+    line: ['Slowest, ', essenceAmount(70), ' a piece, a chance of Epic.'],
+  },
 ];
 
 /** The Reach of an order in words; empty for none. */
@@ -60,35 +79,35 @@ export function orderProgress(order: ValleyOrderView): string {
     : `${String(order.made)} / ${String(order.count)}`;
 }
 
-/** What the next piece of an order takes from the shelf, in words: "36 scrap, 1 Tide shard, 25 Essence". */
-export function needsText(order: ValleyOrderView): string {
+/** What the next piece of an order takes from the shelf, as badges: scrap, a shard of its element (any when it has none), Essence. */
+export function needsItems(order: ValleyOrderView): CountItem[] {
   const n = order.needs;
-  const parts: string[] = [];
-  if (n.scrap > 0) parts.push(`${String(n.scrap)} scrap`);
+  const items: CountItem[] = [];
+  if (n.scrap > 0) items.push(scrapCount(n.scrap));
   if (n.shard > 0) {
-    parts.push(
-      n.shardElement === null
-        ? plural(n.shard, '1 shard', 'shards')
-        : `${String(n.shard)} ${elementName(n.shardElement)} ${n.shard === 1 ? 'shard' : 'shards'}`,
+    items.push(
+      n.shardElement === null ? anyShardCount(n.shard) : shardCount(n.shardElement, n.shard),
     );
   }
-  if (n.essence > 0) parts.push(`${String(n.essence)} Essence`);
-  return parts.length === 0 ? 'Nothing' : parts.join(', ');
+  if (n.essence > 0) items.push(essenceAmount(n.essence));
+  return items;
 }
 
-/** What an order waits on, as the order's own short line ("Waiting for Tide shards"); null when it does not wait. */
-export function orderWait(order: ValleyOrderView): string | null {
+/** The mark of the shard an order or a smith waits on: that element's, or the any-shard icon. */
+const shardWaitMark = (element: string | null): CountItem =>
+  element === null ? anyShardMark() : shardMark(element);
+
+/** What an order waits on, as its own short line ("Waiting for [tide shard]"); null when it does not wait. */
+export function orderWait(order: ValleyOrderView): Say | null {
   switch (order.waiting) {
     case null:
       return null;
     case 'scrap':
-      return 'Waiting for scrap';
+      return ['Waiting for ', resourceMark('scrap')];
     case 'essence':
-      return 'Waiting for Essence';
+      return ['Waiting for ', resourceMark('essence')];
     case 'shard':
-      return order.needs.shardElement === null
-        ? 'Waiting for shards'
-        : `Waiting for ${shardName(order.needs.shardElement)}`;
+      return ['Waiting for ', shardWaitMark(order.needs.shardElement)];
   }
 }
 
@@ -100,21 +119,25 @@ function forHours(hours: number | null): string {
 }
 
 /** Why a smith tinkers, in plain words (V-FORGE-2, 4); null when the anvil is working or has no smith. `marketBuilt`: whether shards can be traded yet (Q64). */
-export function tinkerLine(anvil: ValleyAnvilView, marketBuilt: boolean): string | null {
+export function tinkerLine(anvil: ValleyAnvilView, marketBuilt: boolean): Say | null {
   const t = anvil.tinkering;
   if (t === null) return null;
   switch (t.reason) {
     case 'idle':
-      return 'Nothing is ordered, so the smith tinkers';
+      return ['Nothing is ordered, so the smith tinkers'];
     case 'scrap':
-      return `Waiting for scrap${forHours(t.sinceHours)}`;
+      return ['Waiting for ', resourceMark('scrap'), forHours(t.sinceHours)];
     case 'essence':
-      return `Waiting for Essence${forHours(t.sinceHours)}`;
+      return ['Waiting for ', resourceMark('essence'), forHours(t.sinceHours)];
     case 'shard':
       // Q64: shards change hands at the Market only; until the valley builds it, the line says so.
-      return `Waiting for ${t.shardElement === null ? 'shards' : shardName(t.shardElement)}${forHours(t.sinceHours)}${marketBuilt ? '' : '. The Market will trade for them once the valley builds it.'}`;
+      return [
+        'Waiting for ',
+        shardWaitMark(t.shardElement),
+        `${forHours(t.sinceHours)}${marketBuilt ? '' : '. The Market will trade for them once the valley builds it.'}`,
+      ];
     case 'floor':
-      return 'The floor is full';
+      return ['The floor is full'];
   }
 }
 
@@ -227,34 +250,41 @@ export function forgeCalm(visit: ValleyVisit): string {
   return work === 1 ? '1 smith at work' : `${String(work)} smiths at work`;
 }
 
-/** What the next anvil costs, in words ("free" for the first). */
-export function anvilPriceText(price: { acorns: number; scrap: number } | null): string {
-  if (price === null) return '';
-  if (price.acorns === 0 && price.scrap === 0) return 'free';
-  return `${String(price.acorns)} Acorns, ${String(price.scrap)} scrap`;
+/** What the next anvil costs, as badges ("free" for the first); nothing for no anvil to buy. */
+export function anvilPrice(price: { acorns: number; scrap: number } | null): Price {
+  if (price === null) return { text: '', items: [] };
+  return priceOf([acornCount(price.acorns), scrapCount(price.scrap)]);
 }
 
-/** Why the next anvil cannot be bought now; null when it can. */
-export function anvilBuyReason(visit: ValleyVisit, acorns: number): string | null {
+/** Why the next anvil cannot be bought now: the Forge has no more anvils (text), what the player is short of (badges), or null when it can. */
+export function anvilBuyReason(visit: ValleyVisit, acorns: number): string | ShortOf | null {
   const price = visit.anvilPrices.next;
   if (price === null) return 'The Forge has no more anvils for now';
   const scrap = visit.forge.shelf.scrap;
-  if (price.acorns > acorns && price.scrap > scrap) {
-    return `You have ${String(acorns)} Acorns and ${String(scrap)} scrap; this costs ${String(price.acorns)} and ${String(price.scrap)}.`;
-  }
+  const have: CountItem[] = [];
+  const cost: CountItem[] = [];
   if (price.acorns > acorns) {
-    return `You have ${String(acorns)} Acorns; this costs ${String(price.acorns)}.`;
+    have.push(acornCount(acorns));
+    cost.push(acornCount(price.acorns));
   }
   if (price.scrap > scrap) {
-    return `You have ${String(scrap)} scrap; this costs ${String(price.scrap)}.`;
+    have.push(scrapCount(scrap));
+    cost.push(scrapCount(price.scrap));
   }
-  return null;
+  return cost.length === 0 ? null : { have, cost };
 }
 
-/** The exchange's rate and crit in words (V-FORGE-10): "3 shards of one kind for 1 of another. 10% to get 2." */
-export function exchangeRateText(forge: ValleyForgeView): string {
+/** The exchange's rate and crit (V-FORGE-10): "[3 shards] of one kind for [1] of another. A 10% chance to get [2]." */
+export function exchangeRate(forge: ValleyForgeView): Say {
   const e = forge.exchange;
-  return `${String(e.rate)} shards of one kind for 1 of another. A ${String(Math.round(e.critBp / 100))}% chance to get ${String(e.critYield)}.`;
+  return [
+    anyShardCount(e.rate),
+    ' of one kind for ',
+    anyShardCount(1),
+    ` of another. A ${String(Math.round(e.critBp / 100))}% chance to get `,
+    anyShardCount(e.critYield),
+    '.',
+  ];
 }
 
 /** The shard piles the exchange can pay for `to` from: the other elements with at least `rate` shards, biggest first. */
@@ -277,15 +307,17 @@ export function exchangeReason(
   to: string,
   from: string | null,
   times: number,
-): string | null {
+): Say | null {
   const sources = exchangeSources(forge, to).filter((s) => from === null || s.element === from);
   const can = sources.reduce((n, s) => n + tradesFrom(forge, s.held), 0);
   if (can === 0) {
     return from === null
-      ? `You need ${String(forge.exchange.rate)} shards of one other kind.`
-      : `You need ${String(forge.exchange.rate)} ${shardName(from)}.`;
+      ? ['You need ', anyShardCount(forge.exchange.rate), ' of one other kind.']
+      : ['You need ', shardCount(from, forge.exchange.rate), '.'];
   }
-  if (from !== null && times > can)
-    return `${shardName(from)} pay for ${plural(can, '1 trade', 'trades')}.`;
+  if (from !== null && times > can) {
+    return [shardMark(from), ` pay for ${plural(can, '1 trade', 'trades')}.`];
+  }
   return null;
 }
+

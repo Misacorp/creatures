@@ -6,6 +6,7 @@
 import type { ValleyMarketView } from '@creatures/game';
 import type { ValleyVisit } from '../api';
 import { elementName } from '../game';
+import { anyShardCount, anyShardMark, shardMark, type Say } from '../resource-count';
 import { placeOf, commonsOf } from './commons-view';
 import { masteryName } from './signpost-view';
 
@@ -37,22 +38,31 @@ export function marketState(visit: ValleyVisit | null | undefined): MarketState 
 }
 
 /**
- * A rate (shards of another element for 1) as a ratio of whole shards: 2.4 is "12 for 5", 2 is "2 for 1", 1.6 is "8 for 5". The smallest
+ * A rate (shards of another element for 1) as a ratio of whole shards: 2.4 is 12 for 5, 2 is 2 for 1, 1.6 is 8 for 5. The smallest
  * denominator up to 10 that makes it whole; a rate that does not is shown with one decimal.
  */
-export function rateText(rate: number): string {
+export function rateRatio(rate: number): { paid: number | string; got: number } {
   for (let n = 1; n <= 10; n++) {
     const paid = rate * n;
-    if (Math.abs(paid - Math.round(paid)) < 1e-6)
-      return `${String(Math.round(paid))} for ${String(n)}`;
+    if (Math.abs(paid - Math.round(paid)) < 1e-6) return { paid: Math.round(paid), got: n };
   }
-  return `${rate.toFixed(1)} for 1`;
+  return { paid: rate.toFixed(1), got: 1 };
+}
+
+/** A rate as shards for a shard: "[12 shards] for [5]" (an icon and a number each, no words for the shard). */
+export function rateSay(rate: number): Say {
+  const { paid, got } = rateRatio(rate);
+  return [{ ...anyShardCount(0), amount: paid }, ' for ', anyShardCount(got)];
 }
 
 /** A bonus chance in basis points as "10%". */
 export const bonusText = (bp: number): string => `${String(Math.round(bp / 100))}%`;
 
-/** The element the broker trades toward, or "Whatever the orders need". */
+/** The element the broker trades toward as its shard's icon, or "What the orders need". */
+export const towardSay = (toward: string | null): Say =>
+  toward === null ? ['What the orders need'] : [shardMark(toward)];
+
+/** The same for assistive technology. */
 export const towardName = (toward: string | null): string =>
   toward === null ? 'What the orders need' : `${elementName(toward)} shards`;
 
@@ -61,34 +71,47 @@ export const brokerSub = (seat: Broker, level: number): string =>
   `Lv ${String(level)}${seat.mastery.step === 0 ? '' : ' · ' + masteryName(seat.mastery.step)}`;
 
 /** What the broker is doing, as the card's one line under the slots. */
-export function brokerLine(seat: Broker): string {
-  if (seat.creatureId === null) return 'Pick a creature, or drag one here.';
-  if (seat.paused !== null) return 'In the raid. It trades again when the finale is over.';
-  const rate = `Swaps spare shards ${rateText(seat.terms.rate)}, with a ${bonusText(seat.terms.critBp)} chance of one extra`;
+export function brokerLine(seat: Broker): Say {
+  if (seat.creatureId === null) return ['Pick a creature, or drag one here.'];
+  if (seat.paused !== null) return ['In the raid. It trades again when the finale is over.'];
+  const rate: Say = [
+    'Swaps ',
+    ...rateSay(seat.terms.rate),
+    `, with a ${bonusText(seat.terms.critBp)} chance of one extra`,
+  ];
   if (seat.blocked !== null) {
-    return `${rate}. Waiting for spare shards to trade for ${elementName(seat.blocked)}.`;
+    return [...rate, '. Waiting for a spare ', anyShardMark(), ' to trade for ', shardMark(seat.blocked), '.'];
   }
   return rate;
 }
 
+/** A row of the broker's numbers: a label and a value that may hold shard icons. */
+export interface BrokerRow {
+  label: string;
+  value: Say;
+}
+
 /** The rows of the broker's numbers drawer: its rate and bonus now, its trading, and the next step's rate. */
-export function brokerRows(seat: Broker): { label: string; value: string }[] {
-  const rows = [
-    { label: 'Rate', value: `${rateText(seat.terms.rate)} shards` },
+export function brokerRows(seat: Broker): BrokerRow[] {
+  const rows: BrokerRow[] = [
+    { label: 'Rate', value: rateSay(seat.terms.rate) },
     {
       label: 'Bonus shard',
-      value: `${bonusText(seat.terms.critBp)} of trades give ${String(seat.terms.critYield)}`,
+      value: [`${bonusText(seat.terms.critBp)} of trades give `, anyShardCount(seat.terms.critYield)],
     },
     {
       label: 'Trading',
-      value: seat.mastery.step === 0 ? masteryName(0) : masteryName(seat.mastery.step),
+      value: [seat.mastery.step === 0 ? masteryName(0) : masteryName(seat.mastery.step)],
     },
-    { label: 'Trades toward', value: towardName(seat.toward) },
+    { label: 'Trades toward', value: towardSay(seat.toward) },
   ];
   if (seat.next !== null) {
     rows.push({
       label: 'Next step',
-      value: `${rateText(seat.next.rate)}, ${bonusText(seat.next.critBp)} bonus, after ${plural(Math.round(seat.next.atHours / 24), '1 day', 'days')}`,
+      value: [
+        ...rateSay(seat.next.rate),
+        `, ${bonusText(seat.next.critBp)} bonus, after ${plural(Math.round(seat.next.atHours / 24), '1 day', 'days')}`,
+      ],
     });
   }
   return rows;
@@ -102,7 +125,7 @@ export function marketLine(visit: ValleyVisit | null | undefined): string | null
   if (state === 'building') return 'being built';
   if (seat === null || seat.creatureId === null) return 'a free broker seat';
   if (seat.paused !== null) return 'the broker is in the raid';
-  return seat.blocked === null ? 'the broker trades' : 'the broker waits for spare shards';
+  return seat.blocked === null ? 'the broker trades' : 'the broker waits to trade';
 }
 
 /** The tray's one-line word for a creature at the broker's seat. */

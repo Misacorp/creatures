@@ -16,3 +16,30 @@
 .part-amount {
   font-variant-numeric: tabular-nums;
 }
+
+/* The inline size: the same icon and number with no chip, for a cost inside a sentence or a button's detail. */
+.part-count.inline {
+  padding: 0;
+  gap: 0.125rem;
+  background: none;
+  color: inherit;
+  font-size: inherit;
+  vertical-align: middle;
+}
+
+/* A line of amounts ("Still needed: 3 [acorn] 5 [scrap]"): inline badges with room between them. */
+.cost-line {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.125rem 0.5rem;
+  vertical-align: middle;
+}
+
+.part-count.inline + .part-count.inline {
+  margin-inline-start: 0.5rem;
+}
+
+.cost-line .part-count.inline + .part-count.inline {
+  margin-inline-start: 0;
+}
