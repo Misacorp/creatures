@@ -17,7 +17,7 @@
  * Everything that is chosen by chance is drawn from a seeded rng keyed by the server, the player and the week, so a run repeats.
  */
 import { RULES, content, createSeededRng, int, type Rng } from '@creatures/game';
-import type { FinaleAction, FinaleActionKind, Placement } from '@creatures/engine/v2';
+import type { BossDef, FinaleAction, FinaleActionKind, Placement } from '@creatures/engine/v2';
 import type { GearedPlacement } from './gear';
 import { FORM_KNACKS } from './knacks';
 import type { PlayerRole } from './path';
@@ -75,7 +75,8 @@ export type PlacementPolicy = 'board' | 'random';
 export type FinalePolicy =
   | { readonly kind: 'none' }
   | { readonly kind: 'auto' }
-  | { readonly kind: 'fixed'; readonly ability: FinaleActionKind };
+  | { readonly kind: 'best' }
+  | { readonly kind: 'fixed'; readonly ability: FinaleActionKind; readonly row?: number };
 
 export interface Habits {
   readonly id: string;
@@ -147,8 +148,21 @@ export const HABITS_FIRST_KNACK: Habits = {
   knacks: perRole('board', 'board', 'first'),
 };
 
+/**
+ * The habits again, but the daily players (prepared and builders) pick the finale's best ability for the boss they face
+ * (`bestAbilityFor`), a casual player keeps the default (a report row: what choosing is worth).
+ */
+export const HABITS_BEST_FINALE: Habits = {
+  ...HABITS,
+  id: 'habits-best-finale',
+  finale: perRole<FinalePolicy>({ kind: 'best' }, { kind: 'best' }, { kind: 'auto' }),
+};
+
 export const HABIT_SETS: Readonly<Record<string, Habits>> = Object.fromEntries(
-  [EVERYONE_REPLACES, REPLACE_ONLY, HABITS, HABITS_FIRST_KNACK].map((h) => [h.id, h]),
+  [EVERYONE_REPLACES, REPLACE_ONLY, HABITS, HABITS_FIRST_KNACK, HABITS_BEST_FINALE].map((h) => [
+    h.id,
+    h,
+  ]),
 );
 
 export const habitsOf = (id: string | undefined): Habits => {
@@ -244,6 +258,15 @@ export const defaultRoundOf = (kind: FinaleActionKind): number => {
 };
 
 /**
+ * The ability a player who reads the boss card picks (the `best` finale policy). It reads what the card shows a player and nothing
+ * hidden: a boss whose card says it takes less from the element that hurt it most (Element Resistance) is purged unless its arena is two rows (the Storm
+ * Sovereign: a front-row wall covers half the party there, and measured better than a Purge), and every other boss gets a Shield Wall. Rally is never the pick: it is worth about nothing anywhere (`finaleWorth.ts`, balance.md section 4).
+ */
+export function bestAbilityFor(boss: Pick<BossDef, 'mods' | 'rows'>): FinaleActionKind {
+  return boss.mods.adaptsElement && boss.rows >= 3 ? 'purge' : 'shieldWall';
+}
+
+/**
  * The finale's inputs for the party, one per member who has one: member `i` (the party's order) gets the `i % 3`-th ability unless
  * their policy fixes one, fired at its default round (never past the last round); a Shield Wall covers the front row, as the worker's
  * default does.
@@ -252,18 +275,21 @@ export function finaleActions(
   policies: readonly FinalePolicy[],
   rounds: number,
   alias: (i: number) => string,
+  best: FinaleActionKind = 'rally',
 ): FinaleAction[] {
   return policies.flatMap((policy, i): FinaleAction[] => {
     if (policy.kind === 'none') return [];
     const kind =
       policy.kind === 'fixed'
         ? policy.ability
-        : (ABILITY_KINDS[i % ABILITY_KINDS.length] as { kind: FinaleActionKind }).kind;
+        : policy.kind === 'best'
+          ? best
+          : (ABILITY_KINDS[i % ABILITY_KINDS.length] as { kind: FinaleActionKind }).kind;
     return [
       {
         round: Math.min(rounds, defaultRoundOf(kind)),
         kind,
-        ...(kind === 'shieldWall' ? { row: 0 } : {}),
+        ...(kind === 'shieldWall' ? { row: policy.kind === 'fixed' ? (policy.row ?? 0) : 0 } : {}),
         by: alias(i),
       },
     ];
