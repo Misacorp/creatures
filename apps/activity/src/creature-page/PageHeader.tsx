@@ -4,6 +4,7 @@ import { xpWords } from '../creature-card-view';
 import { CreatureHead } from '../CreatureHead';
 import { experienceLabel } from '../CreatureProgress';
 import { XpTrack } from '../ui/XpTrack';
+import { TrialPips } from '../valley/TrialPips';
 import { skillRows } from './skill-rows';
 
 /**
@@ -39,6 +40,7 @@ export function PageHeader({
         text={xpWords(creature)}
         levelEntry="level"
       />
+      <TrialPips creature={creature} />
       {skillRows(creature, skills).map((row) => (
         <XpTrack
           key={row.kind}

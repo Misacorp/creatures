@@ -18,6 +18,8 @@ import { MarketPage, type MarketActions, type MarketStart } from './MarketPage';
 import { marketState } from './market-view';
 import { VisitorPage, type VisitorFeed } from './VisitorPage';
 import { AWAY_LINE, isHere } from './visitor-view';
+import { SchoolPage, type SchoolFeed } from './SchoolPage';
+import { isSchoolHere, studentIds } from './school-view';
 import { commonsOf, levelOf } from './commons-view';
 import { PinnedAct } from './PinnedAct';
 import { PlaceScene, SCENE_ART } from './PlaceScene';
@@ -68,6 +70,7 @@ export function ValleyFrame({
   commons,
   market,
   visitor,
+  school,
   acorns = 0,
   commonsStart,
   marketStart,
@@ -99,6 +102,8 @@ export function ValleyFrame({
   market?: MarketActions;
   /** The weekly visitor (`VALLEY_SYSTEMS` on): what the server said of him and what his page reads and asks; absent leaves his place "not open yet". */
   visitor?: VisitorFeed;
+  /** The School (`VALLEY_SYSTEMS` on): what the server said of it and what its page asks; absent (or no answer yet) leaves its place "not open yet". */
+  school?: SchoolFeed;
   /** The player's Acorns, for a gift. */
   acorns?: number;
   /** The board's sheet or drawer to open at the start (the workbench shows each); the game leaves it out. */
@@ -130,9 +135,19 @@ export function ValleyFrame({
   // The bonfire's place level grows its art (V-BON-7); the plain fire until the commons say more.
   const bonfireLevel = levelOf(commonsOf(visit), 'bonfire');
   const place = view.kind === 'valley' ? null : placeOf(view.place);
-  const bubbles = placeBubbles(alerts, { ...placeInput, visit });
+  // What the server said of the School, and who sits there (a student is neither resting nor walking the map).
+  const schoolView = visit !== null && school !== undefined ? school.view : null;
+  const students = studentIds(schoolView);
+  const bubbles = placeBubbles(alerts, { ...placeInput, visit, school: schoolView });
   // With the valley's systems on, a free creature rests at the fire and a posted one scouts: the tray says so.
-  const tray: TrayInput = visit === null ? trayInput : { ...trayInput, ...trayStates(visit) };
+  const tray: TrayInput =
+    visit === null
+      ? trayInput
+      : {
+          ...trayInput,
+          ...trayStates(visit),
+          ...(students.size === 0 ? {} : { studying: students }),
+        };
   const insideRef = useRef<HTMLDivElement>(null);
   // The five places with a scene (not while a book of the House is open): the scene above, today's page under it.
   const cast =
@@ -171,6 +186,17 @@ export function ValleyFrame({
         'visitor',
         { ...placeInput, ...castExtra, visit },
         artSize(SCENE_ART.visitor),
+        bubbles,
+      )
+    : null;
+  // The School has a page once the server has said anything of it (away it is the empty yard and one line).
+  const schoolPage =
+    view.kind === 'soon' && view.place === 'school' && school !== undefined && isSchoolHere(schoolView);
+  const schoolCast = schoolPage
+    ? castFor(
+        'school',
+        { ...placeInput, ...castExtra, visit, school: schoolView },
+        artSize(SCENE_ART.school),
         bubbles,
       )
     : null;
@@ -234,7 +260,8 @@ export function ValleyFrame({
                     !isScouting(c, visit) &&
                     !isSmithing(c, visit) &&
                     !isHelping(c, visit) &&
-                    !isTrading(c, visit),
+                    !isTrading(c, visit) &&
+                    !students.has(c.id),
                 )}
                 look={{
                   ...DEFAULT_LOOK,
@@ -339,10 +366,32 @@ export function ValleyFrame({
             </div>
           </div>
         )}
+        {schoolPage && schoolCast !== null && school !== undefined && isSchoolHere(schoolView) && (
+          <div class="vy-page">
+            <PlaceScene
+              cast={schoolCast}
+              onAct={() => {
+                scrollAndFocus(insideRef.current);
+              }}
+            />
+            <div class="vy-inside" ref={insideRef} tabIndex={-1}>
+              <SchoolPage
+                view={schoolView}
+                creatures={creatures}
+                graduation={visit?.graduation}
+                now={school.now}
+                zone={school.zone}
+                busy={busy}
+                actions={school.actions}
+              />
+            </div>
+          </div>
+        )}
         {view.kind === 'soon' &&
           !(view.place === 'bonfire' && visit !== null) &&
           !marketPage &&
-          !visitorPage && (
+          !visitorPage &&
+          !schoolPage && (
             <section class="vy-soon" aria-label={placeLabel(view.place)}>
               {(() => {
                 // His shuttered spot once the server has said he is away (a place not open yet keeps its own art).
@@ -383,7 +432,7 @@ export function ValleyFrame({
       </div>
       <PlacesList
         open={places}
-        lines={placeStates({ ...placeInput, visit, visitor: visitorView })}
+        lines={placeStates({ ...placeInput, visit, visitor: visitorView, school: schoolView })}
         bubbles={bubbles}
         opened={
           visit === null
@@ -392,6 +441,7 @@ export function ValleyFrame({
                 'bonfire',
                 ...(marketAt === null || marketAt === 'waiting' ? [] : (['market'] as const)),
                 ...(visitorView === null ? [] : (['visitor'] as const)),
+                ...(schoolView === null ? [] : (['school'] as const)),
               ]
         }
         onClose={() => {

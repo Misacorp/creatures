@@ -179,14 +179,23 @@ export function bandArtBox(g: SceneGeometry, name: MapName, aside = 0): ArtBox {
   };
 }
 
-/** The band's scene: as `placeSceneDraw`, the art higher up to leave the creatures room in front, plus `extra` over it. */
-export function bandSceneDraw(name: MapName, extra?: (box: ArtBox) => Placement[], aside = 0) {
+/**
+ * The band's scene: as `placeSceneDraw`, the art higher up to leave the creatures room in front, plus `extra` over it and `under` (the
+ * School's yard, whose top rows the art covers) between the trees and the art.
+ */
+export function bandSceneDraw(
+  name: MapName,
+  extra?: (box: ArtBox) => Placement[],
+  aside = 0,
+  under?: (box: ArtBox) => Placement[],
+) {
   return (g: SceneGeometry): Placement[] => {
     const box = bandArtBox(g, name, aside);
     return [
       ...grassTo(g),
       ...skyBackdrop(g, BAND_ART_TOP),
       ...treesAround(box.x, box.y, box),
+      ...(under?.(box) ?? []),
       { sprite: glowSprite(name), x: box.x, y: box.y },
       ...(extra?.(box) ?? []),
     ];

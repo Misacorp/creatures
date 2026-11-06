@@ -11,6 +11,7 @@
  * - **The decision** (V-RET-3) is not a story: it is the paper's one choice at the end (`decisionOf`).
  */
 import type { Paper, PaperDecision, PaperHeadline } from '@creatures/game';
+import { combatV2 } from '@creatures/game/combat-v2';
 import type { Creature } from '../../api';
 import { creatureName, speciesName } from '../../game';
 import { baitCount } from '../../count-items';
@@ -41,9 +42,19 @@ const PAIR_MOMENTS: readonly ((a: string, b: string) => string)[] = [
   (a, b) => `${a} chased ${b} round the fire`,
 ];
 
+/** A talent's name for the paper: the library's own, else its id read as words. */
+const talentName = (id: string | null | undefined): string =>
+  id === null || id === undefined
+    ? 'a talent'
+    : (combatV2.talents[id]?.name ?? id.replace(/-/g, ' '));
+
 const honourName = (tier: number): string => ['Bronze', 'Silver', 'Gold'][tier - 1] ?? 'Bronze';
 const plural = (n: number, one: string, many: string): string => (n === 1 ? one : many);
 const num = (n: number): string => String(n);
+/** A small count in words ("Three of yours graduated at the School", Misa's own wording); digits from eleven on. */
+const WORDS = ['none', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'];
+const word = (n: number): string => WORDS[n] ?? String(n);
+const sentence = (text: string): string => `${text.charAt(0).toUpperCase()}${text.slice(1)}`;
 const upper = (text: string): string => text.toUpperCase();
 const article = (word: string): string => (/^[aeiou]/i.test(word) ? 'an' : 'a');
 
@@ -251,24 +262,23 @@ function storyOf(h: PaperHeadline, paper: Paper, byId: ReadonlyMap<string, Creat
         scene: scene([]),
       };
     case 'teacher': {
-      // V-SCH-11: a teacher is announced or at the School (step 9b draws the lectern; the paper only names the talent).
-      const talent = (h.talent ?? 'a talent').replace(/-/g, ' ');
+      // V-SCH-11: a teacher is announced or at the School (the School's page has the lectern and the days); the paper names the talent.
       return {
         ...base,
-        headline: upper(`A teacher is coming to the School: ${talent}`),
-        blurb: 'Seat a creature there and it may learn it by morning.',
+        headline: upper(`A teacher visits the School: ${talentName(h.talent)}`),
+        blurb: 'Send a creature that can learn it, and it learns it by morning.',
         finds: [],
         scene: scene([]),
       };
     }
     case 'lesson': {
       // V-SCH-13: the lesson is learned; the creature is back at its post.
-      const talent = (h.talent ?? 'a talent').replace(/-/g, ' ');
+      const talent = talentName(h.talent);
       return {
         ...base,
         headline: upper(
           h.count > 1
-            ? `${first ?? 'A creature'} and ${num(h.count - 1)} more learned ${talent} at the School`
+            ? `${first ?? 'A creature'} and ${word(h.count - 1)} more learned ${talent} at the School`
             : `${first ?? 'A creature'} learned ${talent} at the School`,
         ),
         finds: [],
@@ -282,7 +292,7 @@ function storyOf(h: PaperHeadline, paper: Paper, byId: ReadonlyMap<string, Creat
         headline: upper(
           h.count === 1
             ? `${first ?? 'One of yours'} graduated at the School`
-            : `${num(h.count)} of yours graduated at the School`,
+            : `${sentence(word(h.count))} of yours graduated at the School`,
         ),
         blurb: h.step === null ? '' : `${honourName(h.step)} honours.`,
         finds: [],

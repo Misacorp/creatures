@@ -28,7 +28,19 @@ import { useRoamers } from './use-roamers';
 import { depthOf } from './valley-logic';
 import { WARMING_FLAME, placeOf, type Rect } from './valley-art';
 import { scaffoldUp } from './scaffold';
+import { HonourRibbon, useHonour } from './HonourRibbon';
 import { glowSprite, type MapName } from './valley-places';
+import {
+  BELL_AT,
+  YARD_ASIDE,
+  bellSprite,
+  lecternSprite,
+  lecternTopLeft,
+  teacherSprite,
+  teacherTopLeft,
+  yardSprite,
+  yardTopLeft,
+} from './school-yard';
 
 /** The sprite each scene stands its place's art from. */
 export const SCENE_ART: Readonly<Record<CastPlace, MapName>> = {
@@ -41,6 +53,7 @@ export const SCENE_ART: Readonly<Record<CastPlace, MapName>> = {
   forge: 'forge',
   market: 'market',
   visitor: 'visitor',
+  school: 'school',
 };
 
 /** The nameplates' layer: above every creature (`depthOf` stays below it). */
@@ -184,6 +197,8 @@ export function Stander({
   warm?: boolean;
 }) {
   const info = infoOf(creature, owner);
+  // An honour is worn on the sprite (phase 5 step 9b, V-TRIAL-1); another player's creature has none here.
+  const honour = useHonour(creature.id);
   const button = (
     <SmallCreature
       info={info}
@@ -214,6 +229,7 @@ export function Stander({
             <Pic sprite={WARMING_FLAME} scale={g.s} />
           </span>
         )}
+        {owner === undefined && <HonourRibbon honour={honour} scale={g.s} />}
       </At>
       {/* The nameplate, always shown under the feet (level first, in yellow, then the name): on a layer above every creature so a neighbour never hides it, in the creatures' own depth order. */}
       <At
@@ -279,14 +295,36 @@ function Roamers({
 export function PlaceScene({ cast, onAct }: { cast: Cast; onAct: () => void }) {
   const art = SCENE_ART[cast.place];
   const bossId = cast.boss?.id ?? null;
-  // The boss stands beside the art: the pair is centred in the band, not the art alone.
-  const aside = bossId === null ? 0 : BOSS_ASIDE;
+  // The boss stands beside the art: the pair is centred in the band, not the art alone. The School's yard is wider than its house.
+  const aside = cast.school !== null ? YARD_ASIDE : bossId === null ? 0 : BOSS_ASIDE;
   const steps = cast.scaffold;
+  const school = cast.school;
   const draw = useMemo(
     () =>
       bandSceneDraw(
         art,
         (box) => [
+          // The School's visit: the bell tilted while announced, the lectern, and the teacher at it while here (V-SCH-11).
+          ...(school === null || !school.bell
+            ? []
+            : [{ sprite: bellSprite(), x: box.x + BELL_AT.x, y: box.y + BELL_AT.y }]),
+          ...(school === null || !school.lectern
+            ? []
+            : [
+                {
+                  sprite: lecternSprite(),
+                  x: box.x + lecternTopLeft().x,
+                  y: box.y + lecternTopLeft().y,
+                },
+              ]),
+          ...(school === null || school.teacher === null
+            ? []
+            : (() => {
+                const sprite = teacherSprite(school.teacher);
+                return sprite === null
+                  ? []
+                  : [{ sprite, x: box.x + teacherTopLeft().x, y: box.y + teacherTopLeft().y }];
+              })()),
           // The scaffolding rises in front of the place as its project fills (V-COM-6).
           ...(steps === 0
             ? []
@@ -302,8 +340,12 @@ export function PlaceScene({ cast, onAct }: { cast: Cast; onAct: () => void }) {
               ]),
         ],
         aside,
+        // The yard under the School, always there: a bench with room to join.
+        school === null
+          ? undefined
+          : (box) => [{ sprite: yardSprite(), x: box.x + yardTopLeft().x, y: box.y + yardTopLeft().y }],
       ),
-    [art, bossId, aside, steps],
+    [art, bossId, aside, steps, school?.lectern, school?.bell, school?.teacher],
   );
   const name = placeOf(cast.place).name;
   return (

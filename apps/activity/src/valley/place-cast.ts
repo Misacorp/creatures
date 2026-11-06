@@ -12,7 +12,7 @@
  *
  * Positions are scene pixels from the top-left of the place's art, a creature's own top-left (16 x 16).
  */
-import type { Attention, Creature, ValleyVisit } from '../api';
+import type { Attention, Creature, SchoolState, ValleyVisit } from '../api';
 import type { DungeonPhase } from '../dungeon-flow';
 import { emptyEvents, showLive } from '../games-view';
 import type { GamesView } from '../games-types';
@@ -24,6 +24,8 @@ import { commonsOf, percentFilled, placeOf } from './commons-view';
 import { forgeCalm } from './forge-view';
 import { scaffoldSteps } from './scaffold';
 import { placeName, scoutsOut, signpostCalm } from './signpost-view';
+import { teaching } from './school-view';
+import { studentSpot, teacherSpecies } from './school-yard';
 import type { PlaceId } from './valley-art';
 import type { Rect } from './valley-art';
 
@@ -41,6 +43,7 @@ export const CAST_PLACES = [
   'forge',
   'market',
   'visitor',
+  'school',
 ] as const;
 export type CastPlace = (typeof CAST_PLACES)[number];
 
@@ -77,6 +80,8 @@ export interface CastInput extends CastExtra {
   timezone: string | null;
   /** The valley's scouts and seats (`VALLEY_SYSTEMS` on): the Signpost's scene is made from it. */
   visit?: ValleyVisit | null;
+  /** What the server said of the School (`VALLEY_SYSTEMS` on): its scene is made from it (null until it has said). */
+  school?: SchoolState | null;
 }
 
 /** One creature standing in a scene. */
@@ -120,6 +125,22 @@ export interface Cast {
   act: CastAct;
   /** The steps of scaffolding standing round the place while its project fills (0 to 11; V-COM-6). */
   scaffold: number;
+  /** The School's yard and the visit (the School only): what stands in the yard, null elsewhere. */
+  school: SchoolCast | null;
+}
+
+/**
+ * The School's yard (V-SCH-11): the yard is always there (a bench with room to join), the lectern stands and the bell hangs tilted from the
+ * announcement to the end of the stay, and the teacher (in a mortarboard, a species the player does not own) stands at the lectern
+ * while the teacher is here. Nothing in the yard when no teacher is at the School or announced.
+ */
+export interface SchoolCast {
+  /** The lectern stands at the door. */
+  lectern: boolean;
+  /** The bell hangs tilted (the teacher is announced, not yet here). */
+  bell: boolean;
+  /** The teacher's species while the teacher is here; null otherwise. */
+  teacher: string | null;
 }
 
 const byId = (creatures: readonly Creature[]): Map<string, Creature> =>
@@ -510,6 +531,40 @@ function marketCast(input: CastInput, art: Size): Pick<Cast, 'stands' | 'act'> {
   return { stands, act: { kind: 'calm', line: '' } };
 }
 
+// --- School ---
+
+/**
+ * The School's students on the bench (V-SCH-13), in the order of the seats, each saying it learns it by morning; the yard's props from the
+ * teacher's phase. The scene says nothing under its picture: the page under it has the teacher's line and the Send buttons.
+ */
+function schoolCast(input: CastInput): Pick<Cast, 'stands' | 'act' | 'school'> {
+  const view = input.school ?? null;
+  const students = (view?.seats ?? []).flatMap((seat) => {
+    const creature = seat.creatureId === null ? undefined : input.creatures.find((c) => c.id === seat.creatureId);
+    return creature === undefined ? [] : [creature];
+  });
+  const stands = students.flatMap((creature, i) => {
+    const spot = studentSpot(i);
+    return spot === null
+      ? []
+      : [{ creature, x: spot.x, y: spot.y, flip: false, where: 'at the School, learns it by morning' }];
+  });
+  const open = teaching(view);
+  const talent = view?.talent?.id ?? null;
+  const owned = new Set(input.creatures.map((c) => c.species));
+  const here = open && view?.phase === 'here';
+  return {
+    stands,
+    school: {
+      lectern: open,
+      bell: open && view?.phase === 'announced',
+      teacher: here && talent !== null ? teacherSpecies(talent, owned) : null,
+    },
+    // The page under the scene says where the teacher stands, so the scene says nothing (as the visitor's).
+    act: { kind: 'calm', line: '' },
+  };
+}
+
 interface Size {
   width: number;
   height: number;
@@ -533,6 +588,7 @@ export function castFor(
     waiting: 0,
     act: { kind: 'calm', line: '' },
     scaffold: 0,
+    school: null,
   };
   const scaffold = scaffoldOf(input, place);
   switch (place) {
@@ -552,6 +608,8 @@ export function castFor(
       return { ...base, ...forgeCast(input, art), scaffold };
     case 'market':
       return { ...base, ...marketCast(input, art), scaffold };
+    case 'school':
+      return { ...base, ...schoolCast(input) };
     case 'visitor':
       // His stall stands alone (nobody of yours is posted there); the page under it says everything, so the scene says nothing.
       return base;

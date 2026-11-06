@@ -21,6 +21,7 @@ import { ItemThumb } from './GearArt';
 import { ActionButton } from './ui/ActionButton';
 import { ArmchairIcon } from './ui/ArmchairIcon';
 import { XpTrack, type XpSize } from './ui/XpTrack';
+import { TrialPips } from './valley/TrialPips';
 
 /**
  * One creature, small (Misa's variant E, decisions.md 2026-10-19): the sprite at the top left with the name
@@ -137,6 +138,7 @@ export function CreatureCard({
         levelEntry="level"
         size={xpSize}
       />
+      <TrialPips creature={creature} />
       <div class="cc-kit">
         <ul class="cc-gear" aria-label="Gear">
           {GEAR_SLOTS.map((slot) => {

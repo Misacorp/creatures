@@ -12,3 +12,4 @@ export * from './visitor';
 export * from './visitor-view';
 export * from './school';
 export * from './trials';
+export * from './school-view';

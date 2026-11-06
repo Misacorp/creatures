@@ -1,6 +1,7 @@
 import { composePaper, emptyLog, type Paper, type PaperLog } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import { SAMPLE_STATE } from '../../creature-card-sample';
+import { creatureName } from '../../game';
 import { decisionOf, gazetteOfPaper, paperNote } from './paper-stories';
 
 const creatures = SAMPLE_STATE.creatures.slice(0, 4);
@@ -143,6 +144,63 @@ describe('the stories of the server’s paper', () => {
     const day = gazetteOfPaper(paperOf(RICH), creatures);
     const month = gazetteOfPaper(paperOf(RICH, { awayHours: 24 * 30 }), creatures);
     expect(month.stories.length).toBe(day.stories.length);
+  });
+});
+
+describe('the School in the paper (step 9b)', () => {
+  const storyOf = (log: PaperLog, id: string) =>
+    gazetteOfPaper(paperOf(log), creatures).stories.find((st) => st.id === id);
+
+  it('names the visiting teacher’s talent by its name, as a story at the School', () => {
+    const story = storyOf({ ...emptyLog(), teacher: 'first-pounce' }, 'teacher');
+    expect(story?.headline).toBe('A TEACHER VISITS THE SCHOOL: FIRST POUNCE');
+    expect(story?.scene.place).toBe('school');
+    expect(story?.blurb).toContain('learns it by morning');
+  });
+
+  it('tells a lesson with the creature and the talent’s name, and several in one line', () => {
+    const one = storyOf(
+      {
+        ...emptyLog(),
+        lessons: [{ creatureId: a.id, talentId: 'first-pounce' }],
+        lessonCount: 1,
+      },
+      'lesson',
+    );
+    expect(one?.headline).toBe(`${creatureName(a).toUpperCase()} LEARNED FIRST POUNCE AT THE SCHOOL`);
+    expect(one?.scene.place).toBe('school');
+    const many = storyOf(
+      {
+        ...emptyLog(),
+        lessons: [{ creatureId: a.id, talentId: 'first-pounce' }],
+        lessonCount: 3,
+      },
+      'lesson',
+    );
+    expect(many?.headline).toContain('AND TWO MORE LEARNED FIRST POUNCE AT THE SCHOOL');
+  });
+
+  it('tells a graduation at the School, several in one line, with the honour', () => {
+    const one = storyOf(
+      { ...emptyLog(), graduates: [{ creatureId: a.id, honour: 2 }], graduateCount: 1 },
+      'graduation',
+    );
+    expect(one?.headline).toBe(`${creatureName(a).toUpperCase()} GRADUATED AT THE SCHOOL`);
+    expect(one?.blurb).toBe('Silver honours.');
+    expect(one?.scene.place).toBe('school');
+    const three = storyOf(
+      {
+        ...emptyLog(),
+        graduates: [
+          { creatureId: a.id, honour: 1 },
+          { creatureId: b.id, honour: 1 },
+          { creatureId: c.id, honour: 1 },
+        ],
+        graduateCount: 3,
+      },
+      'graduation',
+    );
+    expect(three?.headline).toBe('THREE OF YOURS GRADUATED AT THE SCHOOL');
   });
 });
 

@@ -229,6 +229,11 @@ const ERROR_TEXT: Record<string, string> = {
   // The weekly visitor.
   visitor_away: 'The visitor has left the valley. Back Thursday.',
   already_bought: 'You bought this week\u2019s blueprint already.',
+  // The School's teacher.
+  no_teacher: 'No teacher is at the School right now.',
+  would_not_learn: 'That creature would not learn this lesson.',
+  line_seated: 'A creature of the same kind already sits at the School.',
+  no_such_seat: 'There is no such seat at the School.',
   creature_on_job: 'That creature is on a job in the Workshop. Claim it first.',
   // The living room.
   creature_not_found: 'That creature no longer exists. The page was refreshed.',

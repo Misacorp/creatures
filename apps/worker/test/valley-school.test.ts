@@ -9,6 +9,8 @@ import {
   VALLEY_RULES,
   ValleyViewSchema,
   benefitCounts,
+  parseSchoolSeatAnswer,
+  parseSchoolView,
   teacherCandidates,
   type ValleyView,
 } from '@creatures/game';
@@ -171,6 +173,7 @@ describe('the teacher is announced Friday and here Monday to Wednesday (V-SCH-11
           arrivesAt: null,
           wouldLearn: [],
         });
+        expect(parseSchoolView(away.body)).toEqual(away.body);
         expect(count(ctx.sql, 'school_weeks')).toBe(0);
         // Thursday 23:59 Helsinki (21:59 UTC): still away. Friday 00:00 Helsinki (22:00 UTC Thursday): announced.
         ctx.clock.t = Date.UTC(2027, 0, 14, 21, 59);
@@ -391,9 +394,13 @@ describe('a lesson (V-SCH-13)', () => {
         const talent = told.body.talent.id as string;
         const line = lineOf(ctx, pip);
         expect(told.body.wouldLearn).toContain(pip);
+        // The client's schemas take the server's answers as they are (the shapes `@creatures/game` shares).
+        expect(parseSchoolView(told.body)).toEqual(told.body);
         // The seat takes the creature off its post.
         const seated = await sit(p, 0, pip);
         expect(seated.status).toBe(200);
+        expect(parseSchoolSeatAnswer(seated.body)).toEqual({ index: 0, creatureId: pip });
+        expect(parseSchoolView((await school(p)).body)).toBeDefined();
         expect(seatHolds(ctx, scout)).toBeNull();
         const afterSeat = await school(p);
         expect(afterSeat.body.seats[0]).toMatchObject({ index: 0, creatureId: pip });

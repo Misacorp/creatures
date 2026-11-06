@@ -9,6 +9,7 @@ import {
   dismissAway,
   dismissLevelReset,
   exchangeShards,
+  fetchSchool,
   fetchState,
   fetchVisitor,
   giveToProject,
@@ -27,6 +28,7 @@ import {
   type LeetSyncStatus,
   type LoungeSpot,
   type LoungeXpPush,
+  type SchoolState,
   type SessionUser,
   type ValleyVisit,
   type VisitorState,
@@ -102,6 +104,9 @@ import { Alert } from './ui/Alert';
 import { WelcomeBack } from './valley/gazette/WelcomeBack';
 import { ValleyFrame } from './valley/ValleyFrame';
 import { createVisitorActions, isAway } from './valley/visitor-actions';
+import { createSchoolActions, isSchoolRefusal, refreshSchool } from './valley/school-actions';
+import { readerZone, studentIds, withoutStudents } from './valley/school-view';
+import { HonoursContext, honoursOf } from './valley/HonourRibbon';
 import { shardsHeld } from './valley/visitor-view';
 import type { MarketActions, MarketStart } from './valley/MarketPage';
 import { SignpostSeats, type SignpostActions } from './valley/SignpostSeats';
@@ -248,6 +253,8 @@ export function Game({
     // He left while the page was open: his place turns to his shuttered spot (the refusal came before any spend).
     onFail: (err) => {
       if (isAway(err)) setVisitor({ here: false });
+      // The School was not as the screen thought (no teacher now, it would not learn it): read it again.
+      if (isSchoolRefusal(err)) void refreshSchool(setSchool);
     },
     onStale: async () => {
       try {
@@ -272,7 +279,31 @@ export function Game({
   useEffect(() => {
     if (game.valley !== null) setVisit(game.valley);
   }, [game.valley]);
-  const systems = valleySystems ? visit : null;
+  // The School as the server last said (`VALLEY_SYSTEMS` on); null until the first answer. It is read when the game opens and each time
+  // its place is opened or left (one small read), and again when the valley's state changes while a student sits there (so a lesson
+  // learned by morning sends the student home on screen), never on a timer.
+  const [school, setSchool] = useState<SchoolState | null>(null);
+  const atSchool = homeAt === 'school';
+  const students = useMemo(() => studentIds(school), [school]);
+  const seated = students.size > 0;
+  const settledAt = visit?.settledAt ?? 0;
+  useEffect(() => {
+    if (!valleySystems || !valley || !game.starterChosen) return;
+    let current = true;
+    fetchSchool().then(
+      (view) => {
+        if (current) setSchool(view);
+      },
+      () => undefined,
+    );
+    return () => {
+      current = false;
+    };
+  }, [valleySystems, valley, game.starterChosen, atSchool, seated ? settledAt : 0]);
+  // The valley's lists leave out the creatures that sit at the School (the server's view has no seat for them and says "resting").
+  const systems = valleySystems && visit !== null ? withoutStudents(visit, students) : null;
+  // Every creature's honours (V-TRIAL-1), from the unfiltered state, for the cards and the sprites.
+  const honours = useMemo(() => honoursOf(valleySystems ? visit?.creatures : undefined), [valleySystems, visit]);
   // The weekly visitor as the server last said (`VALLEY_SYSTEMS` on): here or away; null until the first answer. It is read when the
   // game opens and each time his place is opened or left (one small read), never on a timer.
   const [visitor, setVisitor] = useState<VisitorState | null>(null);
@@ -492,6 +523,14 @@ export function Game({
       setVisitor(update);
     },
     setError,
+  });
+  /** The School's page (phase 5 step 9b): seating a creature is free; each answer's `valley` and state are taken in at once. */
+  const schoolActions = createSchoolActions({
+    run,
+    takeValley,
+    setSchool: (view) => {
+      setSchool(view);
+    },
   });
   /** Wears an item or takes it off (the card's and the dungeon's); true when the server took it. */
   const equipOn = async (gearId: string, creatureId: string | null): Promise<boolean> =>
@@ -1101,6 +1140,12 @@ export function Game({
                   shards: shardsHeld(gear?.parts ?? null),
                 },
               },
+              school: {
+                view: school,
+                actions: schoolActions,
+                now: Date.now() + offset,
+                zone: readerZone(),
+              },
               acorns: game.balances.bait,
               busy,
               error,
@@ -1210,12 +1255,14 @@ export function Game({
   return (
     <TreatTimesContext.Provider value={forecast?.today?.treatTimes ?? 2}>
       <GearItemsContext.Provider value={gear?.items ?? NO_ITEMS}>
-        <EquipHost creatures={gear === null ? NO_CREATURES : game.creatures} onEquip={equipOn}>
-          {!game.starterChosen && head}
-          {content}
-          {swap}
-          {devPanel}
-        </EquipHost>
+        <HonoursContext.Provider value={honours}>
+          <EquipHost creatures={gear === null ? NO_CREATURES : game.creatures} onEquip={equipOn}>
+            {!game.starterChosen && head}
+            {content}
+            {swap}
+            {devPanel}
+          </EquipHost>
+        </HonoursContext.Provider>
       </GearItemsContext.Provider>
     </TreatTimesContext.Provider>
   );

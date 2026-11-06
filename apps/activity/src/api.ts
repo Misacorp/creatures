@@ -16,6 +16,10 @@ import type {
 import {
   parseBlueprintAnswer,
   parseRerollAnswer,
+  parseSchoolSeatAnswer,
+  parseSchoolView,
+  type SchoolSeatAnswerView,
+  type SchoolViewState,
   parseValleyView,
   parseVisitorView,
   type BlueprintAnswerView,
@@ -1311,4 +1315,32 @@ export async function buyVisitorBlueprint(idempotencyKey: string): Promise<Visit
   if (blueprint === undefined)
     throw new Error('the server returned an unexpected blueprint answer');
   return { ...valleyAnswer(data), blueprint };
+}
+
+// --- The School (phase 5 step 9b) ---
+
+/** The School as the server shows it: the teacher (hidden while away), the stay, your student seats and who of yours would learn. */
+export type SchoolState = SchoolViewState;
+
+/** Reads the School (V-SCH-11 to 13). Free. */
+export async function fetchSchool(): Promise<SchoolState> {
+  const view = parseSchoolView(await apiFetch('/api/valley/school'));
+  if (view === undefined) throw new Error('the server returned an unexpected School answer');
+  return view;
+}
+
+/** What seating a student answers: the seat and who sits there now, with the valley and the state. */
+export interface SchoolSeatAnswer extends ValleyAnswer {
+  seat: SchoolSeatAnswerView;
+}
+
+/** Seats a creature at student seat `index`, or empties the seat with `null` (V-SCH-13). Free, so no key; a refusal is a 409 code. */
+export async function seatAtSchool(body: {
+  index: number;
+  creatureId: string | null;
+}): Promise<SchoolSeatAnswer> {
+  const data = await apiFetch('/api/valley/school/seat', jsonRequest('POST', body));
+  const seat = parseSchoolSeatAnswer(data);
+  if (seat === undefined) throw new Error('the server returned an unexpected School seat answer');
+  return { ...valleyAnswer(data), seat };
 }

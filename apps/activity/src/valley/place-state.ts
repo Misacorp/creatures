@@ -14,10 +14,11 @@ import { explorerName, legEnd, tripCounts, type HomeInput } from '../home-view';
 import { ALERT_TEXT, type TabAlerts } from '../tab-alerts';
 import { TABS, type Tab } from '../tabs';
 import { formatCountdown, formatZoned } from '../time-format';
-import type { ValleyVisit, VisitorState } from '../api';
+import type { SchoolState, ValleyVisit, VisitorState } from '../api';
 import { bonfireLine } from './bonfire-cast';
 import { marketLine } from './market-view';
 import { visitorLine } from './visitor-view';
+import { readyLine, schoolLine } from './school-view';
 import { commonsOf, placeMention } from './commons-view';
 import { forgeSystemsLine, fullFloors, longWaits } from './forge-view';
 import { fullPacks, signpostSystemsLine } from './signpost-view';
@@ -34,11 +35,13 @@ export type PlaceInput = Pick<
   visit?: ValleyVisit | null;
   /** What the server said of the weekly visitor (`VALLEY_SYSTEMS` on): his place's line says his stall is open or he is back Thursday; absent or null leaves it "not open yet". */
   visitor?: VisitorState | null;
+  /** What the server said of the School (`VALLEY_SYSTEMS` on): its line says where the teacher stands and how many are ready to graduate; absent or null leaves it "not open yet" (the ceremony's count still shows). */
+  school?: SchoolState | null;
 };
 
 /** A bubble over a place: the glyph of what waits, a count when there is more than one, its spoken words. */
 export interface PlaceBubble {
-  place: OpenPlaceId;
+  place: PlaceId;
   glyph: string;
   /** How many wait, when it is more than one; else null. */
   count: number | null;
@@ -127,6 +130,31 @@ export function placeBubbles(alerts: TabAlerts, input: PlaceInput): PlaceBubble[
             ? 'A floor is full'
             : `${String(floors)} floors are full`
           : 'An anvil has waited on an input for a day',
+    });
+  }
+  // The School's news (V-TRIAL-3, V-SCH-11): creatures ready to graduate, else a lesson one of yours could take with a seat free.
+  const ready = input.visit?.graduation?.ready ?? 0;
+  const school = input.school;
+  const lesson =
+    school !== undefined &&
+    school !== null &&
+    school.phase === 'here' &&
+    school.talent !== null &&
+    school.wouldLearn.some((id) => !school.seats.some((s) => s.creatureId === id)) &&
+    school.seats.some((s) => s.creatureId === null);
+  if (ready > 0) {
+    out.push({
+      place: 'school',
+      glyph: 'sparkle',
+      count: ready > 1 ? ready : null,
+      spoken: readyLine(ready) ?? '',
+    });
+  } else if (lesson) {
+    out.push({
+      place: 'school',
+      glyph: 'hand',
+      count: null,
+      spoken: 'The visiting teacher has a lesson one of yours can take',
     });
   }
   return out;
@@ -235,6 +263,7 @@ export function placeStates(input: PlaceInput): Record<PlaceId, string> {
   out.bonfire = bonfireLine(input.visit, input.creatures) ?? out.bonfire;
   out.market = marketLine(input.visit) ?? out.market;
   out.visitor = visitorLine(input.visitor) ?? out.visitor;
+  out.school = schoolLine(input.school, input.visit?.graduation) ?? out.school;
   // A project that is being built gets a mention (it matters: it has a clock); an open one does not, the board says it.
   const commons = commonsOf(input.visit);
   for (const id of ['bonfire', 'forge', 'signpost', 'paddock'] as const) {

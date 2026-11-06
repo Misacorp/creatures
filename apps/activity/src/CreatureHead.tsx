@@ -19,6 +19,8 @@ import { elementIcon } from './sprites/element-icons';
 import { ElementChip } from './sprites/ElementChip';
 import { ArmchairIcon } from './ui/ArmchairIcon';
 import { Tag } from './ui/Tag';
+import { HonourRibbon, useHonour } from './valley/HonourRibbon';
+import { honourName, honourTitle } from './valley/honours-view';
 
 /** The species name as a tag, only for a creature whose nickname says something else (any case). */
 function showsSpecies(creature: Creature): boolean {
@@ -48,6 +50,8 @@ export function NameTags({
 }) {
   const species = getSpecies(creature.species);
   const tags: ComponentChildren[] = [];
+  // An honour the creature graduated with (phase 5 step 9b, V-TRIAL-1): a badge in the metal's name, never a stat.
+  const honour = honourName(useHonour(creature.id));
   if (showsSpecies(creature)) {
     tags.push(<Tag key="species">{speciesName(creature.species)}</Tag>);
   }
@@ -85,6 +89,13 @@ export function NameTags({
     tags.push(
       <Tag key="first" kind="badge" tone="first" {...(help ? { entry: 'first-on-server' } : {})}>
         First on server
+      </Tag>,
+    );
+  }
+  if (honour !== null) {
+    tags.push(
+      <Tag key="honour" kind="badge" tone="rank" label={`${honour} honour`}>
+        {honour}
       </Tag>,
     );
   }
@@ -134,7 +145,9 @@ export function CreatureHead({
   // A shiny without its own palette gets a sparkle frame instead.
   const sparkleFrame = creature.shiny && shinyColours === undefined;
   const sparkle = glyphOrUnknown('sparkle');
-  const name = creatureName(creature);
+  // With an honour the name shows as its title: "Pip, Silver" (V-TRIAL-1); the plain name otherwise.
+  const honourHeld = useHonour(creature.id);
+  const name = honourTitle(creatureName(creature), honourHeld);
   const nameClass =
     species === undefined ? 'cc-name' : `cc-name rarity-name rarity-${species.rarity}`;
   return (
@@ -157,6 +170,7 @@ export function CreatureHead({
             <Sprite sprite={sparkle} scale={2} class="sparkle two" />
           </>
         )}
+        <HonourRibbon honour={honourHeld} scale={3} />
       </div>
       <div class="cc-id">
         {onOpen === undefined ? (
