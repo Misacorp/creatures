@@ -19,13 +19,9 @@
 .fg-shelf-line {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 0.5rem;
   min-height: 2.75rem;
-}
-
-.fg-bag {
-  font-size: var(--fs-row);
 }
 
 /* The queue: a row for each order, and one dashed row to add another. */

@@ -82,11 +82,9 @@ export function Blueprints({
                     </span>
                   </p>
                 </div>
-              </div>
-              {order === undefined && <CostList cost={bp.cost} have={gear.parts} />}
-              <p>
                 <button
                   type="button"
+                  class="bp-act"
                   disabled={order?.reason != null}
                   {...(order?.reason == null ? {} : { title: order.reason })}
                   onClick={(event) => {
@@ -97,8 +95,9 @@ export function Blueprints({
                 >
                   {order === undefined ? 'Craft' : 'Order'}
                 </button>
-                {order?.reason != null && <span class="muted"> {order.reason}</span>}
-              </p>
+              </div>
+              {order === undefined && <CostList cost={bp.cost} have={gear.parts} />}
+              {order?.reason != null && <p class="muted">{order.reason}</p>}
             </li>
           ))}
         </ul>

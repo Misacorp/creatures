@@ -156,6 +156,9 @@ export function bandScale(width: number): number {
   return sceneScale(width);
 }
 
+/** Scene pixels the arena's boss stands beyond the art's right edge (it overlaps the art by 6 and is 24 wide). */
+export const BOSS_ASIDE = 18;
+
 export interface ArtBox {
   x: number;
   y: number;
@@ -163,16 +166,23 @@ export interface ArtBox {
   height: number;
 }
 
-/** Where a place's art stands in a band (scene pixels). */
-export function bandArtBox(g: SceneGeometry, name: MapName): ArtBox {
+/**
+ * Where a place's art stands in a band (scene pixels). `aside`: scene pixels something stands beyond the art's right edge
+ * (the arena's boss); the art moves left by half of it, so the two together are centred and neither is tight to a frame edge.
+ */
+export function bandArtBox(g: SceneGeometry, name: MapName, aside = 0): ArtBox {
   const art = artSize(name);
-  return { x: g.cx - Math.floor(art.width / 2), y: g.top + BAND_ART_TOP, ...art };
+  return {
+    x: g.cx - Math.floor(art.width / 2) - Math.floor(aside / 2),
+    y: g.top + BAND_ART_TOP,
+    ...art,
+  };
 }
 
 /** The band's scene: as `placeSceneDraw`, the art higher up to leave the creatures room in front, plus `extra` over it. */
-export function bandSceneDraw(name: MapName, extra?: (box: ArtBox) => Placement[]) {
+export function bandSceneDraw(name: MapName, extra?: (box: ArtBox) => Placement[], aside = 0) {
   return (g: SceneGeometry): Placement[] => {
-    const box = bandArtBox(g, name);
+    const box = bandArtBox(g, name, aside);
     return [
       ...grassTo(g),
       ...skyBackdrop(g, BAND_ART_TOP),

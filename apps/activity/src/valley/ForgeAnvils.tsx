@@ -44,8 +44,6 @@ import {
   anvilBuyReason,
   anvilName,
   anvilPriceText,
-  bagCountText,
-  bagIsFull,
   exchangeRateText,
   exchangeReason,
   exchangeSources,
@@ -272,9 +270,6 @@ export function ForgeAnvils({
       <div class="fg-shelf">
         <Shelf visit={visit} />
         <div class="fg-shelf-line">
-          <span class={bagIsFull(visit.forge) ? 'fg-bag over' : 'fg-bag muted'}>
-            Bag {bagCountText(visit.forge)}
-          </span>
           <button
             type="button"
             class="fg-trade"
@@ -290,11 +285,6 @@ export function ForgeAnvils({
             {wanted === null ? 'Trade shards' : `Trade for ${shardName(wanted)}`}
           </button>
         </div>
-        {bagIsFull(visit.forge) && (
-          <Alert level="warning">
-            The bag is full. Finished pieces wait on the floors until it has room.
-          </Alert>
-        )}
       </div>
       <ul class="sp-seats" aria-label="Anvils">
         {visit.anvils.map((anvil) => {
@@ -465,9 +455,7 @@ export function ForgeAnvils({
         })}
         <li class="sp-seat sp-new">
           {nextPrice === null ? (
-            <p class="sp-line muted">
-              {`The Forge has room for ${String(visit.anvilPrices.max)} anvils each for now.`}
-            </p>
+            <p class="sp-line muted">The Forge has no more anvils for now.</p>
           ) : (
             <button
               type="button"
@@ -804,7 +792,7 @@ function Exchange({
           >
             <SlotText
               name={shardName(to)}
-              sub={`Get · have ${String(forge.shelf.shards[to] ?? 0)}`}
+              sub={`You get (have ${String(forge.shelf.shards[to] ?? 0)})`}
             />
           </Slot>,
           <Slot
@@ -818,7 +806,9 @@ function Exchange({
             <SlotText
               name={from === null ? 'Any other' : shardName(from)}
               sub={
-                from === null ? 'Pay with' : `Pay · have ${String(forge.shelf.shards[from] ?? 0)}`
+                from === null
+                  ? 'You pay'
+                  : `You pay (have ${String(forge.shelf.shards[from] ?? 0)})`
               }
             />
           </Slot>,

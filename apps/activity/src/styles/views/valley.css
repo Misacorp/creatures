@@ -65,6 +65,14 @@ main.card:has(.vy-frame) > .hud {
   pointer-events: none;
 }
 
+/* On a place's page they sit above the page, in the flow: a note floating over a page covers its buttons (the Forge's Trade shards). */
+.vy-frame[data-view='place'] > .vy-notices {
+  position: static;
+  flex: none;
+  padding: 0.5rem 0.5rem 0;
+  max-height: 40%;
+}
+
 .vy-notices:empty {
   display: none;
 }
@@ -156,7 +164,8 @@ main.card:has(.vy-frame) > .hud {
 .vy-scroller {
   position: absolute;
   inset: 0;
-  overflow: hidden;
+  /* Clipped, not just hidden: a hidden box still scrolls when a place's button takes the focus, which on a window that fits the map slid it sideways and showed a bare strip at the other edge. */
+  overflow: clip;
   scrollbar-width: none;
 }
 
@@ -490,6 +499,11 @@ main.card:has(.vy-frame) > .hud {
   gap: 2px 4px;
   justify-content: center;
   min-width: min-content;
+}
+
+/* Every creature fits in one row: the tray is one row tall, with no empty block under it. */
+.vy-tray-grid[data-rows='1'] {
+  grid-template-rows: 84px;
 }
 
 @media (min-width: 900px) {

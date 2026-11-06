@@ -63,18 +63,18 @@ export const FIRE_BOX = { width: 56, height: 44 };
 /**
  * The seats on the ring round the fire, in the order they fill: a creature's top-left in scene pixels from the fire art's
  * top-left. The ring is an ellipse about the fire's middle (28, 32), a little wider than the stone ring (radii about 24 by
- * 32, as narrow as a phone's scene (68 scene pixels at scale 5) allows): the front, then front right and left, the sides, and the two behind it. The same at every screen size, because it
+ * 32, as narrow as a phone's scene (68 scene pixels at scale 5) allows): the front, then front right and left, the sides, and the two behind it, whose feet stand on the meadow, never on the hills (the grass starts 14 scene pixels under the art's top, so a creature's top is at -2 or lower). The same at every screen size, because it
  * is measured from the fire, not from the scene. Each seat is at least a plate's gap from every other at both pixel scales
  * (3 and 4), so a seat is lost only to the scene's edge.
  */
 export const FIRE_SEATS: readonly { x: number; y: number }[] = [
-  { x: 20, y: 60 },
-  { x: 44, y: 38 },
-  { x: -4, y: 38 },
-  { x: 44, y: 16 },
-  { x: -4, y: 16 },
-  { x: 38, y: -6 },
-  { x: 2, y: -6 },
+  { x: 20, y: 64 },
+  { x: 44, y: 42 },
+  { x: -4, y: 42 },
+  { x: 44, y: 20 },
+  { x: -4, y: 20 },
+  { x: 38, y: -2 },
+  { x: 2, y: -2 },
 ];
 
 /** A creature sitting at the fire at its real spot in the scene. */

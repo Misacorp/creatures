@@ -107,7 +107,7 @@ describe('the Forge words', () => {
         withAnvils(plain, [sampleAnvil('a1', a.id, []), sampleAnvil('a2', b.id, [])]),
         999,
       ),
-    ).toMatch(/no room/);
+    ).toMatch(/no more anvils/);
   });
 
   it('the exchange pays from piles of at least the rate, never from the element it gets', () => {

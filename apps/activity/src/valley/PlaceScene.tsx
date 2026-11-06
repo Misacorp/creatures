@@ -20,7 +20,7 @@ import { PinnedAct } from './PinnedAct';
 import { SceneFrame, sceneGeometry, type SceneGeometry } from './SceneFrame';
 import { At, CreatureSprite, Pic, SpeechBubble, isStill, useTick } from './parts';
 import { CREATURE_PX, type Cast, type CastPlace } from './place-cast';
-import { BAND_ROWS, bandArtBox, bandScale, bandSceneDraw } from './place-scene';
+import { BAND_ROWS, BOSS_ASIDE, bandArtBox, bandScale, bandSceneDraw } from './place-scene';
 import { plateGap, roamPlan, standSpots } from './place-plates';
 import { frontProps, propDepth } from './place-props';
 import { useRoamers } from './use-roamers';
@@ -258,20 +258,25 @@ function Roamers({
 export function PlaceScene({ cast, onAct }: { cast: Cast; onAct: () => void }) {
   const art = SCENE_ART[cast.place];
   const bossId = cast.boss?.id ?? null;
+  // The boss stands beside the art: the pair is centred in the band, not the art alone.
+  const aside = bossId === null ? 0 : BOSS_ASIDE;
   const draw = useMemo(
     () =>
-      bandSceneDraw(art, (box) =>
-        bossId === null
-          ? []
-          : [
-              {
-                sprite: bossArt(bossId).sprite,
-                x: box.x + box.width - 6,
-                y: box.y + box.height - 30,
-              },
-            ],
+      bandSceneDraw(
+        art,
+        (box) =>
+          bossId === null
+            ? []
+            : [
+                {
+                  sprite: bossArt(bossId).sprite,
+                  x: box.x + box.width - 6,
+                  y: box.y + box.height - 30,
+                },
+              ],
+        aside,
       ),
-    [art, bossId],
+    [art, bossId, aside],
   );
   const name = placeOf(cast.place).name;
   return (
@@ -295,10 +300,10 @@ export function PlaceScene({ cast, onAct }: { cast: Cast; onAct: () => void }) {
       }
     >
       {(g) => {
-        const box = bandArtBox(g, art);
+        const box = bandArtBox(g, art, aside);
         // A scene not measured yet (width 0) is laid out as a phone's, so nothing waits for the first measure.
         const lay = g.W > 0 ? g : sceneGeometry(390, BAND_ROWS * g.s, g.s);
-        const laid = bandArtBox(lay, art);
+        const laid = bandArtBox(lay, art, aside);
         const scene = { W: lay.W, H: lay.H, s: g.s, top: lay.top };
         const gate = cast.gate.map((n) => ({ x: laid.x + n.x, y: laid.y + n.y }));
         const roam = roamPlan(cast, laid, scene);

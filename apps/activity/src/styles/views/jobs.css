@@ -23,6 +23,17 @@
   gap: 0.5rem;
 }
 
+.bp-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* The action sits at the row's end, where a list row keeps its button. */
+.bp-act {
+  flex: none;
+  margin-left: auto;
+}
+
 .bp-name {
   margin: 0;
 }
