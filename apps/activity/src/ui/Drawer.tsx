@@ -4,6 +4,7 @@ import { dragOutcome, focusablesIn, trapTarget } from './drawer-logic';
 import { handleFlipKey } from './flip-keys';
 import type { FlipProps } from './flip-logic';
 import { FlipLive, FlipNav } from './Flipper';
+import { keyboardHasFocus } from './focus-return';
 
 export interface DrawerProps {
   /** Whether the sheet is up. Closed, nothing is drawn and the focus goes back to where it was. */
@@ -104,12 +105,14 @@ function DrawerSheet({
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
 
-  // Focus into the sheet when it opens; back to the opener when it goes.
+  // Focus into the sheet when it opens; back to the opener when it goes, but only for a keyboard user (after a
+  // tap or a click nothing is focused again, so no focus ring is left on the control just left).
   useEffect(() => {
     const before = returnFocusTo ?? (document.activeElement as HTMLElement | null);
+    const byKeyboard = keyboardHasFocus();
     panel.current?.focus({ preventScroll: true });
     return () => {
-      before?.focus({ preventScroll: true });
+      if (byKeyboard) before?.focus({ preventScroll: true });
     };
   }, []);
 

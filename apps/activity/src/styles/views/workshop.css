@@ -53,6 +53,11 @@
   list-style: none;
 }
 
+.parts-row {
+  /* Seven chips fit the narrowest column (18 rem) in one row at this gap; at the usual one the last wrapped alone. */
+  column-gap: 0.25rem;
+}
+
 .parts-row li.none {
   opacity: 0.55;
 }

@@ -75,7 +75,7 @@ export function BossHead({
         <Sprite sprite={art.sprite} scale={art.scale} alt={boss.name} bob />
       </div>
       <div class="boss-meta">
-        <PixelHeading as="h3" outline="element-drop" size="m" id="raid-boss-name" class="boss-name">
+        <PixelHeading as="h3" outline="ink-drop" size="m" id="raid-boss-name" class="boss-name">
           {boss.name}
         </PixelHeading>
         <div class="boss-status">{status}</div>
