@@ -618,6 +618,53 @@ describe('query plan audit', () => {
     expect(result.found, scanMessage(result.found)).toEqual([]);
   }, 60_000);
 
+  it("plans the broker's statements (the seat made on the first look after the Market is built, a creature posted, an arrival and a look where it trades, a setting) without a whole-table scan", async () => {
+    const result = await audit({ valleySystems: true, fresh: true }, async (env, world) => {
+      const { clock } = env;
+      const relog = async (): Promise<void> => {
+        world.secrets.set(
+          userId(1),
+          await world.core.createSession(GUILD_ID, { id: userId(1), displayName: 'Player 1' }),
+        );
+      };
+      const call = (path: string, body: unknown): Promise<unknown> =>
+        callAs(world.core, world.secrets, 1, path, { method: 'POST', body });
+      clock.t += 6 * MINUTE;
+      await callAs(world.core, world.secrets, 1, '/api/state');
+      const mine = world.creatures[userId(1)] ?? [];
+      seedAnvils(env.metered.sql, userId(1), mine, 2);
+      env.metered.sql.exec(
+        "UPDATE parts SET amount = 0 WHERE user_id = ? AND kind = 'tide-shard'",
+        userId(1),
+      );
+      env.metered.sql.exec("UPDATE valley_places SET level = 2 WHERE place = 'market'");
+      clock.t += 10 * MINUTE;
+      await callAs(world.core, world.secrets, 1, '/api/state');
+      const seat = env.metered.sql
+        .exec<{ seat_id: string }>("SELECT seat_id FROM valley_seats WHERE place = 'market'")
+        .one().seat_id;
+      await call('/api/valley/seat', { seatId: seat, creatureId: mine[mine.length - 3] ?? null });
+      await call('/api/valley/broker', { seatId: seat, toward: 'grove' });
+      clock.t += 24 * 60 * MINUTE;
+      await relog();
+      await callAs(world.core, world.secrets, 1, '/api/state');
+      clock.t += 10 * MINUTE;
+      await callAs(world.core, world.secrets, 1, '/api/state');
+    });
+
+    expect(result.seen, 'statements recorded').toBeGreaterThan(40);
+    for (const table of ['valley_seats', 'valley_places', 'valley_creatures', 'parts'])
+      expect(
+        result.statements.some((q) => q.includes(table)),
+        table,
+      ).toBe(true);
+    expect(
+      result.statements.some((q) => q.includes('trade_hours')),
+      'trade_hours',
+    ).toBe(true);
+    expect(result.found, scanMessage(result.found)).toEqual([]);
+  }, 60_000);
+
   it("plans the Gazette's statements (an arrival that writes a paper, a joined one, a look with it unread, taking a way deeper, closing it) without a whole-table scan", async () => {
     const result = await audit({ valleySystems: true, fresh: true }, async (env, world) => {
       const { clock } = env;
