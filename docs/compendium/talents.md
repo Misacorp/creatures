@@ -339,7 +339,7 @@ Status: written 2026-10-31. **Combat v2 is in development and these talents are 
 
 - Roles: setter, payoff.
 - Line pools: Cindle.
-- Text `(content: combat-v2/talents.json)`: "Every third hit that lands is a crit, +0.1x on crits."
+- Text `(content: combat-v2/talents.json)`: "Every third hit that lands is a crit."
 - Gear line: none.
 - Canon `(compendium detail, not shipped)`: It counts in threes, like a drummer, and every third hit lands with a flourish.
 
@@ -381,7 +381,7 @@ Status: written 2026-10-31. **Combat v2 is in development and these talents are 
 
 - Roles: payoff.
 - Line pools: Mossback, Gaiadrake.
-- Text `(content: combat-v2/talents.json)`: "Its {Reaction} bonus +100% when it cashes a {Mark} at 2 stacks or more."
+- Text `(content: combat-v2/talents.json)`: "Its {Reaction} bonus +50% when it cashes a {Mark} at 2 stacks or more."
 - Gear line: none.
 - Canon `(compendium detail, not shipped)`: It waits for the bigger mark, and the wait is worth it.
 

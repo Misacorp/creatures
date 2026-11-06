@@ -4,6 +4,14 @@ The shared combat engine, abilities, statuses, elements, the balance simulator, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-06: Talents' raid share back in band: Opportunist +50%, Steady Rhythm without its crit bonus
+
+ID: `2026-11-06-talents-raid-share-back-in-band` · Status: current
+
+**Decision.** The Opportunist talent's bonus on a mark cashed at 2 stacks or more goes from +100% to +50% (`cashHighBp` 10000 to 5000, `packages/game/src/combat-v2/data/talents.json`), and Steady Rhythm loses its +0.1x crit damage (`critDamageBp` 1000 removed; it is still a crit on every third hit that lands). Texts, `knacks.md`, the compendium and the lab's grammar copy follow. Parity digest rewritten.
+
+**Reasoning.** The raid board's best-fit talent share read 24.0% on 2026-11-06 against a 17% to 23% band (22.3% on 2026-10-31), gauntlet 18.2%. Steady Rhythm is the most picked best-fit talent on the raid boards (21 of about 190 picks), Potent Mark and Opportunist follow. Opportunist's +100% on a 2-stack cash is what the new Knacks and cards feed most; cutting it alone gives raid 22.9%, adding the Steady Rhythm bonus cut 22.5%, gauntlet 18.0% (in band). Potent Mark 12 to 8 was tried and moved the share by 0.3 point, so it stays. The whole gate is as before (casual 1.42 is the known miss), `--rules` all met. The earlier idea of Steady Rhythm every 4th hit is an engine rule change and was not needed. To change back: set `cashHighBp` to 10000 and restore `critDamageBp` 1000.
+
 ## 2026-11-06: [Misa] Fizzle becomes a telegraphed boss move: immune to reactions every second turn
 
 ID: `2026-11-06-fizzle-becomes-a-telegraphed-boss-move` · Status: current

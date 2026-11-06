@@ -121,9 +121,9 @@ describe('the luck texts (panel 6)', () => {
     const x = (n: number) => `${n / 10_000}x`;
     const crit = (extra: number) => x(LAB_RULES.critBp + extra);
     expect(TALENTS['crit-damage']?.text).toContain(crit(bp('crit-damage', 'critDamageBp')));
-    expect(TALENTS['steady-rhythm']?.text).toContain(
-      `+${x(bp('steady-rhythm', 'critDamageBp'))} on crits`,
-    );
+    // Steady Rhythm adds no crit damage (2026-11-06): its text names none and its effect has none.
+    expect(TALENTS['steady-rhythm']?.fx.critDamageBp).toBeUndefined();
+    expect(TALENTS['steady-rhythm']?.text).not.toMatch(/on crits/);
     const swing = KNACKS['wild-swing']?.fx;
     expect(KNACKS['wild-swing']?.text).toContain(
       `+${(swing?.critChanceBp ?? 0) / 100} crit chance points`,

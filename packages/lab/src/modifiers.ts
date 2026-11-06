@@ -283,7 +283,7 @@ export const IDEAS: readonly Idea[] = [
   },
   {
     name: 'Steady Rhythm',
-    text: 'Every third hit that lands is a crit, +0.1x on crits.',
+    text: 'Every third hit that lands is a crit.',
     class: ['damage', HIT, 'rhythm'],
   },
   {
