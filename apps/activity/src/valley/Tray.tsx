@@ -2,11 +2,11 @@
  * The creature tray: the roster along the bottom of the valley (the party prototype's camp, adapted). Each
  * creature is a button with its sprite, "Lv N" under it, and at most one mark on it, one shape per state: a bag
  * (home with loot), "!" (done at the forge), an up arrow (can evolve), an anvil (working), a dark silhouette
- * with a pack and the destination's element (away), an anvil (working or smithing at the Forge), a small "z" (resting at the fire, the valley's systems), the destination's element (scouting). A free creature carries no mark; it idles. Two rows on a
+ * with a pack and the destination's element (away), an anvil (working or smithing at the Forge), a small "z" (resting at the fire, the valley's systems), the destination's element (scouting). A free creature carries no mark; it idles. One row when they all fit across, else two rows on a
  * phone (more creatures scroll sideways behind a cue), one row on a wide window. Tapping one opens the Paddock.
  */
 import { expeditionContent } from '@creatures/game';
-import { useEffect, useRef, useState } from 'preact/hooks';
+import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import type { Creature } from '../api';
 import { silhouettePalette } from '../art';
 import { cssVars } from '../css-vars';
@@ -140,6 +140,11 @@ export interface TrayDrag {
   consumeClick: () => boolean;
 }
 
+/** How many creatures stand side by side in a tray `width` CSS px wide (the CSS: 72 px columns, 4 px gaps, 6 px padding). */
+export function trayColumnsFit(width: number): number {
+  return Math.max(1, Math.floor((width - 12 + 4) / (72 + 4)));
+}
+
 export function Tray({
   creatures,
   input,
@@ -156,6 +161,21 @@ export function Tray({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [more, setMore] = useState(false);
+  // One row when every creature fits across (the tray is as tall as its content); two rows, scrolling sideways, when not.
+  const [rows, setRows] = useState(creatures.length <= 1 ? 1 : 2);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (el === null) return undefined;
+    const fit = (): void => {
+      setRows(creatures.length <= trayColumnsFit(el.clientWidth) ? 1 : 2);
+    };
+    fit();
+    const observer = new ResizeObserver(fit);
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+    };
+  }, [creatures.length]);
   useEffect(() => {
     const el = ref.current;
     if (el === null) return undefined;
@@ -174,7 +194,7 @@ export function Tray({
   return (
     <section class={`vy-tray${more ? ' has-more' : ''}`} aria-label={label}>
       <div class="vy-tray-scroll" ref={ref}>
-        <div class="vy-tray-grid">
+        <div class="vy-tray-grid" data-rows={rows}>
           {creatures.map((c, i) => (
             <TrayCreature
               key={c.id}

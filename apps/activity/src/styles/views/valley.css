@@ -492,6 +492,11 @@ main.card:has(.vy-frame) > .hud {
   min-width: min-content;
 }
 
+/* Every creature fits in one row: the tray is one row tall, with no empty block under it. */
+.vy-tray-grid[data-rows='1'] {
+  grid-template-rows: 84px;
+}
+
 @media (min-width: 900px) {
   .vy-tray-grid {
     grid-template-rows: 84px;
