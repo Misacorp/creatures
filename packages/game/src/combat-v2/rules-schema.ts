@@ -16,6 +16,7 @@ export const RulesSchema = v.pipe(
     maxBonusFactorBp: Int,
     /** A mark holds at most this many counts (R3). */
     maxStacks: Int,
+    overstackCapPerStackBp: Int,
     /** Dodge chance per point of Speed, the cap, and the share against area hits (R1). */
     dodgePerSpdBp: Int,
     dodgeMaxBp: Int,

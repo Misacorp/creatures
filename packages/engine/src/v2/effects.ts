@@ -55,6 +55,27 @@ export interface KnackFx {
   readonly trail?: boolean;
   /** A reaction on a mark of its element heals the creature that set it off (share of max HP). */
   readonly healOnReactionBp?: number;
+  /**
+   * Gear (Hollow Weave, three pieces): it heals itself by this share of its max HP whenever it sets off a reaction. A heal of its own,
+   * so it adds to Returning Tide's (`healOnReactionBp`) instead of replacing it.
+   */
+  readonly healOnCashBp?: number;
+  /**
+   * Gear (Ridge Copper, three pieces): after its reaction it leaves one stack of its own element's mark, like Leave a Trail. A wearer
+   * whose Knack is Leave a Trail (`trail`) leaves two. Its own field, so the engine can tell the set's trail from the Knack's.
+   */
+  readonly trailSet?: boolean;
+  /**
+   * Gear (Hearth Helpers, three pieces): its boost also lands on the creatures two slots away. A wearer whose Knack is Wide Embrace
+   * (`support: 'wideWarmth'`) reaches three slots out. Nobody is boosted twice.
+   */
+  readonly boostReachSet?: boolean;
+  /**
+   * Gear (First Footprints, three pieces), Deep Tracks: the marks it leaves can stack past the cap, one more for each living creature
+   * on the team that has this effect (silence blanks it). A reaction that spends more than the cap's stacks raises the bonus cap too
+   * (`RulesV2.overstackCapPerStackBp`).
+   */
+  readonly deepTracks?: boolean;
   /** When it dodges, it hits back for this share of its Attack (Retaliate). */
   readonly retaliateBp?: number;
   /** Store: +1 per dodge; at 3, its next mark gains this many extra stacks and spends all. */
@@ -347,6 +368,10 @@ export const GEAR_FIELDS: readonly (keyof KnackFx)[] = [
   'unreflectedFirst',
   'critWindowBp',
   'firstReactionCrit',
+  'healOnCashBp',
+  'trailSet',
+  'boostReachSet',
+  'deepTracks',
 ];
 
 /**

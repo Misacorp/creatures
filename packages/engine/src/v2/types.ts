@@ -115,6 +115,8 @@ export interface V2Rules {
   readonly maxBonusFactorBp: number;
   /** A mark holds at most this many counts (R3). */
   readonly maxStacks: number;
+  /** Deep Tracks: each stack a reaction spends past `maxStacks` raises the bonus factor's cap by this much (bp). */
+  readonly overstackCapPerStackBp: number;
   /** Dodge chance per point of Speed, the cap, and the share against area hits (R1). */
   readonly dodgePerSpdBp: number;
   readonly dodgeMaxBp: number;

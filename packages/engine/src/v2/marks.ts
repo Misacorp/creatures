@@ -28,23 +28,34 @@ const {
   silenced,
 } = stateMod;
 
+/**
+ * The most stacks a mark may hold when `by` adds to it (Deep Tracks): `maxStacks`, plus one for each living creature whose effects
+ * have Deep Tracks, when `by` is one of them. Any other addition keeps `maxStacks`, and no limit shrinks a mark already above it.
+ */
+export function stackLimit(s: State, current: number, by?: Fighter): number {
+  let limit = s.ctx.rules.maxStacks;
+  if (by !== undefined && s.carries.has('deepTracks') && fx(by).deepTracks) {
+    for (const o of alive(s)) if (fx(o).deepTracks) limit++;
+  }
+  return Math.max(limit, current);
+}
+
 export function addMark(
   s: State,
   element: string,
   stacks: number,
   opts: { sealed?: boolean; fromTrail?: boolean; by?: Fighter } = {},
 ): void {
-  const R = s.ctx.rules;
   const m = s.marks.get(element);
   if (m) {
     m.turnSet = s.bossTurnsDone;
     if (opts.by) m.owners.add(opts.by.uid);
-    m.stacks = Math.min(R.maxStacks, m.stacks + stacks);
+    m.stacks = Math.min(stackLimit(s, m.stacks, opts.by), m.stacks + stacks);
     // A mark is sealed if any of its counts was left sealed (R8).
     m.sealed ||= opts.sealed ?? false;
   } else {
     s.marks.set(element, {
-      stacks: Math.min(R.maxStacks, stacks),
+      stacks: Math.min(stackLimit(s, 0, opts.by), stacks),
       age: s.markAge++,
       sealed: opts.sealed ?? false,
       fromTrail: opts.fromTrail ?? false,
@@ -215,9 +226,13 @@ function supportVerb(s: State, f: Fighter, k: KnackFx): void {
           if (triage) bump(f, 'triageBp');
         }
       }
-      if (k.support === 'wideWarmth')
-        for (const o of beside(s, f, 2).filter((o) => Math.abs(o.col - f.col) === 2))
+      // Wide Embrace reaches one slot further, and Hearth Helpers (gear) one more: each creature is boosted once, at full strength.
+      const reach = 1 + (k.support === 'wideWarmth' ? 1 : 0) + (k.boostReachSet ? 1 : 0);
+      if (reach > 1) {
+        if (k.boostReachSet) bump(f, 'boostReachSet');
+        for (const o of beside(s, f, reach).filter((o) => Math.abs(o.col - f.col) > 1))
           give(o, boost + kindred(o));
+      }
       if (k.support === 'gatherCalm' && f.store >= 3) {
         for (const o of beside(s, f)) give(o, 4_500);
         setStore(s, f, 0);

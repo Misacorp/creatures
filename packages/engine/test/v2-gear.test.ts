@@ -3,7 +3,7 @@
  * effects in `fxAll` only, so silence blanks it (R12); its Armour is a stat line and stays. A Retaliate line and a Knack's make one
  * counter with the larger chance. Gear-less placements resolve exactly as before. Hand-built packs, as in `v2-resolve.test.ts`.
  */
-import { GEAR_LINE_FX } from '@creatures/game';
+import { GEAR_LINE_FX, SET_THREE_V2 } from '@creatures/game';
 import type { CombatV2Pack, KnackDef } from '@creatures/game/combat-v2';
 import {
   GEAR_FIELDS,
@@ -119,6 +119,8 @@ describe('a gear sheet in the resolver', () => {
       expect(listed.has(entry.field), id).toBe(true);
       for (const field of Object.keys(entry.once ?? {})) expect(listed.has(field), id).toBe(true);
     }
+    for (const [id, entry] of Object.entries(SET_THREE_V2))
+      for (const field of Object.keys(entry.fx)) expect(listed.has(field), id).toBe(true);
   });
 });
 

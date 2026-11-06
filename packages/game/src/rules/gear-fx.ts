@@ -78,6 +78,11 @@ export interface GearFx {
   unreflectedFirst?: boolean;
   critWindowBp?: number;
   firstReactionCrit?: boolean;
+  // The five set effects written for combat v2 (`SET_THREE_V2`).
+  healOnCashBp?: number;
+  trailSet?: boolean;
+  boostReachSet?: boolean;
+  deepTracks?: boolean;
 }
 
 type GearField = keyof GearFx;
@@ -220,6 +225,49 @@ export const SET_THREE_FX: Readonly<Record<string, GearLineFx>> = {
   firstReactionCrit: { field: 'firstReactionCrit', unit: 'flag' },
 };
 
+/** A three-piece effect written for combat v2: its words and the effect fields it gives. */
+export interface SetThreeV2 {
+  readonly text: string;
+  readonly fx: GearFx;
+}
+
+/**
+ * The five three-piece effects combat v2 has of its own (gear plan OPEN 5, Misa 2026-11-06), by set id. They replace the v1 effect of
+ * the same set in the new rules only: the set data (`gear-sets.json`) and v1 keep their effects and texts as they are. The wearer's
+ * element (Hollow Weave: grove, Ridge Copper: spark) is the data's `wearerElement`, as for every set. The "with the Knack" parts are
+ * the engine's: it tells the set's field from the Knack's own (`trailSet` against `trail`, `boostReachSet` against `wideWarmth`).
+ */
+export const SET_THREE_V2: Readonly<Record<string, SetThreeV2>> = {
+  'wardens-watch': {
+    text: 'Protects one more creature on each side of it, on top of Wide Reach.',
+    fx: { reachBonus: 1 },
+  },
+  'hollow-weave': {
+    text: 'Heals 3% of max HP whenever it cashes Grounding, on top of any heal a Knack gives.',
+    fx: { healOnCashBp: 300 },
+  },
+  'ridge-copper': {
+    text: 'Its Overload also leaves Charged afterwards. With Leave a Trail, that mark has 2 stacks.',
+    fx: { trailSet: true },
+  },
+  'hearth-helpers': {
+    text: 'Its boost also lands on the creature two slots away. With Wide Embrace, it reaches three slots out.',
+    fx: { boostReachSet: true },
+  },
+  'first-footprints': {
+    text: 'Deep Tracks: its marks can stack past x3, one more for each creature on the team wearing this set. A reaction that spends those extra stacks goes past the x3 cap too.',
+    fx: { deepTracks: true },
+  },
+};
+
+/** What a set's three pieces say under combat v2: its v2 text where it has one, else the set's own. */
+export function setThreeText(set: {
+  id: string;
+  three?: { text: string } | undefined;
+}): string | undefined {
+  return Object.hasOwn(SET_THREE_V2, set.id) ? SET_THREE_V2[set.id]?.text : set.three?.text;
+}
+
 /** The id a line has in `GEAR_LINE_FX`: an element line without its element. */
 function entryId(line: GearLine): string {
   return line.element === null ? line.id : line.id.slice(line.element.length + 1);
@@ -304,6 +352,15 @@ export function gearFx(
     for (const entry of set.two.lines) add(gearLine(entry.line), entry.value);
     // Three pieces: the set's one effect, for a wearer it works for (its element), when it has a v2 hook.
     const effect = set.three;
+    const v2 = Object.hasOwn(SET_THREE_V2, id) ? SET_THREE_V2[id] : undefined;
+    if (v2 !== undefined && effect !== undefined && count >= 3) {
+      if (effect.wearerElement !== undefined && effect.wearerElement !== wearer.element) continue;
+      for (const [field, value] of Object.entries(v2.fx)) {
+        if (typeof value === 'number') addTo(field, value);
+        else out[field] = true;
+      }
+      continue;
+    }
     const three =
       effect !== undefined && Object.hasOwn(SET_THREE_FX, effect.effect)
         ? SET_THREE_FX[effect.effect]

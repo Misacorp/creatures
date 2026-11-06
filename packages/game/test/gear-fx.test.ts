@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
   GEAR_LINE_FX,
+  SET_THREE_V2,
   gearContent,
   gearFx,
   gearLineHasV2Hook,
   itemOf,
   setPieces,
+  setThreeText,
   type GearItem,
   type Role,
 } from '../src/index';
@@ -236,8 +238,55 @@ describe('gearFx: the line to effect map', () => {
       reactionBonusBp: 2000,
       firstReactionCrit: true,
     });
-    // A retired three-piece effect adds nothing (Warden's Watch: the two-piece armour and the bell's, no reach).
-    expect(gearFx(wearer('guard'), three('wardens-watch'))).toEqual({ armourBonus: 8 });
+    // Warden's Watch: the two-piece armour and the bell's, and one more slot of reach.
+    expect(gearFx(wearer('guard'), three('wardens-watch'))).toEqual({
+      armourBonus: 8,
+      reachBonus: 1,
+    });
+  });
+
+  it('gives the five combat v2 three-piece effects of their own, for three pieces only', () => {
+    const worn = (setId: string, n = 3): GearItem[] =>
+      (['hat', 'scarf', 'charm'] as const).slice(0, n).map((slot) => {
+        const base = setPieces(setId).find((b) => b.slot === slot);
+        if (base === undefined) throw new Error(`no ${slot} in ${setId}`);
+        return itemOf(base.id, 'common', 100, []);
+      });
+    // Hollow Weave: a Grove wearer's heal when it cashes. Ridge Copper: a Spark wearer's trail. Neither works for another element.
+    expect(gearFx(wearer('payoff', 'grove'), worn('hollow-weave'))).toMatchObject({
+      healOnCashBp: 300,
+    });
+    expect(gearFx(wearer('payoff', 'tide'), worn('hollow-weave'))).toEqual({});
+    expect(gearFx(wearer('payoff', 'spark'), worn('ridge-copper'))).toMatchObject({
+      trailSet: true,
+    });
+    expect(gearFx(wearer('payoff', 'tide'), worn('ridge-copper'))).toEqual({});
+    expect(gearFx(wearer('support'), worn('hearth-helpers'))).toMatchObject({
+      boostReachSet: true,
+    });
+    expect(gearFx(wearer('setter'), worn('first-footprints'))).toMatchObject({
+      deepTracks: true,
+    });
+    // Two pieces give none of them, and the v1 id of the set (`sealMark`) gives nothing in combat v2.
+    expect(gearFx(wearer('setter'), worn('first-footprints', 2))).not.toHaveProperty('deepTracks');
+    expect(gearFx(wearer('setter'), worn('first-footprints'))).not.toHaveProperty('sealMark');
+  });
+
+  it('keeps the v1 set data as it is: the five v2 texts live apart from the set data', () => {
+    for (const [id, effect] of [
+      ['hollow-weave', 'healOnReaction'],
+      ['ridge-copper', 'chainMark'],
+      ['wardens-watch', 'guardReach'],
+      ['hearth-helpers', 'boostReach'],
+      ['first-footprints', 'sealMark'],
+    ] as const) {
+      const set = gearContent.sets.find((s) => s.id === id);
+      expect(set?.three?.effect, id).toBe(effect);
+      expect(Object.hasOwn(SET_THREE_V2, id), id).toBe(true);
+    }
+    expect(setThreeText({ id: 'first-footprints' })).toMatch(/^Deep Tracks:/);
+    // A set with no v2 effect of its own reads the set's text.
+    expect(setThreeText({ id: 'pounce-set', three: { text: 'x' } })).toBe('x');
   });
 
   it('counts a charm base line (the Warden bell is Armour)', () => {

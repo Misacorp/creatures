@@ -328,7 +328,11 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
     raise(f, 'freshMarkBp', k.freshMarkBp, mark.turnSet === s.bossTurnsDone);
     if (s.carries.has('ownMarkBp'))
       for (const o of alive(s)) raise(o, 'ownMarkBp', fx(o).ownMarkBp, mark.owners.has(o.uid));
-    factor = Math.min(factor, R.maxBonusFactorBp);
+    // Deep Tracks: a reaction that spends stacks past the mark cap raises the cap of the bonus factor with them (a one-stack cash is unchanged).
+    factor = Math.min(
+      factor,
+      R.maxBonusFactorBp + Math.max(0, spent - R.maxStacks) * R.overstackCapPerStackBp,
+    );
     bonus = Math.floor((((plain * (R.payoffMultBp - 10_000)) / 10_000) * factor) / 10_000);
     // Reaction Resistance: half the bonus at full strength, less below it.
     if (s.opts.resistReaction === el && !s.purged)
@@ -361,6 +365,11 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
         o.lastStoreRound = s.round;
       }
       if (ok.healOnReactionBp && o.element === el) heal(s, f, ok.healOnReactionBp, false, o);
+      // Hollow Weave (gear, three pieces): the wearer heals itself when it sets off a reaction.
+      if (o === f && ok.healOnCashBp) {
+        heal(s, f, ok.healOnCashBp, false, f);
+        bump(f, 'healOnCashBp');
+      }
       if (ok.support === 'clearAir' && beside(s, o).includes(f)) {
         heal(s, f, 1_000, false, o);
         f.silencedTurns = 0;
@@ -394,12 +403,15 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
       }
     }
     // Leave a Trail: one link per chain, so a reaction on a trail mark leaves no trail.
-    if (k.trail && !mark.fromTrail)
-      addMark(s, f.element, 1, {
+    // Ridge Copper (gear, three pieces) gives the same trail; with the Knack itself the mark has two stacks.
+    if ((k.trail || k.trailSet) && !mark.fromTrail) {
+      if (k.trailSet) bump(f, 'trailSet');
+      addMark(s, f.element, k.trail && k.trailSet ? 2 : 1, {
         sealed: k.seal ?? false,
         fromTrail: true,
         by: f,
       });
+    }
   }
   // 4. Cap, then armour: at or below armour the hit is Blocked (R13). A spent mark stays spent.
   if (!dodged && !k.noDamage) {
@@ -522,7 +534,8 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
       if (k.markOthers)
         for (const [other, m] of s.marks)
           if (other !== el) {
-            m.stacks = Math.min(R.maxStacks, m.stacks + 1);
+            // Feed the Marks keeps the usual cap, and never shrinks a mark that Deep Tracks took above it.
+            m.stacks = Math.min(Math.max(R.maxStacks, m.stacks), m.stacks + 1);
             if (s.opts.log)
               emit(s, { type: 'mark', element: other, stacks: m.stacks, sealed: m.sealed });
           }

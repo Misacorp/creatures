@@ -22,6 +22,7 @@ const RULES: V2Rules = {
   payoffMultBp: 20_000,
   maxBonusFactorBp: 30_000,
   maxStacks: 3,
+  overstackCapPerStackBp: 10_000,
   dodgePerSpdBp: 10,
   dodgeMaxBp: 5_000,
   areaDodgeShareBp: 5_000,
