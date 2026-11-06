@@ -44,7 +44,7 @@ import { keepsakeGlyph } from './dungeon-text';
 import { FindItems } from './ui/FindItem';
 import { essenceCount, partBadge } from './count-items';
 import { modifierActs, modifierIcon } from './dungeon-rooms';
-import { ArmourChip } from './BossCardV2';
+import { ArmourChip, RuleCards } from './BossCardV2';
 import { MoveTile } from './ui/MoveTile';
 import { roomMoves } from './dungeon-playback';
 import type {
@@ -496,6 +496,7 @@ function FoeBody({
         <p class="dnd-line dnd-descend">{DESCEND_LINE}</p>
       )}
       {children}
+      {card !== undefined && <RuleCards card={card} />}
       {card !== undefined &&
         (card.moves.length === 0 ? (
           <p class="dnd-trick">
