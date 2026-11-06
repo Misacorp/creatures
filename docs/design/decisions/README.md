@@ -23,6 +23,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [direction.md](direction.md): Roadmap calls, Misa's standing direction, naming and tone, content policy, how agents and Misa work.
 
+- 2026-11-06 The reset: no warning post, the wipe runs when Misa asks, no server rank or bosses in the record \[Misa\]
 - 2026-11-06 The settlers' record keeps eight feats; firsts on the server are read by catch date \[Misa\]
 - 2026-11-06 The reset: settlers appear on every server, each player gets their record by DM, and a hidden trace of who was there is kept \[Misa\] (amended)
 - 2026-11-06 Overnight sessions: quiet until news, then one message with every open question \[Misa\]

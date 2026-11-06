@@ -1,6 +1,6 @@
 # The reset (combat v2 phase 6, valley phase 6)
 
-Status: **draft, 2026-11-06.** Nothing here is shipped or built. Everything marked **Proposal** waits for Misa. The combat half is written here; the valley session adds its half in the section kept for it.
+Status: **accepted by Misa, 2026-11-06.** Nothing here is built yet. Misa accepted the plan with the picks below; the valley session's half is still to come. The combat half is written here; the valley session adds its half in the section kept for it.
 
 ## What is decided
 
@@ -14,7 +14,7 @@ One record per server. It holds only what the game already stores today (invento
 
 **Per settler:**
 
-- The name they had in the game (Discord display name, as stored, at most 32 characters) and the day they first played.
+- The name they had in the game on the switch day (Discord display name, as stored, at most 32 characters) and the day they first played.
 - **Every creature:** species (its current form), line, level, shiny, nickname, how it came (starter, trip, Festival), the day it was caught, its quirk. (Misa's brief: "each player's creatures and their names".)
 - **The eight feats below**, and nothing else (Misa, 2026-11-06: "only keep a handful").
 
@@ -33,7 +33,7 @@ One record per server. It holds only what the game already stores today (invento
 
 **First on the server, read by catch date (technical call).** Misa noted the stored server firsts look odd because of evolutions: `server_firsts` also has an `evolve` kind and records the species at the moment of the drop. Instead, for each creature line we take the creature with the earliest `caught_at` on the server and credit its owner, named by the line's first form ("First Mossling"), whatever it has evolved into since. Starters and dev-tool creatures don't count (everyone picks a starter). Creatures are never deleted outside the staging dev tools, so every catch still counts.
 
-**Per server:** its best Boss Rank and the bosses it beat.
+Nothing per server: no Boss Rank and no bosses beaten (Misa, 2026-11-06: combat is being reworked, so they mean nothing later).
 
 ### What is already lost (we can't promise these)
 
@@ -67,15 +67,14 @@ Everything else, on every server: creatures, talents, Talent Books, gear, materi
 
 ## 4. When the switch goes on
 
-**Proposal:**
+Decided with Misa, 2026-11-06:
 
 1. Phase 7 (a real raid weekend on staging with Misa and testers) passes, valley included.
-2. Misa picks the day. A Discord post a week before tells players the date.
-3. One release turns on combat v2 and the valley and carries the reset. Each server resets the first time it wakes on the new build, closed behind a "back soon" card while it works:
+2. **No warning post from the game.** Misa tells players himself, then asks an agent to do the wipe. The agent opens the PR that turns the switch on, and Misa merges it (agents never deploy production). A Monday is best, so the first raid week starts clean.
+3. That release turns on combat v2 and the valley and carries the reset. Each server resets the first time it wakes on the new build, closed behind a "back soon" card while it works:
    1. Take one snapshot and write the record to the archive; confirm it is stored. If that fails, the server does not wipe and stays closed, so nothing is lost by accident.
    2. DM each player their record from that same snapshot (section 5).
-   3. Wipe once the DMs are sent, or after a time limit, so a stuck DM never blocks the reset.
-4. A Monday, so the first week starts clean (raid preparation, a full week to the first boss).
+   3. Wipe once the DMs are sent, or after **24 hours**, so a stuck DM never blocks the reset.
 
 ## 5. The one-time notice
 
@@ -88,7 +87,7 @@ Everything else, on every server: creatures, talents, Talent Books, gear, materi
 > Best crafter: Ember the Ashmole, Crafting 9 · Best explorer: Fizz the Lanternfin, Explorer 7
 > Your creatures: Pebbles, Ember, Fizz and 39 more
 
-**The notice in the game (proposal).** A card on first open after the reset, like the level reset's card, and one Discord post in the announce channel. Draft:
+**The notice in the game (Misa, 2026-11-06).** A card on first open after the reset, like the level reset's card, for players who open the game without knowing what happened. No Discord post. Draft (the valley session may adjust the last line to its start):
 
 > **A new valley**
 > The old valley has gone quiet. The first settlers are remembered, and their creatures with them. Pick a starter and find your way.
@@ -109,4 +108,4 @@ Kept for the valley session (owner of `docs/design/valley/`): what the valley re
 
 ## Open questions for Misa
 
-1. The switch day and the notice text (sections 4 and 5), when phase 7 is close.
+None. Misa will say when to do the wipe.

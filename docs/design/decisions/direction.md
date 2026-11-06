@@ -4,6 +4,20 @@ Roadmap calls, Misa's standing direction, naming and tone, content policy, how a
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-06: The reset: no warning post, the wipe runs when Misa asks, no server rank or bosses in the record [Misa]
+
+ID: `2026-11-06-the-reset-no-warning-post-the` · Status: current · Amends: `2026-11-06-the-reset-settlers-appear-on-every`
+
+**Decision.** Misa accepted the reset plan (`docs/design/reset.md`) with the lead's picks, and three changes:
+
+- **No warning post from the game.** Misa tells players himself, then asks an agent to do the wipe; the agent opens the PR that turns the switch on and Misa merges it.
+- **The record keeps nothing per server**: no Boss Rank, no bosses beaten.
+- **The one-time card in the game stays**, for players who open it without knowing what happened. There is no Discord post.
+
+The lead's picks that stand: the wipe waits at most 24 hours for the goodbye DMs; the name kept is the display name on the switch day; a Monday is the best switch day; and the earlier technical calls (record in the live game only, private notes left out, no double leet pay, save before wipe, DM to everyone once, a name check before cross-server use, anonymous usage counts kept).
+
+**Reasoning.** Misa, 2026-11-06: "Let's go with your recommendation but not have any warning. I'll just communicate it myself and ask you to do the wipe. Combat is getting reworked so no need to store the server rank or boss info. 13 I suppose it's good to have that kind of a message if players open the game but don't know what's up."
+
 ## 2026-11-06: The settlers' record keeps eight feats; firsts on the server are read by catch date [Misa]
 
 ID: `2026-11-06-the-settlers-record-keeps-eight-feats` · Status: current · Amends: `2026-11-06-the-reset-settlers-appear-on-every`
@@ -14,7 +28,7 @@ ID: `2026-11-06-the-settlers-record-keeps-eight-feats` · Status: current · Ame
 
 ## 2026-11-06: The reset: settlers appear on every server, each player gets their record by DM, and a hidden trace of who was there is kept [Misa]
 
-ID: `2026-11-06-the-reset-settlers-appear-on-every` · Status: current, amended by `2026-11-06-the-settlers-record-keeps-eight-feats` · Amends: `2026-11-06-the-settlers-record-lives-in-a`
+ID: `2026-11-06-the-reset-settlers-appear-on-every` · Status: current, amended by `2026-11-06-the-reset-no-warning-post-the`, `2026-11-06-the-settlers-record-keeps-eight-feats` · Amends: `2026-11-06-the-settlers-record-lives-in-a`
 
 **Decision.** Misa's answers on the reset plan (`docs/design/reset.md`):
 
