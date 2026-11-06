@@ -3278,7 +3278,7 @@ try {
         const labels = await pips.evaluateAll((els) =>
           els.map((el) => el.getAttribute('aria-label')),
         );
-        if (!labels.includes('Bronze trial, 2 of 4 boxes ticked'))
+        if (!labels.includes('Bronze trial, 2 / 4 boxes ticked'))
           throw new Error(`the pips are not named: ${labels.join(' | ')}`);
         if (!labels.some((l) => /^Silver trial/.test(l ?? '')))
           throw new Error('the creature with Bronze shows no Silver trial next');

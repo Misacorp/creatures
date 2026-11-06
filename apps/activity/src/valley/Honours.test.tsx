@@ -63,7 +63,7 @@ describe('the next trial on the card (V-TRIAL-3)', () => {
   it('shows only the next trial as pips for its boxes, the ticked ones lit', () => {
     const p = drawCard(sampleTrial({ ticked: 2 }));
     const button = pips(p);
-    expect(button?.getAttribute('aria-label')).toBe('Bronze trial, 2 of 4 boxes ticked');
+    expect(button?.getAttribute('aria-label')).toBe('Bronze trial, 2 / 4 boxes ticked');
     expect(byClass(button ?? p.root, 'pips')).toHaveLength(1);
     const lit = byClass(button ?? p.root, 'on');
     expect(lit).toHaveLength(2);

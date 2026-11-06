@@ -33,7 +33,7 @@ describe('the next trial as pips and a list', () => {
     expect(next?.level).toBe(10);
     expect(next?.rows.map((r) => r.ticked)).toEqual([true, true, false, false]);
     expect(next?.ticked).toBe(2);
-    expect(trialLabel(must(next))).toBe('Bronze trial, 2 of 4 boxes ticked');
+    expect(trialLabel(must(next))).toBe('Bronze trial, 2 / 4 boxes ticked');
   });
 
   it('moves up with each honour: Silver after Bronze, Gold after Silver, and nothing once Gold is held', () => {

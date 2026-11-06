@@ -76,11 +76,11 @@ export function nextTrial(trial: ValleyTrialView | undefined): NextTrial | null 
   };
 }
 
-/** The pips' spoken name: "Bronze trial, 2 of 4 boxes ticked", or that it graduates at the next ceremony. */
+/** The pips' spoken name: "Bronze trial, 2 / 4 boxes ticked", or that it graduates at the next ceremony. */
 export function trialLabel(next: NextTrial): string {
   return next.ready
     ? `${next.name} trial, every box ticked: graduates at the next ceremony`
-    : `${next.name} trial, ${String(next.ticked)} of ${String(next.rows.length)} boxes ticked`;
+    : `${next.name} trial, ${String(next.ticked)} / ${String(next.rows.length)} boxes ticked`;
 }
 
 /** The line under the popover's list: when the trial is ready it graduates, and a creature below the level waits for it. */

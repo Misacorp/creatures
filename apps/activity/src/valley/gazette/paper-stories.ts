@@ -11,7 +11,6 @@
  * - **The decision** (V-RET-3) is not a story: it is the paper's one choice at the end (`decisionOf`).
  */
 import type { Paper, PaperDecision, PaperHeadline } from '@creatures/game';
-import { combatV2 } from '@creatures/game/combat-v2';
 import type { Creature } from '../../api';
 import { creatureName, speciesName } from '../../game';
 import { baitCount } from '../../count-items';
@@ -42,11 +41,17 @@ const PAIR_MOMENTS: readonly ((a: string, b: string) => string)[] = [
   (a, b) => `${a} chased ${b} round the fire`,
 ];
 
-/** A talent's name for the paper: the library's own, else its id read as words. */
+/**
+ * A talent's name for the paper: its id read as words, each capitalised ("first-pounce" is "First Pounce"). The paper holds the id only,
+ * and the combat library stays out of the main bundle (the production build test forbids its draft text there).
+ */
 const talentName = (id: string | null | undefined): string =>
   id === null || id === undefined
     ? 'a talent'
-    : (combatV2.talents[id]?.name ?? id.replace(/-/g, ' '));
+    : id
+        .split('-')
+        .map((w) => `${w.charAt(0).toUpperCase()}${w.slice(1)}`)
+        .join(' ');
 
 const honourName = (tier: number): string => ['Bronze', 'Silver', 'Gold'][tier - 1] ?? 'Bronze';
 const plural = (n: number, one: string, many: string): string => (n === 1 ? one : many);
