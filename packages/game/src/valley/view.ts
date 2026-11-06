@@ -188,10 +188,9 @@ export const ValleyVisitorCreatureSchema = v.strictObject({
 
 /**
  * A player who is online now (V-BON-4, "no couch": the valley shows who is here), with up to three of their resting creatures, which
- * the Bonfire draws among its own. Company brings no XP and no boost. Never the caller; never more than `MAX_ONLINE` players.
+ * the Bonfire draws among its own. Company brings no XP and no boost. Never the caller; never more than `MAX_ONLINE` players; no id of the player goes out.
  */
 export const ValleyOnlineSchema = v.strictObject({
-  userId: id,
   /** The player's name (plain text). */
   name: v.pipe(v.string(), v.minLength(1), v.maxLength(40)),
   creatures: v.pipe(v.array(ValleyVisitorCreatureSchema), v.maxLength(3)),

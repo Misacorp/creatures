@@ -143,7 +143,7 @@ export class ValleyBonfire {
           level: c.level,
           name: c.nickname === null || c.nickname === '' ? null : c.nickname.slice(0, 40),
         }));
-      out.push({ userId: id, name: name.slice(0, 40), creatures });
+      out.push({ name: name.slice(0, 40), creatures });
       if (out.length >= MAX_ONLINE) break;
     }
     return out;

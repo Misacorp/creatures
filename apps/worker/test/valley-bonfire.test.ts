@@ -288,13 +288,13 @@ describe('who is online (V-BON-4)', () => {
         seatInstance(ctx, [p.id, q.id]);
         const online = view(await p.state()).online;
         expect(online).toHaveLength(1);
-        expect(online[0]?.userId).toBe(q.id);
+        expect(online[0]?.name).toBe(q.name);
         expect(online[0]?.name).toBe(q.name);
         expect(online[0]?.creatures).toHaveLength(3);
         expect(online[0]?.creatures.every((c) => c.level === 9)).toBe(true);
         // The other player's own view does not list themselves, and lists p.
         const mine = view(await q.state()).online;
-        expect(mine.map((o) => o.userId)).toEqual([p.id]);
+        expect(mine.map((o) => o.name)).toEqual([p.name]);
         // Company changes nobody's XP: the two settle exactly as they would alone (the XP of p's creatures is the plain idle rate).
         expect(count(ctx.sql, 'lounge_rest')).toBe(0);
       },
@@ -526,7 +526,6 @@ describe("a raider's post pauses (V-POST-7)", () => {
 describe('the strictness of the new fields', () => {
   it('rejects an online entry with an unknown key or too many creatures', () => {
     const base = {
-      userId: '1',
       name: 'A',
       creatures: [{ id: 'c', species: 'x', shiny: false, level: 1, name: null }],
     };

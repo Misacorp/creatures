@@ -223,7 +223,6 @@ describe('the tray says resting', () => {
 
 describe('company and the warming flame (V-BON-2, V-BON-4)', () => {
   const visitor = (n: number, creatureCount = 3) => ({
-    userId: `90${String(n)}`,
     name: `Mia ${String(n)}`,
     creatures: Array.from({ length: creatureCount }, (_, i) => ({
       id: `v${String(n)}-${String(i)}`,

@@ -32,9 +32,8 @@ import { describe, expect, it } from 'vitest';
 import { RULES } from '../src/rules';
 import { profileById } from '../src/profiles';
 import { ALL_SERVERS } from '../src/servers';
-import { runServer } from '../src/sim';
+import { runServer, type PlayerRun } from '../src/sim';
 import { TARGETS, THRESHOLDS } from '../src/targets';
-import type { PlayerRun } from '../src/types';
 import { buildSchedule } from '../src/world';
 
 const H = 3_600_000;
@@ -48,6 +47,7 @@ const SHARE_TOLERANCE = 0.15;
 
 const config = ALL_SERVERS.find((s) => s.id === 'mixed8');
 if (!config) throw new Error('no mixed8 server');
+const profiles = config.players.map((p) => p.profile);
 const run = runServer({ ...config, weeks: WEEKS }, SEED, RULES);
 
 const sortedDesc = (levels: readonly number[]): number[] => [...levels].sort((a, b) => b - a);
@@ -109,7 +109,6 @@ function replayWeek(
       baseXp: xp[i] ?? 0,
     })),
   };
-  let idleXp = 0;
   for (let d = 0; d < 7; d++) {
     const dayStart = t0 + d * DAY;
     const stops = [...visits.filter((at) => at > dayStart && at <= dayStart + DAY), dayStart + DAY];
@@ -143,13 +142,13 @@ function replayWeek(
     };
   }
   const end = state.creatures.map((c) => (c.baseXp ?? 0) + c.xp + c.carry);
-  idleXp = state.creatures.reduce((sum, c) => sum + c.xp + c.carry, 0);
+  const idleXp = state.creatures.reduce((sum, c) => sum + c.xp + c.carry, 0);
   void index;
   return { levels: sortedDesc(end.map((a) => levelAtXp(a))), idleXp };
 }
 
 function replayAll(profile: string): { lab: PlayerRun; weeks: (WeekReplay | null)[] } {
-  const index = config.players.findIndex((p) => p.profile === profile);
+  const index = profiles.indexOf(profile);
   const lab = run.players[index];
   if (!lab) throw new Error(`no ${profile} player`);
   const visitAt = buildSchedule(profileById(profile), index, WEEKS);

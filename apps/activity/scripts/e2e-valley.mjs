@@ -1569,14 +1569,12 @@ try {
       scouts.ids = creatures.map((c) => c.id);
       bonfire.online = [
         {
-          userId: '9001',
           name: 'Mia',
           creatures: [
             { id: 'v1', species: creatures[2].species, shiny: false, level: 9, name: null },
           ],
         },
         {
-          userId: '9002',
           name: 'Tobias',
           creatures: [
             { id: 'v2', species: creatures[3].species, shiny: false, level: 14, name: 'Pebble' },
