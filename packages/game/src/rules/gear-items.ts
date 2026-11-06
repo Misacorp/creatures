@@ -260,6 +260,40 @@ export function rollLines(
   return out;
 }
 
+/**
+ * Fresh lines for the ones an item lost when the content removed their line (CLAUDE.md: a removed modifier is replaced by a
+ * fresh random roll). Each replacement is drawn by weight from the item's own pool, never a line the item already has, and
+ * never a second special line (`rollLines`' rule); the tier is rolled as a drop rolls it. Fewer come back when the pool runs out.
+ */
+export function rollReplacementLines(
+  rng: Rng,
+  base: Pick<GearBase, 'slot' | 'tag' | 'pool' | 'stats'>,
+  rarity: GearRarity,
+  itemLevel: number,
+  kept: readonly ItemLine[],
+  count: number,
+): ItemLine[] {
+  const level = clampItemLevel(itemLevel);
+  const have = new Set(kept.map((l) => l.id));
+  let special = specialLinesOf(kept).length > 0;
+  const pool = linePool(base, rarity, level).filter(
+    (p) => !have.has(p.line.id) && !(special && p.line.special),
+  );
+  const out: ItemLine[] = [];
+  for (let i = 0; i < count && pool.length > 0; i++) {
+    const picked = pickWeighted(rng, pool);
+    pool.splice(pool.indexOf(picked), 1);
+    if (picked.line.special) {
+      special = true;
+      for (let j = pool.length - 1; j >= 0; j--) {
+        if ((pool[j] as PoolLine).line.special) pool.splice(j, 1);
+      }
+    }
+    out.push({ id: picked.line.id, tier: picked.line.single ? 0 : rollTier(rng, level) });
+  }
+  return out;
+}
+
 /** The special lines among an item's rolled lines (an item holds at most one; see `rollLines`). */
 export function specialLinesOf(lines: readonly ItemLine[]): ItemLine[] {
   return lines.filter((l) => gearLine(l.id)?.special === true);
@@ -544,19 +578,16 @@ export interface GearMods {
   dodgeBp?: number;
   areaDodgeBp?: number;
   steadyPawsBp?: number;
-  warmHeartBp?: number;
   quickRemarkBp?: number;
   spillOverBp?: number;
   paybackBp?: number;
   kindlingBp?: number;
-  openingMark?: 0 | 1;
   rallyCryBp?: number;
   emberTailBp?: number;
   stormWarningBp?: number;
   stubborn?: 0 | 1;
   lastStandBp?: number;
   overflowBp?: number;
-  secondBreathBp?: number;
   patientBp?: number;
   sharedWarmthBp?: number;
   /** On-dodge lines (`combat-rules.md` 12): they fire when the wearer dodges a boss hit. */
@@ -685,7 +716,7 @@ type SheetNumeric =
   | 'debuffDurationTurns'
   | 'areaDodgeBp'
   | (typeof CHANCE_FIELDS)[number]
-  | Exclude<(typeof TRIGGER_FIELDS)[number], 'openingMark' | 'stubborn'>;
+  | Exclude<(typeof TRIGGER_FIELDS)[number], 'stubborn'>;
 
 function addTo<K extends string>(
   table: Partial<Record<K, number>> | undefined,
@@ -797,7 +828,6 @@ const CAPPED_AT_WHOLE = [
   ...CHANCE_FIELDS,
   'stormWarningBp',
   'lastStandBp',
-  'secondBreathBp',
 ] as const;
 const CAPPED_SET: ReadonlySet<string> = new Set(CAPPED_AT_WHOLE);
 
@@ -807,7 +837,7 @@ const CAPPED_SET: ReadonlySet<string> = new Set(CAPPED_AT_WHOLE);
  * sheet's conditions are resolved here: an element Hunter becomes a bonus against every element it deals 150% to,
  * an element Ward a reduction against every element that deals 150% to it, a reaction line the bonus of that
  * reaction, a position line the bonus beside a role. Pure and deterministic; no caps beyond the ones
- * the engine's sheet checks (a reduction stays below 100%, a pierce at most 100%, Lingering at most 3 rounds).
+ * the engine's sheet checks (a reduction stays below 100%, a pierce at most 100%).
  *
  * The creature's talents (`talents`) go through the same function: a talent whose effect is a gear line
  * is folded exactly like that line on an item, and the two rules only talents have (Speed, glimmer finds)
@@ -905,7 +935,7 @@ export function wornEffects(
       case 'sheet':
         if (effect.field === 'ignoreSilence') {
           sheet.ignoreSilence = 1;
-        } else if (effect.field === 'openingMark' || effect.field === 'stubborn') {
+        } else if (effect.field === 'stubborn') {
           sheet[effect.field] = 1;
         } else if (effect.field === 'sidestepBp' && RULES.combat.dodge.enabled) {
           // The one switch (`RULES.combat.dodge.enabled`): with dodge on, Sidestep is flat dodge against area

@@ -75,6 +75,7 @@ import {
   rollFinaleReward,
   rollItem,
   rollLines,
+  rollReplacementLines,
   rollTier,
   rollWelcomeKit,
   skillLevel,
@@ -2135,5 +2136,31 @@ describe('the day modifiers hook (Market Day, built by the Boons step)', () => {
     expect(pileDismantleXp(['common', 'common', 'rare', 'epic'])).toBe(6 + 12 + 24);
     // Apprentice adds its share once, to the total.
     expect(pileDismantleXp(['rare', 'epic'], 1_000)).toBe(Math.floor((36 * 11_000) / 10_000));
+  });
+});
+
+describe('rollReplacementLines (a removed line comes back as a fresh roll)', () => {
+  const base = { slot: 'charm', tag: 'neutral' } as const;
+  it('draws from the item pool, never a line the item has, never a second special line', () => {
+    const kept = [
+      { id: 'cover', tier: 1 },
+      { id: 'payback', tier: 0 },
+    ];
+    for (let n = 0; n < 40; n++) {
+      const got = rollReplacementLines(createSeededRng(`rep:${n}`), base, 'epic', 20, kept, 2);
+      expect(got).toHaveLength(2);
+      const ids = got.map((l) => l.id);
+      expect(new Set([...ids, 'cover', 'payback']).size).toBe(4);
+      // `payback` is special, so no replacement is.
+      expect(got.filter((l) => gearLine(l.id)?.special === true)).toEqual([]);
+      for (const l of got) expect(l.tier).toBeGreaterThanOrEqual(0);
+    }
+  });
+  it('is the same for the same stream and gives fewer when the pool runs out', () => {
+    const a = rollReplacementLines(createSeededRng('same'), base, 'epic', 20, [], 3);
+    const b = rollReplacementLines(createSeededRng('same'), base, 'epic', 20, [], 3);
+    expect(a).toEqual(b);
+    const all = linePool(base, 'epic', 20).map((p) => ({ id: p.line.id, tier: 0 }));
+    expect(rollReplacementLines(createSeededRng('x'), base, 'epic', 20, all, 2)).toEqual([]);
   });
 });

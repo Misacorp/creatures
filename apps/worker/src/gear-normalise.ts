@@ -14,7 +14,9 @@
  * Items keep their id, worn state, level and tiers. A removed line becomes its nearest current one at the
  * same tier (`sturdy-blow` becomes the item's own flat Attack, `attack` its own percent Attack, `hp` and
  * `thick-coat` the same for HP; on a Charm they become the Charm's Creature Attack and Creature HP). A
- * line that has no nearest one is dropped. An unknown base becomes the best base of the same slot and tag
+ * line that has no nearest one is dropped; when a random source is given (the live one, at every start) each dropped line is
+ * replaced by a fresh random roll of the item's own pool (CLAUDE.md: a removed modifier is replaced by a fresh random roll;
+ * Warm heart, Second breath, Opening mark and Lingering, Misa 2026-11-06). An unknown base becomes the best base of the same slot and tag
  * the item's level unlocks. Item stats are not stored (they are computed from the base and the lines), so
  * there is nothing else to recompute. One unreadable row never stops the guild from starting: it is
  * counted, logged by kind only, and left as it is (the views skip a row they cannot read).
@@ -28,9 +30,11 @@ import {
   eligibleBases,
   gearBase,
   gearLine,
+  rollReplacementLines,
   type GearBase,
   type GearSlot,
   type GearTag,
+  type Rng,
 } from '@creatures/game';
 import type { GearRow } from './gear-store';
 
@@ -133,7 +137,7 @@ function logUnreadable(kind: string, err: unknown): void {
   );
 }
 
-function normaliseItems(sql: SqlStorage, report: NormaliseReport): void {
+function normaliseItems(sql: SqlStorage, report: NormaliseReport, rng: Rng | undefined): void {
   const rows = sql.exec<GearRow>('SELECT * FROM gear_items ORDER BY rowid').toArray();
   for (const row of rows) {
     try {
@@ -153,12 +157,22 @@ function normaliseItems(sql: SqlStorage, report: NormaliseReport): void {
       } catch {
         lines = [];
       }
+      const rarity = normaliseRarity(row.rarity);
+      const kept = normaliseLines(lines, base.slot);
+      // A line the content removed (Warm heart, Second breath, Opening mark, Lingering) is replaced by a fresh random roll of
+      // the item's own pool. Only a line with no nearest current one counts (a moved line is mapped above), and a duplicate
+      // that was merged is not a removal.
+      const removed = lines.filter((l) => mapLine(l, base.slot) === null).length;
+      const fresh =
+        rng === undefined || removed === 0
+          ? []
+          : rollReplacementLines(rng, base, rarity, row.item_level, kept, removed);
       const next = {
         base_id: base.id,
         slot: base.slot,
         tag: base.tag,
-        rarity: normaliseRarity(row.rarity),
-        lines_json: JSON.stringify(normaliseLines(lines, base.slot)),
+        rarity,
+        lines_json: JSON.stringify([...kept, ...fresh]),
       };
       if (
         next.base_id === row.base_id &&
@@ -223,15 +237,18 @@ function fixJsonColumn(
  * Normalises every row of the earlier v2 shape. Safe on every start; with nothing to fix it only reads.
  * Never throws: a failure of one row is counted in `unreadable`.
  */
-export function normaliseGearRows(storage: {
-  sql: SqlStorage;
-  transactionSync: <T>(fn: () => T) => T;
-}): NormaliseReport {
+export function normaliseGearRows(
+  storage: {
+    sql: SqlStorage;
+    transactionSync: <T>(fn: () => T) => T;
+  },
+  rng?: Rng,
+): NormaliseReport {
   const report: NormaliseReport = { items: 0, jobs: 0, grants: 0, unreadable: 0 };
   const sql = storage.sql;
   try {
     storage.transactionSync(() => {
-      normaliseItems(sql, report);
+      normaliseItems(sql, report, rng);
       fixJsonColumn(sql, 'workshop_jobs', ['id'], 'input_json', report, 'jobs');
       fixJsonColumn(sql, 'workshop_jobs', ['id'], 'result_json', report, 'jobs');
       fixJsonColumn(sql, 'gear_grants', ['user_id', 'key'], 'result_json', report, 'grants');

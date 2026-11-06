@@ -161,19 +161,12 @@ describe('gearFx: the line to effect map', () => {
 
   it('adds nothing for lines with no v2 hook, stat lines and an empty set of items', () => {
     expect(gearFx(wearer('guard'), [])).toEqual({});
-    for (const line of [
-      'attack',
-      'hp',
-      'crit-chance',
-      'warm-heart',
-      'second-breath',
-      'opening-mark',
-    ]) {
+    for (const line of ['attack', 'hp', 'crit-chance']) {
       expect(gearFx(wearer('guard'), [hatWith(line)]), line).toEqual({});
     }
     expect(gearLineHasV2Hook('first-pounce')).toBe(true);
     expect(gearLineHasV2Hook('tide-reaction')).toBe(true);
-    // Retired for combat v2 (Warm Heart, Second Breath, Opening Mark): no hook.
+    // Warm Heart, Second Breath and Opening Mark are gone from the data (Misa 2026-11-06): no line, no hook.
     for (const line of ['warm-heart', 'second-breath', 'opening-mark'])
       expect(gearLineHasV2Hook(line), line).toBe(false);
     for (const line of [

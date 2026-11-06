@@ -462,14 +462,7 @@
     "set": "lantern-night",
     "implicit": { "line": "tide-attunement", "values": [200, 300, 400, 500, 600] },
     "fixed": { "line": "lantern-luck", "values": [50, 50, 100, 100, 150] },
-    "pool": [
-      "tide-attunement",
-      "tide-reaction",
-      "tide-hunter",
-      "tide-ward",
-      "well-fed",
-      "warm-heart"
-    ],
+    "pool": ["tide-attunement", "tide-reaction", "tide-hunter", "tide-ward", "well-fed"],
     "flavor": "A paper lantern charm, lit once a season at the Festival of the tide."
   },
   {
