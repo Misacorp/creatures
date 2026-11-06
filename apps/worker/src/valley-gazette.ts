@@ -132,8 +132,9 @@ export class PaperRecorder {
     this.log.xp.length = Math.min(this.log.xp.length, LOG_CAPS.xp);
   }
 
-  moment(creatureId: string, turn: number): void {
-    this.log.moment = { creatureId, turn };
+  moment(creatureId: string, turn: number, friendId?: string): void {
+    this.log.moment =
+      friendId === undefined ? { creatureId, turn } : { creatureId, turn, friendId };
   }
 }
 

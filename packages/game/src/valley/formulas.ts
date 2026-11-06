@@ -1,3 +1,5 @@
+import { RULES as GAME } from '../rules/config';
+import { expToReach } from '../rules/experience';
 import type { AwayCurve, ValleyRules } from './rules';
 
 /**
@@ -33,4 +35,28 @@ export function masteryBonus(rules: MasteryRules, hours: number): number {
   let bonus = 0;
   for (const step of rules.posts.mastery) if (hours >= step.hours) bonus = step.bonus;
   return bonus;
+}
+
+/** The creature level table as total XP (`xpAtLevel(l)` is the XP to be level `l`), built once. */
+let levelXp: number[] | null = null;
+function levelTable(): number[] {
+  if (levelXp === null) {
+    levelXp = [0];
+    for (let l = 1; l <= GAME.experience.maxLevel; l++) levelXp.push(expToReach(l));
+  }
+  return levelXp;
+}
+
+/** The total XP a creature holds at the start of `level` (1 and below: 0; above the top level: the top's). */
+export function xpAtLevel(level: number): number {
+  const table = levelTable();
+  return table[Math.min(Math.max(1, Math.floor(level)), GAME.experience.maxLevel)] ?? 0;
+}
+
+/** The level a total of `xp` reaches (no ribbons or species cap; a hair of tolerance so an exact total counts). */
+export function levelAtXp(xp: number): number {
+  const table = levelTable();
+  let level = 1;
+  while (level < GAME.experience.maxLevel && xp + 1e-9 >= (table[level + 1] ?? Infinity)) level += 1;
+  return level;
 }

@@ -343,6 +343,11 @@ export class ValleyFinds {
     return added;
   }
 
+  /** One live uniform draw in [0, 1) (the small moments' picks, V-BON-9). */
+  roll(): number {
+    return uniform(this.deps.rng);
+  }
+
   /**
    * V-SCOUT-6: whether an Expert scout found a way into its destination's deeper area during the hours it picked up in this pass: one live
    * draw per scout that may (an Expert, not already deep, at a place with a deeper area), the first to find one wins (at most one decision,

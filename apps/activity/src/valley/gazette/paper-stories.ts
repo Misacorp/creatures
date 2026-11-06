@@ -34,6 +34,13 @@ const MOMENTS: readonly ((n: string) => string)[] = [
   (n) => `${n} yawned and stretched`,
 ];
 
+/** The small moments of two resting creatures together (V-BON-9). */
+const PAIR_MOMENTS: readonly ((a: string, b: string) => string)[] = [
+  (a, b) => `${a} and ${b} shared the log bench`,
+  (a, b) => `${a} and ${b} watched the sparks together`,
+  (a, b) => `${a} chased ${b} round the fire`,
+];
+
 const plural = (n: number, one: string, many: string): string => (n === 1 ? one : many);
 const num = (n: number): string => String(n);
 const upper = (text: string): string => text.toUpperCase();
@@ -220,10 +227,19 @@ function storyOf(h: PaperHeadline, paper: Paper, byId: ReadonlyMap<string, Creat
         scene: scene([]),
       };
     case 'moment': {
-      const line = MOMENTS[(h.turn ?? 0) % MOMENTS.length];
+      const turn = h.turn ?? 0;
+      const second = members[1]?.name;
+      const line = MOMENTS[turn % MOMENTS.length];
+      const pair = PAIR_MOMENTS[turn % PAIR_MOMENTS.length];
       return {
         ...base,
-        headline: upper(line === undefined ? '' : line(first ?? 'A creature')),
+        headline: upper(
+          second !== undefined && pair !== undefined
+            ? pair(first ?? 'A creature', second)
+            : line === undefined
+              ? ''
+              : line(first ?? 'A creature'),
+        ),
         finds: [],
         scene: scene(members),
       };

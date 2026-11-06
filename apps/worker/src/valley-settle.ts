@@ -34,6 +34,10 @@ import {
   addExperience,
   expToReach,
   masteryBonus,
+  catchUpBpOf,
+  catchUpTarget,
+  xpAtLevel,
+  WELCOME_AFTER_HOURS,
   placeIds,
   placeOpen,
   placeProfile,
@@ -45,6 +49,7 @@ import {
   MAX_RIBBONS,
   SCOUT_KITS,
   type AnvilKit,
+  type AwayWindow,
   type PlaceProfile,
   type ScoutKit,
   type SettleSeat,
@@ -65,6 +70,7 @@ import {
   type AnvilColumns,
   type ValleyForgePass,
 } from './valley-forge';
+import { ValleyBonfire } from './valley-bonfire';
 import { hasDeepArea, type ValleyFinds } from './valley-finds';
 import { PaperRecorder, paperItem, type ValleyGazette } from './valley-gazette';
 import { scoutClock, specialOfWeek, worldAt } from './valley-world';
@@ -81,6 +87,7 @@ export const INTENT_MIN_MS = 60_000;
 export const VALLEY_ALLOWANCE_SOURCE = 'allowance';
 
 const HOUR_MS = 3_600_000;
+const DAY_MS = 24 * HOUR_MS;
 /** Basis points of a multiplier of 1. */
 const BP = 10_000;
 
@@ -94,6 +101,8 @@ type PlayerRow = {
   visit_allowance: number;
   first_scout_done: number;
   forge_carry: number;
+  /** The level the creatures catch up toward, fixed at the last visit (0: none yet). */
+  catch_target: number;
 };
 
 type CreatureRow = {
@@ -109,6 +118,8 @@ type CreatureRow = {
   visit_xp: number | null;
   scout_hours: number | null;
   smith_hours: number | null;
+  /** The game day the creature last featured in a small moment (null: never). */
+  moment_day: number | null;
 };
 
 export type SeatRow = AnvilColumns & {
@@ -153,6 +164,8 @@ export interface ValleySettleDeps {
   readonly forge: ValleyForgePass;
   /** The Gazette's last paper of each player (`valley-gazette.ts`): an arrival's pass writes it. */
   readonly gazette: ValleyGazette;
+  /** The server's middle, who is online and who is in the raid (`valley-bonfire.ts`). */
+  readonly bonfire: ValleyBonfire;
 }
 
 const masteryStep = (hours: number): 0 | 1 | 2 | 3 => {
@@ -186,7 +199,8 @@ export class ValleySettle {
       const player = this.sql
         .exec<PlayerRow>(
           `SELECT settled_at, last_visit_at, hearth_at_visit_bp, visit_started_at, allowance_store,
-                  allowance_carry, visit_allowance, first_scout_done, forge_carry FROM valley_players WHERE user_id = ?`,
+                  allowance_carry, visit_allowance, first_scout_done, forge_carry, catch_target
+           FROM valley_players WHERE user_id = ?`,
           userId,
         )
         .toArray()[0];
@@ -201,7 +215,7 @@ export class ValleySettle {
     return this.sql
       .exec<CreatureRow>(
         `SELECT c.id, c.species, c.level, c.exp, c.ribbons, c.caught_at, v.creature_id AS tracked,
-                v.xp_carry, v.catchup_bp, v.visit_xp, v.scout_hours, v.smith_hours
+                v.xp_carry, v.catchup_bp, v.visit_xp, v.scout_hours, v.smith_hours, v.moment_day
          FROM creatures c LEFT JOIN valley_creatures v ON v.creature_id = c.id
          WHERE c.user_id = ? ORDER BY c.caught_at, c.rowid`,
         userId,
@@ -257,7 +271,12 @@ export class ValleySettle {
         now,
       );
       const rows = this.creatureRows(userId);
-      for (const row of rows) this.trackCreature(userId, row.id, 0, BP, 0, 0, 0);
+      // V-BON-2: a creature caught before the valley opened catches up from the first moment, toward the same target as at any visit.
+      const first = this.catchUpFor(rows.map((row) => row.level));
+      for (const row of rows) {
+        this.trackCreature(userId, row.id, 0, first.bpOf(row.level), 0, 0, 0);
+      }
+      this.sql.exec('UPDATE valley_players SET catch_target = ? WHERE user_id = ?', first.target, userId);
       const seats = this.seats(userId);
       return this.view({
         userId,
@@ -267,7 +286,8 @@ export class ValleySettle {
         rows,
         seats: seats.scouts,
         anvils: seats.anvils,
-        creatures: rows.map((row) => ({ row, gained: 0, catchUpBp: BP })),
+        paused: this.pausedAt(userId, now, seats.scouts, seats.anvils),
+        creatures: rows.map((row) => ({ row, gained: 0, catchUpBp: first.bpOf(row.level) })),
         allowance: { store: 0, cap, brought: 0 },
       });
     }
@@ -285,10 +305,11 @@ export class ValleySettle {
         rows,
         seats: seats.scouts,
         anvils: seats.anvils,
+        paused: this.pausedAt(userId, player.settled_at, seats.scouts, seats.anvils),
         creatures: rows.map((row) => ({
           row,
           gained: row.visit_xp ?? 0,
-          catchUpBp: row.catchup_bp ?? BP,
+          catchUpBp: effectiveBp(row.catchup_bp ?? BP, row.level, player.catch_target),
         })),
         allowance: { store: player.allowance_store, cap, brought: player.visit_allowance },
       });
@@ -329,6 +350,9 @@ export class ValleySettle {
         carry: row.xp_carry ?? 0,
         capXp: Number.POSITIVE_INFINITY,
         catchUp: (row.catchup_bp ?? BP) / BP,
+        ...(player.catch_target > 0
+          ? { catchTarget: player.catch_target, baseXp: xpAtLevel(row.level) + row.exp }
+          : {}),
         scoutHours: row.scout_hours ?? 0,
         smithHours: row.smith_hours ?? 0,
         ...(row.tracked === null ? { joinedAt: row.caught_at } : {}),
@@ -337,6 +361,20 @@ export class ValleySettle {
       seats: seatsIn,
       ...(forgeIn === null ? {} : { forge: { ...forgeIn.forge, scrapCarry: player.forge_carry } }),
     };
+    // V-POST-7: a creature in the raid is away from the first stage's lock to the end of the finale; its post pauses for that time.
+    const raid = this.deps.bonfire.raidWindows(
+      userId,
+      player.settled_at,
+      to,
+      [...seatRows, ...anvilRows].some((seat) => seat.creature_id !== null),
+    );
+    const away: AwayWindow[] = raid.flatMap((w) => {
+      const creature = indexOf.get(w.creatureId);
+      return creature === undefined ? [] : [{ creature, ...w.window }];
+    });
+    const paused = new Set(
+      raid.flatMap((w) => (to >= w.window.from && to < w.window.to ? [w.creatureId] : [])),
+    );
     const watchNight = seatRows.some(
       (seat) => placeProfile(VALLEY_RULES, seat.destination_id)?.night === true,
     );
@@ -348,6 +386,7 @@ export class ValleySettle {
       {
         ...(seatRows.length === 0 ? {} : { world: scoutClock(tz, watchNight) }),
         ...(forgeIn === null ? {} : { rng: this.deps.forge.rng }),
+        ...(away.length === 0 ? {} : { away }),
       },
     );
 
@@ -417,13 +456,25 @@ export class ValleySettle {
         seat.creature_id === null ? [] : [seat.creature_id],
       ),
     );
-    const creatures = rows.map((row, i) => {
+    // The XP each creature earned is paid through the level rules first; the levels they reach decide the catch-up fixed at this visit.
+    const payments = rows.map((row, i) => {
       const paid = after.creatures[i];
       const whole = paid?.xp ?? 0;
-      const paidXp = this.payXp(row, whole);
+      return { row, paid, whole, taken: this.payXp(row, whole) };
+    });
+    // V-BON-2: fixed at each visit, per creature, toward the higher of the player's 3rd best and the server's middle; mid-visit only
+    // creatures new to the valley get one, toward the target the visit fixed.
+    const fix = newVisit
+      ? this.catchUpFor(payments.map((p) => p.taken.level))
+      : player.catch_target > 0
+        ? this.catchUpAt(player.catch_target)
+        : this.catchUpFor(payments.map((p) => p.taken.level));
+    const creatures = payments.map(({ row, paid, whole, taken: paidXp }) => {
       const gainedNow = paidXp.taken;
       const visitXp = (newVisit ? 0 : (row.visit_xp ?? 0)) + gainedNow;
-      const catchUpBp = row.catchup_bp ?? BP;
+      const held =
+        newVisit || row.tracked === null ? fix.bpOf(paidXp.level) : (row.catchup_bp ?? BP);
+      const catchUpBp = effectiveBp(held, paidXp.level, fix.target);
       const scoutHours = paid?.scoutHours ?? 0;
       const smithHours = paid?.smithHours ?? 0;
       if (rec !== undefined) {
@@ -446,18 +497,10 @@ export class ValleySettle {
         scoutHours !== (row.scout_hours ?? 0) ||
         smithHours !== (row.smith_hours ?? 0);
       if (changed) {
-        this.trackCreature(
-          userId,
-          row.id,
-          paid?.carry ?? 0,
-          catchUpBp,
-          visitXp,
-          scoutHours,
-          smithHours,
-        );
+        this.trackCreature(userId, row.id, paid?.carry ?? 0, held, visitXp, scoutHours, smithHours);
       }
       return {
-        row: { ...row, scout_hours: scoutHours, smith_hours: smithHours },
+        row: { ...row, level: paidXp.level, scout_hours: scoutHours, smith_hours: smithHours },
         gained: visitXp,
         catchUpBp,
       };
@@ -465,11 +508,29 @@ export class ValleySettle {
 
     if (rec !== undefined) {
       const awayHours = Math.floor((to - player.last_visit_at) / HOUR_MS);
-      // One resting creature's small moment (V-BON-9, cheap): the day picks who and which, so a reload tells the same one.
-      const resting = rows.filter((row) => !seated.has(row.id));
-      const day = Math.floor(to / (24 * HOUR_MS));
-      const rester = resting[day % Math.max(1, resting.length)];
-      if (rester !== undefined) rec.moment(rester.id, day);
+      // One or two resting creatures' small moment (V-BON-9), told in the paper when there is one (a short absence has none, so nothing
+      // is used up): picked by live draws, weighted toward creatures that have not featured lately, and remembered so they rest next time.
+      if (awayHours >= WELCOME_AFTER_HOURS) {
+        const resting = rows.filter((row) => !seated.has(row.id) && row.tracked !== null);
+        const day = Math.floor(to / DAY_MS);
+        const moment = ValleyBonfire.pickMoments(
+          day,
+          resting.map((row) => row.moment_day),
+          [this.deps.finds.roll(), this.deps.finds.roll(), this.deps.finds.roll()],
+        );
+        const first = moment === null ? undefined : resting[moment.first];
+        if (moment !== null && first !== undefined) {
+          const second = moment.second === null ? undefined : resting[moment.second];
+          rec.moment(first.id, moment.turn, second?.id);
+          for (const row of second === undefined ? [first] : [first, second]) {
+            this.sql.exec(
+              'UPDATE valley_creatures SET moment_day = ? WHERE creature_id = ?',
+              day,
+              row.id,
+            );
+          }
+        }
+      }
       // V-SCOUT-6, V-RET-3: an Expert scout may have found a way deeper; the paper offers it as its one decision.
       const hoursOf = new Map<string, number>();
       for (const stretch of after.stretches ?? []) {
@@ -518,7 +579,7 @@ export class ValleySettle {
     }
     this.sql.exec(
       `UPDATE valley_players SET settled_at = ?, last_visit_at = ?, visit_started_at = ?, allowance_store = ?,
-         allowance_carry = ?, visit_allowance = ?, first_scout_done = ?, forge_carry = ? WHERE user_id = ?`,
+         allowance_carry = ?, visit_allowance = ?, first_scout_done = ?, forge_carry = ?, catch_target = ? WHERE user_id = ?`,
       to,
       to,
       newVisit ? to : player.visit_started_at,
@@ -527,6 +588,7 @@ export class ValleySettle {
       visitAllowance,
       seatsOut.firstDone ? 1 : player.first_scout_done,
       after.forge?.scrapCarry ?? player.forge_carry,
+      fix.target,
       userId,
     );
     // A newcomer from a scout is on the roster already: show it at the fire in this very answer.
@@ -543,6 +605,7 @@ export class ValleySettle {
       rows: [...creatures.map((c) => c.row), ...extra.map((c) => c.row)],
       seats: seatsOut.rows,
       anvils: anvilsOut,
+      paused,
       fullSeats: seatsOut.full,
       creatures: [...creatures, ...extra],
       allowance: { store, cap, brought: visitAllowance },
@@ -693,6 +756,8 @@ export class ValleySettle {
     rows: readonly CreatureRow[];
     seats: readonly SeatRow[];
     anvils: readonly SeatRow[];
+    /** The creatures whose post is paused now because they are in the raid (V-POST-7). */
+    paused: ReadonlySet<string>;
     /** Seats whose pack was full when this pass found it (it came home, so the stored pack is empty). */
     fullSeats?: ReadonlySet<string>;
     creatures: readonly { row: CreatureRow; gained: number; catchUpBp: number }[];
@@ -738,6 +803,7 @@ export class ValleySettle {
         creatureId: seat.creature_id,
         kit,
         fit,
+        paused: seat.creature_id !== null && input.paused.has(seat.creature_id) ? 'raid' : null,
         second,
         deep: seat.deep === 1,
         mastery: {
@@ -789,6 +855,7 @@ export class ValleySettle {
           seatId: at?.id ?? null,
         };
       }),
+      online: this.deps.bonfire.online(input.userId),
       allowance: input.allowance,
       seats: seatViews,
       ...this.forgeView(input, rowOf),
@@ -817,6 +884,33 @@ export class ValleySettle {
       special: { destination: special.destination, twist: special.twist },
       ...(paper === null ? {} : { paper }),
     };
+  }
+
+  /**
+   * V-BON-2: the target the player's creatures catch up toward (the higher of their 3rd best level and the server's middle) and the
+   * multiplier of a creature at a level, in basis points.
+   */
+  private catchUpFor(levels: readonly number[]): { target: number; bpOf: (level: number) => number } {
+    return this.catchUpAt(catchUpTarget(levels, this.deps.bonfire.middle()));
+  }
+
+  private catchUpAt(target: number): { target: number; bpOf: (level: number) => number } {
+    return { target, bpOf: (level) => catchUpBpOf(VALLEY_RULES, level, target) };
+  }
+
+  /** The creatures whose post is paused at `at` because they are in the raid (V-POST-7); reads only inside a raid's calendar span. */
+  private pausedAt(
+    userId: string,
+    at: number,
+    scouts: readonly SeatRow[],
+    anvils: readonly SeatRow[],
+  ): Set<string> {
+    const posted = [...scouts, ...anvils].some((seat) => seat.creature_id !== null);
+    return new Set(
+      this.deps.bonfire
+        .raidWindows(userId, at, at, posted)
+        .flatMap((w) => (at >= w.window.from && at < w.window.to ? [w.creatureId] : [])),
+    );
   }
 
   /**
@@ -871,7 +965,7 @@ export class ValleySettle {
 
   /** The anvils, their price ladder and the Forge's shelf, bag and exchange (the `anvils`, `anvilPrices` and `forge` of the view). */
   private forgeView(
-    input: { userId: string; to: number; anvils: readonly SeatRow[] },
+    input: { userId: string; to: number; anvils: readonly SeatRow[]; paused: ReadonlySet<string> },
     rowOf: ReadonlyMap<string, CreatureRow>,
   ): Pick<ValleyView, 'anvils' | 'anvilPrices' | 'forge'> {
     const rules = VALLEY_RULES;
@@ -910,6 +1004,7 @@ export class ValleySettle {
         id: a.seat_id,
         creatureId: a.creature_id,
         kit,
+        paused: a.creature_id !== null && input.paused.has(a.creature_id) ? 'raid' : null,
         mastery: {
           hours,
           step: masteryStep(hours),
@@ -942,7 +1037,7 @@ export class ValleySettle {
                 progress: a.piece_progress,
                 need: a.piece_need,
                 leftHours:
-                  held || worker === undefined
+                  held || worker === undefined || input.paused.has(worker.id)
                     ? null
                     : Math.max(0, a.piece_need - a.piece_progress) / speed,
               }
@@ -1013,4 +1108,14 @@ function fitOf(worker: { species: string } | undefined, place: PlaceProfile | un
     place.element !== null &&
     speciesOf(worker.species).element === place.element
   );
+}
+
+/**
+ * V-BON-2: the multiplier a creature earns now in basis points: the one fixed at the visit, faded to the gap it has left to its target
+ * (never above the held one, never a flame over a creature that has arrived). With no target known the held one stands.
+ */
+function effectiveBp(held: number, level: number, target: number): number {
+  if (held <= BP) return BP;
+  if (!(target > 0)) return held;
+  return Math.max(BP, Math.min(held, catchUpBpOf(VALLEY_RULES, level, target)));
 }

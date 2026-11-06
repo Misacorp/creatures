@@ -120,6 +120,7 @@ import {
 import { MIGRATIONS } from './migrations';
 import { ReadMeter, pruneReads, readSourceOfPath, type ReadSource } from './read-meter';
 import { liveRng } from './rng';
+import { ValleyBonfire } from './valley-bonfire';
 import { ValleyFinds } from './valley-finds';
 import { ValleyForgePass } from './valley-forge';
 import { ValleyGazette } from './valley-gazette';
@@ -452,6 +453,8 @@ export class GuildCore {
   readonly valleyOrders: ValleyOrders | null;
   /** The welcome-back Gazette's last paper per player (`VALLEY_SYSTEMS`), or null with the flag off. */
   readonly valleyGazette: ValleyGazette | null;
+  /** The server's middle, who is online and the raid's pause of posts (`VALLEY_SYSTEMS`), or null with the flag off. */
+  readonly valleyBonfire: ValleyBonfire | null;
   /** The `VALLEY_SYSTEMS` flag as the worker resolved it (see `valley-flag.ts`). */
   readonly valleySystems: boolean;
   private postsInFlight: Promise<void> | null = null;
@@ -549,6 +552,13 @@ export class GuildCore {
       });
       const forge = new ValleyForgePass({ storage, now, rng: gearRng });
       const gazette = new ValleyGazette(storage, now);
+      const bonfire = new ValleyBonfire({
+        storage,
+        now,
+        realNow,
+        timezone: () => this.timezone(),
+      });
+      this.valleyBonfire = bonfire;
       const valley = new ValleySettle({
         storage,
         now,
@@ -557,6 +567,7 @@ export class GuildCore {
         choices: this.collection.choices,
         forge,
         gazette,
+        bonfire,
       });
       this.valley = valley;
       this.valleySeats = new ValleySeats({
@@ -574,6 +585,7 @@ export class GuildCore {
       this.valleySeats = null;
       this.valleyOrders = null;
       this.valleyGazette = null;
+      this.valleyBonfire = null;
     }
     this.gear = new Gear({
       storage,
@@ -1774,6 +1786,8 @@ export class GuildCore {
     this.dungeon.closeStale();
     this.dungeon.prune();
     pruneAway(this.sql, this.now());
+    // The valley's server middle (V-BON-2), once a game day: one read of the active players' levels and one row written.
+    this.valleyBonfire?.writeMiddle(this.now());
     const oldBacklog = pruneOldData(this.storage, this.now(), this.timezone());
     this.pruneBacklog = analyticsBacklog || oldBacklog;
     if (!this.pruneBacklog) markMaintained(this.sql, day);

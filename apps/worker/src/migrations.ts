@@ -45,6 +45,7 @@ import { raidProgressionMigration } from './raid-progression-migration';
 import { valleyMigration } from './valley-migration';
 import { valleyScoutsMigration } from './valley-scouts-migration';
 import { valleyForgeMigration } from './valley-forge-migration';
+import { valleyBonfireMigration } from './valley-bonfire-migration';
 import { valleyGazetteMigration } from './valley-gazette-migration';
 import { weatherMigration } from './weather-migration';
 import { workshopConvertMigration } from './workshop-convert-migration';
@@ -354,6 +355,8 @@ export const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
   valleyForgeMigration,
   // Version 59: the welcome-back Gazette's last paper per player (see valley-gazette-migration.ts).
   valleyGazetteMigration,
+  // Version 60: the server's middle, the catch-up target, small-moment turns and the raid placements by player (see valley-bonfire-migration.ts).
+  valleyBonfireMigration,
 ];
 
 /** The schema version of a fresh database. */
