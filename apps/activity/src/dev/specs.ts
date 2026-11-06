@@ -20,6 +20,7 @@ import {
   PART_FIELDS,
   RANK_OPTIONS,
   RARITY_OPTIONS,
+  SEATS_OPTIONS,
   SPECIES_OPTIONS,
   SUPPLY_OPTIONS,
 } from './options';
@@ -98,6 +99,16 @@ export const RESET_ACCOUNT_SPEC: ToolSpec = {
   fields: [{ kind: 'text', key: 'confirm', label: 'Type RESET', must: 'RESET' }],
   danger: true,
   hint: 'Deletes all your data on this server (creatures, gear, trips, raid).',
+};
+
+/**
+ * The roster preset tool. Its form is its own component (`RosterPresets.tsx`: the player list comes from the server and the
+ * confirmation word is the picked player's name), so this spec only names the tool and the label of its status line.
+ */
+export const ROSTER_PRESET_SPEC: ToolSpec = {
+  tool: 'apply-roster-preset',
+  label: 'Roster preset',
+  fields: [],
 };
 
 const CREATURES_SPECS: readonly ToolSpec[] = [
@@ -276,7 +287,7 @@ const RAID_SPECS: readonly ToolSpec[] = [
         placeholder: 'fill the board',
       },
     ],
-    hint: 'Simulated players take the empty spots after what you placed, three creatures each. Yours never move.',
+    hint: 'Simulated players take the empty spots after what you placed, as many creatures each as the boss piece (or Creatures per player) allows. Yours never move.',
   },
   {
     tool: 'raid-rank',
@@ -285,6 +296,16 @@ const RAID_SPECS: readonly ToolSpec[] = [
     fields: [pick('rank', 'Rank', RANK_OPTIONS)],
     build: (values) => ({ rank: Number(values['rank']) }),
     hint: 'A rank comes with its own boss. Only before anything is fought: clear the board first otherwise.',
+  },
+  {
+    tool: 'raid-seats',
+    label: 'Creatures per player',
+    button: 'Set',
+    fields: [pick('seats', 'Creatures', SEATS_OPTIONS)],
+    build: (values) => ({
+      seats: values['seats'] === 'default' ? null : Number(values['seats']),
+    }),
+    hint: "Default: the boss's piece decides (2 to 4). A number makes every player's piece that wide, for few testers; the boss is sized for the seats on the board. Kept for this week and the later ones. Set it before Fill. Only before anything is fought.",
   },
   { tool: 'raid-play', label: 'Play stage 1', fields: [], fixed: { stage: 'stage1' } },
   { tool: 'raid-play', label: 'Play stage 2', fields: [], fixed: { stage: 'stage2' } },
@@ -352,6 +373,7 @@ export const ALL_SPECS: readonly ToolSpec[] = [
   ...CLOCK_SPECS,
   ...GOODS_SPECS,
   RESET_ACCOUNT_SPEC,
+  ROSTER_PRESET_SPEC,
   ...SECTIONS.flatMap((s) => s.specs),
 ];
 

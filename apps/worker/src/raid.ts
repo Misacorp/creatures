@@ -59,12 +59,14 @@ import { askSwap, acceptSwap, declineSwap } from './raid-swap';
 import { endWeekV2 } from './raid-v2-track';
 import { resolveStageV2, type ResultPhase } from './raid-v2-stage';
 import {
+  arenaOf,
   colsFor,
   ensureTrack,
   outOf,
   readPartyCarry,
   slotBossInfo,
   weekRules,
+  type Arena,
 } from './raid-v2-core';
 import {
   buildRaidViewV2,
@@ -149,6 +151,11 @@ export interface RaidDeps {
     listening: (weekId: string, party: number, actorId: string) => boolean;
     send: (actorId: string, push: BoardPush) => void;
   };
+  /**
+   * Staging only (the dev tools are on): the creatures each player brings to a combat v2 raid instead of the boss's own piece, or null for
+   * the piece. Absent in production, where nothing is read.
+   */
+  seatOverride?: () => number | null;
 }
 
 export interface WeekRow {
@@ -162,6 +169,12 @@ export interface WeekRow {
   trackSlot: number | null;
   /** A Festival week (a v2 Festival week has no raid and the track waits). */
   festival: boolean;
+  /**
+   * The seats-per-player override of the dev tools (staging only, `RaidDeps.seatOverride`): the creatures each player brings instead of
+   * the boss's own piece. Null everywhere else, always in production. Read each time the week is read, so it applies to the current
+   * week and the later ones until it is set back.
+   */
+  seatOverride: number | null;
 }
 
 /** Every table keyed by a raid week's id, the week's own row last (`rebuildWeekAsV2` clears them for one week). */
@@ -313,7 +326,13 @@ export class Raid {
           rules: row.rules_version === 2 ? 2 : 1,
           trackSlot: row.track_slot,
           festival: row.festival === 1,
+          seatOverride: row.rules_version === 2 ? (this.deps.seatOverride?.() ?? null) : null,
         };
+  }
+
+  /** The arena a combat v2 week plays on: the boss's rows and the seats a player brings (the dev override applied). */
+  private arena(week: WeekRow): Arena {
+    return arenaOf(week.trackSlot ?? 1, week.seatOverride);
   }
 
   /**
@@ -355,6 +374,7 @@ export class Raid {
         rules: 1 as const,
         trackSlot: null,
         festival: season.festival === 1,
+        seatOverride: null,
       };
     });
   }
@@ -391,6 +411,7 @@ export class Raid {
       rules: 2,
       trackSlot: slot,
       festival: season.festival === 1,
+      seatOverride: this.deps.seatOverride?.() ?? null,
     };
   }
 
@@ -610,7 +631,11 @@ export class Raid {
       this.markDone(week.weekId, event, 'skipped');
       return;
     }
-    const v2 = { weekId: week.weekId, trackSlot: week.trackSlot };
+    const v2 = {
+      weekId: week.weekId,
+      trackSlot: week.trackSlot,
+      seatOverride: week.seatOverride,
+    };
     const parties = this.sql
       .exec<{
         party: number;
@@ -723,16 +748,16 @@ export class Raid {
    * spare piece (one more column) until stage 1 locks the players (Misa, 2026-11-03), so a newcomer can always place.
    */
   private v2Length(week: WeekRow, party: number): number {
-    const rows = slotBossInfo(week.trackSlot ?? 1).rows;
+    const arena = this.arena(week);
     const locked = readPartyCarry(this.sql, week.weekId, party)?.players;
-    if (locked !== undefined) return rows * colsFor(locked);
+    if (locked !== undefined) return arena.rows * colsFor(locked, false, arena);
     const players = partyMembers(this.sql, week.weekId, party).length;
-    return rows * colsFor(players, week.status === 'open');
+    return arena.rows * colsFor(players, week.status === 'open', arena);
   }
 
   /** The creatures a player may place this week: a combat v2 boss's piece seats, three on a v1 week. */
   private seats(week: WeekRow): number {
-    return week.rules === 2 ? slotBossInfo(week.trackSlot ?? 1).seats : RULES.raid.teamSize;
+    return week.rules === 2 ? this.arena(week).seats : RULES.raid.teamSize;
   }
 
   /**
@@ -1059,7 +1084,7 @@ export class Raid {
         throw new GameError(409, 'locked');
       }
       const wasOn = loadAutofire(this.sql, week.weekId).isOn(userId, target);
-      storeAutofire(this.sql, week.weekId, userId, target, on);
+      storeAutofire(this.sql, week.weekId, userId, target, on, week.seatOverride);
       // Only a change is logged: setting the same value again is a repeat.
       if (wasOn !== on) {
         this.deps.analytics?.record(

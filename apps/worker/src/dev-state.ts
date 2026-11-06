@@ -14,6 +14,8 @@
  * - `u:<user>:night` and `u:<user>:festival`: `on` or `off`, force the night and Festival gates of the
  *   user's expeditions (absent: the real clock and calendar decide).
  * - `g:modifiers:<day>`: JSON array of room modifier ids that replaces the day's rolled modifiers.
+ * - `g:raid_seats`: the seats-per-player override of the raid (1 to `MAX_RAID_SEATS`; absent: the boss's own piece decides).
+ *   `GuildCore` hands `readRaidSeats` to the raid as its `seatOverride`, so it applies to the current week and later ones.
  * - `u:<user>:dungeon_reset:<day>:<currency>`: the sum of the day's dungeon credits that a
  *   `dungeon-reset` has already dealt with, so a second reset does not take them back again.
  */
@@ -21,7 +23,11 @@
 /** The longest the dev clock may be moved ahead: ten years, so every sum stays a safe integer. */
 export const MAX_CLOCK_OFFSET_MS = 10 * 365 * 86_400_000;
 
+/** The most creatures per player the raid override may ask for. */
+export const MAX_RAID_SEATS = 8;
+
 export const devKey = {
+  raidSeats: 'g:raid_seats',
   clockOffset: 'clock_offset_ms',
   pushOffer: (userId: string): string => `u:${userId}:push_offer`,
   pushOutcome: (userId: string): string => `u:${userId}:push_outcome`,
@@ -79,6 +85,21 @@ export class DevState {
     }
     if (ms === 0) this.delete(devKey.clockOffset);
     else this.set(devKey.clockOffset, String(ms));
+  }
+
+  /** The raid's seats-per-player override, or null (the boss's own piece). Anything that is not a valid number counts as none. */
+  readRaidSeats(): number | null {
+    const raw = this.get(devKey.raidSeats);
+    if (raw === null) return null;
+    const n = Number(raw);
+    return Number.isInteger(n) && n >= 1 && n <= MAX_RAID_SEATS ? n : null;
+  }
+
+  writeRaidSeats(seats: number | null): void {
+    if (seats === null) this.delete(devKey.raidSeats);
+    else if (Number.isInteger(seats) && seats >= 1 && seats <= MAX_RAID_SEATS) {
+      this.set(devKey.raidSeats, String(seats));
+    } else throw new RangeError('raid seats out of range');
   }
 
   /** Forgets everything stored about one player (an account reset). */
