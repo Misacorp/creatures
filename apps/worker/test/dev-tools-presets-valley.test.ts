@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access --
+/* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument --
    These tests read parts of response bodies (`Json.body` is `any` on purpose). */
 // The roster presets on a server that already has valley rows (all three flags on): the creatures a preset replaces sit on posts, on the
 // raid board and in the valley's tables. The posts stay (bought seats keep what they stored), nothing points at a creature that is gone,

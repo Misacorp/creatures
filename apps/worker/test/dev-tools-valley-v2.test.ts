@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment --
+/* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-return --
    The tools' answers are read loosely on purpose (`Json.body` is `any`). */
 // The dev tools of combat v2 on a server that has valley rows (all three flags on): the raid test bench, the seats override and the
 // Convert tool each start from a state a tester really has (a post on a placed creature, a v1 week with a stored lock), and the valley
