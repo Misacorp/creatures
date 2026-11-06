@@ -80,7 +80,14 @@ export function brokerLine(seat: Broker): Say {
     `, with a ${bonusText(seat.terms.critBp)} chance of one extra`,
   ];
   if (seat.blocked !== null) {
-    return [...rate, '. Waiting for a spare ', anyShardMark(), ' to trade for ', shardMark(seat.blocked), '.'];
+    return [
+      ...rate,
+      '. Waiting for a spare ',
+      anyShardMark(),
+      ' to trade for ',
+      shardMark(seat.blocked),
+      '.',
+    ];
   }
   return rate;
 }
@@ -97,7 +104,10 @@ export function brokerRows(seat: Broker): BrokerRow[] {
     { label: 'Rate', value: rateSay(seat.terms.rate) },
     {
       label: 'Bonus shard',
-      value: [`${bonusText(seat.terms.critBp)} of trades give `, anyShardCount(seat.terms.critYield)],
+      value: [
+        `${bonusText(seat.terms.critBp)} of trades give `,
+        anyShardCount(seat.terms.critYield),
+      ],
     },
     {
       label: 'Trading',

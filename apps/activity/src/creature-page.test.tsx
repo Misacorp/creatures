@@ -6,6 +6,7 @@ import { SAMPLE_STATE } from './creature-card-sample';
 import { cardDomId, type PageFocus } from './creature-card-view';
 import { pageScene, type SceneKind } from './creature-page/sample';
 import {
+  badgesIn,
   byClass,
   byName,
   byRole,
@@ -366,9 +367,11 @@ describe('the creature page: the buttons for what is ready', () => {
 
     // At the level, short of parts: the cost and what is missing, the button off.
     const short = draw('ribbon waiting');
-    const off = first(
-      byName(short.root, 'button', 'Earn Bronze Ribbon 6 scrap and 2 Ember shards'),
-    );
+    const off = first(byName(short.root, 'button', /^Earn Bronze Ribbon/));
+    expect(badgesIn(off)).toEqual([
+      ['Scrap', '6'],
+      ['Ember Shards', '2'],
+    ]);
     expect(off.hasAttribute('disabled')).toBe(true);
     expect(visibleText(first(byClass(short.root, 'ribbon-line')))).toContain('Short of parts');
     page?.unmount();
@@ -384,7 +387,8 @@ describe('the creature page: the buttons for what is ready', () => {
 
   it('has a gold evolve button when evolution is ready, and answers a waiting catch', () => {
     const evolve = draw('evolve ready');
-    const button = first(byName(evolve.root, 'button', 'Evolve 20 Essence'));
+    const button = first(byName(evolve.root, 'button', /^Evolve/));
+    expect(badgesIn(button)).toEqual([['Essence', '20']]);
     expect(button.getAttribute('class')).toContain('primary');
     // The main button of the page: the full width of the page, and the big size.
     expect(button.getAttribute('class')).toContain('wide');
@@ -406,9 +410,12 @@ describe('the creature page: the buttons for what is ready', () => {
 describe('the creature page: evolution short of Essence', () => {
   it('shows the Evolve button greyed with its price and the Essence the player has', () => {
     const { root, actions, page: p } = draw('evolve short');
-    const button = first(byName(root, 'button', 'Evolve 20 Essence'));
+    const button = first(byName(root, 'button', /^Evolve/));
     expect(button.hasAttribute('disabled')).toBe(true);
-    expect(visibleText(root)).toContain('Short of Essence: you have 12 / 20.');
+    // What the player has and what it costs: Essence icons and numbers, no word.
+    const note = first(byClass(root, 'evolve-line'));
+    expect(badgesIn(note).map(([, n]) => n)).toEqual(['20', '12', '20']);
+    expect(visibleText(note)).not.toContain('Essence');
     p.click(button);
     expect(actions.onEvolve).not.toHaveBeenCalled();
   });
@@ -693,7 +700,8 @@ describe('the creature page: talent slots and the Talent Book', () => {
     const dialog = first(byRole(root, 'dialog'));
     expect(dialog.textContent).toContain('Talent Book');
     const use = first(byName(dialog, 'button', /^Put Warm to the Touch in slot 2 for 10 Bait/));
-    expect(visibleText(use)).toBe('Use · 10 Bait');
+    expect(visibleText(use)).toBe('Use · 10');
+    expect(badgesIn(use)).toEqual([['Bait', '10']]);
     p.click(use);
     expect(actions.onSlotTalent).toHaveBeenCalledWith(creature, 'warm-to-the-touch', false, 2);
     // The drawer closes once it is asked.
@@ -734,7 +742,8 @@ describe('the creature page: talent slots and the Talent Book', () => {
     const buttons = byClass(dialog, 'book-use');
     expect(buttons.length).toBeGreaterThan(0);
     for (const button of buttons) expect(button.hasAttribute('disabled')).toBe(true);
-    expect(visibleText(dialog)).toContain('Not enough Bait.');
+    expect(visibleText(dialog)).toContain('Not enough .');
+    expect(badgesIn(first(byClass(dialog, 'book-short')))).toEqual([['Bait', '']]);
   });
 
   it('shows locked talent slots like locked gear slots, and the signature talent first', () => {

@@ -32,6 +32,7 @@ import {
 import type { Creature } from './api';
 import { capitalize, creatureName, getSpecies } from './game';
 import { percent } from './progress-math';
+import { ANY_SHARD_ICON, joinSay, resourceCount, type Say } from './resource-count';
 import { formatDuration } from './time-format';
 import { destinationName, supplyName } from './trip-view';
 import type { CountItem } from './ui/CountBadge';
@@ -704,9 +705,8 @@ export function dismantleCountItems(range: DismantleRange): CountItem[] {
     else {
       items.push({
         key: 'shards',
-        icon: { kind: 'glyph', id: 'sparkle' },
-        label: 'Shards',
-        name: 'any kind',
+        icon: ANY_SHARD_ICON,
+        label: 'Shards of any kind',
         ...rangeBadge(range.shards),
       });
     }
@@ -781,7 +781,7 @@ export function startBlocker(
   gear: Pick<GearState, 'slots' | 'inventory' | 'parts' | 'balances'>,
   creatures: readonly Creature[],
   job: { kind: JobKind; cost: PartsBundle; essence?: number; bait?: number },
-): string | null {
+): string | Say | null {
   if (gear.slots.used >= gear.slots.total) {
     return `All ${String(gear.slots.total)} slots are busy.`;
   }
@@ -794,15 +794,15 @@ export function startBlocker(
   const missing = missingParts(gear.parts, job.cost);
   const entries = partsEntries(missing);
   const lackingEssence = Math.max(0, (job.essence ?? 0) - gear.balances.essence);
-  const lacks = [
-    ...entries.map((e) => `${String(e.amount)} more ${partName(e.kind)}`),
-    ...(lackingEssence > 0 ? [`${String(lackingEssence)} more ${resourceName('essence')}`] : []),
+  const lacks: CountItem[] = [
+    ...entries.map((e) => resourceCount(e.kind, e.amount)),
+    ...(lackingEssence > 0 ? [resourceCount('essence', lackingEssence)] : []),
   ];
-  if (lacks.length > 0) return `Needs ${lacks.join(' and ')}.`;
+  if (lacks.length > 0) return ['Needs ', ...joinSay(lacks, ' and '), ' more.'];
   // A lure costs Bait as well as parts.
   const bait = job.bait ?? 0;
   if (gear.balances.bait < bait) {
-    return `Needs ${String(bait - gear.balances.bait)} more ${resourceName('bait')}.`;
+    return ['Needs ', resourceCount('bait', bait - gear.balances.bait), ' more.'];
   }
   return null;
 }

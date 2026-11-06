@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { PhaseResultView } from './raid-api';
+import { sayParts } from './resource-count';
 import {
   CLEARED_GLYPH,
   MISSED_GLYPH,
@@ -31,10 +32,10 @@ describe('stepMark', () => {
   it('ticks a cleared phase and crosses one that was not cleared, with a short result', () => {
     const win = stepMark(result('phase1', true));
     expect(win.glyph).toBe(CLEARED_GLYPH);
-    expect(win.summary).toBe('Phase 1: cleared. You got 12 Essence.');
+    expect(sayParts(win.summary)).toEqual(['Phase 1: cleared. You got ', ['essence', 12], '.']);
     const loss = stepMark(result('phase2', false, 0));
     expect(loss.glyph).toBe(MISSED_GLYPH);
-    expect(loss.summary).toBe('Phase 2: not cleared. You got 0 Essence.');
+    expect(sayParts(loss.summary)).toEqual(['Phase 2: not cleared. You got ', ['essence', 0], '.']);
     expect(loss.label).toBe('Phase 2: not cleared. Show result.');
   });
 });

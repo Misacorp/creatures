@@ -10,6 +10,7 @@ import type {
 } from './gear-types';
 import { startBlocker, type PickerOption } from './gear-view';
 import { jobWho, type JobWho } from './job-who';
+import type { Say } from './resource-count';
 import { useJobPreview, type PreviewStatusName } from './use-job-preview';
 import { useWizard, type Wizard, type WizardStep } from './ui/use-wizard';
 
@@ -90,7 +91,7 @@ export interface JobWizard {
   /** The Bait the treat can spend: what is held minus the job's own Bait. */
   treatBait: number;
   /** Why the job cannot start as chosen (on both steps, so a grey button always has its reason); null when it can. */
-  blocker: string | null;
+  blocker: string | Say | null;
   /** The Reach step's state; null for a job without one. */
   reach: JobReach | null;
   /** How long the job takes the picked creature: the chosen Reach's time for a craft. */

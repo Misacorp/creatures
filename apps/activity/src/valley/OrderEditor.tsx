@@ -13,11 +13,12 @@ import { elementName } from '../game';
 import type { BlueprintView } from '../gear-view';
 import { slotName } from '../gear-view';
 import { resourceIconRef } from '../icon-ref';
+import { anyShardCount } from '../resource-count';
 import type { PartKind } from '../gear-types';
 import { Alert } from '../ui/Alert';
 import { ActionButton } from '../ui/ActionButton';
 import { ChoiceButton, ChoiceList } from '../ui/ChoiceList';
-import type { CountItem } from '../ui/CountBadge';
+import { SayLine, type CountItem } from '../ui/CountBadge';
 import { CountStepper } from '../ui/CountStepper';
 import { Drawer } from '../ui/Drawer';
 import { DrillHead } from '../ui/DrillHead';
@@ -286,7 +287,7 @@ export function OrderEditor({
             <ChoiceButton
               key={choice.id}
               label={choice.name}
-              line={choice.line}
+              line={<SayLine say={choice.line} />}
               selected={reach === choice.id}
               disabled={busy}
               onClick={() => {
@@ -302,7 +303,11 @@ export function OrderEditor({
           actionLabel="Order"
           onStart={() => undefined}
         />
-        {forTeam && <p class="muted sp-note">Each piece also takes a shard of its element.</p>}
+        {forTeam && (
+          <p class="muted sp-note">
+            <SayLine say={['Each piece also takes ', anyShardCount(1), ' of its element.']} />
+          </p>
+        )}
         {reason !== null && <Alert level="info">{reason}</Alert>}
         {error !== null && <Alert level="alert">{error}</Alert>}
         {editing === undefined ? (

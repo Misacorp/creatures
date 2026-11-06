@@ -4,26 +4,30 @@
  * sends counts; this only words them. Plain text, short and warm.
  */
 import type { LevelResetNotice } from './api';
-import { resourceName } from '@creatures/game';
+import { acornCount, type Say } from './resource-count';
 
 /** The lines of the card: the headline, then one short line for each side effect that happened. */
-export function levelResetLines(notice: LevelResetNotice): string[] {
-  const lines = [
-    `Creatures now grow by doing things. Every creature's level was halved and you got back the ${resourceName('bait')} those levels cost: ${String(notice.bait)} ${resourceName('bait')}.`,
+export function levelResetLines(notice: LevelResetNotice): Say[] {
+  const lines: Say[] = [
+    [
+      "Creatures now grow by doing things. Every creature's level was halved and you got back what those levels cost: ",
+      acornCount(notice.bait),
+      '.',
+    ],
   ];
   if (notice.unequipped > 0) {
-    lines.push(
+    lines.push([
       notice.unequipped === 1
         ? 'One worn item went back to your bag, because its creature is below its level now.'
         : `${String(notice.unequipped)} worn items went back to your bag, because their creatures are below their levels now.`,
-    );
+    ]);
   }
   if (notice.talentsToBook > 0) {
-    lines.push(
+    lines.push([
       notice.talentsToBook === 1
         ? 'One talent rests in its Talent Book until its slot opens again.'
         : `${String(notice.talentsToBook)} talents rest in their Talent Books until their slots open again.`,
-    );
+    ]);
   }
   return lines;
 }

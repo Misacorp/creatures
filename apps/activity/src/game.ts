@@ -17,6 +17,8 @@ import {
   resourceName,
 } from '@creatures/game';
 import { ApiError, type CatchResult, type Creature, type ServerFirst } from './api';
+import { resourceCount } from './resource-count';
+import type { CountItem } from './ui/CountBadge';
 
 const SPECIES = new Map<string, CreatureSpecies>(content.creatures.map((c) => [c.id, c]));
 const ELEMENT_NAMES = new Map<string, string>(content.elements.map((e) => [e.id, e.name]));
@@ -116,32 +118,6 @@ export function creatureAbilityText(
   };
 }
 
-/** What the evolve control of a creature card shows. */
-export function evolutionText(
-  level: number,
-  evolution: NonNullable<Creature['evolution']>,
-  essence: number,
-): { available: boolean; label: string } {
-  const target =
-    evolution.alt === undefined
-      ? speciesName(evolution.toSpecies)
-      : `${speciesName(evolution.toSpecies)} or ${speciesName(evolution.alt.toSpecies)}`;
-  if (evolution.available) {
-    return {
-      available: true,
-      label: `Evolve (${String(evolution.essence)} ${resourceName('essence')})`,
-    };
-  }
-  const needs: string[] = [];
-  if (level < evolution.level) needs.push(`level ${String(evolution.level)}`);
-  if (essence < evolution.essence)
-    needs.push(`${String(evolution.essence)} ${resourceName('essence')}`);
-  return {
-    available: false,
-    label: `Evolve into ${target}: needs ${needs.length === 0 ? 'more progress' : needs.join(' and ')}`,
-  };
-}
-
 /** Filled and empty stars for the fusion count (0 to 5). */
 export function fusionStars(count: number): string {
   const filled = Math.min(Math.max(count, 0), RULES.fusion.maxFusions);
@@ -175,8 +151,10 @@ export function fusionGain(
 }
 
 /** The badges of a catch, in display order, with the glossary entry each one explains (null: nothing to explain). */
-export function catchBadgeTags(entry: CatchResult): { text: string; entry: string | null }[] {
-  const badges: { text: string; entry: string | null }[] = [];
+export function catchBadgeTags(
+  entry: CatchResult,
+): { text: string; entry: string | null; item?: CountItem }[] {
+  const badges: { text: string; entry: string | null; item?: CountItem }[] = [];
   if (entry.outcome === 'new') badges.push({ text: 'New!', entry: null });
   if (entry.outcome === 'duplicate') {
     badges.push({ text: 'Duplicate', entry: 'duplicate-choice' });
@@ -185,7 +163,7 @@ export function catchBadgeTags(entry: CatchResult): { text: string; entry: strin
     badges.push({ text: `Fused ★${String(entry.fusionCount ?? 0)}`, entry: 'fusion' });
   }
   if (entry.outcome === 'converted') {
-    badges.push({ text: `+${String(entry.bait ?? 0)} ${resourceName('bait')}`, entry: 'bait' });
+    badges.push({ text: '+', entry: 'bait', item: resourceCount('bait', entry.bait ?? 0) });
   }
   if (entry.shiny) badges.push({ text: 'Shiny!', entry: 'shiny' });
   if (entry.firstOnServer) badges.push({ text: 'First on server!', entry: 'first-on-server' });

@@ -5,6 +5,10 @@
  * tested; `use-action-runner.ts` binds it to a component's state.
  */
 import type { ActionId, KeyStore } from './actions';
+import type { Say } from './resource-count';
+
+/** A line the page shows after an action: plain text, or text with resources in it (their icons and numbers). */
+export type Notice = string | Say;
 
 /** What the runner needs from its screen. It is read again at every run, so closures may change. */
 export interface ActionRunnerConfig {
@@ -15,7 +19,7 @@ export interface ActionRunnerConfig {
   isStale: (err: unknown) => boolean;
   setBusy: (busy: boolean) => void;
   setError: (text: string | null) => void;
-  setNotice: (text: string | null) => void;
+  setNotice: (text: Notice | null) => void;
   /** False once the screen is gone: nothing is set on it then. */
   isMounted: () => boolean;
   /** Called when a run starts (not when it was turned away because one is running). */

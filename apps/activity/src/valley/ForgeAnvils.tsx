@@ -15,12 +15,7 @@ import type { Creature, ValleyVisit } from '../api';
 import { creatureName } from '../game';
 import { PartCount } from '../GearArt';
 import { busyReason } from '../gear-view';
-import {
-  acornCount,
-  resourceCount,
-  sayText,
-  type Say,
-} from '../resource-count';
+import { acornCount, resourceCount, sayText, type Say } from '../resource-count';
 import { baseOption, type PickerOption } from '../roster-picker';
 import { dropOutcome } from '../slot-outcome';
 import { TOUCH_HOLD_MS } from '../dnd-core';
@@ -152,9 +147,7 @@ function OrderRow({
         <span class="fg-order-text">
           <strong class="pix fg-order-name">{orderName(order)}</strong>
           <span class="fg-order-sub">
-            {[orderProgress(order), reach]
-              .filter((part) => part !== '')
-              .join(' · ')}
+            {[orderProgress(order), reach].filter((part) => part !== '').join(' · ')}
             {' · '}
             <SayLine say={wait ?? needs} />
           </span>
@@ -566,7 +559,8 @@ export function ForgeAnvils({
                           ANVIL_KIT_INFO[kind].name
                         ) : (
                           <>
-                            {ANVIL_KIT_INFO[kind].name}, <PriceLine price={seatPrice(visit.kit.price)} />
+                            {ANVIL_KIT_INFO[kind].name},{' '}
+                            <PriceLine price={seatPrice(visit.kit.price)} />
                           </>
                         )
                       }

@@ -123,7 +123,9 @@ const SCRAP_MARK = resourceMark('scrap');
 const SHARDS_MARK = anyShardMark();
 
 /** The pack's finds with their counts, nothing for a kind with none (scrap and shards by their icons). */
-export function packContents(seat: ValleySeatView): { label: string; mark?: CountItem; count: number }[] {
+export function packContents(
+  seat: ValleySeatView,
+): { label: string; mark?: CountItem; count: number }[] {
   const s = seat.store;
   const rows: { label: string; mark?: CountItem; count: number }[] = [
     { label: 'Scrap', mark: SCRAP_MARK, count: s.scrap },

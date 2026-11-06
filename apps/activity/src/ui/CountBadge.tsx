@@ -106,13 +106,7 @@ export function CountBadgeList({
  * what something costs, takes or holds in the valley and in buttons; resource names are never spelled out
  * (`resource-count.ts` makes the items; `no-resource-words.test.ts` guards it).
  */
-export function CostLine({
-  items,
-  class: cls,
-}: {
-  items: readonly CountItem[];
-  class?: string;
-}) {
+export function CostLine({ items, class: cls }: { items: readonly CountItem[]; class?: string }) {
   return (
     <span class={cls === undefined ? 'cost-line' : `cost-line ${cls}`}>
       {items.map(({ key, ...badge }) => (
@@ -136,21 +130,15 @@ export function ShortOfLine({ short }: { short: ShortOf }) {
   );
 }
 
-function withoutKey({ key: _key, ...badge }: CountItem): CountBadgeProps {
-  return badge;
-}
-
 /** A line of words with amounts in it: the strings as text, each count item as an inline badge. */
 export function SayLine({ say }: { say: Say }) {
   return (
     <>
-      {say.map((part, i) =>
-        typeof part === 'string' ? (
-          part
-        ) : (
-          <CountBadge key={`${String(i)}-${part.key}`} size="inline" {...withoutKey(part)} />
-        ),
-      )}
+      {say.map((part, i) => {
+        if (typeof part === 'string') return part;
+        const { key, ...badge } = part;
+        return <CountBadge key={`${String(i)}-${key}`} size="inline" {...badge} />;
+      })}
     </>
   );
 }

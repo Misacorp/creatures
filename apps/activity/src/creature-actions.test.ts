@@ -5,6 +5,7 @@ import { SAMPLE_STATE, sampleCreature } from './creature-card-sample';
 import { createCreatureActions } from './creature-actions';
 import { creatureName, errorText, speciesName } from './game';
 import type { Loaded } from './loaded-state';
+import { sayText } from './resource-count';
 import type { GameState } from './api';
 
 /** The real runner (as `Game` uses it), with the answer going to plain recorders. */
@@ -37,7 +38,7 @@ function setup() {
       current = typeof next === 'function' ? next(current) : next;
       shown.push(current);
     },
-    setNotice: (text) => notices.push(text),
+    setNotice: (text) => notices.push(typeof text === 'string' ? text : sayText(text ?? [])),
     server,
   });
   /** Lets the guarded action and its `then` settle. */

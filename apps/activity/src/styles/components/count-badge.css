@@ -23,7 +23,7 @@
   gap: 0.125rem;
   background: none;
   color: inherit;
-  font-size: inherit;
+  font: inherit;
   vertical-align: middle;
 }
 

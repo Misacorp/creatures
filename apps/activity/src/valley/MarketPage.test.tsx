@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PopoverHost } from '../PopoverHost';
 import {
+  badgesIn,
   byClass,
   byName,
   byRole,
@@ -116,16 +117,21 @@ describe('MarketPage while the Market is built', () => {
     const { page: p } = draw('being built');
     const text = visibleText(p.root);
     expect(text).toMatch(/Market/);
-    expect(text).toMatch(/Still needed: 190 Acorns, 380 scrap/);
+    expect(text).toMatch(/Still needed:/);
+    expect(badgesIn(byClass(p.root, 'cm-need')[0] as FakeElement)).toEqual([
+      ['Bait', '190'],
+      ['Scrap', '380'],
+    ]);
     expect(byClass(p.root, 'sp-seats')).toHaveLength(0);
     expect(byName(p.root, 'button', /Trade shards/)).toHaveLength(0);
     expect(find(p.root, (el) => el.getAttribute('data-seat') === 'communal:market')).toHaveLength(
       1,
     );
     p.click(button(p, /^Give/));
-    expect(visibleText(p.root)).toMatch(/Acorns/);
+    const rows = byClass(p.root, 'choice').map((c) => badgesIn(c)[0]?.[0] ?? '');
+    expect(rows).toContain('Bait');
     // Shards of any kind may be given (V-COM-15): a row for each pile held, the biggest first; the exchange's rate is not here.
-    expect(visibleText(p.root)).toMatch(/Ember shards/);
+    expect(rows).toContain('Ember Shards');
     expect(visibleText(p.root)).not.toMatch(/\d for 1/);
   });
 });
@@ -156,22 +162,38 @@ describe('MarketPage once it is built', () => {
 
   it("says the broker's rate and bonus, and a stuck anvil's wait; its rates open in a drawer", () => {
     const { page: p } = draw('broker stuck');
-    expect(visibleText(p.root)).toMatch(
-      /Swaps spare shards 12 for 5, with a 15% chance of one extra/,
-    );
-    expect(visibleText(p.root)).toMatch(/Waiting for spare shards to trade for Tide/);
+    // The rate is any-shard icons with numbers (12 for 5), never "shards".
+    const line = byClass(p.root, 'mk-line')[0] as FakeElement;
+    expect(badgesIn(line).slice(0, 2)).toEqual([
+      ['Shards of any kind', '12'],
+      ['Shards of any kind', '5'],
+    ]);
+    expect(visibleText(line)).toMatch(/Swaps 12 for 5, with a 15% chance of one extra/);
+    expect(visibleText(line)).not.toMatch(/shards/i);
     p.click(button(p, /Show the rates/));
     const text = visibleText(p.root);
     expect(text).toMatch(/Rate/);
     expect(text).toMatch(/Next step/);
-    expect(text).toMatch(/2 for 1/);
+    // The next step's rate: 2 for 1.
+    expect(
+      badgesIn(
+        byClass(p.root, 'data-row').find((r) => /Next step/.test(visibleText(r))) as FakeElement,
+      ),
+    ).toEqual([
+      ['Shards of any kind', '2'],
+      ['Shards of any kind', '1'],
+    ]);
   });
 
   it('sets what it trades toward in a drawer of choices: an element, or back to the orders', () => {
     const { page: p, calls } = draw('open with a broker');
     p.click(button(p, /Trades toward: What the orders need/));
     expect(visibleText(p.root)).toMatch(/It never trades the few shards you keep/);
-    p.click(button(p, /^Grove shards/));
+    const grove = byClass(p.root, 'choice').find((c) =>
+      /^Grove Shard/.test(badgesIn(c)[0]?.[0] ?? ''),
+    );
+    if (grove === undefined) throw new Error('no Grove row');
+    p.click(grove);
     expect(calls.toward).toEqual([{ seatId: 'broker-1', toward: 'grove' }]);
     // The orders' own row is already the chosen one: choosing it again sends nothing.
     p.click(button(p, /Trades toward: What the orders need/));
@@ -182,10 +204,16 @@ describe('MarketPage once it is built', () => {
   it('has the exchange beside the broker: it shows the rate and the crit, and trades only what the shelf can pay', () => {
     const { page: p, calls } = draw('open with a broker');
     p.click(button(p, /Trade shards/));
-    expect(visibleText(p.root)).toMatch(
-      /3 shards of one kind for 1 of another\. A 10% chance to get 2\./,
+    const rate = byClass(p.root, 'sp-note').find((n) => /chance/.test(visibleText(n)));
+    expect(badgesIn(rate as FakeElement)).toEqual([
+      ['Shards of any kind', '3'],
+      ['Shards of any kind', '1'],
+      ['Shards of any kind', '2'],
+    ]);
+    expect(visibleText(rate as FakeElement)).toMatch(
+      /of one kind for 1 of another\. A 10% chance to get/,
     );
-    const trade = byName(p.root, 'button', /^Trade \d/)[0];
+    const trade = byClass(p.root, 'action-btn').find((b) => /^Trade/.test(visibleText(b)));
     if (trade === undefined) throw new Error('no confirm');
     expect(trade.getAttribute('disabled')).toBeNull();
     p.click(trade);
@@ -195,7 +223,10 @@ describe('MarketPage once it is built', () => {
 
   it('opens its exchange on the shard an anvil waits for when sent from the Forge', () => {
     const { page: p } = draw('open with a broker', { exchange: 'grove' });
-    expect(visibleText(p.root)).toMatch(/Trade 1 for Grove/);
+    const trade = byClass(p.root, 'action-btn').find((b) => /^Trade/.test(visibleText(b)));
+    // "Trade", the Grove shard's icon and "× 1".
+    expect(badgesIn(trade as FakeElement)).toEqual([['Grove Shards', '']]);
+    expect(visibleText(trade as FakeElement)).toMatch(/× 1/);
   });
 
   it('starts with a drawer open when asked (the workbench shots)', () => {

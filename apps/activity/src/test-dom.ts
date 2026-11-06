@@ -404,6 +404,21 @@ export function byRole(root: FakeElement, role: string): FakeElement[] {
   return find(root, (el) => el.getAttribute('role') === role);
 }
 
+/**
+ * The count badges inside as [name, number] pairs in order ("Scrap: 6" is ["Scrap", "6"]): what a cost line shows is an
+ * icon and a number, so a test reads the badge's spoken name and its number, never a resource's name in the text.
+ */
+export function badgesIn(root: FakeElement): [string, string][] {
+  return find(root, (el) =>
+    (el.getAttribute('class') ?? '').split(/\s+/).includes('part-count'),
+  ).map((el) => {
+    const spoken = el.getAttribute('aria-label') ?? '';
+    const amount = byClass(el, 'part-amount')[0]?.textContent.trim() ?? '';
+    const cut = spoken.lastIndexOf(': ');
+    return [cut === -1 ? spoken : spoken.slice(0, cut), amount];
+  });
+}
+
 export function visibleText(root: FakeElement): string {
   return root.textContent.replace(/\s+/g, ' ').trim();
 }

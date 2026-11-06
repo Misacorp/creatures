@@ -169,7 +169,7 @@ export function Exchange({
       {error !== null && <Alert level="alert">{error}</Alert>}
       <ActionButton
         label="Trade"
-        detail={`${String(shown)} for`}
+        detail={`× ${String(shown)}`}
         cost={[shardMark(to)]}
         wide
         large

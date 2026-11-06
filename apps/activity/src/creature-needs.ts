@@ -5,7 +5,9 @@
  */
 import type { Creature, GameState } from './api';
 import { creatureV2 } from './combat-v2-view';
-import { ribbonCostText, ribbonName } from './experience';
+import { ribbonCost, ribbonName } from './experience';
+import { essenceAmount, resourceCount } from './resource-count';
+import type { CountItem } from './ui/CountBadge';
 import { creatureName, speciesName } from './game';
 import { busyReason } from './gear-view';
 import { bookActions } from './talent-view';
@@ -17,8 +19,10 @@ export interface Need {
   kind: NeedKind;
   /** The button's words ("Earn Bronze Ribbon"). */
   label: string;
-  /** The small line under the label (the cost, or where to answer). */
+  /** The small line under the label (where to answer, or what is missing); empty when `cost` says it all. */
   detail: string;
+  /** What it costs, as count items (an icon and a number, never the resource's name). */
+  cost?: CountItem[];
   /**
    * Why the button cannot be used now (the creature is away or on a job, or the player is short of what it
    * costs); the card shows it disabled. It still counts for the "Needs you" filter (a signal to go and get
@@ -41,14 +45,16 @@ export function creatureNeeds(creature: Creature, state: NeedsState): Need[] {
   if (ribbon !== null) {
     // At its ribbon level: ready, or short of trips (how many) or parts (the exact cost).
     const tripsLeft = ribbon.trips - ribbon.tripsDone;
+    const price = ribbonCost(ribbon);
+    const waitingOnTrips = !ribbon.ready && tripsLeft > 0;
     needs.push({
       ...(ribbon.ready ? {} : { blocked: tripsLeft > 0 ? 'Short of trips' : 'Short of parts' }),
       kind: 'ribbon',
       label: `Earn ${ribbonName(ribbon.id)}`,
-      detail:
-        !ribbon.ready && tripsLeft > 0
-          ? `${String(tripsLeft)} more ${tripsLeft === 1 ? 'trip' : 'trips'}`
-          : ribbonCostText(ribbon),
+      detail: waitingOnTrips
+        ? `${String(tripsLeft)} more ${tripsLeft === 1 ? 'trip' : 'trips'}`
+        : price.trips,
+      ...(waitingOnTrips ? {} : { cost: price.items }),
     });
   }
   if (creature.evolution?.available === true) {
@@ -59,7 +65,8 @@ export function creatureNeeds(creature: Creature, state: NeedsState): Need[] {
       kind: 'evolve',
       // Just the verb: the evolve screen names the form (or the two to choose from).
       label: 'Evolve',
-      detail: blocked ?? `${String(creature.evolution.essence)} ${resourceName('essence')}`,
+      detail: blocked ?? '',
+      ...(blocked === null ? { cost: [essenceAmount(creature.evolution.essence)] } : {}),
     });
   } else {
     const short = evolveShortfall(creature, state.balances.essence);
@@ -68,7 +75,8 @@ export function creatureNeeds(creature: Creature, state: NeedsState): Need[] {
         blocked: `Short of ${resourceName('essence')}`,
         kind: 'evolve',
         label: 'Evolve',
-        detail: `${String(short.have)} / ${String(short.cost)} ${resourceName('essence')}`,
+        detail: '',
+        cost: [essenceAmount(short.cost)],
       });
     }
   }
@@ -97,7 +105,8 @@ export function creatureNeeds(creature: Creature, state: NeedsState): Need[] {
     needs.push({
       kind: 'talent',
       label: `Fill talent slot ${String(emptySlot.slot)}`,
-      detail: `${String(state.bookSlotBait)} ${resourceName('bait')}`,
+      detail: '',
+      cost: [resourceCount('bait', state.bookSlotBait)],
     });
   }
   return [

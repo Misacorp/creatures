@@ -15,6 +15,8 @@ import type {
 } from './dungeon-types';
 import { nodeLevel } from './dungeon-map';
 import { partName } from './gear-view';
+import { resourceCount } from './resource-count';
+import type { CountItem } from './ui/CountBadge';
 import { errorText } from './game';
 
 /** One short plain message for every error code the dungeon routes send. */
@@ -258,7 +260,7 @@ export function isPackEmpty(pack: DungeonPack): boolean {
   );
 }
 
-/** What a pack holds, without the empty kinds: "2 Bait · 1 Scrap · 1 Ember Shard". Empty: "nothing". */
+/** What a pack holds in words, without the empty kinds: "2 Bait · 1 Scrap · 1 Ember Shard". Empty: "nothing". For assistive technology; the screen draws `packItems`. */
 export function packText(pack: DungeonPack): string {
   const parts = [
     ...PACK_KINDS.filter(([kind]) => pack[kind] > 0).map(
@@ -267,6 +269,16 @@ export function packText(pack: DungeonPack): string {
     ...packShardEntries(pack).map(([kind, n]) => `${String(n)} ${partName(kind)}`),
   ];
   return parts.length === 0 ? 'nothing' : parts.join(' · ');
+}
+
+/** What a pack holds as count items (an icon and a number each, never a name), without the empty kinds. */
+export function packItems(pack: DungeonPack): CountItem[] {
+  return [
+    ...PACK_KINDS.filter(([kind]) => pack[kind] > 0).map(([kind]) =>
+      resourceCount(kind, pack[kind]),
+    ),
+    ...packShardEntries(pack).map(([kind, n]) => resourceCount(kind, n)),
+  ];
 }
 
 /** The pack on the run strip: "In your pack: 2 Bait · 1 Scrap", or that it is empty. */

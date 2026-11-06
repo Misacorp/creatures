@@ -37,12 +37,25 @@ describe('the commons in words', () => {
 
   it('what is still needed, whole units, an empty part left out, "1 Acorn" for one', () => {
     const p = openPlace('signpost', 2, 900, 0.28);
-    expect(stillNeeded(p)).toBe('260 Acorns, 519 scrap, 65 Grove shards');
+    const shape = (items: ReturnType<typeof stillNeeded>) => items.map((i) => [i.key, i.amount]);
+    expect(shape(stillNeeded(p))).toEqual([
+      ['bait', 260],
+      ['scrap', 519],
+      ['shards:grove', 65],
+    ]);
     if (p.project === null) throw new Error('fixture');
     expect(
-      stillNeeded({ ...p, project: { ...p.project, needs: { acorns: 0.4, scrap: 0, shards: 1 } } }),
-    ).toBe('1 Acorn, 1 Grove shard');
-    expect(stillNeeded(buildingPlace('forge', 2, 2, []))).toBe('');
+      shape(
+        stillNeeded({
+          ...p,
+          project: { ...p.project, needs: { acorns: 0.4, scrap: 0, shards: 1 } },
+        }),
+      ),
+    ).toEqual([
+      ['bait', 1],
+      ['shards:grove', 1],
+    ]);
+    expect(stillNeeded(buildingPlace('forge', 2, 2, []))).toEqual([]);
   });
 
   it('the percent filled: whole, never over 100, zero with no project', () => {
@@ -119,7 +132,7 @@ describe('the give list', () => {
     const mire = rows.find((r) => r.id === 'shards:mire');
     // 7 shards pay for 2 units at 3 for 1; each step costs 3.
     expect(mire?.max).toBe(2);
-    expect(mire && giftPrice(mire, 2)).toBe('6 Mire shards');
+    expect(mire && giftPrice(mire, 2)).toMatchObject({ key: 'shards:mire', amount: 6 });
   });
 
   it('a row with nothing to give says why', () => {
@@ -147,9 +160,9 @@ describe('the give list', () => {
 
   it('the price of a gift of one currency each', () => {
     const rows = giveRows(place, purse, 3);
-    expect(giftPrice(rows[0]!, 5)).toBe('5 Acorns');
-    expect(giftPrice(rows[1]!, 5)).toBe('5 scrap');
-    expect(giftPrice(rows[2]!, 1)).toBe('1 Grove shard');
+    expect(giftPrice(rows[0]!, 5)).toMatchObject({ key: 'bait', amount: 5 });
+    expect(giftPrice(rows[1]!, 5)).toMatchObject({ key: 'scrap', amount: 5 });
+    expect(giftPrice(rows[2]!, 1)).toMatchObject({ key: 'shards:grove', amount: 1 });
   });
 });
 

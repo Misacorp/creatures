@@ -87,6 +87,16 @@ export function shardMark(element: string): CountItem {
   return { key, icon, ...(label === undefined ? {} : { label }) };
 }
 
+/** Items in a row of a `Say`, a word between them ("[3 scrap] and [2 shards]"). */
+export function joinSay(items: readonly CountItem[], between: string): Say {
+  return items.flatMap((item, i) => (i === 0 ? [item] : [between, item]));
+}
+
+/** A `Say` as plain data for a test or a log: its words, and each count item as [key, amount]. */
+export function sayParts(say: Say): (string | readonly [string, number | string | undefined])[] {
+  return say.map((part) => (typeof part === 'string' ? part : ([part.key, part.amount] as const)));
+}
+
 /** The words of a `Say`, for assistive technology: text as it is, each count item as its label and number. */
 export function sayText(say: Say): string {
   return say

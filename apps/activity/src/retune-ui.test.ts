@@ -1,5 +1,6 @@
 import { dungeonContent } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
+import { sayParts } from './resource-count';
 import { outcomeLine } from './after-action';
 import { landmarkLine } from './dungeon-text';
 import { modifierGimmicks, roomIntroView, roomMoves, roomTrick } from './dungeon-playback';
@@ -63,12 +64,18 @@ describe('the result wording of a stage', () => {
       rankChange: null,
       festivalGrant: null,
     };
-    expect(stepMark(result).summary).toBe(
-      'Phase 1 cleared: the boss retreated. You got 12 Essence.',
-    );
+    expect(sayParts(stepMark(result).summary)).toEqual([
+      'Phase 1 cleared: the boss retreated. You got ',
+      ['essence', 12],
+      '.',
+    ]);
     const older: PhaseResultView = { ...result };
     delete older.retreated;
-    expect(stepMark(older).summary).toBe('Phase 1: cleared. You got 12 Essence.');
+    expect(sayParts(stepMark(older).summary)).toEqual([
+      'Phase 1: cleared. You got ',
+      ['essence', 12],
+      '.',
+    ]);
     expect(revealSummary({ cleared: false, essence: 3, enraged: true }).outcome).toBe(
       'The boss held on. Out of time, it enraged. Not cleared.',
     );

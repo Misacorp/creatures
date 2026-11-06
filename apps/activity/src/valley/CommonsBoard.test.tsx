@@ -2,11 +2,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ValleyCommonsPlace } from '@creatures/game';
 import { PopoverHost } from '../PopoverHost';
 import {
+  badgesIn,
   byClass,
   byName,
   byRole,
   createPage,
   find,
+  nameOf,
   visibleText,
   type FakeElement,
   type Page,
@@ -116,6 +118,23 @@ const button = (p: Page, name: RegExp): FakeElement => {
   return el;
 };
 
+/** The row of the give list whose badge is this resource (a choice shows an icon and a number, never a name). */
+const row = (p: Page, resource: RegExp): FakeElement => {
+  const el = byClass(p.root, 'choice').find((c) => resource.test(badgesIn(c)[0]?.[0] ?? ''));
+  if (el === undefined) throw new Error(`no give row ${String(resource)}`);
+  return el;
+};
+
+/** The one Give button that carries a cost (the confirm of the amount view), with its badge. */
+const confirm = (p: Page): FakeElement => {
+  const el = find(
+    p.root,
+    (c) => c.localName === 'button' && /^Give/.test(nameOf(c)) && badgesIn(c).length > 0,
+  )[0];
+  if (el === undefined) throw new Error('no confirm button');
+  return el;
+};
+
 describe('CommonsBoard: an open project', () => {
   const signpost = openPlace('signpost', 2, 900, 0.28, {
     plaque: ['Ada', 'Mia', 'Tobias'],
@@ -127,7 +146,14 @@ describe('CommonsBoard: an open project', () => {
     const text = visibleText(p.root);
     expect(text).toMatch(/Level 2 \/ 5/);
     expect(text).toMatch(/28%/);
-    expect(text).toMatch(/Still needed: 260 Acorns, 519 scrap, 65 Grove shards/);
+    expect(text).toMatch(/Still needed:/);
+    // What is still needed is icons and numbers, never the resources' names.
+    expect(badgesIn(byClass(p.root, 'cm-need')[0] as FakeElement)).toEqual([
+      ['Bait', '260'],
+      ['Scrap', '519'],
+      ['Grove Shards', '65'],
+    ]);
+    expect(text).not.toMatch(/Acorns|scrap|shards/);
     expect(text).toMatch(/You gave 31% of this/);
     expect(byRole(p.root, 'progressbar').length).toBeGreaterThan(0);
     expect(button(p, /^Give/)).toBeDefined();
@@ -146,11 +172,12 @@ describe('CommonsBoard: an open project', () => {
     const { page: p, calls } = draw('signpost', [signpost]);
     p.click(button(p, /^Give/));
     expect(visibleText(p.root)).toMatch(/Give to the project/);
-    p.click(button(p, /^Acorns/));
+    p.click(row(p, /^Bait/));
     // 260 Acorns are needed and 1000 are held: the stepper starts at what the project takes.
-    expect(visibleText(p.root)).toMatch(/260 Acorns/);
+    expect(badgesIn(confirm(p))).toEqual([['Bait', '260']]);
     p.click(button(p, /One fewer/));
-    p.click(button(p, /^Give \d+ Acorns/));
+    expect(badgesIn(confirm(p))).toEqual([['Bait', '259']]);
+    p.click(confirm(p));
     expect(calls.gives).toHaveLength(1);
     expect(calls.gives[0]?.place).toBe('signpost');
     expect(calls.gives[0]?.row.id).toBe('acorns');
@@ -160,10 +187,10 @@ describe('CommonsBoard: an open project', () => {
   it('shards of another element pay at the exchange rate, three for one', () => {
     const { page: p, calls } = draw('signpost', [signpost]);
     p.click(button(p, /^Give/));
-    p.click(button(p, /^Mire shards, 3 for 1/));
-    // 7 Mire shards pay for 2 units; the price line says what the player spends.
-    expect(visibleText(p.root)).toMatch(/6 Mire shards/);
-    p.click(button(p, /^Give \d+ Mire shards/));
+    p.click(row(p, /^Mire Shard/));
+    // 7 Mire shards pay for 2 units; the button says what the player spends: 6 of them.
+    expect(badgesIn(confirm(p))).toEqual([['Mire Shards', '6']]);
+    p.click(confirm(p));
     expect(calls.gives[0]?.row.per).toBe(3);
     expect(calls.gives[0]?.units).toBe(2);
   });
@@ -171,21 +198,29 @@ describe('CommonsBoard: an open project', () => {
   it('the Market takes shards of any kind: the board says so, the drawer lists the biggest pile first, and a gift names the element', () => {
     const market = marketPlace('being built');
     const { page: p, calls } = draw('market', [market]);
-    expect(visibleText(p.root)).toMatch(/Still needed: 190 Acorns, 380 scrap/);
-    expect(visibleText(p.root)).toMatch(
-      /Shards of any kind count too, as many as you like: 4 shards count as 1 Acorn/,
-    );
+    expect(badgesIn(byClass(p.root, 'cm-need')[0] as FakeElement)).toEqual([
+      ['Bait', '190'],
+      ['Scrap', '380'],
+    ]);
+    // The rate is an any-shard icon and a number, then an Acorn: "4 [shard] = 1 [acorn]".
+    const rate = byClass(p.root, 'cm-need')[1] as FakeElement;
+    expect(badgesIn(rate)).toEqual([
+      ['Shards of any kind', ''],
+      ['Shards of any kind', '4'],
+      ['Bait', '1'],
+    ]);
+    expect(visibleText(p.root)).not.toMatch(/shards/i);
     p.click(button(p, /^Give/));
-    const names = byName(p.root, 'button', /shards|Acorns|Scrap/).map((el) => visibleText(el));
+    const names = byClass(p.root, 'choice').map((el) => badgesIn(el)[0]?.[0] ?? '');
     // The shelf holds Mire 7, Tide 4, Ember 4, Grove 1: Mire (the biggest) comes first among the shards.
     const order = ['Mire', 'Tide', 'Ember', 'Grove'].map((n) =>
-      names.findIndex((t) => t.startsWith(`${n} shards`)),
+      names.findIndex((t) => t.startsWith(`${n} Shard`)),
     );
     expect(order.every((i) => i >= 0)).toBe(true);
     expect([...order].sort((x, y) => x - y)).toEqual(order);
-    p.click(button(p, /^Mire shards/));
-    expect(visibleText(p.root)).toMatch(/4 shards count as 1 Acorn/);
-    p.click(button(p, /^Give \d+ Mire shards/));
+    p.click(row(p, /^Mire Shard/));
+    expect(badgesIn(confirm(p))).toEqual([['Mire Shards', '7']]);
+    p.click(confirm(p));
     expect(calls.gives[0]?.place).toBe('market');
     expect(calls.gives[0]?.row).toMatchObject({ part: 'shards', element: 'mire', per: 1 });
     expect(calls.gives[0]?.units).toBe(7);
@@ -194,7 +229,7 @@ describe('CommonsBoard: an open project', () => {
   it('a part the player cannot pay is listed with its reason and cannot be opened', () => {
     const { page: p } = draw('signpost', [signpost], { scrap: 0 });
     p.click(button(p, /^Give/));
-    const scrap = button(p, /^Scrap/);
+    const scrap = row(p, /^Scrap/);
     expect(scrap.getAttribute('disabled')).not.toBeNull();
     expect(visibleText(p.root)).toMatch(/You have none/);
   });

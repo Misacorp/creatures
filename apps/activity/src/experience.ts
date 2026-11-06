@@ -6,6 +6,8 @@
  */
 import { PART_KINDS } from '@creatures/game';
 import type { PartKind } from './gear-types';
+import { resourceCount } from './resource-count';
+import type { CountItem } from './ui/CountBadge';
 import { isArrayOf, isCount, isInt, isRecord, isStr } from './parse-core';
 
 /** One thing that changed an XP gain: a treat's multiplier, or a share on top (basis points; negative: less). */
@@ -140,28 +142,19 @@ export function ribbonName(id: RibbonView['id'] | 'gold'): string {
   return id === 'gold' ? 'Gold Ribbon' : RIBBON_NAMES[id];
 }
 
-const PART_NAMES: Readonly<Record<string, string>> = {
-  scrap: 'scrap',
-  glimmer: 'glimmer',
-  'tide-shard': 'Tide shards',
-  'ember-shard': 'Ember shards',
-  'grove-shard': 'Grove shards',
-  'spark-shard': 'Spark shards',
-  'mire-shard': 'Mire shards',
-};
-
-/** "6 scrap and 2 Ember shards": a ribbon's parts, in the order the server lists them, as words. */
-export function ribbonCostText(ribbon: RibbonView): string {
-  const parts = Object.entries(ribbon.parts)
+/**
+ * What a ribbon takes: its parts as count items in the order the server lists them (scrap, shards by their icons;
+ * never a name), and the finished trips it asks for as a short text ("5 finished trips"; empty with none).
+ */
+export function ribbonCost(ribbon: RibbonView): { items: CountItem[]; trips: string } {
+  const items = Object.entries(ribbon.parts)
     .filter(([, amount]) => typeof amount === 'number' && amount > 0)
-    .map(([kind, amount]) => `${String(amount)} ${PART_NAMES[kind] ?? kind}`);
+    .map(([kind, amount]) => resourceCount(kind, Number(amount)));
   const trips =
     ribbon.trips > 0
-      ? [`${String(ribbon.trips)} finished ${ribbon.trips === 1 ? 'trip' : 'trips'}`]
-      : [];
-  const all = [...parts, ...trips];
-  if (all.length <= 1) return all.join('');
-  return `${all.slice(0, -1).join(', ')} and ${all[all.length - 1] ?? ''}`;
+      ? `${String(ribbon.trips)} finished ${ribbon.trips === 1 ? 'trip' : 'trips'}`
+      : '';
+  return { items, trips };
 }
 
 /** What is missing before the ribbon can be earned, in words; null when it is ready. */

@@ -1,4 +1,5 @@
 import { useState } from 'preact/hooks';
+import { SayLine } from './ui/CountBadge';
 import type { Creature } from './api';
 import type { CancelledTrip } from './expedition-types';
 import {
@@ -29,7 +30,9 @@ export function WipeNotice({
   return (
     <section class="wipe-notice" role="status" aria-labelledby="wipe-notice-title">
       <h3 id="wipe-notice-title">A note about your trips</h3>
-      <p>{WIPE_NOTICE_TEXT}</p>
+      <p>
+        <SayLine say={WIPE_NOTICE_TEXT} />
+      </p>
       <ul class="muted">
         {unseen.map((trip) => (
           <li key={trip.id}>{cancelledLine(trip, creatures)}</li>

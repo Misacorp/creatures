@@ -10,6 +10,7 @@ import { pageScene, type SceneKind } from './creature-page/sample';
 import { teamSample } from './creature-page/team-sample';
 import { withV2 } from './creature-page/v2-sample';
 import {
+  badgesIn,
   byClass,
   byName,
   byRole,
@@ -264,7 +265,8 @@ describe('the Talent Book under combat v2', () => {
     p.click(slotButton(root, /^Talent slot 2: /));
     const dialog = first(byRole(root, 'dialog'));
     const learn = first(byName(dialog, 'button', /^Learn .* for 10 Bait$/));
-    expect(visibleText(learn)).toBe('Learn · 10 Bait');
+    expect(visibleText(learn)).toBe('Learn · 10');
+    expect(badgesIn(learn)).toEqual([['Bait', '10']]);
     p.click(learn);
     expect(actions.onLearnTalentV2).toHaveBeenCalledTimes(1);
     expect(actions.onLearnTalentV2).toHaveBeenCalledWith(creature, expect.any(String));
@@ -298,7 +300,8 @@ describe('the Talent Book under combat v2', () => {
     const learns = byName(dialog, 'button', /^Learn /);
     expect(learns.length).toBeGreaterThan(0);
     for (const button of learns) expect(button.hasAttribute('disabled')).toBe(true);
-    expect(visibleText(dialog)).toContain('Not enough Bait.');
+    expect(visibleText(dialog)).toContain('Not enough .');
+    expect(badgesIn(first(byClass(dialog, 'book-short')))).toEqual([['Bait', '']]);
     for (const button of byName(dialog, 'button', /^Put /)) {
       expect(button.hasAttribute('disabled')).toBe(false);
     }

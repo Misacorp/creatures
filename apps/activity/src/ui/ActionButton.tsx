@@ -24,7 +24,7 @@ export function ActionButton({
   label: string;
   /** The small words next to or under the label; nothing is drawn (and no room kept) when empty. */
   detail?: string | undefined;
-  /** What it costs, as count badges (an icon and a number, never the resource's name): drawn after the detail. */
+  /** What it costs, as count badges (an icon and a number, never the resource's name): drawn before the detail. */
   cost?: readonly CountItem[] | undefined;
   onClick: () => void;
   disabled?: boolean | undefined;
@@ -45,9 +45,9 @@ export function ActionButton({
         <>
           {/* A space between the two, so the button's name reads "Evolve, Essence: 20" (the box drops it). */}{' '}
           <small class="ab-detail">
-            {note}
-            {note !== '' && priced ? ' ' : ''}
             {priced && <CostLine items={cost} />}
+            {note !== '' && priced ? ' ' : ''}
+            {note}
           </small>
         </>
       )}
