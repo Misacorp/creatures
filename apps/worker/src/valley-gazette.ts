@@ -145,6 +145,7 @@ type PaperRow = {
   log: string;
   decision: string | null;
   read_at: number | null;
+  market_told: number;
 };
 
 export class ValleyGazette {
@@ -160,7 +161,7 @@ export class ValleyGazette {
   private row(userId: string): PaperRow | undefined {
     return this.sql
       .exec<PaperRow>(
-        'SELECT paper_id, at, away_hours, log, decision, read_at FROM valley_gazette WHERE user_id = ?',
+        'SELECT paper_id, at, away_hours, log, decision, read_at, market_told FROM valley_gazette WHERE user_id = ?',
         userId,
       )
       .toArray()[0];
@@ -219,9 +220,48 @@ export class ValleyGazette {
     return true;
   }
 
-  /** The player's paper while it is unread (one row by its key); null when there is none or it was closed. */
-  current(userId: string): Paper | null {
-    const row = this.row(userId);
+  /**
+   * Q64: the Market is built, so the paper tells this player so, once (no hours away needed: the one story that does not wait). It joins
+   * an unread paper (and so leads it) or makes a paper of its own; the mark stays after the paper is read, so it is never told twice.
+   * Called with the one row `current` reads, so a player who was told costs nothing more. Returns the row as it now stands.
+   */
+  private tellMarket(userId: string, row: PaperRow | undefined): PaperRow | undefined {
+    if (row !== undefined && row.market_told === 1) return row;
+    const unread = row !== undefined && row.read_at === null ? row : undefined;
+    const old = unread === undefined ? null : this.parseLog(unread.log);
+    const log: PaperLog = { ...(old ?? emptyLog()), market: true };
+    const at = this.now();
+    const next: PaperRow = {
+      paper_id: unread === undefined ? String(at) : unread.paper_id,
+      at: unread === undefined ? at : unread.at,
+      away_hours: unread === undefined ? 0 : unread.away_hours,
+      log: JSON.stringify(log),
+      decision: unread === undefined ? null : unread.decision,
+      read_at: null,
+      market_told: 1,
+    };
+    this.sql.exec(
+      `INSERT INTO valley_gazette (user_id, paper_id, at, away_hours, log, decision, read_at, market_told)
+       VALUES (?, ?, ?, ?, ?, ?, NULL, 1)
+       ON CONFLICT(user_id) DO UPDATE SET paper_id = excluded.paper_id, at = excluded.at, away_hours = excluded.away_hours,
+         log = excluded.log, decision = excluded.decision, read_at = NULL, market_told = 1`,
+      userId,
+      next.paper_id,
+      next.at,
+      next.away_hours,
+      next.log,
+      next.decision,
+    );
+    return next;
+  }
+
+  /**
+   * The player's paper while it is unread (one row by its key); null when there is none or it was closed. With `marketBuilt` the
+   * Market's opening is told first, once (Q64).
+   */
+  current(userId: string, marketBuilt = false): Paper | null {
+    let row = this.row(userId);
+    if (marketBuilt) row = this.tellMarket(userId, row);
     if (row === undefined || row.read_at !== null) return null;
     const log = this.parseLog(row.log);
     if (log === null) return null;

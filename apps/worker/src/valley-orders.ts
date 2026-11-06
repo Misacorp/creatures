@@ -258,6 +258,8 @@ export class ValleyOrders {
   ): Outcome<ExchangeResult> {
     return atomically(this.deps.storage, () => {
       this.deps.settle.settle(userId, 'now');
+      // Q64: nobody exchanges until the server has built the Market (checked before any spend).
+      if (this.deps.commons.levelOf('market') < 2) throw new GameError(409, 'market_not_built');
       return runKeyed(
         this.sql,
         this.deps.now,

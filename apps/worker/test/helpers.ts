@@ -315,8 +315,18 @@ export function undoGamesIndexMigration(sql: SqlStorage): void {
   sql.exec('DELETE FROM schema_version WHERE version = 42');
 }
 
+/** Puts a database back to before migration 63 (the Market's opening in the paper): the told mark goes. */
+export function undoValleyMarketOpenMigration(sql: SqlStorage): void {
+  const has = sql
+    .exec("SELECT 1 FROM pragma_table_info('valley_gazette') WHERE name = 'market_told'")
+    .toArray();
+  if (has.length > 0) sql.exec('ALTER TABLE valley_gazette DROP COLUMN market_told');
+  sql.exec('DELETE FROM schema_version WHERE version = 63');
+}
+
 /** Puts a database back to before migration 62 (the Market's broker): the trading hours go. */
 export function undoValleyMarketMigration(sql: SqlStorage): void {
+  undoValleyMarketOpenMigration(sql);
   const has = sql
     .exec("SELECT 1 FROM pragma_table_info('valley_creatures') WHERE name = 'trade_hours'")
     .toArray();

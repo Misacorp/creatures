@@ -1069,7 +1069,10 @@ export class ValleySettle {
       if (price !== null) ladder.push(price);
     }
     const special = specialOfWeek(tz, input.to);
-    const paper = this.deps.gazette.current(input.userId);
+    const paper = this.deps.gazette.current(
+      input.userId,
+      this.deps.commons.levelIn(input.commons, 'market') >= 2,
+    );
     return {
       settledAt: input.to,
       arrived: input.arrived,

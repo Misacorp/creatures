@@ -54,6 +54,8 @@ export const HIGHLIGHT_WEIGHT = {
   scoutsHome: 20,
   moment: 10,
   // The valley
+  /** The Market opening is the whole server's moment (Q64): it leads every paper that has it. */
+  marketOpen: 120,
   placeLevel: 85,
   blueprint: 60,
   visitor: 50,
@@ -161,6 +163,11 @@ export const PaperLogSchema = v.strictObject({
   moment: v.nullable(v.strictObject({ creatureId: id, turn: int, friendId: v.optional(id) })),
   /** What came home: Acorns (the allowance), scrap and shards (the scouts' packs). */
   brought: v.strictObject({ acorns: int, scrap: int, shards: int }),
+  /**
+   * The Market has opened (Q64: a server-wide moment, told once to each player; the stored log of an older paper has none, so false).
+   * It is the one story that does not wait for three hours away.
+   */
+  market: v.optional(v.boolean(), false),
 });
 export type PaperLog = v.InferOutput<typeof PaperLogSchema>;
 
@@ -179,6 +186,7 @@ export const emptyLog = (): PaperLog => ({
   xp: [],
   moment: null,
   brought: { acorns: 0, scrap: 0, shards: 0 },
+  market: false,
 });
 
 const rank = (rarity: PaperRarity): number => RARITIES.indexOf(rarity);
@@ -235,6 +243,7 @@ export function mergeLogs(base: PaperLog, more: PaperLog): PaperLog {
       scrap: base.brought.scrap + more.brought.scrap,
       shards: base.brought.shards + more.brought.shards,
     },
+    market: base.market || more.market,
   };
 }
 
@@ -254,6 +263,7 @@ export const HEADLINE_KINDS = [
   'pack-full',
   'allowance',
   'moment',
+  'market-open',
 ] as const;
 export type HeadlineKind = (typeof HEADLINE_KINDS)[number];
 
@@ -270,6 +280,7 @@ const GROUP_OF: Record<HeadlineKind, HighlightGroup> = {
   'pack-full': 'server',
   allowance: 'server',
   moment: 'creature',
+  'market-open': 'server',
 };
 
 /** One of a paper's headlines, as data: the client words it (names, places) and draws its scene from the creatures. */
@@ -349,6 +360,7 @@ const crew = (...ids: (string | null)[]): string[] =>
 /** Every story the log has, unranked. */
 export function headlinesOf(log: PaperLog): PaperHeadline[] {
   const out: PaperHeadline[] = [];
+  if (log.market) out.push(blank('market-open', HIGHLIGHT_WEIGHT.marketOpen, 0));
   const first = log.newcomers[0];
   if (log.newcomerCount > 0 && first !== undefined) {
     out.push({
