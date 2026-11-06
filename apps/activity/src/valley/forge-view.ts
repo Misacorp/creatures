@@ -282,10 +282,3 @@ export function exchangeReason(
     return `${shardName(from)} pay for ${plural(can, '1 trade', 'trades')}.`;
   return null;
 }
-
-/** The bag's count in words against its cap: "12 / 200". */
-export const bagCountText = (forge: ValleyForgeView): string =>
-  `${String(forge.bag.count)} / ${String(forge.bag.cap)}`;
-
-/** The bag is full (pieces wait on the floors until it has room). */
-export const bagIsFull = (forge: ValleyForgeView): boolean => forge.bag.count >= forge.bag.cap;

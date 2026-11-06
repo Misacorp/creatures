@@ -139,6 +139,11 @@ export function Workshop({
   const [cardFlow, setCardFlow] = useState(initialCardDismantle !== undefined);
   const [backFromFlow, setBackFromFlow] = useState(false);
   // The one-time hint about selecting several: gone for good once dismissed or once anything was selected.
+  // With the valley's Forge the bag is the valley's (its own cap, worn pieces not counted); this is the one place it shows.
+  const bag: GearState['inventory'] =
+    forge === undefined
+      ? gear.inventory
+      : { used: forge.visit.forge.bag.count, cap: forge.visit.forge.bag.cap, reserved: 0 };
   const [hintOpen, setHintOpen] = useState(() => !selectHintRetired(BAG_HINT));
   useEffect(() => {
     if (selection.active) {
@@ -271,8 +276,8 @@ export function Workshop({
             <h3 id="ws-gear">
               Gear <GlossaryTag entry="gear" look="help" />
             </h3>
-            <span class={bagFull(gear.inventory) ? 'bag-count over' : 'bag-count muted'}>
-              Bag: {bagText(gear.inventory)}
+            <span class={bagFull(bag) ? 'bag-count over' : 'bag-count muted'}>
+              Bag: {bagText(bag)}
             </span>
           </div>
           {hintOpen && gear.items.length > 0 && (
@@ -287,7 +292,7 @@ export function Workshop({
               {selectHintText(BAG_HINT)}
             </Alert>
           )}
-          {bagFull(gear.inventory) && (
+          {bagFull(bag) && (
             <Alert level="warning">
               {forge === undefined
                 ? 'Gear you find becomes parts until the bag has room.'

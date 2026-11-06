@@ -44,8 +44,6 @@ import {
   anvilBuyReason,
   anvilName,
   anvilPriceText,
-  bagCountText,
-  bagIsFull,
   exchangeRateText,
   exchangeReason,
   exchangeSources,
@@ -272,9 +270,6 @@ export function ForgeAnvils({
       <div class="fg-shelf">
         <Shelf visit={visit} />
         <div class="fg-shelf-line">
-          <span class={bagIsFull(visit.forge) ? 'fg-bag over' : 'fg-bag muted'}>
-            Bag {bagCountText(visit.forge)}
-          </span>
           <button
             type="button"
             class="fg-trade"
@@ -290,11 +285,6 @@ export function ForgeAnvils({
             {wanted === null ? 'Trade shards' : `Trade for ${shardName(wanted)}`}
           </button>
         </div>
-        {bagIsFull(visit.forge) && (
-          <Alert level="warning">
-            The bag is full. Finished pieces wait on the floors until it has room.
-          </Alert>
-        )}
       </div>
       <ul class="sp-seats" aria-label="Anvils">
         {visit.anvils.map((anvil) => {
