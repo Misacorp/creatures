@@ -126,7 +126,7 @@ export class ValleyCommons {
     }
     const places = new Map(rows.map((row) => [row.place, row]));
     const fire = this.sql
-      .exec<{ total_milli: number }>('SELECT total_milli FROM valley_fire_log ORDER BY id DESC LIMIT 1')
+      .exec<{ total_milli: number }>('SELECT total_milli FROM valley_fire_log WHERE id > 0 ORDER BY id DESC LIMIT 1')
       .toArray()[0];
     const snap: CommonsSnapshot = {
       places,
@@ -527,7 +527,7 @@ export class ValleyCommons {
     });
     const recent = this.sql
       .exec<{ source: string; place: string | null; at: number }>(
-        'SELECT source, place, at FROM valley_fire_log ORDER BY id DESC LIMIT 5',
+        'SELECT source, place, at FROM valley_fire_log WHERE id > 0 ORDER BY id DESC LIMIT 5',
       )
       .toArray()
       .flatMap((r) =>

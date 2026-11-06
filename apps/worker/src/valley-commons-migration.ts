@@ -9,7 +9,8 @@
  *   communal seats' trickle is fractional). A finished project sets `opens_at` three build days on, and the next one opens lazily when a
  *   read finds the time past (no timer, V-COM-5). `plaque` is the names of everyone who helped the last finished level, written once.
  * - `valley_gifts`: one row per player per project (V-COM-8): `given_milli` is what they gave in thousandths of an Acorn's worth (gifts
- *   and credited communal work), `plaque` marks the player as a helper (a name on the plaque, the keepsake, V-COM-3).
+ *   and credited communal work), `plaque` marks the player as a helper (a name on the plaque, the keepsake, V-COM-3). The primary key
+ *   serves a player's own parts; the index `(place, project)` serves the plaque.
  * - `valley_collections`: one row per socket that has been set (V-COM-12): the place's board, the socket's index, the find's source and
  *   the finder's name for good. A socket with no row is empty.
  * - `valley_fire_log`: the fire's warming (V-COM-13), one row for every step: its source, the place, the step and the fire's total after
@@ -42,6 +43,8 @@ export function valleyCommonsMigration(sql: SqlStorage): void {
     plaque INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (user_id, place, project)
   )`);
+  // The plaque of a finished project reads its helpers: the rows of one project, whoever they are.
+  sql.exec('CREATE INDEX IF NOT EXISTS valley_gifts_project ON valley_gifts (place, project)');
   sql.exec(`CREATE TABLE IF NOT EXISTS valley_collections (
     place TEXT NOT NULL,
     socket INTEGER NOT NULL,
