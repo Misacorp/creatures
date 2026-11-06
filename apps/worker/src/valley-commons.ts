@@ -26,6 +26,7 @@ import {
   fireLevelOf,
   fireStartMilli,
   hearthBp,
+  isOneShot,
   mayOpenProject,
   nextThreshold,
   partNeeds,
@@ -123,6 +124,12 @@ export class ValleyCommons {
     if (rows.length === 0) {
       this.openValley(now);
       rows = this.sql.exec<PlaceRow>('SELECT * FROM valley_places').toArray();
+    } else if (rows.length < VALLEY_RULES.commons.places.length) {
+      // A place added to the valley after it opened (the Market): its row is made once.
+      for (const place of VALLEY_RULES.commons.places) {
+        this.sql.exec('INSERT OR IGNORE INTO valley_places (place) VALUES (?)', place);
+      }
+      rows = this.sql.exec<PlaceRow>('SELECT * FROM valley_places').toArray();
     }
     const places = new Map(rows.map((row) => [row.place, row]));
     const fire = this.sql
@@ -178,7 +185,7 @@ export class ValleyCommons {
       if (row === undefined || row.size > 0 || row.opens_at > now) continue;
       if (!mayOpenProject(VALLEY_RULES, place, level)) continue;
       weight ??= this.weight();
-      row.size = projectSize(VALLEY_RULES, row.level, weight);
+      row.size = projectSize(VALLEY_RULES, row.level, weight, place);
       row.have_acorns = 0;
       row.have_scrap = 0;
       row.have_shards = 0;
@@ -242,14 +249,14 @@ export class ValleyCommons {
     if (row === undefined || row.size <= 0) return none;
     const rules = VALLEY_RULES;
     const have = haveOf(row);
-    const before = projectProgress(rules, row.size, have);
+    const before = projectProgress(rules, row.size, have, place);
     const taken: ProjectHave = { acorns: 0, scrap: 0, shards: 0 };
     for (const part of PROJECT_PARTS) {
-      const room = partRoom(rules, row.size, have, part);
+      const room = partRoom(rules, row.size, have, part, place);
       taken[part] = Math.min(Math.max(0, units[part] ?? 0), room);
       have[part] += taken[part];
     }
-    const value = projectProgress(rules, row.size, have) - before;
+    const value = projectProgress(rules, row.size, have, place) - before;
     if (value <= 0) return none;
     row.have_acorns = have.acorns;
     row.have_scrap = have.scrap;
@@ -269,7 +276,7 @@ export class ValleyCommons {
       row.project,
       Math.round(value * 1000),
     );
-    const levelUp = projectDone(rules, row.size, have);
+    const levelUp = projectDone(rules, row.size, have, place);
     if (levelUp) this.complete(snap, row, now);
     return { taken, value, levelUp };
   }
@@ -336,13 +343,13 @@ export class ValleyCommons {
       if (row === undefined || row.size <= 0 || seat.hours <= 0) continue;
       const value = Math.min(
         communalValue(VALLEY_RULES, seat.hours),
-        row.size - projectProgress(VALLEY_RULES, row.size, haveOf(row)),
+        row.size - projectProgress(VALLEY_RULES, row.size, haveOf(row), seat.place),
       );
       if (value <= 0) continue;
       credited += this.addToProject(
         snap,
         seat.place,
-        valueToUnits(VALLEY_RULES, value),
+        valueToUnits(VALLEY_RULES, value, seat.place),
         userId,
         now,
       ).value;
@@ -492,11 +499,13 @@ export class ValleyCommons {
         row !== undefined && !open && row.opens_at > now
           ? Math.max(1, Math.ceil((row.opens_at - now) / DAY_MS))
           : 0;
-      const state: 'open' | 'building' | 'waiting' = open
+      const state: 'open' | 'building' | 'waiting' | 'done' = open
         ? 'open'
-        : row === undefined || (row.done_at === null && !mayOpenProject(rules, id, level))
-          ? 'waiting'
-          : 'building';
+        : row !== undefined && isOneShot(rules, id) && row.level >= 2
+          ? 'done'
+          : row === undefined || (row.done_at === null && !mayOpenProject(rules, id, level))
+            ? 'waiting'
+            : 'building';
       const own = row === undefined ? undefined : mine.get(`${id}:${String(row.project)}`);
       const given = open ? Math.round((own?.given ?? 0) / 1000) : 0;
       return {
@@ -509,9 +518,9 @@ export class ValleyCommons {
           open && row !== undefined
             ? {
                 size: row.size,
-                progress: projectProgress(rules, row.size, haveOf(row)),
+                progress: projectProgress(rules, row.size, haveOf(row), id),
                 needs: (() => {
-                  const need = partNeeds(rules, row.size);
+                  const need = partNeeds(rules, row.size, id);
                   const have = haveOf(row);
                   return {
                     acorns: Math.max(0, need.acorns - have.acorns),

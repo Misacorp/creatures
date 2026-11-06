@@ -39,6 +39,7 @@ export const CAST_PLACES = [
   'paddock',
   'signpost',
   'forge',
+  'market',
 ] as const;
 export type CastPlace = (typeof CAST_PLACES)[number];
 
@@ -475,6 +476,39 @@ function forgeCast(input: CastInput, art: Size): Pick<Cast, 'stands' | 'act'> {
   return { stands, act: { kind: 'calm', line: smiths.length === 0 ? '' : forgeCalm(visit) } };
 }
 
+// --- Market ---
+
+/** The broker and the Market's helper stand this far apart sideways in front of the stall (scene pixels). */
+const MARKET_STEP = 24;
+
+/**
+ * The broker at its seat in front of the stall, with the Market's helper beside it while the project is built (V-COM-6). The scene's one
+ * action is the next step: post a broker to the free seat; else nothing (the broker's line is on its card under the scene).
+ */
+function marketCast(input: CastInput, art: Size): Pick<Cast, 'stands' | 'act'> {
+  const visit = input.visit;
+  if (visit == null) return { stands: [], act: { kind: 'calm', line: '' } };
+  const seat = visit.market?.seat ?? null;
+  const people: { creature: Creature; where: string }[] = [];
+  const broker = seat === null ? undefined : input.creatures.find((c) => c.id === seat.creatureId);
+  if (broker !== undefined) people.push({ creature: broker, where: 'trading at the Market' });
+  const helper = helperOf(input, 'market');
+  if (helper !== undefined) people.push({ creature: helper, where: 'helping build the Market' });
+  const spots = row(people.length, Math.floor(art.width / 2), art.height - 10, MARKET_STEP);
+  const stands = people.flatMap(({ creature, where }, i) => {
+    const spot = spots[i];
+    return spot === undefined ? [] : [{ creature, x: spot.x, y: spot.y, flip: i % 2 === 1, where }];
+  });
+  if (seat !== null && seat.creatureId === null) {
+    const posted = new Set(visit.creatures.filter((c) => c.seatId !== null).map((c) => c.id));
+    const spare = input.creatures.filter((c) => !posted.has(c.id) && isAtHome(c)).length;
+    if (spare > 0) {
+      return { stands, act: { kind: 'step', label: 'Post a broker', detail: 'a seat is free' } };
+    }
+  }
+  return { stands, act: { kind: 'calm', line: '' } };
+}
+
 interface Size {
   width: number;
   height: number;
@@ -515,5 +549,7 @@ export function castFor(
       return { ...base, ...signpostCast(input, art), scaffold };
     case 'forge':
       return { ...base, ...forgeCast(input, art), scaffold };
+    case 'market':
+      return { ...base, ...marketCast(input, art), scaffold };
   }
 }

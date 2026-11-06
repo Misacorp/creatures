@@ -896,6 +896,17 @@ export async function postCommunal(body: {
   return valleyAnswer(await apiFetch('/api/valley/communal', jsonRequest('POST', body)));
 }
 
+/**
+ * Sets what the broker at the Market trades toward (V-FORGE-11): an element it keeps a small stock of besides what the orders wait on, or
+ * `null` (only what the orders wait on). Free, so no key.
+ */
+export async function setBroker(body: {
+  seatId: string;
+  toward: string | null;
+}): Promise<ValleyAnswer> {
+  return valleyAnswer(await apiFetch('/api/valley/broker', jsonRequest('POST', body)));
+}
+
 export function stateFrom(data: unknown): GameState {
   return parseGameState(isRecord(data) ? data['state'] : undefined);
 }

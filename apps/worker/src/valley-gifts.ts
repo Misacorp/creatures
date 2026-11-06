@@ -84,6 +84,7 @@ export class ValleyGifts {
             row.size,
             { acorns: row.have_acorns, scrap: row.have_scrap, shards: row.have_shards },
             input.currency,
+            input.place,
           );
           if (room <= 1e-9) throw new GameError(409, 'part_full');
           // Units the project takes, at most the room (a fraction of room rounds up so the last gift can finish a part).

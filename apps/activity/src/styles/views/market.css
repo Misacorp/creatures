@@ -1,0 +1,9 @@
+/*
+  The Market's page (phase 5 step 7, `valley/MarketPage.tsx`): the broker's card is a seat card of the Signpost's family (`.sp-seat`,
+  `.sp-line`, `.sp-pack`). Only what it adds is here: its one line of words (no bar) wraps inside the card instead of running past it.
+*/
+.mk-line .sp-pack-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}

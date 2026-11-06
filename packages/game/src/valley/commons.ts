@@ -51,8 +51,15 @@ export const maskDays = (mask: number): number => {
 };
 
 /** V-COM-5, V-COM-11: the size of the project that raises a place from `level` (cosmetic after the max), in Acorns' worth. */
-export function projectSize(rules: CommonsRules, level: number, weight: number): number {
+export function projectSize(
+  rules: CommonsRules,
+  level: number,
+  weight: number,
+  place?: string,
+): number {
   const c = rules.commons;
+  // A one-shot place (the Market) is sized as the level its rule names, whatever its own level is.
+  if (place !== undefined) level = c.oneShot[place]?.sizeLevel ?? level;
   const factor =
     level >= c.maxLevel
       ? c.cosmeticFactor
@@ -64,9 +71,22 @@ export function projectSize(rules: CommonsRules, level: number, weight: number):
 export const partValue = (rules: CommonsRules, part: ProjectPart): number =>
   rules.commons.giftValue[part];
 
+/** The share of a project's value each part makes: the place's own split when it has one (the Market's, V-FORGE-11), else the common one (Q33). */
+const splitOf = (rules: CommonsRules, place?: string) =>
+  (place === undefined ? undefined : rules.commons.oneShot[place]?.costSplit) ??
+  rules.commons.costSplit;
+
+/** A place built once and then never again (V-FORGE-11: the Market). */
+export const isOneShot = (rules: CommonsRules, place: string): boolean =>
+  rules.commons.oneShot[place] !== undefined;
+
 /** The units of each part a project of `size` needs: its cost split by value (Q33). */
-export function partNeeds(rules: CommonsRules, size: number): Record<ProjectPart, number> {
-  const split = rules.commons.costSplit;
+export function partNeeds(
+  rules: CommonsRules,
+  size: number,
+  place?: string,
+): Record<ProjectPart, number> {
+  const split = splitOf(rules, place);
   return {
     acorns: (size * split.acorns) / partValue(rules, 'acorns'),
     scrap: (size * split.scrap) / partValue(rules, 'scrap'),
@@ -78,8 +98,13 @@ export function partNeeds(rules: CommonsRules, size: number): Record<ProjectPart
 export type ProjectHave = Record<ProjectPart, number>;
 
 /** How much of a project is filled in Acorns' worth: each part counts up to what it needs. */
-export function projectProgress(rules: CommonsRules, size: number, have: ProjectHave): number {
-  const need = partNeeds(rules, size);
+export function projectProgress(
+  rules: CommonsRules,
+  size: number,
+  have: ProjectHave,
+  place?: string,
+): number {
+  const need = partNeeds(rules, size, place);
   return PROJECT_PARTS.reduce(
     (sum, part) => sum + Math.min(have[part], need[part]) * partValue(rules, part),
     0,
@@ -87,8 +112,13 @@ export function projectProgress(rules: CommonsRules, size: number, have: Project
 }
 
 /** Whether every part is full (the level is raised; a hair of tolerance for the communal trickle's fractions). */
-export function projectDone(rules: CommonsRules, size: number, have: ProjectHave): boolean {
-  const need = partNeeds(rules, size);
+export function projectDone(
+  rules: CommonsRules,
+  size: number,
+  have: ProjectHave,
+  place?: string,
+): boolean {
+  const need = partNeeds(rules, size, place);
   return PROJECT_PARTS.every((part) => have[part] >= need[part] - 1e-9);
 }
 
@@ -98,8 +128,9 @@ export function partRoom(
   size: number,
   have: ProjectHave,
   part: ProjectPart,
+  place?: string,
 ): number {
-  return Math.max(0, partNeeds(rules, size)[part] - have[part]);
+  return Math.max(0, partNeeds(rules, size, place)[part] - have[part]);
 }
 
 /**
@@ -115,8 +146,8 @@ export const communalValue = (rules: CommonsRules, hours: number): number =>
   hours * rules.commons.communalPerHour;
 
 /** The units of each part a value in Acorns' worth fills, in the project's own proportions (the haulers fill every part). */
-export function valueToUnits(rules: CommonsRules, value: number): ProjectHave {
-  const split = rules.commons.costSplit;
+export function valueToUnits(rules: CommonsRules, value: number, place?: string): ProjectHave {
+  const split = splitOf(rules, place);
   return {
     acorns: (value * split.acorns) / partValue(rules, 'acorns'),
     scrap: (value * split.scrap) / partValue(rules, 'scrap'),
@@ -124,7 +155,7 @@ export function valueToUnits(rules: CommonsRules, value: number): ProjectHave {
   };
 }
 
-/** V-COM-15: the guided start. The hearth's project opens first, the Forge's once the hearth has levelled, the rest once both have. */
+/** V-COM-15: the guided start. The hearth's project opens first, the Forge's once the hearth has levelled, the rest (the Market among them) once both have. */
 export function mayOpenProject(
   rules: CommonsRules,
   place: string,
@@ -132,6 +163,8 @@ export function mayOpenProject(
 ): boolean {
   const places = rules.commons.places;
   const index = places.indexOf(place);
+  // A place built once (the Market) opens its one project with the rest, and never another.
+  if (isOneShot(rules, place) && levelOf(place) >= 2) return false;
   if (index <= 0) return index === 0;
   if (levelOf(places[0] ?? '') < 2) return false;
   if (index === 1) return true;
@@ -231,9 +264,9 @@ export const ValleyCommonsPlaceSchema = v.strictObject({
   cosmetic: int,
   /**
    * `open`: a project is open for gifts; `building`: the last one is done and the place builds for its three days; `waiting`: the
-   * guided start has not reached this place yet (V-COM-15).
+   * guided start has not reached this place yet (V-COM-15); `done`: a place built once (the Market) has been built, no project follows.
    */
-  state: v.picklist(['open', 'building', 'waiting']),
+  state: v.picklist(['open', 'building', 'waiting', 'done']),
   /** The open project (null unless `state` is `open`): its size and what is filled, in Acorns' worth, and what each part still takes. */
   project: v.nullable(
     v.strictObject({

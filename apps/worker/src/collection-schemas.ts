@@ -187,6 +187,12 @@ export const ValleyGazetteCloseBodySchema = v.strictObject({
 });
 
 /** Takes a scout into its destination's deeper area (only while the unread paper offers it) or back up (free, any time). */
+/** What the broker trades toward (V-FORGE-11): an element it keeps a small stock of, or null (only what the orders wait on). */
+export const ValleyBrokerBodySchema = v.strictObject({
+  seatId: IdSchema,
+  toward: v.nullable(v.picklist(VALLEY_ELEMENTS)),
+});
+
 export const ValleyDeepBodySchema = v.strictObject({ seatId: IdSchema, deep: v.boolean() });
 
 /** Buys a kit (a keyed spend of Acorns), or sets an owned kit on a seat (free; `null` takes it off). */

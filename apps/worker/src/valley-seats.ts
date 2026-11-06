@@ -15,13 +15,14 @@ import {
   placeOpen,
   placeProfile,
   seatPrice,
+  type Element,
   type KitName,
 } from '@creatures/game';
 import { runKeyed, settleSpend } from './keyed-action';
 import { spend, type LedgerStorage } from './ledger';
 import { GameError, atomically, type Outcome } from './outcome';
 import type { ValleyCommons } from './valley-commons';
-import { SEAT_COLUMNS, type SeatRow, type ValleySettle } from './valley-settle';
+import { BROKER_ANY, SEAT_COLUMNS, type SeatRow, type ValleySettle } from './valley-settle';
 import { hasDeepArea, type ValleyFinds } from './valley-finds';
 import type { ValleyGazette } from './valley-gazette';
 import { worldAt } from './valley-world';
@@ -210,8 +211,8 @@ export class ValleySeats {
           seat.seat_id,
         );
       }
-      // A smith posted to an anvil with an order starts on it at once.
-      if (seat.place === 'forge') this.deps.settle.settle(userId, 'now');
+      // A smith posted to an anvil with an order starts on it at once; a broker posted trades for the orders that wait at once.
+      if (seat.place === 'forge' || seat.place === 'market') this.deps.settle.settle(userId, 'now');
       return { seatId: seat.seat_id };
     });
   }
@@ -314,6 +315,30 @@ export class ValleySeats {
     });
   }
 
+  /**
+   * V-FORGE-11: sets what the broker trades toward: an element it keeps a small stock of besides what the orders wait on, or `null` (only
+   * what the orders wait on). Free. 404 for a seat that is not the caller's broker seat. Settles first, so the old setting is booked.
+   */
+  setBrokerToward(
+    userId: string,
+    seatId: string,
+    toward: Element | null,
+  ): Outcome<{ seatId: string }> {
+    return atomically(this.deps.storage, () => {
+      this.deps.settle.settle(userId, 'now');
+      const seat = this.seatOf(userId, seatId);
+      if (seat.place !== 'market') throw new GameError(400, 'not_a_broker_seat');
+      this.sql.exec(
+        'UPDATE valley_seats SET destination_id = ?, passed_at = ? WHERE seat_id = ?',
+        toward ?? BROKER_ANY,
+        this.deps.now(),
+        seat.seat_id,
+      );
+      this.deps.settle.settle(userId, 'now');
+      return { seatId: seat.seat_id };
+    });
+  }
+
   /** Brings a seat's store home now (the seat is about to change what it explores). */
   private bringHome(userId: string, seat: SeatRow, now: number): void {
     const place = placeProfile(VALLEY_RULES, seat.destination_id);
@@ -403,7 +428,9 @@ export class ValleySeats {
     return atomically(this.deps.storage, () => {
       this.deps.settle.settle(userId, 'now');
       const seat = this.seatOf(userId, seatId);
-      if (seat.place === 'commons') throw new GameError(400, 'kit_does_not_fit');
+      if (seat.place === 'commons' || seat.place === 'market') {
+        throw new GameError(400, 'kit_does_not_fit');
+      }
       if (kit !== null) {
         if (!(KIT_NAMES as readonly string[]).includes(kit))
           throw new GameError(400, 'unknown_kit');

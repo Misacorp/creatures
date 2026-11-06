@@ -314,9 +314,12 @@ export interface ForgeWork {
   made: MadePiece[];
   finished: string[];
   hours: ForgeHours;
+  /** The broker's change in shards owed to its house (0 up to 1; V-FORGE-11) and what it traded in this pass. */
+  brokerCredit: number;
+  brokered: BrokerTally;
 }
 
-export function startForge(forge: SettleForge): ForgeWork {
+export function startForge(forge: SettleForge, brokerCredit = 0): ForgeWork {
   return {
     anvils: forge.anvils.map((a) => ({
       id: a.id,
@@ -340,6 +343,8 @@ export function startForge(forge: SettleForge): ForgeWork {
     made: [],
     finished: [],
     hours: { ...NO_FORGE_HOURS },
+    brokerCredit,
+    brokered: { trades: 0, paid: 0, got: 0, crits: 0 },
   };
 }
 
@@ -438,15 +443,28 @@ export function forgeInstants(
   smiths: readonly ForgeSmith[],
   at: number,
   rng: Rng,
+  broker: BrokerTerms | null = null,
 ): void {
-  for (const a of work.anvils) {
-    a.mode = 'none';
-    if (!active(a, smiths, at)) continue;
+  const instant = (a: WorkAnvil): void => {
     const waitWas = a.wait;
     anvilInstant(rules, work, a, at, rng);
     // The wait began when the reason first held (the start of the stretch that found it), and ends when work starts.
     if (a.wait === null) a.waitSince = null;
     else if (a.wait !== waitWas || a.waitSince === null) a.waitSince = at;
+  };
+  for (const a of work.anvils) {
+    a.mode = 'none';
+    if (!active(a, smiths, at)) continue;
+    instant(a);
+  }
+  if (broker === null) return;
+  // V-FORGE-11: the broker tops up what the orders wait on from the spare piles, then the anvils that waited try again, until nothing
+  // more can be traded: a fixed point, so settling again at the same moment (or at a split point) changes nothing.
+  for (;;) {
+    if (!brokerTrade(rules, work, smiths, at, broker, rng)) break;
+    for (const a of work.anvils) {
+      if (a.mode === 'shard') instant(a);
+    }
   }
 }
 
@@ -631,4 +649,123 @@ export function exchangeShards(
     trades.push({ from: donor, to, paid: rate, got: crit ? critYield : 1, crit });
   }
   return trades;
+}
+
+// --- The broker (V-FORGE-11) ---
+
+/** What the broker trades at, at the moment (from its creature's trading mastery) and what it keeps stocked besides the orders' needs. */
+export interface BrokerTerms {
+  /** Shards of another element for 1 (not a whole number: a trade pays the next whole number and the change is kept in `credit`). */
+  readonly rate: number;
+  readonly critChance: number;
+  /** The element index it keeps a small stock of whatever the orders need (-1: only what the orders wait on). */
+  readonly toward: number;
+}
+
+/** What the broker traded in a pass: trades made, shards paid and received, and how many were crits. */
+export interface BrokerTally {
+  trades: number;
+  paid: number;
+  got: number;
+  crits: number;
+}
+
+/** The rate and crit chance of the broker at `tradeHours` of trading (V-POST-12's steps: none, Skilled, Expert, Master). */
+export function brokerTermsAt(
+  rules: Pick<ValleyRules, 'broker' | 'posts'>,
+  tradeHours: number,
+): { rate: number; critChance: number } {
+  const step = rules.posts.mastery.filter((m) => tradeHours + 1e-9 >= m.hours).length;
+  const tiers = rules.broker.tiers;
+  const tier = tiers[Math.min(step, tiers.length - 1)] ?? tiers[0];
+  return { rate: tier?.rate ?? 3, critChance: tier?.critChance ?? 0 };
+}
+
+/** How many pieces ahead of an anvil's current one the broker keeps shards for (the lab: up to 3 orders an anvil). */
+const BROKER_AHEAD = 3;
+
+/** The shards of each element the broker wants on the shelf now: the orders' next pieces (and the team's weak slots), and its `toward`. */
+function brokerWants(
+  rules: ValleyRules,
+  work: ForgeWork,
+  smiths: readonly ForgeSmith[],
+  at: number,
+  toward: number,
+): number[] {
+  const want = new Array<number>(VALLEY_ELEMENTS.length).fill(0);
+  let teamAnvils = 0;
+  for (const a of work.anvils) {
+    if (!active(a, smiths, at)) continue;
+    const order = currentOrder(a.orders);
+    if (order === undefined) continue;
+    if (order.forTeam) {
+      teamAnvils += 1;
+      continue;
+    }
+    if (order.element < 0) continue;
+    const inHand = a.piece !== null && a.piece.order === order.id ? 1 : 0;
+    const left = Math.min(BROKER_AHEAD, Math.max(0, order.count - order.made - inHand));
+    want[order.element] = (want[order.element] ?? 0) + left * rules.forge.shard;
+  }
+  if (teamAnvils > 0) {
+    for (let e = 0; e < want.length; e++) {
+      const pieces = Math.min(
+        (work.weak[e] ?? 0) - (work.pending[e] ?? 0),
+        teamAnvils * BROKER_AHEAD,
+      );
+      if (pieces > 0) want[e] = (want[e] ?? 0) + pieces * rules.forge.shard;
+    }
+  }
+  if (toward >= 0 && toward < want.length) {
+    want[toward] = Math.max(want[toward] ?? 0, BROKER_AHEAD * rules.forge.shard);
+  }
+  return want;
+}
+
+/**
+ * One round of the broker's trades at a moment: for each element short of what is wanted (the biggest want first), it pays the
+ * biggest spare pile (above the shards the player keeps, `forge.giveReserveShards`) the next whole number of shards for 1, with the
+ * crit chance of `critYield`, until the element is stocked or no pile can pay. Returns whether anything was traded.
+ */
+function brokerTrade(
+  rules: ValleyRules,
+  work: ForgeWork,
+  smiths: readonly ForgeSmith[],
+  at: number,
+  broker: BrokerTerms,
+  rng: Rng,
+): boolean {
+  const want = brokerWants(rules, work, smiths, at, broker.toward);
+  const keep = rules.forge.giveReserveShards;
+  const order = want
+    .map((w, e) => ({ w, e }))
+    .filter((x) => x.w > 0)
+    .sort((a, b) => b.w - a.w || a.e - b.e);
+  let traded = false;
+  for (const { w, e } of order) {
+    while ((work.shards[e] ?? 0) < w) {
+      const pay = Math.max(1, Math.ceil(broker.rate - work.brokerCredit - 1e-9));
+      let donor = -1;
+      let best = pay - 1;
+      for (let d = 0; d < work.shards.length; d++) {
+        const spare = (work.shards[d] ?? 0) - keep;
+        if (d !== e && spare > best) {
+          best = spare;
+          donor = d;
+        }
+      }
+      if (donor < 0) break;
+      work.shards[donor] = (work.shards[donor] ?? 0) - pay;
+      work.brokerCredit = Math.max(0, work.brokerCredit + pay - broker.rate);
+      const crit = rng.nextU32() / TWO_32 < broker.critChance;
+      const got = crit ? rules.forge.exchange.critYield : 1;
+      work.shards[e] = (work.shards[e] ?? 0) + got;
+      work.brokered.trades += 1;
+      work.brokered.paid += pay;
+      work.brokered.got += got;
+      if (crit) work.brokered.crits += 1;
+      traded = true;
+    }
+  }
+  return traded;
 }

@@ -32,6 +32,7 @@ import {
   anvilPrice,
   anvilSpeed,
   addExperience,
+  brokerTermsAt,
   expToReach,
   masteryBonus,
   catchUpBpOf,
@@ -51,6 +52,7 @@ import {
   SCOUT_KITS,
   type AnvilKit,
   type AwayWindow,
+  type Element,
   type PlaceProfile,
   type ScoutKit,
   type SettleCommunal,
@@ -118,6 +120,7 @@ type CreatureRow = {
   visit_xp: number | null;
   scout_hours: number | null;
   smith_hours: number | null;
+  trade_hours: number | null;
   /** The game day the creature last featured in a small moment (null: never). */
   moment_day: number | null;
 };
@@ -144,6 +147,9 @@ export type SeatRow = AnvilColumns & {
 /** The seat columns the pass and the routes read. */
 export const SEAT_COLUMNS = `seat_id, position, destination_id, prev_destination_id, creature_id, kit_id, store_hours, scrap,
   scrap_carry, shards, shard_carry, gear_finds, blueprint_finds, page_finds, deep, ${ANVIL_COLUMNS}`;
+
+/** The broker's `destination_id` when it trades only for what the orders wait on (V-FORGE-11). */
+export const BROKER_ANY = 'any';
 
 /** The store's size in Acorns (V-POST-5: `storeHours` of the hourly rate). */
 export const allowanceCap = (): number =>
@@ -216,7 +222,7 @@ export class ValleySettle {
     return this.sql
       .exec<CreatureRow>(
         `SELECT c.id, c.species, c.level, c.exp, c.ribbons, c.caught_at, v.creature_id AS tracked,
-                v.xp_carry, v.catchup_bp, v.visit_xp, v.scout_hours, v.smith_hours, v.moment_day
+                v.xp_carry, v.catchup_bp, v.visit_xp, v.scout_hours, v.smith_hours, v.trade_hours, v.moment_day
          FROM creatures c LEFT JOIN valley_creatures v ON v.creature_id = c.id
          WHERE c.user_id = ? ORDER BY c.caught_at, c.rowid`,
         userId,
@@ -224,18 +230,47 @@ export class ValleySettle {
       .toArray();
   }
 
-  /** The player's seats: the scouts' at the Signpost, the smiths' anvils at the Forge, and the communal seats (V-POST-13), each in the order bought. */
-  seats(userId: string): { scouts: SeatRow[]; anvils: SeatRow[]; communal: SeatRow[] } {
+  /**
+   * The player's seats: the scouts' at the Signpost, the smiths' anvils at the Forge, the broker's at the Market (V-FORGE-11) and the
+   * communal seats (V-POST-13), each in the order bought. With the Market built (`commons` given) every player has the broker's seat: it
+   * is made here, empty, the first time they look (one small write, once).
+   */
+  seats(
+    userId: string,
+    commons?: CommonsSnapshot,
+  ): { scouts: SeatRow[]; anvils: SeatRow[]; communal: SeatRow[]; broker: SeatRow | null } {
     const all = this.sql
       .exec<SeatRow>(
         `SELECT ${SEAT_COLUMNS} FROM valley_seats WHERE user_id = ? ORDER BY position`,
         userId,
       )
       .toArray();
+    let broker = all.find((seat) => seat.place === 'market') ?? null;
+    if (
+      broker === null &&
+      commons !== undefined &&
+      this.deps.commons.levelIn(commons, 'market') >= 2
+    ) {
+      const seatId = crypto.randomUUID();
+      this.sql.exec(
+        `INSERT INTO valley_seats (seat_id, user_id, place, kind, position, destination_id, prev_destination_id, passed_at)
+         VALUES (?, ?, 'market', 'broker', 0, ?, ?, ?)`,
+        seatId,
+        userId,
+        BROKER_ANY,
+        BROKER_ANY,
+        this.deps.now(),
+      );
+      broker =
+        this.sql
+          .exec<SeatRow>(`SELECT ${SEAT_COLUMNS} FROM valley_seats WHERE seat_id = ?`, seatId)
+          .toArray()[0] ?? null;
+    }
     return {
       scouts: all.filter((seat) => seat.place === 'signpost'),
       anvils: all.filter((seat) => seat.place === 'forge'),
       communal: all.filter((seat) => seat.place === 'commons'),
+      broker,
     };
   }
 
@@ -282,14 +317,14 @@ export class ValleySettle {
       // V-BON-2: a creature caught before the valley opened catches up from the first moment, toward the same target as at any visit.
       const first = this.catchUpFor(rows.map((row) => row.level));
       for (const row of rows) {
-        this.trackCreature(userId, row.id, 0, first.bpOf(row.level), 0, 0, 0);
+        this.trackCreature(userId, row.id, 0, first.bpOf(row.level), 0, 0, 0, 0);
       }
       this.sql.exec(
         'UPDATE valley_players SET catch_target = ? WHERE user_id = ?',
         first.target,
         userId,
       );
-      const seats = this.seats(userId);
+      const seats = this.seats(userId, commons);
       return this.view({
         userId,
         to: now,
@@ -299,8 +334,13 @@ export class ValleySettle {
         seats: seats.scouts,
         anvils: seats.anvils,
         communal: seats.communal,
+        broker: seats.broker,
         commons,
-        paused: this.pausedAt(userId, now, seats.scouts, [...seats.anvils, ...seats.communal]),
+        paused: this.pausedAt(userId, now, seats.scouts, [
+          ...seats.anvils,
+          ...seats.communal,
+          ...(seats.broker === null ? [] : [seats.broker]),
+        ]),
         creatures: rows.map((row) => ({ row, gained: 0, catchUpBp: first.bpOf(row.level) })),
         allowance: { store: 0, cap, brought: 0 },
       });
@@ -310,7 +350,7 @@ export class ValleySettle {
     const newVisit = to - player.last_visit_at >= VISIT_GAP_MS;
     if (!force && to - player.settled_at < INTENT_MIN_MS && !newVisit) {
       const rows = this.creatureRows(userId);
-      const seats = this.seats(userId);
+      const seats = this.seats(userId, commons);
       return this.view({
         userId,
         to: player.settled_at,
@@ -320,10 +360,12 @@ export class ValleySettle {
         seats: seats.scouts,
         anvils: seats.anvils,
         communal: seats.communal,
+        broker: seats.broker,
         commons,
         paused: this.pausedAt(userId, player.settled_at, seats.scouts, [
           ...seats.anvils,
           ...seats.communal,
+          ...(seats.broker === null ? [] : [seats.broker]),
         ]),
         creatures: rows.map((row) => ({
           row,
@@ -336,7 +378,12 @@ export class ValleySettle {
     // The Paddock gate: duplicates whose day is up take their Recommended answer first (V-SCOUT-3).
     this.deps.choices.autoAnswerDue(userId, to);
     const rows = this.creatureRows(userId);
-    const { scouts: seatRows, anvils: anvilRows, communal: communalRows } = this.seats(userId);
+    const {
+      scouts: seatRows,
+      anvils: anvilRows,
+      communal: communalRows,
+      broker: brokerRow,
+    } = this.seats(userId, commons);
     const tz = this.deps.timezone();
     const indexOf = new Map(rows.map((row, i) => [row.id, i]));
     const rowOf = new Map(rows.map((row) => [row.id, row]));
@@ -387,11 +434,23 @@ export class ValleySettle {
           : {}),
         scoutHours: row.scout_hours ?? 0,
         smithHours: row.smith_hours ?? 0,
+        tradeHours: row.trade_hours ?? 0,
         ...(row.tracked === null ? { joinedAt: row.caught_at } : {}),
       })),
       allowance: { store: player.allowance_store, carry: player.allowance_carry },
       seats: seatsIn,
       ...(communalIn.length === 0 ? {} : { communal: communalIn }),
+      ...(brokerRow === null
+        ? {}
+        : {
+            broker: {
+              id: brokerRow.seat_id,
+              creature:
+                brokerRow.creature_id === null ? -1 : (indexOf.get(brokerRow.creature_id) ?? -1),
+              toward: VALLEY_ELEMENTS.indexOf(brokerRow.destination_id as Element),
+              credit: brokerRow.shard_carry,
+            },
+          }),
       ...(forgeIn === null ? {} : { forge: { ...forgeIn.forge, scrapCarry: player.forge_carry } }),
     };
     // V-POST-7: a creature in the raid is away from the first stage's lock to the end of the finale; its post pauses for that time.
@@ -399,7 +458,9 @@ export class ValleySettle {
       userId,
       player.settled_at,
       to,
-      [...seatRows, ...anvilRows, ...communalRows].some((seat) => seat.creature_id !== null),
+      [...seatRows, ...anvilRows, ...communalRows, ...(brokerRow === null ? [] : [brokerRow])].some(
+        (seat) => seat.creature_id !== null,
+      ),
     );
     const away: AwayWindow[] = raid.flatMap((w) => {
       const creature = indexOf.get(w.creatureId);
@@ -497,10 +558,25 @@ export class ValleySettle {
     }
     void piecesHome;
 
+    // The broker's change (V-FORGE-11) is written with its seat; what it traded is already on the shelf.
+    if (brokerRow !== null && after.broker !== undefined) {
+      if (after.broker.credit !== brokerRow.shard_carry) {
+        this.sql.exec(
+          'UPDATE valley_seats SET shard_carry = ?, passed_at = ? WHERE seat_id = ?',
+          after.broker.credit,
+          to,
+          brokerRow.seat_id,
+        );
+      }
+    }
+
     const seated = new Set(
-      [...seatRows, ...anvilRows, ...communalRows].flatMap((seat) =>
-        seat.creature_id === null ? [] : [seat.creature_id],
-      ),
+      [
+        ...seatRows,
+        ...anvilRows,
+        ...communalRows,
+        ...(brokerRow === null ? [] : [brokerRow]),
+      ].flatMap((seat) => (seat.creature_id === null ? [] : [seat.creature_id])),
     );
     // The XP each creature earned is paid through the level rules first; the levels they reach decide the catch-up fixed at this visit.
     const payments = rows.map((row, i) => {
@@ -523,6 +599,7 @@ export class ValleySettle {
       const catchUpBp = effectiveBp(held, paidXp.level, fix.target);
       const scoutHours = paid?.scoutHours ?? 0;
       const smithHours = paid?.smithHours ?? 0;
+      const tradeHours = paid?.tradeHours ?? 0;
       if (rec !== undefined) {
         // Mastery steps reached while away (V-POST-12) and the resting creatures' best XP (V-BON-1).
         const scoutStep = masteryStep(scoutHours);
@@ -541,12 +618,28 @@ export class ValleySettle {
         newVisit ||
         (paid?.carry ?? 0) !== (row.xp_carry ?? 0) ||
         scoutHours !== (row.scout_hours ?? 0) ||
-        smithHours !== (row.smith_hours ?? 0);
+        smithHours !== (row.smith_hours ?? 0) ||
+        tradeHours !== (row.trade_hours ?? 0);
       if (changed) {
-        this.trackCreature(userId, row.id, paid?.carry ?? 0, held, visitXp, scoutHours, smithHours);
+        this.trackCreature(
+          userId,
+          row.id,
+          paid?.carry ?? 0,
+          held,
+          visitXp,
+          scoutHours,
+          smithHours,
+          tradeHours,
+        );
       }
       return {
-        row: { ...row, level: paidXp.level, scout_hours: scoutHours, smith_hours: smithHours },
+        row: {
+          ...row,
+          level: paidXp.level,
+          scout_hours: scoutHours,
+          smith_hours: smithHours,
+          trade_hours: tradeHours,
+        },
         gained: visitXp,
         catchUpBp,
       };
@@ -657,6 +750,10 @@ export class ValleySettle {
       seats: seatsOut.rows,
       anvils: anvilsOut,
       communal: this.seats(userId).communal,
+      broker:
+        brokerRow === null
+          ? null
+          : { ...brokerRow, shard_carry: after.broker?.credit ?? brokerRow.shard_carry },
       commons,
       paused,
       fullSeats: seatsOut.full,
@@ -873,6 +970,8 @@ export class ValleySettle {
     anvils: readonly SeatRow[];
     /** The caller's communal seats (V-POST-13). */
     communal: readonly SeatRow[];
+    /** The broker's seat (V-FORGE-11; null before the Market is built). */
+    broker: SeatRow | null;
     /** The places, the fire and the hearth this answer reads. */
     commons: CommonsSnapshot;
     /** The creatures whose post is paused now because they are in the raid (V-POST-7). */
@@ -884,10 +983,16 @@ export class ValleySettle {
   }): ValleyView {
     const tz = this.deps.timezone();
     const world = worldAt(tz, input.to);
-    const seatOf = new Map<string, { id: string; kind: 'scouting' | 'smithing' | 'helping' }>();
+    const seatOf = new Map<
+      string,
+      { id: string; kind: 'scouting' | 'smithing' | 'helping' | 'trading' }
+    >();
     for (const seat of input.communal) {
       if (seat.creature_id !== null)
         seatOf.set(seat.creature_id, { id: seat.seat_id, kind: 'helping' });
+    }
+    if (input.broker?.creature_id != null) {
+      seatOf.set(input.broker.creature_id, { id: input.broker.seat_id, kind: 'trading' });
     }
     for (const seat of input.seats) {
       if (seat.creature_id !== null)
@@ -1017,7 +1122,56 @@ export class ValleySettle {
         })),
         input.to,
       ),
+      market: this.marketView(input, rowOf),
       ...(paper === null ? {} : { paper }),
+    };
+  }
+
+  /** The Market and the broker's seat (V-FORGE-11): open when the Market is built, with the terms its creature trades at and the next step's. */
+  private marketView(
+    input: {
+      broker: SeatRow | null;
+      anvils: readonly SeatRow[];
+      paused: ReadonlySet<string>;
+      commons: CommonsSnapshot;
+    },
+    rowOf: ReadonlyMap<string, CreatureRow>,
+  ): NonNullable<ValleyView['market']> {
+    const rules = VALLEY_RULES;
+    const open = this.deps.commons.levelIn(input.commons, 'market') >= 2;
+    const seat = input.broker;
+    if (!open || seat === null) return { open, seat: null };
+    const hours =
+      (seat.creature_id === null ? undefined : rowOf.get(seat.creature_id))?.trade_hours ?? 0;
+    const terms = (h: number): { rate: number; critBp: number; critYield: number } => {
+      const t = brokerTermsAt(rules, h);
+      return {
+        rate: t.rate,
+        critBp: Math.round(t.critChance * BP),
+        critYield: rules.forge.exchange.critYield,
+      };
+    };
+    const step = rules.posts.mastery.find((m) => m.hours > hours + 1e-9);
+    const works = seat.creature_id !== null && !input.paused.has(seat.creature_id);
+    const stuck = works
+      ? input.anvils.find((a) => a.creature_id !== null && a.wait_reason === 'shard')
+      : undefined;
+    return {
+      open,
+      seat: {
+        id: seat.seat_id,
+        creatureId: seat.creature_id,
+        paused: seat.creature_id !== null && input.paused.has(seat.creature_id) ? 'raid' : null,
+        toward: VALLEY_ELEMENTS.find((e) => e === seat.destination_id) ?? null,
+        mastery: {
+          hours,
+          step: masteryStep(hours),
+          bonusBp: 0,
+        },
+        terms: terms(hours),
+        next: step === undefined ? null : { ...terms(step.hours), atHours: step.hours },
+        blocked: stuck === undefined ? null : (VALLEY_ELEMENTS[stuck.wait_element] ?? null),
+      },
     };
   }
 
@@ -1085,12 +1239,14 @@ export class ValleySettle {
     visitXp: number,
     scoutHours: number,
     smithHours: number,
+    tradeHours: number,
   ): void {
     this.sql.exec(
-      `INSERT INTO valley_creatures (creature_id, user_id, catchup_bp, xp_carry, visit_xp, scout_hours, smith_hours)
-       VALUES (?, ?, ?, ?, ?, ?, ?)
+      `INSERT INTO valley_creatures (creature_id, user_id, catchup_bp, xp_carry, visit_xp, scout_hours, smith_hours, trade_hours)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(creature_id) DO UPDATE SET xp_carry = excluded.xp_carry, visit_xp = excluded.visit_xp,
-         catchup_bp = excluded.catchup_bp, scout_hours = excluded.scout_hours, smith_hours = excluded.smith_hours`,
+         catchup_bp = excluded.catchup_bp, scout_hours = excluded.scout_hours, smith_hours = excluded.smith_hours,
+         trade_hours = excluded.trade_hours`,
       creatureId,
       userId,
       catchUpBp,
@@ -1098,6 +1254,7 @@ export class ValleySettle {
       visitXp,
       scoutHours,
       smithHours,
+      tradeHours,
     );
   }
 

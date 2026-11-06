@@ -7,6 +7,7 @@ import type { ValleyView } from '@creatures/game';
 import type { Collection } from './collection';
 import {
   ValleyAnvilBuyBodySchema,
+  ValleyBrokerBodySchema,
   ValleyCommunalBodySchema,
   ValleyDeepBodySchema,
   ValleyExchangeBodySchema,
@@ -201,6 +202,20 @@ export const valleyRoutes: Routes<ValleyRouteContext> = {
         amount: body.amount,
         key: body.idempotencyKey,
       });
+      if (!outcome.ok) return failure(outcome);
+      return json({
+        ...outcome.value,
+        valley: core.valleyState(user.id),
+        state: core.collection.state(user.id),
+      });
+    },
+  },
+  '/api/valley/broker': {
+    POST: async (request, { user, core }) => {
+      if (core.valleySeats === null) return notFound();
+      const body = await parseBody(request, ValleyBrokerBodySchema);
+      if (body === undefined) return invalidBody();
+      const outcome = core.valleySeats.setBrokerToward(user.id, body.seatId, body.toward);
       if (!outcome.ok) return failure(outcome);
       return json({
         ...outcome.value,

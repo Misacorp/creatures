@@ -315,8 +315,18 @@ export function undoGamesIndexMigration(sql: SqlStorage): void {
   sql.exec('DELETE FROM schema_version WHERE version = 42');
 }
 
+/** Puts a database back to before migration 62 (the Market's broker): the trading hours go. */
+export function undoValleyMarketMigration(sql: SqlStorage): void {
+  const has = sql
+    .exec("SELECT 1 FROM pragma_table_info('valley_creatures') WHERE name = 'trade_hours'")
+    .toArray();
+  if (has.length > 0) sql.exec('ALTER TABLE valley_creatures DROP COLUMN trade_hours');
+  sql.exec('DELETE FROM schema_version WHERE version = 62');
+}
+
 /** Puts a database back to before migration 61 (the commons): its tables and columns go. */
 export function undoValleyCommonsMigration(sql: SqlStorage): void {
+  undoValleyMarketMigration(sql);
   for (const table of [
     'valley_places',
     'valley_gifts',

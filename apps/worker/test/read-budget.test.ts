@@ -796,3 +796,89 @@ describe('read budget with the commons', () => {
     },
   );
 });
+
+/**
+ * The Market's broker (phase 5 step 7, `valley-settle.ts`, `valley-seats.ts`): what the same pass reads and writes when the Market is
+ * built and a creature stands at the broker's seat while two anvils wait for tide shards the player has none of (so the broker trades
+ * every pass). The broker adds its seat's row (already among the player's seats, one read through the `(user_id)` index), the market
+ * place row (already among the places) and the trading hours' column (one more on each creature row); its trades are shard writes
+ * through the parts, and the carry one seat row. The first look after the Market is built makes the seat (one insert). The crit draws
+ * are live, so the numbers are the largest of a few runs; the budgets are about 1.5x.
+ */
+const MARKET_BUDGET = {
+  // A day away with two anvils (`FORGE_BUDGET.arrival2`) and a broker that trades.
+  arrival: { reads: 1450, writes: 180 }, // measured 971 reads, 118 written (the forge's arrival2 is 939 and 110: the broker adds the commons' and the seat's rows)
+  // Ten minutes on, the same visit.
+  visit: { reads: 1250, writes: 100 }, // measured 836 reads, 67 written
+  // The first look after the Market is built: the seat is made.
+  first: { reads: 1250, writes: 100 }, // measured 833 reads, 61 written (the seat's one insert is among them)
+  // Setting what the broker trades toward: a settle on either side of one update.
+  toward: { reads: 1500, writes: 100 }, // measured 1007 reads, 63 written
+} as const;
+
+describe('read budget with the broker', () => {
+  const measured: Record<string, ReadReport> = {};
+
+  it('measures the first look after the Market is built, an arrival and a visit with a broker that trades, and a setting', async () => {
+    await inGuild(
+      async (env) => {
+        const { metered, clock } = env;
+        const world = await seedWorld(env, { valleySystems: true });
+        const { core, secrets } = world;
+        const relog = async (): Promise<void> => {
+          secrets.set(
+            userId(1),
+            await core.createSession(GUILD_ID, { id: userId(1), displayName: 'Player 1' }),
+          );
+        };
+        const state = (): Promise<unknown> => callAs(core, secrets, 1, '/api/state');
+        const mine = world.creatures[userId(1)] ?? [];
+        clock.t += 6 * MINUTE;
+        await callAs(core, secrets, 1, '/api/me');
+        await state();
+        seedAnvils(metered.sql, userId(1), mine, 2);
+        // No tide shards: the anvils' orders wait on them, and the broker pays the other piles.
+        metered.sql.exec(
+          "UPDATE parts SET amount = 0 WHERE user_id = ? AND kind = 'tide-shard'",
+          userId(1),
+        );
+        metered.sql.exec("UPDATE valley_places SET level = 2 WHERE place = 'market'");
+        clock.t += 10 * MINUTE;
+        measured['first'] = (await metered.measure(state)).reads;
+        const seat = metered.sql
+          .exec<{ seat_id: string }>("SELECT seat_id FROM valley_seats WHERE place = 'market'")
+          .one().seat_id;
+        metered.sql.exec(
+          'UPDATE valley_seats SET creature_id = ? WHERE seat_id = ?',
+          mine[mine.length - 3] ?? null,
+          seat,
+        );
+        clock.t += 24 * 60 * MINUTE;
+        await relog();
+        measured['arrival'] = (await metered.measure(state)).reads;
+        clock.t += 10 * MINUTE;
+        measured['visit'] = (await metered.measure(state)).reads;
+        clock.t += 10 * MINUTE;
+        measured['toward'] = (
+          await metered.measure(() =>
+            callAs(core, secrets, 1, '/api/valley/broker', {
+              method: 'POST',
+              body: { seatId: seat, toward: 'grove' },
+            }),
+          )
+        ).reads;
+      },
+      { fresh: true },
+    );
+  }, 60_000);
+
+  it.each(Object.keys(MARKET_BUDGET) as (keyof typeof MARKET_BUDGET)[])(
+    'the broker: %s reads and writes few rows',
+    (name) => {
+      const reads = measured[name];
+      if (reads === undefined) throw new Error('the measuring test did not run');
+      expectReadsUnder(`market ${name}`, reads, MARKET_BUDGET[name].reads);
+      expectWritesUnder(`market ${name}`, reads, MARKET_BUDGET[name].writes);
+    },
+  );
+});

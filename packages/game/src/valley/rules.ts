@@ -351,7 +351,16 @@ export const VALLEY_RULES = {
 
   /** V-COM-5, V-COM-10, V-COM-11, V-COM-15: projects. */
   commons: {
-    places: ['bonfire', 'forge', 'signpost', 'paddock', 'school'] as readonly string[],
+    places: ['bonfire', 'forge', 'signpost', 'paddock', 'school', 'market'] as readonly string[],
+    // V-FORGE-11, V-COM-15: the Market is built once (a place level 1 to 2, then no more projects: its later levels are a later idea). Its
+    // project is sized like a level-2 project and paid in Acorns and scrap only: shards are what is short when it is wanted (the lab's
+    // "market" variant; Misa's brief: "paid in Acorns and scrap").
+    oneShot: {
+      market: { sizeLevel: 2, costSplit: { acorns: 0.5, scrap: 0.5, shards: 0 } },
+    } as Record<
+      string,
+      { sizeLevel: number; costSplit: { acorns: number; scrap: number; shards: number } }
+    >,
     maxLevel: 5,
     // A project's size in Acorns' worth: the first about two weeks of 8 players' giving (commons.md).
     // TUNED 2026-10-30: was 2000 (commons.md example).

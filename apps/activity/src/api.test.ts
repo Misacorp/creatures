@@ -14,6 +14,7 @@ import {
   finaleSocketUrl,
   giveToProject,
   postCommunal,
+  setBroker,
   loungeSocketUrl,
   parseLiveMessage,
   jsonRequest,
@@ -831,6 +832,20 @@ describe('the valley block of the state (VALLEY_SYSTEMS)', () => {
       expect(bodies).toEqual([
         ['/api/valley/communal', { place: 'forge', creatureId: 'c1' }],
         ['/api/valley/communal', { place: 'forge', creatureId: null }],
+      ]);
+    });
+
+    it('setting what the broker trades toward sends the seat and the element (or null), with no key', async () => {
+      const bodies: unknown[] = [];
+      vi.stubGlobal('fetch', (path: string, init: RequestInit) => {
+        bodies.push([path, JSON.parse(init.body as string) as unknown]);
+        return Promise.resolve(Response.json({ valley, state: base }));
+      });
+      await setBroker({ seatId: 's1', toward: 'grove' });
+      await setBroker({ seatId: 's1', toward: null });
+      expect(bodies).toEqual([
+        ['/api/valley/broker', { seatId: 's1', toward: 'grove' }],
+        ['/api/valley/broker', { seatId: 's1', toward: null }],
       ]);
     });
   });

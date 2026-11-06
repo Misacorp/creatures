@@ -4,6 +4,7 @@ import {
   VALLEY_DAYS,
   VALLEY_COMMONS,
   VALLEY_FORGE,
+  VALLEY_MARKET,
   VALLEY_OPEN,
   VALLEY_PAPERS,
   VALLEY_RESTING,
@@ -27,6 +28,7 @@ const valleyShell: Entry = {
     open: { kind: 'select', options: VALLEY_OPEN },
     forge: { kind: 'select', options: VALLEY_FORGE },
     commons: { kind: 'select', options: VALLEY_COMMONS },
+    market: { kind: 'select', options: VALLEY_MARKET },
     paper: { kind: 'select', options: VALLEY_PAPERS },
   },
   defaults: {
@@ -38,6 +40,7 @@ const valleyShell: Entry = {
     open: 'nothing',
     forge: 'off',
     commons: 'off',
+    market: 'off',
     paper: 'off',
   },
   presets: [
@@ -219,6 +222,42 @@ const valleyShell: Entry = {
       props: { resting: 'few', commons: 'bonfire level 3' },
     },
     {
+      name: 'Market, not open yet (the guided start has not reached it)',
+      props: { start: 'market' },
+    },
+    {
+      name: 'Market, systems on: not open yet',
+      props: { start: 'market', market: 'not open' },
+    },
+    {
+      name: 'Market, systems on: its project being built (scaffolding, the board)',
+      props: { start: 'market', market: 'being built' },
+    },
+    {
+      name: 'Market, systems on: built, a free broker seat',
+      props: { start: 'market', market: 'open, free seat' },
+    },
+    {
+      name: 'Market, systems on: a broker at work',
+      props: { start: 'market', market: 'open with a broker' },
+    },
+    {
+      name: 'Market, systems on: a broker with no spare shards to trade',
+      props: { start: 'market', market: 'broker stuck' },
+    },
+    {
+      name: 'Market: the broker picker',
+      props: { start: 'market', market: 'open with a broker', open: 'broker picker' },
+    },
+    {
+      name: 'Market: what the broker trades toward',
+      props: { start: 'market', market: 'master broker', open: 'trade toward' },
+    },
+    {
+      name: "Market: the broker's rates and next step",
+      props: { start: 'market', market: 'open with a broker', open: 'broker rates' },
+    },
+    {
       name: 'The valley, systems on, with the Gazette (Acorns fly in too)',
       props: { resting: 'few', away: true },
     },
@@ -246,6 +285,7 @@ const valleyShell: Entry = {
       open={str(p, 'open')}
       forge={str(p, 'forge')}
       commons={str(p, 'commons')}
+      market={str(p, 'market')}
       paper={str(p, 'paper')}
     />
   ),

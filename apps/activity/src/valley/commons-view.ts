@@ -22,7 +22,7 @@ const plural = (n: number, one: string, many: string): string =>
   n === 1 ? one : `${String(n)} ${many}`;
 
 /** The places that have a project, in the valley's order. */
-export type CommonsPlaceId = 'bonfire' | 'forge' | 'signpost' | 'paddock' | 'school';
+export type CommonsPlaceId = 'bonfire' | 'forge' | 'signpost' | 'paddock' | 'school' | 'market';
 
 /** What each place is called on its board. */
 export const COMMONS_NAMES: Readonly<Record<string, string>> = {
@@ -31,6 +31,7 @@ export const COMMONS_NAMES: Readonly<Record<string, string>> = {
   signpost: 'Signpost',
   paddock: 'Paddock',
   school: 'School',
+  market: 'Market',
 };
 
 /** What a place's project builds, for a sentence ("the hearth is being built"). */
@@ -40,6 +41,7 @@ const BUILDS: Readonly<Record<string, string>> = {
   signpost: 'the road',
   paddock: 'the Paddock',
   school: 'the School',
+  market: 'the Market',
 };
 
 export const buildName = (place: string): string => BUILDS[place] ?? 'the place';
@@ -58,6 +60,10 @@ export function placeOf(
 
 /** The place's level: "Level 2 / 5"; past the max, "Level 5, finished" and how many extras stand. */
 export function levelLine(p: ValleyCommonsPlace): string {
+  // A place built once (the Market) is built or not, whatever its level counts.
+  if (VALLEY_RULES.commons.oneShot[p.id] !== undefined) {
+    return p.level >= 2 ? 'Built' : 'Not built yet';
+  }
   if (p.level < p.max) return `Level ${String(p.level)} / ${String(p.max)}`;
   return p.cosmetic === 0
     ? `Level ${String(p.max)}, finished`
@@ -113,6 +119,8 @@ export function stateTag(p: ValleyCommonsPlace): string {
       return 'Building';
     case 'waiting':
       return 'Not yet';
+    case 'done':
+      return 'Built';
   }
 }
 
@@ -133,6 +141,8 @@ export function stateLine(p: ValleyCommonsPlace): string {
       return p.id === 'forge'
         ? 'Opens once the hearth has grown.'
         : 'Opens once the hearth and the Forge have grown.';
+    case 'done':
+      return `${capital(buildName(p.id))} is built.`;
   }
 }
 
@@ -228,6 +238,9 @@ export function giveRows(p: ValleyCommonsPlace, purse: Purse, rate: number): Giv
       need.shards,
     ),
   ];
+  // A project that takes no shards (the Market's) lists none: a row that is always "full" would only be noise.
+  if (VALLEY_RULES.commons.oneShot[p.id]?.costSplit.shards === 0)
+    return rows.filter((r) => r.part !== 'shards');
   for (const element of ELEMENTS) {
     if (element === project.shardElement) continue;
     const held = purse.shards[element] ?? 0;
