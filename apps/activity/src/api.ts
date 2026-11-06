@@ -795,6 +795,20 @@ export async function postScout(body: {
   return valleyAnswer(await apiFetch('/api/valley/seat', jsonRequest('POST', body)));
 }
 
+/** Closes the welcome-back Gazette's paper (marks it read; `paperId` is the `id` the state's paper carried). Free and repeatable, no key. */
+export async function closeGazette(paperId: string): Promise<boolean> {
+  const data = await apiFetch('/api/valley/gazette/close', jsonRequest('POST', { paperId }));
+  return isRecord(data) && data['closed'] === true;
+}
+
+/**
+ * Takes a scout into its destination's deeper area (V-SCOUT-6; only while the unread paper offers it) or back up (free, any time).
+ * Free, so no key; asking for the state a seat is already in changes nothing.
+ */
+export async function setScoutDeep(seatId: string, deep: boolean): Promise<ValleyAnswer> {
+  return valleyAnswer(await apiFetch('/api/valley/deep', jsonRequest('POST', { seatId, deep })));
+}
+
 /** Buys the player's next scout seat (V-POST-2): a keyed spend of Acorns. */
 export async function buyScoutSeat(idempotencyKey: string): Promise<ValleyAnswer> {
   return valleyAnswer(

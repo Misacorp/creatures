@@ -315,8 +315,15 @@ export function undoGamesIndexMigration(sql: SqlStorage): void {
   sql.exec('DELETE FROM schema_version WHERE version = 42');
 }
 
+/** Puts a database back to before migration 59 (the welcome-back Gazette): its table goes. */
+export function undoValleyGazetteMigration(sql: SqlStorage): void {
+  sql.exec('DROP TABLE IF EXISTS valley_gazette');
+  sql.exec('DELETE FROM schema_version WHERE version = 59');
+}
+
 /** Puts a database back to before migration 58 (the Forge loop): its tables go, and the columns it added. */
 export function undoValleyForgeMigration(sql: SqlStorage): void {
+  undoValleyGazetteMigration(sql);
   for (const table of ['forge_orders', 'forge_floor', 'valley_bag'])
     sql.exec(`DROP TABLE IF EXISTS ${table}`);
   const has = (table: string, column: string): boolean =>

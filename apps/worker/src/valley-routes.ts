@@ -7,13 +7,16 @@ import type { ValleyView } from '@creatures/game';
 import type { Collection } from './collection';
 import {
   ValleyAnvilBuyBodySchema,
+  ValleyDeepBodySchema,
   ValleyExchangeBodySchema,
+  ValleyGazetteCloseBodySchema,
   ValleyKitBodySchema,
   ValleyOrderBodySchema,
   ValleySeatBodySchema,
   ValleySeatBuyBodySchema,
 } from './collection-schemas';
 import { failure, invalidBody, json, notFound, parseBody, type Routes } from './http';
+import type { ValleyGazette } from './valley-gazette';
 import type { ValleyOrders } from './valley-orders';
 import type { ValleySeats } from './valley-seats';
 
@@ -27,6 +30,8 @@ export interface ValleyRouteContext {
     valleySeats: ValleySeats | null;
     /** Anvils, orders and the exchange (null with the flag off). */
     valleyOrders: ValleyOrders | null;
+    /** The welcome-back Gazette's papers (null with the flag off). */
+    valleyGazette: ValleyGazette | null;
     /** The caller's valley as `/api/state` shows it (null with the flag off). */
     valleyState(userId: string): ValleyView | null;
   };
@@ -80,6 +85,29 @@ export const valleyRoutes: Routes<ValleyRouteContext> = {
         valley: core.valleyState(user.id),
         state: core.collection.state(user.id),
       });
+    },
+  },
+  '/api/valley/deep': {
+    POST: async (request, { user, core }) => {
+      if (core.valleySeats === null) return notFound();
+      const body = await parseBody(request, ValleyDeepBodySchema);
+      if (body === undefined) return invalidBody();
+      const outcome = core.valleySeats.setDeep(user.id, body.seatId, body.deep);
+      if (!outcome.ok) return failure(outcome);
+      return json({
+        ...outcome.value,
+        valley: core.valleyState(user.id),
+        state: core.collection.state(user.id),
+      });
+    },
+  },
+  '/api/valley/gazette/close': {
+    POST: async (request, { user, core }) => {
+      if (core.valleyGazette === null) return notFound();
+      const body = await parseBody(request, ValleyGazetteCloseBodySchema);
+      if (body === undefined) return invalidBody();
+      // One row written, no pass: the answer is only whether a paper was closed (the client drops its own copy).
+      return json({ closed: core.valleyGazette.close(user.id, body.paperId) });
     },
   },
   '/api/valley/anvil/buy': {

@@ -13,6 +13,7 @@
  *   entered in today's Games, the explorers home from a trip, the creatures whose job is done, a newcomer itself.
  *   Otherwise it shows the place alone. Never a stand-in.
  */
+import type { HeadlineKind } from '@creatures/game';
 import type { AwaySource, AwaySummary, Creature } from '../../api';
 import { speciesName } from '../../game';
 import type { GamesView } from '../../games-types';
@@ -59,7 +60,8 @@ export type Find =
   | { kind: 'blueprint'; baseId: string }
   | { kind: 'newcomer'; id: string; species: string; shiny: boolean };
 
-export type StoryKind = 'raid' | 'games' | 'leet' | 'trips' | 'jobs' | 'found';
+/** Today's notice's stories (the flag off) and the server paper's headlines (the valley's systems on, `paper-stories.ts`). */
+export type StoryKind = 'raid' | 'games' | 'leet' | 'trips' | 'jobs' | 'found' | HeadlineKind;
 
 export interface Story {
   id: StoryKind;

@@ -543,6 +543,65 @@ describe('query plan audit', () => {
     expect(result.found, scanMessage(result.found)).toEqual([]);
   }, 60_000);
 
+  it("plans the Gazette's statements (an arrival that writes a paper, a joined one, a look with it unread, taking a way deeper, closing it) without a whole-table scan", async () => {
+    const result = await audit({ valleySystems: true, fresh: true }, async (env, world) => {
+      const { clock } = env;
+      const relog = async (): Promise<void> => {
+        world.secrets.set(
+          userId(1),
+          await world.core.createSession(GUILD_ID, { id: userId(1), displayName: 'Player 1' }),
+        );
+      };
+      const call = (path: string, body: unknown): Promise<unknown> =>
+        callAs(world.core, world.secrets, 1, path, { method: 'POST', body });
+      clock.t += 6 * MINUTE;
+      await callAs(world.core, world.secrets, 1, '/api/state');
+      const mine = world.creatures[userId(1)] ?? [];
+      seedSeats(env.metered.sql, userId(1), mine, 2);
+      clock.t += 24 * 60 * MINUTE;
+      await relog();
+      await callAs(world.core, world.secrets, 1, '/api/state');
+      clock.t += 10 * MINUTE;
+      await callAs(world.core, world.secrets, 1, '/api/state');
+      // A second arrival joins the unread paper.
+      clock.t += 24 * 60 * MINUTE;
+      await relog();
+      await callAs(world.core, world.secrets, 1, '/api/state');
+      const seat = env.metered.sql
+        .exec<{ seat_id: string; creature_id: string; destination_id: string }>(
+          'SELECT seat_id, creature_id, destination_id FROM valley_seats WHERE user_id = ? AND position = 1',
+          userId(1),
+        )
+        .one();
+      env.metered.sql.exec(
+        'UPDATE valley_gazette SET decision = ? WHERE user_id = ?',
+        JSON.stringify({
+          kind: 'push-on',
+          seatId: seat.seat_id,
+          creatureId: seat.creature_id,
+          destination: seat.destination_id,
+        }),
+        userId(1),
+      );
+      await call('/api/valley/deep', { seatId: seat.seat_id, deep: true });
+      await call('/api/valley/deep', { seatId: seat.seat_id, deep: false });
+      const paper = env.metered.sql
+        .exec<{ paper_id: string }>(
+          'SELECT paper_id FROM valley_gazette WHERE user_id = ?',
+          userId(1),
+        )
+        .one();
+      await call('/api/valley/gazette/close', { paperId: paper.paper_id });
+    });
+
+    expect(result.seen, 'statements recorded').toBeGreaterThan(40);
+    expect(
+      result.statements.some((q) => q.includes('valley_gazette')),
+      'valley_gazette',
+    ).toBe(true);
+    expect(result.found, scanMessage(result.found)).toEqual([]);
+  }, 60_000);
+
   it('sees a full scan, an indexed search and an aliased scan in this SQLite (the detector works)', async () => {
     await inGuild(({ metered }) => {
       const plan = (query: string): string[] =>

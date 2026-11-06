@@ -144,6 +144,69 @@ const PLACES = [
 const LADDER = [0, 113, 188, 281, 394, 525];
 /** The Signpost's state of a scenario: the seats (id, destination, creatureId, hours), the kit owned and the creatures' ids. */
 const scouts = { seats: [], owned: [], ids: [] };
+/** The server's unread paper of a scenario (phase 5 step 4: `valley.paper`), and what the Gazette's routes were asked. */
+const gazette = { paper: null };
+const gazetteCalls = [];
+const headline = (kind, weight, count, extra = {}) => ({
+  kind,
+  weight,
+  count,
+  creatureIds: [],
+  species: null,
+  step: null,
+  rarity: null,
+  turn: null,
+  items: [],
+  blueprints: [],
+  newcomers: [],
+  ...extra,
+});
+const paperOf = (kind, creatures) => {
+  const [a, , c] = creatures;
+  const newest = creatures[creatures.length - 1];
+  const long = kind === 'long absence';
+  const headlines = long
+    ? [
+        headline('new-species', 95, 3, {
+          creatureIds: [a.id],
+          species: newest.species,
+          newcomers: [newest.id, creatures[1].id],
+        }),
+        headline('mastery-scout', 90, 2, { creatureIds: [a.id], step: 3 }),
+        headline('found-gear', 95, 7, {
+          creatureIds: [a.id],
+          rarity: 'epic',
+          items: [
+            { id: 'e2e-1', baseId: 'kelp-cap', rarity: 'epic', level: 9 },
+            { id: 'e2e-2', baseId: 'kelp-cap', rarity: 'rare', level: 8 },
+          ],
+        }),
+      ]
+    : [
+        headline('new-species', 100, 1, {
+          creatureIds: [a.id],
+          species: newest.species,
+          newcomers: [newest.id],
+        }),
+        headline('found-gear', 80, 2, {
+          creatureIds: [a.id],
+          rarity: 'rare',
+          items: [{ id: 'e2e-3', baseId: 'kelp-cap', rarity: 'rare', level: 5 }],
+        }),
+        headline('resting-xp', 45, 1, { creatureIds: [c.id] }),
+      ];
+  return {
+    id: String(1799760000000 + (long ? 1 : 0)),
+    at: 1799760000000,
+    awayHours: long ? 216 : 26,
+    headlines: headlines.sort((x, y) => y.weight - x.weight),
+    more: long ? 9 : 2,
+    brought: { acorns: long ? 480 : 130, scrap: 60, shards: 7 },
+    decision: long
+      ? null
+      : { kind: 'push-on', seatId: 'seat-1', creatureId: a.id, destination: 'ember-caves' },
+  };
+};
 const seatView = (s) => ({
   id: s.id,
   destination: s.destination,
@@ -151,6 +214,7 @@ const seatView = (s) => ({
   kit: s.kit ?? null,
   fit: false,
   second: false,
+  deep: s.deep === true,
   mastery: { hours: 0, step: 0, bonusBp: 0 },
   store: {
     hours: s.creatureId === null ? 0 : s.hours,
@@ -251,6 +315,7 @@ const valleyBlock = () => ({
   places: PLACES,
   night: false,
   special: { destination: 'ember-caves', twist: 'rich-veins' },
+  ...(gazette.paper === null ? {} : { paper: gazette.paper }),
 });
 /** Puts the scouts' state into the state the page asks for (and answers each route with it). */
 const syncValley = () => {
@@ -1343,6 +1408,103 @@ try {
       forgeState.anvils = [];
     },
   );
+
+  // The welcome-back Gazette on the server's real paper (phase 5 step 4): it opens over the valley for an unread paper (and again after a
+  // reload), shows the paper's one choice at its end, takes it (a scout goes deeper), closes (the server is told once) and is gone after a
+  // reload. A short absence, a long one and the choice are each looked at; nothing may overlap (`expectTopmost`) at any width.
+  for (const kind of ['short absence', 'long absence']) {
+    await scenario(
+      `the Gazette on the server's paper (${kind}): opens, replays on a reload, takes the choice, closes`,
+      () => {
+        const config = ROUTES.get('/api/config');
+        answerOverride.set('/api/config', () => ({ ...config(), valleySystems: true }));
+        const creatures = baseState.creatures.map((c) => ({ ...c, busy: null, away: false }));
+        scouts.seats = [
+          { id: 'seat-1', destination: 'ember-caves', creatureId: creatures[0].id, hours: 20 },
+        ];
+        scouts.owned = [];
+        scouts.ids = creatures.map((c) => c.id);
+        scoutCalls.length = 0;
+        gazetteCalls.length = 0;
+        gazette.paper = paperOf(kind, creatures);
+        stateOverride = { creatures, valley: valleyBlock() };
+        answerOverride.set('/api/valley/gazette/close', (request) => {
+          gazetteCalls.push(['close', bodyOf(request)]);
+          gazette.paper = null;
+          stateOverride = { ...stateOverride, valley: valleyBlock() };
+          return { closed: true };
+        });
+        answerOverride.set('/api/valley/deep', (request) => {
+          gazetteCalls.push(['deep', bodyOf(request)]);
+          const seat = scouts.seats.find((s) => s.id === bodyOf(request).seatId);
+          if (seat !== undefined) seat.deep = bodyOf(request).deep;
+          if (gazette.paper !== null) gazette.paper = { ...gazette.paper, decision: null };
+          return { seatId: bodyOf(request).seatId, ...syncValley() };
+        });
+      },
+      async () => {
+        const paper = page.locator('article[aria-label="The Valley Gazette"]');
+        await waitFor(paper);
+        await waitFor(page.locator('h3.gz-headline'));
+        // The sheet slides up and the paper unfolds: measure once it is still.
+        await page.waitForTimeout(800);
+        const tag = kind.replace(' ', '-');
+        await expectTopmost(page.locator('.gz-masthead').first(), 'the masthead');
+        await expectTopmost(page.locator('h3.gz-headline').first(), 'the headline');
+        await shot(`gazette-${tag}`);
+        // A reload replays the unread paper.
+        await page.reload();
+        await page.evaluate(() => document.fonts.ready);
+        await waitFor(paper);
+        const heads = await page.locator('.gz-headline, .gz-brief-headline').count();
+        if (heads > 3) throw new Error(`${String(heads)} stories on the paper`);
+        if ((await page.getByText(/\b(missed|lost|reduced)\b/i).count()) > 0)
+          throw new Error('the paper uses loss wording');
+        if (kind === 'long absence') {
+          const note = await page.locator('.gz-home-note').innerText();
+          if (!/kept the fire going/.test(note)) throw new Error(`no welcome line: ${note}`);
+        }
+        // The choice, last on the paper (a scout's way deeper, only in the short paper).
+        const choice = page.locator('.gz-choice');
+        if (kind === 'short absence') {
+          await waitFor(choice);
+          await choice.first().scrollIntoViewIfNeeded();
+          await expectTopmost(choice.first(), 'the paper’s choice');
+          await expectTopmost(page.getByRole('button', { name: 'Push on' }), 'the Push on button');
+          await shot('gazette-decision');
+          await page.getByRole('button', { name: 'Push on' }).click();
+          await waitFor(page.locator('.gz-choice', { hasText: 'is deep in' }));
+          if (!gazetteCalls.some(([name, body]) => name === 'deep' && body.deep === true))
+            throw new Error('the scout was not sent deeper');
+          if ((await page.getByRole('button', { name: 'Push on' }).count()) > 0)
+            throw new Error('the button stays after the choice');
+          await expectTopmost(page.locator('.gz-choice').first(), 'the taken choice');
+          await shot('gazette-decision-taken');
+        } else if ((await choice.count()) > 0) {
+          throw new Error('a choice on a paper without one');
+        }
+        const closer = page.getByRole('button', { name: /more things?|Into the valley/i }).last();
+        await closer.scrollIntoViewIfNeeded();
+        await expectTopmost(closer, 'the paper’s closing button');
+        await closer.click();
+        await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+        const closes = gazetteCalls.filter(([name]) => name === 'close');
+        if (closes.length !== 1)
+          throw new Error(`the server was told ${String(closes.length)} times`);
+        await page.locator('.gz-fly').waitFor({ state: 'detached', timeout: 15000 });
+        // Closed: nothing holds a ring on the map.
+        const ringed = await page.locator(':focus-visible').count();
+        if (ringed > 0) throw new Error('a focus ring is left after the paper closed');
+        await shot(`gazette-closed-${tag}`);
+        // Closed: a reload shows no paper.
+        await page.reload();
+        await page.evaluate(() => document.fonts.ready);
+        await waitFor(page.locator(VALLEY), 'attached');
+        if ((await paper.count()) > 0) throw new Error('the paper came back after it was closed');
+        scouts.seats = [];
+      },
+    );
+  }
 
   await scenario(
     'a brand-new player: the starter pick first, then the valley with that one creature',

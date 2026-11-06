@@ -179,6 +179,14 @@ export const ValleySeatBodySchema = v.strictObject({
 
 export const ValleySeatBuyBodySchema = v.strictObject({ idempotencyKey: IdempotencyKeySchema });
 
+/** Closes the welcome-back Gazette's paper (marks it read); `paperId` is the `id` the state's paper carried. */
+export const ValleyGazetteCloseBodySchema = v.strictObject({
+  paperId: v.pipe(v.string(), v.regex(/^\d{1,16}$/)),
+});
+
+/** Takes a scout into its destination's deeper area (only while the unread paper offers it) or back up (free, any time). */
+export const ValleyDeepBodySchema = v.strictObject({ seatId: IdSchema, deep: v.boolean() });
+
 /** Buys a kit (a keyed spend of Acorns), or sets an owned kit on a seat (free; `null` takes it off). */
 export const ValleyKitBodySchema = v.variant('action', [
   v.strictObject({

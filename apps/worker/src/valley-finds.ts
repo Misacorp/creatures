@@ -39,14 +39,16 @@ import {
 import type { Analytics } from './analytics';
 import type { CatchChoices } from './catch-choices';
 import { addPage, foundPages } from './expedition-store';
-import { payOnce, type DraftItem } from './gear-grants';
+import { payOnce, type DraftItem, type GrantView } from './gear-grants';
 import { creditParts } from './gear-store';
 import type { LedgerStorage } from './ledger';
+import { paperItem, type PaperRecorder } from './valley-gazette';
 import { recordServerFirst } from './server-firsts';
 import { speciesOf } from './species';
 import { insertCreature } from './talent-store';
 
 const HOUR_MS = 3_600_000;
+const uniform = (rng: Rng): number => rng.nextU32() / 0x1_0000_0000;
 const RARITIES = ['common', 'rare', 'epic'] as const;
 
 /** The lines scouts can find: the first stage of every catchable line (evolved forms come from evolving), as the lab models them. */
@@ -116,7 +118,12 @@ export class ValleyFinds {
   draw(
     userId: string,
     stretches: readonly SeatStretch[],
-    options: { kitOf: (seatId: string) => string | null; guarantee: boolean },
+    options: {
+      kitOf: (seatId: string) => string | null;
+      guarantee: boolean;
+      /** The Gazette's log of this arrival (V-POST-14), with the creature that stands at each seat; absent: nothing is recorded. */
+      paper?: { rec: PaperRecorder; byOf: (seatId: string) => string | null } | undefined;
+    },
     at: number,
   ): DrawnFinds {
     const rng = this.deps.rng;
@@ -132,11 +139,15 @@ export class ValleyFinds {
       const creatures = poissonDraw(rng, stretch.hours * stretch.rates.creatures);
       for (let n = 0; n < creatures; n++) {
         this.arrive(userId, stretch.seat, stretch.place, owned, {
-          lure: options.kitOf(stretch.seat) === 'lure',
+          lure: options.kitOf(stretch.seat) === 'lure' && !stretch.deep,
+          deep: stretch.deep,
           special: stretch.world.special,
           needNew: false,
           at,
           arrivals,
+          ...(options.paper === undefined
+            ? {}
+            : { paper: { rec: options.paper.rec, by: options.paper.byOf(stretch.seat) } }),
         });
       }
     }
@@ -147,11 +158,15 @@ export class ValleyFinds {
       first !== undefined
     ) {
       this.arrive(userId, first.seat, first.place, owned, {
-        lure: options.kitOf(first.seat) === 'lure',
+        lure: options.kitOf(first.seat) === 'lure' && !first.deep,
+        deep: first.deep,
         special: first.world.special,
         needNew: true,
         at,
         arrivals,
+        ...(options.paper === undefined
+          ? {}
+          : { paper: { rec: options.paper.rec, by: options.paper.byOf(first.seat) } }),
       });
     }
     return { stores, arrivals };
@@ -164,20 +179,31 @@ export class ValleyFinds {
     owned: Set<string>,
     o: {
       lure: boolean;
+      /** V-SCOUT-6: the scout is deep: the deeper area's residents turn up, and rare and epic species a little more. */
+      deep: boolean;
       special: ScoutSpecial | null;
       needNew: boolean;
       at: number;
       arrivals: { newcomers: number; duplicates: number };
+      paper?: { rec: PaperRecorder; by: string | null };
     },
   ): void {
     const dest = expeditionContent.destinations.find((d) => d.id === place.id);
-    const residents = new Set(dest?.species ?? []);
+    const residents = new Set(o.deep ? (dest?.deep.species ?? []) : (dest?.species ?? []));
+    const rarityUp = o.deep ? 1 + (dest?.deep.rarityUpBp ?? 0) / 10_000 : 1;
     const candidates: FindableSpecies[] = FINDABLE.map((s) => ({
       id: s.id,
       element: s.element,
       rarity: s.rarity,
       owned: owned.has(s.line),
       resident: residents.has(s.id),
+      ...(o.deep
+        ? {
+            weight:
+              (residents.has(s.id) ? VALLEY_RULES.scouts.pushOn.residentWeight : 1) *
+              (s.rarity > 0 ? rarityUp : 1),
+          }
+        : {}),
     }));
     const picked =
       FINDABLE[
@@ -196,7 +222,7 @@ export class ValleyFinds {
     if (!owned.has(picked.line)) {
       owned.add(picked.line);
       recordServerFirst(this.sql, 'catch', picked.id, userId, seatId, o.at);
-      insertCreature(
+      const made = insertCreature(
         this.sql,
         {
           quirk: this.deps.quirkRng,
@@ -207,6 +233,7 @@ export class ValleyFinds {
         this.deps.analytics,
       );
       o.arrivals.newcomers += 1;
+      o.paper?.rec.newcomer(made.id, picked.id, o.paper.by);
       return;
     }
     // A duplicate waits at the Paddock gate; it takes today's Recommended answer by itself after a day (V-SCOUT-3).
@@ -225,6 +252,7 @@ export class ValleyFinds {
       o.at + VALLEY_RULES.scouts.gateAutoHours * HOUR_MS,
     );
     o.arrivals.duplicates += 1;
+    o.paper?.rec.duplicate();
   }
 
   /**
@@ -238,6 +266,7 @@ export class ValleyFinds {
     store: SeatStore,
     scoutLevel: number,
     at: number,
+    paper?: { rec: PaperRecorder; by: string | null },
   ): PartsBundle {
     const parts: PartsBundle = {};
     if (store.scrap > 0) parts.scrap = store.scrap;
@@ -246,8 +275,12 @@ export class ValleyFinds {
       parts[kind] = (parts[kind] ?? 0) + 1;
     }
     const total = store.gear + store.blueprints;
+    const seen: { gear: GrantView['gear']; blueprints: GrantView['blueprints'] } = {
+      gear: [],
+      blueprints: [],
+    };
     if (total > 0) {
-      payOnce(
+      const view = payOnce(
         {
           storage: this.deps.storage,
           now: this.deps.now,
@@ -267,9 +300,18 @@ export class ValleyFinds {
           }),
         },
       );
+      seen.gear = view.gear;
+      seen.blueprints = view.blueprints;
     }
-    if (store.pages > 0) this.rollPages(userId, place, store.pages, at);
+    let pages = 0;
+    if (store.pages > 0) pages = this.rollPages(userId, place, store.pages, at);
     creditParts(this.sql, userId, parts);
+    if (paper !== undefined) {
+      paper.rec.parts(store.scrap, store.shards);
+      paper.rec.pages(pages);
+      for (const item of seen.gear) paper.rec.gear(paperItem(item), paper.by);
+      for (const bp of seen.blueprints) if (!bp.duplicate) paper.rec.blueprint(bp.baseId, paper.by);
+    }
     return parts;
   }
 
@@ -287,7 +329,8 @@ export class ValleyFinds {
   }
 
   /** Journal pages: one roll each, never a repeat, nothing when the book is complete. */
-  private rollPages(userId: string, place: PlaceProfile, count: number, at: number): void {
+  private rollPages(userId: string, place: PlaceProfile, count: number, at: number): number {
+    let added = 0;
     const entries = expeditionContent.journal.entries;
     const found = foundPages(this.sql, userId);
     for (let i = 0; i < count; i++) {
@@ -295,9 +338,30 @@ export class ValleyFinds {
       if (entryId === null) continue;
       if (!addPage(this.sql, userId, entryId, at, null)) continue;
       found.add(entryId);
+      added += 1;
     }
+    return added;
+  }
+
+  /**
+   * V-SCOUT-6: whether an Expert scout found a way into its destination's deeper area during the hours it picked up in this pass: one live
+   * draw per scout that may (an Expert, not already deep, at a place with a deeper area), the first to find one wins (at most one decision,
+   * V-RET-3). `hours` is each such seat's effective hours; returns the seat id, or null.
+   */
+  wayDeeper(candidates: readonly { seatId: string; hours: number }[]): string | null {
+    const rate = VALLEY_RULES.scouts.pushOn.chancePerHour;
+    for (const c of candidates) {
+      if (!(c.hours > 0)) continue;
+      const p = 1 - Math.pow(1 - rate, c.hours);
+      if (uniform(this.deps.rng) < p) return c.seatId;
+    }
+    return null;
   }
 }
+
+/** V-SCOUT-6: the destination has a deeper area to push on into. */
+export const hasDeepArea = (id: string): boolean =>
+  expeditionContent.destinations.some((d) => d.id === id);
 
 /** The profile of a seat's destination, or undefined when the content no longer has it. */
 export const profileOf = (id: string): PlaceProfile | undefined => placeProfile(VALLEY_RULES, id);

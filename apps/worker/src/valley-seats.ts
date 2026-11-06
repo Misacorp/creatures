@@ -21,7 +21,8 @@ import { runKeyed, settleSpend } from './keyed-action';
 import { spend, type LedgerStorage } from './ledger';
 import { GameError, atomically, type Outcome } from './outcome';
 import { SEAT_COLUMNS, SIGNPOST_LEVEL, type SeatRow, type ValleySettle } from './valley-settle';
-import type { ValleyFinds } from './valley-finds';
+import { hasDeepArea, type ValleyFinds } from './valley-finds';
+import type { ValleyGazette } from './valley-gazette';
 import { worldAt } from './valley-world';
 
 export interface ValleySeatsDeps {
@@ -30,6 +31,8 @@ export interface ValleySeatsDeps {
   readonly timezone: () => string;
   readonly settle: ValleySettle;
   readonly finds: ValleyFinds;
+  /** The Gazette's paper: a way deeper is taken from its decision (V-RET-3, V-SCOUT-6). */
+  readonly gazette: ValleyGazette;
 }
 
 /** What a bought seat or kit answers (stored for a retry). */
@@ -174,7 +177,7 @@ export class ValleySeats {
         }
         this.bringHome(userId, seat, now);
         this.sql.exec(
-          `UPDATE valley_seats SET destination_id = ?, prev_destination_id = ? WHERE seat_id = ?`,
+          `UPDATE valley_seats SET destination_id = ?, prev_destination_id = ?, deep = 0 WHERE seat_id = ?`,
           input.destination,
           place.festival ? seat.destination_id : input.destination,
           seat.seat_id,
@@ -207,6 +210,40 @@ export class ValleySeats {
       // A smith posted to an anvil with an order starts on it at once.
       if (seat.place === 'forge') this.deps.settle.settle(userId, 'now');
       return { seatId: seat.seat_id };
+    });
+  }
+
+  /**
+   * V-SCOUT-6: takes a scout into its destination's deeper area, or back up. Going deeper is only offered by the unread Gazette paper's one
+   * decision for this seat and this scout (a way found while away; the pass drew it); the pack comes home first, so nothing found
+   * at the old depth is counted at the new. Coming back up is free at any time. Asking for the state a seat is already in changes nothing.
+   */
+  setDeep(userId: string, seatId: string, deep: boolean): Outcome<{ seatId: string }> {
+    return atomically(this.deps.storage, () => {
+      this.deps.settle.settle(userId, 'now');
+      const seat = this.seatOf(userId, seatId);
+      if (seat.place !== 'signpost') throw new GameError(400, 'not_a_scout_seat');
+      if ((seat.deep === 1) === deep) return { seatId };
+      if (deep) {
+        const offer = this.deps.gazette.pendingDecision(userId);
+        if (
+          offer === null ||
+          offer.seatId !== seat.seat_id ||
+          offer.creatureId !== seat.creature_id ||
+          offer.destination !== seat.destination_id ||
+          !hasDeepArea(seat.destination_id)
+        ) {
+          throw new GameError(409, 'no_way_deeper');
+        }
+        this.deps.gazette.clearDecision(userId);
+      }
+      this.bringHome(userId, seat, this.deps.now());
+      this.sql.exec(
+        'UPDATE valley_seats SET deep = ? WHERE seat_id = ?',
+        deep ? 1 : 0,
+        seat.seat_id,
+      );
+      return { seatId };
     });
   }
 

@@ -470,3 +470,107 @@ describe('read budget with anvils posted', () => {
     },
   );
 });
+
+/**
+ * The welcome-back Gazette (phase 5 step 4): what an arrival that writes a paper reads and writes with two scouts posted (the paper's
+ * one row is read when the state is built and written once at the arrival), a look with the paper unread (one more row to compose it),
+ * a second arrival that joins the unread paper, closing it (one row written, no pass) and taking a way deeper (a settle, the seat's
+ * pack home, the paper's decision cleared). The finds are live draws, so the numbers are the largest of a few runs; the budgets are about 1.5x.
+ */
+const GAZETTE_BUDGET = {
+  // A day away with two seats: the arrival writes the paper (`SCOUT_BUDGET.arrival2` is the same arrival, which now includes it).
+  arrival: { reads: 1400, writes: 130 }, // measured 903 reads, 88 written
+  // Ten minutes on with the paper unread: the state carries it.
+  look: { reads: 1200, writes: 55 }, // measured 793 reads, 33 written
+  // A second arrival while the first paper is unread: the two are joined into one.
+  joined: { reads: 1400, writes: 130 }, // measured 923 reads, 97 written
+  // Closing the paper: one row of its own read and written, and no pass (the other rows are the session's).
+  close: { reads: 35, writes: 4 }, // measured 23 reads, 2 written
+  // Taking the way deeper: a settle, the seat's pack home and the decision cleared.
+  deep: { reads: 950, writes: 12 }, // measured 624 reads, 6 written
+} as const;
+
+describe('read budget with the Gazette', () => {
+  const measured: Record<string, ReadReport> = {};
+
+  it('measures an arrival that writes a paper, a look with it unread, a joined arrival, a close and a way deeper', async () => {
+    await inGuild(
+      async (env) => {
+        const { metered, clock } = env;
+        const world = await seedWorld(env, { valleySystems: true });
+        const { core, secrets } = world;
+        const relog = async (): Promise<void> => {
+          secrets.set(
+            userId(1),
+            await core.createSession(GUILD_ID, { id: userId(1), displayName: 'Player 1' }),
+          );
+        };
+        const state = (): Promise<unknown> => callAs(core, secrets, 1, '/api/state');
+        const mine = world.creatures[userId(1)] ?? [];
+        clock.t += 6 * MINUTE;
+        await callAs(core, secrets, 1, '/api/me');
+        await state();
+        seedSeats(metered.sql, userId(1), mine, 2);
+        clock.t += 24 * 60 * MINUTE;
+        await relog();
+        measured['arrival'] = (await metered.measure(state)).reads;
+        clock.t += 10 * MINUTE;
+        measured['look'] = (await metered.measure(state)).reads;
+        // Another day away with the paper still unread: the new one joins it.
+        clock.t += 24 * 60 * MINUTE;
+        await relog();
+        measured['joined'] = (await metered.measure(state)).reads;
+        const row = metered.sql
+          .exec<{ paper_id: string }>(
+            'SELECT paper_id FROM valley_gazette WHERE user_id = ?',
+            userId(1),
+          )
+          .one();
+        // The paper offers the first seat's scout a way deeper (as an arrival's draw would have written it).
+        const seat = metered.sql
+          .exec<{ seat_id: string; creature_id: string; destination_id: string }>(
+            'SELECT seat_id, creature_id, destination_id FROM valley_seats WHERE user_id = ? AND position = 1',
+            userId(1),
+          )
+          .one();
+        metered.sql.exec(
+          'UPDATE valley_gazette SET decision = ? WHERE user_id = ?',
+          JSON.stringify({
+            kind: 'push-on',
+            seatId: seat.seat_id,
+            creatureId: seat.creature_id,
+            destination: seat.destination_id,
+          }),
+          userId(1),
+        );
+        measured['deep'] = (
+          await metered.measure(() =>
+            callAs(core, secrets, 1, '/api/valley/deep', {
+              method: 'POST',
+              body: { seatId: seat.seat_id, deep: true },
+            }),
+          )
+        ).reads;
+        measured['close'] = (
+          await metered.measure(() =>
+            callAs(core, secrets, 1, '/api/valley/gazette/close', {
+              method: 'POST',
+              body: { paperId: row.paper_id },
+            }),
+          )
+        ).reads;
+      },
+      { fresh: true },
+    );
+  }, 60_000);
+
+  it.each(Object.keys(GAZETTE_BUDGET) as (keyof typeof GAZETTE_BUDGET)[])(
+    'the Gazette: %s reads and writes few rows',
+    (name) => {
+      const reads = measured[name];
+      if (reads === undefined) throw new Error('the measuring test did not run');
+      expectReadsUnder(`gazette ${name}`, reads, GAZETTE_BUDGET[name].reads);
+      expectWritesUnder(`gazette ${name}`, reads, GAZETTE_BUDGET[name].writes);
+    },
+  );
+});

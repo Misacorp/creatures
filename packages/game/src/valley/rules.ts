@@ -212,6 +212,22 @@ export const VALLEY_RULES = {
     firstFindHours: 1,
     /** V-SCOUT-3: a duplicate waiting at the Paddock gate takes today's Recommended answer by itself after this many hours. */
     gateAutoHours: 24,
+    /**
+     * V-SCOUT-6, push on (phase 5 step 4). The scouts doc gives no numbers, so these are the smallest assumptions; the lab does not model
+     * push on (its report says so). An Expert scout (mastery step `minStep`, 2) may find a way into its destination's deeper area: each
+     * effective hour at that step has `chancePerHour` to find one (one draw per pass, from the hours it picked up). Deep, the kit does not
+     * work, scrap and shards are `partsMultiplier` of the usual, gear, blueprints and pages are `rareMultiplier` of it, and a creature
+     * comes from the deeper area's residents (each weighs `residentWeight`), rare and epic species weighing more by the area's own
+     * `rarityUpBp`.
+     */
+    // ASSUMPTION: a way deeper turns up about once in two weeks for a daily player's Expert scout (about 0.3 a day at 24 hours).
+    pushOn: {
+      minStep: 2,
+      chancePerHour: 0.0125,
+      partsMultiplier: 0.5,
+      rareMultiplier: 1.5,
+      residentWeight: 3,
+    },
     /** V-SCOUT-9: a keystone clock per destination for the whole server: one in about this many days. */
     keystoneMeanDays: 21,
     // ASSUMPTION: a destination whose element a creature has doubles its weight when a new creature arrives (the shipped 2x).

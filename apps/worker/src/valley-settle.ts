@@ -57,7 +57,6 @@ import type { CatchChoices } from './catch-choices';
 import { bagItems, trackBag } from './gear-store';
 import { credit, type LedgerStorage } from './ledger';
 import { speciesOf } from './species';
-import type { ValleyFinds } from './valley-finds';
 import {
   ANVIL_COLUMNS,
   FIRE_LEVEL,
@@ -66,6 +65,8 @@ import {
   type AnvilColumns,
   type ValleyForgePass,
 } from './valley-forge';
+import { hasDeepArea, type ValleyFinds } from './valley-finds';
+import { PaperRecorder, paperItem, type ValleyGazette } from './valley-gazette';
 import { scoutClock, specialOfWeek, worldAt } from './valley-world';
 
 /** Without a request for this long, the next one is a new visit: the "+N" starts again and the allowance store comes home. */
@@ -125,13 +126,15 @@ export type SeatRow = AnvilColumns & {
   gear_finds: number;
   blueprint_finds: number;
   page_finds: number;
+  /** V-SCOUT-6: the scout is in the destination's deeper area (1) or not (0). */
+  deep: number;
 };
 
 /** The Signpost's level until the commons (step 6) can raise it: it bounds the seats (V-COM-10). */
 export const SIGNPOST_LEVEL = 1;
 /** The seat columns the pass and the routes read. */
 export const SEAT_COLUMNS = `seat_id, position, destination_id, prev_destination_id, creature_id, kit_id, store_hours, scrap,
-  scrap_carry, shards, shard_carry, gear_finds, blueprint_finds, page_finds, ${ANVIL_COLUMNS}`;
+  scrap_carry, shards, shard_carry, gear_finds, blueprint_finds, page_finds, deep, ${ANVIL_COLUMNS}`;
 
 /** The store's size in Acorns (V-POST-5: `storeHours` of the hourly rate). */
 export const allowanceCap = (): number =>
@@ -148,6 +151,8 @@ export interface ValleySettleDeps {
   readonly choices: CatchChoices;
   /** The anvils' part of the pass: orders, the shelf, the floors and the live rarity draws. */
   readonly forge: ValleyForgePass;
+  /** The Gazette's last paper of each player (`valley-gazette.ts`): an arrival's pass writes it. */
+  readonly gazette: ValleyGazette;
 }
 
 const masteryStep = (hours: number): 0 | 1 | 2 | 3 => {
@@ -305,6 +310,7 @@ export class ValleySettle {
         kit: kitOfRow(seat.kit_id),
         fit: fitOf(worker, place),
         second: seatRows.slice(0, i).some((o) => o.destination_id === seat.destination_id),
+        deep: seat.deep === 1,
         storeHours: seat.store_hours,
         scrap: seat.scrap,
         scrapCarry: seat.scrap_carry,
@@ -345,6 +351,8 @@ export class ValleySettle {
       },
     );
 
+    // The Gazette's log of this arrival (V-POST-14): only an arrival tells a paper, so a pass in the middle of a visit records nothing.
+    const rec = newVisit ? new PaperRecorder() : undefined;
     let visitAllowance = newVisit ? 0 : player.visit_allowance;
     let store = after.allowance?.store ?? 0;
     const carry = after.allowance?.carry ?? 0;
@@ -364,13 +372,14 @@ export class ValleySettle {
         ).applied;
         if (applied) {
           visitAllowance += store;
+          if (newVisit) rec?.acorns(store);
           store = 0;
         }
       }
     }
 
     // Scouts: the live draws of the stretches, then each store that is due comes home.
-    const seatsOut = this.scoutFinds(userId, to, newVisit, player, seatRows, after, rowOf, tz);
+    const seatsOut = this.scoutFinds(userId, to, newVisit, player, seatRows, after, rowOf, tz, rec);
 
     // The Forge: what the anvils did is written back, then the floors come home when it is time (an arrival, or a floor that filled).
     let anvilsOut: readonly SeatRow[] = anvilRows;
@@ -382,6 +391,10 @@ export class ValleySettle {
       if (floorDue && anvilsOut.some((a) => a.floor_count > 0)) {
         const home = this.deps.forge.collect(userId, to, team, VALLEY_RULES.forge.bag);
         piecesHome = home.brought;
+        if (home.items.length > 0) {
+          const smith = anvilRows.find((a) => a.seat_id === home.firstSeat)?.creature_id ?? null;
+          rec?.forgePieces(home.items.map(paperItem), smith);
+        }
         if (home.counts.size > 0) {
           for (const [seatId, n] of home.counts) {
             this.sql.exec(
@@ -399,14 +412,32 @@ export class ValleySettle {
     }
     void piecesHome;
 
+    const seated = new Set(
+      [...seatRows, ...anvilRows].flatMap((seat) =>
+        seat.creature_id === null ? [] : [seat.creature_id],
+      ),
+    );
     const creatures = rows.map((row, i) => {
       const paid = after.creatures[i];
       const whole = paid?.xp ?? 0;
-      const gainedNow = this.payXp(row, whole);
+      const paidXp = this.payXp(row, whole);
+      const gainedNow = paidXp.taken;
       const visitXp = (newVisit ? 0 : (row.visit_xp ?? 0)) + gainedNow;
       const catchUpBp = row.catchup_bp ?? BP;
       const scoutHours = paid?.scoutHours ?? 0;
       const smithHours = paid?.smithHours ?? 0;
+      if (rec !== undefined) {
+        // Mastery steps reached while away (V-POST-12) and the resting creatures' best XP (V-BON-1).
+        const scoutStep = masteryStep(scoutHours);
+        const smithStep = masteryStep(smithHours);
+        if (scoutStep > masteryStep(row.scout_hours ?? 0) && scoutStep >= 1) {
+          rec.mastery('scout', row.id, scoutStep as 1 | 2 | 3);
+        }
+        if (smithStep > masteryStep(row.smith_hours ?? 0) && smithStep >= 1) {
+          rec.mastery('anvil', row.id, smithStep as 1 | 2 | 3);
+        }
+        if (!seated.has(row.id)) rec.xp(row.id, gainedNow, paidXp.level - row.level);
+      }
       const changed =
         row.tracked === null ||
         whole > 0 ||
@@ -432,6 +463,50 @@ export class ValleySettle {
       };
     });
 
+    if (rec !== undefined) {
+      const awayHours = Math.floor((to - player.last_visit_at) / HOUR_MS);
+      // One resting creature's small moment (V-BON-9, cheap): the day picks who and which, so a reload tells the same one.
+      const resting = rows.filter((row) => !seated.has(row.id));
+      const day = Math.floor(to / (24 * HOUR_MS));
+      const rester = resting[day % Math.max(1, resting.length)];
+      if (rester !== undefined) rec.moment(rester.id, day);
+      // V-SCOUT-6, V-RET-3: an Expert scout may have found a way deeper; the paper offers it as its one decision.
+      const hoursOf = new Map<string, number>();
+      for (const stretch of after.stretches ?? []) {
+        hoursOf.set(stretch.seat, (hoursOf.get(stretch.seat) ?? 0) + stretch.hours);
+      }
+      const expert = new Set(
+        creatures.flatMap((c) =>
+          masteryStep(c.row.scout_hours ?? 0) >= VALLEY_RULES.scouts.pushOn.minStep
+            ? [c.row.id]
+            : [],
+        ),
+      );
+      const candidates = seatsOut.rows.flatMap((seat) =>
+        seat.creature_id !== null &&
+        seat.deep === 0 &&
+        expert.has(seat.creature_id) &&
+        hasDeepArea(seat.destination_id)
+          ? [{ seatId: seat.seat_id, hours: hoursOf.get(seat.seat_id) ?? 0 }]
+          : [],
+      );
+      const way = this.deps.finds.wayDeeper(candidates);
+      const found = seatsOut.rows.find((seat) => seat.seat_id === way);
+      this.deps.gazette.publish(
+        userId,
+        to,
+        awayHours,
+        rec.log,
+        found === undefined || found.creature_id === null
+          ? null
+          : {
+              kind: 'push-on',
+              seatId: found.seat_id,
+              creatureId: found.creature_id,
+              destination: found.destination_id,
+            },
+      );
+    }
     if (newVisit) {
       // Creatures that left the roster (released, fused) leave their rows too; once a visit is enough.
       this.sql.exec(
@@ -487,6 +562,7 @@ export class ValleySettle {
     after: SettleState,
     rowOf: ReadonlyMap<string, CreatureRow>,
     tz: string,
+    rec: PaperRecorder | undefined,
   ): { rows: SeatRow[]; newcomers: number; firstDone: boolean; full: ReadonlySet<string> } {
     if (seatRows.length === 0) {
       return { rows: [], newcomers: 0, firstDone: false, full: new Set() };
@@ -495,6 +571,8 @@ export class ValleySettle {
     const stretches = after.stretches ?? [];
     const kitOf = (seatId: string): string | null =>
       seatRows.find((seat) => seat.seat_id === seatId)?.kit_id ?? null;
+    const creatureOf = (seatId: string): string | null =>
+      seatRows.find((seat) => seat.seat_id === seatId)?.creature_id ?? null;
     const heldHours = (after.seats ?? []).reduce((sum, seat) => sum + seat.storeHours, 0);
     const guarantee =
       player.first_scout_done === 0 &&
@@ -503,7 +581,18 @@ export class ValleySettle {
     const drawn =
       stretches.length === 0
         ? null
-        : this.deps.finds.draw(userId, stretches, { kitOf, guarantee }, to);
+        : this.deps.finds.draw(
+            userId,
+            stretches,
+            {
+              kitOf,
+              guarantee,
+              ...(rec === undefined
+                ? {}
+                : { paper: { rec, byOf: (seatId: string) => creatureOf(seatId) } }),
+            },
+            to,
+          );
     const arrivals = drawn?.arrivals ?? { newcomers: 0, duplicates: 0 };
     const out: SeatRow[] = [];
     const fullSeats = new Set<string>();
@@ -531,7 +620,10 @@ export class ValleySettle {
         next.page_finds > 0;
       // A pack that filled during a long visit comes home too, so a client that never closes cannot lose finds to the cap.
       const wasFull = next.store_hours >= VALLEY_RULES.posts.storeHours - 1e-9;
-      if (wasFull) fullSeats.add(row.seat_id);
+      if (wasFull) {
+        fullSeats.add(row.seat_id);
+        rec?.packFull(row.creature_id);
+      }
       const due = wasFull || ((newVisit || closed) && (waiting || next.store_hours > 0));
       if (place !== undefined && due) {
         const worker = row.creature_id === null ? undefined : rowOf.get(row.creature_id);
@@ -548,6 +640,7 @@ export class ValleySettle {
           },
           worker?.level ?? 1,
           to,
+          rec === undefined ? undefined : { rec, by: row.creature_id },
         );
         next = {
           ...next,
@@ -560,12 +653,14 @@ export class ValleySettle {
         };
       }
       // V-SCOUT-8: a scout at a place that has closed walks back to the last open place by itself.
-      if (closed) next = { ...next, destination_id: row.prev_destination_id ?? 'tidepools' };
+      if (closed) {
+        next = { ...next, destination_id: row.prev_destination_id ?? 'tidepools', deep: 0 };
+      }
       out.push(next);
       if (JSON.stringify(next) !== JSON.stringify(row)) {
         this.sql.exec(
           `UPDATE valley_seats SET destination_id = ?, store_hours = ?, scrap = ?, scrap_carry = ?, shards = ?,
-             shard_carry = ?, gear_finds = ?, blueprint_finds = ?, page_finds = ?, passed_at = ? WHERE seat_id = ?`,
+             shard_carry = ?, gear_finds = ?, blueprint_finds = ?, page_finds = ?, deep = ?, passed_at = ? WHERE seat_id = ?`,
           next.destination_id,
           next.store_hours,
           next.scrap,
@@ -575,6 +670,7 @@ export class ValleySettle {
           next.gear_finds,
           next.blueprint_finds,
           next.page_finds,
+          next.deep,
           to,
           row.seat_id,
         );
@@ -625,7 +721,15 @@ export class ValleySettle {
       const rates =
         place === undefined || worker === undefined
           ? null
-          : seatRates(rules, { place, fit, masteryHours: hours, kit, second, world });
+          : seatRates(rules, {
+              place,
+              fit,
+              masteryHours: hours,
+              kit,
+              second,
+              world,
+              deep: seat.deep === 1,
+            });
       const room = Math.max(0, rules.posts.storeHours - seat.store_hours);
       const full = room <= 1e-9;
       return {
@@ -635,6 +739,7 @@ export class ValleySettle {
         kit,
         fit,
         second,
+        deep: seat.deep === 1,
         mastery: {
           hours,
           step: masteryStep(hours),
@@ -669,6 +774,7 @@ export class ValleySettle {
       if (price !== null) ladder.push(price);
     }
     const special = specialOfWeek(tz, input.to);
+    const paper = this.deps.gazette.current(input.userId);
     return {
       settledAt: input.to,
       arrived: input.arrived,
@@ -709,6 +815,7 @@ export class ValleySettle {
       }),
       night: world.night,
       special: { destination: special.destination, twist: special.twist },
+      ...(paper === null ? {} : { paper }),
     };
   }
 
@@ -717,8 +824,8 @@ export class ValleySettle {
    * `whole` at the top level, or while it waits at its species' cap with the next level's XP already banked (before evolving), so
    * the fire's "+N" never shows XP that went nowhere.
    */
-  private payXp(row: CreatureRow, whole: number): number {
-    if (whole === 0 && row.ribbons >= MAX_RIBBONS) return 0;
+  private payXp(row: CreatureRow, whole: number): { taken: number; level: number } {
+    if (whole === 0 && row.ribbons >= MAX_RIBBONS) return { taken: 0, level: row.level };
     const species = speciesOf(row.species);
     const gain = addExperience(
       { level: row.level, exp: row.exp, ribbons: MAX_RIBBONS, levelCap: species.levelCap },
@@ -732,7 +839,10 @@ export class ValleySettle {
       row.id,
     );
     // Never below 0, even on a row holding more than its level's need (bad data the clamp would shrink).
-    return Math.max(0, expToReach(gain.level) + gain.exp - (expToReach(row.level) + row.exp));
+    return {
+      taken: Math.max(0, expToReach(gain.level) + gain.exp - (expToReach(row.level) + row.exp)),
+      level: gain.level,
+    };
   }
 
   private trackCreature(

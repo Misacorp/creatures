@@ -131,6 +131,8 @@ export interface SeatRateInput {
   /** V-SCOUT-10: not the player's first scout at this place. */
   readonly second: boolean;
   readonly world: ScoutWorld;
+  /** V-SCOUT-6: the scout is in the destination's deeper area (absent: not). The kit does not work there. */
+  readonly deep?: boolean;
 }
 
 /** A tolerance so mastery reached "exactly" at a boundary counts as reached (splits agree). */
@@ -151,7 +153,11 @@ export function seatRates(rules: ValleyRules, input: SeatRateInput): SeatRates {
   const rate = rules.scouts.perHour;
   const rich = (family: PlaceProfile['rich']): number =>
     place.rich === family ? rules.scouts.richMultiplier : 1;
-  const tilt = kitTilt(rules, input.kit);
+  const deep = input.deep === true;
+  // V-SCOUT-6: deep, the kit does not work, scrap and shards are fewer and rare finds more.
+  const tilt = kitTilt(rules, deep ? null : input.kit);
+  const deepParts = deep ? rules.scouts.pushOn.partsMultiplier : 1;
+  const deepRare = deep ? rules.scouts.pushOn.rareMultiplier : 1;
   const fit = input.fit ? 1 + rules.posts.fitBonus : 1;
   const mult = fit * (1 + masteryBonus(rules, input.masteryHours + EPSILON));
   const special =
@@ -161,10 +167,10 @@ export function seatRates(rules: ValleyRules, input: SeatRateInput): SeatRates {
   const pages = special === null ? 1 : 1 + special.pagesBp / 10_000;
   const night = place.night && world.night ? rules.scouts.nightMultiplier : 1;
   const all = rolls * night;
-  const rare = rich('rare') * mult * tilt.rare * all;
+  const rare = rich('rare') * mult * tilt.rare * all * deepRare;
   return {
-    scrap: rate.scrap * rich('scrap') * mult * tilt.scrap * parts * all,
-    shards: rate.shards * rich('shards') * mult * tilt.shards * parts * all,
+    scrap: rate.scrap * rich('scrap') * mult * tilt.scrap * parts * all * deepParts,
+    shards: rate.shards * rich('shards') * mult * tilt.shards * parts * all * deepParts,
     creatures:
       rate.creatures *
       rich('creatures') *
@@ -217,6 +223,8 @@ export interface FindableSpecies {
   readonly owned: boolean;
   /** Lives at the place being scouted (the week's featured twist favours the first of its rarity). */
   readonly resident: boolean;
+  /** A further multiplier on its weight (absent: 1). A scout in the deeper area weighs its residents and the rarer species more (V-SCOUT-6). */
+  readonly weight?: number;
 }
 
 const TWO_32 = 0x1_0000_0000;
@@ -251,6 +259,7 @@ export function pickSpecies(
     w *= rules.scouts.rarity.weights[s.rarity] ?? 1;
     if (options.lure && s.owned) w *= rules.scouts.lureOwnedWeight;
     if (featured !== null && i === featuredIndex) w *= featured.weight;
+    w *= s.weight ?? 1;
     return w;
   });
   let sum = 0;
