@@ -51,7 +51,10 @@ export const BELL_AT: Point = { x: 27, y: 7 };
 const standing = (feet: Point): Point => ({ x: feet.x - CREATURE / 2, y: feet.y - (CREATURE - 1) });
 
 /** A point of the yard, in the School sprite's pixels (the art's top-left is the School's). */
-const inSchool = (p: Point): Point => ({ x: YARD_FROM_SCHOOL.x + p.x, y: YARD_FROM_SCHOOL.y + p.y });
+const inSchool = (p: Point): Point => ({
+  x: YARD_FROM_SCHOOL.x + p.x,
+  y: YARD_FROM_SCHOOL.y + p.y,
+});
 
 /** The School-pixel top-left of a student on bench seat `seat` (0 to 3), or null for a seat that does not exist. */
 export function seatTopLeft(seat: number): Point | null {

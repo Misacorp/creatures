@@ -39,7 +39,11 @@ import {
   rerolled,
   sampleVisitor,
 } from '../../valley/visitor-sample';
-import type { VisitorState } from '../../api';
+import type { SchoolState, VisitorState } from '../../api';
+import { HonoursContext, honoursOf } from '../../valley/HonourRibbon';
+import type { SchoolFeed } from '../../valley/SchoolPage';
+import { sampleSchool, sampleTrial, withTrials } from '../../valley/school-sample';
+import { readerZone, studentIds, withoutStudents } from '../../valley/school-view';
 import type { GearItem } from '../../gear-types';
 import {
   fullFloor,
@@ -137,6 +141,20 @@ export const VALLEY_MARKET = MARKET_PRESETS;
 
 /** How the demo's weekly visitor stands (phase 5 step 8b): off (his place is "not open yet"), here with a new blueprint, here with a known one, or away. */
 export const VALLEY_VISITOR = ['off', 'here', 'here, known blueprint', 'away'] as const;
+
+/**
+ * How the demo's School stands (phase 5 step 9b): off (its place is "not open yet"), the teacher here with creatures that would learn, here
+ * with none of yours, announced, here with a student already seated, or away with creatures ready to graduate. Any setting but `off` also
+ * gives the creatures trials and honours (the card's pips, a title and a ribbon).
+ */
+export const VALLEY_SCHOOL = [
+  'off',
+  'here',
+  'here, a student seated',
+  'here, none of yours',
+  'announced',
+  'away, ready to graduate',
+] as const;
 
 /** What a `VALLEY_OPEN` setting opens on the visitor's page at the start. */
 function visitorStartOf(setting: string, piece: string | undefined): VisitorStart | undefined {
@@ -532,6 +550,7 @@ export function ValleyDemo({
   commons = 'off',
   market = 'off',
   visitor = 'off',
+  school = 'off',
   paper = 'off',
 }: {
   start: string;
@@ -550,6 +569,8 @@ export function ValleyDemo({
   market?: string;
   /** The weekly visitor (phase 5 step 8b): one of `VALLEY_VISITOR`. */
   visitor?: string;
+  /** The School and the trials (phase 5 step 9b): one of `VALLEY_SCHOOL`. */
+  school?: string;
   /** The welcome-back Gazette on the server's paper (phase 5 step 4): one of `VALLEY_PAPERS`. */
   paper?: string;
 }) {
@@ -577,17 +598,20 @@ export function ValleyDemo({
   const forgeOn = forge !== 'off';
   const marketOn = market !== 'off';
   const visitorOn = visitor !== 'off';
+  const schoolOn = school !== 'off';
   const commonsOn = commons !== 'off' || marketOn;
   // With the valley's systems on the roster rests at the fire, and the allowance brought some Acorns home. The scouts' demo
   // frees every creature of its trips and jobs (a creature cannot scout and be away).
   const base =
-    resting === 'off' && !scoutsOn && !forgeOn && !commonsOn && !visitorOn
+    resting === 'off' && !scoutsOn && !forgeOn && !commonsOn && !visitorOn && !schoolOn
       ? planned
       : {
           ...planned,
           creatures: restingRoster(planned.creatures, resting === 'off' ? 'many' : resting).map(
             (c) =>
-              scoutsOn || forgeOn || commonsOn || visitorOn ? { ...c, busy: null, away: false } : c,
+              scoutsOn || forgeOn || commonsOn || visitorOn || schoolOn
+                ? { ...c, busy: null, away: false }
+                : c,
           ),
         };
   // The seats and kit live here, so the Signpost's page can be played with in the workbench (no server).
@@ -615,7 +639,19 @@ export function ValleyDemo({
   const [pieces, setPieces] = useState<GearItem[]>(() => [...VISITOR_GEAR.items]);
   const [scrap, setScrap] = useState(2400);
   const [shards, setShards] = useState(140);
-  const systems = resting !== 'off' || scoutsOn || forgeOn || commonsOn || visitorOn;
+  // The School (phase 5 step 9b): what the server said of it lives here, so Send and Take off can be played with.
+  const [schoolView, setSchoolView] = useState<SchoolState | null>(() => {
+    if (school === 'off') return null;
+    const ids = base.creatures.map((c) => c.id);
+    const phase =
+      school === 'announced' ? 'announced' : school.startsWith('away') ? 'away' : 'here';
+    return sampleSchool({
+      phase,
+      wouldLearn: school === 'here, none of yours' ? [] : ids.slice(0, 3),
+      seated: school === 'here, a student seated' ? [ids[1] ?? null, null] : [null, null],
+    });
+  });
+  const systems = resting !== 'off' || scoutsOn || forgeOn || commonsOn || visitorOn || schoolOn;
   const scoutVisit = systems ? demoVisit(base.creatures, seats, owned) : null;
   const plainVisit =
     scoutVisit === null
@@ -635,6 +671,51 @@ export function ValleyDemo({
     plainVisit === null || block === null ? plainVisit : withCommons(plainVisit, block);
   const visit =
     withBlock === null || brokerSeat === null ? withBlock : withMarket(withBlock, brokerSeat);
+  // The honours: the first creature has a Bronze trial two boxes in, the second graduated at Bronze, the third has a Silver trial ready.
+  const trialsOf = (creatures: readonly Creature[]) => ({
+    [creatures[0]?.id ?? '']: sampleTrial({ ticked: 2 }),
+    [creatures[1]?.id ?? '']: sampleTrial({ honour: 1, ticked: 1 }),
+    [creatures[2]?.id ?? '']: sampleTrial({ honour: 1, ready: true }),
+  });
+  const shownVisit =
+    visit === null || !schoolOn
+      ? visit
+      : withoutStudents(
+          withTrials(visit, trialsOf(base.creatures), {
+            ready: school === 'away, ready to graduate' ? 2 : 1,
+            nextAt: HOME_NOW + 5 * 3_600_000,
+          }),
+          studentIds(schoolView),
+        );
+  const schoolFeed: SchoolFeed | undefined =
+    schoolView === null
+      ? undefined
+      : {
+          view: schoolView,
+          now: HOME_NOW,
+          zone: readerZone(),
+          actions: {
+            seat: (index, creatureId) => {
+              setSchoolView((now) =>
+                now === null
+                  ? now
+                  : {
+                      ...now,
+                      seats: now.seats.map((seat) =>
+                        seat.index === index
+                          ? {
+                              ...seat,
+                              creatureId,
+                              learnsAt: creatureId === null ? null : (now.arrivesAt ?? HOME_NOW),
+                            }
+                          : seat,
+                      ),
+                    },
+              );
+              return Promise.resolve(true);
+            },
+          },
+        };
   const marketActions: MarketActions = {
     post: (body) => {
       setBrokerSeat((now) =>
@@ -806,238 +887,245 @@ export function ValleyDemo({
     }
   };
   return (
-    <PopoverHost onOpenHowTo={NOTHING}>
-      <DemoViewer
-        onView={() => {
-          open('paddock');
-        }}
-      />
-      <div class="wb-valley">
-        <main class="card">
-          <Hud
-            title={titleOf(at)}
-            balances={purse ?? PURSE}
-            helpRef={NO_REF}
-            onHelp={NOTHING}
-            onSettings={NOTHING}
-            {...(view.kind === 'valley'
-              ? {}
-              : { back: { label: 'Back to the valley', onBack: leave } })}
-          />
-          <ValleyFrame
-            view={view}
-            creatures={input.creatures}
-            trayInput={{ trips: input.trips, jobs: input.jobs, now: HOME_NOW }}
-            alerts={homeAlerts(input)}
-            placeInput={input}
-            castExtra={castExtra}
-            visit={visit}
-            {...(visitorFeed === undefined ? {} : { visitor: visitorFeed })}
-            {...(commonsActions === undefined
-              ? {}
-              : {
-                  commons: commonsActions,
-                  market: marketActions,
-                  acorns,
-                  ...(commonsStart === undefined ? {} : { commonsStart }),
-                })}
-            {...(marketStartOf(opened) === undefined
-              ? {}
-              : { marketStart: marketStartOf(opened) as MarketStart })}
-            focus={focus}
-            onOpen={open}
-            onLeave={leave}
-            onBook={setTab}
-            notices={null}
-            away={null}
-            settings={null}
-          >
-            {tab === 'workshop' && !(forgeOn && visit !== null)
-              ? pageOf(creatureCardEntries, 'Workshop')
-              : null}
-            {tab === 'workshop' && forgeOn && visit !== null && (
-              <Workshop
-                state={{ ...GEAR_STATE, creatures: [...base.creatures], balances: PURSE }}
-                gear={SAMPLE_GEAR}
-                failed={false}
-                offset={0}
-                busy={false}
-                reveal={null}
-                actions={DEMO_GEAR_ACTIONS}
-                onRetry={NOTHING}
-                onClaimed={NOTHING}
-                onDismissReveal={NOTHING}
-                forge={
-                  {
-                    visit,
-                    trayInput: {
-                      trips: base.trips,
-                      jobs: base.jobs,
-                      now: HOME_NOW,
-                      ...trayStates(visit),
-                    },
+    <HonoursContext.Provider value={honoursOf(schoolOn ? shownVisit?.creatures : undefined)}>
+      <PopoverHost onOpenHowTo={NOTHING}>
+        <DemoViewer
+          onView={() => {
+            open('paddock');
+          }}
+        />
+        <div class="wb-valley">
+          <main class="card">
+            <Hud
+              title={titleOf(at)}
+              balances={purse ?? PURSE}
+              helpRef={NO_REF}
+              onHelp={NOTHING}
+              onSettings={NOTHING}
+              {...(view.kind === 'valley'
+                ? {}
+                : { back: { label: 'Back to the valley', onBack: leave } })}
+            />
+            <ValleyFrame
+              view={view}
+              creatures={input.creatures}
+              trayInput={{ trips: input.trips, jobs: input.jobs, now: HOME_NOW }}
+              alerts={homeAlerts(input)}
+              placeInput={input}
+              castExtra={castExtra}
+              visit={shownVisit}
+              {...(visitorFeed === undefined ? {} : { visitor: visitorFeed })}
+              {...(schoolFeed === undefined ? {} : { school: schoolFeed })}
+              {...(commonsActions === undefined
+                ? {}
+                : {
+                    commons: commonsActions,
+                    market: marketActions,
                     acorns,
-                    ...(commonsActions === undefined ? {} : { commons: commonsActions }),
-                    onOpenPaddock: () => {
-                      open('paddock');
-                    },
-                    onOpenMarket: () => {
-                      open('market');
-                    },
-                    start: forgeStartOf(opened),
-                    ...(opened === 'order editor'
-                      ? { orderStart: { anvilId: 'anvil-1', baseId: BLUEPRINT } }
-                      : opened === 'edit an order'
-                        ? { orderStart: { anvilId: 'anvil-1', orderId: 'order-1' } }
-                        : {}),
-                    actions: {
-                      post: (body) => {
-                        setAnvils((now) => {
-                          const target = now.find((x) => x.id === body.seatId);
-                          return now.map((x) =>
-                            x.id === body.seatId
-                              ? { ...x, creatureId: body.creatureId }
-                              : x.creatureId === body.creatureId
-                                ? { ...x, creatureId: target?.creatureId ?? null }
-                                : x,
-                          );
-                        });
-                        return Promise.resolve(true);
-                      },
-                      setKit: (seatId, kit) => {
-                        setAnvils((now) => now.map((x) => (x.id === seatId ? { ...x, kit } : x)));
-                        return Promise.resolve(true);
-                      },
-                      buyKit: (kit) => {
-                        if (visit.kit.price > acorns) return Promise.resolve(false);
-                        setAcorns(acorns - visit.kit.price);
-                        setOwned((now) => [...now, kit]);
-                        return Promise.resolve(true);
-                      },
-                      buyAnvil: () => {
-                        const price = visit.anvilPrices.next;
-                        if (price === null || price.acorns > acorns || price.scrap > shelf.scrap) {
-                          return Promise.resolve(false);
-                        }
-                        setAcorns(acorns - price.acorns);
-                        setShelf({ ...shelf, scrap: shelf.scrap - price.scrap });
-                        setAnvils((now) => [
-                          ...now,
-                          sampleAnvil(`anvil-${String(now.length + 1)}`, null, []),
-                        ]);
-                        return Promise.resolve(true);
-                      },
-                      order: (request) => {
-                        setAnvils((now) => orderDemo(now, request));
-                        return Promise.resolve(true);
-                      },
-                    },
-                  } satisfies ForgeMode
-                }
-              />
-            )}
-            {tab === 'expeditions' && visit !== null && (
-              <SignpostSeats
-                visit={visit}
-                creatures={base.creatures}
-                trayInput={{
-                  trips: base.trips,
-                  jobs: base.jobs,
-                  now: HOME_NOW,
-                  ...trayStates(visit),
-                }}
-                acorns={acorns}
-                busy={false}
-                start={openAtStart(opened)}
-                {...(commonsActions === undefined ? {} : { commons: commonsActions })}
-                onOpenPaddock={() => {
-                  open('paddock');
-                }}
-                actions={{
-                  post: (body) => {
-                    setSeats((now) => postDemo(now, base.creatures, body));
-                    return Promise.resolve(true);
-                  },
-                  setKit: (seatId, kit) => {
-                    setSeats((now) => now.map((s) => (s.id === seatId ? { ...s, kit } : s)));
-                    return Promise.resolve(true);
-                  },
-                  buySeat: () => {
-                    const price = visit.seatPrices.next;
-                    if (price === null || price > acorns) return Promise.resolve(false);
-                    setAcorns(acorns - price);
-                    setSeats((now) => [
-                      ...now,
-                      sampleSeat(`seat-${String(now.length + 1)}`, 'tidepools', null, 0),
-                    ]);
-                    return Promise.resolve(true);
-                  },
-                  buyKit: (kit) => {
-                    if (visit.kit.price > acorns) return Promise.resolve(false);
-                    setAcorns(acorns - visit.kit.price);
-                    setOwned((now) => [...now, kit]);
-                    return Promise.resolve(true);
-                  },
-                }}
-              />
-            )}
-          </ValleyFrame>
-          {paper !== 'off' && (
-            <WelcomeBack
+                    ...(commonsStart === undefined ? {} : { commonsStart }),
+                  })}
+              {...(marketStartOf(opened) === undefined
+                ? {}
+                : { marketStart: marketStartOf(opened) as MarketStart })}
+              focus={focus}
+              onOpen={open}
+              onLeave={leave}
+              onBook={setTab}
+              notices={null}
               away={null}
-              world={{
-                creatures: input.creatures,
-                items: null,
-                blueprints: null,
-                tray: { trips: input.trips, jobs: input.jobs, now: HOME_NOW },
-                games: input.games,
-                raid: input.raid,
-              }}
-              now={HOME_NOW}
-              timezone={HOME_TZ}
-              balances={PURSE}
-              paper={gone ? null : samplePaper(paper, input.creatures, HOME_NOW)}
-              onClosePaper={() => {
-                setGone(true);
-              }}
-              onPushOn={() => Promise.resolve(true)}
-              onDismiss={() => undefined}
-              onPurse={setPurse}
-            />
-          )}
-          {away && (
-            <WelcomeBack
-              away={gone ? null : AWAY_SAMPLE}
-              world={{
-                // The raid's one creature and one piece, obtained inside the notice's window.
-                creatures: input.creatures.map((c, i) =>
-                  i === input.creatures.length - 1
-                    ? { ...c, caughtAt: AWAY_SAMPLE.until - 3_600_000 }
-                    : c,
-                ),
-                items: [
-                  {
-                    ...sampleGearItem({ id: 'away-1', baseId: 'kelp-cap', rarity: 'rare' }),
-                    createdAt: AWAY_SAMPLE.until - 1_800_000,
-                  },
-                ],
-                blueprints: [],
-                tray: { trips: input.trips, jobs: input.jobs, now: HOME_NOW },
-                games: input.games,
-                raid: input.raid,
-              }}
-              now={HOME_NOW}
-              timezone={HOME_TZ}
-              balances={PURSE}
-              brought={visit === null ? 0 : visit.allowance.brought}
-              onDismiss={() => {
-                setGone(true);
-              }}
-              onPurse={setPurse}
-            />
-          )}
-        </main>
-      </div>
-    </PopoverHost>
+              settings={null}
+            >
+              {tab === 'workshop' && !(forgeOn && visit !== null)
+                ? pageOf(creatureCardEntries, 'Workshop')
+                : null}
+              {tab === 'workshop' && forgeOn && visit !== null && (
+                <Workshop
+                  state={{ ...GEAR_STATE, creatures: [...base.creatures], balances: PURSE }}
+                  gear={SAMPLE_GEAR}
+                  failed={false}
+                  offset={0}
+                  busy={false}
+                  reveal={null}
+                  actions={DEMO_GEAR_ACTIONS}
+                  onRetry={NOTHING}
+                  onClaimed={NOTHING}
+                  onDismissReveal={NOTHING}
+                  forge={
+                    {
+                      visit,
+                      trayInput: {
+                        trips: base.trips,
+                        jobs: base.jobs,
+                        now: HOME_NOW,
+                        ...trayStates(visit),
+                      },
+                      acorns,
+                      ...(commonsActions === undefined ? {} : { commons: commonsActions }),
+                      onOpenPaddock: () => {
+                        open('paddock');
+                      },
+                      onOpenMarket: () => {
+                        open('market');
+                      },
+                      start: forgeStartOf(opened),
+                      ...(opened === 'order editor'
+                        ? { orderStart: { anvilId: 'anvil-1', baseId: BLUEPRINT } }
+                        : opened === 'edit an order'
+                          ? { orderStart: { anvilId: 'anvil-1', orderId: 'order-1' } }
+                          : {}),
+                      actions: {
+                        post: (body) => {
+                          setAnvils((now) => {
+                            const target = now.find((x) => x.id === body.seatId);
+                            return now.map((x) =>
+                              x.id === body.seatId
+                                ? { ...x, creatureId: body.creatureId }
+                                : x.creatureId === body.creatureId
+                                  ? { ...x, creatureId: target?.creatureId ?? null }
+                                  : x,
+                            );
+                          });
+                          return Promise.resolve(true);
+                        },
+                        setKit: (seatId, kit) => {
+                          setAnvils((now) => now.map((x) => (x.id === seatId ? { ...x, kit } : x)));
+                          return Promise.resolve(true);
+                        },
+                        buyKit: (kit) => {
+                          if (visit.kit.price > acorns) return Promise.resolve(false);
+                          setAcorns(acorns - visit.kit.price);
+                          setOwned((now) => [...now, kit]);
+                          return Promise.resolve(true);
+                        },
+                        buyAnvil: () => {
+                          const price = visit.anvilPrices.next;
+                          if (
+                            price === null ||
+                            price.acorns > acorns ||
+                            price.scrap > shelf.scrap
+                          ) {
+                            return Promise.resolve(false);
+                          }
+                          setAcorns(acorns - price.acorns);
+                          setShelf({ ...shelf, scrap: shelf.scrap - price.scrap });
+                          setAnvils((now) => [
+                            ...now,
+                            sampleAnvil(`anvil-${String(now.length + 1)}`, null, []),
+                          ]);
+                          return Promise.resolve(true);
+                        },
+                        order: (request) => {
+                          setAnvils((now) => orderDemo(now, request));
+                          return Promise.resolve(true);
+                        },
+                      },
+                    } satisfies ForgeMode
+                  }
+                />
+              )}
+              {tab === 'expeditions' && visit !== null && (
+                <SignpostSeats
+                  visit={visit}
+                  creatures={base.creatures}
+                  trayInput={{
+                    trips: base.trips,
+                    jobs: base.jobs,
+                    now: HOME_NOW,
+                    ...trayStates(visit),
+                  }}
+                  acorns={acorns}
+                  busy={false}
+                  start={openAtStart(opened)}
+                  {...(commonsActions === undefined ? {} : { commons: commonsActions })}
+                  onOpenPaddock={() => {
+                    open('paddock');
+                  }}
+                  actions={{
+                    post: (body) => {
+                      setSeats((now) => postDemo(now, base.creatures, body));
+                      return Promise.resolve(true);
+                    },
+                    setKit: (seatId, kit) => {
+                      setSeats((now) => now.map((s) => (s.id === seatId ? { ...s, kit } : s)));
+                      return Promise.resolve(true);
+                    },
+                    buySeat: () => {
+                      const price = visit.seatPrices.next;
+                      if (price === null || price > acorns) return Promise.resolve(false);
+                      setAcorns(acorns - price);
+                      setSeats((now) => [
+                        ...now,
+                        sampleSeat(`seat-${String(now.length + 1)}`, 'tidepools', null, 0),
+                      ]);
+                      return Promise.resolve(true);
+                    },
+                    buyKit: (kit) => {
+                      if (visit.kit.price > acorns) return Promise.resolve(false);
+                      setAcorns(acorns - visit.kit.price);
+                      setOwned((now) => [...now, kit]);
+                      return Promise.resolve(true);
+                    },
+                  }}
+                />
+              )}
+            </ValleyFrame>
+            {paper !== 'off' && (
+              <WelcomeBack
+                away={null}
+                world={{
+                  creatures: input.creatures,
+                  items: null,
+                  blueprints: null,
+                  tray: { trips: input.trips, jobs: input.jobs, now: HOME_NOW },
+                  games: input.games,
+                  raid: input.raid,
+                }}
+                now={HOME_NOW}
+                timezone={HOME_TZ}
+                balances={PURSE}
+                paper={gone ? null : samplePaper(paper, input.creatures, HOME_NOW)}
+                onClosePaper={() => {
+                  setGone(true);
+                }}
+                onPushOn={() => Promise.resolve(true)}
+                onDismiss={() => undefined}
+                onPurse={setPurse}
+              />
+            )}
+            {away && (
+              <WelcomeBack
+                away={gone ? null : AWAY_SAMPLE}
+                world={{
+                  // The raid's one creature and one piece, obtained inside the notice's window.
+                  creatures: input.creatures.map((c, i) =>
+                    i === input.creatures.length - 1
+                      ? { ...c, caughtAt: AWAY_SAMPLE.until - 3_600_000 }
+                      : c,
+                  ),
+                  items: [
+                    {
+                      ...sampleGearItem({ id: 'away-1', baseId: 'kelp-cap', rarity: 'rare' }),
+                      createdAt: AWAY_SAMPLE.until - 1_800_000,
+                    },
+                  ],
+                  blueprints: [],
+                  tray: { trips: input.trips, jobs: input.jobs, now: HOME_NOW },
+                  games: input.games,
+                  raid: input.raid,
+                }}
+                now={HOME_NOW}
+                timezone={HOME_TZ}
+                balances={PURSE}
+                brought={visit === null ? 0 : visit.allowance.brought}
+                onDismiss={() => {
+                  setGone(true);
+                }}
+                onPurse={setPurse}
+              />
+            )}
+          </main>
+        </div>
+      </PopoverHost>
+    </HonoursContext.Provider>
   );
 }

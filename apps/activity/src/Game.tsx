@@ -303,7 +303,10 @@ export function Game({
   // The valley's lists leave out the creatures that sit at the School (the server's view has no seat for them and says "resting").
   const systems = valleySystems && visit !== null ? withoutStudents(visit, students) : null;
   // Every creature's honours (V-TRIAL-1), from the unfiltered state, for the cards and the sprites.
-  const honours = useMemo(() => honoursOf(valleySystems ? visit?.creatures : undefined), [valleySystems, visit]);
+  const honours = useMemo(
+    () => honoursOf(valleySystems ? visit?.creatures : undefined),
+    [valleySystems, visit],
+  );
   // The weekly visitor as the server last said (`VALLEY_SYSTEMS` on): here or away; null until the first answer. It is read when the
   // game opens and each time his place is opened or left (one small read), never on a timer.
   const [visitor, setVisitor] = useState<VisitorState | null>(null);

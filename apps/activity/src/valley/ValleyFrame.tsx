@@ -191,7 +191,10 @@ export function ValleyFrame({
     : null;
   // The School has a page once the server has said anything of it (away it is the empty yard and one line).
   const schoolPage =
-    view.kind === 'soon' && view.place === 'school' && school !== undefined && isSchoolHere(schoolView);
+    view.kind === 'soon' &&
+    view.place === 'school' &&
+    school !== undefined &&
+    isSchoolHere(schoolView);
   const schoolCast = schoolPage
     ? castFor(
         'school',

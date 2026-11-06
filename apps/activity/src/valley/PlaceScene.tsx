@@ -343,7 +343,9 @@ export function PlaceScene({ cast, onAct }: { cast: Cast; onAct: () => void }) {
         // The yard under the School, always there: a bench with room to join.
         school === null
           ? undefined
-          : (box) => [{ sprite: yardSprite(), x: box.x + yardTopLeft().x, y: box.y + yardTopLeft().y }],
+          : (box) => [
+              { sprite: yardSprite(), x: box.x + yardTopLeft().x, y: box.y + yardTopLeft().y },
+            ],
       ),
     [art, bossId, aside, steps, school?.lectern, school?.bell, school?.teacher],
   );

@@ -31,7 +31,9 @@ export function honoursOf(
   creatures: readonly { id: string; trial?: ValleyTrialView | undefined }[] | undefined,
 ): ReadonlyMap<string, ValleyTrialView> {
   if (creatures === undefined) return NONE;
-  return new Map(creatures.flatMap((c) => (c.trial === undefined ? [] : [[c.id, c.trial] as const])));
+  return new Map(
+    creatures.flatMap((c) => (c.trial === undefined ? [] : [[c.id, c.trial] as const])),
+  );
 }
 
 const RIBBON = VALLEY_HONOURS_CONCEPTS.sprites['honour-ribbon'];
@@ -53,7 +55,11 @@ export function HonourRibbon({ honour, scale }: { honour: number; scale: number 
   const metal = METAL[honour];
   return (
     <span class="honour-ribbon" aria-hidden="true">
-      <Sprite sprite={RIBBON.sprite} scale={scale} {...(metal === undefined ? {} : { palette: metal })} />
+      <Sprite
+        sprite={RIBBON.sprite}
+        scale={scale}
+        {...(metal === undefined ? {} : { palette: metal })}
+      />
     </span>
   );
 }

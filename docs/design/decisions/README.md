@@ -464,6 +464,7 @@ Superseded: 1 entry (see the topic file).
 
 [ui.md](ui.md): Navigation and the frame, Home and the notice board, type scale, shared components, look and feel rules that apply across screens.
 
+- 2026-11-06 The School's page and a creature's trial reuse the seat cards, the creature list and the rule card
 - 2026-11-06 The visitor's page reuses the Workshop's grid, card and drawer
 - 2026-11-06 Costs show the resource's icon and a number, never its name \[Misa\]
 - 2026-11-06 \[Misa\] One pan hint, the same on every sideways-scrolling map; a popover never opens after a drag
@@ -543,6 +544,7 @@ Superseded: 1 entry (see the topic file).
 
 [valley.md](valley.md): The valley and peaceful systems overhaul planned in docs/design/valley/: job posts, the bonfire, the commons, the Forge loop, gear, trials, the School, the visitor, the economy lab, and Misa's question rounds.
 
+- 2026-11-06 Phase 5 step 9b: the School's screens and the trials' screens
 - 2026-11-06 Learning on a card costs the School's price times the slot it fills, in Acorns, with the valley systems on
 - 2026-11-06 Phase 5 step 9a: the School's teacher and lessons
 - 2026-11-06 Trials (step 9c): the boxes, where each ticks, and the ceremony

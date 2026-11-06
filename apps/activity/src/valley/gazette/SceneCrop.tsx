@@ -25,6 +25,8 @@ const DOORS: Partial<Record<PlaceId, { x: number; y: number }>> = {
   signpost: { x: 492, y: 272 },
   // The Market's stall (322, 68, 60 by 48): a door inside it, so the window keeps the whole stall (the paper's Market story, Q64).
   market: { x: 352, y: 108 },
+  // The School (122, 66, 60 by 50): its door is under the bell, so the window keeps the house (the paper's graduation, lesson and teacher stories, step 9b).
+  school: { x: 152, y: 108 },
 };
 
 /** A place's door: its entry above, else the middle of the foot of its art. */

@@ -5,6 +5,7 @@ import {
   VALLEY_COMMONS,
   VALLEY_FORGE,
   VALLEY_MARKET,
+  VALLEY_SCHOOL,
   VALLEY_VISITOR,
   VALLEY_OPEN,
   VALLEY_PAPERS,
@@ -19,7 +20,7 @@ const valleyShell: Entry = {
   file: 'apps/activity/src/valley/ValleyFrame.tsx',
   group: 'Controls',
   description:
-    "The valley shell (the `VALLEY` flag, phase 4 steps 1 and 2): the real HUD with the valley in place of the dock and the tab pages. The map of eleven places (west to east: Cave, Fairground, School, House, Paddock, Market, Forge, Bonfire, Arena, Visitor, Signpost) with the creature tray under it and the Places button (a flag, top left); a phone pans the map sideways and shows edge chips for places out of view. The seven open places (Cave, Fairground, House, Paddock, Forge, Arena, Signpost) open one of today's pages under \"‹ Valley\"; the four new ones (School, Bonfire, Visitor, Market) show their scene and one line of what they will be. Each place with something waiting has a speech bubble (its glyph, and a count where it counts), also on its edge chip; the list under the Places button says what happens next at each place. `day` picks the fixture day (a busy one, nothing waiting, nothing going on). `start` picks where it opens; tap around as in the game. The Cave, Arena, Fairground, House and Paddock each open with their scene above today's page (the creatures that are really there: the dungeon team at the cave mouth, the raid party and boss in the arena, the entered creatures at their events, the creatures at home and the waiting catches at the paddock gate; the House shows only its house, with Journal and Stats under it and no living room). Every creature in a scene wears a nameplate under its feet (level in yellow, then the name), and a scene draws only as many creatures as fit with their plates side by side, so fewer on a phone. The one action of each scene goes to the page under it. Forge shows the Workshop on fixture data; the other pages are drawn by their own workbench pages, so they stay empty here. `paper` plays the welcome-back Gazette on the server's real paper (phase 5 step 4: a short absence, a long one, and one in which a scout found a way deeper, the paper's one choice at its end). `resting` turns the valley's base systems on (phase 5 step 1, `VALLEY_SYSTEMS`): the Bonfire opens with a rotating few of the resting creatures round the fire, each with its \"+N\" experience of this visit on its nameplate, and \"+N more\" (a tap lists them all with their gains); the tray marks each resting creature with a small z; the Places list says how many rest and what they gained; the Gazette's coming-home flight adds the Acorns the allowance brought. `commons` (phase 5 step 6b) adds the valley's shared projects: each place that has one shows a project board in its page (the Signpost, Forge and Paddock; the Bonfire opens it in a drawer from the pinned button): its level, the project's bar and what is still needed, your own part, one Give button (the list of parts, then the amount and one confirm), the plaque of the last finished level, the place's collection of five sockets, and your helper slot (the shared creature picker, or drag from the tray); the scene shows scaffolding that rises as the project fills and a helper working; the Forge shows its fire (a flame that grows, the next step, its numbers in a drawer); the Bonfire's art grows with its level and shows the hearth's bonus; the House shelves your keepsakes; the Places list says when a project is being built. `open` also picks which of those drawers starts open.",
+    "The valley shell (the `VALLEY` flag, phase 4 steps 1 and 2): the real HUD with the valley in place of the dock and the tab pages. The map of eleven places (west to east: Cave, Fairground, School, House, Paddock, Market, Forge, Bonfire, Arena, Visitor, Signpost) with the creature tray under it and the Places button (a flag, top left); a phone pans the map sideways and shows edge chips for places out of view. The seven open places (Cave, Fairground, House, Paddock, Forge, Arena, Signpost) open one of today's pages under \"‹ Valley\"; the four new ones (School, Bonfire, Visitor, Market) show their scene and one line of what they will be. Each place with something waiting has a speech bubble (its glyph, and a count where it counts), also on its edge chip; the list under the Places button says what happens next at each place. `day` picks the fixture day (a busy one, nothing waiting, nothing going on). `start` picks where it opens; tap around as in the game. The Cave, Arena, Fairground, House and Paddock each open with their scene above today's page (the creatures that are really there: the dungeon team at the cave mouth, the raid party and boss in the arena, the entered creatures at their events, the creatures at home and the waiting catches at the paddock gate; the House shows only its house, with Journal and Stats under it and no living room). Every creature in a scene wears a nameplate under its feet (level in yellow, then the name), and a scene draws only as many creatures as fit with their plates side by side, so fewer on a phone. The one action of each scene goes to the page under it. Forge shows the Workshop on fixture data; the other pages are drawn by their own workbench pages, so they stay empty here. `paper` plays the welcome-back Gazette on the server's real paper (phase 5 step 4: a short absence, a long one, and one in which a scout found a way deeper, the paper's one choice at its end). `resting` turns the valley's base systems on (phase 5 step 1, `VALLEY_SYSTEMS`): the Bonfire opens with a rotating few of the resting creatures round the fire, each with its \"+N\" experience of this visit on its nameplate, and \"+N more\" (a tap lists them all with their gains); the tray marks each resting creature with a small z; the Places list says how many rest and what they gained; the Gazette's coming-home flight adds the Acorns the allowance brought. `commons` (phase 5 step 6b) adds the valley's shared projects: each place that has one shows a project board in its page (the Signpost, Forge and Paddock; the Bonfire opens it in a drawer from the pinned button): its level, the project's bar and what is still needed, your own part, one Give button (the list of parts, then the amount and one confirm), the plaque of the last finished level, the place's collection of five sockets, and your helper slot (the shared creature picker, or drag from the tray); the scene shows scaffolding that rises as the project fills and a helper working; the Forge shows its fire (a flame that grows, the next step, its numbers in a drawer); the Bonfire's art grows with its level and shows the hearth's bonus; the House shelves your keepsakes; the Places list says when a project is being built. `open` also picks which of those drawers starts open. `school` (phase 5 step 9b) turns on the School and the trials: its place becomes a scene and a page (the yard with the bench, the lectern and bell while the teacher is announced, the teacher at the lectern while here; the visiting teacher's card with the days, your students with one Send each or Take off, the graduation card), the map gets a bubble over it, and every creature card shows its next trial as pips (a tap lists the boxes) with a title, a badge and a ribbon for an honour.",
   controls: {
     start: { kind: 'select', options: VALLEY_STARTS },
     away: { kind: 'toggle' },
@@ -31,6 +32,7 @@ const valleyShell: Entry = {
     commons: { kind: 'select', options: VALLEY_COMMONS },
     market: { kind: 'select', options: VALLEY_MARKET },
     visitor: { kind: 'select', options: VALLEY_VISITOR },
+    school: { kind: 'select', options: VALLEY_SCHOOL },
     paper: { kind: 'select', options: VALLEY_PAPERS },
   },
   defaults: {
@@ -44,6 +46,7 @@ const valleyShell: Entry = {
     commons: 'off',
     market: 'off',
     visitor: 'off',
+    school: 'off',
     paper: 'off',
   },
   presets: [
@@ -297,6 +300,38 @@ const valleyShell: Entry = {
       props: { visitor: 'away' },
     },
     {
+      name: 'School, systems off: not open yet',
+      props: { start: 'school' },
+    },
+    {
+      name: 'School: the teacher here, the faces that would learn, one Send each',
+      props: { start: 'school', school: 'here' },
+    },
+    {
+      name: 'School: a student seated (learns it by morning), the ribbon on its sprite',
+      props: { start: 'school', school: 'here, a student seated' },
+    },
+    {
+      name: 'School: none of yours this time',
+      props: { start: 'school', school: 'here, none of yours' },
+    },
+    {
+      name: 'School: the teacher announced (the bell and the lectern at the door)',
+      props: { start: 'school', school: 'announced' },
+    },
+    {
+      name: 'School: no teacher, creatures ready to graduate, the next ceremony',
+      props: { start: 'school', school: 'away, ready to graduate' },
+    },
+    {
+      name: 'Paddock with trials: pips on each card, a title and a ribbon for the honoured',
+      props: { start: 'paddock', school: 'here', day: 'crowded' },
+    },
+    {
+      name: 'The valley with the School\u2019s news on the map (a bubble over it)',
+      props: { school: 'away, ready to graduate' },
+    },
+    {
       name: 'Gazette on real output: a short absence',
       props: { resting: 'few', paper: 'short absence' },
     },
@@ -322,6 +357,7 @@ const valleyShell: Entry = {
       commons={str(p, 'commons')}
       market={str(p, 'market')}
       visitor={str(p, 'visitor')}
+      school={str(p, 'school')}
       paper={str(p, 'paper')}
     />
   ),

@@ -30,7 +30,7 @@ const cast = (place: (typeof CAST_PLACES)[number], base: typeof busy, extra?: Pa
   castFor(place, inputOf(base, extra), ART, placeBubbles(homeAlerts(base), base));
 
 describe('which places have a scene', () => {
-  it('nine (the Signpost, the Forge, the Market and the visitor only with the valley systems on, which ValleyFrame checks; he only while he is here)', () => {
+  it('ten (the Signpost, the Forge, the Market, the visitor and the School only with the valley systems on, which ValleyFrame checks; he only while he is here)', () => {
     expect([...CAST_PLACES].sort()).toEqual([
       'arena',
       'cave',
@@ -39,6 +39,7 @@ describe('which places have a scene', () => {
       'house',
       'market',
       'paddock',
+      'school',
       'signpost',
       'visitor',
     ]);
@@ -46,7 +47,8 @@ describe('which places have a scene', () => {
     expect(hasScene('market')).toBe(true);
     expect(hasScene('visitor')).toBe(true);
     expect(hasScene('forge')).toBe(true);
-    expect(hasScene('school')).toBe(false);
+    expect(hasScene('school')).toBe(true);
+    expect(hasScene('bonfire')).toBe(false);
   });
 });
 

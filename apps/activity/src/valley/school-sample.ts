@@ -17,8 +17,9 @@ export const FRIDAY_BEFORE = STAY_FROM - 3 * 24 * 3_600_000 + 10 * 3_600_000;
 /** The teacher's talent: from the real library. */
 export const SAMPLE_TALENT = 'first-pounce';
 
-const def = combatV2.talents[SAMPLE_TALENT];
-if (def === undefined) throw new Error('the sample talent is not in combat v2');
+const found = combatV2.talents[SAMPLE_TALENT];
+if (found === undefined) throw new Error('the sample talent is not in combat v2');
+const def = found;
 
 /** The School while the teacher is here (or announced), with the given students and the creatures that would learn. */
 export function sampleSchool(

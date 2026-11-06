@@ -167,7 +167,9 @@ describe('the School in the paper (step 9b)', () => {
       },
       'lesson',
     );
-    expect(one?.headline).toBe(`${creatureName(a).toUpperCase()} LEARNED FIRST POUNCE AT THE SCHOOL`);
+    expect(one?.headline).toBe(
+      `${creatureName(a).toUpperCase()} LEARNED FIRST POUNCE AT THE SCHOOL`,
+    );
     expect(one?.scene.place).toBe('school');
     const many = storyOf(
       {

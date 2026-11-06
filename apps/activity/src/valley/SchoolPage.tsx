@@ -147,7 +147,10 @@ export function SchoolPage({
               <h3 class="pix">Graduation</h3>
             </div>
             {lines.map((line, i) => (
-              <p key={line} class={i === 0 && (graduation?.ready ?? 0) > 0 ? 'sp-line sch-ready' : 'sp-line'}>
+              <p
+                key={line}
+                class={i === 0 && (graduation?.ready ?? 0) > 0 ? 'sp-line sch-ready' : 'sp-line'}
+              >
                 {line}
               </p>
             ))}

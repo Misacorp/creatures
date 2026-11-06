@@ -4,6 +4,14 @@ Navigation and the frame, Home and the notice board, type scale, shared componen
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-06: The School's page and a creature's trial reuse the seat cards, the creature list and the rule card
+
+ID: `2026-11-06-the-school-s-page-and-a` · Status: current
+
+**Decision.** The School (valley, `VALLEY_SYSTEMS` on) is a page of the seat family under a `PlaceScene` band (`castFor('school')`), as the visitor's: cards of `.sp-seat` (the visiting teacher with the shared `TalentChip` and the stay's days in the reader's own time zone; your students as `ui/CreatureList` in `show` mode with one Send or Take off at the row's right end, `side`, and a note under a seated one; the graduation: how many are ready and "the next ceremony is this evening"). Refusals (`no_teacher`, `would_not_learn`, `line_seated`) are the game's shared alert (`ERROR_TEXT`). A creature's next trial on its card (and page) is the rule card's look (`.rule-card`) with `ui/PipRow`, and its list opens in the game's one popover (`PopoverHost.openCustom`, as a boss's rule cards do); only the next trial shows. Honours are the creature's title in the name's place ("Pip, Silver"), a `ui/Tag` badge and a small ribbon pinned to the sprite's corner, read from one context (`HonoursContext`, provided by `Game` from `valley.creatures[].trial`). No new list, card, popover or badge component. The School's place in the valley keeps no countdown: "learns it by morning", "this evening", the days as names.
+
+**Reasoning.** Misa's rule is to reuse before building, and each part had a twin: the Send list is the Workshop's and the Signpost's creature rows, the trial is a named strength in pips like the boss's rule cards, and the honour is a badge like Shiny or Festival. A context avoids carrying the trial through every list and page between the game and a card. The ribbon on the sprite is the one new picture (a 6 x 6 rosette in three metals, `valley-honours` in the art library).
+
 ## 2026-11-06: The visitor's page reuses the Workshop's grid, card and drawer
 
 ID: `2026-11-06-the-visitor-s-page-reuses-the` · Status: current

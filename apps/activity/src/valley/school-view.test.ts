@@ -136,10 +136,18 @@ describe('the graduation', () => {
 
   it('is two lines on the School page: the count and the ceremony', () => {
     expect(
-      graduationLines({ ready: 2, nextAt: Date.UTC(2026, 10, 9, 15) }, STAY_NOON, 'Europe/Helsinki'),
+      graduationLines(
+        { ready: 2, nextAt: Date.UTC(2026, 10, 9, 15) },
+        STAY_NOON,
+        'Europe/Helsinki',
+      ),
     ).toEqual(['2 ready to graduate', 'The next ceremony is this evening.']);
     expect(
-      graduationLines({ ready: 0, nextAt: Date.UTC(2026, 10, 9, 15) }, STAY_NOON, 'Europe/Helsinki')[0],
+      graduationLines(
+        { ready: 0, nextAt: Date.UTC(2026, 10, 9, 15) },
+        STAY_NOON,
+        'Europe/Helsinki',
+      )[0],
     ).toBe('Nobody is ready to graduate yet.');
     expect(graduationLines(undefined, STAY_NOON, 'Europe/Helsinki')).toEqual([]);
   });
@@ -147,7 +155,9 @@ describe('the graduation', () => {
 
 describe('the Places list and the map', () => {
   it('says the ceremony first, then where the teacher stands, and nothing before the server has said', () => {
-    expect(schoolLine(sampleSchool(), { ready: 2 })).toBe('2 ready to graduate · a teacher is here');
+    expect(schoolLine(sampleSchool(), { ready: 2 })).toBe(
+      '2 ready to graduate · a teacher is here',
+    );
     expect(schoolLine(sampleSchool({ phase: 'announced' }), undefined)).toBe('a teacher is coming');
     expect(schoolLine(sampleSchool({ phase: 'away' }), { ready: 0 })).toBe('no teacher now');
     expect(schoolLine(null, undefined)).toBeNull();

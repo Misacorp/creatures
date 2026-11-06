@@ -52,7 +52,19 @@ const honourName = (tier: number): string => ['Bronze', 'Silver', 'Gold'][tier -
 const plural = (n: number, one: string, many: string): string => (n === 1 ? one : many);
 const num = (n: number): string => String(n);
 /** A small count in words ("Three of yours graduated at the School", Misa's own wording); digits from eleven on. */
-const WORDS = ['none', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'];
+const WORDS = [
+  'none',
+  'one',
+  'two',
+  'three',
+  'four',
+  'five',
+  'six',
+  'seven',
+  'eight',
+  'nine',
+  'ten',
+];
 const word = (n: number): string => WORDS[n] ?? String(n);
 const sentence = (text: string): string => `${text.charAt(0).toUpperCase()}${text.slice(1)}`;
 const upper = (text: string): string => text.toUpperCase();

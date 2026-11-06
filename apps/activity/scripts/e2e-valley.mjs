@@ -10,6 +10,7 @@
  * `shoot.mjs`). There is no server: every `/api/*` call is answered from the worker's captured fixtures
  * (`src/fixtures/`, staging-shaped data from `pnpm fixtures:capture`), with `valley: true` in the config, the
  * starter chosen, and an away notice that the first dismissal clears. Nothing is mocked inside the game.
+ *   --only <text>   run only the items whose name contains the text (for iterating on one)
  *
  * It prints one line per checklist item and exits 1 on the first failure (with a screenshot of it in `--out`).
  * With `--out` it also writes a shot of the map at the end. About 30 s; not part of `check:changed`.
@@ -33,6 +34,8 @@ const argOf = (flag, fallback) => {
 const out = resolve(argOf('--out', join(here, '../screenshots/e2e-valley')));
 const width = Number.parseInt(argOf('--width', '390'), 10);
 const reduced = args.includes('--reduced');
+/** Runs only the checklist items whose name contains this text (for iterating on one: `--only School`). */
+const only = argOf('--only', null);
 mkdirSync(out, { recursive: true });
 
 // --- The server's answers ---------------------------------------------------------------------------------
@@ -310,6 +313,8 @@ const marketBlock = () => ({
       }
     : null,
 });
+/** The trial of a creature with no honour and nothing ticked: Bronze is next. */
+const NO_TRIAL = { honour: 0, tier: 1, boxes: [false, false, false, false], ready: false };
 /** The server's `valley` block for the scenario's seats; every creature rests unless a seat holds it. */
 const valleyBlock = () => ({
   settledAt: 1799760000000,
@@ -334,6 +339,7 @@ const valleyBlock = () => ({
                 : 'resting',
       gained: 25 + i * 11,
       catchUpBp: bonfire.warm.has(id) ? 24000 : 10000,
+      ...(trialsState.on ? { trial: trialsState.byId[id] ?? NO_TRIAL } : {}),
       seatId:
         seat?.id ??
         anvil?.id ??
@@ -369,6 +375,9 @@ const valleyBlock = () => ({
   night: false,
   special: { destination: 'ember-caves', twist: 'rich-veins' },
   ...(gazette.paper === null ? {} : { paper: gazette.paper }),
+  ...(trialsState.on
+    ? { graduation: { ready: trialsState.ready, nextAt: 1799760000000 + 5 * 3600 * 1000 } }
+    : {}),
   ...(commonsState.on ? { commons: commonsBlock() } : {}),
   ...(marketState.on ? { market: marketBlock() } : {}),
 });
@@ -875,6 +884,52 @@ ROUTES.set('/api/valley/visitor/blueprint', (request) => {
   };
 });
 
+// --- The School and the trials (phase 5 step 9b): a small server of its own for the School's two routes ---------
+
+/**
+ * The School's state of a scenario: where the teacher stands, which creatures would learn the talent (ids), who sits at the two seats, and
+ * what the seat route was asked (the bodies, in order); and the trials of the creatures (by id) with the ceremony's count.
+ */
+const schoolState = { phase: 'away', would: [], seats: [null, null], calls: [], refuse: null };
+const trialsState = { on: false, byId: {}, ready: 0 };
+const schoolReset = () => {
+  Object.assign(schoolState, {
+    phase: 'away',
+    would: [],
+    seats: [null, null],
+    calls: [],
+    refuse: null,
+  });
+  Object.assign(trialsState, { on: false, byId: {}, ready: 0 });
+};
+const STAY_FROM = Date.UTC(2027, 0, 17, 22);
+const schoolView = () => {
+  const open = schoolState.phase !== 'away';
+  return {
+    phase: schoolState.phase,
+    talent: open
+      ? { id: 'first-pounce', name: 'First Pounce', text: 'Your first attack hits harder.' }
+      : null,
+    arrivesAt: open ? STAY_FROM : null,
+    leavesAt: open ? STAY_FROM + 3 * 24 * 3600 * 1000 : null,
+    seats: schoolState.seats.map((creatureId, index) => ({
+      index,
+      creatureId,
+      learnsAt: creatureId === null ? null : STAY_FROM + 24 * 3600 * 1000,
+    })),
+    wouldLearn: open ? schoolState.would : [],
+  };
+};
+ROUTES.set('/api/valley/school', () => schoolView());
+ROUTES.set('/api/valley/school/seat', (request) => {
+  const body = bodyOf(request);
+  schoolState.calls.push(body);
+  if (schoolState.refuse !== null) return { refuse: 409, error: schoolState.refuse };
+  schoolState.seats[body.index] = body.creatureId;
+  // A student leaves the fire, but the server's valley still says "resting" (step 9a): the client takes the School's word.
+  return { index: body.index, creatureId: body.creatureId, ...syncValley() };
+});
+
 // --- The checklist ----------------------------------------------------------------------------------------
 
 /** The seven places that open today's page: the place, its name (the HUD's title), and the row of the plan's table. */
@@ -934,6 +989,7 @@ await page.route('**/api/**', answer);
 
 let done = 0;
 async function step(name, run) {
+  if (only !== null && !name.toLowerCase().includes(only.toLowerCase())) return;
   try {
     await run();
     done += 1;
@@ -3044,6 +3100,274 @@ try {
         await backToValley();
       } finally {
         visitorOff();
+      }
+    },
+  );
+
+  // The School and the trials (phase 5 step 9b): the School's place as the server says (the teacher announced, here, or away), Send and
+  // Take off, a student that leaves the fire and the tray's "z", the refusals, a creature's next trial as pips with its list a tap away,
+  // an honour on the card and the sprite, and a graduation told in the paper.
+  const schoolOn = (phase, wouldLearn, honours = {}) => {
+    const creatures = commonsOn();
+    schoolReset();
+    schoolState.phase = phase;
+    schoolState.would = wouldLearn(creatures.map((c) => c.id));
+    trialsState.on = true;
+    trialsState.ready = 2;
+    trialsState.byId = honours;
+    stateOverride = { creatures, valley: valleyBlock() };
+    return creatures;
+  };
+  const schoolOff = () => {
+    schoolReset();
+    commonsOff();
+  };
+  const noCountdown = (text, what) => {
+    if (/until|\d+ ?h\b|\d+ ?minutes?|\d+ ?days?|left/i.test(text))
+      throw new Error(`a countdown on ${what}: ${text}`);
+  };
+  const BRONZE_HONOUR = { honour: 1, tier: 2, boxes: [false, false, false], ready: false };
+  const TWO_OF_FOUR = { honour: 0, tier: 1, boxes: [true, true, false, false], ready: false };
+
+  await scenario(
+    'the School with the teacher here (V-SCH-11, 13): the days, the faces with one Send, a student leaves the fire, Take off, and the refusals',
+    () => {
+      const creatures = schoolOn('here', (ids) => ids.slice(0, 3), {});
+      trialsState.byId = { [creatures[1].id]: BRONZE_HONOUR };
+      stateOverride = { creatures, valley: valleyBlock() };
+    },
+    async () => {
+      try {
+        await waitFor(page.locator(VALLEY), 'attached');
+        await page.waitForTimeout(300);
+        await shot('school-map-here');
+        await page.getByRole('button', { name: /^Places/ }).click();
+        await waitFor(page.getByText('2 ready to graduate · a teacher is here', { exact: true }));
+        await shot('school-places');
+        await page.keyboard.press('Escape');
+        await place('school').evaluate((el) => el.click());
+        await waitFor(heading('School'));
+        await waitFor(page.getByRole('heading', { name: 'Visiting teacher' }));
+        await waitFor(page.getByText(/The visiting teacher is here \w+ to \w+\./));
+        const text = await page.locator('main').innerText();
+        noCountdown(text, 'the School');
+        if (/\bAcorns?\b|\bscrap\b|\bshards?\b/i.test(text))
+          throw new Error(`a currency named in words on the School: ${text}`);
+        await waitFor(page.getByText('First Pounce'));
+        await waitFor(page.getByText(/The next ceremony is (today|this evening|tomorrow)/));
+        await shot('school-here');
+        // The faces that would learn, one Send each.
+        const sends = page.getByRole('button', { name: /^Send / });
+        if ((await sends.count()) !== 3) throw new Error('not one Send for each face');
+        // The second face (Cindle, the first, can evolve and shows that mark on the tray instead).
+        await sends.nth(1).scrollIntoViewIfNeeded();
+        await expectTopmost(sends.nth(1), 'the Send button');
+        await sends.nth(1).click();
+        await waitFor(page.getByText('Learns it by morning'));
+        if (schoolState.calls.length !== 1 || schoolState.calls[0].index !== 0)
+          throw new Error(`Send asked the server wrongly: ${JSON.stringify(schoolState.calls)}`);
+        await page.waitForTimeout(300);
+        // The student sits on the bench in the scene, wearing its honour on the sprite.
+        if ((await page.locator('.vy-stand .honour-ribbon').count()) !== 1)
+          throw new Error('the seated student shows no ribbon in the scene');
+        await page.evaluate(() => window.scrollTo(0, 0));
+        await shot('school-send');
+        // The student left the fire: the tray marks it, the Bonfire's ring has no one of that name.
+        const studentId = schoolState.seats[0];
+        await backToValley();
+        await waitFor(page.locator(`button[data-creature="${studentId}"].vy-mon-studying`));
+        await shot('school-student-tray');
+        await place('bonfire').evaluate((el) => el.click());
+        await waitFor(heading('Bonfire'));
+        await page.waitForTimeout(300);
+        if ((await page.locator(`#scene-${studentId}`).count()) > 0)
+          throw new Error('a student still sits at the fire');
+        await backToValley();
+        // Take off: the seat is free again and the Send comes back.
+        await place('school').evaluate((el) => el.click());
+        await waitFor(page.getByText('Learns it by morning'));
+        await page.getByRole('button', { name: /^Take .* off the seat/ }).click();
+        await waitFor(page.getByRole('button', { name: /^Send / }).first());
+        if (schoolState.calls.length !== 2 || schoolState.calls[1].creatureId !== null)
+          throw new Error(
+            `Take off asked the server wrongly: ${JSON.stringify(schoolState.calls)}`,
+          );
+        // A refusal is the game's shared alert in words.
+        schoolState.refuse = 'would_not_learn';
+        await page
+          .getByRole('button', { name: /^Send / })
+          .first()
+          .click();
+        await waitFor(page.getByText('That creature would not learn this lesson.'));
+        await page.evaluate(() => window.scrollTo(0, 0));
+        await shot('school-refusal');
+        await backToValley();
+      } finally {
+        schoolOff();
+      }
+    },
+  );
+
+  await scenario(
+    'the School with the teacher announced (V-SCH-11): the bell and the lectern at the door, the days, a seat can already be used',
+    () => {
+      schoolOn('announced', (ids) => ids.slice(0, 2));
+    },
+    async () => {
+      try {
+        await waitFor(page.locator(VALLEY), 'attached');
+        await place('school').evaluate((el) => el.click());
+        await waitFor(heading('School'));
+        await waitFor(page.getByText(/A visiting teacher comes \w+ to \w+\./));
+        noCountdown(await page.locator('main').innerText(), 'the announced School');
+        await waitFor(page.getByRole('button', { name: /^Send / }));
+        await shot('school-announced');
+        await backToValley();
+      } finally {
+        schoolOff();
+      }
+    },
+  );
+
+  await scenario(
+    'the School when none of yours would learn it ("none of yours this time" in words), and with no teacher (the empty yard and the ceremony)',
+    () => {
+      schoolOn('here', () => []);
+    },
+    async () => {
+      try {
+        await waitFor(page.locator(VALLEY), 'attached');
+        await place('school').evaluate((el) => el.click());
+        await waitFor(heading('School'));
+        await waitFor(page.getByText('None of yours this time.'));
+        if ((await page.getByRole('button', { name: /^Send / }).count()) > 0)
+          throw new Error('a Send with nobody to send');
+        await shot('school-none-of-yours');
+        await backToValley();
+        schoolState.phase = 'away';
+        // The place is read again each time it is opened.
+        await place('school').evaluate((el) => el.click());
+        await waitFor(page.getByText('No teacher at the School right now.'));
+        await waitFor(page.getByText('2 ready to graduate', { exact: true }));
+        await waitFor(page.getByText(/The next ceremony is (today|this evening|tomorrow)/));
+        noCountdown(await page.locator('main').innerText(), 'the School without a teacher');
+        await shot('school-away');
+        await backToValley();
+      } finally {
+        schoolOff();
+      }
+    },
+  );
+
+  await scenario(
+    'a creature’s next trial on its card (V-TRIAL-3): pips for its ticked boxes, the list a tap away, and an honour as a title, a badge and a ribbon (V-TRIAL-1)',
+    () => {
+      const creatures = commonsOn();
+      schoolReset();
+      trialsState.on = true;
+      trialsState.byId = { [creatures[0].id]: TWO_OF_FOUR, [creatures[1].id]: BRONZE_HONOUR };
+      stateOverride = { creatures, valley: valleyBlock() };
+    },
+    async () => {
+      try {
+        await waitFor(page.locator(VALLEY), 'attached');
+        await place('paddock').evaluate((el) => el.click());
+        await waitFor(heading('Paddock'));
+        const pips = page.locator('button.trial-pips');
+        await waitFor(pips);
+        const labels = await pips.evaluateAll((els) =>
+          els.map((el) => el.getAttribute('aria-label')),
+        );
+        if (!labels.includes('Bronze trial, 2 of 4 boxes ticked'))
+          throw new Error(`the pips are not named: ${labels.join(' | ')}`);
+        if (!labels.some((l) => /^Silver trial/.test(l ?? '')))
+          throw new Error('the creature with Bronze shows no Silver trial next');
+        // Only the next trial shows on the card.
+        const cards = await page.locator('li.creature-card').first().innerText();
+        if (/Gold/.test(cards)) throw new Error('a later trial shows on the card');
+        await pips.first().scrollIntoViewIfNeeded();
+        await expectTopmost(pips.first(), 'the trial pips');
+        await shot('trial-pips-card');
+        // The list is a tap away, in the one popover, and nothing opens it but a tap.
+        await pips.first().click();
+        const list = page.locator('ul.trial-list');
+        await waitFor(list);
+        const rows = await list.locator('li').count();
+        if (rows < 3) throw new Error('the trial list has too few rows');
+        await waitFor(page.getByText('A moment at the bonfire'));
+        await expectTopmost(page.getByRole('dialog').first(), 'the trial popover');
+        await shot('trial-list');
+        await page.keyboard.press('Escape');
+        // An honour: the title, a badge, a ribbon on the sprite.
+        const honoured = page.locator('li.creature-card', { hasText: /, Bronze/ });
+        await waitFor(honoured);
+        await honoured.first().scrollIntoViewIfNeeded();
+        if ((await honoured.first().locator('.honour-ribbon').count()) !== 1)
+          throw new Error('an honour shows no ribbon on the sprite');
+        await shot('trial-honour-card');
+        await backToValley();
+      } finally {
+        schoolOff();
+      }
+    },
+  );
+
+  await scenario(
+    'a graduation told in the paper (V-TRIAL-4): "graduated at the School", with the teacher’s and the lesson’s lines in the same paper',
+    () => {
+      const config = ROUTES.get('/api/config');
+      answerOverride.set('/api/config', () => ({ ...config(), valleySystems: true }));
+      const creatures = baseState.creatures.map((c) => ({ ...c, busy: null, away: false }));
+      scouts.seats = [];
+      scouts.owned = [];
+      scouts.ids = creatures.map((c) => c.id);
+      gazetteCalls.length = 0;
+      const [a, b, c] = creatures;
+      schoolReset();
+      trialsState.on = true;
+      trialsState.byId = { [a.id]: BRONZE_HONOUR };
+      gazette.paper = {
+        id: '1799760000888',
+        at: 1799760000000,
+        awayHours: 30,
+        headlines: [
+          headline('graduation', 80, 3, { creatureIds: [a.id, b.id, c.id], step: 1 }),
+          headline('teacher', 45, 0, { talent: 'first-pounce' }),
+          headline('lesson', 35, 1, { creatureIds: [b.id], talent: 'first-pounce' }),
+        ],
+        more: 0,
+        brought: { acorns: 0, scrap: 0, shards: 0 },
+        decision: null,
+      };
+      stateOverride = { creatures, valley: valleyBlock() };
+      answerOverride.set('/api/valley/gazette/close', (request) => {
+        gazetteCalls.push(['close', bodyOf(request)]);
+        gazette.paper = null;
+        stateOverride = { ...stateOverride, valley: valleyBlock() };
+        return { closed: true };
+      });
+    },
+    async () => {
+      try {
+        const paper = page.locator('article[aria-label="The Valley Gazette"]');
+        await waitFor(paper);
+        await waitFor(page.locator('h3.gz-headline'));
+        await page.waitForTimeout(800);
+        const heads = await page.locator('.gz-headline, .gz-brief-headline').allInnerTexts();
+        if (!heads.some((h) => /^THREE OF YOURS GRADUATED AT THE SCHOOL$/i.test(h.trim())))
+          throw new Error(`the paper does not tell the graduation: ${heads.join(' | ')}`);
+        if (!heads.some((h) => /A TEACHER VISITS THE SCHOOL: FIRST POUNCE/i.test(h)))
+          throw new Error(`the paper does not name the teacher’s talent: ${heads.join(' | ')}`);
+        await expectTopmost(page.locator('h3.gz-headline').first(), 'the graduation headline');
+        await shot('school-paper-graduation');
+        const closer = page.getByRole('button', { name: /more things?|Into the valley/i }).last();
+        await closer.scrollIntoViewIfNeeded();
+        await closer.click();
+        await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+        await page.locator('.gz-fly').waitFor({ state: 'detached', timeout: 15000 });
+      } finally {
+        gazette.paper = null;
+        schoolOff();
       }
     },
   );

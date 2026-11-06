@@ -540,14 +540,23 @@ function marketCast(input: CastInput, art: Size): Pick<Cast, 'stands' | 'act'> {
 function schoolCast(input: CastInput): Pick<Cast, 'stands' | 'act' | 'school'> {
   const view = input.school ?? null;
   const students = (view?.seats ?? []).flatMap((seat) => {
-    const creature = seat.creatureId === null ? undefined : input.creatures.find((c) => c.id === seat.creatureId);
+    const creature =
+      seat.creatureId === null ? undefined : input.creatures.find((c) => c.id === seat.creatureId);
     return creature === undefined ? [] : [creature];
   });
   const stands = students.flatMap((creature, i) => {
     const spot = studentSpot(i);
     return spot === null
       ? []
-      : [{ creature, x: spot.x, y: spot.y, flip: false, where: 'at the School, learns it by morning' }];
+      : [
+          {
+            creature,
+            x: spot.x,
+            y: spot.y,
+            flip: false,
+            where: 'at the School, learns it by morning',
+          },
+        ];
   });
   const open = teaching(view);
   const talent = view?.talent?.id ?? null;
