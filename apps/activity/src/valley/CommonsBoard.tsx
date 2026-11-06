@@ -312,17 +312,17 @@ export function CommonsBoard({
   );
 
   // --- The views a tap opens ---
+  // Shards of any kind are worth the same, so the drawer says it once, above the rows.
+  const worth = rows.find((r) => r.worth !== undefined)?.worth;
   const giveList = (
     <div class="dr-stack pix-panel">
+      {worth === undefined ? null : <p class="cm-need muted">{shardWorth(worth)}.</p>}
       <ChoiceList label="What to give">
         {rows.map((r) => (
           <ChoiceButton
             key={r.id}
             label={r.name}
-            line={
-              r.reason ??
-              `You have ${String(r.held)}${r.worth === undefined ? '' : `. ${shardWorth(r.worth)}`}`
-            }
+            line={r.reason ?? `You have ${String(r.held)}`}
             disabled={busy || r.reason !== null}
             onClick={() => {
               setRowId(r.id);
