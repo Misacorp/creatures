@@ -922,7 +922,7 @@ export function renderReport(data: ReportData, rules: Rules, rulesSource: string
       ]),
     ),
     '',
-    `The Market as a project: the broker's seat does not exist until the server builds the Market, a communal project (it joins the valley the first week the server's anvils spend ${num(MARKET_OPENS_AT * 100)}% of their time waiting for a shard, and is sized like a level-2 place's project; every player has the broker's seat once it is built). Shards are what is short, so the Market of the first three rows is paid in Acorns and scrap only; the last row pays it like the other projects (Acorns, scrap and shards), to see whether the scarce shard can also build its own fix. Each row is a server run ${bro.market[0]?.runs ?? 0} times:`,
+    `The Market as a project: the broker's seat does not exist until the server builds the Market, a communal project (it joins the valley the first week the server's anvils spend ${num(MARKET_OPENS_AT * 100)}% of their time waiting for a shard, and is sized like a level-2 place's project; every player has the broker's seat once it is built, and the exchange tap opens with it, Q64: before it nobody trades, so an anvil waiting for a shard tinkers). Shards are what is short, so the Market of the first three rows is paid in Acorns and scrap only; the last row pays it like the other projects (Acorns, scrap and shards), to see whether the scarce shard can also build its own fix. Each row is a server run ${bro.market[0]?.runs ?? 0} times:`,
     '',
   );
   push(

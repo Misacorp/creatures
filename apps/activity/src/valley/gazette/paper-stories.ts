@@ -74,6 +74,7 @@ const PLACE_OF: Record<PaperHeadline['kind'], PlaceId> = {
   'pack-full': 'signpost',
   allowance: 'bonfire',
   moment: 'bonfire',
+  'market-open': 'market',
 };
 
 /** The stories of the server's paper, the biggest first (as the server ranked them), and what it left untold. */
@@ -223,6 +224,15 @@ function storyOf(h: PaperHeadline, paper: Paper, byId: ReadonlyMap<string, Creat
         ...base,
         headline: 'THE ACORNS CAME IN',
         badges: paper.brought.acorns > 0 ? [baitCount(paper.brought.acorns)] : [],
+        finds: [],
+        scene: scene([]),
+      };
+    case 'market-open':
+      // Q64: the whole server's moment of relief, in the paper's warm voice (no creatures: the stall is the picture).
+      return {
+        ...base,
+        headline: 'THE MARKET OPENS: SHARDS CHANGE HANDS AT LAST',
+        blurb: 'Your anvils can trade for what they wait on.',
         finds: [],
         scene: scene([]),
       };

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { contributePart, openMarket, refreshProjects, MARKET_OPENS_AT } from '../src/commons';
 import { RULES } from '../src/rules';
 import { ALL_SERVERS } from '../src/servers';
-import { brokerSeatOn, runServer } from '../src/sim';
+import { brokerSeatOn, exchangeOn, runServer } from '../src/sim';
 import { createServer } from '../src/world';
 import { sum } from '../src/util';
 
@@ -95,5 +95,39 @@ describe('the variants in a run', () => {
     expect(run.marketOpenedHour).not.toBeNull();
     if (run.marketDoneHour === null)
       expect(sum(run.players.map((p) => sum(p.weeks.map((w) => w.brokerHours))))).toBe(0);
+  });
+});
+
+describe('the exchange opens with the Market (Q64)', () => {
+  it('is open from day one without a Market, and only once the Market is built with one', () => {
+    expect(exchangeOn(serverWith('always'))).toBe(true);
+    expect(exchangeOn(serverWith('never'))).toBe(true);
+    for (const mode of ['market', 'market-shards'] as const) {
+      const server = serverWith(mode);
+      expect(exchangeOn(server)).toBe(false);
+      openMarket(server, 10);
+      expect(exchangeOn(server)).toBe(false);
+      server.marketDoneHour = 100;
+      expect(exchangeOn(server)).toBe(true);
+    }
+    const none = createServer(
+      'market',
+      1,
+      { bossKills: 'half', communalSeats: true, shardExchange: false, broker: 'market' },
+      RULES,
+    );
+    none.marketDoneHour = 100;
+    expect(exchangeOn(none)).toBe(false);
+  });
+
+  it('a run of the Market variant trades nothing before the Market is built, and the day-one variant trades from the first weeks', () => {
+    const config = (id: string) => ALL_SERVERS.find((s) => s.id === id)!;
+    const market = runServer({ ...config('mixed8-market'), weeks: 8 }, 1);
+    const builtWeek = market.marketDoneHour === null ? 8 : Math.floor(market.marketDoneHour / 168);
+    const early = (run: typeof market): number =>
+      sum(run.players.map((p) => sum(p.weeks.slice(0, builtWeek).map((w) => w.exchanges))));
+    expect(early(market)).toBe(0);
+    const always = runServer({ ...config('mixed8'), weeks: 8 }, 1);
+    expect(early(always)).toBeGreaterThan(0);
   });
 });

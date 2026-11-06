@@ -6,13 +6,13 @@
  * An anvil card is the shared slot row (`ui/Slot`: the smith, the kit; the smith opens `ui/RosterPicker` with "Back to resting", the kit a
  * `Drawer` of `ChoiceList`), then its queue of orders (a tap opens the order editor, `OrderEditor`, which the Workshop draws), the piece in
  * hand with its bar or why the smith tinkers (V-FORGE-2, 4), and the floor (`ui/Bar`; a tap opens its pieces by rarity and the anvil's
- * numbers in `ui/DataTable`s, V-RET-9). Buying an anvil, a kit or a run of trades is a keyed spend with one clear button (`SpendConfirm`).
+ * numbers in `ui/DataTable`s, V-RET-9). Buying an anvil or a kit is a keyed spend with one clear button (`SpendConfirm`). Shards are traded at the Market only (Q64): an anvil that waits on a shard says so and leads there.
  * The pure words are `forge-view.ts`; every spend and move is the game's (the server decides).
  */
 import { useRef, useState } from 'preact/hooks';
 import type { AnvilKit, ValleyAnvilView, ValleyOrderView } from '@creatures/game';
 import type { Creature, ValleyVisit } from '../api';
-import { creatureName, elementName } from '../game';
+import { creatureName } from '../game';
 import { PartCount } from '../GearArt';
 import { GlossaryTag } from '../Glossary';
 import { busyReason } from '../gear-view';
@@ -21,10 +21,8 @@ import { dropOutcome } from '../slot-outcome';
 import { TOUCH_HOLD_MS } from '../dnd-core';
 import { useDragDrop } from '../use-drag-drop';
 import { Alert } from '../ui/Alert';
-import { ActionButton } from '../ui/ActionButton';
 import { Bar } from '../ui/Bar';
 import { ChoiceButton, ChoiceList } from '../ui/ChoiceList';
-import { CountStepper } from '../ui/CountStepper';
 import { DataTable } from '../ui/DataTable';
 import { DragGhost } from '../ui/DragGhost';
 import { Drawer } from '../ui/Drawer';
@@ -46,9 +44,6 @@ import {
   anvilBuyReason,
   anvilName,
   anvilPriceText,
-  exchangeRateText,
-  exchangeReason,
-  exchangeSources,
   floorLine,
   floorRows,
   needsText,
@@ -58,11 +53,8 @@ import {
   paceLine,
   pieceLine,
   reachName,
-  shardName,
   smithStepName,
   tinkerLine,
-  tradesFrom,
-  waitingShardElement,
 } from './forge-view';
 import type { OrderRequest } from '../api';
 
@@ -87,8 +79,6 @@ export interface ForgeActions {
   setKit: (seatId: string, kit: AnvilKit | null) => Promise<boolean>;
   /** Adds, changes or takes off an order. */
   order: (request: OrderRequest) => Promise<boolean>;
-  /** Trades shards for the element `to` (a keyed spend). */
-  exchange: (request: { to: string; from: string | null; times: number }) => Promise<boolean>;
 }
 
 /** What the page can open at the start (the workbench shows each). */
@@ -97,7 +87,6 @@ export interface ForgeStart {
   kit?: string;
   floor?: string;
   buy?: boolean;
-  exchange?: boolean;
   /** The bag's "Filter and sort" starts open (the Workshop draws it). */
   bag?: boolean;
   /** The project board's drawer or picker to open (the commons). */
@@ -176,6 +165,7 @@ export function ForgeAnvils({
   actions,
   onOrder,
   onOpenPaddock,
+  onOpenMarket,
   commons,
   start = {},
 }: {
@@ -193,6 +183,8 @@ export function ForgeAnvils({
   onOrder: (open: OrderOpen) => void;
   /** A tap on a tray creature: the Paddock, as everywhere in the valley. */
   onOpenPaddock: () => void;
+  /** The Market (Q64): the shard exchange lives there; `to` is the element an anvil waits for, so its exchange can start on it. */
+  onOpenMarket: (to: string | null) => void;
   /** The Forge's project board and the communal seat on it (a hand can carry a creature onto the card); absent leaves the page as before. */
   commons?: CommonsActions;
   start?: ForgeStart;
@@ -202,7 +194,6 @@ export function ForgeAnvils({
   const [buyingKit, setBuyingKit] = useState<AnvilKit | null>(null);
   const [floorOf, setFloorOf] = useState<string | null>(start.floor ?? null);
   const [buying, setBuying] = useState(start.buy === true);
-  const [trading, setTrading] = useState(start.exchange === true);
   const openers = useRef<Record<string, HTMLElement | null>>({});
   const pageRef = useRef<HTMLElement | null>(null);
 
@@ -266,8 +257,7 @@ export function ForgeAnvils({
   const floorAnvil = anvilOf(floorOf);
   const buyReason = anvilBuyReason(visit, acorns);
   const nextPrice = visit.anvilPrices.next;
-  const waitingFor = visit.anvils.flatMap((a) => a.orders.map(waitingShardElement));
-  const wanted = waitingFor.find((e) => e !== null) ?? null;
+  const marketBuilt = visit.market?.open === true;
 
   return (
     <section
@@ -286,22 +276,6 @@ export function ForgeAnvils({
       <CommonsFire visit={visit} start={start.fire === true} />
       <div class="fg-shelf">
         <Shelf visit={visit} />
-        <div class="fg-shelf-line">
-          <button
-            type="button"
-            class="fg-trade"
-            aria-haspopup="dialog"
-            disabled={busy}
-            ref={(el) => {
-              openers.current['trade'] = el;
-            }}
-            onClick={() => {
-              setTrading(true);
-            }}
-          >
-            {wanted === null ? 'Trade shards' : `Trade for ${shardName(wanted)}`}
-          </button>
-        </div>
       </div>
       <ul class="sp-seats" aria-label="Anvils">
         {visit.anvils.map((anvil) => {
@@ -309,7 +283,7 @@ export function ForgeAnvils({
           const smith = creatureOf(anvil.creatureId);
           const over = drag.drag?.over === anvil.id;
           const kit = anvil.kit === null ? null : ANVIL_KIT_INFO[anvil.kit];
-          const tinker = tinkerLine(anvil);
+          const tinker = tinkerLine(anvil, marketBuilt);
           const piece = pieceLine(anvil);
           const room = anvil.orders.length < visit.forge.queueMax;
           return (
@@ -430,10 +404,26 @@ export function ForgeAnvils({
                   <span>{RAID_PAUSE}</span>
                 </p>
               ) : tinker !== null ? (
-                <p class="sp-line fg-tinker" role="status">
-                  <Tag kind="badge">Tinkering</Tag>
-                  <span>{tinker}</span>
-                </p>
+                <>
+                  <p class="sp-line fg-tinker" role="status">
+                    <Tag kind="badge">Tinkering</Tag>
+                    <span>{tinker}</span>
+                  </p>
+                  {anvil.tinkering?.reason === 'shard' && (
+                    <button
+                      type="button"
+                      class="sp-buy fg-market"
+                      disabled={busy}
+                      onClick={() => {
+                        onOpenMarket(anvil.tinkering?.shardElement ?? null);
+                      }}
+                    >
+                      <span class="pix sp-buy-name">
+                        {marketBuilt ? 'Trade at the Market' : 'Go to the Market'}
+                      </span>
+                    </button>
+                  )}
+                </>
               ) : smith === undefined ? (
                 <p class="sp-line muted">Pick a smith, or drag one here.</p>
               ) : (
@@ -670,29 +660,6 @@ export function ForgeAnvils({
           {error !== null && <Alert level="alert">{error}</Alert>}
         </Drawer>
       )}
-
-      {trading && (
-        <Drawer
-          open
-          onClose={() => {
-            setTrading(false);
-          }}
-          title="Trade shards"
-          returnFocusTo={openers.current['trade'] ?? null}
-        >
-          <Exchange
-            visit={visit}
-            busy={busy}
-            error={error}
-            initial={wanted}
-            onTrade={(request) => {
-              void actions.exchange(request).then((ok) => {
-                if (ok) setTrading(false);
-              });
-            }}
-          />
-        </Drawer>
-      )}
     </section>
   );
 }
@@ -717,154 +684,6 @@ export function AnvilNumbers({ anvil }: { anvil: ValleyAnvilView }) {
           },
           { label: 'Kit', value: kit },
         ]}
-      />
-    </div>
-  );
-}
-
-/** The shard exchange (V-FORGE-10): the shard to get, the pile to pay from, how many trades, and the rate. */
-function Exchange({
-  visit,
-  busy,
-  error,
-  initial,
-  onTrade,
-}: {
-  visit: ValleyVisit;
-  busy: boolean;
-  error: string | null;
-  /** The element an order waits on, if any (the one-tap fix). */
-  initial: string | null;
-  onTrade: (request: { to: string; from: string | null; times: number }) => void;
-}) {
-  const { forge } = visit;
-  const fewest = [...SHARD_ELEMENTS].sort(
-    (a, b) => (forge.shelf.shards[a] ?? 0) - (forge.shelf.shards[b] ?? 0),
-  )[0];
-  const [to, setTo] = useState<string>(initial ?? fewest ?? 'tide');
-  const [from, setFrom] = useState<string | null>(null);
-  const [times, setTimes] = useState(1);
-  const [drill, setDrill] = useState<'to' | 'from' | null>(null);
-  const sources = exchangeSources(forge, to);
-  const can = sources
-    .filter((s) => from === null || s.element === from)
-    .reduce((n, s) => n + tradesFrom(forge, s.held), 0);
-  const most = Math.max(1, Math.min(20, can));
-  const shown = Math.min(times, most);
-  const reason = exchangeReason(forge, to, from, shown);
-  if (drill !== null) {
-    const picking = drill === 'to';
-    return (
-      <div
-        class="dr-stack"
-        onKeyDown={onDrillKey(() => {
-          setDrill(null);
-        })}
-      >
-        <DrillHead
-          title={picking ? 'Trade for' : 'Pay with'}
-          backLabel="to the trade"
-          focus
-          onBack={() => {
-            setDrill(null);
-          }}
-        />
-        <div class="pix-panel">
-          <ChoiceList label={picking ? 'Shards to get' : 'Shards to pay with'}>
-            {!picking && (
-              <ChoiceButton
-                label="Any other shards"
-                line="The biggest pile that can pay."
-                selected={from === null}
-                disabled={false}
-                onClick={() => {
-                  setFrom(null);
-                  setDrill(null);
-                }}
-              />
-            )}
-            {(picking
-              ? SHARD_ELEMENTS.map((element) => ({
-                  element,
-                  held: forge.shelf.shards[element] ?? 0,
-                }))
-              : sources
-            ).map(({ element, held }) => (
-              <ChoiceButton
-                key={element}
-                label={shardName(element)}
-                line={`You have ${String(held)}.`}
-                selected={picking ? to === element : from === element}
-                disabled={!picking && tradesFrom(forge, held) === 0}
-                onClick={() => {
-                  if (picking) {
-                    setTo(element);
-                    if (from === element) setFrom(null);
-                  } else {
-                    setFrom(element);
-                  }
-                  setDrill(null);
-                }}
-              />
-            ))}
-          </ChoiceList>
-        </div>
-      </div>
-    );
-  }
-  return (
-    <div class="dr-stack">
-      <SlotRow
-        label="Trade"
-        slots={[
-          <Slot
-            kind="talent"
-            state="filled"
-            label={`Trade for ${shardName(to)}. You have ${String(forge.shelf.shards[to] ?? 0)}. Change`}
-            onClick={() => {
-              setDrill('to');
-            }}
-          >
-            <SlotText
-              name={shardName(to)}
-              sub={`You get (have ${String(forge.shelf.shards[to] ?? 0)})`}
-            />
-          </Slot>,
-          <Slot
-            kind="talent"
-            state="filled"
-            label={`Pay with ${from === null ? 'any other shards' : shardName(from)}. Change`}
-            onClick={() => {
-              setDrill('from');
-            }}
-          >
-            <SlotText
-              name={from === null ? 'Any other' : shardName(from)}
-              sub={
-                from === null
-                  ? 'You pay'
-                  : `You pay (have ${String(forge.shelf.shards[from] ?? 0)})`
-              }
-            />
-          </Slot>,
-        ]}
-      />
-      <div class="fg-times">
-        <span class="fg-times-name">Trades</span>
-        <CountStepper label="trade" value={shown} max={most} onChange={setTimes} disabled={busy} />
-      </div>
-      <p class="muted sp-note">{exchangeRateText(forge)}</p>
-      {reason !== null && <Alert level="info">{reason}</Alert>}
-      {error !== null && <Alert level="alert">{error}</Alert>}
-      <ActionButton
-        label="Trade"
-        detail={`${String(shown)} for ${elementName(to)}`}
-        wide
-        large
-        disabled={busy || reason !== null || can === 0}
-        onClick={() => {
-          onTrade({ to, from, times: shown });
-        }}
       />
     </div>
   );

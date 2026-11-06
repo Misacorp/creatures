@@ -92,11 +92,6 @@ export function orderWait(order: ValleyOrderView): string | null {
   }
 }
 
-/** The shelf's pile that an order's wait is about (for the exchange's one-tap fix): the shard element, else null. */
-export function waitingShardElement(order: ValleyOrderView): string | null {
-  return order.waiting === 'shard' ? order.needs.shardElement : null;
-}
-
 /** How long a wait has lasted: "for 5 h"; empty when unknown. */
 function forHours(hours: number | null): string {
   return hours === null || hours < 1 / 60
@@ -104,8 +99,8 @@ function forHours(hours: number | null): string {
     : ` for ${formatCountdown(hours * 3_600_000, 'short')}`;
 }
 
-/** Why a smith tinkers, in plain words (V-FORGE-2, 4); null when the anvil is working or has no smith. */
-export function tinkerLine(anvil: ValleyAnvilView): string | null {
+/** Why a smith tinkers, in plain words (V-FORGE-2, 4); null when the anvil is working or has no smith. `marketBuilt`: whether shards can be traded yet (Q64). */
+export function tinkerLine(anvil: ValleyAnvilView, marketBuilt: boolean): string | null {
   const t = anvil.tinkering;
   if (t === null) return null;
   switch (t.reason) {
@@ -116,7 +111,8 @@ export function tinkerLine(anvil: ValleyAnvilView): string | null {
     case 'essence':
       return `Waiting for Essence${forHours(t.sinceHours)}`;
     case 'shard':
-      return `Waiting for ${t.shardElement === null ? 'shards' : shardName(t.shardElement)}${forHours(t.sinceHours)}`;
+      // Q64: shards change hands at the Market only; until the valley builds it, the line says so.
+      return `Waiting for ${t.shardElement === null ? 'shards' : shardName(t.shardElement)}${forHours(t.sinceHours)}${marketBuilt ? '' : '. The Market will trade for them once the valley builds it.'}`;
     case 'floor':
       return 'The floor is full';
   }

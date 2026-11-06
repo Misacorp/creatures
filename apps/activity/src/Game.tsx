@@ -99,7 +99,7 @@ import type { TeamConfigure } from './TeamCreaturePage';
 import { Alert } from './ui/Alert';
 import { WelcomeBack } from './valley/gazette/WelcomeBack';
 import { ValleyFrame } from './valley/ValleyFrame';
-import type { MarketActions } from './valley/MarketPage';
+import type { MarketActions, MarketStart } from './valley/MarketPage';
 import { SignpostSeats, type SignpostActions } from './valley/SignpostSeats';
 import type { CommonsActions } from './valley/CommonsBoard';
 import { COMMONS_NAMES } from './valley/commons-view';
@@ -177,6 +177,11 @@ export function Game({
   const valleyOn = valley && game.starterChosen;
   // The valley shell: Home's tab is drawn as the map, the House's living room, or a place that is not open yet.
   const [homeAt, setHomeAt] = useState<HomeAt>('valley');
+  // The Market's page opens its exchange on the shard a smith waits for when the Forge sends the player there (Q64); forgotten on leaving.
+  const [marketStart, setMarketStart] = useState<MarketStart | undefined>(undefined);
+  useEffect(() => {
+    if (homeAt !== 'market') setMarketStart(undefined);
+  }, [homeAt]);
   const { raid: raidGlance, adopt: adoptRaid } = useRaidGlance(
     game.starterChosen,
     // The valley keeps it "on Home" throughout: one load when it opens and the schedule's own timer, never one per
@@ -406,15 +411,6 @@ export function Game({
       if (ok) setNotice(`The ${ANVIL_KIT_INFO[kit].name} is yours.`);
       return ok;
     },
-    exchange: async ({ to, from, times }) => {
-      const held = systems?.forge.shelf.shards[to] ?? 0;
-      const answer = await runKeyed(ActionIds.exchange(to, from, times, held), (key) =>
-        exchangeShards({ to, from, times, idempotencyKey: key }),
-      );
-      if (!takeValley(answer) || answer === undefined) return false;
-      setNotice(`You traded for ${String(answer.gained)} ${shardName(to)}.`);
-      return true;
-    },
   };
   /**
    * The commons (phase 5 step 6b): a gift to a place's project is a keyed spend; a creature on a communal seat is free. Each answer's
@@ -446,6 +442,16 @@ export function Game({
   const marketActions: MarketActions = {
     post: async (body) => takeValley(await run(() => postScout(body))),
     setToward: async (seatId, toward) => takeValley(await run(() => setBroker({ seatId, toward }))),
+    // Q64: the shard exchange lives at the Market (a keyed spend; the server answers 409 until it is built).
+    exchange: async ({ to, from, times }) => {
+      const held = systems?.forge.shelf.shards[to] ?? 0;
+      const answer = await runKeyed(ActionIds.exchange(to, from, times, held), (key) =>
+        exchangeShards({ to, from, times, idempotencyKey: key }),
+      );
+      if (!takeValley(answer) || answer === undefined) return false;
+      setNotice(`You traded for ${String(answer.gained)} ${shardName(to)}.`);
+      return true;
+    },
   };
   /** Wears an item or takes it off (the card's and the dungeon's); true when the server took it. */
   const equipOn = async (gearId: string, creatureId: string | null): Promise<boolean> =>
@@ -898,6 +904,13 @@ export function Game({
                   onOpenPaddock: () => {
                     openPlace('paddock');
                   },
+                  // Q64: an anvil that waits on a shard leads to the Market (its exchange once built, else its project).
+                  onOpenMarket: (to: string | null) => {
+                    setMarketStart(
+                      systems.market?.open === true && to !== null ? { exchange: to } : undefined,
+                    );
+                    openPlace('market');
+                  },
                 } satisfies ForgeMode,
               }
             : {})}
@@ -1039,6 +1052,8 @@ export function Game({
               market: marketActions,
               acorns: game.balances.bait,
               busy,
+              error,
+              ...(marketStart === undefined ? {} : { marketStart }),
             })}
         castExtra={{
           dungeonTeam,

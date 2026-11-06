@@ -87,6 +87,7 @@ describe('migration 59: the paper table', () => {
           'log',
           'decision',
           'read_at',
+          'market_told',
         ]);
         expect(count(ctx.sql, 'valley_gazette')).toBe(0);
         const p = await scouting(ctx, 1);
@@ -363,6 +364,83 @@ describe('push on: a way deeper (V-SCOUT-6, V-RET-3)', () => {
         expect(view(await p.state()).seats[0]?.deep).toBe(false);
       },
       { ...SYSTEMS, scoutRng: NONE },
+    );
+  });
+});
+
+describe("the Market's opening (Q64): the one story every paper leads with, once per player", () => {
+  const buildMarket = (ctx: CoreContext): void => {
+    ctx.sql.exec("UPDATE valley_places SET level = 2 WHERE place = 'market'");
+  };
+  const closeIt = (p: P, paperId: string) =>
+    p.api.call('POST', '/api/valley/gazette/close', { paperId });
+
+  it('leads the next paper of each player, even a short absence, replayed until read, and never told again', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const a = await scouting(ctx, 1);
+        const b = await scouting(ctx, 2);
+        // Before the Market there is nothing to tell on a short look.
+        expect(view(await a.state()).paper).toBeUndefined();
+        buildMarket(ctx);
+        // A is looking at the moment; B stays away for two days (offline when it opened).
+        ctx.clock.t += 60_000;
+        const first = view(await a.state()).paper;
+        expect(first?.headlines[0]?.kind).toBe('market-open');
+        expect(first?.awayHours).toBe(0);
+        ctx.clock.t += 60_000;
+        expect(view(await a.state()).paper).toEqual(first);
+        // Read: gone, and not told again by a later look or arrival.
+        await closeIt(a, first?.id ?? '');
+        expect(view(await a.state()).paper).toBeUndefined();
+        ctx.clock.t += 2 * HOUR;
+        expect(view(await a.state()).paper).toBeUndefined();
+        // B comes back after two days: the Market leads the same paper that tells the days away.
+        ctx.clock.t += 2 * DAY_MS;
+        const second = view(await b.state()).paper;
+        expect(second?.headlines[0]?.kind).toBe('market-open');
+        expect(second?.awayHours).toBeGreaterThanOrEqual(48);
+        expect(second?.headlines.length).toBeGreaterThanOrEqual(2);
+        expect(second?.headlines.filter((h) => h.kind === 'market-open')).toHaveLength(1);
+        expect(count(ctx.sql, 'valley_gazette')).toBe(2);
+        await closeIt(b, second?.id ?? '');
+        ctx.clock.t += DAY_MS;
+        const later = view(await b.state()).paper;
+        expect(later?.headlines.some((h) => h.kind === 'market-open')).not.toBe(true);
+      },
+      { ...SYSTEMS, scoutRng: createSeededRng('market-open') },
+    );
+  });
+
+  it('joins an unread paper and leads it', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await scouting(ctx, 1);
+        ctx.clock.t += DAY_MS;
+        const before = view(await p.state()).paper;
+        expect(before?.headlines.some((h) => h.kind === 'market-open')).toBe(false);
+        buildMarket(ctx);
+        ctx.clock.t += 60_000;
+        const joined = view(await p.state()).paper;
+        expect(joined?.id).toBe(before?.id);
+        expect(joined?.headlines[0]?.kind).toBe('market-open');
+        expect(count(ctx.sql, 'valley_gazette')).toBe(1);
+      },
+      { ...SYSTEMS, scoutRng: NONE },
+    );
+  });
+
+  it('tells nothing with the flag off', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await newPlayer(ctx, 1);
+        await p.state();
+        expect(count(ctx.sql, 'valley_gazette')).toBe(0);
+      },
+      FLAG_OFF,
     );
   });
 });

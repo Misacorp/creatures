@@ -844,13 +844,42 @@ describe('the bag counter (V-GEAR-6)', () => {
   });
 });
 
-describe('the exchange (V-FORGE-10)', () => {
+describe('the exchange (V-FORGE-10, Q64)', () => {
+  /** The Market built, as a shortcut (the exchange opens with it). */
+  const buildMarket = (ctx: { sql: SqlStorage }): void => {
+    ctx.sql.exec("UPDATE valley_places SET level = 2 WHERE place = 'market'");
+  };
   const exchange = (p: P, body: Record<string, unknown>) =>
     p.api.call('POST', '/api/valley/exchange', {
       to: 'tide',
       idempotencyKey: newKey('xchg'),
       ...body,
     });
+
+  it('answers 409 market_not_built until the server builds the Market, before any spend, then works for everyone', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const a = await newPlayer(ctx, 1);
+        const b = await newPlayer(ctx, 2);
+        await a.state();
+        await b.state();
+        for (const p of [a, b]) creditParts(ctx.sql, p.id, { 'ember-shard': 7 });
+        const key = newKey('xchg-early');
+        const early = await exchange(a, { from: 'ember', idempotencyKey: key });
+        expect(early.status).toBe(409);
+        expect(early.body).toEqual({ error: 'market_not_built' });
+        expect(part(ctx.sql, a.id, 'ember-shard')).toBe(7);
+        expect(part(ctx.sql, a.id, 'tide-shard')).toBe(0);
+        // Nothing was kept under the key: it is free to use once the Market is built.
+        buildMarket(ctx);
+        const late = await exchange(a, { from: 'ember', idempotencyKey: key });
+        expect(late.status).toBe(200);
+        expect((await exchange(b, { from: 'ember' })).status).toBe(200);
+      },
+      SYSTEMS,
+    );
+  });
 
   it('trades the rate of another pile for one shard, with a crit that gives more', async () => {
     for (const [rng, got] of [
@@ -862,6 +891,7 @@ describe('the exchange (V-FORGE-10)', () => {
         async (ctx) => {
           const p = await newPlayer(ctx, 1);
           await p.state();
+          buildMarket(ctx);
           creditParts(ctx.sql, p.id, { 'ember-shard': 7, 'grove-shard': 2 });
           const res = await exchange(p, {});
           expect(res.status).toBe(200);
@@ -891,6 +921,7 @@ describe('the exchange (V-FORGE-10)', () => {
       async (ctx) => {
         const p = await newPlayer(ctx, 1);
         await p.state();
+        buildMarket(ctx);
         creditParts(ctx.sql, p.id, { 'ember-shard': 2, 'grove-shard': 9 });
         const none = await exchange(p, { from: 'ember' });
         expect(none.status).toBe(409);

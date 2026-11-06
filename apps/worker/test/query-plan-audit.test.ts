@@ -583,6 +583,8 @@ describe('query plan audit', () => {
       )) as { orderId: string };
       await call('/api/valley/order', { action: 'edit', orderId: added.orderId, count: 3 }, 2);
       await call('/api/valley/order', { action: 'remove', orderId: added.orderId }, 2);
+      // The exchange opens with the Market (Q64).
+      env.metered.sql.exec("UPDATE valley_places SET level = 2 WHERE place = 'market'");
       await call('/api/valley/exchange', { to: 'tide', idempotencyKey: 'audit-exchange-0001' });
       await call('/api/valley/kit', {
         action: 'set',
@@ -653,7 +655,13 @@ describe('query plan audit', () => {
     });
 
     expect(result.seen, 'statements recorded').toBeGreaterThan(40);
-    for (const table of ['valley_seats', 'valley_places', 'valley_creatures', 'parts'])
+    for (const table of [
+      'valley_seats',
+      'valley_places',
+      'valley_creatures',
+      'parts',
+      'valley_gazette',
+    ])
       expect(
         result.statements.some((q) => q.includes(table)),
         table,
