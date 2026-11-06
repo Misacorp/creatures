@@ -41,7 +41,7 @@ import {
 import { BASIC_TARGET, loadAutofire, storeAutofire, targetOf } from './raid-autofire';
 import { convertLegacyWeek, ensureWeekRank, seasonColumns } from './raid-ladder';
 import { RAID_DIFFICULTY_VERSION } from './raid-difficulty';
-import { queueBossReveal } from './raid-posts';
+import { queueBossReveal, queueBossRevealV2 } from './raid-posts';
 import { ReadinessCache } from './raid-readiness';
 import { redeclareWeek, staleOpenWeeks } from './raid-redeclare';
 import { buildPhaseInput, resolveParty } from './raid-resolve';
@@ -569,8 +569,9 @@ export class Raid {
         // The week, its boss reveal post and the done marker commit together.
         this.deps.storage.transactionSync(() => {
           const week = this.ensureWeek(weekId);
-          // The reveal post describes the shipped boss's moves: a v2 week's (the track's) waits for its own post.
+          // A v2 week's reveal names the track's boss and its rule cards, not the shipped boss's moves.
           if (week.rules === 1) queueBossReveal(this.sql, week, tz, this.deps.now());
+          else queueBossRevealV2(this.sql, week, tz, this.deps.now());
           this.markDone(weekId, event, 'ran');
         });
       } else {
