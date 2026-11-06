@@ -170,7 +170,7 @@ const paperOf = (kind, creatures) => {
         headline('new-species', 95, 3, {
           creatureIds: [a.id],
           species: newest.species,
-          newcomers: [newest.id, creatures[1].id],
+          newcomers: [newest.id, creatures[1].id, c.id],
         }),
         headline('mastery-scout', 90, 2, { creatureIds: [a.id], step: 3 }),
         headline('found-gear', 95, 7, {
