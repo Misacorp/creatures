@@ -89,7 +89,7 @@ describe('the visitor: the reroll price (V-VIS-3)', () => {
 describe('the visitor: paying the blueprint in shards of any element (V-VIS-5)', () => {
   it('takes one at a time from the biggest pile, so the piles come down together', () => {
     expect(anyShardPayment([10, 4, 0, 0, 0], 3)).toEqual([3, 0, 0, 0, 0]);
-    expect(anyShardPayment([10, 4, 0, 0, 0], 8)).toEqual([6, 2, 0, 0, 0]);
+    expect(anyShardPayment([10, 4, 0, 0, 0], 8)).toEqual([7, 1, 0, 0, 0]);
     expect(anyShardPayment([5, 5, 5, 0, 0], 4)).toEqual([2, 1, 1, 0, 0]);
   });
 
