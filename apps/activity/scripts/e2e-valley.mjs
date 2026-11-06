@@ -276,6 +276,24 @@ const anvilView = (a) => ({
   floor: { count: 2, cap: 5, full: false, byRarity: [2, 0, 0] },
   perDay: { pieces: a.creatureId !== null && a.orders.length > 0 ? 1.5 : 0 },
 });
+/** The Market's state of a scenario (phase 5 step 7): whether the block is sent, the broker's creature and what it trades toward. */
+const marketState = { on: false, built: false, creatureId: null, toward: null };
+const BROKER_TIER = { rate: 2.4, critBp: 1000, critYield: 2 };
+const marketBlock = () => ({
+  open: marketState.built,
+  seat: marketState.built
+    ? {
+        id: 'broker-1',
+        creatureId: marketState.creatureId,
+        paused: null,
+        toward: marketState.toward,
+        mastery: { hours: 0, step: 0, bonusBp: 0 },
+        terms: BROKER_TIER,
+        next: { rate: 2.4, critBp: 1500, critYield: 2, atHours: 48 },
+        blocked: null,
+      }
+    : null,
+});
 /** The server's `valley` block for the scenario's seats; every creature rests unless a seat holds it. */
 const valleyBlock = () => ({
   settledAt: 1799760000000,
@@ -285,6 +303,7 @@ const valleyBlock = () => ({
     const seat = scouts.seats.find((s) => s.creatureId === id);
     const anvil = forgeState.anvils.find((a) => a.creatureId === id);
     const helps = Object.entries(commonsState.communal).find(([, creatureId]) => creatureId === id);
+    const trades = marketState.on && marketState.creatureId === id;
     return {
       id,
       state:
@@ -292,12 +311,17 @@ const valleyBlock = () => ({
           ? 'scouting'
           : anvil !== undefined
             ? 'smithing'
-            : helps !== undefined
-              ? 'helping'
-              : 'resting',
+            : trades
+              ? 'trading'
+              : helps !== undefined
+                ? 'helping'
+                : 'resting',
       gained: 25 + i * 11,
       catchUpBp: bonfire.warm.has(id) ? 24000 : 10000,
-      seatId: seat?.id ?? anvil?.id ?? (helps === undefined ? null : `communal-${helps[0]}`),
+      seatId:
+        seat?.id ??
+        anvil?.id ??
+        (trades ? 'broker-1' : helps === undefined ? null : `communal-${helps[0]}`),
     };
   }),
   online: bonfire.online,
@@ -330,6 +354,7 @@ const valleyBlock = () => ({
   special: { destination: 'ember-caves', twist: 'rich-veins' },
   ...(gazette.paper === null ? {} : { paper: gazette.paper }),
   ...(commonsState.on ? { commons: commonsBlock() } : {}),
+  ...(marketState.on ? { market: marketBlock() } : {}),
 });
 /** Puts the scouts' state into the state the page asks for (and answers each route with it). */
 const syncValley = () => {
@@ -342,6 +367,9 @@ const bodyOf = (request) => JSON.parse(request.postData() ?? '{}');
 ROUTES.set('/api/valley/seat', (request) => {
   const body = bodyOf(request);
   scoutCalls.push(['seat', body]);
+  if (body.seatId === 'broker-1' && body.creatureId !== undefined) {
+    marketState.creatureId = body.creatureId;
+  }
   const anvil = forgeState.anvils.find((a) => a.id === body.seatId);
   if (anvil !== undefined && body.creatureId !== undefined) {
     const other = forgeState.anvils.find((a) => a.creatureId === body.creatureId && a !== anvil);
@@ -461,13 +489,14 @@ const commonsState = {
   sockets: {},
   communal: {},
 };
-const COMMONS_PLACES = ['bonfire', 'forge', 'signpost', 'paddock', 'school'];
+const COMMONS_PLACES = ['bonfire', 'forge', 'signpost', 'paddock', 'school', 'market'];
 const COMMONS_ELEMENT = {
   bonfire: 'ember',
   forge: 'ember',
   signpost: 'grove',
   paddock: 'tide',
   school: 'spark',
+  market: 'mire',
 };
 const COMMONS_BOARDS = {
   forge: [
@@ -488,8 +517,11 @@ const COMMONS_BOARDS = {
   paddock: ['resident:1', 'resident:2', 'resident:3', 'resident:4', 'everyday'],
   school: ['page:1', 'page:2', 'page:3', 'page:4', 'everyday'],
 };
-/** The units each part of a project of `size` needs: the shares 0.4, 0.4 and 0.2 over the parts' values 1, 0.5 and 2. */
-const needsOf = (size) => ({ acorns: size * 0.4, scrap: size * 0.8, shards: size * 0.1 });
+/** The units each part of a project of `size` needs: the shares 0.4, 0.4 and 0.2 over the parts' values 1, 0.5 and 2 (the Market's: 0.5 and 0.5, no shards). */
+const needsOf = (size, id = '') =>
+  id === 'market'
+    ? { acorns: size * 0.5, scrap: size, shards: 0 }
+    : { acorns: size * 0.4, scrap: size * 0.8, shards: size * 0.1 };
 const PART_VALUE = { acorns: 1, scrap: 0.5, shards: 2 };
 const placeOf = (id) => ({
   level: 1,
@@ -537,6 +569,7 @@ const commonsScene = (overrides = {}) => {
     },
     paddock: { level: 1, state: 'open', size: 600, have: { acorns: 180, scrap: 360, shards: 45 } },
     school: { level: 1, state: 'waiting' },
+    market: { level: 1, state: 'waiting' },
     ...overrides,
   };
 };
@@ -544,7 +577,7 @@ const commonsBlock = () => ({
   places: COMMONS_PLACES.map((id) => {
     const p = placeOf(id);
     const open = p.state === 'open';
-    const need = needsOf(p.size);
+    const need = needsOf(p.size, id);
     const progress = open
       ? ['acorns', 'scrap', 'shards'].reduce(
           (sum, part) => sum + Math.min(p.have[part], need[part]) * PART_VALUE[part],
@@ -554,7 +587,7 @@ const commonsBlock = () => ({
     return {
       id,
       level: p.level,
-      max: 5,
+      max: id === 'market' ? 2 : 5,
       cosmetic: 0,
       state: p.state,
       project: open
@@ -579,7 +612,7 @@ const commonsBlock = () => ({
       keepsakes: p.keepsakes,
     };
   }),
-  collections: COMMONS_PLACES.map((id) => {
+  collections: COMMONS_PLACES.filter((id) => id in COMMONS_BOARDS).map((id) => {
     const finders = commonsState.sockets[id] ?? [];
     return {
       place: id,
@@ -608,7 +641,7 @@ ROUTES.set('/api/valley/gift', (request) => {
   const body = bodyOf(request);
   commonsCalls.push(['gift', body]);
   const p = placeOf(body.place);
-  const need = needsOf(p.size);
+  const need = needsOf(p.size, body.place);
   const part = body.currency;
   const own = body.element === COMMONS_ELEMENT[body.place];
   const units = part === 'shards' && !own ? Math.floor(body.amount / 3) : body.amount;
@@ -622,7 +655,7 @@ ROUTES.set('/api/valley/gift', (request) => {
         ...p,
         have: { acorns: 0, scrap: 0, shards: 0 },
         level: p.level + 1,
-        state: 'building',
+        state: body.place === 'market' ? 'done' : 'building',
         buildDays: 3,
         plaque: [...p.plaque, 'You'].sort(),
         keepsakes: p.keepsakes + 1,
@@ -638,6 +671,12 @@ ROUTES.set('/api/valley/gift', (request) => {
     level: commonsState.places[body.place].level,
     ...syncValley(),
   };
+});
+ROUTES.set('/api/valley/broker', (request) => {
+  const body = bodyOf(request);
+  commonsCalls.push(['broker', body]);
+  marketState.toward = body.toward;
+  return { seatId: body.seatId, ...syncValley() };
 });
 ROUTES.set('/api/valley/communal', (request) => {
   const body = bodyOf(request);
@@ -2147,6 +2186,161 @@ try {
         await waitFor(page.locator(VALLEY), 'attached');
       } finally {
         commonsOff();
+      }
+    },
+  );
+
+  // The Market (phase 5 step 7): not open until the guided start reaches it, the project board while it is built, then the broker's seat.
+  const marketOff = () => {
+    marketState.on = false;
+    marketState.built = false;
+    marketState.creatureId = null;
+    marketState.toward = null;
+    commonsOff();
+  };
+
+  await scenario(
+    'valley systems on: the Market is not open yet until the guided start reaches it',
+    () => {
+      const creatures = commonsOn();
+      commonsScene();
+      marketState.on = true;
+      stateOverride = { creatures, valley: valleyBlock() };
+    },
+    async () => {
+      try {
+        await waitFor(page.locator(VALLEY), 'attached');
+        await place('market').evaluate((el) => el.click());
+        await waitFor(heading('Market'));
+        await waitFor(page.getByText('A market will open here, for shards and trades.'));
+        await page.waitForTimeout(300);
+        await shot('market-not-open');
+        await backToValley();
+      } finally {
+        marketOff();
+      }
+    },
+  );
+
+  await scenario(
+    "valley systems on: the Market's project is built with the board (Acorns and scrap only)",
+    () => {
+      const creatures = commonsOn();
+      commonsScene({
+        market: {
+          level: 1,
+          state: 'open',
+          size: 700,
+          have: { acorns: 150, scrap: 300, shards: 0 },
+          given: 40,
+        },
+      });
+      marketState.on = true;
+      stateOverride = {
+        creatures,
+        balances: { ...baseState.balances, bait: 1000 },
+        valley: valleyBlock(),
+      };
+    },
+    async () => {
+      try {
+        await waitFor(page.locator(VALLEY), 'attached');
+        await place('market').evaluate((el) => el.click());
+        await waitFor(heading('Market'));
+        const board = page.locator('section[aria-label="Market project"]');
+        await waitFor(board);
+        await page.waitForTimeout(300);
+        await shot('market-building');
+        await board.scrollIntoViewIfNeeded();
+        await expectTopmost(board, 'the Market board');
+        await waitFor(board.getByText(/Still needed: .*Acorns, .*scrap/));
+        if ((await board.getByText(/shards/i).count()) > 0)
+          throw new Error('the Market board asks for shards');
+        if ((await page.getByRole('button', { name: /^Broker/ }).count()) > 0)
+          throw new Error('a broker seat stands before the Market is built');
+        await board.getByRole('button', { name: /^Give/ }).click();
+        await waitFor(dialogOf(/Give to the project/));
+        await page.waitForTimeout(500);
+        await expectTopmost(page.getByRole('dialog').first(), 'the Market give drawer');
+        const rows = await page.getByRole('dialog').getByRole('button').allInnerTexts();
+        if (rows.some((r) => /shard/i.test(r)))
+          throw new Error(`the give list offers shards: ${rows.join(' | ')}`);
+        await page.keyboard.press('Escape');
+        await backToValley();
+      } finally {
+        marketOff();
+      }
+    },
+  );
+
+  await scenario(
+    "valley systems on: the Market is built: post the broker, what it trades toward, its rates",
+    () => {
+      const creatures = commonsOn();
+      commonsScene({ market: { level: 2, state: 'done', plaque: ['Ada', 'You'], keepsakes: 1 } });
+      marketState.on = true;
+      marketState.built = true;
+      stateOverride = { creatures, valley: valleyBlock() };
+    },
+    async () => {
+      try {
+        await waitFor(page.locator(VALLEY), 'attached');
+        await place('market').evaluate((el) => el.click());
+        await waitFor(heading('Market'));
+        const slot = page.getByRole('button', { name: /^Broker: nobody posted/ });
+        await waitFor(slot);
+        await slot.scrollIntoViewIfNeeded();
+        await expectTopmost(slot, 'the empty broker slot');
+        await shot('market-free-seat');
+        for (const loc of [page.locator('.sp-seat').first(), page.locator('.vy-tray').first()]) {
+          if ((await loc.count()) > 0) await expectTopmost(loc, 'a Market card');
+        }
+        await slot.click();
+        await waitFor(dialogOf(/Who trades at the Market/));
+        await page.waitForTimeout(400);
+        await expectTopmost(page.getByRole('dialog').first(), 'the broker picker');
+        await shot('market-broker-picker');
+        await page
+          .getByRole('option')
+          .filter({ hasText: /Sproutle/ })
+          .first()
+          .click();
+        await waitFor(page.getByRole('button', { name: /^Broker: Sproutle/ }));
+        const posted = scoutCalls.filter(([k]) => k === 'seat').at(-1)?.[1];
+        if (posted?.seatId !== 'broker-1' || typeof posted.creatureId !== 'string')
+          throw new Error(`the broker was ${JSON.stringify(posted)}`);
+        await waitFor(page.getByText(/Trades 12 for 5, 10% bonus/));
+        await page.waitForTimeout(300);
+        await shot('market-broker-posted');
+        // What it trades toward: a drawer of choices, one tap.
+        const toward = page.getByRole('button', { name: /^Trades toward: What the orders need/ });
+        await toward.scrollIntoViewIfNeeded();
+        await toward.click();
+        await waitFor(dialogOf(/Trade toward/));
+        await page.waitForTimeout(500);
+        await expectTopmost(page.getByRole('dialog').first(), 'the trade-toward drawer');
+        await shot('market-trade-toward');
+        await page
+          .getByRole('dialog')
+          .getByRole('button', { name: /^Grove shards/ })
+          .click();
+        await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+        const sent = commonsCalls.find(([k]) => k === 'broker')?.[1];
+        if (sent?.seatId !== 'broker-1' || sent.toward !== 'grove')
+          throw new Error(`the setting was ${JSON.stringify(sent)}`);
+        await waitFor(page.getByRole('button', { name: /^Trades toward: Grove shards/ }));
+        // Its rates and the next step.
+        await page.getByRole('button', { name: /Show the rates/ }).click();
+        await waitFor(dialogOf(/Rates/));
+        await page.waitForTimeout(500);
+        await expectTopmost(page.getByRole('dialog').first(), 'the rates drawer');
+        await shot('market-rates');
+        await page.keyboard.press('Escape');
+        // The tray says Trading for the creature at the seat.
+        await waitFor(page.getByRole('button', { name: /Sproutle.*Trading at the Market/ }));
+        await backToValley();
+      } finally {
+        marketOff();
       }
     },
   );
