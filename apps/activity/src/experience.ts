@@ -7,7 +7,7 @@
 import { PART_KINDS } from '@creatures/game';
 import type { PartKind } from './gear-types';
 import { resourceCount } from './resource-count';
-import type { CountItem } from './ui/CountBadge';
+import type { CountItem } from './count-types';
 import { isArrayOf, isCount, isInt, isRecord, isStr } from './parse-core';
 
 /** One thing that changed an XP gain: a treat's multiplier, or a share on top (basis points; negative: less). */

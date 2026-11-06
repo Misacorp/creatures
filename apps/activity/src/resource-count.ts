@@ -6,7 +6,7 @@
  */
 import { resourceName } from '@creatures/game';
 import { resourceIconRef, type IconRef } from './icon-ref';
-import type { CountItem } from './ui/CountBadge';
+import type { CountItem } from './count-types';
 
 /** The neutral shard of "any element" (the Market's shards of any kind, the exchange's rates). */
 export const ANY_SHARD_ICON: IconRef = { kind: 'glyph', id: 'shard-any' };
