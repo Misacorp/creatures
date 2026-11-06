@@ -1,5 +1,6 @@
 import type { RefObject } from 'preact';
 import { useEffect } from 'preact/hooks';
+import { swallowNextClick } from './drag-click-guard';
 
 /** How far (CSS px) a mouse must move with the button down before the press counts as a drag, not a click. */
 export const DRAG_THRESHOLD = 4;
@@ -65,6 +66,7 @@ export function useDragScroll(ref: RefObject<HTMLElement | null>): void {
       box.classList.remove('dragging');
       // A drag released outside the box ends with no click on it: forget it once this event's click is past.
       if (dragging) {
+        swallowNextClick();
         setTimeout(() => {
           dragging = false;
         }, 0);

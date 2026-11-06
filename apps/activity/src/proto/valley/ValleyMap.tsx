@@ -16,6 +16,7 @@ import { nextMarker } from '../../map-view';
 import { scrollBehavior } from '../../scroll-to';
 import { PACK_ART } from '../../sprites/pack-art';
 import { Sprite } from '../../sprites/Sprite';
+import { PanHint } from '../../ui/PanHint';
 import { useDragScroll } from '../../ui/use-drag-scroll';
 import type { Creature } from '../../api';
 import { isFree, type ProtoWorld } from '../world';
@@ -286,6 +287,7 @@ export function ValleyMap({
           </ul>
         </div>
       </div>
+      <PanHint target={scrollerRef} id="valley-proto" />
       {arrows
         .filter((a) => tabY.has(a.place))
         .map((a) => {

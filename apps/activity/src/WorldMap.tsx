@@ -7,6 +7,7 @@ import { MAP_MAX_FACES, mapReadingOrder, mapScale, nextMarker, type MapPlace } f
 import { scrollBehavior } from './scroll-to';
 import { drawSprites } from './room-canvas';
 import { Sprite } from './sprites/Sprite';
+import { PanHint } from './ui/PanHint';
 import { useDragScroll } from './ui/use-drag-scroll';
 import {
   GRASS_TILE,
@@ -157,6 +158,7 @@ export function WorldMap({
           </ul>
         </div>
       </div>
+      <PanHint target={mapRef} id="world-map" />
     </div>
   );
 }

@@ -12,6 +12,7 @@ import { usePrefersReducedMotion } from '../hooks';
 import { Nameplate } from '../ui/Nameplate';
 import { nextMarker } from '../map-view';
 import { scrollBehavior } from '../scroll-to';
+import { PanHint } from '../ui/PanHint';
 import { useDragScroll } from '../ui/use-drag-scroll';
 import { paint } from './paint';
 import { At, CreatureSprite, Glyph, SpeechBubble, isStill, useSize, useTick } from './parts';
@@ -222,6 +223,7 @@ export function ValleyMap({
           </ul>
         </div>
       </div>
+      <PanHint target={scrollerRef} id="valley" />
       {arrows
         .filter((a) => tabY.has(a.place))
         .map((a) => {

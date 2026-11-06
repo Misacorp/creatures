@@ -1,6 +1,6 @@
 import { combatV2 } from '@creatures/game/combat-v2';
 import type { ComponentChildren } from 'preact';
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import { SAMPLE_GEAR } from '../../creature-card-sample';
 import { CurrencyPile } from '../../CurrencyPile';
 import { ItemTile } from '../../ItemTile';
@@ -14,6 +14,8 @@ import { DrillHead } from '../../ui/DrillHead';
 import { LiveRegion } from '../../ui/LiveRegion';
 import { PlaybackControls } from '../../ui/PlaybackControls';
 import { PreviewStatus } from '../../ui/PreviewStatus';
+import { PanHint } from '../../ui/PanHint';
+import { forgetAll } from '../../ui/pan-hint-logic';
 import { ScrollHint } from '../../ui/ScrollHint';
 import { SelectMenu } from '../../ui/SelectMenu';
 import { Switch } from '../../ui/Switch';
@@ -331,6 +333,54 @@ const scrollHint: Entry = {
     { name: 'Quick and fast', props: { lines: 40, delayMs: 500, speed: 60 } },
   ],
   render: (p) => <ScrollHintDemo p={p} />,
+};
+
+function PanHintDemo({ p }: { p: Props }) {
+  const box = useRef<HTMLDivElement>(null);
+  // Each press of "Show the hint again" forgets that the map was scrolled and draws it new.
+  const [version, setVersion] = useState(0);
+  const width = num(p, 'mapWidth');
+  return (
+    <div class="wb-pan-hint">
+      <div class="wb-pan-hint-frame" key={`${String(version)}:${String(width)}`}>
+        <div ref={box} class="wb-pan-hint-box">
+          <div
+            class="wb-pan-hint-map"
+            ref={(el) => {
+              el?.style.setProperty('--wb-map-w', `${String(width)}px`);
+            }}
+          >
+            Sample map, {width} px wide
+          </div>
+        </div>
+        <PanHint target={box} id="workbench-sample" />
+      </div>
+      <button
+        type="button"
+        onClick={() => {
+          forgetAll();
+          setVersion((v) => v + 1);
+        }}
+      >
+        Show the hint again
+      </button>
+    </div>
+  );
+}
+
+const panHint: Entry = {
+  name: 'PanHint',
+  file: 'apps/activity/src/ui/PanHint.tsx',
+  group: 'Controls',
+  description:
+    'The one cue that a map pans sideways, the same on the Expeditions world map, the valley and the living room: a soft stepped fade and a small gold arrow at each edge that has more to see. It shows only while the box really scrolls (a map that fits shows nothing), goes away for good once the player has scrolled the map (by swipe, drag, wheel or keys), and takes no taps and no focus. Under reduced motion the arrow holds still. Scroll the sample to see it go; "Show the hint again" forgets that.',
+  controls: { mapWidth: { kind: 'number', min: 200, max: 1200, step: 50 } },
+  defaults: { mapWidth: 800 },
+  presets: [
+    { name: 'Wider than the window (pans)', props: { mapWidth: 800 } },
+    { name: 'Fits (no hint)', props: { mapWidth: 200 } },
+  ],
+  render: (p) => <PanHintDemo p={p} />,
 };
 
 const choiceList: Entry = {
@@ -698,4 +748,5 @@ export const controlEntries: readonly Entry[] = [
   liveRegion,
   currencyPile,
   scrollHint,
+  panHint,
 ];

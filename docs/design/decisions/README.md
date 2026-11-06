@@ -443,6 +443,7 @@ Superseded: 1 entry (see the topic file).
 
 [ui.md](ui.md): Navigation and the frame, Home and the notice board, type scale, shared components, look and feel rules that apply across screens.
 
+- 2026-11-06 \[Misa\] One pan hint, the same on every sideways-scrolling map; a popover never opens after a drag
 - 2026-11-06 Closing a drawer or popover gives the focus back only to a keyboard user
 - 2026-11-05 Dungeon depth picker is a dropdown with the scalars on every row \[Misa\]
 - 2026-11-04 Combat v2: a Guard's pulse of protection through the tiles replaces the bracket \[Misa\]

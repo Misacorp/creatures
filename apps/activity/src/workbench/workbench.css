@@ -499,6 +499,32 @@
   list-style: none;
 }
 
+/* The pan hint page: a sideways scrolling sample map under its hint. */
+.wb-pan-hint {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+  justify-items: start;
+}
+
+.wb-pan-hint-frame {
+  position: relative;
+  width: 100%;
+}
+
+.wb-pan-hint-box {
+  overflow-x: auto;
+  scrollbar-width: none;
+  background: var(--dusk);
+}
+
+.wb-pan-hint-map {
+  display: grid;
+  place-items: center;
+  width: var(--wb-map-w, 800px);
+  height: 8rem;
+}
+
 /* The Valley Games art pages (entries/games-art.tsx). */
 .wb-games {
   display: flex;

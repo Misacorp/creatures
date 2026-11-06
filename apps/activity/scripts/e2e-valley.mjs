@@ -1144,6 +1144,7 @@ try {
       });
       await page.mouse.move(to.x, to.y, { steps: 6 });
       await page.mouse.up();
+      await page.waitForTimeout(150);
       if ((await page.getByRole('dialog').count()) > 0)
         throw new Error('a drag opened the popover');
       const dropped = await centre();
@@ -1152,6 +1153,16 @@ try {
           `dropped near (${String(Math.round(dropped.x))}, ${String(Math.round(dropped.y))}), not at (${String(Math.round(to.x))}, ${String(Math.round(to.y))})`,
         );
       }
+      // A drag that is released back over the creature it started on is still a drag, not a tap.
+      const back = await centre();
+      await page.mouse.move(back.x, back.y);
+      await page.mouse.down();
+      await page.mouse.move(back.x + 40, back.y + 10, { steps: 5 });
+      await page.mouse.move(back.x, back.y, { steps: 5 });
+      await page.mouse.up();
+      await page.waitForTimeout(150);
+      if ((await page.getByRole('dialog').count()) > 0)
+        throw new Error('a drag released over its own creature opened the popover');
       // A press that hardly moves is a tap.
       await mon.first().click();
       await waitFor(page.getByRole('dialog'));

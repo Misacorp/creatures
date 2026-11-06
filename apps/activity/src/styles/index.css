@@ -81,6 +81,7 @@
 @import './components/fold-row.css';
 @import './components/picker.css';
 @import './components/scroll-hint.css';
+@import './components/pan-hint.css';
 @import './views/jobs.css';
 @import './views/gear-slot.css';
 @import './components/loot.css';
