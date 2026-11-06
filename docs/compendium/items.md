@@ -88,6 +88,19 @@ Forty-nine bases in three slots (twenty-eight more are the gear sets, below). Ha
 
 **What the old gear became.** The charms, bands and trinkets of the first version were converted when gear changed (2026-10-16): an Attack or crit piece became a Hat, an HP piece a Scarf, a speed piece a Charm, with the same tint. The enchants were taken back by their teachers and the materials returned `(compendium detail, not shipped; design: gear-and-creatures-v2.md section 12)`.
 
+## Patchwork pieces
+
+Added 2026-11-06 (valley systems; decision `2026-11-06-patchwork-pieces-blueprints-that-take-any`). Three blueprints that every player knows from the start: the **Patchwork Cap**, the **Patchwork Shawl** and the **Patchwork Charm**. They take scrap and shards of any element, and the piece comes out in the element of the shards used (the pile held most unless an order names one). The piece is the plainest Hat, Scarf or Charm of that element: a Kelp Cap, a Static Wrap, an Acorn Cap. They are Common or Rare only, with fewer rolled lines than a proper blueprint's piece, and they have no quality. The prices and the cap are in `packages/game/src/content/data/patchwork.json`; no numbers here.
+
+- _What they are in the world:_ what a camp makes when it has plenty of one kind of shard and nobody has found the pattern for a proper piece: scraps of old cloth and leather sewn together, a shard worked into the seam, the colour of whichever shard was nearest. It fits anyone and it is nobody's best work. Every smith can make one, which is why every player knows the three from the start. The name "Patchwork" echoes the Patch Scarf (a neutral piece "mended so often that it is mostly patches"); the Patchwork Shawl is named for a shawl so the two scarves are not mixed up `(compendium detail, not shipped)`.
+- _The look `(compendium detail, not shipped)`:_ the blueprint is drawn as the slot's plain neutral piece (the Trail Cap, the Patch Scarf, the Trail Charm) with a patch sewn on in each of the five shard colours (tide blue, ember orange, grove green, spark yellow, mire brown); drawn straight into the game (`sprites/data/patchwork-sprites.ts`), with no art waiting in the library for it. The piece it makes has the ordinary element look.
+
+| Name            | Slot  | Flavour `(content: patchwork.json)`                                     |
+| --------------- | ----- | ----------------------------------------------------------------------- |
+| Patchwork Cap   | Hat   | "Sewn from whatever the camp had left over, and it fits anyone."        |
+| Patchwork Shawl | Scarf | "Strips of old cloth, tacked together with a little shard dust."        |
+| Patchwork Charm | Charm | "A knot of odd bits that hums like whichever shard it was made around." |
+
 ## Gear sets
 
 Added 2026-10-18 (more gear and modifiers). A **set** is three named pieces, a Hat, a Scarf and a Charm, that share a tag. Wear two of them on one creature for a small bonus, all three for a named effect `(content: gear-sets.json)`. Every set piece is a base in `gear.json` like the others: twenty-seven new bases for the nine plain sets, plus a Festival Lantern Cap that completes Lantern Night with the two Festival pieces that were already there. A set piece has the stats of a fine (item level 10) Hat or Scarf and the same Charm line as the plain Charm of its tag, so the set is the reward, not a bigger number; it unlocks at item level 12 (the Festival ones at 1, like all Festival pieces). The pieces of a role's set can only be worn by that role, the way the role Charms are.

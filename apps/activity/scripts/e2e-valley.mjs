@@ -256,7 +256,11 @@ const orderView = (o) => ({
     scrap: 36,
     shardElement:
       forgeState.waitShard ??
-      (o.blueprintId === undefined || o.blueprintId === null ? null : 'tide'),
+      (o.blueprintId === undefined || o.blueprintId === null
+        ? null
+        : String(o.blueprintId).startsWith('patchwork-')
+          ? (o.element ?? null)
+          : 'tide'),
     shard: 1,
     essence: o.reach === 'rare' ? 25 : o.reach === 'epic' ? 70 : 0,
   },
@@ -445,6 +449,7 @@ ROUTES.set('/api/valley/order', (request) => {
       blueprintId: body.forTeam ? null : body.blueprintId,
       count: body.count ?? 1,
       reach: body.reach ?? 'none',
+      element: body.element,
     });
   } else if (body.action === 'edit') {
     for (const a of forgeState.anvils) {
@@ -1694,6 +1699,129 @@ try {
         });
         await expectTopmost(loc, 'a Forge card');
       }
+      forgeState.anvils = [];
+    },
+  );
+
+  // Patchwork pieces (V-FORGE-12): blueprints every player knows, taking shards of any element. In the Blueprints list with icon costs, and in the
+  // order editor with "Most held" as the default (the pile now holding most, as an icon) or a named element.
+  await scenario(
+    'valley systems on: a patchwork piece is ordered with "Most held" and with a named element',
+    () => {
+      const config = ROUTES.get('/api/config');
+      answerOverride.set('/api/config', () => ({ ...config(), valleySystems: true }));
+      const creatures = baseState.creatures.map((c) => ({ ...c, busy: null, away: false }));
+      scouts.seats = [];
+      scouts.owned = [];
+      scouts.ids = creatures.map((c) => c.id);
+      forgeState.anvils = [{ id: 'anvil-1', creatureId: creatures[1].id, kit: null, orders: [] }];
+      forgeState.nextOrder = 1;
+      forgeCalls.length = 0;
+      stateOverride = { creatures, valley: valleyBlock() };
+      // A finished patchwork piece in the bag: an ordinary Ember hat (the plainest one) with no rolled lines.
+      answerOverride.set('/api/gear', () => {
+        const gear = fixture('gear-state');
+        const stats = [
+          { stat: 'atk', value: 2, base: 2, text: 'Attack 2' },
+          { stat: 'hp', value: 3, base: 3, text: 'HP 3' },
+        ];
+        return {
+          ...gear,
+          items: gear.items.map((i) =>
+            i.baseId === 'kelp-cap'
+              ? { ...i, baseId: 'coal-warm-cap', tag: 'ember', rarity: 'common', stats, lines: [] }
+              : i,
+          ),
+        };
+      });
+    },
+    async () => {
+      await waitFor(page.locator(VALLEY), 'attached');
+      await place('forge').evaluate((el) => el.click());
+      await waitFor(heading('Forge'));
+      await waitFor(page.getByRole('heading', { name: 'Anvil 1' }));
+      // The Blueprints list has the three patchwork blueprints with their price as icons (no words, no quality).
+      const rows = page.locator('li.blueprint').filter({ hasText: /Patchwork/ });
+      await waitFor(rows);
+      if ((await rows.count()) !== 3)
+        throw new Error('the Blueprints list has no 3 patchwork rows');
+      const row = rows.first();
+      await row.scrollIntoViewIfNeeded();
+      if (/Quality|shards?\b/i.test((await row.locator('.bp-meta').textContent()) ?? ''))
+        throw new Error('a patchwork row names its costs or its quality in words');
+      if ((await row.locator('.bp-meta [role="img"], .bp-meta button').count()) < 2)
+        throw new Error('a patchwork row has no cost badges');
+      await expectTopmost(
+        row.getByRole('button', { name: /^Order/ }),
+        'the patchwork Order button',
+      );
+      await row.evaluate((el) => {
+        el.scrollIntoView({ block: 'center' });
+      });
+      await shot('patch-blueprints');
+      // Order it from its row: the editor opens with the blueprint picked and "Most held" (Ember holds most: 7).
+      await row.getByRole('button', { name: /^Order/ }).click();
+      await waitFor(page.getByRole('dialog', { name: /Add an order/ }));
+      const shards = page.getByRole('button', { name: /^Shards: most held, now Ember/ });
+      await waitFor(shards);
+      if ((await page.locator('ul[aria-label="Reach"]').count()) > 0)
+        throw new Error('a patchwork order offers a Reach');
+      await page.waitForTimeout(400);
+      await expectTopmost(page.getByRole('dialog').first(), 'the patchwork order editor');
+      await expectTopmost(shards, 'the shard slot');
+      await shot('patch-order-editor');
+      await page.getByRole('button', { name: /^Add to the queue/ }).click();
+      await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+      const most = forgeCalls.at(-1)?.[1];
+      if (
+        most?.action !== 'add' ||
+        most.blueprintId !== 'patchwork-hat' ||
+        most.element !== undefined ||
+        most.reach !== 'none'
+      )
+        throw new Error(`the "most held" order was ${JSON.stringify(most)}`);
+      await waitFor(page.locator('button.fg-order'));
+      // A second one with a named element: the shard choice lists Most held and the five elements.
+      await page.getByRole('button', { name: /^Add an order/ }).click();
+      await waitFor(page.getByRole('dialog', { name: /Add an order/ }));
+      await page.getByRole('button', { name: /What to make: nothing chosen/ }).click();
+      const pick = page.locator('ul[aria-label="Blueprints"] button').filter({
+        hasText: /Patchwork Charm/,
+      });
+      await waitFor(pick);
+      await expectTopmost(pick.first(), 'the patchwork blueprint choice');
+      await shot('patch-what-to-make');
+      await pick.first().click();
+      await page.getByRole('button', { name: /^Shards: most held/ }).click();
+      await waitFor(page.getByText('Which shards'));
+      if ((await page.locator('ul[aria-label="Shards"] button').count()) !== 6)
+        throw new Error('the shard choice does not list Most held and the five elements');
+      await page.waitForTimeout(300);
+      await expectTopmost(page.getByRole('dialog').first(), 'the shard choice');
+      await shot('patch-shard-choice');
+      await page.locator('ul[aria-label="Shards"] button').filter({ hasText: /Grove/ }).click();
+      await waitFor(page.getByRole('button', { name: /^Shards: Grove/ }));
+      await page.getByRole('button', { name: /^Add to the queue/ }).click();
+      await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+      const named = forgeCalls.at(-1)?.[1];
+      if (
+        named?.action !== 'add' ||
+        named.blueprintId !== 'patchwork-charm' ||
+        named.element !== 'grove' ||
+        named.reach !== 'none'
+      )
+        throw new Error(`the named order was ${JSON.stringify(named)}`);
+      await shot('patch-queue');
+      // The finished piece in the bag is an Ember hat like any other: its element badge and tint are the element's.
+      const piece = page.getByRole('option', { name: /Coal-Warm Cap/ }).first();
+      await piece.scrollIntoViewIfNeeded();
+      await piece.click();
+      await waitFor(page.getByRole('dialog'));
+      await page.waitForTimeout(500);
+      await expectTopmost(page.getByRole('dialog').first(), 'the finished piece card');
+      if (!/Ember/.test((await page.getByRole('dialog').first().textContent()) ?? ''))
+        throw new Error('the finished piece does not show its element');
+      await shot('patch-finished-piece');
       forgeState.anvils = [];
     },
   );
