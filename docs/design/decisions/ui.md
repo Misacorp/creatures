@@ -4,6 +4,14 @@ Navigation and the frame, Home and the notice board, type scale, shared componen
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-06: Closing a drawer or popover gives the focus back only to a keyboard user
+
+ID: `2026-11-06-closing-a-drawer-or-popover-gives` · Status: current
+
+**Decision.** `ui/Drawer`, `ui/Popover` and `ui/PickSheet` return the focus to the thing that opened them only when that opener had keyboard focus (`:focus-visible`, asked through `ui/focus-return.ts` when they open). After a tap or click, closing by Escape, a tap outside or the X leaves no focus ring behind. Opened from the keyboard, they still hand the focus back on close, ring and all. The same holds in today's game and in the valley, since both use these components.
+
+**Reasoning.** Misa (2026-11-05, on the valley's back from a place): a ring on the place just left "detracts from the experience", and accessibility need not go that far at this level. The overnight visual pass found the same leftover ring after drawers and popovers closed (the Signpost's pack bar, a glossary tag). Returning focus is still right for keyboard users, so the rule follows how the thing was opened rather than dropping the return.
+
 ## 2026-11-05: Dungeon depth picker is a dropdown with the scalars on every row [Misa]
 
 ID: `2026-11-05-dungeon-depth-picker-is-a-dropdown` · Status: current · Amends: `2026-11-05-combat-v2-dungeon-depth-picker-built`
