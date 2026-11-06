@@ -39,8 +39,8 @@ describe('gearFx: the line to effect map', () => {
     // Scaled to the twin talent's pip: x0.8 (Brace).
     ['brace', 'guard', { braceBp: 2000 }],
     ['clinging', 'support', { clinging: true }],
-    // x0.3 and the Knack's price.
-    ['guards-shadow', 'setter', { besideGuardBp: 510, armourBonus: -10 }],
+    // x0.6, no armour price (2026-11-06).
+    ['guards-shadow', 'setter', { besideGuardBp: 1020 }],
     ['heavy-hand', 'support', { miredExtraBp: 4000 }],
     ['first-pounce', 'setter', { firstHitBp: 8500 }],
     ['owners-mark', 'setter', { ownMarkBp: 750 }],
@@ -79,17 +79,17 @@ describe('gearFx: the line to effect map', () => {
     // Scale x2 (the reaction family).
     ['four-winds', 'payoff', { fourWindsBp: 2000 }],
     ['adaptation-pierce', 'setter', { adaptPierceBp: 3500 }],
-    // Slice 4, batch B: the triggers and auras.
-    ['payback', 'guard', { paybackBp: 3000 }],
+    // Slice 4, batch B: the triggers and auras. Payback x6, Overflow x8, Slipstream x6, Echo x4 and Shared warmth x8 since 2026-11-06.
+    ['payback', 'guard', { paybackBp: 18000 }],
     ['ember-tail', 'payoff', { emberTailBp: 2000 }],
-    ['overflow', 'payoff', { overflowBp: 1500 }],
-    ['slipstream', 'setter', { slipstreamBp: 1800 }],
-    ['echo', 'payoff', { echoChanceBp: 1200 }],
+    ['overflow', 'payoff', { overflowBp: 12000 }],
+    ['slipstream', 'setter', { slipstreamBp: 10800 }],
+    ['echo', 'payoff', { echoChanceBp: 4800 }],
     // The gear line's own field; Catch Breath is `secondWindBp`.
     ['second-wind', 'setter', { windChanceBp: 1200 }],
     // x0.5: round 1 only.
     ['kindling', 'support', { kindlingBp: 2000 }],
-    ['shared-warmth', 'guard', { sharedWarmthBp: 300 }],
+    ['shared-warmth', 'guard', { sharedWarmthBp: 2400 }],
     // Scale x2 (the reaction family).
     ['spark-share', 'support', { sparkShareBp: 3000 }],
     ['lantern-bearer', 'setter', { lanternBp: 600 }],
@@ -110,11 +110,11 @@ describe('gearFx: the line to effect map', () => {
     expect(gearFx(wearer('setter'), [hatWith('first-pounce', 0)])).toEqual({ firstHitBp: 1942 });
   });
 
-  it('sums two copies of a line, but the Guard Shadow armour price is paid once', () => {
+  it('sums two copies of a line (Guard Shadow has no armour price since 2026-11-06)', () => {
     const fx = gearFx(wearer('setter'), [hatWith('well-fed'), hatWith('well-fed', 1)]);
     expect(fx.healReceivedBp).toBe(3500 + 1400);
     const shadow = gearFx(wearer('setter'), [hatWith('guards-shadow'), hatWith('guards-shadow')]);
-    expect(shadow).toEqual({ besideGuardBp: 1020, armourBonus: -10 });
+    expect(shadow).toEqual({ besideGuardBp: 2040 });
   });
 
   it('settles the conditions before the fight', () => {

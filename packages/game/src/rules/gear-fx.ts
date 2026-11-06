@@ -132,12 +132,12 @@ export const GEAR_LINE_FX: Readonly<Record<string, GearLineFx>> = {
   // Top pip 20% against today's 25%.
   brace: { field: 'braceBp', unit: 'bp', scale: [4, 5] },
   clinging: { field: 'clinging', unit: 'flag' },
-  // Top pip 5% against today's 17%, and the Knack's price: armour -10.
+  // Top pip 5% against today's 17%. x0.6 and no armour price since 2026-11-06: the Knack's armour -10 was not paid back at x0.3
+  // (-3.0 points of boss HP in the lab's power table); now +1.1.
   'guards-shadow': {
     field: 'besideGuardBp',
     unit: 'bp',
-    scale: [3, 10],
-    once: { armourBonus: -10 },
+    scale: [6, 10],
   },
   // Top pip 40% against today's 30%.
   'heavy-hand': { field: 'miredExtraBp', unit: 'bp', scale: [4, 3] },
@@ -191,16 +191,19 @@ export const GEAR_LINE_FX: Readonly<Record<string, GearLineFx>> = {
   'four-winds': { field: 'fourWindsBp', unit: 'bp', scale: REACTION_SCALE },
   'adaptation-pierce': { field: 'adaptPierceBp', unit: 'bp' },
   // Slice 4, batch B: triggers and auras. Scales are 1 unless said; the engine limits each trigger that fires off its wearer's turn.
-  payback: { field: 'paybackBp', unit: 'bp' },
+  // Payback, Echo, Overflow, Slipstream and Shared Warmth lifted the boss HP by 0.3 points or less at scale 1; buffed 2026-11-06 (Misa)
+  // to about +1.3 to +1.5 points each (Payback +0.3: it fires only when a creature takes a hit for a neighbour, so even x25 gives
+  // +0.5; x6 is kept, a top boost of +180%). Best picks, listed in docs/design/combat/for-misa.md.
+  payback: { field: 'paybackBp', unit: 'bp', scale: [6, 1] },
   'ember-tail': { field: 'emberTailBp', unit: 'bp' },
-  overflow: { field: 'overflowBp', unit: 'bp' },
-  slipstream: { field: 'slipstreamBp', unit: 'bp' },
-  echo: { field: 'echoChanceBp', unit: 'bp' },
+  overflow: { field: 'overflowBp', unit: 'bp', scale: [8, 1] },
+  slipstream: { field: 'slipstreamBp', unit: 'bp', scale: [6, 1] },
+  echo: { field: 'echoChanceBp', unit: 'bp', scale: [4, 1] },
   // The gear line's own field: `secondWindBp` is Catch Breath's.
   'second-wind': { field: 'windChanceBp', unit: 'bp' },
   // Round 1 only, so one boost of the Support's own size (x0.5: top pip 20% against today's 40%).
   kindling: { field: 'kindlingBp', unit: 'bp', scale: [1, 2] },
-  'shared-warmth': { field: 'sharedWarmthBp', unit: 'bp' },
+  'shared-warmth': { field: 'sharedWarmthBp', unit: 'bp', scale: [8, 1] },
   // The reaction family's scale (x2), an aura on the neighbours.
   'spark-share': { field: 'sparkShareBp', unit: 'bp', scale: REACTION_SCALE },
   'lantern-bearer': { field: 'lanternBp', unit: 'bp' },
