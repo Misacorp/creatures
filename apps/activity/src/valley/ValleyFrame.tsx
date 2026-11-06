@@ -14,6 +14,8 @@ import { scrollAndFocus } from '../scroll-to';
 import { BonfireScene } from './BonfireScene';
 import { CommonsBoard, type CommonsActions, type CommonsStart } from './CommonsBoard';
 import { Keepsakes } from './Keepsakes';
+import { MarketPage, type MarketActions, type MarketStart } from './MarketPage';
+import { marketState } from './market-view';
 import { commonsOf, levelOf } from './commons-view';
 import { PinnedAct } from './PinnedAct';
 import { PlaceScene, SCENE_ART } from './PlaceScene';
@@ -26,7 +28,15 @@ import { placeBubbles, placeStates, type PlaceInput } from './place-state';
 import { castFor, hasScene, type CastExtra } from './place-cast';
 import { artSize, placeScale, placeSceneDraw } from './place-scene';
 import type { TrayInput } from './tray-state';
-import { trayFor, isAtHome, isHelping, isScouting, isSmithing, trayStates } from './tray-state';
+import {
+  trayFor,
+  isAtHome,
+  isHelping,
+  isScouting,
+  isSmithing,
+  isTrading,
+  trayStates,
+} from './tray-state';
 import { placeOf, type PlaceId } from './valley-art';
 import { placeLabel } from './valley-logic';
 import { soonLine, type SoonPlaceId, type ValleyView } from './valley-nav';
@@ -54,8 +64,10 @@ export function ValleyFrame({
   castExtra,
   visit = null,
   commons,
+  market,
   acorns = 0,
   commonsStart,
+  marketStart,
   busy = false,
   focus,
   onOpen,
@@ -79,10 +91,14 @@ export function ValleyFrame({
   visit?: ValleyVisit | null;
   /** The commons' gifts and communal seats (`VALLEY_SYSTEMS` on): the Bonfire's and the Paddock's project boards; absent shows none. */
   commons?: CommonsActions;
+  /** The Market's broker seat (`VALLEY_SYSTEMS` on): its page opens once the Market's project is under way; absent leaves the Market "not open yet". */
+  market?: MarketActions;
   /** The player's Acorns, for a gift. */
   acorns?: number;
   /** The board's sheet or drawer to open at the start (the workbench shows each); the game leaves it out. */
   commonsStart?: CommonsStart & { sheet?: boolean };
+  /** The broker's picker or drawer to open at the start (the workbench shows each); the game leaves it out. */
+  marketStart?: MarketStart;
   /** An action is under way: the boards' buttons wait. */
   busy?: boolean;
   /** The place whose button takes the focus when the map comes back. */
@@ -123,6 +139,23 @@ export function ValleyFrame({
           bubbles,
         )
       : null;
+  // The Market has a page once its project is under way (the server's commons say so); until then it stays "not open yet".
+  const marketAt = marketState(visit);
+  const marketPage =
+    view.kind === 'soon' &&
+    view.place === 'market' &&
+    visit !== null &&
+    market !== undefined &&
+    marketAt !== null &&
+    marketAt !== 'waiting';
+  const marketCast = marketPage
+    ? castFor(
+        'market',
+        { ...placeInput, ...castExtra, visit },
+        artSize(SCENE_ART.market),
+        bubbles,
+      )
+    : null;
   // Today's page of the place: the House's two books, then the page the game drew.
   const inside = (
     <>
@@ -182,7 +215,8 @@ export function ValleyFrame({
                     isAtHome(c) &&
                     !isScouting(c, visit) &&
                     !isSmithing(c, visit) &&
-                    !isHelping(c, visit),
+                    !isHelping(c, visit) &&
+                    !isTrading(c, visit),
                 )}
                 look={{ ...DEFAULT_LOOK, bonfireLevel }}
                 at="start"
@@ -231,7 +265,37 @@ export function ValleyFrame({
             />
           </section>
         )}
-        {view.kind === 'soon' && !(view.place === 'bonfire' && visit !== null) && (
+        {marketPage && marketCast !== null && visit !== null && market !== undefined && (
+          <div class="vy-page">
+            <PlaceScene
+              cast={marketCast}
+              onAct={() => {
+                scrollAndFocus(insideRef.current);
+              }}
+            />
+            <div class="vy-inside" ref={insideRef} tabIndex={-1}>
+              <MarketPage
+                visit={visit}
+                creatures={creatures}
+                trayInput={tray}
+                acorns={acorns}
+                busy={busy}
+                actions={market}
+                {...(commons === undefined ? {} : { commons })}
+                onOpenPaddock={() => {
+                  onOpen('paddock');
+                }}
+                start={{
+                  ...marketStart,
+                  ...(commonsStart === undefined ? {} : { commons: commonsStart }),
+                }}
+              />
+            </div>
+          </div>
+        )}
+        {view.kind === 'soon' &&
+          !(view.place === 'bonfire' && visit !== null) &&
+          !marketPage && (
           <section class="vy-soon" aria-label={placeLabel(view.place)}>
             <SceneFrame
               id={view.place}
@@ -267,7 +331,13 @@ export function ValleyFrame({
         open={places}
         lines={placeStates({ ...placeInput, visit })}
         bubbles={bubbles}
-        opened={visit === null ? [] : ['bonfire']}
+        opened={
+          visit === null
+            ? []
+            : marketAt === null || marketAt === 'waiting'
+              ? ['bonfire']
+              : ['bonfire', 'market']
+        }
         onClose={() => {
           setPlaces(false);
         }}

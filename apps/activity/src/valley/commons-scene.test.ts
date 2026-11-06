@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { homeAlerts } from '../home-view';
 import { HOME_NOW, homeInput } from '../workbench/home-sample';
 import { buildingPlace, openPlace, sampleCommons, withCommons } from './commons-sample';
+import { presetMarket, withMarket, withMarketPlace } from './market-sample';
 import { castFor, type CastInput } from './place-cast';
 import { placeBubbles, placeStates } from './place-state';
 import { sampleSeat, sampleValley } from './signpost-sample';
@@ -118,5 +119,38 @@ describe('the tray and the Places list', () => {
     const visit = withCommons(sampleValley(free, []), sampleCommons());
     const plain = placeBubbles(homeAlerts(busy), { ...busy, visit: sampleValley(free, []) });
     expect(placeBubbles(homeAlerts(busy), { ...busy, visit })).toEqual(plain);
+  });
+});
+
+describe("the Market's scene (V-FORGE-11, V-COM-6)", () => {
+  const marketCast = (preset: string, helper?: string) => {
+    const commons = withMarketPlace(sampleCommons(), preset);
+    const market = presetMarket(preset, free);
+    const base = withCommons(
+      sampleValley(free, []),
+      commons,
+      helper === undefined ? undefined : { place: 'market', creatureId: helper },
+    );
+    return castFor('market', inputOf(market === null ? base : withMarket(base, market)), ART, []);
+  };
+
+  it('puts scaffolding up while the project fills, and none once it is built', () => {
+    expect(marketCast('being built').scaffold).toBeGreaterThan(0);
+    expect(marketCast('open, free seat').scaffold).toBe(0);
+  });
+
+  it('stands the broker at its seat and the helper beside it, and asks for a broker when the seat is free', () => {
+    const working = marketCast('open with a broker', b.id);
+    expect(working.stands.map((s) => s.where)).toEqual([
+      'trading at the Market',
+      'helping build the Market',
+    ]);
+    expect(working.act).toEqual({ kind: 'calm', line: '' });
+    expect(marketCast('open, free seat').act).toEqual({
+      kind: 'step',
+      label: 'Post a broker',
+      detail: 'a seat is free',
+    });
+    expect(marketCast('being built').stands).toEqual([]);
   });
 });

@@ -12,6 +12,7 @@ import {
   fetchState,
   giveToProject,
   postCommunal,
+  setBroker,
   postOrder,
   postScout,
   scoutKit,
@@ -98,6 +99,7 @@ import type { TeamConfigure } from './TeamCreaturePage';
 import { Alert } from './ui/Alert';
 import { WelcomeBack } from './valley/gazette/WelcomeBack';
 import { ValleyFrame } from './valley/ValleyFrame';
+import type { MarketActions } from './valley/MarketPage';
 import { SignpostSeats, type SignpostActions } from './valley/SignpostSeats';
 import type { CommonsActions } from './valley/CommonsBoard';
 import { COMMONS_NAMES } from './valley/commons-view';
@@ -439,6 +441,12 @@ export function Game({
     },
     post: async (place, creatureId) =>
       takeValley(await run(() => postCommunal({ place, creatureId }))),
+  };
+  /** The Market's broker (phase 5 step 7): posting and setting what it trades toward are free; each answer's `valley` and state are taken in at once. */
+  const marketActions: MarketActions = {
+    post: async (body) => takeValley(await run(() => postScout(body))),
+    setToward: async (seatId, toward) =>
+      takeValley(await run(() => setBroker({ seatId, toward }))),
   };
   /** Wears an item or takes it off (the card's and the dungeon's); true when the server took it. */
   const equipOn = async (gearId: string, creatureId: string | null): Promise<boolean> =>
@@ -1025,7 +1033,14 @@ export function Game({
           raid: raidGlance,
         }}
         visit={systems}
-        {...(systems === null ? {} : { commons: commonsActions, acorns: game.balances.bait, busy })}
+        {...(systems === null
+          ? {}
+          : {
+              commons: commonsActions,
+              market: marketActions,
+              acorns: game.balances.bait,
+              busy,
+            })}
         castExtra={{
           dungeonTeam,
           dungeonPhase,

@@ -48,7 +48,7 @@ import {
 import { SlotText, SpendConfirm } from './seat-parts';
 
 /** The sentinel row of the creature picker that empties the seat. */
-const REMOVE_ID = '';
+export const REMOVE_ID = '';
 
 /** What the board asks the game to do; each answers whether the server took it. */
 export interface CommonsActions {
@@ -88,7 +88,7 @@ export interface CommonsBoardProps {
 }
 
 /** The creature picker's rows for the communal seat: everyone who can be posted; who stands at another seat swaps here. */
-function seatOptions(
+export function seatOptions(
   creatures: readonly Creature[],
   visit: ValleyVisit,
   seatId: string | null,

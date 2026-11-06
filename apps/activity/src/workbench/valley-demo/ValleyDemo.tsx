@@ -13,7 +13,19 @@ import type { OrderRequest } from '../../api';
 import type { ValleyAnvilView, ValleyCommonsView, ValleyOrderView } from '@creatures/game';
 import { SignpostSeats, type SignpostStart } from '../../valley/SignpostSeats';
 import type { CommonsActions, CommonsStart } from '../../valley/CommonsBoard';
-import { COMMONS_PRESETS, presetCommons, withCommons } from '../../valley/commons-sample';
+import {
+  COMMONS_PRESETS,
+  presetCommons,
+  sampleCommons,
+  withCommons,
+} from '../../valley/commons-sample';
+import {
+  MARKET_PRESETS,
+  presetMarket,
+  withMarket,
+  withMarketPlace,
+} from '../../valley/market-sample';
+import type { MarketActions, MarketStart } from '../../valley/MarketPage';
 import {
   fullFloor,
   sampleAnvil,
@@ -52,6 +64,7 @@ export const VALLEY_STARTS = [
   'school',
   'bonfire',
   'signpost',
+  'market',
 ] as const;
 
 /** How the demo's valley systems stand: off (the Bonfire is "not open yet"), a small roster resting, or a big one. */
@@ -93,10 +106,16 @@ export const VALLEY_OPEN = [
   'collection',
   'helper picker',
   'fire numbers',
+  'broker picker',
+  'trade toward',
+  'broker rates',
 ] as const;
 
 /** How the demo's commons stand (phase 5 step 6b): off, a young server, a full collection, a grown fire, a bonfire at level 3, helpers posted. */
 export const VALLEY_COMMONS = COMMONS_PRESETS;
+
+/** How the demo's Market stands (phase 5 step 7): off, not open, being built, built with a free seat or a broker at work, stuck, or a Master. */
+export const VALLEY_MARKET = MARKET_PRESETS;
 
 /** What a `VALLEY_OPEN` setting opens on a project board at the start. */
 function commonsStartOf(setting: string): (CommonsStart & { sheet?: boolean }) | undefined {
@@ -282,6 +301,20 @@ function forgeStartOf(setting: string): ForgeStart {
   }
 }
 
+/** What a `VALLEY_OPEN` setting opens on the Market's page at the start. */
+function marketStartOf(setting: string): MarketStart | undefined {
+  switch (setting) {
+    case 'broker picker':
+      return { picker: true };
+    case 'trade toward':
+      return { toward: true };
+    case 'broker rates':
+      return { detail: true };
+    default:
+      return undefined;
+  }
+}
+
 const BLUEPRINT = SAMPLE_GEAR.blueprints[0]?.baseId ?? 'kelp-cap';
 
 /** The anvils of a forge setting, the first two creatures of the roster posted. */
@@ -464,6 +497,7 @@ export function ValleyDemo({
   open: opened = 'nothing',
   forge = 'off',
   commons = 'off',
+  market = 'off',
   paper = 'off',
 }: {
   start: string;
@@ -478,6 +512,8 @@ export function ValleyDemo({
   forge?: string;
   /** The commons (phase 5 step 6b): one of `VALLEY_COMMONS`. */
   commons?: string;
+  /** The Market and its broker (phase 5 step 7): one of `VALLEY_MARKET`. */
+  market?: string;
   /** The welcome-back Gazette on the server's paper (phase 5 step 4): one of `VALLEY_PAPERS`. */
   paper?: string;
 }) {
@@ -488,7 +524,9 @@ export function ValleyDemo({
     first !== 'valley' && isOpenPlace(first) ? PLACE_TAB[first] : 'home',
   );
   const [homeAt, setHomeAt] = useState<HomeAt>(
-    first === 'house' || first === 'school' || first === 'bonfire' ? first : 'valley',
+    first === 'house' || first === 'school' || first === 'bonfire' || first === 'market'
+      ? first
+      : 'valley',
   );
   const [focus, setFocus] = useState<PlaceId | null>(null);
   const [gone, setGone] = useState(false);
@@ -497,7 +535,8 @@ export function ValleyDemo({
   const planned = homeInput(day, true);
   const scoutsOn = scouts !== 'off';
   const forgeOn = forge !== 'off';
-  const commonsOn = commons !== 'off';
+  const marketOn = market !== 'off';
+  const commonsOn = commons !== 'off' || marketOn;
   // With the valley's systems on the roster rests at the fire, and the allowance brought some Acorns home. The scouts' demo
   // frees every creature of its trips and jobs (a creature cannot scout and be away).
   const base =
@@ -517,9 +556,12 @@ export function ValleyDemo({
   const [anvils, setAnvils] = useState<ValleyAnvilView[]>(() => forgeAnvils(base.creatures, forge));
   const [shelf, setShelf] = useState(DEMO_SHELF);
   // The commons live here too: a gift fills the project, a helper stands at its seat.
-  const [block, setBlock] = useState<ValleyCommonsView | null>(() =>
-    presetCommons(commons, base.creatures),
-  );
+  const [block, setBlock] = useState<ValleyCommonsView | null>(() => {
+    const own = presetCommons(commons, base.creatures);
+    return marketOn ? withMarketPlace(own ?? sampleCommons(), market) : own;
+  });
+  // The broker's seat (phase 5 step 7): its creature and what it trades toward live here too.
+  const [brokerSeat, setBrokerSeat] = useState(() => presetMarket(market, base.creatures));
   const systems = resting !== 'off' || scoutsOn || forgeOn || commonsOn;
   const scoutVisit = systems ? demoVisit(base.creatures, seats, owned) : null;
   const plainVisit =
@@ -536,7 +578,25 @@ export function ValleyDemo({
           },
           anvils,
         );
-  const visit = plainVisit === null || block === null ? plainVisit : withCommons(plainVisit, block);
+  const withBlock =
+    plainVisit === null || block === null ? plainVisit : withCommons(plainVisit, block);
+  const visit = withBlock === null || brokerSeat === null ? withBlock : withMarket(withBlock, brokerSeat);
+  const marketActions: MarketActions = {
+    post: (body) => {
+      setBrokerSeat((now) =>
+        now === null || now.seat === null
+          ? now
+          : { ...now, seat: { ...now.seat, creatureId: body.creatureId } },
+      );
+      return Promise.resolve(true);
+    },
+    setToward: (_seatId, toward) => {
+      setBrokerSeat((now) =>
+        now === null || now.seat === null ? now : { ...now, seat: { ...now.seat, toward } },
+      );
+      return Promise.resolve(true);
+    },
+  };
   const commonsActions: CommonsActions | undefined =
     block === null
       ? undefined
@@ -650,9 +710,11 @@ export function ValleyDemo({
               ? {}
               : {
                   commons: commonsActions,
+                  market: marketActions,
                   acorns,
                   ...(commonsStart === undefined ? {} : { commonsStart }),
                 })}
+            {...(marketStartOf(opened) === undefined ? {} : { marketStart: marketStartOf(opened) as MarketStart })}
             focus={focus}
             onOpen={open}
             onLeave={leave}
