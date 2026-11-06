@@ -13,8 +13,15 @@ export const tiersAt = (rules: Rules, ilvl: number): number =>
   1 + rules.gear.pipFrom.filter((t) => ilvl >= t).length;
 
 /** Rolls the lines of a piece: each is the top pip its level allows with `topPipChance`, else a lower tier with equal chances. */
-export function rollLines(rng: Rng, rules: Rules, rarity: number, ilvl: number): number[] {
-  const count = rules.gear.lines[rarity] ?? 1;
+export function rollLines(
+  rng: Rng,
+  rules: Rules,
+  rarity: number,
+  ilvl: number,
+  /** Fewer lines than the rarity's (a patchwork piece, V-FORGE-12). */
+  fewer?: number,
+): number[] {
+  const count = fewer ?? rules.gear.lines[rarity] ?? 1;
   const top = tiersAt(rules, ilvl);
   return Array.from({ length: count }, () => {
     if (top === 1) return 1;

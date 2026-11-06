@@ -59,6 +59,11 @@ export interface ServerConfig {
   readonly tempering?: boolean;
   /** Whether the idol (a placeholder scrap sink) is in the valley (default: `rules.idol.on`; the report runs the other value beside it). */
   readonly idol?: boolean;
+  /**
+   * Whether anvils that would tinker order patchwork pieces (V-FORGE-12: a Hat, Scarf or Charm from any shard plus scrap; default yes; the
+   * quick run's `--patchwork off` is the "before").
+   */
+  readonly patchwork?: boolean;
   /** Dungeon XP by the player's week (a study variant, off by default; see `dungeonXp.ts`). */
   readonly dungeonXp?: DungeonXp;
   /** How the School's teacher picks its talent (default `few`; `several` is the first draft, kept as a variant for the comparison). */

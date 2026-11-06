@@ -1,5 +1,5 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { lateScrapAll, ledgerOf, measuresOf, serverOf } from './analysis';
+import { lateScrapAll, ledgerOf, measuresOf, serverOf, worstStall } from './analysis';
 import { BUDGET, budgetLine } from './budget';
 import { studyReport } from './dungeonXpStudy';
 import { inProcess, runScenarios, type Executor } from './jobs';
@@ -9,6 +9,7 @@ import { RULES, type Rules } from './rules';
 import rulesSource from '../../game/src/valley/rules.ts?raw';
 import { DEFAULT_SEEDS, runScenario, variantSeedsFor, type Results } from './scenarios';
 import { ALL_SERVERS } from './servers';
+import { FORGE_BUCKETS } from './types';
 import { runServer } from './sim';
 import { TARGETS, boundsText, judge } from './targets';
 import { playersOf } from './scenarios';
@@ -85,9 +86,15 @@ export function quickRun(args: readonly string[]): number {
   }
   const t = Date.now();
   const tempering = flag(args, '--tempering');
+  const patchwork = flag(args, '--patchwork');
   const rules = rulesWith(RULES, flag(args, '--set'));
   const result = runScenario(
-    { ...config, weeks, ...(tempering ? { tempering: tempering === 'on' } : {}) },
+    {
+      ...config,
+      weeks,
+      ...(tempering ? { tempering: tempering === 'on' } : {}),
+      ...(patchwork ? { patchwork: patchwork === 'on' } : {}),
+    },
     seeds,
     rules,
   );
@@ -103,6 +110,21 @@ export function quickRun(args: readonly string[]): number {
       `  ${status.padEnd(7)} ${j.target.id.padEnd(6)} ${value} (${boundsText(j.target)}): ${j.target.label}`,
     );
   }
+  const marketDays = result.runs
+    .map((r) => r.marketDoneHour)
+    .filter((h): h is number => h !== null)
+    .map((h) => h / 24)
+    .sort((a, b) => a - b);
+  if (marketDays.length > 0) {
+    console.log('');
+    console.log(
+      `  The Market was built on day ${num(marketDays[Math.floor(marketDays.length / 2)] ?? 0)} (median of ${String(marketDays.length)} of ${String(result.runs.length)} runs)`,
+    );
+  }
+  const stall = worstStall(results, FORGE_BUCKETS.indexOf('scrap'), Math.min(12, weeks));
+  console.log(
+    `  T-4's worst week: ${num(stall.share * 100)}% of the ${stall.id} player's anvil-hours wait for scrap, in week ${String(stall.week)} (mean ${num(stall.mean * 100)}%)`,
+  );
   const profile = config.players.some((p) => p.profile === 'daily')
     ? 'daily'
     : config.players[0]?.profile;

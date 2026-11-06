@@ -452,6 +452,7 @@ export function Workshop({
             : {
                 order: {
                   reason: forge.visit.anvils.length === 0 ? 'Buy an anvil to order pieces.' : null,
+                  shards: forge.visit.forge.shelf.shards,
                   onOrder: (baseId: string, opener: HTMLElement) => {
                     const room = forge.visit.anvils.find(
                       (a) => a.orders.length < forge.visit.forge.queueMax,
@@ -505,7 +506,7 @@ export function Workshop({
         <OrderEditor
           open={orderOpen}
           visit={forge.visit}
-          blueprints={blueprintViews(gear.blueprints, gear.skills)}
+          blueprints={blueprintViews(gear.blueprints, gear.skills, true)}
           busy={busy}
           error={error}
           onOrder={forge.actions.order}

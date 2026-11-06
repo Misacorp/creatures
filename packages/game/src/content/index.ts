@@ -40,6 +40,8 @@ export * from './lore';
 export * from './glossary-schema';
 export * from './gear-schema';
 export * from './gear';
+export * from './patchwork-schema';
+export * from './patchwork';
 export * from './dungeon-schema';
 export * from './dungeon';
 export * from './expedition-schema';

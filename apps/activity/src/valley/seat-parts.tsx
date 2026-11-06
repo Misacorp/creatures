@@ -22,7 +22,7 @@ export function seatAt(x: number, y: number): string | null {
 }
 
 /** The slot's two small lines: a name, and under it what matters. Text only. */
-export function SlotText({ name, sub }: { name: ComponentChildren; sub?: string }) {
+export function SlotText({ name, sub }: { name: ComponentChildren; sub?: ComponentChildren }) {
   return (
     <span class="sp-slot">
       <strong class="pix sp-slot-name">{name}</strong>

@@ -1,3 +1,4 @@
+import { patchworkBlueprint, patchworkMaxRarity } from '../content/patchwork';
 import { RULES as GAME } from '../rules';
 import type { ReachId } from '../rules/gear';
 import type { Rng } from '../rng';
@@ -256,7 +257,7 @@ export function chooseTeamElement(
 }
 
 /** The element of the fullest pile (the lowest index on a tie). */
-function fullestPile(shards: readonly number[]): number {
+export function fullestPile(shards: readonly number[]): number {
   let best = 0;
   for (let e = 1; e < VALLEY_ELEMENTS.length; e++) {
     if ((shards[e] ?? 0) > (shards[best] ?? 0)) best = e;
@@ -273,16 +274,39 @@ export interface OrderNeeds {
   readonly essence: number;
 }
 
+/**
+ * What one piece of an order takes of scrap and shards: the Forge's plain price, or a patchwork blueprint's own (V-FORGE-12, content data).
+ * The shard is of one element: the order's, or for an order that names none, the pile held most when the piece starts.
+ */
+export function pieceCost(
+  rules: Pick<ValleyRules, 'forge'>,
+  blueprint: string | null,
+): { scrap: number; shard: number } {
+  const patch = blueprint === null ? undefined : patchworkBlueprint(blueprint);
+  return patch === undefined
+    ? { scrap: rules.forge.scrap, shard: rules.forge.shard }
+    : { scrap: patch.scrap, shard: patch.shards };
+}
+
+/** Whether an order is for a patchwork blueprint (it takes shards of any element and never reaches for rarity). */
+export const isPatchworkOrder = (order: Pick<SettleOrder, 'blueprint'>): boolean =>
+  order.blueprint !== null && patchworkBlueprint(order.blueprint) !== undefined;
+
+/** The Reach an order really has: a patchwork piece is always a plain one (V-FORGE-12: Common or Rare only). */
+export const orderReach = (order: Pick<SettleOrder, 'blueprint' | 'reach'>): ReachId =>
+  isPatchworkOrder(order) ? 'none' : order.reach;
+
 export function orderNeeds(
   rules: Pick<ValleyRules, 'forge'>,
   order: SettleOrder,
   teamElement: number,
 ): OrderNeeds {
+  const cost = pieceCost(rules, order.blueprint);
   return {
-    scrap: rules.forge.scrap,
+    scrap: cost.scrap,
     element: order.forTeam ? teamElement : order.element,
-    shard: rules.forge.shard,
-    essence: reachEssence(rules, order.reach),
+    shard: cost.shard,
+    essence: reachEssence(rules, orderReach(order)),
   };
 }
 
@@ -398,33 +422,39 @@ function tryStart(rules: ValleyRules, work: ForgeWork, a: WorkAnvil, rng: Rng): 
       return false;
     }
   }
-  if (work.scrap < rules.forge.scrap) {
+  const cost = pieceCost(rules, order.blueprint);
+  const patchwork = isPatchworkOrder(order);
+  const reach = orderReach(order);
+  if (work.scrap < cost.scrap) {
     a.wait = 'scrap';
     return false;
   }
+  // An order that names no element (a neutral base, or patchwork left on "most held") takes the biggest pile as it stands now.
   const pile = element >= 0 ? element : fullestPile(work.shards);
-  if ((work.shards[pile] ?? 0) < rules.forge.shard) {
+  if ((work.shards[pile] ?? 0) < cost.shard) {
     a.wait = 'shard';
     a.waitElement = pile;
     return false;
   }
-  const essence = reachEssence(rules, order.reach);
+  const essence = reachEssence(rules, reach);
   if (work.essence < essence) {
     a.wait = 'essence';
     return false;
   }
-  work.scrap -= rules.forge.scrap;
-  work.shards[pile] = (work.shards[pile] ?? 0) - rules.forge.shard;
+  work.scrap -= cost.scrap;
+  work.shards[pile] = (work.shards[pile] ?? 0) - cost.shard;
   work.essence -= essence;
-  const rarity = rollRarity(rng, pieceOdds(rules, order.reach, a.kit === 'loupe', order.stepUp));
+  const drawn = rollRarity(rng, pieceOdds(rules, reach, a.kit === 'loupe', order.stepUp));
+  // V-FORGE-12: a patchwork piece is never better than the blueprint's cap (an Epic draw becomes a Rare one).
+  const rarity = (patchwork ? Math.min(drawn, patchworkMaxRarity()) : drawn) as RarityIndex;
   a.piece = {
     order: order.id,
     blueprint: order.blueprint,
     forTeam: order.forTeam,
-    element: order.forTeam ? element : order.element,
+    element: order.forTeam ? element : patchwork ? pile : order.element,
     rarity,
-    reach: order.reach,
-    need: pieceHours(rules, order.reach),
+    reach,
+    need: pieceHours(rules, reach),
     progress: 0,
   };
   if (order.forTeam) work.pending[element] = (work.pending[element] ?? 0) + 1;
@@ -536,7 +566,9 @@ export function forgeBoundary(
   let next = Number.POSITIVE_INFINITY;
   if (share <= 0) return next;
   let tinkering = 0;
-  let waitsOnScrap = false;
+  // The scrap the cheapest waiting order lacks of its price (a patchwork piece costs its own, V-FORGE-12): none waits: Infinity.
+  let cheapestScrap = Number.POSITIVE_INFINITY;
+  const waitsOnScrap = (): boolean => cheapestScrap < Number.POSITIVE_INFINITY;
   for (const a of work.anvils) {
     if (a.mode === 'none') continue;
     const smith = smiths[a.creature] as ForgeSmith;
@@ -554,11 +586,14 @@ export function forgeBoundary(
         next = Math.min(next, cursor + Math.ceil((left / rate) * HOUR_MS));
     } else {
       tinkering += 1;
-      if (a.mode === 'scrap') waitsOnScrap = true;
+      if (a.mode === 'scrap') {
+        const waiting = currentOrder(a.orders);
+        cheapestScrap = Math.min(cheapestScrap, pieceCost(rules, waiting?.blueprint ?? null).scrap);
+      }
     }
   }
-  if (waitsOnScrap && tinkering > 0) {
-    const missing = rules.forge.scrap - (work.scrap + work.scrapCarry);
+  if (waitsOnScrap() && tinkering > 0) {
+    const missing = cheapestScrap - (work.scrap + work.scrapCarry);
     const perHour = (tinkering * share) / rules.forge.tinkerScrapEveryHours;
     if (missing > 1e-9) next = Math.min(next, cursor + Math.ceil((missing / perHour) * HOUR_MS));
   }
@@ -705,7 +740,8 @@ function brokerWants(
     if (order.element < 0) continue;
     const inHand = a.piece !== null && a.piece.order === order.id ? 1 : 0;
     const left = Math.min(BROKER_AHEAD, Math.max(0, order.count - order.made - inHand));
-    want[order.element] = (want[order.element] ?? 0) + left * rules.forge.shard;
+    want[order.element] =
+      (want[order.element] ?? 0) + left * pieceCost(rules, order.blueprint).shard;
   }
   if (teamAnvils > 0) {
     for (let e = 0; e < want.length; e++) {

@@ -4,9 +4,17 @@ The valley and peaceful systems overhaul planned in docs/design/valley/: job pos
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-06: Patchwork pieces built: the plainest piece of the shard's element, Rare at best
+
+ID: `2026-11-06-patchwork-pieces-built-the-plainest-piece` · Status: current · Amends: `2026-11-06-patchwork-pieces-blueprints-that-take-any`
+
+**Decision.** Patchwork pieces are built as three blueprints in `packages/game/src/content/data/patchwork.json` (Patchwork Cap, Shawl and Charm, 72, 72 and 90 scrap with 4, 4 and 5 shards), not as gear bases. A piece is the plainest base of its slot in the shard's element (a Kelp Cap for Tide), so the art, tint, element badge and wearing rules are those of any gear. "Uncommon" is the game's Rare: a patchwork piece is Common or Rare (an Epic draw becomes Rare; no Reach), and rolls fewer lines (Common none, Rare one, against one and two). The element is the order's, or "most held": the pile biggest when the piece starts, a tie going to the first element. "For my team" keeps making proper pieces; the player gives a waiting anvil a patchwork order. The name stays "Patchwork" (the Patch Scarf is the old neutral piece, so the scarf is a Shawl).
+
+**Reasoning.** A base per element would be fifteen new gear bases with no new look, and the item would not be an ordinary element piece; resolving to the existing plain base keeps one code path for wearing, art and lines. Rolling fewer lines and capping at Rare is what keeps them from replacing proper blueprints. The prices came from the economy lab: its player orders them only when an anvil would tinker, from spare scrap and shards (the whole team's dressing and the exchange's reserve first), and with these prices T-7 and T-7b pass on `mixed8-market` where they failed, with T-3, T-4 and T-4b unharmed. A team order is not widened because "for my team" is about dressing weak slots with the best base the fire allows; a patchwork piece is by design worse.
+
 ## 2026-11-06: Patchwork pieces: blueprints that take any shard, with scrap [Misa]
 
-ID: `2026-11-06-patchwork-pieces-blueprints-that-take-any` · Status: current
+ID: `2026-11-06-patchwork-pieces-blueprints-that-take-any` · Status: current, amended by `2026-11-06-patchwork-pieces-built-the-plainest-piece`
 
 **Decision.** A few blueprints, one per slot (Hat, Scarf, Charm), known to every player from the start, take shards of any element plus scrap. The piece's element is the shard's; the anvil uses the element the player holds most of unless the order names one. They roll Common or Uncommon only, with fewer good lines than proper blueprints, so they never replace them. Their costs show as icons (decision `2026-11-06-costs-show-the-resource-s-icon`). "Patchwork" is a working name.
 

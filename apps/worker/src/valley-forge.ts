@@ -26,6 +26,9 @@ import {
   isAnvilKit,
   marksStepUp,
   orderNeeds,
+  patchworkBase,
+  patchworkBlueprint,
+  patchworkRolledLines,
   rollItem,
   shardOf,
   tagElement,
@@ -447,7 +450,18 @@ export class ValleyForgePass {
       const rarity = RARITIES[row.rarity] ?? 'common';
       let item: GearItem;
       let wearer: { id: string; slot: GearSlot } | null = null;
-      if (row.blueprint_id !== null && gearBase(row.blueprint_id) !== undefined) {
+      const patch = row.blueprint_id === null ? undefined : patchworkBlueprint(row.blueprint_id);
+      if (patch !== undefined) {
+        // V-FORGE-12: a patchwork piece is the plainest base of its slot in the shard's element, with fewer rolled lines. No mark: it
+        // has no quality (it is no blueprint the player found).
+        const base = patchworkBase(patch.slot, VALLEY_ELEMENTS[row.element] ?? null);
+        item = rollItem(this.deps.rng, {
+          baseId: base.id,
+          rarity,
+          itemLevel: row.item_level,
+          lines: patchworkRolledLines(rarity),
+        });
+      } else if (row.blueprint_id !== null && gearBase(row.blueprint_id) !== undefined) {
         item = rollItem(this.deps.rng, {
           baseId: row.blueprint_id,
           rarity,

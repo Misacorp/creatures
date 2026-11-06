@@ -65,6 +65,8 @@ export interface Anvil {
   element: number;
   rarity: number;
   mastery: number;
+  /** The piece in hand is a patchwork piece (V-FORGE-12): fewer lines, Common or Rare only, no team slot waiting for it. */
+  patch?: boolean;
 }
 
 /** A School seat (V-SCH-13): a student waiting for the visiting teacher's talent; it learns it at the hour `until` (the next morning). */
@@ -95,6 +97,8 @@ export interface Piece {
   ilvl: number;
   rarity: number;
   element: number;
+  /** A patchwork piece (V-FORGE-12): it rolls fewer lines and was never counted among the team's pending pieces. */
+  patch?: boolean;
 }
 
 /** Why an anvil-hour was not spent on a piece (T-4): the index into `WeekRecord.forge`. */
@@ -191,6 +195,8 @@ export interface WeekRecord {
   waitingEvolve: number;
   forge: number[];
   piecesMade: number;
+  /** Of those, the patchwork pieces (V-FORGE-12). */
+  patchMade: number;
   piecesWorn: number;
   piecesDismantled: number;
   /** Shard exchanges made this week and how many of them were crits. */
@@ -250,6 +256,8 @@ export interface Player {
   giftBudget: number[];
   hoardDone: boolean;
   forgeCursor: number;
+  /** Which patchwork blueprint (Hat, Scarf, Charm) the player orders next: they take turns (V-FORGE-12). */
+  patchCursor: number;
   /** The element an anvil last waited for shards of (-1: none): the one-tap fix of a set-and-forget player. */
   waitingShard: number;
   raidThisWeek: boolean;
@@ -331,6 +339,8 @@ export interface ServerOptions {
   tempering?: boolean;
   /** Whether the idol (a placeholder scrap sink) is in the valley (replaces `rules.idol.on`). */
   idol?: boolean;
+  /** Whether anvils that would tinker order patchwork pieces (V-FORGE-12; default yes). */
+  patchwork?: boolean;
   /** Dungeon XP by the player's week instead of the flat `rules.fights.dungeon.xp` (a lab variant: `dungeonXp.ts`). */
   dungeonXp?: DungeonXp;
   /** How the teacher picks (V-SCH-12): `few` (the default: a few players benefit) or `several` (any number from 2 to all but one; the first round-22 draft). */

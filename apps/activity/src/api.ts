@@ -827,7 +827,15 @@ export async function scoutKit(
 
 /** One order of an anvil's queue (V-FORGE-1): what to add, change or take off. Free and repeatable, so no key. */
 export type OrderRequest =
-  | { action: 'add'; seatId: string; blueprintId: string; count: number; reach?: ReachId }
+  | {
+      action: 'add';
+      seatId: string;
+      blueprintId: string;
+      count: number;
+      reach?: ReachId;
+      /** A patchwork blueprint's shard element (omitted: the pile held most when a piece starts). */
+      element?: string;
+    }
   | { action: 'add'; seatId: string; forTeam: true; reach?: ReachId }
   | { action: 'edit'; orderId: string; count?: number; reach?: ReachId }
   | { action: 'remove'; orderId: string };

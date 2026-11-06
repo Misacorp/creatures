@@ -14,6 +14,7 @@ import {
   craftable,
   exchangeShards,
   gearBase,
+  patchworkBlueprint,
   shardOf,
   type AnvilPrice,
   type Element,
@@ -52,7 +53,14 @@ export const ANVIL_PURPOSE = 'valley_anvil';
 
 /** What an add asks for: a blueprint and a count, or "for my team" (no blueprint, no count). */
 export type OrderInput =
-  | { forTeam: false; blueprintId: string; count: number; reach: ReachId }
+  | {
+      forTeam: false;
+      blueprintId: string;
+      count: number;
+      reach: ReachId;
+      /** Patchwork only (V-FORGE-12): the shard element a piece takes; omitted: the pile held most when the piece starts. */
+      element?: string | undefined;
+    }
   | { forTeam: true; reach: ReachId };
 
 export interface ExchangeResult {
@@ -168,16 +176,28 @@ export class ValleyOrders {
       let element = -1;
       let count = 0;
       if (!input.forTeam) {
-        const base = gearBase(input.blueprintId);
-        if (base === undefined || !craftable(base)) throw new GameError(400, 'invalid_blueprint');
-        if (blueprintMarks(this.sql, userId, base.id) === null) {
-          throw new GameError(409, 'blueprint_unknown');
-        }
         if (input.count < 1 || input.count > VALLEY_RULES.forge.orderCountMax) {
           throw new GameError(400, 'invalid_count');
         }
-        blueprint = base.id;
-        element = baseElementIndex(base);
+        const patch = patchworkBlueprint(input.blueprintId);
+        if (patch !== undefined) {
+          // V-FORGE-12: known to everyone; any shard element or "most held" (-1); never a Reach (Common or Rare only).
+          if (input.reach !== 'none') throw new GameError(400, 'invalid_reach');
+          if (input.element !== undefined) {
+            element = VALLEY_ELEMENTS.indexOf(input.element as never);
+            if (element < 0) throw new GameError(400, 'unknown_element');
+          }
+          blueprint = patch.id;
+        } else {
+          if (input.element !== undefined) throw new GameError(400, 'invalid_element');
+          const base = gearBase(input.blueprintId);
+          if (base === undefined || !craftable(base)) throw new GameError(400, 'invalid_blueprint');
+          if (blueprintMarks(this.sql, userId, base.id) === null) {
+            throw new GameError(409, 'blueprint_unknown');
+          }
+          blueprint = base.id;
+          element = baseElementIndex(base);
+        }
         count = input.count;
       }
       const orderId = crypto.randomUUID();
@@ -225,6 +245,13 @@ export class ValleyOrders {
         );
       }
       if (change.reach !== undefined) {
+        if (
+          change.reach !== 'none' &&
+          order.blueprint_id !== null &&
+          patchworkBlueprint(order.blueprint_id) !== undefined
+        ) {
+          throw new GameError(400, 'invalid_reach');
+        }
         this.sql.exec(
           'UPDATE forge_orders SET reach = ? WHERE order_id = ?',
           change.reach,
