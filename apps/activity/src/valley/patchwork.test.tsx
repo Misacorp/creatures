@@ -49,8 +49,9 @@ afterEach(() => {
 
 const base = homeInput('busy', true);
 const free = base.creatures.map((c) => ({ ...c, busy: null, away: false }));
-const [a] = free;
-if (a === undefined) throw new Error('fixture');
+const [someone] = free;
+if (someone === undefined) throw new Error('fixture');
+const smithId = someone.id;
 const PATCH_HAT = 'patchwork-hat';
 const hat = patchworkBlueprint(PATCH_HAT)!;
 
@@ -77,7 +78,7 @@ function visitWith(
   shards: Partial<Record<(typeof VALLEY_ELEMENTS)[number], number>>,
   orders = [] as ReturnType<typeof sampleOrder>[],
 ): ValleyView {
-  const visit = withAnvils(sampleValley(free, []), [sampleAnvil('a1', a.id, orders)]);
+  const visit = withAnvils(sampleValley(free, []), [sampleAnvil('a1', smithId, orders)]);
   return {
     ...visit,
     forge: {
@@ -209,7 +210,7 @@ describe('the order editor for a patchwork blueprint', () => {
     ).toBe(true);
     // It makes the plainest Ember hat.
     expect(labelsIn(listOf(p.root, 'Makes'))).toEqual(['Coal-Warm Cap: 1']);
-    p.click(byName(p.root, 'button', /Add to the queue/)[0] as HTMLElement);
+    p.click(byName(p.root, 'button', /Add to the queue/)[0] as FakeElement);
     expect(sent).toEqual([
       { action: 'add', seatId: 'a1', blueprintId: PATCH_HAT, count: 1, reach: 'none' },
     ]);
@@ -223,7 +224,7 @@ describe('the order editor for a patchwork blueprint', () => {
   it('lets the player name an element: Grove is sent, and the piece shown is the Grove one', () => {
     const sent: OrderRequest[] = [];
     const p = editor(opened, visitWith({ tide: 3, ember: 30, grove: 12 }), sent);
-    p.click(byName(p.root, 'button', /^Shards: most held, now Ember/)[0] as HTMLElement);
+    p.click(byName(p.root, 'button', /^Shards: most held, now Ember/)[0] as FakeElement);
     // The drill lists "Most held" and the five elements, each with its shard icon and what is held.
     expect(visibleText(p.root)).toMatch(/Which shards/);
     const grove = byName(p.root, 'button', /^Grove/)[0];
@@ -231,7 +232,7 @@ describe('the order editor for a patchwork blueprint', () => {
     expect(labelsIn(grove).some((l) => l.includes('12'))).toBe(true);
     p.click(grove);
     expect(labelsIn(listOf(p.root, 'Makes'))).toEqual(['Acorn Cap: 1']);
-    p.click(byName(p.root, 'button', /Add to the queue/)[0] as HTMLElement);
+    p.click(byName(p.root, 'button', /Add to the queue/)[0] as FakeElement);
     expect(sent).toEqual([
       {
         action: 'add',
@@ -256,8 +257,8 @@ describe('the order editor for a patchwork blueprint', () => {
     );
     expect(hasList(p.root, 'Reach')).toBe(false);
     expect(byName(p.root, 'button', /^Shards:/)).toHaveLength(0);
-    p.click(byName(p.root, 'button', /One more piece/)[0] as HTMLElement);
-    p.click(byName(p.root, 'button', /^Save/)[0] as HTMLElement);
+    p.click(byName(p.root, 'button', /One more piece/)[0] as FakeElement);
+    p.click(byName(p.root, 'button', /^Save/)[0] as FakeElement);
     expect(sent).toEqual([{ action: 'edit', orderId: 'o1', count: 4, reach: 'none' }]);
   });
 
