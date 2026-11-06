@@ -619,13 +619,24 @@ const WEEKEND_DAY_BUDGET = 56_000;
 // players, the jackpot rolls, the track's move) and a last look at the raid. Saturday's stage 1 is played first and is not part of the day.
 
 /** The rows of a v2 raid Sunday, by source. */
-async function simulateWeekendDay(): Promise<DayReads> {
+async function simulateWeekendDay(options: { valleySystems?: boolean } = {}): Promise<DayReads> {
   const reads = new DayReads();
   await inGuild(
     async (env: GuildEnv) => {
-      await seedWorld(env, { combatV2: true });
+      const world = await seedWorld(env, { combatV2: true, ...options });
       const { metered, clock, mk } = env;
-      const flag = { combatV2: true } as const;
+      const flag =
+        options.valleySystems === true
+          ? ({ combatV2: true, valleySystems: true } as const)
+          : ({ combatV2: true } as const);
+      // With the valley's systems on, every player has two scouts and two smiths posted, and the scouts are the creatures on the raid board:
+      // each pass of the day finds a raider's post and reads the raid's windows.
+      if (options.valleySystems === true) {
+        for (let n = 1; n <= PLAYERS; n++) {
+          seedSeats(metered.sql, userId(n), world.creatures[userId(n)] ?? [], 2);
+          seedAnvils(metered.sql, userId(n), world.creatures[userId(n)] ?? [], 2);
+        }
+      }
       const wake = async (source: string): Promise<ReturnType<GuildEnv['mk']>> => {
         const core = mk(BUILD, flag);
         reads.add(source, (await metered.measure(() => core.migrate())).reads);
@@ -708,5 +719,18 @@ describe('a v2 raid weekend day', () => {
       reads.total,
       `${reads.describe()}\nBudget: ${String(WEEKEND_DAY_BUDGET)} rows.`,
     ).toBeLessThanOrEqual(WEEKEND_DAY_BUDGET);
+  }, 180_000);
+});
+
+/** The same Sunday with all three flags on and raiders on posts: its own budget, because the valley's pass runs on every opening of the day. */
+// Measured 42,263 rows read (37,149 without the valley: request:state 14,559 against 9,664, the rest as before) and 2,404 written. About 1.5x, as the day above.
+const WEEKEND_VALLEY_DAY_BUDGET = 63_000;
+describe('a v2 raid weekend day with the valley systems on', () => {
+  it('reads few rows on the Sunday with raiders posted as scouts and smiths (the pass reads the raid windows)', async () => {
+    const reads = await simulateWeekendDay({ valleySystems: true });
+    expect(
+      reads.total,
+      `${reads.describe()}\nBudget: ${String(WEEKEND_VALLEY_DAY_BUDGET)} rows.`,
+    ).toBeLessThanOrEqual(WEEKEND_VALLEY_DAY_BUDGET);
   }, 180_000);
 });

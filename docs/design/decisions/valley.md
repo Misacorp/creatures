@@ -4,6 +4,14 @@ The valley and peaceful systems overhaul planned in docs/design/valley/: job pos
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-06: Combat v2 and the valley systems together: a knocked-out raider stays paused; presets empty seats
+
+ID: `2026-11-06-combat-v2-and-the-valley-systems` · Status: current
+
+**Decision.** (1) A creature knocked out in a combat v2 stage loses its place on the raid board but is out of the raid for the weekend, so its valley post stays paused until the finale like a creature still on the board: `ValleyBonfire.raidWindows` also takes the ids of the party's carry `out` list (one row, v2 weeks only). (2) The roster presets (`apply-roster-preset`) empty a valley seat that held a replaced creature (`creature_id = NULL`) instead of deleting the seat row, so the player keeps the seat, what it stored and an anvil's orders and floor. (3) The finale's done marker is written when the live finale starts, as in v1, so a post resumes at the finale's start, not after its four and a half minutes; kept. (4) The raid bench plays a stage "now": the posts pause by the calendar only, so a stage played on a Monday does not pause anyone until Saturday; kept (reading the weekdays too would add a read to every pass).
+
+**Reasoning.** (1) Without it a knocked-out raider went back to work at once and the pause that had already been settled was lost for any pass made later. (2) Deleting a bought seat on a dev tool left an anvil's orders and floor pieces pointing at a seat that was gone. (3) and (4) are the cheap reading of the calendar the valley already uses; the cost of a closer one is out of proportion to a four-minute or dev-only difference. V-GEAR-3 needed no change: the v2 fighters (raid, dungeon, creature page) all go through `buildFighter`, which asks for no slot level and no item-level rule; the only strict `wearBlock` calls left are in the one-off gear and level conversions of old databases.
+
 ## 2026-11-06: Patchwork pieces built: the plainest piece of the shard's element, Rare at best
 
 ID: `2026-11-06-patchwork-pieces-built-the-plainest-piece` · Status: current · Amends: `2026-11-06-patchwork-pieces-blueprints-that-take-any`

@@ -521,7 +521,12 @@ export class Collection {
         silver: row.medal_silver ?? 0,
         bronze: row.medal_bronze ?? 0,
       },
-      nextUnlock: nextUnlock(row.level, species.rarity, species.evolvesTo?.level),
+      nextUnlock: nextUnlock(
+        row.level,
+        species.rarity,
+        species.evolvesTo?.level,
+        this.deps.valleySystems === true,
+      ),
       ribbon,
       treatCost: treatCost(row.level),
       ...(species.evolvesTo === undefined
