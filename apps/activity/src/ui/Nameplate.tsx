@@ -8,8 +8,8 @@ import type { ComponentChildren } from 'preact';
  * Options: `bold` (heavier letters), `level` (a number shown first in yellow; `levelPrefix` writes a word before it,
  * "Lv 14", and with no children the plate is the level alone, as under a creature in the tray), `size` (`sm` or `md`)
  * `tone` (`bone` words, or `gold`), `gain` (a "+N" in green after the name that a long name never hides: the experience a
- * resting creature gained this visit) and `owner` (a player's name in the muted colour after the name: another player's creature by
- * the fire, so it is never taken for yours). It is decoration or a caption: it holds text only and no button; the thing it labels
+ * resting creature gained this visit) and `owner` (a player's name in the muted colour after the name, or alone with the level when the
+ * caller gives no name: another player's creature by the fire shows "14 Tobias", so it is never taken for yours). It is decoration or a caption: it holds text only and no button; the thing it labels
  * is the button. Text is drawn as text.
  */
 export type NameplateSize = 'sm' | 'md';

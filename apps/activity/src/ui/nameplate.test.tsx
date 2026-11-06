@@ -96,6 +96,15 @@ describe('Nameplate options', () => {
     );
   });
 
+  it("another player's creature: with no name the plate is the level and the owner only", () => {
+    const el = plate(<Nameplate level={14} owner="Tobias" size="sm" />);
+    expect(parts(el).map((p) => p.getAttribute('class'))).toEqual([
+      'nameplate-level',
+      'nameplate-owner',
+    ]);
+    expect(visibleText(el)).toContain('Tobias');
+  });
+
   it('draws the words as text, never as markup', () => {
     const el = plate(<Nameplate>{'<b>Hi</b>'}</Nameplate>);
     expect(visibleText(el)).toBe('<b>Hi</b>');

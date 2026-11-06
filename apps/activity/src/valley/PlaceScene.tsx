@@ -218,7 +218,8 @@ export function Stander({
         z={PLATES_Z + depthOf(x, y)}
       >
         <Nameplate size="sm" level={info.level} gain={gain} owner={owner}>
-          {info.name}
+          {/* Another player's creature shows its level and its owner only; its own name is in its popover. */}
+          {owner === undefined ? info.name : undefined}
         </Nameplate>
       </At>
     </>

@@ -109,21 +109,26 @@ const nameplate: Entry = {
   file: 'apps/activity/src/ui/Nameplate.tsx',
   group: 'Headings & banners',
   description:
-    "The one small label on art, words on a solid ink plate: a place's name on the valley map (bold) and a creature's nameplate under its feet (its level first, in yellow). Options: bold, a leading level, size and tone; never a second look-alike.",
+    "The one small label on art, words on a solid ink plate: a place's name on the valley map (bold) and a creature's nameplate under its feet (its level first, in yellow). Options: bold, a leading level, size, tone and an owner (another player's creature: level and owner only); never a second look-alike.",
   controls: {
     text: { kind: 'text', maxLength: 40 },
     level: { kind: 'number', min: 0, max: 99 },
+    owner: { kind: 'text', maxLength: 20 },
     bold: { kind: 'toggle' },
     size: { kind: 'select', options: ['sm', 'md'] },
     tone: { kind: 'select', options: ['bone', 'gold'] },
   },
-  defaults: { text: 'Signpost', level: 0, bold: true, size: 'md', tone: 'bone' },
+  defaults: { text: 'Signpost', level: 0, owner: '', bold: true, size: 'md', tone: 'bone' },
   presets: [
     { name: 'Place name (bold)', props: {} },
     { name: 'Place name (plain)', props: { bold: false } },
     {
       name: 'Creature nameplate (level first)',
       props: { text: 'Cindle', level: 12, bold: false, size: 'sm' },
+    },
+    {
+      name: "Another player's creature (level and owner)",
+      props: { text: '', level: 14, owner: 'Tobias', bold: false, size: 'sm' },
     },
     { name: 'Gold tone', props: { text: 'Valley Games', tone: 'gold' } },
     {
@@ -138,8 +143,9 @@ const nameplate: Entry = {
         bold={bool(p, 'bold')}
         size={str(p, 'size') === 'sm' ? 'sm' : 'md'}
         tone={str(p, 'tone') === 'gold' ? 'gold' : 'bone'}
+        {...(str(p, 'owner') === '' ? {} : { owner: str(p, 'owner') })}
       >
-        {str(p, 'text')}
+        {str(p, 'text') === '' ? undefined : str(p, 'text')}
       </Nameplate>
     </div>
   ),
