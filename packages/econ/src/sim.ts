@@ -557,6 +557,7 @@ export function runServer(
       visitor: config.visitor !== false,
       tempering: config.tempering ?? rules.tempering.on,
       idol: config.idol ?? rules.idol.on,
+      patchwork: config.patchwork !== false,
       ...(config.dungeonXp !== undefined ? { dungeonXp: config.dungeonXp } : {}),
       teacherRule: config.teacherRule ?? 'few',
     },

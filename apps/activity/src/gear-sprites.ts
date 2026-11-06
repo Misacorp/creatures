@@ -10,6 +10,7 @@ import {
   gearBase,
   gearContent,
   gearSet,
+  patchworkBlueprint,
   resourceIcon,
   type GearBase,
   type GearSlot,
@@ -17,6 +18,7 @@ import {
 } from '@creatures/game';
 import { CHARM_SPRITE_DATA } from './sprites/data/item-charm-sprites';
 import { ITEM_FLAIR } from './sprites/data/item-flair';
+import { PATCHWORK_FLAIR, PATCHWORK_LOOKS } from './sprites/data/patchwork-sprites';
 import { HAT_SPRITE_DATA } from './sprites/data/item-hat-sprites';
 import { SCARF_SPRITE_DATA } from './sprites/data/item-scarf-sprites';
 import { expandRows, type SpriteDef } from './sprites/sprite-data';
@@ -273,6 +275,14 @@ export function itemArt(baseId: string): {
   sprite: SpriteDef;
   palette: Readonly<Record<string, string>> | undefined;
 } {
+  // A patchwork blueprint (V-FORGE-12) is not a base: the slot's plain neutral piece with a patch in each shard colour.
+  const patch = patchworkBlueprint(baseId);
+  if (patch !== undefined) {
+    const look = ITEM_LOOK_SPRITES[PATCHWORK_LOOKS[patch.slot]] ?? BUNDLED_ITEM_SPRITES[patch.slot];
+    const sprite = FLAIRED.get(baseId) ?? withFlair(look, PATCHWORK_FLAIR[patch.slot]);
+    FLAIRED.set(baseId, sprite);
+    return { sprite, palette: NEUTRAL_PAINT };
+  }
   const base = gearBase(baseId);
   if (base === undefined) return { sprite: FALLBACK_ITEM, palette: undefined };
   const own = ITEM_LOOK_SPRITES[itemLookId(baseId)];

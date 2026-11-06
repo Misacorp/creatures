@@ -3,7 +3,15 @@
  * the server's `valley` block: an order's words, what a piece waits on, the floor, the shelf, the exchange, the Places line and the
  * bubble. Pure: no clock and no request; the server's numbers go in, words come out. Nothing here says what was missed.
  */
-import type { ReachId, ValleyAnvilView, ValleyForgeView, ValleyOrderView } from '@creatures/game';
+import {
+  VALLEY_ELEMENTS,
+  fullestPile,
+  patchworkBlueprint,
+  type ReachId,
+  type ValleyAnvilView,
+  type ValleyForgeView,
+  type ValleyOrderView,
+} from '@creatures/game';
 import type { ValleyVisit } from '../api';
 import { elementName } from '../game';
 import { gearName } from '../gear-view';
@@ -14,6 +22,17 @@ const plural = (n: number, one: string, many: string): string =>
 
 /** The shard elements, in the order the shelf lists them. */
 export const SHARD_ELEMENTS = ['tide', 'ember', 'grove', 'spark', 'mire'] as const;
+
+/**
+ * The element a patchwork order that names none uses now (V-FORGE-12): the pile held most, the first of them on a tie, as the Forge's pass
+ * picks it when a piece starts.
+ */
+export const mostHeldElement = (shards: Readonly<Record<string, number>>): string =>
+  VALLEY_ELEMENTS[fullestPile(VALLEY_ELEMENTS.map((e) => shards[e] ?? 0))] ?? 'tide';
+
+/** Whether an order is for a patchwork blueprint (V-FORGE-12). */
+export const isPatchwork = (order: Pick<ValleyOrderView, 'blueprintId'>): boolean =>
+  order.blueprintId !== null && patchworkBlueprint(order.blueprintId) !== undefined;
 
 /** A shard pile's name ("Tide shards"). */
 export const shardName = (element: string): string => `${elementName(element)} shards`;

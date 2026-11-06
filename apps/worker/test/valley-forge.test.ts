@@ -6,7 +6,13 @@
  * anvil's floor, and come home into the bag on arrival; the bag is a stored counter of the items not worn; Workshop jobs answer 404.
  * With the flag off the routes are not there and jobs work as before.
  */
-import { VALLEY_RULES, ValleyViewSchema, createSeededRng, type Rng } from '@creatures/game';
+import {
+  VALLEY_RULES,
+  ValleyViewSchema,
+  createSeededRng,
+  patchworkBlueprint,
+  type Rng,
+} from '@creatures/game';
 import * as v from 'valibot';
 import { describe, expect, it } from 'vitest';
 import { ON, type Json } from './dev-helpers';
@@ -941,6 +947,183 @@ describe('the exchange (V-FORGE-10, Q64)', () => {
         const clash = await exchange(p, { from: 'grove', times: 1, idempotencyKey: key });
         expect(clash.status).toBe(409);
         expect(clash.body).toEqual({ error: 'key_conflict' });
+      },
+      SYSTEMS,
+    );
+  });
+});
+
+describe('patchwork pieces (V-FORGE-12)', () => {
+  const PATCH_HAT = 'patchwork-hat';
+  const patch = patchworkBlueprint(PATCH_HAT)!;
+  /** A smith with a stocked shelf: 30 Ember shards, 12 Grove shards, 3 Tide shards and plenty of scrap. */
+  async function stocked(ctx: CoreContext, n: number) {
+    const p = await smithing(ctx, n, { scrap: 2000, shards: 3 });
+    creditParts(ctx.sql, p.id, { 'ember-shard': 30, 'grove-shard': 12 });
+    return p;
+  }
+  const add = (p: P & { seatId: string }, body: Record<string, unknown>) =>
+    order(p, { action: 'add', seatId: p.seatId, ...body });
+
+  it('is known to every player from the start, and takes an element or none; refuses what does not fit', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await newPlayer(ctx, 1);
+        await p.state();
+        const bought = await buyAnvil(p);
+        const seat = { ...p, seatId: bought.body.seatId as string };
+        // No blueprint was learned: a proper one is refused (409), a patchwork one is taken.
+        expect((await add(seat, { blueprintId: 'brine-hood', count: 1 })).status).toBe(409);
+        expect((await add(seat, { blueprintId: PATCH_HAT, count: 2 })).status).toBe(200);
+        expect(
+          (await add(seat, { blueprintId: 'patchwork-scarf', count: 1, element: 'grove' })).status,
+        ).toBe(200);
+        const queue = (await view(p)).anvils[0]!.orders;
+        expect(queue.map((o) => [o.blueprintId, o.count, o.reach, o.needs.shardElement])).toEqual([
+          [PATCH_HAT, 2, 'none', null],
+          ['patchwork-scarf', 1, 'none', 'grove'],
+        ]);
+        expect(queue[0]?.needs).toMatchObject({ scrap: patch.scrap, shard: patch.shards });
+        expect(queue[1]?.needs.scrap).toBe(patchworkBlueprint('patchwork-scarf')!.scrap);
+        // What does not fit: an unknown element, an element on a proper blueprint, a Reach, a bad shape.
+        expect(
+          (await add(seat, { blueprintId: 'patchwork-charm', count: 1, element: 'void' })).status,
+        ).toBe(400);
+        expect(
+          (await add(seat, { blueprintId: 'patchwork-charm', count: 1, reach: 'rare' })).status,
+        ).toBe(400);
+        learnBlueprint(ctx.sql, p.id, HAT, ctx.clock.t);
+        expect((await add(seat, { blueprintId: HAT, count: 1, element: 'tide' })).status).toBe(400);
+        expect((await add(seat, { forTeam: true, element: 'tide' })).status).toBe(400);
+        expect(
+          (await add(seat, { blueprintId: 'patchwork-charm', count: 1, extra: 1 })).status,
+        ).toBe(400);
+        const id = queue[0]!.id;
+        expect((await order(seat, { action: 'edit', orderId: id, reach: 'rare' })).status).toBe(
+          400,
+        );
+        expect((await order(seat, { action: 'edit', orderId: id, count: 4 })).status).toBe(200);
+        expect(count(ctx.sql, 'forge_orders')).toBe(2);
+      },
+      SYSTEMS,
+    );
+  });
+
+  it('with "most held" makes the piece in the element of the biggest pile at that moment, with the blueprint price', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await stocked(ctx, 1);
+        expect((await add(p, { blueprintId: PATCH_HAT, count: 1 })).status).toBe(200);
+        // The piece started at the order: Ember (30) was the biggest pile.
+        expect(part(ctx.sql, p.id, 'scrap')).toBe(2000 - patch.scrap);
+        expect(part(ctx.sql, p.id, 'ember-shard')).toBe(30 - patch.shards);
+        expect(part(ctx.sql, p.id, 'grove-shard')).toBe(12);
+        expect(part(ctx.sql, p.id, 'tide-shard')).toBe(3);
+        expect(seatRow(ctx.sql, p.seatId).piece_element).toBe(1);
+        ctx.clock.t += 20 * HOUR;
+        expect((await view(p)).arrived).toBe(true);
+        const items = ctx.sql
+          .exec<{ base_id: string; tag: string; rarity: string; lines_json: string }>(
+            'SELECT base_id, tag, rarity, lines_json FROM gear_items WHERE user_id = ?',
+            p.id,
+          )
+          .toArray();
+        // An ordinary Ember hat: the plainest one, with no rolled lines (a Common patchwork piece).
+        expect(items).toHaveLength(1);
+        expect(items[0]).toMatchObject({
+          base_id: 'coal-warm-cap',
+          tag: 'ember',
+          rarity: 'common',
+        });
+        expect(JSON.parse(items[0]!.lines_json)).toEqual([]);
+        expect(count(ctx.sql, 'forge_orders')).toBe(0);
+      },
+      { ...SYSTEMS, gearRng: WORST },
+    );
+  });
+
+  it('uses the element the order names, whatever is biggest, and waits on that pile when it is short', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await stocked(ctx, 1);
+        await add(p, { blueprintId: PATCH_HAT, count: 1, element: 'grove' });
+        expect(part(ctx.sql, p.id, 'grove-shard')).toBe(12 - patch.shards);
+        expect(part(ctx.sql, p.id, 'ember-shard')).toBe(30);
+        expect(seatRow(ctx.sql, p.seatId).piece_element).toBe(2);
+        // Spark has none: a second order waits on spark shards, and says so.
+        const scarf = patchworkBlueprint('patchwork-scarf')!;
+        const s = await add(p, { blueprintId: 'patchwork-scarf', count: 1, element: 'spark' });
+        expect(s.status).toBe(200);
+        ctx.clock.t += 20 * HOUR;
+        const waiting = (await view(p)).anvils[0]!;
+        expect(waiting.tinkering?.reason).toBe('shard');
+        expect(waiting.tinkering?.shardElement).toBe('spark');
+        expect(waiting.orders[0]?.waiting).toBe('shard');
+        creditParts(ctx.sql, p.id, { 'spark-shard': scarf.shards });
+        ctx.clock.t += 20 * HOUR;
+        await p.state();
+        expect(
+          ctx.sql
+            .exec<{ base_id: string }>('SELECT base_id FROM gear_items WHERE user_id = ?', p.id)
+            .toArray()
+            .map((i) => i.base_id)
+            .sort(),
+        ).toEqual(['acorn-cap', 'static-wrap']);
+      },
+      { ...SYSTEMS, gearRng: WORST },
+    );
+  });
+
+  it('never makes better than Rare, even from an Epic draw', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await stocked(ctx, 1);
+        await add(p, { blueprintId: PATCH_HAT, count: 1 });
+        expect((await view(p)).anvils[0]?.piece?.rarity).toBe(1);
+        ctx.clock.t += 20 * HOUR;
+        await p.state();
+        const made = ctx.sql
+          .exec<{ rarity: string; lines_json: string }>(
+            'SELECT rarity, lines_json FROM gear_items WHERE user_id = ?',
+            p.id,
+          )
+          .toArray();
+        expect(made.map((m) => m.rarity)).toEqual(['rare']);
+        // A Rare patchwork piece rolls one line where a proper Rare piece rolls two.
+        expect(JSON.parse(made[0]!.lines_json)).toHaveLength(1);
+      },
+      { ...SYSTEMS, gearRng: best() },
+    );
+  });
+
+  it('leaves the keyed paths as they were: an anvil bought twice with one key is charged once', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await stocked(ctx, 1);
+        await add(p, { blueprintId: PATCH_HAT, count: 3 });
+        give(ctx, p.id, { bait: 500 });
+        const key = newKey('anvil-patchwork');
+        const a = await buyAnvil(p, key);
+        const acorns = bait(ctx.sql, p.id);
+        const scrap = part(ctx.sql, p.id, 'scrap');
+        const b = await buyAnvil(p, key);
+        expect(b.body.seatId).toBe(a.body.seatId);
+        expect(bait(ctx.sql, p.id)).toBe(acorns);
+        expect(part(ctx.sql, p.id, 'scrap')).toBe(scrap);
+        // The patchwork order itself is free and keyless: the ledger holds no row for it.
+        expect(
+          ctx.sql
+            .exec<{ n: number }>(
+              "SELECT COUNT(*) AS n FROM ledger WHERE user_id = ? AND source LIKE '%patchwork%'",
+              p.id,
+            )
+            .one().n,
+        ).toBe(0);
       },
       SYSTEMS,
     );

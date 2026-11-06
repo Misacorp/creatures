@@ -596,7 +596,7 @@ const spreadAt = (p: PlayerRun, week: number, low: number): number | undefined =
 };
 
 /** The worst week's share of anvil-hours spent on one thing, over the typical profiles and weeks 2 to 12 (T-4). */
-function worstStall(
+export function worstStall(
   results: Results,
   idx: number,
   weeks: number,

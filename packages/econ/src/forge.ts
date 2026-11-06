@@ -1,3 +1,4 @@
+import { patchworkBlueprints, patchworkMaxRarity, patchworkRolledLines } from '@creatures/game';
 import { masteryBonus } from './curves';
 import type { Rules } from './rules';
 import { ELEMENTS } from './rules';
@@ -141,9 +142,61 @@ export function brokerHour(p: Player, share: number): void {
   }
 }
 
-/** What an idle anvil does at the start of an hour: begin a piece if it has an order and the inputs, else say what is missing. */
-function tryStart(p: Player, anvil: Anvil): 'started' | 'scrap' | 'shard' | 'nothing' {
+/**
+ * V-FORGE-12 (the lab's player): an anvil that would tinker, because the team has nothing to be dressed with or its shard is short, is given
+ * a patchwork order instead: the blueprints in turn (Hat, Scarf, Charm), each with the shards of the pile held most. It starts only when the
+ * shelf pays its own price (scrap and shards, `patchwork.json`) and keeps the gifts' reserves (spare scrap and shards only); otherwise the anvil tinkers as before and the wait stays what it was.
+ */
+function tryPatchwork(
+  p: Player,
+  anvil: Anvil,
+  was: 'shard' | 'nothing',
+): 'started' | 'shard' | 'nothing' {
   const rules = p.rules;
+  const blueprints = patchworkBlueprints();
+  const bp = blueprints[p.patchCursor % blueprints.length];
+  if (!bp) return was;
+  let pile = 0;
+  for (let e = 1; e < ELEMENTS.length; e++)
+    if ((p.shards[e] ?? 0) > (p.shards[pile] ?? 0)) pile = e;
+  // Only what is spare: the team's pieces come first, so the player keeps the scrap that dresses every slot of every creature once (a fire
+  // that rises suddenly leaves many slots weak at the same time), and the shards the exchange keeps (the gifts' reserve).
+  const keepScrap = Math.max(
+    rules.forge.giveReserveScrap,
+    p.creatures.length * rules.forge.slotsPerCreature * rules.forge.scrap,
+  );
+  if (
+    (p.stock[R.scrap] ?? 0) - bp.scrap < keepScrap ||
+    (p.shards[pile] ?? 0) - bp.shards < rules.forge.giveReserveShards
+  )
+    return was;
+  p.patchCursor = (p.patchCursor + 1) % blueprints.length;
+  debit(p, R.scrap, bp.scrap, 'pieces');
+  debitShard(p, pile, bp.shards, 'pieces');
+  const odds = orderOdds(rules, rules.forge.baseOdds, p.anvilKit === 'loupe');
+  anvil.rarity = Math.min(rollRarity(p, odds), patchworkMaxRarity());
+  anvil.need = rules.forge.pieceHours;
+  anvil.progress = 0;
+  anvil.element = pile;
+  anvil.working = true;
+  anvil.patch = true;
+  return 'started';
+}
+
+/** What an idle anvil does at the start of an hour: begin a piece if it has an order and the inputs, else say what is missing. */
+function tryStart(
+  p: Player,
+  anvil: Anvil,
+  server: Server,
+): 'started' | 'scrap' | 'shard' | 'nothing' {
+  const team = tryTeam(p, anvil);
+  if (team === 'started' || team === 'scrap' || server.config.patchwork === false) return team;
+  return tryPatchwork(p, anvil, team);
+}
+
+function tryTeam(p: Player, anvil: Anvil): 'started' | 'scrap' | 'shard' | 'nothing' {
+  const rules = p.rules;
+  anvil.patch = false;
   const element = chooseElement(p);
   if (element < 0) return 'nothing';
   if ((p.stock[R.scrap] ?? 0) < rules.forge.scrap) return 'scrap';
@@ -197,7 +250,7 @@ export function stepAnvils(p: Player, share: number, count: number, server: Serv
       deliver(p, anvil, server);
     }
     if (!anvil.working) {
-      const result = tryStart(p, anvil);
+      const result = tryStart(p, anvil, server);
       if (result !== 'started') {
         const bucket = result === 'scrap' ? 1 : result === 'shard' ? 2 : 4;
         wk[bucket] = (wk[bucket] ?? 0) + share;
@@ -215,10 +268,16 @@ export function stepAnvils(p: Player, share: number, count: number, server: Serv
 }
 
 function deliver(p: Player, anvil: Anvil, server: Server): void {
-  p.floor.push({ ilvl: server.fire, rarity: anvil.rarity, element: anvil.element });
+  p.floor.push({
+    ilvl: server.fire,
+    rarity: anvil.rarity,
+    element: anvil.element,
+    ...(anvil.patch === true ? { patch: true } : {}),
+  });
   anvil.working = false;
   anvil.progress = 0;
   p.wk.piecesMade += 1;
+  if (anvil.patch === true) p.wk.patchMade += 1;
 }
 
 /** Recounts the slots that are "weaker" than the fire allows, by the element of their creature (the "for my team" need). */
@@ -259,6 +318,14 @@ export function equipOrBag(p: Player, piece: Piece, fire: number): boolean {
       p.rules,
       piece.rarity,
       piece.ilvl,
+      piece.patch === true
+        ? Math.min(
+            p.rules.gear.lines[piece.rarity] ?? 1,
+            patchworkRolledLines(
+              piece.rarity === 0 ? 'common' : piece.rarity === 1 ? 'rare' : 'epic',
+            ),
+          )
+        : undefined,
     );
     target.creature.gearRerolls[target.slot] = 0;
     p.wk.piecesWorn += 1;
@@ -279,7 +346,13 @@ export function collectFloor(p: Player, server: Server): void {
   const kept: Piece[] = [];
   for (const piece of p.floor) {
     if (equipOrBag(p, piece, server.fire)) {
-      p.pendingByElement[piece.element] = Math.max(0, (p.pendingByElement[piece.element] ?? 0) - 1);
+      // A patchwork piece was never counted among the team's pieces on their way.
+      if (piece.patch !== true) {
+        p.pendingByElement[piece.element] = Math.max(
+          0,
+          (p.pendingByElement[piece.element] ?? 0) - 1,
+        );
+      }
     } else kept.push(piece);
   }
   p.floor = kept;

@@ -1,0 +1,30 @@
+{
+  "maxRarity": "rare",
+  "rolledLines": { "common": 0, "rare": 1, "epic": 2 },
+  "blueprints": [
+    {
+      "id": "patchwork-hat",
+      "name": "Patchwork Cap",
+      "slot": "hat",
+      "scrap": 72,
+      "shards": 4,
+      "flavor": "Sewn from whatever the camp had left over, and it fits anyone."
+    },
+    {
+      "id": "patchwork-scarf",
+      "name": "Patchwork Shawl",
+      "slot": "scarf",
+      "scrap": 72,
+      "shards": 4,
+      "flavor": "Strips of old cloth, tacked together with a little shard dust."
+    },
+    {
+      "id": "patchwork-charm",
+      "name": "Patchwork Charm",
+      "slot": "charm",
+      "scrap": 90,
+      "shards": 5,
+      "flavor": "A knot of odd bits that hums like whichever shard it was made around."
+    }
+  ]
+}

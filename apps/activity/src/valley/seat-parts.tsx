@@ -3,6 +3,7 @@
  * they find the card under a dragged creature the same way, draw the two small lines of a slot the same way, and confirm a spend of
  * Acorns the same way (one cost, one button, the reason it cannot be pressed).
  */
+import type { ComponentChildren } from 'preact';
 import { Alert } from '../ui/Alert';
 import { ActionButton } from '../ui/ActionButton';
 
@@ -17,7 +18,7 @@ export function seatAt(x: number, y: number): string | null {
 }
 
 /** The slot's two small lines: a name, and under it what matters. Text only. */
-export function SlotText({ name, sub }: { name: string; sub?: string }) {
+export function SlotText({ name, sub }: { name: string; sub?: ComponentChildren }) {
   return (
     <span class="sp-slot">
       <strong class="pix sp-slot-name">{name}</strong>

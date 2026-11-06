@@ -242,10 +242,11 @@ export function rollLines(
   rarity: GearRarity,
   itemLevel: number,
   minTier = 0,
+  count: number = RULES.gear.rolledLines[rarity],
 ): ItemLine[] {
   const pool = linePool(base, rarity, itemLevel);
   const out: ItemLine[] = [];
-  for (let i = 0; i < RULES.gear.rolledLines[rarity]; i++) {
+  for (let i = 0; i < count; i++) {
     if (pool.length === 0) break;
     const picked = pickWeighted(rng, pool);
     pool.splice(pool.indexOf(picked), 1);
@@ -270,7 +271,14 @@ export function specialLinesOf(lines: readonly ItemLine[]): ItemLine[] {
 /** Rolls a whole item of a base. Throws RangeError for an unknown base. Any base can be of any rarity. */
 export function rollItem(
   rng: Rng,
-  spec: { baseId: string; rarity: GearRarity; itemLevel: number; minTier?: number },
+  spec: {
+    baseId: string;
+    rarity: GearRarity;
+    itemLevel: number;
+    minTier?: number;
+    /** How many lines to roll instead of the rarity's (a patchwork piece rolls fewer than a proper one). */
+    lines?: number;
+  },
 ): GearItem {
   const base = baseOrThrow(spec.baseId);
   const level = clampItemLevel(spec.itemLevel);
@@ -278,7 +286,7 @@ export function rollItem(
     base.id,
     spec.rarity,
     level,
-    rollLines(rng, base, spec.rarity, level, spec.minTier ?? 0),
+    rollLines(rng, base, spec.rarity, level, spec.minTier ?? 0, spec.lines),
   );
 }
 

@@ -139,7 +139,12 @@ export const valleyRoutes: Routes<ValleyRouteContext> = {
       if (body.action === 'add') {
         // "For my team" has no blueprint and no count; any other order needs both.
         if (body.forTeam) {
-          if (body.blueprintId !== undefined || body.count !== undefined) return invalidBody();
+          if (
+            body.blueprintId !== undefined ||
+            body.count !== undefined ||
+            body.element !== undefined
+          )
+            return invalidBody();
           outcome = core.valleyOrders.addOrder(user.id, body.seatId, {
             forTeam: true,
             reach: body.reach,
@@ -151,6 +156,7 @@ export const valleyRoutes: Routes<ValleyRouteContext> = {
             blueprintId: body.blueprintId,
             count: body.count,
             reach: body.reach,
+            element: body.element,
           });
         }
       } else if (body.action === 'edit') {

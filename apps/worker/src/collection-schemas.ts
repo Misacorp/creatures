@@ -227,6 +227,8 @@ export const ValleyOrderBodySchema = v.variant('action', [
     forTeam: v.optional(v.boolean(), false),
     count: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(999))),
     reach: v.optional(ReachSchema, 'none'),
+    /** A patchwork order's shard element (omitted: the pile held most when a piece starts). */
+    element: v.optional(v.picklist(VALLEY_ELEMENTS)),
   }),
   v.strictObject({
     action: v.literal('edit'),

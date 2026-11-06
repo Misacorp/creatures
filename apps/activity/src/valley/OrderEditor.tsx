@@ -6,7 +6,14 @@
  * `ui/RecipeCard` (compact). Orders are free and repeatable, so there is no key; the server decides what is allowed.
  */
 import { useEffect, useState } from 'preact/hooks';
-import { VALLEY_RULES, type ReachId, type ValleyOrderView } from '@creatures/game';
+import {
+  VALLEY_RULES,
+  patchworkBase,
+  patchworkBlueprint,
+  type Element,
+  type ReachId,
+  type ValleyOrderView,
+} from '@creatures/game';
 import type { OrderRequest, ValleyVisit } from '../api';
 import { partBadge } from '../count-items';
 import { elementName } from '../game';
@@ -17,7 +24,7 @@ import type { PartKind } from '../gear-types';
 import { Alert } from '../ui/Alert';
 import { ActionButton } from '../ui/ActionButton';
 import { ChoiceButton, ChoiceList } from '../ui/ChoiceList';
-import type { CountItem } from '../ui/CountBadge';
+import { CountBadge, type CountItem } from '../ui/CountBadge';
 import { CountStepper } from '../ui/CountStepper';
 import { Drawer } from '../ui/Drawer';
 import { DrillHead } from '../ui/DrillHead';
@@ -27,7 +34,14 @@ import { Segmented } from '../ui/Segmented';
 import { Slot, SlotRow } from '../ui/Slot';
 import type { OrderOpen } from './ForgeAnvils';
 import { SlotText } from './seat-parts';
-import { REACH_CHOICES, anvilName, orderName, reachName } from './forge-view';
+import {
+  REACH_CHOICES,
+  SHARD_ELEMENTS,
+  anvilName,
+  mostHeldElement,
+  orderName,
+  reachName,
+} from './forge-view';
 
 /** What the editor asks the game to do. */
 export interface OrderEditorProps {
@@ -44,6 +58,22 @@ export interface OrderEditorProps {
 
 const TEAM = 'team';
 
+/** A shard's icon with how many are held now (a patchwork order's shard choice). Icons, no words (decision 2026-11-06). */
+function ShardNow({ element, visit }: { element: string; visit: ValleyVisit }) {
+  return (
+    <PlainBadge
+      kind={`${element}-shard` as PartKind}
+      amount={visit.forge.shelf.shards[element] ?? 0}
+    />
+  );
+}
+
+/** A part's count badge without its glossary link, for use inside a button (a button never holds a button). */
+function PlainBadge({ kind, amount }: { kind: PartKind; amount: number }) {
+  const { entry: _entry, ...badge } = partBadge(kind, amount);
+  return <CountBadge {...badge} />;
+}
+
 /** The order and the anvil it stands in, for an order id. */
 function findOrder(
   visit: ValleyVisit,
@@ -56,27 +86,33 @@ function findOrder(
   return undefined;
 }
 
-/** What one piece takes from the shelf, as the recipe card's inputs, with what the shelf holds. */
+/**
+ * What one piece takes from the shelf, as the recipe card's inputs, with what the shelf holds. A patchwork blueprint (V-FORGE-12) has its
+ * own price (`cost`, content data); its shard is the chosen element's, or the pile held most now.
+ */
 function inputsOf(
   visit: ValleyVisit,
   element: string | null,
   reach: ReachId,
+  cost?: { scrap: number; shards: number },
 ): (CountItem & { amount: number; have: number })[] {
   const { shelf } = visit.forge;
   const forge = VALLEY_RULES.forge;
+  const scrap = cost?.scrap ?? forge.scrap;
+  const shards = cost?.shards ?? forge.shard;
   const inputs: (CountItem & { amount: number; have: number })[] = [
     {
       key: 'scrap',
-      ...partBadge('scrap', forge.scrap),
-      amount: forge.scrap,
+      ...partBadge('scrap', scrap),
+      amount: scrap,
       have: shelf.scrap,
     },
   ];
   if (element !== null) {
     inputs.push({
       key: 'shard',
-      ...partBadge(`${element}-shard` as PartKind, forge.shard),
-      amount: forge.shard,
+      ...partBadge(`${element}-shard` as PartKind, shards),
+      amount: shards,
       have: shelf.shards[element] ?? 0,
     });
   }
@@ -111,7 +147,9 @@ export function OrderEditor({
   );
   const [count, setCount] = useState(found?.order.count ?? 1);
   const [reach, setReach] = useState<ReachId>(found?.order.reach ?? 'none');
-  const [drill, setDrill] = useState(false);
+  /** A patchwork order's shard element (V-FORGE-12); null: the pile held most when a piece starts. */
+  const [shardPick, setShardPick] = useState<string | null>(null);
+  const [drill, setDrill] = useState<'what' | 'shard' | null>(null);
   const { queueMax, orderCountMax } = visit.forge;
   const anvil = visit.anvils.find((a) => a.id === anvilId);
   const title = open.kind === 'add' ? 'Add an order' : 'Change the order';
@@ -129,7 +167,18 @@ export function OrderEditor({
     editing !== undefined
       ? blueprints?.find((b) => b.baseId === editing.blueprintId)
       : blueprints?.find((b) => b.baseId === what);
-  const element = forTeam ? null : (blueprint?.element ?? editing?.needs.shardElement ?? null);
+  const patch =
+    editing !== undefined
+      ? patchworkBlueprint(editing.blueprintId ?? '')
+      : patchworkBlueprint(blueprint?.baseId ?? '');
+  // A patchwork order's shard: the one named, or (named none) the pile held most right now.
+  const chosen = editing === undefined ? shardPick : (editing.needs.shardElement ?? null);
+  const mostHeld = mostHeldElement(visit.forge.shelf.shards);
+  const element = forTeam
+    ? null
+    : patch !== undefined
+      ? (chosen ?? mostHeld)
+      : (blueprint?.element ?? editing?.needs.shardElement ?? null);
   const queueFull = editing === undefined && anvil !== undefined && anvil.orders.length >= queueMax;
   const reason =
     editing !== undefined
@@ -151,22 +200,80 @@ export function OrderEditor({
           label: 'A piece for the team',
         },
       ]
-    : [
-        {
-          key: 'piece',
-          icon: { kind: 'gear', baseId: blueprint?.baseId ?? editing?.blueprintId ?? '' },
-          amount: 1,
-          label: blueprint?.name ?? (editing === undefined ? 'A piece' : orderName(editing)),
-        },
-      ];
+    : patch !== undefined && element !== null
+      ? // The piece it makes is the plainest piece of its slot in that shard's element: its own look and tint.
+        [
+          {
+            key: 'piece',
+            icon: { kind: 'gear', baseId: patchworkBase(patch.slot, element as Element).id },
+            amount: 1,
+            label: patchworkBase(patch.slot, element as Element).name,
+          },
+        ]
+      : [
+          {
+            key: 'piece',
+            icon: { kind: 'gear', baseId: blueprint?.baseId ?? editing?.blueprintId ?? '' },
+            amount: 1,
+            label: blueprint?.name ?? (editing === undefined ? 'A piece' : orderName(editing)),
+          },
+        ];
 
-  if (drill && editing === undefined) {
+  if (drill === 'shard' && editing === undefined) {
     return (
       <Drawer open onClose={onClose} title={title} meta={meta} returnFocusTo={open.opener}>
         <div
           class="dr-stack"
           onKeyDown={onDrillKey(() => {
-            setDrill(false);
+            setDrill(null);
+          })}
+        >
+          <DrillHead
+            title="Which shards"
+            backLabel="to the order"
+            focus
+            onBack={() => {
+              setDrill(null);
+            }}
+          />
+          <div class="pix-panel">
+            <ChoiceList label="Shards">
+              <ChoiceButton
+                label="Most held"
+                line={<ShardNow element={mostHeld} visit={visit} />}
+                selected={shardPick === null}
+                disabled={false}
+                onClick={() => {
+                  setShardPick(null);
+                  setDrill(null);
+                }}
+              />
+              {SHARD_ELEMENTS.map((e) => (
+                <ChoiceButton
+                  key={e}
+                  label={elementName(e)}
+                  line={<ShardNow element={e} visit={visit} />}
+                  selected={shardPick === e}
+                  disabled={false}
+                  onClick={() => {
+                    setShardPick(e);
+                    setDrill(null);
+                  }}
+                />
+              ))}
+            </ChoiceList>
+          </div>
+        </div>
+      </Drawer>
+    );
+  }
+  if (drill === 'what' && editing === undefined) {
+    return (
+      <Drawer open onClose={onClose} title={title} meta={meta} returnFocusTo={open.opener}>
+        <div
+          class="dr-stack"
+          onKeyDown={onDrillKey(() => {
+            setDrill(null);
           })}
         >
           <DrillHead
@@ -174,7 +281,7 @@ export function OrderEditor({
             backLabel="to the order"
             focus
             onBack={() => {
-              setDrill(false);
+              setDrill(null);
             }}
           />
           <div class="pix-panel">
@@ -186,19 +293,33 @@ export function OrderEditor({
                 disabled={false}
                 onClick={() => {
                   setWhat(TEAM);
-                  setDrill(false);
+                  setDrill(null);
                 }}
               />
               {(blueprints ?? []).map((bp) => (
                 <ChoiceButton
                   key={bp.baseId}
                   label={bp.name}
-                  line={`${slotName(bp.slot)}${bp.element === null ? '' : ' · ' + elementName(bp.element)}`}
+                  line={
+                    bp.patchwork === undefined ? (
+                      `${slotName(bp.slot)}${bp.element === null ? '' : ' · ' + elementName(bp.element)}`
+                    ) : (
+                      <>
+                        {slotName(bp.slot)} ·{' '}
+                        <PlainBadge kind="scrap" amount={bp.patchwork.scrap} />{' '}
+                        <PlainBadge
+                          kind={`${mostHeld}-shard` as PartKind}
+                          amount={bp.patchwork.shards}
+                        />
+                      </>
+                    )
+                  }
                   selected={what === bp.baseId}
                   disabled={false}
                   onClick={() => {
                     setWhat(bp.baseId);
-                    setDrill(false);
+                    setShardPick(null);
+                    setDrill(null);
                   }}
                 />
               ))}
@@ -247,7 +368,7 @@ export function OrderEditor({
                 label="What to make: nothing chosen. Choose"
                 disabled={busy || blueprints === null}
                 onClick={() => {
-                  setDrill(true);
+                  setDrill('what');
                 }}
               />
             ) : (
@@ -257,7 +378,7 @@ export function OrderEditor({
                 label={`What to make: ${forTeam ? 'for my team' : (blueprint?.name ?? '')}. Change`}
                 disabled={busy}
                 onClick={() => {
-                  setDrill(true);
+                  setDrill('what');
                 }}
               >
                 <SlotText
@@ -266,6 +387,24 @@ export function OrderEditor({
                 />
               </Slot>
             ),
+            ...(patch !== undefined && editing === undefined
+              ? [
+                  <Slot
+                    kind="talent"
+                    state="filled"
+                    label={`Shards: ${shardPick === null ? 'most held, now ' + elementName(mostHeld) : elementName(shardPick)}. Change`}
+                    disabled={busy}
+                    onClick={() => {
+                      setDrill('shard');
+                    }}
+                  >
+                    <SlotText
+                      name={shardPick === null ? 'Most held' : elementName(shardPick)}
+                      sub={<ShardNow element={shardPick ?? mostHeld} visit={visit} />}
+                    />
+                  </Slot>,
+                ]
+              : []),
           ]}
         />
         {!forTeam && (
@@ -281,23 +420,30 @@ export function OrderEditor({
             />
           </div>
         )}
-        <ChoiceList label="Reach">
-          {REACH_CHOICES.map((choice) => (
-            <ChoiceButton
-              key={choice.id}
-              label={choice.name}
-              line={choice.line}
-              selected={reach === choice.id}
-              disabled={busy}
-              onClick={() => {
-                setReach(choice.id);
-              }}
-            />
-          ))}
-        </ChoiceList>
+        {patch === undefined && (
+          <ChoiceList label="Reach">
+            {REACH_CHOICES.map((choice) => (
+              <ChoiceButton
+                key={choice.id}
+                label={choice.name}
+                line={choice.line}
+                selected={reach === choice.id}
+                disabled={busy}
+                onClick={() => {
+                  setReach(choice.id);
+                }}
+              />
+            ))}
+          </ChoiceList>
+        )}
         <RecipeCard
           compact
-          inputs={inputsOf(visit, element, reach)}
+          inputs={inputsOf(
+            visit,
+            element,
+            patch === undefined ? reach : 'none',
+            patch === undefined ? undefined : { scrap: patch.scrap, shards: patch.shards },
+          )}
           outputs={outputs}
           actionLabel="Order"
           onStart={() => undefined}
@@ -308,7 +454,7 @@ export function OrderEditor({
         {editing === undefined ? (
           <ActionButton
             label="Add to the queue"
-            detail={reach === 'none' ? '' : reachName(reach)}
+            detail={reach === 'none' || patch !== undefined ? '' : reachName(reach)}
             wide
             large
             disabled={busy || reason !== null}
@@ -322,7 +468,8 @@ export function OrderEditor({
                       seatId: anvil.id,
                       blueprintId: what ?? '',
                       count,
-                      reach,
+                      reach: patch === undefined ? reach : 'none',
+                      ...(patch !== undefined && shardPick !== null ? { element: shardPick } : {}),
                     },
               );
             }}

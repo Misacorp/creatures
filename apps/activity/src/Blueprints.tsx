@@ -12,8 +12,11 @@ import {
   nominalHours,
   slotName,
 } from './gear-view';
+import { partBadge } from './count-items';
+import type { PartKind } from './gear-types';
 import { ElementChip } from './sprites/ElementChip';
 import { CountBadge } from './ui/CountBadge';
+import { mostHeldElement } from './valley/forge-view';
 
 /**
  * The blueprints a player has learned, each with its quality, the parts a plain craft costs
@@ -42,10 +45,15 @@ export function Blueprints({
    * The valley's Forge (`VALLEY_SYSTEMS` on): there are no timed crafts, so each blueprint says "Order" and opens the order editor with
    * itself picked. `reason` is why it cannot be pressed now (no anvil yet); the plain craft's price, time and Crafting level are not shown.
    */
-  order?: { reason: string | null; onOrder: (baseId: string, opener: HTMLElement) => void };
+  order?: {
+    reason: string | null;
+    onOrder: (baseId: string, opener: HTMLElement) => void;
+    /** The shelf's shard piles by element: the patchwork blueprints (V-FORGE-12) show the shard icon of the pile held most. */
+    shards: Readonly<Record<string, number>>;
+  };
 }) {
   const [open, setOpen] = useState<{ baseId: string; opener: HTMLElement | null } | null>(null);
-  const views = blueprintViews(gear.blueprints, gear.skills);
+  const views = blueprintViews(gear.blueprints, gear.skills, order !== undefined);
   const opened = views.find((v) => v.baseId === open?.baseId);
   const job = opened === undefined ? null : craftJob(opened, gear, { load: loadPreview }, onCraft);
   return (
@@ -76,10 +84,23 @@ export function Blueprints({
                     {order === undefined && (
                       <CountBadge {...nominalDurationCountItem(nominalHours() * 3_600_000)} />
                     )}
-                    <span>
-                      <GlossaryTag entry="blueprint-quality">Quality</GlossaryTag>{' '}
-                      {marksText(bp.marks)}
-                    </span>
+                    {bp.patchwork !== undefined && order !== undefined ? (
+                      // V-FORGE-12: no quality; what a piece takes, as icons (the shard icon is the pile held most now).
+                      <>
+                        <CountBadge {...partBadge('scrap', bp.patchwork.scrap)} />
+                        <CountBadge
+                          {...partBadge(
+                            `${mostHeldElement(order.shards)}-shard` as PartKind,
+                            bp.patchwork.shards,
+                          )}
+                        />
+                      </>
+                    ) : (
+                      <span>
+                        <GlossaryTag entry="blueprint-quality">Quality</GlossaryTag>{' '}
+                        {marksText(bp.marks)}
+                      </span>
+                    )}
                   </p>
                 </div>
                 <button
