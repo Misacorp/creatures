@@ -110,6 +110,8 @@ describe('migration 56: the valley tables', () => {
           'smith_hours',
           // Migration 60: the game day it last featured in a small moment.
           'moment_day',
+          // Migration 62: the creature's trading hours (the broker).
+          'trade_hours',
         ]);
         expect(
           ctx.sql

@@ -9,8 +9,14 @@ import { SCOUT_KITS } from './scouts';
  * Bonfire reads it. Strict, so the client half and the server tests share one definition. Absent from the answer with the flag off.
  */
 
-/** Where a creature is: resting at the bonfire (V-BON-1), or posted to a scout seat, an anvil or a communal seat (`helping`, V-POST-13; V-POST-1; it earns the same idle XP, V-POST-3). */
-export const VALLEY_CREATURE_STATES = ['resting', 'scouting', 'smithing', 'helping'] as const;
+/** Where a creature is: resting at the bonfire (V-BON-1), or posted to a scout seat, an anvil, the broker's seat (`trading`, V-FORGE-11) or a communal seat (`helping`, V-POST-13; V-POST-1; it earns the same idle XP, V-POST-3). */
+export const VALLEY_CREATURE_STATES = [
+  'resting',
+  'scouting',
+  'smithing',
+  'helping',
+  'trading',
+] as const;
 export type ValleyCreatureState = (typeof VALLEY_CREATURE_STATES)[number];
 
 const int = v.pipe(v.number(), v.integer(), v.minValue(0));
@@ -163,6 +169,30 @@ export const ValleyForgeViewSchema = v.strictObject({
   orderCountMax: int,
 });
 
+/**
+ * The Market and its broker (V-FORGE-11). `open`: the server has built the Market, so every player has the broker's seat (`seat`; null
+ * before). The broker has no store: what it trades lands on the shelf. `terms` are what it trades at now (from its creature's trading
+ * mastery), `next` the terms of the next mastery step (null at Master), `blocked` says an anvil waits for a shard though it works (no
+ * spare pile of another element can pay), and `toward` is the element it keeps a small stock of (null: only what the orders wait on).
+ */
+export const ValleyMarketViewSchema = v.strictObject({
+  open: v.boolean(),
+  seat: v.nullable(
+    v.strictObject({
+      id,
+      creatureId: v.nullable(id),
+      paused: v.nullable(v.picklist(PAUSE_REASONS)),
+      toward: v.nullable(element),
+      mastery,
+      terms: v.strictObject({ rate: amount, critBp: int, critYield: int }),
+      next: v.nullable(
+        v.strictObject({ rate: amount, critBp: int, critYield: int, atHours: amount }),
+      ),
+      blocked: v.nullable(element),
+    }),
+  ),
+});
+
 /** A destination as the Signpost draws it (V-SCOUT-2, 8, 11). */
 export const ValleyPlaceViewSchema = v.strictObject({
   id,
@@ -244,6 +274,8 @@ export const ValleyViewSchema = v.strictObject({
   special: v.nullable(v.strictObject({ destination: id, twist: id })),
   /** The commons (phase 5 step 6): the places and their projects, the collections, the fire, the hearth, keystones and communal seats. */
   commons: v.optional(ValleyCommonsViewSchema),
+  /** The Market and the broker's seat (phase 5 step 7). */
+  market: v.optional(ValleyMarketViewSchema),
   /** The welcome-back Gazette's paper (V-RET-0): present only while the last paper is unread; closing it takes it away. */
   paper: v.optional(PaperSchema),
 });
@@ -255,6 +287,7 @@ export type ValleySeatView = v.InferOutput<typeof ValleySeatViewSchema>;
 export type ValleyOrderView = v.InferOutput<typeof ValleyOrderViewSchema>;
 export type ValleyAnvilView = v.InferOutput<typeof ValleyAnvilViewSchema>;
 export type ValleyForgeView = v.InferOutput<typeof ValleyForgeViewSchema>;
+export type ValleyMarketView = v.InferOutput<typeof ValleyMarketViewSchema>;
 export type ValleyPlaceView = v.InferOutput<typeof ValleyPlaceViewSchema>;
 export type ValleyView = v.InferOutput<typeof ValleyViewSchema>;
 

@@ -2,11 +2,14 @@ import { VALLEY_RULES, type AwayCurve, type ValleyRules } from './rules';
 import { awayShare, catchUpMultiplier, levelAtXp, xpAtLevel } from './formulas';
 import type { Rng } from '../rng';
 import {
+  brokerTermsAt,
   finishForge,
   forgeAdvance,
   forgeBoundary,
   forgeInstants,
   startForge,
+  type BrokerTally,
+  type BrokerTerms,
   type ForgeHours,
   type MadePiece,
   type SettleForge,
@@ -66,6 +69,8 @@ export interface SettleCreature {
   readonly scoutHours?: number;
   /** The creature's smithing hours (V-POST-12): effective hours it has worked at an anvil (default 0). */
   readonly smithHours?: number;
+  /** The creature's trading hours (V-POST-12): effective hours it has worked at the broker's seat (default 0). */
+  readonly tradeHours?: number;
 }
 
 /** The allowance store (V-POST-5): whole Acorns waiting, and the fraction not yet paid into them (0 up to 1). */
@@ -106,6 +111,21 @@ export interface SettleCommunal {
   readonly storeHours: number;
 }
 
+/**
+ * The broker's seat at the Market (V-FORGE-11): a creature that trades the player's spare shards for what the Forge's orders wait on, all
+ * the time, at the rate its trading mastery gives. It has no store: its trades land on the shelf as they happen (the pass writes the
+ * shelf back), so it needs the Forge's state to trade and only grows its mastery without it.
+ */
+export interface SettleBroker {
+  readonly id: string;
+  /** The index in `creatures` of the posted creature; -1: an empty seat. */
+  readonly creature: number;
+  /** The element index it keeps a small stock of besides what the orders need (-1: none). */
+  readonly toward: number;
+  /** The shards of change owed to the broker's house (0 up to 1), so a rate of 2.4 averages 2.4 though shards are whole. */
+  readonly credit: number;
+}
+
 /** What a stretch of one seat picked up, for the live draws (V-POST-14): `hours` of effective work at `rates`, in `world`. */
 export interface SeatStretch {
   readonly seat: string;
@@ -143,6 +163,10 @@ export interface SettleState {
   readonly communal?: readonly SettleCommunal[];
   /** Absent: no anvils (step 3, V-FORGE-1 to 5): the queues, the shelf, the pieces on their way and the floors. */
   readonly forge?: SettleForge;
+  /** Absent: no broker seat (V-FORGE-11). */
+  readonly broker?: SettleBroker;
+  /** Output only: what the broker traded in this pass. */
+  readonly brokered?: BrokerTally;
   /** Output only: the pieces that reached a floor in this pass, in time order. */
   readonly made?: readonly MadePiece[];
   /** Output only: the orders that made their last piece in this pass (they leave the queue). */
@@ -356,8 +380,11 @@ export function settle(
   let allowance = state.allowance;
   let seats = state.seats;
   let communal = state.communal;
+  let broker = state.broker;
   const forge =
-    state.forge !== undefined && state.forge.anvils.length > 0 ? startForge(state.forge) : null;
+    state.forge !== undefined && state.forge.anvils.length > 0
+      ? startForge(state.forge, state.broker?.credit ?? 0)
+      : null;
   const stretches: SeatStretch[] = [];
   const world = options.world;
   const away = options.away ?? [];
@@ -370,9 +397,17 @@ export function settle(
       lastVisitAt = e.at;
       if (e.hearth !== undefined) hearth = e.hearth;
     }
+    const trading = broker === undefined ? null : brokerNow(rules, broker, creatures, away, cursor);
     if (forge !== null) {
       if (options.rng === undefined) throw new RangeError('a pass with anvils needs an rng');
-      forgeInstants(rules, forge, smithsOf(creatures, away, cursor), cursor, options.rng);
+      forgeInstants(
+        rules,
+        forge,
+        smithsOf(creatures, away, cursor),
+        cursor,
+        options.rng,
+        trading?.terms ?? null,
+      );
     }
     if (cursor >= to) break;
     const share = awayShare(rules, curve, (cursor - lastVisitAt) / HOUR_MS);
@@ -397,6 +432,9 @@ export function settle(
       forge === null
         ? Number.POSITIVE_INFINITY
         : forgeBoundary(rules, forge, smithsOf(creatures, away, cursor), share, cursor),
+      trading === null || share <= 0
+        ? Number.POSITIVE_INFINITY
+        : brokerBoundary(rules, trading.hours, share, cursor),
     );
     const hours = (boundary - cursor) / HOUR_MS;
     const gain = rules.xp.idlePerHour * hearth * share * hours;
@@ -474,8 +512,16 @@ export function settle(
         });
       }
     }
+    if (trading !== null && hours > 0) {
+      // The broker's trading mastery grows with its effective hours (V-POST-12), whether or not an order waits.
+      const more = share * hours;
+      creatures = creatures.map((c, i) =>
+        i === trading.creature ? { ...c, tradeHours: (c.tradeHours ?? 0) + more } : c,
+      );
+    }
     cursor = boundary;
   }
+  if (broker !== undefined) broker = { ...broker, credit: forge?.brokerCredit ?? broker.credit };
   return {
     settledAt: to,
     lastVisitAt,
@@ -484,6 +530,8 @@ export function settle(
     ...(allowance === undefined ? {} : { allowance }),
     ...(seats === undefined ? {} : { seats }),
     ...(communal === undefined ? {} : { communal }),
+    ...(broker === undefined ? {} : { broker }),
+    ...(forge === null || forge.brokered.trades === 0 ? {} : { brokered: forge.brokered }),
     ...(stretches.length === 0 ? {} : { stretches }),
     ...(forge === null || state.forge === undefined
       ? {}
@@ -510,3 +558,30 @@ const smithsOf = (
         ? {}
         : { joinedAt: c.joinedAt }),
   }));
+
+/** The broker at `at`: its terms and trading hours when a creature stands there and is not away or unjoined (V-POST-7), else null. */
+function brokerNow(
+  rules: ValleyRules,
+  broker: SettleBroker,
+  creatures: readonly SettleCreature[],
+  away: readonly AwayWindow[],
+  at: number,
+): { terms: BrokerTerms; hours: number; creature: number } | null {
+  const worker = creatures[broker.creature];
+  if (worker === undefined || isAway(away, broker.creature, at)) return null;
+  if (worker.joinedAt !== undefined && worker.joinedAt > at) return null;
+  const hours = worker.tradeHours ?? 0;
+  return {
+    terms: { ...brokerTermsAt(rules, hours), toward: broker.toward },
+    hours,
+    creature: broker.creature,
+  };
+}
+
+/** The next moment (ms) the broker's mastery steps up, which changes its terms (Infinity after Master). */
+function brokerBoundary(rules: ValleyRules, hours: number, share: number, cursor: number): number {
+  const step = rules.posts.mastery.find((m) => m.hours > hours + EPSILON);
+  return step === undefined
+    ? Number.POSITIVE_INFINITY
+    : cursor + Math.ceil(((step.hours - hours) / share) * HOUR_MS);
+}

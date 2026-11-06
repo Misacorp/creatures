@@ -114,7 +114,25 @@ describe('projects (V-COM-5, 11, 15)', () => {
     ]);
     level['forge'] = 2;
     expect(R.commons.places.filter((id) => mayOpenProject(R, id, of))).toEqual(R.commons.places);
+    // The Market is the last of the places, built once: its one project opens with the rest, and no other follows (V-FORGE-11).
+    expect(R.commons.places.at(-1)).toBe('market');
+    level['market'] = 2;
     expect(mayOpenProject(R, 'market', of)).toBe(false);
+    expect(mayOpenProject(R, 'school', of)).toBe(true);
+  });
+
+  it('size the Market like a level-2 project and pay it in Acorns and scrap only', () => {
+    expect(projectSize(R, 1, 8, 'market')).toBeCloseTo(projectSize(R, 2, 8), 9);
+    expect(projectSize(R, 1, 8, 'school')).toBeCloseTo(projectSize(R, 1, 8), 9);
+    const need = partNeeds(R, 1000, 'market');
+    expect(need.shards).toBe(0);
+    expect(need.acorns * R.commons.giftValue.acorns).toBeCloseTo(500, 9);
+    expect(need.scrap * R.commons.giftValue.scrap).toBeCloseTo(500, 9);
+    expect(partNeeds(R, 1000, 'forge').shards).toBeGreaterThan(0);
+    expect(partRoom(R, 1000, { acorns: 0, scrap: 0, shards: 0 }, 'shards', 'market')).toBe(0);
+    expect(
+      projectDone(R, 1000, { acorns: need.acorns, scrap: need.scrap, shards: 0 }, 'market'),
+    ).toBe(true);
   });
 
   it("turn a value into the parts in the project's own proportions", () => {

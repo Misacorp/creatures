@@ -187,6 +187,7 @@ describe('the guided start (V-COM-15) and the open project (V-COM-5)', () => {
           ['signpost', 'waiting', 1],
           ['paddock', 'waiting', 1],
           ['school', 'waiting', 1],
+          ['market', 'waiting', 1],
         ]);
         const hearth = placeOf(valley, 'bonfire');
         // A lone player's weight is 1: the first level's factor of the base size, scaled by (1 / 8) ^ 0.7.

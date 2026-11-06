@@ -8,6 +8,13 @@ const pos = v.pipe(v.number(), v.finite(), v.minValue(0.000001));
 const share = v.pipe(v.number(), v.minValue(0), v.maxValue(1));
 const int = v.pipe(v.number(), v.integer(), v.minValue(0));
 const nums = v.array(num);
+const costSplitSchema = v.pipe(
+  v.strictObject({ acorns: share, scrap: share, shards: share }),
+  v.check(
+    (s) => Math.abs(s.acorns + s.scrap + s.shards - 1) < 1e-9,
+    'the shares of a project must add up to 1',
+  ),
+);
 const stepList = v.pipe(
   v.array(v.strictObject({ until: pos, share })),
   v.minLength(1),
@@ -199,12 +206,10 @@ export const ValleyRulesSchema = v.strictObject({
     buildHours: num,
     weight: v.strictObject({ oneDay: share, fullAtDays: pos }),
     giftValue: v.strictObject({ acorns: pos, scrap: pos, shards: pos }),
-    costSplit: v.pipe(
-      v.strictObject({ acorns: share, scrap: share, shards: share }),
-      v.check(
-        (s) => Math.abs(s.acorns + s.scrap + s.shards - 1) < 1e-9,
-        'the shares of a project must add up to 1',
-      ),
+    costSplit: costSplitSchema,
+    oneShot: v.record(
+      v.string(),
+      v.strictObject({ sizeLevel: v.pipe(v.number(), v.integer(), v.minValue(1)), costSplit: costSplitSchema }),
     ),
     placeElement: v.record(v.string(), v.picklist(VALLEY_ELEMENTS)),
     placeWeights: v.record(v.string(), pos),
