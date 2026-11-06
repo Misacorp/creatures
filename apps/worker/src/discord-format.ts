@@ -642,11 +642,14 @@ export function formatStagePostV2(post: StagePostV2): PostMessage {
     );
   }
   if (post.stage === 3) {
-    lines.push(
-      post.kill
-        ? `Next boss ${relativeTime(post.next)}.`
-        : `It returns ${relativeTime(post.next)} with this week's best on its HP bar.`,
-    );
+    // With several parties the server's outcome (next boss or a return) is not known yet, so the post does not claim it.
+    if (post.party === null) {
+      lines.push(
+        post.kill
+          ? `Next boss ${relativeTime(post.next)}.`
+          : `It returns ${relativeTime(post.next)} with this week's best on its HP bar.`,
+      );
+    }
     const firsts = post.firsts ?? [];
     if (firsts.length > 0) fields.push(field('🆕 New on the server', firstsValue(firsts), false));
   } else if (!post.kill) {

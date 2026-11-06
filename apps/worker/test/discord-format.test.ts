@@ -756,4 +756,30 @@ describe('formatStagePostV2', () => {
       "▰▰▰▰▰▰▱▱▱▱ 62% HP left\nIt returns <t:1800500000:R> with this week's best on its HP bar.",
     );
   });
+
+  it('does not claim the server outcome in a finale of a week with several parties', () => {
+    const won = embedOf(
+      formatStagePostV2({
+        ...STAGE_V2,
+        stage: 3,
+        kill: true,
+        hpLeftPercent: 0,
+        thresholds: [],
+        party: 2,
+        next: 1800500000000,
+      }),
+    );
+    expect(won.description).toBe('🎁 Kill bonus paid.');
+    const lost = embedOf(
+      formatStagePostV2({
+        ...STAGE_V2,
+        stage: 3,
+        cleared: false,
+        thresholds: [],
+        party: 2,
+        next: 1800500000000,
+      }),
+    );
+    expect(lost.description).toBe('▰▰▰▰▰▰▱▱▱▱ 62% HP left');
+  });
 });
