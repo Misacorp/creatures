@@ -10,36 +10,36 @@ Status: **draft, 2026-11-06.** Nothing here is shipped or built. Everything mark
 
 ## 1. The settlers' record: what is kept
 
-**Proposal.** One record per server. It holds only what the game already stores today (inventory from the worker's migrations, 2026-11-06).
+One record per server. It holds only what the game already stores today (inventory from the worker's migrations, 2026-11-06).
 
 **Per settler:**
 
 - The name they had in the game (Discord display name, as stored, at most 32 characters) and the day they first played.
-- **Every creature:** species (its current form), line, level, shiny, nickname, how it came (starter, trip, Festival), the day it was caught, its quirk, ribbons, fusions.
-- **Feats**, each with a date where one is stored (see the list below).
+- **Every creature:** species (its current form), line, level, shiny, nickname, how it came (starter, trip, Festival), the day it was caught, its quirk. (Misa's brief: "each player's creatures and their names".)
+- **The eight feats below**, and nothing else (Misa, 2026-11-06: "only keep a handful").
 
-**Per server:** its best Boss Rank, the bosses it beat, and the server's firsts.
+### The feats (Misa, 2026-11-06)
 
-### Feats we can read
+| Feat                   | How it is read                                                                                                                        | Example                                                |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| Deepest dungeon depth  | the deepest depth of a run they cleared (`dungeon_runs`, kept forever); `dungeon_progress.depth` is the next depth unlocked, one more | "Cleared depth 18"                                     |
+| First on the server    | per creature line, the earliest catch date among all creatures on the server; ties share it (see below)                               | "First Mossling, Lanternfin and Ashmole on the server" |
+| Blueprints owned       | count of `blueprints`                                                                                                                 | "31 blueprints"                                        |
+| Creatures owned        | count of `creatures`                                                                                                                  | "42 creatures"                                         |
+| Highest level creature | highest level, its name (nickname, else species); a tie goes to the earliest caught                                                   | "Pebbles the Mossling, level 31"                       |
+| Total creature levels  | sum of all levels                                                                                                                     | "612 levels in all"                                    |
+| Best crafter           | highest Crafting level (`crafting_skill`, level from `skillLevel`) and that creature's name                                           | "Crafting 9: Ember the Ashmole"                        |
+| Best explorer          | highest Explorer rank (`explorer_progress`, rank from `explorerRank`) and that creature's name                                        | "Explorer 7: Fizz the Lanternfin"                      |
 
-| Feat (working name) | From                                                                 | Example                                   |
-| ------------------- | -------------------------------------------------------------------- | ----------------------------------------- |
-| First on the server | `server_firsts`: first catch, evolve, jackpot, Festival of a species | "First to find a Lanternfin, 2026-10-12"  |
-| Oldest companion    | earliest `caught_at` that is not the starter                         | "Pebbles the Mossling, caught 2026-09-28" |
-| Highest level       | creature level                                                       | "Raised Ashmole to level 31"              |
-| Shiny finder        | shiny flag                                                           | "Found 2 shinies"                         |
-| Boss slayer         | raid week summaries: per-player damage, kills                        | "Top damage the week Old Bogback fell"    |
-| Deep diver          | `dungeon_progress`: best depth, longest streak, clears               | "Reached depth 18; 21 days in a row"      |
-| Valley Games        | lifetime medals, best score per event, badges                        | "4 gold medals; record in the Pond Dash"  |
-| Explorer            | trips, places visited first, journal pages found                     | "First to reach Storm Ridge"              |
-| Maker               | gear with their maker's mark                                         | "Made 40 pieces in the Workshop"          |
-| Leet regular        | days with a leet payout in the game's ledger                         | "Brought leet on 37 days"                 |
+**First on the server, read by catch date (technical call).** Misa noted the stored server firsts look odd because of evolutions: `server_firsts` also has an `evolve` kind and records the species at the moment of the drop. Instead, for each creature line we take the creature with the earliest `caught_at` on the server and credit its owner, named by the line's first form ("First Mossling"), whatever it has evolved into since. Starters and dev-tool creatures don't count (everyone picks a starter). Creatures are never deleted outside the staging dev tools, so every catch still counts.
+
+**Per server:** its best Boss Rank and the bosses it beat.
 
 ### What is already lost (we can't promise these)
 
 - **Finale moments and fight replays** of any week before the last one: old raid logs are blanked; only each week's summary (damage, contribution, kill) stays.
 - **Day-by-day Valley Games placings**: only lifetime medals, records and badges stay.
-- **Evolution dates** and creatures a player released or fused away.
+- **Evolution dates.**
 - **Avatars and server nicknames**: never stored.
 
 ## 2. Who can see the record, and which IDs it keeps
@@ -79,12 +79,14 @@ Everything else, on every server: creatures, talents, Talent Books, gear, materi
 
 ## 5. The one-time notice
 
-**Your record, by DM (Misa, 2026-11-06).** Each player gets one Discord DM with their record, and it is not shown in the game. It goes to everyone once, also to those with reminder DMs off (a one-off goodbye, not a reminder). A player whose DMs are closed doesn't get it. It fits Discord's 2,000 characters: feats, then the most notable creatures (shiny, oldest, highest level), then "and N more". Markdown is escaped and mentions are off. Draft:
+**Your record, by DM (Misa, 2026-11-06).** Each player gets one Discord DM with their record, and it is not shown in the game. It goes to everyone once, also to those with reminder DMs off (a one-off goodbye, not a reminder). A player whose DMs are closed doesn't get it. It fits Discord's 2,000 characters: the eight feats, then creature names until the limit, then "and N more". Markdown is escaped and mentions are off. Draft:
 
 > **You were one of the first settlers.**
 > The valley is starting over, and it will remember you. Here is what it keeps:
-> First to find a Lanternfin · Reached depth 18 · 4 gold medals
-> Pebbles the Mossling, level 31, with you since 2026-09-28 · Ember the Ashmole (shiny) · and 23 more
+> First Mossling and Lanternfin on the server · Cleared depth 18 · 31 blueprints
+> 42 creatures, 612 levels in all · Highest: Pebbles the Mossling, level 31
+> Best crafter: Ember the Ashmole, Crafting 9 · Best explorer: Fizz the Lanternfin, Explorer 7
+> Your creatures: Pebbles, Ember, Fizz and 39 more
 
 **The notice in the game (proposal).** A card on first open after the reset, like the level reset's card, and one Discord post in the announce channel. Draft:
 
@@ -107,5 +109,4 @@ Kept for the valley session (owner of `docs/design/valley/`): what the valley re
 
 ## Open questions for Misa
 
-1. What counts as a feat: the table in section 1 as it is, or fewer and bigger ones?
-2. The switch day and the notice text (sections 4 and 5), when phase 7 is close.
+1. The switch day and the notice text (sections 4 and 5), when phase 7 is close.

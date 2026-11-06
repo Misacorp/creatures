@@ -4,9 +4,17 @@ Roadmap calls, Misa's standing direction, naming and tone, content policy, how a
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-06: The settlers' record keeps eight feats; firsts on the server are read by catch date [Misa]
+
+ID: `2026-11-06-the-settlers-record-keeps-eight-feats` · Status: current · Amends: `2026-11-06-the-reset-settlers-appear-on-every`
+
+**Decision.** The settlers' record keeps each player's creatures (species, nickname, level, shiny, catch day, quirk) and exactly eight feats: deepest dungeon depth cleared, the creature lines they were first on the server to catch, blueprints owned, creatures owned, highest level creature (with its name), total creature levels, best Crafting level (with the creature's name) and best Explorer rank (with the creature's name). "First on the server" is read from catch dates, not `server_firsts`: per line, the creature with the earliest `caught_at` (starters and dev-tool creatures excluded) credits its owner, named by the line's first form. Details in `docs/design/reset.md` section 1.
+
+**Reasoning.** Misa, 2026-11-06: "Let's only keep a handful", listing these eight, and "check this by catch date because some of them show weird due to evolutions". Creatures are never deleted outside the staging dev tools, so every catch date is still there. Deepest depth comes from cleared runs because `dungeon_progress.depth` holds the next depth unlocked.
+
 ## 2026-11-06: The reset: settlers appear on every server, each player gets their record by DM, and a hidden trace of who was there is kept [Misa]
 
-ID: `2026-11-06-the-reset-settlers-appear-on-every` · Status: current · Amends: `2026-11-06-the-settlers-record-lives-in-a`
+ID: `2026-11-06-the-reset-settlers-appear-on-every` · Status: current, amended by `2026-11-06-the-settlers-record-keeps-eight-feats` · Amends: `2026-11-06-the-settlers-record-lives-in-a`
 
 **Decision.** Misa's answers on the reset plan (`docs/design/reset.md`):
 
