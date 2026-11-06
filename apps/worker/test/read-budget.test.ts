@@ -972,6 +972,9 @@ describe('read budget with the visitor', () => {
         // Twelve hours away, still inside his days (Friday 03:00 Helsinki): the paper tells him.
         metered.sql.exec('UPDATE visitor_rerolls SET told = 0 WHERE user_id = ?', id);
         clock.t += 12 * 60 * MINUTE;
+        // The object's alarm wakes at Friday 00:00 and makes the School's weekly row (the pick over the server: priced in the School's
+        // own budget), so the return below finds it, as it does in production.
+        await core.alarm();
         await relog();
         measured['arrival'] = (await metered.measure(state)).reads;
       },
@@ -999,7 +1002,7 @@ describe('read budget with the visitor', () => {
  */
 const SCHOOL_BUDGET = {
   // The first look of the week: the pick over the whole server, the row and (with a channel) the post.
-  pick: { reads: 2500, writes: 80 }, // measured 1925 reads (1330 of them the books, 390 the creatures' lines: once a week), 56 written (the pass of a first look, the week's row)
+  pick: { reads: 3000, writes: 80 }, // measured 1925 reads here (1330 of them the books, 390 the creatures' lines: once a week); 2490 when all 15 players hold whole books, 56 written (the pass of a first look, the week's row)
   // A look with the row made.
   look: { reads: 250, writes: 45 }, // measured 182 reads, 29 written (the valley's pass of this player: the first of the object's life here; the School's own part is the week's row and the player's creatures and book, about 51 rows)
   // Seating a student: the valley's pass before and after, the seat row and the checks.
