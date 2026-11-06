@@ -51,6 +51,16 @@ describe('the Forge words', () => {
       ['essence', 25],
     ]);
     expect(sayParts(orderWait(o) ?? [])).toEqual(['Waiting for ', ['shards:tide', undefined]]);
+    // A patchwork order on "most held" names no element: it waits for the any-shard icon, never the word.
+    const most = sampleOrder('o4', 'patchwork-hat', 1, {
+      waiting: 'shard',
+      needs: { scrap: 72, shardElement: null, shard: 4, essence: 0 },
+    });
+    expect(sayParts(orderWait(most) ?? [])).toEqual(['Waiting for ', ['shards:any', undefined]]);
+    expect(needsItems(most).map((i) => [i.key, i.amount])).toEqual([
+      ['scrap', 72],
+      ['shards:any', 4],
+    ]);
     expect(orderWait(sampleOrder('o2', BP, 1))).toBeNull();
     expect(sayParts(orderWait(sampleOrder('o3', BP, 1, { waiting: 'essence' })) ?? [])).toEqual([
       'Waiting for ',

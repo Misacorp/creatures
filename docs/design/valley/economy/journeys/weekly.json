@@ -75,7 +75,6 @@
    "events": [
     "new line: cindle",
     "new line: mistnewt",
-    "school: a student seated for crit-chance",
     "visitor: he is in the valley until the raid finale",
     "mastery: scout seat 1 reached Expert",
     "mastery: scout seat 2 reached Apprentice",
@@ -125,7 +124,6 @@
     "new line: sproutle",
     "new line: coralynx",
     "school: a student seated for crit-damage",
-    "school: a creature learned the teacher's talent on its card (12 Acorns)",
     "school: a creature learned its talent 1 on its card (12 Acorns)",
     "school: a creature learned its talent 1 on its card (12 Acorns)",
     "school: a creature learned its talent 1 on its card (12 Acorns)",
@@ -150,38 +148,20 @@
    "hour": 20,
    "cameHome": {
     "acorns": 132,
-    "scrap": 431.83,
+    "scrap": 415.83,
     "shards": {
      "ember": 22.48,
      "mire": 23.5
     },
-    "creatures": [
-     {
-      "line": "mudlump",
-      "count": 1,
-      "newLine": false
-     },
-     {
-      "line": "squelch",
-      "count": 1,
-      "newLine": false
-     },
-     {
-      "line": "new line 18 (common)",
-      "count": 1,
-      "newLine": true
-     }
-    ],
+    "creatures": [],
     "pieces": {
      "collected": 5,
      "worn": 6,
-     "bagged": 3
+     "bagged": 2
     }
    },
    "events": [
-    "new line: new line 18 (common)",
     "school: a creature learned the teacher's talent on its card (12 Acorns)",
-    "school: a creature learned its talent 1 on its card (12 Acorns)",
     "visitor: he is in the valley until the raid finale",
     "mastery: scout seat 1 reached Master",
     "mastery: anvil 1 reached Master",
@@ -190,7 +170,7 @@
    "top5": [
     16,
     16,
-    15,
+    16,
     13,
     13
    ]
