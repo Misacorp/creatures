@@ -106,6 +106,10 @@ describe('who rests at the fire', () => {
 });
 
 describe('the ring round the fire', () => {
+  it('every seat has its creature’s feet on the meadow, which starts 14 scene pixels under the art’s top', () => {
+    for (const seat of FIRE_SEATS) expect(seat.y + 16).toBeGreaterThanOrEqual(14);
+  });
+
   const many = firesideOf(restingOf(creatures, visitOf(creatures)), HOME_NOW);
   const centre = { x: FIRE_BOX.width / 2, y: 32 };
   const scenes = [
