@@ -272,8 +272,6 @@ function openAtStart(setting: string): SignpostStart {
 /** What a `VALLEY_OPEN` setting opens on the Forge's page at the start. */
 function forgeStartOf(setting: string): ForgeStart {
   switch (setting) {
-    case 'exchange':
-      return { exchange: true };
     case 'floor and pace':
       return { floor: 'anvil-1' };
     case 'anvil kit':
@@ -310,6 +308,8 @@ function marketStartOf(setting: string): MarketStart | undefined {
       return { toward: true };
     case 'broker rates':
       return { detail: true };
+    case 'exchange':
+      return { exchange: true };
     default:
       return undefined;
   }
@@ -591,6 +591,27 @@ export function ValleyDemo({
       );
       return Promise.resolve(true);
     },
+    exchange: ({ to, from, times }) => {
+      const rate = visit?.forge.exchange.rate ?? 3;
+      const pay =
+        from ??
+        [...SHARD_ELEMENTS]
+          .filter((e) => e !== to)
+          .sort((x, y) => shelf.shards[y] - shelf.shards[x])[0];
+      if (pay === undefined || shelf.shards[pay as keyof typeof shelf.shards] < rate * times) {
+        return Promise.resolve(false);
+      }
+      const key = pay as keyof typeof shelf.shards;
+      setShelf({
+        ...shelf,
+        shards: {
+          ...shelf.shards,
+          [key]: shelf.shards[key] - rate * times,
+          [to]: (shelf.shards[to as keyof typeof shelf.shards] ?? 0) + times,
+        },
+      });
+      return Promise.resolve(true);
+    },
     setToward: (_seatId, toward) => {
       setBrokerSeat((now) =>
         now === null || now.seat === null ? now : { ...now, seat: { ...now.seat, toward } },
@@ -755,6 +776,9 @@ export function ValleyDemo({
                     onOpenPaddock: () => {
                       open('paddock');
                     },
+                    onOpenMarket: () => {
+                      open('market');
+                    },
                     start: forgeStartOf(opened),
                     ...(opened === 'order editor'
                       ? { orderStart: { anvilId: 'anvil-1', baseId: BLUEPRINT } }
@@ -800,30 +824,6 @@ export function ValleyDemo({
                       },
                       order: (request) => {
                         setAnvils((now) => orderDemo(now, request));
-                        return Promise.resolve(true);
-                      },
-                      exchange: ({ to, from, times }) => {
-                        const rate = visit.forge.exchange.rate;
-                        const pay =
-                          from ??
-                          [...SHARD_ELEMENTS]
-                            .filter((e) => e !== to)
-                            .sort((x, y) => shelf.shards[y] - shelf.shards[x])[0];
-                        if (
-                          pay === undefined ||
-                          shelf.shards[pay as keyof typeof shelf.shards] < rate * times
-                        ) {
-                          return Promise.resolve(false);
-                        }
-                        const key = pay as keyof typeof shelf.shards;
-                        setShelf({
-                          ...shelf,
-                          shards: {
-                            ...shelf.shards,
-                            [key]: shelf.shards[key] - rate * times,
-                            [to]: (shelf.shards[to as keyof typeof shelf.shards] ?? 0) + times,
-                          },
-                        });
                         return Promise.resolve(true);
                       },
                     },

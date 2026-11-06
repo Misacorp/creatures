@@ -114,6 +114,24 @@ describe('the stories of the server’s paper', () => {
     for (const s of plan.stories) expect(s.scene.actors).toEqual([]);
   });
 
+  it("leads with the Market's opening (Q64): the stall is the picture, the words are warm and carry no loss", () => {
+    const plan = gazetteOfPaper(paperOf({ ...RICH, market: true }), creatures);
+    const first = plan.stories[0];
+    expect(first?.id).toBe('market-open');
+    expect(first?.headline).toBe('THE MARKET OPENS: SHARDS CHANGE HANDS AT LAST');
+    expect(first?.scene.place).toBe('market');
+    expect(plan.stories).toHaveLength(3);
+    expect(`${first?.headline ?? ''} ${first?.blurb ?? ''}`).not.toMatch(
+      /\b(miss|missed|lost|lose|less|reduced|cost)\b/i,
+    );
+    // Alone (a player who never left), it is a paper of its own that still has two stories.
+    const alone = gazetteOfPaper(
+      paperOf({ ...emptyLog(), market: true }, { awayHours: 0 }),
+      creatures,
+    );
+    expect(alone.stories.map((s) => s.id)).toEqual(['market-open']);
+  });
+
   it('opens a long absence with the welcome line and a short one without', () => {
     expect(paperNote({ awayHours: 24 })).toBe('Everything your creatures found is already home.');
     expect(paperNote({ awayHours: 200 })).toBe(

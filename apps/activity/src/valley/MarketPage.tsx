@@ -1,11 +1,11 @@
 /**
  * The Market's page with the valley's systems on (phase 5 step 7, `systems/forge.md` V-FORGE-11, `commons.md` V-COM-15): it sits under the
  * Market's scene, the way the Signpost's and the Forge's pages sit under theirs. While the server builds the Market it is the project board
- * (`CommonsBoard`, the same card every place uses) and nothing else; once it is built it is the broker's seat, one card of the seat family:
+ * (`CommonsBoard`, the same card every place uses) and nothing else; once it is built it is the broker's seat and the shard exchange (Q64: shards change hands here and nowhere else), one card of the seat family:
  * the creature tray (a hand carries a creature from it onto the seat), the shared slot row (the broker, and what it trades toward), and
- * one line of what it is doing, which opens its numbers. The creature is chosen in the shared picker (`ui/RosterPicker`), what to trade toward
- * in a drawer of choices (`ui/Drawer` + `ui/ChoiceList`, as the Signpost's destinations are). The broker has no store and no spend: its trades land
- * on the Forge's shelf as they happen. The pure words are `market-view.ts`; every move is the game's (the server decides).
+ * one line of what it is doing, which opens its numbers, and a row that opens the exchange (`Exchange`, the drawer the Forge had, moved here). The creature is chosen in the shared picker (`ui/RosterPicker`), what to trade toward
+ * in a drawer of choices (`ui/Drawer` + `ui/ChoiceList`, as the Signpost's destinations are). The broker has no store: its trades land
+ * on the Forge's shelf as they happen. The exchange is the one keyed spend of the page. The pure words are `market-view.ts`; every move is the game's (the server decides).
  */
 import { useRef, useState } from 'preact/hooks';
 import type { Creature, ValleyVisit } from '../api';
@@ -20,6 +20,7 @@ import { DragGhost } from '../ui/DragGhost';
 import { Drawer } from '../ui/Drawer';
 import { RosterPicker } from '../ui/RosterPicker';
 import { Slot, SlotRow } from '../ui/Slot';
+import { Exchange } from './Exchange';
 import {
   CommonsBoard,
   REMOVE_ID,
@@ -50,6 +51,8 @@ export interface MarketActions {
   post: (body: { seatId: string; creatureId: string | null }) => Promise<boolean>;
   /** Sets what the broker trades toward: an element it keeps a small stock of, or `null` (only what the orders wait on). */
   setToward: (seatId: string, toward: string | null) => Promise<boolean>;
+  /** Trades shards for the element `to` (a keyed spend; Q64: only once the Market is built). */
+  exchange: (request: { to: string; from: string | null; times: number }) => Promise<boolean>;
 }
 
 /** What the page can open at the start (the workbench shows each). */
@@ -57,6 +60,8 @@ export interface MarketStart {
   picker?: boolean;
   toward?: boolean;
   detail?: boolean;
+  /** The exchange starts open, on this element when given (a smith's wait leads here). */
+  exchange?: boolean | string;
   /** The project board's drawer or picker to open (the commons). */
   commons?: CommonsStart;
 }
@@ -70,6 +75,7 @@ export function MarketPage({
   actions,
   commons,
   onOpenPaddock,
+  error = null,
   start = {},
 }: {
   visit: ValleyVisit;
@@ -82,15 +88,22 @@ export function MarketPage({
   commons?: CommonsActions;
   /** A tap on a tray creature: the Paddock, as everywhere in the valley. */
   onOpenPaddock: () => void;
+  /** The server's last error: the notice line is behind a drawer, so the exchange shows it itself. */
+  error?: string | null;
   start?: MarketStart;
 }) {
   const [picking, setPicking] = useState(start.picker === true);
   const [toward, setToward] = useState(start.toward === true);
   const [detail, setDetail] = useState(start.detail === true);
+  const [trading, setTrading] = useState(start.exchange !== undefined && start.exchange !== false);
   const openers = useRef<Record<string, HTMLElement | null>>({});
   const pageRef = useRef<HTMLElement | null>(null);
   const state = marketState(visit);
   const seat = brokerOf(visit);
+  // The shard an anvil waits for: the exchange starts on it (the one-tap fix).
+  const wanted =
+    visit.anvils.find((anvil) => anvil.tinkering?.reason === 'shard')?.tinkering?.shardElement ??
+    null;
 
   const drag = useDragDrop<string>({
     disabled: busy,
@@ -211,6 +224,20 @@ export function MarketPage({
                 <span class="sp-pack-text">{brokerLine(seat)}</span>
               </button>
             )}
+            <button
+              type="button"
+              class="sp-buy mk-trade"
+              aria-haspopup="dialog"
+              disabled={busy}
+              ref={(el) => {
+                openers.current['trade'] = el;
+              }}
+              onClick={() => {
+                setTrading(true);
+              }}
+            >
+              <span class="pix sp-buy-name">Trade shards</span>
+            </button>
           </li>
         </ul>
       ) : (
@@ -294,6 +321,29 @@ export function MarketPage({
             </ChoiceList>
             <p class="muted sp-note">It never trades the few shards you keep for the Forge.</p>
           </div>
+        </Drawer>
+      )}
+
+      {trading && state === 'built' && (
+        <Drawer
+          open
+          onClose={() => {
+            setTrading(false);
+          }}
+          title="Trade shards"
+          returnFocusTo={openers.current['trade'] ?? null}
+        >
+          <Exchange
+            visit={visit}
+            busy={busy}
+            error={error}
+            initial={typeof start.exchange === 'string' ? start.exchange : wanted}
+            onTrade={(request) => {
+              void actions.exchange(request).then((ok) => {
+                if (ok) setTrading(false);
+              });
+            }}
+          />
         </Drawer>
       )}
 

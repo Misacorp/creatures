@@ -5,9 +5,16 @@ import type { Creature } from '../../api';
  * The welcome-back Gazette's paper on real output (phase 5 step 4) for the workbench: what the server's arrival pass would have written
  * for three kinds of return, built with the same `composePaper` the server uses, from the demo's own creatures.
  * `short`: a day or so away, `long`: a week and more (the paper is no longer, it groups more), `push on`: a short absence in which an
- * Expert scout found a way deeper (the paper's one decision).
+ * Expert scout found a way deeper (the paper's one decision), `market opens`: the server built the Market (Q64), told on top of a short
+ * absence's paper.
  */
-export const VALLEY_PAPERS = ['off', 'short absence', 'long absence', 'push on'] as const;
+export const VALLEY_PAPERS = [
+  'off',
+  'short absence',
+  'long absence',
+  'push on',
+  'market opens',
+] as const;
 
 const piece = (id: string, rarity: 'common' | 'rare' | 'epic', level: number) => ({
   id,
@@ -25,7 +32,7 @@ export function samplePaper(
   const ids = creatures.map((c) => c.id);
   const [a = '', b = '', c = '', d = ''] = ids;
   const newest = creatures[creatures.length - 1];
-  const log: PaperLog = { ...emptyLog() };
+  const log: PaperLog = { ...emptyLog(), market: kind === 'market opens' };
   if (kind === 'long absence') {
     Object.assign(log, {
       newcomers: [

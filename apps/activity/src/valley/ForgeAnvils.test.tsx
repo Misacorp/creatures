@@ -39,6 +39,7 @@ function draw(
   acorns: number,
   calls: string[] = [],
   opened: OrderOpen[] = [],
+  toMarket: (string | null)[] = [],
 ): Page {
   const ok = (name: string) => () => {
     calls.push(name);
@@ -50,7 +51,6 @@ function draw(
     buyKit: ok('buyKit'),
     setKit: ok('setKit'),
     order: ok('order'),
-    exchange: ok('exchange'),
   };
   const p = createPage();
   page = p;
@@ -65,6 +65,7 @@ function draw(
         actions={actions}
         onOrder={(open) => opened.push(open)}
         onOpenPaddock={() => undefined}
+        onOpenMarket={(to) => toMarket.push(to)}
       />
     </PopoverHost>,
   );
@@ -91,13 +92,38 @@ describe('ForgeAnvils', () => {
     expect(text).not.toMatch(/Bag/);
   });
 
-  it('a smith that cannot go on says Tinkering with why, and the shelf button offers the trade for that shard', () => {
+  it('before the Market is built, a smith waiting on a shard says the Market will trade for it and leads to the Market', () => {
+    const toMarket: (string | null)[] = [];
     const visit = withAnvils(plain, [shardWait('a1', a.id, BP, 5)]);
-    const p = draw(visit, 500);
+    const p = draw({ ...visit, market: { open: false, seat: null } }, 500, [], [], toMarket);
     const text = visibleText(p.root);
     expect(text).toMatch(/Tinkering/);
+    expect(text).toMatch(
+      /Waiting for Tide shards for 5 h\. The Market will trade for them once the valley builds it\./,
+    );
+    // There is no exchange tap at the Forge any more, whatever the state of the Market (Q64).
+    expect(byName(p.root, 'button', /Trade shards|Trade for/).length).toBe(0);
+    expect(byName(p.root, 'button', /Trade at the Market/).length).toBe(0);
+    p.click(byName(p.root, 'button', /Go to the Market/)[0] as never);
+    expect(toMarket).toEqual(['tide']);
+  });
+
+  it('once the Market is built, the wait line is plain and the button leads to its exchange', () => {
+    const toMarket: (string | null)[] = [];
+    const visit = withAnvils(plain, [shardWait('a1', a.id, BP, 5)]);
+    const p = draw({ ...visit, market: { open: true, seat: null } }, 500, [], [], toMarket);
+    const text = visibleText(p.root);
     expect(text).toMatch(/Waiting for Tide shards for 5 h/);
-    expect(byName(p.root, 'button', /Trade for Tide shards/).length).toBe(1);
+    expect(text).not.toMatch(/once the valley builds it/);
+    expect(byName(p.root, 'button', /Go to the Market/).length).toBe(0);
+    p.click(byName(p.root, 'button', /Trade at the Market/)[0] as never);
+    expect(toMarket).toEqual(['tide']);
+  });
+
+  it('a smith that waits on something else has no Market button', () => {
+    const visit = withAnvils(plain, [sampleAnvil('a1', a.id, [])]);
+    const p = draw(visit, 500);
+    expect(byName(p.root, 'button', /the Market/).length).toBe(0);
   });
 
   it('a full floor is named on the card', () => {
@@ -150,41 +176,6 @@ describe('ForgeAnvils', () => {
     const orders = [1, 2, 3].map((n) => sampleOrder(`o${String(n)}`, BP, n));
     const p = draw(withAnvils(plain, [sampleAnvil('a1', a.id, orders)]), 500);
     expect(byName(p.root, 'button', /Add an order/).length).toBe(0);
-  });
-
-  it('the exchange shows the rate and the crit, and trades only what the shelf can pay', () => {
-    const calls: string[] = [];
-    const visit = withAnvils(plain, [sampleAnvil('a1', a.id, [])]);
-    const stocked = {
-      ...visit,
-      forge: {
-        ...visit.forge,
-        shelf: { ...visit.forge.shelf, shards: { tide: 0, ember: 7, grove: 0, spark: 0, mire: 0 } },
-      },
-    };
-    const p = draw(stocked, 500, calls);
-    const open = byName(p.root, 'button', /Trade shards/)[0];
-    if (open === undefined) throw new Error('no trade button');
-    p.click(open);
-    expect(visibleText(p.root)).toMatch(
-      /3 shards of one kind for 1 of another\. A 10% chance to get 2\./,
-    );
-    const trade = byName(p.root, 'button', /^Trade \d/)[0];
-    if (trade === undefined) throw new Error('no confirm');
-    expect(trade.getAttribute('disabled')).toBeNull();
-    p.click(trade);
-    expect(calls).toEqual(['exchange']);
-  });
-
-  it('with no shards the exchange is off and says what it needs', () => {
-    const visit = withAnvils(plain, [sampleAnvil('a1', a.id, [])]);
-    const p = draw(visit, 500);
-    const open = byName(p.root, 'button', /Trade shards/)[0];
-    if (open === undefined) throw new Error('no trade button');
-    p.click(open);
-    expect(visibleText(p.root)).toMatch(/You need 3 shards of one other kind/);
-    const trade = byName(p.root, 'button', /^Trade \d/)[0];
-    expect(trade?.getAttribute('disabled')).not.toBeNull();
   });
 });
 

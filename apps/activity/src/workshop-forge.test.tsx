@@ -81,9 +81,9 @@ function forgeMode(anvils: ReturnType<typeof sampleAnvil>[], sent: unknown[] = [
         sent.push(request);
         return Promise.resolve(true);
       },
-      exchange: ok,
     },
     onOpenPaddock: () => undefined,
+    onOpenMarket: () => undefined,
   };
 }
 

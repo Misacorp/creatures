@@ -238,6 +238,8 @@ const forgeState = {
   anvils: [],
   shelf: { scrap: 120, essence: 30, shards: { tide: 4, ember: 7, grove: 0, spark: 2, mire: 3 } },
   nextOrder: 1,
+  /** An element every smith with an order waits for (Q64's wait line); null: nobody waits for a shard. */
+  waitShard: null,
 };
 const ANVIL_LADDER = [
   { acorns: 0, scrap: 0 },
@@ -252,11 +254,13 @@ const orderView = (o) => ({
   reach: o.reach,
   needs: {
     scrap: 36,
-    shardElement: o.blueprintId === undefined || o.blueprintId === null ? null : 'tide',
+    shardElement:
+      forgeState.waitShard ??
+      (o.blueprintId === undefined || o.blueprintId === null ? null : 'tide'),
     shard: 1,
     essence: o.reach === 'rare' ? 25 : o.reach === 'epic' ? 70 : 0,
   },
-  waiting: null,
+  waiting: forgeState.waitShard === null ? null : 'shard',
 });
 const anvilView = (a) => ({
   id: a.id,
@@ -266,13 +270,18 @@ const anvilView = (a) => ({
   mastery: { hours: 0, step: 0, bonusBp: 0 },
   orders: a.orders.map(orderView),
   piece:
-    a.creatureId !== null && a.orders.length > 0
+    a.creatureId !== null && a.orders.length > 0 && forgeState.waitShard === null
       ? { orderId: a.orders[0].id, rarity: 0, progress: 6, need: 16, leftHours: 10 }
       : null,
   tinkering:
-    a.creatureId !== null && a.orders.length === 0 && !bonfire.raid.has(a.creatureId)
-      ? { reason: 'idle', shardElement: null, sinceHours: 3 }
-      : null,
+    a.creatureId !== null &&
+    a.orders.length > 0 &&
+    forgeState.waitShard !== null &&
+    !bonfire.raid.has(a.creatureId)
+      ? { reason: 'shard', shardElement: forgeState.waitShard, sinceHours: 3 }
+      : a.creatureId !== null && a.orders.length === 0 && !bonfire.raid.has(a.creatureId)
+        ? { reason: 'idle', shardElement: null, sinceHours: 3 }
+        : null,
   floor: { count: 2, cap: 5, full: false, byRarity: [2, 0, 0] },
   perDay: { pieces: a.creatureId !== null && a.orders.length > 0 ? 1.5 : 0 },
 });
@@ -1505,9 +1514,9 @@ try {
     },
   );
 
-  // The Forge with the valley's systems on (phase 5 step 3): buy an anvil, post a smith, order, edit, remove, a second anvil, the exchange.
+  // The Forge with the valley's systems on (phase 5 step 3): buy an anvil, post a smith, order, edit, remove, a second anvil (the exchange is at the Market, Q64).
   await scenario(
-    'valley systems on: the Forge is its anvils: buy one, post a smith, add, edit and remove an order, a second anvil, the exchange',
+    'valley systems on: the Forge is its anvils: buy one, post a smith, add, edit and remove an order, a second anvil',
     () => {
       const config = ROUTES.get('/api/config');
       answerOverride.set('/api/config', () => ({ ...config(), valleySystems: true }));
@@ -1633,22 +1642,6 @@ try {
       }
       await waitFor(page.getByRole('button', { name: /^Anvil 2: Cindle/ }));
       await shot('forge-two-anvils');
-      // The exchange: the rate and the crit are shown, the trade is keyed.
-      await page
-        .getByRole('button', { name: /^Trade/ })
-        .first()
-        .click();
-      await waitFor(page.getByRole('dialog', { name: /Trade shards/ }));
-      await page.waitForTimeout(400);
-      if (!/10% chance to get 2/.test(await page.getByRole('dialog').innerText()))
-        throw new Error('the exchange does not show the crit chance');
-      await expectTopmost(page.getByRole('dialog').first(), 'the exchange drawer');
-      await shot('forge-exchange');
-      await page.getByRole('button', { name: /^Trade \d/ }).click();
-      await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
-      const traded = forgeCalls.at(-1);
-      if (traded?.[0] !== 'exchange' || typeof traded[1].idempotencyKey !== 'string')
-        throw new Error('the trade was sent without an idempotency key');
       // The bag's filter and sort, with the count against the cap.
       await waitFor(page.getByText(/Bag: \d+ \/ \d+/));
       const tools = page.getByRole('button', { name: /Filter and sort/ });
@@ -2343,6 +2336,187 @@ try {
         await backToValley();
       } finally {
         marketOff();
+      }
+    },
+  );
+
+  // Q64: shards change hands at the Market only. Before it is built an anvil that waits for a shard says the Market will trade for it and
+  // leads to the Market's project board; once it is built the same anvil leads to the Market's exchange, which is where the drawer lives.
+  await scenario(
+    "valley systems on: the Forge's wait line before and after the Market is built, and the exchange at the Market",
+    () => {
+      const creatures = commonsOn();
+      commonsScene({
+        market: {
+          level: 1,
+          state: 'open',
+          size: 700,
+          have: { acorns: 150, scrap: 300, shards: 0 },
+          given: 40,
+        },
+      });
+      forgeState.anvils = [
+        {
+          id: 'anvil-1',
+          creatureId: creatures[1].id,
+          kit: null,
+          orders: [{ id: 'order-1', blueprintId: 'kelp-cap', count: 2, reach: 'none' }],
+        },
+      ];
+      forgeState.waitShard = 'grove';
+      forgeCalls.length = 0;
+      marketState.on = true;
+      stateOverride = {
+        creatures,
+        balances: { ...baseState.balances, bait: 1000 },
+        valley: valleyBlock(),
+      };
+    },
+    async () => {
+      try {
+        await waitFor(page.locator(VALLEY), 'attached');
+        await place('forge').evaluate((el) => el.click());
+        await waitFor(heading('Forge'));
+        // Before: the wait line says the Market will trade once the valley builds it; there is no exchange tap at the Forge.
+        const before = page.getByText(
+          /Waiting for Grove shards for 3 h\. The Market will trade for them once the valley builds it\./,
+        );
+        await waitFor(before);
+        await before.first().scrollIntoViewIfNeeded();
+        await expectTopmost(before.first(), 'the wait line before the Market');
+        const go = page.getByRole('button', { name: /Go to the Market/ });
+        await waitFor(go);
+        await expectTopmost(go.first(), 'the button to the Market');
+        if (
+          (await page.getByRole('button', { name: /Trade shards|Trade for|Trade at/ }).count()) > 0
+        )
+          throw new Error('the Forge still has an exchange tap before the Market is built');
+        await page.waitForTimeout(300);
+        await shot('q64-forge-wait-before');
+        // It leads to the Market's project board.
+        await go.first().click();
+        await waitFor(heading('Market'));
+        const board = page.locator('section[aria-label="Market project"]');
+        await waitFor(board);
+        await board.scrollIntoViewIfNeeded();
+        await expectTopmost(board, 'the Market board');
+        if ((await page.getByRole('button', { name: /Trade shards/ }).count()) > 0)
+          throw new Error('the Market offers the exchange before it is built');
+        await backToValley();
+
+        // The server builds the Market: the same anvil now leads to the exchange.
+        commonsScene({ market: { level: 2, state: 'done', plaque: ['Ada', 'You'], keepsakes: 1 } });
+        marketState.built = true;
+        stateOverride = { ...stateOverride, valley: valleyBlock() };
+        await page.reload();
+        await page.evaluate(() => document.fonts.ready);
+        await waitFor(page.locator(VALLEY), 'attached');
+        await place('forge').evaluate((el) => el.click());
+        await waitFor(heading('Forge'));
+        const after = page.getByText(/Waiting for Grove shards for 3 h/);
+        await waitFor(after);
+        await after.first().scrollIntoViewIfNeeded();
+        await expectTopmost(after.first(), 'the wait line after the Market');
+        if ((await page.getByText(/once the valley builds it/).count()) > 0)
+          throw new Error('the Forge still says the Market is not built');
+        const trade = page.getByRole('button', { name: /Trade at the Market/ });
+        await waitFor(trade);
+        await expectTopmost(trade.first(), 'the button to the exchange');
+        await page.waitForTimeout(300);
+        await shot('q64-forge-wait-after');
+        // It leads to the Market's exchange, on the shard the anvil waits for: rate and crit are shown, the trade is keyed.
+        await trade.first().click();
+        await waitFor(heading('Market'));
+        await waitFor(page.getByRole('dialog', { name: /Trade shards/ }));
+        await page.waitForTimeout(500);
+        const text = await page.getByRole('dialog').innerText();
+        if (!/10% chance to get 2/.test(text))
+          throw new Error('the exchange does not show the crit chance');
+        if (!/Grove shards\s+You get/.test(text))
+          throw new Error(`the exchange did not start on Grove: ${text}`);
+        await expectTopmost(page.getByRole('dialog').first(), 'the exchange drawer');
+        await shot('q64-market-exchange');
+        await page.getByRole('button', { name: /^Trade \d/ }).click();
+        await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+        const traded = forgeCalls.at(-1);
+        if (
+          traded?.[0] !== 'exchange' ||
+          typeof traded[1].idempotencyKey !== 'string' ||
+          traded[1].to !== 'grove'
+        )
+          throw new Error('the trade was sent without an idempotency key, or not for Grove');
+        // The exchange is also one tap away on the Market's own page.
+        const tap = page.getByRole('button', { name: /^Trade shards/ });
+        await tap.scrollIntoViewIfNeeded();
+        await expectTopmost(tap.first(), 'the exchange row');
+        await backToValley();
+      } finally {
+        forgeState.waitShard = null;
+        forgeState.anvils = [];
+        marketOff();
+      }
+    },
+  );
+
+  // Q64: the Market's opening is the one story every player's next paper leads with (even after a short absence).
+  await scenario(
+    "the Gazette leads with the Market's opening (Q64): the stall is the picture, and it closes as any paper does",
+    () => {
+      const config = ROUTES.get('/api/config');
+      answerOverride.set('/api/config', () => ({ ...config(), valleySystems: true }));
+      const creatures = baseState.creatures.map((c) => ({ ...c, busy: null, away: false }));
+      scouts.seats = [];
+      scouts.owned = [];
+      scouts.ids = creatures.map((c) => c.id);
+      gazetteCalls.length = 0;
+      const [a, , c] = creatures;
+      gazette.paper = {
+        id: '1799760000777',
+        at: 1799760000000,
+        awayHours: 5,
+        headlines: [
+          headline('market-open', 120, 0),
+          headline('new-species', 100, 1, {
+            creatureIds: [a.id],
+            species: creatures[creatures.length - 1].species,
+            newcomers: [creatures[creatures.length - 1].id],
+          }),
+          headline('resting-xp', 45, 1, { creatureIds: [c.id] }),
+        ],
+        more: 0,
+        brought: { acorns: 0, scrap: 0, shards: 0 },
+        decision: null,
+      };
+      stateOverride = { creatures, valley: valleyBlock() };
+      answerOverride.set('/api/valley/gazette/close', (request) => {
+        gazetteCalls.push(['close', bodyOf(request)]);
+        gazette.paper = null;
+        stateOverride = { ...stateOverride, valley: valleyBlock() };
+        return { closed: true };
+      });
+    },
+    async () => {
+      try {
+        const paper = page.locator('article[aria-label="The Valley Gazette"]');
+        await waitFor(paper);
+        await waitFor(page.locator('h3.gz-headline'));
+        await page.waitForTimeout(800);
+        const lead = page.locator('h3.gz-headline').first();
+        const words = await lead.innerText();
+        if (!/MARKET OPENS/i.test(words)) throw new Error(`the paper leads with: ${words}`);
+        await expectTopmost(lead, 'the Market headline');
+        await expectTopmost(page.locator('.gz-masthead').first(), 'the masthead');
+        await shot('q64-paper-market');
+        const closer = page.getByRole('button', { name: /more things?|Into the valley/i }).last();
+        await closer.scrollIntoViewIfNeeded();
+        await expectTopmost(closer, 'the paper’s closing button');
+        await closer.click();
+        await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+        if (gazetteCalls.filter(([name]) => name === 'close').length !== 1)
+          throw new Error('the server was not told once');
+        await page.locator('.gz-fly').waitFor({ state: 'detached', timeout: 15000 });
+      } finally {
+        gazette.paper = null;
       }
     },
   );

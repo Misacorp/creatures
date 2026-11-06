@@ -55,6 +55,8 @@ export interface ForgeMode {
   /** The Forge's project board (the commons): its gifts and its communal seat; absent shows no board. */
   commons?: CommonsActions;
   onOpenPaddock: () => void;
+  /** The Market (Q64: shards are traded there); `to` is the element an anvil waits for. */
+  onOpenMarket: (to: string | null) => void;
   /** What the page and the editor have open at the start (the workbench shows each). */
   start?: ForgeStart;
   orderStart?: { anvilId: string; baseId?: string; orderId?: string };
@@ -240,6 +242,7 @@ export function Workshop({
               setOrderOpen(open);
             }}
             onOpenPaddock={forge.onOpenPaddock}
+            onOpenMarket={forge.onOpenMarket}
             {...(forge.commons === undefined ? {} : { commons: forge.commons })}
             {...(forge.start === undefined ? {} : { start: forge.start })}
           />

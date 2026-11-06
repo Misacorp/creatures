@@ -69,6 +69,7 @@ export function ValleyFrame({
   commonsStart,
   marketStart,
   busy = false,
+  error = null,
   focus,
   onOpen,
   onLeave,
@@ -101,6 +102,8 @@ export function ValleyFrame({
   marketStart?: MarketStart;
   /** An action is under way: the boards' buttons wait. */
   busy?: boolean;
+  /** The server's last error, for the Market's exchange drawer (the notice line is behind it). */
+  error?: string | null;
   /** The place whose button takes the focus when the map comes back. */
   focus: PlaceId | null;
   /** Opens a place (from the map, the Places list or the tray). */
@@ -275,6 +278,7 @@ export function ValleyFrame({
                 trayInput={tray}
                 acorns={acorns}
                 busy={busy}
+                error={error}
                 actions={market}
                 {...(commons === undefined ? {} : { commons })}
                 onOpenPaddock={() => {

@@ -23,6 +23,8 @@ const DOORS: Partial<Record<PlaceId, { x: number; y: number }>> = {
   forge: { x: 336, y: 196 },
   arena: { x: 456, y: 112 },
   signpost: { x: 492, y: 272 },
+  // The Market's stall (322, 68, 60 by 48): a door inside it, so the window keeps the whole stall (the paper's Market story, Q64).
+  market: { x: 352, y: 108 },
 };
 
 /** A place's door: its entry above, else the middle of the foot of its art. */

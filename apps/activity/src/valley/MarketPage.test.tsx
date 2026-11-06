@@ -41,16 +41,27 @@ if (a === undefined || b === undefined) throw new Error('fixture');
 interface Calls {
   posts: { seatId: string; creatureId: string | null }[];
   toward: { seatId: string; toward: string | null }[];
+  trades: { to: string; from: string | null; times: number }[];
   gifts: number;
   helpers: { place: string; creatureId: string | null }[];
 }
 
 function draw(preset: string, start: MarketStart = {}): { page: Page; calls: Calls } {
-  const calls: Calls = { posts: [], toward: [], gifts: 0, helpers: [] };
+  const calls: Calls = { posts: [], toward: [], trades: [], gifts: 0, helpers: [] };
   const commons = withMarketPlace(sampleCommons(), preset);
   const market = presetMarket(preset, free);
   const plain = withCommons(sampleValley(free, []), commons);
-  const visit = market === null ? plain : withMarket(plain, market);
+  const stocked = {
+    ...plain,
+    forge: {
+      ...plain.forge,
+      shelf: {
+        ...plain.forge.shelf,
+        shards: { tide: 0, ember: 7, grove: 0, spark: 0, mire: 0 },
+      },
+    },
+  };
+  const visit = market === null ? stocked : withMarket(stocked, market);
   const actions: MarketActions = {
     post: (body) => {
       calls.posts.push(body);
@@ -58,6 +69,10 @@ function draw(preset: string, start: MarketStart = {}): { page: Page; calls: Cal
     },
     setToward: (seatId, toward) => {
       calls.toward.push({ seatId, toward });
+      return Promise.resolve(true);
+    },
+    exchange: (request) => {
+      calls.trades.push(request);
       return Promise.resolve(true);
     },
   };
@@ -97,12 +112,13 @@ const button = (p: Page, name: RegExp): FakeElement => {
 };
 
 describe('MarketPage while the Market is built', () => {
-  it('is the project board and nothing else, with no shards to give', () => {
+  it('is the project board and nothing else, with no shards to give and no exchange', () => {
     const { page: p } = draw('being built');
     const text = visibleText(p.root);
     expect(text).toMatch(/Market/);
     expect(text).toMatch(/Still needed: 190 Acorns, 380 scrap/);
     expect(byClass(p.root, 'sp-seats')).toHaveLength(0);
+    expect(byName(p.root, 'button', /Trade shards/)).toHaveLength(0);
     expect(find(p.root, (el) => el.getAttribute('data-seat') === 'communal:market')).toHaveLength(
       1,
     );
@@ -159,6 +175,25 @@ describe('MarketPage once it is built', () => {
     p.click(button(p, /Trades toward: What the orders need/));
     p.click(button(p, /^What the orders need/));
     expect(calls.toward).toHaveLength(1);
+  });
+
+  it('has the exchange beside the broker: it shows the rate and the crit, and trades only what the shelf can pay', () => {
+    const { page: p, calls } = draw('open with a broker');
+    p.click(button(p, /Trade shards/));
+    expect(visibleText(p.root)).toMatch(
+      /3 shards of one kind for 1 of another\. A 10% chance to get 2\./,
+    );
+    const trade = byName(p.root, 'button', /^Trade \d/)[0];
+    if (trade === undefined) throw new Error('no confirm');
+    expect(trade.getAttribute('disabled')).toBeNull();
+    p.click(trade);
+    expect(calls.trades).toHaveLength(1);
+    expect(calls.trades[0]?.times).toBe(1);
+  });
+
+  it('opens its exchange on the shard an anvil waits for when sent from the Forge', () => {
+    const { page: p } = draw('open with a broker', { exchange: 'grove' });
+    expect(visibleText(p.root)).toMatch(/Trade 1 for Grove/);
   });
 
   it('starts with a drawer open when asked (the workbench shots)', () => {

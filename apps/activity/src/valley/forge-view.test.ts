@@ -52,12 +52,16 @@ describe('the Forge words', () => {
 
   it('a smith that tinkers says why, in plain words and for how long', () => {
     const wait = shardWait('a1', a.id, BP, 5);
-    expect(tinkerLine(wait)).toBe('Waiting for Tide shards for 5 h');
-    expect(tinkerLine(sampleAnvil('a2', a.id, []))).toBe(
+    // Q64: shards change hands at the Market, so before it is built the line says so; after, it is the plain wait.
+    expect(tinkerLine(wait, true)).toBe('Waiting for Tide shards for 5 h');
+    expect(tinkerLine(wait, false)).toBe(
+      'Waiting for Tide shards for 5 h. The Market will trade for them once the valley builds it.',
+    );
+    expect(tinkerLine(sampleAnvil('a2', a.id, []), false)).toBe(
       'Nothing is ordered, so the smith tinkers',
     );
-    expect(tinkerLine(fullFloor('a3', a.id, BP))).toBe('The floor is full');
-    expect(tinkerLine(sampleAnvil('a4', a.id, [sampleOrder('o', BP, 2)]))).toBeNull();
+    expect(tinkerLine(fullFloor('a3', a.id, BP), false)).toBe('The floor is full');
+    expect(tinkerLine(sampleAnvil('a4', a.id, [sampleOrder('o', BP, 2)]), false)).toBeNull();
   });
 
   it('the piece in hand reads as its name, its rarity and the time left', () => {
