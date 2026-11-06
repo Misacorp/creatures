@@ -411,13 +411,13 @@ The share of anvil time a player spends waiting for a shard of the element the o
 | 20 | 12% | 0% | 23% | 0% | 0% | 0% | 74% | 0% | 1 / 3 | 4 / 3 |
 | 24 | 2% | 0% | 12% | 0% | 16% | 0% | 68% | 0% | 2 / 4 | 5 / 3 |
 
-The Market as a project: the broker's seat does not exist until the server builds the Market, a communal project (the server's second guided project, Q48: it opens when the hearth has levelled, before the Forge's, and is small, 25% of the base size against the hearth's 9%; every player has the broker's seat once it is built, and the exchange tap opens with it, Q64: before it nobody trades, so an anvil waiting for a shard tinkers). Shards are what is short, so the Market of the first three rows is paid in Acorns and scrap only; the last row pays it like the other projects (Acorns, scrap and shards), to see whether the scarce shard can also build its own fix. Each row is a server run 6 times:
+The Market as a project: the broker's seat does not exist until the server builds the Market, a communal project (the server's second guided project, Q48: it opens when the hearth has levelled, before the Forge's, and is small, 25% of the base size against the hearth's 9%; every player has the broker's seat once it is built, and the exchange tap opens with it, Q64: before it nobody trades, so an anvil waiting for a shard tinkers). The Market of the first three rows takes Acorns, scrap and shards of any element, no cap, each shard worth 0.25 of an Acorn (V-COM-15, Misa 2026-11-06: the shards piling up at the Forge while it waits build the Market; a player gives the shards above what the next orders need and the exchange's reserve); the last row pays it like the other projects (Acorns, scrap and an own-element shard part), for comparison. Each row is a server run 6 times:
 
 | Server | Opened (share of runs, week) | Built (share of runs, week) | Stall before it opened | Stall after it was built | Week 4: Market / broker from day one | Week 8: Market / broker from day one | Week 12: Market / broker from day one | Week 16: Market / broker from day one | Week 24: Market / broker from day one |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Mixed 5, the Market as a project | 100%, 1.5 | 100%, 2.5 | 34% | 4% | 13% / 4% | 0% / 3% | 0% / 0% | 0% / 0% | 0% / 0% |
-| Mixed 8, the Market as a project | 100%, 2 | 100%, 2 | 41% | 3% | 7% / 4% | 4% / 3% | 0% / 1% | 0% / 1% | 0% / 0% |
-| Mixed 15, the Market as a project | 100%, 2 | 100%, 2 | 36% | 4% | 6% / 4% | 4% / 3% | 4% / 2% | 1% / 1% | 0% / 0% |
+| Mixed 5, the Market as a project | 100%, 1.5 | 100%, 2 | 34% | 4% | 10% / 4% | 7% / 3% | 5% / 0% | 0% / 0% | 0% / 0% |
+| Mixed 8, the Market as a project | 100%, 2 | 100%, 2 | 40% | 3% | 4% / 4% | 4% / 3% | 2% / 1% | 0% / 1% | 2% / 0% |
+| Mixed 15, the Market as a project | 100%, 2 | 100%, 2 | 33% | 3% | 6% / 4% | 4% / 3% | 1% / 2% | 2% / 1% | 0% / 0% |
 | Mixed 8, the Market paid like the other projects (with shards) | 100%, 2 | 100%, 11 | 44% | 1% | 50% / 4% | 59% / 3% | 9% / 1% | 1% / 1% | 0% / 0% |
 
 ### The School and the broker (V-SCH-7, V-FORGE-11)

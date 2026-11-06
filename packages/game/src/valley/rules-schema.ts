@@ -213,6 +213,7 @@ export const ValleyRulesSchema = v.strictObject({
       v.strictObject({
         sizeFactor: pos,
         costSplit: costSplitSchema,
+        shardValue: v.optional(pos),
       }),
     ),
     placeElement: v.record(v.string(), v.picklist(VALLEY_ELEMENTS)),

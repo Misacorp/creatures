@@ -27,11 +27,8 @@ describe('the broker seat', () => {
 });
 
 describe('the Market project', () => {
-  it('joins the valley once, as a small project (Q48), shard-free in the first variant and with shards in the other', () => {
-    for (const [mode, shards] of [
-      ['market', false],
-      ['market-shards', true],
-    ] as const) {
+  it('joins the valley once, as a small project (Q48): shards of any kind may fill it in the first variant, a fifth of it in the other', () => {
+    for (const mode of ['market', 'market-shards'] as const) {
       const server = serverWith(mode);
       const before = server.places.length;
       openMarket(server, 100);
@@ -50,8 +47,35 @@ describe('the Market project', () => {
         c.oneShot['market']!.sizeFactor *
         Math.pow(Math.max(server.weight, 1) / c.referenceWeight, c.sizeExponent);
       expect(place.size).toBeCloseTo(small, 6);
-      expect(place.need[2]! > 0).toBe(shards);
+      if (mode === 'market') {
+        // V-COM-15: the shard part is the whole project at the Market's one value.
+        expect(place.need[2]! * c.oneShot['market']!.shardValue!).toBeCloseTo(place.size, 6);
+        expect(
+          place.need[0]! * c.giftValue.acorns + place.need[1]! * c.giftValue.scrap,
+        ).toBeCloseTo(place.size, 6);
+      } else {
+        expect(place.need[2]! * c.giftValue.shards).toBeCloseTo(place.size * c.costSplit.shards, 6);
+      }
     }
+  });
+
+  it('is filled by shards alone, never past the project, and a part is not taken past what is left (V-COM-15)', () => {
+    const server = serverWith('market');
+    openMarket(server, 0);
+    server.places[0]!.level = 2;
+    refreshProjects(server, 0, RULES);
+    const index = server.places.length - 1;
+    const place = server.places[index]!;
+    const value = RULES.commons.oneShot['market']!.shardValue!;
+    const half = place.size / 2 / value;
+    expect(contributePart(server, index, 2, half, 5, RULES)).toBeCloseTo(half, 9);
+    expect(place.progress).toBeCloseTo(place.size / 2, 6);
+    expect(place.open).toBe(true);
+    // Scrap takes only what the shards left, so an overgift is not swallowed.
+    const taken = contributePart(server, index, 1, 1e9, 6, RULES);
+    expect(taken * RULES.commons.giftValue.scrap).toBeCloseTo(place.size / 2, 6);
+    expect(server.marketDoneHour).toBe(6);
+    expect(place.open).toBe(false);
   });
 
   it('is built once: the seat appears, the project does not open again', () => {
