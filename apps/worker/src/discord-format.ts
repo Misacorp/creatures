@@ -332,6 +332,59 @@ export function formatBossReveal(post: RevealPost): PostMessage {
   });
 }
 
+export interface RevealPostV2 {
+  bossId: string;
+  bossName: string;
+  elementId: string;
+  elementName: string;
+  /** The track's slot, which is the server's Boss Rank. */
+  rank: number;
+  /** The boss's rule cards by name, with the question each asks (the text of the boss card). */
+  cards: readonly { name: string; asks: string }[];
+  /** The arena: rows of the boss and the creatures one player brings. */
+  rows: number;
+  seats: number;
+  /** UTC epoch milliseconds of stage 1, stage 2 and the finale. */
+  schedule: { phase1: number; phase2: number; finale: number };
+  timeZone: string;
+}
+
+/** Monday of a combat v2 week: the track's boss, its rule cards and the arena. */
+export function formatBossRevealV2(post: RevealPostV2): PostMessage {
+  const emoji = ELEMENT_EMOJI[post.elementId];
+  const lines = [
+    `${emoji === undefined ? '' : `${emoji} `}${escapeMarkdown(post.elementName)} · ${String(post.rows)} rows, ${String(post.seats)} creatures each`,
+  ];
+  const fields: EmbedField[] = [];
+  if (post.cards.length > 0) {
+    fields.push(
+      field(
+        'Rule cards',
+        post.cards
+          .map((c) => `**${escapeMarkdown(c.name)}**: ${escapeMarkdown(c.asks)}`)
+          .join('\n'),
+        false,
+      ),
+    );
+  }
+  for (const [name, at] of [
+    ['Stage 1', post.schedule.phase1],
+    ['Stage 2', post.schedule.phase2],
+    ['Finale', post.schedule.finale],
+  ] as const) {
+    fields.push(field(name, dayAndTime(at, post.timeZone)));
+  }
+  return message({
+    author: { name: `New raid week · Boss Rank ${String(post.rank)}` },
+    title: escapeMarkdown(post.bossName),
+    description: lines.join('\n'),
+    color: POST_COLOURS.element[post.elementId] ?? POST_COLOURS.plain,
+    thumbnail: { url: bossPortraitPath(post.bossId) },
+    fields,
+    footer: { text: 'Place a creature on the raid board to join before Stage 1.' },
+  });
+}
+
 export type KeyMoment =
   | { kind: 'hit'; round: number; creature: string; owner: string | null; damage: number }
   | {
@@ -521,6 +574,94 @@ export function formatPhasePost(post: PhasePost): PostMessage {
     title: head.title,
     ...(lines.length > 0 ? { description: lines.join('\n') } : {}),
     color: head.color,
+    thumbnail: { url: bossPortraitPath(post.bossId) },
+    fields,
+  });
+}
+
+export interface StagePostV2 {
+  stage: 1 | 2 | 3;
+  bossId: string;
+  bossName: string;
+  /** The party number when the week has more than one party, otherwise null. */
+  party: number | null;
+  /** The boss fell in this stage. */
+  kill: boolean;
+  /** Stage 1 or 2: the stage removed enough of the boss's HP to count as cleared. */
+  cleared: boolean;
+  /** Whole percent of the weekend's HP left, 0 to 100. */
+  hpLeftPercent: number;
+  /** The reward thresholds first crossed in this stage, as the percent of the weekend's HP removed. */
+  thresholds: readonly number[];
+  /** Best first. */
+  top: readonly { name: string; contribution: number }[];
+  /** Stage 1 and 2: when the next fight starts. Finale: when the next week opens. */
+  next: number;
+  /** Finale only: creatures first caught or evolved on the server this week by this party. */
+  firsts?: readonly FirstPost[];
+}
+
+const STAGE_TITLES = { 1: 'Stage 1', 2: 'Stage 2', 3: 'Finale' } as const;
+
+/** A combat v2 stage: one party's result, in the shape of `formatPhasePost`. */
+export function formatStagePostV2(post: StagePostV2): PostMessage {
+  const boss = escapeMarkdown(post.bossName);
+  const lines: string[] = [];
+  let title: string;
+  let color: number;
+  if (post.kill) {
+    title = `🏆 ${boss} is defeated!`;
+    color = POST_COLOURS.won;
+  } else if (post.stage === 3) {
+    title = `💢 ${boss} survives`;
+    lines.push(hpBar(post.hpLeftPercent));
+    color = POST_COLOURS.lost;
+  } else if (post.cleared) {
+    title = `✅ ${STAGE_TITLES[post.stage]} cleared`;
+    lines.push(hpBar(post.hpLeftPercent));
+    color = POST_COLOURS.cleared;
+  } else {
+    title = `❌ ${boss} holds firm`;
+    lines.push(hpBar(post.hpLeftPercent));
+    color = POST_COLOURS.lost;
+  }
+  for (const percent of post.thresholds) {
+    lines.push(`🎁 ${String(percent)}% of its HP is gone: reward paid.`);
+  }
+  if (post.kill) lines.push('🎁 Kill bonus paid.');
+  const fields: EmbedField[] = [];
+  if (post.top.length > 0) {
+    fields.push(
+      field(
+        'Top fighters',
+        post.top
+          .slice(0, MEDALS.length)
+          .map((c, i) => `${MEDALS[i] ?? ''} ${safeName(c.name)}`)
+          .join('\n'),
+      ),
+    );
+  }
+  if (post.stage === 3) {
+    lines.push(
+      post.kill
+        ? `Next boss ${relativeTime(post.next)}.`
+        : `It returns ${relativeTime(post.next)} with this week's best on its HP bar.`,
+    );
+    const firsts = post.firsts ?? [];
+    if (firsts.length > 0) fields.push(field('🆕 New on the server', firstsValue(firsts), false));
+  } else if (!post.kill) {
+    fields.push(
+      field('Next fight', `${post.stage === 1 ? 'Stage 2' : 'Finale'}\n${relativeTime(post.next)}`),
+    );
+  }
+  const party = post.party === null ? '' : ` · Party ${String(post.party)}`;
+  return message({
+    author: {
+      name: `${post.stage === 3 ? 'Raid finale' : `Raid · ${STAGE_TITLES[post.stage]}`}${party}`,
+    },
+    title,
+    ...(lines.length > 0 ? { description: lines.join('\n') } : {}),
+    color,
     thumbnail: { url: bossPortraitPath(post.bossId) },
     fields,
   });

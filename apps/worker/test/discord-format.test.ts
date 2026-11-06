@@ -7,7 +7,9 @@ import {
   escapeMarkdown,
   formatBossReveal,
   dayAndTime,
+  formatBossRevealV2,
   formatPhasePost,
+  formatStagePostV2,
   hpBar,
   PLAY_BUTTON_ID,
   safeName,
@@ -17,6 +19,8 @@ import {
   type PostMessage,
   type RankPost,
   type RevealPost,
+  type RevealPostV2,
+  type StagePostV2,
 } from '../src/discord-format';
 
 const ZWSP = '\u200B';
@@ -619,5 +623,137 @@ describe('formatPhasePost', () => {
     expect(
       textOf(formatPhasePost({ ...FINALE, reaction: { name: 'Re_action', count: 2 } })),
     ).toContain('Re\\\\_action ×2');
+  });
+});
+
+const REVEAL_V2: RevealPostV2 = {
+  bossId: 'tidal-colossus',
+  bossName: 'Tidal Colossus',
+  elementId: 'tide',
+  elementName: 'Tide',
+  rank: 6,
+  cards: [{ name: 'Rising Tide', asks: 'Can you finish it before it grows?' }],
+  rows: 4,
+  seats: 3,
+  schedule: { phase1: 1800099420000, phase2: 1800185820000, finale: 1800208800000 },
+  timeZone: 'Europe/Helsinki',
+};
+
+describe('formatBossRevealV2', () => {
+  it('matches the Monday post of a v2 week', () => {
+    const message = formatBossRevealV2(REVEAL_V2);
+    expect(embedOf(message)).toMatchObject({
+      author: { name: 'New raid week · Boss Rank 6' },
+      title: 'Tidal Colossus',
+      description: '🌊 Tide · 4 rows, 3 creatures each',
+      thumbnail: { url: '/discord/bosses/tidal-colossus.png' },
+      footer: { text: 'Place a creature on the raid board to join before Stage 1.' },
+    });
+    expect(embedOf(message).fields.map((f) => f.name)).toEqual([
+      'Rule cards',
+      'Stage 1',
+      'Stage 2',
+      'Finale',
+    ]);
+    expect(embedOf(message).fields[0]?.value).toBe(
+      '**Rising Tide**: Can you finish it before it grows?',
+    );
+    expect(message.components[0]?.components[0]?.custom_id).toBe(PLAY_BUTTON_ID);
+  });
+
+  it('has no card field for a boss without rule cards, and escapes names', () => {
+    const embed = embedOf(
+      formatBossRevealV2({ ...REVEAL_V2, cards: [], bossName: '@everyone **x**' }),
+    );
+    expect(embed.fields.map((f) => f.name)).toEqual(['Stage 1', 'Stage 2', 'Finale']);
+    expect(embed.title).toBe(`@${ZWSP}everyone \\*\\*x\\*\\*`);
+  });
+});
+
+const STAGE_V2: StagePostV2 = {
+  stage: 1,
+  bossId: 'tidal-colossus',
+  bossName: 'Tidal Colossus',
+  party: null,
+  kill: false,
+  cleared: true,
+  hpLeftPercent: 62,
+  thresholds: [30],
+  top: [
+    { name: 'Ann', contribution: 900 },
+    { name: '@everyone', contribution: 500 },
+  ],
+  next: 1800185820000,
+};
+
+describe('formatStagePostV2', () => {
+  it('posts a cleared stage with its threshold and what comes next', () => {
+    const embed = embedOf(formatStagePostV2(STAGE_V2));
+    expect(embed.author).toEqual({ name: 'Raid · Stage 1' });
+    expect(embed.title).toBe('✅ Stage 1 cleared');
+    expect(embed.description).toBe(
+      '▰▰▰▰▰▰▱▱▱▱ 62% HP left\n🎁 30% of its HP is gone: reward paid.',
+    );
+    expect(embed.fields[0]?.value).toBe(`🥇 Ann\n🥈 @${ZWSP}everyone`);
+    expect(embed.fields[1]).toEqual({
+      name: 'Next fight',
+      value: 'Stage 2\n<t:1800185820:R>',
+      inline: true,
+    });
+  });
+
+  it('says the boss holds firm when little was removed, and names the party', () => {
+    const embed = embedOf(
+      formatStagePostV2({ ...STAGE_V2, cleared: false, thresholds: [], party: 2 }),
+    );
+    expect(embed.title).toBe('❌ Tidal Colossus holds firm');
+    expect(embed.author).toEqual({ name: 'Raid · Stage 1 · Party 2' });
+    expect(embed.description).toBe('▰▰▰▰▰▰▱▱▱▱ 62% HP left');
+  });
+
+  it('announces a kill in a stage with the kill bonus and no next fight', () => {
+    const embed = embedOf(
+      formatStagePostV2({
+        ...STAGE_V2,
+        stage: 2,
+        kill: true,
+        hpLeftPercent: 0,
+        thresholds: [30, 85],
+      }),
+    );
+    expect(embed.title).toBe('🏆 Tidal Colossus is defeated!');
+    expect(embed.description).toContain('🎁 85% of its HP is gone: reward paid.');
+    expect(embed.description).toContain('🎁 Kill bonus paid.');
+    expect(embed.fields.map((f) => f.name)).toEqual(['Top fighters']);
+  });
+
+  it('closes the finale: a kill points to the next boss, a survivor returns with its HP', () => {
+    const won = embedOf(
+      formatStagePostV2({
+        ...STAGE_V2,
+        stage: 3,
+        kill: true,
+        hpLeftPercent: 0,
+        thresholds: [],
+        next: 1800500000000,
+        firsts: [{ species: 'Wickat', kind: 'catch' }],
+      }),
+    );
+    expect(won.author).toEqual({ name: 'Raid finale' });
+    expect(won.description).toBe('🎁 Kill bonus paid.\nNext boss <t:1800500000:R>.');
+    expect(won.fields.at(-1)?.name).toBe('🆕 New on the server');
+    const lost = embedOf(
+      formatStagePostV2({
+        ...STAGE_V2,
+        stage: 3,
+        cleared: false,
+        thresholds: [],
+        next: 1800500000000,
+      }),
+    );
+    expect(lost.title).toBe('💢 Tidal Colossus survives');
+    expect(lost.description).toBe(
+      "▰▰▰▰▰▰▱▱▱▱ 62% HP left\nIt returns <t:1800500000:R> with this week's best on its HP bar.",
+    );
   });
 });
