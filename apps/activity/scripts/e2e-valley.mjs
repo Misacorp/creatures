@@ -119,10 +119,13 @@ async function answer(route) {
     await route.fulfill({ status: 404, contentType: 'application/json', body: '{"error":"e2e"}' });
     return;
   }
+  const made = make(route.request());
+  // A refusal: `{ refuse: 409, error: 'code' }` answers that status with `{ error }` (the game reads the code).
+  const refused = made !== null && typeof made === 'object' && 'refuse' in made;
   await route.fulfill({
-    status: 200,
+    status: refused ? made.refuse : 200,
     contentType: 'application/json',
-    body: JSON.stringify(make(route.request())),
+    body: JSON.stringify(refused ? { error: made.error } : made),
   });
 }
 
@@ -724,6 +727,152 @@ ROUTES.set('/api/valley/communal', (request) => {
   }
   commonsState.communal[body.place] = body.creatureId;
   return { seatId: `communal-${body.place}`, ...syncValley() };
+});
+
+// --- The weekly visitor (phase 5 step 8b): a small server of its own for his three routes -------------------
+
+/**
+ * The visitor's state of a scenario: whether he is here, the rerolls this player made this week, whether the blueprint was bought, which
+ * pieces were rerolled (their lines' tiers move up one), what the player holds, and what his routes were asked (the bodies, in order).
+ */
+const visitorState = {
+  here: false,
+  rerolls: 0,
+  bought: false,
+  rerolled: new Set(),
+  bait: 900,
+  scrap: 9000,
+  shards: 120,
+  calls: [],
+};
+const visitorReset = () => {
+  Object.assign(visitorState, {
+    here: false,
+    rerolls: 0,
+    bought: false,
+    bait: 900,
+    scrap: 9000,
+    shards: 120,
+    calls: [],
+  });
+  visitorState.rerolled.clear();
+};
+const VISITOR_BLUEPRINT = 'thundercap';
+/** A reroll's price at an item level after `n` rerolls this week (`rerollPrice`: 60 Acorns and 400 scrap at item level 10, times 1.5 each). */
+const visitorPrice = (level, n) => ({
+  acorns: Math.round(((60 * level) / 10) * 1.5 ** n),
+  scrap: Math.round(((400 * level) / 10) * 1.5 ** n),
+});
+/** The captured bag with the player's piles and the lines' tiers of rerolled pieces moved up one. */
+const visitorGear = () => {
+  const gear = fixture('gear-state');
+  const each = Math.floor(visitorState.shards / 5);
+  return {
+    ...gear,
+    parts: {
+      ...gear.parts,
+      scrap: visitorState.scrap,
+      'tide-shard': each,
+      'ember-shard': each,
+      'grove-shard': each,
+      'spark-shard': each,
+      'mire-shard': each,
+    },
+    items: gear.items.map((item) =>
+      visitorState.rerolled.has(item.id)
+        ? {
+            ...item,
+            lines: item.lines.map((l) =>
+              l.source === 'rolled' && l.tier !== null
+                ? { ...l, tier: (l.tier % (l.bestTier ?? 5)) + 1 }
+                : l,
+            ),
+          }
+        : item,
+    ),
+  };
+};
+const visitorOdds = (item) => ({
+  lines: item.lines.filter((l) => l.source === 'rolled').length,
+  topTier: 3,
+  tiers: [
+    { tier: 3, chance: 0.4 },
+    { tier: 2, chance: 0.3 },
+    { tier: 1, chance: 0.2 },
+    { tier: 0, chance: 0.1 },
+  ],
+  topChance: 0.4,
+  singleShare: 0,
+});
+ROUTES.set('/api/valley/visitor', (request) => {
+  if (!visitorState.here) return { here: false };
+  const id = new URL(request.url()).searchParams.get('item');
+  const stock = {
+    here: true,
+    blueprint: { baseId: VISITOR_BLUEPRINT, acorns: 40, shards: 50, bought: visitorState.bought },
+    rerolls: visitorState.rerolls,
+  };
+  const item = id === null ? undefined : visitorGear().items.find((i) => i.id === id);
+  return item === undefined
+    ? stock
+    : {
+        ...stock,
+        item: {
+          id: item.id,
+          itemLevel: item.itemLevel,
+          rarity: item.rarity,
+          price: visitorPrice(item.itemLevel, visitorState.rerolls),
+          odds: visitorOdds(item),
+        },
+      };
+});
+ROUTES.set('/api/valley/visitor/reroll', (request) => {
+  const body = bodyOf(request);
+  visitorState.calls.push(['reroll', body]);
+  if (!visitorState.here) return { refuse: 409, error: 'visitor_away' };
+  const item = visitorGear().items.find((i) => i.id === body.itemId);
+  if (item === undefined) return { refuse: 404, error: 'not_found' };
+  const paid = visitorPrice(item.itemLevel, visitorState.rerolls);
+  const next = visitorPrice(item.itemLevel, visitorState.rerolls + 1);
+  const linesOf = (list) =>
+    list.filter((l) => l.source === 'rolled').map((l) => ({ id: l.id, tier: l.tier - 1 }));
+  const before = linesOf(item.lines);
+  visitorState.bait -= paid.acorns;
+  visitorState.scrap -= paid.scrap;
+  visitorState.rerolls += 1;
+  visitorState.rerolled.add(item.id);
+  const after = linesOf(visitorGear().items.find((i) => i.id === item.id).lines);
+  stateOverride = {
+    ...stateOverride,
+    balances: { ...baseState.balances, bait: visitorState.bait },
+  };
+  return {
+    itemId: item.id,
+    before,
+    after,
+    paid,
+    rerolls: visitorState.rerolls,
+    next,
+    ...syncValley(),
+  };
+});
+ROUTES.set('/api/valley/visitor/blueprint', (request) => {
+  visitorState.calls.push(['blueprint', bodyOf(request)]);
+  if (!visitorState.here) return { refuse: 409, error: 'visitor_away' };
+  if (visitorState.bought) return { refuse: 409, error: 'already_bought' };
+  visitorState.bought = true;
+  visitorState.bait -= 40;
+  visitorState.shards -= 50;
+  stateOverride = {
+    ...stateOverride,
+    balances: { ...baseState.balances, bait: visitorState.bait },
+  };
+  return {
+    baseId: VISITOR_BLUEPRINT,
+    duplicate: false,
+    paid: { acorns: 40, shards: 50 },
+    ...syncValley(),
+  };
 });
 
 // --- The checklist ----------------------------------------------------------------------------------------
@@ -2732,6 +2881,169 @@ try {
         await page.locator('.gz-fly').waitFor({ state: 'detached', timeout: 15000 });
       } finally {
         gazette.paper = null;
+      }
+    },
+  );
+
+  // The weekly visitor (phase 5 step 8b): his place as the server says (shuttered while away, a stall and a page while here), the reroll
+  // of one piece (picker, price and odds, one confirm, before and after) and the week's blueprint.
+  const visitorOn = (here) => {
+    const creatures = commonsOn();
+    visitorReset();
+    visitorState.here = here;
+    answerOverride.set('/api/gear', visitorGear);
+    stateOverride = {
+      creatures,
+      balances: { ...baseState.balances, bait: visitorState.bait },
+      valley: valleyBlock(),
+    };
+  };
+  const visitorOff = () => {
+    visitorReset();
+    commonsOff();
+  };
+  const rerollTitle = /Reroll a piece/;
+
+  await scenario(
+    'the visitor away (V-VIS-1): his stall is shuttered on the map, his place says back Thursday and offers nothing',
+    () => {
+      visitorOn(false);
+    },
+    async () => {
+      try {
+        await waitFor(page.locator(VALLEY), 'attached');
+        await page.waitForTimeout(300);
+        await shot('visitor-map-away');
+        await place('visitor').evaluate((el) => el.click());
+        await waitFor(heading('Visitor'));
+        await waitFor(page.getByText('Back Thursday.'));
+        if ((await page.getByRole('button', { name: /Reroll|Choose a piece|Buy/ }).count()) > 0)
+          throw new Error('his shuttered place offers something');
+        const body = await page.locator('main').innerText();
+        if (/until|\d+ ?h\b|\d+ ?days?/i.test(body))
+          throw new Error(`a countdown on his shuttered place: ${body}`);
+        await shot('visitor-away');
+        await backToValley();
+        // The Places list says it too.
+        await page.getByRole('button', { name: /^Places/ }).click();
+        await waitFor(page.getByText('back Thursday', { exact: true }));
+        await page.keyboard.press('Escape');
+      } finally {
+        visitorOff();
+      }
+    },
+  );
+
+  await scenario(
+    'the visitor here (V-VIS-2, 4, 5): reroll one piece with one confirm, see before and after and the next price, and buy the blueprint',
+    () => {
+      visitorOn(true);
+    },
+    async () => {
+      try {
+        await waitFor(page.locator(VALLEY), 'attached');
+        await page.waitForTimeout(300);
+        await shot('visitor-map-here');
+        await place('visitor').evaluate((el) => el.click());
+        await waitFor(heading('Visitor'));
+        await waitFor(page.getByRole('heading', { name: rerollTitle }));
+        // His page is two cards under his stall: no timer, no "until" line.
+        const text = await page.locator('main').innerText();
+        if (/until|Back Thursday/i.test(text)) throw new Error(`a countdown or away line: ${text}`);
+        await shot('visitor-here');
+        // The blueprint card: its price is icons and numbers.
+        const buy = page.locator('button.action-btn', { hasText: /^Buy/ });
+        await buy.first().scrollIntoViewIfNeeded();
+        await expectTopmost(buy.first(), 'the Buy button');
+        await shot('visitor-blueprint');
+        // The reroll: the picker (worn pieces first), then a piece.
+        await page
+          .getByRole('button', { name: /Choose a piece/ })
+          .first()
+          .click();
+        const picker = page.getByRole('dialog', { name: rerollTitle });
+        await waitFor(picker);
+        await waitFor(picker.locator('.item-tile'));
+        await page.waitForTimeout(300);
+        await shot('visitor-picker');
+        await picker
+          .getByRole('button', { name: /Emberkeeper/ })
+          .first()
+          .click();
+        await waitFor(picker.getByText(/chance of Tier 4 \/ 5/));
+        await waitFor(picker.getByText(/old lines are gone for good/));
+        if (visitorState.calls.length > 0) throw new Error('looking at a piece spent something');
+        const confirm = picker.locator('button.action-btn', { hasText: /^Reroll/ });
+        await expectTopmost(confirm.first(), 'the Reroll button');
+        await page.waitForTimeout(200);
+        await shot('visitor-confirm');
+        await confirm.first().click();
+        await waitFor(picker.getByText(/Rerolled\. The old lines are gone\./));
+        const [reroll] = visitorState.calls;
+        if (
+          reroll === undefined ||
+          reroll[0] !== 'reroll' ||
+          typeof reroll[1].idempotencyKey !== 'string' ||
+          reroll[1].idempotencyKey.length < 8
+        )
+          throw new Error(
+            `the reroll was sent without an idempotency key: ${JSON.stringify(reroll)}`,
+          );
+        if (visitorState.calls.length !== 1) throw new Error('a reroll was sent twice');
+        await waitFor(picker.getByText('Before', { exact: true }));
+        await waitFor(picker.getByText('After', { exact: true }));
+        await waitFor(picker.getByText(/Next reroll/));
+        await page.waitForTimeout(200);
+        await shot('visitor-result');
+        // Again: back to the piece, whose price rose.
+        await picker
+          .locator('button.action-btn', { hasText: /Reroll again/ })
+          .first()
+          .click();
+        await waitFor(picker.locator('.item-tile'));
+        await picker
+          .getByRole('button', { name: /Emberkeeper/ })
+          .first()
+          .click();
+        await waitFor(picker.getByText(/chance of Tier 4 \/ 5/));
+        await page.keyboard.press('Escape');
+        await picker.waitFor({ state: 'detached', timeout: 10000 });
+        // The blueprint: one tap, then it says so for the week.
+        await buy.first().click();
+        await waitFor(page.getByText('Bought this week.'));
+        const calls = visitorState.calls.filter(([name]) => name === 'blueprint');
+        if (calls.length !== 1 || typeof calls[0][1].idempotencyKey !== 'string')
+          throw new Error(`the blueprint was sent without a key: ${JSON.stringify(calls)}`);
+        await page.getByText('Bought this week.').first().scrollIntoViewIfNeeded();
+        await shot('visitor-bought');
+        await backToValley();
+      } finally {
+        visitorOff();
+      }
+    },
+  );
+
+  await scenario(
+    'the visitor leaves while his page is open (409 visitor_away before any spend): the page turns to his shuttered place',
+    () => {
+      visitorOn(true);
+    },
+    async () => {
+      try {
+        await waitFor(page.locator(VALLEY), 'attached');
+        await place('visitor').evaluate((el) => el.click());
+        await waitFor(page.getByRole('heading', { name: rerollTitle }));
+        visitorState.here = false;
+        const buy = page.locator('button.action-btn', { hasText: /^Buy/ });
+        await buy.first().scrollIntoViewIfNeeded();
+        await buy.first().click();
+        await waitFor(page.getByText('Back Thursday.'));
+        if ((await page.getByRole('button', { name: /Choose a piece|^Buy/ }).count()) > 0)
+          throw new Error('the page still offers his stock after he left');
+        await shot('visitor-left');
+        await backToValley();
+      } finally {
+        visitorOff();
       }
     },
   );

@@ -16,6 +16,8 @@ import { CommonsBoard, type CommonsActions, type CommonsStart } from './CommonsB
 import { Keepsakes } from './Keepsakes';
 import { MarketPage, type MarketActions, type MarketStart } from './MarketPage';
 import { marketState } from './market-view';
+import { VisitorPage, type VisitorFeed } from './VisitorPage';
+import { AWAY_LINE, isHere } from './visitor-view';
 import { commonsOf, levelOf } from './commons-view';
 import { PinnedAct } from './PinnedAct';
 import { PlaceScene, SCENE_ART } from './PlaceScene';
@@ -40,7 +42,7 @@ import {
 import { placeOf, type PlaceId } from './valley-art';
 import { placeLabel } from './valley-logic';
 import { soonLine, type SoonPlaceId, type ValleyView } from './valley-nav';
-import { DEFAULT_LOOK, type GlowName } from './valley-places';
+import { DEFAULT_LOOK, visitorName, type GlowName } from './valley-places';
 
 /** The sprite of a place that is not open yet. */
 const SOON_ART: Readonly<Record<SoonPlaceId, GlowName>> = {
@@ -65,6 +67,7 @@ export function ValleyFrame({
   visit = null,
   commons,
   market,
+  visitor,
   acorns = 0,
   commonsStart,
   marketStart,
@@ -94,6 +97,8 @@ export function ValleyFrame({
   commons?: CommonsActions;
   /** The Market's broker seat (`VALLEY_SYSTEMS` on): its page opens once the Market's project is under way; absent leaves the Market "not open yet". */
   market?: MarketActions;
+  /** The weekly visitor (`VALLEY_SYSTEMS` on): what the server said of him and what his page reads and asks; absent leaves his place "not open yet". */
+  visitor?: VisitorFeed;
   /** The player's Acorns, for a gift. */
   acorns?: number;
   /** The board's sheet or drawer to open at the start (the workbench shows each); the game leaves it out. */
@@ -153,6 +158,21 @@ export function ValleyFrame({
     marketAt !== 'waiting';
   const marketCast = marketPage
     ? castFor('market', { ...placeInput, ...castExtra, visit }, artSize(SCENE_ART.market), bubbles)
+    : null;
+  // The visitor has a page while the server says he is here; away it is his shuttered spot and one line; before the server has said, "not open yet".
+  const visitorView = visit !== null && visitor !== undefined ? visitor.view : null;
+  const visitorPage =
+    view.kind === 'soon' &&
+    view.place === 'visitor' &&
+    visitor !== undefined &&
+    isHere(visitorView);
+  const visitorCast = visitorPage
+    ? castFor(
+        'visitor',
+        { ...placeInput, ...castExtra, visit },
+        artSize(SCENE_ART.visitor),
+        bubbles,
+      )
     : null;
   // Today's page of the place: the House's two books, then the page the game drew.
   const inside = (
@@ -216,7 +236,12 @@ export function ValleyFrame({
                     !isHelping(c, visit) &&
                     !isTrading(c, visit),
                 )}
-                look={{ ...DEFAULT_LOOK, bonfireLevel }}
+                look={{
+                  ...DEFAULT_LOOK,
+                  bonfireLevel,
+                  // His stall follows the server (open while he is here, shuttered while he is away); the default until it has said.
+                  visitorHere: visitorView === null ? DEFAULT_LOOK.visitorHere : visitorView.here,
+                }}
                 at="start"
                 focus={focus}
                 bubbles={bubbles}
@@ -292,18 +317,50 @@ export function ValleyFrame({
             </div>
           </div>
         )}
-        {view.kind === 'soon' && !(view.place === 'bonfire' && visit !== null) && !marketPage && (
-          <section class="vy-soon" aria-label={placeLabel(view.place)}>
-            <SceneFrame
-              id={view.place}
-              label={placeLabel(view.place)}
-              draw={placeSceneDraw(SOON_ART[view.place])}
-              scaleFor={(width, height) => placeScale(width, height, SOON_ART[view.place])}
-              onLeave={onLeave}
-              act={<PinnedAct calm={soonLine(view.place)} />}
+        {visitorPage && visitorCast !== null && visitor !== undefined && isHere(visitorView) && (
+          <div class="vy-page">
+            <PlaceScene
+              cast={visitorCast}
+              onAct={() => {
+                scrollAndFocus(insideRef.current);
+              }}
             />
-          </section>
+            <div class="vy-inside" ref={insideRef} tabIndex={-1}>
+              <VisitorPage
+                view={visitorView}
+                items={visitor.items}
+                blueprints={visitor.blueprints}
+                purse={visitor.purse}
+                busy={busy}
+                error={error}
+                actions={visitor.actions}
+                {...(visitor.start === undefined ? {} : { start: visitor.start })}
+              />
+            </div>
+          </div>
         )}
+        {view.kind === 'soon' &&
+          !(view.place === 'bonfire' && visit !== null) &&
+          !marketPage &&
+          !visitorPage && (
+            <section class="vy-soon" aria-label={placeLabel(view.place)}>
+              {(() => {
+                // His shuttered spot once the server has said he is away (a place not open yet keeps its own art).
+                const away = view.place === 'visitor' && visitorView !== null && !visitorView.here;
+                const art = away ? visitorName(false) : SOON_ART[view.place];
+                return (
+                  <SceneFrame
+                    id={view.place}
+                    label={placeLabel(view.place)}
+                    draw={placeSceneDraw(art)}
+                    scaleFor={(width, height) => placeScale(width, height, art)}
+                    onLeave={onLeave}
+                    act={<PinnedAct calm={away ? AWAY_LINE : soonLine(view.place)} />}
+                  />
+                );
+              })()}
+            </section>
+          )}
         {view.kind === 'place' && (
           <div class="vy-page">
             {cast !== null && (
@@ -326,14 +383,16 @@ export function ValleyFrame({
       </div>
       <PlacesList
         open={places}
-        lines={placeStates({ ...placeInput, visit })}
+        lines={placeStates({ ...placeInput, visit, visitor: visitorView })}
         bubbles={bubbles}
         opened={
           visit === null
             ? []
-            : marketAt === null || marketAt === 'waiting'
-              ? ['bonfire']
-              : ['bonfire', 'market']
+            : [
+                'bonfire',
+                ...(marketAt === null || marketAt === 'waiting' ? [] : (['market'] as const)),
+                ...(visitorView === null ? [] : (['visitor'] as const)),
+              ]
         }
         onClose={() => {
           setPlaces(false);

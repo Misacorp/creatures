@@ -14,7 +14,13 @@ import type {
   TripResult,
 } from './expedition-types';
 import {
+  parseBlueprintAnswer,
+  parseRerollAnswer,
   parseValleyView,
+  parseVisitorView,
+  type BlueprintAnswerView,
+  type RerollAnswerView,
+  type VisitorViewState,
   type ReachId,
   type KitName,
   type ValleyView as ValleyVisit,
@@ -1260,3 +1266,49 @@ export const raidBoardSocketUrl = (
   ticket: string,
   location: { protocol: string; host: string },
 ): string => liveSocketUrl('/api/raid/board/live', ticket, location);
+
+// --- The weekly visitor (phase 5 step 8b) ---
+
+/** The visitor as the server shows him: away, or here with the week's blueprint (and, when asked, one piece's price and odds). */
+export type VisitorState = VisitorViewState;
+
+/** Reads the visitor; with `itemId` also that piece's next price and the odds of a reroll. Free. */
+export async function fetchVisitor(itemId?: string): Promise<VisitorState> {
+  const query = itemId === undefined ? '' : `?item=${encodeURIComponent(itemId)}`;
+  const view = parseVisitorView(await apiFetch(`/api/valley/visitor${query}`));
+  if (view === undefined) throw new Error('the server returned an unexpected visitor answer');
+  return view;
+}
+
+/** What a reroll answers: the lines before and after, what it cost, and the next price, with the valley and the state. */
+export interface VisitorRerollAnswer extends ValleyAnswer {
+  reroll: RerollAnswerView;
+}
+
+/** Rerolls every modifier line of one piece (V-VIS-2): a keyed spend of Acorns and scrap; the old lines are gone. */
+export async function rerollWithVisitor(request: {
+  itemId: string;
+  idempotencyKey: string;
+}): Promise<VisitorRerollAnswer> {
+  const data = await apiFetch('/api/valley/visitor/reroll', jsonRequest('POST', request));
+  const reroll = parseRerollAnswer(data);
+  if (reroll === undefined) throw new Error('the server returned an unexpected reroll answer');
+  return { ...valleyAnswer(data), reroll };
+}
+
+/** What the blueprint's purchase answers: whether it was a copy (and its marks), with the valley and the state. */
+export interface VisitorBlueprintAnswer extends ValleyAnswer {
+  blueprint: BlueprintAnswerView;
+}
+
+/** Buys the week's blueprint (V-VIS-5): a keyed spend of Acorns and shards of any kind; once a week. */
+export async function buyVisitorBlueprint(idempotencyKey: string): Promise<VisitorBlueprintAnswer> {
+  const data = await apiFetch(
+    '/api/valley/visitor/blueprint',
+    jsonRequest('POST', { idempotencyKey }),
+  );
+  const blueprint = parseBlueprintAnswer(data);
+  if (blueprint === undefined)
+    throw new Error('the server returned an unexpected blueprint answer');
+  return { ...valleyAnswer(data), blueprint };
+}

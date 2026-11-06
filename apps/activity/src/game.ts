@@ -226,6 +226,9 @@ const ERROR_TEXT: Record<string, string> = {
   channel_unknown: 'The game does not know which channel this was opened in. Reopen the Activity.',
   // Gear and the Workshop.
   insufficient_parts: 'You do not have the parts for that.',
+  // The weekly visitor.
+  visitor_away: 'The visitor has left the valley. Back Thursday.',
+  already_bought: 'You bought this week\u2019s blueprint already.',
   creature_on_job: 'That creature is on a job in the Workshop. Claim it first.',
   // The living room.
   creature_not_found: 'That creature no longer exists. The page was refreshed.',

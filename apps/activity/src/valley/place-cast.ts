@@ -29,7 +29,7 @@ import type { Rect } from './valley-art';
 
 /**
  * The places that have a scene of their own over today's page. The Signpost's and the Forge's are drawn only with the valley's
- * systems on (the scouts and the smiths stand in them; `ValleyFrame` checks).
+ * systems on (the scouts and the smiths stand in them; `ValleyFrame` checks). The visitor's is drawn only while he is here.
  */
 export const CAST_PLACES = [
   'house',
@@ -40,6 +40,7 @@ export const CAST_PLACES = [
   'signpost',
   'forge',
   'market',
+  'visitor',
 ] as const;
 export type CastPlace = (typeof CAST_PLACES)[number];
 
@@ -551,5 +552,8 @@ export function castFor(
       return { ...base, ...forgeCast(input, art), scaffold };
     case 'market':
       return { ...base, ...marketCast(input, art), scaffold };
+    case 'visitor':
+      // His stall stands alone (nobody of yours is posted there); the page under it says everything, so the scene says nothing.
+      return base;
   }
 }

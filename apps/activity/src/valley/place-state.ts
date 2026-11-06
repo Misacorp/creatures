@@ -14,9 +14,10 @@ import { explorerName, legEnd, tripCounts, type HomeInput } from '../home-view';
 import { ALERT_TEXT, type TabAlerts } from '../tab-alerts';
 import { TABS, type Tab } from '../tabs';
 import { formatCountdown, formatZoned } from '../time-format';
-import type { ValleyVisit } from '../api';
+import type { ValleyVisit, VisitorState } from '../api';
 import { bonfireLine } from './bonfire-cast';
 import { marketLine } from './market-view';
+import { visitorLine } from './visitor-view';
 import { commonsOf, placeMention } from './commons-view';
 import { forgeSystemsLine, fullFloors, longWaits } from './forge-view';
 import { fullPacks, signpostSystemsLine } from './signpost-view';
@@ -31,6 +32,8 @@ export type PlaceInput = Pick<
 > & {
   /** The valley's resting creatures (`VALLEY_SYSTEMS` on): the Bonfire's line is made from it; absent or null leaves the Bonfire "not open yet". */
   visit?: ValleyVisit | null;
+  /** What the server said of the weekly visitor (`VALLEY_SYSTEMS` on): his place's line says his stall is open or he is back Thursday; absent or null leaves it "not open yet". */
+  visitor?: VisitorState | null;
 };
 
 /** A bubble over a place: the glyph of what waits, a count when there is more than one, its spoken words. */
@@ -231,6 +234,7 @@ export function placeStates(input: PlaceInput): Record<PlaceId, string> {
   for (const id of ['bonfire', 'school', 'visitor', 'market'] as const) out[id] = placeFallback(id);
   out.bonfire = bonfireLine(input.visit, input.creatures) ?? out.bonfire;
   out.market = marketLine(input.visit) ?? out.market;
+  out.visitor = visitorLine(input.visitor) ?? out.visitor;
   // A project that is being built gets a mention (it matters: it has a clock); an open one does not, the board says it.
   const commons = commonsOf(input.visit);
   for (const id of ['bonfire', 'forge', 'signpost', 'paddock'] as const) {

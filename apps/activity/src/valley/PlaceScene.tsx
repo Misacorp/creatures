@@ -40,6 +40,7 @@ export const SCENE_ART: Readonly<Record<CastPlace, MapName>> = {
   signpost: 'road',
   forge: 'forge',
   market: 'market',
+  visitor: 'visitor',
 };
 
 /** The nameplates' layer: above every creature (`depthOf` stays below it). */
