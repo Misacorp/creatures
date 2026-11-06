@@ -194,7 +194,7 @@ export function visit(p: Player, server: Server, hour: number): void {
   temperAtVisit(p, server);
   collectFloor(p, server);
   dismantleBag(p);
-  if (server.config.shardExchange) exchangeAtVisit(p);
+  if (exchangeOn(server)) exchangeAtVisit(p);
   else p.waitingShard = -1;
   if (first) {
     credit(p, R.acorns, rules.acorns.leetPerVisitDay, 'leets');
@@ -236,6 +236,17 @@ export function visit(p: Player, server: Server, hour: number): void {
   const n = p.creatures.length;
   p.wk.rowsRead += 1 + n + p.seats.length + p.anvils.length + 2 * server.places.length + 2;
   p.wk.rowsWritten += 1 + n + p.seats.length + p.anvils.length + (p.wk.gifts > giftsBefore ? 4 : 0);
+}
+
+/**
+ * Whether shards can be exchanged on this server now (Q64): the tap and the broker's seat open together. Where the Market is a project the
+ * server builds (the `market` variants, the shipped design) nobody exchanges before it is built, and an anvil that waits on a shard
+ * tinkers; the day-one variants (`always`, `never`) keep the exchange from the start, as the lab modelled it before Q64.
+ */
+export function exchangeOn(server: Server): boolean {
+  if (!server.config.shardExchange) return false;
+  const mode = server.config.broker ?? 'always';
+  return mode === 'market' || mode === 'market-shards' ? server.marketDoneHour !== null : true;
 }
 
 /** Whether the broker's seat exists on this server now (V-FORGE-11): always, never, or once the Market is built. */

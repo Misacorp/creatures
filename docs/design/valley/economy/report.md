@@ -411,14 +411,14 @@ The share of anvil time a player spends waiting for a shard of the element the o
 | 20 | 12% | 0% | 23% | 0% | 0% | 0% | 74% | 0% | 1 / 3 | 4 / 3 |
 | 24 | 2% | 0% | 12% | 0% | 16% | 0% | 68% | 0% | 2 / 4 | 5 / 3 |
 
-The Market as a project: the broker's seat does not exist until the server builds the Market, a communal project (it joins the valley the first week the server's anvils spend 15% of their time waiting for a shard, and is sized like a level-2 place's project; every player has the broker's seat once it is built). Shards are what is short, so the Market of the first three rows is paid in Acorns and scrap only; the last row pays it like the other projects (Acorns, scrap and shards), to see whether the scarce shard can also build its own fix. Each row is a server run 6 times:
+The Market as a project: the broker's seat does not exist until the server builds the Market, a communal project (it joins the valley the first week the server's anvils spend 15% of their time waiting for a shard, and is sized like a level-2 place's project; every player has the broker's seat once it is built, and the exchange tap opens with it, Q64: before it nobody trades, so an anvil waiting for a shard tinkers). Shards are what is short, so the Market of the first three rows is paid in Acorns and scrap only; the last row pays it like the other projects (Acorns, scrap and shards), to see whether the scarce shard can also build its own fix. Each row is a server run 6 times:
 
 | Server | Opened (share of runs, week) | Built (share of runs, week) | Stall before it opened | Stall after it was built | Week 4: Market / broker from day one | Week 8: Market / broker from day one | Week 12: Market / broker from day one | Week 16: Market / broker from day one | Week 24: Market / broker from day one |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Mixed 5, the Market as a project | 100%, 2 | 83%, 16 | 22% | 2% | 27% / 4% | 33% / 3% | 15% / 0% | 6% / 0% | 0% / 0% |
-| Mixed 8, the Market as a project | 100%, 1 | 100%, 14 | 17% | 2% | 27% / 4% | 28% / 3% | 15% / 1% | 7% / 1% | 0% / 0% |
-| Mixed 15, the Market as a project | 100%, 1 | 100%, 14 | 20% | 2% | 27% / 4% | 17% / 3% | 11% / 2% | 4% / 1% | 1% / 0% |
-| Mixed 8, the Market paid like the other projects (with shards) | 100%, 1 | 0%, - | 17% | - | 26% / 4% | 25% / 3% | 17% / 1% | 20% / 1% | 15% / 0% |
+| Mixed 5, the Market as a project | 100%, 1 | 100%, 11 | 22% | 1% | 58% / 4% | 61% / 3% | 19% / 0% | 2% / 0% | 0% / 0% |
+| Mixed 8, the Market as a project | 100%, 1 | 100%, 12 | 28% | 2% | 54% / 4% | 66% / 3% | 41% / 1% | 4% / 1% | 0% / 0% |
+| Mixed 15, the Market as a project | 100%, 1 | 100%, 12 | 27% | 2% | 45% / 4% | 42% / 3% | 6% / 2% | 1% / 1% | 0% / 0% |
+| Mixed 8, the Market paid like the other projects (with shards) | 100%, 1 | 0%, - | 28% | - | 53% / 4% | 63% / 3% | 56% / 1% | 48% / 1% | 39% / 0% |
 
 ### The School and the broker (V-SCH-7, V-FORGE-11)
 
