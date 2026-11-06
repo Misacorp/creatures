@@ -1041,7 +1041,8 @@ export function Game({
                   if (closed === true) {
                     setVisit((was) => {
                       if (was === null) return was;
-                      const { paper: _read, ...rest } = was;
+                      const rest = { ...was };
+                      delete rest.paper;
                       return rest;
                     });
                   }
