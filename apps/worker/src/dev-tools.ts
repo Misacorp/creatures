@@ -48,6 +48,7 @@ import {
   RaidFillBodySchema,
   RaidPlayBodySchema,
   RaidRankBodySchema,
+  RaidSeatsBodySchema,
   ResetAccountBodySchema,
   ResetRaidsDungeonsBodySchema,
   SetWeatherBodySchema,
@@ -94,7 +95,7 @@ import {
   setSlots,
   slotWipeNotice,
 } from './dev-tools-trips';
-import { raidClear, raidFill, raidPlay, raidRank } from './dev-tools-raid-bench';
+import { raidClear, raidFill, raidPlay, raidRank, raidSeats } from './dev-tools-raid-bench';
 import { resetRaidsDungeons } from './dev-tools-reset-raids';
 import {
   errorResponse,
@@ -213,6 +214,8 @@ const TOOLS: Record<DevActionTool, Tool> = {
   'raid-fill': tool(RaidFillBodySchema, raidFill),
   'raid-rank': tool(RaidRankBodySchema, raidRank),
   'raid-play': tool(RaidPlayBodySchema, raidPlay, { movesClock: true }),
+  // Creatures per player (staging with COMBAT_V2 on only): kept in dev state, applies to this week and later ones.
+  'raid-seats': tool(RaidSeatsBodySchema, raidSeats),
   // The Games' tools re-arm the alarm afterwards (as a clock move does): a new bot, a show that starts in
   // 15 s or a forgotten day changes what the alarm waits for.
   'games-bots': tool(GamesBotsBodySchema, gamesBots, { movesClock: true }),
@@ -328,6 +331,7 @@ export class DevTools {
       raid:
         week === null ? null : { weekId: week.weekId, status: week.status, bossId: week.bossId },
       guests,
+      raidSeats: ctx.state.readRaidSeats(),
       flags: {
         night: flag(devKey.night(userId)) ?? 'auto',
         festival: flag(devKey.festival(userId)) ?? 'auto',

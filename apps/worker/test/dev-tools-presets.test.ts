@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access --
-   The tool's answer is read loosely on purpose (`Json.body` is `any`): typing it would repeat the tool's own types. */
 // The `apply-roster-preset` dev tool and its data (docs/design/dev-tools.md, "Roster presets").
 import { RULES, baseMinLevel, content, gearBase, gearContent } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
@@ -300,10 +298,14 @@ describe('the apply-roster-preset tool', () => {
         const { ann, call } = await setup(ctx);
         const res = await call('GET', '/api/dev/players');
         expect(res.status).toBe(200);
-        expect(res.body.players.map((p: { name: string }) => p.name)).toEqual(['Ann', 'Bo']);
-        expect(res.body.players[0]).toMatchObject({ userId: ann.id, creatures: 5, items: 0 });
-        expect(res.body.presets.map((p: { id: string }) => p.id)).toEqual([...PRESET_IDS]);
-        expect(res.body.presets[0]).toMatchObject({ creatures: 7, items: 15 });
+        const body = res.body as {
+          players: { userId: string; name: string }[];
+          presets: { id: string }[];
+        };
+        expect(body.players.map((p) => p.name)).toEqual(['Ann', 'Bo']);
+        expect(body.players[0]).toMatchObject({ userId: ann.id, creatures: 5, items: 0 });
+        expect(body.presets.map((p) => p.id)).toEqual([...PRESET_IDS]);
+        expect(body.presets[0]).toMatchObject({ creatures: 7, items: 15 });
       },
       { start: V2_WEEK.open, core: CORE },
     );

@@ -534,6 +534,10 @@ export class GuildCore {
       gearRng,
       ...(options.combatV2 === true ? { combatV2: true } : {}),
       ...(options.readinessRng === undefined ? {} : { readinessRng: options.readinessRng }),
+      // Staging only: the dev tools' seats-per-player override. Without the dev tools nothing is read.
+      ...(this.devState === null
+        ? {}
+        : { seatOverride: () => this.devState?.readRaidSeats() ?? null }),
     });
     this.games = new Games({
       storage,

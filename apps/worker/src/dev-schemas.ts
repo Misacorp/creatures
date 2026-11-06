@@ -10,6 +10,7 @@ import { combatV2 } from '@creatures/game/combat-v2';
 import * as v from 'valibot';
 import { IdSchema } from './collection-schemas';
 import { PRESET_IDS } from './dev-presets';
+import { MAX_RAID_SEATS } from './dev-state';
 import { BASE_IDS, DESTINATION_IDS, GOAL_IDS, SPECIES_IDS, SUPPLY_IDS } from './content-ids';
 
 /** The most one clock call may move the clock: 30 days. */
@@ -51,6 +52,7 @@ export const DEV_ACTION_TOOLS = [
   'raid-fill',
   'raid-rank',
   'raid-play',
+  'raid-seats',
   'combat-v2-convert',
   'reset-raids-dungeons',
   'valley-fresh',
@@ -258,6 +260,9 @@ export const RaidFillBodySchema = v.strictObject({ count: v.optional(int(1, MAX_
 /** The Boss Ranks of the track: one per slot of `raid-track.json`. */
 export const TRACK_RANKS = combatV2.raidTrack.slots.length;
 export const RaidRankBodySchema = v.strictObject({ rank: int(1, TRACK_RANKS) });
+
+/** Creatures per player in the raid: a number of seats, or null for the boss's own piece (the default). */
+export const RaidSeatsBodySchema = v.strictObject({ seats: v.nullable(int(1, MAX_RAID_SEATS)) });
 
 export const RAID_PLAY_STAGES = ['stage1', 'stage2', 'finale'] as const;
 export const RaidPlayBodySchema = v.pipe(

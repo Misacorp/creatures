@@ -63,6 +63,8 @@ export interface DevStateView {
   gameDay: string;
   raid: { weekId: string; status: string; bossId: string | null } | null;
   guests: number;
+  /** The raid's creatures-per-player override, or null (the boss's own piece decides). */
+  raidSeats: number | null;
 }
 
 const isNum = (value: unknown): value is number => typeof value === 'number';
@@ -93,6 +95,7 @@ export function parseDevState(data: unknown): DevStateView | null {
           }
         : null,
     guests: isNum(data['guests']) ? data['guests'] : 0,
+    raidSeats: isNum(data['raidSeats']) ? data['raidSeats'] : null,
   };
 }
 
@@ -272,6 +275,13 @@ export function describeBench(tool: DevToolId, result: unknown): string | null {
       const full = result['boardFull'] === true ? ' The board is full.' : '';
       return `${String(added)} simulated ${added === 1 ? 'player' : 'players'} added.${full}`;
     }
+    case 'raid-seats': {
+      if (!('seats' in result)) return null;
+      const seats = num(result, 'seats');
+      return seats === null
+        ? "Creatures per player: the boss's own piece again."
+        : `Creatures per player: ${String(seats)}.`;
+    }
     case 'raid-rank': {
       const rank = num(result, 'rank');
       return rank === null ? null : `Boss Rank ${String(rank)} set.`;
@@ -342,6 +352,10 @@ export function clockRows(view: DevStateView): DataRow[] {
   if (view.raid !== null) {
     rows.push({ label: 'Raid status', value: view.raid.status });
     rows.push({ label: 'Raid boss', value: view.raid.bossId ?? '-' });
+    rows.push({
+      label: 'Creatures per player',
+      value: view.raidSeats === null ? 'default' : String(view.raidSeats),
+    });
   }
   if (view.guests > 0) rows.push({ label: 'Simulated players', value: String(view.guests) });
   return rows;

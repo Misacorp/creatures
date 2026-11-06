@@ -56,6 +56,18 @@ export const RANK_OPTIONS: readonly Option[] = combatV2.raidTrack.slots.map((slo
   return { value: String(slot.slot), label: `Rank ${String(slot.slot)} \u00b7 ${name}` };
 });
 
+/** The most creatures per player the raid override offers (`MAX_RAID_SEATS` of the Worker). */
+export const MAX_RAID_SEATS = 8;
+
+/** The raid's "Creatures per player" list: the default (the boss's own piece decides) and 1 to 8. */
+export const SEATS_OPTIONS: readonly Option[] = [
+  { value: 'default', label: 'Default' },
+  ...Array.from({ length: MAX_RAID_SEATS }, (_, i) => ({
+    value: String(i + 1),
+    label: String(i + 1),
+  })),
+];
+
 /** The most simulated players one fill adds (a party holds 15 players, and the caller is one of them). */
 export const MAX_FILL_PLAYERS = 14;
 

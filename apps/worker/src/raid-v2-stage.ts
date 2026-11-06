@@ -26,13 +26,13 @@ import type { RaidPhase } from './raid-schedule';
 import { partyPlacements, type PlacementRow } from './raid-teams';
 import {
   V2_WORLD,
+  arenaOf,
   colsFor,
   determinationBpFor,
+  effectivePlayers,
   gridPlace,
   readPartyCarry,
   readTrack,
-  seatsFor,
-  slotBossInfo,
   weekendBoss,
 } from './raid-v2-core';
 import { fighterOf, knackOf, loadV2Creatures, type V2Creature } from './raid-v2-fighters';
@@ -54,6 +54,8 @@ export const RESULT_PHASES: readonly ResultPhase[] = ['stage1', 'stage2', 'final
 export interface WeekV2 {
   weekId: string;
   trackSlot: number;
+  /** The dev tools' seats-per-player override (staging only), or null: the boss's own piece (see `arenaOf`). */
+  seatOverride: number | null;
 }
 
 /** A stage's fight as it will be played, with who is in it. */
@@ -153,7 +155,8 @@ export function buildStageV2(
   if (stage > 1 && prior === null) return null;
   if (prior !== null && prior.carry.bossHp <= 0) return null;
   const out = new Set(prior?.carry.out ?? []);
-  const { rows, seats } = slotBossInfo(week.trackSlot);
+  const arena = arenaOf(week.trackSlot, week.seatOverride);
+  const { rows, seats } = arena;
   const placements: PlacementRow[] = partyPlacements(sql, week.weekId, party, seats)
     .filter((p) => !out.has(p.creature_id))
     .sort((a, b) => a.slot - b.slot);
@@ -162,8 +165,8 @@ export function buildStageV2(
   );
   if (fightingIds.length === 0) return null;
   const players = prior?.players ?? fightingIds.length;
-  const cols = colsFor(players);
-  const boss = weekendBoss(week.trackSlot, players);
+  const cols = colsFor(players, false, arena);
+  const boss = weekendBoss(week.trackSlot, effectivePlayers(players, arena));
   const aliases = fightingIds.map((_, i) => aliasFor(i));
   const creatures = loadV2Creatures(
     sql,
@@ -498,6 +501,7 @@ export function resolveStageV2(
 ): boolean {
   const { storage } = deps;
   const sql = storage.sql;
+  const arena = arenaOf(week.trackSlot, week.seatOverride);
   return storage.transactionSync(() => {
     const done = sql
       .exec(
@@ -511,17 +515,11 @@ export function resolveStageV2(
     if (stage === 1) {
       const members = partyMembers(sql, week.weekId, party);
       const owners = new Set(
-        partyPlacements(sql, week.weekId, party, seatsFor(week.trackSlot))
+        partyPlacements(sql, week.weekId, party, arena.seats)
           .map((p) => p.user_id)
           .filter((id) => members.includes(id)),
       );
-      compactBoard(
-        sql,
-        week.weekId,
-        party,
-        slotBossInfo(week.trackSlot).rows,
-        colsFor(owners.size),
-      );
+      compactBoard(sql, week.weekId, party, arena.rows, colsFor(owners.size, false, arena));
     }
     const built = buildStageV2(sql, week, party, stage);
     if (built === null) return false;
