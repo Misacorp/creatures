@@ -59,7 +59,8 @@ const SMALL_BY_DESIGN: Record<string, string> = {
   lounge_message: 'one row: the lounge message of the guild',
   lounge_instances: 'the Activity instances open right now (a few)',
   lounge_company: 'one row per player who lounges with company (players, at most a few dozen)',
-  valley_places: 'one row per place of the valley (five today; a new place is content, never a row per player)',
+  valley_places:
+    'one row per place of the valley (five today; a new place is content, never a row per player)',
   valley_keystones: 'one row per scouting destination (seven today), a clock each',
   valley_collections:
     'one row per socket that has been set: five sockets on each board of five places, 25 rows for good',

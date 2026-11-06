@@ -64,12 +64,7 @@ import type { CatchChoices } from './catch-choices';
 import { bagItems, trackBag } from './gear-store';
 import { credit, type LedgerStorage } from './ledger';
 import { speciesOf } from './species';
-import {
-  ANVIL_COLUMNS,
-  orderView,
-  type AnvilColumns,
-  type ValleyForgePass,
-} from './valley-forge';
+import { ANVIL_COLUMNS, orderView, type AnvilColumns, type ValleyForgePass } from './valley-forge';
 import { ValleyBonfire } from './valley-bonfire';
 import { ValleyCommons, type CommonsSnapshot } from './valley-commons';
 import { hasDeepArea, type ValleyFinds } from './valley-finds';
@@ -460,7 +455,16 @@ export class ValleySettle {
 
     // The commons: what scouting turned up for the collections (V-COM-12), the keystones the server's clocks have rung for a scout posted
     // there (V-SCOUT-9, at an arrival), and the communal seats' work credited to their projects (V-COM-14, at an arrival or a full store).
-    this.commonsWork(userId, to, newVisit, commons, seatsOut, communalRows, after.communal ?? [], paused);
+    this.commonsWork(
+      userId,
+      to,
+      newVisit,
+      commons,
+      seatsOut,
+      communalRows,
+      after.communal ?? [],
+      paused,
+    );
 
     // The Forge: what the anvils did is written back, then the floors come home when it is time (an arrival, or a floor that filled).
     let anvilsOut: readonly SeatRow[] = anvilRows;
@@ -819,7 +823,10 @@ export class ValleySettle {
     to: number,
     newVisit: boolean,
     commons: CommonsSnapshot,
-    scouting: { rows: readonly SeatRow[]; finds: { everyday: number; residents: number; pages: number } },
+    scouting: {
+      rows: readonly SeatRow[];
+      finds: { everyday: number; residents: number; pages: number };
+    },
     communalRows: readonly SeatRow[],
     stores: readonly SettleCommunal[],
     paused: ReadonlySet<string>,

@@ -126,7 +126,9 @@ export class ValleyCommons {
     }
     const places = new Map(rows.map((row) => [row.place, row]));
     const fire = this.sql
-      .exec<{ total_milli: number }>('SELECT total_milli FROM valley_fire_log WHERE id > 0 ORDER BY id DESC LIMIT 1')
+      .exec<{ total_milli: number }>(
+        'SELECT total_milli FROM valley_fire_log WHERE id > 0 ORDER BY id DESC LIMIT 1',
+      )
       .toArray()[0];
     const snap: CommonsSnapshot = {
       places,
@@ -205,7 +207,12 @@ export class ValleyCommons {
   }
 
   /** Warms the fire by a step of a source (V-COM-13). */
-  private warm(snap: CommonsSnapshot, source: WarmthSource, place: string | null, now: number): void {
+  private warm(
+    snap: CommonsSnapshot,
+    source: WarmthSource,
+    place: string | null,
+    now: number,
+  ): void {
     const step = warmthMilli(VALLEY_RULES, source);
     snap.fireMilli += step;
     this.sql.exec(
@@ -285,7 +292,12 @@ export class ValleyCommons {
     const cosmetic = row.level >= rules.commons.maxLevel;
     if (cosmetic) row.cosmetic += 1;
     else row.level += 1;
-    this.warm(snap, cosmetic ? 'cosmetic' : row.place === 'forge' ? 'forge' : 'place', row.place, now);
+    this.warm(
+      snap,
+      cosmetic ? 'cosmetic' : row.place === 'forge' ? 'forge' : 'place',
+      row.place,
+      now,
+    );
     row.project += 1;
     row.size = 0;
     row.have_acorns = 0;
@@ -327,7 +339,13 @@ export class ValleyCommons {
         row.size - projectProgress(VALLEY_RULES, row.size, haveOf(row)),
       );
       if (value <= 0) continue;
-      credited += this.addToProject(snap, seat.place, valueToUnits(VALLEY_RULES, value), userId, now).value;
+      credited += this.addToProject(
+        snap,
+        seat.place,
+        valueToUnits(VALLEY_RULES, value),
+        userId,
+        now,
+      ).value;
     }
     return credited;
   }
@@ -377,7 +395,9 @@ export class ValleyCommons {
       now,
     );
     const board = boardOf(VALLEY_RULES, at.place);
-    const completed = board.every((_, k) => k === at.socket || filled.has(`${at.place}:${String(k)}`));
+    const completed = board.every(
+      (_, k) => k === at.socket || filled.has(`${at.place}:${String(k)}`),
+    );
     if (completed) this.warm(snap, 'collection', at.place, now);
     return { ...at, completed };
   }
@@ -401,7 +421,8 @@ export class ValleyCommons {
     for (let i = 0; i < finds.residents; i++) {
       set(`resident:${String(1 + Math.floor(draw() * RESIDENT_TOKENS))}`);
     }
-    for (let i = 0; i < finds.pages; i++) set(`page:${String(1 + Math.floor(draw() * PAGE_TOKENS))}`);
+    for (let i = 0; i < finds.pages; i++)
+      set(`page:${String(1 + Math.floor(draw() * PAGE_TOKENS))}`);
   }
 
   /**
@@ -429,7 +450,13 @@ export class ValleyCommons {
         this.nextKeystone(now),
         clock.destination,
       );
-      this.setFind(userId, snap, `keystone:${clock.destination}`, now, `${String(now)}:k:${clock.destination}`);
+      this.setFind(
+        userId,
+        snap,
+        `keystone:${clock.destination}`,
+        now,
+        `${String(now)}:k:${clock.destination}`,
+      );
       found += 1;
     }
     return found;

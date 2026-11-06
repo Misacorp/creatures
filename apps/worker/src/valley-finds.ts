@@ -198,7 +198,8 @@ export class ValleyFinds {
     },
   ): void {
     // V-COM-12: an arrival is a rare resident with its token now and then (it sets itself into the Paddock's collection).
-    if (uniform(this.deps.rng) < VALLEY_RULES.collections.residentPerArrival) o.arrivals.residents += 1;
+    if (uniform(this.deps.rng) < VALLEY_RULES.collections.residentPerArrival)
+      o.arrivals.residents += 1;
     const dest = expeditionContent.destinations.find((d) => d.id === place.id);
     const residents = new Set(o.deep ? (dest?.deep.species ?? []) : (dest?.species ?? []));
     const rarityUp = o.deep ? 1 + (dest?.deep.rarityUpBp ?? 0) / 10_000 : 1;

@@ -95,7 +95,7 @@ async function fill(ctx: CoreContext, p: P, place: string): Promise<Json> {
   creditParts(ctx.sql, p.id, {
     scrap: Math.ceil(project.needs.scrap) + 10,
     [`${element}-shard`]: Math.ceil(project.needs.shards) + 10,
-  } as never);
+  });
   await gift(p, { place, currency: 'acorns', amount: Math.ceil(project.needs.acorns) });
   await gift(p, { place, currency: 'scrap', amount: Math.ceil(project.needs.scrap) });
   return gift(p, {
@@ -189,7 +189,8 @@ describe('the guided start (V-COM-15) and the open project (V-COM-5)', () => {
         ]);
         const hearth = placeOf(valley, 'bonfire');
         // A lone player's weight is 1: the first level's factor of the base size, scaled by (1 / 8) ^ 0.7.
-        const expected = R.commons.baseSize * R.commons.levelFactor[0]! * (1 / 8) ** R.commons.sizeExponent;
+        const expected =
+          R.commons.baseSize * R.commons.levelFactor[0]! * (1 / 8) ** R.commons.sizeExponent;
         expect(hearth.project?.size).toBeCloseTo(expected, 6);
         expect(hearth.project?.progress).toBe(0);
         expect(hearth.mine).toEqual({ given: 0, shareBp: 0 });
@@ -245,16 +246,36 @@ describe('gifts (V-COM-1, 5; gifts are keyed spends)', () => {
       async (ctx) => {
         const p = await newPlayer(ctx, 1);
         await p.state();
-        const send = (body: Record<string, unknown>) => p.api.call('POST', '/api/valley/gift', body);
+        const send = (body: Record<string, unknown>) =>
+          p.api.call('POST', '/api/valley/gift', body);
         const key = { idempotencyKey: newKey('gift') };
-        expect((await send({ ...key, place: 'bonfire', currency: 'acorns', amount: 5, extra: 1 })).status).toBe(400);
-        expect((await send({ ...key, place: 'bonfire', currency: 'shards', amount: 5 })).status).toBe(400);
         expect(
-          (await send({ ...key, place: 'bonfire', currency: 'acorns', element: 'ember', amount: 5 })).status,
+          (await send({ ...key, place: 'bonfire', currency: 'acorns', amount: 5, extra: 1 }))
+            .status,
         ).toBe(400);
-        expect((await send({ ...key, place: 'nowhere', currency: 'acorns', amount: 5 })).status).toBe(400);
-        expect((await send({ ...key, place: 'bonfire', currency: 'acorns', amount: 0 })).status).toBe(400);
-        expect((await send({ ...key, place: 'bonfire', currency: 'essence', amount: 5 })).status).toBe(400);
+        expect(
+          (await send({ ...key, place: 'bonfire', currency: 'shards', amount: 5 })).status,
+        ).toBe(400);
+        expect(
+          (
+            await send({
+              ...key,
+              place: 'bonfire',
+              currency: 'acorns',
+              element: 'ember',
+              amount: 5,
+            })
+          ).status,
+        ).toBe(400);
+        expect(
+          (await send({ ...key, place: 'nowhere', currency: 'acorns', amount: 5 })).status,
+        ).toBe(400);
+        expect(
+          (await send({ ...key, place: 'bonfire', currency: 'acorns', amount: 0 })).status,
+        ).toBe(400);
+        expect(
+          (await send({ ...key, place: 'bonfire', currency: 'essence', amount: 5 })).status,
+        ).toBe(400);
         expect((await send({ place: 'bonfire', currency: 'acorns', amount: 5 })).status).toBe(400);
       },
       SYSTEMS,
@@ -289,7 +310,10 @@ describe('gifts (V-COM-1, 5; gifts are keyed spends)', () => {
         expect(other.status).toBe(409);
         expect(bait(ctx.sql, p.id)).toBe(before - 30);
         // Not enough Acorns: nothing is taken, nothing is added.
-        ctx.sql.exec("UPDATE balances SET amount = 5 WHERE user_id = ? AND currency = 'bait'", p.id);
+        ctx.sql.exec(
+          "UPDATE balances SET amount = 5 WHERE user_id = ? AND currency = 'bait'",
+          p.id,
+        );
         const poor = await gift(p, { place: 'bonfire', currency: 'acorns', amount: 40 });
         expect(poor.status).toBe(409);
         expect(rowsOf(ctx.sql)).toEqual(rows);
@@ -298,28 +322,51 @@ describe('gifts (V-COM-1, 5; gifts are keyed spends)', () => {
     );
   });
 
-  it('takes scrap and shards from the parts (the place\'s own shard in full, another at the exchange rate)', async () => {
+  it("takes scrap and shards from the parts (the place's own shard in full, another at the exchange rate)", async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
         const p = await newPlayer(ctx, 1);
         await p.state();
         creditParts(ctx.sql, p.id, { scrap: 100, 'ember-shard': 10, 'tide-shard': 10 });
-        expect((await gift(p, { place: 'bonfire', currency: 'scrap', amount: 40 })).status).toBe(200);
+        expect((await gift(p, { place: 'bonfire', currency: 'scrap', amount: 40 })).status).toBe(
+          200,
+        );
         expect(part(ctx.sql, p.id, 'scrap')).toBe(60);
-        const own = await gift(p, { place: 'bonfire', currency: 'shards', element: 'ember', amount: 2 });
+        const own = await gift(p, {
+          place: 'bonfire',
+          currency: 'shards',
+          element: 'ember',
+          amount: 2,
+        });
         expect(own.status).toBe(200);
         expect(part(ctx.sql, p.id, 'ember-shard')).toBe(8);
         // Tide shards count at 3 for 1: 5 of them give 1 unit and take 3.
         const rate = R.forge.exchange.rate;
-        const other = await gift(p, { place: 'bonfire', currency: 'shards', element: 'tide', amount: rate + 2 });
+        const other = await gift(p, {
+          place: 'bonfire',
+          currency: 'shards',
+          element: 'tide',
+          amount: rate + 2,
+        });
         expect(other.status).toBe(200);
         expect(other.body.spent).toBe(rate);
         expect(part(ctx.sql, p.id, 'tide-shard')).toBe(10 - rate);
         // Fewer than the rate is nothing to give.
-        expect((await gift(p, { place: 'bonfire', currency: 'shards', element: 'tide', amount: rate - 1 })).status).toBe(400);
+        expect(
+          (
+            await gift(p, {
+              place: 'bonfire',
+              currency: 'shards',
+              element: 'tide',
+              amount: rate - 1,
+            })
+          ).status,
+        ).toBe(400);
         // More than the player has: refused, nothing taken.
-        expect((await gift(p, { place: 'bonfire', currency: 'scrap', amount: 1000 })).status).toBe(409);
+        expect((await gift(p, { place: 'bonfire', currency: 'scrap', amount: 1000 })).status).toBe(
+          409,
+        );
         expect(part(ctx.sql, p.id, 'scrap')).toBe(60);
       },
       SYSTEMS,
@@ -334,7 +381,9 @@ describe('gifts (V-COM-1, 5; gifts are keyed spends)', () => {
         const valley = await view(p);
         give(ctx, p.id, { bait: 5_000 });
         const before = bait(ctx.sql, p.id);
-        expect((await gift(p, { place: 'forge', currency: 'acorns', amount: 10 })).status).toBe(409);
+        expect((await gift(p, { place: 'forge', currency: 'acorns', amount: 10 })).status).toBe(
+          409,
+        );
         const need = Math.ceil(placeOf(valley, 'bonfire').project?.needs.acorns ?? 0);
         // More than the part needs: only what it needs is taken.
         const over = await gift(p, { place: 'bonfire', currency: 'acorns', amount: need + 500 });
@@ -342,7 +391,9 @@ describe('gifts (V-COM-1, 5; gifts are keyed spends)', () => {
         expect(over.body.spent).toBe(need);
         expect(bait(ctx.sql, p.id)).toBe(before - need);
         // The part is full now.
-        expect((await gift(p, { place: 'bonfire', currency: 'acorns', amount: 5 })).status).toBe(409);
+        expect((await gift(p, { place: 'bonfire', currency: 'acorns', amount: 5 })).status).toBe(
+          409,
+        );
       },
       SYSTEMS,
     );
@@ -375,7 +426,9 @@ describe('gifts (V-COM-1, 5; gifts are keyed spends)', () => {
         expect(valley.commons?.fire.milli).toBe(warmed);
         expect(valley.commons?.fire.level).toBe(fireLevelOf(warmed));
         expect(valley.commons?.fire.recent[0]).toMatchObject({ source: 'place', place: 'bonfire' });
-        expect(valley.commons?.hearthBp).toBe(10_000 + Math.round(R.bonfire.hearth.perLevel * 10_000));
+        expect(valley.commons?.hearthBp).toBe(
+          10_000 + Math.round(R.bonfire.hearth.perLevel * 10_000),
+        );
         // The Forge's project opens now that the hearth has levelled (the guided start); the others still wait.
         expect(placeOf(valley, 'forge').state).toBe('open');
         expect(placeOf(valley, 'signpost').state).toBe('waiting');
@@ -401,7 +454,11 @@ describe('gifts (V-COM-1, 5; gifts are keyed spends)', () => {
       async (ctx) => {
         const p = await newPlayer(ctx, 1);
         await p.state();
-        ctx.sql.exec('UPDATE valley_places SET level = ? WHERE place = ?', R.commons.maxLevel, 'bonfire');
+        ctx.sql.exec(
+          'UPDATE valley_places SET level = ? WHERE place = ?',
+          R.commons.maxLevel,
+          'bonfire',
+        );
         // Reopen the bonfire's project at the max level (it opened at level 1; a read at a new size).
         ctx.sql.exec("UPDATE valley_places SET size = 0, opens_at = 0 WHERE place = 'bonfire'");
         const open = placeOf(await view(p), 'bonfire');
@@ -412,9 +469,14 @@ describe('gifts (V-COM-1, 5; gifts are keyed spends)', () => {
         expect(after.level).toBe(R.commons.maxLevel);
         expect(after.cosmetic).toBe(1);
         const last = ctx.sql
-          .exec<{ source: string; warmth_milli: number }>('SELECT source, warmth_milli FROM valley_fire_log ORDER BY id DESC LIMIT 1')
+          .exec<{ source: string; warmth_milli: number }>(
+            'SELECT source, warmth_milli FROM valley_fire_log ORDER BY id DESC LIMIT 1',
+          )
           .one();
-        expect(last).toEqual({ source: 'cosmetic', warmth_milli: Math.round(R.fire.warmth.cosmetic * 1000) });
+        expect(last).toEqual({
+          source: 'cosmetic',
+          warmth_milli: Math.round(R.fire.warmth.cosmetic * 1000),
+        });
       },
       SYSTEMS,
     );
@@ -468,10 +530,14 @@ describe('place levels bound the seats and anvils (V-COM-10, V-FORGE-6)', () => 
         give(ctx, p.id, { bait: 100_000 });
         creditParts(ctx.sql, p.id, { scrap: 100_000 });
         for (let n = 0; n < R.seats.anvilByLevel[2]!; n++) {
-          const bought = await p.api.call('POST', '/api/valley/anvil/buy', { idempotencyKey: newKey('anvil') });
+          const bought = await p.api.call('POST', '/api/valley/anvil/buy', {
+            idempotencyKey: newKey('anvil'),
+          });
           expect(bought.status).toBe(200);
         }
-        const more = await p.api.call('POST', '/api/valley/anvil/buy', { idempotencyKey: newKey('anvil') });
+        const more = await p.api.call('POST', '/api/valley/anvil/buy', {
+          idempotencyKey: newKey('anvil'),
+        });
         expect(more.status).toBe(409);
       },
       SYSTEMS,
@@ -525,7 +591,9 @@ describe('communal seats (V-POST-13, V-COM-14)', () => {
         expect((await communal(p, { place: 'forge', creatureId: null })).status).toBe(200);
         // A creature that is not the player's is refused, and so is a place that does not exist.
         const q = await newPlayer(ctx, 2);
-        expect((await communal(p, { place: 'bonfire', creatureId: q.creatureIds[0] })).status).toBe(404);
+        expect((await communal(p, { place: 'bonfire', creatureId: q.creatureIds[0] })).status).toBe(
+          404,
+        );
         expect((await communal(p, { place: 'nowhere', creatureId: null })).status).toBe(400);
       },
       SYSTEMS,
@@ -565,14 +633,24 @@ describe('communal seats (V-POST-13, V-COM-14)', () => {
       async (ctx) => {
         const p = await newPlayer(ctx, 1);
         await p.state();
-        const seatId = (
-          await communal(p, { place: 'bonfire', creatureId: p.creatureIds[0] })
-        ).body.seatId as string;
-        const asScout = await p.api.call('POST', '/api/valley/seat', { seatId, destination: 'tidepools' });
+        const seatId = (await communal(p, { place: 'bonfire', creatureId: p.creatureIds[0] })).body
+          .seatId as string;
+        const asScout = await p.api.call('POST', '/api/valley/seat', {
+          seatId,
+          destination: 'tidepools',
+        });
         expect(asScout.status).toBe(400);
         give(ctx, p.id, { bait: 1000 });
-        await p.api.call('POST', '/api/valley/kit', { action: 'buy', kit: 'lure', idempotencyKey: newKey('kit') });
-        const kit = await p.api.call('POST', '/api/valley/kit', { action: 'set', seatId, kit: 'lure' });
+        await p.api.call('POST', '/api/valley/kit', {
+          action: 'buy',
+          kit: 'lure',
+          idempotencyKey: newKey('kit'),
+        });
+        const kit = await p.api.call('POST', '/api/valley/kit', {
+          action: 'set',
+          seatId,
+          kit: 'lure',
+        });
         expect(kit.status).toBe(400);
       },
       SYSTEMS,
@@ -585,10 +663,12 @@ describe('keystones (V-SCOUT-9) and collections (V-COM-12)', () => {
   async function scout(ctx: CoreContext, n: number, destination: string): Promise<P> {
     const p = await newPlayer(ctx, n);
     await p.state();
-    const bought = await p.api.call('POST', '/api/valley/seat/buy', { idempotencyKey: newKey('seat') });
+    const bought = await p.api.call('POST', '/api/valley/seat/buy', {
+      idempotencyKey: newKey('seat'),
+    });
     expect(bought.status).toBe(200);
     const posted = await p.api.call('POST', '/api/valley/seat', {
-      seatId: bought.body.seatId,
+      seatId: bought.body.seatId as string,
       creatureId: p.creatureIds[0],
       destination,
     });
@@ -603,33 +683,66 @@ describe('keystones (V-SCOUT-9) and collections (V-COM-12)', () => {
         const a = await scout(ctx, 1, 'tidepools');
         const b = await scout(ctx, 2, 'tidepools');
         // Nothing is ready yet: a long absence and a visit find nothing.
-        ctx.sql.exec("UPDATE valley_keystones SET ready_at = ? WHERE destination = 'tidepools'", ctx.clock.t + 365 * DAY);
+        ctx.sql.exec(
+          "UPDATE valley_keystones SET ready_at = ? WHERE destination = 'tidepools'",
+          ctx.clock.t + 365 * DAY,
+        );
         ctx.clock.t += 10 * HOUR;
         await a.state();
-        expect(ctx.sql.exec("SELECT * FROM valley_collections WHERE source LIKE 'keystone:%'").toArray()).toEqual([]);
+        expect(
+          ctx.sql.exec("SELECT * FROM valley_collections WHERE source LIKE 'keystone:%'").toArray(),
+        ).toEqual([]);
         // The clock rings while the scouts are away: the first one to arrive finds the keystone; the second finds none.
-        ctx.sql.exec("UPDATE valley_keystones SET ready_at = ? WHERE destination = 'tidepools'", ctx.clock.t - 1);
+        ctx.sql.exec(
+          "UPDATE valley_keystones SET ready_at = ? WHERE destination = 'tidepools'",
+          ctx.clock.t - 1,
+        );
         ctx.clock.t += 10 * HOUR;
         const seen = v.parse(ValleyViewSchema, (await a.state()).body.valley);
         await b.state();
-        const sockets = ctx.sql.exec<{ place: string; socket: number; source: string; finder: string }>("SELECT * FROM valley_collections WHERE source LIKE 'keystone:%'").toArray();
+        const sockets = ctx.sql
+          .exec<{ place: string; socket: number; source: string; finder: string }>(
+            "SELECT * FROM valley_collections WHERE source LIKE 'keystone:%'",
+          )
+          .toArray();
         // 'keystone:tidepools' is on the Forge's board (socket 0) and the Signpost's: the Forge comes first.
         expect(sockets).toHaveLength(1);
-        expect(sockets[0]).toMatchObject({ place: 'forge', socket: 0, source: 'keystone:tidepools', finder: a.name });
-        const clock = ctx.sql.exec<{ ready_at: number; found: number }>("SELECT ready_at, found FROM valley_keystones WHERE destination = 'tidepools'").one();
+        expect(sockets[0]).toMatchObject({
+          place: 'forge',
+          socket: 0,
+          source: 'keystone:tidepools',
+          finder: a.name,
+        });
+        const clock = ctx.sql
+          .exec<{ ready_at: number; found: number }>(
+            "SELECT ready_at, found FROM valley_keystones WHERE destination = 'tidepools'",
+          )
+          .one();
         expect(clock.found).toBe(1);
         expect(clock.ready_at).toBeGreaterThan(ctx.clock.t);
         expect(seen.commons?.keystones.found).toBe(1);
         const board = seen.commons?.collections.find((c) => c.place === 'forge');
-        expect(board?.sockets[0]).toEqual({ source: 'keystone:tidepools', set: true, finder: a.name });
+        expect(board?.sockets[0]).toEqual({
+          source: 'keystone:tidepools',
+          set: true,
+          finder: a.name,
+        });
         expect(board?.done).toBe(false);
         // A second keystone for the same place sets the Signpost's socket; a third melts into Essence.
         for (let n = 0; n < 2; n++) {
-          ctx.sql.exec("UPDATE valley_keystones SET ready_at = ? WHERE destination = 'tidepools'", ctx.clock.t - 1);
+          ctx.sql.exec(
+            "UPDATE valley_keystones SET ready_at = ? WHERE destination = 'tidepools'",
+            ctx.clock.t - 1,
+          );
           ctx.clock.t += 10 * HOUR;
           await a.state();
         }
-        const set = ctx.sql.exec<{ place: string }>("SELECT place FROM valley_collections WHERE source LIKE 'keystone:%' ORDER BY found_at, place").toArray().map((r) => r.place);
+        const set = ctx.sql
+          .exec<{ place: string }>(
+            "SELECT place FROM valley_collections WHERE source LIKE 'keystone:%' ORDER BY found_at, place",
+          )
+          .toArray()
+          .map((r) => r.place);
         expect(set.sort()).toEqual(['forge', 'signpost']);
         expect(essence(ctx.sql, a.id)).toBe(R.collections.meltEssence);
       },
@@ -657,13 +770,19 @@ describe('keystones (V-SCOUT-9) and collections (V-COM-12)', () => {
           );
         }
         const before = (await view(a)).commons?.fire.milli ?? 0;
-        ctx.sql.exec("UPDATE valley_keystones SET ready_at = ? WHERE destination = 'storm-ridge'", ctx.clock.t - 1);
+        ctx.sql.exec(
+          "UPDATE valley_keystones SET ready_at = ? WHERE destination = 'storm-ridge'",
+          ctx.clock.t - 1,
+        );
         ctx.clock.t += 10 * HOUR;
         const done = v.parse(ValleyViewSchema, (await a.state()).body.valley);
         const board = done.commons?.collections.find((c) => c.place === 'forge');
         expect(board?.done).toBe(true);
         expect(done.commons?.fire.milli).toBe(before + Math.round(R.fire.warmth.collection * 1000));
-        expect(done.commons?.fire.recent[0]).toMatchObject({ source: 'collection', place: 'forge' });
+        expect(done.commons?.fire.recent[0]).toMatchObject({
+          source: 'collection',
+          place: 'forge',
+        });
       },
       SYSTEMS,
     );
@@ -685,7 +804,9 @@ describe('the fire warms (V-COM-13) and the hearth raises growth (V-BON-7)', () 
         const warm = await view(p);
         expect(warm.forge.fireLevel).toBe(R.fire.start + 5);
         expect(warm.commons?.fire.level).toBe(R.fire.start + 5);
-        expect(warm.commons?.fire.next).toBe(R.fire.thresholds.find((t) => t > R.fire.start + 5) ?? null);
+        expect(warm.commons?.fire.next).toBe(
+          R.fire.thresholds.find((t) => t > R.fire.start + 5) ?? null,
+        );
       },
       SYSTEMS,
     );
@@ -698,7 +819,12 @@ describe('the fire warms (V-COM-13) and the hearth raises growth (V-BON-7)', () 
         const p = await newPlayer(ctx, 1);
         const id = p.creatureIds[0] as string;
         const xp = (): number =>
-          ctx.sql.exec<{ exp: number; level: number }>('SELECT exp, level FROM creatures WHERE id = ?', id).one().exp;
+          ctx.sql
+            .exec<{ exp: number; level: number }>(
+              'SELECT exp, level FROM creatures WHERE id = ?',
+              id,
+            )
+            .one().exp;
         await p.state();
         // Level 3 of the hearth is x1.08. It is fixed at an arrival and held until the next, so the first span below still earns x1.
         ctx.sql.exec("UPDATE valley_places SET level = 3 WHERE place = 'bonfire'");
@@ -707,7 +833,9 @@ describe('the fire warms (V-COM-13) and the hearth raises growth (V-BON-7)', () 
         await p.state();
         const plain = xp() - a;
         expect(
-          ctx.sql.exec<{ hearth_at_visit_bp: number }>('SELECT hearth_at_visit_bp FROM valley_players').one().hearth_at_visit_bp,
+          ctx.sql
+            .exec<{ hearth_at_visit_bp: number }>('SELECT hearth_at_visit_bp FROM valley_players')
+            .one().hearth_at_visit_bp,
         ).toBe(10_800);
         const b = xp();
         ctx.clock.t += 4 * HOUR;

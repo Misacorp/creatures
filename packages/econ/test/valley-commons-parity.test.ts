@@ -25,7 +25,6 @@ import {
   settle,
   valueToUnits,
   warmthMilli,
-  type ProjectHave,
   type SettleState,
 } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
@@ -69,14 +68,17 @@ function replay(seed: number): { lab: ReturnType<typeof runServer>; mine: Replay
   );
   const parts = ['acorns', 'scrap', 'shards'] as const;
   const worth = parts.map((part, k) => (givenUnits[k] ?? 0) * rules.commons.giftValue[part]);
-  const worthTotal = Math.max(1e-9, worth.reduce((a, b) => a + b, 0));
+  const worthTotal = Math.max(
+    1e-9,
+    worth.reduce((a, b) => a + b, 0),
+  );
   const mix = worth.map((w) => w / worthTotal);
   // Per place: level, open project (size and parts), when it may open.
   const places = rules.commons.places.map((id) => ({
     id,
     level: 1,
     size: 0,
-    have: { acorns: 0, scrap: 0, shards: 0 } as ProjectHave,
+    have: { acorns: 0, scrap: 0, shards: 0 },
     opensAt: 0,
   }));
   const level = (id: string): number => places.find((p) => p.id === id)?.level ?? 1;
@@ -132,7 +134,7 @@ function replay(seed: number): { lab: ReturnType<typeof runServer>; mine: Replay
       const trickleShare = (trickleValue / Math.max(1e-9, value)) * share;
       const units = valueToUnits(rules, trickleShare);
       parts.forEach((part, k) => {
-        units[part] += (((share - trickleShare) * (mix[k] ?? 0)) / rules.commons.giftValue[part]);
+        units[part] += ((share - trickleShare) * (mix[k] ?? 0)) / rules.commons.giftValue[part];
       });
       for (const part of parts) {
         const room = Math.max(0, partNeeds(rules, place.size)[part] - place.have[part]);
@@ -176,7 +178,9 @@ function replay(seed: number): { lab: ReturnType<typeof runServer>; mine: Replay
 
 const runs = SEEDS.map((seed) => replay(seed));
 const labFirst = median(runs.map((r) => (r.lab.levelUps[0]?.hour ?? Infinity) / 24));
-const labLevelUps = median(runs.map((r) => r.lab.levelUps.filter((u) => u.hour < DAYS * 24).length));
+const labLevelUps = median(
+  runs.map((r) => r.lab.levelUps.filter((u) => u.hour < DAYS * 24).length),
+);
 const labFire = median(runs.map((r) => r.lab.log[3]?.fire ?? 0));
 const labShare = median(
   runs.map((r) => {
@@ -232,7 +236,7 @@ describe('the commons rules against the lab (mixed8, seeded)', () => {
     expect(Math.abs(share - labShare)).toBeLessThanOrEqual(0.1);
   });
 
-  it('a level builds for the lab\'s three days before the next project opens', () => {
+  it("a level builds for the lab's three days before the next project opens", () => {
     for (const run of runs) {
       for (const days of run.mine.buildDays) expect(days).toBeLessThan(1.0001 + 0);
     }
@@ -256,8 +260,12 @@ describe('the pure rules agree with the lab', () => {
     const expected = (level: number, weight: number): number => {
       const c = RULES.commons;
       const factor =
-        level >= c.maxLevel ? c.cosmeticFactor : (c.levelFactor[level - 1] ?? c.levelFactor.at(-1) ?? 1);
-      return c.baseSize * factor * Math.pow(Math.max(weight, 1) / c.referenceWeight, c.sizeExponent);
+        level >= c.maxLevel
+          ? c.cosmeticFactor
+          : (c.levelFactor[level - 1] ?? c.levelFactor.at(-1) ?? 1);
+      return (
+        c.baseSize * factor * Math.pow(Math.max(weight, 1) / c.referenceWeight, c.sizeExponent)
+      );
     };
     for (const level of [1, 2, 3, 4, 5]) {
       for (const weight of [1, 4, 8, 12]) {
