@@ -106,7 +106,9 @@ export function ValleyMap({
 
   // Back from a place's page the focus rests on the map itself, never on the place's button: a ring on the House
   // after Escape "detracts from the experience" (Misa, 2026-11-05). Tab goes on from here into the places.
-  useEffect(() => {
+  // A layout effect: the focus is there in the commit that shows the map, so a later move of the focus (the
+  // keyboard walking into a place) is never overwritten by this one running late.
+  useLayoutEffect(() => {
     if (focus === null) return;
     wrapRef.current?.focus({ preventScroll: true });
   }, []);
