@@ -26,6 +26,21 @@ import {
   withMarketPlace,
 } from '../../valley/market-sample';
 import type { MarketActions, MarketStart } from '../../valley/MarketPage';
+import type {
+  BlueprintDone,
+  RerollDone,
+  VisitorFeed,
+  VisitorStart,
+} from '../../valley/VisitorPage';
+import {
+  KNOWN_BLUEPRINT,
+  SAMPLE_AWAY,
+  SAMPLE_GEAR as VISITOR_GEAR,
+  rerolled,
+  sampleVisitor,
+} from '../../valley/visitor-sample';
+import type { VisitorState } from '../../api';
+import type { GearItem } from '../../gear-types';
 import {
   fullFloor,
   sampleAnvil,
@@ -65,6 +80,7 @@ export const VALLEY_STARTS = [
   'bonfire',
   'signpost',
   'market',
+  'visitor',
 ] as const;
 
 /** How the demo's valley systems stand: off (the Bonfire is "not open yet"), a small roster resting, or a big one. */
@@ -109,6 +125,8 @@ export const VALLEY_OPEN = [
   'broker picker',
   'trade toward',
   'broker rates',
+  'reroll picker',
+  'reroll piece',
 ] as const;
 
 /** How the demo's commons stand (phase 5 step 6b): off, a young server, a full collection, a grown fire, a bonfire at level 3, helpers posted. */
@@ -116,6 +134,21 @@ export const VALLEY_COMMONS = COMMONS_PRESETS;
 
 /** How the demo's Market stands (phase 5 step 7): off, not open, being built, built with a free seat or a broker at work, stuck, or a Master. */
 export const VALLEY_MARKET = MARKET_PRESETS;
+
+/** How the demo's weekly visitor stands (phase 5 step 8b): off (his place is "not open yet"), here with a new blueprint, here with a known one, or away. */
+export const VALLEY_VISITOR = ['off', 'here', 'here, known blueprint', 'away'] as const;
+
+/** What a `VALLEY_OPEN` setting opens on the visitor's page at the start. */
+function visitorStartOf(setting: string, piece: string | undefined): VisitorStart | undefined {
+  switch (setting) {
+    case 'reroll picker':
+      return { reroll: true };
+    case 'reroll piece':
+      return { reroll: piece ?? true };
+    default:
+      return undefined;
+  }
+}
 
 /** What a `VALLEY_OPEN` setting opens on a project board at the start. */
 function commonsStartOf(setting: string): (CommonsStart & { sheet?: boolean }) | undefined {
@@ -498,6 +531,7 @@ export function ValleyDemo({
   forge = 'off',
   commons = 'off',
   market = 'off',
+  visitor = 'off',
   paper = 'off',
 }: {
   start: string;
@@ -514,6 +548,8 @@ export function ValleyDemo({
   commons?: string;
   /** The Market and its broker (phase 5 step 7): one of `VALLEY_MARKET`. */
   market?: string;
+  /** The weekly visitor (phase 5 step 8b): one of `VALLEY_VISITOR`. */
+  visitor?: string;
   /** The welcome-back Gazette on the server's paper (phase 5 step 4): one of `VALLEY_PAPERS`. */
   paper?: string;
 }) {
@@ -524,7 +560,11 @@ export function ValleyDemo({
     first !== 'valley' && isOpenPlace(first) ? PLACE_TAB[first] : 'home',
   );
   const [homeAt, setHomeAt] = useState<HomeAt>(
-    first === 'house' || first === 'school' || first === 'bonfire' || first === 'market'
+    first === 'house' ||
+      first === 'school' ||
+      first === 'bonfire' ||
+      first === 'market' ||
+      first === 'visitor'
       ? first
       : 'valley',
   );
@@ -536,16 +576,18 @@ export function ValleyDemo({
   const scoutsOn = scouts !== 'off';
   const forgeOn = forge !== 'off';
   const marketOn = market !== 'off';
+  const visitorOn = visitor !== 'off';
   const commonsOn = commons !== 'off' || marketOn;
   // With the valley's systems on the roster rests at the fire, and the allowance brought some Acorns home. The scouts' demo
   // frees every creature of its trips and jobs (a creature cannot scout and be away).
   const base =
-    resting === 'off' && !scoutsOn && !forgeOn && !commonsOn
+    resting === 'off' && !scoutsOn && !forgeOn && !commonsOn && !visitorOn
       ? planned
       : {
           ...planned,
           creatures: restingRoster(planned.creatures, resting === 'off' ? 'many' : resting).map(
-            (c) => (scoutsOn || forgeOn || commonsOn ? { ...c, busy: null, away: false } : c),
+            (c) =>
+              scoutsOn || forgeOn || commonsOn || visitorOn ? { ...c, busy: null, away: false } : c,
           ),
         };
   // The seats and kit live here, so the Signpost's page can be played with in the workbench (no server).
@@ -562,7 +604,18 @@ export function ValleyDemo({
   });
   // The broker's seat (phase 5 step 7): its creature and what it trades toward live here too.
   const [brokerSeat, setBrokerSeat] = useState(() => presetMarket(market, base.creatures));
-  const systems = resting !== 'off' || scoutsOn || forgeOn || commonsOn;
+  // The visitor (phase 5 step 8b): what the server said of him, the player's bag and purse live here, so the page can be played with.
+  const [visitorView, setVisitorView] = useState<VisitorState | null>(() =>
+    visitor === 'off'
+      ? null
+      : visitor === 'away'
+        ? SAMPLE_AWAY
+        : sampleVisitor({ baseId: visitor === 'here' ? undefined : KNOWN_BLUEPRINT }),
+  );
+  const [pieces, setPieces] = useState<GearItem[]>(() => [...VISITOR_GEAR.items]);
+  const [scrap, setScrap] = useState(2400);
+  const [shards, setShards] = useState(140);
+  const systems = resting !== 'off' || scoutsOn || forgeOn || commonsOn || visitorOn;
   const scoutVisit = systems ? demoVisit(base.creatures, seats, owned) : null;
   const plainVisit =
     scoutVisit === null
@@ -619,6 +672,57 @@ export function ValleyDemo({
       return Promise.resolve(true);
     },
   };
+  const visitorStart = visitorStartOf(
+    opened,
+    pieces.find((p) => p.baseId === 'emberkeepers-crown')?.id,
+  );
+  const visitorFeed: VisitorFeed | undefined =
+    visitorView === null
+      ? undefined
+      : {
+          view: visitorView,
+          items: pieces,
+          blueprints: VISITOR_GEAR.blueprints,
+          purse: { acorns, scrap, shards },
+          ...(visitorStart === undefined ? {} : { start: visitorStart }),
+          actions: {
+            look: (id) => {
+              const item = pieces.find((p) => p.id === id);
+              const rerolls = visitorView.here ? visitorView.rerolls : 0;
+              return Promise.resolve(
+                item === undefined ? undefined : sampleVisitor({ rerolls, item }),
+              );
+            },
+            reroll: (id): Promise<RerollDone | undefined> => {
+              const before = pieces.find((p) => p.id === id);
+              if (before === undefined || !visitorView.here) return Promise.resolve(undefined);
+              const paid = sampleVisitor({ rerolls: visitorView.rerolls, item: before }).item
+                ?.price;
+              const next = sampleVisitor({ rerolls: visitorView.rerolls + 1, item: before }).item
+                ?.price;
+              if (paid === undefined || next === undefined) return Promise.resolve(undefined);
+              const after = rerolled(before);
+              setAcorns(acorns - paid.acorns);
+              setScrap(scrap - paid.scrap);
+              setPieces(pieces.map((p) => (p.id === id ? after : p)));
+              setVisitorView({ ...visitorView, rerolls: visitorView.rerolls + 1 });
+              return Promise.resolve({ before, after, paid, next });
+            },
+            buy: (): Promise<BlueprintDone | undefined> => {
+              if (!visitorView.here) return Promise.resolve(undefined);
+              const bp = visitorView.blueprint;
+              setAcorns(acorns - bp.acorns);
+              setShards(shards - bp.shards);
+              setVisitorView({ ...visitorView, blueprint: { ...bp, bought: true } });
+              const mine = VISITOR_GEAR.blueprints.find((b) => b.baseId === bp.baseId);
+              return Promise.resolve({
+                baseId: bp.baseId,
+                duplicate: mine !== undefined,
+                ...(mine === undefined ? {} : { marks: mine.marks + 1 }),
+              });
+            },
+          },
+        };
   const commonsActions: CommonsActions | undefined =
     block === null
       ? undefined
@@ -728,6 +832,7 @@ export function ValleyDemo({
             placeInput={input}
             castExtra={castExtra}
             visit={visit}
+            {...(visitorFeed === undefined ? {} : { visitor: visitorFeed })}
             {...(commonsActions === undefined
               ? {}
               : {

@@ -9,6 +9,9 @@ import {
   VALLEY_RULES,
   ValleyViewSchema,
   createSeededRng,
+  parseBlueprintAnswer,
+  parseRerollAnswer,
+  parseVisitorView,
   rerollPrice,
   rollItem,
   type ValleyView,
@@ -150,6 +153,7 @@ describe('his days (V-VIS-1) and what stays hidden before he comes', () => {
         const away = await read(p);
         expect(away.status).toBe(200);
         expect(away.body).toEqual({ here: false });
+        expect(parseVisitorView(away.body)).toEqual({ here: false });
         expect(count(ctx.sql, 'visitor_weeks')).toBe(0);
         const before = bait(ctx, p);
         const scrap = part(ctx, p.id, 'scrap');
@@ -367,6 +371,8 @@ describe('the reroll (V-VIS-2, 3, 4)', () => {
         const [nextAcorns, nextScrap] = rerollPrice(VALLEY_RULES, 10, 1);
         expect(res.body.next).toEqual({ acorns: nextAcorns, scrap: nextScrap });
         expect(view(res).paper).toBeUndefined();
+        // The client's schema takes what the server sends.
+        expect(parseRerollAnswer(res.body)).toMatchObject({ itemId: p.item, rerolls: 1 });
       },
       SYSTEMS,
     );
@@ -547,6 +553,9 @@ describe('the odds shown before one confirm (V-VIS-2)', () => {
         expect(odds.tiers.map((t: { tier: number }) => t.tier)).toEqual([4, 3, 2, 1]);
         // Asking is free and changes nothing.
         expect(asked.body.rerolls).toBe(0);
+        // The client's schema takes what the server sends: asked, unasked and away.
+        expect(parseVisitorView(asked.body)).toMatchObject({ here: true, item: { id: p.item } });
+        expect(parseVisitorView((await read(p)).body)).toMatchObject({ here: true });
         const low = await stocked(ctx, 2, 3);
         expect((await read(low, low.item)).body.item.odds).toMatchObject({
           topTier: 0,
@@ -584,6 +593,7 @@ describe('the week`s blueprint (V-VIS-5)', () => {
         expect(mireLeft).toBeLessThan(mire);
         expect(blueprintMarks(ctx.sql, p.id, base)).toBe(0);
         expect((await read(p)).body.blueprint.bought).toBe(true);
+        expect(parseBlueprintAnswer(res.body)).toMatchObject({ baseId: base, duplicate: false });
       },
       SYSTEMS,
     );

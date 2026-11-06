@@ -4,6 +4,14 @@ Navigation and the frame, Home and the notice board, type scale, shared componen
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-06: The visitor's page reuses the Workshop's grid, card and drawer
+
+ID: `2026-11-06-the-visitor-s-page-reuses-the` · Status: current
+
+**Decision.** Picking a piece to hand to the visitor uses the parts the bag and the item picker already have: `ItemTile` in `.item-grid` (worn pieces first, with the "Worn" flag), `ItemCard` for the chosen piece and for Before and After (the changes marked with the compare's `diffItems`), in a `ui/Drawer` opened from a page (never from a drawer). No new picker and no new card. His page is two cards of the seat family (`.sp-seat`, as the Market's) under a `PlaceScene` band, the blueprint is `ui/FindBlueprint` in a `ui/FindList`, prices are `ActionButton`'s `cost` (icons and numbers), what is short is `ShortOfLine`, and a refusal is the shared `ui/Alert`. A price is said once (on the button that pays it), not once more beside it. The page has no creature tray and no drag, so the drag-click guard has nothing to guard here.
+
+**Reasoning.** Misa's rule is to reuse before building, and the prototype's own drawer was built from these same parts. A page that says a price twice (a line and the button) makes a player read each number two times.
+
 ## 2026-11-06: Costs show the resource's icon and a number, never its name [Misa]
 
 ID: `2026-11-06-costs-show-the-resource-s-icon` · Status: current

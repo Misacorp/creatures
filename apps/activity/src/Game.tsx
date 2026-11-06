@@ -10,6 +10,7 @@ import {
   dismissLevelReset,
   exchangeShards,
   fetchState,
+  fetchVisitor,
   giveToProject,
   postCommunal,
   setBroker,
@@ -28,6 +29,7 @@ import {
   type LoungeXpPush,
   type SessionUser,
   type ValleyVisit,
+  type VisitorState,
 } from './api';
 import { ActionIds } from './actions';
 import { allowanceNotice } from './allowance-text';
@@ -99,6 +101,8 @@ import type { TeamConfigure } from './TeamCreaturePage';
 import { Alert } from './ui/Alert';
 import { WelcomeBack } from './valley/gazette/WelcomeBack';
 import { ValleyFrame } from './valley/ValleyFrame';
+import { createVisitorActions, isAway } from './valley/visitor-actions';
+import { shardsHeld } from './valley/visitor-view';
 import type { MarketActions, MarketStart } from './valley/MarketPage';
 import { SignpostSeats, type SignpostActions } from './valley/SignpostSeats';
 import type { CommonsActions } from './valley/CommonsBoard';
@@ -241,6 +245,10 @@ export function Game({
     onStart: () => {
       actionCount.current += 1;
     },
+    // He left while the page was open: his place turns to his shuttered spot (the refusal came before any spend).
+    onFail: (err) => {
+      if (isAway(err)) setVisitor({ here: false });
+    },
     onStale: async () => {
       try {
         setCurrent(loaded(await fetchState()));
@@ -265,6 +273,23 @@ export function Game({
     if (game.valley !== null) setVisit(game.valley);
   }, [game.valley]);
   const systems = valleySystems ? visit : null;
+  // The weekly visitor as the server last said (`VALLEY_SYSTEMS` on): here or away; null until the first answer. It is read when the
+  // game opens and each time his place is opened or left (one small read), never on a timer.
+  const [visitor, setVisitor] = useState<VisitorState | null>(null);
+  const atVisitor = homeAt === 'visitor';
+  useEffect(() => {
+    if (!valleySystems || !valley || !game.starterChosen) return;
+    let current = true;
+    fetchVisitor().then(
+      (view) => {
+        if (current) setVisitor(view);
+      },
+      () => undefined,
+    );
+    return () => {
+      current = false;
+    };
+  }, [valleySystems, valley, game.starterChosen, atVisitor]);
   // The setup row of the Dungeon tab, kept while the player is on other tabs (lost on a reload).
   const dungeonDraft = useRef<Slots | null>(null);
   // The same row as state, so the valley's Cave scene can draw the team standing at the cave mouth (null until the
@@ -455,6 +480,19 @@ export function Game({
       return true;
     },
   };
+  /** The visitor's page (phase 5 step 8b): his read is free, a reroll and the week's blueprint are keyed spends. */
+  const visitorActions = createVisitorActions({
+    run,
+    runKeyed,
+    items: () => gear?.items ?? NO_ITEMS,
+    rerolls: () => (visitor !== null && visitor.here ? visitor.rerolls : 0),
+    takeValley,
+    replaceGear,
+    setVisitor: (update) => {
+      setVisitor(update);
+    },
+    setError,
+  });
   /** Wears an item or takes it off (the card's and the dungeon's); true when the server took it. */
   const equipOn = async (gearId: string, creatureId: string | null): Promise<boolean> =>
     (await gearActions.equip(gearId, creatureId)) !== undefined;
@@ -1052,6 +1090,17 @@ export function Game({
           : {
               commons: commonsActions,
               market: marketActions,
+              visitor: {
+                view: visitor,
+                actions: visitorActions,
+                items: gear === null ? null : gear.items,
+                blueprints: gear === null ? null : gear.blueprints,
+                purse: {
+                  acorns: game.balances.bait,
+                  scrap: gear?.parts.scrap ?? 0,
+                  shards: shardsHeld(gear?.parts ?? null),
+                },
+              },
               acorns: game.balances.bait,
               busy,
               error,

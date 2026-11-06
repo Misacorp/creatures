@@ -464,6 +464,7 @@ Superseded: 1 entry (see the topic file).
 
 [ui.md](ui.md): Navigation and the frame, Home and the notice board, type scale, shared components, look and feel rules that apply across screens.
 
+- 2026-11-06 The visitor's page reuses the Workshop's grid, card and drawer
 - 2026-11-06 Costs show the resource's icon and a number, never its name \[Misa\]
 - 2026-11-06 \[Misa\] One pan hint, the same on every sideways-scrolling map; a popover never opens after a drag
 - 2026-11-06 Closing a drawer or popover gives the focus back only to a keyboard user
@@ -542,6 +543,7 @@ Superseded: 1 entry (see the topic file).
 
 [valley.md](valley.md): The valley and peaceful systems overhaul planned in docs/design/valley/: job posts, the bonfire, the commons, the Forge loop, gear, trials, the School, the visitor, the economy lab, and Misa's question rounds.
 
+- 2026-11-06 Phase 5 step 8b: the visitor's screens
 - 2026-11-06 The visitor's weekly blueprint is drawn from the craftable bases for now (scouts can find them too)
 - 2026-11-06 The visitor prices a piece on its stored item level, and rerolls with the shipped line roller
 - 2026-11-06 The visitor's arrival is made by whatever sees him first, and one alarm a week wakes the object for it

@@ -9,3 +9,4 @@ export * from './gazette';
 export * from './bonfire';
 export * from './commons';
 export * from './visitor';
+export * from './visitor-view';

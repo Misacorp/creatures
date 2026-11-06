@@ -5,6 +5,7 @@ import {
   VALLEY_COMMONS,
   VALLEY_FORGE,
   VALLEY_MARKET,
+  VALLEY_VISITOR,
   VALLEY_OPEN,
   VALLEY_PAPERS,
   VALLEY_RESTING,
@@ -29,6 +30,7 @@ const valleyShell: Entry = {
     forge: { kind: 'select', options: VALLEY_FORGE },
     commons: { kind: 'select', options: VALLEY_COMMONS },
     market: { kind: 'select', options: VALLEY_MARKET },
+    visitor: { kind: 'select', options: VALLEY_VISITOR },
     paper: { kind: 'select', options: VALLEY_PAPERS },
   },
   defaults: {
@@ -41,6 +43,7 @@ const valleyShell: Entry = {
     forge: 'off',
     commons: 'off',
     market: 'off',
+    visitor: 'off',
     paper: 'off',
   },
   presets: [
@@ -262,6 +265,38 @@ const valleyShell: Entry = {
       props: { resting: 'few', away: true },
     },
     {
+      name: 'Visitor, systems off: not open yet',
+      props: { start: 'visitor' },
+    },
+    {
+      name: 'Visitor here: his stall, the reroll and the week\u2019s blueprint',
+      props: { start: 'visitor', visitor: 'here' },
+    },
+    {
+      name: 'Visitor here: a blueprint you know (a copy adds a mark)',
+      props: { start: 'visitor', visitor: 'here, known blueprint' },
+    },
+    {
+      name: 'Visitor away: the shuttered stall and one line',
+      props: { start: 'visitor', visitor: 'away' },
+    },
+    {
+      name: 'Visitor: the reroll picker',
+      props: { start: 'visitor', visitor: 'here', open: 'reroll picker' },
+    },
+    {
+      name: 'Visitor: a piece chosen, its price and the odds',
+      props: { start: 'visitor', visitor: 'here', open: 'reroll piece' },
+    },
+    {
+      name: 'The valley with the visitor here (his stall open on the map)',
+      props: { visitor: 'here' },
+    },
+    {
+      name: 'The valley with the visitor away (his stall shuttered on the map)',
+      props: { visitor: 'away' },
+    },
+    {
       name: 'Gazette on real output: a short absence',
       props: { resting: 'few', paper: 'short absence' },
     },
@@ -286,6 +321,7 @@ const valleyShell: Entry = {
       forge={str(p, 'forge')}
       commons={str(p, 'commons')}
       market={str(p, 'market')}
+      visitor={str(p, 'visitor')}
       paper={str(p, 'paper')}
     />
   ),

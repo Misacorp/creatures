@@ -75,7 +75,7 @@ const PLACE_OF: Record<PaperHeadline['kind'], PlaceId> = {
   allowance: 'bonfire',
   moment: 'bonfire',
   'market-open': 'market',
-  visitor: 'signpost',
+  visitor: 'visitor',
 };
 
 /** The stories of the server's paper, the biggest first (as the server ranked them), and what it left untold. */
