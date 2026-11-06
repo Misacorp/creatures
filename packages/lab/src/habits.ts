@@ -260,7 +260,7 @@ export const defaultRoundOf = (kind: FinaleActionKind): number => {
 /**
  * The ability a player who reads the boss card picks (the `best` finale policy). It reads what the card shows a player and nothing
  * hidden: a boss whose card says it takes less from the element that hurt it most (Element Resistance) is purged unless its arena is two rows (the Storm
- * Sovereign: a front-row wall covers half the party there, and measured better than a Purge), and every other boss gets a Shield Wall. Rally is never the pick: it is worth about nothing anywhere (`finaleWorth.ts`, balance.md section 4).
+ * Sovereign: a front-row wall covers half the party there, and measured better than a Purge), and every other boss gets a Shield Wall. Rally is never the pick: it is worth about nothing anywhere (`finaleWorth.ts`, balance.md section 10).
  */
 export function bestAbilityFor(boss: Pick<BossDef, 'mods' | 'rows'>): FinaleActionKind {
   return boss.mods.adaptsElement && boss.rows >= 3 ? 'purge' : 'shieldWall';
