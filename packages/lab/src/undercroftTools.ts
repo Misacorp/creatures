@@ -49,6 +49,8 @@ export interface UndercroftToolsOptions {
   readonly kinds?: readonly (typeof DUNGEON_DAYS_SERVERS)[number][];
   /** Tool ids (default: all). `today` is always played. */
   readonly tools?: readonly string[];
+  /** Everyone plays with the lab's gear model (`gear.ts`) at the roster's item level. Default off. */
+  readonly gear?: boolean;
 }
 
 export interface UndercroftToolsReport {
@@ -60,7 +62,15 @@ const jobArgs = (
   server: string,
   speed: RosterSpeed,
   index: number,
-): DungeonDaysJobArgs => ({ server, speed, index, scenario: 'shipped', tool });
+  gear = false,
+): DungeonDaysJobArgs => ({
+  server,
+  speed,
+  index,
+  scenario: 'shipped',
+  tool,
+  ...(gear ? { gear: true } : {}),
+});
 
 /** The runs a tool's table reads: all of them, or for the depth picker the replays, filed under the best depth they stepped back from. */
 export function runsFor(tool: Tool, runs: readonly DayRun[]): DayRun[] {
@@ -88,7 +98,9 @@ export function planUndercroftTools(options: UndercroftToolsOptions): Plan<Under
   const each = <T>(tool: Tool, f: (a: DungeonDaysJobArgs) => T): T[] =>
     kinds.flatMap((server) =>
       speeds.flatMap((speed) =>
-        Array.from({ length: n }, (_, index) => f(jobArgs(tool.id, server, speed, index))),
+        Array.from({ length: n }, (_, index) =>
+          f(jobArgs(tool.id, server, speed, index, options.gear)),
+        ),
       ),
     );
   const jobs: JobSpec[] = tools.flatMap((tool) =>

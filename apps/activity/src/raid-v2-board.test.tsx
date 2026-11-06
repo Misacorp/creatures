@@ -5,7 +5,7 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { PopoverHost } from './PopoverHost';
-import { BossCardV2, boardTurnSteps, stageTicks, strengthPips } from './BossCardV2';
+import { BossCardV2, RuleCards, boardTurnSteps, stageTicks, strengthPips } from './BossCardV2';
 import { moveGlyphId } from './combat-glyphs';
 import { parseRaidView } from './raid-api';
 import {
@@ -29,6 +29,7 @@ import { byClass, byName, createPage, visibleText, type Page } from './test-dom'
 import { MoveTile } from './ui/MoveTile';
 import { TrackStrip } from './ui/TrackStrip';
 import { raidV2Sample, trackOf, V2_NAMES, type V2SampleOptions } from './workbench/raid-v2-sample';
+import { foeCard } from './workbench/dungeon-v2-sample';
 import type { RaidView } from './raid-api';
 
 let page: Page | null = null;
@@ -244,6 +245,32 @@ describe('reading the week', () => {
     const parsed = parseRaidView(data);
     expect(parsed.rules).toBeUndefined();
     expect(parsed.v2).toBeUndefined();
+  });
+});
+
+describe('a dungeon foe on the map', () => {
+  const draw = (card: ReturnType<typeof foeCard>) => {
+    page = createPage();
+    page.draw(<RuleCards card={card} />);
+    return page;
+  };
+
+  it("shows a foe's Escalating meter (the Puddle Imp's Rising Puddle) in the rule card row the boss card uses", () => {
+    const p = draw(foeCard('puddle-imp', 1));
+    expect(visibleText(p.root)).toContain('Rising Puddle');
+    expect(byClass(p.root, 'escalating')).toHaveLength(1);
+  });
+
+  it("shows a foe's rule card by name with its strength as pips (the Moss Lurker's Grudge)", () => {
+    const p = draw(foeCard('moss-lurker', 1));
+    const cards = byClass(p.root, 'rule-card');
+    expect(cards).toHaveLength(1);
+    expect(visibleText(cards[0]!)).toContain('Grudge');
+  });
+
+  it('draws nothing for a foe with neither', () => {
+    const p = draw(foeCard('flicker-swarm', 1));
+    expect(byClass(p.root, 'boss-rules')).toHaveLength(0);
   });
 });
 

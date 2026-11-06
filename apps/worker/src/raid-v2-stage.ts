@@ -20,6 +20,7 @@ import {
 } from '@creatures/engine/v2';
 import { bumpStat } from './expedition-store';
 import { aliasFor, drawSeed, payStage, type ResolveDeps, type StoredSummary } from './raid-resolve';
+import { queueStagePostV2 } from './raid-posts';
 import { partyMembers } from './raid-roster';
 import type { RaidPhase } from './raid-schedule';
 import { partyPlacements, type PlacementRow } from './raid-teams';
@@ -448,6 +449,21 @@ export function settleStageV2(
     kill: result.won,
   });
   for (const userId of memberIds) bumpStat(sql, userId, 'reactions_seen', result.reactions);
+  // Queued in this transaction, so the post exists exactly when the result does.
+  queueStagePostV2(sql, {
+    weekId: week.weekId,
+    party,
+    stage,
+    now,
+    bossId: input.boss.id,
+    bossName: input.boss.name,
+    kill: result.won,
+    cleared,
+    thresholds: crossed.map(
+      (t) => (RULES.raid.v2.rewards.thresholds.find((x) => x.id === t.id)?.removedBp ?? 0) / 100,
+    ),
+    summary,
+  });
 }
 
 /** Logs what each player brought to a stage when it locked. */

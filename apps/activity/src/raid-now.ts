@@ -7,6 +7,7 @@ import { RULES } from '@creatures/game';
 import { bannerText, type FinaleWindow } from './live';
 import type { RaidView } from './raid-api';
 import { eventTitle } from './raid-time';
+import { earlyKillStage } from './raid-timeline';
 import { formatCountdown, formatZoned } from './time-format';
 
 /** What the action leads to: the placement step or the live finale. */
@@ -33,7 +34,7 @@ interface NowAction {
 
 type NowView = Pick<RaidView, 'next' | 'schedule' | 'timezone' | 'party' | 'rules'> & {
   /** A combat v2 week's part: only its seats a player brings are read here. */
-  v2?: { seats: number } | undefined;
+  v2?: { seats: number; nextStage?: number } | undefined;
   you: Pick<RaidView['you'], 'inRoster' | 'canEdit' | 'team'>;
 };
 
@@ -76,6 +77,16 @@ export function nowAction(
       label: 'Watch live',
       detail: bannerText(finale, view.schedule.finale, serverNow),
       target: 'live',
+    };
+  }
+  // The boss fell in a stage before the finale: nothing is left for this party to play, whatever the week's calendar says next.
+  const killedIn = earlyKillStage(view);
+  if (killedIn !== null) {
+    return {
+      kind: 'week-done',
+      label: `The boss fell in ${eventTitle(killedIn, 2)}`,
+      detail: `Next boss ${formatZoned(view.schedule.weekStart, view.timezone, 'long')}`,
+      target: null,
     };
   }
   if (next === null) {

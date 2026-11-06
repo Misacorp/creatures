@@ -83,6 +83,7 @@ in the worker.
   rule, prove the property in a pure test (layer 1) and keep one integration test that shows the worker uses that
   rule with the right inputs. Same for the simulator: test a policy or metric on a hand-built input, not by running
   the whole pipeline.
+- **Dev tools start from old state.** A dev tool that changes raid or dungeon data gets one worker test that starts from data an earlier version left behind (a week or run on the old rules, records from before a reset), not only from an empty server (retro 2026-11-06: `not_v2` on Misa's staging server).
 - **No duplicate runs.** A deterministic expensive result (a sim run, a played-out scenario) is computed once per
   file and shared by its assertions.
 - **Delete with the feature.** When a mechanic is removed, its rule functions and tests go in the same PR; what

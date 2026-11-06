@@ -30,6 +30,7 @@ Implementer agents cannot start other agents, so the lead splits the work: one i
 - **Off-turn strikes (`counter()`) skip armour, dodge and the cap and fire for every copy in the arena:** give them a once-per-boss-turn limit and a row rule, and measure several copies and stacked cards.
 - **Measure close calls at 48 seeds** (24 has about ±0.03 noise); keep SPEC (the lift on the card over a card-free boss) at 1.15 or more as well as beating the classic line.
 - **A card that doesn't bite is a fun problem first:** fix the card (or what it is paired with) before adding answers to it.
+- **Port check for v1 content** (retro 2026-11-06): before proposing a change to anything carried over from v1 (a gear line, a set text, a card, a talent), say in one line which v2 rule it uses, or flag it "no v2 meaning". First Footprints' "cannot be replaced" and the old Fizzle card meant nothing on v2, because a v2 mark is never replaced, and a proposal was built on them.
 - **Spread new Knacks across forms** so one creature (Tempestray, say) doesn't become the answer to every week.
 
 ## Rules

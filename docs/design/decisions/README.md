@@ -23,6 +23,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [direction.md](direction.md): Roadmap calls, Misa's standing direction, naming and tone, content policy, how agents and Misa work.
 
+- 2026-11-06 Overnight sessions: quiet until news, then one message with every open question \[Misa\]
 - 2026-11-05 \[Misa\] Working rules: scalars best-guess and ask later, invent content for misses, fewer decisions for Misa
 - 2026-11-05 \[Misa\] CI runs the full check; agents push after quick local checks
 - 2026-11-03 \[Misa\] Valley art goes straight onto the valley branch, not through main
@@ -143,6 +144,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [combat.md](combat.md): The shared combat engine, abilities, statuses, elements, the balance simulator, balance passes, and combat v2 in the lab.
 
+- 2026-11-06 Talents' raid share back in band: Opportunist +50%, Steady Rhythm without its crit bonus
 - 2026-11-06 \[Misa\] Fizzle becomes a telegraphed boss move: immune to reactions every second turn
 - 2026-11-06 Lab gate: dead Knacks are read on the track's weekends too
 - 2026-11-06 Combat v2: Cool Head turns a spared crit into a Sure Crit

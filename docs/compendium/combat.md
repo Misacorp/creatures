@@ -84,7 +84,7 @@ Each entry: the family, the forms that know it, the player text, and a line of c
 
 - Family: Punish the clear.
 - Forms: Gaiadrake.
-- Text `(content: combat-v2/knacks.json)`: "When the boss sheds a {Mark}, this creature strikes back for 20% of its Attack, ignoring armour. Once a round."
+- Text `(content: combat-v2/knacks.json)`: "When the boss sheds a {Mark}, it strikes back for 20% of its Attack, ignoring armour. Once a round."
 - Canon `(compendium detail, not shipped)`: When the boss shrugs a mark off, Gaiadrake's roots snap back like a branch let go: no hurry, no malice, just the spring in the wood.
 - Design `(design)`: The second answer to the Clean Scales card for a team that does not Seal: the Payoff turns the boss's own clearing into damage. A counter, not a hit; once a round for each creature, so copies and big stacks do not pile it up. Below Brand's lift on every stack of cards measured. Added 2026-11-05 (second answers).
 
@@ -127,7 +127,7 @@ Each entry: the family, the forms that know it, the player text, and a line of c
 
 - Family: Chain.
 - Forms: Geyserpup, Stormray, Cindle, Bloomback, Coralynx, Gaiadrake; kept when evolving by Tempestray, Pyrelynx.
-- Text `(content: combat-v2/knacks.json)`: "After its {Reaction}, it leaves 1 stack of its own element's mark. A reaction on that mark leaves no further trail."
+- Text `(content: combat-v2/knacks.json)`: "After its {Reaction}, it leaves 1 stack of its element's mark. That mark's reaction leaves no trail."
 - Canon `(compendium detail, not shipped)`: Where one reaction ends, a small new mark begins. A crumb of its own element left for whoever comes next.
 - Design `(design)`: Chains between elements: one Payoff primes another.
 
@@ -143,7 +143,7 @@ Each entry: the family, the forms that know it, the player text, and a line of c
 
 - Family: Detonator.
 - Forms: Bloomback.
-- Text `(content: combat-v2/knacks.json)`: "{Spend}s all the stacks of the mark it cashes, with a smaller bonus than Detonate. A hit cap holds its hit and its bonus apart."
+- Text `(content: combat-v2/knacks.json)`: "{Spend}s all stacks of the mark it cashes, for less than Detonate. Its bonus lands as its own hit."
 - Canon `(compendium detail, not shipped)`: Bloomback's flower opens, and a heartbeat later the seeds fall: two thuds, not one.
 - Design `(design)`: Detonate's quieter cousin for a boss that caps a hit (the Stone Skin card): the reaction's bonus lands as its own hit, so the cap cuts each half on its own. Its bonus is 90% of Detonate's, so Detonate stays the pick on a boss with no cap. Added 2026-11-05 (second answers).
 
@@ -176,7 +176,7 @@ Each entry: the family, the forms that know it, the player text, and a line of c
 - Family: Store.
 - Was **Gather Calm**. Misa: turning reactions into damage is mayhem, not calm.
 - Forms: Halcyray, Aurorix.
-- Text `(content: combat-v2/knacks.json)`: "{Store} Calm: +1 for each reaction anywhere. At round start with 3 Calm, the creatures beside it get +45% and it spends all."
+- Text `(content: combat-v2/knacks.json)`: "{Store} Calm: +1 per reaction anywhere. At 3 at round start: creatures beside it get +45%, spends all."
 - Canon `(compendium detail, not shipped)`: The middle of a storm is where it all gathers. Each reaction nearby adds a little, and then it all goes out at once.
 - Design `(design)`: A reaction-heavy line gets a burst every few rounds.
 
@@ -278,7 +278,7 @@ Each entry: the family, the forms that know it, the player text, and a line of c
 - Family: Store.
 - Was **Baked Shell**. Misa wanted it to be about pent-up anger.
 - Forms: Kilnmole.
-- Text `(content: combat-v2/knacks.json)`: "{Store} Heat: +1 at round start and each time it or a creature in its reach takes damage. At 3, the next {Reaction} by a creature beside it deals double bonus."
+- Text `(content: combat-v2/knacks.json)`: "{Store} Heat: +1 per round and per hit in its {Reach}. At 3, next {Reaction} beside it deals double bonus."
 - Canon `(compendium detail, not shipped)`: Heat builds quietly in the chimney with every knock, and then the friend beside it gets to let it out. Patience with a limit, never meanness.
 - Design `(design)`: A Guard beside a Payoff in a hard fight.
 
@@ -445,7 +445,7 @@ Each entry: the family, the forms that know it, the player text, and a line of c
 
 - Family: Luck.
 - Forms: Thornbuck.
-- Text `(content: combat-v2/knacks.json)`: "{Crit}s on it and on the creatures {Beside} it deal no extra damage; each crit it spares stores a {Sure Crit} on the creature it was aimed at."
+- Text `(content: combat-v2/knacks.json)`: "{Crit}s on it and creatures {Beside} it deal no extra damage; a spared crit stores a {Sure Crit} there."
 - Canon `(compendium detail, not shipped)`: Branching antlers and a calm eye. A lucky hit on it, or beside it, is only an ordinary one.
 - Design `(design)`: The answer to a boss that crits (the Double Strike card): a spared crit becomes a Sure Crit for the creature it was aimed at, so it asks for a Payoff beside the Guard.
 

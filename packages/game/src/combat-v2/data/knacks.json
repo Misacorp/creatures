@@ -116,7 +116,7 @@
       "id": "backlash",
       "name": "Backlash",
       "family": "Punish the clear",
-      "text": "When the boss sheds a {Mark}, this creature strikes back for 20% of its Attack, ignoring armour. Once a round.",
+      "text": "When the boss sheds a {Mark}, it strikes back for 20% of its Attack, ignoring armour. Once a round.",
       "intent": "Answers marks that are shed (Clean Scales) without a Seal: an unsealed Setter's mark can cross a boss turn, and the Payoff punishes the clearing. A counter, not a hit: no crit, it ignores armour and dodge. It fires once a round per creature, on the first shed, however many marks or stacks go, so copies and Heavy Prime stacks do not pile it up. It stays below Brand on every stack of cards measured.",
       "fx": {
         "backlashBp": 2000
@@ -189,7 +189,7 @@
       "id": "leave-a-trail",
       "name": "Leave a Trail",
       "family": "Chain",
-      "text": "After its {Reaction}, it leaves 1 stack of its own element's mark. A reaction on that mark leaves no further trail.",
+      "text": "After its {Reaction}, it leaves 1 stack of its element's mark. That mark's reaction leaves no trail.",
       "intent": "Cross-element chains: a reaction primes the next one for another Payoff.",
       "fx": {
         "trail": true
@@ -210,7 +210,7 @@
       "id": "aftershock",
       "name": "Aftershock",
       "family": "Detonator",
-      "text": "{Spend}s all the stacks of the mark it cashes, with a smaller bonus than Detonate. A hit cap holds its hit and its bonus apart.",
+      "text": "{Spend}s all stacks of the mark it cashes, for less than Detonate. Its bonus lands as its own hit.",
       "intent": "The Detonator's answer to a hit cap (Stone Skin): the reaction's bonus lands as a second hit, each held to the cap on its own. Its bonus is 90% of Detonate's, so on a boss with no cap Detonate is still the better pick.",
       "fx": {
         "spendAllBp": 7500,
@@ -252,7 +252,7 @@
       "id": "gather-calm",
       "name": "Eye of the Storm",
       "family": "Store",
-      "text": "{Store} Calm: +1 for each reaction anywhere. At round start with 3 Calm, the creatures beside it get +45% and it spends all.",
+      "text": "{Store} Calm: +1 per reaction anywhere. At 3 at round start: creatures beside it get +45%, spends all.",
       "intent": "A reaction-heavy line gets a burst every few rounds.",
       "fx": {
         "support": "gatherCalm"
@@ -374,7 +374,7 @@
       "id": "baked-shell",
       "name": "Boiling Point",
       "family": "Store",
-      "text": "{Store} Heat: +1 at round start and each time it or a creature in its reach takes damage. At 3, the next {Reaction} by a creature beside it deals double bonus.",
+      "text": "{Store} Heat: +1 per round and per hit in its {Reach}. At 3, next {Reaction} beside it deals double bonus.",
       "intent": "A Guard beside a Payoff in a hard fight.",
       "fx": {
         "bakedShell": true
@@ -585,7 +585,7 @@
       "id": "cool-head",
       "name": "Cool Head",
       "family": "Luck",
-      "text": "{Crit}s on it and on the creatures {Beside} it deal no extra damage; each crit it spares stores a {Sure Crit} on the creature it was aimed at.",
+      "text": "{Crit}s on it and creatures {Beside} it deal no extra damage; a spared crit stores a {Sure Crit} there.",
       "intent": "The answer to a boss that crits (Double Strike): a Guard that keeps a crit to a plain hit for itself and its neighbours, and turns each spared crit into a Sure Crit for the creature it was aimed at, so it asks for a Payoff beside the Guard. A Sure Crit deals the spender's own crit extra (a Perfect Timing creature's is 3x). Nothing against a boss that never crits (2026-10-31: at half the ward alone was tied with no Knack on every card but Double Strike).",
       "fx": {
         "critWardBp": 10000,
