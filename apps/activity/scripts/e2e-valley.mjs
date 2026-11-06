@@ -1492,6 +1492,10 @@ try {
         if (closes.length !== 1)
           throw new Error(`the server was told ${String(closes.length)} times`);
         await page.locator('.gz-fly').waitFor({ state: 'detached', timeout: 15000 });
+        // Closed: nothing holds a ring on the map.
+        const ringed = await page.locator(':focus-visible').count();
+        if (ringed > 0) throw new Error('a focus ring is left after the paper closed');
+        await shot(`gazette-closed-${tag}`);
         // Closed: a reload shows no paper.
         await page.reload();
         await page.evaluate(() => document.fonts.ready);
