@@ -523,6 +523,49 @@ describe('the stats a creature page shows under v2 (statsV2)', () => {
     );
   });
 
+  it('gear effect lines with a v2 hook reach the fighter in the raid, the dungeon and the page; lines with none do not', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await seeded(ctx, ['mossback'], 12);
+        const id = p.ids[0] as string;
+        const wear = (base: string, lines: [string, number][], level = 20) => {
+          const item = giveItem(ctx.sql, p.id, base, { rarity: 'rare', level, lines });
+          ctx.sql.exec('UPDATE gear_items SET equipped_on = ? WHERE id = ?', id, item);
+        };
+        const bare = fightNumbers(
+          fighterOf(loadV2Creatures(ctx.sql, [id]).get(id) as never, 'm1', { row: 0, col: 0 }),
+        );
+        // A hat with First Pounce (hooked) and Armour; a scarf with a line that has no v2 hook (All damage taken).
+        wear('felt-hat', [
+          ['first-pounce', 4],
+          ['armor', 4],
+        ]);
+        wear('patch-scarf', [['all-damage-taken', 4]]);
+        const raid = loadV2Creatures(ctx.sql, [id]).get(id);
+        if (raid === undefined) throw new Error('no raid creature');
+        const raidFighter = fighterOf(raid, 'm1', { row: 0, col: 0 });
+        const team = loadCreaturesById(ctx.sql, p.id, [id])[0];
+        if (team === undefined) throw new Error('no creature');
+        const dungeonFighter = fighterV2(team, learnedOf(ctx.sql, id));
+        for (const f of [raidFighter, dungeonFighter]) {
+          // The Guard-only Armour line counts for every role; First Pounce at its scaled top (x17/7 of 35%).
+          expect(f.fxAll.firstHitBp).toBe(8_500);
+          expect(f.fxAll.armourBonus).toBe(9);
+          expect(f.fxStat.armourBonus).toBe(9);
+          expect(f.fxStat.firstHitBp).toBeUndefined();
+          // The line with no hook adds nothing.
+          expect(JSON.stringify(f.fxAll)).not.toContain('takenBp');
+        }
+        // The page shows the same fighter: its armour is the form's and the gear's.
+        const shown = (await p.call('GET', '/api/state')).body.creatures[0].statsV2;
+        expect(shown).toEqual(fightNumbers(raidFighter));
+        expect(shown.armour).toBe(bare.armour + 9);
+      },
+      V2,
+    );
+  });
+
   it('a golden talent counts x1.25 in the fight, and the page shows the fighter’s numbers', async () => {
     await runCore(
       nextGuild(),

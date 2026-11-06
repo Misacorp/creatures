@@ -73,11 +73,13 @@ export interface RoomSampleOptions {
   elite?: boolean;
   /** The floor boss at a landmark has its signature move. */
   signature?: boolean;
+  /** Other species for the line (default `ROW_SPECIES`), for a room that needs a Setter before a Payoff that cashes its mark. */
+  species?: readonly string[];
 }
 
 /** The row of the sample: its creatures' ids are `c1` to `c3`, in the place they stand in. */
-export function sampleRow(): ReplayRowEntry[] {
-  return ROW_SPECIES.map((species, position) => ({
+export function sampleRow(species: readonly string[] = ROW_SPECIES): ReplayRowEntry[] {
+  return species.map((species, position) => ({
     position,
     id: `c${String(position + 1)}`,
     name: speciesLabel(species),
@@ -94,7 +96,7 @@ export function sampleRoomV2(o: RoomSampleOptions): {
   room: DungeonReplayRoomV2;
   row: ReplayRowEntry[];
 } {
-  const row = sampleRow().map((r) => ({ ...r, level: o.level }));
+  const row = sampleRow(o.species).map((r) => ({ ...r, level: o.level }));
   const fighters: FighterSpec[] = row.map((r, col) => {
     const knack = knownKnacks(r.species)[0];
     return {

@@ -4,6 +4,14 @@ The daily dungeon: paths, rooms and rare rooms, the camp, the Undercroft, foes, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-06: Combat v2 dungeon: Puddle Imp, Ash Sprite and Bog Toad ask their questions
+
+ID: `2026-11-06-combat-v2-dungeon-puddle-imp-ash` · Status: current
+
+**Decision.** Three dungeon foes that asked nothing at any depth each get an escalation of their own and a per-foe HP dose (`hpBp`) in `packages/game/src/combat-v2/data/foes.json`. The Puddle Imp gets Rising Puddle (two more Barrages of splashes a round, cap 3; HP 14000) and keeps asking for a Guard. The Ash Sprite gets Hardening Ash (+50 armour a round, cap 3; HP 18000) and keeps Fizzle; its text leads with the hardening and a Heat-doubled reaction. The Bog Toad gets Swelling Croak (+50% Attack a round, cap 3; HP 15000), which Mired slows. The toad's text and the compendium now say the team Mires the toad: no rule Mires the team. The lab's three questions (`foeQuestions.ts`) leave the old foe numbers and ask the game's foes at Undercroft depth 30.
+
+**Reasoning.** The three foes died in 2 to 4 rounds, so no rule of theirs mattered. A mechanic alone moved nothing at the default HP, and the HP dose alone moved nothing either (win rates with and without the tool both 1.00 at depth 20 to 35; the Puddle Imp with +1 a round needed HP 16000 and then asked only at depth 35, so +2 was picked); the escalation on top adds the whole gap (about 0.55 to 0.65 at depth 30 to 35). The windows are narrow because foe HP climbs steeply in the Undercroft: Puddle Imp and Bog Toad ask from about depth 25, the Ash Sprite from about 30. Slippery was dropped from the Puddle Imp (a second question next to the Guard, and a miss in every base room). Measured: a safe daily player still gains about 6.4 a week from week 9 (was 6.6), no gate item starts missing. No depth gate exists for a foe's own `hpBp` (it applies to base floors and the Undercroft alike), so the doses cost the base floors: weeks 1 and 2 fell from 4.4 to 3.7 and depth 1-4 clear from 49% to 41%. The base floors' own HP scale (`scale.hpBp` in `foes.json`, which the lab's `base55-u1` option now reads) was lowered from 12650 to 10600 to pay it back: weeks 1 and 2 are 4.4 again, depth 1-4 clear 51%, a safe daily player 6.7 a week from week 5. The Undercroft scale is untouched.
+
 ## 2026-11-05: [Misa] The Undercroft curve stays; the skill tree and gear are the tools past depth 40
 
 ID: `2026-11-05-the-undercroft-curve-stays-the-skill` · Status: current

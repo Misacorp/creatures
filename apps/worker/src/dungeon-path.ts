@@ -827,7 +827,7 @@ export function applyCamp(env: PathEnv, st: RunState, act: CampAct): ActOutcome 
       // (it starts at full HP) and carries no treat.
       const rest = { ...st.input.rest };
       delete rest[leaving];
-      if (st.v !== 2 && coming.gearRules.restBp > 0) rest[coming.id] = coming.gearRules.restBp;
+      if (coming.gearRules.restBp > 0) rest[coming.id] = coming.gearRules.restBp;
       const withoutRest = { ...st.input };
       delete withoutRest.rest;
       st.input = {

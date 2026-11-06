@@ -2,7 +2,7 @@
  * Marks, Support verbs and the start of a round (R3 to R5 marks, R8.2 round start, the Support verbs and heals of R10 and the
  * Overheal Spill rule). Round start runs the Support verbs, the round-start Knacks, the escalation step and the announcements.
  */
-import type { KnackFx } from './effects';
+import { GEAR_SHARES, type KnackFx } from './effects';
 import type { Fighter } from './types';
 import * as escalationMod from './escalation';
 import * as boardMod from './board';
@@ -15,43 +15,50 @@ const { beside, inReach, targetsOf, usesRoll } = boardMod;
 const {
   alive,
   aliveBySlot,
+  boostNext,
   bump,
   emit,
   fx,
   keyOf,
   log,
   mostHurt,
+  onceIn,
   roll,
   setStore,
   silenced,
-  strengthOf,
-  strong,
 } = stateMod;
+
+/**
+ * The most stacks a mark may hold when `by` adds to it (Deep Tracks): `maxStacks`, plus one for each living creature whose effects
+ * have Deep Tracks, when `by` is one of them. Any other addition keeps `maxStacks`, and no limit shrinks a mark already above it.
+ */
+export function stackLimit(s: State, current: number, by?: Fighter): number {
+  let limit = s.ctx.rules.maxStacks;
+  if (by !== undefined && s.carries.has('deepTracks') && fx(by).deepTracks) {
+    for (const o of alive(s)) if (fx(o).deepTracks) limit++;
+  }
+  return Math.max(limit, current);
+}
 
 export function addMark(
   s: State,
   element: string,
   stacks: number,
-  opts: { sealed?: boolean; fromTrail?: boolean; fizzle?: boolean; by?: Fighter } = {},
+  opts: { sealed?: boolean; fromTrail?: boolean; by?: Fighter } = {},
 ): void {
-  const R = s.ctx.rules;
   const m = s.marks.get(element);
-  const after =
-    opts.fizzle && s.boss.mods.fizzle && strong(s, strengthOf(s)) ? s.bossTurnsDone + 1 : 0;
   if (m) {
     m.turnSet = s.bossTurnsDone;
     if (opts.by) m.owners.add(opts.by.uid);
-    m.stacks = Math.min(R.maxStacks, m.stacks + stacks);
+    m.stacks = Math.min(stackLimit(s, m.stacks, opts.by), m.stacks + stacks);
     // A mark is sealed if any of its counts was left sealed (R8).
     m.sealed ||= opts.sealed ?? false;
-    m.cashableAfterTurns = Math.max(m.cashableAfterTurns, after);
   } else {
     s.marks.set(element, {
-      stacks: Math.min(R.maxStacks, stacks),
+      stacks: Math.min(stackLimit(s, 0, opts.by), stacks),
       age: s.markAge++,
       sealed: opts.sealed ?? false,
       fromTrail: opts.fromTrail ?? false,
-      cashableAfterTurns: after,
       turnSet: s.bossTurnsDone,
       owners: new Set(opts.by ? [opts.by.uid] : []),
     });
@@ -89,6 +96,12 @@ export function heal(
       amount: real,
       ...(src ? { by: keyOf(src) } : {}),
     });
+  // Shared Warmth (gear): a Support that heals a creature wearing it has a bigger boost next time, once a round.
+  const warmth = fx(target).sharedWarmthBp;
+  if (warmth && real > 0 && src?.role === 'support' && onceIn(src, 'sharedWarmthBp', s.round)) {
+    src.warmBp = Math.max(src.warmBp, warmth);
+    bump(target, 'sharedWarmthBp');
+  }
   const over = amt - real;
   if (over > 0 && src && fx(src).spillOver) {
     const next = mostHurt(alive(s).filter((o) => o !== target && o.row === target.row));
@@ -117,6 +130,16 @@ export function roundStart(s: State): void {
     if (k.bakedShell) setStore(s, f, Math.min(3, f.store + 1));
     if (k.guardMendBp)
       for (const o of alive(s).filter((o) => inReach(s, f, o))) heal(s, o, k.guardMendBp, true, f);
+    // Gear: Second Wind (a chance to heal each round, only while hurt) and Kindling (round 1: the creatures beside it start boosted).
+    if (k.windChanceBp && f.hp < f.maxHp && roll(s, k.windChanceBp)) {
+      bump(f, 'windChanceBp');
+      heal(s, f, GEAR_SHARES.windHealBp, false);
+    }
+    if (k.kindlingBp && s.round === 1)
+      for (const o of beside(s, f)) {
+        boostNext(s, o, f, k.kindlingBp);
+        bump(f, 'kindlingBp');
+      }
   }
   // The escalation steps up (announced), then every move due this round whose targets use a roll (a random anchor,
   // scatter, a random row) or that is Charged is announced: its slots are rolled and shown now, and it lands on exactly
@@ -143,13 +166,15 @@ export function roundStart(s: State): void {
 function supportVerb(s: State, f: Fighter, k: KnackFx): void {
   const R = s.ctx.rules;
   /** `o`'s next hit gets `bp` more (and the board is told). */
-  const give = (o: Fighter, bp: number): void => {
-    o.boostBp += bp;
-    if (s.opts.log && bp > 0) emit(s, { type: 'boost', who: keyOf(o), by: keyOf(f), bp });
-  };
+  const give = (o: Fighter, bp: number): void => boostNext(s, o, f, bp);
   f.verbsUsed++;
   let boost =
     (f.element === 'ember' ? R.supportBoostEmberBp : R.supportBoostBp) + (k.boostBonusBp ?? 0);
+  // Shared Warmth (gear): a creature it healed since its last boost makes this one bigger.
+  if (f.warmBp > 0) {
+    boost += f.warmBp;
+    f.warmBp = 0;
+  }
   // Bright Boost: every second boost it gives is doubled.
   if (k.brightBoost && f.verbsUsed % 2 === 0) {
     boost *= 2;
@@ -177,7 +202,10 @@ function supportVerb(s: State, f: Fighter, k: KnackFx): void {
       addMark(s, f.element, 1, { by: f });
       return;
     case 'clearSkies':
-      for (const o of beside(s, f)) o.undodgeable = true;
+      for (const o of beside(s, f)) {
+        o.undodgeable = true;
+        if (s.opts.log) emit(s, { type: 'sure', who: keyOf(o), by: keyOf(f) });
+      }
       return;
     case 'sunbeam':
       for (const o of alive(s).filter((o) => o.col === f.col && o.row < f.row)) {
@@ -198,9 +226,13 @@ function supportVerb(s: State, f: Fighter, k: KnackFx): void {
           if (triage) bump(f, 'triageBp');
         }
       }
-      if (k.support === 'wideWarmth')
-        for (const o of beside(s, f, 2).filter((o) => Math.abs(o.col - f.col) === 2))
+      // Wide Embrace reaches one slot further, and Hearth Helpers (gear) one more: each creature is boosted once, at full strength.
+      const reach = 1 + (k.support === 'wideWarmth' ? 1 : 0) + (k.boostReachSet ? 1 : 0);
+      if (reach > 1) {
+        if (k.boostReachSet) bump(f, 'boostReachSet');
+        for (const o of beside(s, f, reach).filter((o) => Math.abs(o.col - f.col) > 1))
           give(o, boost + kindred(o));
+      }
       if (k.support === 'gatherCalm' && f.store >= 3) {
         for (const o of beside(s, f)) give(o, 4_500);
         setStore(s, f, 0);

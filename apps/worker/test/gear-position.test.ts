@@ -98,7 +98,7 @@ describe('the raid row', () => {
     );
   });
 
-  it('gives a Guard in the row of a Lantern Night wearer a longer Shield Wall, and the Lantern bearer HP to its neighbours', async () => {
+  it('gives the Lantern bearer HP to its neighbours, and a Guard in a Lantern Night wearer row gets no Shield Wall gift', async () => {
     await runRaid(
       (ctx) => {
         const players = [1, 2, 3].map((n) =>
@@ -129,8 +129,8 @@ describe('the raid row', () => {
         )[0];
         const input = JSON.parse(stored?.input ?? '{}') as FightInput;
         const guard = input.row.find((s) => s.id === sproutle);
-        // One more round of Shield Wall for the Guard of the row, from Lantern Night.
-        expect(guard?.mods?.lingerRounds).toBe(1);
+        // Lantern Night has no three-piece effect since 2026-11-06 (Lingering is retired).
+        expect(guard?.mods?.lingerRounds).toBeUndefined();
         // The Guard stands beside the Lantern bearer (Zipmouse): 6% more HP (a Guard's own bonus is the engine's).
         expect(guard?.stats?.hp).toBe(
           Math.floor(((bare.get(sproutle)?.stats.hp ?? 0) * 10_600) / 10_000),

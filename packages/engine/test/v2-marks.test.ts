@@ -5,8 +5,10 @@
  * mire, grove spark, spark tide, mire ember.
  */
 import { describe, expect, it } from 'vitest';
+import type { BossMove, FightResult } from '../src/v2/types';
 import {
   boss,
+  type BossOver,
   by,
   count,
   marks,
@@ -77,10 +79,62 @@ describe('marks (R3 to R5)', () => {
     expect(r.reactions).toBe(2);
   });
 
-  it('Fizzle: a mark left by a reaction cannot be cashed before the next boss turn', () => {
-    const team = [setter(0), payoff(1, 'spark', { fx: { trail: true } }), payoff(2, 'grove')];
-    expect(play(boss({ cols: 3, mods: { fizzle: true } }), team).reactions).toBe(1);
-    expect(play(boss({ cols: 3 }), team).reactions).toBe(2);
+  describe('Fizzle', () => {
+    const fizzle = (over: Partial<BossMove> = {}): BossMove => ({
+      id: 'fizzle',
+      name: 'Fizzle',
+      pattern: { anchor: 'front', shape: 'all' },
+      powerBp: 0,
+      every: 2,
+      fizzles: true,
+      ...over,
+    });
+    const team = [setter(0), payoff(1)];
+    const arena = (m: BossMove, over: BossOver = {}) =>
+      boss({ cols: 2, rounds: 4, moves: [m], ...over });
+    const fizzles = (res: FightResult) =>
+      res.events.flatMap((e) => (e.board?.type === 'fizzle' ? [e.board.state] : []));
+
+    it('after its turn on every second round the boss is immune to reactions until its next turn, and the mark is kept', () => {
+      const res = play(arena(fizzle()), team, { log: true });
+      // Rounds 1 and 2 cash, it fizzles after round 2's row, round 3 is blocked, its turn ends it and round 4 cashes.
+      expect(res.reactions).toBe(3);
+      expect(play(boss({ cols: 2, rounds: 4 }), team).reactions).toBe(4);
+      expect(fizzles(res)).toEqual(['on', 'blocked', 'off', 'on']);
+      const blocked = res.events.find(
+        (e) => e.board?.type === 'fizzle' && e.board.state === 'blocked',
+      );
+      expect(blocked?.round).toBe(3);
+      // The blocked mark was not spent: round 3's mark stays and round 4's Setter adds to it.
+      expect(marks(res).filter((m) => m === 'tide x2')).toHaveLength(1);
+    });
+
+    it('a Fizzle move deals no damage and has no targets', () => {
+      const res = play(arena(fizzle({ every: 1 })), team);
+      expect(res.fighters.every((f) => f.hp === f.maxHp)).toBe(true);
+    });
+
+    it('in two rows, firing after row 2 blocks row 1 of the next round', () => {
+      const two = boss({ rows: 2, cols: 2, rounds: 3, moves: [fizzle({ every: 1 })] });
+      const fighters = [
+        setter(0),
+        payoff(1),
+        setter(0, 'tide', { row: 1 }),
+        payoff(1, 'spark', { row: 1 }),
+      ];
+      const res = play(two, fighters, { log: true });
+      // Only the row-1 Payoff is ever blocked (it acts after the boss turn that ended row 2); row 2's always cashes.
+      const by = res.events.flatMap((e) =>
+        e.board?.type === 'fizzle' && e.board.state === 'blocked' ? [e.board.by] : [],
+      );
+      expect(by.length).toBeGreaterThan(0);
+      expect(new Set(by).size).toBe(1);
+    });
+
+    it('a card at strength 0 never takes hold (a gate roll below its strength)', () => {
+      const none = fizzle({ strengthBp: 0 });
+      expect(play(arena(none), team).reactions).toBe(4);
+    });
   });
 
   it('a minimum count is checked before picking the oldest mark', () => {

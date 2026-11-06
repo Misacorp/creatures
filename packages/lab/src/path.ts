@@ -11,7 +11,7 @@
  * `walkPath` is the pure walk with an injected fight; `weekendKill` is the real fight; `planPath` runs many seeded servers on the job
  * pool (`jobs.ts`) and `summarisePath` turns them into the report's table.
  */
-import { createSeededRng } from '@creatures/game';
+import { createSeededRng, RULES } from '@creatures/game';
 import { randomTalents } from './answerMeasure';
 import {
   columnOf,
@@ -24,10 +24,12 @@ import {
   type PlayerKind,
 } from './raidMeasure';
 import { raidBench, weekendStatsOf } from './bosses';
+import { withGear } from './gear';
 import type { JobResults, JobSpec, Plan } from './jobs';
 import {
   ROSTER_WEEKS,
   levelledColumn,
+  rosterGearLevel,
   rosterLevels,
   type RosterKind,
   type RosterProfile,
@@ -60,8 +62,7 @@ export const STUCK_SHARE_MAX = 0.1;
 /**
  * Determination (Misa, 2026-10-30; after WoW's): each failed weekend on the same boss gives the server `stackBp` more damage and
  * healing, at most `maxStacks` stacks, and a kill resets it. A Festival week (no weekend) changes nothing. **On by default from the
- * second lap** (Misa, 2026-10-30, panel 6): `fromSlot` is the first slot it applies to, so slots 1 to 5 never get it, and the cap is
- * +25%. The track tuner never uses it (`trackTuner.ts` asks the path for `'off'`): the table must not rely on it. `--path` shows the
+ * second lap** (Misa, 2026-10-30, panel 6): `fromSlot` is the first slot it applies to, so slots 1 to 5 never get it (cap: `maxStacks` stacks). The track tuner never uses it (`trackTuner.ts` asks the path for `'off'`): the table must not rely on it. `--path` shows the
  * path with it on and, with `--determination`, beside the path without it (`--no-determination` shows only the latter).
  */
 export interface Determination {
@@ -72,8 +73,8 @@ export interface Determination {
   readonly fromSlot: number;
 }
 
-/** The default: +5% damage and healing a stack, at most 5 stacks (+25%), from slot 6 (the second lap) on. */
-export const DETERMINATION: Determination = { stackBp: 500, maxStacks: 5, fromSlot: 6 };
+/** The default: the game's own rule (`RULES.raid.v2.determination`, so the lab cannot drift from it): +15% damage and healing a stack, at most 5 stacks, from slot 6 (the second lap) on. */
+export const DETERMINATION: Determination = RULES.raid.v2.determination;
 
 // ---------- the walk ----------
 
@@ -113,6 +114,8 @@ export interface PathRun {
    * entry when absent. The tuner sets it to measure each answer; the dedicated and builder servers always field the slot's prepared line.
    */
   readonly mixedAnswer?: number;
+  /** Play with gear (`gear.ts`): every creature wears the roster's average item level of the week (`rosterGearLevel`). Absent or false: no gear, as before. */
+  readonly gear?: boolean;
 }
 
 export interface WalkOptions {
@@ -322,22 +325,35 @@ export function serverWeekend(
   // One more creature than the column holds: the bench's.
   playerColumns(server, base, slot, week, speed, seed, profile, run, 1).forEach(
     ({ column, levels }, c) => {
+      const il = run.gear
+        ? rosterGearLevel(
+            profile,
+            (server.players[c] as PathPlayer).roster,
+            week,
+            speed,
+            (server.players[c] as PathPlayer).joinWeek,
+          )
+        : undefined;
       column.forEach((pick, r) =>
-        placements.push({
-          owner: `p${c + 1}`,
-          formId: pick.formId,
-          level: pick.level ?? 1,
-          knack: pick.knack,
-          ...(pick.talents ? { talents: pick.talents } : {}),
-          row: r,
-          col: c,
-        }),
+        placements.push(
+          withGear(
+            {
+              owner: `p${c + 1}`,
+              formId: pick.formId,
+              level: pick.level ?? 1,
+              knack: pick.knack,
+              ...(pick.talents ? { talents: pick.talents } : {}),
+              row: r,
+              col: c,
+            },
+            il,
+          ),
+        ),
       );
       bench.push(
-        ...raidBench(1, levels[rows] ?? levels[levels.length - 1] ?? 1).map((x) => ({
-          ...x,
-          owner: `p${c + 1}`,
-        })),
+        ...raidBench(1, levels[rows] ?? levels[levels.length - 1] ?? 1).map((x) =>
+          withGear({ ...x, owner: `p${c + 1}` }, il),
+        ),
       );
     },
   );

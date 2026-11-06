@@ -161,6 +161,7 @@ describe('combat v2 content', () => {
     expect(Object.keys(combatV2.foes)).toHaveLength(foes.foes.length);
     expect(Object.keys(combatV2.keywords)).toHaveLength(keywords.length);
     expect(combatV2.rules.maxStacks).toBe(3);
+    expect(combatV2.rules.overstackCapPerStackBp).toBe(10_000);
     for (const p of Object.values(combatV2.pools)) expect(p).toHaveLength(7);
   });
 
@@ -303,10 +304,13 @@ describe('combat v2 content', () => {
     expect(Object.keys(combatV2.foes).sort()).toEqual(dungeonContent.foes.map((f) => f.id).sort());
   });
 
-  it('every card has at least one answer, from a Knack family or a talent (the baseline and the raid-only cards excepted)', () => {
+  it('every card has at least one answer, from a Knack family, a Knack id or a talent (the baseline and the raid-only cards excepted)', () => {
     for (const c of Object.values(combatV2.cards)) {
       for (const a of c.answers)
-        expect(a in combatV2.families || a in combatV2.talents, `${c.id}: ${a}`).toBe(true);
+        expect(
+          a in combatV2.families || a in combatV2.talents || a in combatV2.knacks,
+          `${c.id}: ${a}`,
+        ).toBe(true);
       if (c.id === 'plain' || c.raidOnly) continue;
       expect(c.answers.length, c.id).toBeGreaterThanOrEqual(1);
     }
@@ -345,13 +349,14 @@ describe('combat v2 content', () => {
     );
   });
 
-  it('rejects a card answer that is neither a Knack family nor a talent', () => {
+  it('rejects a card answer that is no Knack family, Knack id or talent', () => {
     expect(broken((r) => card(r, 'thick-hide').answers.push('Not A Family'))).toThrow(
-      /card "thick-hide" has the answer "Not A Family", which is no Knack family and no talent/,
+      /card "thick-hide" has the answer "Not A Family", which is no Knack family, Knack id or talent/,
     );
-    // A Knack id is not a family.
-    expect(broken((r) => card(r, 'thick-hide').answers.push('tunnel-through'))).toThrow(
-      /no Knack family/,
+    // A Knack id is an answer on its own (it points at that Knack only, not at its whole family).
+    expect(broken((r) => card(r, 'thick-hide').answers.push('tunnel-through'))).not.toThrow();
+    expect(broken((r) => card(r, 'thick-hide').answers.push('tunnel-thru'))).toThrow(
+      /no Knack family, Knack id or talent/,
     );
   });
 
@@ -479,9 +484,9 @@ describe('combat v2 content', () => {
 const LAB_TRACK = [
   [1, 'tidal-colossus', 3_800, 70, 25, 1_833, 0, false, []],
   [2, 'cinder-wyrm', 7_500, 80, 42, 3_000, 1, false, []],
-  [3, 'storm-sovereign', 13_500, 53, 7, 4_167, 2, true, []],
+  [3, 'storm-sovereign', 13_100, 51, 7, 4_167, 2, true, []],
   [4, 'old-bogback', 28_200, 82, 19, 5_333, 2, true, []],
-  [5, 'thornmother', 6_500, 155, 124, 6_500, 1, true, []],
+  [5, 'thornmother', 6_400, 153, 124, 6_500, 1, true, []],
   [6, 'tidal-colossus', 19_300, 88, 37, 7_200, 2, true, ['slippery', 'breakwater']],
   [7, 'cinder-wyrm', 10_200, 185, 48, 7_900, 2, true, []],
   [8, 'storm-sovereign', 7_000, 96, 5, 8_600, 2, true, ['lucky-strike']],
@@ -495,7 +500,7 @@ const LAB_TRACK = [
 ] as const;
 
 describe('combat v2 raid track', () => {
-  it('loads the shipped track: the order of the bosses and slots 1 to 15', () => {
+  it('loads the shipped track: the order of the bosses and slots 1 to 24', () => {
     expect(combatV2.raidTrack.order).toEqual([
       'tidal-colossus',
       'cinder-wyrm',
@@ -503,21 +508,38 @@ describe('combat v2 raid track', () => {
       'old-bogback',
       'thornmother',
     ]);
-    expect(combatV2.raidTrack.slots.map((s) => s.slot)).toEqual(LAB_TRACK.map((t) => t[0]));
+    expect(combatV2.raidTrack.slots.map((s) => s.slot)).toEqual(
+      Array.from({ length: 24 }, (_, i) => i + 1),
+    );
   });
 
-  it('holds the numbers, strengths, ramp and extra cards the lab had for slots 1 to 15', () => {
-    const got = combatV2.raidTrack.slots.map((s) => [
-      s.slot,
-      s.boss,
-      s.hp,
-      s.atk,
-      s.armour,
-      s.strengthBp,
-      s.cards,
-      s.buildUp,
-      s.extraCards,
-    ]);
+  it('plays slots 16 to 24 at full strength with the boss full set of rules and the escalation', () => {
+    for (const s of combatV2.raidTrack.slots.filter((x) => x.slot > 15)) {
+      expect(s.strengthBp).toBe(10000);
+      expect(s.buildUp).toBe(true);
+      expect(s.cards).toBe(combatV2.raidBosses[s.boss]?.cards.length);
+      // The extra cards of the same boss's last lap before the data's end (a later lap keeps them).
+      expect(s.extraCards).toEqual(
+        combatV2.raidTrack.slots.find((x) => x.slot === s.slot - 5 * Math.ceil((s.slot - 15) / 5))
+          ?.extraCards,
+      );
+    }
+  });
+
+  it('holds the numbers, strengths, ramp and extra cards the lab had for slots 1 to 15 (16 to 24 are tuned by the track tuner)', () => {
+    const got = combatV2.raidTrack.slots
+      .slice(0, 15)
+      .map((s) => [
+        s.slot,
+        s.boss,
+        s.hp,
+        s.atk,
+        s.armour,
+        s.strengthBp,
+        s.cards,
+        s.buildUp,
+        s.extraCards,
+      ]);
     expect(got).toEqual(LAB_TRACK.map((t) => [...t]));
   });
 

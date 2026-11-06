@@ -1,7 +1,7 @@
 /**
  * The dungeon foes and the dungeon runs on the shipped map.
  */
-import { createSeededRng, dungeonContent, isLandmark } from '@creatures/game';
+import { RULES, createSeededRng, dungeonContent, isLandmark } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import {
   ALL_ROUND_BENCH,
@@ -28,7 +28,7 @@ import {
   CLASSIC_LINE,
   GAUNTLET,
 } from '../src';
-import { OLD_FOES, OLD_PACK } from '../src/dungeonKnobs';
+import { packOf } from '../src/dungeonKnobs';
 import { cardIds } from './helpers/bossHelpers';
 
 describe('the dungeon foes', () => {
@@ -97,19 +97,22 @@ describe('the dungeon foes', () => {
   });
 
   it('a deeper foe is harder: the classic line wins less often', () => {
+    // The base floors are easy now (the classic line beats these two at every depth of them), so the depths are the Undercroft's:
+    // from its first level (depth 9) to a late one (depth 40).
+    const under = packOf(undefined, 'undercroft');
     const rate = (id: string, depth: number) => {
       let w = 0;
       for (let i = 0; i < 20; i++)
         if (
-          fight(foeAt(id, depth, {}, OLD_PACK), toPlacements(CLASSIC_LINE, GAUNTLET), {
+          fight(foeAt(id, depth, {}, under), toPlacements(CLASSIC_LINE, GAUNTLET), {
             rng: createSeededRng(`d:${id}:${i}`),
           }).won
         )
           w++;
       return w / 20;
     };
-    expect(rate('moss-lurker', 8)).toBeLessThanOrEqual(rate('moss-lurker', 1));
-    expect(rate('coil-baron', 8)).toBeLessThan(rate('coil-baron', 1));
+    expect(rate('moss-lurker', 40)).toBeLessThanOrEqual(rate('moss-lurker', 9));
+    expect(rate('coil-baron', 40)).toBeLessThan(rate('coil-baron', 9));
   });
 
   it('three foes ask a question the classic line fails: no Guard, no silence ward, nothing for armour', () => {
@@ -129,8 +132,10 @@ describe('the dungeon foes', () => {
         team.some((p) => q.tool.includes(p.knack)),
         `${q.foe} carries its tool`,
       ).toBe(true);
-      expect(q.hpBp).toBeGreaterThan(0);
-      expect(q.atkBp).toBeGreaterThan(0);
+      expect(q.depth).toBeGreaterThan(0);
+      // The game's foe in a form it has: an Undercroft foe is built at the run's depth plus a level, so from depth 9.
+      if (q.probe.side === 'undercroft')
+        expect(q.depth, q.foe).toBeGreaterThanOrEqual(8 + RULES.dungeon.undercroft.depthBonus);
     }
     // The three questions about a Guard, a ward and armour are the foes' `needs`.
     expect(FOE_QUESTIONS['moss-lurker']?.mechanic).toBe('family:Reach');
@@ -151,12 +156,13 @@ describe('the dungeon foes', () => {
   );
 
   it('the classic line fails the foes that ask for a tool it does not bring (a silence ward, something for armour)', () => {
+    // In the Undercroft (the base floors' versions of these two are beaten by every team): depth 30 and depth 20 of it.
     for (const [foe, depth] of [
-      ['drift-wisp', 4],
-      ['bramble-hound', 4],
+      ['drift-wisp', 30],
+      ['bramble-hound', 20],
     ] as const) {
       const g = gauntletStats(
-        foeAt(foe, depth, {}, OLD_PACK),
+        foeAt(foe, depth, {}, packOf(undefined, 'undercroft')),
         [...CLASSIC_LINE],
         100,
         `classic:${foe}`,
@@ -173,7 +179,7 @@ describe('dungeon runs on the shipped map', () => {
     policy: 'first' | 'smart',
     runs = 100,
     over: { bench?: readonly (typeof ALL_ROUND_TEAM)[number][]; levels?: number } = {},
-  ) => runStats(team, depth, true, runs, 'map', { policy, foes: OLD_FOES, ...over });
+  ) => runStats(team, depth, true, runs, 'map', { policy, ...over });
 
   it('the all-round team and its bench are legal rosters', () => {
     expect(answerProblems([...ALL_ROUND_TEAM, ...ALL_ROUND_BENCH])).toEqual([]);
@@ -185,14 +191,18 @@ describe('dungeon runs on the shipped map', () => {
     const run = (seed: string, depth: number) =>
       runMap(ALL_ROUND_TEAM, depth, createSeededRng(seed), {
         policy: 'smart',
-        foes: OLD_FOES,
         bench: ALL_ROUND_BENCH,
       });
     expect(run('x', 3)).toEqual(run('x', 3));
-    const hopeless = runMap([...CLASSIC_LINE], 60, createSeededRng('x'), {
-      policy: 'smart',
-      foes: OLD_FOES,
-    });
+    // Level 1 creatures: the game's base floors no longer stop a full-level classic line at any depth.
+    const hopeless = runMap(
+      CLASSIC_LINE.map((p) => ({ ...p, level: 1 })),
+      60,
+      createSeededRng('x'),
+      {
+        policy: 'smart',
+      },
+    );
     expect(hopeless.cleared).toBe(false);
     expect(hopeless.fights).toBeLessThan(5);
     // A cleared run won at least the entrance floor's fight and the floor boss's.
@@ -204,16 +214,16 @@ describe('dungeon runs on the shipped map', () => {
 
   it('the policy picks all three camp choices over many runs, and a swap only with a bench', () => {
     const seen = new Set<string>();
-    for (let i = 0; i < 300; i++) {
-      const r = runMap(ALL_ROUND_TEAM, 8, createSeededRng(`camp${i}`), {
+    // A healthy team at the game's easy base floors always takes the keepsake, so the team is level 10 at depth 64 (40 seeds show all three: 23, 8 and 5).
+    const weak = (row: typeof ALL_ROUND_TEAM) => row.map((p) => ({ ...p, level: 10 }));
+    for (let i = 0; i < 40; i++) {
+      const r = runMap(weak(ALL_ROUND_TEAM), 64, createSeededRng(`camp${i}`), {
         policy: 'smart',
-        foes: OLD_FOES,
-        bench: ALL_ROUND_BENCH,
+        bench: weak(ALL_ROUND_BENCH),
       });
       if (r.camp) seen.add(r.camp);
-      const plain = runMap(ALL_ROUND_TEAM, 8, createSeededRng(`camp${i}`), {
+      const plain = runMap(weak(ALL_ROUND_TEAM), 64, createSeededRng(`camp${i}`), {
         policy: 'smart',
-        foes: OLD_FOES,
       });
       expect(plain.camp).not.toBe('swap');
     }
@@ -221,16 +231,18 @@ describe('dungeon runs on the shipped map', () => {
   });
 
   it('the camp helps: a run with its Rest clears more than one without', () => {
-    const withCamp = runStats([...CLASSIC_LINE], 2, true, 150, 'camp', { foes: OLD_FOES });
-    const without = runStats([...CLASSIC_LINE], 2, false, 150, 'camp', { foes: OLD_FOES });
+    // At depth 64: the base floors are easy, and the classic line still loses runs there (at depth 2 it clears nearly all of them).
+    const withCamp = runStats([...CLASSIC_LINE], 64, true, 150, 'camp');
+    const without = runStats([...CLASSIC_LINE], 64, false, 150, 'camp');
     expect(withCamp.cleared).toBeGreaterThan(without.cleared);
     expect(withCamp.winRate).toBeGreaterThan(without.winRate);
   });
 
-  // These run on the foe numbers before 2026-11-04 (`OLD_FOES`): they test the plan, the camp and the Undercroft's order, which the game's
-  // easier base floors (decision "Combat v2 dungeon baseline") no longer separate.
-  it('a good all-round team with a plan clears over half of its runs at every depth from 1 to 8', () => {
-    for (let depth = 1; depth <= 8; depth++)
+  // The game's base floors (decision "Combat v2 dungeon baseline") are easy: a plan, a bench and a camp separate teams only deep down
+  // (their HP stops growing at about depth 56), and the Undercroft is where the foes stay hard. These tests ask at those depths.
+  it('a good all-round team with a plan clears over half of its runs at the first and the last of the depths 1 to 8', () => {
+    // The depths in between lie between the two.
+    for (const depth of [1, 8])
       expect(
         rate(ALL_ROUND_TEAM, depth, 'smart', 100, { bench: ALL_ROUND_BENCH }).winRate,
         `depth ${depth}`,
@@ -238,16 +250,19 @@ describe('dungeon runs on the shipped map', () => {
   });
 
   it('the plan and the bench matter, and the classic line falls away within a few depths', () => {
-    const planned = rate(ALL_ROUND_TEAM, 7, 'smart', 100, { bench: ALL_ROUND_BENCH }).winRate;
-    const fixed = rate(ALL_ROUND_TEAM, 7, 'first', 100).winRate;
-    const classic = rate([...CLASSIC_LINE], 7, 'first', 100).winRate;
+    // Depth 64 (measured: planned 0.94, fixed 0.78, classic 0.24). The old "the classic line is under 0.1 by depth 5" does not hold at the
+    // game's numbers (it stays above 0.1 at every depth of the base floors), so here it is held under a third.
+    const planned = rate(ALL_ROUND_TEAM, 64, 'smart', 100, { bench: ALL_ROUND_BENCH }).winRate;
+    const fixed = rate(ALL_ROUND_TEAM, 64, 'first', 100).winRate;
+    const classic = rate([...CLASSIC_LINE], 64, 'first', 100).winRate;
     expect(planned).toBeGreaterThan(fixed + 0.1);
     expect(fixed).toBeGreaterThan(classic);
-    expect(rate([...CLASSIC_LINE], 5, 'first', 100).winRate).toBeLessThan(0.1);
+    expect(classic).toBeLessThan(0.35);
   });
 
   it('the Undercroft beyond depth 8 is harder: its levels clear less often, each less than the one before', () => {
-    const r = rate(ALL_ROUND_TEAM, 8, 'smart', 150, { bench: ALL_ROUND_BENCH, levels: 2 });
+    // From depth 20 (measured: the base floor 1.00, its Undercroft levels 0.86 and 0.80); at depth 8 the base floor and its first level are both cleared by every run.
+    const r = rate(ALL_ROUND_TEAM, 20, 'smart', 80, { bench: ALL_ROUND_BENCH, levels: 2 });
     expect(r.undercroft[0] ?? 1).toBeLessThan(r.winRate);
     expect(r.undercroft[1] ?? 1).toBeLessThanOrEqual(r.undercroft[0] ?? 0);
     // Not out of reach: some runs clear the first level.

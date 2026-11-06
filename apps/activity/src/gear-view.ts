@@ -18,7 +18,9 @@ import {
   expeditionContent,
   gearBase,
   gearLine,
+  gearLineHasV2Hook,
   gearSet,
+  setThreeText,
   jobDuration,
   jobHours,
   partsOfSpec,
@@ -31,6 +33,7 @@ import {
 } from '@creatures/game';
 import type { Creature } from './api';
 import { capitalize, creatureName, getSpecies } from './game';
+import { combatV2On } from './live-flags';
 import { percent } from './progress-math';
 import { formatDuration } from './time-format';
 import { destinationName, supplyName } from './trip-view';
@@ -113,12 +116,14 @@ export interface WornItem {
 }
 
 /**
- * Whether a line is a fight effect that combat v2 does not read yet: only a line's stat (Attack, HP, Speed, crit,
- * an Attunement, the item's own stats) counts (R12, `integration.md` section 2). A line that is no fight effect at all
- * (a trip or Workshop rule, a rest line) is not "not in the new rules": it works as it did.
+ * Whether a line is a fight effect that combat v2 does not read yet: a line's stat (Attack, HP, Speed, crit, an Attunement,
+ * the item's own stats) counts (R12, `integration.md` section 2), and so does every effect line with a v2 hook (`gearLineHasV2Hook`
+ * of the game package, gear plan slice 1). A line that is no fight effect at all (a trip or Workshop rule, a rest line) is not
+ * "not in the new rules": it works as it did.
  */
 export function isEffectLine(lineId: string): boolean {
   const kind = gearLine(lineId)?.effect.kind;
+  if (gearLineHasV2Hook(lineId)) return false;
   return (
     kind === 'hunter' ||
     kind === 'ward' ||
@@ -182,11 +187,24 @@ export interface SetBonusRow {
   active: boolean;
 }
 
+/**
+ * What a set's three pieces say: under combat v2 (`v2`, on when the server plays it) the five sets with a v2 effect read that
+ * effect's words, every other set its own.
+ */
+function threeText(set: GearSet, v2: boolean): string | undefined {
+  return v2 ? setThreeText(set) : set.three?.text;
+}
+
 /** The two bonus rows of a set for a wearer who has `count` of its pieces. */
-export function setBonusRows(set: GearSet, count: number): SetBonusRow[] {
+export function setBonusRows(
+  set: GearSet,
+  count: number,
+  v2: boolean = combatV2On(),
+): SetBonusRow[] {
+  const three = threeText(set, v2);
   return [
     { pieces: 2, text: set.two.text, active: count >= 2 },
-    { pieces: 3, text: set.three.text, active: count >= 3 },
+    ...(three === undefined ? [] : [{ pieces: 3 as const, text: three, active: count >= 3 }]),
   ];
 }
 
@@ -209,12 +227,16 @@ export function setPiecesWith(
  * pieces of, with the count and the bonus it gives ("Tidepool Finery 2 / 3: Steam bonus +8%"), separated by
  * dots. Empty when it has none. The server's fold does the real work; this only says what the content says.
  */
-export function activeSetLine(worn: readonly Pick<GearItem, 'baseId' | 'slot'>[]): string {
+export function activeSetLine(
+  worn: readonly Pick<GearItem, 'baseId' | 'slot'>[],
+  v2: boolean = combatV2On(),
+): string {
   const parts: string[] = [];
   for (const [id, count] of setCounts(worn)) {
     const set = gearSet(id);
     if (set === undefined || count < 2) continue;
-    const bonus = count >= 3 ? `${set.two.text}. ${set.three.text}` : set.two.text;
+    const three = threeText(set, v2);
+    const bonus = count >= 3 && three !== undefined ? `${set.two.text}. ${three}` : set.two.text;
     parts.push(`${set.name} ${setCountText(count)}: ${bonus}`);
   }
   return parts.join(' · ');

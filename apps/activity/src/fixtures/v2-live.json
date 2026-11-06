@@ -17,7 +17,7 @@
     "name": "Tidal Colossus",
     "element": "tide",
     "hpMax": 19300,
-    "hpStart": 4764
+    "hpStart": 2449
   },
   "bossDef": {
     "id": "tidal-colossus",
@@ -189,6 +189,7 @@
         "shape": "row",
         "silences": false,
         "oneShot": false,
+        "fizzles": false,
         "every": 3,
         "turn": 0,
         "windUp": false,
@@ -201,6 +202,7 @@
         "shape": "scatter",
         "silences": false,
         "oneShot": false,
+        "fizzles": false,
         "every": 2,
         "turn": 0,
         "windUp": false,
@@ -213,6 +215,7 @@
         "shape": "columns",
         "silences": false,
         "oneShot": false,
+        "fizzles": false,
         "every": 3,
         "turn": 1,
         "windUp": false,
@@ -225,6 +228,7 @@
         "shape": "columns",
         "silences": false,
         "oneShot": false,
+        "fizzles": false,
         "every": 4,
         "turn": 1,
         "windUp": true,
@@ -237,6 +241,7 @@
         "shape": "row",
         "silences": false,
         "oneShot": false,
+        "fizzles": false,
         "every": 6,
         "turn": 1,
         "windUp": true,
@@ -249,6 +254,7 @@
         "shape": "randomRow",
         "silences": false,
         "oneShot": false,
+        "fizzles": false,
         "every": 3,
         "turn": 2,
         "windUp": true,
@@ -261,6 +267,7 @@
         "shape": "rows",
         "silences": false,
         "oneShot": false,
+        "fizzles": false,
         "every": 7,
         "turn": 0,
         "windUp": false,
@@ -292,7 +299,7 @@
       "knackName": "Wide Reach",
       "talents": ["bright-boost"],
       "maxHp": 539,
-      "startHp": 148
+      "startHp": 118
     },
     {
       "key": "00000000-0000-4000-8700-000000000006",
@@ -308,7 +315,7 @@
       "knackName": "Detonate",
       "talents": ["slow-burn"],
       "maxHp": 420,
-      "startHp": 193
+      "startHp": 197
     },
     {
       "key": "00000000-0000-4000-8700-000000000007",
@@ -324,7 +331,7 @@
       "knackName": "Brand",
       "talents": ["hardy"],
       "maxHp": 597,
-      "startHp": 393
+      "startHp": 347
     },
     {
       "key": "00000000-0000-4000-8700-000000000012",
@@ -340,7 +347,7 @@
       "knackName": "Drizzle",
       "talents": ["unbothered"],
       "maxHp": 456,
-      "startHp": 94
+      "startHp": 132
     },
     {
       "key": "00000000-0000-4000-8700-000000000013",
@@ -356,7 +363,7 @@
       "knackName": "Draw Fire",
       "talents": ["hardy"],
       "maxHp": 657,
-      "startHp": 141
+      "startHp": 298
     }
   ],
   "names": {
@@ -443,7 +450,7 @@
       "board": {
         "type": "heal",
         "who": "00000000-0000-4000-8700-000000000006",
-        "amount": 23,
+        "amount": 27,
         "by": "00000000-0000-4000-8700-000000000012"
       }
     },
@@ -455,7 +462,7 @@
       "board": {
         "type": "heal",
         "who": "00000000-0000-4000-8700-000000000012",
-        "amount": 24,
+        "amount": 28,
         "by": "00000000-0000-4000-8700-000000000012"
       }
     },
@@ -577,7 +584,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000002",
         "to": null,
-        "damage": 181,
+        "damage": 214,
         "crit": true,
         "blocked": false,
         "dodged": false,
@@ -593,7 +600,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000007",
         "to": null,
-        "damage": 82,
+        "damage": 97,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -620,7 +627,7 @@
         "type": "hit",
         "from": "00000000-0000-4000-8700-000000000013",
         "to": null,
-        "damage": 22,
+        "damage": 26,
         "crit": false,
         "blocked": false,
         "dodged": false
@@ -773,24 +780,24 @@
       }
     }
   ],
-  "bossHp": 4764,
+  "bossHp": 2449,
   "carry": {
     "stage": 2,
-    "bossHp": 4764,
-    "shadowHp": 4764,
+    "bossHp": 2449,
+    "shadowHp": 2449,
     "hp": {
-      "00000000-0000-4000-8700-000000000002": 148,
-      "00000000-0000-4000-8700-000000000006": 193,
-      "00000000-0000-4000-8700-000000000007": 393,
-      "00000000-0000-4000-8700-000000000012": 94,
-      "00000000-0000-4000-8700-000000000013": 141
+      "00000000-0000-4000-8700-000000000002": 118,
+      "00000000-0000-4000-8700-000000000006": 197,
+      "00000000-0000-4000-8700-000000000007": 347,
+      "00000000-0000-4000-8700-000000000012": 132,
+      "00000000-0000-4000-8700-000000000013": 298
     },
     "out": [
+      "00000000-0000-4000-8700-000000000008",
       "00000000-0000-4000-8700-000000000010",
       "00000000-0000-4000-8700-000000000011",
       "00000000-0000-4000-8700-000000000001",
       "00000000-0000-4000-8700-000000000003",
-      "00000000-0000-4000-8700-000000000008",
       "00000000-0000-4000-8700-000000000009",
       "00000000-0000-4000-8700-000000000014"
     ],
@@ -801,17 +808,17 @@
       "fallStep": 3,
       "phase": false,
       "phaseNext": false,
-      "count": 7531
+      "count": 8731
     },
     "used": {
-      "ember": 3,
-      "tide": 2
+      "ember": 4,
+      "tide": 3
     },
     "dealt": {
-      "spark": 8435,
-      "tide": 2688,
-      "ember": 1232,
-      "grove": 2125
+      "spark": 9836,
+      "tide": 3314,
+      "ember": 1414,
+      "grove": 2221
     }
   },
   "watching": ["Player 1"],

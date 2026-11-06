@@ -425,21 +425,6 @@
     "worth": 2000
   },
   {
-    "id": "lingering",
-    "name": "Lingering",
-    "about": "The wearer's Rally, Shield Wall and Purge last 1 more round.",
-    "group": "role",
-    "effect": { "kind": "sheet", "field": "lingerRounds" },
-    "unit": "once",
-    "values": [1, 1, 1, 1, 1],
-    "single": true,
-    "minItemLevel": 15,
-    "minRarity": "epic",
-    "weights": { "hat": 0, "scarf": 0, "charm": 10 },
-    "roles": ["guard", "support"],
-    "worth": 300
-  },
-  {
     "id": "marked-foe",
     "name": "Marked foe",
     "about": "Hits on a marked foe that set off no reaction do more damage.",
@@ -749,19 +734,6 @@
     "worth": 1000
   },
   {
-    "id": "warm-heart",
-    "name": "Warm heart",
-    "about": "Chance at round start to give a neighbour's next hit a 10% boost.",
-    "group": "chance",
-    "effect": { "kind": "sheet", "field": "warmHeartBp" },
-    "unit": "chance",
-    "values": [400, 600, 800, 1000, 1200],
-    "minRarity": "rare",
-    "weights": { "hat": 0, "scarf": 8, "charm": 15 },
-    "roles": ["guard"],
-    "worth": 1000
-  },
-  {
     "id": "tinkers-luck",
     "name": "Tinker's luck",
     "about": "Chance a dismantle the wearer runs refunds the full craft cost.",
@@ -810,20 +782,6 @@
     "weights": { "hat": 0, "scarf": 0, "charm": 14 },
     "roles": ["support"],
     "worth": 300
-  },
-  {
-    "id": "opening-mark",
-    "name": "Opening mark",
-    "about": "Round 1: it marks the boss before the first blow, if nothing has.",
-    "group": "trigger",
-    "effect": { "kind": "sheet", "field": "openingMark" },
-    "unit": "once",
-    "values": [1, 1, 1, 1, 1],
-    "single": true,
-    "minRarity": "rare",
-    "weights": { "hat": 8, "scarf": 0, "charm": 8 },
-    "roles": ["setter"],
-    "worth": 150
   },
   {
     "id": "rally-cry",
@@ -901,18 +859,6 @@
     "weights": { "hat": 10, "scarf": 0, "charm": 12 },
     "roles": ["payoff"],
     "worth": 800
-  },
-  {
-    "id": "second-breath",
-    "name": "Second breath",
-    "about": "When overtime starts, it heals.",
-    "group": "trigger",
-    "effect": { "kind": "sheet", "field": "secondBreathBp" },
-    "unit": "pct",
-    "values": [300, 400, 600, 800, 1000],
-    "minRarity": "rare",
-    "weights": { "hat": 0, "scarf": 8, "charm": 10 },
-    "worth": 300
   },
   {
     "id": "patient",

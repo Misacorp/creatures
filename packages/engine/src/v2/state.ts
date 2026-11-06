@@ -74,8 +74,6 @@ export interface Mark {
   sealed: boolean;
   /** Left by Leave a Trail: a reaction on it leaves no further trail (the chain cap, R5). */
   fromTrail: boolean;
-  /** With Fizzle, a mark left by a reaction cannot be cashed until this many boss turns have passed. */
-  cashableAfterTurns: number;
   /** The boss turns done when a count was last added: "set this boss turn" means equal to now (Quick Draw). */
   turnSet: number;
   /** Creatures that left a count on it (Potent Mark). */
@@ -108,6 +106,8 @@ export interface State {
   round: number;
   turn: number;
   bossTurnsDone: number;
+  /** Fizzle: the boss is immune to reactions from the turn it fires until its next boss turn begins. */
+  fizzled: boolean;
   reflectArmed: boolean;
   /**
    * The boss's escalation (its Store, R22): units fed by events this stage, the units carried from earlier stages, the
@@ -227,6 +227,15 @@ export const roll = (s: State, bp: number) => bp > 0 && chance(s.rng, Math.min(b
 export const bump = (f: Fighter, key: keyof KnackFx) => {
   f.fires[key] = (f.fires[key] ?? 0) + 1;
 };
+/**
+ * Whether the gear trigger `key` of `f` may fire in `unit` (a round number, or a boss turn number plus one): at most once a unit, so an
+ * effect that fires outside the creature's own turn cannot pile up. Marks the unit used when it answers yes.
+ */
+export const onceIn = (f: Fighter, key: keyof KnackFx, unit: number): boolean => {
+  if (f.gearUnit[key] === unit) return false;
+  f.gearUnit[key] = unit;
+  return true;
+};
 export const log = (s: State, kind: string, text: string, extra: Partial<FightEvent> = {}) => {
   if (s.opts.log) s.events.push({ round: s.round, turn: s.turn, kind, text, ...extra });
 };
@@ -268,6 +277,12 @@ export function applyActions(s: State): void {
   s.shieldRows = rows;
   s.purged = purged;
 }
+
+/** `o`'s next hit gets `bp` more (inside the hit-bonus cap), given by `by` (`o` itself for a self boost); the board is told. */
+export const boostNext = (s: State, o: Fighter, by: Fighter, bp: number): void => {
+  o.boostBp += bp;
+  if (s.opts.log && bp > 0) emit(s, { type: 'boost', who: keyOf(o), by: keyOf(by), bp });
+};
 
 /** A creature's Store set to `value`, shown on the board when it changed. */
 export const setStore = (s: State, f: Fighter, value: number) => {

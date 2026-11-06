@@ -122,7 +122,11 @@ describe('the effects the engine rule tests name directly (the catalogue gives t
 
   it('the rule cards put their rule on the boss', () => {
     const b = labBoss({ rows: 1, cols: 1 });
-    expect(card('fizzle').apply(b).mods.fizzle).toBe(true);
+    expect(
+      card('fizzle')
+        .apply(b)
+        .moves.some((m) => m.fizzles === true),
+    ).toBe(true);
     expect(card('clean-scales').apply(b).mods.shedMarks).toBe(true);
     expect(card('shake-it-off').apply(b).mods.shakeEvery).toBeGreaterThan(0);
     expect(card('reflective-hide').apply(b).mods.reflectFirst).toBe(true);
@@ -238,6 +242,7 @@ describe('R11 and line talent pools (Misa, 2026-10-27)', () => {
     expect(knacksOf('tidewing')).toEqual([
       'steady-mark',
       'lead-the-way',
+      'pin-down',
       'double-mark',
       'circle-round',
     ]);

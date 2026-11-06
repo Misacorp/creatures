@@ -6,6 +6,7 @@
 import { content } from './content';
 import { dungeonContent, dungeonEvents, dungeonKeepsakes } from './content/dungeon';
 import { gearContent } from './content/gear';
+import { SET_THREE_V2, setThreeText } from './rules/gear-fx';
 import { GOAL_RISKS, SUPPLY_KINDS } from './content/expedition-schema';
 import { GEAR_RARITIES, GEAR_SLOTS } from './content/gear-schema';
 import glossaryJson from './content/data/glossary.json';
@@ -56,22 +57,29 @@ const ROLE_NAMES: Readonly<Record<string, string>> = {
  * One entry for every gear set, written from the set's own content so the numbers stay true: what two
  * and three pieces give, and who can wear it.
  */
-function gearSetEntries(): unknown[] {
-  return gearContent.sets.map((set) => ({
-    id: `gear-set-${set.id}`,
-    title: set.name,
-    short: 'A Hat, a Scarf and a Charm worn by one creature.',
-    lines: [
-      `2 pieces: ${set.two.text}.`,
-      `3 pieces: ${set.three.text}`,
-      set.tag === 'festival'
-        ? 'Won by clearing a Festival finale. It cannot be crafted.'
-        : ROLE_NAMES[set.tag] !== undefined
-          ? `Only a ${ROLE_NAMES[set.tag] as string} can wear these pieces.`
-          : 'Any creature can wear these pieces.',
-    ],
-    section: 'gear',
-  }));
+function gearSetEntries(v2 = false): unknown[] {
+  return gearContent.sets
+    .filter((set) => !v2 || Object.hasOwn(SET_THREE_V2, set.id))
+    .map((set) => ({
+      id: `${v2 ? 'v2-' : ''}gear-set-${set.id}`,
+      title: set.name,
+      short: 'A Hat, a Scarf and a Charm worn by one creature.',
+      lines: [
+        `2 pieces: ${set.two.text}.`,
+        ...(set.three === undefined
+          ? []
+          : // A v2 text can be long: one line per sentence (a glossary line holds 120 characters).
+            (v2 ? (setThreeText(set) ?? set.three.text).split(/(?<=\.) /) : [set.three.text]).map(
+              (sentence, i) => (i === 0 ? `3 pieces: ${sentence}` : sentence),
+            )),
+        set.tag === 'festival'
+          ? 'Won by clearing a Festival finale. It cannot be crafted.'
+          : ROLE_NAMES[set.tag] !== undefined
+            ? `Only a ${ROLE_NAMES[set.tag] as string} can wear these pieces.`
+            : 'Any creature can wear these pieces.',
+      ],
+      section: 'gear',
+    }));
 }
 
 export const glossary: Glossary = loadGlossary(
@@ -81,6 +89,8 @@ export const glossary: Glossary = loadGlossary(
     ...(glossaryV2Json as unknown[]),
     ...gearLineEntries(),
     ...gearSetEntries(),
+    // The five sets with a combat v2 effect of their own: the entry the Activity opens instead while the server plays v2.
+    ...gearSetEntries(true),
   ],
   content,
 );
@@ -311,6 +321,9 @@ export const V2_COUNTERPARTS: Readonly<Record<string, string>> = {
   adaptation: 'v2-resistance',
   'creature-ability': 'v2-knack',
   level: 'v2-level',
+  ...Object.fromEntries(
+    Object.keys(SET_THREE_V2).map((id) => [`gear-set-${id}`, `v2-gear-set-${id}`] as const),
+  ),
 };
 
 /** A glossary entry as a popover view; with `v2` (the server plays combat v2), the entry's v2 counterpart where it has one. */

@@ -2,6 +2,7 @@
   "payoffMultBp": 20000,
   "maxBonusFactorBp": 30000,
   "maxStacks": 3,
+  "overstackCapPerStackBp": 10000,
   "dodgePerSpdBp": 10,
   "dodgeMaxBp": 5000,
   "areaDodgeShareBp": 5000,

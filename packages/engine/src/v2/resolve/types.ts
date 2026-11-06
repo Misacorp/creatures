@@ -4,6 +4,7 @@
  * (`CombatV2Pack` from `@creatures/game/combat-v2`; a type import only, so the engine does not load the data).
  */
 import type { Role } from '../types';
+import type { KnackFx } from '../effects';
 
 /** A shipped species (`content.creatures`). */
 export interface ShippedSpecies {
@@ -55,6 +56,13 @@ export interface Placement {
    * for it). Default none: the lab plays no golden talents.
    */
   readonly goldenTalents?: readonly string[];
+  /**
+   * The effect lines of the creature's worn gear (`gearFx` of the game package), as one effect sheet. It joins the Knack and talents in
+   * `fxAll` only, so silence blanks it (R12); its Armour (a stat line) stays in `fxStat`. The gear's plain stat lines (Attack, HP, Speed,
+   * crit) are the caller's to add to the fighter. Absent or empty changes nothing. A `retaliateBp` here and a Knack's make one counter
+   * with the larger chance (gear plan OPEN 3).
+   */
+  readonly gear?: KnackFx;
   readonly row: number;
   readonly col: number;
 }

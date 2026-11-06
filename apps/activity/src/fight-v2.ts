@@ -110,6 +110,8 @@ export interface BoardState {
   /** The marks that will be shed by the boss's next turn (a boss that sheds, shown just before it). */
   expiring: readonly string[];
   mired: number;
+  /** Fizzle: the boss is immune to reactions until its next turn. */
+  fizzled: boolean;
   escalation: EscalationState | null;
   resistance: { reaction: string | null; element: string | null } | null;
   announced: readonly AnnouncedMove[];
@@ -133,6 +135,7 @@ export function startState(setup: FoldSetup): BoardState {
     marks: [],
     expiring: [],
     mired: 0,
+    fizzled: false,
     escalation:
       setup.escalationStep === null
         ? null
@@ -278,6 +281,9 @@ function play(
     case 'mired':
       s.mired = b.stacks;
       break;
+    case 'fizzle':
+      if (b.state !== 'blocked') s.fizzled = b.state === 'on';
+      break;
     case 'escalation':
       s.escalation = {
         count: b.count,
@@ -382,7 +388,14 @@ export function buildBeats(
       starts.push({ from: i, kind: 'boss', round, row: b.row, actor: null });
     } else if (b.type === 'end') {
       starts.push({ from: i, kind: 'end', round, row: 0, actor: null });
-    } else if (b.type === 'hit' && b.from !== null && b.to === null && rows.has(b.from)) {
+    } else if (
+      b.type === 'hit' &&
+      b.from !== null &&
+      b.to === null &&
+      b.bonus !== true &&
+      rows.has(b.from)
+    ) {
+      // (A bonus that lands as its own hit, Aftershock's, is the same creature's turn: it stays in the beat of the hit before it.)
       let from = i;
       while (from > 0 && from - 1 > (last?.from ?? -1) && isLead(events[from - 1] as FightEvent))
         from--;
@@ -597,6 +610,8 @@ export function showOf(
       }
       case 'counter':
         flash.add(null);
+        // A counter that is its Knack's own effect (Backlash) names the Knack on its tile, as a heal or a boost does.
+        if (b.byKnack === true && !knackOwners.has(b.from)) knackOwners.set(b.from, i);
         floats.push({
           i,
           target: null,
@@ -627,8 +642,50 @@ export function showOf(
       case 'intercept':
         saves.push({ i, guard: b.guard, who: b.who, prevented: null });
         break;
+      case 'sure':
+        // The boss cannot dodge `who` this round: nothing on the board changes, so the Knack that did it is named on its tile.
+        if (!knackOwners.has(b.by)) knackOwners.set(b.by, i);
+        break;
+      case 'mired':
+        // Shake It Off: the boss clears its Mired. The same callout a reaction uses, in no element's colours.
+        if (b.shook !== undefined && b.shook > 0)
+          floats.push({
+            i,
+            target: null,
+            text: 'Shakes it off!',
+            tone: 'reaction',
+            crit: false,
+            drift: drift(i),
+            sub: `-${String(b.shook)} Mired`,
+          });
+        break;
+      case 'fizzle':
+        // Fizzle: the boss turns reactions away. The same callout a reaction uses, in no element's colours.
+        if (b.state === 'on')
+          floats.push({
+            i,
+            target: null,
+            text: 'Fizzle!',
+            tone: 'reaction',
+            crit: false,
+            drift: drift(i),
+            sub: 'No reactions',
+          });
+        else if (b.state === 'blocked')
+          floats.push({
+            i,
+            target: null,
+            text: 'Fizzled!',
+            tone: 'reaction',
+            crit: false,
+            drift: drift(i),
+            sub: 'Mark kept',
+          });
+        break;
       case 'cover':
         saves.push({ i, guard: b.guard, who: b.who, prevented: b.prevented });
+        // Cool Head's ward is a Knack's own effect: its name pops on the Guard's tile (a plain cover has none).
+        if (b.byKnack === true && !knackOwners.has(b.guard)) knackOwners.set(b.guard, i);
         break;
       case 'knockout':
         knockedOut.push({ i, who: b.who });
@@ -647,7 +704,8 @@ export function showOf(
           tone: 'reaction',
           crit: false,
           drift: drift(i),
-          sub: `+${String(b.bonus)}`,
+          // Aftershock's bonus lands as its own hit after this one, with its own number, so the callout leaves it out.
+          ...(b.split === true ? {} : { sub: `+${String(b.bonus)}` }),
           ...(trigger === undefined ? {} : { elements: [b.mark, trigger] as const }),
         };
         floats.push(cue);

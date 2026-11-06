@@ -1,5 +1,5 @@
 {
-  "scale": { "hpBp": 12650, "atkBp": 225000 },
+  "scale": { "hpBp": 10600, "atkBp": 225000 },
   "curve": { "hpStepBp": 200, "hpCurveBp": 0, "atkStepBp": 0, "atkCurveBp": 0 },
   "undercroft": {
     "scale": { "hpBp": 20700, "atkBp": 225000 },
@@ -12,7 +12,15 @@
       "plain": { "pattern": { "anchor": "random", "shape": "scatter", "n": 4 }, "powerBp": 4500 },
       "moves": [],
       "cards": [],
-      "asks": "A Barrage of small splashes on four different creatures: they are area hits, so a Guard's cover turns them down (dodge only half as often); armour only wears them down."
+      "escalation": {
+        "name": "Rising Puddle",
+        "feed": "rounds",
+        "per": 1,
+        "cap": 3,
+        "grow": { "hits": 2 }
+      },
+      "asks": "Each round it splashes twice more, every splash on a different creature: they are area hits, so a Guard's cover turns them down (dodge only half as often); armour only wears them down.",
+      "hpBp": 14000
     },
     {
       "id": "drift-wisp",
@@ -63,7 +71,15 @@
       "plain": { "pattern": { "anchor": "front", "shape": "line3" }, "powerBp": 8000 },
       "moves": [],
       "cards": ["fizzle"],
-      "asks": "Ash settles on a mark made by a reaction, so it cannot be cashed at once, and the fight is long: a Guard that builds Heat doubles a reaction every few rounds."
+      "escalation": {
+        "name": "Hardening Ash",
+        "feed": "rounds",
+        "per": 1,
+        "cap": 3,
+        "grow": { "armour": 50 }
+      },
+      "asks": "The ash hardens every round, so small hits fall off it soon: hit it early, and let a Guard that builds Heat double a reaction to get through later. Every second round it fizzles: until its next turn a reaction on it fails and keeps the mark.",
+      "hpBp": 16000
     },
     {
       "id": "bramble-hound",
@@ -119,7 +135,15 @@
       "plain": { "pattern": { "anchor": "front", "shape": "single" }, "powerBp": 8000 },
       "moves": [{ "id": "mud-spit", "every": 2, "turn": 0, "powerBp": 9000, "n": 1 }],
       "cards": ["shake-it-off"],
-      "asks": "It washes every debuff off itself every third round: a Mired that comes back every round holds it down."
+      "escalation": {
+        "name": "Swelling Croak",
+        "feed": "rounds",
+        "per": 1,
+        "cap": 3,
+        "grow": { "atkBp": 5000 }
+      },
+      "asks": "It swells bigger every round, and it washes every debuff off itself every third round: Mire the toad again every round and it swells slower.",
+      "hpBp": 15000
     },
     {
       "id": "tar-leech",

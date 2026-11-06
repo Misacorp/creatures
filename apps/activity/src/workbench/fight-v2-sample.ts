@@ -6,6 +6,7 @@
 import { content, createSeededRng, dungeonContent } from '@creatures/game';
 import { combatV2, knownKnacks, moveLabel } from '@creatures/game/combat-v2';
 import {
+  applyCards,
   createResolver,
   stageV2,
   startCarry,
@@ -59,9 +60,35 @@ const MIXED_BY_ROW: readonly (readonly string[])[] = [
   ['lanternfin', 'tempestray', 'sunfawn', 'cindle'],
 ];
 
-/** The knack a sample creature takes: the first its form knows, except a Payoff that takes the one that cashes marks. */
-const knackOf = (species: string, row: number): string | undefined =>
-  knownKnacks(species)[row === 2 ? 0 : 0];
+/**
+ * The party of the second answers (2026-11-05): a Setter with Pin Down and a Payoff after it, a Setter and Detonators behind it, a
+ * Backlash Payoff and Squelch Song Supports, for the boss that sheds its marks, caps a hit and shakes off its Mired
+ * (`ANSWERS_CARDS`). The Knack of each creature is named by species and row.
+ */
+const ANSWERS_BY_ROW: readonly (readonly string[])[] = [
+  ['splashet', 'tempestray', 'voltaro', 'bloomback'],
+  ['thornbuck', 'gaiadrake', 'thornbuck', 'splashet'],
+  ['croakmire', 'sunfawn', 'croakmire', 'kilnmole'],
+];
+
+/** The Knack the party of the second answers gives a species (the first its form knows for the others). */
+const ANSWERS_KNACKS: Readonly<Record<string, string>> = {
+  splashet: 'pin-down',
+  bloomback: 'aftershock',
+  gaiadrake: 'backlash',
+  croakmire: 'squelch-song',
+  tempestray: 'detonate',
+  thornbuck: 'cool-head',
+};
+
+/** The cards the party of the second answers meets on top of the slot's own: marks are shed, a hit is capped. */
+export const ANSWERS_CARDS: readonly string[] = ['clean-scales', 'stone-skin'];
+
+/** The knack a sample creature takes: the first its form knows (the party of the second answers has its own). */
+const knackOf = (species: string, party: 'rows' | 'mixed' | 'answers'): string | undefined =>
+  party === 'answers' && Object.hasOwn(ANSWERS_KNACKS, species)
+    ? ANSWERS_KNACKS[species]
+    : knownKnacks(species)[0];
 
 export interface FightSampleOptions {
   /** The track's slot (the Boss Rank). */
@@ -74,8 +101,8 @@ export interface FightSampleOptions {
   seed: string;
   /** Level of every creature. */
   level?: number;
-  /** `mixed`: Guards and Supports stand among the Setters and Payoffs (default: a role to a row). */
-  party?: 'rows' | 'mixed';
+  /** `mixed`: Guards and Supports stand among the Setters and Payoffs (default: a role to a row); `answers`: the party of the second answers, against a boss that also sheds marks and caps a hit. */
+  party?: 'rows' | 'mixed' | 'answers';
   /** The finale's live inputs (stage 3). */
   actions?: readonly FinaleAction[];
 }
@@ -88,14 +115,17 @@ export function sampleFighters(
   boss: BossDef,
   players: number,
   level: number,
-  party: 'rows' | 'mixed' = 'rows',
+  party: 'rows' | 'mixed' | 'answers' = 'rows',
 ): FighterSpec[] {
   const out: FighterSpec[] = [];
   for (let p = 0; p < players; p++) {
     for (let r = 0; r < Math.min(3, boss.rows); r++) {
-      const options = (party === 'mixed' ? MIXED_BY_ROW : BY_ROW)[r] ?? BY_ROW[0] ?? [];
+      const options =
+        (party === 'answers' ? ANSWERS_BY_ROW : party === 'mixed' ? MIXED_BY_ROW : BY_ROW)[r] ??
+        BY_ROW[0] ??
+        [];
       const species = options[p % options.length] ?? 'splashet';
-      const knack = knackOf(species, r);
+      const knack = knackOf(species, party);
       out.push({
         ...resolver.resolve({
           owner: aliasOf(p),
@@ -124,13 +154,21 @@ export function cardOfBoss(boss: BossDef, carry: StageCarry | null): BossCardV2V
     const shape = def?.shape ?? m.pattern.shape;
     const silences = def?.silences ?? m.silenceTurns !== undefined;
     const oneShot = def?.oneShot === true || m.oneShotBp !== undefined;
+    const fizzles = def?.fizzles === true || m.fizzles === true;
     return {
       id: m.id,
       name: m.name,
-      label: moveLabel({ shape, anchor: def?.anchor ?? m.pattern.anchor, silences, oneShot }),
+      label: moveLabel({
+        shape,
+        anchor: def?.anchor ?? m.pattern.anchor,
+        silences,
+        oneShot,
+        fizzles,
+      }),
       shape,
       silences,
       oneShot,
+      fizzles,
       every: m.every,
       turn: Math.min(m.turn ?? last, last),
       windUp: m.charged === true,
@@ -218,7 +256,14 @@ export interface FightSample {
 /** Plays the stages up to `o.stage` and returns the last one. */
 export function playSample(o: FightSampleOptions): FightSample {
   const players = Math.max(1, o.players);
-  const boss = trackBoss(combatV2, SHIPPED, o.slot, { players, followSmallParty: true });
+  const slotBoss = trackBoss(combatV2, SHIPPED, o.slot, { players, followSmallParty: true });
+  const boss =
+    o.party === 'answers'
+      ? {
+          ...applyCards(combatV2, slotBoss, ANSWERS_CARDS, slotBoss.strengthBp),
+          cards: [...slotBoss.cards, ...ANSWERS_CARDS],
+        }
+      : slotBoss;
   const fighters = sampleFighters(boss, players, o.level ?? 20, o.party ?? 'rows');
   let carry = startCarry(boss);
   let shown: FightSample | null = null;

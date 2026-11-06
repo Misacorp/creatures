@@ -4,6 +4,19 @@ Roadmap calls, Misa's standing direction, naming and tone, content policy, how a
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-05: [Misa] Working rules: scalars best-guess and ask later, invent content for misses, fewer decisions for Misa
+
+ID: `2026-11-05-working-rules-scalars-best-guess-and` · Status: current
+
+**Decision.** Agents move forward on their own and keep Misa's decisions to the large direction.
+
+- **Scalars:** when unsure about a number, take the best pick and ask Misa later whether it is good. Every scalar lives in one place (`RULES`, a data file, `targets.ts`), never copied, so a change he wants in the morning is one edit.
+- **Balance misses:** an agent may invent new Knacks, talents and gear lines to work around a miss. Each must add or change a game mechanic or chain off an existing one, not just boost a number, and a review panel judges whether it is fun before it is measured and applied.
+- **Direction stays Misa's:** a boss's identity, a new system, or a rule players must learn is a question before acting; everything else is decided, recorded, and listed for him to glance at (`docs/design/combat/for-misa.md`).
+- **Procedures are kept as skills** so they are not reinvented: the `balance-miss` skill (`.claude/skills/balance-miss/SKILL.md`) holds this one.
+
+**Reasoning.** Misa (2026-11-05): "if you're unsure about some scalar, just take your best pick and ask me later if it's good. A scalar variable is easier to change if it lives in a single place so if I wake up in the morning and don't like something, there's a good chance we can tweak by changing scalars. … I'm really looking forward to just seeing everything in here making it to the main game so the less decisions I have to make the better, but I do want to control the larger direction. As a tool to work around any misses in balance, you can always invent new knacks, talents and gear lines. Ask a review panel if they seem like fun (add or change a game mechanic or chain off an existing one, not just provide number boosts). … Maintain your own skills or procedures for this type of work so you don't have to reinvent it every time."
+
 ## 2026-11-05: [Misa] CI runs the full check; agents push after quick local checks
 
 ID: `2026-11-05-ci-runs-the-full-check-agents` · Status: current

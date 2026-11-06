@@ -9,6 +9,7 @@
  * happens below, so a safe player's gain does not depend on the descent rule: the report reads "never goes down" and "sure" from the same runs
  * (a test holds that the rule changes nothing before the boss falls).
  */
+import { combatV2 } from '@creatures/game/combat-v2';
 import type { LevelLog } from './dungeon';
 import {
   dungeonDaysOf,
@@ -70,8 +71,8 @@ export const SCENARIOS: readonly Scenario[] = [
   },
   {
     id: 'base55-u1',
-    note: 'alias of shipped: base 55% HP, nearly flat (+2% a depth); Undercroft U1: 90% HP, +3% a depth and +0.02% a depth squared',
-    foes: { base: flat(12_650), undercroft: U1 },
+    note: 'alias of shipped: the game’s base HP, nearly flat (+2% a depth); Undercroft U1: 90% HP, +3% a depth and +0.02% a depth squared',
+    foes: { base: flat(combatV2.foeScale.hpBp), undercroft: U1 },
   },
   {
     id: 'base65-u1',
@@ -342,14 +343,16 @@ export interface DungeonDaysJobArgs {
   readonly stepBack?: number;
   /** A tool of the Undercroft report (`undercroftToolSet.ts`), played on top of the scenario. */
   readonly tool?: string;
+  /** Play with gear (`gear.ts`). Absent: no gear; the job id is then what it always was. */
+  readonly gear?: boolean;
 }
 
 export const dungeonDaysJobId = (a: DungeonDaysJobArgs): string =>
-  `dungeon-days:${a.scenario}:${a.server}:${a.speed}:${a.index}${a.stepBack ? `:back${a.stepBack}` : ''}${a.tool ? `:tool-${a.tool}` : ''}`;
+  `dungeon-days:${a.scenario}:${a.server}:${a.speed}:${a.index}${a.stepBack ? `:back${a.stepBack}` : ''}${a.tool ? `:tool-${a.tool}` : ''}${a.gear ? ':gear' : ''}`;
 
 /** The play of the report: the safe player who goes down only when sure (and the probe), at a scenario's foe numbers. */
 export const configOf = (
-  a: Pick<DungeonDaysJobArgs, 'scenario' | 'stepBack' | 'tool'>,
+  a: Pick<DungeonDaysJobArgs, 'scenario' | 'stepBack' | 'tool' | 'gear'>,
 ): DaysConfig => {
   const s = scenarioOf(a.scenario);
   return {
@@ -359,6 +362,7 @@ export const configOf = (
     ...(s.foes ? { foes: s.foes } : {}),
     ...(a.stepBack ? { stepBack: a.stepBack } : {}),
     ...(a.tool ? toolOf(a.tool).config : {}),
+    ...(a.gear ? { gear: true } : {}),
   };
 };
 
@@ -381,6 +385,8 @@ export interface DungeonDaysOptions {
   readonly rewards?: boolean;
   /** Also play a safe player who steps back this many depths after a wipe (a reward-only replay). */
   readonly stepBack?: number;
+  /** Everyone plays with gear at the roster's item level (`gear.ts`). Default off. */
+  readonly gear?: boolean;
 }
 
 export interface DungeonDaysReport {
@@ -402,6 +408,7 @@ export function planDungeonDays(options: DungeonDaysOptions): Plan<DungeonDaysRe
           index,
           scenario,
           ...(options.stepBack ? { stepBack: options.stepBack } : {}),
+          ...(options.gear ? { gear: true } : {}),
         })),
       ),
     ),
@@ -435,6 +442,7 @@ export function planDungeonDays(options: DungeonDaysOptions): Plan<DungeonDaysRe
                     index,
                     scenario,
                     ...(options.stepBack ? { stepBack: options.stepBack } : {}),
+                    ...(options.gear ? { gear: true } : {}),
                   }),
                 ) as PlayerDays[],
             ).flat(),

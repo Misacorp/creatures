@@ -23,6 +23,7 @@ import type {
 } from '../src/dungeon-types';
 import { isStoredV2, type RoomResultV2, type StoredFightV2 } from '../src/dungeon-v2';
 import { grantFirstTalent } from '../src/talent-v2-store';
+import { giveItem } from './gear-helpers';
 import { scaleV2Foes } from './dungeon-v2-reads';
 import {
   dungeonPlayer,
@@ -415,6 +416,90 @@ describe('a v2 day: rooms, a knock-out, the camp swap, the floor boss', () => {
         expect(rested.body.state.team.find((m) => m.id === a)?.hp).toBeGreaterThan(0);
       },
       V2('v2-day-knockout'),
+    );
+  });
+
+  it('a Between-room Rest scarf heals a standing creature before the next room, and a fallen one stays down', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await dungeonPlayer(ctx, 1, FOUR);
+        giveV2(ctx, p.id);
+        ctx.clock.t = AFTER_RESET;
+        const [a, b, c] = p.creatureIds as [string, string, string, string];
+        // A rest scarf (tier III: 4% of max HP) on the first creature and one on the fallen third; the second wears none.
+        for (const id of [a, c]) {
+          const scarf = giveItem(ctx.sql, p.id, 'patch-scarf', {
+            rarity: 'rare',
+            level: 20,
+            lines: [['between-room-rest', 2]],
+          });
+          ctx.sql.exec('UPDATE gear_items SET equipped_on = ? WHERE id = ?', id, scarf);
+        }
+        const state = await begin(p, { team: [a, b, c] });
+        const st = stored(ctx, state.id);
+        expect(st.v).toBe(2);
+        // The run keeps the rest the way the v1 run does: by creature id, in basis points.
+        expect(st.input.rest).toEqual({ [a]: 400, [c]: 400 });
+        const route = routeThrough(state.map, (n) => n.kind === 'camp') as string[];
+        const kindOf = (id: string) => state.map.nodes.find((n) => n.id === id)?.kind;
+        const fights = route.filter((id) => kindOf(id) === 'fight');
+        const last = route.indexOf(fights.at(-1) as string);
+        const before = await walk(
+          p,
+          state,
+          route,
+          (s) => s.path.length === last && s.pending === null,
+        );
+        const max = (id: string) => stored(ctx, before.id).hpMax[id] ?? 0;
+        patchState(ctx, before.id, (s) => {
+          s.hp = { [a]: Math.floor(max(a) / 2), [b]: Math.floor(max(b) / 2), [c]: 0 };
+        });
+        const moved = await p.act(before, { type: 'move', node: route[last] as string });
+        expect(moved.status, JSON.stringify(moved.body)).toBe(200);
+        const room = moved.body.room as DungeonReplayRoomV2;
+        // The scarf's creature starts the room with its share more; the one without it as it was left; the fallen one at 0.
+        expect(room.hpStart[a]).toBe(Math.floor(max(a) / 2) + Math.floor((max(a) * 400) / 10_000));
+        expect(room.hpStart[b]).toBe(Math.floor(max(b) / 2));
+        expect(room.hpStart[c]).toBe(0);
+      },
+      V2('v2-rest'),
+    );
+  });
+
+  it('a Between-room Rest never carries a creature above its max HP', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await dungeonPlayer(ctx, 1, FOUR);
+        giveV2(ctx, p.id);
+        ctx.clock.t = AFTER_RESET;
+        const [a, b, c] = p.creatureIds as [string, string, string, string];
+        const scarf = giveItem(ctx.sql, p.id, 'patch-scarf', {
+          rarity: 'rare',
+          level: 20,
+          lines: [['between-room-rest', 4]],
+        });
+        ctx.sql.exec('UPDATE gear_items SET equipped_on = ? WHERE id = ?', a, scarf);
+        const state = await begin(p, { team: [a, b, c] });
+        const route = routeThrough(state.map, (n) => n.kind === 'camp') as string[];
+        const kindOf = (id: string) => state.map.nodes.find((n) => n.id === id)?.kind;
+        const last = route.indexOf(route.filter((id) => kindOf(id) === 'fight').at(-1) as string);
+        const before = await walk(
+          p,
+          state,
+          route,
+          (s) => s.path.length === last && s.pending === null,
+        );
+        const max = stored(ctx, before.id).hpMax[a] ?? 0;
+        // One point short of full: the rest fills it and no more.
+        patchState(ctx, before.id, (s) => {
+          s.hp = { ...s.hp, [a]: max - 1 };
+        });
+        const moved = await p.act(before, { type: 'move', node: route[last] as string });
+        expect((moved.body.room as DungeonReplayRoomV2).hpStart[a]).toBe(max);
+      },
+      V2('v2-rest-cap'),
     );
   });
 

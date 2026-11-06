@@ -25,9 +25,9 @@
         "stats": [
           {
             "stat": "atk",
-            "value": 2,
+            "value": 6,
             "base": 2,
-            "text": "Attack 2"
+            "text": "Attack 6"
           },
           {
             "stat": "hp",
@@ -38,10 +38,10 @@
         ],
         "lines": [
           {
-            "id": "tide-reaction",
-            "name": "Steam bonus",
-            "text": "Steam bonus +9%",
-            "about": "The bonus of the reaction Tide creatures set off is bigger.",
+            "id": "ember-hunter",
+            "name": "Ember Hunter",
+            "text": "Ember Hunter +7%",
+            "about": "More damage to bosses and foes that Ember is strong against.",
             "source": "rolled",
             "tier": 2,
             "bestTier": 1,
@@ -49,14 +49,14 @@
             "active": true
           },
           {
-            "id": "edge-walker",
-            "name": "Edge-walker",
-            "text": "Edge-walker +4%",
-            "about": "More Attack at either end of its row.",
+            "id": "attack-local-flat",
+            "name": "Attack",
+            "text": "+4 Attack (this item)",
+            "about": "Adds Attack to this item before its percentages (not the creature's).",
             "source": "rolled",
             "tier": 2,
             "bestTier": 1,
-            "local": false,
+            "local": true,
             "active": true
           }
         ],
@@ -102,9 +102,9 @@
         "stats": [
           {
             "stat": "hp",
-            "value": 12,
+            "value": 37,
             "base": 12,
-            "text": "HP 12"
+            "text": "HP 37"
           },
           {
             "stat": "atk",
@@ -115,14 +115,14 @@
         ],
         "lines": [
           {
-            "id": "tide-ward",
-            "name": "Tide Ward",
-            "text": "Tide Ward −7%",
-            "about": "Less damage from the foes that beat Tide.",
+            "id": "hp-local-flat",
+            "name": "HP",
+            "text": "+25 HP (this item)",
+            "about": "Adds HP to this item before its percentages (not the creature's).",
             "source": "rolled",
             "tier": 2,
             "bestTier": 1,
-            "local": false,
+            "local": true,
             "active": true
           },
           {
@@ -137,10 +137,10 @@
             "active": false
           },
           {
-            "id": "ember-ward",
-            "name": "Ember Ward",
-            "text": "Ember Ward −7%",
-            "about": "Less damage from the foes that beat Ember.",
+            "id": "front-liner",
+            "name": "Front-liner",
+            "text": "Front-liner −4%",
+            "about": "Takes less damage from every hit while in the Front row.",
             "source": "rolled",
             "tier": 2,
             "bestTier": 1,
@@ -360,7 +360,7 @@
         },
         "statsWithGear": {
           "hp": 148,
-          "atk": 63,
+          "atk": 67,
           "spd": 42
         },
         "dodgeBp": 0,
@@ -451,7 +451,7 @@
           "spd": 23
         },
         "statsWithGear": {
-          "hp": 249,
+          "hp": 274,
           "atk": 30,
           "spd": 23
         },

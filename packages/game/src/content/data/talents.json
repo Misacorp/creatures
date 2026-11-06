@@ -696,8 +696,8 @@
     "aurorix": {
       "id": "watcher-above",
       "name": "Watcher Above",
-      "effect": { "line": "lingering" },
-      "value": 1
+      "effect": { "line": "mend" },
+      "value": 300
     },
     "lanternfin": {
       "id": "guiding-light",
@@ -708,8 +708,8 @@
     "hearthshell": {
       "id": "fire-that-lasts",
       "name": "Fire That Lasts",
-      "effect": { "line": "lingering" },
-      "value": 1
+      "effect": { "line": "cover" },
+      "value": 900
     }
   },
   "deferred": [

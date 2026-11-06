@@ -222,7 +222,7 @@ describe('loading talent content', () => {
     (effect.pools.splashet[0] as { effect: unknown }).effect = { line: 'not-a-line' };
     expect(() => load(effect)).toThrow(/unknown line/);
     const once = raw();
-    once.signatures.aurorix.value = 2;
+    once.signatures.gaiadrake.value = 2;
     expect(() => load(once)).toThrow(/once-only/);
     const extra = raw();
     (extra.pools.splashet[0] as Record<string, unknown>)['extra'] = 1;
@@ -329,7 +329,7 @@ describe('the size of a talent', () => {
     // Speed is the dodge now (docs/design/speed-and-dodge.md): the card says so.
     expect(talentText(def('zoomies'), false).about).toBe('Dodges more often.');
     expect(talentText(def('easily-distracted'), true).text).toBe('Glimmer finds +37%');
-    expect(talentText(def('watcher-above'), false).text).toBe('Lingering');
+    expect(talentText(def('watcher-above'), false).text).toBe('Mend +3%');
     expect(talentUnit(def('zoomies'))).toBe('pct');
     for (const t of talentContent.byId.values()) {
       expect(talentText(t, false).about.length, t.id).toBeGreaterThan(0);
@@ -467,9 +467,11 @@ describe('folding talents like gear', () => {
     ).toEqual(['mossy-shoulders']);
   });
 
-  it('gives the signature talents their effect: Lingering and Unbothered', () => {
-    const lingering = wornEffects(support, [], [foldTalent(def('watcher-above'), false)]);
-    expect(lingering.mods.lingerRounds).toBe(1);
+  it('gives the signature talents their effect: Mend, Cover and Unbothered (Lingering is retired)', () => {
+    const watcher = wornEffects(support, [], [foldTalent(def('watcher-above'), false)]);
+    expect(watcher.mods.mendBp).toBe(300);
+    const fire = wornEffects(guard, [], [foldTalent(def('fire-that-lasts'), false)]);
+    expect(fire.mods.coverBp).toBe(900);
     const unbothered = wornEffects(payoff, [], [foldTalent(def('impossible-to-stop'), false)]);
     expect(unbothered.mods.ignoreSilence).toBe(1);
   });

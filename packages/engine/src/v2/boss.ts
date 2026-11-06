@@ -18,8 +18,22 @@ const { AIMED, beside, inReach, targetsOf } = boardMod;
 const { addMark } = marksMod;
 const { feed, grown, miredCut, movesOf } = escalationMod;
 const { critWardOf, dodgeOf, gainSureCrit, takeHit } = takingMod;
-const { alive, best, bump, emit, fx, keyOf, log, roll, setStore, silenced, strengthOf, strong } =
-  stateMod;
+const {
+  alive,
+  best,
+  boostNext,
+  bump,
+  emit,
+  fx,
+  keyOf,
+  log,
+  onceIn,
+  roll,
+  setStore,
+  silenced,
+  strengthOf,
+  strong,
+} = stateMod;
 
 /**
  * One move or plain attack lands. A Charged move lands on the creatures shown at round start and never re-aims (a
@@ -131,6 +145,14 @@ function bossHits(
       // Momentum: its next hit deals more. Perfect Timing: it stores a Sure Crit.
       if (k.momentumBp) t.momentum = true;
       if (k.dodgeCritBp) gainSureCrit(s, t, 'dodgeCritBp');
+      // Slipstream (gear): the strongest creature beside it gets a boost, once a boss turn.
+      if (k.slipstreamBp && onceIn(t, 'slipstreamBp', s.bossTurnsDone + 1)) {
+        const next = best(beside(s, t), (a, b) => b.atk - a.atk || a.col - b.col);
+        if (next) {
+          boostNext(s, next, t, k.slipstreamBp);
+          bump(t, 'slipstreamBp');
+        }
+      }
       continue;
     }
     // Only if the dodge failed: a Guard in reach intercepts, if the hit is one it may take.
@@ -206,11 +228,27 @@ function bossHits(
     // A boss crit (R7.1): rolled for each hit that lands on a creature, after the dodge and the intercept and before the cuts
     // and the armour, so Cool Head, the cover, Brace and armour all work on the doubled hit. A one-shot never crits.
     let crit = false;
+    let spared: Fighter | undefined;
     if (!move.oneShotBp && proposed > 0 && roll(s, s.boss.critChanceBp ?? 0)) {
       crit = true;
-      const ward = critWardOf(s, taker);
-      proposed += Math.floor((proposed * (R.critBp - 10_000) * (10_000 - ward)) / 1e8);
+      const { ward, by } = critWardOf(s, taker);
+      const extra = Math.floor((proposed * (R.critBp - 10_000)) / 1e4);
+      const kept = Math.floor((proposed * (R.critBp - 10_000) * (10_000 - ward)) / 1e8);
+      proposed += kept;
       if (s.opts.log) log(s, 'boss-crit', `${s.boss.name} crits ${taker.name}`);
+      if (ward > 0 && by) {
+        // A fully spared crit is shown as a plain hit, and the Guard's save as a cover beat (Cool Head).
+        if (ward >= 10_000) crit = false;
+        if (s.opts.log && extra > kept)
+          emit(s, {
+            type: 'cover',
+            guard: keyOf(by),
+            who: keyOf(taker),
+            prevented: extra - kept,
+            byKnack: true,
+          });
+        if (fx(by).critWardSure) spared = by;
+      }
     }
     takeHit(
       s,
@@ -221,6 +259,14 @@ function bossHits(
       watched,
       crit,
     );
+    // Payback (gear): a creature that took a hit for a neighbour hits harder next, once a boss turn.
+    const payback = fx(taker).paybackBp;
+    if (payback && taker !== t && taker.hp > 0 && onceIn(taker, 'paybackBp', s.bossTurnsDone + 1)) {
+      boostNext(s, taker, taker, payback);
+      bump(taker, 'paybackBp');
+    }
+    // Cool Head: each crit it spared stores a Sure Crit on the creature it was aimed at, if that one still stands and is not silenced.
+    if (spared && t.hp > 0 && !silenced(t)) gainSureCrit(s, t, 'critWardSure', spared);
   }
 }
 
@@ -230,10 +276,26 @@ export function bossTurn(s: State, turn: number): void {
   const ageAtStart = s.markAge;
   const last = s.boss.rows - 1;
   if (s.opts.log) emit(s, { type: 'bossTurn', row: turn });
+  // Fizzle's immunity ends as the boss's next turn begins.
+  if (s.fizzled) {
+    s.fizzled = false;
+    if (s.opts.log) emit(s, { type: 'fizzle', state: 'off' });
+  }
   for (const m of movesOf(s)) {
     if (s.bossHp <= 0) return;
     if (s.round % m.every === 0 && (m.turn ?? last) === turn) {
       if (s.opts.log) log(s, 'move', m.name);
+      if (m.fizzles) {
+        // Fizzle deals no damage and has no targets: the boss is immune to reactions until its next turn (the strength's share of the times).
+        if (strong(s, m.strengthBp ?? strengthOf(s))) {
+          s.fizzled = true;
+          if (s.opts.log)
+            log(s, 'fizzle', `${s.boss.name} fizzles: reactions fail until its next turn`, {
+              board: { type: 'fizzle', state: 'on' },
+            });
+        }
+        continue;
+      }
       bossHits(s, m, false);
     }
   }
@@ -256,6 +318,17 @@ export function bossTurn(s: State, turn: number): void {
         shed.push(el);
       }
     if (s.opts.log && shed.length > 0) emit(s, { type: 'shed', marks: shed });
+    // Backlash: the first time the boss sheds a mark in a round, each creature that has it strikes back, once a round (not once per
+    // stack, per mark or per boss turn, so copies and Heavy Prime stacks do not multiply it).
+    if (shed.length > 0 && s.carries.has('backlashBp'))
+      for (const o of alive(s)) {
+        const bp = fx(o).backlashBp;
+        if (!bp || o.lastBacklashRound === s.round) continue;
+        o.lastBacklashRound = s.round;
+        counter(s, o, bp, true);
+        bump(o, 'backlashBp');
+        if (s.bossHp <= 0) return;
+      }
   }
   s.bossTurnsDone++;
   s.reflectArmed = true;

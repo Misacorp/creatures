@@ -6,7 +6,7 @@
     },
     {
       "name": "Lead",
-      "text": "Boosts the next creature after it marks."
+      "text": "Helps the next creature in its row after it marks."
     },
     {
       "name": "Heavy Prime",
@@ -31,6 +31,10 @@
     {
       "name": "Chain",
       "text": "After a reaction, leaves a mark of its own element."
+    },
+    {
+      "name": "Punish the clear",
+      "text": "Strikes back when the boss clears what is on it."
     },
     {
       "name": "Flurry",
@@ -109,6 +113,16 @@
       }
     },
     {
+      "id": "backlash",
+      "name": "Backlash",
+      "family": "Punish the clear",
+      "text": "When the boss sheds a {Mark}, this creature strikes back for 20% of its Attack, ignoring armour. Once a round.",
+      "intent": "Answers marks that are shed (Clean Scales) without a Seal: an unsealed Setter's mark can cross a boss turn, and the Payoff punishes the clearing. A counter, not a hit: no crit, it ignores armour and dodge. It fires once a round per creature, on the first shed, however many marks or stacks go, so copies and Heavy Prime stacks do not pile it up. It stays below Brand on every stack of cards measured.",
+      "fx": {
+        "backlashBp": 2000
+      }
+    },
+    {
       "id": "lead-the-way",
       "name": "Lead the Way",
       "family": "Lead",
@@ -116,6 +130,16 @@
       "intent": "Rewards placing the Payoff right after the Setter in a row.",
       "fx": {
         "leadBoostBp": 2000
+      }
+    },
+    {
+      "id": "pin-down",
+      "name": "Pin Down",
+      "family": "Lead",
+      "text": "After it leaves a {Mark}, the boss cannot dodge the next creature to act in its row this round.",
+      "intent": "Answers dodge (Elusive, Slippery): the Setter's hit may miss, its mark still lands, and the hit after it cannot. It trades away Lead the Way's boost and Brand's Seal, so the Setter's pick is a real choice. One flag, cleared every round, so copies do not stack.",
+      "fx": {
+        "leadUndodge": true
       }
     },
     {
@@ -180,6 +204,18 @@
       "fx": {
         "spendAllBp": 7500,
         "bonusBp": 7500
+      }
+    },
+    {
+      "id": "aftershock",
+      "name": "Aftershock",
+      "family": "Detonator",
+      "text": "{Spend}s all the stacks of the mark it cashes, with a smaller bonus than Detonate. A hit cap holds its hit and its bonus apart.",
+      "intent": "The Detonator's answer to a hit cap (Stone Skin): the reaction's bonus lands as a second hit, each held to the cap on its own. Its bonus is 90% of Detonate's, so on a boss with no cap Detonate is still the better pick.",
+      "fx": {
+        "spendAllBp": 7500,
+        "bonusBp": 6750,
+        "splitBonus": true
       }
     },
     {
@@ -549,10 +585,11 @@
       "id": "cool-head",
       "name": "Cool Head",
       "family": "Luck",
-      "text": "{Crit}s on it and on the creatures {Beside} it deal no extra damage.",
-      "intent": "The answer to a boss that crits (Double Strike): a Guard that keeps a crit to a plain hit for itself and its neighbours (2026-10-31: at half it was tied with no Knack on every card but Double Strike, and barely ahead there). Nothing against a boss that never crits.",
+      "text": "{Crit}s on it and on the creatures {Beside} it deal no extra damage; each crit it spares stores a {Sure Crit} on the creature it was aimed at.",
+      "intent": "The answer to a boss that crits (Double Strike): a Guard that keeps a crit to a plain hit for itself and its neighbours, and turns each spared crit into a Sure Crit for the creature it was aimed at, so it asks for a Payoff beside the Guard. A Sure Crit deals the spender's own crit extra (a Perfect Timing creature's is 3x). Nothing against a boss that never crits (2026-10-31: at half the ward alone was tied with no Knack on every card but Double Strike).",
       "fx": {
-        "critWardBp": 10000
+        "critWardBp": 10000,
+        "critWardSure": true
       }
     }
   ]

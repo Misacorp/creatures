@@ -12,11 +12,10 @@
  * creature of its row, as the boss's row-end silence counts them. Pure, deterministic, no randomness.
  */
 import type { CritBonus, Element, Stats, Zone } from '../content/schema';
-import { gearLine, gearSet } from '../content/gear';
+import { gearLine } from '../content/gear';
 import {
   applyGear,
   itemLines,
-  setCounts,
   type FoldTalent,
   type GearItem,
   type GearMods,
@@ -78,18 +77,9 @@ export function lanternGift(items: readonly GearItem[]): number {
   return total;
 }
 
-/** True when the items complete a set whose full bonus is a Shield Wall gift to the row (Lantern Night). */
-export function giftsShieldWall(items: readonly GearItem[]): boolean {
-  for (const [id, count] of setCounts(items)) {
-    if (count >= 3 && gearSet(id)?.three.effect === 'rowShieldWall') return true;
-  }
-  return false;
-}
-
 /** True when a creature's own position lines or a gift from its row can change its fold. */
 function matters(kit: FoldKit, placement: Placement): boolean {
   if (placement.lanternHpBp > 0) return true;
-  if (placement.rowShieldWall > 0 && kit.wearer.role === 'guard') return true;
   return kit.items.some((item) =>
     item.lines.some((l) => {
       const kind = gearLine(l.id)?.effect.kind;
@@ -114,7 +104,6 @@ function placementOf(
   );
   let lantern = 0;
   for (const i of sides) lantern += lanternGift(members[i]?.kit?.items ?? []);
-  const wall = row.some((i) => giftsShieldWall(members[i]?.kit?.items ?? []));
   return {
     index: at,
     length: row.length,
@@ -122,7 +111,6 @@ function placementOf(
     beside: sides.map((i) => (members[i] as RowMember).element),
     rowElements: row.map((i) => (members[i] as RowMember).element),
     lanternHpBp: lantern,
-    rowShieldWall: wall ? 1 : 0,
   };
 }
 

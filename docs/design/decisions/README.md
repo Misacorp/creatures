@@ -23,6 +23,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [direction.md](direction.md): Roadmap calls, Misa's standing direction, naming and tone, content policy, how agents and Misa work.
 
+- 2026-11-05 \[Misa\] Working rules: scalars best-guess and ask later, invent content for misses, fewer decisions for Misa
 - 2026-11-05 \[Misa\] CI runs the full check; agents push after quick local checks
 - 2026-11-03 \[Misa\] Valley art goes straight onto the valley branch, not through main
 - 2026-11-03 Sprites up to 128 wide; free backdrop art may have no outline
@@ -49,6 +50,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [platform.md](platform.md): Hosting, Durable Objects, scheduling, CI and deploys, staging, dependencies, security, database reads, data cleanup, analytics, dev tools, the workbench, player feedback, sockets.
 
+- 2026-11-05 The lab's tests share modules between files, and boss rule measurements live in the report
 - 2026-11-03 Raid test bench: the staging raid dev tools become four steps \[Misa\]
 - 2026-11-03 The resource library: one data file names every resource
 - 2026-10-30 Prettier's cache, and a cleanup script for agent worktrees
@@ -141,6 +143,14 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [combat.md](combat.md): The shared combat engine, abilities, statuses, elements, the balance simulator, balance passes, and combat v2 in the lab.
 
+- 2026-11-06 \[Misa\] Fizzle becomes a telegraphed boss move: immune to reactions every second turn
+- 2026-11-06 Lab gate: dead Knacks are read on the track's weekends too
+- 2026-11-06 Combat v2: Cool Head turns a spared crit into a Sure Crit
+- 2026-11-06 Combat v2 second answers: answers by Knack id, Pin Down, Backlash, Aftershock, and what stays one-answer
+- 2026-11-05 Combat v2: the track's tuned table reaches slot 24
+- 2026-11-05 \[Misa\] Combat v2 balance pass: slots 3 and 5 eased, Determination 15% a stack, Night Watch on Hearthshell, the casual miss kept
+- 2026-11-05 Lab foe questions test the game's v2 dungeon foes again
+- 2026-11-05 Combat v2 phase 5 step 5: the gate report and known misses (amended)
 - 2026-11-04 Combat v2 phase 5 step 3: the dungeon over days in the lab
 - 2026-11-04 \[Misa\] Combat v2 phase 5: weekly players replace 3 in 10, and Misa's server mix
 - 2026-11-04 \[Misa\] Combat v2 small raid parties: curve only, no mechanics
@@ -292,6 +302,7 @@ Superseded: 1 entry (see the topic file).
 
 [dungeon.md](dungeon.md): The daily dungeon: paths, rooms and rare rooms, the camp, the Undercroft, foes, its screens and payouts.
 
+- 2026-11-06 Combat v2 dungeon: Puddle Imp, Ash Sprite and Bog Toad ask their questions
 - 2026-11-05 \[Misa\] The Undercroft curve stays; the skill tree and gear are the tools past depth 40
 - 2026-11-05 Combat v2 dungeon XP: about 120 a run, a step at each landmark; more gear \[Misa\]
 - 2026-11-05 Combat v2 dungeon depth picker built: any unlocked depth, progress only at the current depth (amended)
@@ -370,6 +381,12 @@ Superseded: 1 entry (see the topic file).
 
 [gear.md](gear.md): Gear items, lines and sets, crafting, dismantling, conversions, the bag and the item picker.
 
+- 2026-11-06 Three-piece sets on combat v2 and Deep Tracks \[Misa\]
+- 2026-11-06 \[Misa\] Gear and cards: Lingering and three lines retired, weak lines buffed, Shake It Off and Wither accepted
+- 2026-11-06 Combat v2 gear slice 4: triggers, auras and three-piece sets
+- 2026-11-06 Combat v2 gear slice 3: new effects for the cut and condition lines
+- 2026-11-06 Combat v2 gear slice 2: the lab plays gear
+- 2026-11-06 Combat v2 gear effect lines, slice 1: the sheet and the lines with an existing effect
 - 2026-11-05 \[Misa\] Rarity is shown by the frame's shape too, and every item's spoken name says it
 - 2026-11-04 \[Misa\] A hidden best-of gear roller: roll X to Y, keep the best N to M
 - 2026-11-03 \[Misa\] Element shards differ by shape (Tide drop, Ember flame, Grove leaf, Spark bolt, Mire drip)

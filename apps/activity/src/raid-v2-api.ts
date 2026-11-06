@@ -27,6 +27,8 @@ export interface BossMoveV2 {
   shape: string;
   silences: boolean;
   oneShot: boolean;
+  /** Fizzle: no targets; the boss is immune to reactions until its next turn. */
+  fizzles: boolean;
   /** Due every this many rounds. */
   every: number;
   /** The boss turn it lands on (0 is after row 1). */
@@ -133,6 +135,7 @@ const isMove = (value: unknown): value is BossMoveV2 =>
   isStr(value['shape']) &&
   isBool(value['silences']) &&
   isBool(value['oneShot']) &&
+  isBool(value['fizzles']) &&
   isCount(value['every']) &&
   isCount(value['turn']) &&
   isBool(value['windUp']) &&

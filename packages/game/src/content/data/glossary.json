@@ -913,7 +913,7 @@
     "title": "Charm",
     "short": "Opens at creature level 13. Roles, reactions and trips.",
     "lines": [
-      "Only Charms roll Cover, Boost, Lingering and the trip lines.",
+      "Only Charms roll Cover, Boost and the trip lines.",
       "A few Charms are made for one role and can only be worn by it."
     ],
     "section": "gear"
@@ -1151,7 +1151,7 @@
     "title": "Epic gear",
     "short": "A base stat or line and 3 rolled lines.",
     "lines": [
-      "Can also roll Lingering and Unbothered at item level 15 or more.",
+      "Can also roll Unbothered at item level 15 or more.",
       "Dismantling Epic gear can give glimmer."
     ],
     "section": "gear"

@@ -55,7 +55,7 @@ export function gearLinesOf(
 ): GearStats {
   const items = wornItems(worn);
   // Nothing worn adds nothing (and the creature's stats need not be worked out: a level above its cap is the page's to show).
-  if (items.length === 0) return { ...NO_GEAR };
+  if (items.length === 0) return { ...NO_GEAR, fx: {} };
   return gearStatLines({
     stats: effectiveStats(species, level, fusionCount),
     crit: species.crit,

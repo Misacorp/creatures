@@ -12,8 +12,9 @@
  *   elite's or an epic fight's boost scales the foe's HP and Attack as in v1.
  * - **Numbers folded in:** the room modifier's, then the keepsakes' and curses' plain number effects (team Attack,
  *   HP and Speed, team crit, foe HP and Attack), as in v1. A modifier's foe gimmick (v1 foe move) has no v2
- *   counterpart and does nothing. Weather, the Scarf's rest, finale abilities, gear effect lines and fusion do nothing.
- * - **Between rooms only HP carries** (R14). A knocked-out creature (0 HP) is left out of every later room until a
+ *   counterpart and does nothing. Weather, finale abilities, gear effect lines with no v2 hook yet and fusion do nothing.
+ * - **Between rooms only HP carries** (R14), and a Scarf's Between-room Rest (`RunState.input.rest`, the share of max HP a standing
+ *   creature recovers before each room) is added to it, never above max. A knocked-out creature (0 HP) is left out of every later room until a
  *   camp swap sends it away; the camp's rest never raises it.
  * - **Stored** in `dungeon_steps` (`StoredFightV2`): the room's `FightInputV2` (it cannot hold the carried HP, a
  *   Map, so `hpIn` is beside it), what to show of the room, and the result (`RoomResultV2`) with the board events.
@@ -190,7 +191,17 @@ export function playRoomV2(
   });
   const hpMax = Object.fromEntries(team.map((t) => [t.id, t.spec.maxHp]));
   const hpStart = Object.fromEntries(
-    team.map((t) => [t.id, Math.min(hpMax[t.id] ?? 0, carried?.[t.id] ?? hpMax[t.id] ?? 0)]),
+    team.map((t) => {
+      const max = hpMax[t.id] ?? 0;
+      const held = Math.min(max, carried?.[t.id] ?? max);
+      // Between-room Rest: a creature that stands (and has fought before) recovers its share of max HP; a fallen one stays down.
+      const rest = st.input.rest?.[t.id] ?? 0;
+      const rested =
+        carried?.[t.id] !== undefined && held > 0 && rest > 0
+          ? Math.min(max, held + Math.floor((max * rest) / 10_000))
+          : held;
+      return [t.id, rested];
+    }),
   );
   const standing = team.filter((t) => (hpStart[t.id] ?? 0) > 0);
   const hpIn = carried === null ? null : { ...carried };
