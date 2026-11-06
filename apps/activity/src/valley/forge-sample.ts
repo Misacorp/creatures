@@ -44,6 +44,7 @@ export function sampleAnvil(
     id,
     creatureId,
     kit: null,
+    paused: null,
     mastery: { hours: 40, step: 0, bonusBp: 0 },
     orders: [...orders],
     piece:

@@ -989,7 +989,8 @@ export class ValleySettle {
       const hours = worker?.smith_hours ?? 0;
       const kit = anvilKitOfRow(a.kit_id);
       const mine = orders.filter((o) => o.seat_id === a.seat_id);
-      const reason = worker === undefined ? null : a.wait_reason;
+      const reason =
+        worker === undefined || input.paused.has(worker.id) ? null : a.wait_reason;
       const current = mine.find((o) => o.for_team === 1 || o.made < o.count);
       const plain = anvilSpeed(rules, hours, kit, 0);
       const speed = anvilSpeed(

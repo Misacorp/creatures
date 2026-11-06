@@ -25,7 +25,7 @@ import { plateGap, roamPlan, standSpots } from './place-plates';
 import { frontProps, propDepth } from './place-props';
 import { useRoamers } from './use-roamers';
 import { depthOf } from './valley-logic';
-import { placeOf, type Rect } from './valley-art';
+import { WARMING_FLAME, placeOf, type Rect } from './valley-art';
 import type { MapName } from './valley-places';
 
 /** The sprite each scene stands its place's art from. */
@@ -49,7 +49,10 @@ const LIFTED_Z = PLATES_Z - 1;
 const TICK_MS = 125;
 
 /** The popover's facts of one of the player's own creatures (its name as text, its species' element and role). */
-function infoOf(c: Creature): CreatureInfo {
+/** What a scene draws of a creature: the player's own, or (at the Bonfire) another online player's, which has no page of its own here. */
+export type StandCreature = Pick<Creature, 'id' | 'species' | 'level' | 'shiny' | 'nickname'>;
+
+function infoOf(c: StandCreature, owner?: string): CreatureInfo {
   const species = getSpecies(c.species);
   return {
     name: creatureName(c),
@@ -58,7 +61,8 @@ function infoOf(c: Creature): CreatureInfo {
     element: species?.element ?? 'unknown',
     role: species?.role ?? '',
     shiny: c.shiny,
-    creatureId: c.id,
+    // Another player's creature has no page to open and says whose it is.
+    ...(owner === undefined ? { creatureId: c.id } : { ownerName: owner }),
   };
 }
 
@@ -156,8 +160,10 @@ export function Stander({
   g,
   hand,
   gain,
+  owner,
+  warm = false,
 }: {
-  creature: Creature;
+  creature: StandCreature;
   x: number;
   y: number;
   flip: boolean;
@@ -167,14 +173,18 @@ export function Stander({
   hand?: Hand;
   /** The experience it gained this visit, "+N" on its nameplate (the Bonfire's resting creatures). */
   gain?: number;
+  /** Another online player's creature (the Bonfire, V-BON-4): their name on its nameplate. */
+  owner?: string;
+  /** It is catching up toward the server (V-BON-2): a small flame over it. */
+  warm?: boolean;
 }) {
-  const info = infoOf(creature);
+  const info = infoOf(creature, owner);
   const button = (
     <SmallCreature
       info={info}
       id={`scene-${creature.id}`}
       class="vy-stand-btn"
-      label={`${info.name}, level ${String(info.level)}, ${label}`}
+      label={`${info.name}, level ${String(info.level)}${owner === undefined ? '' : `, ${owner}'s`}, ${label}${warm ? ', warming up' : ''}`}
     >
       <CreatureSprite creature={creature} scale={g.s} flip={flip} />
     </SmallCreature>
@@ -194,6 +204,11 @@ export function Stander({
             {button}
           </Draggable>
         )}
+        {warm && (
+          <span class="vy-flame" aria-hidden="true">
+            <Pic sprite={WARMING_FLAME} scale={g.s} />
+          </span>
+        )}
       </At>
       {/* The nameplate, always shown under the feet (level first, in yellow, then the name): on a layer above every creature so a neighbour never hides it, in the creatures' own depth order. */}
       <At
@@ -202,7 +217,7 @@ export function Stander({
         class="vy-feet-plate"
         z={PLATES_Z + depthOf(x, y)}
       >
-        <Nameplate size="sm" level={info.level} gain={gain}>
+        <Nameplate size="sm" level={info.level} gain={gain} owner={owner}>
           {info.name}
         </Nameplate>
       </At>

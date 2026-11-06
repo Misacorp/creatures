@@ -35,6 +35,7 @@ const visitOf = (list: typeof creatures, at = HOME_NOW): ValleyVisit => ({
     catchUpBp: 10000,
     seatId: null,
   })),
+  online: [],
   allowance: { store: 0, cap: 480, brought: 0 },
   seats: [],
   anvils: [],

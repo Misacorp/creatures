@@ -680,6 +680,7 @@ describe('the valley block of the state (VALLEY_SYSTEMS)', () => {
     arrived: true,
     awayHours: 2,
     creatures: [{ id: 'c1', state: 'resting', gained: 30, catchUpBp: 10000, seatId: null }],
+    online: [],
     allowance: { store: 4, cap: 480, brought: 100 },
     seats: [],
     anvils: [],

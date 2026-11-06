@@ -15,16 +15,23 @@ import { Stander } from './PlaceScene';
 import { SceneFrame } from './SceneFrame';
 import { At } from './parts';
 import {
+  atTheFire,
   bonfireCalm,
   fireSpots,
   moreSpot,
-  firesideOf,
   moreCount,
   moreLabel,
   restingOf,
+  visitorsOf,
 } from './bonfire-cast';
 import { placeArtBox, placeScale, placeSceneDraw } from './place-scene';
 import { bonfireName } from './valley-places';
+
+/** One creature's line in the list of everyone resting: its XP this visit, and that it is warming up while it catches up. */
+function restingNote(gained: number, warm: boolean): string {
+  const xp = gained > 0 ? `+${String(gained)} XP this visit` : 'Resting';
+  return warm ? `${xp}, warming up` : xp;
+}
 
 /** CSS px at the bottom of the scene the pinned line takes: creatures keep clear of it. */
 const ACT_CSS = 72;
@@ -44,7 +51,11 @@ export function BonfireScene({
   const [all, setAll] = useState(false);
   const art = bonfireName(level);
   const resting = useMemo(() => restingOf(creatures, visit), [creatures, visit]);
-  const fireside = useMemo(() => firesideOf(resting, visit.settledAt), [resting, visit]);
+  const visitors = useMemo(() => visitorsOf(visit), [visit]);
+  const fireside = useMemo(
+    () => atTheFire(resting, visitors, visit.settledAt),
+    [resting, visitors, visit],
+  );
   const calm = bonfireCalm(resting);
   const draw = useMemo(() => placeSceneDraw(art), [art]);
   return (
@@ -61,7 +72,8 @@ export function BonfireScene({
           const box = placeArtBox(g, art);
           const scene = { W: g.W, H: g.H - Math.ceil(ACT_CSS / g.s), s: g.s, top: g.top };
           const spots = fireSpots(fireside, box, scene);
-          const more = moreCount(resting.length, spots.length);
+          // "+N more" counts the player's own resting creatures that did not get a seat (a visitor's seat is not one of them).
+          const more = moreCount(resting.length, spots.filter((s) => s.owner === undefined).length);
           return (
             <>
               {spots.map((spot) => (
@@ -74,6 +86,8 @@ export function BonfireScene({
                   label={spot.where}
                   g={g}
                   gain={spot.gained}
+                  warm={spot.warm}
+                  {...(spot.owner === undefined ? {} : { owner: spot.owner })}
                 />
               ))}
               {more > 0 && (
@@ -111,7 +125,7 @@ export function BonfireScene({
         <CreatureList
           options={resting.map((r) => ({
             ...baseOption(r.creature),
-            note: r.gained > 0 ? `+${String(r.gained)} XP this visit` : 'Resting',
+            note: restingNote(r.gained, r.warm),
           }))}
           selection={{ mode: 'show', label: 'Resting creatures' }}
           chips={false}
