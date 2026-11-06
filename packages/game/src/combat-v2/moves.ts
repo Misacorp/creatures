@@ -53,6 +53,8 @@ export const MoveSchema = v.pipe(
     silences: v.boolean(),
     /** A one-shot (Judgement Bolt): a share of the victim's Max HP instead of Attack x power (a usage then brings `oneShotBp`). */
     oneShot: v.exactOptional(v.boolean()),
+    /** Fizzle: no hit and no targets; the boss is immune to reactions from this turn until its next one (a usage brings only its rhythm). */
+    fizzles: v.exactOptional(v.boolean()),
   }),
   v.readonly(),
 );
@@ -77,9 +79,10 @@ const TARGET_WORD: Readonly<Record<MoveDef['anchor'], string>> = {
  * that belongs to the boss. Two moves with the same label are one behaviour.
  */
 export function moveLabel(
-  move: Pick<MoveDef, 'shape' | 'anchor' | 'silences' | 'oneShot'>,
+  move: Pick<MoveDef, 'shape' | 'anchor' | 'silences' | 'oneShot' | 'fizzles'>,
 ): string {
   if (move.oneShot === true) return 'One-shot';
+  if (move.fizzles === true) return 'No reactions';
   const target = TARGET_WORD[move.anchor];
   switch (move.shape) {
     case 'single':

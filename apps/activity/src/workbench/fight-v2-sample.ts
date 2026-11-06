@@ -154,13 +154,21 @@ export function cardOfBoss(boss: BossDef, carry: StageCarry | null): BossCardV2V
     const shape = def?.shape ?? m.pattern.shape;
     const silences = def?.silences ?? m.silenceTurns !== undefined;
     const oneShot = def?.oneShot === true || m.oneShotBp !== undefined;
+    const fizzles = def?.fizzles === true || m.fizzles === true;
     return {
       id: m.id,
       name: m.name,
-      label: moveLabel({ shape, anchor: def?.anchor ?? m.pattern.anchor, silences, oneShot }),
+      label: moveLabel({
+        shape,
+        anchor: def?.anchor ?? m.pattern.anchor,
+        silences,
+        oneShot,
+        fizzles,
+      }),
       shape,
       silences,
       oneShot,
+      fizzles,
       every: m.every,
       turn: Math.min(m.turn ?? last, last),
       windUp: m.charged === true,

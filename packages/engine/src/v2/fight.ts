@@ -141,6 +141,7 @@ export function startState(
     round: 0,
     turn: 0,
     bossTurnsDone: 0,
+    fizzled: false,
     // Reflective Hide arms after each boss turn, so not before the first one.
     reflectArmed: false,
     esc: {

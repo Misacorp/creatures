@@ -110,6 +110,8 @@ export interface BoardState {
   /** The marks that will be shed by the boss's next turn (a boss that sheds, shown just before it). */
   expiring: readonly string[];
   mired: number;
+  /** Fizzle: the boss is immune to reactions until its next turn. */
+  fizzled: boolean;
   escalation: EscalationState | null;
   resistance: { reaction: string | null; element: string | null } | null;
   announced: readonly AnnouncedMove[];
@@ -133,6 +135,7 @@ export function startState(setup: FoldSetup): BoardState {
     marks: [],
     expiring: [],
     mired: 0,
+    fizzled: false,
     escalation:
       setup.escalationStep === null
         ? null
@@ -277,6 +280,9 @@ function play(
     }
     case 'mired':
       s.mired = b.stacks;
+      break;
+    case 'fizzle':
+      if (b.state !== 'blocked') s.fizzled = b.state === 'on';
       break;
     case 'escalation':
       s.escalation = {
@@ -651,6 +657,29 @@ export function showOf(
             crit: false,
             drift: drift(i),
             sub: `-${String(b.shook)} Mired`,
+          });
+        break;
+      case 'fizzle':
+        // Fizzle: the boss turns reactions away. The same callout a reaction uses, in no element's colours.
+        if (b.state === 'on')
+          floats.push({
+            i,
+            target: null,
+            text: 'Fizzle!',
+            tone: 'reaction',
+            crit: false,
+            drift: drift(i),
+            sub: 'No reactions',
+          });
+        else if (b.state === 'blocked')
+          floats.push({
+            i,
+            target: null,
+            text: 'Fizzled!',
+            tone: 'reaction',
+            crit: false,
+            drift: drift(i),
+            sub: 'Mark kept',
           });
         break;
       case 'cover':

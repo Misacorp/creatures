@@ -158,7 +158,7 @@ export interface LitMove {
 /** The slots a move would hit now, from the week's preview. A move the preview does not know lights nothing and is "aimed when it comes". */
 export function litMove(
   preview: MovePreviewV2 | null,
-  move: Pick<BossMoveV2, 'id' | 'shape' | 'silences' | 'oneShot'>,
+  move: Pick<BossMoveV2, 'id' | 'shape' | 'silences' | 'oneShot' | 'fizzles'>,
 ): LitMove {
   const slots = preview?.moves[move.id];
   return { slots: slots ?? null, glyph: moveGlyphId(move) };
@@ -183,6 +183,9 @@ export const everyShort = (every: number): string =>
 
 /** The line under the board for a tapped move that has no slots yet. */
 export const AIMED_WHEN_IT_COMES = 'Aimed when it comes';
+
+/** The line under the board for a tapped Fizzle: it hits nobody; it turns reactions away. */
+export const NO_TARGETS = 'Hits nobody: reactions fail until its next turn';
 
 // --- Swap requests ---
 

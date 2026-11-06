@@ -492,7 +492,6 @@ const ONE_ANSWER_CARDS: readonly string[] = [
   'bramble-bind',
   'wither',
   'payoff-hunter',
-  'fizzle',
   'shake-it-off',
 ];
 

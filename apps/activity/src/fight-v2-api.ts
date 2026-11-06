@@ -266,6 +266,12 @@ export function isBoardEvent(value: unknown): value is BoardEvent {
         isBool(value['phase']) &&
         isBool(value['phaseNext'])
       );
+    case 'fizzle':
+      return (
+        (value['state'] === 'on' || value['state'] === 'off' || value['state'] === 'blocked') &&
+        (value['by'] === undefined || isStr(value['by'])) &&
+        (value['mark'] === undefined || isStr(value['mark']))
+      );
     case 'resistance':
       return (
         (value['reaction'] === undefined || isStr(value['reaction'])) &&

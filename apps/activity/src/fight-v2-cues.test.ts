@@ -55,6 +55,25 @@ describe('the board cues of the second answers', () => {
     expect(plain.knacks).toEqual([]);
   });
 
+  it('Fizzle: a callout when it fires and when a reaction is blocked, and the boss is Fizzling until its next turn', () => {
+    const on = [ev({ type: 'fizzle', state: 'on' })];
+    expect(showOf(on, beat(1), { creatures }).floats[0]).toMatchObject({
+      target: null,
+      text: 'Fizzle!',
+      tone: 'reaction',
+      sub: 'No reactions',
+    });
+    expect(stateAfter(setup, on, 1).fizzled).toBe(true);
+    const blocked = [ev({ type: 'fizzle', state: 'blocked', by: 'payoff', mark: 'tide' })];
+    expect(showOf(blocked, beat(1), { creatures }).floats[0]).toMatchObject({
+      text: 'Fizzled!',
+      sub: 'Mark kept',
+    });
+    expect(stateAfter(setup, [...on, ...blocked], 2).fizzled).toBe(true);
+    const off = [...on, ev({ type: 'fizzle', state: 'off' })];
+    expect(stateAfter(setup, off, 2).fizzled).toBe(false);
+  });
+
   it("Shake It Off is the reaction callout on the boss with what it cleared, and the board's Mired follows", () => {
     const events = [ev({ type: 'mired', stacks: 1, shook: 3 })];
     const show = showOf(events, beat(1), { creatures });

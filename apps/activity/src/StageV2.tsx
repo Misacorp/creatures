@@ -599,7 +599,11 @@ export function StageV2({
           text={compactPair(state.bossHp, hpMax)}
         />
         <MarkStrip marks={marks} />
-        {(state.mired > 0 || resisted !== null || escalation !== null || actions.length > 0) && (
+        {(state.mired > 0 ||
+          state.fizzled ||
+          resisted !== null ||
+          escalation !== null ||
+          actions.length > 0) && (
           <div class="stage-status">
             {escalation !== null && <EscalatingMeter {...escalation} />}
             {state.mired > 0 && (
@@ -609,6 +613,15 @@ export function StageV2({
                 label={`Mired, ${String(state.mired)}`}
               >
                 {`x${String(state.mired)}`}
+              </Tag>
+            )}
+            {state.fizzled && (
+              <Tag
+                kind="chip"
+                icon={{ kind: 'glyph', id: 'reflect_first_reaction' }}
+                label="Fizzling: reactions fail until its next turn"
+              >
+                Fizzling
               </Tag>
             )}
             {resisted !== null && <ResistChip resisted={resisted} />}

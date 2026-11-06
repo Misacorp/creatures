@@ -78,12 +78,13 @@ export const FOE_QUESTIONS: Readonly<Record<string, FoeQuestion>> = Object.fromE
         UNDER_ELITE,
         'tidewing/none thornbuck/primed-by-pain pyrelynx/none',
       ],
-      // Its ash hardens every round: a Guard that builds Heat doubles the Payoff's reaction to get through the armour it grows.
+      // Its ash hardens every round and every second round it fizzles (reactions fail until its next turn): a Guard that builds Heat doubles the Payoff's reaction to get through the armour it grows.
+      // Asked at 25 since the Fizzle move (2026-11-06): at 30 the team with the tool wins 0.40, below FOE_QUESTION_WIN.
       [
         'ash-sprite',
         'family:Store',
         ['baked-shell'],
-        30,
+        25,
         UNDER,
         'tidewing/none kilnmole/baked-shell tempestray/none',
       ],

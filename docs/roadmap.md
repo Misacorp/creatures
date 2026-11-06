@@ -72,6 +72,8 @@ Later, for the endgame (Misa, 2026-10-29): an opt-in harder version of the week'
 
 Later (Misa, 2026-11-05): an **art-led dungeon entrance**. The cave opens into a drawn view where the player first picks a depth (the reward scaling visible), and only then sees the day's map, though the map is the same at every depth. It touches the valley's art and places, so it waits for the valley work; until then the depth picker is a dropdown on the pre-run card.
 
+Later (Misa, 2026-11-06): a future raid boss (for example a Void boss) carries the **Fizzle** move (immune to reactions every second turn, shown on its move tile); none of the five bosses of today needs it (`design/combat/for-misa.md`).
+
 Way down the line (Misa, 2026-11-04): a **dungeon skill tree**. Players pick nodes that fit the dungeon to their needs (camp chances up to guaranteed camps, favoured foe elements, better rewards, healing between rooms, double keepsakes, more elite fights with double rewards, foe modifiers with a payoff, changes to the reward pool or when loot is given) and can reset it with a moderately expensive item built from common pieces. Decision `2026-11-04-dungeon-direction-an-easy-base-dungeon`.
 
 ## Open design questions

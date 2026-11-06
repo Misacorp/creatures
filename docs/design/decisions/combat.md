@@ -4,6 +4,14 @@ The shared combat engine, abilities, statuses, elements, the balance simulator, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-06: [Misa] Fizzle becomes a telegraphed boss move: immune to reactions every second turn
+
+ID: `2026-11-06-fizzle-becomes-a-telegraphed-boss-move` · Status: current
+
+**Decision.** Fizzle is a boss move, not a trail rule: a library move (`fizzle`, label "No reactions") with no slots and no damage. When it fires, on its `every` and `turn` like any move, the boss is immune to reactions until its next boss turn begins: a Payoff's hit sets off no reaction and the mark stays (marks still land). The card is renamed Quench (a card's name never equals a move's name) and adds the move every 2 rounds at the card's strength; the Ash Sprite keeps it. The old `fizzle` flag, the mark's `cashableAfterTurns` and the trail's Fizzle hook are removed. Its answers are Self-Starter and Twin Strike. The replay shows "Fizzle!" when it fires, "Fizzled!" when a reaction is blocked, and a Fizzling chip on the boss until its next turn; the tile and turn strip show it like any move. The Ash Sprite's foe question moved from Undercroft depth 30 to 25. No current raid boss carries it (measured: it costs the classic team 0.3 to 0.6%); a future raid boss (for example a Void boss) is planned to.
+
+**Reasoning.** Misa's design (2026-11-06): the same pressure as before (do not rely on reactions in some rows), telegraphed through the move tiles and the turn strip, and it works in the dungeon, which has one row. Every 2nd round was kept as the one cadence: in the one-row dungeon it blocks every second round, and a raid boss can set `every` and `turn` for the row it wants to block (last turn blocks row 1, turn 0 blocks row 2). Measured numbers are in balance.md section 8, row 8d, and `for-misa.md`.
+
 ## 2026-11-06: Lab gate: dead Knacks are read on the track's weekends too
 
 ID: `2026-11-06-lab-gate-dead-knacks-are-read` · Status: current
