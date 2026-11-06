@@ -20,6 +20,7 @@ import {
   type Point,
 } from './dnd-core';
 import { startsOnTag } from './glossary-ui';
+import { swallowNextClick } from './ui/drag-click-guard';
 import type { DropOutcome, DropTarget } from './slot-outcome';
 
 /** Pixels around each slot that still count as "on" it, so the small gaps are not dead zones. */
@@ -271,6 +272,8 @@ export function useDragDrop<T = DropTarget>(args: UseDragDropArgs<T>): DragDrop<
     }
 
     function stop(): void {
+      // The click that ends a drag opens nothing, wherever it lands.
+      if (state.phase === 'dragging' && typeof window !== 'undefined') swallowNextClick();
       if (holdTimer !== null) clearTimeout(holdTimer);
       window.removeEventListener('touchmove', onTouchMove);
       window.removeEventListener('pointermove', onMove);

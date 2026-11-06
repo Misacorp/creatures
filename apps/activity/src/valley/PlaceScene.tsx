@@ -15,6 +15,7 @@ import { cssVars } from '../css-vars';
 import { usePrefersReducedMotion } from '../hooks';
 import { SmallCreature } from '../SmallCreature';
 import { Nameplate } from '../ui/Nameplate';
+import { swallowNextClick } from '../ui/drag-click-guard';
 import { dropPoint, pastThreshold, type Grab } from './creature-drag';
 import { PinnedAct } from './PinnedAct';
 import { SceneFrame, sceneGeometry, type SceneGeometry } from './SceneFrame';
@@ -106,6 +107,7 @@ function Draggable({
     if (!dragging.current) return;
     dragging.current = false;
     swallow.current = true;
+    swallowNextClick();
     setTimeout(() => {
       swallow.current = false;
     }, 0);
