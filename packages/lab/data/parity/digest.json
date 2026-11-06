@@ -1,6 +1,6 @@
 {
   "format": 2,
-  "overall": "158f68ffacbaa1745898342ea95ce398f6cf6a6a9f072092b77137b98bb19d60",
+  "overall": "d23b392b347f9167978f3908f1ab3becbf025d894f83a1fe30163d2d27b82772",
   "cases": {
     "cull-potential:12000#0": "17b80ca1a6bf81210475e2407fef1a9dcc342e55b61d7d0bf5d97f1e28fa8044",
     "cull-potential:24000#0": "e1dce8e43354ba33f577117566fb2c331d8db1b95d91cbd18b88cc42b7498aff",
@@ -545,6 +545,9 @@
     "gauntlet:wither:answer0#0": "b7b0fb96b79c677aeb4d9499eaf66ff26a19cef03a44e063b14ca1b87577d4be",
     "gauntlet:wither:answer0#1": "df5e36f17af7d25b045e3151c6f9258af16119082a4c6d19225a7b0456c32eb8",
     "gauntlet:wither:answer0#2": "1a6a7b0cdf42f3c76dff79c7d3b46b429b94286c2ef7ed729710eb303970230a",
+    "gauntlet:wither:answer1#0": "e5828e952a12f8d8d5455e9a904af190382f14c5d75c8848ea04408f66710eda",
+    "gauntlet:wither:answer1#1": "3d3fac1c89905d3e61dae52af52ad658a89a7f1d15c447f0398be6202093e516",
+    "gauntlet:wither:answer1#2": "b830387fb4cc80730a87d5e332d79bee5eb92ef5dac9338ac90256f0f2496141",
     "gauntlet:wither:classic#0": "3594583d24d91cfd35eaed13aad3597bb575bfce272416e58e52beae4e36d5da",
     "gauntlet:wither:classic#1": "9cbe62a6ed81a84654142963cf5f52513c9b1c3ccf027d5bec2dab04e89972ba",
     "gauntlet:wither:classic#2": "ef1dd44f85df314a4490221e29c80a3a56ab92acc2f59a80990a497c005a7df3",

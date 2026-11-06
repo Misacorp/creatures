@@ -74,8 +74,6 @@ export interface Placement {
   rowElements: readonly Element[];
   /** HP the Lantern bearers beside it give it, added up (basis points). */
   lanternHpBp: number;
-  /** Rounds more that a Guard's own ability (Rally, Shield Wall, Purge) lasts in this row (Lantern Night; 0 or 1). */
-  rowShieldWall: number;
 }
 
 /** How a creature looks to the gear rules. `placement` is absent where nobody knows the row (a card, "Equip best"). */
@@ -517,6 +515,7 @@ export interface GearMods {
   coverBp?: number;
   boostBp?: number;
   mendBp?: number;
+  /** Rounds more that a timed ability lasts (the day's Lantern Light; no gear gives it since 2026-11-06). */
   lingerRounds?: number;
   /** Status effects: weaker debuffs on the wearer (a share), and debuffs it applies: more power, more turns. */
   debuffResistBp?: number;
@@ -742,12 +741,12 @@ function foldSets(
       const line = gearLine(entry.line);
       if (line !== undefined) apply(line, entry.value, null, false);
     }
-    if (count >= 3) setEffect(set.three, wearer, out);
+    if (count >= 3 && set.three !== undefined) setEffect(set.three, wearer, out);
   }
 }
 
 /** One three-piece effect into the sheet (or the trip rules), for a wearer it works for. */
-function setEffect(three: GearSet['three'], wearer: Wearer, out: WornEffects): void {
+function setEffect(three: NonNullable<GearSet['three']>, wearer: Wearer, out: WornEffects): void {
   if (three.wearerElement !== undefined && three.wearerElement !== wearer.element) return;
   const sheet = out.mods;
   const value = three.value ?? 0;
@@ -781,9 +780,6 @@ function setEffect(three: GearSet['three'], wearer: Wearer, out: WornEffects): v
       break;
     case 'longTripCatch':
       out.rules.dayTripRolls += value;
-      break;
-    case 'rowShieldWall':
-      // A gift to the row: the row's builder counts the wearers (`Placement.rowShieldWall`).
       break;
   }
 }
@@ -907,9 +903,7 @@ export function wornEffects(
         if (place !== undefined) positionLine(effect.rule, value, place);
         break;
       case 'sheet':
-        if (effect.field === 'lingerRounds') {
-          sheet.lingerRounds = Math.min(3, (sheet.lingerRounds ?? 0) + value);
-        } else if (effect.field === 'ignoreSilence') {
+        if (effect.field === 'ignoreSilence') {
           sheet.ignoreSilence = 1;
         } else if (effect.field === 'openingMark' || effect.field === 'stubborn') {
           sheet[effect.field] = 1;
@@ -979,11 +973,8 @@ export function wornEffects(
   }
   foldSets(items, wearer, out, apply);
   if (place !== undefined) {
-    // What the creatures beside it give it (Lantern bearer) and what its row gives (Lantern Night).
+    // What the creatures beside it give it (Lantern bearer).
     out.hpBp += place.lanternHpBp;
-    if (wearer.role === 'guard' && place.rowShieldWall > 0) {
-      sheet.lingerRounds = Math.min(3, (sheet.lingerRounds ?? 0) + place.rowShieldWall);
-    }
   }
   for (const talent of talents) {
     if ('line' in talent.effect) {
@@ -1039,9 +1030,9 @@ export function applyGear(
   items: readonly GearItem[],
   talents: readonly FoldTalent[] = [],
 ): { stats: Stats; crit: CritBonus | undefined; mods: GearMods | undefined; rules: GearRules } {
-  // A creature that wears nothing can still gain from the row (Lantern bearer, Lantern Night).
+  // A creature that wears nothing can still gain from the row (Lantern bearer).
   const gifts = wearer.placement;
-  const given = gifts !== undefined && (gifts.lanternHpBp > 0 || gifts.rowShieldWall > 0);
+  const given = gifts !== undefined && gifts.lanternHpBp > 0;
   if (items.length === 0 && talents.length === 0 && !given) {
     return { stats, crit, mods: undefined, rules: NO_GEAR_RULES };
   }

@@ -208,7 +208,7 @@ export const GEAR_LINE_FX: Readonly<Record<string, GearLineFx>> = {
 
 /**
  * The three-piece set effects with a v2 hook (`SET_EFFECTS`, by id). The rest of the three-piece effects are retired for combat v2
- * (gear plan OPEN 5: four equal a Knack, Hollow Weave's is Returning Tide's) or wait for Lingering (Lantern Night).
+ * (gear plan OPEN 5: four equal a Knack, Hollow Weave's is Returning Tide's); Lantern Night has none (Misa 2026-11-06).
  */
 export const SET_THREE_FX: Readonly<Record<string, GearLineFx>> = {
   unreflected: { field: 'unreflectedFirst', unit: 'flag' },
@@ -300,16 +300,17 @@ export function gearFx(
     if (set === undefined || count < 2) continue;
     for (const entry of set.two.lines) add(gearLine(entry.line), entry.value);
     // Three pieces: the set's one effect, for a wearer it works for (its element), when it has a v2 hook.
-    const three = Object.hasOwn(SET_THREE_FX, set.three.effect)
-      ? SET_THREE_FX[set.three.effect]
-      : undefined;
-    if (count >= 3 && three !== undefined) {
-      if (set.three.wearerElement !== undefined && set.three.wearerElement !== wearer.element)
-        continue;
+    const effect = set.three;
+    const three =
+      effect !== undefined && Object.hasOwn(SET_THREE_FX, effect.effect)
+        ? SET_THREE_FX[effect.effect]
+        : undefined;
+    if (effect !== undefined && count >= 3 && three !== undefined) {
+      if (effect.wearerElement !== undefined && effect.wearerElement !== wearer.element) continue;
       if (three.unit === 'flag') out[three.field] = true;
       else {
         const [num, den] = three.scale ?? [1, 1];
-        addTo(three.field, Math.floor(((set.three.value ?? 0) * num) / den));
+        addTo(three.field, Math.floor(((effect.value ?? 0) * num) / den));
       }
     }
   }

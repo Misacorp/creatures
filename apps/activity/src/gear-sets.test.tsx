@@ -89,7 +89,7 @@ describe('the set helpers', () => {
 
   it('has text for every set that fits a compact card (no line breaks, kept short)', () => {
     for (const set of gearContent.sets) {
-      for (const text of [set.two.text, set.three.text]) {
+      for (const text of [set.two.text, ...(set.three === undefined ? [] : [set.three.text])]) {
         expect(text.length, set.id).toBeLessThanOrEqual(80);
         expect(text, set.id).not.toMatch(/\n/);
       }

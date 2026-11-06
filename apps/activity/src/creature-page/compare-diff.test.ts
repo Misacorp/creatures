@@ -43,7 +43,7 @@ describe('diffItems: lines on both items', () => {
   it('says nothing for a line with the same value, or a once-only line', () => {
     const rolled = [
       { id: 'first-pounce', tier: 1 },
-      { id: 'lingering', tier: 0 },
+      { id: 'unbothered', tier: 0 },
     ];
     const diff = diffItems(hat(rolled), hat(rolled));
     expect(diff.lines.size).toBe(0);

@@ -639,7 +639,7 @@ describe('the glossary covers gear and crafting', () => {
     expect(text('gear-festival')).toContain('same odds as any finale piece');
     expect(text('gear-stat')).toContain("An item's own Attack and HP");
     expect(text('gear-rarity-epic')).toContain(
-      `item level ${String(gearContent.lines.find((l) => l.id === 'lingering')?.minItemLevel)}`,
+      `item level ${String(gearContent.lines.find((l) => l.id === 'unbothered')?.minItemLevel)}`,
     );
     expect(text('workshop')).toContain(`${String(RULES.gear.workshopSlots)} jobs`);
     expect(text('blueprint')).toContain(

@@ -60,7 +60,6 @@ const place = (p: Partial<Placement> = {}): Placement => ({
   beside: [],
   rowElements: [],
   lanternHpBp: 0,
-  rowShieldWall: 0,
   ...p,
 });
 const fold = (id: string, w: Wearer, p: Placement | undefined, tier = TIER_V) =>
@@ -462,37 +461,15 @@ describe('folding a row (the raid and the dungeon)', () => {
     expect(guest[0]).toBeUndefined();
   });
 
-  it('Lantern Night: the Guards of the wearer row have Shield Walls that last one more round', () => {
+  it('Lantern Night has no three-piece effect: a Guard in the wearer row is left as it is (Misa 2026-11-06)', () => {
     const night = (
       ['festival-lantern-cap', 'festival-hearth-scarf', 'festival-lantern-charm'] as const
     ).map((id) => itemOf(id, 'common', 10, []));
     const row: RowMember[] = Array.from({ length: 9 }, () => member('tide', 'payoff', []));
     row[0] = member('ember', 'support', night);
     row[1] = member('grove', 'guard', []);
-    row[2] = member('tide', 'payoff', []);
-    row[4] = member('grove', 'guard', []);
     const placed = placeRow(row, RAID);
-    // The Guard in the same row gets a round; the support and payoff do not need one; the other row's Guard neither.
-    expect(placed[1]?.mods?.lingerRounds).toBe(1);
-    expect(placed[2]).toBeUndefined();
-    expect(placed[4]).toBeUndefined();
-    // Two wearers in a row do not stack.
-    row[2] = member('ember', 'support', night);
-    expect(placeRow(row, RAID)[1]?.mods?.lingerRounds).toBe(1);
-    // Two pieces are not enough.
-    row[0] = member('ember', 'support', night.slice(0, 2));
-    row[2] = member('tide', 'payoff', []);
-    expect(placeRow(row, RAID)[1]).toBeUndefined();
-  });
-
-  it('adds to a Guard Lingering line and stops at three rounds', () => {
-    const night = (
-      ['festival-lantern-cap', 'festival-hearth-scarf', 'festival-lantern-charm'] as const
-    ).map((id) => itemOf(id, 'common', 10, []));
-    const lingering = item('wardens-bell', [['lingering', 0]]);
-    const row = [member('ember', 'support', night), member('grove', 'guard', [lingering])];
-    const placed = placeRow(row, LINE);
-    expect(placed[1]?.mods?.lingerRounds).toBe(2);
+    expect(placed[1]).toBeUndefined();
   });
 });
 

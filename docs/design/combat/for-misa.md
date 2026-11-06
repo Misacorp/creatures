@@ -43,7 +43,7 @@ Picks agents made on their own under Misa's working rules (decision `2026-11-05-
 
 ## Ask Misa (gear slice 4)
 
-- **Lingering** (Rally, Shield Wall and Purge last 1 more round, plus Lantern Night's three-piece): not built (OPEN 9, taking "skip with a reason"). Those three are a player's finale input; no creature owns them, so a worn line has nothing to extend. Choose: retire the line and Lantern Night's three-piece, or let the finale input carry its owner's gear. It still shows "not in the new rules yet".
+- ~~**Lingering** (Rally, Shield Wall and Purge last 1 more round, plus Lantern Night's three-piece)~~ **Retired (Misa 2026-11-06).** The line is out of the item data, Lantern Night has no three-piece (its card shows two lines), and the two signature talents that used it changed: Watcher Above (Aurorix) is now Mend 3%, Fire That Lasts (Hearthshell) is now Cover 9%. Best picks, for you to glance at.
 - **Five sets have no three-piece effect in v2** (OPEN 5): Hollow Weave, Ridge Copper, Warden's Watch, Hearth Helpers and First Footprints equal a Knack. New gear-only effects are new rules to learn, so none was invented. Do you want proposals (for example "the first heal it gives is doubled", "once a fight a Guard's cover covers the whole row")?
 - **Warm Heart, Second Breath and Opening Mark** (the plan retires them) still exist in the item data and show "not in the new rules yet". Removing them from the data makes old items roll fresh lines.
 - **Weak lines:** Payback, Echo, Overflow, Slipstream and Shared Warmth lift the boss HP by 0.3 points or less. Raise their scales, or leave them as small flavour lines?

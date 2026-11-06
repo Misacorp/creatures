@@ -63,7 +63,7 @@ function gearSetEntries(): unknown[] {
     short: 'A Hat, a Scarf and a Charm worn by one creature.',
     lines: [
       `2 pieces: ${set.two.text}.`,
-      `3 pieces: ${set.three.text}`,
+      ...(set.three === undefined ? [] : [`3 pieces: ${set.three.text}`]),
       set.tag === 'festival'
         ? 'Won by clearing a Festival finale. It cannot be crafted.'
         : ROLE_NAMES[set.tag] !== undefined

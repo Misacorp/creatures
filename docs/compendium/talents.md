@@ -172,9 +172,9 @@ Epic and Festival species each have one fixed **signature talent** (never rolled
 | ----------- | ------------------ | ---------------------------------------------------- |
 | Solmane     | Lights Up a Room   | A lion whose mane makes every mark glow brighter.    |
 | Gaiadrake   | Impossible to Stop | Nothing slows it down: it shrugs off being stunned.  |
-| Aurorix     | Watcher Above      | Its Purge lasts one round longer: it keeps watching. |
+| Aurorix     | Watcher Above      | Its watchful warmth mends the creatures beside it.   |
 | Lanternfin  | Guiding Light      | Its boost guides everyone it helps a little further. |
-| Hearthshell | Fire That Lasts    | The warmth it gives lingers a round longer.          |
+| Hearthshell | Fire That Lasts    | The cover it gives holds a little tighter.           |
 
 Their pools:
 

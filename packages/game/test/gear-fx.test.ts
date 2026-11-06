@@ -165,7 +165,6 @@ describe('gearFx: the line to effect map', () => {
       'attack',
       'hp',
       'crit-chance',
-      'lingering',
       'warm-heart',
       'second-breath',
       'opening-mark',
@@ -174,8 +173,8 @@ describe('gearFx: the line to effect map', () => {
     }
     expect(gearLineHasV2Hook('first-pounce')).toBe(true);
     expect(gearLineHasV2Hook('tide-reaction')).toBe(true);
-    // Retired for combat v2 (Warm Heart, Second Breath, Opening Mark) or waiting for the finale's input (Lingering): no hook.
-    for (const line of ['lingering', 'warm-heart', 'second-breath', 'opening-mark'])
+    // Retired for combat v2 (Warm Heart, Second Breath, Opening Mark): no hook.
+    for (const line of ['warm-heart', 'second-breath', 'opening-mark'])
       expect(gearLineHasV2Hook(line), line).toBe(false);
     for (const line of [
       'payback',

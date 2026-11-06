@@ -367,7 +367,8 @@ describe('the three-piece effects', () => {
     ).toBe(0);
   });
 
-  it('Lantern Night gives nothing alone: the row gives its Guards a longer Shield Wall (see the position tests)', () => {
+  it('Lantern Night has no three-piece effect (Misa 2026-11-06): the card has two lines and the fold adds nothing', () => {
+    expect(gearSet('lantern-night')?.three).toBeUndefined();
     expect(three('lantern-night').mods.lingerRounds).toBeUndefined();
   });
 

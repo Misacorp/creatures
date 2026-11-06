@@ -425,21 +425,6 @@
     "worth": 2000
   },
   {
-    "id": "lingering",
-    "name": "Lingering",
-    "about": "The wearer's Rally, Shield Wall and Purge last 1 more round.",
-    "group": "role",
-    "effect": { "kind": "sheet", "field": "lingerRounds" },
-    "unit": "once",
-    "values": [1, 1, 1, 1, 1],
-    "single": true,
-    "minItemLevel": 15,
-    "minRarity": "epic",
-    "weights": { "hat": 0, "scarf": 0, "charm": 10 },
-    "roles": ["guard", "support"],
-    "worth": 300
-  },
-  {
     "id": "marked-foe",
     "name": "Marked foe",
     "about": "Hits on a marked foe that set off no reaction do more damage.",

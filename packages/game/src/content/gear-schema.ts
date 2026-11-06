@@ -232,7 +232,6 @@ export const LineEffectSchema = v.variant('kind', [
       'coverBp',
       'boostBp',
       'mendBp',
-      'lingerRounds',
       'debuffResistBp',
       'debuffPowerBp',
       'debuffDurationTurns',
@@ -394,7 +393,6 @@ export type LegacyPack = v.InferOutput<typeof LegacyPackSchema>;
  * - `sealMark`: the first mark it leaves each fight cannot be replaced.
  * - `firstReactionCrit`: its first reaction each fight is a critical hit.
  * - `longTripCatch`: `value` extra catch rolls on 24 hour trips.
- * - `rowShieldWall`: Guards in the wearer's row have their abilities (Rally, Shield Wall, Purge) last 1 more round.
  */
 export const SET_EFFECTS = [
   'unreflected',
@@ -406,7 +404,6 @@ export const SET_EFFECTS = [
   'sealMark',
   'firstReactionCrit',
   'longTripCatch',
-  'rowShieldWall',
 ] as const;
 export type SetEffectId = (typeof SET_EFFECTS)[number];
 
@@ -432,15 +429,17 @@ export const GearSetSchema = v.strictObject({
     text: About,
     lines: v.pipe(v.array(SetLineSchema), v.minLength(1), v.maxLength(3)),
   }),
-  /** Three pieces: this on top of the two-piece bonus. */
-  three: v.strictObject({
-    text: About,
-    effect: v.picklist(SET_EFFECTS),
-    /** The effect's number, where it has one (crit damage and healing in basis points, extra rolls). */
-    value: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(100_000))),
-    /** The effect only works for a wearer of this element (Steam is cashed by Tide wearers). */
-    wearerElement: v.optional(ElementSchema),
-  }),
+  /** Three pieces: this on top of the two-piece bonus. A set without one has none (Lantern Night, Misa 2026-11-06). */
+  three: v.optional(
+    v.strictObject({
+      text: About,
+      effect: v.picklist(SET_EFFECTS),
+      /** The effect's number, where it has one (crit damage and healing in basis points, extra rolls). */
+      value: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(100_000))),
+      /** The effect only works for a wearer of this element (Steam is cashed by Tide wearers). */
+      wearerElement: v.optional(ElementSchema),
+    }),
+  ),
 });
 export type GearSet = v.InferOutput<typeof GearSetSchema>;
 export const GearSetsSchema = v.pipe(v.array(GearSetSchema), v.minLength(1), v.maxLength(40));
@@ -750,7 +749,7 @@ export function loadGear(
         fail(`set "${set.id}" uses "${entry.line}", which a set cannot give`);
       }
     }
-    if (set.three.effect === 'longTripCatch' && set.three.value === undefined) {
+    if (set.three?.effect === 'longTripCatch' && set.three.value === undefined) {
       fail(`set "${set.id}": longTripCatch needs a value`);
     }
   }

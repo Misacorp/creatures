@@ -50,8 +50,8 @@ describe('gear lines under combat v2', () => {
       'lantern-bearer',
     ])
       expect(isEffectLine(id), id).toBe(false);
-    // Left without a hook: Lingering (the finale's input has no creature to extend), and the lines the plan retires for v2.
-    for (const id of ['lingering', 'warm-heart', 'second-breath', 'opening-mark'])
+    // Left without a hook: the lines the plan retires for v2.
+    for (const id of ['warm-heart', 'second-breath', 'opening-mark'])
       expect(isEffectLine(id), id).toBe(true);
     expect(isEffectLine('no-such-line')).toBe(false);
   });

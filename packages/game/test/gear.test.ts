@@ -177,7 +177,6 @@ describe('the gear content', () => {
       'cover',
       'boost',
       'spark-share',
-      'lingering',
       'adaptation-pierce',
       'quick-feet',
       'lucky-find',
@@ -507,12 +506,11 @@ describe('rolling items', () => {
     }
   });
 
-  it('keeps Lingering and Unbothered to epic items of level 15 and more', () => {
+  it('keeps Unbothered to epic items of level 15 and more, and Lingering is retired (Misa 2026-11-06)', () => {
     const ids = (level: number, rarity: GearRarity) =>
       linePool({ slot: 'charm', tag: 'neutral' }, rarity, level).map((p) => p.line.id);
-    expect(ids(20, 'epic')).toContain('lingering');
-    expect(ids(14, 'epic')).not.toContain('lingering');
-    expect(ids(20, 'rare')).not.toContain('lingering');
+    expect(gearContent.lines.some((l) => l.id === 'lingering')).toBe(false);
+    expect(ids(20, 'epic')).not.toContain('lingering');
     expect(linePool({ slot: 'scarf', tag: 'neutral' }, 'epic', 15).map((p) => p.line.id)).toContain(
       'unbothered',
     );
@@ -577,7 +575,6 @@ describe('rolling items', () => {
     expect(ids).not.toContain('boost');
     expect(ids).not.toContain('marking-hit');
     expect(ids).not.toContain('payoffs-pounce');
-    expect(ids).toContain('lingering');
     expect(guard.find((p) => p.line.id === 'armor')?.weight).toBe(
       (plain.find((p) => p.line.id === 'armor')?.weight ?? 0) * 3,
     );
@@ -1070,12 +1067,11 @@ describe('folding worn items', () => {
     }
   });
 
-  it('sums every plain sheet line across items, and keeps Lingering to 3 rounds and Unbothered a switch', () => {
+  it('sums every plain sheet line across items and keeps Unbothered a switch', () => {
     const fx = wornEffects(support, [
       item('hearth-bell', 'epic', 20, [
         ['boost', 4],
         ['mend', 4],
-        ['lingering', 0],
       ]),
       item('patch-scarf', 'epic', 20, [
         ['all-damage-taken', 4],
@@ -1084,7 +1080,6 @@ describe('folding worn items', () => {
       ]),
       item('trail-charm', 'epic', 20, [
         ['spark-share', 4],
-        ['lingering', 0],
         ['boost', 0],
       ]),
     ]);
@@ -1093,7 +1088,7 @@ describe('folding worn items', () => {
     expect(fx.mods.shareBp).toBe(1_500);
     expect(fx.mods.takenBp).toBe(800);
     expect(fx.mods.areaBp).toBe(1_200);
-    expect(fx.mods.lingerRounds).toBe(2);
+    expect(fx.mods.lingerRounds).toBeUndefined();
     expect(fx.mods.ignoreSilence).toBe(1);
   });
 

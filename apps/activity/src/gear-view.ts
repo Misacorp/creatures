@@ -189,7 +189,9 @@ export interface SetBonusRow {
 export function setBonusRows(set: GearSet, count: number): SetBonusRow[] {
   return [
     { pieces: 2, text: set.two.text, active: count >= 2 },
-    { pieces: 3, text: set.three.text, active: count >= 3 },
+    ...(set.three === undefined
+      ? []
+      : [{ pieces: 3 as const, text: set.three.text, active: count >= 3 }]),
   ];
 }
 
@@ -217,7 +219,8 @@ export function activeSetLine(worn: readonly Pick<GearItem, 'baseId' | 'slot'>[]
   for (const [id, count] of setCounts(worn)) {
     const set = gearSet(id);
     if (set === undefined || count < 2) continue;
-    const bonus = count >= 3 ? `${set.two.text}. ${set.three.text}` : set.two.text;
+    const bonus =
+      count >= 3 && set.three !== undefined ? `${set.two.text}. ${set.three.text}` : set.two.text;
     parts.push(`${set.name} ${setCountText(count)}: ${bonus}`);
   }
   return parts.join(' · ');

@@ -148,7 +148,6 @@ export const GEAR_CLASS: Readonly<Record<string, GearClass>> = {
   'marking-hit': c('marks', SETTER, 'stat'),
   'payoffs-pounce': c('marks', PAYOFF, 'stat'),
   strike: c('damage', ANY, 'stat'),
-  lingering: c('team', ANY, 'stat'),
   'marked-foe': c('marks', HIT, 'condition'),
   'first-pounce': c('damage', HIT, 'condition'),
   'owners-mark': c('marks', SETTER, 'condition'),
