@@ -1,6 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PopoverHost } from '../PopoverHost';
-import { byClass, byName, createPage, visibleText, type Page } from '../test-dom';
+import {
+  badgesIn,
+  byClass,
+  byName,
+  createPage,
+  visibleText,
+  type FakeElement,
+  type Page,
+} from '../test-dom';
 import { homeInput } from '../workbench/home-sample';
 import { SignpostSeats, type SignpostActions } from './SignpostSeats';
 import { sampleSeat, sampleValley } from './signpost-sample';
@@ -75,7 +83,13 @@ describe('SignpostSeats', () => {
     p.click(open);
     const buy = byName(p.root, 'button', /Buy the seat/)[0];
     expect(buy?.getAttribute('disabled')).not.toBeNull();
-    expect(visibleText(p.root)).toMatch(/113 Acorns/);
+    // The price on the button is the Acorn icon and a number; so is what the player has.
+    expect(badgesIn(buy as FakeElement)).toEqual([['Bait', '113']]);
+    expect(badgesIn(byClass(p.root, 'alert')[0] as FakeElement)).toEqual([
+      ['Bait', '50'],
+      ['Bait', '113'],
+    ]);
+    expect(visibleText(p.root)).not.toMatch(/Acorns/);
   });
 
   it('with the Acorns, the button buys', () => {

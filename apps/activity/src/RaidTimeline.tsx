@@ -5,6 +5,7 @@ import { nowAction, type NowTarget } from './raid-now';
 import { scheduleSteps } from './raid-time';
 import { stepMarks, toggleMark } from './raid-timeline';
 import { SeasonPips } from './SeasonPips';
+import { SayLine } from './ui/CountBadge';
 
 /**
  * The top of the Raid tab: the week as four steps (Preparation, Phase 1, Phase 2, Finale; Stage 1 and Stage 2 on a combat v2 week), the one
@@ -90,7 +91,9 @@ export function RaidTimeline({
       <SeasonPips season={view.season} />
       {openedMark !== undefined && opened !== undefined && (
         <p class="schedule-result" role="status">
-          <span>{openedMark.summary}</span>
+          <span>
+            <SayLine say={openedMark.summary} />
+          </span>
           {/* A combat v2 stage has no replay screen yet (the stage playback is a later part). */}
           {view.rules !== 2 && (
             <>

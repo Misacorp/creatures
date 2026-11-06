@@ -6,12 +6,18 @@
 import { talentDef } from '@creatures/game';
 import type { Creature } from './api';
 import { creatureName, fusionProgressText, speciesName } from './game';
-import { partsText } from './gear-view';
+import { partCountItems } from './count-items';
+import type { CountItem } from './ui/CountBadge';
 import type { ChoiceResult, TalentSlotView } from './talent-types';
 
 /** A creature of the state by id. */
 function creatureOf(creatures: readonly Creature[], id: string): Creature | undefined {
   return creatures.find((c) => c.id === id);
+}
+
+/** What a release gave back, as count items (the notice shows them after the sentence). */
+export function releasedParts(result: ChoiceResult): CountItem[] {
+  return result.choice === 'release' ? partCountItems(result.parts ?? {}) : [];
 }
 
 /** What a settled choice did, in a sentence ("Taught Wet Footprints to Cindle."). */
@@ -34,7 +40,7 @@ export function choiceResultText(
     case 'fuse':
       return `${lead}Fused ${speciesName(result.species)} into ${who}${fusedText(result)}.`;
     case 'release':
-      return `${lead}Released ${speciesName(result.species)} for ${partsText(result.parts ?? {})}.`;
+      return `${lead}Released ${speciesName(result.species)}.`;
     case 'keep':
       return `${lead}Kept ${speciesName(result.species)} as a second creature.`;
   }

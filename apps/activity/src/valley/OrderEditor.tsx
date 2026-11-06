@@ -15,16 +15,15 @@ import {
   type ValleyOrderView,
 } from '@creatures/game';
 import type { OrderRequest, ValleyVisit } from '../api';
-import { partBadge } from '../count-items';
 import { elementName } from '../game';
 import type { BlueprintView } from '../gear-view';
 import { slotName } from '../gear-view';
 import { resourceIconRef } from '../icon-ref';
-import type { PartKind } from '../gear-types';
+import { anyShardCount, scrapCount, shardCount } from '../resource-count';
 import { Alert } from '../ui/Alert';
 import { ActionButton } from '../ui/ActionButton';
 import { ChoiceButton, ChoiceList } from '../ui/ChoiceList';
-import { CountBadge, type CountItem } from '../ui/CountBadge';
+import { CostLine, SayLine, type CountItem } from '../ui/CountBadge';
 import { CountStepper } from '../ui/CountStepper';
 import { Drawer } from '../ui/Drawer';
 import { DrillHead } from '../ui/DrillHead';
@@ -60,18 +59,7 @@ const TEAM = 'team';
 
 /** A shard's icon with how many are held now (a patchwork order's shard choice). Icons, no words (decision 2026-11-06). */
 function ShardNow({ element, visit }: { element: string; visit: ValleyVisit }) {
-  return (
-    <PlainBadge
-      kind={`${element}-shard` as PartKind}
-      amount={visit.forge.shelf.shards[element] ?? 0}
-    />
-  );
-}
-
-/** A part's count badge without its glossary link, for use inside a button (a button never holds a button). */
-function PlainBadge({ kind, amount }: { kind: PartKind; amount: number }) {
-  const { icon, label } = partBadge(kind, amount);
-  return <CountBadge icon={icon} amount={amount} {...(label === undefined ? {} : { label })} />;
+  return <CostLine items={[shardCount(element, visit.forge.shelf.shards[element] ?? 0)]} />;
 }
 
 /** The order and the anvil it stands in, for an order id. */
@@ -102,16 +90,14 @@ function inputsOf(
   const shards = cost?.shards ?? forge.shard;
   const inputs: (CountItem & { amount: number; have: number })[] = [
     {
-      key: 'scrap',
-      ...partBadge('scrap', scrap),
+      ...scrapCount(scrap),
       amount: scrap,
       have: shelf.scrap,
     },
   ];
   if (element !== null) {
     inputs.push({
-      key: 'shard',
-      ...partBadge(`${element}-shard` as PartKind, shards),
+      ...shardCount(element, shards),
       amount: shards,
       have: shelf.shards[element] ?? 0,
     });
@@ -306,10 +292,11 @@ export function OrderEditor({
                     ) : (
                       <>
                         {slotName(bp.slot)} ·{' '}
-                        <PlainBadge kind="scrap" amount={bp.patchwork.scrap} />{' '}
-                        <PlainBadge
-                          kind={`${mostHeld}-shard` as PartKind}
-                          amount={bp.patchwork.shards}
+                        <CostLine
+                          items={[
+                            scrapCount(bp.patchwork.scrap),
+                            shardCount(mostHeld, bp.patchwork.shards),
+                          ]}
                         />
                       </>
                     )
@@ -426,7 +413,7 @@ export function OrderEditor({
               <ChoiceButton
                 key={choice.id}
                 label={choice.name}
-                line={choice.line}
+                line={<SayLine say={choice.line} />}
                 selected={reach === choice.id}
                 disabled={busy}
                 onClick={() => {
@@ -448,7 +435,11 @@ export function OrderEditor({
           actionLabel="Order"
           onStart={() => undefined}
         />
-        {forTeam && <p class="muted sp-note">Each piece also takes a shard of its element.</p>}
+        {forTeam && (
+          <p class="muted sp-note">
+            <SayLine say={['Each piece also takes ', anyShardCount(1), ' of its element.']} />
+          </p>
+        )}
         {reason !== null && <Alert level="info">{reason}</Alert>}
         {error !== null && <Alert level="alert">{error}</Alert>}
         {editing === undefined ? (

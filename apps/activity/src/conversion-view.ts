@@ -60,9 +60,7 @@ export function craftInputs(
     amount,
     have: parts[kind] ?? 0,
   }));
-  return bait > 0
-    ? [{ ...baitCount(bait, { name: true }), amount: bait, have: baitHeld }, ...inputs]
-    : inputs;
+  return bait > 0 ? [{ ...baitCount(bait), amount: bait, have: baitHeld }, ...inputs] : inputs;
 }
 
 /** "Needs 2 more Plain Lure." for the first input the player is short of, or null when none is. */

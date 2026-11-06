@@ -71,7 +71,7 @@ import { useGames } from './use-games';
 import type { DungeonPhase } from './dungeon-flow';
 import type { Slots } from './dungeon-team';
 import { chooseCatch } from './talent-api';
-import { choiceResultText } from './talent-view';
+import { choiceResultText, releasedParts } from './talent-view';
 import { DevPanelHost } from './DevPanelHost';
 import { StarterPicker } from './StarterPicker';
 import { navStateFor, type GoOptions } from './nav-state';
@@ -103,7 +103,9 @@ import type { MarketActions, MarketStart } from './valley/MarketPage';
 import { SignpostSeats, type SignpostActions } from './valley/SignpostSeats';
 import type { CommonsActions } from './valley/CommonsBoard';
 import { COMMONS_NAMES } from './valley/commons-view';
-import { ANVIL_KIT_INFO, shardName } from './valley/forge-view';
+import { ANVIL_KIT_INFO } from './valley/forge-view';
+import { sayText, shardCount } from './resource-count';
+import { SayLine } from './ui/CountBadge';
 import type { ForgeActions } from './valley/ForgeAnvils';
 import { KIT_INFO } from './valley/signpost-view';
 import { trayStates } from './valley/tray-state';
@@ -449,7 +451,7 @@ export function Game({
         exchangeShards({ to, from, times, idempotencyKey: key }),
       );
       if (!takeValley(answer) || answer === undefined) return false;
-      setNotice(`You traded for ${String(answer.gained)} ${shardName(to)}.`);
+      setNotice(['You traded for ', shardCount(to, answer.gained), '.']);
       return true;
     },
   };
@@ -494,7 +496,7 @@ export function Game({
         const only = results.length === 1 ? results[0] : undefined;
         setNotice(
           only !== undefined
-            ? choiceResultText(only, last.creatures)
+            ? [choiceResultText(only, last.creatures), ' ', ...releasedParts(only)]
             : `Settled ${String(results.length)} catches.`,
         );
       }
@@ -722,13 +724,13 @@ export function Game({
       )}
       {notice !== null && (
         <Alert
-          key={notice}
+          key={typeof notice === 'string' ? notice : sayText(notice)}
           level="success"
           onDismiss={() => {
             setNotice(null);
           }}
         >
-          {notice}
+          {typeof notice === 'string' ? notice : <SayLine say={notice} />}
         </Alert>
       )}
     </>

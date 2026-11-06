@@ -6,10 +6,11 @@
  */
 import { useState } from 'preact/hooks';
 import type { ValleyVisit } from '../api';
-import { elementName } from '../game';
+import { anyShardMark, shardCount, shardMark } from '../resource-count';
 import { Alert } from '../ui/Alert';
 import { ActionButton } from '../ui/ActionButton';
 import { ChoiceButton, ChoiceList } from '../ui/ChoiceList';
+import { CountBadge, SayLine } from '../ui/CountBadge';
 import { CountStepper } from '../ui/CountStepper';
 import { DrillHead } from '../ui/DrillHead';
 import { onDrillKey } from '../ui/drill-keys';
@@ -17,7 +18,7 @@ import { Slot, SlotRow } from '../ui/Slot';
 import { SlotText } from './seat-parts';
 import {
   SHARD_ELEMENTS,
-  exchangeRateText,
+  exchangeRate,
   exchangeReason,
   exchangeSources,
   shardName,
@@ -94,8 +95,8 @@ export function Exchange({
             ).map(({ element, held }) => (
               <ChoiceButton
                 key={element}
-                label={shardName(element)}
-                line={`You have ${String(held)}.`}
+                label={<CountBadge {...shardCount(element, held)} size="inline" />}
+                line={!picking && tradesFrom(forge, held) === 0 ? 'Too few' : ''}
                 selected={picking ? to === element : from === element}
                 disabled={!picking && tradesFrom(forge, held) === 0}
                 onClick={() => {
@@ -128,8 +129,8 @@ export function Exchange({
             }}
           >
             <SlotText
-              name={shardName(to)}
-              sub={`You get (have ${String(forge.shelf.shards[to] ?? 0)})`}
+              name={<CountBadge {...shardCount(to, forge.shelf.shards[to] ?? 0)} size="inline" />}
+              sub="You get (have)"
             />
           </Slot>,
           <Slot
@@ -141,12 +142,14 @@ export function Exchange({
             }}
           >
             <SlotText
-              name={from === null ? 'Any other' : shardName(from)}
-              sub={
-                from === null
-                  ? 'You pay'
-                  : `You pay (have ${String(forge.shelf.shards[from] ?? 0)})`
+              name={
+                from === null ? (
+                  <CountBadge {...anyShardMark()} size="inline" />
+                ) : (
+                  <CountBadge {...shardCount(from, forge.shelf.shards[from] ?? 0)} size="inline" />
+                )
               }
+              sub={from === null ? 'You pay, any other' : 'You pay (have)'}
             />
           </Slot>,
         ]}
@@ -155,12 +158,19 @@ export function Exchange({
         <span class="fg-times-name">Trades</span>
         <CountStepper label="trade" value={shown} max={most} onChange={setTimes} disabled={busy} />
       </div>
-      <p class="muted sp-note">{exchangeRateText(forge)}</p>
-      {reason !== null && <Alert level="info">{reason}</Alert>}
+      <p class="muted sp-note">
+        <SayLine say={exchangeRate(forge)} />
+      </p>
+      {reason !== null && (
+        <Alert level="info">
+          <SayLine say={reason} />
+        </Alert>
+      )}
       {error !== null && <Alert level="alert">{error}</Alert>}
       <ActionButton
         label="Trade"
-        detail={`${String(shown)} for ${elementName(to)}`}
+        detail={`× ${String(shown)}`}
+        cost={[shardMark(to)]}
         wide
         large
         disabled={busy || reason !== null || can === 0}

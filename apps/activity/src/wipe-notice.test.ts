@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseGameState } from './api';
+import { sayParts } from './resource-count';
 import type { CancelledTrip } from './expedition-types';
 import stateOffer from './fixtures/expedition-state-offer.json';
 import {
@@ -37,9 +38,11 @@ function fakeStorage(initial: Record<string, string> = {}): NoticeStorage & {
 
 describe('the slot wipe notice', () => {
   it('says what happened in friendly words', () => {
-    expect(WIPE_NOTICE_TEXT).toBe(
-      'Expeditions got bigger: everyone starts with one slot. Your trips in slots 2–3 were called home and their Bait refunded.',
-    );
+    expect(sayParts(WIPE_NOTICE_TEXT)).toEqual([
+      'Expeditions got bigger: everyone starts with one slot. Your trips in slots 2–3 were called home and their ',
+      ['bait', undefined],
+      ' refunded.',
+    ]);
   });
 
   it('is needed for a cancelled trip that has not been seen, and for nothing else', () => {

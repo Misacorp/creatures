@@ -57,7 +57,7 @@ export interface Find {
   talent: TalentView | null;
   /** The talent is new to every creature of its line the player has (or the creature itself is new). */
   talentNew: boolean;
-  badges: { text: string; entry: string | null }[];
+  badges: { text: string; entry: string | null; item?: CountItem }[];
   /** A duplicate's choice; null for a new creature (or a duplicate already answered). */
   choice: { card: PendingCatch; options: FindOption[] } | null;
   /** What an answered duplicate became, in a sentence. */

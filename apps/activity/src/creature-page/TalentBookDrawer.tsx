@@ -1,6 +1,8 @@
 import type { Creature } from '../api';
 import { TalentChip } from '../TalentChip';
 import { bookRows } from '../talent-view';
+import { resourceCount, resourceMark } from '../resource-count';
+import { CountBadge } from '../ui/CountBadge';
 import { Drawer } from '../ui/Drawer';
 import { resourceName } from '@creatures/game';
 
@@ -99,7 +101,7 @@ export function TalentBookDrawer({
                     }}
                   >
                     Use{' · '}
-                    {bookSlotBait} {resourceName('bait')}
+                    <CountBadge {...resourceCount('bait', bookSlotBait)} size="inline" />
                   </button>
                 )}
               </li>
@@ -108,7 +110,9 @@ export function TalentBookDrawer({
         </ul>
       )}
       {!afford && anyFree && (
-        <p class="muted small book-short">Not enough {resourceName('bait')}.</p>
+        <p class="muted small book-short">
+          Not enough <CountBadge {...resourceMark('bait')} size="inline" />.
+        </p>
       )}
     </Drawer>
   );

@@ -4,7 +4,7 @@ import { LootList } from './LootList';
 import { DungeonTreasure } from './DungeonTreasure';
 import { glyphOrUnknown } from './glyphs';
 import { baitCount, essenceCount, partCountItems, supplyCounts } from './count-items';
-import { CountBadgeList, type CountItem } from './ui/CountBadge';
+import { CostLine, CountBadgeList, type CountItem } from './ui/CountBadge';
 import { RevealLater, RevealShell, useRevealSequence } from './ui/RevealShell';
 import { RewardSummary } from './ui/RewardSummary';
 import { ToggleButton } from './ui/ToggleButton';
@@ -281,7 +281,7 @@ function RoomLog({ rows }: { rows: readonly RoomLogRow[] }) {
           )}
           {row.note !== null && (
             <span class="rp-note muted" aria-hidden="true">
-              {row.note}
+              {row.items.length > 0 ? <CostLine items={row.items} /> : row.note}
             </span>
           )}
         </li>

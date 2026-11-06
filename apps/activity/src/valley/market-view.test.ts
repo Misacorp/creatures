@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { VALLEY_RULES } from '@creatures/game';
+import { sayParts, sayText } from '../resource-count';
 import { homeInput } from '../workbench/home-sample';
 import { openPlace, sampleCommons, withCommons } from './commons-sample';
 import {
@@ -16,7 +17,8 @@ import {
   brokerRows,
   marketLine,
   marketState,
-  rateText,
+  rateRatio,
+  rateSay,
   towardName,
 } from './market-view';
 import {
@@ -44,13 +46,15 @@ const visitOf = (preset: string) => {
 
 describe('the rate in words', () => {
   it('is a ratio of whole shards: the lab tiers read 12 for 5, 2 for 1 and 8 for 5', () => {
-    expect(VALLEY_RULES.broker.tiers.map((t) => rateText(t.rate))).toEqual([
-      '12 for 5',
-      '12 for 5',
-      '2 for 1',
-      '8 for 5',
+    expect(VALLEY_RULES.broker.tiers.map((t) => rateRatio(t.rate))).toEqual([
+      { paid: 12, got: 5 },
+      { paid: 12, got: 5 },
+      { paid: 2, got: 1 },
+      { paid: 8, got: 5 },
     ]);
-    expect(rateText(3)).toBe('3 for 1');
+    expect(rateRatio(3)).toEqual({ paid: 3, got: 1 });
+    // Shown as an any-shard icon and a number on each side, never the word.
+    expect(sayParts(rateSay(2.4))).toEqual([['shards:any', 12], ' for ', ['shards:any', 5]]);
   });
 });
 
@@ -76,10 +80,18 @@ describe("the Market's state", () => {
 
   it('asks for Acorns and scrap, says shards of any kind count too, and offers every element held, the biggest pile first', () => {
     const place = marketPlace('being built');
-    expect(stillNeeded(place)).toBe('190 Acorns, 380 scrap');
-    expect(anyShardLine(place)).toBe(
-      'Shards of any kind count too, as many as you like: 4 shards count as 1 Acorn.',
-    );
+    expect(stillNeeded(place).map((i) => [i.key, i.amount])).toEqual([
+      ['bait', 190],
+      ['scrap', 380],
+    ]);
+    expect(sayParts(anyShardLine(place))).toEqual([
+      ['shards:any', undefined],
+      ' counts too, as many as you like: ',
+      ['shards:any', 4],
+      ' = ',
+      ['bait', 1],
+      '.',
+    ]);
     const rows = giveRows(
       place,
       { acorns: 500, scrap: 500, shards: { tide: 9, ember: 30, grove: 0, spark: 12, mire: 12 } },
@@ -107,20 +119,30 @@ describe("the Market's state", () => {
     const none = giveRows(place, { acorns: 5, scrap: 5, shards: {} }, 3).at(-1);
     expect(none).toMatchObject({ id: 'shards', max: 0, reason: 'You have none' });
     // Other places say nothing of the kind.
-    expect(anyShardLine(openPlace('forge', 2, 900, 0.2))).toBe('');
+    expect(anyShardLine(openPlace('forge', 2, 900, 0.2))).toEqual([]);
   });
 });
 
 describe('the broker in words', () => {
   it('asks for a creature when the seat is free, and says its rate, bonus and what it waits on', () => {
-    expect(brokerLine(sampleBroker(null))).toBe('Pick a creature, or drag one here.');
-    expect(brokerLine(sampleBroker(a.id, 1))).toBe(
-      'Swaps spare shards 12 for 5, with a 15% chance of one extra',
+    expect(brokerLine(sampleBroker(null))).toEqual(['Pick a creature, or drag one here.']);
+    expect(sayParts(brokerLine(sampleBroker(a.id, 1)))).toEqual([
+      'Swaps ',
+      ['shards:any', 12],
+      ' for ',
+      ['shards:any', 5],
+      ', with a 15% chance of one extra',
+    ]);
+    expect(sayParts(brokerLine(sampleBroker(a.id, 1, { blocked: 'tide' }))).slice(-4)).toEqual(
+      [
+        '. Waiting for a spare ',
+        ['shards:any', undefined],
+        ' to trade for ',
+        ['shards:tide', undefined],
+        '.',
+      ].slice(-4),
     );
-    expect(brokerLine(sampleBroker(a.id, 1, { blocked: 'tide' }))).toMatch(
-      /Waiting for spare shards to trade for Tide/,
-    );
-    expect(brokerLine(sampleBroker(a.id, 1, { paused: 'raid' }))).toMatch(/In the raid/);
+    expect(sayText(brokerLine(sampleBroker(a.id, 1, { paused: 'raid' })))).toMatch(/In the raid/);
   });
 
   it('lists its numbers and the next step, none at Master', () => {
@@ -132,7 +154,9 @@ describe('the broker in words', () => {
       'Trades toward',
       'Next step',
     ]);
-    expect(rows.find((r) => r.label === 'Trades toward')?.value).toBe('Grove shards');
+    expect(sayParts(rows.find((r) => r.label === 'Trades toward')?.value ?? [])).toEqual([
+      ['shards:grove', undefined],
+    ]);
     expect(brokerRows(sampleBroker(a.id, 3)).some((r) => r.label === 'Next step')).toBe(false);
     expect(towardName(null)).toBe('What the orders need');
   });
@@ -157,7 +181,7 @@ describe('the tray and the Places list', () => {
     expect(line('being built')).toBe('being built');
     expect(line('open, free seat')).toBe('a free broker seat');
     expect(line('open with a broker')).toBe('the broker trades');
-    expect(line('broker stuck')).toBe('the broker waits for spare shards');
+    expect(line('broker stuck')).toBe('the broker waits to trade');
     expect(marketLine(sampleValley(free, []))).toBeNull();
   });
 });

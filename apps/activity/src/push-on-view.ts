@@ -7,13 +7,17 @@
  */
 import { goalDef, partsOfSpec, type GoalReward } from '@creatures/game';
 import type { OfferedGoal } from './expedition-types';
-import { partName, partsEntries, rarityName } from './gear-view';
+import { partsEntries, rarityName } from './gear-view';
 import type { IconRef } from './icon-ref';
+import { resourceCount } from './resource-count';
+import type { CountItem } from './ui/CountBadge';
 
 interface RewardLine {
   key: string;
   icon: IconRef;
   text: string;
+  /** A part it brings, as a count item (an icon and a number, never the part's name); `text` is then empty. */
+  item?: CountItem;
 }
 
 /** What a goal's risk is called on the card. */
@@ -60,7 +64,8 @@ export function rewardLines(reward: GoalReward): RewardLine[] {
     out.push({
       key: part.kind,
       icon: { kind: 'part', part: part.kind },
-      text: `${String(part.amount)} ${partName(part.kind)}`,
+      text: '',
+      item: resourceCount(part.kind, part.amount),
     });
   }
   if (reward.supply === true) {

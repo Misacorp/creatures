@@ -200,6 +200,7 @@ export function CreatureCard({
           <ActionButton
             wide
             label={first.label}
+            {...(first.cost === undefined ? {} : { cost: first.cost })}
             detail={[first.detail, needs.length > 1 ? `${String(needs.length - 1)} more` : '']
               .filter((part) => part !== '')
               .join(' · ')}

@@ -9,6 +9,7 @@ import {
   byClass,
   createPage,
   find,
+  badgesIn,
   nameOf,
   visibleText,
   type FakeElement,
@@ -306,7 +307,12 @@ describe('the one gold button', () => {
     const [button] = byClass(card, 'cc-do')[0]?.childNodes ?? [];
     const gold = button as FakeElement;
     expect(visibleText(gold)).toContain('Earn Bronze Ribbon');
-    expect(visibleText(gold)).toContain('6 scrap and 2 Ember shards');
+    // The cost is icons and numbers, never the resources' names.
+    expect(badgesIn(gold)).toEqual([
+      ['Scrap', '6'],
+      ['Ember Shards', '2'],
+    ]);
+    expect(visibleText(gold)).not.toMatch(/scrap|shard/i);
     p.click(gold);
     expect(actions.onRibbon).toHaveBeenCalledTimes(1);
   });
@@ -315,7 +321,10 @@ describe('the one gold button', () => {
     const { card, actions, page: p } = draw(kind('ribbon short'));
     const button = byClass(card, 'cc-do')[0]?.childNodes[0] as FakeElement;
     expect(visibleText(button)).toContain('Earn Bronze Ribbon');
-    expect(visibleText(button)).toContain('6 scrap and 2 Ember shards');
+    expect(badgesIn(button)).toEqual([
+      ['Scrap', '6'],
+      ['Ember Shards', '2'],
+    ]);
     expect(button.hasAttribute('disabled')).toBe(true);
     p.click(button);
     expect(actions.onRibbon).not.toHaveBeenCalled();
@@ -343,7 +352,7 @@ describe('the one gold button', () => {
     });
     const button = byClass(card, 'cc-do')[0]?.childNodes[0] as FakeElement;
     expect(visibleText(button)).toContain('Evolve');
-    expect(visibleText(button)).toContain('0 / 20 Essence');
+    expect(badgesIn(button)).toEqual([['Essence', '20']]);
     expect(button.hasAttribute('disabled')).toBe(true);
     p.click(button);
     expect(actions.onEvolve).not.toHaveBeenCalled();
@@ -353,7 +362,8 @@ describe('the one gold button', () => {
     const { card, actions, page: p } = draw(kind('evolve ready'));
     const gold = byClass(card, 'cc-do')[0]?.childNodes[0] as FakeElement;
     expect(visibleText(gold)).toContain('Evolve');
-    expect(visibleText(gold)).toContain('20 Essence');
+    expect(badgesIn(gold)).toEqual([['Essence', '20']]);
+    expect(visibleText(gold)).not.toContain('Essence');
     p.click(gold);
     expect(actions.onEvolve).toHaveBeenCalledTimes(1);
   });

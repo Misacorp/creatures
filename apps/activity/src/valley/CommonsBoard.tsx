@@ -17,6 +17,7 @@ import { baseOption, type PickerOption } from '../roster-picker';
 import { ActionButton } from '../ui/ActionButton';
 import { Bar } from '../ui/Bar';
 import { ChoiceButton, ChoiceList } from '../ui/ChoiceList';
+import { CostLine, CountBadge, SayLine } from '../ui/CountBadge';
 import { CountStepper } from '../ui/CountStepper';
 import { CreatureList } from '../ui/CreatureList';
 import { Drawer } from '../ui/Drawer';
@@ -43,6 +44,7 @@ import {
   stateLine,
   stateTag,
   shardWorth,
+  partItem,
   stillNeeded,
   yourPart,
   type GiveRow,
@@ -206,8 +208,16 @@ export function CommonsBoard({
             />
             <span class="sp-pack-text">{percent}%</span>
           </div>
-          {needs !== '' && <p class="cm-need">Still needed: {needs}</p>}
-          {anyShards !== '' && <p class="cm-need">{anyShards}</p>}
+          {needs.length > 0 && (
+            <p class="cm-need">
+              Still needed: <CostLine items={needs} />
+            </p>
+          )}
+          {anyShards.length > 0 && (
+            <p class="cm-need">
+              <SayLine say={anyShards} />
+            </p>
+          )}
         </div>
       ) : (
         <p class="cm-need">{stateLine(p)}</p>
@@ -316,13 +326,17 @@ export function CommonsBoard({
   const worth = rows.find((r) => r.worth !== undefined)?.worth;
   const giveList = (
     <div class="dr-stack pix-panel">
-      {worth === undefined ? null : <p class="cm-need muted">{shardWorth(worth)}.</p>}
+      {worth === undefined ? null : (
+        <p class="cm-need muted">
+          <SayLine say={shardWorth(worth)} />
+        </p>
+      )}
       <ChoiceList label="What to give">
         {rows.map((r) => (
           <ChoiceButton
             key={r.id}
-            label={r.name}
-            line={r.reason ?? `You have ${String(r.held)}`}
+            label={<CountBadge {...r.item} size="inline" />}
+            line={r.reason ?? (r.trade === null ? '' : <SayLine say={r.trade} />)}
             disabled={busy || r.reason !== null}
             onClick={() => {
               setRowId(r.id);
@@ -358,12 +372,21 @@ export function CommonsBoard({
         </div>
         <SpendConfirm
           text={
-            row.worth === undefined
-              ? `Gifts count in full, whoever gives. The project still takes ${String(row.max)} of this.`
-              : `Gifts count in full, whoever gives. ${shardWorth(row.worth)}; the project still takes up to ${String(row.max)}.`
+            row.worth === undefined ? (
+              <>
+                Gifts count in full, whoever gives. The project still takes{' '}
+                <CountBadge {...partItem(row.part, row.max, row.element ?? '')} size="inline" />.
+              </>
+            ) : (
+              <>
+                Gifts count in full, whoever gives. <SayLine say={shardWorth(row.worth)} />; the
+                project still takes up to{' '}
+                <CountBadge {...partItem(row.part, row.max, row.element ?? '')} size="inline" />.
+              </>
+            )
           }
           label="Give"
-          price={giftPrice(row, Math.min(units, Math.max(row.max, 1)))}
+          price={{ text: '', items: [giftPrice(row, Math.min(units, Math.max(row.max, 1)))] }}
           reason={row.reason}
           busy={busy}
           onConfirm={() => {

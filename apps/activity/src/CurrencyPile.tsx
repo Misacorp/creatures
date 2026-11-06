@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { fetchLedger, type Balances, type LeetSyncStatus, type LedgerEntry } from './api';
-import { GlossaryTag } from './Glossary';
+import { baitCount, essenceCount } from './count-items';
 import { glyphOrUnknown } from './glyphs';
 import { Sprite } from './sprites/Sprite';
 import { leetStatusLine } from './leet-status';
 import { INCOME_FETCH, baitIncome, incomeRow } from './ledger-text';
 import { compactCount } from './number-format';
+import { CountBadge, type CountItem } from './ui/CountBadge';
 import { DataTable } from './ui/DataTable';
 import { Popover, popupProps } from './ui/Popover';
 import { resourceName } from '@creatures/game';
@@ -25,22 +26,10 @@ export function hudAmount(n: number): string {
 }
 
 /** One line of the popover: the currency's picture, its amount and its glossary tag. */
-function CurrencyLine({
-  glyph,
-  amount,
-  entry,
-  name,
-}: {
-  glyph: string;
-  amount: number;
-  entry: string;
-  name: string;
-}) {
+function CurrencyLine({ item }: { item: CountItem }) {
   return (
     <li class="currency-line">
-      <Sprite sprite={glyphOrUnknown(glyph)} scale={3} />
-      <span class="currency-amount pix">{amount}</span>
-      <GlossaryTag entry={entry}>{name}</GlossaryTag>
+      <CountBadge {...item} />
     </li>
   );
 }
@@ -151,18 +140,8 @@ export function CurrencyPile({
           }}
         >
           <ul class="currency-lines">
-            <CurrencyLine
-              glyph="bait"
-              amount={balances.bait}
-              entry="bait"
-              name={resourceName('bait')}
-            />
-            <CurrencyLine
-              glyph="gem"
-              amount={balances.essence}
-              entry="essence"
-              name={resourceName('essence')}
-            />
+            <CurrencyLine item={baitCount(balances.bait, { entry: true })} />
+            <CurrencyLine item={essenceCount(balances.essence, { entry: true })} />
           </ul>
           <IncomeList load={loadLedger} />
           <LeetWarning status={leetSync} />

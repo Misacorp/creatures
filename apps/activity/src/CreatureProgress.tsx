@@ -1,5 +1,5 @@
 import type { Creature } from './api';
-import { ribbonBlocker, ribbonCostText, ribbonName } from './experience';
+import { ribbonBlocker, ribbonCost, ribbonName } from './experience';
 import { GlossaryTag } from './Glossary';
 import { ActionButton } from './ui/ActionButton';
 import { Bar } from './ui/Bar';
@@ -89,7 +89,8 @@ export function RibbonLine({
         wide
         large={large}
         label={`Earn ${ribbonName(ribbon.id)}`}
-        detail={ribbonCostText(ribbon)}
+        cost={ribbonCost(ribbon).items}
+        detail={ribbonCost(ribbon).trips}
         disabled={busy || !ribbon.ready}
         onClick={() => {
           onRibbon(creature);

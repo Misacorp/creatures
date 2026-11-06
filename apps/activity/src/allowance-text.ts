@@ -1,9 +1,7 @@
 import type { Allowance } from './api';
-import { resourceName } from '@creatures/game';
+import { acornCount, type Say } from './resource-count';
 
-/** The one plain-text line shown when the daily Bait allowance lands, or null when nothing landed. */
-export function allowanceNotice(allowance: Allowance | null): string | null {
-  return allowance === null
-    ? null
-    : `Daily allowance: +${String(allowance.amount)} ${resourceName('bait')}`;
+/** The one line shown when the daily allowance lands ("Daily allowance: +25" and the Bait icon), or null when nothing landed. */
+export function allowanceNotice(allowance: Allowance | null): Say | null {
+  return allowance === null ? null : ['Daily allowance: +', acornCount(allowance.amount)];
 }

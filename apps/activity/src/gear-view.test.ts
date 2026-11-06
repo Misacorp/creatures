@@ -1,6 +1,7 @@
 import { RULES, craftCost, craftItemLevel, dismantleRange, jobDuration } from '@creatures/game';
 import { describe, expect, it, vi } from 'vitest';
 import { parseGameState, type Creature } from './api';
+import { sayParts, type Say } from './resource-count';
 import collectionState from './fixtures/collection-state.json';
 import expeditionLoot from './fixtures/expedition-claim-loot.json';
 import gearNotice from './fixtures/gear-notice.json';
@@ -462,21 +463,24 @@ describe('starting a job', () => {
       }),
     ).toContain('bag is full');
     expect(
-      startBlocker(gear, free, { kind: 'craft', cost: { 'grove-shard': 1, scrap: 100 } }),
-    ).toBe(`Needs ${String(100 - gear.parts.scrap)} more Scrap and 1 more Grove Shard.`);
+      sayParts(
+        startBlocker(gear, free, { kind: 'craft', cost: { 'grove-shard': 1, scrap: 100 } }) as Say,
+      ),
+    ).toEqual(['Needs ', ['scrap', 100 - gear.parts.scrap], ' and ', ['grove-shard', 1], ' more.']);
   });
 
   it('stops a lure for want of Bait, and says how much more', () => {
     const poor = { ...gear, balances: { ...gear.balances, bait: 5 } };
-    expect(startBlocker(poor, free, { kind: 'supply', cost: { scrap: 2 }, bait: 12 })).toBe(
-      'Needs 7 more Bait.',
-    );
+    expect(
+      sayParts(startBlocker(poor, free, { kind: 'supply', cost: { scrap: 2 }, bait: 12 }) as Say),
+    ).toEqual(['Needs ', ['bait', 7], ' more.']);
     const rich = { ...gear, balances: { ...gear.balances, bait: 12 } };
     expect(startBlocker(rich, free, { kind: 'supply', cost: { scrap: 2 }, bait: 12 })).toBeNull();
     // The parts come first in the order of reasons.
-    expect(startBlocker(poor, free, { kind: 'supply', cost: { scrap: 999 }, bait: 12 })).toContain(
-      'more Scrap',
+    const parts = sayParts(
+      startBlocker(poor, free, { kind: 'supply', cost: { scrap: 999 }, bait: 12 }) as Say,
     );
+    expect(parts[1]).toEqual(['scrap', 999 - gear.parts.scrap]);
   });
 
   it('shows the Bait of a lure craft, and none for the other supplies', () => {
@@ -753,10 +757,9 @@ describe("writing the odds, the marks and the refund ranges (the numbers are the
       { key: 'scrap', icon: { kind: 'part', part: 'scrap' }, amount: '5\u20136', label: 'Scrap' },
       {
         key: 'shards',
-        icon: { kind: 'glyph', id: 'sparkle' },
+        icon: { kind: 'glyph', id: 'shard-any' },
         amount: '1\u20132',
-        label: 'Shards',
-        name: 'any kind',
+        label: 'Shards of any kind',
       },
       {
         key: 'glimmer',
@@ -852,12 +855,20 @@ describe('what a start needs besides parts', () => {
 
   it('says how much Essence is missing, with the parts that are', () => {
     const poor = { ...gear, balances: { bait: 0, essence: 10 } };
-    expect(startBlocker(poor, free, { kind: 'craft', cost: {}, essence: 25 })).toBe(
-      'Needs 15 more Essence.',
+    expect(
+      sayParts(startBlocker(poor, free, { kind: 'craft', cost: {}, essence: 25 }) as Say),
+    ).toEqual(['Needs ', ['essence', 15], ' more.']);
+    const both = sayParts(
+      startBlocker(poor, free, { kind: 'craft', cost: { scrap: 999 }, essence: 25 }) as Say,
     );
-    expect(startBlocker(poor, free, { kind: 'craft', cost: { scrap: 999 }, essence: 25 })).toMatch(
-      /^Needs \d+ more Scrap and 15 more Essence\.$/,
-    );
+    expect(both.map((p) => (typeof p === 'string' ? p : p[0]))).toEqual([
+      'Needs ',
+      'scrap',
+      ' and ',
+      'essence',
+      ' more.',
+    ]);
+    expect(both[3]).toEqual(['essence', 15]);
     expect(startBlocker(poor, free, { kind: 'craft', cost: {}, essence: 10 })).toBeNull();
   });
 

@@ -17,6 +17,7 @@ import { useDragDrop } from '../use-drag-drop';
 import { ChoiceButton, ChoiceList } from '../ui/ChoiceList';
 import { DataTable } from '../ui/DataTable';
 import { DragGhost } from '../ui/DragGhost';
+import { CountBadge, SayLine } from '../ui/CountBadge';
 import { Drawer } from '../ui/Drawer';
 import { RosterPicker } from '../ui/RosterPicker';
 import { Slot, SlotRow } from '../ui/Slot';
@@ -40,7 +41,7 @@ import {
   marketState,
   towardName,
 } from './market-view';
-import { elementName } from '../game';
+import { sayText, shardMark } from '../resource-count';
 
 /** The id of the card a hand drops a creature on to help build (the project board's communal seat). */
 const COMMUNAL_DROP = 'communal:market';
@@ -199,7 +200,11 @@ export function MarketPage({
                 >
                   <SlotText
                     name={
-                      seat.toward === null ? 'The orders' : `${elementName(seat.toward)} shards`
+                      seat.toward === null ? (
+                        'The orders'
+                      ) : (
+                        <CountBadge {...shardMark(seat.toward)} size="inline" />
+                      )
                     }
                     sub="Trades toward"
                   />
@@ -207,13 +212,15 @@ export function MarketPage({
               ]}
             />
             {seat.creatureId === null ? (
-              <p class="sp-line muted">{brokerLine(seat)}</p>
+              <p class="sp-line muted">
+                <SayLine say={brokerLine(seat)} />
+              </p>
             ) : (
               <button
                 type="button"
                 class="sp-line sp-pack mk-line"
                 aria-haspopup="dialog"
-                aria-label={`${brokerLine(seat)} Show the rates`}
+                aria-label={`${sayText(brokerLine(seat))} Show the rates`}
                 ref={(el) => {
                   openers.current['detail'] = el;
                 }}
@@ -221,7 +228,9 @@ export function MarketPage({
                   setDetail(true);
                 }}
               >
-                <span class="sp-pack-text">{brokerLine(seat)}</span>
+                <span class="sp-pack-text">
+                  <SayLine say={brokerLine(seat)} />
+                </span>
               </button>
             )}
             <button
@@ -308,7 +317,7 @@ export function MarketPage({
               {BROKER_ELEMENTS.map((element) => (
                 <ChoiceButton
                   key={element}
-                  label={`${elementName(element)} shards`}
+                  label={<CountBadge {...shardMark(element)} size="inline" />}
                   line="Also keeps a small stock of these on the shelf."
                   selected={seat.toward === element}
                   disabled={busy}
@@ -358,7 +367,12 @@ export function MarketPage({
           returnFocusTo={openers.current['detail'] ?? null}
         >
           <div class="dr-stack pix-panel">
-            <DataTable rows={brokerRows(seat)} />
+            <DataTable
+              rows={brokerRows(seat).map((r) => ({
+                label: r.label,
+                value: <SayLine say={r.value} />,
+              }))}
+            />
           </div>
         </Drawer>
       )}

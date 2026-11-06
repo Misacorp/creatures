@@ -6,17 +6,18 @@ import { placeBubbles, placeStates } from './place-state';
 import { fullFloor, sampleAnvil, sampleOrder, shardWait, withAnvils } from './forge-sample';
 import {
   anvilBuyReason,
-  anvilPriceText,
+  anvilPrice,
   exchangeReason,
   exchangeSources,
   floorLine,
   forgeCalm,
   forgeSystemsLine,
-  needsText,
+  needsItems,
   orderWait,
   pieceLine,
   tinkerLine,
 } from './forge-view';
+import { sayParts, sayText } from '../resource-count';
 import { sampleValley } from './signpost-sample';
 import { isSmithing, trayBadge, trayFor, trayStates } from './tray-state';
 
@@ -44,23 +45,36 @@ describe('a smith in the raid (V-POST-7)', () => {
 describe('the Forge words', () => {
   it('an order says what a piece takes and what it waits on', () => {
     const o = sampleOrder('o1', BP, 3, { reach: 'rare', waiting: 'shard' });
-    expect(needsText(o)).toBe('36 scrap, 1 Tide shard, 25 Essence');
-    expect(orderWait(o)).toBe('Waiting for Tide shards');
+    expect(needsItems(o).map((i) => [i.key, i.amount])).toEqual([
+      ['scrap', 36],
+      ['shards:tide', 1],
+      ['essence', 25],
+    ]);
+    expect(sayParts(orderWait(o) ?? [])).toEqual(['Waiting for ', ['shards:tide', undefined]]);
     expect(orderWait(sampleOrder('o2', BP, 1))).toBeNull();
-    expect(orderWait(sampleOrder('o3', BP, 1, { waiting: 'essence' }))).toBe('Waiting for Essence');
+    expect(sayParts(orderWait(sampleOrder('o3', BP, 1, { waiting: 'essence' })) ?? [])).toEqual([
+      'Waiting for ',
+      ['essence', undefined],
+    ]);
   });
 
   it('a smith that tinkers says why, in plain words and for how long', () => {
     const wait = shardWait('a1', a.id, BP, 5);
     // Q64: shards change hands at the Market, so before it is built the line says so; after, it is the plain wait.
-    expect(tinkerLine(wait, true)).toBe('Waiting for Tide shards for 5 h');
-    expect(tinkerLine(wait, false)).toBe(
-      'Waiting for Tide shards for 5 h. The Market will trade for them once the valley builds it.',
-    );
-    expect(tinkerLine(sampleAnvil('a2', a.id, []), false)).toBe(
+    expect(sayParts(tinkerLine(wait, true) ?? [])).toEqual([
+      'Waiting for ',
+      ['shards:tide', undefined],
+      ' for 5 h',
+    ]);
+    expect(sayParts(tinkerLine(wait, false) ?? [])).toEqual([
+      'Waiting for ',
+      ['shards:tide', undefined],
+      ' for 5 h. The Market will trade for them once the valley builds it.',
+    ]);
+    expect(tinkerLine(sampleAnvil('a2', a.id, []), false)).toEqual([
       'Nothing is ordered, so the smith tinkers',
-    );
-    expect(tinkerLine(fullFloor('a3', a.id, BP), false)).toBe('The floor is full');
+    ]);
+    expect(tinkerLine(fullFloor('a3', a.id, BP), false)).toEqual(['The floor is full']);
     expect(tinkerLine(sampleAnvil('a4', a.id, [sampleOrder('o', BP, 2)]), false)).toBeNull();
   });
 
@@ -110,17 +124,32 @@ describe('the Forge words', () => {
   });
 
   it('the next anvil says why it cannot be bought', () => {
-    expect(anvilPriceText({ acorns: 123, scrap: 38 })).toBe('123 Acorns, 38 scrap');
-    expect(anvilPriceText({ acorns: 0, scrap: 0 })).toBe('free');
+    expect(anvilPrice({ acorns: 123, scrap: 38 }).items.map((i) => [i.key, i.amount])).toEqual([
+      ['bait', 123],
+      ['scrap', 38],
+    ]);
+    expect(anvilPrice({ acorns: 0, scrap: 0 })).toEqual({ text: 'free', items: [] });
     const second = withAnvils(plain, [sampleAnvil('a1', a.id, [])]);
-    expect(anvilBuyReason(second, 500)).toMatch(/scrap/);
-    expect(anvilBuyReason(second, 10)).toMatch(/Acorns and 0 scrap/);
+    const short = (reason: ReturnType<typeof anvilBuyReason>) =>
+      typeof reason === 'object' && reason !== null
+        ? {
+            have: reason.have.map((i) => [i.key, i.amount]),
+            cost: reason.cost.map((i) => [i.key, i.amount]),
+          }
+        : reason;
+    expect(short(anvilBuyReason(second, 500))).toMatchObject({ have: [['scrap', 0]] });
+    expect(short(anvilBuyReason(second, 10))).toMatchObject({
+      have: [
+        ['bait', 10],
+        ['scrap', 0],
+      ],
+    });
     const rich = {
       ...second,
       forge: { ...second.forge, shelf: { ...second.forge.shelf, scrap: 99 } },
     };
     expect(anvilBuyReason(rich, 500)).toBeNull();
-    expect(anvilBuyReason(rich, 10)).toMatch(/10 Acorns/);
+    expect(short(anvilBuyReason(rich, 10))).toMatchObject({ have: [['bait', 10]] });
     expect(
       anvilBuyReason(
         withAnvils(plain, [sampleAnvil('a1', a.id, []), sampleAnvil('a2', b.id, [])]),
@@ -137,10 +166,18 @@ describe('the Forge words', () => {
     expect(exchangeSources(forge, 'tide')[0]).toEqual({ element: 'ember', held: 7 });
     expect(exchangeSources(forge, 'ember').map((s) => s.element)).not.toContain('ember');
     expect(exchangeReason(forge, 'tide', null, 1)).toBeNull();
-    expect(exchangeReason(forge, 'tide', 'grove', 1)).toMatch(/3 Grove shards/);
+    expect(sayParts(exchangeReason(forge, 'tide', 'grove', 1) ?? [])).toEqual([
+      'You need ',
+      ['shards:grove', 3],
+      '.',
+    ]);
     expect(
-      exchangeReason({ ...forge, shelf: { ...forge.shelf, shards: {} } }, 'tide', null, 1),
-    ).toMatch(/3 shards of one other kind/);
+      sayParts(
+        exchangeReason({ ...forge, shelf: { ...forge.shelf, shards: {} } }, 'tide', null, 1) ?? [],
+      ),
+    ).toEqual(['You need ', ['shards:any', 3], ' of one other kind.']);
+    // The screen shows icons and numbers; the words of a spoken line are the library's names.
+    expect(sayText(exchangeReason(forge, 'tide', 'grove', 1) ?? [])).toContain('3 Grove Shard');
   });
 });
 

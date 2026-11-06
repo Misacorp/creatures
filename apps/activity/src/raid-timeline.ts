@@ -3,7 +3,7 @@
  * its step, and a tap opens a one-line result. The full after-action card waits until the finale
  * is over. Pure.
  */
-import { resourceName } from '@creatures/game';
+import { essenceAmount, type Say } from './resource-count';
 import type { PhaseResultView, RaidEventId, RaidPhaseId } from './raid-api';
 import { phaseName, stageOutcomeNote, stageOutcomeText } from './raid-text';
 
@@ -14,8 +14,8 @@ interface StepMark {
   glyph: string;
   /** What assistive technology says for the mark button, for example "Phase 1: cleared. Show result." */
   label: string;
-  /** The short result: "Phase 1: cleared. You got 12 Essence." */
-  summary: string;
+  /** The short result: "Phase 1: cleared. You got" and the Essence icon with 12. */
+  summary: Say;
 }
 
 export const CLEARED_GLYPH = '✓';
@@ -32,8 +32,8 @@ export function stepMark(result: PhaseResultView, rules?: 2): StepMark {
     // A retreat or an enrage says so ("Phase 1 cleared: the boss retreated."); the plain case is as it was.
     summary:
       stageOutcomeNote(result) === null
-        ? `${name}: ${word}. You got ${String(result.essence)} ${resourceName('essence')}.`
-        : `${stageOutcomeText(result)} You got ${String(result.essence)} ${resourceName('essence')}.`,
+        ? [`${name}: ${word}. You got `, essenceAmount(result.essence), '.']
+        : [`${stageOutcomeText(result)} You got `, essenceAmount(result.essence), '.'],
   };
 }
 

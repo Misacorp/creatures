@@ -8,12 +8,16 @@ import type { Creature } from './api';
 import type { CancelledTrip } from './expedition-types';
 import { creatureName } from './game';
 import { destinationName } from './trip-view';
-import { resourceName } from '@creatures/game';
+import { resourceMark, type Say } from './resource-count';
 
 export const WIPE_NOTICE_KEY = 'creatures:expeditions-v2-notice';
 
 /** The notice's text, friendly and short. */
-export const WIPE_NOTICE_TEXT = `Expeditions got bigger: everyone starts with one slot. Your trips in slots 2–3 were called home and their ${resourceName('bait')} refunded.`;
+export const WIPE_NOTICE_TEXT: Say = [
+  'Expeditions got bigger: everyone starts with one slot. Your trips in slots 2–3 were called home and their ',
+  resourceMark('bait'),
+  ' refunded.',
+];
 
 /** The part of the Web Storage API the notice uses (so tests can pass a fake). */
 export interface NoticeStorage {

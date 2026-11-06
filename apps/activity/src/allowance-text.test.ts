@@ -1,10 +1,15 @@
 import { RULES, glossary, howToPlay } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import { allowanceNotice } from './allowance-text';
+import { sayParts } from './resource-count';
 
 describe('allowanceNotice', () => {
   it('says what landed, as plain text', () => {
-    expect(allowanceNotice({ day: '2026-10-20', amount: 25 })).toBe('Daily allowance: +25 Bait');
+    // The line has the Bait icon and the number, never the word.
+    expect(sayParts(allowanceNotice({ day: '2026-10-20', amount: 25 }) ?? [])).toEqual([
+      'Daily allowance: +',
+      ['bait', 25],
+    ]);
   });
 
   it('says nothing when the server had nothing new to tell', () => {

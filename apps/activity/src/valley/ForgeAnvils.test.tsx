@@ -1,7 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { OrderRequest } from '../api';
 import { PopoverHost } from '../PopoverHost';
-import { byClass, byName, createPage, visibleText, type Page } from '../test-dom';
+import {
+  badgesIn,
+  byClass,
+  byName,
+  createPage,
+  visibleText,
+  type FakeElement,
+  type Page,
+} from '../test-dom';
 import { blueprintViews } from '../gear-view';
 import { SAMPLE_GEAR } from '../creature-card-sample';
 import { homeInput } from '../workbench/home-sample';
@@ -98,9 +106,12 @@ describe('ForgeAnvils', () => {
     const p = draw({ ...visit, market: { open: false, seat: null } }, 500, [], [], toMarket);
     const text = visibleText(p.root);
     expect(text).toMatch(/Tinkering/);
+    // The wait is "Waiting for" and the Tide shard's icon, never the words "Tide shards".
     expect(text).toMatch(
-      /Waiting for Tide shards for 5 h\. The Market will trade for them once the valley builds it\./,
+      /Waiting for for 5 h\. The Market will trade for them once the valley builds it\./,
     );
+    expect(text).not.toMatch(/Tide shards/);
+    expect(badgesIn(byClass(p.root, 'fg-tinker')[0] as FakeElement)).toEqual([['Tide Shards', '']]);
     // There is no exchange tap at the Forge any more, whatever the state of the Market (Q64).
     expect(byName(p.root, 'button', /Trade shards|Trade for/).length).toBe(0);
     expect(byName(p.root, 'button', /Trade at the Market/).length).toBe(0);
@@ -113,7 +124,7 @@ describe('ForgeAnvils', () => {
     const visit = withAnvils(plain, [shardWait('a1', a.id, BP, 5)]);
     const p = draw({ ...visit, market: { open: true, seat: null } }, 500, [], [], toMarket);
     const text = visibleText(p.root);
-    expect(text).toMatch(/Waiting for Tide shards for 5 h/);
+    expect(text).toMatch(/Waiting for for 5 h/);
     expect(text).not.toMatch(/once the valley builds it/);
     expect(byName(p.root, 'button', /Go to the Market/).length).toBe(0);
     p.click(byName(p.root, 'button', /Trade at the Market/)[0] as never);
@@ -139,8 +150,17 @@ describe('ForgeAnvils', () => {
     p.click(open);
     const buy = byName(p.root, 'button', /Buy the anvil/)[0];
     expect(buy?.getAttribute('disabled')).not.toBeNull();
-    expect(visibleText(p.root)).toMatch(/123 Acorns, 38 scrap/);
-    expect(visibleText(p.root)).toMatch(/0 scrap/);
+    // The price on the button and what the player has: icons and numbers, never the words.
+    const price = badgesIn(byName(p.root, 'button', /Buy the anvil/)[0] as FakeElement);
+    expect(price).toEqual([
+      ['Bait', '123'],
+      ['Scrap', '38'],
+    ]);
+    const why = badgesIn(byClass(p.root, 'alert')[0] as FakeElement).map(
+      ([name, n]) => `${name} ${n}`,
+    );
+    expect(why.length).toBeGreaterThan(0);
+    expect(visibleText(p.root)).not.toMatch(/Acorns|scrap/);
   });
 
   it('with the Acorns and scrap, the button buys', () => {

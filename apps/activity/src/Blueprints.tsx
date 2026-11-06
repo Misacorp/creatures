@@ -12,10 +12,9 @@ import {
   nominalHours,
   slotName,
 } from './gear-view';
-import { partBadge } from './count-items';
-import type { PartKind } from './gear-types';
+import { scrapCount, shardCount } from './resource-count';
 import { ElementChip } from './sprites/ElementChip';
-import { CountBadge } from './ui/CountBadge';
+import { CostLine, CountBadge } from './ui/CountBadge';
 import { mostHeldElement } from './valley/forge-view';
 
 /**
@@ -87,12 +86,11 @@ export function Blueprints({
                     {bp.patchwork !== undefined && order !== undefined ? (
                       // V-FORGE-12: no quality; what a piece takes, as icons (the shard icon is the pile held most now).
                       <>
-                        <CountBadge {...partBadge('scrap', bp.patchwork.scrap)} />
-                        <CountBadge
-                          {...partBadge(
-                            `${mostHeldElement(order.shards)}-shard` as PartKind,
-                            bp.patchwork.shards,
-                          )}
+                        <CostLine
+                          items={[
+                            scrapCount(bp.patchwork.scrap),
+                            shardCount(mostHeldElement(order.shards), bp.patchwork.shards),
+                          ]}
                         />
                       </>
                     ) : (
