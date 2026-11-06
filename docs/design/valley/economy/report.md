@@ -677,6 +677,8 @@ Rows touched, from the shape of a visit (the player row, one row per creature, s
 - `creatures`: not the docs' 2% an hour: with 2% a daily player has all the launch lines early, and posts.md's worked month ("15 creatures by week 4") needs far less. The two numbers in the docs disagree; the live value (1.3% an hour) is the tuner's, from the 0.75% of the first draft.
 - `rareFinds`: the "everyday" rare find that fills one socket of a collection (V-COM-12) about every 28 scout-days.
 - `destinations`: six destinations, profiles picked to cover scrap, shards, creatures and rare finds (places.md lists them).
+- `extraPlaces`: the Moonlit Reef is tide, rich in creatures, open all day; the Festival Grounds have no element, are rich in rare finds, and are open in festival weeks (V-SCOUT-8).
+- `pushOn`: a way deeper turns up about once in two weeks for a daily player's Expert scout (about 0.3 a day at 24 hours).
 - `placeAffinity`: a destination whose element a creature has doubles its weight when a new creature arrives (the shipped 2x).
 - `species`: a content drop adds 12 lines, 6 common, 4 rare and 2 epic (`drop`; the earlier 6/4/2 kept, now counted as lines), with elements cycling through the five; and a line's typical number of forms by rarity is `forms` (a common line 3, as most today; a rare line 2; an epic line 1, as today's epics), so a drop is about 28 forms.
 - `rarity`: arrivals weigh a line by its rarity, so commons come at the "week 4 pace" and rarer lines take months.

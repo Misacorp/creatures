@@ -363,18 +363,21 @@ export function createServer(
   options: ServerOptions,
   rules: Rules,
 ): Server {
-  const places = rules.commons.places.map((id) => ({
-    id,
-    level: 1,
-    open: false,
-    opensAt: 0,
-    progress: 0,
-    size: 0,
-    need: [0, 0, 0],
-    have: [0, 0, 0],
-    cosmetic: 0,
-    openedAt: 0,
-  }));
+  // A one-shot place (the Market) is not in the valley from the start: the lab adds it when anvils wait for shards (`openMarket`).
+  const places = rules.commons.places
+    .filter((id) => rules.commons.oneShot[id] === undefined)
+    .map((id) => ({
+      id,
+      level: 1,
+      open: false,
+      opensAt: 0,
+      progress: 0,
+      size: 0,
+      need: [0, 0, 0],
+      have: [0, 0, 0],
+      cosmetic: 0,
+      openedAt: 0,
+    }));
   const rng = createSeededRng(`${serverId}|${seed}|server`);
   return {
     config: { id: serverId, ...options },

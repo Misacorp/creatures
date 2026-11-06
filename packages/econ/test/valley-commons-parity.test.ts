@@ -74,13 +74,16 @@ function replay(seed: number): { lab: ReturnType<typeof runServer>; mine: Replay
   );
   const mix = worth.map((w) => w / worthTotal);
   // Per place: level, open project (size and parts), when it may open.
-  const places = rules.commons.places.map((id) => ({
-    id,
-    level: 1,
-    size: 0,
-    have: { acorns: 0, scrap: 0, shards: 0 },
-    opensAt: 0,
-  }));
+  // The mixed8 lab has no Market (a one-shot place the lab adds only in its "market" variant, tested in valley-market-parity).
+  const places = rules.commons.places
+    .filter((id) => rules.commons.oneShot[id] === undefined)
+    .map((id) => ({
+      id,
+      level: 1,
+      size: 0,
+      have: { acorns: 0, scrap: 0, shards: 0 },
+      opensAt: 0,
+    }));
   const level = (id: string): number => places.find((p) => p.id === id)?.level ?? 1;
   let fireMilli = fireStartMilli(rules);
   const levelUps: number[] = [];
@@ -283,11 +286,13 @@ describe('the pure rules agree with the lab', () => {
       false,
       false,
       false,
+      false, // the Market (step 7) opens with the rest
     ]);
     levels.bonfire = 2;
     expect(rules.commons.places.map((id) => mayOpenProject(rules, id, of))).toEqual([
       true,
       true,
+      false,
       false,
       false,
       false,
