@@ -11,6 +11,7 @@
 import {
   VALLEY_ELEMENTS,
   VALLEY_RULES,
+  anyShardValue,
   partRoom,
   shardOf,
   shardUnits,
@@ -94,7 +95,10 @@ export class ValleyGifts {
           if (input.currency === 'shards') {
             const element = input.element;
             if (element === undefined) throw new GameError(400, 'invalid_body');
-            const own = rules.commons.placeElement[input.place] === element;
+            // The Market takes shards of any element, each in full (V-COM-15); every other place counts only its own in full.
+            const own =
+              anyShardValue(rules, input.place) !== undefined ||
+              rules.commons.placeElement[input.place] === element;
             const rate = rules.forge.exchange.rate;
             units = Math.min(shardUnits(input.amount, own, rate), roomUnits);
             if (units <= 0) throw new GameError(400, 'too_few_shards');

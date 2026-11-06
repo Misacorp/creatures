@@ -72,6 +72,18 @@ export function projectSize(
 export const partValue = (rules: CommonsRules, part: ProjectPart): number =>
   rules.commons.giftValue[part];
 
+/**
+ * V-COM-15, Q48 (Misa, 2026-11-06): the value of one shard of any element toward a place's project, or `undefined` when the place takes
+ * shards only in its own split (the common rule, element-tied). The Market takes shards of any element, one value for all, with no cap:
+ * they may fill the whole project, so the surplus piling up at the Forge builds the Market.
+ */
+export const anyShardValue = (rules: CommonsRules, place?: string): number | undefined =>
+  place === undefined ? undefined : rules.commons.oneShot[place]?.shardValue;
+
+/** What one unit of a part is worth toward this place's project (a shard of the Market counts at the Market's own value). */
+const unitValue = (rules: CommonsRules, part: ProjectPart, place?: string): number =>
+  (part === 'shards' ? anyShardValue(rules, place) : undefined) ?? partValue(rules, part);
+
 /** The share of a project's value each part makes: the place's own split when it has one (the Market's, V-FORGE-11), else the common one (Q33). */
 const splitOf = (rules: CommonsRules, place?: string) =>
   (place === undefined ? undefined : rules.commons.oneShot[place]?.costSplit) ??
@@ -88,10 +100,12 @@ export function partNeeds(
   place?: string,
 ): Record<ProjectPart, number> {
   const split = splitOf(rules, place);
+  const any = anyShardValue(rules, place);
   return {
     acorns: (size * split.acorns) / partValue(rules, 'acorns'),
     scrap: (size * split.scrap) / partValue(rules, 'scrap'),
-    shards: (size * split.shards) / partValue(rules, 'shards'),
+    // Shards of any element may stand in for the whole project (the Market): the shard "part" is as big as the project.
+    shards: any === undefined ? (size * split.shards) / partValue(rules, 'shards') : size / any,
   };
 }
 
@@ -106,10 +120,12 @@ export function projectProgress(
   place?: string,
 ): number {
   const need = partNeeds(rules, size, place);
-  return PROJECT_PARTS.reduce(
-    (sum, part) => sum + Math.min(have[part], need[part]) * partValue(rules, part),
+  const filled = PROJECT_PARTS.reduce(
+    (sum, part) => sum + Math.min(have[part], need[part]) * unitValue(rules, part, place),
     0,
   );
+  // Where shards may fill the whole project, the parts together never count past it.
+  return anyShardValue(rules, place) === undefined ? filled : Math.min(size, filled);
 }
 
 /** Whether every part is full (the level is raised; a hair of tolerance for the communal trickle's fractions). */
@@ -119,6 +135,8 @@ export function projectDone(
   have: ProjectHave,
   place?: string,
 ): boolean {
+  if (anyShardValue(rules, place) !== undefined)
+    return projectProgress(rules, size, have, place) >= size - 1e-9;
   const need = partNeeds(rules, size, place);
   return PROJECT_PARTS.every((part) => have[part] >= need[part] - 1e-9);
 }
@@ -131,15 +149,20 @@ export function partRoom(
   part: ProjectPart,
   place?: string,
 ): number {
-  return Math.max(0, partNeeds(rules, size, place)[part] - have[part]);
+  const own = Math.max(0, partNeeds(rules, size, place)[part] - have[part]);
+  if (anyShardValue(rules, place) === undefined) return own;
+  // Where shards may stand in for any part, no part takes more than what the project still lacks.
+  const left = Math.max(0, size - projectProgress(rules, size, have, place));
+  return Math.min(own, left / unitValue(rules, part, place));
 }
 
 /**
  * The units a gift of shards of an element gives a place's project: the place's own element in full, any other at the exchange's rate
- * (`rate` for 1), so one scarce element never holds a project back.
+ * (`rate` for 1), so one scarce element never holds a project back. A place that takes shards of any element (the Market, `anyElement`)
+ * counts every shard in full.
  */
-export function shardUnits(amount: number, own: boolean, rate: number): number {
-  return own ? amount : Math.floor(amount / rate);
+export function shardUnits(amount: number, own: boolean, rate: number, anyElement = false): number {
+  return own || anyElement ? amount : Math.floor(amount / rate);
 }
 
 /** V-COM-14: the value in Acorns' worth `hours` of a communal seat's work adds to its project (the caller caps it at what is left). */
@@ -152,7 +175,7 @@ export function valueToUnits(rules: CommonsRules, value: number, place?: string)
   return {
     acorns: (value * split.acorns) / partValue(rules, 'acorns'),
     scrap: (value * split.scrap) / partValue(rules, 'scrap'),
-    shards: (value * split.shards) / partValue(rules, 'shards'),
+    shards: (value * split.shards) / unitValue(rules, 'shards', place),
   };
 }
 
@@ -279,6 +302,8 @@ export const ValleyCommonsPlaceSchema = v.strictObject({
       needs: v.strictObject({ acorns: amount, scrap: amount, shards: amount }),
       /** The shards the place's own element counts in full. */
       shardElement: v.string(),
+      /** The value in Acorns' worth of one shard of any element, for a place that takes them all (the Market); null: only its own element counts in full. */
+      anyShard: v.nullable(amount),
       cosmetic: v.boolean(),
     }),
   ),

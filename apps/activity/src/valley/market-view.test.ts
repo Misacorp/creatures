@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { VALLEY_RULES } from '@creatures/game';
 import { homeInput } from '../workbench/home-sample';
-import { sampleCommons, withCommons } from './commons-sample';
+import { openPlace, sampleCommons, withCommons } from './commons-sample';
 import {
   COMMONS_NAMES,
+  anyShardLine,
   giveRows,
   levelLine,
   stateLine,
@@ -73,15 +74,40 @@ describe("the Market's state", () => {
     expect(COMMONS_NAMES['market']).toBe('Market');
   });
 
-  it('asks for Acorns and scrap only, and offers no shards to give', () => {
+  it('asks for Acorns and scrap, says shards of any kind count too, and offers every element held, the biggest pile first', () => {
     const place = marketPlace('being built');
     expect(stillNeeded(place)).toBe('190 Acorns, 380 scrap');
+    expect(anyShardLine(place)).toBe(
+      'Shards of any kind count too, as many as you like: 4 shards count as 1 Acorn.',
+    );
     const rows = giveRows(
       place,
-      { acorns: 500, scrap: 500, shards: { tide: 9, ember: 9, grove: 9, spark: 9, mire: 9 } },
+      { acorns: 500, scrap: 500, shards: { tide: 9, ember: 30, grove: 0, spark: 12, mire: 12 } },
       3,
     );
-    expect(rows.map((r) => r.id)).toEqual(['acorns', 'scrap']);
+    // One value for every element (no 3 for 1), a row for each pile held, the biggest first; a tie keeps the shelf's order.
+    expect(rows.map((r) => r.id)).toEqual([
+      'acorns',
+      'scrap',
+      'shards:ember',
+      'shards:spark',
+      'shards:mire',
+      'shards:tide',
+    ]);
+    const ember = rows.find((r) => r.id === 'shards:ember');
+    expect(ember).toMatchObject({ per: 1, held: 30, max: 30, worth: 0.25, reason: null });
+    // Never more than the project still takes.
+    const small = giveRows(
+      { ...place, project: { ...place.project!, needs: { acorns: 0, scrap: 0, shards: 7 } } },
+      { acorns: 0, scrap: 0, shards: { ember: 30 } },
+      3,
+    ).find((r) => r.id === 'shards:ember');
+    expect(small?.max).toBe(7);
+    // No shards held: one row that says so.
+    const none = giveRows(place, { acorns: 5, scrap: 5, shards: {} }, 3).at(-1);
+    expect(none).toMatchObject({ id: 'shards', max: 0, reason: 'You have none' });
+    // Other places say nothing of the kind.
+    expect(anyShardLine(openPlace('forge', 2, 900, 0.2))).toBe('');
   });
 });
 

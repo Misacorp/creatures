@@ -132,6 +132,36 @@ describe('projects and gifts (Q33)', () => {
     expect(q.shards[ember]).toBeGreaterThanOrEqual(reserve);
   });
 
+  it("give the Market spare shards of any element in full, keeping the Forge's orders and reserve (V-COM-15)", () => {
+    const s = createServer('test', 1, { ...options, broker: 'market' }, RULES);
+    dailyServer(s, [], 0, RULES);
+    s.places[0]!.level = 2;
+    dailyServer(s, [], 24, RULES);
+    const market = s.places.findIndex((x) => x.id === 'market');
+    expect(s.places[market]!.open).toBe(true);
+    // Only the Market is open, so every shard given is the Market's.
+    for (const [i, x] of s.places.entries()) if (i !== market) x.open = false;
+    const p = createPlayer(RULES, 'test', 1, 0, profileById('daily'), 4);
+    join(p, s, 0);
+    p.giftBudget.fill(0);
+    const reserve = RULES.forge.giveReserveShards;
+    const spark = ELEMENTS.indexOf('spark');
+    const grove = ELEMENTS.indexOf('grove');
+    creditShard(p, spark, 50, 'test');
+    creditShard(p, grove, 20, 'test');
+    const held = (): number => ELEMENTS.reduce((n, _, e) => n + (p.shards[e] ?? 0), 0);
+    const before = held();
+    const value = RULES.commons.oneShot['market']!.shardValue!;
+    giveGifts(p, s, 30);
+    // Every shard above the reserve goes in at the one value (no exchange rate), whatever the element.
+    expect(p.shards[spark]).toBeGreaterThanOrEqual(reserve);
+    expect(p.shards[grove]).toBeGreaterThanOrEqual(reserve);
+    const given = before - held();
+    expect(given).toBeGreaterThan(0);
+    expect(s.places[market]!.have[2]).toBeCloseTo(given, 9);
+    expect(s.places[market]!.progress).toBeCloseTo(given * value, 6);
+  });
+
   it('keep a reserve for the Forge: at least a piece of scrap and a piece of shards', () => {
     expect(RULES.forge.giveReserveShards).toBeGreaterThanOrEqual(RULES.forge.shard);
     expect(RULES.forge.giveReserveScrap).toBeGreaterThanOrEqual(RULES.forge.scrap);

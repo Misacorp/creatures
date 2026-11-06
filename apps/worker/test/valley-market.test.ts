@@ -2,7 +2,7 @@
    These tests read parts of response bodies (`Json.body` is `any` on purpose). */
 /**
  * Phase 5 step 7: the Market and the broker (migration 62, `valley-seats.ts`, `valley-settle.ts`, the `/api/valley/broker` route). The
- * Market is a place built once (its one project: Acorns and scrap, no shards); when it is built every player has the broker's seat, a
+ * Market is a place built once (its one project: Acorns and scrap, and shards of any element, no cap); when it is built every player has the broker's seat, a
  * creature there trades spare shards for what the Forge's orders wait on, all the time, and grows in trading.
  */
 import { VALLEY_RULES, ValleyViewSchema, type ValleyView } from '@creatures/game';
@@ -124,7 +124,7 @@ describe('the Market before and after it is built (V-FORGE-11, V-COM-15)', () =>
     );
   });
 
-  it('opens its one project as soon as the hearth has levelled (Q48), small, paid in Acorns and scrap only, and the Forge follows', async () => {
+  it('opens its one project as soon as the hearth has levelled (Q48), small, paid in Acorns and scrap or shards of any kind, and the Forge follows', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
@@ -133,7 +133,10 @@ describe('the Market before and after it is built (V-FORGE-11, V-COM-15)', () =>
         ctx.sql.exec("UPDATE valley_places SET level = 2 WHERE place = 'bonfire'");
         const open = (await view(p)).commons?.places.find((x) => x.id === 'market');
         expect(open?.state).toBe('open');
-        expect(open?.project?.needs.shards).toBe(0);
+        // Shards of any element may fill the whole project (V-COM-15): the shard part is as big as the project, at the Market's one value.
+        const shardValue = R.commons.oneShot['market']!.shardValue!;
+        expect(open?.project?.anyShard).toBe(shardValue);
+        expect(open?.project?.needs.shards).toBeCloseTo((open?.project?.size ?? 0) / shardValue, 6);
         expect(open?.project?.needs.acorns).toBeGreaterThan(0);
         // Small, a share of the base size (the lab's Market). The Forge's project waits until it is built.
         expect((await view(p)).commons?.places.find((x) => x.id === 'forge')?.state).toBe(
@@ -146,16 +149,38 @@ describe('the Market before and after it is built (V-FORGE-11, V-COM-15)', () =>
             (weight / 8) ** R.commons.sizeExponent,
           6,
         );
-        // Shards are not taken for it.
-        creditParts(ctx.sql, p.id, { 'mire-shard': 5 });
-        const shards = await gift(p, {
+        // Shards of any element count at the one value, each in full (never the exchange's 3 for 1), and a repeat of the same key is free.
+        creditParts(ctx.sql, p.id, { 'mire-shard': 5, 'grove-shard': 7 });
+        const key = newKey('gift');
+        const body = { place: 'market', currency: 'shards', element: 'grove', amount: 4 };
+        const shards = await p.api.call('POST', '/api/valley/gift', {
+          idempotencyKey: key,
+          ...body,
+        });
+        expect(shards.status).toBe(200);
+        expect(shards.body.spent).toBe(4);
+        expect(shards.body.value).toBeCloseTo(4 * shardValue, 9);
+        expect(part(ctx.sql, p.id, 'grove-shard')).toBe(3);
+        const again = await p.api.call('POST', '/api/valley/gift', {
+          idempotencyKey: key,
+          ...body,
+        });
+        expect(again.body.spent).toBe(4);
+        expect(part(ctx.sql, p.id, 'grove-shard')).toBe(3);
+        const mire = await gift(p, {
           place: 'market',
           currency: 'shards',
           element: 'mire',
           amount: 3,
         });
-        expect(shards.status).toBe(409);
-        expect(part(ctx.sql, p.id, 'mire-shard')).toBe(5);
+        expect(mire.status).toBe(200);
+        expect(mire.body.spent).toBe(3);
+        expect(part(ctx.sql, p.id, 'mire-shard')).toBe(2);
+        // More than the player has: refused, nothing taken.
+        expect(
+          (await gift(p, { place: 'market', currency: 'shards', element: 'tide', amount: 1 }))
+            .status,
+        ).toBe(409);
         // Acorns and scrap fill it: the level is raised and no other project follows.
         const needs = open?.project?.needs ?? { acorns: 0, scrap: 0 };
         give(ctx, p.id, { bait: Math.ceil(needs.acorns) + 10 });
@@ -183,6 +208,46 @@ describe('the Market before and after it is built (V-FORGE-11, V-COM-15)', () =>
         ctx.clock.t += 10 * 24 * HOUR;
         const later = await view(p);
         expect(later.commons?.places.find((x) => x.id === 'market')?.state).toBe('done');
+      },
+      SYSTEMS,
+    );
+  });
+
+  it('is built by shards of any two elements alone, uncapped, and takes only what it lacked (V-COM-15)', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await newPlayer(ctx, 1);
+        await p.state();
+        ctx.sql.exec("UPDATE valley_places SET level = 2 WHERE place = 'bonfire'");
+        const open = (await view(p)).commons?.places.find((x) => x.id === 'market');
+        const total = Math.ceil(open?.project?.needs.shards ?? 0);
+        creditParts(ctx.sql, p.id, { 'tide-shard': total - 100, 'spark-shard': 150 });
+        const first = await gift(p, {
+          place: 'market',
+          currency: 'shards',
+          element: 'tide',
+          amount: total - 100,
+        });
+        expect(first.status).toBe(200);
+        expect(first.body.levelUp).toBe(false);
+        const done = await gift(p, {
+          place: 'market',
+          currency: 'shards',
+          element: 'spark',
+          amount: 150,
+        });
+        expect(done.status).toBe(200);
+        expect(done.body.levelUp).toBe(true);
+        // Only what the project lacked was taken: the rest of the spark shards stay.
+        expect(part(ctx.sql, p.id, 'spark-shard')).toBeGreaterThan(0);
+        expect(
+          v.parse(ValleyViewSchema, done.body.valley).commons?.places.find((x) => x.id === 'market')
+            ?.state,
+        ).toBe('done');
+        // Another place is unchanged (its own element in full, another 3 for 1: valley-commons.test.ts), with no `anyShard` on its board.
+        const hearth = (await view(p)).commons?.places.find((x) => x.id === 'bonfire');
+        expect(hearth?.project?.anyShard).toBeNull();
       },
       SYSTEMS,
     );

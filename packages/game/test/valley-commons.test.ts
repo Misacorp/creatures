@@ -4,6 +4,7 @@ import {
   VALLEY_RULES,
   ValleyCommonsViewSchema,
   activeWeightOf,
+  anyShardValue,
   communalValue,
   fireLevelOf,
   fireStartMilli,
@@ -121,7 +122,7 @@ describe('projects (V-COM-5, 11, 15)', () => {
     expect(mayOpenProject(R, 'market', of)).toBe(false);
   });
 
-  it('size the Market small (a share of the base, Q48) and pay it in Acorns and scrap only', () => {
+  it('size the Market small (a share of the base, Q48) and pay it in Acorns and scrap, with shards of any kind standing in', () => {
     expect(projectSize(R, 1, 8, 'market')).toBeCloseTo(
       R.commons.baseSize * R.commons.oneShot['market']!.sizeFactor,
       9,
@@ -129,14 +130,47 @@ describe('projects (V-COM-5, 11, 15)', () => {
     expect(projectSize(R, 1, 8, 'market')).toBeLessThan(projectSize(R, 2, 8) / 2);
     expect(projectSize(R, 1, 8, 'school')).toBeCloseTo(projectSize(R, 1, 8), 9);
     const need = partNeeds(R, 1000, 'market');
-    expect(need.shards).toBe(0);
     expect(need.acorns * R.commons.giftValue.acorns).toBeCloseTo(500, 9);
     expect(need.scrap * R.commons.giftValue.scrap).toBeCloseTo(500, 9);
     expect(partNeeds(R, 1000, 'forge').shards).toBeGreaterThan(0);
-    expect(partRoom(R, 1000, { acorns: 0, scrap: 0, shards: 0 }, 'shards', 'market')).toBe(0);
     expect(
       projectDone(R, 1000, { acorns: need.acorns, scrap: need.scrap, shards: 0 }, 'market'),
     ).toBe(true);
+  });
+
+  it('let shards of any kind fill the Market at one value, with no cap (V-COM-15)', () => {
+    const value = anyShardValue(R, 'market')!;
+    expect(value).toBe(R.commons.oneShot['market']!.shardValue);
+    expect(anyShardValue(R, 'forge')).toBeUndefined();
+    expect(anyShardValue(R)).toBeUndefined();
+    const size = 1000;
+    const none = { acorns: 0, scrap: 0, shards: 0 };
+    // The shard part is as big as the whole project: they may fill all of it.
+    expect(partNeeds(R, size, 'market').shards * value).toBeCloseTo(size, 9);
+    expect(partRoom(R, size, none, 'shards', 'market')).toBeCloseTo(size / value, 9);
+    expect(projectProgress(R, size, { ...none, shards: 100 }, 'market')).toBeCloseTo(
+      100 * value,
+      9,
+    );
+    expect(projectDone(R, size, { ...none, shards: size / value }, 'market')).toBe(true);
+    // Never counted past the project, and what is left shrinks as the other parts fill.
+    expect(projectProgress(R, size, { ...none, shards: 10 * size }, 'market')).toBeCloseTo(size, 9);
+    const half = { acorns: 500 / R.commons.giftValue.acorns, scrap: 0, shards: 0 };
+    expect(partRoom(R, size, half, 'shards', 'market')).toBeCloseTo(500 / value, 9);
+    expect(partRoom(R, size, { ...half, shards: 300 }, 'scrap', 'market')).toBeCloseTo(
+      (500 - 300 * value) / R.commons.giftValue.scrap,
+      9,
+    );
+    // A mix of the three finishes it exactly.
+    const mix = { acorns: 200, scrap: 400, shards: (size - 200 - 400 * 0.5) / value };
+    expect(projectDone(R, size, mix, 'market')).toBe(true);
+    expect(projectDone(R, size, { ...mix, shards: mix.shards - 1 }, 'market')).toBe(false);
+    // The other places are as before: a part is full at its own need.
+    expect(partRoom(R, size, none, 'shards', 'forge')).toBeCloseTo(
+      partNeeds(R, size, 'forge').shards,
+      9,
+    );
+    expect(shardUnits(7, false, 3, true)).toBe(7);
   });
 
   it("turn a value into the parts in the project's own proportions", () => {

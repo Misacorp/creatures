@@ -353,13 +353,23 @@ export const VALLEY_RULES = {
   commons: {
     places: ['bonfire', 'forge', 'signpost', 'paddock', 'school', 'market'] as readonly string[],
     // V-FORGE-11, V-COM-15, Q48: the Market is built once (a place level 1 to 2, then no more projects: its later levels are a later idea).
-    // It is the second guided project, so it is sized like a first-level project (the hearth's size, small) and paid in Acorns and scrap
-    // only: shards are what is short when it is wanted, and you cannot trade for them before it stands (Q48: "paid in Acorns and scrap").
+    // It is the second guided project, so it is sized like a first-level project (the hearth's size, small), paid in Acorns and scrap
+    // (Q48), and shards of ANY element may stand in for any part with no cap (Misa, 2026-11-06: the shards piling up at the Forge
+    // while it waits for the Market build it). One value for every shard, below a scrap's, because the lab's players give their whole
+    // surplus: 0.25 opens the Market on day 11 to 14 (median 12, from 14), 0.5 or more on day 10 or sooner.
     oneShot: {
-      market: { sizeFactor: 0.25, costSplit: { acorns: 0.5, scrap: 0.5, shards: 0 } },
+      market: {
+        sizeFactor: 0.25,
+        costSplit: { acorns: 0.5, scrap: 0.5, shards: 0 },
+        shardValue: 0.25,
+      },
     } as Record<
       string,
-      { sizeFactor: number; costSplit: { acorns: number; scrap: number; shards: number } }
+      {
+        sizeFactor: number;
+        costSplit: { acorns: number; scrap: number; shards: number };
+        shardValue?: number;
+      }
     >,
     // V-COM-15, Q48: the guided start. Each project opens once the ones before it have levelled; the other places open after all three.
     guided: ['bonfire', 'market', 'forge'] as readonly string[],

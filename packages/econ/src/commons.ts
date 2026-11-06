@@ -91,6 +91,31 @@ const partValues = (rules: Rules): number[] => [
   rules.commons.giftValue.scrap,
   rules.commons.giftValue.shards,
 ];
+/**
+ * Q48, V-COM-15 (Misa, 2026-11-06): the Market of the `market` variant takes shards of any element, each worth `shardValue`, with no cap
+ * (they may fill the whole project). The lab's other variants pay it the older ways (Acorns and scrap only is gone; `market-shards` pays it
+ * like the other projects).
+ */
+const pooledShardValue = (server: Server, place: Place, rules: Rules): number | undefined =>
+  place.id === 'market' && server.config.broker === 'market'
+    ? rules.commons.oneShot['market']?.shardValue
+    : undefined;
+
+/** The value of one unit of each part for this place. */
+const valuesFor = (server: Server, place: Place, rules: Rules): number[] => {
+  const values = partValues(rules);
+  const any = pooledShardValue(server, place, rules);
+  return any === undefined ? values : [values[0] as number, values[1] as number, any];
+};
+
+/** The share of a project's value each part makes (the Market's own split where it has one). */
+const sharesFor = (server: Server, place: Place, rules: Rules): number[] => {
+  const own = place.id === 'market' ? rules.commons.oneShot['market']?.costSplit : undefined;
+  return own !== undefined && server.config.broker === 'market'
+    ? [own.acorns, own.scrap, own.shards]
+    : partSplit(rules);
+};
+
 const partSplit = (rules: Rules): number[] => [
   rules.commons.costSplit.acorns,
   rules.commons.costSplit.scrap,
@@ -99,8 +124,6 @@ const partSplit = (rules: Rules): number[] => [
 
 /** Opens each place's next project when its build days have passed (V-COM-5: a hoard raises one level per place at most). */
 export function refreshProjects(server: Server, hour: number, rules: Rules): void {
-  const values = partValues(rules);
-  const split = partSplit(rules);
   // Q48: the Market's project joins the valley's open ones when the hearth has levelled (the market variants; the others have no Market).
   if (
     (server.config.broker === 'market' || server.config.broker === 'market-shards') &&
@@ -113,22 +136,35 @@ export function refreshProjects(server: Server, hour: number, rules: Rules): voi
     place.progress = 0;
     place.size = projectSize(server, i, rules);
     // Q33: a project's cost has an Acorn part, a scrap part and a shard part (shards of an element tied to the place).
-    // The Market of the shard-free variant is paid in Acorns and scrap only (shards are what is short, so they cannot also build it).
-    const shares =
-      place.id === 'market' && server.config.broker === 'market' ? [0.5, 0.5, 0] : split;
+    // The Market of the `market` variant is Acorns and scrap, and shards of any element may fill the whole of it (V-COM-15).
+    const values = valuesFor(server, place, rules);
+    const shares = sharesFor(server, place, rules);
     place.need = shares.map((s, k) => (place.size * s) / (values[k] as number));
+    if (pooledShardValue(server, place, rules) !== undefined)
+      place.need[2] = place.size / (values[2] as number);
     place.have = [0, 0, 0];
     place.openedAt = hour;
   });
 }
 
 /** How much of a project is filled, in Acorns' worth (each part counts up to what it needs). */
-const filledValue = (place: Place, rules: Rules): number => {
-  const values = partValues(rules);
-  return place.need.reduce(
+const filledValue = (server: Server, place: Place, rules: Rules): number => {
+  const values = valuesFor(server, place, rules);
+  const filled = place.need.reduce(
     (sum, need, k) => sum + Math.min(place.have[k] ?? 0, need) * (values[k] as number),
     0,
   );
+  return pooledShardValue(server, place, rules) === undefined
+    ? filled
+    : Math.min(place.size, filled);
+};
+
+/** The units of a part a project still takes (where shards fill any part, no part takes more than the project lacks). */
+const roomOf = (server: Server, place: Place, part: number, rules: Rules): number => {
+  const own = Math.max(0, (place.need[part] ?? 0) - (place.have[part] ?? 0));
+  if (pooledShardValue(server, place, rules) === undefined) return own;
+  const left = Math.max(0, place.size - filledValue(server, place, rules));
+  return Math.min(own, left / (valuesFor(server, place, rules)[part] as number));
 };
 
 /**
@@ -145,11 +181,14 @@ export function contributePart(
 ): number {
   const place = server.places[index]!;
   if (!place.open || units <= 0) return 0;
-  const room = Math.max(0, (place.need[part] ?? 0) - (place.have[part] ?? 0));
-  const taken = Math.min(units, room);
+  const taken = Math.min(units, roomOf(server, place, part, rules));
   place.have[part] = (place.have[part] ?? 0) + taken;
-  place.progress = filledValue(place, rules);
-  if (place.need.some((need, k) => (place.have[k] ?? 0) < need - 1e-9)) return taken;
+  place.progress = filledValue(server, place, rules);
+  const done =
+    pooledShardValue(server, place, rules) !== undefined
+      ? place.progress >= place.size - 1e-9
+      : place.need.every((need, k) => (place.have[k] ?? 0) >= need - 1e-9);
+  if (!done) return taken;
   const warmth = rules.fire.warmth;
   if (place.level < rules.commons.maxLevel) {
     place.level += 1;
@@ -175,10 +214,10 @@ export function contributePart(
 }
 
 /** The open projects that still need some of a part. */
-const openFor = (server: Server, part: number): { pl: Place; i: number }[] =>
+const openFor = (server: Server, part: number, rules: Rules): { pl: Place; i: number }[] =>
   server.places
     .map((pl, i) => ({ pl, i }))
-    .filter(({ pl }) => pl.open && (pl.have[part] ?? 0) < (pl.need[part] ?? 0) - 1e-9);
+    .filter(({ pl }) => pl.open && roomOf(server, pl, part, rules) > 1e-9);
 
 /**
  * Gifts of Acorns or scrap go to the open projects the server favours (V-COM-5: "the server chooses together"); what no project can
@@ -196,7 +235,7 @@ function offerPart(
   let left = available;
   let given = 0;
   for (let tries = 0; tries < 6 && left > 1e-9; tries++) {
-    const open = openFor(server, part);
+    const open = openFor(server, part, rules);
     if (open.length === 0) break;
     const pick =
       open[
@@ -205,7 +244,7 @@ function offerPart(
           open.map(({ pl }) => rules.commons.placeWeights[pl.id] ?? 1),
         )
       ]!;
-    const amount = Math.min(left, (pick.pl.need[part] ?? 0) - (pick.pl.have[part] ?? 0));
+    const amount = Math.min(left, roomOf(server, pick.pl, part, rules));
     take(amount);
     contributePart(server, pick.i, part, amount, hour, rules);
     left -= amount;
@@ -243,7 +282,30 @@ export function giveGifts(p: Player, server: Server, hour: number): void {
     p.giftBudget[R.scrap] = Math.max(0, (p.giftBudget[R.scrap] ?? 0) - given);
     total += given * (value[1] as number);
   }
-  for (const { pl, i } of openFor(server, 2)) {
+  for (const { pl, i } of openFor(server, 2, rules)) {
+    // The Market takes the spare shards of any element, each in full, up to what the project lacks (V-COM-15). A player keeps what
+    // the next orders need of each element (the Forge's own want, never under the exchange's reserve) and puts the rest in; the
+    // biggest pile goes first.
+    if (pooledShardValue(server, pl, rules) !== undefined) {
+      const keepOf = (e: number): number => {
+        const orders = Math.min(
+          (p.weakByElement[e] ?? 0) - (p.pendingByElement[e] ?? 0),
+          Math.max(1, p.anvils.length) * 3,
+        );
+        return Math.max(rules.forge.giveReserveShards, Math.max(0, orders) * rules.forge.shard);
+      };
+      const spareOf = (e: number): number => Math.max(0, (p.shards[e] ?? 0) - keepOf(e));
+      for (const e of ELEMENTS.map((_, k) => k).sort((x, y) => spareOf(y) - spareOf(x))) {
+        const units = Math.min(Math.floor(spareOf(e)), Math.floor(roomOf(server, pl, 2, rules)));
+        if (units < 1) continue;
+        debitShard(p, e, units, 'gifts');
+        const taken = contributePart(server, i, 2, units, hour, rules);
+        p.giftBudget[R.shards] = Math.max(0, (p.giftBudget[R.shards] ?? 0) - units);
+        total += taken * (valuesFor(server, pl, rules)[2] as number);
+        if (!pl.open) break;
+      }
+      continue;
+    }
     const element = ELEMENTS.indexOf(
       (rules.commons.placeElement[pl.id] ?? 'ember') as (typeof ELEMENTS)[number],
     );
@@ -284,11 +346,11 @@ export function creditCommunal(p: Player, server: Server, hour: number): void {
     server.places.length,
     Math.floor(p.creatures.length / rules.commons.communalCreaturesPerSeat),
   );
-  const values = partValues(rules);
-  const split = partSplit(rules);
   for (let i = 0; i < seats; i++) {
     const place = server.places[i]!;
     if (!place.open) continue;
+    const values = valuesFor(server, place, rules);
+    const split = sharesFor(server, place, rules);
     // The haulers' work fills every part of the project in its own proportion.
     const value = Math.min(hours * rules.commons.communalPerHour, place.size - place.progress);
     server.communal += value;

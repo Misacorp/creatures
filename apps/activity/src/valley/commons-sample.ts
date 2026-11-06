@@ -3,7 +3,12 @@
  * collections with some sockets set, the fire and the hearth. The numbers follow `VALLEY_RULES` loosely (a project's parts are worth 1,
  * 0.5 and 2 Acorns' worth a unit and split 0.4, 0.4 and 0.2 of its size); they only have to look right.
  */
-import { VALLEY_RULES, type ValleyCommonsPlace, type ValleyCommonsView } from '@creatures/game';
+import {
+  VALLEY_RULES,
+  anyShardValue,
+  type ValleyCommonsPlace,
+  type ValleyCommonsView,
+} from '@creatures/game';
 import type { Creature, ValleyVisit } from '../api';
 
 type Place = ValleyCommonsPlace;
@@ -37,6 +42,7 @@ export function openPlace(
         shards: Math.ceil(need.shards * left),
       },
       shardElement: VALLEY_RULES.commons.placeElement[id] ?? 'ember',
+      anyShard: anyShardValue(VALLEY_RULES, id) ?? null,
       cosmetic: false,
     },
     buildDaysLeft: 0,

@@ -103,11 +103,25 @@ export function stillNeeded(p: ValleyCommonsPlace): string {
   const out: string[] = [];
   const acorns = unitsLeft(project.needs.acorns);
   const scrap = unitsLeft(project.needs.scrap);
-  const shards = unitsLeft(project.needs.shards);
+  // A place that takes shards of any kind (the Market) does not name a shard part: they stand in for the rest (`anyShardLine`).
+  const shards = project.anyShard === null ? unitsLeft(project.needs.shards) : 0;
   if (acorns > 0) out.push(partWords('acorns', acorns, ''));
   if (scrap > 0) out.push(partWords('scrap', scrap, ''));
   if (shards > 0) out.push(partWords('shards', shards, project.shardElement));
   return out.join(', ');
+}
+
+/** What shards of any kind count for, in words ("4 shards count as 1 Acorn", "1 shard counts as 2 Acorns"). */
+export function shardWorth(value: number): string {
+  if (value >= 1) return `1 shard counts as ${String(value)} ${value === 1 ? 'Acorn' : 'Acorns'}`;
+  return `${String(Math.round(1 / value))} shards count as 1 Acorn`;
+}
+
+/** The board's line for a project that takes shards of any kind; empty for the others. */
+export function anyShardLine(p: ValleyCommonsPlace): string {
+  const value = p.project?.anyShard ?? null;
+  if (value === null || p.project === null) return '';
+  return `Shards of any kind count too, as many as you like: ${shardWorth(value)}.`;
 }
 
 /** The place's state in a few words, for its tag. */
@@ -183,6 +197,8 @@ export interface GiveRow {
   per: number;
   /** Why nothing can be given of it; null when something can. */
   reason: string | null;
+  /** What one unit counts for, in Acorns' worth, where it is not the part's usual value (a shard of any kind at the Market); absent otherwise. */
+  worth?: number;
 }
 
 /** What the player holds, for the give rows: the Acorns (`bait`) and the Forge's shelf. */
@@ -228,6 +244,33 @@ export function giveRows(p: ValleyCommonsPlace, purse: Purse, rate: number): Giv
           : null;
     return { id, part, element, name, held, max, per, reason };
   };
+  // A project that takes shards of any element (the Market): one row for each element the player holds, the biggest pile first (so the
+  // pile that waits longest is the one suggested), each counted at the project's one value. None held: one row that says so.
+  if (project.anyShard !== null) {
+    const value = project.anyShard;
+    const piles = ELEMENTS.map((element) => ({ element, held: purse.shards[element] ?? 0 }))
+      .filter((pile) => pile.held > 0)
+      .sort((a, b) => b.held - a.held || ELEMENTS.indexOf(a.element) - ELEMENTS.indexOf(b.element));
+    const shardRows =
+      piles.length === 0
+        ? [row('shards', 'shards', null, 'Shards of any kind', 0, 1, need.shards)]
+        : piles.map((pile) =>
+            row(
+              `shards:${pile.element}`,
+              'shards',
+              pile.element,
+              capital(shardName(pile.element)),
+              pile.held,
+              1,
+              need.shards,
+            ),
+          );
+    return [
+      row('acorns', 'acorns', null, 'Acorns', purse.acorns, 1, need.acorns),
+      row('scrap', 'scrap', null, 'Scrap', purse.scrap, 1, need.scrap),
+      ...shardRows.map((r) => ({ ...r, worth: value })),
+    ];
+  }
   const rows: GiveRow[] = [
     row('acorns', 'acorns', null, 'Acorns', purse.acorns, 1, need.acorns),
     row('scrap', 'scrap', null, 'Scrap', purse.scrap, 1, need.scrap),

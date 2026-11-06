@@ -112,7 +112,7 @@ const button = (p: Page, name: RegExp): FakeElement => {
 };
 
 describe('MarketPage while the Market is built', () => {
-  it('is the project board and nothing else, with no shards to give and no exchange', () => {
+  it('is the project board and nothing else, taking shards of any kind and offering no exchange', () => {
     const { page: p } = draw('being built');
     const text = visibleText(p.root);
     expect(text).toMatch(/Market/);
@@ -124,7 +124,9 @@ describe('MarketPage while the Market is built', () => {
     );
     p.click(button(p, /^Give/));
     expect(visibleText(p.root)).toMatch(/Acorns/);
-    expect(visibleText(p.root)).not.toMatch(/shards/i);
+    // Shards of any kind may be given (V-COM-15): a row for each pile held, the biggest first; the exchange's rate is not here.
+    expect(visibleText(p.root)).toMatch(/Ember shards/);
+    expect(visibleText(p.root)).not.toMatch(/\d for 1/);
   });
 });
 
