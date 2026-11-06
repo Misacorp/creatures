@@ -69,14 +69,14 @@ describe('catch-up fixed at each visit (V-BON-2)', () => {
         const before = ctx.sql
           .exec<{ level: number; exp: number }>(
             'SELECT level, exp FROM creatures WHERE id = ?',
-            low as string,
+            low,
           )
           .one();
         const next = view(await p.state());
         const after = ctx.sql
           .exec<{ level: number; exp: number }>(
             'SELECT level, exp FROM creatures WHERE id = ?',
-            low as string,
+            low,
           )
           .one();
         expect(after.level * 1000 + after.exp).toBeGreaterThan(before.level * 1000 + before.exp);
@@ -319,7 +319,7 @@ describe('who is online (V-BON-4)', () => {
         });
         expect(bought.status).toBe(200);
         const posted = await q.api.call('POST', '/api/valley/seat', {
-          seatId: bought.body.seatId,
+          seatId: bought.body.seatId as string,
           creatureId: q.creatureIds[0],
           destination: 'tidepools',
         });
@@ -457,7 +457,7 @@ describe("a raider's post pauses (V-POST-7)", () => {
         });
         expect(bought.status).toBe(200);
         const posted = await p.api.call('POST', '/api/valley/seat', {
-          seatId: bought.body.seatId,
+          seatId: bought.body.seatId as string,
           creatureId: p.creatureIds[0],
         });
         expect(posted.status).toBe(200);
@@ -478,7 +478,7 @@ describe("a raider's post pauses (V-POST-7)", () => {
           ctx.sql
             .exec<{ smith_hours: number }>(
               'SELECT smith_hours FROM valley_creatures WHERE creature_id = ?',
-              p.creatureIds[0] as string,
+              p.creatureIds[0],
             )
             .one().smith_hours;
         ctx.clock.t = times.phase1 - HOUR;
