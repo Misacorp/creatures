@@ -13,6 +13,11 @@
   min-width: 0;
 }
 
+/* It takes the focus when a drill-in closes (so Escape still reaches the sheet), never a ring. */
+.cm-sheet:focus {
+  outline: none;
+}
+
 .cm-level,
 .cm-need,
 .cm-mine {

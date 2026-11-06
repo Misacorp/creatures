@@ -9,7 +9,7 @@
  * and the seat in the shared creature picker. Giving is a keyed spend with one clear button (`SpendConfirm`); the server decides.
  */
 import type { ComponentChildren } from 'preact';
-import { useRef, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Creature, ValleyVisit } from '../api';
 import { creatureName } from '../game';
 import { busyReason } from '../gear-view';
@@ -137,6 +137,16 @@ export function CommonsBoard({
   const [rowId, setRowId] = useState<string | null>(start.row ?? null);
   const [units, setUnits] = useState(1);
   const openers = useRef<Record<string, HTMLElement | null>>({});
+  // In the sheet, coming back from a drill-in drops the view the focus was in: it goes to the sheet's own body, so Escape still closes it.
+  const sheetRef = useRef<HTMLDivElement | null>(null);
+  const wasDeeper = useRef(false);
+  useEffect(() => {
+    if (view !== null) wasDeeper.current = true;
+    else if (wasDeeper.current) {
+      wasDeeper.current = false;
+      sheetRef.current?.focus({ preventScroll: true });
+    }
+  }, [view]);
   if (p === undefined) return null;
 
   const name = COMMONS_NAMES[place] ?? place;
@@ -429,7 +439,9 @@ export function CommonsBoard({
         title={`${name}, level ${String(p.level)}`}
       >
         {view === null ? (
-          <div class="dr-stack cm-board cm-sheet">{card}</div>
+          <div class="dr-stack cm-board cm-sheet" ref={sheetRef} tabIndex={-1}>
+            {card}
+          </div>
         ) : (
           <div class="dr-stack" onKeyDown={onDrillKey(back)}>
             <DrillHead
