@@ -36,7 +36,7 @@ import { Tag } from '../ui/Tag';
 import { SlotText, SpendConfirm, seatAt } from './seat-parts';
 import { Tray } from './Tray';
 import { trayFor, type TrayInput } from './tray-state';
-import { percentOf, seatPriceText } from './signpost-view';
+import { RAID_PAUSE, percentOf, seatPriceText } from './signpost-view';
 import {
   ANVIL_KIT_INFO,
   ANVIL_KIT_ORDER,
@@ -407,7 +407,12 @@ export function ForgeAnvils({
                   </li>
                 )}
               </ul>
-              {tinker !== null ? (
+              {anvil.paused !== null && smith !== undefined ? (
+                <p class="sp-line fg-tinker" role="status">
+                  <Tag kind="badge">Paused</Tag>
+                  <span>{RAID_PAUSE}</span>
+                </p>
+              ) : tinker !== null ? (
                 <p class="sp-line fg-tinker" role="status">
                   <Tag kind="badge">Tinkering</Tag>
                   <span>{tinker}</span>

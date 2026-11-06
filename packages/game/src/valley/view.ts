@@ -21,11 +21,17 @@ export const ValleyCreatureViewSchema = v.strictObject({
   state: v.picklist(VALLEY_CREATURE_STATES),
   /** The XP the creature gained since this visit began, the "+N" of V-BON-3 (0: nothing, or it is at the top). */
   gained: int,
-  /** The catch-up multiplier held since the last visit, in basis points (10000 is x1; above it the "warming up" flame, V-BON-2). */
+  /**
+   * The catch-up multiplier it earns now, in basis points (10000 is x1; above it the "warming up" flame, V-BON-2): fixed at the last
+   * visit, and fading to x1 as the creature closes on its target, so it never shows a flame over a creature that has arrived.
+   */
   catchUpBp: int,
   /** The seat the creature stands at (null: resting). */
   seatId: v.nullable(id),
 });
+
+/** Why a post is paused (V-POST-7): its creature is in the raid, from the first stage's lock to the end of the finale. */
+export const PAUSE_REASONS = ['raid'] as const;
 
 /**
  * One scout seat (V-POST-1, V-SCOUT-1..5, V-RET-9): where it stands, who stands there, what its pack holds and what makes its pace.
@@ -40,6 +46,8 @@ export const ValleySeatViewSchema = v.strictObject({
   kit: v.nullable(v.picklist(SCOUT_KITS)),
   /** V-POST-4: the creature's element is the place's. */
   fit: v.boolean(),
+  /** V-POST-7: why the seat is paused now (null: it works); its pack keeps what it holds. */
+  paused: v.nullable(v.picklist(PAUSE_REASONS)),
   /** V-SCOUT-10: not the first of the player's scouts at this place. */
   second: v.boolean(),
   /** V-SCOUT-6: the scout is in the destination's deeper area (its kit does not work there; coming back up is free). */
@@ -99,6 +107,8 @@ export const ValleyAnvilViewSchema = v.strictObject({
   id,
   creatureId: v.nullable(id),
   kit: v.nullable(v.picklist(ANVIL_KITS)),
+  /** V-POST-7: why the anvil is paused now (null: it works); its piece in hand keeps its progress. */
+  paused: v.nullable(v.picklist(PAUSE_REASONS)),
   /** V-POST-12: the smith's smithing hours, its step and the bonus in basis points. */
   mastery,
   orders: v.pipe(v.array(ValleyOrderViewSchema), v.maxLength(8)),
@@ -166,6 +176,29 @@ export const ValleyPlaceViewSchema = v.strictObject({
   special: v.boolean(),
 });
 
+/** One of another player's creatures round the fire (V-BON-4): only what is drawn on its nameplate. */
+export const ValleyVisitorCreatureSchema = v.strictObject({
+  id,
+  species: v.pipe(v.string(), v.minLength(1), v.maxLength(64)),
+  shiny: v.boolean(),
+  level: int,
+  /** Its nickname (null: the species' name), plain text. */
+  name: v.nullable(v.pipe(v.string(), v.minLength(1), v.maxLength(40))),
+});
+
+/**
+ * A player who is online now (V-BON-4, "no couch": the valley shows who is here), with up to three of their resting creatures, which
+ * the Bonfire draws among its own. Company brings no XP and no boost. Never the caller; never more than `MAX_ONLINE` players; no id of the player goes out.
+ */
+export const ValleyOnlineSchema = v.strictObject({
+  /** The player's name (plain text). */
+  name: v.pipe(v.string(), v.minLength(1), v.maxLength(40)),
+  creatures: v.pipe(v.array(ValleyVisitorCreatureSchema), v.maxLength(3)),
+});
+
+/** The most online players the valley draws (the fire has seats for a few). */
+export const MAX_ONLINE = 4;
+
 export const ValleyViewSchema = v.strictObject({
   /** The server time of this settle (UTC epoch ms). */
   settledAt: int,
@@ -174,6 +207,8 @@ export const ValleyViewSchema = v.strictObject({
   /** The whole hours away that the arrival settled (0 mid-visit). */
   awayHours: int,
   creatures: v.pipe(v.array(ValleyCreatureViewSchema), v.maxLength(2000)),
+  /** Who else is online now and the creatures of theirs that sit by the fire (V-BON-4); empty when alone. */
+  online: v.pipe(v.array(ValleyOnlineSchema), v.maxLength(MAX_ONLINE)),
   /** The allowance (V-POST-5): Acorns waiting in the store, the store's size, and what this visit already brought home. */
   allowance: v.strictObject({ store: int, cap: int, brought: int }),
   /** The player's scout seats, in the order they were bought (V-POST-2). */
@@ -211,6 +246,8 @@ export const ValleyViewSchema = v.strictObject({
 });
 
 export type ValleyCreatureView = v.InferOutput<typeof ValleyCreatureViewSchema>;
+export type ValleyOnline = v.InferOutput<typeof ValleyOnlineSchema>;
+export type ValleyVisitorCreature = v.InferOutput<typeof ValleyVisitorCreatureSchema>;
 export type ValleySeatView = v.InferOutput<typeof ValleySeatViewSchema>;
 export type ValleyOrderView = v.InferOutput<typeof ValleyOrderViewSchema>;
 export type ValleyAnvilView = v.InferOutput<typeof ValleyAnvilViewSchema>;

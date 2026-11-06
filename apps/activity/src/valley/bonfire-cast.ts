@@ -6,18 +6,34 @@
  * server's `valley` block in, plain data out. The numbers are the server's; nothing is worked out here.
  */
 import type { Creature, ValleyVisit } from '../api';
-import { CREATURE_PX, type Stand } from './place-cast';
+import { CREATURE_PX } from './place-cast';
+import type { StandCreature } from './PlaceScene';
 import { PLATE_ROW_PX, crowded, plateGap, standBounds, type PlateScene } from './place-plates';
 
-/** A creature at the fire with what it gained this visit. */
+/**
+ * A creature at the fire with what it gained this visit. `warm`: it is catching up toward the server (V-BON-2), so a small flame is
+ * drawn over it. `owner`: another online player's creature (V-BON-4), with their name; it gains nothing and has no flame.
+ */
 export interface Resting {
-  creature: Creature;
+  creature: StandCreature;
   gained: number;
+  warm: boolean;
+  owner?: string;
 }
 
 /** A standing creature at the fire: its experience this visit rides on its nameplate. */
-export interface FireStand extends Stand {
+export interface FireStand {
+  creature: StandCreature;
   gained: number;
+  warm: boolean;
+  owner?: string;
+  /** Scene pixels from the art's top-left. */
+  x: number;
+  y: number;
+  /** Faces left. */
+  flip: boolean;
+  /** Where it is, for its spoken name. */
+  where: string;
 }
 
 /** The most creatures drawn round the fire (fewer where they do not fit with their plates, as everywhere). */
@@ -33,8 +49,47 @@ export function restingOf(creatures: readonly Creature[], visit: ValleyVisit): R
   const byId = new Map(creatures.map((c) => [c.id, c]));
   return visit.creatures.flatMap((r) => {
     const creature = byId.get(r.id);
-    return r.state === 'resting' && creature !== undefined ? [{ creature, gained: r.gained }] : [];
+    return r.state === 'resting' && creature !== undefined
+      ? [{ creature, gained: r.gained, warm: r.catchUpBp > 10_000 }]
+      : [];
   });
+}
+
+/** The most visitors drawn round the fire: one creature of each online player (V-BON-4), so the fire stays calm. */
+export const MAX_VISITORS = 3;
+
+/** One creature of each player who is online now, with their name (the first of the up to three the server sends). */
+export function visitorsOf(visit: ValleyVisit): Resting[] {
+  return visit.online
+    .flatMap((o) => {
+      const c = o.creatures[0];
+      return c === undefined
+        ? []
+        : [
+            {
+              creature: {
+                id: c.id,
+                species: c.species,
+                level: c.level,
+                shiny: c.shiny,
+                nickname: c.name,
+              },
+              gained: 0,
+              warm: false,
+              owner: o.name,
+            },
+          ];
+    })
+    .slice(0, MAX_VISITORS);
+}
+
+/** Who sits round the fire: the player's own first, the visitors on the seats after them (a visitor never takes an own creature's seat). */
+export function atTheFire(
+  resting: readonly Resting[],
+  visitors: readonly Resting[],
+  settledAt: number,
+): Resting[] {
+  return [...firesideOf(resting, settledAt, MAX_AT_FIRE - visitors.length), ...visitors];
 }
 
 /** Everything the resting creatures gained this visit. */
@@ -46,11 +101,15 @@ export function totalGained(resting: readonly Resting[]): number {
  * The few who sit round the fire: everyone while they fit, else `MAX_AT_FIRE` of them starting further along the
  * list each hour (so over a day everyone gets a seat by the fire).
  */
-export function firesideOf(resting: readonly Resting[], settledAt: number): Resting[] {
-  if (resting.length <= MAX_AT_FIRE) return [...resting];
+export function firesideOf(
+  resting: readonly Resting[],
+  settledAt: number,
+  seats: number = MAX_AT_FIRE,
+): Resting[] {
+  if (resting.length <= seats) return [...resting];
   const start = Math.floor(settledAt / HOUR_MS) % resting.length;
   const out: Resting[] = [];
-  for (let i = 0; i < MAX_AT_FIRE; i += 1) {
+  for (let i = 0; i < seats; i += 1) {
     const one = resting[(start + i) % resting.length];
     if (one !== undefined) out.push(one);
   }
@@ -112,10 +171,16 @@ export function fireSpots(
       out.push({
         creature: r.creature,
         gained: r.gained,
+        warm: r.warm,
+        ...(r.owner === undefined ? {} : { owner: r.owner }),
         ...at,
         flip: seat.x + CREATURE_PX / 2 > FIRE_MIDDLE,
         where:
-          r.gained > 0 ? `resting by the fire, gained ${String(r.gained)}` : 'resting by the fire',
+          r.owner !== undefined
+            ? 'visiting the fire'
+            : r.gained > 0
+              ? `resting by the fire, gained ${String(r.gained)}`
+              : 'resting by the fire',
       });
       next += 1;
       break;

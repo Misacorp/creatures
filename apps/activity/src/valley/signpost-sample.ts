@@ -53,6 +53,7 @@ export function sampleSeat(
     creatureId,
     kit: null,
     fit: false,
+    paused: null,
     second: false,
     deep: false,
     mastery: { hours: 20, step: 0, bonusBp: 0 },
@@ -95,6 +96,7 @@ export function sampleValley(
       catchUpBp: 10000,
       seatId: seated.get(c.id) ?? null,
     })),
+    online: [],
     allowance: { store: 0, cap: 480, brought: 0 },
     anvils: [],
     anvilPrices: {

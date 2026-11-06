@@ -371,3 +371,9 @@ export function plateBox(rect: Rect): Rect {
     height: PLATE_ROWS + 2,
   };
 }
+
+/** The small flame over a creature that is warming up, catching up toward the server (V-BON-2; 5 x 7 pixels). */
+export const WARMING_FLAME: SpriteDef = {
+  rows: ['..o..', '..oo.', '.ooyo', '.oyyo', 'oyyyo', 'oyyyo', '.ooo.'],
+  palette: { o: '#ff7a2e', y: '#ffd25a' },
+};

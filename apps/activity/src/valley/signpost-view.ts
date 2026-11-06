@@ -97,9 +97,13 @@ export function placeOfSeat(visit: ValleyVisit, seat: ValleySeatView): ValleyPla
   return visit.places.find((p) => p.id === seat.destination);
 }
 
+/** What a paused post says (V-POST-7): the scout or the smith is in the raid, and the post waits for the finale. */
+export const RAID_PAUSE = 'In the raid until Sunday';
+
 /** "Pack full", "Full in 2 d 14 h", or what an empty seat says. */
 export function packLine(seat: ValleySeatView): string {
   if (seat.creatureId === null) return 'Nobody posted';
+  if (seat.paused !== null) return RAID_PAUSE;
   if (seat.store.full) return 'Pack full';
   if (seat.store.fullInHours === null) return 'Pack filling';
   if (seat.store.fullInHours < 1 / 60) return 'Pack almost full';
@@ -189,7 +193,11 @@ export function fitPreview(
 
 /** How many scouts stand at a seat now. */
 export const scoutsOut = (visit: ValleyVisit): number =>
-  visit.seats.filter((s) => s.creatureId !== null).length;
+  visit.seats.filter((s) => s.creatureId !== null && s.paused === null).length;
+
+/** How many scouts are in the raid (V-POST-7): their seats wait for the finale. */
+export const scoutsInRaid = (visit: ValleyVisit): number =>
+  visit.seats.filter((s) => s.creatureId !== null && s.paused !== null).length;
 
 /** How many packs are full. */
 export const fullPacks = (visit: ValleyVisit): number =>
@@ -200,6 +208,7 @@ export function signpostSystemsLine(visit: ValleyVisit): string {
   const full = fullPacks(visit);
   if (full > 0) return full === 1 ? 'a pack is full' : `${String(full)} packs are full`;
   const out = scoutsOut(visit);
+  if (out === 0 && scoutsInRaid(visit) > 0) return 'scouts are in the raid';
   if (out === 0) return visit.seats.length === 0 ? 'a free seat waits' : 'nobody is out';
   return `${plural(out, 'a scout', 'scouts')} out`;
 }
@@ -210,6 +219,7 @@ export function signpostCalm(visit: ValleyVisit): string {
   if (full > 0) return full === 1 ? 'A pack is full' : `${String(full)} packs are full`;
   const out = scoutsOut(visit);
   if (visit.seats.length === 0) return 'Your first seat is free';
+  if (out === 0 && scoutsInRaid(visit) > 0) return 'Scouts are in the raid';
   if (out === 0) return 'No scouts out';
   return out === 1 ? '1 scout out' : `${String(out)} scouts out`;
 }

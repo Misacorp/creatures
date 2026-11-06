@@ -1,5 +1,5 @@
 import { VALLEY_RULES, type AwayCurve, type ValleyRules } from './rules';
-import { awayShare } from './formulas';
+import { awayShare, catchUpMultiplier, levelAtXp, xpAtLevel } from './formulas';
 import type { Rng } from '../rng';
 import {
   finishForge,
@@ -53,6 +53,13 @@ export interface SettleCreature {
   readonly capXp: number;
   /** The XP multiplier fixed at the last visit (V-BON-2; default 1). Never applied to anything but idle XP. */
   readonly catchUp?: number;
+  /**
+   * The level the multiplier was fixed toward (V-BON-2) and the creature's total XP at the start of the pass (`xpAtLevel(level) + exp`).
+   * Given both, the multiplier fades as the creature closes the gap (the pass splits at each level-up), so it never lifts a creature
+   * past its target, as the lab's `effectiveCatchUp` does; absent, the held multiplier applies throughout.
+   */
+  readonly catchTarget?: number;
+  readonly baseXp?: number;
   /** When the creature joined the player's roster: it earns nothing before (default: always there). */
   readonly joinedAt?: number;
   /** The creature's scouting hours (V-POST-12): effective hours it has worked at a scout seat (default 0). */
@@ -138,7 +145,18 @@ export interface SettleEvent {
   readonly hearth?: number;
 }
 
+/** A creature away from its post (V-POST-7: in the raid from the first stage's lock to the end of the finale): its seat or anvil pauses. */
+export interface AwayWindow {
+  /** The index in `creatures`. */
+  readonly creature: number;
+  readonly from: number;
+  /** Infinity: it has not ended. */
+  readonly to: number;
+}
+
 export interface SettleOptions {
+  /** Times a creature's post is paused (idle XP is not: a creature on a post can still fight, and earns the same). */
+  readonly away?: readonly AwayWindow[];
   readonly rules?: ValleyRules;
   readonly curve?: AwayCurve;
   /** Absent: always day, no festival, no twist. */
@@ -183,6 +201,50 @@ function pay(creature: SettleCreature, gain: number): SettleCreature {
   return { ...creature, xp: paid.amount, carry: paid.carry };
 }
 
+/** The catch-up multiplier a creature earns now: the held one, faded to the gap it has left when its target is known. */
+function catchNow(rules: ValleyRules, c: SettleCreature): number {
+  const held = c.catchUp ?? 1;
+  if (held <= 1) return 1;
+  if (c.catchTarget === undefined || c.baseXp === undefined) return held;
+  const level = levelAtXp(c.baseXp + c.xp + c.carry);
+  return Math.min(held, catchUpMultiplier(rules, c.catchTarget - level));
+}
+
+/** The next moment after `at` a catching-up creature reaches its next level (its multiplier changes there); Infinity when none does. */
+function nextCatchStep(
+  rules: ValleyRules,
+  creatures: readonly SettleCreature[],
+  ratePerHour: number,
+  at: number,
+): number {
+  let next = Number.POSITIVE_INFINITY;
+  if (!(ratePerHour > 0)) return next;
+  for (const c of creatures) {
+    if (c.joinedAt !== undefined && c.joinedAt > at) continue;
+    const mult = catchNow(rules, c);
+    if (mult <= 1 || c.baseXp === undefined) continue;
+    const total = c.baseXp + c.xp + c.carry;
+    const need = xpAtLevel(levelAtXp(total) + 1) - total;
+    if (need <= 0) continue;
+    next = Math.min(next, at + Math.ceil((need / (ratePerHour * mult)) * HOUR_MS));
+  }
+  return next;
+}
+
+/** Whether `creature` is away from its post at `at` (V-POST-7). */
+const isAway = (windows: readonly AwayWindow[], creature: number, at: number): boolean =>
+  windows.some((w) => w.creature === creature && at >= w.from && at < w.to);
+
+/** The next edge of an away window after `at` (Infinity when none). */
+function nextAwayEdge(windows: readonly AwayWindow[], at: number): number {
+  let next = Number.POSITIVE_INFINITY;
+  for (const w of windows) {
+    if (w.from > at) next = Math.min(next, w.from);
+    if (w.to > at) next = Math.min(next, w.to);
+  }
+  return next;
+}
+
 /** The next moment after `at` a creature joins (Infinity when none does). */
 function nextJoin(creatures: readonly SettleCreature[], at: number): number {
   let next = Number.POSITIVE_INFINITY;
@@ -205,9 +267,11 @@ function seatWork(
   creatures: readonly SettleCreature[],
   world: ScoutWorld,
   at: number,
+  away: readonly AwayWindow[],
 ): SeatWork[] {
   const out: SeatWork[] = [];
   for (const seat of seats) {
+    if (seat.creature >= 0 && isAway(away, seat.creature, at)) continue;
     const worker = creatures[seat.creature];
     const place = placeProfile(rules, seat.destination);
     if (worker === undefined || place === undefined || !placeOpen(place, world)) continue;
@@ -282,6 +346,7 @@ export function settle(
     state.forge !== undefined && state.forge.anvils.length > 0 ? startForge(state.forge) : null;
   const stretches: SeatStretch[] = [];
   const world = options.world;
+  const away = options.away ?? [];
   const allowanceCap = (rules.acorns.allowancePerDay / 24) * rules.posts.storeHours;
   const allowancePerHour = rules.acorns.allowancePerDay / 24;
   let cursor = from;
@@ -293,7 +358,7 @@ export function settle(
     }
     if (forge !== null) {
       if (options.rng === undefined) throw new RangeError('a pass with anvils needs an rng');
-      forgeInstants(rules, forge, smithsOf(creatures), cursor, options.rng);
+      forgeInstants(rules, forge, smithsOf(creatures, away, cursor), cursor, options.rng);
     }
     if (cursor >= to) break;
     const share = awayShare(rules, curve, (cursor - lastVisitAt) / HOUR_MS);
@@ -301,10 +366,12 @@ export function settle(
     const work =
       seats === undefined || seats.length === 0
         ? []
-        : seatWork(rules, seats, creatures, scoutWorld, cursor);
+        : seatWork(rules, seats, creatures, scoutWorld, cursor, away);
     const boundary = Math.min(
       to,
       due[next]?.at ?? Number.POSITIVE_INFINITY,
+      nextAwayEdge(away, cursor),
+      nextCatchStep(rules, creatures, rules.xp.idlePerHour * hearth * share, cursor),
       nextAwayBoundary(rules, curve, lastVisitAt, cursor),
       nextJoin(creatures, cursor),
       seats === undefined || seats.length === 0
@@ -315,14 +382,14 @@ export function settle(
           ),
       forge === null
         ? Number.POSITIVE_INFINITY
-        : forgeBoundary(rules, forge, smithsOf(creatures), share, cursor),
+        : forgeBoundary(rules, forge, smithsOf(creatures, away, cursor), share, cursor),
     );
     const hours = (boundary - cursor) / HOUR_MS;
     const gain = rules.xp.idlePerHour * hearth * share * hours;
     if (gain > 0) {
       const at = cursor;
       creatures = creatures.map((c) =>
-        c.joinedAt !== undefined && c.joinedAt > at ? c : pay(c, gain * (c.catchUp ?? 1)),
+        c.joinedAt !== undefined && c.joinedAt > at ? c : pay(c, gain * catchNow(rules, c)),
       );
     }
     const stored = allowancePerHour * share * hours;
@@ -369,7 +436,7 @@ export function settle(
       }
     }
     if (forge !== null && hours > 0) {
-      const grown = forgeAdvance(rules, forge, smithsOf(creatures), share * hours);
+      const grown = forgeAdvance(rules, forge, smithsOf(creatures, away, cursor), share * hours);
       if (grown.size > 0) {
         creatures = creatures.map((c, i) => {
           const more = grown.get(i);
@@ -398,10 +465,17 @@ export function settle(
   };
 }
 
+/** The smiths as the forge step sees them at `at`: a creature away (V-POST-7) counts as not yet there, so its anvil pauses as it does before a creature joins. */
 const smithsOf = (
   creatures: readonly SettleCreature[],
+  away: readonly AwayWindow[],
+  at: number,
 ): { smithHours: number; joinedAt?: number }[] =>
-  creatures.map((c) => ({
+  creatures.map((c, i) => ({
     smithHours: c.smithHours ?? 0,
-    ...(c.joinedAt === undefined ? {} : { joinedAt: c.joinedAt }),
+    ...(isAway(away, i, at)
+      ? { joinedAt: Number.POSITIVE_INFINITY }
+      : c.joinedAt === undefined
+        ? {}
+        : { joinedAt: c.joinedAt }),
   }));

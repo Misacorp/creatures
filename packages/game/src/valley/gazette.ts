@@ -154,8 +154,11 @@ export const PaperLogSchema = v.strictObject({
     v.array(v.strictObject({ creatureId: id, gained: int, levels: int })),
     v.maxLength(LOG_CAPS.xp),
   ),
-  /** One resting creature's small moment (V-BON-9): who, and which of the moments (the client has the lines). */
-  moment: v.nullable(v.strictObject({ creatureId: id, turn: int })),
+  /**
+   * One or two resting creatures' small moment (V-BON-9): who, and which of the moments (the client has the lines); `friendId` is the
+   * second creature when two did something together.
+   */
+  moment: v.nullable(v.strictObject({ creatureId: id, turn: int, friendId: v.optional(id) })),
   /** What came home: Acorns (the allowance), scrap and shards (the scouts' packs). */
   brought: v.strictObject({ acorns: int, scrap: int, shards: int }),
 });
@@ -431,7 +434,10 @@ export function headlinesOf(log: PaperLog): PaperHeadline[] {
   if (log.moment !== null) {
     out.push({
       ...blank('moment', HIGHLIGHT_WEIGHT.moment, 0),
-      creatureIds: [log.moment.creatureId],
+      creatureIds:
+        log.moment.friendId === undefined
+          ? [log.moment.creatureId]
+          : [log.moment.creatureId, log.moment.friendId],
       turn: log.moment.turn,
     });
   }

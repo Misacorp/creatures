@@ -144,6 +144,8 @@ const PLACES = [
 const LADDER = [0, 113, 188, 281, 394, 525];
 /** The Signpost's state of a scenario: the seats (id, destination, creatureId, hours), the kit owned and the creatures' ids. */
 const scouts = { seats: [], owned: [], ids: [] };
+/** The Bonfire's state of a scenario (phase 5 step 5): who is online with which creatures, who is catching up, whose post is in the raid. */
+const bonfire = { online: [], warm: new Set(), raid: new Set() };
 /** The server's unread paper of a scenario (phase 5 step 4: `valley.paper`), and what the Gazette's routes were asked. */
 const gazette = { paper: null };
 const gazetteCalls = [];
@@ -213,6 +215,7 @@ const seatView = (s) => ({
   creatureId: s.creatureId,
   kit: s.kit ?? null,
   fit: false,
+  paused: s.creatureId !== null && bonfire.raid.has(s.creatureId) ? 'raid' : null,
   second: false,
   deep: s.deep === true,
   mastery: { hours: 0, step: 0, bonusBp: 0 },
@@ -259,6 +262,7 @@ const anvilView = (a) => ({
   id: a.id,
   creatureId: a.creatureId,
   kit: a.kit ?? null,
+  paused: a.creatureId !== null && bonfire.raid.has(a.creatureId) ? 'raid' : null,
   mastery: { hours: 0, step: 0, bonusBp: 0 },
   orders: a.orders.map(orderView),
   piece:
@@ -266,7 +270,7 @@ const anvilView = (a) => ({
       ? { orderId: a.orders[0].id, rarity: 0, progress: 6, need: 16, leftHours: 10 }
       : null,
   tinkering:
-    a.creatureId !== null && a.orders.length === 0
+    a.creatureId !== null && a.orders.length === 0 && !bonfire.raid.has(a.creatureId)
       ? { reason: 'idle', shardElement: null, sinceHours: 3 }
       : null,
   floor: { count: 2, cap: 5, full: false, byRarity: [2, 0, 0] },
@@ -284,10 +288,11 @@ const valleyBlock = () => ({
       id,
       state: seat !== undefined ? 'scouting' : anvil !== undefined ? 'smithing' : 'resting',
       gained: 25 + i * 11,
-      catchUpBp: 10000,
+      catchUpBp: bonfire.warm.has(id) ? 24000 : 10000,
       seatId: seat?.id ?? anvil?.id ?? null,
     };
   }),
+  online: bonfire.online,
   allowance: { store: 0, cap: 480, brought: 0 },
   anvils: forgeState.anvils.map(anvilView),
   anvilPrices: {
@@ -1536,6 +1541,88 @@ try {
       if (count !== 11) throw new Error(`expected 11 places, found ${String(count)}`);
       await waitFor(page.locator('section[aria-label="Your creatures"] button'));
       await shot('new-player-valley');
+    },
+  );
+
+  // The bonfire in full (phase 5 step 5): another player's creatures round the fire with their owner's name, a creature warming up
+  // under its flame, and a scout and a smith in the raid whose posts say so.
+  await scenario(
+    'valley systems on: visitors at the fire, a warming flame, and posts paused for the raid',
+    () => {
+      const config = ROUTES.get('/api/config');
+      answerOverride.set('/api/config', () => ({ ...config(), valleySystems: true }));
+      // Eight of the player's own (the fixture has three): the first two are posted, two more are catching up.
+      const creatures = Array.from({ length: 8 }, (_, i) => {
+        const from = baseState.creatures[i % baseState.creatures.length];
+        return {
+          ...from,
+          id: i < baseState.creatures.length ? from.id : `${from.id}-r${String(i)}`,
+          level: 4 + ((i * 3) % 9),
+          busy: null,
+          away: false,
+        };
+      });
+      scouts.seats = [
+        { id: 'seat-1', destination: 'tidepools', creatureId: creatures[0].id, hours: 30 },
+      ];
+      forgeState.anvils = [{ id: 'anvil-1', creatureId: creatures[1].id, kit: null, orders: [] }];
+      scouts.ids = creatures.map((c) => c.id);
+      bonfire.online = [
+        {
+          name: 'Mia',
+          creatures: [
+            { id: 'v1', species: creatures[2].species, shiny: false, level: 9, name: null },
+          ],
+        },
+        {
+          name: 'Tobias',
+          creatures: [
+            { id: 'v2', species: creatures[3].species, shiny: false, level: 14, name: 'Pebble' },
+          ],
+        },
+      ];
+      bonfire.warm = new Set([creatures[4].id, creatures[5].id]);
+      bonfire.raid = new Set([creatures[0].id, creatures[1].id]);
+      stateOverride = { creatures, valley: valleyBlock() };
+    },
+    async () => {
+      try {
+        await waitFor(page.locator(VALLEY), 'attached');
+        await place('bonfire').evaluate((el) => el.click());
+        await waitFor(heading('Bonfire'));
+        const owners = page.locator('.vy-feet-plate .nameplate-owner');
+        await waitFor(owners);
+        const names = (await owners.allInnerTexts()).join(',');
+        if (!names.includes('Mia') || !names.includes('Tobias'))
+          throw new Error(`the visitors' owners are not on their plates: ${names}`);
+        await waitFor(page.locator('.vy-flame'));
+        const plates = page.locator('.vy-feet-plate .nameplate');
+        for (let i = 0; i < (await plates.count()); i += 1)
+          await expectTopmost(plates.nth(i), `plate ${String(i)} at the fire`);
+        await page.waitForTimeout(300);
+        await shot('bonfire5-company');
+        await hudBack().click();
+        await waitFor(page.locator(VALLEY), 'attached');
+        await place('signpost').evaluate((el) => el.click());
+        await waitFor(heading('Signpost'));
+        await waitFor(page.getByText('In the raid until Sunday'));
+        await shot('bonfire5-signpost-paused');
+        await hudBack().click();
+        await waitFor(page.locator(VALLEY), 'attached');
+        await place('forge').evaluate((el) => el.click());
+        await waitFor(heading('Forge'));
+        await waitFor(page.getByText('In the raid until Sunday'));
+        await page.getByText('In the raid until Sunday').first().scrollIntoViewIfNeeded();
+        await shot('bonfire5-forge-paused');
+        await hudBack().click();
+        await waitFor(page.locator(VALLEY), 'attached');
+      } finally {
+        bonfire.online = [];
+        bonfire.warm = new Set();
+        bonfire.raid = new Set();
+        scouts.seats = [];
+        forgeState.anvils = [];
+      }
     },
   );
 

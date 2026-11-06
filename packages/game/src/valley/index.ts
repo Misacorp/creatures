@@ -6,3 +6,4 @@ export * from './view';
 export * from './scouts';
 export * from './forge';
 export * from './gazette';
+export * from './bonfire';

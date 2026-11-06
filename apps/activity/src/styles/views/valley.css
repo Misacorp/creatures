@@ -819,6 +819,27 @@ main.card:has(.vy-frame) > .hud {
   cursor: grabbing;
 }
 
+/* The small flame at a warming creature's upper right (catching up toward the server, V-BON-2; not over its head, where a crest can look like one): it flickers in two steps, and holds still for reduced motion. */
+.vy-flame {
+  position: absolute;
+  right: -6px;
+  bottom: calc(100% - 14px);
+  line-height: 0;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .vy-flame {
+    animation: vy-flicker 700ms steps(1) infinite;
+  }
+}
+
+@keyframes vy-flicker {
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
 /* A creature's nameplate under its feet (`ui/Nameplate`), centred on the feet: never takes a tap. */
 .vy-feet-plate {
   transform: translateX(-50%);

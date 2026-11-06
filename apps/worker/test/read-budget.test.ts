@@ -6,6 +6,7 @@
 // The seeded guild is `read-world.ts`; `query-plan-audit.test.ts` checks how the statements are planned and
 // `read-day.test.ts` adds them up over a day.
 import { describe, expect, it } from 'vitest';
+import { eventTimes, weekIdFor } from '../src/raid-schedule';
 import { ReadMeter, readSourceOfPath } from '../src/read-meter';
 import { addDays, gameDay } from '../src/time';
 import { USER_ID, runCore } from './helpers';
@@ -16,6 +17,7 @@ import {
   BUILD,
   GUILD_ID,
   HISTORY_DAYS,
+  PLAYERS,
   TODAY,
   callAs,
   boardSwap,
@@ -266,7 +268,8 @@ const VALLEY_BUDGET = {
   // A day away: settles every creature (the XP through the level rules), pays the allowance, clears rows of creatures that left.
   arrival: { reads: 1250, writes: 95 }, // measured 828 reads, 63 written
   // Ten minutes into the visit: a pass writes each creature's carry and the player row.
-  visit: { reads: 1100, writes: 50 }, // measured 723 reads, 31 written
+  // Step 5: the seeded creatures are far below the player's 3rd best, so catch-up (x3 at most) makes each pass pay whole XP: 23 level/exp rows written more (the carries alone were enough before). Raised from 50.
+  visit: { reads: 1100, writes: 80 }, // measured 723 reads, 54 written
   // A look within a minute of the last pass answers from what is stored and writes nothing.
   quick: { reads: 1050, writes: 5 }, // measured 692 reads, 1 written (the meter's own flush is not counted)
   // The pass before an intent (a dismiss of a card that is not there), with the request's own reads.
@@ -344,7 +347,7 @@ const SCOUT_BUDGET = {
   // A day away with the seeded player's 30 creatures: 828 reads and 63 written without seats (`VALLEY_BUDGET.arrival`).
   arrival2: { reads: 1400, writes: 130 }, // measured 883-918 reads, 78-84 written (the draws differ run to run)
   // Ten minutes on, the same visit (778 reads, 31 written without seats here).
-  visit2: { reads: 1200, writes: 55 }, // measured 774-778 reads, 33 written
+  visit2: { reads: 1200, writes: 85 }, // measured 774-778 reads, 56 written (step 5: catch-up pays whole XP each pass, +23; was 33 and 55)
   arrival6: { reads: 1600, writes: 210 }, // measured 944-1048 reads, 106-140 written (a store coming home: parts, gear, a newcomer or a card)
   visit6: { reads: 1300, writes: 100 }, // measured 806-838 reads, 63 written
 } as const;
@@ -411,7 +414,7 @@ const FORGE_BUDGET = {
   // A day away: 828 reads and 63 written without anvils (`VALLEY_BUDGET.arrival`).
   arrival2: { reads: 1400, writes: 165 }, // measured 939 reads, 110 written (the floors' four pieces come home: each rolled, inserted, its row deleted)
   // Ten minutes on, the same visit.
-  visit2: { reads: 1200, writes: 60 }, // measured 783 reads, 40 written
+  visit2: { reads: 1200, writes: 90 }, // measured 783 reads, 63 written (step 5: catch-up pays whole XP each pass, +23; was 40 and 60)
   // Two anvils and two scouts together.
   arrival2s2: { reads: 1500, writes: 175 }, // measured 978 reads, 116 written
   visit2s2: { reads: 1300, writes: 95 }, // measured 850 reads, 61 written
@@ -481,7 +484,7 @@ const GAZETTE_BUDGET = {
   // A day away with two seats: the arrival writes the paper (`SCOUT_BUDGET.arrival2` is the same arrival, which now includes it).
   arrival: { reads: 1400, writes: 130 }, // measured 903 reads, 88 written
   // Ten minutes on with the paper unread: the state carries it.
-  look: { reads: 1200, writes: 55 }, // measured 793 reads, 33 written
+  look: { reads: 1200, writes: 85 }, // measured 793 reads, 56 written (step 5: catch-up pays whole XP each pass, +23; was 33 and 55)
   // A second arrival while the first paper is unread: the two are joined into one.
   joined: { reads: 1400, writes: 130 }, // measured 923 reads, 97 written
   // Closing the paper: one row of its own read and written, and no pass (the other rows are the session's).
@@ -573,4 +576,121 @@ describe('read budget with the Gazette', () => {
       expectWritesUnder(`gazette ${name}`, reads, GAZETTE_BUDGET[name].writes);
     },
   );
+});
+
+/**
+ * The bonfire in full (phase 5 step 5, `valley-bonfire.ts`): the three things it adds to a request or to the daily job, each priced as
+ * `docs/design/database-reads.md` asks. Measured in the seeded guild (15 players with 30 creatures each, one of them looking):
+ * - the daily middle (`maintain`): one read of the players who visited in the last week and each one's creatures, one row written;
+ * - who is online: the lounge's instance rows plus, for each of up to four players, their name and up to three creatures that are not posted;
+ * - the raid pause: only inside a raid weekend's calendar span, the player's own placements, the week's row and the finale marker.
+ * The last two are the extra rows of one `/api/state` look, over the same look without them.
+ */
+const BONFIRE_BUDGET = {
+  // 15 players visited today, their 30 creatures each read through the `creatures_user` index; one row written.
+  middle: { reads: 650, writes: 3 }, // measured 420 reads, 1 written
+  // The lounge's instance rows, four names and up to three creatures each (index order, so no sort), a seat lookup per creature.
+  online: { reads: 30, writes: 0 }, // measured 18
+  // Inside a raid weekend's span: the player's placements (their own index), the week's row and the finale marker; outside it, none.
+  raid: { reads: 10, writes: 0 }, // measured 5
+} as const;
+
+describe('read budget with the bonfire', () => {
+  const measured: Record<string, number> = {};
+  let middleWrites = 0;
+
+  it('measures the daily middle, a look with company and a look in a raid weekend', async () => {
+    await inGuild(
+      async (env) => {
+        const { metered, clock } = env;
+        const world = await seedWorld(env, { valleySystems: true });
+        const { core, secrets } = world;
+        const state = (): Promise<unknown> => callAs(core, secrets, 1, '/api/state');
+        const mine = world.creatures[userId(1)] ?? [];
+        clock.t += 6 * MINUTE;
+        await callAs(core, secrets, 1, '/api/me');
+        await state();
+        seedSeats(metered.sql, userId(1), mine, 2);
+        for (let p = 1; p <= PLAYERS; p++) {
+          metered.sql.exec(
+            'INSERT OR IGNORE INTO valley_players (user_id, settled_at, last_visit_at, visit_started_at) VALUES (?, ?, ?, ?)',
+            userId(p),
+            clock.t,
+            clock.t,
+            clock.t,
+          );
+        }
+        const bonfire = core.valleyBonfire;
+        if (bonfire === null) throw new Error('the valley is off');
+        const daily = (await metered.measure(() => bonfire.writeMiddle(clock.t))).reads;
+        measured['middle'] = daily.total;
+        middleWrites = daily.written;
+        // Who is online: four other players in the Activity, measured as the pass asks for it.
+        metered.sql.exec(
+          'INSERT INTO lounge_instances (instance_id, user_ids, first_seen_at, checked_at) VALUES (?, ?, ?, ?)',
+          'bonfire-test',
+          JSON.stringify([2, 3, 4, 5, 1].map((p) => userId(p))),
+          clock.t,
+          clock.t,
+        );
+        const company = await metered.measure(() => bonfire.online(userId(1)));
+        expect(company.result).toHaveLength(4);
+        measured['online'] = company.reads.total;
+        // A raid weekend: the player has posted creatures and three of them are placed, and a pass reads the windows.
+        const week = weekIdFor(clock.t, HELSINKI);
+        const times = eventTimes(week, HELSINKI, 2);
+        metered.sql.exec(
+          "INSERT OR IGNORE INTO raid_weeks (week_id, boss_id, status, created_at, rules_version) VALUES (?, 'boss', 'open', ?, 2)",
+          week,
+          clock.t,
+        );
+        metered.sql.exec('DELETE FROM raid_placements WHERE user_id = ?', userId(1));
+        for (const [slot, id] of mine.slice(0, 3).entries()) {
+          metered.sql.exec(
+            'INSERT INTO raid_placements (week_id, party, slot, user_id, creature_id) VALUES (?, 99, ?, ?, ?)',
+            week,
+            slot,
+            userId(1),
+            id,
+          );
+        }
+        const inside = await metered.measure(() =>
+          bonfire.raidWindows(
+            userId(1),
+            times.phase1 - 60 * MINUTE,
+            times.phase1 + 120 * MINUTE,
+            true,
+          ),
+        );
+        expect(inside.result).toHaveLength(3);
+        measured['raid'] = inside.reads.total;
+        // Outside any raid weekend's span (a week later by the calendar) nothing is read at all.
+        const outside = await metered.measure(() =>
+          bonfire.raidWindows(
+            userId(1),
+            times.finale + 60 * 60 * MINUTE,
+            times.finale + 61 * 60 * MINUTE,
+            true,
+          ),
+        );
+        expect(outside.reads.total).toBe(0);
+      },
+      { fresh: true },
+    );
+  }, 60_000);
+
+  it.each(Object.keys(BONFIRE_BUDGET) as (keyof typeof BONFIRE_BUDGET)[])(
+    'the bonfire: %s reads few rows',
+    (name) => {
+      const rows = measured[name];
+      if (rows === undefined) throw new Error('the measuring test did not run');
+      expect(rows, `${name}: ${String(rows)} rows read`).toBeLessThanOrEqual(
+        BONFIRE_BUDGET[name].reads,
+      );
+    },
+  );
+
+  it('the daily middle writes one row', () => {
+    expect(middleWrites).toBeLessThanOrEqual(BONFIRE_BUDGET.middle.writes);
+  });
 });

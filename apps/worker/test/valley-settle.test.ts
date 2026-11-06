@@ -90,6 +90,8 @@ describe('migration 56: the valley tables', () => {
           'first_scout_done',
           // Migration 58: tinkering scrap not yet whole.
           'forge_carry',
+          // Migration 60: the level the creatures catch up toward, fixed at the visit.
+          'catch_target',
         ]);
         expect(columns('valley_creatures')).toEqual([
           'creature_id',
@@ -102,6 +104,8 @@ describe('migration 56: the valley tables', () => {
           'scout_hours',
           // Migration 58: the creature's smithing hours.
           'smith_hours',
+          // Migration 60: the game day it last featured in a small moment.
+          'moment_day',
         ]);
         expect(
           ctx.sql

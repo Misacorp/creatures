@@ -379,6 +379,13 @@ async function simulateDay(options: {
       // The day crossed a reset and its alarm did the daily cleanup: the day was not left unmarked.
       const today = gameDay(env.clock.t, HELSINKI, RULES.daily.reset);
       expect(maintainedDay(env.metered.sql), 'the daily maintenance ran').toBe(today);
+      // Step 5: with the valley on that cleanup also wrote the server's middle (one row; priced in `read-budget.test.ts`, "the bonfire").
+      if (options.valleySystems === true) {
+        expect(
+          env.metered.sql.exec<{ n: number }>('SELECT COUNT(*) AS n FROM valley_server').one().n,
+          'the daily maintenance wrote the middle',
+        ).toBe(1);
+      }
     },
     { fresh: options.fresh === true },
   );

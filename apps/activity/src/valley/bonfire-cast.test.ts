@@ -13,6 +13,9 @@ import {
   moreCount,
   restingOf,
   totalGained,
+  MAX_VISITORS,
+  atTheFire,
+  visitorsOf,
 } from './bonfire-cast';
 import { PLATE_ROW_PX, PLATE_MAX_PX, crowded, plateGap, standBounds } from './place-plates';
 import { placeStates } from './place-state';
@@ -35,6 +38,7 @@ const visitOf = (list: typeof creatures, at = HOME_NOW): ValleyVisit => ({
     catchUpBp: 10000,
     seatId: null,
   })),
+  online: [],
   allowance: { store: 0, cap: 480, brought: 0 },
   seats: [],
   anvils: [],
@@ -214,5 +218,62 @@ describe('the tray says resting', () => {
     expect(trayBadge(c1, input).state).not.toBe('resting');
     expect(trayBadge(c0, { ...input, resting: new Set() }).state).not.toBe('resting');
     expect(trayFor(creatures, input)).toHaveLength(creatures.length);
+  });
+});
+
+describe('company and the warming flame (V-BON-2, V-BON-4)', () => {
+  const visitor = (n: number, creatureCount = 3) => ({
+    name: `Mia ${String(n)}`,
+    creatures: Array.from({ length: creatureCount }, (_, i) => ({
+      id: `v${String(n)}-${String(i)}`,
+      species: 'ember-pup',
+      shiny: false,
+      level: 7 + i,
+      name: i === 0 ? 'Pebble' : null,
+    })),
+  });
+
+  it('marks a resting creature warm only while the server says it earns more than x1', () => {
+    const visit = visitOf(creatures.slice(0, 3));
+    visit.creatures[1] = { ...visit.creatures[1]!, catchUpBp: 24000 };
+    const resting = restingOf(creatures, visit);
+    expect(resting.map((r) => r.warm)).toEqual([false, true, false]);
+  });
+
+  it('draws one creature of each online player with their name, and no XP, no flame', () => {
+    const visit = { ...visitOf(creatures.slice(0, 3)), online: [visitor(1), visitor(2)] };
+    const visitors = visitorsOf(visit);
+    expect(visitors).toHaveLength(2);
+    expect(visitors[0]).toMatchObject({ owner: 'Mia 1', gained: 0, warm: false });
+    expect(visitors[0]?.creature).toMatchObject({ id: 'v1-0', level: 7, nickname: 'Pebble' });
+    expect(visitorsOf({ ...visit, online: [] })).toEqual([]);
+    expect(visitorsOf({ ...visit, online: [{ ...visitor(3), creatures: [] }] })).toEqual([]);
+    expect(visitorsOf({ ...visit, online: [1, 2, 3, 4].map((n) => visitor(n)) })).toHaveLength(
+      MAX_VISITORS,
+    );
+  });
+
+  it("seats the visitors after the player's own, who give up seats rather than the visitors", () => {
+    const own = restingOf(creatures, visitOf(creatures));
+    const visit = { ...visitOf(creatures), online: [visitor(1), visitor(2)] };
+    const seated = atTheFire(own, visitorsOf(visit), HOME_NOW);
+    expect(seated).toHaveLength(MAX_AT_FIRE);
+    expect(seated.slice(-2).map((r) => r.owner)).toEqual(['Mia 1', 'Mia 2']);
+    expect(seated.slice(0, -2).every((r) => r.owner === undefined)).toBe(true);
+    // Alone, nothing changes.
+    expect(atTheFire(own, [], HOME_NOW)).toEqual(firesideOf(own, HOME_NOW));
+  });
+
+  it("a visitor's seat says whose it is and counts for no 'more'", () => {
+    const own = restingOf(creatures, visitOf(creatures.slice(0, 2)));
+    const visit = { ...visitOf(creatures.slice(0, 2)), online: [visitor(1)] };
+    const spots = fireSpots(
+      atTheFire(own, visitorsOf(visit), HOME_NOW),
+      { x: 40, y: 26 },
+      { W: 500, H: 200, s: 4, top: 4 },
+    );
+    expect(spots).toHaveLength(3);
+    expect(spots[2]).toMatchObject({ owner: 'Mia 1', where: 'visiting the fire', gained: 0 });
+    expect(moreCount(2, spots.filter((s) => s.owner === undefined).length)).toBe(0);
   });
 });

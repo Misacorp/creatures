@@ -315,8 +315,23 @@ export function undoGamesIndexMigration(sql: SqlStorage): void {
   sql.exec('DELETE FROM schema_version WHERE version = 42');
 }
 
+/** Puts a database back to before migration 60 (the bonfire in full): its table, columns and index go. */
+export function undoValleyBonfireMigration(sql: SqlStorage): void {
+  sql.exec('DROP TABLE IF EXISTS valley_server');
+  sql.exec('DROP INDEX IF EXISTS raid_placements_user');
+  const has = (table: string, column: string): boolean =>
+    sql.exec(`SELECT 1 FROM pragma_table_info('${table}') WHERE name = ?`, column).toArray()
+      .length > 0;
+  if (has('valley_players', 'catch_target'))
+    sql.exec('ALTER TABLE valley_players DROP COLUMN catch_target');
+  if (has('valley_creatures', 'moment_day'))
+    sql.exec('ALTER TABLE valley_creatures DROP COLUMN moment_day');
+  sql.exec('DELETE FROM schema_version WHERE version = 60');
+}
+
 /** Puts a database back to before migration 59 (the welcome-back Gazette): its table goes. */
 export function undoValleyGazetteMigration(sql: SqlStorage): void {
+  undoValleyBonfireMigration(sql);
   sql.exec('DROP TABLE IF EXISTS valley_gazette');
   sql.exec('DELETE FROM schema_version WHERE version = 59');
 }
