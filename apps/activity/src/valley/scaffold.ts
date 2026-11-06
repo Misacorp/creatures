@@ -9,7 +9,7 @@ import type { SpriteDef } from '../sprites/sprite-data';
 /** The steps the scaffolding goes up in: a twelfth of the art's height each. */
 export const SCAFFOLD_STEPS = 12;
 
-const PALETTE = { k: '#0d0a1a', p: '#a67c4e', q: '#7a5636' };
+const PALETTE = { k: '#0d0a1a', w: '#e6c98c', p: '#b08850', q: '#7a5636' };
 
 /** The steps a project's fill (0 to 1) is worth: none at nothing, at least one once something is given, and never the last (the level is raised then). */
 export function scaffoldSteps(fraction: number): number {
@@ -55,20 +55,32 @@ export function scaffoldUp(sprite: SpriteDef, steps: number): SpriteDef {
     const base = bottom + 1;
     const high = Math.max(0, base - tall);
     const span = right - left;
-    const poles = [left + 1, left + Math.floor(span / 2), right - 2];
+    const poles = [left + 1, left + Math.floor(span / 2), right - 4];
+    // Each pole is four pixels wide with an ink edge and a pale face, so it reads as new timber against the building's own wood.
     for (const x of poles) {
-      grid.rect(x, high, 2, base - high, 'q');
-      grid.rect(x, high, 1, base - high, 'p');
+      grid.rect(x, high, 4, base - high, 'k');
+      grid.rect(x + 1, high, 2, base - high, 'w');
     }
-    for (let y = base - 4; y >= high + 1; y -= 12) {
-      grid.rect(left, y, span + 1, 2, 'p');
-      grid.rect(left, y + 1, span + 1, 1, 'q');
+    // A board across the poles every 12 rows, ink above and below.
+    const boards: number[] = [];
+    for (let y = base - 6; y >= high + 1; y -= 12) {
+      boards.push(y);
+      grid.rect(left, y, span + 1, 5, 'k');
+      grid.rect(left + 1, y + 1, span - 1, 2, 'w');
+      grid.rect(left + 1, y + 3, span - 1, 1, 'p');
     }
-    const first = poles[0] ?? left;
-    const mid = poles[1] ?? left;
-    const rise = Math.min(base - high - 5, 11);
-    for (let i = 0; i <= mid - first && rise > 0; i++) {
-      grid.set(first + i, base - 4 - Math.round((i * rise) / Math.max(1, mid - first)), 'q');
+    // A brace in each bay between two boards (and the ground), from one pole to the next.
+    let floor = base;
+    for (const y of boards) {
+      for (let n = 0; n + 1 < poles.length; n++) {
+        const from = (poles[n] ?? left) + 4;
+        const to = poles[n + 1] ?? right;
+        const rise = Math.min(floor - y - 6, 10);
+        for (let i = 0; i < to - from && rise > 0; i++) {
+          grid.set(from + i, floor - 2 - Math.round((i * rise) / Math.max(1, to - from)), 'q');
+        }
+      }
+      floor = y;
     }
   }
   const used = new Set(grid.rows().join(''));

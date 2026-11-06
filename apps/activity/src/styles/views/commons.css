@@ -6,6 +6,13 @@
   align-content: start;
 }
 
+.cm-helper {
+  display: grid;
+  grid-template-columns: minmax(0, 11rem) minmax(0, 1fr);
+  align-items: center;
+  gap: 0.5rem;
+}
+
 /* In the Bonfire's drawer the board is the drawer's own content: no card frame inside a frame. */
 .cm-sheet {
   display: grid;

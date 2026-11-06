@@ -12,7 +12,7 @@ import type { Creature, ValleyVisit } from '../api';
 import type { TabAlerts } from '../tab-alerts';
 import { scrollAndFocus } from '../scroll-to';
 import { BonfireScene } from './BonfireScene';
-import { CommonsBoard, type CommonsActions } from './CommonsBoard';
+import { CommonsBoard, type CommonsActions, type CommonsStart } from './CommonsBoard';
 import { Keepsakes } from './Keepsakes';
 import { commonsOf, levelOf } from './commons-view';
 import { PinnedAct } from './PinnedAct';
@@ -55,6 +55,7 @@ export function ValleyFrame({
   visit = null,
   commons,
   acorns = 0,
+  commonsStart,
   busy = false,
   focus,
   onOpen,
@@ -80,6 +81,8 @@ export function ValleyFrame({
   commons?: CommonsActions;
   /** The player's Acorns, for a gift. */
   acorns?: number;
+  /** The board's sheet or drawer to open at the start (the workbench shows each); the game leaves it out. */
+  commonsStart?: CommonsStart & { sheet?: boolean };
   /** An action is under way: the boards' buttons wait. */
   busy?: boolean;
   /** The place whose button takes the focus when the map comes back. */
@@ -158,6 +161,7 @@ export function ValleyFrame({
             acorns={acorns}
             busy={busy}
             actions={commons}
+            {...(commonsStart?.view === undefined ? {} : { start: { view: commonsStart.view } })}
           />
         )}
       {children}
@@ -223,6 +227,7 @@ export function ValleyFrame({
               level={bonfireLevel}
               onLeave={onLeave}
               {...(commons === undefined ? {} : { commons, acorns, busy })}
+              {...(commonsStart === undefined ? {} : { start: commonsStart })}
             />
           </section>
         )}

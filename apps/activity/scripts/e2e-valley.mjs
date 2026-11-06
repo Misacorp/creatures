@@ -535,7 +535,7 @@ const commonsScene = (overrides = {}) => {
       plaque: ['Ada', 'Mia', 'Tobias', 'You'],
       keepsakes: 1,
     },
-    paddock: { level: 1, state: 'open', size: 600, have: { acorns: 10, scrap: 20, shards: 1 } },
+    paddock: { level: 1, state: 'open', size: 600, have: { acorns: 180, scrap: 360, shards: 45 } },
     school: { level: 1, state: 'waiting' },
     ...overrides,
   };
@@ -1881,6 +1881,9 @@ try {
         await waitFor(heading('Signpost'));
         const board = page.locator('section[aria-label="Signpost project"]');
         await waitFor(board);
+        // The scaffolding stands round the road as the project fills.
+        await page.waitForTimeout(300);
+        await shot('commons-signpost-scaffolding');
         await board.scrollIntoViewIfNeeded();
         await expectTopmost(board, 'the Signpost board');
         await shot('commons-signpost-board');
@@ -2018,6 +2021,9 @@ try {
         await waitFor(heading('Paddock'));
         const paddock = page.locator('section[aria-label="Paddock project"]');
         await waitFor(paddock);
+        // The scaffolding stands high round the Paddock: its project is three quarters full.
+        await page.waitForTimeout(300);
+        await shot('commons-paddock-scaffolding');
         await paddock.scrollIntoViewIfNeeded();
         await expectTopmost(paddock, 'the Paddock board');
         await shot('commons-paddock-board');
@@ -2064,7 +2070,7 @@ try {
         await page.waitForTimeout(300);
         await shot('commons-bonfire-level3');
         await act.click();
-        await waitFor(dialogOf(/Bonfire, level 3/));
+        await waitFor(dialogOf(/^Bonfire/));
         await page.waitForTimeout(500);
         await expectTopmost(page.getByRole('dialog').first(), 'the Bonfire board');
         await shot('commons-bonfire-board');

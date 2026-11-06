@@ -181,13 +181,17 @@ export function CommonsBoard({
   const percent = percentFilled(p);
   const card = (
     <>
-      <div class="sp-seat-head">
-        <h3 class="pix">{name}</h3>
-        <Tag kind="badge" {...(p.state === 'open' ? { tone: 'good' as const } : {})}>
-          {stateTag(p)}
-        </Tag>
-      </div>
-      <p class="cm-level">{levelLine(p)}</p>
+      {host === 'page' && (
+        <>
+          <div class="sp-seat-head">
+            <h3 class="pix">{name}</h3>
+            <Tag kind="badge" {...(p.state === 'open' ? { tone: 'good' as const } : {})}>
+              {stateTag(p)}
+            </Tag>
+          </div>
+          <p class="cm-level">{levelLine(p)}</p>
+        </>
+      )}
       {p.state === 'open' && p.project !== null ? (
         <div class="cm-project">
           <div class="sp-line cm-bar">
@@ -216,49 +220,55 @@ export function CommonsBoard({
           }}
         />
       )}
-      <SlotRow
-        label={`${name}: your helper`}
-        slots={[
-          helper === undefined ? (
-            <Slot
-              kind="talent"
-              state="empty"
-              name="Post a helper"
-              label={`${name}: nobody helps. Choose a creature`}
-              buttonRef={(el) => {
-                openers.current['seat'] = el;
-              }}
-              expanded={view === 'seat'}
-              disabled={busy}
-              onClick={() => {
-                setView('seat');
-              }}
-            />
-          ) : (
-            <Slot
-              kind="talent"
-              state="filled"
-              label={`${name}: ${creatureName(helper)}, level ${String(helper.level)}, helping. Change`}
-              buttonRef={(el) => {
-                openers.current['seat'] = el;
-              }}
-              expanded={view === 'seat'}
-              disabled={busy}
-              onClick={() => {
-                setView('seat');
-              }}
-            >
-              <SlotText name={creatureName(helper)} sub={`Lv ${String(helper.level)} · Helping`} />
-            </Slot>
-          ),
-        ]}
-      />
+      <div class="cm-helper">
+        <SlotRow
+          label={`${name}: your helper`}
+          slots={[
+            helper === undefined ? (
+              <Slot
+                kind="talent"
+                state="empty"
+                name="Post a helper"
+                label={`${name}: nobody helps. Choose a creature`}
+                buttonRef={(el) => {
+                  openers.current['seat'] = el;
+                }}
+                expanded={view === 'seat'}
+                disabled={busy}
+                onClick={() => {
+                  setView('seat');
+                }}
+              />
+            ) : (
+              <Slot
+                kind="talent"
+                state="filled"
+                label={`${name}: ${creatureName(helper)}, level ${String(helper.level)}, helping. Change`}
+                buttonRef={(el) => {
+                  openers.current['seat'] = el;
+                }}
+                expanded={view === 'seat'}
+                disabled={busy}
+                onClick={() => {
+                  setView('seat');
+                }}
+              >
+                <SlotText
+                  name={creatureName(helper)}
+                  sub={`Lv ${String(helper.level)} · Helping`}
+                />
+              </Slot>
+            ),
+          ]}
+        />
+        <p class="cm-need">A creature here helps build, a little each day.</p>
+      </div>
       {board !== undefined && (
         <button
           type="button"
           class="sp-line sp-pack cm-row"
           aria-haspopup="dialog"
-          aria-label={`${boardName(place)}, ${String(socketsSet(board))} of ${String(board.sockets.length)} finds set. Show the collection`}
+          aria-label={`${boardName(place)}, ${String(socketsSet(board))} / ${String(board.sockets.length)} finds set. Show the collection`}
           ref={(el) => {
             openers.current['collection'] = el;
           }}
@@ -340,7 +350,7 @@ export function CommonsBoard({
           </button>
         </div>
         <SpendConfirm
-          text={`Your gift counts in full, whoever gives. The project takes at most ${String(row.max)} of this.`}
+          text={`Gifts count in full, whoever gives. The project still takes ${String(row.max)} of this.`}
           label="Give"
           price={giftPrice(row, Math.min(units, Math.max(row.max, 1)))}
           reason={row.reason}
@@ -374,7 +384,7 @@ export function CommonsBoard({
     board === undefined ? null : (
       <div class="dr-stack pix-panel">
         <p class="sp-note">
-          {boardName(place)}: {socketsSet(board)} / {board.sockets.length} set
+          {socketsSet(board)} / {board.sockets.length} set
           {board.done ? '. The collection is complete.' : '. A find sets itself when it turns up.'}
         </p>
         <ul class="cm-sockets" aria-label="Sockets">
@@ -436,7 +446,8 @@ export function CommonsBoard({
           close();
           onClose?.();
         }}
-        title={`${name}, level ${String(p.level)}`}
+        title={name}
+        meta={levelLine(p)}
       >
         {view === null ? (
           <div class="dr-stack cm-board cm-sheet" ref={sheetRef} tabIndex={-1}>
@@ -484,7 +495,7 @@ export function CommonsBoard({
         <Drawer
           open
           onClose={close}
-          title={titleOf(view)}
+          title={view === 'give' ? 'Give to the project' : titleOf(view)}
           meta={name}
           returnFocusTo={openers.current[view === 'give' ? 'give' : view] ?? null}
         >

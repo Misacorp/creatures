@@ -10,8 +10,10 @@ import type { Place } from '../../tabs';
 import { GEAR_STATE, SAMPLE_GEAR } from '../../creature-card-sample';
 import type { GearActions } from '../../gear-actions';
 import type { OrderRequest } from '../../api';
-import type { ValleyAnvilView, ValleyOrderView } from '@creatures/game';
+import type { ValleyAnvilView, ValleyCommonsView, ValleyOrderView } from '@creatures/game';
 import { SignpostSeats, type SignpostStart } from '../../valley/SignpostSeats';
+import type { CommonsActions, CommonsStart } from '../../valley/CommonsBoard';
+import { COMMONS_PRESETS, presetCommons, withCommons } from '../../valley/commons-sample';
 import {
   fullFloor,
   sampleAnvil,
@@ -85,7 +87,70 @@ export const VALLEY_OPEN = [
   'smith picker',
   'buy an anvil',
   'bag filter',
+  'give list',
+  'give amount',
+  'plaque',
+  'collection',
+  'helper picker',
+  'fire numbers',
 ] as const;
+
+/** How the demo's commons stand (phase 5 step 6b): off, a young server, a full collection, a grown fire, a bonfire at level 3, helpers posted. */
+export const VALLEY_COMMONS = COMMONS_PRESETS;
+
+/** What a `VALLEY_OPEN` setting opens on a project board at the start. */
+function commonsStartOf(setting: string): (CommonsStart & { sheet?: boolean }) | undefined {
+  switch (setting) {
+    case 'give list':
+      return { view: 'give', sheet: true };
+    case 'give amount':
+      return { view: 'give', row: 'acorns', sheet: true };
+    case 'plaque':
+      return { view: 'plaque', sheet: true };
+    case 'collection':
+      return { view: 'collection', sheet: true };
+    case 'helper picker':
+      return { view: 'seat', sheet: true };
+    default:
+      return undefined;
+  }
+}
+
+/** A gift on the demo's commons, as the server takes it: a part fills, and a full project is built (the plaque gets the player, a keepsake is theirs). */
+function giftDemo(
+  commons: ValleyCommonsView,
+  place: string,
+  part: 'acorns' | 'scrap' | 'shards',
+  units: number,
+): ValleyCommonsView {
+  const value = { acorns: 1, scrap: 0.5, shards: 2 }[part];
+  return {
+    ...commons,
+    places: commons.places.map((p) => {
+      if (p.id !== place || p.project === null) return p;
+      const needs = { ...p.project.needs, [part]: Math.max(0, p.project.needs[part] - units) };
+      const progress = Math.min(p.project.size, p.project.progress + units * value);
+      const given = p.mine.given + units * value;
+      if (needs.acorns <= 0 && needs.scrap <= 0 && needs.shards <= 0) {
+        return {
+          ...p,
+          level: p.level + 1,
+          state: 'building' as const,
+          project: null,
+          buildDaysLeft: 3,
+          plaque: [...p.plaque, 'You'].sort(),
+          keepsakes: p.keepsakes + 1,
+          mine: { given: 0, shareBp: 0 },
+        };
+      }
+      return {
+        ...p,
+        project: { ...p.project, needs, progress },
+        mine: { given, shareBp: Math.round((given / Math.max(1, progress)) * 10_000) },
+      };
+    }),
+  };
+}
 
 /** The seats of a scouts setting, the first two creatures of the roster posted. */
 function scoutSeats(roster: readonly Creature[], scouts: string): ValleySeatView[] {
@@ -170,6 +235,16 @@ function openAtStart(setting: string): SignpostStart {
       return { detail: 'seat-1' };
     case 'buy a seat':
       return { buy: true };
+    case 'give list':
+      return { commons: { view: 'give' } };
+    case 'give amount':
+      return { commons: { view: 'give', row: 'acorns' } };
+    case 'plaque':
+      return { commons: { view: 'plaque' } };
+    case 'collection':
+      return { commons: { view: 'collection' } };
+    case 'helper picker':
+      return { commons: { view: 'seat' } };
     default:
       return {};
   }
@@ -190,6 +265,18 @@ function forgeStartOf(setting: string): ForgeStart {
       return { buy: true };
     case 'bag filter':
       return { bag: true };
+    case 'fire numbers':
+      return { fire: true };
+    case 'give list':
+      return { commons: { view: 'give' } };
+    case 'give amount':
+      return { commons: { view: 'give', row: 'acorns' } };
+    case 'plaque':
+      return { commons: { view: 'plaque' } };
+    case 'collection':
+      return { commons: { view: 'collection' } };
+    case 'helper picker':
+      return { commons: { view: 'seat' } };
     default:
       return {};
   }
@@ -376,6 +463,7 @@ export function ValleyDemo({
   scouts = 'off',
   open: opened = 'nothing',
   forge = 'off',
+  commons = 'off',
   paper = 'off',
 }: {
   start: string;
@@ -388,6 +476,8 @@ export function ValleyDemo({
   open?: string;
   /** The Forge's anvils (phase 5 step 3): one of `VALLEY_FORGE`. */
   forge?: string;
+  /** The commons (phase 5 step 6b): one of `VALLEY_COMMONS`. */
+  commons?: string;
   /** The welcome-back Gazette on the server's paper (phase 5 step 4): one of `VALLEY_PAPERS`. */
   paper?: string;
 }) {
@@ -407,15 +497,16 @@ export function ValleyDemo({
   const planned = homeInput(day, true);
   const scoutsOn = scouts !== 'off';
   const forgeOn = forge !== 'off';
+  const commonsOn = commons !== 'off';
   // With the valley's systems on the roster rests at the fire, and the allowance brought some Acorns home. The scouts' demo
   // frees every creature of its trips and jobs (a creature cannot scout and be away).
   const base =
-    resting === 'off' && !scoutsOn && !forgeOn
+    resting === 'off' && !scoutsOn && !forgeOn && !commonsOn
       ? planned
       : {
           ...planned,
           creatures: restingRoster(planned.creatures, resting === 'off' ? 'many' : resting).map(
-            (c) => (scoutsOn || forgeOn ? { ...c, busy: null, away: false } : c),
+            (c) => (scoutsOn || forgeOn || commonsOn ? { ...c, busy: null, away: false } : c),
           ),
         };
   // The seats and kit live here, so the Signpost's page can be played with in the workbench (no server).
@@ -425,9 +516,13 @@ export function ValleyDemo({
   // The anvils, the shelf and the shards live here too, so the Forge's page can be played with.
   const [anvils, setAnvils] = useState<ValleyAnvilView[]>(() => forgeAnvils(base.creatures, forge));
   const [shelf, setShelf] = useState(DEMO_SHELF);
-  const systems = resting !== 'off' || scoutsOn || forgeOn;
+  // The commons live here too: a gift fills the project, a helper stands at its seat.
+  const [block, setBlock] = useState<ValleyCommonsView | null>(() =>
+    presetCommons(commons, base.creatures),
+  );
+  const systems = resting !== 'off' || scoutsOn || forgeOn || commonsOn;
   const scoutVisit = systems ? demoVisit(base.creatures, seats, owned) : null;
-  const visit =
+  const plainVisit =
     scoutVisit === null
       ? null
       : withAnvils(
@@ -441,6 +536,53 @@ export function ValleyDemo({
           },
           anvils,
         );
+  const visit = plainVisit === null || block === null ? plainVisit : withCommons(plainVisit, block);
+  const commonsActions: CommonsActions | undefined =
+    block === null
+      ? undefined
+      : {
+          give: (place, row, units) => {
+            if (row.part === 'acorns') setAcorns(acorns - units);
+            else if (row.part === 'scrap') setShelf({ ...shelf, scrap: shelf.scrap - units });
+            else if (row.element !== null) {
+              const key = row.element as keyof typeof shelf.shards;
+              setShelf({
+                ...shelf,
+                shards: { ...shelf.shards, [key]: shelf.shards[key] - units * row.per },
+              });
+            }
+            setBlock(giftDemo(block, place, row.part, units));
+            return Promise.resolve(true);
+          },
+          post: (place, creatureId) => {
+            setBlock((now) =>
+              now === null
+                ? now
+                : {
+                    ...now,
+                    communal: now.communal.map((c) => {
+                      if (c.place === place) {
+                        return {
+                          ...c,
+                          seatId: creatureId === null ? c.seatId : `communal-${place}`,
+                          creatureId,
+                        };
+                      }
+                      // A creature that stood at another seat swaps into the one this seat held.
+                      return creatureId !== null && c.creatureId === creatureId
+                        ? {
+                            ...c,
+                            creatureId:
+                              now.communal.find((x) => x.place === place)?.creatureId ?? null,
+                          }
+                        : c;
+                    }),
+                  },
+            );
+            return Promise.resolve(true);
+          },
+        };
+  const commonsStart = commonsStartOf(opened);
   // What the scenes draw: the fixture creatures, standing where today's state puts them (a dungeon row, a raid party).
   const party = base.creatures.slice(0, 3).map((c) => c.id);
   const input = {
@@ -504,6 +646,13 @@ export function ValleyDemo({
             placeInput={input}
             castExtra={castExtra}
             visit={visit}
+            {...(commonsActions === undefined
+              ? {}
+              : {
+                  commons: commonsActions,
+                  acorns,
+                  ...(commonsStart === undefined ? {} : { commonsStart }),
+                })}
             focus={focus}
             onOpen={open}
             onLeave={leave}
@@ -537,6 +686,7 @@ export function ValleyDemo({
                       ...trayStates(visit),
                     },
                     acorns,
+                    ...(commonsActions === undefined ? {} : { commons: commonsActions }),
                     onOpenPaddock: () => {
                       open('paddock');
                     },
@@ -629,6 +779,7 @@ export function ValleyDemo({
                 acorns={acorns}
                 busy={false}
                 start={openAtStart(opened)}
+                {...(commonsActions === undefined ? {} : { commons: commonsActions })}
                 onOpenPaddock={() => {
                   open('paddock');
                 }}

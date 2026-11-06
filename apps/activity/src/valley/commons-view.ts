@@ -56,9 +56,9 @@ export function placeOf(
   return commons?.places.find((p) => p.id === place);
 }
 
-/** The place's level: "Level 2 of 5"; past the max, "Level 5, finished" and how many extras stand. */
+/** The place's level: "Level 2 / 5"; past the max, "Level 5, finished" and how many extras stand. */
 export function levelLine(p: ValleyCommonsPlace): string {
-  if (p.level < p.max) return `Level ${String(p.level)} of ${String(p.max)}`;
+  if (p.level < p.max) return `Level ${String(p.level)} / ${String(p.max)}`;
   return p.cosmetic === 0
     ? `Level ${String(p.max)}, finished`
     : `Level ${String(p.max)}, ${plural(p.cosmetic, '1 extra', 'extras')}`;
@@ -82,7 +82,7 @@ export const unitsLeft = (need: number): number => (need <= 1e-9 ? 0 : Math.ceil
 export function partWords(part: ProjectPart, count: number, element: string): string {
   switch (part) {
     case 'acorns':
-      return `${String(count)} Acorns`;
+      return `${String(count)} ${count === 1 ? 'Acorn' : 'Acorns'}`;
     case 'scrap':
       return `${String(count)} scrap`;
     case 'shards':

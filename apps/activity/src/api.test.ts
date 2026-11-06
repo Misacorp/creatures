@@ -12,6 +12,8 @@ import {
   fetchRaidBoardTicket,
   fetchRoom,
   finaleSocketUrl,
+  giveToProject,
+  postCommunal,
   loungeSocketUrl,
   parseLiveMessage,
   jsonRequest,
@@ -721,5 +723,115 @@ describe('the valley block of the state (VALLEY_SYSTEMS)', () => {
         valley: { ...valley, creatures: [{ id: 'c1', state: 'asleep' }] },
       }),
     ).toThrow();
+  });
+
+  const commons = {
+    places: [
+      {
+        id: 'bonfire',
+        level: 1,
+        max: 5,
+        cosmetic: 0,
+        state: 'open',
+        project: {
+          size: 400,
+          progress: 100,
+          needs: { acorns: 100, scrap: 200, shards: 30 },
+          shardElement: 'ember',
+          cosmetic: false,
+        },
+        buildDaysLeft: 0,
+        mine: { given: 20, shareBp: 2000 },
+        plaque: [],
+        keepsakes: 0,
+      },
+    ],
+    collections: [],
+    fire: { level: 10, milli: 10000, next: 25, recent: [] },
+    hearthBp: 10000,
+    keystones: { found: 0, meanDays: 21 },
+    communal: [{ place: 'bonfire', seatId: null, creatureId: null, storeHours: 0, perDay: 6 }],
+  };
+
+  it('carries the commons when the server sends them, strictly', () => {
+    expect(parseGameState({ ...base, valley: { ...valley, commons } }).valley?.commons).toEqual(
+      commons,
+    );
+    expect(() =>
+      parseGameState({ ...base, valley: { ...valley, commons: { ...commons, extra: 1 } } }),
+    ).toThrow();
+    expect(() =>
+      parseGameState({
+        ...base,
+        valley: { ...valley, commons: { ...commons, hearthBp: 'big' } },
+      }),
+    ).toThrow();
+  });
+
+  describe('the commons routes', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('a gift is a keyed POST with the place, the part and the amount; the answer carries what it cost and the valley', async () => {
+      let sent: unknown = null;
+      vi.stubGlobal('fetch', (path: string, init: RequestInit) => {
+        sent = { path, body: JSON.parse(init.body as string) as unknown };
+        return Promise.resolve(
+          Response.json({
+            place: 'bonfire',
+            currency: 'shards',
+            spent: 6,
+            value: 4,
+            levelUp: true,
+            level: 2,
+            valley: { ...valley, commons },
+            state: { ...base },
+          }),
+        );
+      });
+      const answer = await giveToProject({
+        place: 'bonfire',
+        currency: 'shards',
+        element: 'mire',
+        amount: 6,
+        idempotencyKey: 'k1',
+      });
+      expect(sent).toEqual({
+        path: '/api/valley/gift',
+        body: {
+          place: 'bonfire',
+          currency: 'shards',
+          element: 'mire',
+          amount: 6,
+          idempotencyKey: 'k1',
+        },
+      });
+      expect(answer.spent).toBe(6);
+      expect(answer.levelUp).toBe(true);
+      expect(answer.level).toBe(2);
+      expect(answer.valley.commons).toEqual(commons);
+    });
+
+    it('an answer without a valley is refused', async () => {
+      vi.stubGlobal('fetch', () => Promise.resolve(Response.json({ spent: 1, state: base })));
+      await expect(
+        giveToProject({ place: 'forge', currency: 'acorns', amount: 1, idempotencyKey: 'k' }),
+      ).rejects.toThrow();
+    });
+
+    it('posting a helper sends the place and the creature (or null), with no key', async () => {
+      const bodies: unknown[] = [];
+      vi.stubGlobal('fetch', (path: string, init: RequestInit) => {
+        bodies.push([path, JSON.parse(init.body as string) as unknown]);
+        return Promise.resolve(Response.json({ valley, state: base }));
+      });
+      await postCommunal({ place: 'forge', creatureId: 'c1' });
+      await postCommunal({ place: 'forge', creatureId: null });
+      expect(bodies).toEqual([
+        ['/api/valley/communal', { place: 'forge', creatureId: 'c1' }],
+        ['/api/valley/communal', { place: 'forge', creatureId: null }],
+      ]);
+    });
   });
 });
