@@ -232,10 +232,15 @@ export function bagItems(sql: SqlStorage, userId: string): number {
   return items;
 }
 
+/** Applies a change to the counter. Every caller has already written the change to `gear_items`. */
 function bagAdjust(sql: SqlStorage, userId: string, delta: number): void {
   if (!bagTracked.has(sql) || delta === 0) return;
-  // The counter is made from a count first when the player has none yet (so the change is applied once, to the right base).
-  bagItems(sql, userId);
+  const has = sql.exec('SELECT 1 FROM valley_bag WHERE user_id = ?', userId).toArray().length > 0;
+  // A player with no counter yet gets one made from a count, which already holds the change: it is not applied twice.
+  if (!has) {
+    bagItems(sql, userId);
+    return;
+  }
   sql.exec('UPDATE valley_bag SET items = MAX(0, items + ?) WHERE user_id = ?', delta, userId);
 }
 
@@ -270,6 +275,12 @@ export function deleteItem(sql: SqlStorage, itemId: string): void {
     : undefined;
   sql.exec('DELETE FROM gear_items WHERE id = ?', itemId);
   if (before !== undefined && before.equipped_on === null) bagAdjust(sql, before.user_id, -1);
+}
+
+/** Deletes every item a player owns, worn or not (a dev tool's roster reset), and drops their bag counter so it is made afresh. */
+export function deleteAllItems(sql: SqlStorage, userId: string): void {
+  sql.exec('DELETE FROM gear_items WHERE user_id = ?', userId);
+  if (bagTracked.has(sql)) sql.exec('DELETE FROM valley_bag WHERE user_id = ?', userId);
 }
 
 /** True if an item can take one more: items and crafts still to be claimed are below the cap (the valley's bag: items not worn, below its 200). */

@@ -170,6 +170,30 @@ describe('the apply-roster-preset tool', () => {
     );
   });
 
+  it('leaves the valley bag counter matching the new bag, with the valley systems on', async () => {
+    await runRaid(
+      async (ctx) => {
+        const { ann, call } = await setup(ctx);
+        // A stale counter: the reset drops it, and it is made afresh from the new items.
+        ctx.sql.exec('INSERT OR REPLACE INTO valley_bag (user_id, items) VALUES (?, 99)', ann.id);
+        const res = await call('POST', '/api/dev/apply-roster-preset', {
+          preset: 'week-8',
+          userId: ann.id,
+          confirm: 'ann',
+        });
+        expect(res.status).toBe(200);
+        const items = presetItems(ROSTER_PRESETS['week-8']).length;
+        expect(
+          rows<{ items: number }>(
+            ctx.sql,
+            `SELECT items FROM valley_bag WHERE user_id = '${ann.id}'`,
+          ),
+        ).toEqual([{ items }]);
+      },
+      { start: V2_WEEK.open, core: { ...CORE, valleySystems: true } },
+    );
+  });
+
   it('takes the replaced creatures off the raid board', async () => {
     await runRaid(
       async (ctx) => {
