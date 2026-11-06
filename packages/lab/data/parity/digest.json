@@ -1,6 +1,6 @@
 {
   "format": 2,
-  "overall": "9e3e28c6678d40f5a1bbafa845872b21f9248a255797199b503b05048fc6e764",
+  "overall": "8bdffa85904dde21094dd137cf0918f279283b6190da6f7ac036e6109034df03",
   "cases": {
     "cull-potential:12000#0": "17b80ca1a6bf81210475e2407fef1a9dcc342e55b61d7d0bf5d97f1e28fa8044",
     "cull-potential:24000#0": "e1dce8e43354ba33f577117566fb2c331d8db1b95d91cbd18b88cc42b7498aff",
@@ -353,8 +353,8 @@
     "fight:slot9:old-bogback:classic#0": "5077ccd303be243bc6716721215dd4b1e86f0eba0417629613b8c69ca4865b71",
     "fight:slot9:old-bogback:classic#1": "da210844f3215ecc68dc9c6f4af389f059448854702edd10d1593f6ee1db0fc4",
     "fight:slot9:old-bogback:classic#2": "d579959f02012abd87990b6f665391ab474156bc36bb5edbcd510c7d5b798549",
-    "foe:ash-sprite:1#0": "6aab0fd23ae0d3601b7309b1d77cb2771a8907a04135614cac8fa66fe9471aa5",
-    "foe:ash-sprite:7#0": "f822a2a486b6c75fb4a1f51edb0cde501099580ac10e7abfea01099085455a97",
+    "foe:ash-sprite:1#0": "1f90f0fa9259c754d04c893a9ecc89330feb050675ce30f3487d60cf25133b7d",
+    "foe:ash-sprite:7#0": "be1cbf323c7a88fd0c39fae76e8222b0fe4414fdd8ad17f4a0c7e72fe08781c8",
     "foe:bog-toad:1#0": "5327b72be5d1e7fe3342922ad7ffc5b47346bf492b1a149dc53100af40c74316",
     "foe:bog-toad:7#0": "d4a468758bb4f2bf968c065441e284f1c5266fd16ef2d077803b5478bb3304a9",
     "foe:bramble-hound:1#0": "80bf42dc56c1e5490e99166a8e6c84e1dfb63b47c59bca2ab95972abbf228631",

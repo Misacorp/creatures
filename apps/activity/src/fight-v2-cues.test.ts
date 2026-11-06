@@ -152,6 +152,10 @@ describe('the board cues of the second answers', () => {
     expect(isBoardEvent({ type: 'counter', from: 'a', damage: 3, byKnack: 'yes' })).toBe(false);
     expect(isBoardEvent({ type: 'mired', stacks: 1, shook: 2 })).toBe(true);
     expect(isBoardEvent({ type: 'mired', stacks: 1, shook: -1 })).toBe(false);
+    expect(isBoardEvent({ type: 'fizzle', state: 'blocked', by: 'a', mark: 'tide' })).toBe(true);
+    expect(isBoardEvent({ type: 'fizzle', state: 'on' })).toBe(true);
+    expect(isBoardEvent({ type: 'fizzle', state: 'later' })).toBe(false);
+    expect(isBoardEvent({ type: 'fizzle', state: 'blocked', by: 3 })).toBe(false);
     expect(
       isBoardEvent({
         type: 'hit',
