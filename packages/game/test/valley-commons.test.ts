@@ -23,6 +23,7 @@ import {
   valueToUnits,
   warmthMilli,
   type SettleState,
+  wearBlock,
 } from '../src';
 
 const R = VALLEY_RULES;
@@ -229,5 +230,14 @@ describe('the commons view', () => {
     expect(
       v.safeParse(ValleyCommonsViewSchema, { ...view, fire: { ...view.fire, level: -1 } }).success,
     ).toBe(false);
+  });
+});
+
+describe('the wear rule (V-GEAR-3)', () => {
+  const charm = { slot: 'charm' as const, tag: 'ember' as const, itemLevel: 10 };
+  const rookie = { level: 1, role: 'payoff' as const };
+  it('refuses a level-10 Charm on a level-1 creature unless relaxed', () => {
+    expect(wearBlock(charm, rookie)).not.toBeNull();
+    expect(wearBlock(charm, rookie, true)).toBeNull();
   });
 });

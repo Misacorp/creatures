@@ -536,6 +536,7 @@ export class GuildCore {
       gearRng,
       branchesOf: options.branchesOf,
       ...(options.combatV2 === true ? { combatV2: true } : {}),
+      ...(this.valleySystems ? { valleySystems: true } : {}),
       tripRng: options.tripRng ?? liveRng(),
       weather: this.weather,
       // With the valley on there is no lounge XP and no daily cap to show (the bonfire's idle XP takes over).
@@ -602,6 +603,7 @@ export class GuildCore {
       rng: gearRng,
       analytics: this.analytics,
       weather: this.weather,
+      ...(this.valleySystems ? { valleySystems: true } : {}),
     });
     this.dungeon = new Dungeon({
       storage,

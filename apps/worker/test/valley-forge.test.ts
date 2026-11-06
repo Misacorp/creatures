@@ -757,8 +757,6 @@ describe('the bag counter (V-GEAR-6)', () => {
           .exec<{ id: string }>('SELECT id FROM gear_items WHERE user_id = ? ORDER BY id', p.id)
           .toArray()
           .map((r) => r.id);
-        // Pieces are at the fire's level, and today's wear rule asks the wearer for that level (V-GEAR-3 drops it with combat v2).
-        ctx.sql.exec('UPDATE creatures SET level = ? WHERE user_id = ?', R.fire.start, p.id);
         const equip = (id: string, creatureId: string | null) =>
           p.api.call('POST', `/api/gear/${id}/equip`, { creatureId });
         const wearer = p.creatureIds[1] as string;

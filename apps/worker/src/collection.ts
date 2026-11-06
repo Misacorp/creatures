@@ -331,6 +331,8 @@ export interface CollectionDeps {
    * the Knack and Talent Book routes exist. Off (the default): none of it.
    */
   combatV2?: boolean;
+  /** `VALLEY_SYSTEMS` is on: V-GEAR-3, an evolution or a level change takes no worn item off for its level. */
+  valleySystems?: boolean;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -851,7 +853,8 @@ export class Collection {
     for (const row of this.sql
       .exec<GearRow>('SELECT * FROM gear_items WHERE equipped_on = ?', creatureId)
       .toArray()) {
-      if (wearBlock(rowToItem(row), { level, role }) === null) continue;
+      if (wearBlock(rowToItem(row), { level, role }, this.deps.valleySystems === true) === null)
+        continue;
       setEquipped(this.sql, row.id, null);
       off += 1;
     }

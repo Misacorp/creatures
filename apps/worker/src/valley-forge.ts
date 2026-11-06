@@ -16,7 +16,6 @@
  */
 import {
   GEAR_SLOTS,
-  RULES,
   VALLEY_ELEMENTS,
   VALLEY_RULES,
   chance,
@@ -124,14 +123,6 @@ const WAITS: readonly string[] = ['idle', 'scrap', 'shard', 'essence', 'floor'];
 const asWait = (reason: string | null): AnvilWait | null =>
   reason !== null && WAITS.includes(reason) ? (reason as AnvilWait) : null;
 
-/**
- * Combat v2 seam (V-GEAR-3, plan risk 5): today a gear slot opens at a creature level (`RULES.gear.slotUnlockLevel`); V-GEAR-3 opens all
- * three at level 1 once combat v2's gear ships. "For my team" counts and dresses only the slots a creature may wear now, so no piece
- * is made for a slot that cannot take it. When the rule changes, this is the one place that follows.
- */
-export const slotOpenFor = (level: number, slot: GearSlot): boolean =>
-  level >= RULES.gear.slotUnlockLevel[slot];
-
 /** The element index (in `VALLEY_ELEMENTS`) of a base: its tag's element, or -1 for a neutral base (any pile pays). */
 export function baseElementIndex(base: Pick<GearBase, 'tag'>): number {
   const element = tagElement(base.tag);
@@ -194,7 +185,6 @@ export class ValleyForgePass {
       const e = VALLEY_ELEMENTS.indexOf(speciesOf(c.species).element);
       if (e < 0) continue;
       for (const slot of GEAR_SLOTS) {
-        if (!slotOpenFor(c.level, slot)) continue;
         if ((worn.get(c.id)?.[slot]?.item_level ?? 0) < limit) weak[e] = (weak[e] ?? 0) + 1;
       }
     }
@@ -471,7 +461,7 @@ export class ValleyForgePass {
         const pick = target.pick(row.element, row.item_level);
         const base = pick?.base ?? teamBase(this.deps.rng, row.element, row.item_level);
         item = rollItem(this.deps.rng, { baseId: base.id, rarity, itemLevel: row.item_level });
-        if (pick !== undefined && wearBlock(item, pick.wearer) === null) {
+        if (pick !== undefined && wearBlock(item, pick.wearer, true) === null) {
           wearer = { id: pick.wearer.id, slot: pick.slot };
         }
       }
@@ -549,7 +539,6 @@ class TeamTargets {
     for (const member of this.team) {
       if (VALLEY_ELEMENTS.indexOf(speciesOf(member.species).element) !== element) continue;
       for (const slot of GEAR_SLOTS) {
-        if (!slotOpenFor(member.level, slot)) continue;
         const level = this.levels.get(member.id)?.get(slot)?.level ?? 0;
         if (level < limit && level < itemLevel && (best === undefined || level < best.level)) {
           best = { member, slot, level };

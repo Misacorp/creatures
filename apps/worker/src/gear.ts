@@ -183,7 +183,10 @@ export class Gear {
             reserved: open.filter((j) => j.kind === 'craft').length,
           },
       items: rows.flatMap((row) => viewOrSkip('item', () => itemView(this.sql, row))),
-      slotOpens: { ...RULES.gear.slotUnlockLevel },
+      slotOpens:
+        this.deps.valleySystems === true
+          ? { hat: 1, scarf: 1, charm: 1 }
+          : { ...RULES.gear.slotUnlockLevel },
       parts: getParts(this.sql, userId),
       blueprints: knownBlueprints(this.sql, userId).flatMap((b) =>
         viewOrSkip('blueprint', () => ({ ...b, needsCraftingLevel: craftLevelNeeded(b.baseId) })),
@@ -293,10 +296,11 @@ export class Gear {
           this.recordEquip(row, was?.species ?? '', 'unequip', false, userId);
         }
       } else if (row.equipped_on !== creature.id) {
-        const block = wearBlock(rowToItem(row), {
-          level: creature.level,
-          role: speciesOf(creature.species).role,
-        });
+        const block = wearBlock(
+          rowToItem(row),
+          { level: creature.level, role: speciesOf(creature.species).role },
+          this.deps.valleySystems === true,
+        );
         if (block !== null) throw wearError(block);
         displaced = this.sql
           .exec<GearRow>(
@@ -372,6 +376,7 @@ export class Gear {
           };
         }),
         candidates.map((r) => ({ id: r.id, item: rowToItem(r) })),
+        this.deps.valleySystems === true,
       );
       const byId = new Map(rows.map((r) => [r.id, r]));
       const speciesOfCreature = new Map(creatures.map((c) => [c.id, c.species]));

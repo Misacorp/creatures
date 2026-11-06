@@ -15,6 +15,7 @@ import { runCore, type CoreContext } from './helpers';
 import { HOUR, give, newKey, sessionCaller, type SessionCaller } from './kit';
 import { nextGuild, seedPlayer } from './raid-helpers';
 import { creditParts } from '../src/gear-store';
+import { giveItem } from './gear-helpers';
 
 const SYSTEMS = { ...ON, valleySystems: true, combatV2: true, dailyAllowance: true } as const;
 const FLAG_OFF = { ...ON, dailyAllowance: true } as const;
@@ -845,6 +846,58 @@ describe('the fire warms (V-COM-13) and the hearth raises growth (V-BON-7)', () 
         expect(warmed / plain).toBeCloseTo(1.08, 1);
       },
       SYSTEMS,
+    );
+  });
+});
+
+describe('item level is quality, not a requirement (V-GEAR-3, with the valley systems on)', () => {
+  const equip = (p: P, itemId: string, creatureId: string) =>
+    p.api.call('POST', `/api/gear/${itemId}/equip`, { creatureId });
+
+  it('lets a level-1 creature wear a level-10 piece in a Charm slot, and says so on the card', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await newPlayer(ctx, 1, 1);
+        const charm = giveItem(ctx.sql, p.id, 'trail-charm', { level: R.fire.start });
+        const scarf = giveItem(ctx.sql, p.id, 'patch-scarf', { level: R.fire.start });
+        const creature = p.creatureIds[0] as string;
+        expect((await equip(p, charm, creature)).status).toBe(200);
+        expect((await equip(p, scarf, creature)).status).toBe(200);
+        const gear = await p.api.call('GET', '/api/gear');
+        expect(gear.body.slotOpens).toEqual({ hat: 1, scarf: 1, charm: 1 });
+        const card = (gear.body.items as { id: string; needs: { level: number } }[]).find(
+          (i) => i.id === charm,
+        );
+        expect(card?.needs.level).toBe(1);
+        // Equip best dresses it too.
+        const spare = giveItem(ctx.sql, p.id, 'trail-cap', { level: R.fire.start });
+        const best = await p.api.call('POST', '/api/gear/equip-best', { creatureIds: [creature] });
+        expect(best.status).toBe(200);
+        expect(spare.length).toBeGreaterThan(0);
+      },
+      SYSTEMS,
+    );
+  });
+
+  it("keeps today's refusals with the flag off", async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await newPlayer(ctx, 1, 1);
+        const charm = giveItem(ctx.sql, p.id, 'trail-charm', { level: 1 });
+        const high = giveItem(ctx.sql, p.id, 'trail-cap', { level: R.fire.start });
+        const creature = p.creatureIds[0] as string;
+        const slot = await equip(p, charm, creature);
+        expect(slot.status).toBe(409);
+        expect(slot.body.error).toBe('slot_locked');
+        const level = await equip(p, high, creature);
+        expect(level.status).toBe(409);
+        expect(level.body.error).toBe('item_level_too_high');
+        const gear = await p.api.call('GET', '/api/gear');
+        expect(gear.body.slotOpens).toEqual({ hat: 1, scarf: 7, charm: 13 });
+      },
+      FLAG_OFF,
     );
   });
 });
