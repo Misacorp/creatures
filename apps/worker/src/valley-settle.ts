@@ -64,6 +64,7 @@ import {
   type ValleyAnvilView,
   type ValleySeatView,
   type ValleyView,
+  type ForgeHours,
 } from '@creatures/game';
 import type { CatchChoices } from './catch-choices';
 import { bagItems, trackBag } from './gear-store';
@@ -193,6 +194,8 @@ export interface ValleySettleDeps {
   readonly school?: { readonly weeks: SchoolWeeks; readonly lessons: SchoolLessons };
   /** Trials and graduation (V-TRIAL-1 to 5): the pass ticks the boxes the hours meet and runs the ceremonies. */
   readonly trials: ValleyTrials;
+  /** Staging only (the dev tools on): told what the anvils did with the hours of each pass, for the simulated month's tinkering share. */
+  readonly onForgeHours?: (userId: string, hours: ForgeHours) => void;
 }
 
 const masteryStep = (hours: number): 0 | 1 | 2 | 3 => {
@@ -516,6 +519,7 @@ export class ValleySettle {
       },
     );
 
+    if (after.forgeHours !== undefined) this.deps.onForgeHours?.(userId, after.forgeHours);
     // The Gazette's log of this arrival (V-POST-14): only an arrival tells a paper, so a pass in the middle of a visit records nothing.
     const rec = newVisit ? new PaperRecorder() : undefined;
     // Trials (V-TRIAL-2): the events of this stretch that tick a box (a find brought home, a small moment, a keystone, a week at a seat).

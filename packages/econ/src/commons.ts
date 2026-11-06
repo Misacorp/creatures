@@ -1,3 +1,4 @@
+import { giftAmount, isDumping, isHoarding, keepOf } from '@creatures/game';
 import type { Rules } from './rules';
 import { ELEMENTS } from './rules';
 import { serverMiddle } from './growth';
@@ -262,11 +263,11 @@ export function giveGifts(p: Player, server: Server, hour: number): void {
   const rules = p.rules;
   const week = Math.floor(hour / HOURS_PER_WEEK) + 1;
   const hoard = p.profile.hoardWeeks;
-  if (hoard > 0 && week <= hoard) return;
-  const dumping = hoard > 0 && week <= hoard + 2;
+  if (isHoarding(hoard, week)) return;
+  const dumping = isDumping(hoard, week);
   const value = partValues(rules);
   const budget = (r: number, spare: number): number =>
-    dumping ? spare : Math.min(p.giftBudget[r] ?? 0, spare);
+    giftAmount(p.giftBudget[r] ?? 0, spare, dumping);
   let total = 0;
   const acorns = Math.floor(budget(R.acorns, p.stock[R.acorns] ?? 0));
   if (acorns >= 1) {
@@ -287,14 +288,14 @@ export function giveGifts(p: Player, server: Server, hour: number): void {
     // the next orders need of each element (the Forge's own want, never under the exchange's reserve) and puts the rest in; the
     // biggest pile goes first.
     if (pooledShardValue(server, pl, rules) !== undefined) {
-      const keepOf = (e: number): number => {
+      const keptOf = (e: number): number => {
         const orders = Math.min(
           (p.weakByElement[e] ?? 0) - (p.pendingByElement[e] ?? 0),
           Math.max(1, p.anvils.length) * 3,
         );
-        return Math.max(rules.forge.giveReserveShards, Math.max(0, orders) * rules.forge.shard);
+        return keepOf(rules.forge.giveReserveShards, orders, rules.forge.shard);
       };
-      const spareOf = (e: number): number => Math.max(0, (p.shards[e] ?? 0) - keepOf(e));
+      const spareOf = (e: number): number => Math.max(0, (p.shards[e] ?? 0) - keptOf(e));
       for (const e of ELEMENTS.map((_, k) => k).sort((x, y) => spareOf(y) - spareOf(x))) {
         const units = Math.min(Math.floor(spareOf(e)), Math.floor(roomOf(server, pl, 2, rules)));
         if (units < 1) continue;

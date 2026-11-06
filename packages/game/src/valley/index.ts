@@ -13,3 +13,5 @@ export * from './visitor-view';
 export * from './school';
 export * from './trials';
 export * from './school-view';
+export * from './profiles';
+export * from './policy';

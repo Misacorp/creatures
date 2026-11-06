@@ -12,6 +12,17 @@
  * stay signed in with their rows in `players`; each starts again at the starter choice. The dev clock goes back to real time.
  */
 import { DevError, ownCreature, purgeUser, type ToolCtx } from './dev-context';
+import type { ValleySimDayBodySchema } from './dev-schemas';
+import type * as v from 'valibot';
+import {
+  clearSim,
+  valleyBots,
+  valleyReport,
+  valleySimDay,
+  type BotsResult,
+  type ReportResult,
+  type SimDayResult,
+} from './valley-bots';
 
 /**
  * The valley's tables that are NOT keyed by `user_id` (the guild-level ones), cleared whole. Per-player valley tables carry a
@@ -49,6 +60,8 @@ export function valleyFresh(ctx: ToolCtx): ValleyFreshResult {
   }
   // Names come from the constant above, never from a request.
   for (const table of VALLEY_GUILD_TABLES) sql.exec(`DELETE FROM "${table}"`);
+  // The simulated month's own state (the bots' flows are per player and went with `purgeUser`).
+  clearSim(ctx);
   ctx.raid.invalidateReadiness();
   ctx.offset.set(0);
   return { players: ids.length, tablesCleared: [...VALLEY_GUILD_TABLES] };
@@ -143,3 +156,22 @@ export function trialsCeremony(ctx: ToolCtx): TrialsCeremonyResult {
     .map((r) => r.id);
   return { graduated: ctx.trials.ceremonyNow(ctx.userId, ids, ctx.now) };
 }
+
+/**
+ * The `valley-bots` dev tool (staging only, with the valley systems on; 404 otherwise): moves the dev clock to the next Monday 00:00 (guild
+ * time) and makes the month's bots, `dev-guest-1` to `-7`, the lab's mixed server of 8 without the human (see `valley-bots.ts`). Safe to repeat.
+ */
+export const valleyBotsTool = (ctx: ToolCtx): BotsResult => valleyBots(ctx);
+
+/**
+ * The `valley-sim-day` dev tool (staging only; 404 otherwise): plays the next game day of the bots: the clock moves through the day, the
+ * server's own daily work runs, and each bot whose visit is due plays its policy through the real settle and the valley's intents.
+ * `maxVisits` splits a long day over several calls. Answers the day, the visits and the rows read and written.
+ */
+export const valleySimDayTool = (
+  ctx: ToolCtx,
+  body: v.InferOutput<typeof ValleySimDayBodySchema>,
+): SimDayResult => valleySimDay(ctx, body);
+
+/** The `valley-report` dev tool (staging only; 404 otherwise): the lab-shaped report of the bots and the real players, plus the month's rows. */
+export const valleyReportTool = (ctx: ToolCtx): ReportResult => valleyReport(ctx);

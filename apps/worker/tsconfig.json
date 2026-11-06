@@ -9,6 +9,7 @@
     "src",
     "test",
     "vitest.config.ts",
-    "vitest.capture.config.ts"
+    "vitest.capture.config.ts",
+    "vitest.month.config.ts"
   ]
 }

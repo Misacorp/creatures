@@ -544,6 +544,8 @@ Superseded: 1 entry (see the topic file).
 
 [valley.md](valley.md): The valley and peaceful systems overhaul planned in docs/design/valley/: job posts, the bonfire, the commons, the Forge loop, gear, trials, the School, the visitor, the economy lab, and Misa's question rounds.
 
+- 2026-11-07 Step 10: the simulated month's stand-ins, flows and report (what the bots do not do, how the numbers are read)
+- 2026-11-07 Step 10: the bots play the lab's policies through the server's own code, one shared policy module
 - 2026-11-06 Phase 5 step 9b: the School's screens and the trials' screens
 - 2026-11-06 Learning on a card costs the School's price times the slot it fills, in Acorns, with the valley systems on
 - 2026-11-06 Phase 5 step 9a: the School's teacher and lessons

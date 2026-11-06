@@ -29,6 +29,7 @@ import { DevError, purgeUser, type ToolCtx } from './dev-context';
 import {
   ApplyRosterPresetBodySchema,
   TrialsTickBodySchema,
+  ValleySimDayBodySchema,
   ClockBodySchema,
   DEV_ACTION_TOOLS,
   DEV_READ_TOOLS,
@@ -70,9 +71,13 @@ import {
   schoolTeacher,
   trialsCeremony,
   trialsTick,
+  valleyBotsTool,
   valleyFresh,
+  valleyReportTool,
+  valleySimDayTool,
   visitorArrive,
 } from './dev-tools-valley';
+import type { ValleyWorld } from './valley-bots';
 import type { SchoolWeeks } from './valley-school';
 import type { ValleyTrials } from './valley-trials';
 import type { VisitorWeeks } from './valley-visitor';
@@ -157,6 +162,8 @@ export interface DevToolsDeps {
   school: SchoolWeeks | null;
   /** Trials and graduation (the `trials-tick` and `trials-ceremony` tools); null with the valley systems off. */
   trials: ValleyTrials | null;
+  /** What the staging bots drive (the `valley-*` simulation tools); null with the valley systems off. */
+  world: ValleyWorld | null;
   /** Crypto randomness for what the tools roll. */
   rng: Rng;
   gearRng: Rng;
@@ -254,6 +261,10 @@ const TOOLS: Record<DevActionTool, Tool> = {
   }),
   // Staging with the valley systems on only (404 otherwise): wipes every player's progress in the guild for a day-0 valley; re-arms the alarm (the dev clock goes back to real time).
   'valley-fresh': tool(NoBodySchema, valleyFresh, { movesClock: true }),
+  // The simulated month (staging with the valley systems on only; 404 otherwise): the bots, one game day of them (the dev clock moves), the lab-shaped report.
+  'valley-bots': tool(NoBodySchema, valleyBotsTool, { movesClock: true }),
+  'valley-sim-day': tool(ValleySimDayBodySchema, valleySimDayTool, { movesClock: true }),
+  'valley-report': tool(NoBodySchema, valleyReportTool),
   // Staging with the valley systems on only (404 otherwise): brings the weekly visitor now for the current week, whatever the weekday.
   'visitor-arrive': tool(NoBodySchema, visitorArrive),
   // Staging with the valley systems on only (404 otherwise): brings the School's teacher now (`arrive`) or announces next week's now (`announce`).
@@ -299,6 +310,7 @@ export class DevTools {
       visitor: d.visitor,
       school: d.school,
       trials: d.trials,
+      world: d.world,
       rng: d.rng,
       gearRng: d.gearRng,
       quirkRng: d.quirkRng,

@@ -1,4 +1,9 @@
-import { createSeededRng } from '@creatures/game';
+import {
+  createSeededRng,
+  giftBudgetAfterIncome,
+  speciesAvailableAt,
+  visitHours,
+} from '@creatures/game';
 import { LEVEL_XP, MAX_LEVEL } from './curves';
 import { ELEMENTS, type Rules } from './rules';
 import type { PlayerProfile } from './schema';
@@ -23,10 +28,7 @@ export function maxSpecies(rules: Rules): number {
 
 /** How many species are available at an hour: today's pool, plus each content drop that has happened (Misa's 100+ species plan). */
 export function speciesAvailable(rules: Rules, hour: number): number {
-  const { start, dropFromWeek, dropEveryWeeks, dropCount } = rules.scouts.species;
-  const week = Math.floor(hour / HOURS_PER_WEEK) + 1;
-  if (week < dropFromWeek) return start;
-  return start + dropCount * (Math.floor((week - dropFromWeek) / dropEveryWeeks) + 1);
+  return speciesAvailableAt(rules, hour);
 }
 
 /** The rarity of each line (0 common, 1 rare, 2 epic): the first lines from the content, then each content drop's pattern. */
@@ -185,7 +187,7 @@ export function credit(p: Player, r: number, amount: number, source: string): vo
   p.stock[r] = (p.stock[r] ?? 0) + amount;
   p.wk.inn[r] = (p.wk.inn[r] ?? 0) + amount;
   // A share of everything earned is set aside for gifts (V-COM-5: "about a third of income").
-  p.giftBudget[r] = (p.giftBudget[r] ?? 0) + amount * p.profile.giveShare;
+  p.giftBudget[r] = giftBudgetAfterIncome(p.giftBudget[r] ?? 0, amount, p.profile.giveShare);
   const day = p.income[p.incomeDay % 7];
   if (day) day[r] = (day[r] ?? 0) + amount;
   noteSource(p, `in:${r}:${source}`, amount);
@@ -266,15 +268,8 @@ export function addCreature(p: Player, species: number, hour = 0): Creature {
 /** The visit schedule: one flag per hour of the horizon (the profile's days and hours, minus the away weeks). */
 export function buildSchedule(profile: PlayerProfile, id: number, weeks: number): Uint8Array {
   const visitAt = new Uint8Array(weeks * HOURS_PER_WEEK);
-  const joinDay = (profile.joinWeek - 1) * 7;
-  for (let day = joinDay; day < weeks * 7; day++) {
-    const week = Math.floor(day / 7) + 1;
-    if (profile.away && week >= profile.away[0] && week <= profile.away[1]) continue;
-    const goes =
-      profile.everyNDays > 0
-        ? (day - joinDay + id) % profile.everyNDays === 0
-        : profile.weekdays.includes(day % 7);
-    if (goes) for (const hour of profile.hours) visitAt[day * 24 + hour] = 1;
+  for (let day = 0; day < weeks * 7; day++) {
+    for (const hour of visitHours(profile, day, id)) visitAt[day * 24 + hour] = 1;
   }
   return visitAt;
 }

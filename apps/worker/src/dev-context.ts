@@ -7,6 +7,7 @@ import type { DevState } from './dev-state';
 import type { Games } from './games';
 import type { LedgerStorage } from './ledger';
 import type { Raid } from './raid';
+import type { ValleyWorld } from './valley-bots';
 import type { SchoolWeeks } from './valley-school';
 import type { ValleyTrials } from './valley-trials';
 import type { VisitorWeeks } from './valley-visitor';
@@ -59,6 +60,8 @@ export interface ToolCtx {
   school: SchoolWeeks | null;
   /** Trials and graduation (the `trials-*` tools); null with the valley systems off. */
   trials: ValleyTrials | null;
+  /** What the staging bots drive (the `valley-bots`, `valley-sim-day` and `valley-report` tools); null with the valley systems off. */
+  world: ValleyWorld | null;
   /** Crypto randomness for the things the tools roll (guest teams, gear, the day's seed). */
   rng: Rng;
   gearRng: Rng;

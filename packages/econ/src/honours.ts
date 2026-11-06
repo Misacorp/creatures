@@ -1,3 +1,4 @@
+import { pickFreeCreature } from '@creatures/game';
 import type { Rules } from './rules';
 import type { Creature, Player } from './types';
 
@@ -51,15 +52,11 @@ export function tickRaid(team: readonly Creature[]): void {
 /** Which creature takes a new seat: one not at a post yet, the one with the fewest hours of work, then the highest level. */
 export function pickOccupant(p: Player): number {
   const taken = new Set([...p.scoutOcc, ...p.anvilOcc]);
-  let best = -1;
-  p.creatures.forEach((c, i) => {
-    if (taken.has(i)) return;
-    const b = best >= 0 ? (p.creatures[best] as Creature) : undefined;
-    const work = c.scoutHours + c.smithHours;
-    const bw = b ? b.scoutHours + b.smithHours : Infinity;
-    if (!b || work < bw || (work === bw && c.level > b.level)) best = i;
-  });
-  return best;
+  const free = p.creatures.flatMap((c, i) =>
+    taken.has(i) ? [] : [{ index: i, hours: c.scoutHours + c.smithHours, level: c.level }],
+  );
+  const best = pickFreeCreature(free);
+  return best >= 0 ? (free[best] as { index: number }).index : -1;
 }
 
 /** At a visit, seats that had nobody (no creature was free) get one now. */

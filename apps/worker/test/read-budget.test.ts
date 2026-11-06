@@ -194,6 +194,25 @@ describe('rows read counter', () => {
     });
   });
 
+  it('peeks at the rows read and written so far without moving them (the simulated month measures a visit with it)', async () => {
+    await runCore(nextGuild(), (ctx) => {
+      for (let n = 1; n <= 3; n++) seedPlayer(ctx, n, { creatures: 0 });
+      const meter = new ReadMeter(ctx.sql);
+      const start = meter.peek();
+      meter.sql.exec('SELECT * FROM players').toArray();
+      const mid = meter.peek();
+      expect(mid.read - start.read).toBe(3);
+      expect(mid.written).toBe(start.written);
+      meter.sql.exec('UPDATE players SET last_seen_at = last_seen_at').toArray();
+      const end = meter.peek();
+      expect(end.written - mid.written).toBe(3);
+      // Peeking moved nothing: the flush still counts every row once.
+      meter.flush('alarm', '2027-01-14');
+      expect(counters(ctx).alarm).toBeGreaterThanOrEqual(6);
+      expect(meter.peek()).toEqual({ read: 0, written: 0 });
+    });
+  });
+
   it('attributes the start, the login, each request area and the alarm', async () => {
     await runCore(nextGuild(), async (ctx) => {
       ctx.core.migrate();

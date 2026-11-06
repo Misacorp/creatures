@@ -214,6 +214,14 @@ export class ValleyCommons {
     return snap.places.get(place)?.level ?? 1;
   }
 
+  /**
+   * A boss fell: the fire warms by a step (V-COM-13). Nothing in the raid calls this yet (the first-kill hook comes with combat v2's
+   * integration); the staging bots' stand-in raid does, so the simulated month's fire has the boss share the lab models.
+   */
+  bossFell(now: number): void {
+    this.warm(this.load(now), 'boss', null, now);
+  }
+
   /** Warms the fire by a step of a source (V-COM-13). */
   private warm(
     snap: CommonsSnapshot,

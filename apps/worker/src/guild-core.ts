@@ -121,6 +121,7 @@ import { MIGRATIONS } from './migrations';
 import { ReadMeter, pruneReads, readSourceOfPath, type ReadSource } from './read-meter';
 import { liveRng } from './rng';
 import { ValleyBonfire } from './valley-bonfire';
+import { recordForgeHours, type ValleyWorld } from './valley-bots';
 import { ValleyCommons } from './valley-commons';
 import { ValleyFinds } from './valley-finds';
 import { ValleyForgePass } from './valley-forge';
@@ -133,7 +134,7 @@ import { ValleySettle } from './valley-settle';
 import { SchoolLessons, SchoolWeeks, ValleySchool } from './valley-school';
 import { ValleyTrials } from './valley-trials';
 import { ValleyVisitor, VisitorWeeks } from './valley-visitor';
-import type { ValleyView } from '@creatures/game';
+import type { ForgeHours, ValleyView } from '@creatures/game';
 import type { LoungeClient, LoungeResult } from './lounge-discord';
 import { nextRaidBoundary, raidStageAt } from './lounge-raid';
 import {
@@ -475,6 +476,8 @@ export class GuildCore {
   readonly valleyTrials: ValleyTrials | null;
   /** The `VALLEY_SYSTEMS` flag as the worker resolved it (see `valley-flag.ts`). */
   readonly valleySystems: boolean;
+  /** What the staging bots drive (`valley-bots.ts`): only with the dev tools and the valley systems on, else null. */
+  private valleyWorld: ValleyWorld | null = null;
   private postsInFlight: Promise<void> | null = null;
   private dmsInFlight: Promise<void> | null = null;
   private loungeInFlight: Promise<void> | null = null;
@@ -613,6 +616,13 @@ export class GuildCore {
         visitor: visitorWeeks,
         school: { weeks: schoolWeeks, lessons: schoolLessons },
         trials,
+        // Staging only: the anvils' hours by what they did, for the simulated month's tinkering share (`valley-bots.ts`).
+        ...(this.devState === null
+          ? {}
+          : {
+              onForgeHours: (userId: string, hours: ForgeHours) =>
+                recordForgeHours(storage.sql, userId, hours),
+            }),
       });
       this.valley = valley;
       this.valleySeats = new ValleySeats({
@@ -643,6 +653,29 @@ export class GuildCore {
         weeks: visitorWeeks,
         rng: gearRng,
       });
+      if (this.devState !== null) {
+        this.valleyWorld = {
+          storage,
+          settle: valley,
+          seats: this.valleySeats,
+          orders: this.valleyOrders,
+          gifts: this.valleyGifts,
+          visitor: this.valleyVisitor,
+          school: this.valleySchool,
+          commons,
+          collection: this.collection,
+          // What the alarm runs by itself in a game day, for the simulated month's day calls (staging only).
+          daily: () => {
+            this.weather.ensure();
+            this.catchUpRaid();
+            this.catchUpGames();
+            this.ensureVisitor();
+            this.ensureTeacher();
+            this.maintain();
+          },
+          rows: () => this.meter.peek(),
+        };
+      }
     } else {
       this.valley = null;
       this.valleySeats = null;
@@ -764,6 +797,7 @@ export class GuildCore {
             visitor: this.valleyVisitorWeeks,
             school: this.valleySchoolWeeks,
             trials: this.valleyTrials,
+            world: this.valleyWorld,
             rng: options.raidRng ?? liveRng(),
             gearRng,
             quirkRng,

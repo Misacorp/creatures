@@ -2,6 +2,7 @@ import * as v from 'valibot';
 import { describe, expect, it, vi } from 'vitest';
 import {
   LiveReportSchema,
+  SERVER_METRICS,
   compareReport,
   formatComparison,
   judgeMetric,
@@ -107,10 +108,86 @@ describe('a live report', () => {
     expect(v.safeParse(LiveReportSchema, { ...base, profiles: {}, extra: 1 }).success).toBe(false);
   });
 
-  it('answers 2 for a file it cannot read', () => {
+  it('answers 2 for a file it cannot read, and reads the file named first even without --seeds', () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     expect(main(['/nonexistent/live-report.json'])).toBe(2);
+    expect(main(['/nonexistent/live-report.json', '--seeds', '3'])).toBe(2);
+    expect(error).toHaveBeenCalledWith('cannot read /nonexistent/live-report.json as JSON');
     expect(main([])).toBe(2);
     error.mockRestore();
+  });
+
+  it('judges the share of anvil time spent tinkering as an expected quantity', () => {
+    const median = medianAt('tinkerShare', 1);
+    expect(median).toBeGreaterThanOrEqual(0);
+    expect(median).toBeLessThanOrEqual(1);
+    const [agree] = compareReport(report({ tinkerShare: median }), lookup);
+    expect(agree?.verdict).toBe('agree');
+    const [off] = compareReport(report({ tinkerShare: Math.min(1, median + 0.3) }), lookup);
+    expect(off?.verdict).toBe('disagree');
+  });
+});
+
+describe('the valley own numbers of a live report', () => {
+  const config = ALL_SERVERS.find((s) => s.id === 'mixed8');
+  if (!config) throw new Error('no mixed8 server');
+  const result = runScenario({ ...config, weeks: 4 }, 4, RULES);
+  const lookup = (profile: string) => playersOf(result, profile);
+  const server = (metrics: Record<string, number>, day = 28): LiveReport =>
+    v.parse(LiveReportSchema, {
+      version: 1,
+      scenario: 'mixed8',
+      profiles: {},
+      server: { days: [{ day, metrics }] },
+    });
+  const labFire = result.runs.map((r) => r.log[3]?.fire ?? 0);
+
+  it('judges the fire as expected (10% of the median) and a count of finds as drawn', () => {
+    const mid = SERVER_METRICS.fire.lab(result.runs[0] as never, 4);
+    expect(mid).toBe(labFire[0]);
+    const median = band(labFire).median;
+    const judged = compareReport(server({ fire: median, keystones: 0 }), lookup, result.runs);
+    expect(judged.map((j) => [j.profile, j.metric])).toEqual([
+      ['server', 'fire'],
+      ['server', 'keystones'],
+    ]);
+    expect(judged[0]?.verdict).toBe('agree');
+    expect(compareReport(server({ fire: median * 2 }), lookup, result.runs)[0]?.verdict).toBe(
+      'disagree',
+    );
+    expect(compareReport(server({ keystones: 999 }), lookup, result.runs)[0]?.verdict).toBe(
+      'disagree',
+    );
+  });
+
+  it('skips a day the lab does not record, and a metric of which the lab has nothing', () => {
+    expect(compareReport(server({ fire: 12 }, 10), lookup, result.runs)[0]?.verdict).toBe(
+      'skipped',
+    );
+    expect(compareReport(server({ fire: 12 }), lookup, [])[0]?.verdict).toBe('skipped');
+  });
+
+  it('the first level-up day is the lab first place level-up within the weeks, as a day', () => {
+    const lab = result.runs.flatMap((r) => {
+      const value = SERVER_METRICS.firstLevelUpDay.lab(r, 4);
+      return value === null ? [] : [value];
+    });
+    expect(lab.length).toBeGreaterThan(0);
+    for (const day of lab) expect(day).toBeLessThan(28);
+    const inside = band(lab).median;
+    expect(
+      compareReport(server({ firstLevelUpDay: inside }), lookup, result.runs)[0]?.verdict,
+    ).toBe('agree');
+  });
+
+  it('rejects an unknown server metric', () => {
+    expect(
+      v.safeParse(LiveReportSchema, {
+        version: 1,
+        scenario: 'mixed8',
+        profiles: {},
+        server: { days: [{ day: 7, metrics: { fires: 1 } }] },
+      }).success,
+    ).toBe(false);
   });
 });
