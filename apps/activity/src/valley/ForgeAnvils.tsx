@@ -455,9 +455,7 @@ export function ForgeAnvils({
         })}
         <li class="sp-seat sp-new">
           {nextPrice === null ? (
-            <p class="sp-line muted">
-              {`The Forge has room for ${String(visit.anvilPrices.max)} anvils each for now.`}
-            </p>
+            <p class="sp-line muted">The Forge has no more anvils for now.</p>
           ) : (
             <button
               type="button"
@@ -794,7 +792,7 @@ function Exchange({
           >
             <SlotText
               name={shardName(to)}
-              sub={`Get · have ${String(forge.shelf.shards[to] ?? 0)}`}
+              sub={`You get (have ${String(forge.shelf.shards[to] ?? 0)})`}
             />
           </Slot>,
           <Slot
@@ -808,7 +806,9 @@ function Exchange({
             <SlotText
               name={from === null ? 'Any other' : shardName(from)}
               sub={
-                from === null ? 'Pay with' : `Pay · have ${String(forge.shelf.shards[from] ?? 0)}`
+                from === null
+                  ? 'You pay'
+                  : `You pay (have ${String(forge.shelf.shards[from] ?? 0)})`
               }
             />
           </Slot>,

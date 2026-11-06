@@ -230,7 +230,7 @@ export function anvilPriceText(price: { acorns: number; scrap: number } | null):
 /** Why the next anvil cannot be bought now; null when it can. */
 export function anvilBuyReason(visit: ValleyVisit, acorns: number): string | null {
   const price = visit.anvilPrices.next;
-  if (price === null) return 'The Forge has no room for more anvils for now';
+  if (price === null) return 'The Forge has no more anvils for now';
   const scrap = visit.forge.shelf.scrap;
   if (price.acorns > acorns && price.scrap > scrap) {
     return `You have ${String(acorns)} Acorns and ${String(scrap)} scrap; this costs ${String(price.acorns)} and ${String(price.scrap)}.`;
