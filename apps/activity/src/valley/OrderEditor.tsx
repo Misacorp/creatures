@@ -70,8 +70,8 @@ function ShardNow({ element, visit }: { element: string; visit: ValleyVisit }) {
 
 /** A part's count badge without its glossary link, for use inside a button (a button never holds a button). */
 function PlainBadge({ kind, amount }: { kind: PartKind; amount: number }) {
-  const { entry: _entry, ...badge } = partBadge(kind, amount);
-  return <CountBadge {...badge} />;
+  const { icon, label } = partBadge(kind, amount);
+  return <CountBadge icon={icon} amount={amount} {...(label === undefined ? {} : { label })} />;
 }
 
 /** The order and the anvil it stands in, for an order id. */
