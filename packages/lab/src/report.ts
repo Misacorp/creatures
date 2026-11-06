@@ -143,7 +143,11 @@ export const ANSWERS: Readonly<Record<string, readonly (readonly [string, string
     ['Setter in the middle', 'thornbuck/wide-reach tidewing/steady-mark tempestray/none'],
     ['Lantern Glow in the middle', 'tidewing/steady-mark lanternfin/lantern-glow tempestray/none'],
   ],
-  wither: [['Draw Fire (prevention)', 'tidewing/steady-mark tempestray/none kilnmole/draw-fire']],
+  wither: [
+    ['Draw Fire (prevention)', 'tidewing/steady-mark tempestray/none kilnmole/draw-fire'],
+    // Placement is Wither's second answer, as it is Payoff Hunter's (Misa, 2026-11-06): a Guard in the middle takes the hits.
+    ['Guard in the middle', 'tidewing/steady-mark kilnmole/none tempestray/none'],
+  ],
   'payoff-hunter': [
     ['Guard beside the Payoff', 'tidewing/steady-mark tempestray/none thornbuck/wide-reach'],
   ],

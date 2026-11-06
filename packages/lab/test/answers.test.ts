@@ -59,7 +59,8 @@ describe("each card's intended answers beat the classic line (P-13)", () => {
   // family needs a line with a Knack of that family. (Talents are measured by the talent report, against the classic party.)
   it('every Knack or family a card lists as an answer has a line that measures it', () => {
     // Shake It Off's Debuff answer is measured on the raid weekends of the Tidal Colossus (a Mired build and a boss that sheds it),
-    // not in the gauntlet, where Mired never builds (balance.md section 8, 2026-11-05 second answers).
+    // not in the gauntlet, where Mired never builds (balance.md section 8, 2026-11-05 second answers). Misa accepted it as a
+    // one-answer card (2026-11-06): do not lean on a debuff is the only answer, and nothing else is owed.
     const WEEKEND_MEASURED: readonly string[] = ['shake-it-off: Debuff'];
     const missing: string[] = [];
     for (const card of Object.values(combatV2.cards)) {

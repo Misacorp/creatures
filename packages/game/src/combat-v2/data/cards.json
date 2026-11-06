@@ -65,7 +65,7 @@
   {
     "id": "wither",
     "name": "Wither",
-    "asks": "Healing is halved; can you prevent damage instead?",
+    "asks": "Healing is halved; can you prevent damage instead? A Guard in the middle holds.",
     "ops": [
       { "op": "raise", "stat": "atk", "bp": 2000 },
       { "op": "mod", "mod": "healBp", "base": 10000, "minus": 5000 }

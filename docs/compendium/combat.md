@@ -516,7 +516,7 @@ A rule card is a question a boss asks: can you land big hits, can you take a cri
 | Slippery            | The boss slips away from a quarter of all hits, whatever debuffs it has; can you make hits land?                               | Clear Skies, Detonator, Pin Down |              |
 | Double Strike       | The boss's hits sometimes Crit for double damage; can you turn them away or take the sting out?                                | Luck, Evasion aura               | Lucky Strike |
 | Bramble Bind        | The ends of every row are silenced; who stands at the ends?                                                                    | Silence Guard                    |              |
-| Wither              | Healing is halved; can you prevent damage instead?                                                                             | Taunt                            |              |
+| Wither              | Healing is halved; can you prevent damage instead? A Guard in the middle holds.                                                | Taunt                            |              |
 | Payoff Hunter       | Every 3 rounds it slams the strongest Payoff (aimed) and the slots beside it (area); is a Guard there? A Guard there takes it. | Reach                            |              |
 | Grudge              | It hits whoever dealt the most last round.                                                                                     | Taunt, Returning Tide, Curl Up   |              |
 | Full Sweep          | Every 3 rounds a Wind-up sweep of a row; who stands there?                                                                     | Intercept, Row Ward              | Great Wave   |
