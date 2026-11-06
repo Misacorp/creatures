@@ -65,6 +65,14 @@ main.card:has(.vy-frame) > .hud {
   pointer-events: none;
 }
 
+/* On a place's page they sit above the page, in the flow: a note floating over a page covers its buttons (the Forge's Trade shards). */
+.vy-frame[data-view='place'] > .vy-notices {
+  position: static;
+  flex: none;
+  padding: 0.5rem 0.5rem 0;
+  max-height: 40%;
+}
+
 .vy-notices:empty {
   display: none;
 }
