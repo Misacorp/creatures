@@ -2024,6 +2024,17 @@ try {
         // The scaffolding stands high round the Paddock: its project is three quarters full.
         await page.waitForTimeout(300);
         await shot('commons-paddock-scaffolding');
+        // A helper at the Paddock stands at its rails (it does not wander the meadow).
+        await paddock.getByRole('button', { name: /^Paddock: nobody helps/ }).click();
+        await waitFor(dialogOf(/Who helps build/));
+        await page
+          .getByRole('option')
+          .filter({ hasText: /Sproutle/ })
+          .first()
+          .click();
+        await waitFor(paddock.getByRole('button', { name: /^Paddock: Sproutle.*helping/ }));
+        await page.waitForTimeout(400);
+        await shot('commons-paddock-helper');
         await paddock.scrollIntoViewIfNeeded();
         await expectTopmost(paddock, 'the Paddock board');
         await shot('commons-paddock-board');
