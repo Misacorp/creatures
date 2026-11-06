@@ -499,9 +499,11 @@ function FoeBody({
       {card !== undefined && <RuleCards card={card} />}
       {card !== undefined &&
         (card.moves.length === 0 ? (
-          <p class="dnd-trick">
-            <span class="muted">{NO_TRICK_LINE}</span>
-          </p>
+          card.cards.length > 0 || card.escalation !== null ? null : (
+            <p class="dnd-trick">
+              <span class="muted">{NO_TRICK_LINE}</span>
+            </p>
+          )
         ) : (
           <ul class="boss-moves" aria-label="Moves">
             {card.moves.map((move) => (

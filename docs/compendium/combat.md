@@ -143,7 +143,7 @@ Each entry: the family, the forms that know it, the player text, and a line of c
 
 - Family: Detonator.
 - Forms: Bloomback.
-- Text `(content: combat-v2/knacks.json)`: "{Spend}s all stacks of the mark it cashes, for less than Detonate. A hit cap splits its hit and bonus."
+- Text `(content: combat-v2/knacks.json)`: "{Spend}s all stacks of the mark it cashes, for less than Detonate. Its bonus lands as its own hit."
 - Canon `(compendium detail, not shipped)`: Bloomback's flower opens, and a heartbeat later the seeds fall: two thuds, not one.
 - Design `(design)`: Detonate's quieter cousin for a boss that caps a hit (the Stone Skin card): the reaction's bonus lands as its own hit, so the cap cuts each half on its own. Its bonus is 90% of Detonate's, so Detonate stays the pick on a boss with no cap. Added 2026-11-05 (second answers).
 
