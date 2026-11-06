@@ -360,6 +360,14 @@
     "silences": false
   },
   {
+    "id": "fizzle",
+    "name": "Fizzle",
+    "shape": "all",
+    "anchor": "front",
+    "silences": false,
+    "fizzles": true
+  },
+  {
     "id": "crush",
     "name": "Crush",
     "shape": "single",

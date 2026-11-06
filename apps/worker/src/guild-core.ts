@@ -778,7 +778,7 @@ export class GuildCore {
     if (build !== undefined && startupPassesRan(this.sql, build)) return;
     // Rows of an earlier shape of gear v2 (staging ran one before its migration 27 was edited in place) are
     // brought to today's shape first, so nothing below or in a view meets an item it cannot read.
-    normaliseGearRows(this.storage);
+    normaliseGearRows(this.storage, this.gearRng);
     // The first load after the gear v2 migration: every player who had gear is converted, once, with
     // live randomness (idempotent: nothing is waiting on later starts).
     convertPendingGear({

@@ -588,9 +588,9 @@ describe('the end of the week', () => {
   it('gives Determination from the second lap only, five stacks at most', () => {
     expect(determinationBpFor(5, 4)).toBe(0);
     expect(determinationBpFor(6, 0)).toBe(0);
-    expect(determinationBpFor(6, 2)).toBe(1000);
-    expect(determinationBpFor(11, 5)).toBe(2500);
-    expect(determinationBpFor(11, 9)).toBe(2500);
+    expect(determinationBpFor(6, 2)).toBe(3000);
+    expect(determinationBpFor(11, 5)).toBe(7500);
+    expect(determinationBpFor(11, 9)).toBe(7500);
   });
 
   it('ends the weekend by the rule across parties: at least half of the parties that played won', async () => {
@@ -640,7 +640,14 @@ describe('a fighter', () => {
         const p = v2Player(ctx, 1, { level: 22, creatures: 1 });
         const id = p.creatureIds[0] as string;
         const bare = loadV2Creatures(ctx.sql, [id]).get(id);
-        expect(bare?.gear).toEqual({ hp: 0, atk: 0, spd: 0, critChanceBp: 0, critDamageBp: 0 });
+        expect(bare?.gear).toEqual({
+          fx: {},
+          hp: 0,
+          atk: 0,
+          spd: 0,
+          critChanceBp: 0,
+          critDamageBp: 0,
+        });
         const base = gearContent.bases.find((b) => b.slot === 'hat') ?? gearContent.bases[0];
         const item = giveItem(ctx.sql, p.id, (base as { id: string }).id, { level: 10, lines: [] });
         ctx.sql.exec('UPDATE gear_items SET equipped_on = ? WHERE id = ?', id, item);

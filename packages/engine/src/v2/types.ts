@@ -65,6 +65,8 @@ export interface Fighter extends FighterSpec {
   undodgeable: boolean;
   /** The round of the last mark it left by intercepting (Primed by Pain: once a round); 0 for none yet. */
   lastPrimeRound: number;
+  /** The round of its last Backlash (it strikes back once a round at most); 0 for none yet. */
+  lastBacklashRound: number;
   damageDealt: number;
   /** Damage its hits dealt to the boss, reactions included, counters not (Element Resistance reads it). */
   hitDamage: number;
@@ -88,6 +90,16 @@ export interface Fighter extends FighterSpec {
   marksLeft: number;
   /** Times its Support verb has run (Bright Boost: every second is doubled). */
   verbsUsed: number;
+  /** Ember Tail (gear): a bonus on its next hit, stored by a crit and used up by the hit after it (bp). */
+  emberBp: number;
+  /** Shared Warmth (gear): the extra its Support's next boost carries, stored when a creature wearing it is healed by this Support (bp). */
+  warmBp: number;
+  /** Reactions it has set off this fight (the Tidepool and Pounce sets' "first reaction"). */
+  reactionsMade: number;
+  /** Forge-Warm Kit (gear): the last round in which its crits still deal more; 0 for none. */
+  critWindowTo: number;
+  /** The unit (a round, or a boss turn) in which each gear trigger last fired, by effect field: a trigger fires once a unit (`onceIn`). */
+  gearUnit: Record<string, number>;
   /** How often each effect's condition held or its trigger fired this fight, by effect field (the report's "holds"). */
   fires: Record<string, number>;
 }
@@ -103,6 +115,8 @@ export interface V2Rules {
   readonly maxBonusFactorBp: number;
   /** A mark holds at most this many counts (R3). */
   readonly maxStacks: number;
+  /** Deep Tracks: each stack a reaction spends past `maxStacks` raises the bonus factor's cap by this much (bp). */
+  readonly overstackCapPerStackBp: number;
   /** Dodge chance per point of Speed, the cap, and the share against area hits (R1). */
   readonly dodgePerSpdBp: number;
   readonly dodgeMaxBp: number;
@@ -235,6 +249,11 @@ export interface BossMove {
    * (Night Watch, Intercept area hits too); a Row Ward, Barricade and Brace read it.
    */
   readonly charged?: boolean;
+  /**
+   * Fizzle: instead of hitting, the boss becomes immune to reactions from this turn until its next boss turn begins. A reaction that
+   * would have been set off does not happen and the mark is not spent. At a lower strength it takes hold that share of the times.
+   */
+  readonly fizzles?: boolean;
 }
 
 /** What fills an escalation (the boss's Store). */
@@ -338,7 +357,7 @@ export interface BossDef {
   readonly dodgeBp?: number;
   /**
    * The strength of the boss's rule cards and gates (bp, default 10000 = full): reflection returns this share of the
-   * reaction's bonus, Shake It Off clears this share of the Mired, Clean Scales and Fizzle take hold on this share of the
+   * reaction's bonus, Shake It Off clears this share of the Mired, Clean Scales takes hold on this share of the
    * marks, Reaction Resistance halves the bonus by this share (a cut of half at full strength), Element Resistance cuts a quarter
    * at full strength and this share of that below it; cards that change a number (armour, Speed, the cap, healing, an
    * added move's power) are built with it (`applyCard`, `cards.ts`).
@@ -364,8 +383,6 @@ export interface BossMods {
   readonly reflectFirst?: boolean;
   /** Healing is scaled by this (Wither). */
   readonly healBp?: number;
-  /** A mark left by a reaction cannot be cashed until after the next boss turn (Fizzle). */
-  readonly fizzle?: boolean;
   /** Every this many rounds the boss clears all its debuffs at the end of the round; announced at round start (Shake It Off). */
   readonly shakeEvery?: number;
   /** In a raid weekend, from stage 2 the boss resists the reaction used most so far (Adapts). */
@@ -449,6 +466,8 @@ export type BoardEvent =
       readonly by?: string;
       /** On a creature's crit: the crit's multiplier in basis points (26_000 is x2.6), after its talents and Knack. */
       readonly critBp?: number;
+      /** On a creature's hit: this is the reaction's bonus landing as its own hit, right after the plain hit (Aftershock). */
+      readonly bonus?: boolean;
     }
   /** A Guard takes a boss hit aimed at `who` (the hit that follows names the Guard as `by`). */
   | { readonly type: 'intercept'; readonly guard: string; readonly who: string }
@@ -458,11 +477,26 @@ export type BoardEvent =
       readonly guard: string;
       readonly who: string;
       readonly prevented: number;
+      /** The cover is a Knack's own effect (Cool Head's ward): the board names the Knack on `guard`'s tile. */
+      readonly byKnack?: boolean;
     }
   /** A Support's verb adds `bp` (basis points) to the next hit of `who`; `by` is the Support. */
   | { readonly type: 'boost'; readonly who: string; readonly by: string; readonly bp: number }
-  /** A creature's strike-back (not a hit: no crit, ignores armour). */
-  | { readonly type: 'counter'; readonly from: string; readonly damage: number }
+  /**
+   * A creature's strike-back (not a hit: no crit, ignores armour). `byKnack`: it is its Knack's own effect (Backlash), so the
+   * board names the Knack on `from`'s tile.
+   */
+  | {
+      readonly type: 'counter';
+      readonly from: string;
+      readonly damage: number;
+      readonly byKnack?: boolean;
+    }
+  /**
+   * The boss cannot dodge the hits of `who` this round (Clear Skies, Pin Down); `by` is the creature whose Knack did it, which the
+   * board names. Nothing on the board changes: it is for the cue, since the only other sign is a missing "Dodged!".
+   */
+  | { readonly type: 'sure'; readonly who: string; readonly by: string }
   /** A mark on the boss is added to or made bigger: its element, its counts now and whether it is sealed. */
   | {
       readonly type: 'mark';
@@ -472,6 +506,16 @@ export type BoardEvent =
     }
   /** Marks the boss shed (Clean Scales), by element. */
   | { readonly type: 'shed'; readonly marks: readonly string[] }
+  /**
+   * Fizzle: `on`, the boss is immune to reactions until its next boss turn; `off`, that turn began; `blocked`, a Payoff `by` would have
+   * cashed the `mark` and could not (the mark stays).
+   */
+  | {
+      readonly type: 'fizzle';
+      readonly state: 'on' | 'off' | 'blocked';
+      readonly by?: string;
+      readonly mark?: string;
+    }
   /** A Payoff cashes a mark: the element, the counts spent, the bonus damage and the counts left on it (0: the mark is gone). */
   | {
       readonly type: 'reaction';
@@ -480,6 +524,8 @@ export type BoardEvent =
       readonly spent: number;
       readonly bonus: number;
       readonly left: number;
+      /** The bonus lands as its own hit (Aftershock): the callout leaves it out, the hit after it carries the number. */
+      readonly split?: boolean;
     }
   /** `who` is healed by `amount` (what was really restored); `by` is the healer, when there is one. */
   | { readonly type: 'heal'; readonly who: string; readonly amount: number; readonly by?: string }
@@ -488,8 +534,8 @@ export type BoardEvent =
   | { readonly type: 'silence'; readonly who: string; readonly turns: number }
   /** A creature's Store (Heat, Calm, Dodge stacks) is now `value`. */
   | { readonly type: 'store'; readonly who: string; readonly value: number }
-  /** The boss's Mired is now `stacks`. */
-  | { readonly type: 'mired'; readonly stacks: number }
+  /** The boss's Mired is now `stacks`; `shook`: it shook off this many stacks just now (Shake It Off). */
+  | { readonly type: 'mired'; readonly stacks: number; readonly shook?: number }
   /**
    * The boss's escalation moved: its feed count, the steps that help it (`step`) and that help the players (`fall`), and the phase
    * (`phaseNext`: announced, it applies at the next round start).

@@ -27,7 +27,7 @@ describe('applyCard', () => {
 
   it('every card sets the boss strength to its own, the last card winning', () => {
     const b = base({ strengthBp: 9_000 });
-    expect(applyCard(b, [{ op: 'flag', mod: 'fizzle' }], 3_000).strengthBp).toBe(3_000);
+    expect(applyCard(b, [{ op: 'flag', mod: 'adapts' }], 3_000).strengthBp).toBe(3_000);
     expect(applyCard(b, [{ op: 'add', stat: 'spd', value: 1 }]).strengthBp).toBe(FULL);
     const twice = applyCard(applyCard(b, [], 3_000), [], 6_500);
     expect(twice.strengthBp).toBe(6_500);
@@ -71,7 +71,7 @@ describe('applyCard', () => {
   });
 
   describe('flag', () => {
-    it.each(['shedMarks', 'reflectFirst', 'fizzle', 'adapts', 'adaptsElement'] as const)(
+    it.each(['shedMarks', 'reflectFirst', 'adapts', 'adaptsElement'] as const)(
       'turns %s on, and keeps the other mods',
       (mod) => {
         const b = applyCard(base({ mods: { capPerHit: 5 } }), [{ op: 'flag', mod }], 6_500);
@@ -80,7 +80,7 @@ describe('applyCard', () => {
       },
     );
     it('is on at strength 0 too: the engine scales the rule by the boss strength', () => {
-      expect(applyCard(base(), [{ op: 'flag', mod: 'fizzle' }], 0).mods.fizzle).toBe(true);
+      expect(applyCard(base(), [{ op: 'flag', mod: 'adapts' }], 0).mods.adapts).toBe(true);
     });
   });
 

@@ -12,7 +12,7 @@ import { formStats, type FormStats } from './forms';
 import type { Placement, Shipped } from './types';
 
 // Bound once: a named import is read through a getter on every call under the lab's Vite loader, which costs 15% of a report.
-const { STAT_FIELDS, mergeFx } = effectsMod;
+const { STAT_FIELDS, GEAR_FIELDS, mergeFx } = effectsMod;
 
 /** The family whose Knacks reshape or replace a Support's base verb (and so leave Triage idle). */
 export const SUPPORT_SHAPE_FAMILY = 'Support shape';
@@ -70,11 +70,12 @@ export function createResolver(pack: FighterPack, shipped: Pick<Shipped, 'creatu
 
   /** Every effect name a Knack or talent uses, in a fixed order (see `uniformFx`). */
   const fxKeys: readonly string[] = [
-    ...new Set(
-      [...Object.values(pack.knacks), ...Object.values(pack.talents)].flatMap((d) =>
+    ...new Set([
+      ...[...Object.values(pack.knacks), ...Object.values(pack.talents)].flatMap((d) =>
         Object.keys(d.fx),
       ),
-    ),
+      ...GEAR_FIELDS,
+    ]),
   ];
   /** The Knacks that reshape the Support's base verb: Triage aims that verb, so they leave it idle. */
   const supportShape: ReadonlySet<string> = new Set(
@@ -99,22 +100,57 @@ export function createResolver(pack: FighterPack, shipped: Pick<Shipped, 'creatu
   const statFxMemo = new Map<string, KnackFx>();
   const statsMemo = new Map<string, FormStats>();
 
-  function fxOf(knackId: string | undefined, talents: readonly string[]): KnackFx {
-    const key = `${knackId ?? ''}|${talents.join(',')}`;
+  /** A gear sheet as a memo key (its fields in name order), or '' for no gear. */
+  function gearKey(gear: KnackFx | undefined): string {
+    if (gear === undefined) return '';
+    const names = Object.keys(gear).sort();
+    return names.length === 0
+      ? ''
+      : names
+          .map((n) => {
+            const value = (gear as Record<string, unknown>)[n];
+            // A table by element or role (Hunter, Ward, Beside the mark-maker) is keyed by its entries, in name order.
+            return `${n}=${typeof value === 'object' && value !== null ? JSON.stringify(Object.entries(value).sort()) : String(value)}`;
+          })
+          .join(',');
+  }
+
+  function fxOf(
+    knackId: string | undefined,
+    talents: readonly string[],
+    gear: KnackFx | undefined,
+  ): KnackFx {
+    const gk = gearKey(gear);
+    const key = `${knackId ?? ''}|${talents.join(',')}|${gk}`;
     let fxAll = fxMemo.get(key);
     if (!fxAll) {
-      fxAll = uniformFx(mergeFx([knackFx(knackId), ...talents.map(talentFx)]));
+      const knack = knackFx(knackId);
+      const parts = [knack, ...talents.map(talentFx)];
+      if (gk === '') fxAll = uniformFx(mergeFx(parts));
+      else {
+        // Gear joins the sum, except Retaliate: a Knack's and the gear's make one counter with the larger chance.
+        const { retaliateBp: gearCounter, ...rest } = gear as KnackFx;
+        const merged: Record<string, unknown> = { ...mergeFx([...parts, rest]) };
+        if (gearCounter !== undefined) {
+          merged['retaliateBp'] = Math.max(knack.retaliateBp ?? 0, gearCounter);
+        }
+        fxAll = uniformFx(merged);
+      }
       fxMemo.set(key, fxAll);
     }
     return fxAll;
   }
 
   /** The talents' plain stat lines alone (`STAT_FIELDS`): what silence leaves (R12). */
-  function statFxOf(talents: readonly string[]): KnackFx {
-    const key = talents.join(',');
+  function statFxOf(talents: readonly string[], gear: KnackFx | undefined): KnackFx {
+    const gk = gearKey(gear);
+    const key = `${talents.join(',')}|${gk}`;
     let stat = statFxMemo.get(key);
     if (!stat) {
-      const merged = mergeFx(talents.map(talentFx)) as Record<string, unknown>;
+      // Of the gear only its Armour is a stat line (the rest of its stat lines are added to the fighter by the caller).
+      const gearStat: KnackFx =
+        gear?.armourBonus === undefined ? {} : { armourBonus: gear.armourBonus };
+      const merged = mergeFx([...talents.map(talentFx), gearStat]) as Record<string, unknown>;
       const only: Record<string, unknown> = {};
       for (const name of Object.keys(merged))
         if (STAT_FIELDS.has(name as keyof KnackFx)) only[name] = merged[name];
@@ -146,7 +182,7 @@ export function createResolver(pack: FighterPack, shipped: Pick<Shipped, 'creatu
     const st = statsOf(p.formId, p.level);
     const k = p.knack === 'none' ? undefined : p.knack;
     const keys = talentKeys(p);
-    const fxAll = fxOf(k, keys);
+    const fxAll = fxOf(k, keys, p.gear);
     const maxHp = Math.floor((st.hp * (10_000 + (fxAll.hpBp ?? 0))) / 10_000);
     return {
       owner: p.owner,
@@ -163,7 +199,7 @@ export function createResolver(pack: FighterPack, shipped: Pick<Shipped, 'creatu
       knack: k,
       talents: p.talents ?? [],
       fxAll,
-      fxStat: statFxOf(keys),
+      fxStat: statFxOf(keys, p.gear),
       // Triage aims the Support's own base verb: a Support shape Knack leaves it idle (the fight reads only the flag).
       triageIdle: k !== undefined && supportShape.has(k),
       row: p.row,

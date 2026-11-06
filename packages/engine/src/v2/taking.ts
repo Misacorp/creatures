@@ -37,21 +37,21 @@ export function dodgeOf(s: State, f: Fighter, area: boolean): number {
   );
 }
 
-/** A Sure Crit for `f` (at most `R.sureCritMax`), counted as the effect `key` firing. */
-export function gainSureCrit(s: State, f: Fighter, key: keyof KnackFx): void {
+/** A Sure Crit for `f` (at most `R.sureCritMax`), counted as the effect `key` firing (for `credit`, `f` unless another creature gave it). */
+export function gainSureCrit(s: State, f: Fighter, key: keyof KnackFx, credit: Fighter = f): void {
   const R = s.ctx.rules;
   if (f.sureCrits >= R.sureCritMax) return;
   f.sureCrits++;
-  bump(f, key);
+  bump(credit, key);
   if (s.opts.log) log(s, 'sure-crit', `${f.name} stores a Sure Crit (${f.sureCrits})`);
 }
 
 /**
  * How much of a boss crit's extra damage `taker` is spared (bp): its own Cool Head, or the largest one on a living creature
- * beside it (an aura: the largest applies, R15). Counted for the creature that gives it.
+ * beside it (an aura: the largest applies, R15). Counted for the creature that gives it, which is returned with the ward.
  */
-export function critWardOf(s: State, taker: Fighter): number {
-  if (!s.carries.has('critWardBp')) return 0;
+export function critWardOf(s: State, taker: Fighter): { ward: number; by: Fighter | undefined } {
+  if (!s.carries.has('critWardBp')) return { ward: 0, by: undefined };
   let ward = fx(taker).critWardBp ?? 0;
   let by: Fighter | undefined = ward > 0 ? taker : undefined;
   for (const o of beside(s, taker)) {
@@ -62,7 +62,7 @@ export function critWardOf(s: State, taker: Fighter): number {
     }
   }
   if (by) bump(by, 'critWardBp');
-  return ward;
+  return { ward, by };
 }
 
 /** The board's part of a boss hit on `target` that `taker` took (the same creature unless a Guard intercepted it). */
@@ -91,7 +91,9 @@ const cutOf = (left: number, bp: number): number =>
 const coverOf = (s: State, g: Fighter, who: Fighter): number =>
   s.ctx.rules.coverBp +
   (fx(g).coverBonusBp ?? 0) +
-  (fx(g).distanceCoverBp ?? 0) * Math.abs(g.col - who.col);
+  (fx(g).distanceCoverBp ?? 0) * Math.abs(g.col - who.col) +
+  // Sheltered (gear): the cover on a creature is stronger, whoever gives it.
+  (fx(who).shelterBp ?? 0);
 
 /**
  * Damage lands on a creature: every cut it gets for this hit multiplies together (an aura, its own area cut,
@@ -164,6 +166,18 @@ export function takeHit(
     without = cutOf(without, k.braceBp);
     bump(taker, 'braceBp');
   }
+  // Gear cuts (slice 3): every hit, aimed hits, a reflected hit, at a quarter of its HP, the boss's element. Each is one cut among the others.
+  const gearCut = (bp: number | undefined, key: keyof KnackFx): void => {
+    if (!bp) return;
+    left = cutOf(left, bp);
+    without = cutOf(without, bp);
+    bump(taker, key);
+  };
+  gearCut(k.takenCutBp, 'takenCutBp');
+  if (how === 'aimed') gearCut(k.aimedCutBp, 'aimedCutBp');
+  if (how === 'reflected') gearCut(k.reflectedCutBp, 'reflectedCutBp');
+  if (taker.hp * 4 <= taker.maxHp) gearCut(k.lastStandCutBp, 'lastStandCutBp');
+  gearCut(k.fromElementCutBp?.[s.boss.element], 'fromElementCutBp');
   // Long Shadow: the cut on a hit it intercepts grows with the distance to the creature it saved.
   if (k.distanceCoverBp && taker !== target) {
     const shadow = k.distanceCoverBp * Math.abs(taker.col - target.col);

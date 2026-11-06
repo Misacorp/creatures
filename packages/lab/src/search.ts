@@ -7,6 +7,7 @@
 import { createSeededRng, int, type Rng } from '@creatures/game';
 import { labBoss } from './cards';
 import { fight } from './fight';
+import { withGear } from './gear';
 import { FORM_KNACKS } from './knacks';
 import { legalTalents } from './talents';
 import type { BossDef, Placement } from './types';
@@ -20,6 +21,8 @@ export interface Pick {
   readonly talents?: readonly string[];
   /** The talents (of `talents`) that are golden (the dungeon days' players roll them). */
   readonly goldenTalents?: readonly string[];
+  /** The item level of the gear the creature wears (`gear.ts`); absent: no gear, as before. */
+  readonly itemLevel?: number;
 }
 
 export const LEVEL = 25;
@@ -57,17 +60,22 @@ export function classicFor(mode: Mode): Pick[] {
 }
 
 export function toPlacements(line: readonly Pick[], mode: Mode): Placement[] {
-  return line.map((p, i) => ({
-    // A raid has a player for each column of the arena (four in the usual raid).
-    owner: mode.id === 'gauntlet' ? 'p1' : `p${(i % mode.cols) + 1}`,
-    formId: p.formId,
-    level: p.level ?? mode.level ?? LEVEL,
-    knack: p.knack,
-    ...(p.talents ? { talents: p.talents } : {}),
-    ...(p.goldenTalents?.length ? { goldenTalents: p.goldenTalents } : {}),
-    row: Math.floor(i / mode.cols),
-    col: i % mode.cols,
-  }));
+  return line.map((p, i) =>
+    withGear(
+      {
+        // A raid has a player for each column of the arena (four in the usual raid).
+        owner: mode.id === 'gauntlet' ? 'p1' : `p${(i % mode.cols) + 1}`,
+        formId: p.formId,
+        level: p.level ?? mode.level ?? LEVEL,
+        knack: p.knack,
+        ...(p.talents ? { talents: p.talents } : {}),
+        ...(p.goldenTalents?.length ? { goldenTalents: p.goldenTalents } : {}),
+        row: Math.floor(i / mode.cols),
+        col: i % mode.cols,
+      },
+      p.itemLevel,
+    ),
+  );
 }
 
 export interface Score {

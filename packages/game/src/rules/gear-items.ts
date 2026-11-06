@@ -74,8 +74,6 @@ export interface Placement {
   rowElements: readonly Element[];
   /** HP the Lantern bearers beside it give it, added up (basis points). */
   lanternHpBp: number;
-  /** Rounds more that a Guard's own ability (Rally, Shield Wall, Purge) lasts in this row (Lantern Night; 0 or 1). */
-  rowShieldWall: number;
 }
 
 /** How a creature looks to the gear rules. `placement` is absent where nobody knows the row (a card, "Equip best"). */
@@ -258,6 +256,40 @@ export function rollLines(
       id: picked.line.id,
       tier: picked.line.single ? 0 : rollTier(rng, itemLevel, minTier),
     });
+  }
+  return out;
+}
+
+/**
+ * Fresh lines for the ones an item lost when the content removed their line (CLAUDE.md: a removed modifier is replaced by a
+ * fresh random roll). Each replacement is drawn by weight from the item's own pool, never a line the item already has, and
+ * never a second special line (`rollLines`' rule); the tier is rolled as a drop rolls it. Fewer come back when the pool runs out.
+ */
+export function rollReplacementLines(
+  rng: Rng,
+  base: Pick<GearBase, 'slot' | 'tag' | 'pool' | 'stats'>,
+  rarity: GearRarity,
+  itemLevel: number,
+  kept: readonly ItemLine[],
+  count: number,
+): ItemLine[] {
+  const level = clampItemLevel(itemLevel);
+  const have = new Set(kept.map((l) => l.id));
+  let special = specialLinesOf(kept).length > 0;
+  const pool = linePool(base, rarity, level).filter(
+    (p) => !have.has(p.line.id) && !(special && p.line.special),
+  );
+  const out: ItemLine[] = [];
+  for (let i = 0; i < count && pool.length > 0; i++) {
+    const picked = pickWeighted(rng, pool);
+    pool.splice(pool.indexOf(picked), 1);
+    if (picked.line.special) {
+      special = true;
+      for (let j = pool.length - 1; j >= 0; j--) {
+        if ((pool[j] as PoolLine).line.special) pool.splice(j, 1);
+      }
+    }
+    out.push({ id: picked.line.id, tier: picked.line.single ? 0 : rollTier(rng, level) });
   }
   return out;
 }
@@ -520,6 +552,7 @@ export interface GearMods {
   coverBp?: number;
   boostBp?: number;
   mendBp?: number;
+  /** Rounds more that a timed ability lasts (the day's Lantern Light; no gear gives it since 2026-11-06). */
   lingerRounds?: number;
   /** Status effects: weaker debuffs on the wearer (a share), and debuffs it applies: more power, more turns. */
   debuffResistBp?: number;
@@ -548,19 +581,16 @@ export interface GearMods {
   dodgeBp?: number;
   areaDodgeBp?: number;
   steadyPawsBp?: number;
-  warmHeartBp?: number;
   quickRemarkBp?: number;
   spillOverBp?: number;
   paybackBp?: number;
   kindlingBp?: number;
-  openingMark?: 0 | 1;
   rallyCryBp?: number;
   emberTailBp?: number;
   stormWarningBp?: number;
   stubborn?: 0 | 1;
   lastStandBp?: number;
   overflowBp?: number;
-  secondBreathBp?: number;
   patientBp?: number;
   sharedWarmthBp?: number;
   /** On-dodge lines (`combat-rules.md` 12): they fire when the wearer dodges a boss hit. */
@@ -689,7 +719,7 @@ type SheetNumeric =
   | 'debuffDurationTurns'
   | 'areaDodgeBp'
   | (typeof CHANCE_FIELDS)[number]
-  | Exclude<(typeof TRIGGER_FIELDS)[number], 'openingMark' | 'stubborn'>;
+  | Exclude<(typeof TRIGGER_FIELDS)[number], 'stubborn'>;
 
 function addTo<K extends string>(
   table: Partial<Record<K, number>> | undefined,
@@ -745,12 +775,12 @@ function foldSets(
       const line = gearLine(entry.line);
       if (line !== undefined) apply(line, entry.value, null, false);
     }
-    if (count >= 3) setEffect(set.three, wearer, out);
+    if (count >= 3 && set.three !== undefined) setEffect(set.three, wearer, out);
   }
 }
 
 /** One three-piece effect into the sheet (or the trip rules), for a wearer it works for. */
-function setEffect(three: GearSet['three'], wearer: Wearer, out: WornEffects): void {
+function setEffect(three: NonNullable<GearSet['three']>, wearer: Wearer, out: WornEffects): void {
   if (three.wearerElement !== undefined && three.wearerElement !== wearer.element) return;
   const sheet = out.mods;
   const value = three.value ?? 0;
@@ -785,9 +815,6 @@ function setEffect(three: GearSet['three'], wearer: Wearer, out: WornEffects): v
     case 'longTripCatch':
       out.rules.dayTripRolls += value;
       break;
-    case 'rowShieldWall':
-      // A gift to the row: the row's builder counts the wearers (`Placement.rowShieldWall`).
-      break;
   }
 }
 
@@ -804,7 +831,6 @@ const CAPPED_AT_WHOLE = [
   ...CHANCE_FIELDS,
   'stormWarningBp',
   'lastStandBp',
-  'secondBreathBp',
 ] as const;
 const CAPPED_SET: ReadonlySet<string> = new Set(CAPPED_AT_WHOLE);
 
@@ -814,7 +840,7 @@ const CAPPED_SET: ReadonlySet<string> = new Set(CAPPED_AT_WHOLE);
  * sheet's conditions are resolved here: an element Hunter becomes a bonus against every element it deals 150% to,
  * an element Ward a reduction against every element that deals 150% to it, a reaction line the bonus of that
  * reaction, a position line the bonus beside a role. Pure and deterministic; no caps beyond the ones
- * the engine's sheet checks (a reduction stays below 100%, a pierce at most 100%, Lingering at most 3 rounds).
+ * the engine's sheet checks (a reduction stays below 100%, a pierce at most 100%).
  *
  * The creature's talents (`talents`) go through the same function: a talent whose effect is a gear line
  * is folded exactly like that line on an item, and the two rules only talents have (Speed, glimmer finds)
@@ -910,11 +936,9 @@ export function wornEffects(
         if (place !== undefined) positionLine(effect.rule, value, place);
         break;
       case 'sheet':
-        if (effect.field === 'lingerRounds') {
-          sheet.lingerRounds = Math.min(3, (sheet.lingerRounds ?? 0) + value);
-        } else if (effect.field === 'ignoreSilence') {
+        if (effect.field === 'ignoreSilence') {
           sheet.ignoreSilence = 1;
-        } else if (effect.field === 'openingMark' || effect.field === 'stubborn') {
+        } else if (effect.field === 'stubborn') {
           sheet[effect.field] = 1;
         } else if (effect.field === 'sidestepBp' && RULES.combat.dodge.enabled) {
           // The one switch (`RULES.combat.dodge.enabled`): with dodge on, Sidestep is flat dodge against area
@@ -982,11 +1006,8 @@ export function wornEffects(
   }
   foldSets(items, wearer, out, apply);
   if (place !== undefined) {
-    // What the creatures beside it give it (Lantern bearer) and what its row gives (Lantern Night).
+    // What the creatures beside it give it (Lantern bearer).
     out.hpBp += place.lanternHpBp;
-    if (wearer.role === 'guard' && place.rowShieldWall > 0) {
-      sheet.lingerRounds = Math.min(3, (sheet.lingerRounds ?? 0) + place.rowShieldWall);
-    }
   }
   for (const talent of talents) {
     if ('line' in talent.effect) {
@@ -1042,9 +1063,9 @@ export function applyGear(
   items: readonly GearItem[],
   talents: readonly FoldTalent[] = [],
 ): { stats: Stats; crit: CritBonus | undefined; mods: GearMods | undefined; rules: GearRules } {
-  // A creature that wears nothing can still gain from the row (Lantern bearer, Lantern Night).
+  // A creature that wears nothing can still gain from the row (Lantern bearer).
   const gifts = wearer.placement;
-  const given = gifts !== undefined && (gifts.lanternHpBp > 0 || gifts.rowShieldWall > 0);
+  const given = gifts !== undefined && gifts.lanternHpBp > 0;
   if (items.length === 0 && talents.length === 0 && !given) {
     return { stats, crit, mods: undefined, rules: NO_GEAR_RULES };
   }

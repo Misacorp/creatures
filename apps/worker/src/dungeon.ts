@@ -647,9 +647,9 @@ export class Dungeon {
     // --- The run: the day's map copied in, and the base fight input frozen ---
     const map = this.mapFor(day);
     const enrage = dungeonBossEnrage();
-    // Between-fight rest (a Scarf line): the share of max HP a standing creature recovers before each fight.
+    // Between-fight rest (a Scarf line): the share of max HP a standing creature recovers before each fight (v1 and v2 alike).
     const rest: Record<string, number> = {};
-    if (!v2) for (const c of standing) if (c.gearRules.restBp > 0) rest[c.id] = c.gearRules.restBp;
+    for (const c of standing) if (c.gearRules.restBp > 0) rest[c.id] = c.gearRules.restBp;
     const input: DungeonRunInput = {
       team: row,
       player: PLAYER,

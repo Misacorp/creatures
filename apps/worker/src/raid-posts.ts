@@ -10,12 +10,16 @@ import type { FightEvent, FightInput, FightResult } from '@creatures/engine';
 import {
   describeGimmick,
   formatBossReveal,
+  formatBossRevealV2,
   formatPhasePost,
+  formatStagePostV2,
   type FirstPost,
   type KeyMoment,
   type RankPost,
 } from './discord-format';
 import { announceChannelId, enqueuePost } from './discord-posts';
+import { bossCardView } from './raid-v2-card';
+import { slotBossInfo, weekendBoss } from './raid-v2-core';
 import { festivalWinners } from './raid-festival';
 import { rankChangeOf, readWeekProgression } from './raid-ladder';
 import { eligiblePlayerIds } from './raid-roster';
@@ -74,6 +78,45 @@ export function queueBossReveal(
       timeZone: tz,
       rank: progression?.rank ?? null,
       festivalCreature: progression?.festival === true ? (festivalSpecies?.name ?? null) : null,
+    });
+    enqueuePost(
+      sql,
+      { key: `raid:${week.weekId}:weekStart:all`, content: JSON.stringify(post) },
+      now,
+    );
+  } catch (err) {
+    console.error('queueing the boss reveal failed', err instanceof Error ? err.name : 'unknown');
+  }
+}
+
+/**
+ * Monday on a combat v2 week: the track's boss, its rule cards (name and question, as the boss card shows them) and its arena. Same
+ * skips as the v1 reveal; a Festival week has no raid and gets none.
+ */
+export function queueBossRevealV2(
+  sql: SqlStorage,
+  week: { weekId: string; trackSlot: number | null; festival: boolean },
+  tz: string,
+  now: number,
+): void {
+  try {
+    if (week.trackSlot === null || week.festival) return;
+    if (announceChannelId(sql) === null) return;
+    if (eligiblePlayerIds(sql, now).length === 0) return;
+    const { rows, seats } = slotBossInfo(week.trackSlot);
+    const boss = weekendBoss(week.trackSlot, 1);
+    const times = eventTimes(week.weekId, tz, 2);
+    const post = formatBossRevealV2({
+      bossId: boss.id,
+      bossName: boss.name,
+      elementId: boss.element,
+      elementName: content.elements.find((e) => e.id === boss.element)?.name ?? boss.element,
+      rank: week.trackSlot,
+      cards: bossCardView(boss, null).cards,
+      rows,
+      seats,
+      schedule: { phase1: times.phase1, phase2: times.phase2, finale: times.finale },
+      timeZone: tz,
     });
     enqueuePost(
       sql,
@@ -297,5 +340,78 @@ export function queuePhasePost(sql: SqlStorage, src: PhasePostSource): void {
     );
   } catch (err) {
     console.error('queueing a phase post failed', err instanceof Error ? err.name : 'unknown');
+  }
+}
+
+export interface StagePostV2Source {
+  weekId: string;
+  party: number;
+  stage: 1 | 2 | 3;
+  now: number;
+  bossId: string;
+  bossName: string;
+  kill: boolean;
+  cleared: boolean;
+  /** The reward thresholds first crossed in this stage, as the percent of the weekend's HP removed. */
+  thresholds: readonly number[];
+  summary: StoredSummary;
+}
+
+/** A combat v2 stage's post for one party (stage 1, stage 2 or the finale), queued in the transaction that stores the result. */
+export function queueStagePostV2(sql: SqlStorage, src: StagePostV2Source): void {
+  try {
+    if (announceChannelId(sql) === null) return;
+    const { summary, stage } = src;
+    const names = playerNames(sql);
+    const tz = storedTimezone(sql);
+    const times = eventTimes(src.weekId, tz, 2);
+    const week = sql
+      .exec<{ created_at: number }>(
+        'SELECT created_at FROM raid_weeks WHERE week_id = ?',
+        src.weekId,
+      )
+      .toArray()[0];
+    const post = formatStagePostV2({
+      stage,
+      bossId: src.bossId,
+      bossName: src.bossName,
+      party: partiesInPlay(sql, src.weekId) > 1 ? src.party : null,
+      kill: src.kill,
+      cleared: src.cleared,
+      hpLeftPercent:
+        summary.bossHpMax <= 0
+          ? 0
+          : Math.min(100, Math.ceil((summary.bossHpEnd * 100) / summary.bossHpMax)),
+      thresholds: src.thresholds,
+      top: summary.contributors.slice(0, 3).map((c) => ({
+        name: names.get(c.userId) ?? 'Unknown',
+        contribution: c.contribution,
+      })),
+      next:
+        stage === 1
+          ? times.phase2
+          : stage === 2
+            ? times.finale
+            : eventTimes(addWeeks(src.weekId, 1), tz, 2).weekStart,
+      ...(stage === 3
+        ? {
+            firsts: firstsOf(
+              sql,
+              week?.created_at ?? 0,
+              new Set(summary.members.map((m) => m.userId)),
+            ),
+          }
+        : {}),
+    });
+    enqueuePost(
+      sql,
+      {
+        key: `raid:${src.weekId}:stage${String(stage)}:${String(src.party)}`,
+        content: JSON.stringify(post),
+      },
+      src.now,
+    );
+  } catch (err) {
+    console.error('queueing a stage post failed', err instanceof Error ? err.name : 'unknown');
   }
 }

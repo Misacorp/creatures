@@ -32,10 +32,10 @@ Foes have no turn order of their own: in the dungeon **your creatures always act
 
 ### Tide foes
 
-**Puddle Imp** (no trick)
+**Puddle Imp** (Rising Puddle, two more Barrages of splashes every round, up to three times)
 
 - Shipped flavour `(content)`: "Hides in puddles and splashes ankles. Not scary, just very wet."
-- Compendium detail: it lives in the low corners of the dungeon, where the rain collects. Its trick is simply to be in the way.
+- Compendium detail: it lives in the low corners of the dungeon, where the rain collects. Its trick is simply to be in the way, and the puddle keeps rising: every round it splashes twice more, so a Guard's cover matters more the longer the fight runs.
 
 **Drift Wisp** (Sea Mist, every third round, silences the two ends for a turn)
 
@@ -49,10 +49,10 @@ Foes have no turn order of their own: in the dungeon **your creatures always act
 - Shipped flavour `(content)`: "A glowing bug that nests in warm stones and pops like a tiny firework."
 - Compendium detail: a small bug that gathers in warm stone. Its pop can land on any creature in the row, so no one is safe from it.
 
-**Ash Sprite** (no trick)
+**Ash Sprite** (Hardening Ash, its armour grows +50 every round, up to three times; Fizzle every second round: no reactions until its next turn)
 
 - Shipped flavour `(content)`: "Drifts out of cold hearths in a puff of grey and sneezes sparks."
-- Compendium detail: a relic of a fire that has gone out, which is why it is cold to touch and sneezes sparks. It is the dungeon's gentle foe.
+- Compendium detail: a relic of a fire that has gone out, which is why it is cold to touch and sneezes sparks. It is the dungeon's gentle foe early on: soft in the first rounds, then the ash packs hard, so small hits fall off it unless a Heat-doubled reaction gets through.
 
 ### Grove foes
 
@@ -80,14 +80,14 @@ Foes have no turn order of their own: in the dungeon **your creatures always act
 
 ### Mire foes
 
-Status: 2026-10-20. Shipped (`docs/design/speed-and-dodge.md` section 5.5). Both foes leave Mired on the creatures they hit. `(content: dungeon-foes.json)`
+Status: 2026-10-20. Shipped (`docs/design/speed-and-dodge.md` section 5.5). In combat v2 (2026-11-05) Mired sits on the foe, never on your creatures: the fen foes are the ones the team Mires, not foes that Mire the team. `(content: dungeon-foes.json, combat-v2 foes.json)`
 
-**Bog Toad** (Mud Spit, every second round, a small shell of mud on one random creature that leaves Mired)
+**Bog Toad** (Mud Spit, every second round, a mouthful of mud on one random creature; Swelling Croak, it swells +50% Attack every round, up to three times; Shake It Off, every third round it washes every debuff off itself)
 
 - Shipped flavour `(content)`: "Sits so still you take it for a stone, then spits a mouthful of mud. It is very sorry afterwards."
-- Compendium detail: a small cousin of Old Bogback, the one the Sunken Fen sends to the dungeon's damp corners. It leaves Mired on whoever it spits at, which is the first taste of the fen's slow ground.
+- Compendium detail: a small cousin of Old Bogback, the one the Sunken Fen sends to the dungeon's damp corners. Its mud is only mud: the team is the one that Mires the toad. A Mired toad swells slower, and it shakes the Mire off every third round, so the Mire has to come back every round. It is the first taste of the fen's slow ground.
 
-**Tar Leech** (Tar Cling, every third round, a heavy hit on the left creature that leaves Mired)
+**Tar Leech** (Tar Cling, every third round, a heavy hit on the left creature)
 
 - Shipped flavour `(content)`: "Black, shiny and slow. It clings to the nearest creature and will not take the hint."
 - Compendium detail: tar that has learned to cling. It is the dungeon's patient foe: it is slow, it is not scary, and it will not let go.

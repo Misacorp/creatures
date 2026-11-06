@@ -45,6 +45,12 @@ describe('the v2 payloads the engine and the server make', () => {
     expect(isBoardEvent({ type: 'intercept', guard: 'a', who: 'b' })).toBe(true);
     expect(isBoardEvent({ type: 'intercept', guard: 'a' })).toBe(false);
     expect(isBoardEvent({ type: 'cover', guard: 'a', who: 'b', prevented: -1 })).toBe(false);
+    expect(isBoardEvent({ type: 'cover', guard: 'a', who: 'b', prevented: 3, byKnack: true })).toBe(
+      true,
+    );
+    expect(isBoardEvent({ type: 'cover', guard: 'a', who: 'b', prevented: 3, byKnack: 1 })).toBe(
+      false,
+    );
     expect(isBoardEvent({ type: 'boost', who: 'a', by: 'b', bp: 1500 })).toBe(true);
     const hit = {
       type: 'hit',

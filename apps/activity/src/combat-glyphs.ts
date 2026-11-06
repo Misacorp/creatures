@@ -23,8 +23,15 @@ export function combatGlyph(id: string): SpriteDef | undefined {
 }
 
 /** The glyph id of a boss move's shape (the library's `shape`), with `silences` (Hush) and `oneShot` picking their own. */
-export function moveGlyphId(move: { shape: string; silences: boolean; oneShot: boolean }): string {
+export function moveGlyphId(move: {
+  shape: string;
+  silences: boolean;
+  oneShot: boolean;
+  fizzles?: boolean;
+}): string {
   if (move.oneShot) return 'shape-one-shot';
+  // Fizzle has no slots to draw: the shield that reactions burn against (the Molten Shell's), the nearest shipped picture.
+  if (move.fizzles === true) return 'reflect_first_reaction';
   switch (move.shape) {
     case 'single':
       return 'shape-strike';

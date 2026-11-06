@@ -44,7 +44,9 @@ describe('within-form ratio', () => {
       ['ancientshell', 4],
       ['tidewing', 5],
     ]);
-    // Random gives each form's "no Knack" a share of 1 over its choices: 4 / 4 + 5 / 5.
-    expect(withinFormRatio('none', 2, formPicks)).toBe(1);
+    // Random gives each form's "no Knack" a share of 1 over its choices (its Knacks plus "no Knack"): 4 / n1 + 5 / n2.
+    const choices = (f: string) => (FORM_KNACKS[f]?.length ?? 0) + 1;
+    const expected = 4 / choices('ancientshell') + 5 / choices('tidewing');
+    expect(withinFormRatio('none', expected, formPicks)).toBeCloseTo(1, 10);
   });
 });

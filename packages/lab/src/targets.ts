@@ -769,3 +769,49 @@ export const DUNGEON_UNDERCROFT_FALL = { minDrop: 0.2 } as const;
 
 /** A safe daily player is rarely stuck: the share of player-weeks with no depth gained, from week 3 on (a proposal; the depth picker is for those). */
 export const DUNGEON_STUCK_WEEKS_MAX = 0.1;
+
+// ---------- the phase 5 gate (`gate.ts`, `report -- --gate`) ----------
+
+/**
+ * Where the gate's numbers come from. The gate is `docs/design/combat/roadmap.md`'s phase 5 row (weekly raid win rates in band at each
+ * rank, the classic trio not best everywhere, diversity of winning teams, no dead Knack) as listed in `balance.md` section 3. The items
+ * that already had a number reuse it: `STUCK_SHARE_MAX` and `STUCK_WEEKS` (`path.ts`: at most 10% of servers stuck more than four
+ * weekends on one boss), `MIXED_KILL_MIN` and `MIXED_WEEKENDS_MAX` (above: Misa, 2026-10-30), the classic line's ten percent
+ * (principle P-11, `principles.md`). The ones that had none are the lab's proposals below, each marked as such; changing one is a
+ * one-line edit, and a target the tuners cannot reach is a content problem, never a looser threshold (`balance.md` section 4).
+ */
+
+/**
+ * Raid by rank: on every slot that at least half of a server kind's servers reach, the median server needs at most this many weekends
+ * to kill the boss (the mixed server's three, `MIXED_WEEKENDS_MAX`, for every kind and speed). Read from the journey's per-slot medians.
+ */
+export const GATE_WEEKENDS_MAX = MIXED_WEEKENDS_MAX;
+/** The share of servers that must reach a slot for it to count in `GATE_WEEKENDS_MAX` (a slot most servers never see is not a rank's rate). */
+export const GATE_REACHED_MIN = 0.5;
+
+/**
+ * The classic trio not best everywhere (P-11): its line is more than this far behind the best line (share of the best's score, or of
+ * the boss's HP removed at a party size) on most of the cases: more than `CLASSIC_LOSES_MOST` of them.
+ */
+export const CLASSIC_BEHIND = 0.1;
+export const CLASSIC_LOSES_MOST = 0.5;
+
+/**
+ * Diversity of winning teams (a proposal: the roadmap names the gate and no number). A boss's winning teams are the lines of the gate's
+ * potential searches (`gate.ts`: independent searches a boss, the best five lines of each) that remove the boss's whole HP when the
+ * weekend is played as if it could not die (potential at least 1). Across them the boss needs at least this many different content
+ * lines, element sets and Knack families, and no one line may hold more than `DIVERSITY_TOP_LINE_MAX` of the creatures in them.
+ */
+export const DIVERSITY_LINES_MIN = 4;
+export const DIVERSITY_ELEMENT_SETS_MIN = 3;
+export const DIVERSITY_FAMILIES_MIN = 4;
+export const DIVERSITY_TOP_LINE_MAX = 0.35;
+
+/** No dead Knack: every Knack (not "no Knack") is on at least this many creatures of the winning teams of the gate's searches and the report's best-team searches. */
+export const DEAD_KNACK_PICKS_MIN = 1;
+
+/** The casual metric (phase 1 accepted 1.41 and set 1.5 for phase 5, `roadmap.md`): creatures of the best line beyond the player's top three, on average. */
+export const CASUAL_BEYOND_MIN = 1.5;
+
+/** The Free plan's CPU limit for one request, in milliseconds (`integration.md` section 8). Reported, not gating: the lab's clock is not the Worker's. */
+export const CPU_LIMIT_MS = 10;

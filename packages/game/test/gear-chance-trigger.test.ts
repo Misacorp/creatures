@@ -50,21 +50,18 @@ const CHANCE_IDS = [
   'quick-remark',
   'steady-paws',
   'spill-over',
-  'warm-heart',
   'tinkers-luck',
   'second-look',
 ];
 const TRIGGER_IDS = [
   'payback',
   'kindling',
-  'opening-mark',
   'rally-cry',
   'ember-tail',
   'storm-warning',
   'stubborn',
   'last-stand',
   'overflow',
-  'second-breath',
   'patient',
   'shared-warmth',
 ];
@@ -75,17 +72,14 @@ const FIELD: Record<string, string> = {
   'quick-remark': 'quickRemarkBp',
   'steady-paws': 'steadyPawsBp',
   'spill-over': 'spillOverBp',
-  'warm-heart': 'warmHeartBp',
   payback: 'paybackBp',
   kindling: 'kindlingBp',
-  'opening-mark': 'openingMark',
   'rally-cry': 'rallyCryBp',
   'ember-tail': 'emberTailBp',
   'storm-warning': 'stormWarningBp',
   stubborn: 'stubborn',
   'last-stand': 'lastStandBp',
   overflow: 'overflowBp',
-  'second-breath': 'secondBreathBp',
   patient: 'patientBp',
   'shared-warmth': 'sharedWarmthBp',
 };
@@ -107,7 +101,7 @@ const charm = (rarity: GearRarity, lines: [string, number][], level = 20): GearI
 const wearer: Wearer = { role: 'payoff', element: 'tide' };
 
 describe('the content', () => {
-  it('has the nine chance lines and twelve trigger lines of the design, in their groups', () => {
+  it('has the chance lines and trigger lines of the design, in their groups', () => {
     for (const id of CHANCE_IDS) {
       const line = gearLine(id);
       expect(line, id).toBeDefined();
@@ -139,17 +133,17 @@ describe('the content', () => {
     expect(v('storm-warning')).toBe(3_000);
     expect(v('last-stand')).toBe(2_000);
     expect(v('overflow')).toBe(1_500);
-    expect(v('second-breath')).toBe(1_000);
     expect(v('patient')).toBe(2_500);
     expect(v('shared-warmth')).toBe(300);
     // Kindling is a start-of-fight boost that works once, so it is bigger than a Support's every-round 15%.
     expect(v('kindling')).toBe(4_000);
   });
 
-  it('Stubborn and Opening mark are single-value lines (no tiers), and Stubborn is an Epic from item level 12', () => {
+  it('Stubborn is a single-value line (no tiers) and an Epic from item level 12; Warm heart, Second breath and Opening mark are retired', () => {
     const stubborn = gearLine('stubborn');
     expect(stubborn).toMatchObject({ single: true, minRarity: 'epic', minItemLevel: 12 });
-    expect(gearLine('opening-mark')).toMatchObject({ single: true, unit: 'once' });
+    for (const id of ['warm-heart', 'second-breath', 'opening-mark'])
+      expect(gearLine(id), id).toBeUndefined();
   });
 
   it('they roll from Rare up (never on a Common) and about words fit the glossary', () => {

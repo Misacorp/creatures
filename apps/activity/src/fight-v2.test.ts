@@ -349,4 +349,28 @@ describe('what a beat shows of the new events (reactions, crits, saves, boosts, 
     });
     expect(quiet.knacks.map((k) => k.who)).not.toContain(actor);
   });
+
+  it('a cover that is a Knack’s own (Cool Head) names the Knack on the Guard’s tile; a plain cover does not', () => {
+    const ev = (byKnack: boolean) => [
+      {
+        round: 1,
+        turn: 0,
+        kind: 'board',
+        text: '',
+        board: {
+          type: 'cover',
+          guard: 'g',
+          who: 'w',
+          prevented: 9,
+          ...(byKnack ? { byKnack } : {}),
+        },
+      },
+    ];
+    const beat = { kind: 'boss', from: 0, to: 1, actor: null } as never;
+    const creatures = [{ key: 'g', element: 'tide', knackName: 'Cool Head' }] as never;
+    const named = showOf(ev(true) as never, beat, { creatures });
+    expect(named.knacks.map((k) => k.name)).toEqual(['Cool Head']);
+    expect(named.saves).toHaveLength(1);
+    expect(showOf(ev(false) as never, beat, { creatures }).knacks).toEqual([]);
+  });
 });

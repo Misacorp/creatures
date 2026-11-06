@@ -53,6 +53,7 @@ import {
   FOE_QUESTIONS,
   FOE_QUESTION_GAP,
   FOE_QUESTION_WIN,
+  probeText,
   questionResult,
   type FoeQuestion,
   type FoeQuestionResult,
@@ -1741,13 +1742,13 @@ function assembleBosses(opts: BossOptions, results: JobResults): BossSections {
   md.push(
     '### What each foe asks: the questions',
     '',
-    `Each foe has one question (\`packages/lab/src/foeQuestions.ts\`): a team of three with the tool and the same team without it, on the foe at the depth, HP and Attack shown (a foe at 150% HP is what it is in an elite room or deeper down; an ordinary foe at an ordinary depth is beaten by the best searched team whatever it carries, so the ablation above names little). The foe calls for the mechanic when the team with the tool wins at least ${Math.round(FOE_QUESTION_WIN * 100)}% of the fights and at least ${Math.round(FOE_QUESTION_GAP * 100)} points more often than the team without it (${quick ? 60 : 200} fights each).`,
+    `Each foe has one question (\`packages/lab/src/foeQuestions.ts\`): a team of three with the tool and the same team without it, on the foe as the game has it, at the depth and in the form shown (an elite is the game's elite boost; the base floors are now so easy that the best searched team beats an ordinary foe whatever it carries, so most questions are asked in the Undercroft, where the foes are still hard). The foe calls for the mechanic when the team with the tool wins at least ${Math.round(FOE_QUESTION_WIN * 100)}% of the fights and at least ${Math.round(FOE_QUESTION_GAP * 100)} points more often than the team without it (${quick ? 60 : 200} fights each).`,
     '',
-    '| Foe | Asks | Mechanic (tool) | Depth / HP / Attack | Win with / without | Gap |',
+    '| Foe | Asks | Mechanic (tool) | Asked of | Win with / without | Gap |',
     '| --- | --- | --- | --- | --- | ---: |',
     ...questionResults.map(
       (r) =>
-        `| ${foeAt(r.question.foe, 1).name} | ${FOE_ASKS.get(r.question.foe) ?? ''} | ${MECHANICS.find((m) => m.id === r.question.mechanic)?.name ?? r.question.mechanic} (${r.question.tool.map(knackName).join(', ')}) | ${r.question.depth} / ${r.question.hpBp / 100}% / ${r.question.atkBp / 100}% | ${pct(r.withTool)} / ${pct(r.without)} | ${Math.round(100 * r.gap)} ${r.gap >= FOE_QUESTION_GAP && r.withTool >= FOE_QUESTION_WIN ? '' : '**fails**'} |`,
+        `| ${foeAt(r.question.foe, 1).name} | ${FOE_ASKS.get(r.question.foe) ?? ''} | ${MECHANICS.find((m) => m.id === r.question.mechanic)?.name ?? r.question.mechanic} (${r.question.tool.map(knackName).join(', ')}) | ${probeText(r.question)} | ${pct(r.withTool)} / ${pct(r.without)} | ${Math.round(100 * r.gap)} ${r.gap >= FOE_QUESTION_GAP && r.withTool >= FOE_QUESTION_WIN ? '' : '**fails**'} |`,
     ),
     '',
     `**${questionCalls.length} of ${questionResults.length} foes call for their mechanic by their question.**`,

@@ -180,9 +180,10 @@ describe('the map’s drawer on a v2 run', () => {
     const { root } = open(v2, 'f0l0');
     expect(byClass(root, 'dnd-mod')).toHaveLength(1);
     expect(visibleText(byClass(root, 'dnd-mod')[0] as FakeElement)).toContain('Flooded');
-    // The Puddle Imp has no moves: the drawer says so in a line, with no empty tile row.
+    // The Puddle Imp has no moves but escalates: its meter shows and no "No tricks" line (it is not true), with no empty tile row.
     expect(byClass(root, 'boss-moves')).toHaveLength(0);
-    expect(byClass(root, 'dnd-trick')).toHaveLength(1);
+    expect(byClass(root, 'escalating')).toHaveLength(1);
+    expect(byClass(root, 'dnd-trick')).toHaveLength(0);
   });
 
   it('is exactly what it was on a v1 run: tricks from the content, the Thorns modifier named', () => {

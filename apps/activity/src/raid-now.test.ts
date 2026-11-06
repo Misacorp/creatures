@@ -128,6 +128,29 @@ describe('nowAction', () => {
     expect(action.target).toBeNull();
   });
 
+  it('says the boss fell, not the next stage, once a combat v2 party has killed it before the finale', () => {
+    const killed = {
+      party: { party: 1, results: [{ phase: 'phase1', cleared: true }] },
+      v2: { seats: 3, nextStage: 4 },
+    };
+    const action = nowAction(
+      {
+        ...view({ next: { event: 'phase2', at: schedule.phase2 } }),
+        rules: 2 as const,
+        ...(killed as unknown as Pick<RaidView, 'party'>),
+        v2: killed.v2,
+      },
+      'before',
+      FRIDAY + HOUR,
+    );
+    expect(action).toMatchObject({
+      kind: 'week-done',
+      label: 'The boss fell in Stage 1',
+      detail: 'Next boss Monday 13:37',
+      target: null,
+    });
+  });
+
   it('does not ask for a team when edits are closed', () => {
     const closed = { canEdit: false, team: one };
     expect(nowAction(view({ you: closed }), 'before', FRIDAY - HOUR).kind).toBe('countdown');

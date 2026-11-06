@@ -11,7 +11,7 @@
 import { FULL_STRENGTH_BP, type BossDef, type BossMove, type Pattern } from './types';
 
 /** The mods a `flag` operation turns on. */
-export type CardFlag = 'shedMarks' | 'reflectFirst' | 'fizzle' | 'adapts' | 'adaptsElement';
+export type CardFlag = 'shedMarks' | 'reflectFirst' | 'adapts' | 'adaptsElement';
 /** The mods a `mod` operation sets to a number. */
 export type CardModNumber = 'shakeEvery' | 'wardBp' | 'healBp';
 

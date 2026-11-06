@@ -107,11 +107,6 @@
         { "line": "attack", "value": 300 },
         { "line": "hp", "value": 300 }
       ]
-    },
-    "three": {
-      "text": "Guards in its row: their abilities last 1 more round.",
-      "effect": "rowShieldWall",
-      "value": 1
     }
   }
 ]

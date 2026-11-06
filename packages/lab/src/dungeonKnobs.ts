@@ -3,7 +3,7 @@
  * (phase 5, balance.md section 2 item 4; Misa, 2026-11-04: the base dungeon fairly easy, the Undercroft the challenge).
  *
  * The game's v2 foes (`foes.json`, written from the lab's `base55-u1` option, decision "Combat v2 dungeon baseline"):
- * - the base floors: HP 12650 bp of the content's numbers (55% of the shipped engine's), +200 bp a depth above 1, no square; Attack
+ * - the base floors: HP 10600 bp of the content's numbers (46% of the shipped engine's; was 12650 until the idle foes' HP doses, 2026-11-05), +200 bp a depth above 1, no square; Attack
  *   225000 bp, flat;
  * - the Undercroft has a scale and a curve of its own (`undercroft`): HP 20700 bp (90%), +300 bp a depth and +2 bp a depth squared. Its foes
  *   are built at the run's depth plus `RULES.dungeon.undercroft.depthBonus` (1) for each level, with that curve.
@@ -70,12 +70,10 @@ export function packOf(knob: FoeKnob | undefined, side: FoeSide): FoePack {
 
 /**
  * The foe numbers before 2026-11-04 (HP scale 23000 bp, +1600 bp a depth and +45 bp a depth squared, the Undercroft on the same curve at one
- * depth more a level). The lab's mechanic tests and foe questions were tuned on them (a foe that asks for a tool must be hard enough that
- * a team without it loses), so they keep them: they test what a foe asks, not how hard the game's dungeon is.
+ * depth more a level): the report's `old-shipped` scenario, and the stand-in of the three foe questions the game's foes no longer ask
+ * anywhere (`foeQuestions.ts`). No test of a rule, a plan or a camp uses them any more.
  */
 export const OLD_FOES: FoeKnobs = {
   base: { hpBp: 23_000, curve: { hpStepBp: 1_600, hpCurveBp: 45 } },
   undercroft: { hpBp: 23_000, curve: { hpStepBp: 1_600, hpCurveBp: 45 } },
 };
-/** The pack of the old base numbers, for a foe built outside a run (a gauntlet, a foe question). */
-export const OLD_PACK: FoePack = packOf(OLD_FOES.base, 'base');

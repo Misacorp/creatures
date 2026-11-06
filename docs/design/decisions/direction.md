@@ -4,6 +4,27 @@ Roadmap calls, Misa's standing direction, naming and tone, content policy, how a
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-06: Overnight sessions: quiet until news, then one message with every open question [Misa]
+
+ID: `2026-11-06-overnight-sessions-quiet-until-news-then` · Status: current
+
+**Decision.** In overnight or unattended sessions, agents send no message for a CI check or a routine notification; they write only when there is news. When every background job has finished and nothing is left but waiting, they send one message that repeats every open question, numbered, each with a line of context and the agent's pick. The questions go in the message itself, not only in `for-misa.md`. The retro's other five proposals were also accepted: a port check for v1 content, `pnpm scalars` in the implementer's finish list, both sides' rows when merging date-keyed tables, GitHub REST instead of GraphQL in cloud sessions, and a test from old state for dev tools (`docs/retros/2026-11-06-combat-v2-phase4-5.md`).
+
+**Reasoning.** Misa, 2026-11-06: "remember that I can't open files from my phone. In overnight sessions, repeat all open questions when all background processes have finished and you have nothing to do but wait. It's also not necessary to notify me every time you check CI in an overnight session." On 11-06 he had to ask for the open questions again, because they were spread over several messages and lists.
+
+## 2026-11-05: [Misa] Working rules: scalars best-guess and ask later, invent content for misses, fewer decisions for Misa
+
+ID: `2026-11-05-working-rules-scalars-best-guess-and` · Status: current
+
+**Decision.** Agents move forward on their own and keep Misa's decisions to the large direction.
+
+- **Scalars:** when unsure about a number, take the best pick and ask Misa later whether it is good. Every scalar lives in one place (`RULES`, a data file, `targets.ts`), never copied, so a change he wants in the morning is one edit.
+- **Balance misses:** an agent may invent new Knacks, talents and gear lines to work around a miss. Each must add or change a game mechanic or chain off an existing one, not just boost a number, and a review panel judges whether it is fun before it is measured and applied.
+- **Direction stays Misa's:** a boss's identity, a new system, or a rule players must learn is a question before acting; everything else is decided, recorded, and listed for him to glance at (`docs/design/combat/for-misa.md`).
+- **Procedures are kept as skills** so they are not reinvented: the `balance-miss` skill (`.claude/skills/balance-miss/SKILL.md`) holds this one.
+
+**Reasoning.** Misa (2026-11-05): "if you're unsure about some scalar, just take your best pick and ask me later if it's good. A scalar variable is easier to change if it lives in a single place so if I wake up in the morning and don't like something, there's a good chance we can tweak by changing scalars. … I'm really looking forward to just seeing everything in here making it to the main game so the less decisions I have to make the better, but I do want to control the larger direction. As a tool to work around any misses in balance, you can always invent new knacks, talents and gear lines. Ask a review panel if they seem like fun (add or change a game mechanic or chain off an existing one, not just provide number boosts). … Maintain your own skills or procedures for this type of work so you don't have to reinvent it every time."
+
 ## 2026-11-05: [Misa] CI runs the full check; agents push after quick local checks
 
 ID: `2026-11-05-ci-runs-the-full-check-agents` · Status: current

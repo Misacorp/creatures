@@ -18,7 +18,7 @@ import {
 
 describe('knownKnacks', () => {
   it('a base form knows its own Knacks, from the moment it is caught', () => {
-    expect(knownKnacks('splashet')).toEqual(['steady-mark', 'lead-the-way']);
+    expect(knownKnacks('splashet')).toEqual(['steady-mark', 'lead-the-way', 'pin-down']);
     expect(knownKnacks('mossback')).toEqual(['steady-mark', 'feed-the-marks']);
   });
 
@@ -27,6 +27,7 @@ describe('knownKnacks', () => {
     expect(knownKnacks('tidewing')).toEqual([
       'steady-mark',
       'lead-the-way',
+      'pin-down',
       'double-mark',
       'circle-round',
     ]);
@@ -40,7 +41,12 @@ describe('knownKnacks', () => {
 
   it('a role change keeps only the new form’s Knacks', () => {
     // Mossback is a Setter, Bloomback a Payoff: the Setter Knacks would do nothing.
-    expect(knownKnacks('bloomback')).toEqual(['all-at-once', 'detonate', 'leave-a-trail']);
+    expect(knownKnacks('bloomback')).toEqual([
+      'all-at-once',
+      'detonate',
+      'leave-a-trail',
+      'aftershock',
+    ]);
     expect(knownKnacks('geyserpup')).toEqual(['leave-a-trail', 'puddle-maker', 'all-at-once']);
   });
 

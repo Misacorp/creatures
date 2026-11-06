@@ -12,6 +12,7 @@ import { KEYWORDS } from './keywords';
 import { FAMILIES, FORM_KNACKS, KNACKS } from './knacks';
 import { withinFormRatio } from './knackUsage';
 import { planBosses, type BossSections } from './bossReport';
+import { planGate, type GateSection } from './gate';
 import { planJourney, type JourneyReport } from './journey';
 import { ownabilityMarkdown, ownabilityTable } from './ownability';
 import { SLOT_WEEKS } from './track';
@@ -29,7 +30,6 @@ import { LINE_POOLS, TALENTS, talentPool } from './talents';
 import { LAB_RULES } from './rules';
 import { ELEMENTS, formStats, triggers } from './species';
 import {
-  CLASSIC_LINE,
   GAUNTLET,
   LEVEL,
   RAID,
@@ -94,7 +94,10 @@ export const ANSWERS: Readonly<Record<string, readonly (readonly [string, string
   ],
   'stone-skin': [
     ['Twin Strike', 'tidewing/steady-mark tempestray/twin-strike thornbuck/wide-reach'],
+    // The Detonator that holds its hit and its bonus apart: each is cut by the cap on its own.
+    ['Aftershock', 'voltaro/zoom bloomback/aftershock thornbuck/wide-reach'],
   ],
+  // Brand is the gauntlet's answer; Backlash is measured in a raid (`RAID_ANSWERS`), where a mark can cross a boss turn.
   'clean-scales': [['Brand (Seal)', 'tidewing/steady-mark tempestray/none thornbuck/wide-reach']],
   'reflective-hide': [
     ['Returning Tide', 'tidewing/circle-round tempestray/none thornbuck/wide-reach'],
@@ -103,12 +106,16 @@ export const ANSWERS: Readonly<Record<string, readonly (readonly [string, string
       'Clear the Air in the middle',
       'tidewing/steady-mark halcyray/clear-the-air tempestray/detonate',
     ],
+    // Two smaller hits: the bounce takes a share of the first one's bonus only.
+    ['Twin Strike', 'tidewing/steady-mark tempestray/twin-strike thornbuck/wide-reach'],
+    ['Curl Up beside both', 'tidewing/steady-mark sunfawn/curl-up tempestray/none'],
   ],
   elusive: [
     [
       'Clear Skies beside both hitters',
       'tidewing/steady-mark halcyray/clear-skies tempestray/none',
     ],
+    ['Pin Down', 'tidewing/pin-down tempestray/none thornbuck/wide-reach'],
   ],
   slippery: [
     [
@@ -119,12 +126,14 @@ export const ANSWERS: Readonly<Record<string, readonly (readonly [string, string
       'All In (marks are never dodged)',
       'tidewing/steady-mark tempestray/all-at-once thornbuck/wide-reach',
     ],
+    ['Pin Down', 'tidewing/pin-down tempestray/none thornbuck/wide-reach'],
   ],
   breakwater: [
     [
       'Barricade on a Kilnmole in the row',
       'tidewing/steady-mark kilnmole/keep-the-heat-in tempestray/none',
     ],
+    ['Night Watch', 'tidewing/steady-mark tempestray/none thornbuck/night-watch'],
   ],
   'lucky-strike': [
     ['Cool Head in the middle', 'tidewing/steady-mark thornbuck/cool-head tempestray/none'],
@@ -134,11 +143,30 @@ export const ANSWERS: Readonly<Record<string, readonly (readonly [string, string
     ['Setter in the middle', 'thornbuck/wide-reach tidewing/steady-mark tempestray/none'],
     ['Lantern Glow in the middle', 'tidewing/steady-mark lanternfin/lantern-glow tempestray/none'],
   ],
-  wither: [['Draw Fire (prevention)', 'tidewing/steady-mark tempestray/none kilnmole/draw-fire']],
+  wither: [
+    ['Draw Fire (prevention)', 'tidewing/steady-mark tempestray/none kilnmole/draw-fire'],
+    // Placement is Wither's second answer, as it is Payoff Hunter's (Misa, 2026-11-06): a Guard in the middle takes the hits.
+    ['Guard in the middle', 'tidewing/steady-mark kilnmole/none tempestray/none'],
+  ],
   'payoff-hunter': [
     ['Guard beside the Payoff', 'tidewing/steady-mark tempestray/none thornbuck/wide-reach'],
   ],
-  grudge: [['Draw Fire', 'tidewing/steady-mark tempestray/none kilnmole/draw-fire']],
+  fizzle: [
+    // A blocked reaction keeps its mark. Self-Starter's Payoff marks on the blocked turn (it set off no reaction), so the next round has more to cash.
+    [
+      'Self-Starter marks on the blocked turn',
+      'bloomback/none sunfawn/curl-up geyserpup/puddle-maker',
+    ],
+    // The marks pile up while it fizzles, and a Payoff that hits twice cashes two stacks the round after.
+    ['Twin Strike cashes the pile', 'tidewing/none tempestray/twin-strike hearthshell/draw-fire'],
+  ],
+  grudge: [
+    // The Guard acts first in the row: the plain attack aims at whoever dealt the most last round, and Draw Fire's Taunt
+    // only draws it from a Guard that has already acted (a Guard last, the aim is made before it has a round of damage).
+    ['Draw Fire, the Guard first', 'kilnmole/draw-fire tidewing/steady-mark tempestray/none'],
+    ['Returning Tide', 'tidewing/circle-round tempestray/none thornbuck/wide-reach'],
+    ['Curl Up beside both', 'tidewing/steady-mark sunfawn/curl-up tempestray/none'],
+  ],
   'great-wave': [
     ['Night Watch', 'tidewing/steady-mark tempestray/none thornbuck/night-watch'],
     [
@@ -155,6 +183,27 @@ export const ANSWERS: Readonly<Record<string, readonly (readonly [string, string
   crusher: [
     ['Guard beside the Payoff', 'tidewing/steady-mark tempestray/none thornbuck/wide-reach'],
     ['Hearth', 'tidewing/steady-mark tempestray/none hearthshell/hearth'],
+  ],
+};
+
+/**
+ * Cards the lab measures with another card beside them, because alone they have nothing to answer: Breakwater only strengthens Row
+ * Wards against an Area hit, and the lab's boss has none (the track pairs it only with the Tidal Colossus, which sweeps with Wind-ups).
+ */
+export const ANSWER_WITH: Readonly<Record<string, readonly string[]>> = {
+  breakwater: ['great-wave'],
+};
+
+/**
+ * Intended answers that need a raid's three rows (twelve picks, row by row), measured in the raid against the classic raid line: a
+ * mark only crosses a boss turn when the Setter and the Payoff stand in different rows.
+ */
+export const RAID_ANSWERS: Readonly<Record<string, readonly (readonly [string, string])[]>> = {
+  'clean-scales': [
+    [
+      'Backlash on the Payoffs, Setters unsealed',
+      'voltaro/none thornbuck/wide-reach voltaro/none thornbuck/wide-reach gaiadrake/backlash gaiadrake/backlash gaiadrake/backlash gaiadrake/backlash voltaro/none gaiadrake/backlash voltaro/none gaiadrake/backlash',
+    ],
   ],
 };
 
@@ -183,8 +232,8 @@ function usefulKnacks(l: readonly Pick[]): Set<string> {
 /** Job ids of the report's own pieces (the talent section's team share reads the searches). */
 const scenId = (card: string) => `report:scenarios:${card}`;
 const answersId = (card: string) => `report:answers:${card}`;
-const bestId = (mode: string, card: string) => `report:best:${mode}:${card}`;
-const casualId = (roster: number, card: string) => `report:casual:${roster}:${card}`;
+export const bestId = (mode: string, card: string) => `report:best:${mode}:${card}`;
+export const casualId = (roster: number, card: string) => `report:casual:${roster}:${card}`;
 const WEEKEND_ID = 'report:weekend';
 
 /** One card's column of the scenario table: a cell for each scenario, in the order of `SCENARIOS`. */
@@ -226,10 +275,22 @@ export function reportAnswers(cardId: string, quick: boolean): AnswerRows {
   const rows: string[] = [];
   let working = 0,
     answers = 0;
-  for (const [label, spec] of ANSWERS[cardId] ?? []) {
-    const boss = bossFor(GAUNTLET, [cardId]);
-    const a = evaluate(boss, line(spec), GAUNTLET, seeds, `ans:${cardId}`);
-    const cl = evaluate(boss, CLASSIC_LINE, GAUNTLET, seeds, `ans:${cardId}`);
+  const measured: [string, string, Mode][] = [
+    ...(ANSWERS[cardId] ?? []).map(([label, spec]): [string, string, Mode] => [
+      label,
+      spec,
+      GAUNTLET,
+    ]),
+    ...(RAID_ANSWERS[cardId] ?? []).map(([label, spec]): [string, string, Mode] => [
+      `${label} (raid)`,
+      spec,
+      RAID,
+    ]),
+  ];
+  for (const [label, spec, mode] of measured) {
+    const boss = bossFor(mode, [cardId, ...(ANSWER_WITH[cardId] ?? [])]);
+    const a = evaluate(boss, line(spec), mode, seeds, `ans:${cardId}`);
+    const cl = evaluate(boss, classicFor(mode), mode, seeds, `ans:${cardId}`);
     answers++;
     if (a.score > cl.score) working++;
     rows.push(
@@ -385,6 +446,33 @@ export function teamInputsOf(get: (id: string) => unknown, quick: boolean): Team
   return { ...maps, casual };
 }
 
+/** The best-team searches of every card, as jobs (the gate reads the same ones). */
+export function bestJobs(quick: boolean): JobSpec[] {
+  const cards = CARDS.filter((c) => !c.raidOnly);
+  return (['raid', 'gauntlet'] as const).flatMap((mode) =>
+    cards.map((c): JobSpec => ({
+      id: bestId(mode, c.id),
+      section: 'Best teams per card',
+      kind: 'report-best',
+      args: { mode, card: c.id, quick },
+      needs: [],
+    })),
+  );
+}
+
+/** The casual rosters' searches, as jobs (the gate reads the same ones). */
+export function casualJobs(quick: boolean): JobSpec[] {
+  return casualRosters(quick).flatMap((roster) =>
+    CASUAL_CARDS.map((cid): JobSpec => ({
+      id: casualId(roster.index, cid),
+      section: 'A casual roster',
+      kind: 'report-casual',
+      args: { roster: roster.index, card: cid, quick },
+      needs: [],
+    })),
+  );
+}
+
 /**
  * The whole report as jobs. The talent section's team share reads the best-team searches (`teamInputsOf`); everything
  * else is independent, so the order of the list is only a priority (the longest pieces first).
@@ -394,24 +482,9 @@ export function planReport(opts: { quick?: boolean } = {}): Plan<Report> {
   const cards = CARDS.filter((c) => !c.raidOnly);
   const bosses = planBosses({ quick });
   const journey = planJourney({ quick });
-  const best: JobSpec[] = (['raid', 'gauntlet'] as const).flatMap((mode) =>
-    cards.map((c): JobSpec => ({
-      id: bestId(mode, c.id),
-      section: 'Best teams per card',
-      kind: 'report-best',
-      args: { mode, card: c.id, quick },
-      needs: [],
-    })),
-  );
-  const casual: JobSpec[] = casualRosters(quick).flatMap((roster) =>
-    CASUAL_CARDS.map((cid): JobSpec => ({
-      id: casualId(roster.index, cid),
-      section: 'A casual roster',
-      kind: 'report-casual',
-      args: { roster: roster.index, card: cid, quick },
-      needs: [],
-    })),
-  );
+  const gate = planGate({ quick, inReport: true });
+  const best = bestJobs(quick);
+  const casual = casualJobs(quick);
   const talents = planTalents({
     cards,
     quick,
@@ -446,9 +519,16 @@ export function planReport(opts: { quick?: boolean } = {}): Plan<Report> {
     },
   ];
   return {
-    jobs: [...bosses.jobs, ...journey.jobs, ...talents.jobs, ...own],
+    jobs: [...bosses.jobs, ...journey.jobs, ...talents.jobs, ...own, ...gate.jobs],
     assemble: (results) =>
-      assembleReport(quick, results, talents.assemble, bosses.assemble, journey.assemble),
+      assembleReport(
+        quick,
+        results,
+        talents.assemble,
+        bosses.assemble,
+        journey.assemble,
+        gate.assemble,
+      ),
   };
 }
 
@@ -458,6 +538,7 @@ function assembleReport(
   talentsOf: (results: JobResults) => TalentSection,
   bossesOf: (results: JobResults) => BossSections,
   journeyOf: (results: JobResults) => JourneyReport,
+  gateOf: (results: JobResults) => GateSection,
 ): Report {
   const seeds = quick ? 4 : 24;
   const md: string[] = [];
@@ -513,7 +594,10 @@ function assembleReport(
     `**${working} of ${answers} intended answers beat the classic line on their card.**`,
     '',
     `No intended answer yet: ${cards
-      .filter((c) => c.id !== 'plain' && !(ANSWERS[c.id]?.length ?? 0))
+      .filter(
+        (c) =>
+          c.id !== 'plain' && !(ANSWERS[c.id]?.length ?? 0) && !(RAID_ANSWERS[c.id]?.length ?? 0),
+      )
       .map((c) => c.name)
       .join(
         ', ',
@@ -779,6 +863,11 @@ function assembleReport(
   const journey = journeyOf(results);
   md.push('', ...journey.md);
   data['journey'] = journey.data;
+
+  // 14. The phase 5 gate: each item of balance.md section 3, measured, against its target.
+  const gate = gateOf(results);
+  md.push('', ...gate.md);
+  data['gate'] = gate.data;
 
   md.push(
     '',

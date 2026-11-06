@@ -69,6 +69,7 @@ function fighterOf(spec: FighterSpec): Fighter {
     boostBp: 0,
     undodgeable: false,
     lastPrimeRound: 0,
+    lastBacklashRound: 0,
     damageDealt: 0,
     hitDamage: 0,
     watchTurn: -1,
@@ -80,6 +81,11 @@ function fighterOf(spec: FighterSpec): Fighter {
     avenged: false,
     marksLeft: 0,
     verbsUsed: 0,
+    emberBp: 0,
+    warmBp: 0,
+    reactionsMade: 0,
+    critWindowTo: 0,
+    gearUnit: {},
     fires: {},
   };
 }
@@ -96,7 +102,20 @@ export function startState(
   rng: Rng,
   actions: readonly FinaleAction[] = [],
 ): State {
-  const fighters = specs.map(fighterOf);
+  // Gear's max HP: Heart of the Row (a creature in the middle of its row: not column 0 nor the last column) and Lantern Bearer (an
+  // aura: the creatures beside a bearer, the largest bearer applying). Both add to one share of the spec's max HP.
+  const fighters = specs.map((spec) => {
+    const heart = spec.fxAll.heartHpBp;
+    let share = heart !== undefined && spec.col > 0 && spec.col < boss.cols - 1 ? heart : 0;
+    let lantern = 0;
+    for (const o of specs)
+      if (o !== spec && o.row === spec.row && Math.abs(o.col - spec.col) === 1)
+        lantern = Math.max(lantern, o.fxAll.lanternBp ?? 0);
+    share += lantern;
+    return fighterOf(
+      share > 0 ? { ...spec, maxHp: Math.floor((spec.maxHp * (10_000 + share)) / 10_000) } : spec,
+    );
+  });
   if (opts.carryHp) for (const f of fighters) f.hp = opts.carryHp.get(f.uid) ?? f.hp;
   // Catch Breath is once per raid weekend: a creature that used it in an earlier stage does not have it again.
   for (const f of fighters) if (opts.carryWindDone?.has(f.uid)) f.secondWindDone = true;
@@ -122,6 +141,7 @@ export function startState(
     round: 0,
     turn: 0,
     bossTurnsDone: 0,
+    fizzled: false,
     // Reflective Hide arms after each boss turn, so not before the first one.
     reflectArmed: false,
     esc: {
@@ -189,9 +209,13 @@ export function playFight(
     // Shake It Off: announced at round start, the boss clears every debuff when its round ends.
     if (s.boss.mods.shakeEvery && s.round % s.boss.mods.shakeEvery === 0 && s.mired > 0) {
       // Shake It Off clears the card's strength's share of the Mired (all of it at full strength).
+      const before = s.mired;
       s.mired -= Math.min(s.mired, Math.round((s.mired * strengthOf(s)) / 10_000));
       if (s.opts.log) log(s, 'shake', `${boss.name} shakes off its debuffs`);
-      if (s.opts.log) log(s, 'mired', `Mired x${s.mired}`);
+      if (s.opts.log)
+        log(s, 'mired', `Mired x${s.mired}`, {
+          board: { type: 'mired', stacks: s.mired, shook: before - s.mired },
+        });
     }
   }
   if (opts.log) {

@@ -4,7 +4,7 @@
  *
  * A profile is plain data: for each kind of player and each week from 1 to 24, the levels of the player's 1st, 3rd, 10th and
  * 20th creature, how many creatures they own, which lab forms they can have, how many talent slots their best creature has
- * open, and a `gear` level (the average worn item level; carried but unused: the lab has no gear yet). The functions below only
+ * open, and a `gear` level (the average worn item level; played with `--gear`, see `rosterGearLevel`). The functions below only
  * read it. The data is the valley's (`valley.ts`: `VALLEY_ROSTER`, from `data/valley/roster-profile.json`); when the valley
  * writes new numbers in the same shape, the file is replaced and nothing else here changes.
  */
@@ -50,7 +50,7 @@ export interface RosterWeek {
   readonly talentSlots: number;
   /** Whether the talents are picked (a Talent Book) or random rolls. */
   readonly talentsPicked: boolean;
-  /** The average worn item level. Carried, unused: the lab has no gear yet. */
+  /** The average worn item level (the lab plays it with `--gear`: `rosterGearLevel`, `gear.ts`). */
   readonly gear: number;
 }
 
@@ -109,6 +109,21 @@ export function rosterWeek(
     twentieth: Math.min(mine.twentieth, daily.twentieth),
     size: Math.min(mine.size, daily.size),
   };
+}
+
+/**
+ * The item level the roster's creatures wear in a week: the profile's `gear` (the average worn item level of the player) times the speed's
+ * factor (a slower server's gear is behind as its levels are; a best pick, listed in `for-misa.md`), every fielded creature at the average
+ * (the profile has no per-rank gear). A weekly player's and a new player's rows are the profile's own.
+ */
+export function rosterGearLevel(
+  profile: RosterProfile,
+  kind: RosterKind,
+  week: number,
+  speed: RosterSpeed,
+  joinWeek?: number,
+): number {
+  return Math.round(rosterWeek(profile, kind, week, joinWeek).gear * SPEED_FACTOR[speed]);
 }
 
 /**

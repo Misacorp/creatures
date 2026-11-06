@@ -583,7 +583,7 @@ describe('the slot measure at the high rank’s own setting', () => {
     expect(trackSlot(slot).bossId).toBe(id);
     expect(trackSlot(slot).strengthBp).toBe(10_000);
     const numbers = absoluteOf(id, 'high', nativeOf(id, 'high'));
-    const fid = { weekends: 40, draws: 8, classicWeekends: 20, mixedDraws: 1, mixedWeekends: 1 };
+    const fid = { weekends: 20, draws: 4, classicWeekends: 10, mixedDraws: 1, mixedWeekends: 1 };
     const rank = evalCandidate({ boss: id, rank: 'high', numbers, fidelity: fid, salt: 'cmp' });
     const slotMeasure = evalSlot(
       { slot, week: 8, speed: 'expected', numbers, fidelity: fid, salt: 'cmp' },

@@ -2,8 +2,8 @@ import { useState } from 'preact/hooks';
 import type { FinaleWindow } from './live';
 import type { PhaseResultView, RaidPhaseId, RaidView } from './raid-api';
 import { nowAction, type NowTarget } from './raid-now';
-import { scheduleSteps } from './raid-time';
-import { stepMarks, toggleMark } from './raid-timeline';
+import { scheduleSteps, withEarlyKill } from './raid-time';
+import { earlyKillStage, stepMarks, toggleMark } from './raid-timeline';
 import { SeasonPips } from './SeasonPips';
 import { SayLine } from './ui/CountBadge';
 
@@ -31,7 +31,11 @@ export function RaidTimeline({
   onReplay: (phase: RaidPhaseId) => void;
 }) {
   const [open, setOpen] = useState<RaidPhaseId | null>(null);
-  const steps = scheduleSteps(view.schedule, view.next, view.timezone, view.rules);
+  // A boss that fell in stage 1 or 2 leaves the later steps unplayed: they read "Boss down", not a time that never comes.
+  const steps = withEarlyKill(
+    scheduleSteps(view.schedule, view.next, view.timezone, view.rules),
+    earlyKillStage(view),
+  );
   const action = nowAction(view, finale, serverNow, owned);
   const results = view.party?.results ?? [];
   const marks = stepMarks(results, view.rules);

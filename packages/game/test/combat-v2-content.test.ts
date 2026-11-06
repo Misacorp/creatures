@@ -362,10 +362,68 @@ describe('combat v2 content gate: unique names (P-06)', () => {
     );
   });
 
+  it('no Knack, talent or keyword name is the name of another thing or one edit away from it (Echo is a gear line; Kindle sits next to Kindling)', () => {
+    const norm = (n: string) => n.toLowerCase().replace(/[^a-z0-9]+/g, '');
+    /** Whether `a` and `b` differ by at most one inserted, deleted or changed letter. */
+    const oneEdit = (a: string, b: string): boolean => {
+      if (Math.abs(a.length - b.length) > 1) return false;
+      let i = 0;
+      while (i < a.length && i < b.length && a[i] === b[i]) i++;
+      if (i === a.length || i === b.length) return true;
+      if (a.length === b.length) return a.slice(i + 1) === b.slice(i + 1);
+      return a.length > b.length ? a.slice(i + 1) === b.slice(i) : a.slice(i) === b.slice(i + 1);
+    };
+    /** Every name with what it names; a gear line and the talent that is that line are one thing. */
+    const things: { name: string; thing: string }[] = [
+      ...Object.values(pack.knacks).map((k) => ({ name: k.name, thing: `Knack ${k.id}` })),
+      ...Object.values(pack.talents).map((t) => ({
+        name: t.name,
+        thing: t.gearLine !== undefined ? `gear line ${t.gearLine}` : `talent ${t.id}`,
+      })),
+      ...lines.map((l) => ({ name: l.name, thing: `gear line ${l.id}` })),
+      ...Object.values(pack.keywords).map((k) => ({ name: k.name, thing: `keyword ${k.name}` })),
+    ];
+    const clashes: string[] = [];
+    for (let i = 0; i < things.length; i++) {
+      for (let j = i + 1; j < things.length; j++) {
+        const a = things[i] as (typeof things)[number];
+        const b = things[j] as (typeof things)[number];
+        if (a.thing === b.thing || a.name.length < 4) continue;
+        // Gear lines are named by the gear data's own rules (a line has one name per variant), and the gear stat "Boost" is the keyword.
+        if (a.thing.startsWith('gear line') && b.thing.startsWith('gear line')) continue;
+        if (norm(a.name) === 'boost') continue;
+        if (oneEdit(norm(a.name), norm(b.name)))
+          clashes.push(`${a.thing} "${a.name}" ~ ${b.thing} "${b.name}"`);
+      }
+    }
+    expect(clashes).toEqual([]);
+  });
+
   it('a combat v2 talent shares no name with a combat v1 talent', () => {
     const v1Names = new Set([...talentContent.byId.values()].map((t) => t.name.toLowerCase()));
     const same = Object.values(pack.talents).filter((t) => v1Names.has(t.name.toLowerCase()));
     expect(same.map((t) => t.id)).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Knack text length
+// ---------------------------------------------------------------------------------------------------------------------
+
+/**
+ * A Knack's text runs to two lines at most at 390 px ("On the board", Text rule in docs/design/ux-patterns.md): never clipped,
+ * so the content is short enough. Measured 2026-11-06 in the Knack picker (the narrowest place: the name shares its first line)
+ * at 390 px with every Knack: all texts up to 100 characters (keyword braces not counted) fit two lines, the first that ran to
+ * three was 108. A text with several keyword chips needs more room per character, so 100 is the cap, not a guess above it.
+ */
+const KNACK_TEXT_MAX = 100;
+
+describe('Knack text length', () => {
+  it(`is at most ${String(KNACK_TEXT_MAX)} characters, so it fits two lines at 390 px`, () => {
+    const tooLong = Object.values(pack.knacks)
+      .map((k) => ({ id: k.id, length: k.text.replace(/[{}]/g, '').length }))
+      .filter((k) => k.length > KNACK_TEXT_MAX);
+    expect(tooLong).toEqual([]);
   });
 });
 
@@ -452,17 +510,10 @@ describe('combat v2 content gate: keywords', () => {
  * has to leave it.
  */
 const ONE_ANSWER_CARDS: readonly string[] = [
-  'stone-skin',
-  'clean-scales',
-  'reflective-hide',
-  'elusive',
   'bramble-bind',
   'wither',
   'payoff-hunter',
-  'grudge',
-  'fizzle',
   'shake-it-off',
-  'breakwater',
 ];
 
 describe('combat v2 content gate: every card has answers', () => {
@@ -470,12 +521,14 @@ describe('combat v2 content gate: every card has answers', () => {
     (c) => c.id !== 'plain' && c.raidOnly !== true,
   );
 
-  it('every card except the baseline and the raid-only cards has at least one answer, each a Knack family or a talent', () => {
+  it('every card except the baseline and the raid-only cards has at least one answer, each a Knack family, a Knack id or a talent', () => {
     for (const c of answerable) {
       expect(c.answers.length, `card ${c.id}`).toBeGreaterThanOrEqual(1);
       for (const a of c.answers)
         expect(
-          Object.hasOwn(pack.families, a) || Object.hasOwn(pack.talents, a),
+          Object.hasOwn(pack.families, a) ||
+            Object.hasOwn(pack.talents, a) ||
+            Object.hasOwn(pack.knacks, a),
           `card ${c.id}: answer "${a}"`,
         ).toBe(true);
       expect(new Set(c.answers).size, `card ${c.id} repeats an answer`).toBe(c.answers.length);

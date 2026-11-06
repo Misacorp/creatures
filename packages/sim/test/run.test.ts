@@ -126,17 +126,23 @@ describe('simulation run', () => {
     // hour and the long run did not move. The quick sim is the measure: see the 2026-10-22 decision.
     // 2026-10-24 (both of the above together, after merging main): finale start share 0.2948 to 0.2941,
     // top share 0.2977 to 0.3033, creature ratio 1.3876 to 1.3878. Nothing else moved.
+    // 2026-11-06 (Misa: Warm Heart, Second Breath, Opening Mark and Lingering removed from the item data; the signature talents
+    // Watcher Above and Fire That Lasts now give Mend and Cover): the Charm, Hat and Scarf pools lose four lines, so every
+    // seeded item roll and the dice after it differ, and v1 fights lose those effects. Dice at this size: finale start share
+    // 0.2941 to 0.3515, top share 0.3033 to 0.3122, creature ratio 1.3878 to 1.4483, a dungeon run 5.3214 to 5.5089 fights
+    // (home rate 0.1339 to 0.1161). The raid win rates, the casual top level, Experience per hour and the long run did not move.
+    // Nothing is tuned to these; the quick sim is the measure.
     const m = sharedTinyRun().analysis.metrics;
     const headline: Record<string, number> = {
       'raid.typical.phase1ClearRate': 1,
       'raid.typical.finaleWinRate': 1,
-      'raid.typical.finaleStartShare': 0.2941,
-      'fair.topShareMedian': 0.3033,
-      'choice.creatureRatioMax': 1.3878,
+      'raid.typical.finaleStartShare': 0.3515,
+      'fair.topShareMedian': 0.3122,
+      'choice.creatureRatioMax': 1.4483,
       'econ.casualTopLevelWeek4': 14,
       'exp.rate.long': 131.3262,
-      'dungeon.meanFights': 5.3214,
-      'dungeon.dailyHomeRate': 0.1339,
+      'dungeon.meanFights': 5.5089,
+      'dungeon.dailyHomeRate': 0.1161,
       'longrun.typical.finaleWinRate': 0.8333,
       'longrun.typicalFinalRank': 4,
     };

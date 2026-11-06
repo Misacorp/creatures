@@ -30,8 +30,23 @@ export interface KnackFx {
   readonly seal?: boolean;
   /** After it marks, the next creature to act in its row gets this boost (bp). */
   readonly leadBoostBp?: number;
+  /**
+   * After it leaves a mark, the boss cannot dodge the next creature to act in its row this round (Pin Down). A flag cleared at
+   * every round start, so several copies do not stack.
+   */
+  readonly leadUndodge?: boolean;
   /** Payoff: spend every stack of the mark; each extra stack adds this share of the bonus. */
   readonly spendAllBp?: number;
+  /**
+   * Payoff: a hit cap holds its plain hit and its reaction bonus apart (each is held to the cap on its own), and the bonus is its own
+   * number on the board (Aftershock).
+   */
+  readonly splitBonus?: boolean;
+  /**
+   * The first time the boss sheds a mark in a round, it strikes back for this share of its Attack: a counter (ignores armour, dodge
+   * and the hit cap), once a round per creature whatever the number of marks or boss turns (Backlash).
+   */
+  readonly backlashBp?: number;
   /** Payoff: its reaction bonus is scaled by this (bp) before stacks count. */
   readonly bonusBp?: number;
   /** Payoff: sets off a reaction only when the mark has at least this many stacks. */
@@ -40,6 +55,27 @@ export interface KnackFx {
   readonly trail?: boolean;
   /** A reaction on a mark of its element heals the creature that set it off (share of max HP). */
   readonly healOnReactionBp?: number;
+  /**
+   * Gear (Hollow Weave, three pieces): it heals itself by this share of its max HP whenever it sets off a reaction. A heal of its own,
+   * so it adds to Returning Tide's (`healOnReactionBp`) instead of replacing it.
+   */
+  readonly healOnCashBp?: number;
+  /**
+   * Gear (Ridge Copper, three pieces): after its reaction it leaves one stack of its own element's mark, like Leave a Trail. A wearer
+   * whose Knack is Leave a Trail (`trail`) leaves two. Its own field, so the engine can tell the set's trail from the Knack's.
+   */
+  readonly trailSet?: boolean;
+  /**
+   * Gear (Hearth Helpers, three pieces): its boost also lands on the creatures two slots away. A wearer whose Knack is Wide Embrace
+   * (`support: 'wideWarmth'`) reaches three slots out. Nobody is boosted twice.
+   */
+  readonly boostReachSet?: boolean;
+  /**
+   * Gear (First Footprints, three pieces), Deep Tracks: the marks it leaves can stack past the cap, one more for each living creature
+   * on the team that has this effect (silence blanks it). A reaction that spends more than the cap's stacks raises the bonus cap too
+   * (`RulesV2.overstackCapPerStackBp`).
+   */
+  readonly deepTracks?: boolean;
   /** When it dodges, it hits back for this share of its Attack (Retaliate). */
   readonly retaliateBp?: number;
   /** Store: +1 per dodge; at 3, its next mark gains this many extra stacks and spends all. */
@@ -110,6 +146,8 @@ export interface KnackFx {
   readonly guardCritBp?: number;
   /** Crits on it, and on the creatures beside it, deal this much less extra damage (an aura: the largest applies). */
   readonly critWardBp?: number;
+  /** Each crit its ward spares stores a Sure Crit on the creature the crit was aimed at (Cool Head). */
+  readonly critWardSure?: boolean;
   /** Its hits deal this much more while it is below half its max HP. */
   readonly lowHpAtkBp?: number;
   /** It takes this much less from area hits and charged landings (its own; adds to an aura). */
@@ -184,7 +222,77 @@ export interface KnackFx {
   readonly spillOver?: boolean;
   /** A hit that leaves a foe below this share of its full HP defeats it outright (the HP left is the killing blow, not damage). */
   readonly cullBp?: number;
+  // Gear lines, batch A (docs/design/combat/gear-plan.md, slice 3): cuts and conditions. Gear only; numbers add.
+  /** It takes this much less from every hit (inside the 75% cut cap). */
+  readonly takenCutBp?: number;
+  /** It takes this much less from aimed hits (the plain attack and aimed moves; not area or charged landings). */
+  readonly aimedCutBp?: number;
+  /** It takes this much less from a hit the boss's reflected reaction bounces back at it. */
+  readonly reflectedCutBp?: number;
+  /** While it is at a quarter of its max HP or less, it takes this much less from every hit. */
+  readonly lastStandCutBp?: number;
+  /** Its hits deal this much more to a boss of the element (by element id; the elements the line's own element beats). */
+  readonly vsElementBp?: Record<string, number>;
+  /** It takes this much less from a boss of the element (by element id; the elements that beat the line's own element). */
+  readonly fromElementCutBp?: Record<string, number>;
+  /** Its hit that leaves a mark (no reaction fires, and it marks) deals this much more. */
+  readonly markingHitBp?: number;
+  /** Its hit on a boss that carries a mark deals this much more when it sets off no reaction. */
+  readonly markedFoeBp?: number;
+  /** Its hits deal this much more while a living creature of the role stands beside it (by role id). */
+  readonly besideRoleBp?: Record<string, number>;
+  /** A Guard's reach is this many slots longer on its left (negative: shorter); the reach never goes below 0. */
+  readonly reachLeftBonus?: number;
+  /** A Guard's reach is this many slots longer on its right (negative: shorter). */
+  readonly reachRightBonus?: number;
+  /** A Guard's cover on it is this much stronger (added to the cover's cut). */
+  readonly shelterBp?: number;
+  /** Added to its crit chance on a hit that sets off a reaction. */
+  readonly keenReactionBp?: number;
+  /** Added to its crit chance while it stands in the back row of an arena with more than one row. */
+  readonly backRowCritBp?: number;
+  /** Its max HP is this much higher while it stands in the middle of its row (not a row end; set when the fight starts). */
+  readonly heartHpBp?: number;
+  /** Its reaction bonus factor is this much higher while its row holds creatures of four elements or more. */
+  readonly fourWindsBp?: number;
+  /** The boss's Element Resistance and Reaction Resistance weigh this much less on its hits. */
+  readonly adaptPierceBp?: number;
+  // Gear lines, batch B (slice 4): triggers, auras and three-piece set effects. Gear only; numbers add, flags combine.
+  /** After it takes a hit for a neighbour, its next hit deals this much more (once a boss turn). */
+  readonly paybackBp?: number;
+  /** After a crit that lands, its next hit deals this much more. */
+  readonly emberTailBp?: number;
+  /** After it sets off a reaction, the next creature to act has its hit boosted by this much (once a turn). */
+  readonly overflowBp?: number;
+  /** When it dodges, the strongest creature beside it has its next hit boosted by this much (once a boss turn). */
+  readonly slipstreamBp?: number;
+  /** The chance (bp) that a hit of its that lands hits again for `GEAR_SHARES.echoBp` of the plain hit; the echo sets off no reaction. */
+  readonly echoChanceBp?: number;
+  /** The chance (bp) at each round start that it heals `GEAR_SHARES.windHealBp` of its max HP (Second Wind, the gear line; not Catch Breath). */
+  readonly windChanceBp?: number;
+  /** Round 1: the creatures beside it have their first hit boosted by this much. */
+  readonly kindlingBp?: number;
+  /** When a Support heals it, that Support's next boost is this much bigger (once a round). */
+  readonly sharedWarmthBp?: number;
+  /** The creatures beside it have their reaction bonus factor this much higher (an aura: the largest applies; inside the cap). */
+  readonly sparkShareBp?: number;
+  /** The creatures beside it have this much more max HP (an aura: the largest applies; set when the fight starts). */
+  readonly lanternBp?: number;
+  /** Tidepool Finery, three pieces: the first reaction it sets off cannot be reflected. */
+  readonly unreflectedFirst?: boolean;
+  /** Forge-Warm Kit, three pieces: after it sets off a reaction, its crits deal this much more crit damage for a round (this one and the next). */
+  readonly critWindowBp?: number;
+  /** Pounce Set, three pieces: the first reaction it sets off is a crit. */
+  readonly firstReactionCrit?: boolean;
 }
+
+/** The fixed shares of the gear lines whose number is a chance (the line's own number is the chance). One place, so a change is one edit. */
+export const GEAR_SHARES = {
+  /** Echo: the second hit's share of the plain hit (bp). */
+  echoBp: 3_000,
+  /** Second Wind (gear): the heal's share of max HP (bp). */
+  windHealBp: 500,
+} as const;
 
 /**
  * The plain stat lines of a talent or gear line (R12, amended in panel 6): Attack, Max HP, Armour, Speed (as the dodge it gives),
@@ -198,6 +306,73 @@ export const STAT_FIELDS: ReadonlySet<keyof KnackFx> = new Set<keyof KnackFx>([
   'critChanceBp',
   'critDamageBp',
 ]);
+
+/**
+ * The effect fields worn gear can give (`Placement.gear`; the game's `gearFx` makes them from the lines that have a v2 hook). The
+ * resolver gives every creature's effects all of them, so adding gear never changes the shape of the effect object (`uniformFx`).
+ * A field a gear line starts to use is added here (a test in the engine checks the game's map against this list).
+ */
+export const GEAR_FIELDS: readonly (keyof KnackFx)[] = [
+  'armourBonus',
+  'reachBonus',
+  'dodgeBonusBp',
+  'areaDodgeBp',
+  'retaliateBp',
+  'besideGuardBp',
+  'areaCutBp',
+  'coverBonusBp',
+  'boostBonusBp',
+  'mendBonusBp',
+  'healReceivedBp',
+  'reactionBonusBp',
+  'firstHitBp',
+  'perKindredBesideBp',
+  'oddOneOutBp',
+  'rowEndBp',
+  'frontCutBp',
+  'vengefulBp',
+  'momentumBp',
+  'ownMarkBp',
+  'braceBp',
+  'miredExtraBp',
+  'ignoreSilence',
+  'holdOn',
+  'clinging',
+  'takenCutBp',
+  'aimedCutBp',
+  'reflectedCutBp',
+  'lastStandCutBp',
+  'vsElementBp',
+  'fromElementCutBp',
+  'markingHitBp',
+  'markedFoeBp',
+  'besideRoleBp',
+  'reachLeftBonus',
+  'reachRightBonus',
+  'shelterBp',
+  'keenReactionBp',
+  'backRowCritBp',
+  'heartHpBp',
+  'fourWindsBp',
+  'adaptPierceBp',
+  'paybackBp',
+  'emberTailBp',
+  'overflowBp',
+  'slipstreamBp',
+  'echoChanceBp',
+  'windChanceBp',
+  'kindlingBp',
+  'sharedWarmthBp',
+  'sparkShareBp',
+  'lanternBp',
+  'unreflectedFirst',
+  'critWindowBp',
+  'firstReactionCrit',
+  'healOnCashBp',
+  'trailSet',
+  'boostReachSet',
+  'deepTracks',
+];
 
 /**
  * Effect fields whose values add when a Knack and talents combine (a talent may use only these).

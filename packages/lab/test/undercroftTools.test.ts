@@ -5,7 +5,6 @@
 import { createSeededRng } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import { ALL_ROUND_BENCH, ALL_ROUND_TEAM, runMap, type RunOptions } from '../src';
-import { OLD_FOES } from '../src/dungeonKnobs';
 import { EXTRA_BENCH, teamOf } from '../src/dungeonDays';
 import { configOf } from '../src/dungeonMeasure';
 import { HABITS } from '../src/habits';
@@ -94,10 +93,10 @@ describe('the bench and the row of four', () => {
 
   it('the extra creature is brought in by a swap at the camp (it is the only one on the bench)', () => {
     let swaps = 0;
-    for (let i = 0; i < 300; i++) {
+    // Stops at the first swap (a few seeds in).
+    for (let i = 0; i < 300 && swaps === 0; i++) {
       const r = runMap(ALL_ROUND_TEAM, 8, createSeededRng(`camp${i}`), {
         policy: 'smart',
-        foes: OLD_FOES,
         bench: EXTRA_BENCH.slice(0, 1),
       });
       if (r.camp === 'swap') swaps++;

@@ -4,6 +4,14 @@ Hosting, Durable Objects, scheduling, CI and deploys, staging, dependencies, sec
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-05: The lab's tests share modules between files, and boss rule measurements live in the report
+
+ID: `2026-11-05-the-lab-s-tests-share-modules` · Status: current
+
+**Decision.** The combat lab's vitest config runs with `isolate: false`: test files in one worker share their modules. Tests that fight a few thousand weekends to assert a balance number (the boss rank, margin, answer and tool rules) are not in the suite; they are measured by `report -- --rules` (also under `--gate`) against `RULE_TARGETS`, and the suite keeps the structure checks and a check of the report's logic on made-up numbers. A test must not leave a mock or a global behind.
+
+**Reasoning.** The lab's suite took 23 to 29 s against its 10 s budget. Half of its CPU was re-importing the whole lab in every one of 40 files, and a third was boss rule measurements that are measurements, not unit tests. Sharing modules cut the CPU of a run from 39 s to 22 s; moving the measurements and shrinking samples cut it from 69 s to 39 s. The modules hold no state a test changes, and shuffled runs (files and tests, three seeds) pass. CI runs the full check, so the report is where a rule that drifts shows up (per the 2026-11-05 decision that CI runs the full check).
+
 ## 2026-11-03: Raid test bench: the staging raid dev tools become four steps **[Misa]**
 
 ID: `2026-11-03-raid-test-bench-the-staging-raid` · Status: current · Amends: `2026-11-03-combat-v2-bots-and-the-gate`

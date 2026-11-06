@@ -56,3 +56,19 @@ export function showFullResults(results: readonly PhaseResultView[]): boolean {
 export function toggleMark(open: RaidPhaseId | null, tapped: RaidPhaseId): RaidPhaseId | null {
   return open === tapped ? null : tapped;
 }
+
+/**
+ * The stage that killed the boss on a combat v2 week before the finale ('phase1' or 'phase2'), or null: the party has no stage
+ * left to play (`nextStage` 4), its last result is a stage and the finale has no result. A week that went the distance gives null.
+ */
+export function earlyKillStage(view: {
+  rules?: 2;
+  v2?: { nextStage?: number } | undefined;
+  party?: { results: readonly PhaseResultView[] } | null;
+}): 'phase1' | 'phase2' | null {
+  if (view.rules !== 2 || view.v2 === undefined || (view.v2.nextStage ?? 0) < 4) return null;
+  const results = view.party?.results ?? [];
+  if (results.some((r) => r.phase === 'finale')) return null;
+  const last = results.at(-1)?.phase;
+  return last === 'phase1' || last === 'phase2' ? last : null;
+}

@@ -483,7 +483,7 @@ export const RULES = {
      */
     v2: {
       liveRoundMs: 30_000,
-      determination: { stackBp: 500, maxStacks: 5, fromSlot: 6 },
+      determination: { stackBp: 1500, maxStacks: 5, fromSlot: 6 },
       /**
        * What a v2 weekend pays and when (Misa, 2026-11-04). Each threshold is a share (bp) of the weekend's HP removed; it is paid once,
        * when first crossed, by whichever stage crosses it (a stage 1 that removes 90% pays both). `pays` names the stage payout it gives

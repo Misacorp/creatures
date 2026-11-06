@@ -75,6 +75,7 @@ import {
   rollFinaleReward,
   rollItem,
   rollLines,
+  rollReplacementLines,
   rollTier,
   rollWelcomeKit,
   skillLevel,
@@ -177,7 +178,6 @@ describe('the gear content', () => {
       'cover',
       'boost',
       'spark-share',
-      'lingering',
       'adaptation-pierce',
       'quick-feet',
       'lucky-find',
@@ -507,12 +507,11 @@ describe('rolling items', () => {
     }
   });
 
-  it('keeps Lingering and Unbothered to epic items of level 15 and more', () => {
+  it('keeps Unbothered to epic items of level 15 and more, and Lingering is retired (Misa 2026-11-06)', () => {
     const ids = (level: number, rarity: GearRarity) =>
       linePool({ slot: 'charm', tag: 'neutral' }, rarity, level).map((p) => p.line.id);
-    expect(ids(20, 'epic')).toContain('lingering');
-    expect(ids(14, 'epic')).not.toContain('lingering');
-    expect(ids(20, 'rare')).not.toContain('lingering');
+    expect(gearContent.lines.some((l) => l.id === 'lingering')).toBe(false);
+    expect(ids(20, 'epic')).not.toContain('lingering');
     expect(linePool({ slot: 'scarf', tag: 'neutral' }, 'epic', 15).map((p) => p.line.id)).toContain(
       'unbothered',
     );
@@ -577,7 +576,6 @@ describe('rolling items', () => {
     expect(ids).not.toContain('boost');
     expect(ids).not.toContain('marking-hit');
     expect(ids).not.toContain('payoffs-pounce');
-    expect(ids).toContain('lingering');
     expect(guard.find((p) => p.line.id === 'armor')?.weight).toBe(
       (plain.find((p) => p.line.id === 'armor')?.weight ?? 0) * 3,
     );
@@ -1070,12 +1068,11 @@ describe('folding worn items', () => {
     }
   });
 
-  it('sums every plain sheet line across items, and keeps Lingering to 3 rounds and Unbothered a switch', () => {
+  it('sums every plain sheet line across items and keeps Unbothered a switch', () => {
     const fx = wornEffects(support, [
       item('hearth-bell', 'epic', 20, [
         ['boost', 4],
         ['mend', 4],
-        ['lingering', 0],
       ]),
       item('patch-scarf', 'epic', 20, [
         ['all-damage-taken', 4],
@@ -1084,7 +1081,6 @@ describe('folding worn items', () => {
       ]),
       item('trail-charm', 'epic', 20, [
         ['spark-share', 4],
-        ['lingering', 0],
         ['boost', 0],
       ]),
     ]);
@@ -1093,7 +1089,7 @@ describe('folding worn items', () => {
     expect(fx.mods.shareBp).toBe(1_500);
     expect(fx.mods.takenBp).toBe(800);
     expect(fx.mods.areaBp).toBe(1_200);
-    expect(fx.mods.lingerRounds).toBe(2);
+    expect(fx.mods.lingerRounds).toBeUndefined();
     expect(fx.mods.ignoreSilence).toBe(1);
   });
 
@@ -2140,5 +2136,31 @@ describe('the day modifiers hook (Market Day, built by the Boons step)', () => {
     expect(pileDismantleXp(['common', 'common', 'rare', 'epic'])).toBe(6 + 12 + 24);
     // Apprentice adds its share once, to the total.
     expect(pileDismantleXp(['rare', 'epic'], 1_000)).toBe(Math.floor((36 * 11_000) / 10_000));
+  });
+});
+
+describe('rollReplacementLines (a removed line comes back as a fresh roll)', () => {
+  const base = { slot: 'charm', tag: 'neutral' } as const;
+  it('draws from the item pool, never a line the item has, never a second special line', () => {
+    const kept = [
+      { id: 'cover', tier: 1 },
+      { id: 'payback', tier: 0 },
+    ];
+    for (let n = 0; n < 40; n++) {
+      const got = rollReplacementLines(createSeededRng(`rep:${n}`), base, 'epic', 20, kept, 2);
+      expect(got).toHaveLength(2);
+      const ids = got.map((l) => l.id);
+      expect(new Set([...ids, 'cover', 'payback']).size).toBe(4);
+      // `payback` is special, so no replacement is.
+      expect(got.filter((l) => gearLine(l.id)?.special === true)).toEqual([]);
+      for (const l of got) expect(l.tier).toBeGreaterThanOrEqual(0);
+    }
+  });
+  it('is the same for the same stream and gives fewer when the pool runs out', () => {
+    const a = rollReplacementLines(createSeededRng('same'), base, 'epic', 20, [], 3);
+    const b = rollReplacementLines(createSeededRng('same'), base, 'epic', 20, [], 3);
+    expect(a).toEqual(b);
+    const all = linePool(base, 'epic', 20).map((p) => ({ id: p.line.id, tier: 0 }));
+    expect(rollReplacementLines(createSeededRng('x'), base, 'epic', 20, all, 2)).toEqual([]);
   });
 });

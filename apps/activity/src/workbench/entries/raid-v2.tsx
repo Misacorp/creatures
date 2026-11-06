@@ -3,7 +3,7 @@ import { BossCardV2 } from '../../BossCardV2';
 import { Placement } from '../../Placement';
 import { SwapRequests } from '../../SwapRequests';
 import { litMove } from '../../raid-board-v2';
-import type { SwapV2 } from '../../raid-v2-api';
+import type { BossMoveV2, SwapV2 } from '../../raid-v2-api';
 import { MoveTile } from '../../ui/MoveTile';
 import { TrackStrip } from '../../ui/TrackStrip';
 import { raidV2Sample, trackOf, V2_NAMES, type V2SampleOptions } from '../raid-v2-sample';
@@ -29,12 +29,42 @@ function optionsOf(p: Props): V2SampleOptions {
   };
 }
 
+/** The Fizzle move as the server's card lists it for a boss that carries it (the Ash Sprite's every second round), for the presets. */
+const fizzleMoveOf = (rows: number): BossMoveV2 => ({
+  id: 'fizzle',
+  name: 'Fizzle',
+  label: 'No reactions',
+  shape: 'all',
+  silences: false,
+  oneShot: false,
+  fizzles: true,
+  every: 2,
+  turn: rows - 1,
+  windUp: false,
+  later: false,
+});
+
 /**
  * The v2 part of the Raid tab as one page: the track strip, the boss card and the party board, wired to a stand-in for the server
  * (a tap on a move lights its slots; a placement is refused with a hint; asking to swap adds a pending request).
  */
 function RaidWeekDemo({ p }: { p: Props }) {
-  const { view, ownedIds } = useMemo(() => raidV2Sample(optionsOf(p)), [p]);
+  const sample = useMemo(() => raidV2Sample(optionsOf(p)), [p]);
+  const { ownedIds } = sample;
+  // `fizzle` adds the Fizzle move to the boss's card (no raid boss carries it yet; the Ash Sprite does).
+  const view =
+    bool(p, 'fizzle') && sample.view.v2 !== undefined
+      ? {
+          ...sample.view,
+          v2: {
+            ...sample.view.v2,
+            card: {
+              ...sample.view.v2.card,
+              moves: [...sample.view.v2.card.moves, fizzleMoveOf(sample.view.v2.rows)],
+            },
+          },
+        }
+      : sample.view;
   const v2 = view.v2;
   const party = view.party;
   const [litId, setLitId] = useState<string | null>(null);
@@ -42,7 +72,8 @@ function RaidWeekDemo({ p }: { p: Props }) {
   const [refused, setRefused] = useState<string | null>(null);
   if (v2 === undefined || party === null) return null;
   const pick = num(p, 'tap');
-  const tappedId = pick > 0 ? (v2.card.moves[pick - 1]?.id ?? null) : litId;
+  const tappedId =
+    pick > 0 ? (v2.card.moves[Math.min(pick, v2.card.moves.length) - 1]?.id ?? null) : litId;
   const tapped = v2.card.moves.find((m) => m.id === tappedId);
   const owned = ownedIds.map((id, i) => {
     const onBoard = party.row.find((s) => s.creature?.creatureId === id)?.creature;
@@ -121,6 +152,7 @@ const WEEK_CONTROLS = {
   knockedOut: { kind: 'toggle' },
   swaps: { kind: 'select', options: SWAP_KINDS },
   tap: { kind: 'number', min: 0, max: 9 },
+  fizzle: { kind: 'toggle' },
 } as const;
 
 const WEEK_DEFAULTS = {
@@ -133,6 +165,7 @@ const WEEK_DEFAULTS = {
   knockedOut: false,
   swaps: 'none',
   tap: 0,
+  fizzle: false,
 };
 
 const bossCardV2: Entry = {
@@ -148,6 +181,14 @@ const bossCardV2: Entry = {
     { name: 'Slot 1 before stage 1 (4 columns, no card row)', props: {} },
     { name: 'Slot 1, a move tapped', props: { tap: 3 } },
     { name: 'Slot 1, a Wind-up move tapped (aimed when it comes)', props: { tap: 4 } },
+    {
+      name: 'Slot 3 with a Fizzle move (hits nobody)',
+      props: { slot: 3, players: 5, fizzle: true },
+    },
+    {
+      name: 'Slot 3, the Fizzle move tapped',
+      props: { slot: 3, players: 5, fizzle: true, tap: 9 },
+    },
     { name: 'Slot 3, two rows, 5 players', props: { slot: 3, players: 5 } },
     {
       name: 'Slot 8 (rule cards, Escalating), 6 players',

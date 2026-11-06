@@ -1,4 +1,4 @@
-import { ribbonsForLevel } from '@creatures/game';
+import { gearLine, ribbonsForLevel } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import { parseGameState } from '../../activity/src/api';
 import { parseDungeonToday } from '../../activity/src/dungeon-parse';
@@ -328,10 +328,14 @@ describe('rows the normalisation cannot fix never take the Workshop down', () =>
       // The unknown base became the best Ember hat a level 7 item can be.
       expect(byId.get('00000000-0000-4000-8000-0000000000a1')?.baseId).toBe('forge-hood');
       expect(linesOf(ctx, '00000000-0000-4000-8000-0000000000a2')).toEqual([]);
-      expect(linesOf(ctx, '00000000-0000-4000-8000-0000000000a3')).toEqual([
+      // The line that never existed is a removed line: it comes back as a fresh roll of the item's pool.
+      const a3 = linesOf(ctx, '00000000-0000-4000-8000-0000000000a3');
+      expect(a3.slice(0, 2)).toEqual([
         { id: 'attack-local-flat', tier: 4 },
         { id: 'hp-local-pct', tier: 2 },
       ]);
+      expect(a3).toHaveLength(3);
+      expect(gearLine((a3[2] as { id: string }).id)).toBeDefined();
     });
   });
 

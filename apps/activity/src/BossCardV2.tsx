@@ -4,7 +4,7 @@ import { combatGlyph, moveGlyphId } from './combat-glyphs';
 import { elementSlug } from './art';
 import { glyphOrUnknown } from './glyphs';
 import { usePopoverHost } from './PopoverHost';
-import { AIMED_WHEN_IT_COMES, litMove } from './raid-board-v2';
+import { AIMED_WHEN_IT_COMES, NO_TARGETS, litMove } from './raid-board-v2';
 import { bossHpWords, rankLabel } from './raid-progress';
 import type { RaidView } from './raid-api';
 import type { BossCardV2 as CardView, BossMoveV2 } from './raid-v2-api';
@@ -79,6 +79,42 @@ export function EscalatingMeter({ name, cap, step }: { name: string; cap: number
 }
 
 /**
+ * A boss's rule cards (a name, strength as pips, a tap opens the question it asks) and its Escalating meter, in one wrapping row; nothing
+ * when it has neither. The raid's boss card and a dungeon foe's room sheet draw it the same way.
+ */
+export function RuleCards({ card }: { card: CardView }) {
+  const popovers = usePopoverHost();
+  if (card.cards.length === 0 && card.escalation === null) return null;
+  return (
+    <div class="boss-rules">
+      {card.cards.map((rule) => (
+        <button
+          key={rule.id}
+          type="button"
+          class="rule-card"
+          aria-label={`${rule.name}, strength ${String(strengthPips(card.strengthBp))} / ${String(CARD_PIPS)}`}
+          onClick={(event) => {
+            popovers?.openCustom(`rule-card:${rule.id}`, event.currentTarget, {
+              label: rule.name,
+              body: (
+                <div class="pop-stack">
+                  <strong class="pix">{rule.name}</strong>
+                  <p>{rule.asks}</p>
+                </div>
+              ),
+            });
+          }}
+        >
+          <span class="rule-card-name">{rule.name}</span>
+          <PipRow count={CARD_PIPS} lit={strengthPips(card.strengthBp)} />
+        </button>
+      ))}
+      {card.escalation !== null && <EscalatingMeter {...card.escalation} />}
+    </div>
+  );
+}
+
+/**
  * The steps of one round for the turn strip: row 1, boss, row 2, boss, row 3, boss (the boss takes a turn after every row of its
  * arena). A boss step carries the pictures of the moves that land on it, each with how often it is due. Nothing here is playing yet,
  * so no step is current or done.
@@ -124,7 +160,6 @@ export function BossCardV2({
   onLit: (moveId: string | null) => void;
 }) {
   const v2 = view.v2;
-  const popovers = usePopoverHost();
   if (v2 === undefined) return null;
   const { boss } = view;
   const { card } = v2;
@@ -135,7 +170,9 @@ export function BossCardV2({
   const element = elementSlug(boss.element);
   const moves = card.moves;
   const tapped = moves.find((m) => m.id === lit);
-  const aimedLater = tapped !== undefined && litMove(v2.preview, tapped).slots === null;
+  const noTargets = tapped?.fizzles === true;
+  const aimedLater =
+    tapped !== undefined && !noTargets && litMove(v2.preview, tapped).slots === null;
   return (
     <section
       class={`raid-section boss-card boss-card-v2 el-${element}`}
@@ -175,33 +212,7 @@ export function BossCardV2({
           </div>
         )}
       </BossHead>
-      {(card.cards.length > 0 || card.escalation !== null) && (
-        <div class="boss-rules">
-          {card.cards.map((rule) => (
-            <button
-              key={rule.id}
-              type="button"
-              class="rule-card"
-              aria-label={`${rule.name}, strength ${String(strengthPips(card.strengthBp))} / ${String(CARD_PIPS)}`}
-              onClick={(event) => {
-                popovers?.openCustom(`rule-card:${rule.id}`, event.currentTarget, {
-                  label: rule.name,
-                  body: (
-                    <div class="pop-stack">
-                      <strong class="pix">{rule.name}</strong>
-                      <p>{rule.asks}</p>
-                    </div>
-                  ),
-                });
-              }}
-            >
-              <span class="rule-card-name">{rule.name}</span>
-              <PipRow count={CARD_PIPS} lit={strengthPips(card.strengthBp)} />
-            </button>
-          ))}
-          {card.escalation !== null && <EscalatingMeter {...card.escalation} />}
-        </div>
-      )}
+      <RuleCards card={card} />
       <p class="boss-plain">
         <Sprite sprite={combatGlyph('attack') ?? glyphOrUnknown('unknown')} scale={2} />
         <span>
@@ -225,6 +236,11 @@ export function BossCardV2({
             </li>
           ))}
         </ul>
+      )}
+      {noTargets && (
+        <p class="muted small boss-aimed" role="status">
+          {NO_TARGETS}
+        </p>
       )}
       {aimedLater && (
         <p class="muted small boss-aimed" role="status">

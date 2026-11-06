@@ -38,6 +38,12 @@ export function inReach(s: State, g: Fighter, o: Fighter): boolean {
     const left = g.col > toRight;
     return left ? d >= -R.flankGuardSlots * r && d <= -1 : d >= 1 && d <= R.flankGuardSlots * r;
   }
+  // One-sided reach (gear): Long Arm and Flank Guard lines lengthen or shorten one side; a side never goes below 0.
+  const gk = fx(g);
+  if (gk.reachLeftBonus || gk.reachRightBonus)
+    return d < 0
+      ? -d <= Math.max(0, r + (gk.reachLeftBonus ?? 0))
+      : d <= Math.max(0, r + (gk.reachRightBonus ?? 0));
   return Math.abs(d) <= r;
 }
 

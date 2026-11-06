@@ -101,12 +101,11 @@
     {
       "id": "steady-rhythm",
       "name": "Steady Rhythm",
-      "text": "Every third hit that lands is a crit, +0.1x on crits.",
+      "text": "Every third hit that lands is a crit.",
       "roles": ["setter", "payoff"],
       "intent": "Crits you can plan for (P-04): a rhythm instead of a chance.",
       "fx": {
-        "steadyRhythm": true,
-        "critDamageBp": 1000
+        "steadyRhythm": true
       }
     },
     {
@@ -154,11 +153,11 @@
     {
       "id": "opportunist",
       "name": "Opportunist",
-      "text": "Its {Reaction} bonus +100% when it cashes a {Mark} at 2 stacks or more.",
+      "text": "Its {Reaction} bonus +50% when it cashes a {Mark} at 2 stacks or more.",
       "roles": ["payoff"],
       "intent": "Rewards waiting for a bigger mark (2 or 3 stacks); pairs with Setters that leave 2 stacks, and with a second Setter. Was 3 stacks only (2026-10-28): a mark almost never reached 3 stacks when cashed, so the talent did nothing.",
       "fx": {
-        "cashHighBp": 10000
+        "cashHighBp": 5000
       }
     },
     {

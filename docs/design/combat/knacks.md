@@ -64,7 +64,7 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 | gaiadrake | Detonate, Leave a Trail, Unlikely Guardian |
 | aurorix | Starlight, Clear Skies, Eye of the Storm |
 | lanternfin | Lantern Glow, Clear the Air, Sunbeam |
-| hearthshell | Draw Fire, Barricade, Hearth |
+| hearthshell | Draw Fire, Barricade, Hearth, Night Watch |
 | mudlump | Sticky Mud, Wide Reach |
 | bogwarden | Sticky Mud, Wide Reach, Draw Fire |
 | squelch | Squelch Song, Stack Up |
@@ -116,7 +116,7 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 ### Leave a Trail
 
-- **Text:** After its {Reaction}, it leaves 1 stack of its own element's mark. A reaction on that mark leaves no further trail.
+- **Text:** After its {Reaction}, it leaves 1 stack of its element's mark. That mark's reaction leaves no trail.
 - **Family:** Chain
 - **Forms:** geyserpup, stormray, tempestray, cindle, pyrelynx, bloomback, coralynx, gaiadrake
 - **Intent (for contributors, never shown to players):** Cross-element chains: a reaction primes the next one for another Payoff.
@@ -151,7 +151,7 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 ### Eye of the Storm
 
-- **Text:** {Store} Calm: +1 for each reaction anywhere. At round start with 3 Calm, the creatures beside it get +45% and it spends all.
+- **Text:** {Store} Calm: +1 per reaction anywhere. At 3 at round start: creatures beside it get +45%, spends all.
 - **Family:** Store
 - **Forms:** halcyray, aurorix
 - **Intent (for contributors, never shown to players):** A reaction-heavy line gets a burst every few rounds.
@@ -174,7 +174,7 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 - **Text:** Each boss turn it {Intercept}s the first {Wind-up} hit in its row, taking a quarter of it.
 - **Family:** Intercept
-- **Forms:** thornbuck
+- **Forms:** thornbuck, hearthshell
 - **Intent (for contributors, never shown to players):** Answers telegraphed big hits (Wild Sweep, Judgement Bolt). One hit a boss turn, and the hit it takes is cut to a quarter (the most any cut can take), so it is no longer a liability (panel 4; 2026-10-31: the cover cut of 40% left it tied with no Knack outside Wild Sweep and behind Primed by Pain on it).
 
 ### Sunbeam
@@ -235,7 +235,7 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 ### Boiling Point
 
-- **Text:** {Store} Heat: +1 at round start and each time it or a creature in its reach takes damage. At 3, the next {Reaction} by a creature beside it deals double bonus.
+- **Text:** {Store} Heat: +1 per round and per hit in its {Reach}. At 3, next {Reaction} beside it deals double bonus.
 - **Family:** Store
 - **Forms:** kilnmole
 - **Intent (for contributors, never shown to players):** A Guard beside a Payoff in a hard fight.
@@ -375,10 +375,10 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 ### Cool Head
 
-- **Text:** {Crit}s on it and on the creatures {Beside} it deal no extra damage.
+- **Text:** {Crit}s on it and creatures {Beside} it deal no extra damage; a spared crit stores a {Sure Crit} there.
 - **Family:** Luck
 - **Forms:** thornbuck
-- **Intent (for contributors, never shown to players):** The answer to a boss that crits (Double Strike): a Guard that keeps a crit to a plain hit for itself and its neighbours (2026-10-31: at half it was tied with no Knack on every card but Double Strike, and barely ahead there). Nothing against a boss that never crits.
+- **Intent (for contributors, never shown to players):** The answer to a boss that crits (Double Strike): a Guard that keeps a crit to a plain hit for itself and its neighbours, and turns each spared crit into a Sure Crit for the creature it was aimed at, so it asks for a Payoff beside the Guard. A Sure Crit deals the spender's own crit extra (a Perfect Timing creature's is 3x). Nothing against a boss that never crits (2026-10-31: at half the ward alone was tied with no Knack on every card but Double Strike).
 
 ## Combat talents
 
@@ -414,12 +414,12 @@ Generated from `packages/lab/src/talents.ts`. One shared library; each line link
 | Slow Burn | +2.5% on its hits per round from round 2, up to +15%. | setter, payoff | Strong in long raid stages, weak in short fights: a reason to own two of a species. |
 | Finisher | +55% on its hits while the boss is below a third of its HP. | setter, payoff | With the boss HP shared across a raid weekend (R14), the last stage rewards it most. |
 | First Pounce | Its first hit that lands each fight deals +170%. | setter, payoff | Short fights, the dungeon and each raid stage. A hit made while silenced does not use it up. |
-| Steady Rhythm | Every third hit that lands is a crit, +0.1x on crits. | setter, payoff | Crits you can plan for (P-04): a rhythm instead of a chance. |
+| Steady Rhythm | Every third hit that lands is a crit. | setter, payoff | Crits you can plan for (P-04): a rhythm instead of a chance. |
 | Crit Chance | +12 crit chance points. | setter, payoff | The same effect as the gear line Crit chance, under its name. A crit doubles a hit, so it is worth about 12% x 100% = +12% damage on average, in swings; it stacks with Wild Swing, a crit species and items, and pairs with Amplified Crits. A hitter that Stone Skin caps or Thick Hide Blocks gains less. |
 | Amplified Crits | Its {Crit}s are 3x. | payoff | The same effect as the shipped gear line Crit damage (it takes this name when gear moves to combat v2). Small alone (it needs crits to boost) and big with Crit Chance or a crit species: the crit build is the pair. Stacks without a cap in the lab; the measures say whether it needs one. |
 | Perfect Timing | After it dodges, it stores a {Sure Crit} (up to 3): its next hit that lands is a 3x crit. | setter, payoff | Crits from evasion: a fast creature, a Zigzag or Zoom Setter, a dodge aura beside it. A dodge is rare, so the reward is big (a sure crit, +100% more than the double). Not the Guard-takes-it clause of Momentum: that happens every round, and a sure crit every round is a runaway (first measure, 2026-10-30). Silence stops it storing (R12.2); what it stored stays. |
 | Easily Provoked | When hits it {Intercept}s add up to 25% of its max HP, it stores a {Sure Crit} (3x, up to 3). | guard | Crits from guarding: a Guard that takes enough damage for others hits back harder. Its own hit is small, so this is a little extra for a Guard that stands in a busy spot, not a reason to pick the Guard. It was a Sure Crit for every interception, which fired every round and was the best Guard talent on most cards (first measure, 2026-10-30). |
-| Opportunist | Its {Reaction} bonus +100% when it cashes a {Mark} at 2 stacks or more. | payoff | Rewards waiting for a bigger mark (2 or 3 stacks); pairs with Setters that leave 2 stacks, and with a second Setter. Was 3 stacks only (2026-10-28): a mark almost never reached 3 stacks when cashed, so the talent did nothing. |
+| Opportunist | Its {Reaction} bonus +50% when it cashes a {Mark} at 2 stacks or more. | payoff | Rewards waiting for a bigger mark (2 or 3 stacks); pairs with Setters that leave 2 stacks, and with a second Setter. Was 3 stacks only (2026-10-28): a mark almost never reached 3 stacks when cashed, so the talent did nothing. |
 | Quick Draw | +32% on a {Reaction} on a mark added since the boss's last turn. | payoff | The opposite timing: cash right after the Setter, before Clean Scales sheds the mark. |
 | Potent Mark | {Reaction}s on a {Mark} it left have a +12% bonus while it stands. | setter | A Setter that makes its own marks worth more, whoever cashes them, while it stands and is not silenced. |
 | Deep Ink | Its first {Mark} each fight adds 2 more stacks. | setter | Changes the opening without adding marks from nowhere: marks still come only from Setters and Knacks. |
