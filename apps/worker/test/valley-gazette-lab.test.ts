@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment --
+/* eslint-disable @typescript-eslint/no-unsafe-member-access --
    These tests read parts of response bodies (`Json.body` is `any` on purpose). */
 /**
  * Phase 5 step 4, the lab check: for a seeded daily schedule (a visit every day for 28 days, two scouts and an anvil) the headlines the
@@ -135,8 +135,6 @@ describe("the server's headline kinds match the lab's journeys (a seeded daily s
       },
       { ...SYSTEMS, scoutRng: createSeededRng('lab-kinds') },
     );
-    // eslint-disable-next-line no-console
-    console.log('LAB', JSON.stringify(lab), 'SERVER', JSON.stringify(served));
     // The kinds the lab's daily journey has, the server has too.
     for (const kind of ['new-species', 'found-gear', 'forge-pieces'] as const) {
       expect(lab[kind], kind).toBeGreaterThan(0);

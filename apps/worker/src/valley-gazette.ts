@@ -188,7 +188,7 @@ export class ValleyGazette {
    * Writes the paper of an arrival after `awayHours` away: nothing for a short absence (V-RET-6, the first moments go straight to the
    * valley) or when there is no news. An unread earlier paper is joined (one story, the newer decision wins). Returns whether it wrote one.
    */
-  write(
+  publish(
     userId: string,
     at: number,
     awayHours: number,

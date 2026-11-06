@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment --
+/* eslint-disable @typescript-eslint/no-unsafe-member-access --
    These tests read parts of response bodies (`Json.body` is `any` on purpose). */
 /**
  * Phase 5 step 4: the welcome-back Gazette on real output (migration 59, `valley-gazette.ts`, the paper in `/api/state`'s `valley`, the close

@@ -492,7 +492,7 @@ export class ValleySettle {
       );
       const way = this.deps.finds.wayDeeper(candidates);
       const found = seatsOut.rows.find((seat) => seat.seat_id === way);
-      this.deps.gazette.write(
+      this.deps.gazette.publish(
         userId,
         to,
         awayHours,
