@@ -170,6 +170,8 @@ async function simulateDay(options: {
   gazette?: boolean;
   /** The commons (the valley's step 6): every player has a communal seat at the bonfire and gives to its project on their first opening. */
   commons?: boolean;
+  /** The Market (the valley's step 7): it is built after the first opening, every player has a creature at the broker's seat and no tide shards, so it trades. */
+  market?: boolean;
   fresh?: boolean;
 }): Promise<DayReads> {
   const reads = new DayReads();
@@ -202,6 +204,7 @@ async function simulateDay(options: {
         }
       }
       const gave = new Set<number>();
+      let marketBuilt = false;
       const dayStart = env.clock.t;
       const dayEnd = dayStart + DAY;
       const lounge = fakeLounge();
@@ -230,6 +233,25 @@ async function simulateDay(options: {
             readSourceOfPath(path),
             (await env.metered.measure(() => callAs(core, secrets, player, path))).reads,
           );
+        if (options.market === true && !marketBuilt && paths.includes('/api/state')) {
+          // The valley has opened with this look: the Market is built, and every player's anvils wait on tide shards.
+          marketBuilt = true;
+          env.metered.sql.exec("UPDATE valley_places SET level = 2 WHERE place = 'market'");
+          for (let n = 1; n <= PLAYERS; n++) {
+            env.metered.sql.exec(
+              "UPDATE parts SET amount = 0 WHERE user_id = ? AND kind = 'tide-shard'",
+              userId(n),
+            );
+            env.metered.sql.exec(
+              `INSERT INTO valley_seats (seat_id, user_id, place, kind, position, destination_id, prev_destination_id, creature_id,
+                 passed_at) VALUES (?, ?, 'market', 'broker', 0, 'any', 'any', ?, ?)`,
+              crypto.randomUUID(),
+              userId(n),
+              world.creatures[userId(n)]?.[8] ?? null,
+              env.clock.t,
+            );
+          }
+        }
         if (options.commons === true && paths.includes('/api/state') && !gave.has(player)) {
           gave.add(player);
           core.credit({
@@ -483,7 +505,31 @@ const VALLEY_GAZETTE_DAY_WRITE_BUDGET = 6600;
 // every pass reads the places, the fire, the sockets, the clocks and the player's gift rows, and the ten gifts settle first) and 5,098 written (4,617 without).
 const VALLEY_COMMONS_DAY_WRITE_BUDGET = 7000;
 
+// With the Market (step 7: a broker at every player's seat, trading for two anvils that wait on tide shards, on top of the commons' day): the broker adds the
+// seat's row to each pass and its trades' shard writes. Measured 134,621 rows read (134,016 without the Market: +605) and 5,174 written (5,098 without).
+const VALLEY_MARKET_DAY_WRITE_BUDGET = 7000;
+
 describe('a day in the life with the valley on', () => {
+  it('reads and writes few rows in a day with the Market: a broker for each player trading for their anvils, on top of the commons day', async () => {
+    const reads = await simulateDay({
+      valleySystems: true,
+      scouts: true,
+      smiths: true,
+      gazette: true,
+      commons: true,
+      market: true,
+      fresh: true,
+    });
+    expect(
+      reads.total,
+      `${reads.describe()}\nBudget: ${String(DAY_BUDGET)} rows.`,
+    ).toBeLessThanOrEqual(DAY_BUDGET);
+    expect(
+      reads.written,
+      `${reads.describe()}\nWrite budget: ${String(VALLEY_MARKET_DAY_WRITE_BUDGET)} rows.`,
+    ).toBeLessThanOrEqual(VALLEY_MARKET_DAY_WRITE_BUDGET);
+  }, 120_000);
+
   it('reads and writes few rows in a day with the commons: a communal seat for each player, a gift each, the Gazette, scouts and smiths posted', async () => {
     const reads = await simulateDay({
       valleySystems: true,
