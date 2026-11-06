@@ -6,7 +6,7 @@ Hosting, Durable Objects, scheduling, CI and deploys, staging, dependencies, sec
 
 ## 2026-11-06: The settlers' record lives in a production archive object, not the public repo, and keeps no Discord IDs
 
-ID: `2026-11-06-the-settlers-record-lives-in-a` · Status: current
+ID: `2026-11-06-the-settlers-record-lives-in-a` · Status: current, amended by `2026-11-06-the-reset-settlers-appear-on-every`
 
 **Decision.** For the reset (`docs/design/reset.md`), each server writes its settlers' record into one archive Durable Object in production just before it wipes, and wipes only after the write is confirmed. The record is never committed to the repository or kept as a workflow artifact. It keeps no Discord user IDs and no server IDs: each settler and server gets a random id. Player-typed text is kept as it was cleaned at entry and shown only as text; private creature notes are not recorded. Lore written by hand from the record enters the repo only after Misa approves the names. If Misa wants returning players recognised, the record adds an HMAC of the Discord ID keyed by a Worker secret, never the ID itself. After the wipe, leet payouts start from the switch day instead of the usual 7-day backfill, so no day is paid twice.
 

@@ -23,6 +23,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [direction.md](direction.md): Roadmap calls, Misa's standing direction, naming and tone, content policy, how agents and Misa work.
 
+- 2026-11-06 The reset: settlers appear on every server, each player gets their record by DM, and a hidden trace of who was there is kept \[Misa\]
 - 2026-11-06 Overnight sessions: quiet until news, then one message with every open question \[Misa\]
 - 2026-11-05 \[Misa\] Working rules: scalars best-guess and ask later, invent content for misses, fewer decisions for Misa
 - 2026-11-05 \[Misa\] CI runs the full check; agents push after quick local checks
@@ -51,7 +52,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [platform.md](platform.md): Hosting, Durable Objects, scheduling, CI and deploys, staging, dependencies, security, database reads, data cleanup, analytics, dev tools, the workbench, player feedback, sockets.
 
-- 2026-11-06 The settlers' record lives in a production archive object, not the public repo, and keeps no Discord IDs
+- 2026-11-06 The settlers' record lives in a production archive object, not the public repo, and keeps no Discord IDs (amended)
 - 2026-11-06 Dev tools: server managers only, roster presets, creatures-per-player override \[Misa\]
 - 2026-11-05 The lab's tests share modules between files, and boss rule measurements live in the report
 - 2026-11-03 Raid test bench: the staging raid dev tools become four steps \[Misa\]

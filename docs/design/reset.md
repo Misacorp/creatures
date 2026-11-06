@@ -53,7 +53,9 @@ The repository is **public**, so the record never goes into it.
 - Player-typed text (nicknames, notes) stays untrusted: it is stored as it was cleaned at entry, and shown only as text. Private creature notes are **not** recorded.
 - Lore that we write by hand from the record (an NPC named after a settler) enters the repo only after Misa approves the names.
 
-**Depends on question 3:** if a returning player should be recognised as a settler ("You were here first"), the record also keeps a keyed hash of their Discord ID (HMAC with a Worker secret), never the ID itself. Without that, nobody can be linked back to a record and it is "no trace" in the strict sense.
+**A hidden trace of who was there (Misa, 2026-11-06).** The record keeps a keyed hash (HMAC with a Worker secret) of each player's Discord ID, never the ID itself, and shows it to no one. Later, when players get an identity in the game, a returning settler is matched by it and can get a pioneer tag and a house decoration. The secret must never be lost or rotated, or the link breaks.
+
+**Settlers can appear on every server (Misa, 2026-11-06).** One archive serves all servers, so this costs nothing extra. Before any settler name or creature nickname is used, an agent reads the list once and Misa can strike any name: text typed for friends will reach strangers.
 
 ## 3. What is wiped
 
@@ -68,13 +70,23 @@ Everything else, on every server: creatures, talents, Talent Books, gear, materi
 **Proposal:**
 
 1. Phase 7 (a real raid weekend on staging with Misa and testers) passes, valley included.
-2. Misa picks the day. A Discord post a week before tells players the date (question 2 decides if they see their record first).
-3. One release turns on combat v2 and the valley and carries the reset. Each server resets the first time it wakes on the new build: write the record, confirm it is stored, then wipe. If the record fails, the server does not wipe and stays closed with a "back soon" card, so nothing is lost by accident.
+2. Misa picks the day. A Discord post a week before tells players the date.
+3. One release turns on combat v2 and the valley and carries the reset. Each server resets the first time it wakes on the new build, closed behind a "back soon" card while it works:
+   1. Take one snapshot and write the record to the archive; confirm it is stored. If that fails, the server does not wipe and stays closed, so nothing is lost by accident.
+   2. DM each player their record from that same snapshot (section 5).
+   3. Wipe once the DMs are sent, or after a time limit, so a stuck DM never blocks the reset.
 4. A Monday, so the first week starts clean (raid preparation, a full week to the first boss).
 
 ## 5. The one-time notice
 
-**Proposal.** A card on first open after the reset, like the level reset's card, and one Discord post. Draft text (tone per the compendium):
+**Your record, by DM (Misa, 2026-11-06).** Each player gets one Discord DM with their record, and it is not shown in the game. It goes to everyone once, also to those with reminder DMs off (a one-off goodbye, not a reminder). A player whose DMs are closed doesn't get it. It fits Discord's 2,000 characters: feats, then the most notable creatures (shiny, oldest, highest level), then "and N more". Markdown is escaped and mentions are off. Draft:
+
+> **You were one of the first settlers.**
+> The valley is starting over, and it will remember you. Here is what it keeps:
+> First to find a Lanternfin · Reached depth 18 · 4 gold medals
+> Pebbles the Mossling, level 31, with you since 2026-09-28 · Ember the Ashmole (shiny) · and 23 more
+
+**The notice in the game (proposal).** A card on first open after the reset, like the level reset's card, and one Discord post in the announce channel. Draft:
 
 > **A new valley**
 > The old valley has gone quiet. The first settlers are remembered, and their creatures with them. Pick a starter and find your way.
@@ -87,7 +99,7 @@ Everything else, on every server: creatures, talents, Talent Books, gear, materi
 - **Rare finds:** a keepsake on a trip, a once-only catch. "An old Ashmole answers to Ember. Its ribbons are faded." It is a fresh creature of that species and nickname, not the old one.
 - **The fen keeps old things** (compendium thread T11, the Ancient vault, and motif 14 "Keeping"): a stone of the first settlers where their feats are carved.
 
-Content made from the record stays on the settler's own server unless Misa decides otherwise (question 1): a nickname typed for friends is not shown to strangers.
+Settlers can turn up on any server (section 2). A returning settler's pioneer tag and house decoration wait for players to get an identity in the game.
 
 ## 7. Valley's half
 
@@ -95,6 +107,5 @@ Kept for the valley session (owner of `docs/design/valley/`): what the valley re
 
 ## Open questions for Misa
 
-1. What counts as a feat, and where do settlers show up later (own server only, or every server)?
-2. Do players see their record before the wipe (a "Your settler's record" card the last week), or is it a surprise?
-3. Should a returning player be recognised as a settler (needs a hashed ID kept), or is the record anonymous?
+1. What counts as a feat: the table in section 1 as it is, or fewer and bigger ones?
+2. The switch day and the notice text (sections 4 and 5), when phase 7 is close.

@@ -4,6 +4,18 @@ Roadmap calls, Misa's standing direction, naming and tone, content policy, how a
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-06: The reset: settlers appear on every server, each player gets their record by DM, and a hidden trace of who was there is kept [Misa]
+
+ID: `2026-11-06-the-reset-settlers-appear-on-every` · Status: current · Amends: `2026-11-06-the-settlers-record-lives-in-a`
+
+**Decision.** Misa's answers on the reset plan (`docs/design/reset.md`):
+
+1. **Settlers can appear on every server**, not only their own (Misa: "nice lore, though whatever is technically the easiest would be best"; one archive for all servers makes this no harder). Before settler names and nicknames are used anywhere, an agent reads the list once and Misa can strike any name.
+2. **Each player gets their record as one Discord DM, not in the game.** Sent on the switch day from the same snapshot that is archived, so the DM says exactly what is kept. It goes to every player once, also to those with reminder DMs off: it is a one-off goodbye Misa asked for, not a reminder kind. A player whose DMs are closed simply does not get it. The DM keeps to Discord's 2,000-character limit (feats and the most notable creatures, then "and N more"), escapes markdown and sends `allowed_mentions: { parse: [] }`. The server wipes once its DMs are sent or after a time limit, so a stuck DM never blocks the reset.
+3. **A trace of which player was there is kept but shown to no one.** The record keeps a keyed hash (HMAC) of each Discord ID, never the ID. Later, when players get an identity in the game, a returning settler can be matched to get a pioneer tag, and the record can grant a future house decoration. The HMAC key is a Worker secret that must never be lost or rotated, or the link breaks.
+
+**Reasoning.** Misa, 2026-11-06: "1 B since it's nice lore", "DM it to each player on Discord but not in game", "Let's keep a trace that which player was there but we don't have to show it to anyone. Later, when we give players themselves an identity, we can attach a pioneer tag to them or something. It can also grant a future house decoration." The name check covers the one new risk of option 1: text typed for friends reaching strangers.
+
 ## 2026-11-06: Overnight sessions: quiet until news, then one message with every open question [Misa]
 
 ID: `2026-11-06-overnight-sessions-quiet-until-news-then` · Status: current
