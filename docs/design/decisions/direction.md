@@ -4,6 +4,14 @@ Roadmap calls, Misa's standing direction, naming and tone, content policy, how a
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-06: Overnight sessions: quiet until news, then one message with every open question [Misa]
+
+ID: `2026-11-06-overnight-sessions-quiet-until-news-then` · Status: current
+
+**Decision.** In overnight or unattended sessions, agents send no message for a CI check or a routine notification; they write only when there is news. When every background job has finished and nothing is left but waiting, they send one message that repeats every open question, numbered, each with a line of context and the agent's pick. The questions go in the message itself, not only in `for-misa.md`. The retro's other five proposals were also accepted: a port check for v1 content, `pnpm scalars` in the implementer's finish list, both sides' rows when merging date-keyed tables, GitHub REST instead of GraphQL in cloud sessions, and a test from old state for dev tools (`docs/retros/2026-11-06-combat-v2-phase4-5.md`).
+
+**Reasoning.** Misa, 2026-11-06: "remember that I can't open files from my phone. In overnight sessions, repeat all open questions when all background processes have finished and you have nothing to do but wait. It's also not necessary to notify me every time you check CI in an overnight session." On 11-06 he had to ask for the open questions again, because they were spread over several messages and lists.
+
 ## 2026-11-05: [Misa] Working rules: scalars best-guess and ask later, invent content for misses, fewer decisions for Misa
 
 ID: `2026-11-05-working-rules-scalars-best-guess-and` · Status: current

@@ -43,4 +43,4 @@ Session: finish combat v2 phase 4 on staging, then run phase 5 (simulation and b
 | 5   | **Use REST for pull requests in cloud sessions:** `gh api repos/Misacorp/creatures/pulls/N` with `-X PATCH --input` to edit a body. `gh pr view` and `gh pr edit` use GraphQL, which is blocked.                               | `CLAUDE.md` Commands                                                 | Two failed calls and the detour each time           |
 | 6   | **Dev tools are tested on a server with old state:** a dev tool that changes raid or dungeon data gets one test that starts from a v1 week or run already present.                                                             | `docs/design/testing.md` (worker layer)                              | The `not_v2` repeat (11-03)                         |
 
-Status: proposals not applied; Misa decides.
+Status: all six applied (Misa, 2026-11-06). Number 2 as Misa changed it: in overnight or unattended sessions, no message per CI check; once all background work is done, one message repeats every open question, numbered with context, because Misa reads on his phone and can't open repo files.

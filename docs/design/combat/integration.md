@@ -4,6 +4,8 @@ Status: planned, 2026-11-02. Phase 4 of `roadmap.md`: the worker and the Activit
 
 The rules are in `@creatures/engine/v2` (phase 2) and the content in `@creatures/game/combat-v2` (phase 3). Nothing in `apps/` imports either yet. This page says what the game stores, where it calls them, what the client shows, and in what order the work goes. The rules themselves stay in `proposals/001-combat-v2.md` (R numbers below).
 
+**Carrying v1 content into v2** (retro 2026-11-06): a gear line, set text, card or talent from v1 gets a one-line note of the v2 rule it uses (an R number or an engine field) before it is ported or changed, or is flagged "no v2 meaning" and goes to the content owner. v1 ideas such as replacing a mark do not exist on v2.
+
 ## 1. The flag and the rules version
 
 - **`COMBAT_V2`** is a worker variable like `RAID_LIVE` and `DEV_TOOLS`: `on` in the staging block of `wrangler.jsonc`, `off` at the top level and in production, pinned off there by a test (as `DEV_TOOLS` is). `/api/config` sends `combatV2: true` only when it is on (absent, never `false`, like the other flags).
