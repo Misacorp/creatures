@@ -88,7 +88,9 @@ describe("the Market's state", () => {
 describe('the broker in words', () => {
   it('asks for a creature when the seat is free, and says its rate, bonus and what it waits on', () => {
     expect(brokerLine(sampleBroker(null))).toBe('Pick a creature, or drag one here.');
-    expect(brokerLine(sampleBroker(a.id, 1))).toBe('Trades 12 for 5, 15% bonus');
+    expect(brokerLine(sampleBroker(a.id, 1))).toBe(
+      'Swaps spare shards 12 for 5, with a 15% chance of one extra',
+    );
     expect(brokerLine(sampleBroker(a.id, 1, { blocked: 'tide' }))).toMatch(
       /Waiting for spare shards to trade for Tide/,
     );
@@ -115,10 +117,9 @@ describe('the tray and the Places list', () => {
     const visit = visitOf('open with a broker');
     expect(isTrading(a, visit)).toBe(true);
     const input = { trips: [], jobs: [], now: 0, ...trayStates(visit) };
-    expect(trayBadge(a, input)).toMatchObject({
-      state: 'trading',
-      label: expect.stringMatching(/Trading at the Market/),
-    });
+    const badge = trayBadge(a, input);
+    expect(badge?.state).toBe('trading');
+    expect(badge?.label).toMatch(/Trading at the Market/);
     expect(trayFor(free, input).map((c) => c.id)).toContain(a.id);
     expect(trayStates(visitOf('open, free seat')).trading?.size).toBe(0);
   });

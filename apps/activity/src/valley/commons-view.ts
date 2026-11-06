@@ -114,7 +114,7 @@ export function stillNeeded(p: ValleyCommonsPlace): string {
 export function stateTag(p: ValleyCommonsPlace): string {
   switch (p.state) {
     case 'open':
-      return 'Open';
+      return 'Taking gifts';
     case 'building':
       return 'Building';
     case 'waiting':

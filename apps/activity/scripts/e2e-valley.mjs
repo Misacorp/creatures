@@ -2309,7 +2309,9 @@ try {
         const posted = scoutCalls.filter(([k]) => k === 'seat').at(-1)?.[1];
         if (posted?.seatId !== 'broker-1' || typeof posted.creatureId !== 'string')
           throw new Error(`the broker was ${JSON.stringify(posted)}`);
-        await waitFor(page.getByText(/Trades 12 for 5, 10% bonus/));
+        await waitFor(
+          page.getByText(/Swaps spare shards 12 for 5, with a 10% chance of one extra/),
+        );
         await page.waitForTimeout(300);
         await shot('market-broker-posted');
         // What it trades toward: a drawer of choices, one tap.

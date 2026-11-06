@@ -64,7 +64,7 @@ export const brokerSub = (seat: Broker, level: number): string =>
 export function brokerLine(seat: Broker): string {
   if (seat.creatureId === null) return 'Pick a creature, or drag one here.';
   if (seat.paused !== null) return 'In the raid. It trades again when the finale is over.';
-  const rate = `Trades ${rateText(seat.terms.rate)}, ${bonusText(seat.terms.critBp)} bonus`;
+  const rate = `Swaps spare shards ${rateText(seat.terms.rate)}, with a ${bonusText(seat.terms.critBp)} chance of one extra`;
   if (seat.blocked !== null) {
     return `${rate}. Waiting for spare shards to trade for ${elementName(seat.blocked)}.`;
   }

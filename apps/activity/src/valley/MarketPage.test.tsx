@@ -138,7 +138,9 @@ describe('MarketPage once it is built', () => {
 
   it("says the broker's rate and bonus, and a stuck anvil's wait; its rates open in a drawer", () => {
     const { page: p } = draw('broker stuck');
-    expect(visibleText(p.root)).toMatch(/Trades 12 for 5, 15% bonus/);
+    expect(visibleText(p.root)).toMatch(
+      /Swaps spare shards 12 for 5, with a 15% chance of one extra/,
+    );
     expect(visibleText(p.root)).toMatch(/Waiting for spare shards to trade for Tide/);
     p.click(button(p, /Show the rates/));
     const text = visibleText(p.root);
