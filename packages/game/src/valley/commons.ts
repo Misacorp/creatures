@@ -58,12 +58,13 @@ export function projectSize(
   place?: string,
 ): number {
   const c = rules.commons;
-  // A one-shot place (the Market) is sized as the level its rule names, whatever its own level is.
-  if (place !== undefined) level = c.oneShot[place]?.sizeLevel ?? level;
+  // A one-shot place (the Market) has its own size (a share of the base), whatever its own level is.
+  const own = place === undefined ? undefined : c.oneShot[place]?.sizeFactor;
   const factor =
-    level >= c.maxLevel
+    own ??
+    (level >= c.maxLevel
       ? c.cosmeticFactor
-      : (c.levelFactor[level - 1] ?? c.levelFactor.at(-1) ?? 1);
+      : (c.levelFactor[level - 1] ?? c.levelFactor.at(-1) ?? 1));
   return c.baseSize * factor * Math.pow(Math.max(weight, 1) / c.referenceWeight, c.sizeExponent);
 }
 
@@ -155,20 +156,23 @@ export function valueToUnits(rules: CommonsRules, value: number, place?: string)
   };
 }
 
-/** V-COM-15: the guided start. The hearth's project opens first, the Forge's once the hearth has levelled, the rest (the Market among them) once both have. */
+/**
+ * V-COM-15: the guided start (Q48). The projects named in `guided` open one after the other, each once the one before it has levelled
+ * (the Market counts as levelled when it is built); the rest of the places open once every guided one has. The hearth's project is
+ * first, the Market's second (small, paid in Acorns and scrap, so a server can trade for shards as the first anvils wait), the Forge's third.
+ */
 export function mayOpenProject(
   rules: CommonsRules,
   place: string,
   levelOf: (place: string) => number,
 ): boolean {
-  const places = rules.commons.places;
-  const index = places.indexOf(place);
-  // A place built once (the Market) opens its one project with the rest, and never another.
+  const { guided, places } = rules.commons;
+  // A place built once (the Market) never opens another project after it is built.
   if (isOneShot(rules, place) && levelOf(place) >= 2) return false;
-  if (index <= 0) return index === 0;
-  if (levelOf(places[0] ?? '') < 2) return false;
-  if (index === 1) return true;
-  return levelOf(places[1] ?? '') >= 2;
+  if (!places.includes(place)) return false;
+  const at = guided.indexOf(place);
+  const before = at < 0 ? guided : guided.slice(0, at);
+  return before.every((id) => levelOf(id) >= 2);
 }
 
 /** V-BON-7: the hearth's growth multiplier in basis points at a bonfire level. */

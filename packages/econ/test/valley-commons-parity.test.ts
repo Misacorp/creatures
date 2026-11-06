@@ -28,12 +28,12 @@ import {
   type SettleState,
 } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
-import { activeWeight } from '../src/commons';
+import { activeWeight, openMarket, refreshProjects } from '../src/commons';
 import { RULES } from '../src/rules';
 import { ALL_SERVERS } from '../src/servers';
 import { runServer } from '../src/sim';
 import { R } from '../src/types';
-import { buildSchedule, createPlayer } from '../src/world';
+import { buildSchedule, createPlayer, createServer } from '../src/world';
 import { profileById } from '../src/profiles';
 
 const H = 3_600_000;
@@ -277,27 +277,40 @@ describe('the pure rules agree with the lab', () => {
     }
   });
 
-  it('the guided start opens the hearth first, the Forge when it has levelled, the rest when both have', () => {
-    const levels: Record<string, number> = { bonfire: 1, forge: 1 };
-    const of = (id: string): number => levels[id] ?? 1;
-    expect(rules.commons.places.map((id) => mayOpenProject(rules, id, of))).toEqual([
-      true,
-      false,
-      false,
-      false,
-      false,
-      false, // the Market (step 7) opens with the rest
-    ]);
-    levels.bonfire = 2;
-    expect(rules.commons.places.map((id) => mayOpenProject(rules, id, of))).toEqual([
-      true,
-      true,
-      false,
-      false,
-      false,
-      false,
-    ]);
-    levels.forge = 2;
-    expect(rules.commons.places.every((id) => mayOpenProject(rules, id, of))).toBe(true);
+  it('the guided start (Q48) opens the hearth, then the Market alone, then the Forge, then the rest: the lab opens what the server rule opens', () => {
+    const config = ALL_SERVERS.find((x) => x.id === 'mixed8-market')!;
+    // Each state: the levels of the hearth, the Forge and the rest; whether the Market is built.
+    const states = [
+      { bonfire: 1, forge: 1, rest: 1, built: false },
+      { bonfire: 2, forge: 1, rest: 1, built: false },
+      { bonfire: 2, forge: 1, rest: 1, built: true },
+      { bonfire: 2, forge: 2, rest: 1, built: true },
+      { bonfire: 1, forge: 1, rest: 1, built: true },
+    ];
+    const expected = [
+      ['bonfire'],
+      ['bonfire', 'market'],
+      ['bonfire', 'forge'],
+      ['bonfire', 'forge', 'signpost', 'paddock', 'school'],
+      ['bonfire'],
+    ];
+    states.forEach((st, k) => {
+      const server = createServer('guided', 1, { ...config }, RULES);
+      for (const place of server.places)
+        place.level =
+          place.id === 'bonfire' ? st.bonfire : place.id === 'forge' ? st.forge : st.rest;
+      if (st.built) {
+        openMarket(server, 0);
+        server.marketDoneHour = 0;
+        server.places.at(-1)!.opensAt = Infinity;
+      }
+      refreshProjects(server, 1000, RULES);
+      const labOpen = server.places.filter((p) => p.open).map((p) => p.id);
+      const level = (id: string): number =>
+        id === 'market' ? (st.built ? 2 : 1) : (server.places.find((p) => p.id === id)?.level ?? 1);
+      const ruleOpen = rules.commons.places.filter((id) => mayOpenProject(rules, id, level));
+      expect(labOpen.sort()).toEqual(expected[k]!.slice().sort());
+      expect(ruleOpen.sort()).toEqual(labOpen);
+    });
   });
 });

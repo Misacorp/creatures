@@ -138,9 +138,12 @@ export function stateLine(p: ValleyCommonsPlace): string {
     case 'building':
       return `${capital(buildName(p.id))} is being built, ${daysLeft(p.buildDaysLeft)}.`;
     case 'waiting':
-      return p.id === 'forge'
+      // The guided start (V-COM-15, Q48): the hearth, then the Market, then the Forge, then the rest.
+      return p.id === 'market'
         ? 'Opens once the hearth has grown.'
-        : 'Opens once the hearth and the Forge have grown.';
+        : p.id === 'forge'
+          ? 'Opens once the Market is built.'
+          : 'Opens once the hearth, the Market and the Forge have grown.';
     case 'done':
       return `${capital(buildName(p.id))} is built.`;
   }

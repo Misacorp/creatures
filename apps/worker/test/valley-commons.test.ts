@@ -431,8 +431,9 @@ describe('gifts (V-COM-1, 5; gifts are keyed spends)', () => {
         expect(valley.commons?.hearthBp).toBe(
           10_000 + Math.round(R.bonfire.hearth.perLevel * 10_000),
         );
-        // The Forge's project opens now that the hearth has levelled (the guided start); the others still wait.
-        expect(placeOf(valley, 'forge').state).toBe('open');
+        // The Market's project opens now that the hearth has levelled (the guided start, Q48); the Forge and the others still wait.
+        expect(placeOf(valley, 'market').state).toBe('open');
+        expect(placeOf(valley, 'forge').state).toBe('waiting');
         expect(placeOf(valley, 'signpost').state).toBe('waiting');
         // Two days later the hearth is still building; after the third it opens its next, bigger project (no timer: a read does it).
         ctx.clock.t += 2 * DAY;

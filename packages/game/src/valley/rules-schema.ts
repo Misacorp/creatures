@@ -197,6 +197,7 @@ export const ValleyRulesSchema = v.strictObject({
   }),
   commons: v.strictObject({
     places: v.array(v.string()),
+    guided: v.array(v.string()),
     maxLevel: int,
     baseSize: pos,
     levelFactor: v.array(pos),
@@ -210,7 +211,7 @@ export const ValleyRulesSchema = v.strictObject({
     oneShot: v.record(
       v.string(),
       v.strictObject({
-        sizeLevel: v.pipe(v.number(), v.integer(), v.minValue(1)),
+        sizeFactor: pos,
         costSplit: costSplitSchema,
       }),
     ),

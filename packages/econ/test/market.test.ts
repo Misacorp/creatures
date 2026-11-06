@@ -1,6 +1,6 @@
 /** The broker's seat and the Market as a project (V-FORGE-11): when the seat exists, how the project opens and finishes. */
 import { describe, expect, it } from 'vitest';
-import { contributePart, openMarket, refreshProjects, MARKET_OPENS_AT } from '../src/commons';
+import { contributePart, openMarket, refreshProjects } from '../src/commons';
 import { RULES } from '../src/rules';
 import { ALL_SERVERS } from '../src/servers';
 import { brokerSeatOn, exchangeOn, runServer } from '../src/sim';
@@ -27,7 +27,7 @@ describe('the broker seat', () => {
 });
 
 describe('the Market project', () => {
-  it('joins the valley once, as a level-2 project, shard-free in the first variant and with shards in the other', () => {
+  it('joins the valley once, as a small project (Q48), shard-free in the first variant and with shards in the other', () => {
     for (const [mode, shards] of [
       ['market', false],
       ['market-shards', true],
@@ -38,17 +38,18 @@ describe('the Market project', () => {
       openMarket(server, 200);
       expect(server.places).toHaveLength(before + 1);
       expect(server.marketOpenedHour).toBe(100);
+      server.places[0]!.level = 2;
       refreshProjects(server, 100, RULES);
       const place = server.places.at(-1)!;
       expect(place.id).toBe('market');
       expect(place.open).toBe(true);
-      // Sized like the second level's project of a place (the base times the second factor, at the server's weight).
+      // Sized as the rule says: a share of the base, at the server's weight.
       const c = RULES.commons;
-      const level2 =
+      const small =
         c.baseSize *
-        c.levelFactor[1]! *
+        c.oneShot['market']!.sizeFactor *
         Math.pow(Math.max(server.weight, 1) / c.referenceWeight, c.sizeExponent);
-      expect(place.size).toBeCloseTo(level2, 6);
+      expect(place.size).toBeCloseTo(small, 6);
       expect(place.need[2]! > 0).toBe(shards);
     }
   });
@@ -56,6 +57,7 @@ describe('the Market project', () => {
   it('is built once: the seat appears, the project does not open again', () => {
     const server = serverWith('market');
     openMarket(server, 0);
+    server.places[0]!.level = 2;
     refreshProjects(server, 0, RULES);
     const index = server.places.length - 1;
     const place = server.places[index]!;
@@ -67,8 +69,19 @@ describe('the Market project', () => {
     expect(place.open).toBe(false);
   });
 
-  it('opens when the server waits on shards for a share of the week', () => {
-    expect(MARKET_OPENS_AT).toBe(0.15);
+  it('opens when the hearth has levelled, and not before (Q48); the Forge waits for it to be built', () => {
+    const server = serverWith('market');
+    refreshProjects(server, 100, RULES);
+    expect(server.places.some((p) => p.id === 'market')).toBe(false);
+    expect(server.places.filter((p) => p.open).map((p) => p.id)).toEqual(['bonfire']);
+    server.places[0]!.level = 2;
+    refreshProjects(server, 100, RULES);
+    expect(server.places.filter((p) => p.open).map((p) => p.id)).toEqual(['bonfire', 'market']);
+    expect(server.places.find((p) => p.id === 'forge')!.open).toBe(false);
+    const market = server.places.findIndex((p) => p.id === 'market');
+    for (let part = 0; part < 3; part++) contributePart(server, market, part, 1e9, 200, RULES);
+    refreshProjects(server, 300, RULES);
+    expect(server.places.find((p) => p.id === 'forge')!.open).toBe(true);
   });
 });
 
@@ -91,10 +104,11 @@ describe('the variants in a run', () => {
       expect(w.shardStall).toBeLessThanOrEqual(1);
       expect([0, 1, 2]).toContain(w.market);
     }
-    // A server whose anvils wait on shards opens the Market in the first weeks, and no broker works before it is built.
+    // The Market is the second guided project (Q48): open once the hearth has levelled, built in the first two weeks (day 14), and no
+    // broker works before it is built.
     expect(run.marketOpenedHour).not.toBeNull();
-    if (run.marketDoneHour === null)
-      expect(sum(run.players.map((p) => sum(p.weeks.map((w) => w.brokerHours))))).toBe(0);
+    expect(run.marketDoneHour).not.toBeNull();
+    expect(run.marketDoneHour!).toBeLessThan(14 * 24);
   });
 });
 

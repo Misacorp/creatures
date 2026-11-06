@@ -578,7 +578,8 @@ const commonsScene = (overrides = {}) => {
     },
     paddock: { level: 1, state: 'open', size: 600, have: { acorns: 180, scrap: 360, shards: 45 } },
     school: { level: 1, state: 'waiting' },
-    market: { level: 1, state: 'waiting' },
+    // The guided start (Q48) opens the Market second, before the Forge: a valley with a Forge being built has its Market built.
+    market: { level: 2, state: 'done', plaque: ['Ada'] },
     ...overrides,
   };
 };
@@ -2207,7 +2208,13 @@ try {
     'valley systems on: the Market is not open yet until the guided start reaches it',
     () => {
       const creatures = commonsOn();
-      commonsScene();
+      // A young server: only the hearth's project is open, so the Market (second in the guided start) is not.
+      commonsScene({
+        forge: { level: 1, state: 'waiting' },
+        signpost: { level: 1, state: 'waiting' },
+        paddock: { level: 1, state: 'waiting' },
+        market: { level: 1, state: 'waiting' },
+      });
       marketState.on = true;
       stateOverride = { creatures, valley: valleyBlock() };
     },

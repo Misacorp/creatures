@@ -35,7 +35,6 @@ import { offerToIdol } from './idol';
 import { playerWeek, runXp, shareSplit } from './dungeonXp';
 import { heldForms } from './forms';
 import { openSlots, startLearning, stepSchool, teacherDay } from './school';
-import { MARKET_OPENS_AT, openMarket } from './commons';
 import { beginVisit, endVisit, homeDone, newTracer, type JourneyEntry } from './journey';
 import { accrueIdleXp, addXp, atTopLevel, fightXp, levelsDesc, setCatchUp } from './growth';
 import {
@@ -587,13 +586,6 @@ export function runServer(
     if (hourOfDay === 22) for (const p of players) if (h >= p.joinHour) sampleDay(p, server, h);
     if (day % 7 === 6 && hourOfDay === 23) resolveRaid(server, players, h, rules);
     if ((h + 1) % HOURS_PER_WEEK === 0) {
-      // The Market project opens (market variant) once the server's anvils spent MARKET_OPENS_AT of the week waiting for a shard.
-      if (
-        (config.broker === 'market' || config.broker === 'market-shards') &&
-        server.marketOpenedHour === null &&
-        weekShardStall(players, h) >= MARKET_OPENS_AT
-      )
-        openMarket(server, h);
       const gifts = sum(server.gifts) - giftsMark;
       giftsMark = sum(server.gifts);
       server.log.push({

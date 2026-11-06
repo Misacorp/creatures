@@ -59,9 +59,10 @@ describe('the commons in words', () => {
     expect(stateLine(buildingPlace('signpost', 2, 1, []))).toBe(
       'The road is being built, 1 day left.',
     );
-    expect(stateLine(waitingPlace('forge'))).toBe('Opens once the hearth has grown.');
+    expect(stateLine(waitingPlace('market'))).toBe('Opens once the hearth has grown.');
+    expect(stateLine(waitingPlace('forge'))).toBe('Opens once the Market is built.');
     expect(stateLine(waitingPlace('school'))).toBe(
-      'Opens once the hearth and the Forge have grown.',
+      'Opens once the hearth, the Market and the Forge have grown.',
     );
     expect(daysLeft(0)).toBe('1 day left');
   });

@@ -223,7 +223,9 @@ describe('CommonsBoard: the other states', () => {
 
   it('a place the guided start has not reached says when it opens, and offers no Give', () => {
     const { page: p } = draw('school', [waitingPlace('school')]);
-    expect(visibleText(p.root)).toMatch(/Opens once the hearth and the Forge have grown/);
+    expect(visibleText(p.root)).toMatch(
+      /Opens once the hearth, the Market and the Forge have grown/,
+    );
     expect(byName(p.root, 'button', /^Give/)).toHaveLength(0);
   });
 

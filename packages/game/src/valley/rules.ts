@@ -352,15 +352,17 @@ export const VALLEY_RULES = {
   /** V-COM-5, V-COM-10, V-COM-11, V-COM-15: projects. */
   commons: {
     places: ['bonfire', 'forge', 'signpost', 'paddock', 'school', 'market'] as readonly string[],
-    // V-FORGE-11, V-COM-15: the Market is built once (a place level 1 to 2, then no more projects: its later levels are a later idea). Its
-    // project is sized like a level-2 project and paid in Acorns and scrap only: shards are what is short when it is wanted (the lab's
-    // "market" variant; Misa's brief: "paid in Acorns and scrap").
+    // V-FORGE-11, V-COM-15, Q48: the Market is built once (a place level 1 to 2, then no more projects: its later levels are a later idea).
+    // It is the second guided project, so it is sized like a first-level project (the hearth's size, small) and paid in Acorns and scrap
+    // only: shards are what is short when it is wanted, and you cannot trade for them before it stands (Q48: "paid in Acorns and scrap").
     oneShot: {
-      market: { sizeLevel: 2, costSplit: { acorns: 0.5, scrap: 0.5, shards: 0 } },
+      market: { sizeFactor: 0.25, costSplit: { acorns: 0.5, scrap: 0.5, shards: 0 } },
     } as Record<
       string,
-      { sizeLevel: number; costSplit: { acorns: number; scrap: number; shards: number } }
+      { sizeFactor: number; costSplit: { acorns: number; scrap: number; shards: number } }
     >,
+    // V-COM-15, Q48: the guided start. Each project opens once the ones before it have levelled; the other places open after all three.
+    guided: ['bonfire', 'market', 'forge'] as readonly string[],
     maxLevel: 5,
     // A project's size in Acorns' worth: the first about two weeks of 8 players' giving (commons.md).
     // TUNED 2026-10-30: was 2000 (commons.md example).

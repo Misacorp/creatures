@@ -33,12 +33,10 @@ export function refreshFire(server: Server, hour: number, rules: Rules): void {
 }
 
 /**
- * The Market (V-FORGE-11, "the broker as a project"): a communal project like the others that gives every player the broker's seat when it is
- * built. It is added to the valley when the server's anvils first spend this much of a week waiting for a shard (ASSUMPTION: 15%), and it is
- * sized like a level-2 place's project (the base size times the second level's factor, scaled with the server's weight).
+ * The Market (V-FORGE-11, Q48): a communal project like the others that gives every player the broker's seat when it is built. It is the
+ * server's second guided project (V-COM-15): it joins the valley's open projects when the hearth has levelled (`refreshProjects`), small
+ * (the size `rules.commons.oneShot.market` names) and paid in Acorns and scrap.
  */
-export const MARKET_OPENS_AT = 0.15;
-
 export function openMarket(server: Server, hour: number): void {
   if (server.places.some((p) => p.id === 'market')) return;
   server.places.push({
@@ -56,23 +54,32 @@ export function openMarket(server: Server, hour: number): void {
   server.marketOpenedHour = hour;
 }
 
-/** V-COM-15: the guided start. The hearth opens first, the Forge when the hearth has levelled, the rest when both have. */
-function mayOpen(server: Server, index: number): boolean {
-  if (server.places[index]?.id === 'market') return true;
-  const bonfire = server.places[0]?.level ?? 1;
-  const forge = server.places[1]?.level ?? 1;
-  if (index === 0) return true;
-  if (index === 1) return bonfire >= 2;
-  return bonfire >= 2 && forge >= 2;
+/**
+ * V-COM-15, Q48: the guided start, the same rule as the server's `mayOpenProject`: each guided project opens once the ones before it have
+ * levelled (the Market counts as levelled when it is built), the rest once all of them have. A guided place this server does not have
+ * (the day-one broker variants have no Market) is skipped.
+ */
+function mayOpen(server: Server, index: number, rules: Rules): boolean {
+  const id = server.places[index]?.id ?? '';
+  const guided = rules.commons.guided.filter((g) => server.places.some((p) => p.id === g));
+  const at = guided.indexOf(id);
+  const before = at < 0 ? guided : guided.slice(0, at);
+  // The lab's Market starts at level 2 (its size is the rule's); it is levelled when it is built.
+  return before.every((g) =>
+    g === 'market' ? server.marketDoneHour !== null : placeLevel(server, g) >= 2,
+  );
 }
 
 const projectSize = (server: Server, index: number, rules: Rules): number => {
   const place = server.places[index]!;
   const c = rules.commons;
+  // A one-shot place (the Market) has its own size (a share of the base), whatever its own level is.
+  const own = c.oneShot[place.id]?.sizeFactor;
   const factor =
-    place.level >= c.maxLevel
+    own ??
+    (place.level >= c.maxLevel
       ? c.cosmeticFactor
-      : (c.levelFactor[place.level - 1] ?? c.levelFactor.at(-1) ?? 1);
+      : (c.levelFactor[place.level - 1] ?? c.levelFactor.at(-1) ?? 1));
   return (
     c.baseSize * factor * Math.pow(Math.max(server.weight, 1) / c.referenceWeight, c.sizeExponent)
   );
@@ -94,8 +101,14 @@ const partSplit = (rules: Rules): number[] => [
 export function refreshProjects(server: Server, hour: number, rules: Rules): void {
   const values = partValues(rules);
   const split = partSplit(rules);
+  // Q48: the Market's project joins the valley's open ones when the hearth has levelled (the market variants; the others have no Market).
+  if (
+    (server.config.broker === 'market' || server.config.broker === 'market-shards') &&
+    placeLevel(server, 'bonfire') >= 2
+  )
+    openMarket(server, hour);
   server.places.forEach((place, i) => {
-    if (place.open || hour < place.opensAt || !mayOpen(server, i)) return;
+    if (place.open || hour < place.opensAt || !mayOpen(server, i, rules)) return;
     place.open = true;
     place.progress = 0;
     place.size = projectSize(server, i, rules);

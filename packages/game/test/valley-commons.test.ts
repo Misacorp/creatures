@@ -103,26 +103,30 @@ describe('projects (V-COM-5, 11, 15)', () => {
     expect(shardUnits(2, false, 3)).toBe(0);
   });
 
-  it('open in the guided order: the hearth, then the Forge, then the rest', () => {
+  it('open in the guided order (Q48): the hearth, then the Market alone, then the Forge, then the rest', () => {
     const level: Record<string, number> = {};
     const of = (id: string): number => level[id] ?? 1;
-    expect(R.commons.places.filter((id) => mayOpenProject(R, id, of))).toEqual(['bonfire']);
+    const open = (): string[] => R.commons.places.filter((id) => mayOpenProject(R, id, of));
+    expect(R.commons.guided).toEqual(['bonfire', 'market', 'forge']);
+    expect(open()).toEqual(['bonfire']);
     level['bonfire'] = 2;
-    expect(R.commons.places.filter((id) => mayOpenProject(R, id, of))).toEqual([
-      'bonfire',
-      'forge',
-    ]);
-    level['forge'] = 2;
-    expect(R.commons.places.filter((id) => mayOpenProject(R, id, of))).toEqual(R.commons.places);
-    // The Market is the last of the places, built once: its one project opens with the rest, and no other follows (V-FORGE-11).
-    expect(R.commons.places.at(-1)).toBe('market');
+    // The hearth has levelled: the Market's project opens next, alone (the Forge and the rest wait for it).
+    expect(open()).toEqual(['bonfire', 'market']);
     level['market'] = 2;
-    expect(mayOpenProject(R, 'market', of)).toBe(false);
+    // The Market is built: its one project never opens again, the Forge's follows.
+    expect(open()).toEqual(['bonfire', 'forge']);
+    level['forge'] = 2;
+    expect(open()).toEqual(R.commons.places.filter((id) => id !== 'market'));
     expect(mayOpenProject(R, 'school', of)).toBe(true);
+    expect(mayOpenProject(R, 'market', of)).toBe(false);
   });
 
-  it('size the Market like a level-2 project and pay it in Acorns and scrap only', () => {
-    expect(projectSize(R, 1, 8, 'market')).toBeCloseTo(projectSize(R, 2, 8), 9);
+  it('size the Market small (a share of the base, Q48) and pay it in Acorns and scrap only', () => {
+    expect(projectSize(R, 1, 8, 'market')).toBeCloseTo(
+      R.commons.baseSize * R.commons.oneShot['market']!.sizeFactor,
+      9,
+    );
+    expect(projectSize(R, 1, 8, 'market')).toBeLessThan(projectSize(R, 2, 8) / 2);
     expect(projectSize(R, 1, 8, 'school')).toBeCloseTo(projectSize(R, 1, 8), 9);
     const need = partNeeds(R, 1000, 'market');
     expect(need.shards).toBe(0);

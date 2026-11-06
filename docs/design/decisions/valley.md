@@ -4,6 +4,14 @@ The valley and peaceful systems overhaul planned in docs/design/valley/: job pos
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-06: The Market is the second guided project, straight after the hearth (Q48, built)
+
+ID: `2026-11-06-the-market-is-the-second-guided` · Status: current · Amends: `2026-11-06-phase-5-step-6-the-commons`
+
+**Decision.** Builds Q48 (answer A, round 19), which steps 6 and 7 had not: the guided order is **the hearth, then the Market alone, then the Forge, then every other place** (`VALLEY_RULES.commons.guided`, V-COM-15). `mayOpenProject` opens a guided project once the ones before it have levelled (the Market counts as levelled when built, level 2); a place not named opens once all three have. This also amends `2026-11-06-phase-5-step-7-the-market`, which made the Market the last place to open (with the rest, after the hearth and the Forge). The Market's project is small: `oneShot.market.sizeFactor` 0.25 of the base size (was "sized as a level-2 project", 1.0; the hearth's first level is 0.0875), still paid half Acorns, half scrap, no shards (`oneShot.sizeLevel` became `sizeFactor`, a share of the base, so the number is the rule's own). The lab follows the same rule: `openMarket` runs in `refreshProjects` when the hearth has levelled (the stall-share trigger `MARKET_OPENS_AT` is gone), and a variant with no Market (the day-one broker) skips it in the order. Client: a waiting place says what it waits for ("Opens once the hearth has grown" for the Market, "once the Market is built" for the Forge).
+
+**Reasoning.** With the order of step 7 the Market was built in week 12 (median) on `mixed8-market`; once Q64 locked the exchange until the Market stood, the Forge's shard stall over weeks 2 to 12 rose from 43% (day-one tap) to 73% (T-4b's 25% line). Q48 asked for the fix to arrive as the first anvils start waiting. Measured on `mixed8-market` (10 seeds): size 0.25 builds the Market on day 12.8 to 14.8 across seeds (opened day 6 to 8, after the hearth levels), T-4b 5% (median over 10 seeds; 9% over 20; 11% in the report's 6), T-3a unchanged at day 6.6. A smaller Market (0.0875 to 0.2) is built by day 10 to 12 but leaves the scrap pile flagged dead (T-7b) at 10 seeds, because the old 4,500 scrap of a level-2 Market was a real scrap sink and the Forge's own project opens later; 0.25 and 0.35 pass T-7b at 10 seeds, and 0.6 and up fail T-4b. T-7 and T-7b on this variant still flip with the seed count (they fail at 6 seeds, pass at 10 and 20): the variant is a study, the judged targets run on the day-one `mixed8` server and did not move. Week 2 itself still stalls (67%), because the Market is built in days 12 to 15.
+
 ## 2026-11-06: Q64 built: the exchange at the Market only, the opening as a paper headline, the lab without an early exchange
 
 ID: `2026-11-06-q64-built-the-exchange-at-the` · Status: current
@@ -58,7 +66,7 @@ ID: `2026-11-06-phase-5-step-6b-the-commons` · Status: current
 
 ## 2026-11-06: Phase 5 step 6: the commons on the server (places and projects, gifts, plaque and keepsake, levels bound seats, communal seats, keystones and collections, the fire, the hearth)
 
-ID: `2026-11-06-phase-5-step-6-the-commons` · Status: current
+ID: `2026-11-06-phase-5-step-6-the-commons` · Status: current, amended by `2026-11-06-the-market-is-the-second-guided`
 
 **Decision.** Migration 61 (one migration; no 62), behind `VALLEY_SYSTEMS`. Guild-level tables, cleared by `valley-fresh` through `VALLEY_GUILD_TABLES`: `valley_places` (one row per place: level, the serial number of its project, the open project's size and what each part has taken, when the next may open, the plaque), `valley_collections` (one row per socket that has been set, with the finder's name), `valley_fire_log` (one row per warming step with the fire's total after it), and, beyond the four the brief named, `valley_keystones` (one clock per scouting destination). Per-player: `valley_gifts` (one row per player per project: what they gave, a plaque flag; index `(place, project)` for the plaque) and `valley_players.visit_mask`, `mask_day`, `joined_day`; `valley_server.weight`. Eight rules:
 

@@ -124,21 +124,26 @@ describe('the Market before and after it is built (V-FORGE-11, V-COM-15)', () =>
     );
   });
 
-  it('opens its one project with the rest once the hearth and the Forge have levelled, paid in Acorns and scrap only', async () => {
+  it('opens its one project as soon as the hearth has levelled (Q48), small, paid in Acorns and scrap only, and the Forge follows', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
         const p = await newPlayer(ctx, 1);
         await p.state();
-        ctx.sql.exec("UPDATE valley_places SET level = 2 WHERE place IN ('bonfire', 'forge')");
+        ctx.sql.exec("UPDATE valley_places SET level = 2 WHERE place = 'bonfire'");
         const open = (await view(p)).commons?.places.find((x) => x.id === 'market');
         expect(open?.state).toBe('open');
         expect(open?.project?.needs.shards).toBe(0);
         expect(open?.project?.needs.acorns).toBeGreaterThan(0);
-        // Sized like a level-2 project (the lab's Market).
+        // Small, a share of the base size (the lab's Market). The Forge's project waits until it is built.
+        expect((await view(p)).commons?.places.find((x) => x.id === 'forge')?.state).toBe(
+          'waiting',
+        );
         const weight = 1;
         expect(open?.project?.size).toBeCloseTo(
-          R.commons.baseSize * R.commons.levelFactor[1]! * (weight / 8) ** R.commons.sizeExponent,
+          R.commons.baseSize *
+            R.commons.oneShot['market']!.sizeFactor *
+            (weight / 8) ** R.commons.sizeExponent,
           6,
         );
         // Shards are not taken for it.
@@ -172,6 +177,8 @@ describe('the Market before and after it is built (V-FORGE-11, V-COM-15)', () =>
         });
         expect(after.market?.open).toBe(true);
         expect(after.market?.seat?.creatureId).toBeNull();
+        // The Forge's project follows the Market.
+        expect(after.commons?.places.find((x) => x.id === 'forge')?.state).toBe('open');
         // Days later the Market still opens nothing more.
         ctx.clock.t += 10 * 24 * HOUR;
         const later = await view(p);
