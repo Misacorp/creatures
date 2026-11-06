@@ -42,6 +42,14 @@ import { raidLivePacingMigration } from './raid-live-pacing-migration';
 import { raidMigration } from './raid-migration';
 import { raidPlacementCapMigration } from './raid-placement-cap-migration';
 import { raidProgressionMigration } from './raid-progression-migration';
+import { valleyMigration } from './valley-migration';
+import { valleyScoutsMigration } from './valley-scouts-migration';
+import { valleyForgeMigration } from './valley-forge-migration';
+import { valleyBonfireMigration } from './valley-bonfire-migration';
+import { valleyCommonsMigration } from './valley-commons-migration';
+import { valleyMarketMigration } from './valley-market-migration';
+import { valleyMarketOpenMigration } from './valley-market-open-migration';
+import { valleyGazetteMigration } from './valley-gazette-migration';
 import { weatherMigration } from './weather-migration';
 import { workshopConvertMigration } from './workshop-convert-migration';
 import { workshopV2Migration } from './workshop-v2-migration';
@@ -342,6 +350,22 @@ export const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
   raidPartyCarryMigration,
   raidSwapMigration,
   raidLiveV2Migration,
+  // Version 56: the valley's per-player tables, empty until the VALLEY_SYSTEMS flag is on (see valley-migration.ts).
+  valleyMigration,
+  // Version 57: scouts' seats and kit, scouting hours, the Paddock gate's auto-answer time (see valley-scouts-migration.ts).
+  valleyScoutsMigration,
+  // Version 58: the Forge loop: anvils (seats), orders, the floor, the bag counter, smithing hours (see valley-forge-migration.ts).
+  valleyForgeMigration,
+  // Version 59: the welcome-back Gazette's last paper per player (see valley-gazette-migration.ts).
+  valleyGazetteMigration,
+  // Version 60: the server's middle, the catch-up target, small-moment turns and the raid placements by player (see valley-bonfire-migration.ts).
+  valleyBonfireMigration,
+  // Version 61: the commons: places, gifts, collections, the fire's log, keystone clocks, visit days (see valley-commons-migration.ts).
+  valleyCommonsMigration,
+  // Version 62: the Market's broker: trading hours (see valley-market-migration.ts).
+  valleyMarketMigration,
+  // Version 63: the Market's opening is told once to each player in the paper (see valley-market-open-migration.ts).
+  valleyMarketOpenMigration,
 ];
 
 /** The schema version of a fresh database. */

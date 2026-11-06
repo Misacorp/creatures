@@ -1,4 +1,4 @@
-import { RULES, resourceName } from '@creatures/game';
+import { RULES } from '@creatures/game';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Creature, GameState } from './api';
 import {
@@ -37,6 +37,8 @@ import { GlossaryTag } from './Glossary';
 import { abilityDef } from './live';
 import { Accordion } from './ui/Accordion';
 import { ActionButton } from './ui/ActionButton';
+import { ShortOfLine } from './ui/CountBadge';
+import { essenceAmount } from './resource-count';
 import { ArmchairIcon } from './ui/ArmchairIcon';
 import { DataTable, type DataRow } from './ui/DataTable';
 import { handleFlipKey } from './ui/flip-keys';
@@ -398,6 +400,7 @@ export function CreaturePage({
                   large
                   label={evolveNeed.label}
                   detail={evolveNeed.detail}
+                  {...(evolveNeed.cost === undefined ? {} : { cost: evolveNeed.cost })}
                   disabled={busy || evolveNeed.blocked !== undefined}
                   onClick={() => {
                     actions.onEvolve(creature);
@@ -410,13 +413,17 @@ export function CreaturePage({
                     wide
                     large
                     label="Evolve"
-                    detail={`${String(evolveShort.cost)} ${resourceName('essence')}`}
+                    cost={[essenceAmount(evolveShort.cost)]}
                     disabled
                     onClick={() => undefined}
                   />
                   <p class="muted ribbon-note">
-                    Short of {resourceName('essence')}: you have {String(evolveShort.have)} /{' '}
-                    {String(evolveShort.cost)}.{' '}
+                    <ShortOfLine
+                      short={{
+                        have: [essenceAmount(evolveShort.have)],
+                        cost: [essenceAmount(evolveShort.cost)],
+                      }}
+                    />{' '}
                     <GlossaryTag entry="essence" look="help" class="ribbon-help" />
                   </p>
                 </div>

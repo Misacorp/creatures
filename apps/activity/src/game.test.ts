@@ -9,7 +9,6 @@ import {
   creatureAbilityText,
   creatureName,
   errorText,
-  evolutionText,
   fusionGain,
   fusionProgressText,
   fusionStars,
@@ -75,7 +74,12 @@ describe('display helpers', () => {
     expect(badgeTexts({ ...base, outcome: 'duplicate' })).toEqual(['Duplicate']);
     expect(catchBadgeTags({ ...base, outcome: 'duplicate' })[0]?.entry).toBe('duplicate-choice');
     expect(badgeTexts({ ...base, outcome: 'fused', fusionCount: 3 })).toEqual(['Fused ★3']);
-    expect(badgeTexts({ ...base, outcome: 'converted', bait: 5 })).toEqual(['+5 Bait']);
+    // Bait from a converted duplicate is a "+" and the Bait badge (icon and number), never the word.
+    expect(badgeTexts({ ...base, outcome: 'converted', bait: 5 })).toEqual(['+']);
+    expect(catchBadgeTags({ ...base, outcome: 'converted', bait: 5 })[0]?.item).toMatchObject({
+      key: 'bait',
+      amount: 5,
+    });
     expect(badgeTexts({ ...base, outcome: 'new', shiny: true, firstOnServer: true })).toEqual([
       'New!',
       'Shiny!',
@@ -100,7 +104,11 @@ describe('display helpers', () => {
       { text: 'First on server!', entry: 'first-on-server' },
     ]);
     expect(catchBadgeTags({ ...base, outcome: 'converted', bait: 5 })).toEqual([
-      { text: '+5 Bait', entry: 'bait' },
+      {
+        text: '+',
+        entry: 'bait',
+        item: { key: 'bait', icon: { kind: 'glyph', id: 'bait' }, amount: 5, label: 'Bait' },
+      },
     ]);
   });
 
@@ -156,25 +164,6 @@ describe('display helpers', () => {
     expect(text).not.toContain('_');
     expect(text).not.toContain('Something went wrong');
     expect(text.length).toBeGreaterThan(10);
-  });
-});
-
-describe('evolutionText', () => {
-  const evolution = { toSpecies: 'splashet', level: 15, essence: 40, available: false };
-
-  it('offers the evolution when the server says it is available', () => {
-    const text = evolutionText(15, { ...evolution, available: true }, 50);
-    expect(text.available).toBe(true);
-    expect(text.label).toContain('40 Essence');
-  });
-
-  it('says what is missing', () => {
-    expect(evolutionText(10, evolution, 100).label).toContain('needs level 15');
-    expect(evolutionText(10, evolution, 100).label).not.toContain('Essence');
-    expect(evolutionText(15, evolution, 5).label).toContain('needs 40 Essence');
-    const both = evolutionText(3, evolution, 0);
-    expect(both.label).toContain('level 15 and 40 Essence');
-    expect(both.available).toBe(false);
   });
 });
 

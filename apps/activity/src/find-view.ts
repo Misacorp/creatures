@@ -8,6 +8,7 @@ import type { ChoiceRequest, ChoiceResult, PendingCatch, TalentView } from './ta
 import { choiceResultText } from './talent-view';
 import type { CountItem } from './ui/CountBadge';
 import { GLOSSARY_IDS } from '@creatures/game';
+import { formatCountdown } from './time-format';
 
 /**
  * A found creature as the trip result and the waiting catches draw it: its card, and for a duplicate the
@@ -56,11 +57,22 @@ export interface Find {
   talent: TalentView | null;
   /** The talent is new to every creature of its line the player has (or the creature itself is new). */
   talentNew: boolean;
-  badges: { text: string; entry: string | null }[];
+  badges: { text: string; entry: string | null; item?: CountItem }[];
   /** A duplicate's choice; null for a new creature (or a duplicate already answered). */
   choice: { card: PendingCatch; options: FindOption[] } | null;
   /** What an answered duplicate became, in a sentence. */
   answered: string | null;
+}
+
+/**
+ * What a waiting newcomer says about the day it is answered for the player (the valley's Paddock gate, V-SCOUT-3): the player can
+ * step in any time before. Nothing for a card that waits for the player (no `autoAt`). Calm: never says anything was missed.
+ */
+export function autoAnswerLine(card: Pick<PendingCatch, 'autoAt'>, now: number): string | null {
+  if (card.autoAt === undefined) return null;
+  const left = card.autoAt - now;
+  if (left <= 0) return 'Answered for you soon. You can still choose now.';
+  return `Answered for you in ${formatCountdown(left, 'short')}. You can choose before then.`;
 }
 
 /** The player's creatures of a species' line, in the order the state lists them. */

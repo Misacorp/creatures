@@ -81,6 +81,7 @@
 @import './components/fold-row.css';
 @import './components/picker.css';
 @import './components/scroll-hint.css';
+@import './components/pan-hint.css';
 @import './views/jobs.css';
 @import './views/gear-slot.css';
 @import './components/loot.css';
@@ -139,6 +140,10 @@
 @import './views/games-tab.css';
 @import './views/home.css';
 @import './views/valley.css';
+@import './views/signpost.css';
+@import './views/forge.css';
+@import './views/commons.css';
+@import './views/market.css';
 @import './views/gazette.css';
 @import './views/gazette-home.css';
 @import './views/settings.css';

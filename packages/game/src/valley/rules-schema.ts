@@ -8,6 +8,13 @@ const pos = v.pipe(v.number(), v.finite(), v.minValue(0.000001));
 const share = v.pipe(v.number(), v.minValue(0), v.maxValue(1));
 const int = v.pipe(v.number(), v.integer(), v.minValue(0));
 const nums = v.array(num);
+const costSplitSchema = v.pipe(
+  v.strictObject({ acorns: share, scrap: share, shards: share }),
+  v.check(
+    (s) => Math.abs(s.acorns + s.scrap + s.shards - 1) < 1e-9,
+    'the shares of a project must add up to 1',
+  ),
+);
 const stepList = v.pipe(
   v.array(v.strictObject({ until: pos, share })),
   v.minLength(1),
@@ -96,6 +103,25 @@ export const ValleyRulesSchema = v.strictObject({
         rich: v.picklist(['scrap', 'shards', 'creatures', 'rare', 'none']),
       }),
     ),
+    extraPlaces: v.array(
+      v.strictObject({
+        id: v.pipe(v.string(), v.regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)),
+        element: v.nullable(v.picklist(VALLEY_ELEMENTS)),
+        rich: v.picklist(['scrap', 'shards', 'creatures', 'rare', 'none']),
+        opens: v.picklist(['always', 'festival']),
+      }),
+    ),
+    nightMultiplier: pos,
+    twistRollsPerExtra: num,
+    firstFindHours: pos,
+    gateAutoHours: pos,
+    pushOn: v.strictObject({
+      minStep: int,
+      chancePerHour: pos,
+      partsMultiplier: pos,
+      rareMultiplier: pos,
+      residentWeight: pos,
+    }),
     keystoneMeanDays: pos,
     placeAffinity: pos,
     species: v.strictObject({ start: int, dropFromWeek: int, dropEveryWeeks: int, dropCount: int }),
@@ -129,6 +155,9 @@ export const ValleyRulesSchema = v.strictObject({
     tinkerScrapEveryHours: pos,
     floorPiecesPerAnvil: int,
     bag: int,
+    queueMax: int,
+    orderCountMax: int,
+    markChance: share,
     slotsPerCreature: int,
     weakMargin: int,
     dismantle: v.tuple([rarityRow, rarityRow, rarityRow]),
@@ -168,6 +197,7 @@ export const ValleyRulesSchema = v.strictObject({
   }),
   commons: v.strictObject({
     places: v.array(v.string()),
+    guided: v.array(v.string()),
     maxLevel: int,
     baseSize: pos,
     levelFactor: v.array(pos),
@@ -177,12 +207,14 @@ export const ValleyRulesSchema = v.strictObject({
     buildHours: num,
     weight: v.strictObject({ oneDay: share, fullAtDays: pos }),
     giftValue: v.strictObject({ acorns: pos, scrap: pos, shards: pos }),
-    costSplit: v.pipe(
-      v.strictObject({ acorns: share, scrap: share, shards: share }),
-      v.check(
-        (s) => Math.abs(s.acorns + s.scrap + s.shards - 1) < 1e-9,
-        'the shares of a project must add up to 1',
-      ),
+    costSplit: costSplitSchema,
+    oneShot: v.record(
+      v.string(),
+      v.strictObject({
+        sizeFactor: pos,
+        costSplit: costSplitSchema,
+        shardValue: v.optional(pos),
+      }),
     ),
     placeElement: v.record(v.string(), v.picklist(VALLEY_ELEMENTS)),
     placeWeights: v.record(v.string(), pos),

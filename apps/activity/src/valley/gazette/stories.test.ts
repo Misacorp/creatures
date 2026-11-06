@@ -80,6 +80,31 @@ describe('the finds of the away window', () => {
     expect(found.newcomers.map((f) => (f.kind === 'newcomer' ? f.id : ''))).toEqual([b.id]);
   });
 
+  it('with the Forge on a batch comes home best first (rarity, then item level), the blueprints after it (V-GEAR-4)', () => {
+    const mk = (id: string, rarity: GearItem['rarity'], itemLevel: number, createdAt: number) => ({
+      ...sampleGearItem({ id, baseId: 'kelp-cap', rarity, itemLevel }),
+      createdAt,
+    });
+    const items = [
+      mk('common-late', 'common', 9, 1900),
+      mk('epic', 'epic', 4, 1100),
+      mk('rare-high', 'rare', 8, 1200),
+      mk('rare-low', 'rare', 2, 1800),
+    ];
+    const ids = (bestFirst: boolean): string[] =>
+      foundWhileAway(
+        summary(),
+        world({
+          items,
+          blueprints: [{ baseId: 'trail-charm', learnedAt: 1950 }],
+          ...(bestFirst ? { bestFirst } : {}),
+        }),
+      ).things.map((f) => (f.kind === 'item' ? f.id : f.kind === 'blueprint' ? f.baseId : ''));
+    expect(ids(true)).toEqual(['epic', 'rare-high', 'rare-low', 'common-late', 'trail-charm']);
+    // Off: newest first, as before.
+    expect(ids(false)).toEqual(['trail-charm', 'common-late', 'rare-low', 'rare-high', 'epic']);
+  });
+
   it('finds nothing before the gear view has loaded', () => {
     expect(foundWhileAway(summary(), world({ items: null, blueprints: null })).things).toEqual([]);
   });

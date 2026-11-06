@@ -122,9 +122,609 @@ async function answer(route) {
   await route.fulfill({
     status: 200,
     contentType: 'application/json',
-    body: JSON.stringify(make()),
+    body: JSON.stringify(make(route.request())),
   });
 }
+
+// --- The valley's scouts (phase 5 step 2): a small server of its own for the Signpost's three routes ---------
+
+const PLACES = [
+  ['tidepools', 'tide', 'scrap', true],
+  ['ember-caves', 'ember', 'shards', true],
+  ['verdant-hollow', 'grove', 'creatures', true],
+  ['festival-grounds', null, 'rare', false],
+].map(([id, element, rich, open]) => ({
+  id,
+  element,
+  rich,
+  open,
+  night: false,
+  special: id === 'ember-caves',
+}));
+const LADDER = [0, 113, 188, 281, 394, 525];
+/** The Signpost's state of a scenario: the seats (id, destination, creatureId, hours), the kit owned and the creatures' ids. */
+const scouts = { seats: [], owned: [], ids: [] };
+/** The Bonfire's state of a scenario (phase 5 step 5): who is online with which creatures, who is catching up, whose post is in the raid. */
+const bonfire = { online: [], warm: new Set(), raid: new Set() };
+/** The server's unread paper of a scenario (phase 5 step 4: `valley.paper`), and what the Gazette's routes were asked. */
+const gazette = { paper: null };
+const gazetteCalls = [];
+const headline = (kind, weight, count, extra = {}) => ({
+  kind,
+  weight,
+  count,
+  creatureIds: [],
+  species: null,
+  step: null,
+  rarity: null,
+  turn: null,
+  items: [],
+  blueprints: [],
+  newcomers: [],
+  ...extra,
+});
+const paperOf = (kind, creatures) => {
+  const [a, , c] = creatures;
+  const newest = creatures[creatures.length - 1];
+  const long = kind === 'long absence';
+  const headlines = long
+    ? [
+        headline('new-species', 95, 3, {
+          creatureIds: [a.id],
+          species: newest.species,
+          newcomers: [newest.id, creatures[1].id, c.id],
+        }),
+        headline('mastery-scout', 90, 2, { creatureIds: [a.id], step: 3 }),
+        headline('found-gear', 95, 7, {
+          creatureIds: [a.id],
+          rarity: 'epic',
+          items: [
+            { id: 'e2e-1', baseId: 'kelp-cap', rarity: 'epic', level: 9 },
+            { id: 'e2e-2', baseId: 'kelp-cap', rarity: 'rare', level: 8 },
+          ],
+        }),
+      ]
+    : [
+        headline('new-species', 100, 1, {
+          creatureIds: [a.id],
+          species: newest.species,
+          newcomers: [newest.id],
+        }),
+        headline('found-gear', 80, 2, {
+          creatureIds: [a.id],
+          rarity: 'rare',
+          items: [{ id: 'e2e-3', baseId: 'kelp-cap', rarity: 'rare', level: 5 }],
+        }),
+        headline('resting-xp', 45, 1, { creatureIds: [c.id] }),
+      ];
+  return {
+    id: String(1799760000000 + (long ? 1 : 0)),
+    at: 1799760000000,
+    awayHours: long ? 216 : 26,
+    headlines: headlines.sort((x, y) => y.weight - x.weight),
+    more: long ? 9 : 2,
+    brought: { acorns: long ? 480 : 130, scrap: 60, shards: 7 },
+    decision: long
+      ? null
+      : { kind: 'push-on', seatId: 'seat-1', creatureId: a.id, destination: 'ember-caves' },
+  };
+};
+const seatView = (s) => ({
+  id: s.id,
+  destination: s.destination,
+  creatureId: s.creatureId,
+  kit: s.kit ?? null,
+  fit: false,
+  paused: s.creatureId !== null && bonfire.raid.has(s.creatureId) ? 'raid' : null,
+  second: false,
+  deep: s.deep === true,
+  mastery: { hours: 0, step: 0, bonusBp: 0 },
+  store: {
+    hours: s.creatureId === null ? 0 : s.hours,
+    capHours: 72,
+    full: s.creatureId !== null && s.hours >= 72,
+    wasFull: false,
+    fullInHours: s.creatureId === null || s.hours >= 72 ? null : 72 - s.hours,
+    scrap: Math.round(s.hours * 2),
+    shards: Math.round(s.hours * 0.13),
+    gear: 0,
+    blueprints: 0,
+    pages: 0,
+  },
+  perDay: { scrap: 50, shards: 3, creatures: 0.3, gear: 0.2, blueprints: 0.07, pages: 0.1 },
+});
+/** The Forge's state of a scenario (phase 5 step 3): the anvils (id, creatureId, kit, orders), the shelf and the order counter. */
+const forgeState = {
+  anvils: [],
+  shelf: { scrap: 120, essence: 30, shards: { tide: 4, ember: 7, grove: 0, spark: 2, mire: 3 } },
+  nextOrder: 1,
+  /** An element every smith with an order waits for (Q64's wait line); null: nobody waits for a shard. */
+  waitShard: null,
+};
+const ANVIL_LADDER = [
+  { acorns: 0, scrap: 0 },
+  { acorns: 123, scrap: 38 },
+];
+const orderView = (o) => ({
+  id: o.id,
+  blueprintId: o.blueprintId ?? null,
+  forTeam: o.blueprintId === undefined || o.blueprintId === null,
+  count: o.count,
+  made: 0,
+  reach: o.reach,
+  needs: {
+    scrap: 36,
+    shardElement:
+      forgeState.waitShard ??
+      (o.blueprintId === undefined || o.blueprintId === null
+        ? null
+        : String(o.blueprintId).startsWith('patchwork-')
+          ? (o.element ?? null)
+          : 'tide'),
+    shard: 1,
+    essence: o.reach === 'rare' ? 25 : o.reach === 'epic' ? 70 : 0,
+  },
+  waiting: forgeState.waitShard === null ? null : 'shard',
+});
+const anvilView = (a) => ({
+  id: a.id,
+  creatureId: a.creatureId,
+  kit: a.kit ?? null,
+  paused: a.creatureId !== null && bonfire.raid.has(a.creatureId) ? 'raid' : null,
+  mastery: { hours: 0, step: 0, bonusBp: 0 },
+  orders: a.orders.map(orderView),
+  piece:
+    a.creatureId !== null && a.orders.length > 0 && forgeState.waitShard === null
+      ? { orderId: a.orders[0].id, rarity: 0, progress: 6, need: 16, leftHours: 10 }
+      : null,
+  tinkering:
+    a.creatureId !== null &&
+    a.orders.length > 0 &&
+    forgeState.waitShard !== null &&
+    !bonfire.raid.has(a.creatureId)
+      ? { reason: 'shard', shardElement: forgeState.waitShard, sinceHours: 3 }
+      : a.creatureId !== null && a.orders.length === 0 && !bonfire.raid.has(a.creatureId)
+        ? { reason: 'idle', shardElement: null, sinceHours: 3 }
+        : null,
+  floor: { count: 2, cap: 5, full: false, byRarity: [2, 0, 0] },
+  perDay: { pieces: a.creatureId !== null && a.orders.length > 0 ? 1.5 : 0 },
+});
+/** The Market's state of a scenario (phase 5 step 7): whether the block is sent, the broker's creature and what it trades toward. */
+const marketState = { on: false, built: false, creatureId: null, toward: null };
+const BROKER_TIER = { rate: 2.4, critBp: 1000, critYield: 2 };
+const marketBlock = () => ({
+  open: marketState.built,
+  seat: marketState.built
+    ? {
+        id: 'broker-1',
+        creatureId: marketState.creatureId,
+        paused: null,
+        toward: marketState.toward,
+        mastery: { hours: 0, step: 0, bonusBp: 0 },
+        terms: BROKER_TIER,
+        next: { rate: 2.4, critBp: 1500, critYield: 2, atHours: 48 },
+        blocked: null,
+      }
+    : null,
+});
+/** The server's `valley` block for the scenario's seats; every creature rests unless a seat holds it. */
+const valleyBlock = () => ({
+  settledAt: 1799760000000,
+  arrived: true,
+  awayHours: 6,
+  creatures: scouts.ids.map((id, i) => {
+    const seat = scouts.seats.find((s) => s.creatureId === id);
+    const anvil = forgeState.anvils.find((a) => a.creatureId === id);
+    const helps = Object.entries(commonsState.communal).find(([, creatureId]) => creatureId === id);
+    const trades = marketState.on && marketState.creatureId === id;
+    return {
+      id,
+      state:
+        seat !== undefined
+          ? 'scouting'
+          : anvil !== undefined
+            ? 'smithing'
+            : trades
+              ? 'trading'
+              : helps !== undefined
+                ? 'helping'
+                : 'resting',
+      gained: 25 + i * 11,
+      catchUpBp: bonfire.warm.has(id) ? 24000 : 10000,
+      seatId:
+        seat?.id ??
+        anvil?.id ??
+        (trades ? 'broker-1' : helps === undefined ? null : `communal-${helps[0]}`),
+    };
+  }),
+  online: bonfire.online,
+  allowance: { store: 0, cap: 480, brought: 0 },
+  anvils: forgeState.anvils.map(anvilView),
+  anvilPrices: {
+    owned: forgeState.anvils.length,
+    max: 2,
+    next: ANVIL_LADDER[forgeState.anvils.length] ?? null,
+    ladder: ANVIL_LADDER,
+  },
+  forge: {
+    shelf: forgeState.shelf,
+    bag: { count: 34, cap: 200 },
+    fireLevel: 1,
+    exchange: { rate: 3, critBp: 1000, critYield: 2 },
+    queueMax: 3,
+    orderCountMax: 99,
+  },
+  seats: scouts.seats.map(seatView),
+  seatPrices: {
+    owned: scouts.seats.length,
+    max: 2,
+    next: scouts.seats.length >= 2 ? null : LADDER[scouts.seats.length],
+    ladder: LADDER,
+  },
+  kit: { owned: scouts.owned, price: 875 },
+  places: PLACES,
+  night: false,
+  special: { destination: 'ember-caves', twist: 'rich-veins' },
+  ...(gazette.paper === null ? {} : { paper: gazette.paper }),
+  ...(commonsState.on ? { commons: commonsBlock() } : {}),
+  ...(marketState.on ? { market: marketBlock() } : {}),
+});
+/** Puts the scouts' state into the state the page asks for (and answers each route with it). */
+const syncValley = () => {
+  stateOverride = { ...stateOverride, valley: valleyBlock() };
+  return { valley: valleyBlock(), state: { ...state(), valley: undefined } };
+};
+/** What the Signpost's routes were asked, in order (the body of each). */
+const scoutCalls = [];
+const bodyOf = (request) => JSON.parse(request.postData() ?? '{}');
+ROUTES.set('/api/valley/seat', (request) => {
+  const body = bodyOf(request);
+  scoutCalls.push(['seat', body]);
+  if (body.seatId === 'broker-1' && body.creatureId !== undefined) {
+    marketState.creatureId = body.creatureId;
+  }
+  const anvil = forgeState.anvils.find((a) => a.id === body.seatId);
+  if (anvil !== undefined && body.creatureId !== undefined) {
+    const other = forgeState.anvils.find((a) => a.creatureId === body.creatureId && a !== anvil);
+    if (other !== undefined) other.creatureId = anvil.creatureId;
+    anvil.creatureId = body.creatureId;
+  }
+  const seat = scouts.seats.find((s) => s.id === body.seatId);
+  if (seat !== undefined) {
+    if (body.destination !== undefined)
+      Object.assign(seat, { destination: body.destination, hours: 0 });
+    if (body.creatureId !== undefined) {
+      const other = scouts.seats.find((s) => s.creatureId === body.creatureId && s !== seat);
+      if (other !== undefined) other.creatureId = seat.creatureId;
+      seat.creatureId = body.creatureId;
+      if (body.creatureId !== null && seat.hours === 0) seat.hours = 12;
+    }
+  }
+  return { seatId: body.seatId, ...syncValley() };
+});
+ROUTES.set('/api/valley/seat/buy', (request) => {
+  scoutCalls.push(['buy', bodyOf(request)]);
+  scouts.seats.push({
+    id: `seat-${String(scouts.seats.length + 1)}`,
+    destination: 'tidepools',
+    creatureId: null,
+    hours: 0,
+  });
+  return { seatId: scouts.seats.at(-1).id, price: 0, ...syncValley() };
+});
+ROUTES.set('/api/valley/kit', (request) => {
+  const body = bodyOf(request);
+  scoutCalls.push(['kit', body]);
+  if (body.action === 'buy') scouts.owned.push(body.kit);
+  else {
+    const seat =
+      scouts.seats.find((s) => s.id === body.seatId) ??
+      forgeState.anvils.find((a) => a.id === body.seatId);
+    if (seat !== undefined) seat.kit = body.kit;
+  }
+  return { ...syncValley() };
+});
+
+/** What the Forge's routes were asked, in order (the route and the body of each). */
+const forgeCalls = [];
+ROUTES.set('/api/valley/anvil/buy', (request) => {
+  forgeCalls.push(['anvil/buy', bodyOf(request)]);
+  const next = ANVIL_LADDER[forgeState.anvils.length];
+  forgeState.shelf.scrap -= next.scrap;
+  forgeState.anvils.push({
+    id: `anvil-${String(forgeState.anvils.length + 1)}`,
+    creatureId: null,
+    kit: null,
+    orders: [],
+  });
+  return { seatId: forgeState.anvils.at(-1).id, ...syncValley() };
+});
+ROUTES.set('/api/valley/order', (request) => {
+  const body = bodyOf(request);
+  forgeCalls.push(['order', body]);
+  if (body.action === 'add') {
+    const anvil = forgeState.anvils.find((a) => a.id === body.seatId);
+    anvil.orders.push({
+      id: `order-${String(forgeState.nextOrder++)}`,
+      blueprintId: body.forTeam ? null : body.blueprintId,
+      count: body.count ?? 1,
+      reach: body.reach ?? 'none',
+      element: body.element,
+    });
+  } else if (body.action === 'edit') {
+    for (const a of forgeState.anvils) {
+      const order = a.orders.find((o) => o.id === body.orderId);
+      if (order !== undefined)
+        Object.assign(order, {
+          count: body.count ?? order.count,
+          reach: body.reach ?? order.reach,
+        });
+    }
+  } else {
+    for (const a of forgeState.anvils) a.orders = a.orders.filter((o) => o.id !== body.orderId);
+  }
+  return { ...syncValley() };
+});
+ROUTES.set('/api/valley/exchange', (request) => {
+  const body = bodyOf(request);
+  forgeCalls.push(['exchange', body]);
+  const shards = forgeState.shelf.shards;
+  const from =
+    body.from ??
+    Object.keys(shards)
+      .filter((e) => e !== body.to)
+      .sort((x, y) => shards[y] - shards[x])[0];
+  shards[from] -= 3 * body.times;
+  shards[body.to] += body.times;
+  return {
+    trades: Array.from({ length: body.times }, () => ({})),
+    gained: body.times,
+    ...syncValley(),
+  };
+});
+
+/**
+ * The commons of a scenario (phase 5 step 6b): each place's level, project (its size and what each part has taken), build days, plaque and
+ * keepsakes, the collections' finders, the fire, and the communal seats. `commonsBlock` makes the server's `valley.commons` from it.
+ */
+const commonsState = {
+  on: false,
+  hearthBp: 10000,
+  fire: {
+    level: 12,
+    milli: 12400,
+    next: 25,
+    recent: [
+      { source: 'place', place: 'forge', at: 1799700000000 },
+      { source: 'collection', place: 'signpost', at: 1799600000000 },
+    ],
+  },
+  places: {},
+  sockets: {},
+  communal: {},
+};
+const COMMONS_PLACES = ['bonfire', 'forge', 'signpost', 'paddock', 'school', 'market'];
+const COMMONS_ELEMENT = {
+  bonfire: 'ember',
+  forge: 'ember',
+  signpost: 'grove',
+  paddock: 'tide',
+  school: 'spark',
+  market: 'mire',
+};
+const COMMONS_BOARDS = {
+  forge: [
+    'keystone:tidepools',
+    'keystone:ember-caves',
+    'keystone:verdant-hollow',
+    'keystone:storm-ridge',
+    'everyday',
+  ],
+  signpost: [
+    'keystone:sunken-fen',
+    'keystone:old-crossroads',
+    'keystone:tidepools',
+    'keystone:storm-ridge',
+    'everyday',
+  ],
+  bonfire: ['landmark:1', 'landmark:2', 'landmark:3', 'landmark:4', 'everyday'],
+  paddock: ['resident:1', 'resident:2', 'resident:3', 'resident:4', 'everyday'],
+  school: ['page:1', 'page:2', 'page:3', 'page:4', 'everyday'],
+};
+/**
+ * The units each part of a project of `size` needs: the shares 0.4, 0.4 and 0.2 over the parts' values 1, 0.5 and 2. The Market's
+ * (V-COM-15): 0.5 and 0.5 of Acorns and scrap, and shards of any element, one value each (`MARKET_SHARD`), may fill the whole of it.
+ */
+const MARKET_SHARD = 0.25;
+const needsOf = (size, id = '') =>
+  id === 'market'
+    ? { acorns: size * 0.5, scrap: size, shards: size / MARKET_SHARD }
+    : { acorns: size * 0.4, scrap: size * 0.8, shards: size * 0.1 };
+const valueOfPart = (part, id) =>
+  part === 'shards' && id === 'market' ? MARKET_SHARD : PART_VALUE[part];
+/** How much of a project is filled, in Acorns' worth (the Market's never past its size). */
+const filledOf = (p, id) => {
+  const need = needsOf(p.size, id);
+  const sum = ['acorns', 'scrap', 'shards'].reduce(
+    (total, part) => total + Math.min(p.have[part], need[part]) * valueOfPart(part, id),
+    0,
+  );
+  return id === 'market' ? Math.min(p.size, sum) : sum;
+};
+/** The units a part still takes (the Market's no more than what the project still lacks). */
+const roomOfPart = (p, id, part) => {
+  const own = Math.max(0, needsOf(p.size, id)[part] - p.have[part]);
+  return id === 'market'
+    ? Math.min(own, Math.max(0, p.size - filledOf(p, id)) / valueOfPart(part, id))
+    : own;
+};
+const PART_VALUE = { acorns: 1, scrap: 0.5, shards: 2 };
+const placeOf = (id) => ({
+  level: 1,
+  state: 'waiting',
+  size: 0,
+  have: { acorns: 0, scrap: 0, shards: 0 },
+  given: 0,
+  buildDays: 0,
+  plaque: [],
+  keepsakes: 0,
+  ...commonsState.places[id],
+});
+/** The commons' places, a few of them open or built, for a scenario that wants the boards. */
+const commonsScene = (overrides = {}) => {
+  commonsState.on = true;
+  commonsState.hearthBp = 10000;
+  commonsState.communal = {};
+  commonsCalls.length = 0;
+  commonsState.sockets = {
+    forge: [null, 'Mia', null, null, 'Ada'],
+    signpost: [null, null, null, null, null],
+  };
+  commonsState.places = {
+    bonfire: {
+      level: 1,
+      state: 'open',
+      size: 400,
+      have: { acorns: 60, scrap: 100, shards: 4 },
+      given: 60,
+    },
+    forge: {
+      level: 2,
+      state: 'building',
+      buildDays: 2,
+      plaque: ['Ada', 'Mia', 'Tobias'],
+      keepsakes: 1,
+    },
+    signpost: {
+      level: 2,
+      state: 'open',
+      size: 900,
+      have: { acorns: 120, scrap: 200, shards: 20 },
+      plaque: ['Ada', 'Mia', 'Tobias', 'You'],
+      keepsakes: 1,
+    },
+    paddock: { level: 1, state: 'open', size: 600, have: { acorns: 180, scrap: 360, shards: 45 } },
+    school: { level: 1, state: 'waiting' },
+    // The guided start (Q48) opens the Market second, before the Forge: a valley with a Forge being built has its Market built.
+    market: { level: 2, state: 'done', plaque: ['Ada'] },
+    ...overrides,
+  };
+};
+const commonsBlock = () => ({
+  places: COMMONS_PLACES.map((id) => {
+    const p = placeOf(id);
+    const open = p.state === 'open';
+    const progress = open ? filledOf(p, id) : 0;
+    return {
+      id,
+      level: p.level,
+      max: id === 'market' ? 2 : 5,
+      cosmetic: 0,
+      state: p.state,
+      project: open
+        ? {
+            size: p.size,
+            progress,
+            needs: {
+              acorns: roomOfPart(p, id, 'acorns'),
+              scrap: roomOfPart(p, id, 'scrap'),
+              shards: roomOfPart(p, id, 'shards'),
+            },
+            shardElement: COMMONS_ELEMENT[id],
+            anyShard: id === 'market' ? MARKET_SHARD : null,
+            cosmetic: false,
+          }
+        : null,
+      buildDaysLeft: p.state === 'building' ? p.buildDays : 0,
+      mine: {
+        given: Math.round(p.given),
+        shareBp: p.given > 0 && open ? Math.round((p.given / Math.max(1, progress)) * 10000) : 0,
+      },
+      plaque: p.plaque,
+      keepsakes: p.keepsakes,
+    };
+  }),
+  collections: COMMONS_PLACES.filter((id) => id in COMMONS_BOARDS).map((id) => {
+    const finders = commonsState.sockets[id] ?? [];
+    return {
+      place: id,
+      sockets: COMMONS_BOARDS[id].map((source, k) => ({
+        source,
+        set: finders[k] !== undefined && finders[k] !== null,
+        finder: finders[k] ?? null,
+      })),
+      done: false,
+    };
+  }),
+  fire: commonsState.fire,
+  hearthBp: commonsState.hearthBp,
+  keystones: { found: 1, meanDays: 21 },
+  communal: COMMONS_PLACES.map((id) => ({
+    place: id,
+    seatId: id in commonsState.communal ? `communal-${id}` : null,
+    creatureId: commonsState.communal[id] ?? null,
+    storeHours: 0,
+    perDay: 6,
+  })),
+});
+/** What the commons' routes were asked, in order (the route and the body of each). */
+const commonsCalls = [];
+ROUTES.set('/api/valley/gift', (request) => {
+  const body = bodyOf(request);
+  commonsCalls.push(['gift', body]);
+  const p = placeOf(body.place);
+  const need = needsOf(p.size, body.place);
+  const part = body.currency;
+  // The Market counts shards of every element in full (V-COM-15); other places count only their own so.
+  const own = body.place === 'market' || body.element === COMMONS_ELEMENT[body.place];
+  const units = part === 'shards' && !own ? Math.floor(body.amount / 3) : body.amount;
+  const room = Math.max(0, Math.ceil(roomOfPart(p, body.place, part) - 1e-9));
+  const taken = Math.min(units, room);
+  const spent = part === 'shards' && !own ? taken * 3 : taken;
+  const have = { ...p.have, [part]: p.have[part] + taken };
+  const done =
+    body.place === 'market'
+      ? filledOf({ ...p, have }, 'market') >= p.size - 1e-9
+      : ['acorns', 'scrap', 'shards'].every((k) => have[k] >= need[k] - 1e-9);
+  commonsState.places[body.place] = done
+    ? {
+        ...p,
+        have: { acorns: 0, scrap: 0, shards: 0 },
+        level: p.level + 1,
+        state: body.place === 'market' ? 'done' : 'building',
+        buildDays: 3,
+        plaque: [...p.plaque, 'You'].sort(),
+        keepsakes: p.keepsakes + 1,
+        given: 0,
+      }
+    : { ...p, have, given: p.given + taken * valueOfPart(part, body.place) };
+  return {
+    place: body.place,
+    currency: part,
+    spent,
+    value: taken * valueOfPart(part, body.place),
+    levelUp: done,
+    level: commonsState.places[body.place].level,
+    ...syncValley(),
+  };
+});
+ROUTES.set('/api/valley/broker', (request) => {
+  const body = bodyOf(request);
+  commonsCalls.push(['broker', body]);
+  marketState.toward = body.toward;
+  return { seatId: body.seatId, ...syncValley() };
+});
+ROUTES.set('/api/valley/communal', (request) => {
+  const body = bodyOf(request);
+  commonsCalls.push(['communal', body]);
+  for (const [place, creatureId] of Object.entries(commonsState.communal)) {
+    if (creatureId === body.creatureId && place !== body.place) {
+      commonsState.communal[place] = commonsState.communal[body.place] ?? null;
+    }
+  }
+  commonsState.communal[body.place] = body.creatureId;
+  return { seatId: `communal-${body.place}`, ...syncValley() };
+});
 
 // --- The checklist ----------------------------------------------------------------------------------------
 
@@ -177,7 +777,9 @@ page.on('requestfailed', (r) => {
   if (process.env.DEBUG_E2E) console.log('failed:', r.url(), r.failure()?.errorText);
 });
 page.on('response', async (r) => {
-  console.log('starter:', r.status(), (await r.text()).slice(0, 300));
+  // Debug line for the starter pick only; a body the page already dropped is not an error.
+  if (!r.url().endsWith('/api/starter')) return;
+  console.log('starter:', r.status(), (await r.text().catch(() => '')).slice(0, 300));
 });
 await page.route('**/api/**', answer);
 
@@ -418,6 +1020,12 @@ try {
       if (book === 'Journal') {
         // From 60 rem a list of places and the open place's pages beside it; a phone keeps the folded headings.
         const wide = width >= 960;
+        // The Journal loads its entries first: the list is there once it has.
+        await page
+          .locator(wide ? '.journal .choice-list' : '.journal .journal-place')
+          .first()
+          .waitFor({ timeout: 5000 })
+          .catch(() => undefined);
         const lists = await page.locator('.journal .choice-list').count();
         const panels = await page.locator('.journal .side-panel').count();
         const folds = await page.locator('.journal .journal-place').count();
@@ -572,6 +1180,7 @@ try {
       });
       await page.mouse.move(to.x, to.y, { steps: 6 });
       await page.mouse.up();
+      await page.waitForTimeout(150);
       if ((await page.getByRole('dialog').count()) > 0)
         throw new Error('a drag opened the popover');
       const dropped = await centre();
@@ -580,6 +1189,16 @@ try {
           `dropped near (${String(Math.round(dropped.x))}, ${String(Math.round(dropped.y))}), not at (${String(Math.round(to.x))}, ${String(Math.round(to.y))})`,
         );
       }
+      // A drag that is released back over the creature it started on is still a drag, not a tap.
+      const back = await centre();
+      await page.mouse.move(back.x, back.y);
+      await page.mouse.down();
+      await page.mouse.move(back.x + 40, back.y + 10, { steps: 5 });
+      await page.mouse.move(back.x, back.y, { steps: 5 });
+      await page.mouse.up();
+      await page.waitForTimeout(150);
+      if ((await page.getByRole('dialog').count()) > 0)
+        throw new Error('a drag released over its own creature opened the popover');
       // A press that hardly moves is a tap.
       await mon.first().click();
       await waitFor(page.getByRole('dialog'));
@@ -737,6 +1356,573 @@ try {
     },
   );
 
+  // The valley's base systems on (phase 5 step 1): every creature rests, the Bonfire opens with a few round the fire.
+  await scenario(
+    'valley systems on: the Bonfire opens with the resting creatures, their gains and "+N more"',
+    () => {
+      const config = ROUTES.get('/api/config');
+      answerOverride.set('/api/config', () => ({ ...config(), valleySystems: true }));
+      const creatures = baseState.creatures.map((c) => ({ ...c, busy: null, away: false }));
+      scouts.seats = [];
+      scouts.ids = creatures.map((c) => c.id);
+      stateOverride = { creatures, valley: valleyBlock() };
+    },
+    async () => {
+      await waitFor(page.locator(VALLEY), 'attached');
+      // The tray says each creature rests.
+      await waitFor(
+        page.locator('section[aria-label="Your creatures"] button[aria-label*="Resting"]'),
+      );
+      await shot('tray-resting');
+      await place('bonfire').evaluate((el) => el.click());
+      await waitFor(heading('Bonfire'));
+      // Not the "not open yet" line: creatures sit round the fire, each with its +N on the plate.
+      if ((await page.getByText(/will burn here/).count()) > 0)
+        throw new Error('the Bonfire is still "not open yet"');
+      const plates = page.locator('.vy-feet-plate .nameplate-gain');
+      await waitFor(plates);
+      const drawn = await plates.count();
+      for (let i = 0; i < drawn; i += 1)
+        await expectTopmost(plates.nth(i).locator('xpath=..'), `plate ${String(i)} at the fire`);
+      await page.waitForTimeout(300);
+      await shot('bonfire-open');
+      const more = page.getByRole('button', { name: /more: show all \d+ resting/ });
+      if ((await more.count()) > 0) {
+        await expectTopmost(more.first(), 'the "+N more" button');
+        await more.first().click();
+        await waitFor(page.getByRole('dialog'));
+        const rows = await page.getByRole('dialog').locator('ul li').count();
+        if (rows !== baseState.creatures.length)
+          throw new Error(
+            `the list shows ${String(rows)} of ${String(baseState.creatures.length)}`,
+          );
+        await shot('bonfire-all-resting');
+        await page.keyboard.press('Escape');
+      } else if (drawn !== baseState.creatures.length) {
+        throw new Error(`${String(drawn)} drawn, no "+N more" for the rest`);
+      }
+    },
+  );
+
+  // The Signpost with the valley's systems on (phase 5 step 2): take a seat, post a scout, move it, drag one on with the fit
+  // previewed, remove it; a full pack. Nothing may overlap (`expectTopmost`) at any width.
+  await scenario(
+    'valley systems on: the Signpost is its scouts: take a seat, post, move, drag with a preview, remove',
+    () => {
+      const config = ROUTES.get('/api/config');
+      answerOverride.set('/api/config', () => ({ ...config(), valleySystems: true }));
+      const creatures = baseState.creatures.map((c) => ({ ...c, busy: null, away: false }));
+      scouts.seats = [];
+      scouts.owned = [];
+      scouts.ids = creatures.map((c) => c.id);
+      scoutCalls.length = 0;
+      stateOverride = { creatures, valley: valleyBlock() };
+    },
+    async () => {
+      await waitFor(page.locator(VALLEY), 'attached');
+      await place('signpost').evaluate((el) => el.click());
+      await waitFor(heading('Signpost'));
+      // Today's Expeditions page is gone: no trips, no explorer to send.
+      if ((await page.getByText(/Send an explorer|Send on a trip/i).count()) > 0)
+        throw new Error('the Expeditions page is still drawn');
+      await shot('signpost-no-seats');
+      // The scene's one step, then the seat to buy (the first is free).
+      const take = page.getByRole('button', { name: /^Take your first seat/ });
+      await waitFor(take);
+      await expectTopmost(take.first(), 'the "Take your first seat" button');
+      await page.getByRole('button', { name: /A new seat/ }).click();
+      await waitFor(page.getByRole('dialog'));
+      await page.getByRole('button', { name: /^Buy the seat/ }).click();
+      await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+      await waitFor(page.getByRole('heading', { name: 'Seat 1' }));
+      if (
+        !scoutCalls.some(
+          ([kind, body]) => kind === 'buy' && typeof body.idempotencyKey === 'string',
+        )
+      )
+        throw new Error('the seat was bought without an idempotency key');
+      // Post a scout from the picker.
+      const slot = page.getByRole('button', { name: /^Seat 1: nobody posted/ });
+      await expectTopmost(slot, 'the empty scout slot');
+      await slot.click();
+      await waitFor(page.getByRole('dialog', { name: /Who scouts/ }));
+      await shot('signpost-picker');
+      const [first, second] = baseState.creatures;
+      await page
+        .getByRole('option')
+        .filter({ hasText: /Sproutle/ })
+        .first()
+        .click();
+      await waitFor(page.getByRole('button', { name: /^Seat 1: Sproutle/ }));
+      if (scoutCalls.at(-1)?.[1].creatureId !== second.id)
+        throw new Error('the post named another creature');
+      // The pack's line, and the tray calls the scout Scouting (no z on it).
+      await waitFor(page.getByRole('button', { name: /^Full in / }));
+      const tray = page.locator(
+        `section[aria-label="Creatures to post"] button[data-creature="${second.id}"]`,
+      );
+      if (!/Scouting/.test((await tray.getAttribute('aria-label')) ?? ''))
+        throw new Error('the tray does not say Scouting');
+      if ((await tray.locator('.vy-zz').count()) > 0) throw new Error('a scout carries the z');
+      // Move it: another destination, from the drawer.
+      await page.getByRole('button', { name: /^Seat 1: scouting Tidepools/ }).click();
+      await waitFor(page.getByRole('dialog'));
+      await shot('signpost-where');
+      await page.getByRole('button', { name: /^Ember Caves/ }).click();
+      await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+      await waitFor(page.getByRole('button', { name: /^Seat 1: scouting Ember Caves/ }));
+      // Drag a resting creature from the tray onto the seat: the seat previews the change before the drop.
+      const mover = page.locator(
+        `section[aria-label="Creatures to post"] button[data-creature="${first.id}"]`,
+      );
+      const card = page.locator('li.sp-seat').first();
+      await mover.scrollIntoViewIfNeeded();
+      const at = await mover.boundingBox();
+      const over = await card.boundingBox();
+      if (at === null || over === null) throw new Error('no boxes to drag between');
+      await page.mouse.move(at.x + at.width / 2, at.y + at.height / 2);
+      await page.mouse.down();
+      await page.mouse.move(at.x + at.width / 2 + 12, at.y + at.height / 2 + 12, { steps: 4 });
+      await page.mouse.move(over.x + over.width / 2, over.y + over.height / 2, { steps: 10 });
+      await waitFor(page.locator('.sp-preview'));
+      await expectTopmost(page.locator('.sp-preview').first(), 'the fit preview');
+      await shot('signpost-drag-preview');
+      await page.mouse.up();
+      await waitFor(page.getByRole('button', { name: /^Seat 1: Cindle/ }));
+      if (scoutCalls.at(-1)?.[1].creatureId !== first.id)
+        throw new Error('the drop posted another creature');
+      // Remove it: back to resting.
+      await page.getByRole('button', { name: /^Seat 1: Cindle/ }).click();
+      await waitFor(page.getByRole('dialog', { name: /Who scouts/ }));
+      await page
+        .getByRole('option')
+        .filter({ hasText: /Back to resting/ })
+        .first()
+        .click();
+      await waitFor(page.getByRole('button', { name: /^Seat 1: nobody posted/ }));
+      if (scoutCalls.at(-1)?.[1].creatureId !== null) throw new Error('remove did not send null');
+      // No two things overlap: every seat card and the tray is the topmost thing at its box.
+      for (const loc of [
+        page.locator('li.sp-seat').first(),
+        page.locator('.sp-page .vy-tray').first(),
+      ]) {
+        await loc.scrollIntoViewIfNeeded();
+        await expectTopmost(loc, 'a Signpost card');
+      }
+      await shot('signpost-one-seat');
+    },
+  );
+
+  await scenario(
+    'valley systems on: a full pack says so on the seat and on the Signpost',
+    () => {
+      const config = ROUTES.get('/api/config');
+      answerOverride.set('/api/config', () => ({ ...config(), valleySystems: true }));
+      const creatures = baseState.creatures.map((c) => ({ ...c, busy: null, away: false }));
+      scouts.seats = [
+        { id: 'seat-1', destination: 'ember-caves', creatureId: creatures[1].id, hours: 80 },
+        { id: 'seat-2', destination: 'tidepools', creatureId: creatures[2].id, hours: 30 },
+      ];
+      scouts.owned = [];
+      scouts.ids = creatures.map((c) => c.id);
+      stateOverride = { creatures, valley: valleyBlock() };
+    },
+    async () => {
+      await waitFor(page.locator(VALLEY), 'attached');
+      // The Signpost's bubble on the map says a pack is full.
+      const bubble = place('signpost');
+      await waitFor(bubble);
+      if (!/pack is full/i.test((await bubble.getAttribute('aria-label')) ?? ''))
+        throw new Error('the Signpost has no full-pack bubble');
+      await bubble.evaluate((el) => el.click());
+      await waitFor(heading('Signpost'));
+      await waitFor(page.getByText('Pack full').first());
+      await waitFor(page.getByRole('heading', { name: 'Seat 2' }));
+      await page
+        .getByRole('button', { name: /^Pack full/ })
+        .first()
+        .click();
+      await waitFor(page.getByRole('dialog', { name: /Pack and pace/ }));
+      await page.waitForTimeout(600);
+      await expectTopmost(page.getByRole('dialog').first(), 'the pack drawer');
+      await shot('signpost-pack');
+      await page.keyboard.press('Escape');
+      await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+      await shot('signpost-two-seats');
+    },
+  );
+
+  // The Forge with the valley's systems on (phase 5 step 3): buy an anvil, post a smith, order, edit, remove, a second anvil (the exchange is at the Market, Q64).
+  await scenario(
+    'valley systems on: the Forge is its anvils: buy one, post a smith, add, edit and remove an order, a second anvil',
+    () => {
+      const config = ROUTES.get('/api/config');
+      answerOverride.set('/api/config', () => ({ ...config(), valleySystems: true }));
+      const creatures = baseState.creatures.map((c) => ({ ...c, busy: null, away: false }));
+      scouts.seats = [];
+      scouts.owned = [];
+      scouts.ids = creatures.map((c) => c.id);
+      forgeState.anvils = [];
+      forgeState.nextOrder = 1;
+      forgeCalls.length = 0;
+      // Acorns for the second anvil (123).
+      stateOverride = {
+        creatures,
+        balances: { ...baseState.balances, bait: 1000 },
+        valley: valleyBlock(),
+      };
+    },
+    async () => {
+      await waitFor(page.locator(VALLEY), 'attached');
+      await place('forge').evaluate((el) => el.click());
+      await waitFor(heading('Forge'));
+      // Today's job slots are gone.
+      if ((await page.getByText(/Craft supplies/).count()) > 0)
+        throw new Error('the Workshop still draws supply crafts');
+      await waitFor(page.getByRole('button', { name: /A new anvil/ }));
+      const take = page.getByRole('button', { name: /^Take your first anvil/ });
+      await waitFor(take);
+      await expectTopmost(take.first(), 'the "Take your first anvil" button');
+      await shot('forge-no-anvils');
+      await page.getByRole('button', { name: /A new anvil/ }).click();
+      await waitFor(page.getByRole('dialog'));
+      await page.getByRole('button', { name: /^Buy the anvil/ }).click();
+      await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+      await waitFor(page.getByRole('heading', { name: 'Anvil 1' }));
+      if (!forgeCalls.some(([k, b]) => k === 'anvil/buy' && typeof b.idempotencyKey === 'string'))
+        throw new Error('the anvil was bought without an idempotency key');
+      // Post a smith from the picker.
+      const slot = page.getByRole('button', { name: /^Anvil 1: nobody posted/ });
+      await slot.scrollIntoViewIfNeeded();
+      await expectTopmost(slot, 'the empty smith slot');
+      await slot.click();
+      await waitFor(page.getByRole('dialog', { name: /Who smiths/ }));
+      await page
+        .getByRole('option')
+        .filter({ hasText: /Sproutle/ })
+        .first()
+        .click();
+      await waitFor(page.getByRole('button', { name: /^Anvil 1: Sproutle/ }));
+      const [first, second] = baseState.creatures;
+      const tray = page.locator(
+        `section[aria-label="Creatures to post"] button[data-creature="${second.id}"]`,
+      );
+      if (!/Smithing/.test((await tray.getAttribute('aria-label')) ?? ''))
+        throw new Error('the tray does not say Smithing');
+      if ((await tray.locator('.vy-zz').count()) > 0) throw new Error('a smith carries the z');
+      await waitFor(page.getByText(/Tinkering/));
+      await shot('forge-one-smith-tinkering');
+      // Add an order: a blueprint, one more, Reach for Rare.
+      await page.getByRole('button', { name: /^Add an order/ }).click();
+      await waitFor(page.getByRole('dialog', { name: /Add an order/ }));
+      await page.getByRole('button', { name: /What to make: nothing chosen/ }).click();
+      await page.locator('ul[aria-label="Blueprints"] button').nth(1).click();
+      await page.getByRole('button', { name: /One more piece/ }).click();
+      await page.getByRole('button', { name: /Reach for Rare/ }).click();
+      await page.waitForTimeout(400);
+      await expectTopmost(page.getByRole('dialog').first(), 'the order editor');
+      await shot('forge-order-editor');
+      await page.getByRole('button', { name: /^Add to the queue/ }).click();
+      await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+      const added = forgeCalls.at(-1)?.[1];
+      if (added?.action !== 'add' || added.count !== 2 || added.reach !== 'rare')
+        throw new Error(`the order was ${JSON.stringify(added)}`);
+      await waitFor(page.locator('button.fg-order'));
+      await shot('forge-one-smith-at-work');
+      // Edit it, then take it off.
+      await page.locator('button.fg-order').first().click();
+      await waitFor(page.getByRole('dialog', { name: /Change the order/ }));
+      await page.getByRole('button', { name: /One more piece/ }).click();
+      await page.getByRole('button', { name: /^Save/ }).click();
+      await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+      if (forgeCalls.at(-1)?.[1].count !== 3) throw new Error('the edit did not send count 3');
+      await page.locator('button.fg-order').first().click();
+      await waitFor(page.getByRole('dialog', { name: /Change the order/ }));
+      await page.getByRole('button', { name: /Take it off the queue/ }).click();
+      await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+      if (forgeCalls.at(-1)?.[1].action !== 'remove') throw new Error('remove was not sent');
+      // A second anvil, a smith dragged on from the tray.
+      await page.getByRole('button', { name: /A new anvil/ }).click();
+      await waitFor(page.getByRole('dialog'));
+      await page.getByRole('button', { name: /^Buy the anvil/ }).click();
+      await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+      await waitFor(page.getByRole('heading', { name: 'Anvil 2' }));
+      const mover = page.locator(
+        `section[aria-label="Creatures to post"] button[data-creature="${first.id}"]`,
+      );
+      const card = page.locator('li.sp-seat').nth(1);
+      await mover.scrollIntoViewIfNeeded();
+      const start = await mover.boundingBox();
+      const target = await card.boundingBox();
+      const view = page.viewportSize();
+      if (start === null || target === null || view === null) throw new Error('no boxes to drag');
+      // A drop needs the card on screen with the tray (there is no scroll while carrying): wide pages
+      // drag it; a phone, where the card is screens below the tray, posts the smith from the picker.
+      const reachable = target.y + target.height / 2 < view.height && target.y > 0;
+      if (reachable) {
+        await page.mouse.move(start.x + start.width / 2, start.y + start.height / 2);
+        await page.mouse.down();
+        await page.mouse.move(start.x + start.width / 2 + 12, start.y + start.height / 2 + 12, {
+          steps: 4,
+        });
+        await page.mouse.move(target.x + target.width / 2, target.y + target.height / 2, {
+          steps: 10,
+        });
+        await page.mouse.up();
+      } else {
+        await page.getByRole('button', { name: /^Anvil 2: nobody posted/ }).click();
+        await waitFor(page.getByRole('dialog', { name: /Who smiths/ }));
+        await page
+          .getByRole('option')
+          .filter({ hasText: /Cindle/ })
+          .first()
+          .click();
+      }
+      await waitFor(page.getByRole('button', { name: /^Anvil 2: Cindle/ }));
+      await shot('forge-two-anvils');
+      // The bag's filter and sort, with the count against the cap.
+      await waitFor(page.getByText(/Bag: \d+ \/ \d+/));
+      const tools = page.getByRole('button', { name: /Filter and sort/ });
+      await tools.scrollIntoViewIfNeeded();
+      await tools.click();
+      await page.getByRole('button', { name: 'Rare', exact: true }).first().click();
+      await page.waitForTimeout(300);
+      await expectTopmost(tools, 'the bag tools header');
+      await shot('forge-bag-filter');
+      // The trade's notice floats at the top of the screen: bring each card to the middle.
+      for (const loc of [
+        page.locator('li.sp-seat').first(),
+        page.locator('.fg-page .vy-tray').first(),
+      ]) {
+        await loc.evaluate((el) => {
+          el.scrollIntoView({ block: 'center' });
+        });
+        await expectTopmost(loc, 'a Forge card');
+      }
+      forgeState.anvils = [];
+    },
+  );
+
+  // Patchwork pieces (V-FORGE-12): blueprints every player knows, taking shards of any element. In the Blueprints list with icon costs, and in the
+  // order editor with "Most held" as the default (the pile now holding most, as an icon) or a named element.
+  await scenario(
+    'valley systems on: a patchwork piece is ordered with "Most held" and with a named element',
+    () => {
+      const config = ROUTES.get('/api/config');
+      answerOverride.set('/api/config', () => ({ ...config(), valleySystems: true }));
+      const creatures = baseState.creatures.map((c) => ({ ...c, busy: null, away: false }));
+      scouts.seats = [];
+      scouts.owned = [];
+      scouts.ids = creatures.map((c) => c.id);
+      forgeState.anvils = [{ id: 'anvil-1', creatureId: creatures[1].id, kit: null, orders: [] }];
+      forgeState.nextOrder = 1;
+      forgeCalls.length = 0;
+      stateOverride = { creatures, valley: valleyBlock() };
+      // A finished patchwork piece in the bag: an ordinary Ember hat (the plainest one) with no rolled lines.
+      answerOverride.set('/api/gear', () => {
+        const gear = fixture('gear-state');
+        const stats = [
+          { stat: 'atk', value: 2, base: 2, text: 'Attack 2' },
+          { stat: 'hp', value: 3, base: 3, text: 'HP 3' },
+        ];
+        return {
+          ...gear,
+          items: gear.items.map((i) =>
+            i.baseId === 'kelp-cap'
+              ? { ...i, baseId: 'coal-warm-cap', tag: 'ember', rarity: 'common', stats, lines: [] }
+              : i,
+          ),
+        };
+      });
+    },
+    async () => {
+      await waitFor(page.locator(VALLEY), 'attached');
+      await place('forge').evaluate((el) => el.click());
+      await waitFor(heading('Forge'));
+      await waitFor(page.getByRole('heading', { name: 'Anvil 1' }));
+      // The Blueprints list has the three patchwork blueprints with their price as icons (no words, no quality).
+      const rows = page.locator('li.blueprint').filter({ hasText: /Patchwork/ });
+      await waitFor(rows);
+      if ((await rows.count()) !== 3)
+        throw new Error('the Blueprints list has no 3 patchwork rows');
+      const row = rows.first();
+      await row.scrollIntoViewIfNeeded();
+      if (/Quality|shards?\b/i.test((await row.locator('.bp-meta').textContent()) ?? ''))
+        throw new Error('a patchwork row names its costs or its quality in words');
+      if ((await row.locator('.bp-meta [role="img"], .bp-meta button').count()) < 2)
+        throw new Error('a patchwork row has no cost badges');
+      await expectTopmost(
+        row.getByRole('button', { name: /^Order/ }),
+        'the patchwork Order button',
+      );
+      await row.evaluate((el) => {
+        el.scrollIntoView({ block: 'center' });
+      });
+      await shot('patch-blueprints');
+      // Order it from its row: the editor opens with the blueprint picked and "Most held" (Ember holds most: 7).
+      await row.getByRole('button', { name: /^Order/ }).click();
+      await waitFor(page.getByRole('dialog', { name: /Add an order/ }));
+      const shards = page.getByRole('button', { name: /^Shards: most held, now Ember/ });
+      await waitFor(shards);
+      if ((await page.locator('ul[aria-label="Reach"]').count()) > 0)
+        throw new Error('a patchwork order offers a Reach');
+      await page.waitForTimeout(400);
+      await expectTopmost(page.getByRole('dialog').first(), 'the patchwork order editor');
+      await expectTopmost(shards, 'the shard slot');
+      await shot('patch-order-editor');
+      await page.getByRole('button', { name: /^Add to the queue/ }).click();
+      await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+      const most = forgeCalls.at(-1)?.[1];
+      if (
+        most?.action !== 'add' ||
+        most.blueprintId !== 'patchwork-hat' ||
+        most.element !== undefined ||
+        most.reach !== 'none'
+      )
+        throw new Error(`the "most held" order was ${JSON.stringify(most)}`);
+      await waitFor(page.locator('button.fg-order'));
+      // A second one with a named element: the shard choice lists Most held and the five elements.
+      await page.getByRole('button', { name: /^Add an order/ }).click();
+      await waitFor(page.getByRole('dialog', { name: /Add an order/ }));
+      await page.getByRole('button', { name: /What to make: nothing chosen/ }).click();
+      const pick = page.locator('ul[aria-label="Blueprints"] button').filter({
+        hasText: /Patchwork Charm/,
+      });
+      await waitFor(pick);
+      await expectTopmost(pick.first(), 'the patchwork blueprint choice');
+      await shot('patch-what-to-make');
+      await pick.first().click();
+      await page.getByRole('button', { name: /^Shards: most held/ }).click();
+      await waitFor(page.getByText('Which shards'));
+      if ((await page.locator('ul[aria-label="Shards"] button').count()) !== 6)
+        throw new Error('the shard choice does not list Most held and the five elements');
+      await page.waitForTimeout(300);
+      await expectTopmost(page.getByRole('dialog').first(), 'the shard choice');
+      await shot('patch-shard-choice');
+      await page.locator('ul[aria-label="Shards"] button').filter({ hasText: /Grove/ }).click();
+      await waitFor(page.getByRole('button', { name: /^Shards: Grove/ }));
+      await page.getByRole('button', { name: /^Add to the queue/ }).click();
+      await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+      const named = forgeCalls.at(-1)?.[1];
+      if (
+        named?.action !== 'add' ||
+        named.blueprintId !== 'patchwork-charm' ||
+        named.element !== 'grove' ||
+        named.reach !== 'none'
+      )
+        throw new Error(`the named order was ${JSON.stringify(named)}`);
+      await shot('patch-queue');
+      // The finished piece in the bag is an Ember hat like any other: its element badge and tint are the element's.
+      const piece = page.getByRole('option', { name: /Coal-Warm Cap/ }).first();
+      await piece.scrollIntoViewIfNeeded();
+      await piece.click();
+      await waitFor(page.getByRole('dialog'));
+      await page.waitForTimeout(500);
+      await expectTopmost(page.getByRole('dialog').first(), 'the finished piece card');
+      if (!/Ember/.test((await page.getByRole('dialog').first().textContent()) ?? ''))
+        throw new Error('the finished piece does not show its element');
+      await shot('patch-finished-piece');
+      forgeState.anvils = [];
+    },
+  );
+
+  // The welcome-back Gazette on the server's real paper (phase 5 step 4): it opens over the valley for an unread paper (and again after a
+  // reload), shows the paper's one choice at its end, takes it (a scout goes deeper), closes (the server is told once) and is gone after a
+  // reload. A short absence, a long one and the choice are each looked at; nothing may overlap (`expectTopmost`) at any width.
+  for (const kind of ['short absence', 'long absence']) {
+    await scenario(
+      `the Gazette on the server's paper (${kind}): opens, replays on a reload, takes the choice, closes`,
+      () => {
+        const config = ROUTES.get('/api/config');
+        answerOverride.set('/api/config', () => ({ ...config(), valleySystems: true }));
+        const creatures = baseState.creatures.map((c) => ({ ...c, busy: null, away: false }));
+        scouts.seats = [
+          { id: 'seat-1', destination: 'ember-caves', creatureId: creatures[0].id, hours: 20 },
+        ];
+        scouts.owned = [];
+        scouts.ids = creatures.map((c) => c.id);
+        scoutCalls.length = 0;
+        gazetteCalls.length = 0;
+        gazette.paper = paperOf(kind, creatures);
+        stateOverride = { creatures, valley: valleyBlock() };
+        answerOverride.set('/api/valley/gazette/close', (request) => {
+          gazetteCalls.push(['close', bodyOf(request)]);
+          gazette.paper = null;
+          stateOverride = { ...stateOverride, valley: valleyBlock() };
+          return { closed: true };
+        });
+        answerOverride.set('/api/valley/deep', (request) => {
+          gazetteCalls.push(['deep', bodyOf(request)]);
+          const seat = scouts.seats.find((s) => s.id === bodyOf(request).seatId);
+          if (seat !== undefined) seat.deep = bodyOf(request).deep;
+          if (gazette.paper !== null) gazette.paper = { ...gazette.paper, decision: null };
+          return { seatId: bodyOf(request).seatId, ...syncValley() };
+        });
+      },
+      async () => {
+        const paper = page.locator('article[aria-label="The Valley Gazette"]');
+        await waitFor(paper);
+        await waitFor(page.locator('h3.gz-headline'));
+        // The sheet slides up and the paper unfolds: measure once it is still.
+        await page.waitForTimeout(800);
+        const tag = kind.replace(' ', '-');
+        await expectTopmost(page.locator('.gz-masthead').first(), 'the masthead');
+        await expectTopmost(page.locator('h3.gz-headline').first(), 'the headline');
+        await shot(`gazette-${tag}`);
+        // A reload replays the unread paper.
+        await page.reload();
+        await page.evaluate(() => document.fonts.ready);
+        await waitFor(paper);
+        const heads = await page.locator('.gz-headline, .gz-brief-headline').count();
+        if (heads > 3) throw new Error(`${String(heads)} stories on the paper`);
+        if ((await page.getByText(/\b(missed|lost|reduced)\b/i).count()) > 0)
+          throw new Error('the paper uses loss wording');
+        if (kind === 'long absence') {
+          const note = await page.locator('.gz-home-note').innerText();
+          if (!/kept the fire going/.test(note)) throw new Error(`no welcome line: ${note}`);
+        }
+        // The choice, last on the paper (a scout's way deeper, only in the short paper).
+        const choice = page.locator('.gz-choice');
+        if (kind === 'short absence') {
+          await waitFor(choice);
+          await choice.first().scrollIntoViewIfNeeded();
+          await expectTopmost(choice.first(), 'the paper’s choice');
+          await expectTopmost(page.getByRole('button', { name: 'Push on' }), 'the Push on button');
+          await shot('gazette-decision');
+          await page.getByRole('button', { name: 'Push on' }).click();
+          await waitFor(page.locator('.gz-choice', { hasText: 'is deep in' }));
+          if (!gazetteCalls.some(([name, body]) => name === 'deep' && body.deep === true))
+            throw new Error('the scout was not sent deeper');
+          if ((await page.getByRole('button', { name: 'Push on' }).count()) > 0)
+            throw new Error('the button stays after the choice');
+          await expectTopmost(page.locator('.gz-choice').first(), 'the taken choice');
+          await shot('gazette-decision-taken');
+        } else if ((await choice.count()) > 0) {
+          throw new Error('a choice on a paper without one');
+        }
+        const closer = page.getByRole('button', { name: /more things?|Into the valley/i }).last();
+        await closer.scrollIntoViewIfNeeded();
+        await expectTopmost(closer, 'the paper’s closing button');
+        await closer.click();
+        await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+        const closes = gazetteCalls.filter(([name]) => name === 'close');
+        if (closes.length !== 1)
+          throw new Error(`the server was told ${String(closes.length)} times`);
+        await page.locator('.gz-fly').waitFor({ state: 'detached', timeout: 15000 });
+        // Closed: nothing holds a ring on the map.
+        const ringed = await page.locator(':focus-visible').count();
+        if (ringed > 0) throw new Error('a focus ring is left after the paper closed');
+        await shot(`gazette-closed-${tag}`);
+        // Closed: a reload shows no paper.
+        await page.reload();
+        await page.evaluate(() => document.fonts.ready);
+        await waitFor(page.locator(VALLEY), 'attached');
+        if ((await paper.count()) > 0) throw new Error('the paper came back after it was closed');
+        scouts.seats = [];
+      },
+    );
+  }
+
   await scenario(
     'a brand-new player: the starter pick first, then the valley with that one creature',
     () => {
@@ -767,6 +1953,786 @@ try {
       if (count !== 11) throw new Error(`expected 11 places, found ${String(count)}`);
       await waitFor(page.locator('section[aria-label="Your creatures"] button'));
       await shot('new-player-valley');
+    },
+  );
+
+  // The bonfire in full (phase 5 step 5): another player's creatures round the fire with their owner's name, a creature warming up
+  // under its flame, and a scout and a smith in the raid whose posts say so.
+  await scenario(
+    'valley systems on: visitors at the fire, a warming flame, and posts paused for the raid',
+    () => {
+      const config = ROUTES.get('/api/config');
+      answerOverride.set('/api/config', () => ({ ...config(), valleySystems: true }));
+      // Eight of the player's own (the fixture has three): the first two are posted, two more are catching up.
+      const creatures = Array.from({ length: 8 }, (_, i) => {
+        const from = baseState.creatures[i % baseState.creatures.length];
+        return {
+          ...from,
+          id: i < baseState.creatures.length ? from.id : `${from.id}-r${String(i)}`,
+          level: 4 + ((i * 3) % 9),
+          busy: null,
+          away: false,
+        };
+      });
+      scouts.seats = [
+        { id: 'seat-1', destination: 'tidepools', creatureId: creatures[0].id, hours: 30 },
+      ];
+      forgeState.anvils = [{ id: 'anvil-1', creatureId: creatures[1].id, kit: null, orders: [] }];
+      scouts.ids = creatures.map((c) => c.id);
+      bonfire.online = [
+        {
+          name: 'Mia',
+          creatures: [
+            { id: 'v1', species: creatures[2].species, shiny: false, level: 9, name: null },
+          ],
+        },
+        {
+          name: 'Tobias',
+          creatures: [
+            { id: 'v2', species: creatures[3].species, shiny: false, level: 14, name: 'Pebble' },
+          ],
+        },
+      ];
+      bonfire.warm = new Set([creatures[4].id, creatures[5].id]);
+      bonfire.raid = new Set([creatures[0].id, creatures[1].id]);
+      stateOverride = { creatures, valley: valleyBlock() };
+    },
+    async () => {
+      try {
+        await waitFor(page.locator(VALLEY), 'attached');
+        await place('bonfire').evaluate((el) => el.click());
+        await waitFor(heading('Bonfire'));
+        const owners = page.locator('.vy-feet-plate .nameplate-owner');
+        await waitFor(owners);
+        const names = (await owners.allInnerTexts()).join(',');
+        if (!names.includes('Mia') || !names.includes('Tobias'))
+          throw new Error(`the visitors' owners are not on their plates: ${names}`);
+        await waitFor(page.locator('.vy-flame'));
+        const plates = page.locator('.vy-feet-plate .nameplate');
+        for (let i = 0; i < (await plates.count()); i += 1)
+          await expectTopmost(plates.nth(i), `plate ${String(i)} at the fire`);
+        await page.waitForTimeout(300);
+        await shot('bonfire5-company');
+        await hudBack().click();
+        await waitFor(page.locator(VALLEY), 'attached');
+        await place('signpost').evaluate((el) => el.click());
+        await waitFor(heading('Signpost'));
+        await waitFor(page.getByText('In the raid until Sunday'));
+        await shot('bonfire5-signpost-paused');
+        await hudBack().click();
+        await waitFor(page.locator(VALLEY), 'attached');
+        await place('forge').evaluate((el) => el.click());
+        await waitFor(heading('Forge'));
+        await waitFor(page.getByText('In the raid until Sunday'));
+        await page.getByText('In the raid until Sunday').first().scrollIntoViewIfNeeded();
+        await shot('bonfire5-forge-paused');
+        await hudBack().click();
+        await waitFor(page.locator(VALLEY), 'attached');
+      } finally {
+        bonfire.online = [];
+        bonfire.warm = new Set();
+        bonfire.raid = new Set();
+        scouts.seats = [];
+        forgeState.anvils = [];
+      }
+    },
+  );
+
+  // The commons on the client (phase 5 step 6b): the project boards, gifts, communal seats, the plaque, collections, the fire, the hearth.
+  const commonsOn = () => {
+    const config = ROUTES.get('/api/config');
+    answerOverride.set('/api/config', () => ({ ...config(), valleySystems: true }));
+    const creatures = baseState.creatures.map((c) => ({ ...c, busy: null, away: false }));
+    scouts.seats = [];
+    scouts.owned = [];
+    scouts.ids = creatures.map((c) => c.id);
+    forgeState.anvils = [];
+    return creatures;
+  };
+  const commonsOff = () => {
+    commonsState.on = false;
+    commonsState.communal = {};
+    commonsState.hearthBp = 10000;
+  };
+  const dialogOf = (name) => page.getByRole('dialog', { name });
+
+  await scenario(
+    "valley systems on: the Signpost's project board: give Acorns, post a helper, the plaque and the collection",
+    () => {
+      const creatures = commonsOn();
+      commonsScene();
+      stateOverride = {
+        creatures,
+        balances: { ...baseState.balances, bait: 1000 },
+        valley: valleyBlock(),
+      };
+    },
+    async () => {
+      try {
+        await waitFor(page.locator(VALLEY), 'attached');
+        await place('signpost').evaluate((el) => el.click());
+        await waitFor(heading('Signpost'));
+        const board = page.locator('section[aria-label="Signpost project"]');
+        await waitFor(board);
+        // The scaffolding stands round the road as the project fills.
+        await page.waitForTimeout(300);
+        await shot('commons-signpost-scaffolding');
+        await board.scrollIntoViewIfNeeded();
+        await expectTopmost(board, 'the Signpost board');
+        await shot('commons-signpost-board');
+        // Give: the list, then the amount, then the one confirm.
+        await board.getByRole('button', { name: /^Give/ }).click();
+        await waitFor(dialogOf(/Give to the project/));
+        await page.waitForTimeout(500);
+        await expectTopmost(page.getByRole('dialog').first(), 'the give drawer');
+        await shot('commons-give-list');
+        await page.getByRole('dialog').getByRole('button', { name: /^Bait/ }).click();
+        await waitFor(page.getByRole('dialog').getByRole('button', { name: /^Give/ }));
+        await page.waitForTimeout(300);
+        await expectTopmost(page.getByRole('dialog').first(), 'the give amount');
+        await shot('commons-give-amount');
+        await page
+          .getByRole('dialog')
+          .getByRole('button', { name: /One fewer/ })
+          .click();
+        await page.getByRole('dialog').getByRole('button', { name: /^Give/ }).click();
+        await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+        const gift = commonsCalls.find(([k]) => k === 'gift')?.[1];
+        if (
+          gift === undefined ||
+          gift.place !== 'signpost' ||
+          gift.currency !== 'acorns' ||
+          gift.amount !== 239 ||
+          typeof gift.idempotencyKey !== 'string'
+        )
+          throw new Error(`the gift was ${JSON.stringify(gift)}`);
+        await waitFor(board.getByText(/You gave/));
+        // A helper on the communal seat: the shared picker, then the slot and the tray say so.
+        const seat = board.getByRole('button', { name: /^Signpost: nobody helps/ });
+        await seat.scrollIntoViewIfNeeded();
+        await expectTopmost(seat, 'the empty helper slot');
+        await seat.click();
+        await waitFor(dialogOf(/Who helps build/));
+        await page
+          .getByRole('option')
+          .filter({ hasText: /Sproutle/ })
+          .first()
+          .click();
+        await waitFor(board.getByRole('button', { name: /^Signpost: Sproutle.*helping/ }));
+        const posted = commonsCalls.find(([k]) => k === 'communal')?.[1];
+        if (posted?.place !== 'signpost' || typeof posted.creatureId !== 'string')
+          throw new Error(`the helper was ${JSON.stringify(posted)}`);
+        const second = baseState.creatures[1];
+        const tray = page.locator(
+          `section[aria-label="Creatures to post"] button[data-creature="${second.id}"]`,
+        );
+        if (!/Helping/.test((await tray.getAttribute('aria-label')) ?? ''))
+          throw new Error('the tray does not say Helping');
+        await board.scrollIntoViewIfNeeded();
+        await shot('commons-signpost-helper');
+        // The plaque of the last finished level: names, no amounts.
+        await board.getByRole('button', { name: /The plaque of level 2/ }).click();
+        await waitFor(dialogOf(/Plaque, level 2/));
+        await page.waitForTimeout(500);
+        await expectTopmost(page.getByRole('dialog').first(), 'the plaque');
+        if (
+          (await page
+            .getByRole('dialog')
+            .getByText(/\d+%|\bAcorns\b/)
+            .count()) > 0
+        )
+          throw new Error('the plaque shows an amount');
+        await shot('commons-plaque');
+        await page.keyboard.press('Escape');
+        await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+        // The collection board with its five sockets.
+        await board.getByRole('button', { name: /Stones of the Roads/ }).click();
+        await waitFor(dialogOf(/Stones of the Roads/));
+        await page.waitForTimeout(500);
+        await expectTopmost(page.getByRole('dialog').first(), 'the collection board');
+        if ((await page.getByRole('dialog').locator('.cm-socket').count()) !== 5)
+          throw new Error('the board does not have five sockets');
+        await shot('commons-collection');
+        await page.keyboard.press('Escape');
+        await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+      } finally {
+        commonsOff();
+      }
+    },
+  );
+
+  await scenario(
+    'valley systems on: the Forge shows its fire and a project being built; a Paddock board is open',
+    () => {
+      const creatures = commonsOn();
+      commonsScene();
+      stateOverride = {
+        creatures,
+        balances: { ...baseState.balances, bait: 1000 },
+        valley: valleyBlock(),
+      };
+    },
+    async () => {
+      try {
+        await waitFor(page.locator(VALLEY), 'attached');
+        // The Places list mentions a project only while it is being built.
+        await page.locator('button.vy-hatch').click();
+        await waitFor(page.getByRole('dialog'));
+        const forgeRow = page
+          .getByRole('dialog')
+          .getByText(/the Forge is being built, 2 days left/);
+        await waitFor(forgeRow);
+        await page.waitForTimeout(500);
+        await shot('commons-places-list');
+        await page.keyboard.press('Escape');
+        await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+        await place('forge').evaluate((el) => el.click());
+        await waitFor(heading('Forge'));
+        const fire = page.getByRole('button', { name: /^The fire\./ });
+        await waitFor(fire);
+        await expectTopmost(fire, 'the fire');
+        await shot('commons-forge-fire');
+        const board = page.locator('section[aria-label="Forge project"]');
+        await board.scrollIntoViewIfNeeded();
+        await waitFor(board.getByText(/being built, 2 days left/));
+        await expectTopmost(board, 'the Forge board');
+        await shot('commons-forge-building');
+        await fire.scrollIntoViewIfNeeded();
+        await fire.click();
+        await waitFor(dialogOf(/The fire/));
+        await page.waitForTimeout(500);
+        await expectTopmost(page.getByRole('dialog').first(), 'the fire drawer');
+        await shot('commons-forge-fire-numbers');
+        await page.keyboard.press('Escape');
+        await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+        await hudBack().click();
+        await waitFor(page.locator(VALLEY), 'attached');
+        await place('paddock').evaluate((el) => el.click());
+        await waitFor(heading('Paddock'));
+        const paddock = page.locator('section[aria-label="Paddock project"]');
+        await waitFor(paddock);
+        // The scaffolding stands high round the Paddock: its project is three quarters full.
+        await page.waitForTimeout(300);
+        await shot('commons-paddock-scaffolding');
+        // A helper at the Paddock stands at its rails (it does not wander the meadow).
+        await paddock.getByRole('button', { name: /^Paddock: nobody helps/ }).click();
+        await waitFor(dialogOf(/Who helps build/));
+        await page
+          .getByRole('option')
+          .filter({ hasText: /Sproutle/ })
+          .first()
+          .click();
+        await waitFor(paddock.getByRole('button', { name: /^Paddock: Sproutle.*helping/ }));
+        await page.waitForTimeout(400);
+        await shot('commons-paddock-helper');
+        await paddock.scrollIntoViewIfNeeded();
+        await expectTopmost(paddock, 'the Paddock board');
+        await shot('commons-paddock-board');
+      } finally {
+        commonsOff();
+      }
+    },
+  );
+
+  await scenario(
+    'valley systems on: the Bonfire at level 3 has the grand hearth, shows its bonus, and its board opens in one drawer',
+    () => {
+      const creatures = commonsOn();
+      commonsScene({
+        bonfire: {
+          level: 3,
+          state: 'open',
+          size: 900,
+          have: { acorns: 120, scrap: 200, shards: 20 },
+          given: 0,
+          plaque: ['Ada', 'Mia'],
+          keepsakes: 1,
+        },
+      });
+      commonsState.hearthBp = 10800;
+      stateOverride = {
+        creatures,
+        balances: { ...baseState.balances, bait: 1000 },
+        valley: valleyBlock(),
+      };
+    },
+    async () => {
+      try {
+        await waitFor(page.locator(VALLEY), 'attached');
+        await place('bonfire').evaluate((el) => el.click());
+        await waitFor(heading('Bonfire'));
+        await waitFor(page.getByText(/Hearth adds 8% to every creature/));
+        const act = page.getByRole('button', { name: /^Help build the hearth/ });
+        await waitFor(act);
+        await expectTopmost(act, 'the hearth button');
+        const plates = page.locator('.vy-feet-plate .nameplate');
+        for (let i = 0; i < (await plates.count()); i += 1)
+          await expectTopmost(plates.nth(i), `plate ${String(i)} at the fire`);
+        await page.waitForTimeout(300);
+        await shot('commons-bonfire-level3');
+        await act.click();
+        await waitFor(dialogOf(/^Bonfire/));
+        await page.waitForTimeout(500);
+        await expectTopmost(page.getByRole('dialog').first(), 'the Bonfire board');
+        await shot('commons-bonfire-board');
+        // The give flow is a drill-in of the same drawer: one dialog at all times.
+        await page.getByRole('dialog').getByRole('button', { name: /^Give/ }).click();
+        await waitFor(page.getByRole('dialog').getByRole('button', { name: /^Bait/ }));
+        if ((await page.getByRole('dialog').count()) !== 1) throw new Error('two layers are up');
+        await page.getByRole('dialog').getByRole('button', { name: /^Bait/ }).click();
+        await page.getByRole('dialog').getByRole('button', { name: /^Give/ }).click();
+        // The gift lands and the drawer is back on the board.
+        await waitFor(page.getByRole('dialog').getByText(/You gave/));
+        if (!commonsCalls.some(([k, b]) => k === 'gift' && b.place === 'bonfire'))
+          throw new Error('no gift to the hearth');
+        // A helper at the fire (the lamplighter) is a drill-in of the same drawer too.
+        await page
+          .getByRole('dialog')
+          .getByRole('button', { name: /^Bonfire: nobody helps/ })
+          .click();
+        await waitFor(page.getByRole('dialog').getByRole('option').first());
+        if ((await page.getByRole('dialog').count()) !== 1) throw new Error('two layers are up');
+        await page
+          .getByRole('dialog')
+          .getByRole('option')
+          .filter({ hasText: /Sproutle/ })
+          .first()
+          .click();
+        await waitFor(page.getByRole('dialog').getByRole('button', { name: /helping/ }));
+        await page.keyboard.press('Escape');
+        await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+        await page.waitForTimeout(300);
+        await shot('commons-bonfire-lamplighter');
+        // The map draws the grand bonfire too.
+        await hudBack().click();
+        await waitFor(page.locator(VALLEY), 'attached');
+        await shot('commons-map-level3');
+      } finally {
+        commonsOff();
+      }
+    },
+  );
+
+  await scenario(
+    'valley systems on: the House shelves the keepsakes of the levels the player helped build',
+    () => {
+      const creatures = commonsOn();
+      commonsScene();
+      stateOverride = { creatures, valley: valleyBlock() };
+    },
+    async () => {
+      try {
+        await waitFor(page.locator(VALLEY), 'attached');
+        await place('house').evaluate((el) => el.click());
+        await waitFor(heading('House'));
+        const shelf = page.locator('section[aria-label="Keepsakes"]');
+        await waitFor(shelf);
+        await expectTopmost(shelf, 'the keepsake shelf');
+        await page.waitForTimeout(300);
+        await shot('commons-keepsakes');
+        await hudBack().click();
+        await waitFor(page.locator(VALLEY), 'attached');
+      } finally {
+        commonsOff();
+      }
+    },
+  );
+
+  // The Market (phase 5 step 7): not open until the guided start reaches it, the project board while it is built, then the broker's seat.
+  const marketOff = () => {
+    marketState.on = false;
+    marketState.built = false;
+    marketState.creatureId = null;
+    marketState.toward = null;
+    commonsOff();
+  };
+
+  await scenario(
+    'valley systems on: the Market is not open yet until the guided start reaches it',
+    () => {
+      const creatures = commonsOn();
+      // A young server: only the hearth's project is open, so the Market (second in the guided start) is not.
+      commonsScene({
+        forge: { level: 1, state: 'waiting' },
+        signpost: { level: 1, state: 'waiting' },
+        paddock: { level: 1, state: 'waiting' },
+        market: { level: 1, state: 'waiting' },
+      });
+      marketState.on = true;
+      stateOverride = { creatures, valley: valleyBlock() };
+    },
+    async () => {
+      try {
+        await waitFor(page.locator(VALLEY), 'attached');
+        await place('market').evaluate((el) => el.click());
+        await waitFor(heading('Market'));
+        await waitFor(page.getByText('A market will open here, for shards and trades.'));
+        await page.waitForTimeout(300);
+        await shot('market-not-open');
+        await backToValley();
+      } finally {
+        marketOff();
+      }
+    },
+  );
+
+  await scenario(
+    "valley systems on: the Market's project is built with the board (Acorns, scrap and shards of any kind)",
+    () => {
+      const creatures = commonsOn();
+      commonsScene({
+        market: {
+          level: 1,
+          state: 'open',
+          size: 700,
+          have: { acorns: 150, scrap: 300, shards: 0 },
+          given: 40,
+        },
+      });
+      marketState.on = true;
+      stateOverride = {
+        creatures,
+        balances: { ...baseState.balances, bait: 1000 },
+        valley: valleyBlock(),
+      };
+    },
+    async () => {
+      try {
+        await waitFor(page.locator(VALLEY), 'attached');
+        await place('market').evaluate((el) => el.click());
+        await waitFor(heading('Market'));
+        const board = page.locator('section[aria-label="Market project"]');
+        await waitFor(board);
+        await page.waitForTimeout(300);
+        await shot('market-building');
+        await board.scrollIntoViewIfNeeded();
+        await expectTopmost(board, 'the Market board');
+        // What is needed is icons and numbers (Acorns, scrap), never words.
+        await waitFor(board.getByText(/Still needed:/));
+        // Shards of any kind count too (V-COM-15): a line says so with the any-shard icon, and "Still needed" names no shard part.
+        await waitFor(board.getByText(/counts too, as many as you like/));
+        const needLine = await board
+          .locator('p', { hasText: /^Still needed:/ })
+          .first()
+          .innerText();
+        if (/shard|acorn|scrap/i.test(needLine))
+          throw new Error(`the Market board spells a resource out: ${needLine}`);
+        if (
+          (await board
+            .locator('p', { hasText: /^Still needed:/ })
+            .first()
+            .locator('[role="img"]')
+            .count()) !== 2
+        )
+          throw new Error('the Market board should need exactly Acorns and scrap, as icons');
+        await expectTopmost(board.getByText(/counts too, as many as you like/), 'the shard line');
+        await shot('mshards-board');
+        if ((await page.getByRole('button', { name: /^Broker/ }).count()) > 0)
+          throw new Error('a broker seat stands before the Market is built');
+        await board.getByRole('button', { name: /^Give/ }).click();
+        await waitFor(dialogOf(/Give to the project/));
+        await page.waitForTimeout(500);
+        await expectTopmost(page.getByRole('dialog').first(), 'the Market give drawer');
+        // A row is an icon and a number: its name is the icon's spoken label ("Ember Shards: 7").
+        const rows = await page
+          .getByRole('dialog')
+          .getByRole('button')
+          .evaluateAll((els) =>
+            els.map((e) => e.querySelector('[role="img"]')?.getAttribute('aria-label') ?? ''),
+          );
+        // The shelf holds Ember 7, Tide 4, Mire 3, Spark 2 (Grove 0): every pile held, the biggest first, none for Grove.
+        const shardRows = rows.filter((r) => /shard/i.test(r));
+        const order = ['Ember', 'Tide', 'Mire', 'Spark'].map((n) =>
+          shardRows.findIndex((r) => r.startsWith(`${n} Shard`)),
+        );
+        if (order.join() !== '0,1,2,3' || shardRows.length !== 4)
+          throw new Error(`the give list offers shards in the wrong order: ${rows.join(' | ')}`);
+        await shot('mshards-give-list');
+        // Give Ember shards (any element counts in full): the gift names the element, one keyed gift.
+        await page
+          .getByRole('dialog')
+          .getByRole('button', { name: /^Ember Shard/ })
+          .click();
+        await waitFor(page.getByRole('dialog').getByRole('button', { name: /^Give/ }));
+        await page.waitForTimeout(300);
+        await expectTopmost(page.getByRole('dialog').first(), 'the Market shard amount');
+        await shot('mshards-give-amount');
+        await page.getByRole('dialog').getByRole('button', { name: /^Give/ }).click();
+        await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+        const gift = commonsCalls.find(([k]) => k === 'gift')?.[1];
+        if (
+          gift === undefined ||
+          gift.place !== 'market' ||
+          gift.currency !== 'shards' ||
+          gift.element !== 'ember' ||
+          gift.amount !== 7 ||
+          typeof gift.idempotencyKey !== 'string'
+        )
+          throw new Error(`the shard gift was wrong: ${JSON.stringify(gift)}`);
+        await backToValley();
+      } finally {
+        marketOff();
+      }
+    },
+  );
+
+  await scenario(
+    'valley systems on: the Market is built: post the broker, what it trades toward, its rates',
+    () => {
+      const creatures = commonsOn();
+      commonsScene({ market: { level: 2, state: 'done', plaque: ['Ada', 'You'], keepsakes: 1 } });
+      marketState.on = true;
+      marketState.built = true;
+      stateOverride = { creatures, valley: valleyBlock() };
+    },
+    async () => {
+      try {
+        await waitFor(page.locator(VALLEY), 'attached');
+        await place('market').evaluate((el) => el.click());
+        await waitFor(heading('Market'));
+        const slot = page.getByRole('button', { name: /^Broker: nobody posted/ });
+        await waitFor(slot);
+        await slot.scrollIntoViewIfNeeded();
+        await expectTopmost(slot, 'the empty broker slot');
+        await shot('market-free-seat');
+        for (const loc of [page.locator('.sp-seat').first(), page.locator('.vy-tray').first()]) {
+          if ((await loc.count()) > 0) await expectTopmost(loc, 'a Market card');
+        }
+        await slot.click();
+        await waitFor(dialogOf(/Who trades at the Market/));
+        await page.waitForTimeout(400);
+        await expectTopmost(page.getByRole('dialog').first(), 'the broker picker');
+        await shot('market-broker-picker');
+        await page
+          .getByRole('option')
+          .filter({ hasText: /Sproutle/ })
+          .first()
+          .click();
+        await waitFor(page.getByRole('button', { name: /^Broker: Sproutle/ }));
+        const posted = scoutCalls.filter(([k]) => k === 'seat').at(-1)?.[1];
+        if (posted?.seatId !== 'broker-1' || typeof posted.creatureId !== 'string')
+          throw new Error(`the broker was ${JSON.stringify(posted)}`);
+        await waitFor(page.getByText(/Swaps\s+12\s+for\s+5, with a 10% chance of one extra/));
+        await page.waitForTimeout(300);
+        await shot('market-broker-posted');
+        // What it trades toward: a drawer of choices, one tap.
+        const toward = page.getByRole('button', { name: /^Trades toward: What the orders need/ });
+        await toward.scrollIntoViewIfNeeded();
+        await toward.click();
+        await waitFor(dialogOf(/Trade toward/));
+        await page.waitForTimeout(500);
+        await expectTopmost(page.getByRole('dialog').first(), 'the trade-toward drawer');
+        await shot('market-trade-toward');
+        await page
+          .getByRole('dialog')
+          .getByRole('button', { name: /^Grove Shard/ })
+          .click();
+        await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+        const sent = commonsCalls.find(([k]) => k === 'broker')?.[1];
+        if (sent?.seatId !== 'broker-1' || sent.toward !== 'grove')
+          throw new Error(`the setting was ${JSON.stringify(sent)}`);
+        await waitFor(page.getByRole('button', { name: /^Trades toward: Grove shards/ }));
+        // Its rates and the next step.
+        await page.getByRole('button', { name: /Show the rates/ }).click();
+        await waitFor(dialogOf(/Rates/));
+        await page.waitForTimeout(500);
+        await expectTopmost(page.getByRole('dialog').first(), 'the rates drawer');
+        await shot('market-rates');
+        await page.keyboard.press('Escape');
+        // The tray says Trading for the creature at the seat.
+        await waitFor(page.getByRole('button', { name: /Sproutle.*Trading at the Market/ }));
+        await backToValley();
+      } finally {
+        marketOff();
+      }
+    },
+  );
+
+  // Q64: shards change hands at the Market only. Before it is built an anvil that waits for a shard says the Market will trade for it and
+  // leads to the Market's project board; once it is built the same anvil leads to the Market's exchange, which is where the drawer lives.
+  await scenario(
+    "valley systems on: the Forge's wait line before and after the Market is built, and the exchange at the Market",
+    () => {
+      const creatures = commonsOn();
+      commonsScene({
+        market: {
+          level: 1,
+          state: 'open',
+          size: 700,
+          have: { acorns: 150, scrap: 300, shards: 0 },
+          given: 40,
+        },
+      });
+      forgeState.anvils = [
+        {
+          id: 'anvil-1',
+          creatureId: creatures[1].id,
+          kit: null,
+          orders: [{ id: 'order-1', blueprintId: 'kelp-cap', count: 2, reach: 'none' }],
+        },
+      ];
+      forgeState.waitShard = 'grove';
+      forgeCalls.length = 0;
+      marketState.on = true;
+      stateOverride = {
+        creatures,
+        balances: { ...baseState.balances, bait: 1000 },
+        valley: valleyBlock(),
+      };
+    },
+    async () => {
+      try {
+        await waitFor(page.locator(VALLEY), 'attached');
+        await place('forge').evaluate((el) => el.click());
+        await waitFor(heading('Forge'));
+        // Before: the wait line says the Market will trade once the valley builds it; there is no exchange tap at the Forge.
+        const before = page.getByText(
+          /Waiting for\s+for 3 h\. The Market will trade for them once the valley builds it\./,
+        );
+        await waitFor(before);
+        await before.first().scrollIntoViewIfNeeded();
+        await expectTopmost(before.first(), 'the wait line before the Market');
+        const go = page.getByRole('button', { name: /Go to the Market/ });
+        await waitFor(go);
+        await expectTopmost(go.first(), 'the button to the Market');
+        if (
+          (await page.getByRole('button', { name: /Trade shards|Trade for|Trade at/ }).count()) > 0
+        )
+          throw new Error('the Forge still has an exchange tap before the Market is built');
+        await page.waitForTimeout(300);
+        await shot('q64-forge-wait-before');
+        // It leads to the Market's project board.
+        await go.first().click();
+        await waitFor(heading('Market'));
+        const board = page.locator('section[aria-label="Market project"]');
+        await waitFor(board);
+        await board.scrollIntoViewIfNeeded();
+        await expectTopmost(board, 'the Market board');
+        if ((await page.getByRole('button', { name: /Trade shards/ }).count()) > 0)
+          throw new Error('the Market offers the exchange before it is built');
+        await backToValley();
+
+        // The server builds the Market: the same anvil now leads to the exchange.
+        commonsScene({ market: { level: 2, state: 'done', plaque: ['Ada', 'You'], keepsakes: 1 } });
+        marketState.built = true;
+        stateOverride = { ...stateOverride, valley: valleyBlock() };
+        await page.reload();
+        await page.evaluate(() => document.fonts.ready);
+        await waitFor(page.locator(VALLEY), 'attached');
+        await place('forge').evaluate((el) => el.click());
+        await waitFor(heading('Forge'));
+        const after = page.getByText(/Waiting for\s+for 3 h/);
+        await waitFor(after);
+        await after.first().scrollIntoViewIfNeeded();
+        await expectTopmost(after.first(), 'the wait line after the Market');
+        if ((await page.getByText(/once the valley builds it/).count()) > 0)
+          throw new Error('the Forge still says the Market is not built');
+        const trade = page.getByRole('button', { name: /Trade at the Market/ });
+        await waitFor(trade);
+        await expectTopmost(trade.first(), 'the button to the exchange');
+        await page.waitForTimeout(300);
+        await shot('q64-forge-wait-after');
+        // It leads to the Market's exchange, on the shard the anvil waits for: rate and crit are shown, the trade is keyed.
+        await trade.first().click();
+        await waitFor(heading('Market'));
+        await waitFor(page.getByRole('dialog', { name: /Trade shards/ }));
+        await page.waitForTimeout(500);
+        const text = await page.getByRole('dialog').innerText();
+        if (!/10% chance to get\s+2/.test(text))
+          throw new Error('the exchange does not show the crit chance');
+        // The shard to get is its icon (Grove) with a number, then "You get".
+        if (
+          !/You get/.test(text) ||
+          (await page
+            .getByRole('dialog')
+            .locator('[role="img"][aria-label^="Grove Shard"]')
+            .count()) === 0
+        )
+          throw new Error(`the exchange did not start on Grove: ${text}`);
+        await expectTopmost(page.getByRole('dialog').first(), 'the exchange drawer');
+        await shot('q64-market-exchange');
+        await page.getByRole('button', { name: /^Trade.*× \d/ }).click();
+        await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+        const traded = forgeCalls.at(-1);
+        if (
+          traded?.[0] !== 'exchange' ||
+          typeof traded[1].idempotencyKey !== 'string' ||
+          traded[1].to !== 'grove'
+        )
+          throw new Error('the trade was sent without an idempotency key, or not for Grove');
+        // The exchange is also one tap away on the Market's own page.
+        const tap = page.getByRole('button', { name: /^Trade shards/ });
+        await tap.scrollIntoViewIfNeeded();
+        await expectTopmost(tap.first(), 'the exchange row');
+        await backToValley();
+      } finally {
+        forgeState.waitShard = null;
+        forgeState.anvils = [];
+        marketOff();
+      }
+    },
+  );
+
+  // Q64: the Market's opening is the one story every player's next paper leads with (even after a short absence).
+  await scenario(
+    "the Gazette leads with the Market's opening (Q64): the stall is the picture, and it closes as any paper does",
+    () => {
+      const config = ROUTES.get('/api/config');
+      answerOverride.set('/api/config', () => ({ ...config(), valleySystems: true }));
+      const creatures = baseState.creatures.map((c) => ({ ...c, busy: null, away: false }));
+      scouts.seats = [];
+      scouts.owned = [];
+      scouts.ids = creatures.map((c) => c.id);
+      gazetteCalls.length = 0;
+      const [a, , c] = creatures;
+      gazette.paper = {
+        id: '1799760000777',
+        at: 1799760000000,
+        awayHours: 5,
+        headlines: [
+          headline('market-open', 120, 0),
+          headline('new-species', 100, 1, {
+            creatureIds: [a.id],
+            species: creatures[creatures.length - 1].species,
+            newcomers: [creatures[creatures.length - 1].id],
+          }),
+          headline('resting-xp', 45, 1, { creatureIds: [c.id] }),
+        ],
+        more: 0,
+        brought: { acorns: 0, scrap: 0, shards: 0 },
+        decision: null,
+      };
+      stateOverride = { creatures, valley: valleyBlock() };
+      answerOverride.set('/api/valley/gazette/close', (request) => {
+        gazetteCalls.push(['close', bodyOf(request)]);
+        gazette.paper = null;
+        stateOverride = { ...stateOverride, valley: valleyBlock() };
+        return { closed: true };
+      });
+    },
+    async () => {
+      try {
+        const paper = page.locator('article[aria-label="The Valley Gazette"]');
+        await waitFor(paper);
+        await waitFor(page.locator('h3.gz-headline'));
+        await page.waitForTimeout(800);
+        const lead = page.locator('h3.gz-headline').first();
+        const words = await lead.innerText();
+        if (!/MARKET OPENS/i.test(words)) throw new Error(`the paper leads with: ${words}`);
+        await expectTopmost(lead, 'the Market headline');
+        await expectTopmost(page.locator('.gz-masthead').first(), 'the masthead');
+        await shot('q64-paper-market');
+        const closer = page.getByRole('button', { name: /more things?|Into the valley/i }).last();
+        await closer.scrollIntoViewIfNeeded();
+        await expectTopmost(closer, 'the paper’s closing button');
+        await closer.click();
+        await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+        if (gazetteCalls.filter(([name]) => name === 'close').length !== 1)
+          throw new Error('the server was not told once');
+        await page.locator('.gz-fly').waitFor({ state: 'detached', timeout: 15000 });
+      } finally {
+        gazette.paper = null;
+      }
     },
   );
 

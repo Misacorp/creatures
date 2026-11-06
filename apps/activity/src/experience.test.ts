@@ -7,7 +7,7 @@ import {
   isXpBoost,
   isRibbonView,
   ribbonBlocker,
-  ribbonCostText,
+  ribbonCost,
   ribbonName,
   type ExperienceView,
   type RibbonView,
@@ -85,11 +85,30 @@ describe('the ribbon words', () => {
     expect(ribbonName('gold')).toBe('Gold Ribbon');
   });
 
-  it('lists the cost in words, parts first and trips last', () => {
-    expect(ribbonCostText(bronze)).toBe('6 scrap and 2 Tide shards');
-    expect(ribbonCostText(silver)).toBe('15 scrap, 5 Ember shards, 1 glimmer and 5 finished trips');
-    expect(ribbonCostText({ ...bronze, parts: { scrap: 3 } })).toBe('3 scrap');
-    expect(ribbonCostText({ ...bronze, parts: {}, trips: 1 })).toBe('1 finished trip');
+  it('lists the cost as icons and numbers (parts, in the server order) and the trips as a short text', () => {
+    const shape = (r: Parameters<typeof ribbonCost>[0]) =>
+      ribbonCost(r).items.map((i) => [i.key, i.amount]);
+    expect(shape(bronze)).toEqual([
+      ['scrap', 6],
+      ['tide-shard', 2],
+    ]);
+    expect(shape(silver)).toEqual([
+      ['scrap', 15],
+      ['ember-shard', 5],
+      ['glimmer', 1],
+    ]);
+    expect(ribbonCost(silver).trips).toBe('5 finished trips');
+    expect(shape({ ...bronze, parts: { scrap: 3 } })).toEqual([['scrap', 3]]);
+    expect(ribbonCost({ ...bronze, parts: {}, trips: 1 })).toEqual({
+      items: [],
+      trips: '1 finished trip',
+    });
+  });
+
+  it('never writes a resource name in the cost', () => {
+    const { items, trips } = ribbonCost(silver);
+    expect(trips).not.toMatch(/scrap|shard|glimmer/i);
+    expect(items.every((i) => i.name === undefined)).toBe(true);
   });
 
   it('says what is missing, and nothing when it is ready', () => {

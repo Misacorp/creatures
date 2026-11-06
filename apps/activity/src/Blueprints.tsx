@@ -12,8 +12,10 @@ import {
   nominalHours,
   slotName,
 } from './gear-view';
+import { scrapCount, shardCount } from './resource-count';
 import { ElementChip } from './sprites/ElementChip';
-import { CountBadge } from './ui/CountBadge';
+import { CostLine, CountBadge } from './ui/CountBadge';
+import { mostHeldElement } from './valley/forge-view';
 
 /**
  * The blueprints a player has learned, each with its quality, the parts a plain craft costs
@@ -28,6 +30,7 @@ export function Blueprints({
   error = null,
   loadPreview,
   onCraft,
+  order,
 }: {
   gear: GearState;
   creatures: readonly Creature[];
@@ -37,9 +40,19 @@ export function Blueprints({
   loadPreview: (creatureId: string, blueprintId: string) => Promise<CraftPreview>;
   /** Starts the craft; resolves true when it started (the drawer then closes). */
   onCraft: (baseId: string, creatureId: string, reach: ReachId, treat: boolean) => Promise<boolean>;
+  /**
+   * The valley's Forge (`VALLEY_SYSTEMS` on): there are no timed crafts, so each blueprint says "Order" and opens the order editor with
+   * itself picked. `reason` is why it cannot be pressed now (no anvil yet); the plain craft's price, time and Crafting level are not shown.
+   */
+  order?: {
+    reason: string | null;
+    onOrder: (baseId: string, opener: HTMLElement) => void;
+    /** The shelf's shard piles by element: the patchwork blueprints (V-FORGE-12) show the shard icon of the pile held most. */
+    shards: Readonly<Record<string, number>>;
+  };
 }) {
   const [open, setOpen] = useState<{ baseId: string; opener: HTMLElement | null } | null>(null);
-  const views = blueprintViews(gear.blueprints, gear.skills);
+  const views = blueprintViews(gear.blueprints, gear.skills, order !== undefined);
   const opened = views.find((v) => v.baseId === open?.baseId);
   const job = opened === undefined ? null : craftJob(opened, gear, { load: loadPreview }, onCraft);
   return (
@@ -63,29 +76,47 @@ export function Blueprints({
                     <span class="slot-tag">{slotName(bp.slot)}</span>
                     {bp.element !== null && <ElementChip element={bp.element} context="gear" />}
                   </p>
-                  {bp.needsCraftingLevel > 1 && (
+                  {order === undefined && bp.needsCraftingLevel > 1 && (
                     <p class="muted">Needs Crafting level {bp.needsCraftingLevel}</p>
                   )}
                   <p class="bp-meta muted">
-                    <CountBadge {...nominalDurationCountItem(nominalHours() * 3_600_000)} />
-                    <span>
-                      <GlossaryTag entry="blueprint-quality">Quality</GlossaryTag>{' '}
-                      {marksText(bp.marks)}
-                    </span>
+                    {order === undefined && (
+                      <CountBadge {...nominalDurationCountItem(nominalHours() * 3_600_000)} />
+                    )}
+                    {bp.patchwork !== undefined && order !== undefined ? (
+                      // V-FORGE-12: no quality; what a piece takes, as icons (the shard icon is the pile held most now).
+                      <>
+                        <CostLine
+                          items={[
+                            scrapCount(bp.patchwork.scrap),
+                            shardCount(mostHeldElement(order.shards), bp.patchwork.shards),
+                          ]}
+                        />
+                      </>
+                    ) : (
+                      <span>
+                        <GlossaryTag entry="blueprint-quality">Quality</GlossaryTag>{' '}
+                        {marksText(bp.marks)}
+                      </span>
+                    )}
                   </p>
                 </div>
-              </div>
-              <CostList cost={bp.cost} have={gear.parts} />
-              <p>
                 <button
                   type="button"
+                  class="bp-act"
+                  disabled={order?.reason != null}
+                  {...(order?.reason == null ? {} : { title: order.reason })}
                   onClick={(event) => {
-                    setOpen({ baseId: bp.baseId, opener: event.currentTarget });
+                    if (order === undefined)
+                      setOpen({ baseId: bp.baseId, opener: event.currentTarget });
+                    else order.onOrder(bp.baseId, event.currentTarget);
                   }}
                 >
-                  Craft
+                  {order === undefined ? 'Craft' : 'Order'}
                 </button>
-              </p>
+              </div>
+              {order === undefined && <CostList cost={bp.cost} have={gear.parts} />}
+              {order?.reason != null && <p class="muted">{order.reason}</p>}
             </li>
           ))}
         </ul>

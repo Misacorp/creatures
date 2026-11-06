@@ -12,6 +12,7 @@ import { usePrefersReducedMotion } from '../hooks';
 import { Nameplate } from '../ui/Nameplate';
 import { nextMarker } from '../map-view';
 import { scrollBehavior } from '../scroll-to';
+import { PanHint } from '../ui/PanHint';
 import { useDragScroll } from '../ui/use-drag-scroll';
 import { paint } from './paint';
 import { At, CreatureSprite, Glyph, SpeechBubble, isStill, useSize, useTick } from './parts';
@@ -24,7 +25,7 @@ import {
   valleyDrawing,
   type PlaceId,
 } from './valley-art';
-import { DEFAULT_LOOK, type ValleyLook } from './valley-places';
+import { DEFAULT_LOOK, GRAND_LEVEL, artBox, bonfireName, type ValleyLook } from './valley-places';
 import { useRoamers } from './use-roamers';
 import {
   edgeArrows,
@@ -106,7 +107,9 @@ export function ValleyMap({
 
   // Back from a place's page the focus rests on the map itself, never on the place's button: a ring on the House
   // after Escape "detracts from the experience" (Misa, 2026-11-05). Tab goes on from here into the places.
-  useEffect(() => {
+  // A layout effect: the focus is there in the commit that shows the map, so a later move of the focus (the
+  // keyboard walking into a place) is never overwritten by this one running late.
+  useLayoutEffect(() => {
     if (focus === null) return;
     wrapRef.current?.focus({ preventScroll: true });
   }, []);
@@ -178,7 +181,11 @@ export function ValleyMap({
             {order.map((id, i) => {
               const place = placeOf(id);
               const bubble = bubbleAt(bubbles, id);
-              const r = place.rect;
+              // The grand hearth is a little bigger than the plain fire: its button is exactly its drawn art.
+              const r =
+                id === 'bonfire' && bonfireLevel >= GRAND_LEVEL
+                  ? artBox(bonfireName(bonfireLevel))
+                  : place.rect;
               return (
                 <li key={id}>
                   <button
@@ -216,6 +223,7 @@ export function ValleyMap({
           </ul>
         </div>
       </div>
+      <PanHint target={scrollerRef} id="valley" />
       {arrows
         .filter((a) => tabY.has(a.place))
         .map((a) => {

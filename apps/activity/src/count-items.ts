@@ -15,13 +15,12 @@ import type { CountBadgeProps, CountItem } from './ui/CountBadge';
 export const ESSENCE_ICON: IconRef = resourceIconRef('essence');
 export const BAIT_ICON: IconRef = resourceIconRef('bait');
 
-/** What differs between screens: a tap-for-help tag on the badge, and the name written after the number. */
+/** What differs between screens: a tap-for-help tag on the badge. A resource's name is never written after the number. */
 export interface CountOptions {
   entry?: boolean;
-  name?: boolean;
 }
 
-/** An Essence badge ("Essence: 4" spoken); `entry` makes it open the glossary, `name` writes "Essence" after it. */
+/** An Essence badge ("Essence: 4" spoken); `entry` makes it open the glossary. */
 export function essenceCount(amount: number, options: CountOptions = {}): CountItem {
   return {
     key: 'essence',
@@ -29,7 +28,6 @@ export function essenceCount(amount: number, options: CountOptions = {}): CountI
     amount,
     label: resourceName('essence'),
     ...(options.entry === true ? { entry: 'essence' } : {}),
-    ...(options.name === true ? { name: resourceName('essence') } : {}),
   };
 }
 
@@ -41,7 +39,6 @@ export function baitCount(amount: number, options: CountOptions = {}): CountItem
     amount,
     label: resourceName('bait'),
     ...(options.entry === true ? { entry: 'bait' } : {}),
-    ...(options.name === true ? { name: resourceName('bait') } : {}),
   };
 }
 

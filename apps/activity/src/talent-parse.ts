@@ -81,6 +81,7 @@ export function isPendingCatch(value: unknown): value is PendingCatch {
     isBool(value['shiny']) &&
     (value['source'] === 'expedition' || value['source'] === 'festival') &&
     isInt(value['createdAt']) &&
+    (value['autoAt'] === undefined || isInt(value['autoAt'])) &&
     isTalentView(value['talent']) &&
     isRecord(offered) &&
     isArrayOf(offered['teach'], isStr) &&

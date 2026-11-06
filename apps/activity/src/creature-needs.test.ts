@@ -12,6 +12,10 @@ import { creatureName } from './game';
 
 const plainState = { ...SAMPLE_STATE, pending: [] };
 
+/** A cost as the count items it holds: [key, amount] pairs (an icon and a number on screen, never a name). */
+const costOf = (need: { cost?: { key: string; amount?: number | string }[] } | undefined) =>
+  need?.cost?.map((i) => [i.key, i.amount]);
+
 describe('what a creature needs', () => {
   it('needs nothing while it just grows', () => {
     expect(creatureNeeds(sampleCreature('growing'), plainState)).toEqual([]);
@@ -21,22 +25,25 @@ describe('what a creature needs', () => {
   it('needs its ribbon once the server says it is ready, with the cost', () => {
     const [need, ...rest] = creatureNeeds(sampleCreature('ribbon ready'), plainState);
     expect(rest).toEqual([]);
-    expect(need).toEqual({
-      kind: 'ribbon',
-      label: 'Earn Bronze Ribbon',
-      detail: '6 scrap and 2 Ember shards',
-    });
+    expect(need).toMatchObject({ kind: 'ribbon', label: 'Earn Bronze Ribbon', detail: '' });
+    expect(costOf(need)).toEqual([
+      ['scrap', 6],
+      ['ember-shard', 2],
+    ]);
   });
 
   it('needs a ribbon it cannot pay yet as a blocked need, with the exact cost or the trips left', () => {
     const short = sampleCreature('ribbon short');
-    expect(creatureNeeds(short, plainState)).toEqual([
-      {
-        kind: 'ribbon',
-        label: 'Earn Bronze Ribbon',
-        detail: '6 scrap and 2 Ember shards',
-        blocked: 'Short of parts',
-      },
+    const [parts] = creatureNeeds(short, plainState);
+    expect(parts).toMatchObject({
+      kind: 'ribbon',
+      label: 'Earn Bronze Ribbon',
+      detail: '',
+      blocked: 'Short of parts',
+    });
+    expect(costOf(parts)).toEqual([
+      ['scrap', 6],
+      ['ember-shard', 2],
     ]);
     const trips = { ...short, ribbon: { ...short.ribbon!, trips: 3, tripsDone: 2 } };
     expect(creatureNeeds(trips, plainState)).toEqual([
@@ -61,19 +68,19 @@ describe('what a creature needs', () => {
   });
 
   it('needs to evolve when the server says it can', () => {
-    expect(creatureNeeds(sampleCreature('evolve ready'), plainState)).toEqual([
-      { kind: 'evolve', label: 'Evolve', detail: '20 Essence' },
-    ]);
+    const [evolve] = creatureNeeds(sampleCreature('evolve ready'), plainState);
+    expect(evolve).toMatchObject({ kind: 'evolve', label: 'Evolve', detail: '' });
+    expect(costOf(evolve)).toEqual([['essence', 20]]);
     const locked = sampleCreature('evolve ready');
     const notYet = {
       ...locked,
       evolution: { toSpecies: 'pyrelynx', level: 15, essence: 20, available: false },
     };
-    // At the level, short of Essence: a blocked need with what is had and the price.
+    // At the level, short of Essence: a blocked need with the price (the page says what is had).
     const poor = { ...plainState, balances: { ...plainState.balances, essence: 12 } };
-    expect(creatureNeeds(notYet, poor)).toEqual([
-      { kind: 'evolve', label: 'Evolve', detail: '12 / 20 Essence', blocked: 'Short of Essence' },
-    ]);
+    const [short20] = creatureNeeds(notYet, poor);
+    expect(short20).toMatchObject({ kind: 'evolve', label: 'Evolve', blocked: 'Short of Essence' });
+    expect(costOf(short20)).toEqual([['essence', 20]]);
     // Below the level: nothing.
     expect(creatureNeeds({ ...notYet, level: 14 }, poor)).toEqual([]);
   });
@@ -144,11 +151,8 @@ describe('what a creature needs', () => {
   it('needs a talent slot filled when one is open and empty, the book has a talent and the Bait is there', () => {
     const creature = sampleCreature('talent to fill');
     const [need] = creatureNeeds(creature, plainState);
-    expect(need).toEqual({
-      kind: 'talent',
-      label: 'Fill talent slot 2',
-      detail: '10 Bait',
-    });
+    expect(need).toMatchObject({ kind: 'talent', label: 'Fill talent slot 2', detail: '' });
+    expect(costOf(need)).toEqual([['bait', 10]]);
     const poor = { ...plainState, balances: { ...plainState.balances, bait: 9 } };
     expect(creatureNeeds(creature, poor)).toEqual([]);
     const emptyBook = { ...creature, talents: { ...creature.talents, book: [] } };

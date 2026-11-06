@@ -123,6 +123,18 @@ export const ActionIds = {
    * One purchase at the Prize Stall: the stall week, the offer and how many were left when it was tapped,
    * so the next purchase of the same offer (fewer left) is another action with its own key.
    */
+  /** Buying the Signpost's next scout seat: the number of seats owned makes it this purchase (the next one is another). */
+  seatBuy: (owned: number): ActionId => `seat-buy:${String(owned)}`,
+  /** Buying one kit (once each). */
+  kitBuy: (kit: string): ActionId => `kit-buy:${kit}`,
+  /** Buying the Forge's next anvil: the number of anvils owned makes it this purchase. */
+  anvilBuy: (owned: number): ActionId => `anvil-buy:${String(owned)}`,
+  /** One run of trades at the shard exchange: what it asks, and how many shards of the target the player held (so the next run is another action). */
+  exchange: (to: string, from: string | null, times: number, held: number): ActionId =>
+    `exchange:${to}:${from ?? '*'}:${String(times)}:${String(held)}`,
+  /** One gift to a place's project: what it gives, and how much of that part the project still took (so the next gift of the same size is another action). */
+  gift: (place: string, part: string, amount: number, room: number): ActionId =>
+    `gift:${place}:${part}:${String(amount)}:${String(room)}`,
   gamesBuy: (week: string, offerId: string, left: number): ActionId =>
     `games-buy:${week}:${offerId}:${String(left)}`,
 };

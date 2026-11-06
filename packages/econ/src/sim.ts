@@ -35,7 +35,6 @@ import { offerToIdol } from './idol';
 import { playerWeek, runXp, shareSplit } from './dungeonXp';
 import { heldForms } from './forms';
 import { openSlots, startLearning, stepSchool, teacherDay } from './school';
-import { MARKET_OPENS_AT, openMarket } from './commons';
 import { beginVisit, endVisit, homeDone, newTracer, type JourneyEntry } from './journey';
 import { accrueIdleXp, addXp, atTopLevel, fightXp, levelsDesc, setCatchUp } from './growth';
 import {
@@ -194,7 +193,7 @@ export function visit(p: Player, server: Server, hour: number): void {
   temperAtVisit(p, server);
   collectFloor(p, server);
   dismantleBag(p);
-  if (server.config.shardExchange) exchangeAtVisit(p);
+  if (exchangeOn(server)) exchangeAtVisit(p);
   else p.waitingShard = -1;
   if (first) {
     credit(p, R.acorns, rules.acorns.leetPerVisitDay, 'leets');
@@ -236,6 +235,17 @@ export function visit(p: Player, server: Server, hour: number): void {
   const n = p.creatures.length;
   p.wk.rowsRead += 1 + n + p.seats.length + p.anvils.length + 2 * server.places.length + 2;
   p.wk.rowsWritten += 1 + n + p.seats.length + p.anvils.length + (p.wk.gifts > giftsBefore ? 4 : 0);
+}
+
+/**
+ * Whether shards can be exchanged on this server now (Q64): the tap and the broker's seat open together. Where the Market is a project the
+ * server builds (the `market` variants, the shipped design) nobody exchanges before it is built, and an anvil that waits on a shard
+ * tinkers; the day-one variants (`always`, `never`) keep the exchange from the start, as the lab modelled it before Q64.
+ */
+export function exchangeOn(server: Server): boolean {
+  if (!server.config.shardExchange) return false;
+  const mode = server.config.broker ?? 'always';
+  return mode === 'market' || mode === 'market-shards' ? server.marketDoneHour !== null : true;
 }
 
 /** Whether the broker's seat exists on this server now (V-FORGE-11): always, never, or once the Market is built. */
@@ -547,6 +557,7 @@ export function runServer(
       visitor: config.visitor !== false,
       tempering: config.tempering ?? rules.tempering.on,
       idol: config.idol ?? rules.idol.on,
+      patchwork: config.patchwork !== false,
       ...(config.dungeonXp !== undefined ? { dungeonXp: config.dungeonXp } : {}),
       teacherRule: config.teacherRule ?? 'few',
     },
@@ -576,13 +587,6 @@ export function runServer(
     if (hourOfDay === 22) for (const p of players) if (h >= p.joinHour) sampleDay(p, server, h);
     if (day % 7 === 6 && hourOfDay === 23) resolveRaid(server, players, h, rules);
     if ((h + 1) % HOURS_PER_WEEK === 0) {
-      // The Market project opens (market variant) once the server's anvils spent MARKET_OPENS_AT of the week waiting for a shard.
-      if (
-        (config.broker === 'market' || config.broker === 'market-shards') &&
-        server.marketOpenedHour === null &&
-        weekShardStall(players, h) >= MARKET_OPENS_AT
-      )
-        openMarket(server, h);
       const gifts = sum(server.gifts) - giftsMark;
       giftsMark = sum(server.gifts);
       server.log.push({

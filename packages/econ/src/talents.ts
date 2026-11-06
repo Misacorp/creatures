@@ -5,7 +5,7 @@ import { uniform } from './util';
 
 /**
  * The talent books, simplified (docs/design/valley/systems/school.md, V-SCH-10..13). Combat v2's real data is used: 34 talents, and a
- * pool of 7 for each of its 16 lines (`talents.json`; `cull` is in no pool, so it is never taught). The lab's lines are the content's
+ * pool of 7 for each of its 16 lines (`talents.json`; `cull` is in five of them since the owner's trial, 2026-11-03, so the teacher may teach it like any pooled talent). The lab's lines are the content's
  * launch lines, in the order of the content, each with its real pool; the lines of later content drops, which have no pool yet, take the
  * real pools in turn. A find (a new creature, or a duplicate) enters one talent drawn uniformly from the line's pool into the owner's book
  * for that line (the real game rolls by role; the lab does not model roles, golden talents or what a talent does).

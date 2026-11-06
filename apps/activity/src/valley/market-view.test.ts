@@ -1,0 +1,187 @@
+import { describe, expect, it } from 'vitest';
+import { VALLEY_RULES } from '@creatures/game';
+import { sayParts, sayText } from '../resource-count';
+import { homeInput } from '../workbench/home-sample';
+import { openPlace, sampleCommons, withCommons } from './commons-sample';
+import {
+  COMMONS_NAMES,
+  anyShardLine,
+  giveRows,
+  levelLine,
+  stateLine,
+  stateTag,
+  stillNeeded,
+} from './commons-view';
+import {
+  brokerLine,
+  brokerRows,
+  marketLine,
+  marketState,
+  rateRatio,
+  rateSay,
+  towardName,
+} from './market-view';
+import {
+  marketPlace,
+  presetMarket,
+  sampleBroker,
+  withMarket,
+  withMarketPlace,
+} from './market-sample';
+import { placeStates } from './place-state';
+import { sampleValley } from './signpost-sample';
+import { isTrading, trayBadge, trayFor, trayStates } from './tray-state';
+
+const busy = homeInput('busy', true);
+const free = busy.creatures.map((c) => ({ ...c, busy: null, away: false }));
+const [a, b] = free;
+if (a === undefined || b === undefined) throw new Error('fixture');
+
+const visitOf = (preset: string) => {
+  const commons = withMarketPlace(sampleCommons(), preset);
+  const market = presetMarket(preset, free);
+  const base = withCommons(sampleValley(free, []), commons);
+  return market === null ? base : withMarket(base, market);
+};
+
+describe('the rate in words', () => {
+  it('is a ratio of whole shards: the lab tiers read 12 for 5, 2 for 1 and 8 for 5', () => {
+    expect(VALLEY_RULES.broker.tiers.map((t) => rateRatio(t.rate))).toEqual([
+      { paid: 12, got: 5 },
+      { paid: 12, got: 5 },
+      { paid: 2, got: 1 },
+      { paid: 8, got: 5 },
+    ]);
+    expect(rateRatio(3)).toEqual({ paid: 3, got: 1 });
+    // Shown as an any-shard icon and a number on each side, never the word.
+    expect(sayParts(rateSay(2.4))).toEqual([['shards:any', 12], ' for ', ['shards:any', 5]]);
+  });
+});
+
+describe("the Market's state", () => {
+  it('is not there without the block, waiting until the guided start reaches it, building, then built', () => {
+    expect(marketState(sampleValley(free, []))).toBeNull();
+    expect(marketState(visitOf('not open'))).toBe('waiting');
+    expect(marketState(visitOf('being built'))).toBe('building');
+    expect(marketState(visitOf('open, free seat'))).toBe('built');
+  });
+
+  it('says its words: not built, built, and never a level count or a cosmetic one', () => {
+    const waiting = marketPlace('not open');
+    const building = marketPlace('being built');
+    const built = marketPlace('open with a broker');
+    expect(levelLine(waiting)).toBe('Not built yet');
+    expect(levelLine(building)).toBe('Not built yet');
+    expect(levelLine(built)).toBe('Built');
+    expect(stateTag(built)).toBe('Built');
+    expect(stateLine(built)).toBe('The Market is built.');
+    expect(COMMONS_NAMES['market']).toBe('Market');
+  });
+
+  it('asks for Acorns and scrap, says shards of any kind count too, and offers every element held, the biggest pile first', () => {
+    const place = marketPlace('being built');
+    expect(stillNeeded(place).map((i) => [i.key, i.amount])).toEqual([
+      ['bait', 190],
+      ['scrap', 380],
+    ]);
+    expect(sayParts(anyShardLine(place))).toEqual([
+      ['shards:any', undefined],
+      ' counts too, as many as you like: ',
+      ['shards:any', 4],
+      ' = ',
+      ['bait', 1],
+      '.',
+    ]);
+    const rows = giveRows(
+      place,
+      { acorns: 500, scrap: 500, shards: { tide: 9, ember: 30, grove: 0, spark: 12, mire: 12 } },
+      3,
+    );
+    // One value for every element (no 3 for 1), a row for each pile held, the biggest first; a tie keeps the shelf's order.
+    expect(rows.map((r) => r.id)).toEqual([
+      'acorns',
+      'scrap',
+      'shards:ember',
+      'shards:spark',
+      'shards:mire',
+      'shards:tide',
+    ]);
+    const ember = rows.find((r) => r.id === 'shards:ember');
+    expect(ember).toMatchObject({ per: 1, held: 30, max: 30, worth: 0.25, reason: null });
+    // Never more than the project still takes.
+    const small = giveRows(
+      { ...place, project: { ...place.project!, needs: { acorns: 0, scrap: 0, shards: 7 } } },
+      { acorns: 0, scrap: 0, shards: { ember: 30 } },
+      3,
+    ).find((r) => r.id === 'shards:ember');
+    expect(small?.max).toBe(7);
+    // No shards held: one row that says so.
+    const none = giveRows(place, { acorns: 5, scrap: 5, shards: {} }, 3).at(-1);
+    expect(none).toMatchObject({ id: 'shards', max: 0, reason: 'You have none' });
+    // Other places say nothing of the kind.
+    expect(anyShardLine(openPlace('forge', 2, 900, 0.2))).toEqual([]);
+  });
+});
+
+describe('the broker in words', () => {
+  it('asks for a creature when the seat is free, and says its rate, bonus and what it waits on', () => {
+    expect(brokerLine(sampleBroker(null))).toEqual(['Pick a creature, or drag one here.']);
+    expect(sayParts(brokerLine(sampleBroker(a.id, 1)))).toEqual([
+      'Swaps ',
+      ['shards:any', 12],
+      ' for ',
+      ['shards:any', 5],
+      ', with a 15% chance of one extra',
+    ]);
+    expect(sayParts(brokerLine(sampleBroker(a.id, 1, { blocked: 'tide' }))).slice(-4)).toEqual(
+      [
+        '. Waiting for a spare ',
+        ['shards:any', undefined],
+        ' to trade for ',
+        ['shards:tide', undefined],
+        '.',
+      ].slice(-4),
+    );
+    expect(sayText(brokerLine(sampleBroker(a.id, 1, { paused: 'raid' })))).toMatch(/In the raid/);
+  });
+
+  it('lists its numbers and the next step, none at Master', () => {
+    const rows = brokerRows(sampleBroker(a.id, 1, { toward: 'grove' }));
+    expect(rows.map((r) => r.label)).toEqual([
+      'Rate',
+      'Bonus shard',
+      'Trading',
+      'Trades toward',
+      'Next step',
+    ]);
+    expect(sayParts(rows.find((r) => r.label === 'Trades toward')?.value ?? [])).toEqual([
+      ['shards:grove', undefined],
+    ]);
+    expect(brokerRows(sampleBroker(a.id, 3)).some((r) => r.label === 'Next step')).toBe(false);
+    expect(towardName(null)).toBe('What the orders need');
+  });
+});
+
+describe('the tray and the Places list', () => {
+  it('marks the creature at the broker seat as Trading, sorted after the smiths', () => {
+    const visit = visitOf('open with a broker');
+    expect(isTrading(a, visit)).toBe(true);
+    const input = { trips: [], jobs: [], now: 0, ...trayStates(visit) };
+    const badge = trayBadge(a, input);
+    expect(badge?.state).toBe('trading');
+    expect(badge?.label).toMatch(/Trading at the Market/);
+    expect(trayFor(free, input).map((c) => c.id)).toContain(a.id);
+    expect(trayStates(visitOf('open, free seat')).trading?.size).toBe(0);
+  });
+
+  it('says nothing new while the Market waits, then what its project or its broker is doing', () => {
+    const line = (preset: string): string =>
+      placeStates({ ...busy, visit: visitOf(preset) }).market;
+    expect(line('not open')).toBe('not open yet');
+    expect(line('being built')).toBe('being built');
+    expect(line('open, free seat')).toBe('a free broker seat');
+    expect(line('open with a broker')).toBe('the broker trades');
+    expect(line('broker stuck')).toBe('the broker waits to trade');
+    expect(marketLine(sampleValley(free, []))).toBeNull();
+  });
+});

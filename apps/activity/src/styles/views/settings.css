@@ -42,6 +42,7 @@
 .segmented {
   display: flex;
   flex: none;
+  flex-wrap: wrap;
   gap: 0.375rem;
   max-width: 100%;
 }

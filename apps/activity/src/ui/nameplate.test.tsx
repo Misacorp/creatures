@@ -61,6 +61,50 @@ describe('Nameplate options', () => {
     expect(classes(plate(<Nameplate tone="gold">Games</Nameplate>))).toContain('nameplate-gold');
   });
 
+  it('a gain comes last, in its own part, "+N"; none for 0 or when absent', () => {
+    const el = plate(
+      <Nameplate level={3} gain={42}>
+        Cindle
+      </Nameplate>,
+    );
+    expect(parts(el).map((p) => p.getAttribute('class'))).toEqual([
+      'nameplate-level',
+      'nameplate-name',
+      'nameplate-gain',
+    ]);
+    expect(visibleText(parts(el)[2] as FakeElement)).toBe('+42');
+    expect(parts(plate(<Nameplate gain={0}>Cindle</Nameplate>))).toHaveLength(1);
+    expect(parts(plate(<Nameplate>Cindle</Nameplate>))).toHaveLength(1);
+  });
+
+  it("an owner is another player's name after the creature's, in its own muted part, before a gain; none when empty", () => {
+    const el = plate(
+      <Nameplate level={4} owner="Mia" gain={3}>
+        Cindle
+      </Nameplate>,
+    );
+    expect(parts(el).map((p) => p.getAttribute('class'))).toEqual([
+      'nameplate-level',
+      'nameplate-name',
+      'nameplate-owner',
+      'nameplate-gain',
+    ]);
+    expect(visibleText(parts(el)[2] as FakeElement)).toBe('Mia');
+    expect(parts(plate(<Nameplate owner="">Cindle</Nameplate>))).toHaveLength(1);
+    expect(visibleText(plate(<Nameplate owner="<b>x</b>">Cindle</Nameplate>))).toContain(
+      '<b>x</b>',
+    );
+  });
+
+  it("another player's creature: with no name the plate is the level and the owner only", () => {
+    const el = plate(<Nameplate level={14} owner="Tobias" size="sm" />);
+    expect(parts(el).map((p) => p.getAttribute('class'))).toEqual([
+      'nameplate-level',
+      'nameplate-owner',
+    ]);
+    expect(visibleText(el)).toContain('Tobias');
+  });
+
   it('draws the words as text, never as markup', () => {
     const el = plate(<Nameplate>{'<b>Hi</b>'}</Nameplate>);
     expect(visibleText(el)).toBe('<b>Hi</b>');

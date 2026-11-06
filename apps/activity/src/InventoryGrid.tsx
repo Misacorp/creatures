@@ -30,6 +30,7 @@ export function InventoryGrid({
   openId,
   onOpen,
   selection,
+  inOrder = false,
 }: {
   items: readonly GearItem[];
   creatures: readonly Creature[];
@@ -38,8 +39,10 @@ export function InventoryGrid({
   /** Open the item's card (and close it when it is already the one shown). */
   onOpen: (id: string) => void;
   selection: MultiSelect;
+  /** The items are already in the order to show (the bag's sort and filter chose it); else the best first. */
+  inOrder?: boolean;
 }) {
-  const ordered = sortItems(items);
+  const ordered = inOrder ? [...items] : sortItems(items);
   const nameOf = (id: string): string => {
     const item = ordered.find((i) => i.id === id);
     return item === undefined ? '' : gearName(item.baseId);

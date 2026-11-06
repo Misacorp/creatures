@@ -133,6 +133,7 @@ describe('a place on the phone map', () => {
 
   it('walks Who, Pack and Ready inside the same sheet and sends the chosen trip', async () => {
     const { p, calls } = draw([]);
+    marker(p, 'tidepools').focus();
     p.click(marker(p, 'tidepools'));
     p.click(footerButton(p));
     // Who goes: the explorer list, Back at the top, the gold button now says Next.
@@ -204,15 +205,28 @@ describe('a place on the phone map', () => {
 
   it('gives the focus back to the marker when the sheet is closed', () => {
     const { p } = draw([]);
+    marker(p, 'ember-caves').focus();
     p.click(marker(p, 'ember-caves'));
     p.click(one(byClass(p.root, 'drawer-close'), 'close'));
     expect(dialog(p)).toBeUndefined();
     expect(p.document.activeElement).toBe(marker(p, 'ember-caves'));
   });
 
+  it('leaves no focus on the marker when a tap opened and closed the sheet', () => {
+    const { p } = draw([]);
+    const ember = marker(p, 'ember-caves');
+    ember.focus();
+    ember.keyboardFocus = false;
+    p.click(ember);
+    p.click(one(byClass(p.root, 'drawer-close'), 'close'));
+    expect(dialog(p)).toBeUndefined();
+    expect(p.document.activeElement).not.toBe(ember);
+  });
+
   it('gives the focus back to the chip that opened it', () => {
     const { p } = draw([home]);
     const chip = one(byName(p.root, 'button', /at Tidepools: Home!/), 'chip');
+    chip.focus();
     p.click(chip);
     p.click(one(byClass(p.root, 'drawer-close'), 'close'));
     expect(p.document.activeElement).toBe(chip);

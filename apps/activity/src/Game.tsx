@@ -1,10 +1,21 @@
 import type { RefObject } from 'preact';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import {
+  buyAnvil,
+  buyScoutSeat,
+  closeGazette,
+  setScoutDeep,
   chooseStarter,
   dismissAway,
   dismissLevelReset,
+  exchangeShards,
   fetchState,
+  giveToProject,
+  postCommunal,
+  setBroker,
+  postOrder,
+  postScout,
+  scoutKit,
   setLoungeSpot,
   type Allowance,
   type Attention,
@@ -16,6 +27,7 @@ import {
   type LoungeSpot,
   type LoungeXpPush,
   type SessionUser,
+  type ValleyVisit,
 } from './api';
 import { ActionIds } from './actions';
 import { allowanceNotice } from './allowance-text';
@@ -59,7 +71,7 @@ import { useGames } from './use-games';
 import type { DungeonPhase } from './dungeon-flow';
 import type { Slots } from './dungeon-team';
 import { chooseCatch } from './talent-api';
-import { choiceResultText } from './talent-view';
+import { choiceResultText, releasedParts } from './talent-view';
 import { DevPanelHost } from './DevPanelHost';
 import { StarterPicker } from './StarterPicker';
 import { navStateFor, type GoOptions } from './nav-state';
@@ -82,11 +94,21 @@ import { useTabPips } from './use-tab-pips';
 import { sceneOf, type LivingRoom } from './LivingRoom';
 import { LevelResetCard } from './LevelResetCard';
 import { WipeNotice } from './WipeNotice';
-import { Workshop } from './Workshop';
+import { Workshop, type ForgeMode } from './Workshop';
 import type { TeamConfigure } from './TeamCreaturePage';
 import { Alert } from './ui/Alert';
 import { WelcomeBack } from './valley/gazette/WelcomeBack';
 import { ValleyFrame } from './valley/ValleyFrame';
+import type { MarketActions, MarketStart } from './valley/MarketPage';
+import { SignpostSeats, type SignpostActions } from './valley/SignpostSeats';
+import type { CommonsActions } from './valley/CommonsBoard';
+import { COMMONS_NAMES } from './valley/commons-view';
+import { ANVIL_KIT_INFO } from './valley/forge-view';
+import { sayText, shardCount } from './resource-count';
+import { SayLine } from './ui/CountBadge';
+import type { ForgeActions } from './valley/ForgeAnvils';
+import { KIT_INFO } from './valley/signpost-view';
+import { trayStates } from './valley/tray-state';
 import { placeOf, type PlaceId } from './valley/valley-art';
 import {
   PLACE_TAB,
@@ -112,6 +134,7 @@ export function Game({
   devTools,
   loungeLive = false,
   valley = false,
+  valleySystems = false,
 }: {
   initial: GameState;
   /** The signed-in player (their id and display name put their own creature in the living room). */
@@ -127,7 +150,7 @@ export function Game({
   loungeLive?: boolean;
   /** The server shows the valley shell (`valley` of `/api/config`): a map of places instead of the dock and tabs. */
   valley?: boolean;
-  /** The valley's base systems are on (`valleySystems` of `/api/config`; phase 5). Unused until step 1. */
+  /** The valley's base systems are on (`valleySystems` of `/api/config`; phase 5): the Bonfire opens and creatures rest. */
   valleySystems?: boolean;
   /** True on staging and local runs, where the server can start a practice finale. */
   showPractice: boolean;
@@ -156,6 +179,11 @@ export function Game({
   const valleyOn = valley && game.starterChosen;
   // The valley shell: Home's tab is drawn as the map, the House's living room, or a place that is not open yet.
   const [homeAt, setHomeAt] = useState<HomeAt>('valley');
+  // The Market's page opens its exchange on the shard a smith waits for when the Forge sends the player there (Q64); forgotten on leaving.
+  const [marketStart, setMarketStart] = useState<MarketStart | undefined>(undefined);
+  useEffect(() => {
+    if (homeAt !== 'market') setMarketStart(undefined);
+  }, [homeAt]);
   const { raid: raidGlance, adopt: adoptRaid } = useRaidGlance(
     game.starterChosen,
     // The valley keeps it "on Home" throughout: one load when it opens and the schedule's own timer, never one per
@@ -231,6 +259,12 @@ export function Game({
   useEffect(() => {
     if (game.attention !== null) setAttention(game.attention);
   }, [game.attention]);
+  // The valley's resting creatures also come with GET /api/state only (and only with `VALLEY_SYSTEMS` on): kept like the pips.
+  const [visit, setVisit] = useState<ValleyVisit | null>(initial.valley);
+  useEffect(() => {
+    if (game.valley !== null) setVisit(game.valley);
+  }, [game.valley]);
+  const systems = valleySystems ? visit : null;
   // The setup row of the Dungeon tab, kept while the player is on other tabs (lost on a reload).
   const dungeonDraft = useRef<Slots | null>(null);
   // The same row as state, so the valley's Cave scene can draw the team standing at the cave mouth (null until the
@@ -323,6 +357,104 @@ export function Game({
   });
 
   const creatureActions = createCreatureActions({ run, runKeyed, setCurrent, setNotice });
+  /**
+   * The Signpost's scouts (phase 5 step 2): each route answers the settled valley and the state, both taken in at once. Posting and
+   * kit setting are free and repeatable (no key); a seat and a kit are keyed spends. True when the server took it.
+   */
+  const takeValley = (answer: { valley: ValleyVisit; state: GameState } | undefined): boolean => {
+    if (answer === undefined) return false;
+    setCurrent(loaded(answer.state));
+    // Pieces came home (or left the bag): the Workshop's bag is out of date.
+    if (visit !== null && answer.valley.forge.bag.count !== visit.forge.bag.count) loadGear();
+    setVisit(answer.valley);
+    return true;
+  };
+  const signpostActions: SignpostActions = {
+    post: async (body) => takeValley(await run(() => postScout(body))),
+    setKit: async (seatId, kit) =>
+      takeValley(await run(() => scoutKit({ action: 'set', seatId, kit }))),
+    buySeat: async () => {
+      const owned = systems?.seatPrices.owned ?? 0;
+      const ok = takeValley(await runKeyed(ActionIds.seatBuy(owned), (key) => buyScoutSeat(key)));
+      if (ok) setNotice('A new scout seat is yours.');
+      return ok;
+    },
+    buyKit: async (kit) => {
+      const ok = takeValley(
+        await runKeyed(ActionIds.kitBuy(kit), (key) =>
+          scoutKit({ action: 'buy', kit, idempotencyKey: key }),
+        ),
+      );
+      if (ok) setNotice(`The ${KIT_INFO[kit].name} is yours.`);
+      return ok;
+    },
+  };
+  /**
+   * The Forge's anvils (phase 5 step 3), the same way: a post, a kit and an order are free, an anvil, a kit and a run of trades are keyed
+   * spends. Each answer's `valley` and state are taken in at once.
+   */
+  const forgeActions: ForgeActions = {
+    post: async (body) => takeValley(await run(() => postScout(body))),
+    setKit: async (seatId, kit) =>
+      takeValley(await run(() => scoutKit({ action: 'set', seatId, kit }))),
+    order: async (request) => takeValley(await run(() => postOrder(request))),
+    buyAnvil: async () => {
+      const owned = systems?.anvilPrices.owned ?? 0;
+      const ok = takeValley(await runKeyed(ActionIds.anvilBuy(owned), (key) => buyAnvil(key)));
+      if (ok) setNotice('A new anvil is yours.');
+      return ok;
+    },
+    buyKit: async (kit) => {
+      const ok = takeValley(
+        await runKeyed(ActionIds.kitBuy(kit), (key) =>
+          scoutKit({ action: 'buy', kit, idempotencyKey: key }),
+        ),
+      );
+      if (ok) setNotice(`The ${ANVIL_KIT_INFO[kit].name} is yours.`);
+      return ok;
+    },
+  };
+  /**
+   * The commons (phase 5 step 6b): a gift to a place's project is a keyed spend; a creature on a communal seat is free. Each answer's
+   * `valley` and state are taken in at once.
+   */
+  const commonsActions: CommonsActions = {
+    give: async (place, row, units) => {
+      const answer = await runKeyed(ActionIds.gift(place, row.id, units, row.max), (key) =>
+        giveToProject({
+          place,
+          currency: row.part,
+          ...(row.element === null ? {} : { element: row.element }),
+          amount: units * row.per,
+          idempotencyKey: key,
+        }),
+      );
+      if (!takeValley(answer) || answer === undefined) return false;
+      setNotice(
+        answer.levelUp
+          ? `The ${COMMONS_NAMES[place] ?? 'place'} grew to level ${String(answer.level)}!`
+          : 'Thank you. Your gift is in.',
+      );
+      return true;
+    },
+    post: async (place, creatureId) =>
+      takeValley(await run(() => postCommunal({ place, creatureId }))),
+  };
+  /** The Market's broker (phase 5 step 7): posting and setting what it trades toward are free; each answer's `valley` and state are taken in at once. */
+  const marketActions: MarketActions = {
+    post: async (body) => takeValley(await run(() => postScout(body))),
+    setToward: async (seatId, toward) => takeValley(await run(() => setBroker({ seatId, toward }))),
+    // Q64: the shard exchange lives at the Market (a keyed spend; the server answers 409 until it is built).
+    exchange: async ({ to, from, times }) => {
+      const held = systems?.forge.shelf.shards[to] ?? 0;
+      const answer = await runKeyed(ActionIds.exchange(to, from, times, held), (key) =>
+        exchangeShards({ to, from, times, idempotencyKey: key }),
+      );
+      if (!takeValley(answer) || answer === undefined) return false;
+      setNotice(['You traded for ', shardCount(to, answer.gained), '.']);
+      return true;
+    },
+  };
   /** Wears an item or takes it off (the card's and the dungeon's); true when the server took it. */
   const equipOn = async (gearId: string, creatureId: string | null): Promise<boolean> =>
     (await gearActions.equip(gearId, creatureId)) !== undefined;
@@ -364,7 +496,7 @@ export function Game({
         const only = results.length === 1 ? results[0] : undefined;
         setNotice(
           only !== undefined
-            ? choiceResultText(only, last.creatures)
+            ? [choiceResultText(only, last.creatures), ' ', ...releasedParts(only)]
             : `Settled ${String(results.length)} catches.`,
         );
       }
@@ -592,13 +724,13 @@ export function Game({
       )}
       {notice !== null && (
         <Alert
-          key={notice}
+          key={typeof notice === 'string' ? notice : sayText(notice)}
           level="success"
           onDismiss={() => {
             setNotice(null);
           }}
         >
-          {notice}
+          {typeof notice === 'string' ? notice : <SayLine say={notice} />}
         </Alert>
       )}
     </>
@@ -690,7 +822,27 @@ export function Game({
           {...creatureActions}
         />
       )}
-      {tab === 'expeditions' && (
+      {tab === 'expeditions' && valleyOn && valleySystems && systems !== null && (
+        // With the valley's systems on the Signpost is its scouts, not trips (`/api/expeditions` answers 404).
+        <SignpostSeats
+          visit={systems}
+          creatures={game.creatures}
+          trayInput={{
+            trips: game.expeditions,
+            jobs: gear === null ? null : gear.jobs,
+            now: Date.now() + offset,
+            ...trayStates(systems),
+          }}
+          acorns={game.balances.bait}
+          busy={busy}
+          actions={signpostActions}
+          commons={commonsActions}
+          onOpenPaddock={() => {
+            openPlace('paddock');
+          }}
+        />
+      )}
+      {tab === 'expeditions' && !(valleyOn && valleySystems) && (
         <Expeditions
           state={game}
           forecast={forecast}
@@ -738,6 +890,32 @@ export function Game({
       )}
       {tab === 'workshop' && (
         <Workshop
+          {...(valleyOn && valleySystems && systems !== null
+            ? {
+                forge: {
+                  visit: systems,
+                  trayInput: {
+                    trips: game.expeditions,
+                    jobs: gear === null ? null : gear.jobs,
+                    now: Date.now() + offset,
+                    ...trayStates(systems),
+                  },
+                  acorns: game.balances.bait,
+                  actions: forgeActions,
+                  commons: commonsActions,
+                  onOpenPaddock: () => {
+                    openPlace('paddock');
+                  },
+                  // Q64: an anvil that waits on a shard leads to the Market (its exchange once built, else its project).
+                  onOpenMarket: (to: string | null) => {
+                    setMarketStart(
+                      systems.market?.open === true && to !== null ? { exchange: to } : undefined,
+                    );
+                    openPlace('market');
+                  },
+                } satisfies ForgeMode,
+              }
+            : {})}
           state={game}
           gear={gear}
           failed={gearFailed}
@@ -868,6 +1046,17 @@ export function Game({
           attention,
           raid: raidGlance,
         }}
+        visit={systems}
+        {...(systems === null
+          ? {}
+          : {
+              commons: commonsActions,
+              market: marketActions,
+              acorns: game.balances.bait,
+              busy,
+              error,
+              ...(marketStart === undefined ? {} : { marketStart }),
+            })}
         castExtra={{
           dungeonTeam,
           dungeonPhase,
@@ -896,14 +1085,37 @@ export function Game({
           },
           games: games.view,
           raid: raidGlance,
+          bestFirst: valleySystems,
         }}
         now={Date.now() + offset}
         timezone={timezone.current}
         balances={game.balances}
+        brought={systems === null ? 0 : systems.allowance.brought}
         onDismiss={(until) => {
           void run(() => dismissAway(until)).then(showState);
         }}
         onPurse={setPurse}
+        // With the valley's systems on the paper is the server's (`valley.paper`); absent otherwise, today's notice is the source.
+        {...(valleySystems
+          ? {
+              paper: systems?.paper ?? null,
+              onClosePaper: (paperId: string) => {
+                // The server only marks it read; the client drops its own copy so it does not reopen.
+                void run(() => closeGazette(paperId)).then((closed) => {
+                  if (closed === true) {
+                    setVisit((was) => {
+                      if (was === null) return was;
+                      const rest = { ...was };
+                      delete rest.paper;
+                      return rest;
+                    });
+                  }
+                });
+              },
+              onPushOn: async (seatId: string) =>
+                takeValley(await run(() => setScoutDeep(seatId, true))),
+            }
+          : {})}
       />
     </>
   ) : (

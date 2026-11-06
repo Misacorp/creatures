@@ -7,12 +7,16 @@ import { expect } from 'vitest';
 export interface StatementReads {
   sql: string;
   rows: number;
+  /** The rows the statement wrote (`rowsWritten` of its cursor). */
+  written: number;
   calls: number;
 }
 
 export interface ReadReport {
   /** The sum of `rowsRead` of every cursor created during the work. */
   total: number;
+  /** The sum of `rowsWritten` of every cursor created during the work (Cloudflare bills these apart: 100,000 a day on the free tier). */
+  written: number;
   statements: number;
   /** Statement shapes, most rows first. */
   top: StatementReads[];
@@ -43,7 +47,7 @@ function wrap<T extends object>(target: T, over: Record<string, unknown>): T {
 
 /** Wraps a Durable Object's storage so `measure` can sum the rows read by what runs through it. */
 export function meterStorage(raw: DurableObjectStorage, onExec?: ExecHook): MeteredStorage {
-  let recorded: { query: string; cursor: { rowsRead: number } }[] = [];
+  let recorded: { query: string; cursor: { rowsRead: number; rowsWritten: number } }[] = [];
   const sql = wrap(raw.sql, {
     exec: (query: string, ...bindings: unknown[]) => {
       onExec?.(query, bindings);
@@ -62,16 +66,20 @@ export function meterStorage(raw: DurableObjectStorage, onExec?: ExecHook): Mete
       // A cursor's `rowsRead` is final once it is consumed, which every statement of finished work is.
       const byShape = new Map<string, StatementReads>();
       let total = 0;
+      let written = 0;
       for (const { query, cursor } of recorded) {
         total += cursor.rowsRead;
+        written += cursor.rowsWritten;
         const key = shape(query);
-        const entry = byShape.get(key) ?? { sql: key, rows: 0, calls: 0 };
+        const entry = byShape.get(key) ?? { sql: key, rows: 0, written: 0, calls: 0 };
         entry.rows += cursor.rowsRead;
+        entry.written += cursor.rowsWritten;
         entry.calls += 1;
         byShape.set(key, entry);
       }
       const reads = {
         total,
+        written,
         statements: recorded.length,
         top: [...byShape.values()].sort((a, b) => b.rows - a.rows),
       };
@@ -97,5 +105,25 @@ export function expectReadsUnder(label: string, reads: ReadReport, budget: numbe
   expect(
     reads.total,
     `${describeReads(label, reads)}\nBudget: ${String(budget)} rows. A whole-table scan on a hot path needs an index (CLAUDE.md, Conventions).`,
+  ).toBeLessThanOrEqual(budget);
+}
+
+/** The statements that wrote the most rows, as text. */
+export function describeWrites(label: string, reads: ReadReport, top = 8): string {
+  const lines = [...reads.top]
+    .sort((a, b) => b.written - a.written)
+    .slice(0, top)
+    .map((s) => `  ${String(s.written).padStart(7)} rows written  x${String(s.calls)}  ${s.sql}`);
+  return [
+    `${label}: ${String(reads.written)} rows written by ${String(reads.statements)} statements. Top statements:`,
+    ...lines,
+  ].join('\n');
+}
+
+/** Fails, listing the top statements by rows written, when the work wrote more than `budget` rows. */
+export function expectWritesUnder(label: string, reads: ReadReport, budget: number): void {
+  expect(
+    reads.written,
+    `${describeWrites(label, reads)}\nWrite budget: ${String(budget)} rows (plan risk 2: rows written have their own allowance).`,
   ).toBeLessThanOrEqual(budget);
 }

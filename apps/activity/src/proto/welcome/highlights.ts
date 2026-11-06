@@ -8,14 +8,22 @@
  * newcomer, parts) that do the talking and open their popovers when tapped. The player is never a figure in
  * it: creatures act. No DOM, no clock, no randomness: the same visit and cast give the same story.
  */
-import { content, PART_KINDS, type PartKind } from '@creatures/game';
+import {
+  content,
+  HIGHLIGHT_WEIGHT,
+  MAX_HIGHLIGHTS as SHARED_MAX_HIGHLIGHTS,
+  MIN_HIGHLIGHTS as SHARED_MIN_HIGHLIGHTS,
+  PART_KINDS,
+  pickHighlights as pickShared,
+  type PartKind,
+} from '@creatures/game';
 import { speciesName } from '../../game';
 import type { GearRarity } from '../../gear-types';
 import { PLACES, placeOf, type PlaceId } from '../valley/valley-art';
 import { eventsOf, gapDays, type Journey, type JourneyEvent, type Visit } from './journey';
 
 /** At most this many highlights, one per kind. */
-export const MAX_HIGHLIGHTS = 3;
+export const MAX_HIGHLIGHTS = SHARED_MAX_HIGHLIGHTS;
 /** The popup shows after this many hours away (V-RET example: 3 hours). */
 export const WELCOME_AFTER_HOURS = 3;
 /** Most creatures in one picture. */
@@ -247,30 +255,8 @@ const ofKind = <K extends JourneyEvent['kind']>(events: JourneyEvent[], kind: K)
 
 const STEP_RANK: Record<string, number> = { Apprentice: 1, Expert: 2, Master: 3 };
 
-/** How notable each story is. Within a kind the highest is the highlight. */
-const WEIGHT = {
-  // Pieces
-  epicReroll: 95,
-  rareReroll: 80,
-  reroll: 60,
-  fitted: 50,
-  found: 40,
-  // Creatures
-  newLine: 100,
-  master: 90,
-  graduation: 80,
-  expert: 70,
-  learning: 55,
-  apprentice: 40,
-  lesson: 35,
-  newcomersHome: 30,
-  scoutsHome: 20,
-  moment: 10,
-  // The valley
-  placeLevel: 85,
-  blueprint: 60,
-  visitor: 50,
-} as const;
+/** How notable each story is: the one ranking the prototype and the real Gazette share (`@creatures/game`, `valley/gazette.ts`). */
+const WEIGHT = HIGHLIGHT_WEIGHT;
 
 /** The small moments of a resting creature (V-BON-9): the day's, in turn. Never counted as a thing. */
 const MOMENTS: readonly ((n: string) => string)[] = [
@@ -743,25 +729,14 @@ function storiesOf(c: Ctx): Story[] {
 // --- Picking ---
 
 /** The fewest highlights a popup tells when it can. */
-export const MIN_HIGHLIGHTS = 2;
+export const MIN_HIGHLIGHTS = SHARED_MIN_HIGHLIGHTS;
 
 /**
  * The best story of each kind, the biggest first, at most `MAX_HIGHLIGHTS`. When only one kind has anything
  * (a quiet day) the next best story of any kind joins it, so the popup is never one line.
  */
 export function pickHighlights(stories: readonly Story[]): Story[] {
-  const best = (['piece', 'creature', 'server'] as const)
-    .map((kind) => stories.filter((s) => s.kind === kind).sort((a, b) => b.weight - a.weight)[0])
-    .filter((s): s is Story => s !== undefined);
-  const picked = best.sort((a, b) => b.weight - a.weight).slice(0, MAX_HIGHLIGHTS);
-  if (picked.length < MIN_HIGHLIGHTS) {
-    const next = [...stories]
-      .filter((s) => !picked.includes(s))
-      .sort((a, b) => b.weight - a.weight)
-      .slice(0, MIN_HIGHLIGHTS - picked.length);
-    return [...picked, ...next].sort((a, b) => b.weight - a.weight);
-  }
-  return picked;
+  return pickShared(stories, (s) => s.kind);
 }
 
 /**

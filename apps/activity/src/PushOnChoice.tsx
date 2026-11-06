@@ -1,3 +1,4 @@
+import { CountBadge } from './ui/CountBadge';
 import { Tag } from './ui/Tag';
 import { GLOSSARY_IDS } from '@creatures/game';
 import type { OfferedGoal } from './expedition-types';
@@ -37,8 +38,14 @@ function GoalCardView({
       <ul class="goal-rewards">
         {card.rewards.map((reward) => (
           <li key={reward.key}>
-            <GameIcon icon={reward.icon} scale={3} />
-            <span>{reward.text}</span>
+            {reward.item === undefined ? (
+              <>
+                <GameIcon icon={reward.icon} scale={3} />
+                <span>{reward.text}</span>
+              </>
+            ) : (
+              <CountBadge {...reward.item} />
+            )}
           </li>
         ))}
       </ul>

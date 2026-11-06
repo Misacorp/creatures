@@ -13,6 +13,12 @@ import type {
   TripCatch,
   TripResult,
 } from './expedition-types';
+import {
+  parseValleyView,
+  type ReachId,
+  type KitName,
+  type ValleyView as ValleyVisit,
+} from '@creatures/game';
 import { isExperienceView, isRibbonView, type ExperienceView, type RibbonView } from './experience';
 import { isWornGear } from './gear-parse';
 import {
@@ -526,6 +532,11 @@ export interface GameState {
   loungeXp: Record<string, number>;
   /** What needs the player (the pips on the tabs); present on GET /api/state only, null otherwise or when unknown. */
   attention: Attention | null;
+  /**
+   * The valley's resting creatures and allowance (`VALLEY_SYSTEMS` on; GET /api/state only): null with the flag off and in action
+   * answers.
+   */
+  valley: ValleyVisit | null;
 }
 
 /**
@@ -726,6 +737,8 @@ export function parseGameState(data: unknown): GameState {
   ) {
     throw new Error('the server returned an unexpected game state');
   }
+  const valley = parseValleyView(data['valley']);
+  if (valley === undefined) throw new Error('the server returned an unexpected valley block');
   return {
     serverNow: data['serverNow'],
     balances: data['balances'],
@@ -747,7 +760,156 @@ export function parseGameState(data: unknown): GameState {
     loungeSpot: parseLoungeSpot(data['loungeSpot']),
     loungeXp: parseLoungeXp(data['loungeXp']),
     attention: parseAttention(data['attention']),
+    valley,
   };
+}
+
+export type { ValleyVisit };
+
+/** What a scout route answers (phase 5 step 2): the player's settled valley, and the game state as usual (its own `valley` is null). */
+export interface ValleyAnswer {
+  valley: ValleyVisit;
+  state: GameState;
+}
+
+function valleyAnswer(data: unknown): ValleyAnswer {
+  const valley = isRecord(data) ? parseValleyView(data['valley']) : undefined;
+  if (valley === undefined || valley === null) {
+    throw new Error('the server returned an unexpected valley answer');
+  }
+  return { valley, state: stateFrom(data) };
+}
+
+/**
+ * Posts a creature to a scout seat, empties it (`creatureId: null`) or points it at another destination (V-POST-1, V-SCOUT-1).
+ * A creature that stands at another seat swaps places with the one here; moving is free, so there is no key.
+ */
+export async function postScout(body: {
+  seatId: string;
+  creatureId?: string | null;
+  destination?: string;
+}): Promise<ValleyAnswer> {
+  return valleyAnswer(await apiFetch('/api/valley/seat', jsonRequest('POST', body)));
+}
+
+/** Closes the welcome-back Gazette's paper (marks it read; `paperId` is the `id` the state's paper carried). Free and repeatable, no key. */
+export async function closeGazette(paperId: string): Promise<boolean> {
+  const data = await apiFetch('/api/valley/gazette/close', jsonRequest('POST', { paperId }));
+  return isRecord(data) && data['closed'] === true;
+}
+
+/**
+ * Takes a scout into its destination's deeper area (V-SCOUT-6; only while the unread paper offers it) or back up (free, any time).
+ * Free, so no key; asking for the state a seat is already in changes nothing.
+ */
+export async function setScoutDeep(seatId: string, deep: boolean): Promise<ValleyAnswer> {
+  return valleyAnswer(await apiFetch('/api/valley/deep', jsonRequest('POST', { seatId, deep })));
+}
+
+/** Buys the player's next scout seat (V-POST-2): a keyed spend of Acorns. */
+export async function buyScoutSeat(idempotencyKey: string): Promise<ValleyAnswer> {
+  return valleyAnswer(
+    await apiFetch('/api/valley/seat/buy', jsonRequest('POST', { idempotencyKey })),
+  );
+}
+
+/** Buys a kit (a keyed spend of Acorns, once each), or sets an owned kit on a seat for free (`null` takes it off). */
+export async function scoutKit(
+  request:
+    | { action: 'buy'; kit: KitName; idempotencyKey: string }
+    | { action: 'set'; seatId: string; kit: KitName | null },
+): Promise<ValleyAnswer> {
+  return valleyAnswer(await apiFetch('/api/valley/kit', jsonRequest('POST', request)));
+}
+
+/** One order of an anvil's queue (V-FORGE-1): what to add, change or take off. Free and repeatable, so no key. */
+export type OrderRequest =
+  | {
+      action: 'add';
+      seatId: string;
+      blueprintId: string;
+      count: number;
+      reach?: ReachId;
+      /** A patchwork blueprint's shard element (omitted: the pile held most when a piece starts). */
+      element?: string;
+    }
+  | { action: 'add'; seatId: string; forTeam: true; reach?: ReachId }
+  | { action: 'edit'; orderId: string; count?: number; reach?: ReachId }
+  | { action: 'remove'; orderId: string };
+
+/** Buys the player's next anvil (V-POST-2, V-FORGE-6): a keyed spend of Acorns and scrap. */
+export async function buyAnvil(idempotencyKey: string): Promise<ValleyAnswer> {
+  return valleyAnswer(
+    await apiFetch('/api/valley/anvil/buy', jsonRequest('POST', { idempotencyKey })),
+  );
+}
+
+/** Adds, changes or removes an order of an anvil's queue; the answer carries the settled valley (the order takes effect at once). */
+export async function postOrder(request: OrderRequest): Promise<ValleyAnswer> {
+  return valleyAnswer(await apiFetch('/api/valley/order', jsonRequest('POST', request)));
+}
+
+/** What the exchange answers besides the valley: the shards it gave in all (a crit gives more than one). */
+export interface ExchangeAnswer extends ValleyAnswer {
+  trades: number;
+  gained: number;
+}
+
+/** Trades shards for the element `to` (V-FORGE-10), paid from `from` (omitted: the biggest pile that can pay); a keyed spend. */
+export async function exchangeShards(request: {
+  to: string;
+  from?: string | null;
+  times: number;
+  idempotencyKey: string;
+}): Promise<ExchangeAnswer> {
+  const data = await apiFetch('/api/valley/exchange', jsonRequest('POST', request));
+  const trades = isRecord(data) && Array.isArray(data['trades']) ? data['trades'].length : 0;
+  const gained = isRecord(data) && typeof data['gained'] === 'number' ? data['gained'] : 0;
+  return { ...valleyAnswer(data), trades, gained };
+}
+
+/** What a gift answers besides the valley: what it cost the player, and whether it raised the place. */
+export interface GiftAnswer extends ValleyAnswer {
+  spent: number;
+  levelUp: boolean;
+  level: number;
+}
+
+/**
+ * Gives Acorns, scrap or shards to a place's open project (V-COM-1, 5): a keyed spend. Shards name their element; a part that is full
+ * takes only what it needs, so `spent` can be less than `amount` (the rest stays with the player).
+ */
+export async function giveToProject(request: {
+  place: string;
+  currency: 'acorns' | 'scrap' | 'shards';
+  element?: string;
+  amount: number;
+  idempotencyKey: string;
+}): Promise<GiftAnswer> {
+  const data = await apiFetch('/api/valley/gift', jsonRequest('POST', request));
+  const spent = isRecord(data) && typeof data['spent'] === 'number' ? data['spent'] : 0;
+  const levelUp = isRecord(data) && data['levelUp'] === true;
+  const level = isRecord(data) && typeof data['level'] === 'number' ? data['level'] : 0;
+  return { ...valleyAnswer(data), spent, levelUp, level };
+}
+
+/** Posts a creature to the player's communal seat at a place (it opens the seat the first time), or empties it with `null` (V-COM-14). Free, so no key. */
+export async function postCommunal(body: {
+  place: string;
+  creatureId: string | null;
+}): Promise<ValleyAnswer> {
+  return valleyAnswer(await apiFetch('/api/valley/communal', jsonRequest('POST', body)));
+}
+
+/**
+ * Sets what the broker at the Market trades toward (V-FORGE-11): an element it keeps a small stock of besides what the orders wait on, or
+ * `null` (only what the orders wait on). Free, so no key.
+ */
+export async function setBroker(body: {
+  seatId: string;
+  toward: string | null;
+}): Promise<ValleyAnswer> {
+  return valleyAnswer(await apiFetch('/api/valley/broker', jsonRequest('POST', body)));
 }
 
 export function stateFrom(data: unknown): GameState {

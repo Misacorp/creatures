@@ -7,12 +7,16 @@ import type { GearItem, GearState, JobResult } from './gear-types';
 import {
   bagFull,
   bagText,
+  blueprintViews,
   itemsWithIds,
   jobResultRarity,
   noticeLines,
   sortItems,
   unequippedReason,
 } from './gear-view';
+import { content } from '@creatures/game';
+import { BagTools } from './BagTools';
+import { NO_FILTER, selectableIds, shownItems, type BagFilter } from './bag-filter';
 import { GlossaryTag } from './Glossary';
 import { DismantleDrawer, type DismantleStep } from './DismantleDrawer';
 import { BAG_HINT, InventoryGrid } from './InventoryGrid';
@@ -21,6 +25,16 @@ import { ItemDetail } from './ItemDetail';
 import { JobReveal } from './JobReveal';
 import { JobSlots } from './JobSlots';
 import { SupplyCrafting } from './SupplyCrafting';
+import {
+  ForgeAnvils,
+  type ForgeActions,
+  type ForgeStart,
+  type OrderOpen,
+} from './valley/ForgeAnvils';
+import type { CommonsActions } from './valley/CommonsBoard';
+import { OrderEditor } from './valley/OrderEditor';
+import type { TrayInput } from './valley/tray-state';
+import type { ValleyVisit } from './api';
 import { Accordion } from './ui/Accordion';
 import { BulkBar } from './ui/BulkBar';
 import { Drawer } from './ui/Drawer';
@@ -30,6 +44,25 @@ import { Alert } from './ui/Alert';
 import { Column, Columns } from './ui/Columns';
 import { useMultiSelect } from './ui/multi-select';
 import { retireSelectHint, selectHintRetired, selectHintText } from './ui/select-hint';
+
+/** The valley's Forge in place of the job slots (`VALLEY_SYSTEMS` on): what the anvils' page and the order editor need. */
+export interface ForgeMode {
+  visit: ValleyVisit;
+  /** What the creature tray reads. */
+  trayInput: TrayInput;
+  acorns: number;
+  actions: ForgeActions;
+  /** The Forge's project board (the commons): its gifts and its communal seat; absent shows no board. */
+  commons?: CommonsActions;
+  onOpenPaddock: () => void;
+  /** The Market (Q64: shards are traded there); `to` is the element an anvil waits for. */
+  onOpenMarket: (to: string | null) => void;
+  /** What the page and the editor have open at the start (the workbench shows each). */
+  start?: ForgeStart;
+  orderStart?: { anvilId: string; baseId?: string; orderId?: string };
+}
+
+const ELEMENT_IDS: readonly string[] = content.elements.map((e) => e.id);
 
 /**
  * The Workshop tab: your parts, the job slots (with timers and claims), the bag of gear (an item's
@@ -50,6 +83,7 @@ export function Workshop({
   onDismissReveal,
   initialSelectedId,
   initialCardDismantle,
+  forge,
 }: {
   state: GameState;
   gear: GearState | null;
@@ -69,6 +103,11 @@ export function Workshop({
   initialSelectedId?: string;
   /** The workbench shows the item card's Dismantle flow open on this step (with `initialSelectedId`). */
   initialCardDismantle?: DismantleStep;
+  /**
+   * The Forge's anvils (phase 5 step 3): replace the job slots and the supply crafts, blueprints are ordered instead of crafted, and the
+   * bag gains a filter and a sort. Absent (the flag off): the Workshop as it was.
+   */
+  forge?: ForgeMode;
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(initialSelectedId ?? null);
   // The drawer was flipped to another item: the new card does not take the focus from the arrows.
@@ -79,7 +118,25 @@ export function Workshop({
   // The bag's multi-select (2026-10-27): started by a gesture on a tile, held only here; the bulk bar's
   // "Dismantle" picks the creature and confirms. `pile` is the items the confirmation shows (the drawer is open
   // while set).
-  const selection = useMultiSelect(sortItems(gear?.items ?? []).map((i) => i.id));
+  const [filter, setFilter] = useState<BagFilter>(NO_FILTER);
+  const shown =
+    forge === undefined
+      ? sortItems(gear?.items ?? [])
+      : shownItems(gear?.items ?? [], filter, ELEMENT_IDS);
+  const selection = useMultiSelect(shown.map((i) => i.id));
+  // The order editor, drawn here so an anvil's "Add an order" and a blueprint's "Order" open the same one.
+  const [orderOpen, setOrderOpen] = useState<(OrderOpen & { baseId?: string }) | null>(
+    forge?.orderStart === undefined
+      ? null
+      : forge.orderStart.orderId === undefined
+        ? {
+            kind: 'add',
+            anvilId: forge.orderStart.anvilId,
+            opener: null,
+            ...(forge.orderStart.baseId === undefined ? {} : { baseId: forge.orderStart.baseId }),
+          }
+        : { kind: 'edit', orderId: forge.orderStart.orderId, opener: null },
+  );
   const [pile, setPile] = useState<GearItem[] | null>(null);
   const dismantleButton = useRef<HTMLButtonElement | null>(null);
   // The item card's red Dismantle: the same `DismantleDrawer` as the bulk bar's, for this one item, taking the place
@@ -106,10 +163,15 @@ export function Workshop({
       <p class="muted">Opening the Workshop...</p>
     );
   }
+  // With the valley's Forge the bag is the valley's (its own cap, worn pieces not counted); this is the one place it shows.
+  const bag: GearState['inventory'] =
+    forge === undefined
+      ? gear.inventory
+      : { used: forge.visit.forge.bag.count, cap: forge.visit.forge.bag.cap, reserved: 0 };
   const selected = gear.items.find((i) => i.id === selectedId) ?? null;
   const picked = itemsWithIds(gear.items, selection.ids);
   // The drawer flips through the bag's items in the grid's order.
-  const ordered = sortItems(gear.items);
+  const ordered = shown;
   const itemFlip = flipOver({
     list: ordered,
     at: ordered.findIndex((i) => i.id === selected?.id),
@@ -123,7 +185,7 @@ export function Workshop({
   });
   const flip = drilling && itemFlip !== undefined ? { ...itemFlip, paused: true } : itemFlip;
   return (
-    <Columns from="60rem" ratio="1-3" class="workshop">
+    <Columns from="60rem" ratio={forge === undefined ? '1-3' : '2-3'} class="workshop">
       {gear.notice !== null && (
         <section class="ws-section card-item notice-card" aria-labelledby="ws-notice">
           <h3 id="ws-notice">Gear has changed</h3>
@@ -166,41 +228,63 @@ export function Workshop({
           onDismiss={onDismissReveal}
         />
       )}
-      <Column sticky stack="tight">
-        <section class="ws-section" aria-labelledby="ws-parts">
-          <h3 id="ws-parts">Parts</h3>
-          <PartsRow parts={gear.parts} />
-          <p>
-            <button
-              type="button"
-              onClick={() => {
-                document.getElementById('ws-supplies')?.scrollIntoView({ block: 'start' });
-              }}
-            >
-              Craft supplies
-            </button>
-          </p>
-        </section>
-        <JobSlots
-          gear={gear}
-          creatures={state.creatures}
-          offset={offset}
-          busy={busy}
-          onClaim={(job) => {
-            void actions.claimJob(job.id).then((result) => {
-              if (result !== undefined) onClaimed(result);
-            });
-          }}
-        />
-      </Column>
+      {forge !== undefined && (
+        <Column stack="tight">
+          <ForgeAnvils
+            visit={forge.visit}
+            creatures={state.creatures}
+            trayInput={forge.trayInput}
+            acorns={forge.acorns}
+            busy={busy}
+            error={error}
+            actions={forge.actions}
+            onOrder={(open) => {
+              setOrderOpen(open);
+            }}
+            onOpenPaddock={forge.onOpenPaddock}
+            onOpenMarket={forge.onOpenMarket}
+            {...(forge.commons === undefined ? {} : { commons: forge.commons })}
+            {...(forge.start === undefined ? {} : { start: forge.start })}
+          />
+        </Column>
+      )}
+      {forge === undefined && (
+        <Column sticky stack="tight">
+          <section class="ws-section" aria-labelledby="ws-parts">
+            <h3 id="ws-parts">Parts</h3>
+            <PartsRow parts={gear.parts} />
+            <p>
+              <button
+                type="button"
+                onClick={() => {
+                  document.getElementById('ws-supplies')?.scrollIntoView({ block: 'start' });
+                }}
+              >
+                Craft supplies
+              </button>
+            </p>
+          </section>
+          <JobSlots
+            gear={gear}
+            creatures={state.creatures}
+            offset={offset}
+            busy={busy}
+            onClaim={(job) => {
+              void actions.claimJob(job.id).then((result) => {
+                if (result !== undefined) onClaimed(result);
+              });
+            }}
+          />
+        </Column>
+      )}
       <Column stack="tight">
         <section class="ws-section" aria-labelledby="ws-gear">
           <div class="ws-head">
             <h3 id="ws-gear">
               Gear <GlossaryTag entry="gear" look="help" />
             </h3>
-            <span class={bagFull(gear.inventory) ? 'bag-count over' : 'bag-count muted'}>
-              Bag: {bagText(gear.inventory)}
+            <span class={bagFull(bag) ? 'bag-count over' : 'bag-count muted'}>
+              Bag: {bagText(bag)}
             </span>
           </div>
           {hintOpen && gear.items.length > 0 && (
@@ -215,14 +299,34 @@ export function Workshop({
               {selectHintText(BAG_HINT)}
             </Alert>
           )}
-          {bagFull(gear.inventory) && (
-            <Alert level="warning">Gear you find becomes parts until the bag has room.</Alert>
+          {bagFull(bag) && (
+            <Alert level="warning">
+              {forge === undefined
+                ? 'Gear you find becomes parts until the bag has room.'
+                : 'Finished pieces wait on the anvils\u2019 floors until the bag has room.'}
+            </Alert>
+          )}
+          {forge !== undefined && gear.items.length > 0 && (
+            <BagTools
+              filter={filter}
+              onChange={setFilter}
+              shown={shown.length}
+              total={gear.items.length}
+              selectable={selectableIds(shown).length}
+              open={forge.start?.bag === true}
+              onSelectAll={() => {
+                selection.setAll(selectableIds(shown));
+              }}
+            />
           )}
           {gear.items.length === 0 ? (
             <p class="empty muted">Your bag is empty.</p>
+          ) : shown.length === 0 ? (
+            <p class="empty muted">Nothing in the bag matches the filter.</p>
           ) : (
             <InventoryGrid
-              items={gear.items}
+              items={shown}
+              inOrder={forge !== undefined}
               creatures={state.creatures}
               openId={selected?.id ?? null}
               selection={selection}
@@ -343,6 +447,25 @@ export function Workshop({
           busy={busy}
           error={error}
           loadPreview={actions.previewCraft}
+          {...(forge === undefined
+            ? {}
+            : {
+                order: {
+                  reason: forge.visit.anvils.length === 0 ? 'Buy an anvil to order pieces.' : null,
+                  shards: forge.visit.forge.shelf.shards,
+                  onOrder: (baseId: string, opener: HTMLElement) => {
+                    const room = forge.visit.anvils.find(
+                      (a) => a.orders.length < forge.visit.forge.queueMax,
+                    );
+                    setOrderOpen({
+                      kind: 'add',
+                      anvilId: (room ?? forge.visit.anvils[0])?.id ?? '',
+                      baseId,
+                      opener,
+                    });
+                  },
+                },
+              })}
           onCraft={async (baseId, creatureId, reach, treat) =>
             (await actions.startJob({
               kind: 'craft',
@@ -353,30 +476,45 @@ export function Workshop({
             })) !== undefined
           }
         />
-        <SupplyCrafting
-          gear={gear}
-          creatures={state.creatures}
-          stock={state.supplies}
+        {forge === undefined && (
+          <SupplyCrafting
+            gear={gear}
+            creatures={state.creatures}
+            stock={state.supplies}
+            busy={busy}
+            error={error}
+            onCraft={async (supplyId, creatureId, treat) =>
+              (await actions.startJob({
+                kind: 'supply',
+                creatureId,
+                supplyId,
+                ...(treat ? { treat: true } : {}),
+              })) !== undefined
+            }
+            onConvert={async (recipeId, creatureId, treat) =>
+              (await actions.startJob({
+                kind: 'convert',
+                creatureId,
+                recipeId,
+                ...(treat ? { treat: true } : {}),
+              })) !== undefined
+            }
+          />
+        )}
+      </Column>
+      {forge !== undefined && orderOpen !== null && (
+        <OrderEditor
+          open={orderOpen}
+          visit={forge.visit}
+          blueprints={blueprintViews(gear.blueprints, gear.skills, true)}
           busy={busy}
           error={error}
-          onCraft={async (supplyId, creatureId, treat) =>
-            (await actions.startJob({
-              kind: 'supply',
-              creatureId,
-              supplyId,
-              ...(treat ? { treat: true } : {}),
-            })) !== undefined
-          }
-          onConvert={async (recipeId, creatureId, treat) =>
-            (await actions.startJob({
-              kind: 'convert',
-              creatureId,
-              recipeId,
-              ...(treat ? { treat: true } : {}),
-            })) !== undefined
-          }
+          onOrder={forge.actions.order}
+          onClose={() => {
+            setOrderOpen(null);
+          }}
         />
-      </Column>
+      )}
     </Columns>
   );
 }

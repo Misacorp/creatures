@@ -7,6 +7,7 @@ import { SAMPLE_STATE, sampleCreature } from './creature-card-sample';
 import { withV2 } from './creature-page/v2-sample';
 import { errorText } from './game';
 import type { Loaded } from './loaded-state';
+import { sayText } from './resource-count';
 
 /** The real runner (as `Game` uses it), with the answers going to plain recorders: combat v2's three actions. */
 function setup() {
@@ -31,7 +32,7 @@ function setup() {
       const now: Loaded = { game: SAMPLE_STATE, offset: 0 };
       shown.push(typeof next === 'function' ? next(now) : next);
     },
-    setNotice: (text) => notices.push(text),
+    setNotice: (text) => notices.push(typeof text === 'string' ? text : sayText(text ?? [])),
     v2Server,
   });
   const settle = () => new Promise((resolve) => setTimeout(resolve, 0));

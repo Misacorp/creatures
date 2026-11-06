@@ -1,9 +1,24 @@
-import { EXPEDITION_LENGTHS, ROOM_SPOT_IDS, RULES, content, talentContent } from '@creatures/game';
+import {
+  EXPEDITION_LENGTHS,
+  GIFT_CURRENCIES,
+  ROOM_SPOT_IDS,
+  RULES,
+  KIT_NAMES,
+  VALLEY_ELEMENTS,
+  VALLEY_RULES,
+  content,
+  placeIds,
+  talentContent,
+} from '@creatures/game';
 import { combatV2 } from '@creatures/game/combat-v2';
 import * as v from 'valibot';
 import { DESTINATION_IDS, GOAL_IDS, SPECIES_IDS, SUPPLY_IDS } from './content-ids';
 import { ROOM_MAX_USERS } from './lounger';
 import { IdempotencyKeySchema, SNOWFLAKE_RE } from './schemas';
+
+/** Every destination a scout seat can be posted to (the lab's six and the two extra shipped places). */
+const VALLEY_PLACE_IDS = placeIds(VALLEY_RULES) as [string, ...string[]];
+const COMMONS_PLACE_IDS = VALLEY_RULES.commons.places as unknown as [string, ...string[]];
 
 /** Server-generated ids are random UUIDs; anything else is malformed. */
 const ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -153,4 +168,99 @@ export const RoomBodySchema = v.strictObject({
     v.maxLength(ROOM_MAX_USERS),
     v.check((ids) => new Set(ids).size === ids.length),
   ),
+});
+
+// --- The valley's scouts (phase 5 step 2): seats and kit ---
+
+/** Posts a creature to a scout seat (or empties it with `null`) and may point the seat at another destination. */
+export const ValleySeatBodySchema = v.strictObject({
+  seatId: IdSchema,
+  creatureId: v.optional(v.nullable(IdSchema)),
+  destination: v.optional(v.picklist(VALLEY_PLACE_IDS)),
+});
+
+export const ValleySeatBuyBodySchema = v.strictObject({ idempotencyKey: IdempotencyKeySchema });
+
+/** Closes the welcome-back Gazette's paper (marks it read); `paperId` is the `id` the state's paper carried. */
+export const ValleyGazetteCloseBodySchema = v.strictObject({
+  paperId: v.pipe(v.string(), v.regex(/^\d{1,16}$/)),
+});
+
+/** Takes a scout into its destination's deeper area (only while the unread paper offers it) or back up (free, any time). */
+/** What the broker trades toward (V-FORGE-11): an element it keeps a small stock of, or null (only what the orders wait on). */
+export const ValleyBrokerBodySchema = v.strictObject({
+  seatId: IdSchema,
+  toward: v.nullable(v.picklist(VALLEY_ELEMENTS)),
+});
+
+export const ValleyDeepBodySchema = v.strictObject({ seatId: IdSchema, deep: v.boolean() });
+
+/** Buys a kit (a keyed spend of Acorns), or sets an owned kit on a seat (free; `null` takes it off). */
+export const ValleyKitBodySchema = v.variant('action', [
+  v.strictObject({
+    action: v.literal('buy'),
+    kit: v.picklist(KIT_NAMES),
+    idempotencyKey: IdempotencyKeySchema,
+  }),
+  v.strictObject({
+    action: v.literal('set'),
+    seatId: IdSchema,
+    kit: v.nullable(v.picklist(KIT_NAMES)),
+  }),
+]);
+
+// --- The valley's Forge (phase 5 step 3): anvils, orders and the exchange ---
+
+export const ValleyAnvilBuyBodySchema = v.strictObject({ idempotencyKey: IdempotencyKeySchema });
+
+const ReachSchema = v.picklist(['none', 'rare', 'epic']);
+
+/**
+ * An anvil's queue: adds an order (a blueprint and a count, or "for my team": no blueprint, no count), changes one's count or Reach,
+ * or takes one off. The counts are bounded by the rules in the handler; here the shape and the lengths.
+ */
+export const ValleyOrderBodySchema = v.variant('action', [
+  v.strictObject({
+    action: v.literal('add'),
+    seatId: IdSchema,
+    blueprintId: v.optional(v.pipe(v.string(), v.minLength(1), v.maxLength(64))),
+    forTeam: v.optional(v.boolean(), false),
+    count: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(999))),
+    reach: v.optional(ReachSchema, 'none'),
+    /** A patchwork order's shard element (omitted: the pile held most when a piece starts). */
+    element: v.optional(v.picklist(VALLEY_ELEMENTS)),
+  }),
+  v.strictObject({
+    action: v.literal('edit'),
+    orderId: IdSchema,
+    count: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(999))),
+    reach: v.optional(ReachSchema),
+  }),
+  v.strictObject({ action: v.literal('remove'), orderId: IdSchema }),
+]);
+
+/** The shard exchange: `times` trades for the element `to`, paid from `from` (null: the biggest pile that can pay). */
+export const ValleyExchangeBodySchema = v.strictObject({
+  to: v.picklist(VALLEY_ELEMENTS),
+  from: v.optional(v.nullable(v.picklist(VALLEY_ELEMENTS)), null),
+  times: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(20)), 1),
+  idempotencyKey: IdempotencyKeySchema,
+});
+
+/**
+ * A gift to a place's open project (V-COM-1, 5): Acorns, scrap or shards (a keyed spend). Shards name their element (the place's own
+ * counts in full, another at the exchange's rate); the other two currencies take no element.
+ */
+export const ValleyGiftBodySchema = v.strictObject({
+  place: v.picklist(COMMONS_PLACE_IDS),
+  currency: v.picklist(GIFT_CURRENCIES),
+  element: v.optional(v.picklist(VALLEY_ELEMENTS)),
+  amount: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(1_000_000)),
+  idempotencyKey: IdempotencyKeySchema,
+});
+
+/** Posts a creature to the caller's communal seat at a place (it opens the seat the first time), or empties it with `null`. */
+export const ValleyCommunalBodySchema = v.strictObject({
+  place: v.picklist(COMMONS_PLACE_IDS),
+  creatureId: v.nullable(IdSchema),
 });

@@ -67,6 +67,7 @@ import {
   creatureXp,
   creditParts,
   debitParts,
+  deleteItem,
   getParts,
   hasParts,
   hasRoom,
@@ -427,7 +428,7 @@ export class Workshop {
               if (marks !== null) marked.push({ baseId: base.id, marks });
             }
           }
-          for (const row of rows) this.sql.exec('DELETE FROM gear_items WHERE id = ?', row.id);
+          for (const row of rows) deleteItem(this.sql, row.id);
           const day = this.deps.weather?.dayBounds().startsAt;
           if (day !== undefined) {
             this.sql.exec(

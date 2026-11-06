@@ -24,9 +24,11 @@ import {
   GUILD_ID,
   boardSwap,
   callAs,
+  seedSeats,
   fakeLounge,
   inGuild,
   loungeTick,
+  seedAnvils,
   seedWorld,
   startLounge,
   userId,
@@ -57,6 +59,11 @@ const SMALL_BY_DESIGN: Record<string, string> = {
   lounge_message: 'one row: the lounge message of the guild',
   lounge_instances: 'the Activity instances open right now (a few)',
   lounge_company: 'one row per player who lounges with company (players, at most a few dozen)',
+  valley_places:
+    'one row per place of the valley (five today; a new place is content, never a row per player)',
+  valley_keystones: 'one row per scouting destination (seven today), a clock each',
+  valley_collections:
+    'one row per socket that has been set: five sockets on each board of five places, 25 rows for good',
 };
 
 /**
@@ -109,6 +116,8 @@ function resolveTable(sql: string, name: string): string {
 /** What an audit run found: the statements it saw and planned, and the scans it did not accept. */
 interface Audited {
   seen: number;
+  /** The recorded statements (normalised text). */
+  statements: string[];
   planned: number;
   found: string[];
 }
@@ -118,7 +127,7 @@ interface Audited {
  * statement `exercise` runs, plans each one and collects the whole-table scans of tables that grow with play.
  */
 async function audit(
-  options: { combatV2?: boolean; fresh?: boolean },
+  options: { combatV2?: boolean; valleySystems?: boolean; fresh?: boolean },
   exercise: (env: GuildEnv, world: World) => Promise<void>,
 ): Promise<Audited> {
   let recording = false;
@@ -179,7 +188,7 @@ async function audit(
       },
     },
   );
-  return { seen: seen.size, planned, found };
+  return { seen: seen.size, statements: [...seen.keys()], planned, found };
 }
 
 const scanMessage = (found: string[]): string =>
@@ -364,6 +373,362 @@ describe('query plan audit', () => {
     });
 
     expect(result.seen, 'statements recorded').toBeGreaterThan(60);
+    expect(result.found, scanMessage(result.found)).toEqual([]);
+  }, 60_000);
+
+  it("plans the valley's lazy pass (a first look, an arrival after a day, a look mid-visit, a repeat, the pass before an intent) without a whole-table scan", async () => {
+    const result = await audit({ valleySystems: true, fresh: true }, async (env, world) => {
+      const { clock } = env;
+      const relog = async (): Promise<void> => {
+        world.secrets.set(
+          userId(1),
+          await world.core.createSession(GUILD_ID, { id: userId(1), displayName: 'Player 1' }),
+        );
+      };
+      clock.t += 6 * MINUTE;
+      await callAs(world.core, world.secrets, 1, '/api/state');
+      clock.t += 24 * 60 * MINUTE;
+      await relog();
+      await callAs(world.core, world.secrets, 1, '/api/state');
+      clock.t += 10 * MINUTE;
+      await callAs(world.core, world.secrets, 1, '/api/state');
+      clock.t += 10_000;
+      await callAs(world.core, world.secrets, 1, '/api/state');
+      clock.t += 5 * MINUTE;
+      await relog();
+      await callAs(world.core, world.secrets, 1, '/api/away/dismiss', {
+        method: 'POST',
+        body: { until: 1 },
+      });
+    });
+
+    expect(result.seen, 'statements recorded').toBeGreaterThan(40);
+    // The valley's own statements ran (a refactor that stops running them would pass for nothing).
+    for (const table of ['valley_players', 'valley_creatures'])
+      expect(
+        result.statements.some((q) => q.includes(table)),
+        table,
+      ).toBe(true);
+    expect(result.found, scanMessage(result.found)).toEqual([]);
+  }, 60_000);
+
+  it("plans the commons' statements (a gift, a gift that finishes a level, a communal seat credited, a keystone and a collection, a post) without a whole-table scan", async () => {
+    const result = await audit({ valleySystems: true, fresh: true }, async (env, world) => {
+      const { clock, metered } = env;
+      const { core, secrets } = world;
+      const relog = async (): Promise<void> => {
+        secrets.set(
+          userId(1),
+          await core.createSession(GUILD_ID, { id: userId(1), displayName: 'Player 1' }),
+        );
+      };
+      const post = (path: string, body: unknown): Promise<unknown> =>
+        callAs(core, secrets, 1, path, { method: 'POST', body });
+      clock.t += 6 * MINUTE;
+      await callAs(core, secrets, 1, '/api/state');
+      core.credit({
+        userId: userId(1),
+        currency: 'bait',
+        amount: 5000,
+        source: 'test',
+        idempotencyKey: 'plan-funds',
+      });
+      const mine = world.creatures[userId(1)] ?? [];
+      await post('/api/valley/communal', { place: 'bonfire', creatureId: mine[0] });
+      await post('/api/valley/gift', {
+        place: 'bonfire',
+        currency: 'acorns',
+        amount: 5,
+        idempotencyKey: 'plan-gift-1',
+      });
+      // A level finishes, with a keystone ringing for a scout and the bonfire's communal seat credited at the next arrival.
+      const size = metered.sql
+        .exec<{ size: number }>("SELECT size FROM valley_places WHERE place = 'bonfire'")
+        .one().size;
+      metered.sql.exec(
+        "UPDATE valley_places SET have_scrap = 1e9, have_shards = 1e9, have_acorns = ? WHERE place = 'bonfire'",
+        size * 0.4 - 0.5,
+      );
+      await post('/api/valley/gift', {
+        place: 'bonfire',
+        currency: 'acorns',
+        amount: 1,
+        idempotencyKey: 'plan-gift-2',
+      });
+      seedSeats(metered.sql, userId(1), mine.slice(1), 1);
+      metered.sql.exec('UPDATE valley_keystones SET ready_at = 0');
+      metered.sql.exec(
+        "UPDATE valley_seats SET store_hours = 10 WHERE user_id = ? AND place = 'commons'",
+        userId(1),
+      );
+      clock.t += 24 * 60 * MINUTE;
+      await relog();
+      await callAs(core, secrets, 1, '/api/state');
+    });
+
+    expect(result.seen, 'statements recorded').toBeGreaterThan(40);
+    // The commons' own statements ran (a refactor that stops running them would pass for nothing).
+    for (const table of [
+      'valley_places',
+      'valley_gifts',
+      'valley_fire_log',
+      'valley_keystones',
+      'valley_collections',
+    ])
+      expect(
+        result.statements.some((q) => q.includes(table)),
+        table,
+      ).toBe(true);
+    expect(result.found, scanMessage(result.found)).toEqual([]);
+  }, 60_000);
+
+  it("plans the scouts' pass and routes (an arrival with seats, a seat bought and posted, a kit set, a look mid-visit) without a whole-table scan", async () => {
+    const result = await audit({ valleySystems: true, fresh: true }, async (env, world) => {
+      const { clock } = env;
+      const relog = async (): Promise<void> => {
+        world.secrets.set(
+          userId(1),
+          await world.core.createSession(GUILD_ID, { id: userId(1), displayName: 'Player 1' }),
+        );
+      };
+      const call = (path: string, body: unknown, n = 1): Promise<unknown> =>
+        callAs(world.core, world.secrets, n, path, { method: 'POST', body });
+      clock.t += 6 * MINUTE;
+      await callAs(world.core, world.secrets, 1, '/api/state');
+      // Player 2 buys the first seat (free) and posts a creature to it; player 1 has two seats by the seeds.
+      const mine = world.creatures[userId(1)] ?? [];
+      seedSeats(env.metered.sql, userId(1), mine, 2);
+      const bought = (await call(
+        '/api/valley/seat/buy',
+        { idempotencyKey: 'audit-seat-buy-0001' },
+        2,
+      )) as { seatId: string };
+      await call(
+        '/api/valley/seat',
+        {
+          seatId: bought.seatId,
+          creatureId: world.creatures[userId(2)]?.[0] ?? null,
+          destination: 'ember-caves',
+        },
+        2,
+      );
+      const second = env.metered.sql
+        .exec<{ seat_id: string }>(
+          'SELECT seat_id FROM valley_seats WHERE user_id = ? AND position = 2',
+          userId(1),
+        )
+        .one().seat_id;
+      await call('/api/valley/kit', { action: 'set', seatId: second, kit: 'satchel' });
+      clock.t += 24 * 60 * MINUTE;
+      await relog();
+      await callAs(world.core, world.secrets, 1, '/api/state');
+      clock.t += 10 * MINUTE;
+      await callAs(world.core, world.secrets, 1, '/api/state');
+      // A pending duplicate whose day is up is answered by the pass.
+      world.core.collection.choices.addPending(
+        userId(1),
+        { species: 'splashet', shiny: false },
+        { kind: 'expedition', id: 'audit-seat' },
+        undefined,
+        clock.t + 60_000,
+      );
+      clock.t += 24 * 60 * MINUTE;
+      await relog();
+      await callAs(world.core, world.secrets, 1, '/api/state');
+    });
+
+    expect(result.seen, 'statements recorded').toBeGreaterThan(40);
+    for (const table of ['valley_seats', 'valley_kit', 'pending_catches'])
+      expect(
+        result.statements.some((q) => q.includes(table)),
+        table,
+      ).toBe(true);
+    expect(result.found, scanMessage(result.found)).toEqual([]);
+  }, 60_000);
+
+  it("plans the Forge's pass and routes (an arrival with anvils and a full bag, an anvil bought, an order added and removed, an exchange, a kit set, a look mid-visit) without a whole-table scan", async () => {
+    const result = await audit({ valleySystems: true, fresh: true }, async (env, world) => {
+      const { clock } = env;
+      const relog = async (): Promise<void> => {
+        world.secrets.set(
+          userId(1),
+          await world.core.createSession(GUILD_ID, { id: userId(1), displayName: 'Player 1' }),
+        );
+      };
+      const call = (path: string, body: unknown, n = 1): Promise<unknown> =>
+        callAs(world.core, world.secrets, n, path, { method: 'POST', body });
+      clock.t += 6 * MINUTE;
+      await callAs(world.core, world.secrets, 1, '/api/state');
+      // Player 1 has two anvils by the seeds (queues, shelf, pieces on the floors); player 2 buys the first (free) and posts a smith.
+      seedAnvils(env.metered.sql, userId(1), world.creatures[userId(1)] ?? [], 2);
+      const bought = (await call(
+        '/api/valley/anvil/buy',
+        { idempotencyKey: 'audit-anvil-buy-0001' },
+        2,
+      )) as { seatId: string };
+      await call(
+        '/api/valley/seat',
+        { seatId: bought.seatId, creatureId: world.creatures[userId(2)]?.[0] ?? null },
+        2,
+      );
+      env.metered.sql.exec(
+        `INSERT OR IGNORE INTO blueprints (user_id, base_id, rarity, learned_at) VALUES (?, 'kelp-cap', 'common', ?)`,
+        userId(2),
+        clock.t,
+      );
+      const added = (await call(
+        '/api/valley/order',
+        { action: 'add', seatId: bought.seatId, blueprintId: 'kelp-cap', count: 2 },
+        2,
+      )) as { orderId: string };
+      await call('/api/valley/order', { action: 'edit', orderId: added.orderId, count: 3 }, 2);
+      await call('/api/valley/order', { action: 'remove', orderId: added.orderId }, 2);
+      // The exchange opens with the Market (Q64).
+      env.metered.sql.exec("UPDATE valley_places SET level = 2 WHERE place = 'market'");
+      await call('/api/valley/exchange', { to: 'tide', idempotencyKey: 'audit-exchange-0001' });
+      await call('/api/valley/kit', {
+        action: 'set',
+        seatId: env.metered.sql
+          .exec<{ seat_id: string }>(
+            "SELECT seat_id FROM valley_seats WHERE user_id = ? AND place = 'forge' AND position = 2",
+            userId(1),
+          )
+          .one().seat_id,
+        kit: 'tongs',
+      });
+      clock.t += 24 * 60 * MINUTE;
+      await relog();
+      await callAs(world.core, world.secrets, 1, '/api/state');
+      clock.t += 10 * MINUTE;
+      await callAs(world.core, world.secrets, 1, '/api/state');
+      // A full bag holds the floors' pieces back.
+      env.metered.sql.exec(
+        'INSERT OR REPLACE INTO valley_bag (user_id, items) VALUES (?, 200)',
+        userId(1),
+      );
+      clock.t += 24 * 60 * MINUTE;
+      await relog();
+      await callAs(world.core, world.secrets, 1, '/api/state');
+    });
+
+    expect(result.seen, 'statements recorded').toBeGreaterThan(40);
+    for (const table of ['forge_orders', 'forge_floor', 'valley_bag', 'valley_seats', 'parts'])
+      expect(
+        result.statements.some((q) => q.includes(table)),
+        table,
+      ).toBe(true);
+    expect(result.found, scanMessage(result.found)).toEqual([]);
+  }, 60_000);
+
+  it("plans the broker's statements (the seat made on the first look after the Market is built, a creature posted, an arrival and a look where it trades, a setting) without a whole-table scan", async () => {
+    const result = await audit({ valleySystems: true, fresh: true }, async (env, world) => {
+      const { clock } = env;
+      const relog = async (): Promise<void> => {
+        world.secrets.set(
+          userId(1),
+          await world.core.createSession(GUILD_ID, { id: userId(1), displayName: 'Player 1' }),
+        );
+      };
+      const call = (path: string, body: unknown): Promise<unknown> =>
+        callAs(world.core, world.secrets, 1, path, { method: 'POST', body });
+      clock.t += 6 * MINUTE;
+      await callAs(world.core, world.secrets, 1, '/api/state');
+      const mine = world.creatures[userId(1)] ?? [];
+      seedAnvils(env.metered.sql, userId(1), mine, 2);
+      env.metered.sql.exec(
+        "UPDATE parts SET amount = 0 WHERE user_id = ? AND kind = 'tide-shard'",
+        userId(1),
+      );
+      env.metered.sql.exec("UPDATE valley_places SET level = 2 WHERE place = 'market'");
+      clock.t += 10 * MINUTE;
+      await callAs(world.core, world.secrets, 1, '/api/state');
+      const seat = env.metered.sql
+        .exec<{ seat_id: string }>("SELECT seat_id FROM valley_seats WHERE place = 'market'")
+        .one().seat_id;
+      await call('/api/valley/seat', { seatId: seat, creatureId: mine[mine.length - 3] ?? null });
+      await call('/api/valley/broker', { seatId: seat, toward: 'grove' });
+      clock.t += 24 * 60 * MINUTE;
+      await relog();
+      await callAs(world.core, world.secrets, 1, '/api/state');
+      clock.t += 10 * MINUTE;
+      await callAs(world.core, world.secrets, 1, '/api/state');
+    });
+
+    expect(result.seen, 'statements recorded').toBeGreaterThan(40);
+    for (const table of [
+      'valley_seats',
+      'valley_places',
+      'valley_creatures',
+      'parts',
+      'valley_gazette',
+    ])
+      expect(
+        result.statements.some((q) => q.includes(table)),
+        table,
+      ).toBe(true);
+    expect(
+      result.statements.some((q) => q.includes('trade_hours')),
+      'trade_hours',
+    ).toBe(true);
+    expect(result.found, scanMessage(result.found)).toEqual([]);
+  }, 60_000);
+
+  it("plans the Gazette's statements (an arrival that writes a paper, a joined one, a look with it unread, taking a way deeper, closing it) without a whole-table scan", async () => {
+    const result = await audit({ valleySystems: true, fresh: true }, async (env, world) => {
+      const { clock } = env;
+      const relog = async (): Promise<void> => {
+        world.secrets.set(
+          userId(1),
+          await world.core.createSession(GUILD_ID, { id: userId(1), displayName: 'Player 1' }),
+        );
+      };
+      const call = (path: string, body: unknown): Promise<unknown> =>
+        callAs(world.core, world.secrets, 1, path, { method: 'POST', body });
+      clock.t += 6 * MINUTE;
+      await callAs(world.core, world.secrets, 1, '/api/state');
+      const mine = world.creatures[userId(1)] ?? [];
+      seedSeats(env.metered.sql, userId(1), mine, 2);
+      clock.t += 24 * 60 * MINUTE;
+      await relog();
+      await callAs(world.core, world.secrets, 1, '/api/state');
+      clock.t += 10 * MINUTE;
+      await callAs(world.core, world.secrets, 1, '/api/state');
+      // A second arrival joins the unread paper.
+      clock.t += 24 * 60 * MINUTE;
+      await relog();
+      await callAs(world.core, world.secrets, 1, '/api/state');
+      const seat = env.metered.sql
+        .exec<{ seat_id: string; creature_id: string; destination_id: string }>(
+          'SELECT seat_id, creature_id, destination_id FROM valley_seats WHERE user_id = ? AND position = 1',
+          userId(1),
+        )
+        .one();
+      env.metered.sql.exec(
+        'UPDATE valley_gazette SET decision = ? WHERE user_id = ?',
+        JSON.stringify({
+          kind: 'push-on',
+          seatId: seat.seat_id,
+          creatureId: seat.creature_id,
+          destination: seat.destination_id,
+        }),
+        userId(1),
+      );
+      await call('/api/valley/deep', { seatId: seat.seat_id, deep: true });
+      await call('/api/valley/deep', { seatId: seat.seat_id, deep: false });
+      const paper = env.metered.sql
+        .exec<{ paper_id: string }>(
+          'SELECT paper_id FROM valley_gazette WHERE user_id = ?',
+          userId(1),
+        )
+        .one();
+      await call('/api/valley/gazette/close', { paperId: paper.paper_id });
+    });
+
+    expect(result.seen, 'statements recorded').toBeGreaterThan(40);
+    expect(
+      result.statements.some((q) => q.includes('valley_gazette')),
+      'valley_gazette',
+    ).toBe(true);
     expect(result.found, scanMessage(result.found)).toEqual([]);
   }, 60_000);
 

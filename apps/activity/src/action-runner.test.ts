@@ -3,6 +3,7 @@ import { ApiError } from './api';
 import { createKeyStore, isStaleError } from './actions';
 import { createActionRunner, type ActionRunnerConfig } from './action-runner';
 import { errorText } from './game';
+import { sayText } from './resource-count';
 
 /** The runner with numbered keys, and a log of what it showed on the screen. */
 function setup(overrides: Partial<ActionRunnerConfig> = {}) {
@@ -21,7 +22,10 @@ function setup(overrides: Partial<ActionRunnerConfig> = {}) {
     isStale: isStaleError,
     setBusy: (busy) => log.push(`busy:${String(busy)}`),
     setError: (text) => log.push(`error:${String(text)}`),
-    setNotice: (text) => log.push(`notice:${String(text)}`),
+    setNotice: (text) =>
+      log.push(
+        `notice:${typeof text === 'string' || text === null ? String(text) : sayText(text)}`,
+      ),
     isMounted: () => mounted.current,
     ...overrides,
   }));

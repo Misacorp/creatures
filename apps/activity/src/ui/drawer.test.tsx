@@ -36,6 +36,9 @@ function sheet(onClose = vi.fn(), open = true, extra: { returnFocusTo?: FakeElem
       <button type="button" id="opener">
         Opener
       </button>
+      <button type="button" id="other">
+        Other
+      </button>
       <Drawer
         open={open}
         onClose={onClose}
@@ -153,9 +156,20 @@ describe('Drawer', () => {
     expect(p.document.activeElement).toBe(opener);
   });
 
+  it('leaves the focus alone when a tap or click opened it (no ring on the control just left)', () => {
+    const p = draw(sheet(vi.fn(), false));
+    const opener = first(byName(p.root, 'button', 'Opener'));
+    opener.focus();
+    opener.keyboardFocus = false;
+    p.draw(sheet(vi.fn(), true));
+    p.draw(sheet(vi.fn(), false));
+    expect(p.document.activeElement).not.toBe(opener);
+  });
+
   it('prefers the control it is told to return to', () => {
     const p = draw(sheet(vi.fn(), false));
     const opener = first(byName(p.root, 'button', 'Opener'));
+    first(byName(p.root, 'button', 'Other')).focus();
     p.draw(sheet(vi.fn(), true, { returnFocusTo: opener }));
     p.draw(sheet(vi.fn(), false, { returnFocusTo: opener }));
     expect(p.document.activeElement).toBe(opener);

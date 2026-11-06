@@ -17,6 +17,13 @@ export type ValleyResource = (typeof VALLEY_RESOURCES)[number];
 
 export type KitName = 'lure' | 'lantern' | 'satchel' | 'tongs' | 'loupe';
 export type FindFamily = 'scrap' | 'shards' | 'creatures' | 'rare';
+/** A shipped place the lab does not model: when it is open (V-SCOUT-8). */
+export interface ValleyExtraPlace {
+  readonly id: string;
+  readonly element: ValleyElement | null;
+  readonly rich: FindFamily | 'none';
+  readonly opens: 'always' | 'festival';
+}
 export interface ValleyDestination {
   readonly id: string;
   readonly element: ValleyElement | null;
@@ -188,6 +195,39 @@ export const VALLEY_RULES = {
       { id: 'sunken-fen', element: 'mire', rich: 'shards' },
       { id: 'old-crossroads', element: null, rich: 'none' },
     ] as readonly ValleyDestination[],
+    // The two shipped places the lab does not model (it has six). Server only (phase 5 step 2): the lab's `destinations` are unchanged.
+    // ASSUMPTION: the Moonlit Reef is tide, rich in creatures, open all day; the Festival Grounds have no element, are rich in rare finds,
+    // and are open in festival weeks (V-SCOUT-8).
+    extraPlaces: [
+      { id: 'moonlit-reef', element: 'tide', rich: 'creatures', opens: 'always' },
+      { id: 'festival-grounds', element: null, rich: 'rare', opens: 'festival' },
+    ] as readonly ValleyExtraPlace[],
+    // ASSUMPTION (V-SCOUT-8: "gives more at night", no number in the docs): the Moonlit Reef gives this much more of everything at night.
+    nightMultiplier: 1.5,
+    // ASSUMPTION (V-SCOUT-11): the week's twist for scouts. Parts: scrap and shards x(1 + bp). Rolls ("more hours of finds" a trip): every
+    // find rate grows by this much per extra hour. Journal: pages x(1 + bp). Xp: mastery hours count x(1 + bp). Featured: the species
+    // weighs that much more.
+    twistRollsPerExtra: 0.1,
+    /** The starter's first scout finds something for sure (V-SCOUT-3 note, plan step 2) once its pack holds this many effective hours. */
+    firstFindHours: 1,
+    /** V-SCOUT-3: a duplicate waiting at the Paddock gate takes today's Recommended answer by itself after this many hours. */
+    gateAutoHours: 24,
+    /**
+     * V-SCOUT-6, push on (phase 5 step 4). The scouts doc gives no numbers, so these are the smallest assumptions; the lab does not model
+     * push on (its report says so). An Expert scout (mastery step `minStep`, 2) may find a way into its destination's deeper area: each
+     * effective hour at that step has `chancePerHour` to find one (one draw per pass, from the hours it picked up). Deep, the kit does not
+     * work, scrap and shards are `partsMultiplier` of the usual, gear, blueprints and pages are `rareMultiplier` of it, and a creature
+     * comes from the deeper area's residents (each weighs `residentWeight`), rare and epic species weighing more by the area's own
+     * `rarityUpBp`.
+     */
+    // ASSUMPTION: a way deeper turns up about once in two weeks for a daily player's Expert scout (about 0.3 a day at 24 hours).
+    pushOn: {
+      minStep: 2,
+      chancePerHour: 0.0125,
+      partsMultiplier: 0.5,
+      rareMultiplier: 1.5,
+      residentWeight: 3,
+    },
     /** V-SCOUT-9: a keystone clock per destination for the whole server: one in about this many days. */
     keystoneMeanDays: 21,
     // ASSUMPTION: a destination whose element a creature has doubles its weight when a new creature arrives (the shipped 2x).
@@ -237,6 +277,12 @@ export const VALLEY_RULES = {
     // ASSUMPTION: the floor holds about three days of pieces (V-FORGE-5): ceil(72 / 16) per anvil.
     floorPiecesPerAnvil: 5,
     bag: 200,
+    // Step 3 (the server's reading of V-FORGE-1 and V-FORGE-9; the lab models neither a queue nor marks): an anvil's queue holds at most
+    // this many orders (posts.md example), an order asks for at most this many pieces, and each piece of a blueprint adds a well-thumbed
+    // mark with this chance (1 in 10: "with many more rolls it must fill more slowly", gear.md V-GEAR-9).
+    queueMax: 3,
+    orderCountMax: 99,
+    markChance: 0.1,
     // ASSUMPTION: three gear slots per creature (the shipped game's Hat, Scarf and Charm).
     slotsPerCreature: 3,
     // ASSUMPTION: a slot is "weaker" (so "for my team" makes pieces for it) when its item level is this far below the fire.
@@ -305,7 +351,28 @@ export const VALLEY_RULES = {
 
   /** V-COM-5, V-COM-10, V-COM-11, V-COM-15: projects. */
   commons: {
-    places: ['bonfire', 'forge', 'signpost', 'paddock', 'school'] as readonly string[],
+    places: ['bonfire', 'forge', 'signpost', 'paddock', 'school', 'market'] as readonly string[],
+    // V-FORGE-11, V-COM-15, Q48: the Market is built once (a place level 1 to 2, then no more projects: its later levels are a later idea).
+    // It is the second guided project, so it is sized like a first-level project (the hearth's size, small), paid in Acorns and scrap
+    // (Q48), and shards of ANY element may stand in for any part with no cap (Misa, 2026-11-06: the shards piling up at the Forge
+    // while it waits for the Market build it). One value for every shard, below a scrap's, because the lab's players give their whole
+    // surplus: 0.25 opens the Market on day 11 to 14 (median 12, from 14), 0.5 or more on day 10 or sooner.
+    oneShot: {
+      market: {
+        sizeFactor: 0.25,
+        costSplit: { acorns: 0.5, scrap: 0.5, shards: 0 },
+        shardValue: 0.25,
+      },
+    } as Record<
+      string,
+      {
+        sizeFactor: number;
+        costSplit: { acorns: number; scrap: number; shards: number };
+        shardValue?: number;
+      }
+    >,
+    // V-COM-15, Q48: the guided start. Each project opens once the ones before it have levelled; the other places open after all three.
+    guided: ['bonfire', 'market', 'forge'] as readonly string[],
     maxLevel: 5,
     // A project's size in Acorns' worth: the first about two weeks of 8 players' giving (commons.md).
     // TUNED 2026-10-30: was 2000 (commons.md example).

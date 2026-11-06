@@ -15,11 +15,17 @@ import { DevError, purgeUser, type ToolCtx } from './dev-context';
 
 /**
  * The valley's tables that are NOT keyed by `user_id` (the guild-level ones), cleared whole. Per-player valley tables carry a
- * `user_id` column and are cleared by `purgeUser` with everything else, so they need no entry. Today there is nothing
- * valley-specific (no valley tables exist yet): step 1 and later add their guild-level tables here, in one place
- * (for example `valley_server` in step 5, and `valley_places`, `valley_gifts`, `valley_collections`, `valley_fire_log` in step 6).
+ * `user_id` column and are cleared by `purgeUser` with everything else, so they need no entry. Step 5 added `valley_server` (the
+ * server's middle); step 6 added the commons' `valley_places`, `valley_collections`, `valley_fire_log` and `valley_keystones`
+ * (`valley_gifts` has a `user_id`, so `purgeUser` clears it); later steps add theirs here, in one place.
  */
-export const VALLEY_GUILD_TABLES: readonly string[] = [];
+export const VALLEY_GUILD_TABLES: readonly string[] = [
+  'valley_server',
+  'valley_places',
+  'valley_collections',
+  'valley_fire_log',
+  'valley_keystones',
+];
 
 export interface ValleyFreshResult {
   /** Players whose progress was wiped. */

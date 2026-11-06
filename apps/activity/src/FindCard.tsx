@@ -1,5 +1,5 @@
 import { FusionStars } from './ExpeditionIcons';
-import type { Find, FindOption } from './find-view';
+import { autoAnswerLine, type Find, type FindOption } from './find-view';
 import { speciesName } from './game';
 import { CountBadge } from './ui/CountBadge';
 import { FindCreature } from './ui/FindCreature';
@@ -97,6 +97,8 @@ export function FindCard({
   disabled?: boolean;
   onPick: (key: string) => void;
 }) {
+  // The valley's Paddock gate: when the card is answered for the player (display only; the server does it).
+  const auto = find.choice === null ? null : autoAnswerLine(find.choice.card, Date.now());
   return (
     <FindCreature creature={find} duplicate={find.choice !== null}>
       {find.choice !== null && (
@@ -118,6 +120,7 @@ export function FindCard({
           </ul>
         </fieldset>
       )}
+      {auto !== null && <p class="muted find-auto">{auto}</p>}
       {find.answered !== null && <p class="muted find-answered">{find.answered}</p>}
     </FindCreature>
   );

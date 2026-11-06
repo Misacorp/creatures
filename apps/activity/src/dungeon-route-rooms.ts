@@ -11,7 +11,8 @@ import { QUIET_ROOM } from '@creatures/game';
 import { doorLine, stepsAt } from './dungeon-history';
 import { nodeLevel } from './dungeon-map';
 import { ROOM_BANNER, roomStrip, type StripRoom } from './dungeon-playback';
-import { isPackEmpty, nodeFloor, packText, undercroftName } from './dungeon-text';
+import { isPackEmpty, nodeFloor, packItems, packText, undercroftName } from './dungeon-text';
+import type { CountItem } from './ui/CountBadge';
 import type {
   DungeonMapNode,
   DungeonNodeKind,
@@ -51,6 +52,8 @@ export interface RoomLogRow {
   name: string;
   /** What happened in a room that is not a fight ("Rested", "2 Bait · 1 Scrap", "Visited" when nothing is to be said), or null for a fight. */
   note: string | null;
+  /** What a cache gave, as count items (icons and numbers); drawn instead of `note`, which says the same in words for a screen reader. */
+  items: CountItem[];
   /** The panel in sentences for a screen reader. */
   spoken: string;
 }
@@ -131,7 +134,7 @@ function plainRoom(
   kind: DungeonNodeKind,
   node: DungeonMapNode | undefined,
   entry: DungeonStepLog | undefined,
-): { name: string; note: string | null } {
+): { name: string; note: string | null; items?: CountItem[] } {
   switch (entry?.result) {
     case 'camp':
       return { name: ROOM_NAMES.camp, note: campNote(entry) };
@@ -146,6 +149,7 @@ function plainRoom(
       return {
         name: ROOM_NAMES.cache,
         note: isPackEmpty(entry.loot) ? null : packText(entry.loot),
+        ...(isPackEmpty(entry.loot) ? {} : { items: packItems(entry.loot) }),
       };
     case 'door':
       return { name: ROOM_NAMES.door, note: doorLine(entry) };
@@ -211,12 +215,13 @@ export function roomLog(
         glyph: null,
         name: fight.foeName,
         note: null,
+        items: [],
         spoken: `${title}: ${fight.foeName}${fight.modifierName === '' ? '' : `, ${fight.modifierName}`}. ${state === 'defeat' ? 'Defeated' : 'Cleared'}.`,
       });
       continue;
     }
     const entry = entries.find((e) => e.result !== 'pending') ?? entries[0];
-    const { name, note: told } = plainRoom(kind, node, entry);
+    const { name, note: told, items } = plainRoom(kind, node, entry);
     // Nothing was cleared here, so no stamp: a plain "Visited" when the room has nothing else to say.
     const note = told ?? 'Visited';
     const title = titleOf(id, kind);
@@ -234,6 +239,7 @@ export function roomLog(
       glyph: `map-${kind}`,
       name,
       note,
+      items: items ?? [],
       spoken: `${title}: ${name}. ${sentence(note)}`,
     });
   }

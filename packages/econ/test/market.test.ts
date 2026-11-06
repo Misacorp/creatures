@@ -1,9 +1,9 @@
 /** The broker's seat and the Market as a project (V-FORGE-11): when the seat exists, how the project opens and finishes. */
 import { describe, expect, it } from 'vitest';
-import { contributePart, openMarket, refreshProjects, MARKET_OPENS_AT } from '../src/commons';
+import { contributePart, openMarket, refreshProjects } from '../src/commons';
 import { RULES } from '../src/rules';
 import { ALL_SERVERS } from '../src/servers';
-import { brokerSeatOn, runServer } from '../src/sim';
+import { brokerSeatOn, exchangeOn, runServer } from '../src/sim';
 import { createServer } from '../src/world';
 import { sum } from '../src/util';
 
@@ -27,35 +27,61 @@ describe('the broker seat', () => {
 });
 
 describe('the Market project', () => {
-  it('joins the valley once, as a level-2 project, shard-free in the first variant and with shards in the other', () => {
-    for (const [mode, shards] of [
-      ['market', false],
-      ['market-shards', true],
-    ] as const) {
+  it('joins the valley once, as a small project (Q48): shards of any kind may fill it in the first variant, a fifth of it in the other', () => {
+    for (const mode of ['market', 'market-shards'] as const) {
       const server = serverWith(mode);
       const before = server.places.length;
       openMarket(server, 100);
       openMarket(server, 200);
       expect(server.places).toHaveLength(before + 1);
       expect(server.marketOpenedHour).toBe(100);
+      server.places[0]!.level = 2;
       refreshProjects(server, 100, RULES);
       const place = server.places.at(-1)!;
       expect(place.id).toBe('market');
       expect(place.open).toBe(true);
-      // Sized like the second level's project of a place (the base times the second factor, at the server's weight).
+      // Sized as the rule says: a share of the base, at the server's weight.
       const c = RULES.commons;
-      const level2 =
+      const small =
         c.baseSize *
-        c.levelFactor[1]! *
+        c.oneShot['market']!.sizeFactor *
         Math.pow(Math.max(server.weight, 1) / c.referenceWeight, c.sizeExponent);
-      expect(place.size).toBeCloseTo(level2, 6);
-      expect(place.need[2]! > 0).toBe(shards);
+      expect(place.size).toBeCloseTo(small, 6);
+      if (mode === 'market') {
+        // V-COM-15: the shard part is the whole project at the Market's one value.
+        expect(place.need[2]! * c.oneShot['market']!.shardValue!).toBeCloseTo(place.size, 6);
+        expect(
+          place.need[0]! * c.giftValue.acorns + place.need[1]! * c.giftValue.scrap,
+        ).toBeCloseTo(place.size, 6);
+      } else {
+        expect(place.need[2]! * c.giftValue.shards).toBeCloseTo(place.size * c.costSplit.shards, 6);
+      }
     }
+  });
+
+  it('is filled by shards alone, never past the project, and a part is not taken past what is left (V-COM-15)', () => {
+    const server = serverWith('market');
+    openMarket(server, 0);
+    server.places[0]!.level = 2;
+    refreshProjects(server, 0, RULES);
+    const index = server.places.length - 1;
+    const place = server.places[index]!;
+    const value = RULES.commons.oneShot['market']!.shardValue!;
+    const half = place.size / 2 / value;
+    expect(contributePart(server, index, 2, half, 5, RULES)).toBeCloseTo(half, 9);
+    expect(place.progress).toBeCloseTo(place.size / 2, 6);
+    expect(place.open).toBe(true);
+    // Scrap takes only what the shards left, so an overgift is not swallowed.
+    const taken = contributePart(server, index, 1, 1e9, 6, RULES);
+    expect(taken * RULES.commons.giftValue.scrap).toBeCloseTo(place.size / 2, 6);
+    expect(server.marketDoneHour).toBe(6);
+    expect(place.open).toBe(false);
   });
 
   it('is built once: the seat appears, the project does not open again', () => {
     const server = serverWith('market');
     openMarket(server, 0);
+    server.places[0]!.level = 2;
     refreshProjects(server, 0, RULES);
     const index = server.places.length - 1;
     const place = server.places[index]!;
@@ -67,8 +93,19 @@ describe('the Market project', () => {
     expect(place.open).toBe(false);
   });
 
-  it('opens when the server waits on shards for a share of the week', () => {
-    expect(MARKET_OPENS_AT).toBe(0.15);
+  it('opens when the hearth has levelled, and not before (Q48); the Forge waits for it to be built', () => {
+    const server = serverWith('market');
+    refreshProjects(server, 100, RULES);
+    expect(server.places.some((p) => p.id === 'market')).toBe(false);
+    expect(server.places.filter((p) => p.open).map((p) => p.id)).toEqual(['bonfire']);
+    server.places[0]!.level = 2;
+    refreshProjects(server, 100, RULES);
+    expect(server.places.filter((p) => p.open).map((p) => p.id)).toEqual(['bonfire', 'market']);
+    expect(server.places.find((p) => p.id === 'forge')!.open).toBe(false);
+    const market = server.places.findIndex((p) => p.id === 'market');
+    for (let part = 0; part < 3; part++) contributePart(server, market, part, 1e9, 200, RULES);
+    refreshProjects(server, 300, RULES);
+    expect(server.places.find((p) => p.id === 'forge')!.open).toBe(true);
   });
 });
 
@@ -91,9 +128,44 @@ describe('the variants in a run', () => {
       expect(w.shardStall).toBeLessThanOrEqual(1);
       expect([0, 1, 2]).toContain(w.market);
     }
-    // A server whose anvils wait on shards opens the Market in the first weeks, and no broker works before it is built.
+    // The Market is the second guided project (Q48): open once the hearth has levelled, built in the first two weeks (day 14), and no
+    // broker works before it is built.
     expect(run.marketOpenedHour).not.toBeNull();
-    if (run.marketDoneHour === null)
-      expect(sum(run.players.map((p) => sum(p.weeks.map((w) => w.brokerHours))))).toBe(0);
+    expect(run.marketDoneHour).not.toBeNull();
+    expect(run.marketDoneHour!).toBeLessThan(14 * 24);
+  });
+});
+
+describe('the exchange opens with the Market (Q64)', () => {
+  it('is open from day one without a Market, and only once the Market is built with one', () => {
+    expect(exchangeOn(serverWith('always'))).toBe(true);
+    expect(exchangeOn(serverWith('never'))).toBe(true);
+    for (const mode of ['market', 'market-shards'] as const) {
+      const server = serverWith(mode);
+      expect(exchangeOn(server)).toBe(false);
+      openMarket(server, 10);
+      expect(exchangeOn(server)).toBe(false);
+      server.marketDoneHour = 100;
+      expect(exchangeOn(server)).toBe(true);
+    }
+    const none = createServer(
+      'market',
+      1,
+      { bossKills: 'half', communalSeats: true, shardExchange: false, broker: 'market' },
+      RULES,
+    );
+    none.marketDoneHour = 100;
+    expect(exchangeOn(none)).toBe(false);
+  });
+
+  it('a run of the Market variant trades nothing before the Market is built, and the day-one variant trades from the first weeks', () => {
+    const config = (id: string) => ALL_SERVERS.find((s) => s.id === id)!;
+    const market = runServer({ ...config('mixed8-market'), weeks: 8 }, 1);
+    const builtWeek = market.marketDoneHour === null ? 8 : Math.floor(market.marketDoneHour / 168);
+    const early = (run: typeof market): number =>
+      sum(run.players.map((p) => sum(p.weeks.slice(0, builtWeek).map((w) => w.exchanges))));
+    expect(early(market)).toBe(0);
+    const always = runServer({ ...config('mixed8'), weeks: 8 }, 1);
+    expect(early(always)).toBeGreaterThan(0);
   });
 });

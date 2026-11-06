@@ -39,6 +39,9 @@ import {
   LOUNGERS,
   LOUNGER_FIRST,
   LOUNGE_INSTANCE,
+  PLAYERS,
+  seedAnvils,
+  seedSeats,
   boardSwap,
   callAs,
   fakeLounge,
@@ -83,6 +86,7 @@ const TABS = [
 
 interface Tally {
   rows: number;
+  written: number;
   calls: number;
   scaled: number;
 }
@@ -91,8 +95,9 @@ class DayReads {
   private readonly bySource = new Map<string, Tally>();
 
   add(source: string, reads: ReadReport, scaledCalls = 0): void {
-    const tally = this.bySource.get(source) ?? { rows: 0, calls: 0, scaled: 0 };
+    const tally = this.bySource.get(source) ?? { rows: 0, written: 0, calls: 0, scaled: 0 };
     tally.rows += reads.total;
+    tally.written += reads.written;
     tally.calls += scaledCalls === 0 ? 1 : scaledCalls;
     if (scaledCalls > 0) tally.scaled += scaledCalls;
     this.bySource.set(source, tally);
@@ -104,14 +109,24 @@ class DayReads {
     return sum;
   }
 
+  /** The rows written in the day (Cloudflare's free tier allows 100,000 a day, apart from the reads). */
+  get written(): number {
+    let sum = 0;
+    for (const t of this.bySource.values()) sum += t.written;
+    return sum;
+  }
+
   describe(): string {
     const lines = [...this.bySource.entries()]
       .sort((a, b) => b[1].rows - a[1].rows)
       .map(
         ([source, t]) =>
-          `  ${String(t.rows).padStart(8)} rows  x${String(t.calls)}${t.scaled > 0 ? ` (${String(t.scaled)} scaled)` : ''}  ${source}`,
+          `  ${String(t.rows).padStart(8)} rows (${String(t.written)} written)  x${String(t.calls)}${t.scaled > 0 ? ` (${String(t.scaled)} scaled)` : ''}  ${source}`,
       );
-    return [`${String(this.total)} rows read in the day. By source:`, ...lines].join('\n');
+    return [
+      `${String(this.total)} rows read and ${String(this.written)} written in the day. By source:`,
+      ...lines,
+    ].join('\n');
   }
 }
 
@@ -144,12 +159,52 @@ function playerEvents(start: number, loungeStart: number): Event[] {
  * Knacks, the creature page is the v2 one on every `/api/state`, each playing player saves a Knack on each
  * opening and learns a talent from their line's book once.
  */
-async function simulateDay(options: { combatV2?: boolean; fresh?: boolean }): Promise<DayReads> {
+async function simulateDay(options: {
+  combatV2?: boolean;
+  valleySystems?: boolean;
+  /** Scouts are posted (the valley's step 2): every player has two seats, the first three players six. */
+  scouts?: boolean;
+  /** Anvils are posted (the valley's step 3): every player has two, the first three players two as well, with scouts too when `scouts` is on. */
+  smiths?: boolean;
+  /** The welcome-back Gazette (the valley's step 4): a player who finds an unread paper closes it, as every opening of the day does. */
+  gazette?: boolean;
+  /** The commons (the valley's step 6): every player has a communal seat at the bonfire and gives to its project on their first opening. */
+  commons?: boolean;
+  /** The Market (the valley's step 7): it is built after the first opening, every player has a creature at the broker's seat and no tide shards, so it trades. */
+  market?: boolean;
+  fresh?: boolean;
+}): Promise<DayReads> {
   const reads = new DayReads();
-  const flag = options.combatV2 === true ? { combatV2: true } : {};
+  // The valley systems need combat v2 on (`valley-flag.ts`).
+  const flag = {
+    ...(options.combatV2 === true || options.valleySystems === true ? { combatV2: true } : {}),
+    ...(options.valleySystems === true ? { valleySystems: true } : {}),
+  };
   await inGuild(
     async (env: GuildEnv) => {
       const world = await seedWorld(env, options);
+      if (options.scouts === true) {
+        for (let n = 1; n <= PLAYERS; n++)
+          seedSeats(env.metered.sql, userId(n), world.creatures[userId(n)] ?? [], n <= 3 ? 6 : 2);
+      }
+      if (options.smiths === true) {
+        for (let n = 1; n <= PLAYERS; n++)
+          seedAnvils(env.metered.sql, userId(n), world.creatures[userId(n)] ?? [], 2);
+      }
+      if (options.commons === true) {
+        for (let n = 1; n <= PLAYERS; n++) {
+          env.metered.sql.exec(
+            `INSERT INTO valley_seats (seat_id, user_id, place, kind, position, destination_id, prev_destination_id, creature_id,
+               communal, passed_at) VALUES (?, ?, 'commons', 'communal', 0, 'bonfire', 'bonfire', ?, 1, ?)`,
+            crypto.randomUUID(),
+            userId(n),
+            world.creatures[userId(n)]?.[5] ?? null,
+            env.clock.t,
+          );
+        }
+      }
+      const gave = new Set<number>();
+      let marketBuilt = false;
       const dayStart = env.clock.t;
       const dayEnd = dayStart + DAY;
       const lounge = fakeLounge();
@@ -178,6 +233,72 @@ async function simulateDay(options: { combatV2?: boolean; fresh?: boolean }): Pr
             readSourceOfPath(path),
             (await env.metered.measure(() => callAs(core, secrets, player, path))).reads,
           );
+        if (options.market === true && !marketBuilt && paths.includes('/api/state')) {
+          // The valley has opened with this look: the Market is built, and every player's anvils wait on tide shards.
+          marketBuilt = true;
+          env.metered.sql.exec("UPDATE valley_places SET level = 2 WHERE place = 'market'");
+          for (let n = 1; n <= PLAYERS; n++) {
+            env.metered.sql.exec(
+              "UPDATE parts SET amount = 0 WHERE user_id = ? AND kind = 'tide-shard'",
+              userId(n),
+            );
+            env.metered.sql.exec(
+              `INSERT INTO valley_seats (seat_id, user_id, place, kind, position, destination_id, prev_destination_id, creature_id,
+                 passed_at) VALUES (?, ?, 'market', 'broker', 0, 'any', 'any', ?, ?)`,
+              crypto.randomUUID(),
+              userId(n),
+              world.creatures[userId(n)]?.[8] ?? null,
+              env.clock.t,
+            );
+          }
+        }
+        if (options.commons === true && paths.includes('/api/state') && !gave.has(player)) {
+          gave.add(player);
+          core.credit({
+            userId: userId(player),
+            currency: 'bait',
+            amount: 50,
+            source: 'test',
+            idempotencyKey: `commons-day-${String(player)}`,
+          });
+          reads.add(
+            'request:valley',
+            (
+              await env.metered.measure(() =>
+                callAs(core, secrets, player, '/api/valley/gift', {
+                  method: 'POST',
+                  body: {
+                    place: 'bonfire',
+                    currency: 'acorns',
+                    amount: 3,
+                    idempotencyKey: `commons-day-gift-${String(player)}`,
+                  },
+                }),
+              )
+            ).reads,
+          );
+        }
+        if (options.gazette === true && paths.includes('/api/state')) {
+          const paper = env.metered.sql
+            .exec<{ paper_id: string }>(
+              'SELECT paper_id FROM valley_gazette WHERE user_id = ? AND read_at IS NULL',
+              userId(player),
+            )
+            .toArray()[0];
+          if (paper !== undefined) {
+            reads.add(
+              'request:valley',
+              (
+                await env.metered.measure(() =>
+                  callAs(core, secrets, player, '/api/valley/gazette/close', {
+                    method: 'POST',
+                    body: { paperId: paper.paper_id },
+                  }),
+                )
+              ).reads,
+            );
+          }
+        }
         if (options.combatV2 !== true || !paths.includes('/api/state')) return;
         // Combat v2: a Knack saved on the creature page, and (the first opening of a player) a talent learned.
         const mine = world.creatures[userId(player)] ?? [];
@@ -283,7 +404,11 @@ async function simulateDay(options: { combatV2?: boolean; fresh?: boolean }): Pr
           Math.round(settled.reduce((sum, t) => sum + pick(t), 0) / settled.length);
         const remaining = LOUNGE_TICKS - loungeTicks.length;
         const scaled = (source: string, perTick: number): void =>
-          reads.add(source, { total: perTick * remaining, statements: 0, top: [] }, remaining);
+          reads.add(
+            source,
+            { total: perTick * remaining, written: 0, statements: 0, top: [] },
+            remaining,
+          );
         scaled(
           'lounge:start',
           mean((t) => t.start.total),
@@ -317,6 +442,13 @@ async function simulateDay(options: { combatV2?: boolean; fresh?: boolean }): Pr
       // The day crossed a reset and its alarm did the daily cleanup: the day was not left unmarked.
       const today = gameDay(env.clock.t, HELSINKI, RULES.daily.reset);
       expect(maintainedDay(env.metered.sql), 'the daily maintenance ran').toBe(today);
+      // Step 5: with the valley on that cleanup also wrote the server's middle (one row; priced in `read-budget.test.ts`, "the bonfire").
+      if (options.valleySystems === true) {
+        expect(
+          env.metered.sql.exec<{ n: number }>('SELECT COUNT(*) AS n FROM valley_server').one().n,
+          'the daily maintenance wrote the middle',
+        ).toBe(1);
+      }
     },
     { fresh: options.fresh === true },
   );
@@ -349,6 +481,131 @@ describe('a day in the life of a 10-player server', () => {
       reads.total,
       `${reads.describe()}\nBudget: ${String(DAY_BUDGET)} rows.`,
     ).toBeLessThanOrEqual(DAY_BUDGET);
+  }, 120_000);
+});
+
+/**
+ * The same day with the valley's systems on (phase 5 step 1): every opening of the game settles the player's valley (30 creatures
+ * each in the seeded guild: an arrival pays them all, a later look in the same hour writes the carries), the daily allowance claim,
+ * the lounge's company XP and the lounge's own ticks stay as they are (the lounge message still runs). Same reads budget as the flag-off
+ * day, and a rows-written budget (plan risk 2: rows written have their own allowance, 100,000 a day on the free tier).
+ */
+// Measured 117,941 rows read (request:state 31,392 of them, 15,652 without the valley's pass) and 3,901 written (request:state 2,571, request:raid 132, request:session 409).
+const VALLEY_DAY_WRITE_BUDGET = 6000;
+// With scouts posted (step 2: two seats each, six for three players): measured 120,284 rows read (request:state 33,482) and 4,225 written (request:state 2,883).
+const VALLEY_SCOUT_DAY_WRITE_BUDGET = 6000;
+// With smiths as well (step 3: two anvils each, a queue of two orders, a stocked shelf, two pieces on each floor; scouts as above): measured 123,488 rows read and 4,541 written.
+const VALLEY_SMITH_DAY_WRITE_BUDGET = 6500;
+
+// With the Gazette (step 4): every arrival writes a paper (a read of the unread one, a write of the log) and each player closes it.
+// Measured 124,132 rows read (123,488 without the Gazette: the papers add about 650, the ten closes about 10 each) and 4,617 written (4,541 without).
+const VALLEY_GAZETTE_DAY_WRITE_BUDGET = 6600;
+
+// With the commons (step 6: a communal seat each, a gift each, the Gazette, smiths and scouts as above): measured 134,016 rows read (124,132 without the commons:
+// every pass reads the places, the fire, the sockets, the clocks and the player's gift rows, and the ten gifts settle first) and 5,098 written (4,617 without).
+const VALLEY_COMMONS_DAY_WRITE_BUDGET = 7000;
+
+// With the Market (step 7: a broker at every player's seat, trading for two anvils that wait on tide shards, on top of the commons' day): the broker adds the
+// seat's row to each pass and its trades' shard writes. Measured 134,621 rows read (134,016 without the Market: +605) and 5,174 written (5,098 without).
+const VALLEY_MARKET_DAY_WRITE_BUDGET = 7000;
+
+describe('a day in the life with the valley on', () => {
+  it('reads and writes few rows in a day with the Market: a broker for each player trading for their anvils, on top of the commons day', async () => {
+    const reads = await simulateDay({
+      valleySystems: true,
+      scouts: true,
+      smiths: true,
+      gazette: true,
+      commons: true,
+      market: true,
+      fresh: true,
+    });
+    expect(
+      reads.total,
+      `${reads.describe()}\nBudget: ${String(DAY_BUDGET)} rows.`,
+    ).toBeLessThanOrEqual(DAY_BUDGET);
+    expect(
+      reads.written,
+      `${reads.describe()}\nWrite budget: ${String(VALLEY_MARKET_DAY_WRITE_BUDGET)} rows.`,
+    ).toBeLessThanOrEqual(VALLEY_MARKET_DAY_WRITE_BUDGET);
+  }, 120_000);
+
+  it('reads and writes few rows in a day with the commons: a communal seat for each player, a gift each, the Gazette, scouts and smiths posted', async () => {
+    const reads = await simulateDay({
+      valleySystems: true,
+      scouts: true,
+      smiths: true,
+      gazette: true,
+      commons: true,
+      fresh: true,
+    });
+    expect(
+      reads.total,
+      `${reads.describe()}\nBudget: ${String(DAY_BUDGET)} rows.`,
+    ).toBeLessThanOrEqual(DAY_BUDGET);
+    expect(
+      reads.written,
+      `${reads.describe()}\nWrite budget: ${String(VALLEY_COMMONS_DAY_WRITE_BUDGET)} rows.`,
+    ).toBeLessThanOrEqual(VALLEY_COMMONS_DAY_WRITE_BUDGET);
+  }, 120_000);
+
+  it('reads and writes few rows in a day with the Gazette: scouts and smiths posted, every arrival writes a paper and the player closes it', async () => {
+    const reads = await simulateDay({
+      valleySystems: true,
+      scouts: true,
+      smiths: true,
+      gazette: true,
+      fresh: true,
+    });
+    expect(
+      reads.total,
+      `${reads.describe()}\nBudget: ${String(DAY_BUDGET)} rows.`,
+    ).toBeLessThanOrEqual(DAY_BUDGET);
+    expect(
+      reads.written,
+      `${reads.describe()}\nWrite budget: ${String(VALLEY_GAZETTE_DAY_WRITE_BUDGET)} rows.`,
+    ).toBeLessThanOrEqual(VALLEY_GAZETTE_DAY_WRITE_BUDGET);
+  }, 120_000);
+
+  it('reads and writes few rows in a day with smiths and scouts posted (two anvils each, scouts as above)', async () => {
+    const reads = await simulateDay({
+      valleySystems: true,
+      scouts: true,
+      smiths: true,
+      fresh: true,
+    });
+    expect(
+      reads.total,
+      `${reads.describe()}\nBudget: ${String(DAY_BUDGET)} rows.`,
+    ).toBeLessThanOrEqual(DAY_BUDGET);
+    expect(
+      reads.written,
+      `${reads.describe()}\nWrite budget: ${String(VALLEY_SMITH_DAY_WRITE_BUDGET)} rows.`,
+    ).toBeLessThanOrEqual(VALLEY_SMITH_DAY_WRITE_BUDGET);
+  }, 120_000);
+
+  it('reads and writes few rows in a day (every opening settles 30 creatures)', async () => {
+    const reads = await simulateDay({ valleySystems: true, fresh: true });
+    expect(
+      reads.total,
+      `${reads.describe()}\nBudget: ${String(DAY_BUDGET)} rows.`,
+    ).toBeLessThanOrEqual(DAY_BUDGET);
+    expect(
+      reads.written,
+      `${reads.describe()}\nWrite budget: ${String(VALLEY_DAY_WRITE_BUDGET)} rows.`,
+    ).toBeLessThanOrEqual(VALLEY_DAY_WRITE_BUDGET);
+  }, 120_000);
+
+  it('reads and writes few rows in a day with scouts posted (two seats each, six for the first three players)', async () => {
+    const reads = await simulateDay({ valleySystems: true, scouts: true, fresh: true });
+    expect(
+      reads.total,
+      `${reads.describe()}\nBudget: ${String(DAY_BUDGET)} rows.`,
+    ).toBeLessThanOrEqual(DAY_BUDGET);
+    expect(
+      reads.written,
+      `${reads.describe()}\nWrite budget: ${String(VALLEY_SCOUT_DAY_WRITE_BUDGET)} rows.`,
+    ).toBeLessThanOrEqual(VALLEY_SCOUT_DAY_WRITE_BUDGET);
   }, 120_000);
 });
 

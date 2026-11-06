@@ -1,4 +1,4 @@
-import { baitCount, partBadge } from './count-items';
+import { baitCount, essenceCount, partBadge } from './count-items';
 import { CountBadge } from './ui/CountBadge';
 import { GameIcon } from './ui/GameIcon';
 import { Tag } from './ui/Tag';
@@ -11,13 +11,11 @@ import {
   resourceName,
 } from '@creatures/game';
 import type { ComponentChildren } from 'preact';
-import { GlossaryTag } from './Glossary';
 import { itemArt } from './gear-sprites';
 import {
   isFestivalBase,
   itemLabel,
   itemSet,
-  partName,
   partsEntries,
   rarityName,
   slotName,
@@ -289,18 +287,18 @@ export function CostList({
     <ul class="cost-list" aria-label="Cost">
       {essence !== undefined && (
         <li class={short(essence, essenceHave ?? 0) ? 'short' : undefined}>
-          <GlossaryTag entry="essence">
-            {String(essence)} {resourceName('essence')}
-          </GlossaryTag>
+          <CountBadge {...essenceCount(essence, { entry: true })} />
           {short(essence, essenceHave ?? 0) && <span class="visually-hidden"> (not enough)</span>}
         </li>
       )}
       {bait !== undefined && bait > 0 && (
         <li class={short(bait, baitHave ?? 0) ? 'short' : undefined}>
-          <CountBadge {...baitCount(bait, { name: true })} />
+          <CountBadge {...baitCount(bait)} />
           {short(bait, baitHave ?? 0) && (
             <>
-              <span class="cost-name">(have {baitHave ?? 0})</span>
+              <span class="cost-name">
+                (<CountBadge {...baitCount(baitHave ?? 0)} size="inline" />)
+              </span>
               <span class="visually-hidden"> Not enough {resourceName('bait')}.</span>
             </>
           )}
@@ -311,7 +309,6 @@ export function CostList({
         return (
           <li key={kind} class={lacking ? 'short' : undefined}>
             <PartCount kind={kind} amount={amount} tag={false} />
-            <span class="cost-name">{partName(kind)}</span>
             {lacking && <span class="visually-hidden"> (not enough)</span>}
           </li>
         );
@@ -327,7 +324,6 @@ export function PartsList({ parts }: { parts: PartsBundle }) {
       {partsEntries(parts).map(({ kind, amount }) => (
         <li key={kind}>
           <PartCount kind={kind} amount={amount} tag={false} />
-          <span class="cost-name">{partName(kind)}</span>
         </li>
       ))}
     </ul>

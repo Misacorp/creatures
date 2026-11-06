@@ -1,5 +1,5 @@
 import type { RefObject } from 'preact';
-import { useEffect, useRef } from 'preact/hooks';
+import { useLayoutEffect, useRef } from 'preact/hooks';
 import type { Balances, LeetSyncStatus, LedgerEntry } from './api';
 import { CurrencyPile } from './CurrencyPile';
 import { GEAR_SPRITE } from './sprites/data/hud-sprites';
@@ -52,7 +52,9 @@ function BackButton({
   token: string;
 }) {
   const ref = useRef<HTMLButtonElement>(null);
-  useEffect(() => {
+  // A layout effect, not a passive one: the focus is on the button in the same commit that shows the place, so an
+  // Escape pressed the moment the page appears (or a script that waits for its title) never finds it elsewhere.
+  useLayoutEffect(() => {
     ref.current?.focus({ preventScroll: true });
   }, [token]);
   return (

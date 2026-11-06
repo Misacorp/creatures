@@ -14,6 +14,12 @@ import { explorerName, legEnd, tripCounts, type HomeInput } from '../home-view';
 import { ALERT_TEXT, type TabAlerts } from '../tab-alerts';
 import { TABS, type Tab } from '../tabs';
 import { formatCountdown, formatZoned } from '../time-format';
+import type { ValleyVisit } from '../api';
+import { bonfireLine } from './bonfire-cast';
+import { marketLine } from './market-view';
+import { commonsOf, placeMention } from './commons-view';
+import { forgeSystemsLine, fullFloors, longWaits } from './forge-view';
+import { fullPacks, signpostSystemsLine } from './signpost-view';
 import { placeLabel, readingOrder } from './valley-logic';
 import type { PlaceId } from './valley-art';
 import { OPEN_PLACES, PAGE_TITLES, isOpenPlace, viewOf, type OpenPlaceId } from './valley-nav';
@@ -22,7 +28,10 @@ import { OPEN_PLACES, PAGE_TITLES, isOpenPlace, viewOf, type OpenPlaceId } from 
 export type PlaceInput = Pick<
   HomeInput,
   'now' | 'timezone' | 'trips' | 'jobs' | 'creatures' | 'games' | 'pending' | 'attention' | 'raid'
->;
+> & {
+  /** The valley's resting creatures (`VALLEY_SYSTEMS` on): the Bonfire's line is made from it; absent or null leaves the Bonfire "not open yet". */
+  visit?: ValleyVisit | null;
+};
 
 /** A bubble over a place: the glyph of what waits, a count when there is more than one, its spoken words. */
 export interface PlaceBubble {
@@ -89,6 +98,34 @@ export function placeBubbles(alerts: TabAlerts, input: PlaceInput): PlaceBubble[
       spoken: spokenOf(def.id, alert, count),
     });
   }
+  // With the valley's systems a full pack is the Signpost's news (V-SCOUT-4: "pack full"); trips are gone, so no tab pip says it.
+  const full = input.visit == null ? 0 : fullPacks(input.visit);
+  if (full > 0 && !out.some((b) => b.place === 'signpost')) {
+    out.push({
+      place: 'signpost',
+      glyph: 'satchel',
+      count: full > 1 ? full : null,
+      spoken:
+        full === 1 ? 'A scout\u2019s pack is full' : `${String(full)} scouts\u2019 packs are full`,
+    });
+  }
+  // The Forge's news (V-FORGE-4, V-FORGE-5): a full floor, or a shortage that has lasted more than a day; never in the return walk.
+  const floors = input.visit == null ? 0 : fullFloors(input.visit);
+  const waits = input.visit == null ? 0 : longWaits(input.visit);
+  if (floors + waits > 0 && !out.some((b) => b.place === 'forge')) {
+    const n = floors + waits;
+    out.push({
+      place: 'forge',
+      glyph: 'anvil',
+      count: n > 1 ? n : null,
+      spoken:
+        floors > 0
+          ? floors === 1
+            ? 'A floor is full'
+            : `${String(floors)} floors are full`
+          : 'An anvil has waited on an input for a day',
+    });
+  }
   return out;
 }
 
@@ -105,6 +142,8 @@ export function placeSpoken(id: PlaceId, bubble: PlaceBubble | undefined): strin
 const after = (ms: number): string => formatCountdown(ms, 'short');
 
 function signpostLine(input: PlaceInput): string {
+  // With the valley's systems there are scouts at seats, not trips.
+  if (input.visit != null) return signpostSystemsLine(input.visit);
   const { now } = input;
   const { home, choice, out } = tripCounts(input.trips, now);
   const waiting = home.length + choice.length;
@@ -118,6 +157,8 @@ function signpostLine(input: PlaceInput): string {
 }
 
 function forgeLine(input: PlaceInput): string | null {
+  // With the valley's systems there are smiths at anvils, not timed jobs.
+  if (input.visit != null) return forgeSystemsLine(input.visit);
   if (input.jobs === null) return null;
   const { now } = input;
   const open = openJobs(input.jobs);
@@ -188,6 +229,16 @@ export function placeStates(input: PlaceInput): Record<PlaceId, string> {
   const out = {} as Record<PlaceId, string>;
   for (const id of OPEN_PLACES) out[id] = lines[id] ?? placeFallback(id);
   for (const id of ['bonfire', 'school', 'visitor', 'market'] as const) out[id] = placeFallback(id);
+  out.bonfire = bonfireLine(input.visit, input.creatures) ?? out.bonfire;
+  out.market = marketLine(input.visit) ?? out.market;
+  // A project that is being built gets a mention (it matters: it has a clock); an open one does not, the board says it.
+  const commons = commonsOf(input.visit);
+  for (const id of ['bonfire', 'forge', 'signpost', 'paddock'] as const) {
+    const mention = placeMention(commons, id);
+    if (mention === null) continue;
+    // The Bonfire's line is only its resting count, so the hearth takes its place; the other lines keep what they say.
+    out[id] = id === 'bonfire' ? mention : `${out[id]} · ${mention}`;
+  }
   return out;
 }
 
@@ -213,12 +264,16 @@ export function raidTiming(
 }
 
 /**
- * The Places list's order: the places with something waiting first, then the other open places, then the four
- * not-yet-open places last; each group in the map's reading order.
+ * The Places list's order: the places with something waiting first, then the other open places (`opened` adds the
+ * places a flag opened, the Bonfire), then the places not open yet last; each group in the map's reading order.
  */
-export function listOrder(bubbles: readonly PlaceBubble[]): PlaceId[] {
+export function listOrder(
+  bubbles: readonly PlaceBubble[],
+  opened: readonly PlaceId[] = [],
+): PlaceId[] {
   const all = readingOrder();
+  const open = (id: PlaceId): boolean => isOpenPlace(id) || opened.includes(id);
   const waiting = all.filter((id) => bubbleAt(bubbles, id) !== undefined);
   const rest = all.filter((id) => bubbleAt(bubbles, id) === undefined);
-  return [...waiting, ...rest.filter(isOpenPlace), ...rest.filter((id) => !isOpenPlace(id))];
+  return [...waiting, ...rest.filter(open), ...rest.filter((id) => !open(id))];
 }

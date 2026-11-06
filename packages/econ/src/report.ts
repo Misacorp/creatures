@@ -26,7 +26,6 @@ import { rosterProfile, type RosterProfile } from './roster';
 import { levelOf, medianOf, round, total } from './stats';
 import { SLOW_FLOOR } from './servers';
 import { THRESHOLDS } from './targets';
-import { MARKET_OPENS_AT } from './commons';
 import {
   TEACHER_PROFILES,
   TEACHER_WEEKS,
@@ -922,7 +921,7 @@ export function renderReport(data: ReportData, rules: Rules, rulesSource: string
       ]),
     ),
     '',
-    `The Market as a project: the broker's seat does not exist until the server builds the Market, a communal project (it joins the valley the first week the server's anvils spend ${num(MARKET_OPENS_AT * 100)}% of their time waiting for a shard, and is sized like a level-2 place's project; every player has the broker's seat once it is built). Shards are what is short, so the Market of the first three rows is paid in Acorns and scrap only; the last row pays it like the other projects (Acorns, scrap and shards), to see whether the scarce shard can also build its own fix. Each row is a server run ${bro.market[0]?.runs ?? 0} times:`,
+    `The Market as a project: the broker's seat does not exist until the server builds the Market, a communal project (the server's second guided project, Q48: it opens when the hearth has levelled, before the Forge's, and is small, ${num(RULES.commons.oneShot['market']!.sizeFactor * 100)}% of the base size against the hearth's ${num(RULES.commons.levelFactor[0]! * 100)}%; every player has the broker's seat once it is built, and the exchange tap opens with it, Q64: before it nobody trades, so an anvil waiting for a shard tinkers). The Market of the first three rows takes Acorns, scrap and shards of any element, no cap, each shard worth ${num(RULES.commons.oneShot['market']!.shardValue ?? 0, 2)} of an Acorn (V-COM-15, Misa 2026-11-06: the shards piling up at the Forge while it waits build the Market; a player gives the shards above what the next orders need and the exchange's reserve); the last row pays it like the other projects (Acorns, scrap and an own-element shard part), for comparison. Each row is a server run ${bro.market[0]?.runs ?? 0} times:`,
     '',
   );
   push(
@@ -988,7 +987,7 @@ export function renderReport(data: ReportData, rules: Rules, rulesSource: string
   push(
     '#### The visiting teacher (V-SCH-11 to V-SCH-13)',
     '',
-    `The teacher comes every week and stays Monday to Wednesday (${rules.school.teacherStayDays} days), announced ${rules.school.teacherAnnounceDays} days ahead (Friday). One talent for the server, drawn among the talents that would benefit at least one player (a line they own has it in its pool and their book for that line lacks it), preferring ones that benefit more than one player and never all; never golden; \`cull\` is in no pool. A player seats up to ${rules.school.seats} students (one per line) at a visit once the announcement shows a line of theirs benefits; a student seated before the arrival or on a day of the stay learns by the next morning and the talent enters the book for the line. The first Monday has no teacher (nobody has joined), so the 24 weeks hold 23 visits. **A simplified talent model:** the real pools of combat v2 (34 talents, 7 a line, 16 lines; lines of later content drops take those pools in turn); every find (a new creature or a duplicate) enters one talent drawn uniformly from its line's pool into the book (the real game rolls by role); slots, roles and golden talents are not modelled, so a lesson changes nothing but the book. Median over seeds and players of a kind (mixed server of 8). The target (review 2026-11-03): the teacher is secondary, about 10 to 15% of book entries.`,
+    `The teacher comes every week and stays Monday to Wednesday (${rules.school.teacherStayDays} days), announced ${rules.school.teacherAnnounceDays} days ahead (Friday). One talent for the server, drawn among the talents that would benefit at least one player (a line they own has it in its pool and their book for that line lacks it), preferring ones that benefit more than one player and never all; never golden; \`cull\` is in five of the pools and is taught like any other. A player seats up to ${rules.school.seats} students (one per line) at a visit once the announcement shows a line of theirs benefits; a student seated before the arrival or on a day of the stay learns by the next morning and the talent enters the book for the line. The first Monday has no teacher (nobody has joined), so the 24 weeks hold 23 visits. **A simplified talent model:** the real pools of combat v2 (34 talents, 7 a line, 16 lines; lines of later content drops take those pools in turn); every find (a new creature or a duplicate) enters one talent drawn uniformly from its line's pool into the book (the real game rolls by role); slots, roles and golden talents are not modelled, so a lesson changes nothing but the book. Median over seeds and players of a kind (mixed server of 8). The target (review 2026-11-03): the teacher is secondary, about 10 to 15% of book entries.`,
     '',
   );
   const teacherKinds = TEACHER_PROFILES.filter((id) => teach.teacher[id]);

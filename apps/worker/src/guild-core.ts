@@ -120,6 +120,17 @@ import {
 import { MIGRATIONS } from './migrations';
 import { ReadMeter, pruneReads, readSourceOfPath, type ReadSource } from './read-meter';
 import { liveRng } from './rng';
+import { ValleyBonfire } from './valley-bonfire';
+import { ValleyCommons } from './valley-commons';
+import { ValleyFinds } from './valley-finds';
+import { ValleyForgePass } from './valley-forge';
+import { ValleyGifts } from './valley-gifts';
+import { ValleyGazette } from './valley-gazette';
+import { valleyRoutes } from './valley-routes';
+import { ValleyOrders } from './valley-orders';
+import { ValleySeats } from './valley-seats';
+import { ValleySettle } from './valley-settle';
+import type { ValleyView } from '@creatures/game';
 import type { LoungeClient, LoungeResult } from './lounge-discord';
 import { nextRaidBoundary, raidStageAt } from './lounge-raid';
 import {
@@ -216,11 +227,24 @@ function parseLedgerQuery(url: URL): { limit: number; creditsOf: 'bait' | null }
   };
 }
 
+/**
+ * Whether a request is an intent that may change what the valley's pass reads (the creatures a player has, a catch, an evolution):
+ * anything but a read. The room lookup is a POST that only looks at other players, and the dev tools set up state on their own.
+ */
+function isIntent(method: string, pathname: string): boolean {
+  if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS') return false;
+  // Closing the Gazette's paper depends on nothing the pass reads.
+  return (
+    pathname !== '/api/room' && pathname !== '/api/valley/gazette/close' && !isDevPath(pathname)
+  );
+}
+
 const routes: Routes<RequestContext> = {
   ...collectionRoutes,
   ...gearRoutes,
   ...dungeonRoutes,
   ...expeditionRoutes,
+  ...valleyRoutes,
   ...raidRoutes,
   ...weatherRoutes,
   ...gamesRoutes,
@@ -364,6 +388,11 @@ export interface GuildCoreOptions {
   /** The valley's base systems (`VALLEY_SYSTEMS` on with `VALLEY` and `COMBAT_V2` on, see `valley-flag.ts`): the `valley-fresh` dev tool can run. */
   valleySystems?: boolean;
   /**
+   * Live randomness for what scouts find (`VALLEY_SYSTEMS`): how many creatures, gear pieces, blueprints and pages each stretch brings
+   * and which species. Defaults to crypto.getRandomValues; separate from the others so a scout's draw never consumes a scripted one.
+   */
+  scoutRng?: Rng;
+  /**
    * The deployed build (the git commit). The start-up passes in `migrate` run once per build instead of
    * on every start. Without one (local dev, tests) they run on every start.
    */
@@ -419,6 +448,20 @@ export class GuildCore {
   readonly rollup: AnalyticsRollup;
   /** The daily Bait allowance, granted on a player's first authenticated request of a game day. */
   readonly allowance: DailyAllowance;
+  /** The valley's lazy pass (`VALLEY_SYSTEMS`), or null with the flag off: nothing of it runs and none of its rows are read. */
+  readonly valley: ValleySettle | null;
+  /** Seats and kit of the valley's scouts (`VALLEY_SYSTEMS`), or null with the flag off. */
+  readonly valleySeats: ValleySeats | null;
+  /** Anvils, orders and the shard exchange of the valley's Forge (`VALLEY_SYSTEMS`), or null with the flag off. */
+  readonly valleyOrders: ValleyOrders | null;
+  /** The welcome-back Gazette's last paper per player (`VALLEY_SYSTEMS`), or null with the flag off. */
+  readonly valleyGazette: ValleyGazette | null;
+  /** The server's middle, who is online and the raid's pause of posts (`VALLEY_SYSTEMS`), or null with the flag off. */
+  readonly valleyBonfire: ValleyBonfire | null;
+  /** Gifts to the commons' projects (`VALLEY_SYSTEMS`), or null with the flag off. */
+  readonly valleyGifts: ValleyGifts | null;
+  /** The `VALLEY_SYSTEMS` flag as the worker resolved it (see `valley-flag.ts`). */
+  readonly valleySystems: boolean;
   private postsInFlight: Promise<void> | null = null;
   private dmsInFlight: Promise<void> | null = null;
   private loungeInFlight: Promise<void> | null = null;
@@ -480,6 +523,7 @@ export class GuildCore {
     // Rollups keep real time too, like the events they count.
     this.rollup = new AnalyticsRollup({ storage, now: realNow, timezone: () => this.timezone() });
     this.allowance = new DailyAllowance(storage, this.analytics, now, () => this.timezone());
+    this.valleySystems = options.valleySystems === true;
     const gearRng = options.gearRng ?? liveRng();
     this.gearRng = gearRng;
     this.collection = new Collection({
@@ -493,16 +537,74 @@ export class GuildCore {
       gearRng,
       branchesOf: options.branchesOf,
       ...(options.combatV2 === true ? { combatV2: true } : {}),
+      ...(this.valleySystems ? { valleySystems: true } : {}),
       tripRng: options.tripRng ?? liveRng(),
       weather: this.weather,
-      gameDay: () => loungeDay(this.now(), this.timezone()).day,
+      // With the valley on there is no lounge XP and no daily cap to show (the bonfire's idle XP takes over).
+      ...(this.valleySystems ? {} : { gameDay: () => loungeDay(this.now(), this.timezone()).day }),
     });
+    // The valley's scouts need the Paddock gate's cards (`collection.choices`), so they come after the collection.
+    if (this.valleySystems) {
+      const finds = new ValleyFinds({
+        storage,
+        now,
+        rng: options.scoutRng ?? liveRng(),
+        gearRng,
+        quirkRng,
+        talentRng,
+        combatV2: options.combatV2 === true,
+        choices: this.collection.choices,
+        analytics: this.analytics,
+      });
+      const forge = new ValleyForgePass({ storage, now, rng: gearRng });
+      const gazette = new ValleyGazette(storage, now);
+      const bonfire = new ValleyBonfire({
+        storage,
+        now,
+        realNow,
+        timezone: () => this.timezone(),
+      });
+      this.valleyBonfire = bonfire;
+      const commons = new ValleyCommons({ storage, now, roll: () => finds.roll() });
+      const valley = new ValleySettle({
+        storage,
+        now,
+        timezone: () => this.timezone(),
+        finds,
+        choices: this.collection.choices,
+        forge,
+        gazette,
+        bonfire,
+        commons,
+      });
+      this.valley = valley;
+      this.valleySeats = new ValleySeats({
+        storage,
+        now,
+        timezone: () => this.timezone(),
+        settle: valley,
+        finds,
+        gazette,
+        commons,
+      });
+      this.valleyGazette = gazette;
+      this.valleyOrders = new ValleyOrders({ storage, now, settle: valley, forge, commons });
+      this.valleyGifts = new ValleyGifts({ storage, now, settle: valley, commons });
+    } else {
+      this.valley = null;
+      this.valleySeats = null;
+      this.valleyOrders = null;
+      this.valleyGifts = null;
+      this.valleyGazette = null;
+      this.valleyBonfire = null;
+    }
     this.gear = new Gear({
       storage,
       now,
       rng: gearRng,
       analytics: this.analytics,
       weather: this.weather,
+      ...(this.valleySystems ? { valleySystems: true } : {}),
     });
     this.dungeon = new Dungeon({
       storage,
@@ -785,6 +887,14 @@ export class GuildCore {
     }
   }
 
+  /**
+   * The caller's own valley, settled up to now, for `GET /api/state`; null with the flag off (nothing runs). Only ever called
+   * with the session's user: no other player's valley is settled by anyone's look.
+   */
+  valleyState(userId: string): ValleyView | null {
+    return this.valley?.settle(userId, 'state') ?? null;
+  }
+
   /** The player's notification pips and when to look again (see `attention.ts`). Read-only apart from the raid week lookup. */
   attention(userId: string): Attention {
     return attentionOf(this, userId, this.timezone(), this.now());
@@ -930,8 +1040,18 @@ export class GuildCore {
     await this.analytics.prepare(user.id);
     this.analytics.touch(user.id);
     // The first authenticated request of a game day pays the daily allowance (once, race-safe).
-    if (this.options.dailyAllowance !== false) this.allowance.grant(user.id);
+    // With the valley on the allowance builds up idly instead (`valley-settle.ts`), so there is no daily claim.
+    if (this.options.dailyAllowance !== false && !this.valleySystems) this.allowance.grant(user.id);
     await this.ensureAlarm();
+    // The valley's lazy pass runs before an intent that may change what it reads (the caller's own valley only). A request that
+    // only looks (a GET, and the room lookup of other players) never settles here; `/api/state` settles in its own route.
+    if (this.valley !== null && isIntent(request.method, pathname)) {
+      try {
+        this.valley.settle(user.id, 'intent');
+      } catch (err) {
+        console.error('valley settle failed', err instanceof Error ? err.name : 'unknown');
+      }
+    }
     const template = matchTemplate(ROUTE_KEYS, pathname);
     const response = await dispatch(routes, request, template?.template ?? pathname, {
       user,
@@ -1141,7 +1261,7 @@ export class GuildCore {
     }
     if (this.options.dmSender != null) {
       // Opted-in players' next trip end, job end, finale ping or stall opening.
-      const dueAt = nextDmDueAt(this.sql, this.now(), this.timezone());
+      const dueAt = nextDmDueAt(this.sql, this.now(), this.timezone(), this.valleySystems);
       if (dueAt !== null) candidates.push(dueAt);
       // A DM that is still due keeps failing to go out: look again later, not in a loop.
       const dmAt = nextDmAt(this.sql);
@@ -1312,6 +1432,7 @@ export class GuildCore {
           now: this.now(),
           tz: this.timezone(),
           realAt: (gameMs) => this.realAt(gameMs),
+          valleySystems: this.valleySystems,
         }),
       );
     } catch (err) {
@@ -1428,7 +1549,8 @@ export class GuildCore {
       const before = trackedInstances(this.sql);
       const present = await this.refreshInstances(client, t);
       // Lounging with company: who was together at the last check and still is earns the time between.
-      this.company.observe(before, trackedInstances(this.sql), t);
+      // (Off with the valley on: the bonfire's idle XP replaces lounge XP.)
+      if (!this.valleySystems) this.company.observe(before, trackedInstances(this.sql), t);
       const retry = await this.syncLounge(client, present, t);
       const state = readLounge(this.sql);
       if (retry !== null && state.failures < LOUNGE_MAX_FAILURES) {
@@ -1680,6 +1802,8 @@ export class GuildCore {
     this.dungeon.closeStale();
     this.dungeon.prune();
     pruneAway(this.sql, this.now());
+    // The valley's server middle (V-BON-2), once a game day: one read of the active players' levels and one row written.
+    this.valleyBonfire?.writeMiddle(this.now());
     const oldBacklog = pruneOldData(this.storage, this.now(), this.timezone());
     this.pruneBacklog = analyticsBacklog || oldBacklog;
     if (!this.pruneBacklog) markMaintained(this.sql, day);

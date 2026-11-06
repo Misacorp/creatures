@@ -15,7 +15,7 @@
 */
 .creature-cards {
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
-  align-items: start;
+  align-items: stretch;
 }
 
 @media (min-width: 60rem) {

@@ -13,10 +13,12 @@
  *   entered in today's Games, the explorers home from a trip, the creatures whose job is done, a newcomer itself.
  *   Otherwise it shows the place alone. Never a stand-in.
  */
+import type { HeadlineKind } from '@creatures/game';
 import type { AwaySource, AwaySummary, Creature } from '../../api';
 import { speciesName } from '../../game';
 import type { GamesView } from '../../games-types';
 import type { GearItem, GearRarity } from '../../gear-types';
+import { RARITY_ORDER } from '../../gear-view';
 import { creatureName } from '../../game';
 import type { RaidGlance } from '../../home-view';
 import type { CountItem } from '../../ui/CountBadge';
@@ -58,7 +60,8 @@ export type Find =
   | { kind: 'blueprint'; baseId: string }
   | { kind: 'newcomer'; id: string; species: string; shiny: boolean };
 
-export type StoryKind = 'raid' | 'games' | 'leet' | 'trips' | 'jobs' | 'found';
+/** Today's notice's stories (the flag off) and the server paper's headlines (the valley's systems on, `paper-stories.ts`). */
+export type StoryKind = 'raid' | 'games' | 'leet' | 'trips' | 'jobs' | 'found' | HeadlineKind;
 
 export interface Story {
   id: StoryKind;
@@ -95,6 +98,8 @@ export interface AwayWorld {
   tray: TrayInput;
   games: GamesView | null;
   raid: RaidGlance | null;
+  /** The valley's Forge is on (`VALLEY_SYSTEMS`, V-GEAR-4): a batch of pieces comes home best first (rarity, then item level), not newest first. */
+  bestFirst?: boolean;
 }
 
 const plural = (n: number, one: string, many: string): string => (n === 1 ? one : many);
@@ -139,9 +144,22 @@ export function foundWhileAway(away: AwaySummary, world: AwayWorld): Found {
       id: b.baseId,
       find: { kind: 'blueprint', baseId: b.baseId } satisfies Find,
     }));
-  const things = [...pieces, ...blueprints]
-    .sort((a, b) => b.at - a.at || a.id.localeCompare(b.id, 'en'))
-    .map((t) => t.find);
+  const newest = (a: { at: number; id: string }, b: { at: number; id: string }): number =>
+    b.at - a.at || a.id.localeCompare(b.id, 'en');
+  // The best first: the pieces by rarity, then item level; the blueprints after them, newest first.
+  const best = [...(world.items ?? [])]
+    .filter((i) => inWindow(i.createdAt, away))
+    .sort(
+      (a, b) =>
+        RARITY_ORDER.indexOf(b.rarity) - RARITY_ORDER.indexOf(a.rarity) ||
+        b.itemLevel - a.itemLevel ||
+        a.id.localeCompare(b.id, 'en'),
+    )
+    .map(itemFind);
+  const things =
+    world.bestFirst === true
+      ? [...best, ...blueprints.sort(newest).map((t) => t.find)]
+      : [...pieces, ...blueprints].sort(newest).map((t) => t.find);
   const newcomers = world.creatures
     .filter((c) => inWindow(c.caughtAt, away))
     .sort((a, b) => b.caughtAt - a.caughtAt || a.id.localeCompare(b.id, 'en'))

@@ -18,7 +18,7 @@ import type * as v from 'valibot';
 import { DevError, creatureRngsOf, type ToolCtx } from './dev-context';
 import { ROSTER_PRESETS, presetItems, presetSummary, type RosterPreset } from './dev-presets';
 import type { ApplyRosterPresetBodySchema } from './dev-schemas';
-import { insertItem } from './gear-store';
+import { deleteAllItems, insertItem } from './gear-store';
 import { speciesOf } from './species';
 import { insertCreature } from './talent-store';
 
@@ -108,7 +108,7 @@ export function replaceRoster(ctx: ToolCtx, userId: string, preset: RosterPreset
   }
   sql.exec('DELETE FROM creatures WHERE user_id = ?', userId);
   sql.exec('DELETE FROM line_talents WHERE user_id = ?', userId);
-  sql.exec('DELETE FROM gear_items WHERE user_id = ?', userId);
+  deleteAllItems(sql, userId);
 
   const perLine = new Map<string, number>();
   for (const [speciesId, level] of preset.creatures) {

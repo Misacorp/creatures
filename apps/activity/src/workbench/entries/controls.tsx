@@ -1,18 +1,21 @@
 import { combatV2 } from '@creatures/game/combat-v2';
 import type { ComponentChildren } from 'preact';
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import { SAMPLE_GEAR } from '../../creature-card-sample';
 import { CurrencyPile } from '../../CurrencyPile';
 import { ItemTile } from '../../ItemTile';
 import { ActionButton } from '../../ui/ActionButton';
 import { BulkBar } from '../../ui/BulkBar';
 import { ChoiceButton, ChoiceList } from '../../ui/ChoiceList';
+import { CountStepper } from '../../ui/CountStepper';
 import { KeywordText } from '../../ui/KeywordText';
 import { FoldRow } from '../../ui/FoldRow';
 import { DrillHead } from '../../ui/DrillHead';
 import { LiveRegion } from '../../ui/LiveRegion';
 import { PlaybackControls } from '../../ui/PlaybackControls';
 import { PreviewStatus } from '../../ui/PreviewStatus';
+import { PanHint } from '../../ui/PanHint';
+import { forgetAll } from '../../ui/pan-hint-logic';
 import { ScrollHint } from '../../ui/ScrollHint';
 import { SelectMenu } from '../../ui/SelectMenu';
 import { Switch } from '../../ui/Switch';
@@ -332,6 +335,54 @@ const scrollHint: Entry = {
   render: (p) => <ScrollHintDemo p={p} />,
 };
 
+function PanHintDemo({ p }: { p: Props }) {
+  const box = useRef<HTMLDivElement>(null);
+  // Each press of "Show the hint again" forgets that the map was scrolled and draws it new.
+  const [version, setVersion] = useState(0);
+  const width = num(p, 'mapWidth');
+  return (
+    <div class="wb-pan-hint">
+      <div class="wb-pan-hint-frame" key={`${String(version)}:${String(width)}`}>
+        <div ref={box} class="wb-pan-hint-box">
+          <div
+            class="wb-pan-hint-map"
+            ref={(el) => {
+              el?.style.setProperty('--wb-map-w', `${String(width)}px`);
+            }}
+          >
+            Sample map, {width} px wide
+          </div>
+        </div>
+        <PanHint target={box} id="workbench-sample" />
+      </div>
+      <button
+        type="button"
+        onClick={() => {
+          forgetAll();
+          setVersion((v) => v + 1);
+        }}
+      >
+        Show the hint again
+      </button>
+    </div>
+  );
+}
+
+const panHint: Entry = {
+  name: 'PanHint',
+  file: 'apps/activity/src/ui/PanHint.tsx',
+  group: 'Controls',
+  description:
+    'The one cue that a map pans sideways, the same on the Expeditions world map, the valley and the living room: a soft stepped fade and a small gold arrow at each edge that has more to see. It shows only while the box really scrolls (a map that fits shows nothing), goes away for good once the player has scrolled the map (by swipe, drag, wheel or keys), and takes no taps and no focus. Under reduced motion the arrow holds still. Scroll the sample to see it go; "Show the hint again" forgets that.',
+  controls: { mapWidth: { kind: 'number', min: 200, max: 1200, step: 50 } },
+  defaults: { mapWidth: 800 },
+  presets: [
+    { name: 'Wider than the window (pans)', props: { mapWidth: 800 } },
+    { name: 'Fits (no hint)', props: { mapWidth: 200 } },
+  ],
+  render: (p) => <PanHintDemo p={p} />,
+};
+
 const choiceList: Entry = {
   name: 'ChoiceList',
   file: 'apps/activity/src/ui/ChoiceList.tsx',
@@ -646,12 +697,48 @@ const selectMenu: Entry = {
   ),
 };
 
+function CountStepperDemo({ p }: { p: Props }) {
+  const [value, setValue] = useState(num(p, 'value'));
+  return (
+    <CountStepper
+      label="pieces"
+      value={value}
+      min={1}
+      max={num(p, 'max')}
+      onChange={setValue}
+      disabled={bool(p, 'disabled')}
+    />
+  );
+}
+
+const countStepper: Entry = {
+  name: 'CountStepper',
+  file: 'apps/activity/src/ui/CountStepper.tsx',
+  group: 'Controls',
+  description:
+    'A small whole-number control: a minus button, the number, a plus button, each a 44 px target. For "how many" when the number is small and exact: the Forge\u2019s order of three pieces. It stops at its smallest and biggest. Tap it in the preview.',
+  controls: {
+    value: { kind: 'number', min: 1, max: 20 },
+    max: { kind: 'number', min: 1, max: 20 },
+    disabled: { kind: 'toggle' },
+  },
+  defaults: { value: 3, max: 10, disabled: false },
+  presets: [
+    { name: 'Three of ten', props: {} },
+    { name: 'At the smallest', props: { value: 1 } },
+    { name: 'At the biggest', props: { value: 10 } },
+    { name: 'Disabled', props: { disabled: true } },
+  ],
+  render: (p) => <CountStepperDemo key={`${String(num(p, 'value'))}`} p={p} />,
+};
+
 export const controlEntries: readonly Entry[] = [
   actionButton,
   bulkBar,
   selectCheck,
   selectMenu,
   choiceList,
+  countStepper,
   drillHead,
   previewStatus,
   toggleButton,
@@ -661,4 +748,5 @@ export const controlEntries: readonly Entry[] = [
   liveRegion,
   currencyPile,
   scrollHint,
+  panHint,
 ];

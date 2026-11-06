@@ -1,0 +1,192 @@
+/*
+  The Signpost's page with the valley's systems on (valley/SignpostSeats.tsx): the creature tray, then a card for each scout seat (the
+  shared slot row, then one line: the pack, or the preview of a drop), then the next seat to buy. One column at 390 px; cards side by
+  side from 45 rem. Nothing here is positioned over anything else: a drag's ghost is the only thing that floats.
+*/
+.sp-page {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.sp-seats {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 45rem) {
+  .sp-seats {
+    grid-template-columns: repeat(auto-fill, minmax(22rem, 1fr));
+    align-items: start;
+  }
+}
+
+.sp-seat {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+  padding: 0.625rem;
+  background: var(--dusk);
+  box-shadow: var(--frame);
+}
+
+/* The seat a carried creature is over: a gold ring (the picked row's ring elsewhere). */
+.sp-seat.over {
+  box-shadow:
+    var(--frame),
+    inset 0 0 0 var(--px) var(--gold);
+}
+
+.sp-seat-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-height: 1.5rem;
+}
+
+.sp-seat-head h3 {
+  margin: 0;
+  font-size: var(--fs-row);
+}
+
+/* A slot's two lines: the name (cut with an ellipsis when long), and a small line under it. */
+.sp-slot {
+  display: grid;
+  gap: 0.125rem;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.sp-slot-name,
+.sp-slot-sub {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* A long place name wraps to a second line rather than being cut. */
+.sp-slot-name {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.sp-slot-sub {
+  font-size: var(--fs-small);
+  opacity: 0.85;
+}
+
+/* The line under the slots: the pack, a preview, or what to do. One height, so a preview never moves the card. */
+.sp-line {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  min-height: 2.25rem;
+  margin: 0;
+}
+
+button.sp-pack {
+  width: 100%;
+  padding: 0.25rem 0.5rem;
+  background: var(--night);
+  box-shadow: 0 0 0 var(--px) var(--ink);
+  color: var(--bone);
+  font-size: var(--fs-row);
+  text-align: left;
+}
+
+.sp-pack .sp-bar {
+  flex: 1 1 5rem;
+  min-width: 3rem;
+  margin: 0;
+}
+
+.sp-pack-text {
+  flex: none;
+}
+
+.sp-preview {
+  padding: 0.25rem 0.5rem;
+  background: var(--night);
+  box-shadow: 0 0 0 var(--px) var(--ink);
+  font-size: var(--fs-row);
+}
+
+/* The preview's one arrow: up in good green, down in bad red, a flat dash for no change (never colour alone: the number says it too). */
+.sp-arrow {
+  flex: none;
+  width: 0.75rem;
+  height: 0.75rem;
+  background: var(--bone);
+}
+
+.sp-preview[data-arrow='up'] .sp-arrow {
+  background: var(--good, #6fd36f);
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+
+.sp-preview[data-arrow='down'] .sp-arrow {
+  background: var(--bad, #e0586a);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+}
+
+.sp-preview[data-arrow='none'] .sp-arrow {
+  height: 0.25rem;
+  opacity: 0.7;
+}
+
+/* The next seat to buy: an empty slot's dashed outline, one button. */
+.sp-new {
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+button.sp-buy {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: 3rem;
+  padding: 0.5rem 0.75rem;
+  background: transparent;
+  box-shadow: none;
+  outline: var(--px) dashed var(--bone);
+  outline-offset: calc(var(--px) * -1);
+  color: var(--bone);
+  font-size: var(--fs-row);
+}
+
+.sp-buy-price {
+  color: var(--gold);
+}
+
+.sp-sub {
+  margin: 0;
+}
+
+.sp-note {
+  margin: 0;
+}
+
+/* The tray in the page is a block of its own, as wide as the page. */
+.sp-page > .vy-tray {
+  min-width: 0;
+}
+
+/* While a hand carries a creature the page does not scroll under it. */
+.sp-page[data-carrying] {
+  touch-action: none;
+  user-select: none;
+}

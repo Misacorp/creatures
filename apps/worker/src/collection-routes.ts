@@ -1,3 +1,4 @@
+import type { ValleyView } from '@creatures/game';
 import type { Attention } from './attention';
 import type { Collection } from './collection';
 import {
@@ -48,6 +49,10 @@ export interface CollectionRouteContext {
     leetSyncStatus(): LeetSyncStatus;
     /** The notification pips (dungeon, raid) and when to look again. May throw: the route copes. */
     attention(userId: string): Attention;
+    /** The `VALLEY_SYSTEMS` flag: ribbons and treats are off, the bonfire's idle XP takes over. */
+    valleySystems: boolean;
+    /** The caller's own valley, settled up to now (null with the flag off). */
+    valleyState(userId: string): ValleyView | null;
   };
 }
 
@@ -63,11 +68,14 @@ export const collectionRoutes: Routes<CollectionRouteContext> = {
       } catch (err) {
         console.error('attention failed', err instanceof Error ? err.name : 'unknown');
       }
+      // With the valley on, the caller's pass runs first, so the levels below are the settled ones. Absent with the flag off.
+      const valley = core.valleyState(user.id);
       return json({
         ...core.collection.state(user.id),
         timezone: core.timezone(),
         leetSync: core.leetSyncStatus(),
         attention,
+        ...(valley === null ? {} : { valley }),
       });
     },
   },
@@ -122,6 +130,8 @@ export const collectionRoutes: Routes<CollectionRouteContext> = {
   },
   '/api/expeditions': {
     POST: async (request, { user, core }) => {
+      // Trips are gone with the valley on: scouts at their seats replace them (answered before the body is read).
+      if (core.valleySystems) return notFound();
       const body = await parseBody(request, StartExpeditionBodySchema);
       if (body === undefined) return invalidBody();
       const outcome = core.collection.startExpedition(user.id, body, core.timezone());
@@ -131,6 +141,7 @@ export const collectionRoutes: Routes<CollectionRouteContext> = {
   },
   '/api/expeditions/:id/claim': {
     POST: async (request, ctx) => {
+      if (ctx.core.valleySystems) return notFound();
       const id = pathId(ctx);
       if (id === undefined) return invalidId();
       if ((await parseBody(request, ClaimBodySchema)) === undefined) return invalidBody();
@@ -226,6 +237,8 @@ export const collectionRoutes: Routes<CollectionRouteContext> = {
   },
   '/api/creatures/:id/ribbon': {
     POST: async (request, ctx) => {
+      // Ribbon gates are off with the valley on: a creature grows to its species' cap (valley-settle.ts).
+      if (ctx.core.valleySystems) return notFound();
       const id = pathId(ctx);
       if (id === undefined) return invalidId();
       const body = await parseBody(request, RibbonBodySchema);

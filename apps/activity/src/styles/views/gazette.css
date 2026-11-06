@@ -221,3 +221,20 @@
   box-shadow: none;
   line-height: 0;
 }
+
+/* The paper's one choice (a scout's way deeper), under the stories: a line, what it costs and one button. */
+.gz-choice {
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+  grid-column: 1 / -1;
+  padding-top: 8px;
+  border-top: 2px solid var(--ink);
+}
+
+.gz-choice-trade {
+  margin: 0;
+  color: var(--ink);
+  font-size: var(--fs-row);
+  line-height: 1.3;
+}

@@ -38,3 +38,18 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* A gain after the name ("+40"): always whole, in the experience green; a long name is cut, not the gain. */
+.nameplate-gain {
+  flex: none;
+  color: var(--good);
+}
+
+/* Another player's name after a creature's (`owner`): muted, and the part that gives way first when the plate is full. */
+.nameplate-owner {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--haze);
+}

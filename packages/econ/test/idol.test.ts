@@ -99,8 +99,10 @@ describe('the whole run', () => {
   const config = ALL_SERVERS.find((s) => s.id === 'mixed8')!;
   // T-7b's measure is the median daily player over the seeds, so it needs enough seeds to be a median: at 3 seeds (6 daily players) one
   // pile decides it (it flagged scrap at week 13 with the idol on). 10 seeds are the idol variant's own number in the report.
-  const on = runScenario({ ...config, idol: true }, 10);
-  const off = runScenario({ ...config, idol: false }, 10);
+  // The idol is a placeholder for a scrap sink the valley did not have yet. Patchwork pieces (V-FORGE-12) are a real one, so this study is
+  // run in the world it was written for, without them (`patchwork: false`); the last test below says what changes when they are there.
+  const on = runScenario({ ...config, idol: true, patchwork: false }, 10);
+  const off = runScenario({ ...config, idol: false, patchwork: false }, 10);
 
   it('has no offerings with the idol off, and keeps a daily player clear of the dead pile with it on', () => {
     const offered = (r: typeof on): number =>
@@ -112,6 +114,14 @@ describe('the whole run', () => {
         .length;
     expect(scrapDead(on)).toBe(0);
     expect(scrapDead(off)).toBe(1);
+  });
+
+  it('is no longer what keeps the scrap pile alive once patchwork pieces are there: even with the idol off the pile is not dead', () => {
+    const patched = runScenario({ ...config, idol: false }, 10);
+    const dead = ledgerOf(playersOf(patched, 'daily')).filter(
+      (l) => l.resource === 'scrap' && l.dead !== null,
+    );
+    expect(dead).toHaveLength(0);
   });
 
   it('leaves what pieces, gifts and the visitor take about as it was', () => {

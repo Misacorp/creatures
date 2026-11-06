@@ -1004,6 +1004,24 @@ Status: answered, round 28 (2026-11-05). Touches: Q7 (dungeon passes), Q8 (the w
 
 Became: dungeon passes and the Wednesday fair are built after phase 5's gate and before launch, together with combat v2's art-led Cave entrance.
 
+### Q64. Where does the shard exchange live?
+
+Status: answered, round 29 (2026-11-06). Touches: `forge.md` V-FORGE-10 (the exchange) and V-FORGE-11 (the broker), `commons.md` V-COM-15 (the Market as the second guided project), Q34, Q46, Q48.
+
+**Why it matters.** Misa: "The market is where shards are exchanged. You also mention the forge doing that. Why?" The one-tap exchange sat at the Forge (Q34: it fixes a waiting anvil), and the broker at the Market once built (Q46, Q48), so exchanging lived in two places.
+
+- **A. At the Market from day one,** a trader's stall before it is built; building it adds the broker and better rates; the Forge's wait line jumps to the Market.
+- **B. At the Forge until the Market is built,** then it moves there.
+- **C. As now:** the tap at the Forge, the broker at the Market.
+
+**Lead's pick: A.** One place for exchanging, nothing that moves later.
+
+**Answer (2026-11-06): A, but no exchanging before the Market is built.** "don't let players exchange until they've built the market. I want there to be a communal moment of relief when exchanging becomes possible."
+
+**Challenge (lead).** The lab assumed the tap from day one (Q34). Without it, an anvil that waits on an element the player lacks tinkers (it makes scrap) until the Market is built, the first week or two (Q48), so nothing stalls (F-1), but the early tinkering share rises; the lab re-measures T-4 with the change and Misa hears if a target misses.
+
+Became: the exchange and the broker live only at the Market and open together when the server builds it; the Forge's wait line says the Market will trade once built (and jumps to the Market's project board), then jumps to the exchange; the Market's opening is a server-wide moment in every player's next Gazette.
+
 ## Withdrawn
 
 - **skip-and-new** (queued, never asked; withdrawn 2026-10-31). From the walk's panel (`reviews/2026-10-31-walk.md`, row 9): a visible "tap to skip" and a "New" tag on a find. Neither applies to the Gazette: it is a popup with one button that closes it onto the valley (nothing to skip), and a new species is already its own find (the newcomer box), so a tag would only add chrome against "fewer boxes".

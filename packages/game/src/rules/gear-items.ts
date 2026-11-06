@@ -240,10 +240,11 @@ export function rollLines(
   rarity: GearRarity,
   itemLevel: number,
   minTier = 0,
+  count: number = RULES.gear.rolledLines[rarity],
 ): ItemLine[] {
   const pool = linePool(base, rarity, itemLevel);
   const out: ItemLine[] = [];
-  for (let i = 0; i < RULES.gear.rolledLines[rarity]; i++) {
+  for (let i = 0; i < count; i++) {
     if (pool.length === 0) break;
     const picked = pickWeighted(rng, pool);
     pool.splice(pool.indexOf(picked), 1);
@@ -302,7 +303,14 @@ export function specialLinesOf(lines: readonly ItemLine[]): ItemLine[] {
 /** Rolls a whole item of a base. Throws RangeError for an unknown base. Any base can be of any rarity. */
 export function rollItem(
   rng: Rng,
-  spec: { baseId: string; rarity: GearRarity; itemLevel: number; minTier?: number },
+  spec: {
+    baseId: string;
+    rarity: GearRarity;
+    itemLevel: number;
+    minTier?: number;
+    /** How many lines to roll instead of the rarity's (a patchwork piece rolls fewer than a proper one). */
+    lines?: number;
+  },
 ): GearItem {
   const base = baseOrThrow(spec.baseId);
   const level = clampItemLevel(spec.itemLevel);
@@ -310,7 +318,7 @@ export function rollItem(
     base.id,
     spec.rarity,
     level,
-    rollLines(rng, base, spec.rarity, level, spec.minTier ?? 0),
+    rollLines(rng, base, spec.rarity, level, spec.minTier ?? 0, spec.lines),
   );
 }
 
@@ -504,14 +512,17 @@ export type WearBlock =
 /**
  * Whether a creature can wear an item, or why not. Three rules: a role-locked Charm only goes on its
  * role; a slot opens at a creature level (Hat 1, Scarf 7, Charm 13); and the item's level may not
- * exceed the creature's level.
+ * exceed the creature's level. With `relaxed` (the valley's systems, V-GEAR-3: "item level is quality, not a requirement") the slot
+ * unlock levels and the item-level rule do not apply; a role-locked Charm still goes only on its role.
  */
 export function wearBlock(
   item: Pick<GearItem, 'slot' | 'tag' | 'itemLevel'>,
   creature: { level: number; role: Role },
+  relaxed = false,
 ): WearBlock | null {
   const role = tagRole(item.tag);
   if (role !== null && role !== creature.role) return { reason: 'role', role };
+  if (relaxed) return null;
   const opens = RULES.gear.slotUnlockLevel[item.slot];
   if (creature.level < opens) return { reason: 'slot_locked', needs: opens };
   if (creature.level < item.itemLevel) return { reason: 'item_level', needs: item.itemLevel };
@@ -1209,6 +1220,7 @@ export interface EquipMove {
 export function planEquipBest(
   creatures: readonly BestCreature[],
   candidates: readonly BestCandidate[],
+  relaxed = false,
 ): EquipMove[] {
   type Pair = {
     creature: BestCreature;
@@ -1219,7 +1231,7 @@ export function planEquipBest(
   const pairs: Pair[] = [];
   for (const creature of creatures) {
     for (const candidate of candidates) {
-      if (wearBlock(candidate.item, creature) !== null) continue;
+      if (wearBlock(candidate.item, creature, relaxed) !== null) continue;
       pairs.push({
         creature,
         candidate,

@@ -253,6 +253,12 @@ export class FakeElement extends FakeNode {
     this.focused += 1;
     this.doc.activeElement = this;
   }
+  /** What `:focus-visible` answers for the focused element: true (a keyboard user) unless a test sets it to false (a tap). */
+  keyboardFocus = true;
+  matches(selector: string): boolean {
+    if (selector === ':focus-visible') return this.doc.activeElement === this && this.keyboardFocus;
+    throw new Error(`the fake DOM does not support matches(${selector})`);
+  }
   /** There is no layout: every box is empty (components that measure keep their default size). */
   getBoundingClientRect(): { width: number; height: number; left: number; top: number } {
     return { width: 0, height: 0, left: 0, top: 0 };
@@ -396,6 +402,21 @@ export function byClass(root: FakeElement, cls: string): FakeElement[] {
 
 export function byRole(root: FakeElement, role: string): FakeElement[] {
   return find(root, (el) => el.getAttribute('role') === role);
+}
+
+/**
+ * The count badges inside as [name, number] pairs in order ("Scrap: 6" is ["Scrap", "6"]): what a cost line shows is an
+ * icon and a number, so a test reads the badge's spoken name and its number, never a resource's name in the text.
+ */
+export function badgesIn(root: FakeElement): [string, string][] {
+  return find(root, (el) =>
+    (el.getAttribute('class') ?? '').split(/\s+/).includes('part-count'),
+  ).map((el) => {
+    const spoken = el.getAttribute('aria-label') ?? '';
+    const amount = byClass(el, 'part-amount')[0]?.textContent.trim() ?? '';
+    const cut = spoken.lastIndexOf(': ');
+    return [cut === -1 ? spoken : spoken.slice(0, cut), amount];
+  });
 }
 
 export function visibleText(root: FakeElement): string {

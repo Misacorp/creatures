@@ -32,6 +32,7 @@ import {
   wearerOf,
   type GearRow,
   type JobRow,
+  bagIsTracked,
 } from './gear-store';
 import { fixFestivalRarity } from './gear-normalise';
 import type { LedgerStorage } from './ledger';
@@ -45,6 +46,8 @@ export interface GearDeps {
   /** Live randomness for job results and the welcome kit. Crypto in production. */
   rng: Rng;
   analytics?: Analytics | undefined;
+  /** `VALLEY_SYSTEMS` is on: V-GEAR-3, any creature can wear any item and every slot is open from level 1. */
+  valleySystems?: boolean;
   /**
    * The day's Workshop modifiers (Market Day, built by the Boons step): asked when a craft or a
    * dismantle job is priced, and stored with the job, so what was shown is what is rolled. None today.
@@ -151,7 +154,8 @@ export function itemView(sql: SqlStorage, row: GearRow): GearItemView {
     itemLevel: row.item_level,
     stats: parts.stats,
     lines: parts.lines,
-    needs: parts.needs,
+    // V-GEAR-3 (the valley's systems, which also track the bag): no level is needed to wear it.
+    needs: bagIsTracked(sql) ? { ...parts.needs, level: 1 } : parts.needs,
     equippedOn: row.equipped_on,
     dismantle: dismantleRange([item]),
     source: row.source,

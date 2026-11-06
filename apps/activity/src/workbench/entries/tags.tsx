@@ -6,7 +6,24 @@ import { GlossaryTag } from '../../Glossary';
 import { RarityTag } from '../../GearArt';
 import { ElementChip, RoleChip } from '../../sprites/ElementChip';
 import { baitCount, essenceCount, partCountItems, supplyCounts } from '../../count-items';
-import { CountBadge, CountBadgeList } from '../../ui/CountBadge';
+import {
+  CostLine,
+  CountBadge,
+  CountBadgeList,
+  PriceLine,
+  SayLine,
+  ShortOfLine,
+} from '../../ui/CountBadge';
+import { ActionButton } from '../../ui/ActionButton';
+import {
+  acornCount,
+  anyShardCount,
+  anyShardMark,
+  priceOf,
+  resourceMark,
+  scrapCount,
+  shardCount,
+} from '../../resource-count';
 import { OutcomeBadge } from '../../ui/RevealShell';
 import { KeywordText } from '../../ui/KeywordText';
 import { LandmarkChip, Tag } from '../../ui/Tag';
@@ -138,8 +155,9 @@ const countBadge: Entry = {
     label: { kind: 'text', maxLength: 30 },
     entry: { kind: 'select', options: GLOSSARY_SAMPLE },
     name: { kind: 'text', maxLength: 30 },
+    size: { kind: 'select', options: ['chip', 'inline'] },
   },
-  defaults: { icon: 'part: scrap', amount: 3, label: 'Scrap', entry: NONE, name: '' },
+  defaults: { icon: 'part: scrap', amount: 3, label: 'Scrap', entry: NONE, name: '', size: 'chip' },
   presets: [
     { name: 'Scrap x3', props: { icon: 'part: scrap', amount: 3, label: 'Scrap' } },
     {
@@ -151,6 +169,10 @@ const countBadge: Entry = {
       props: { icon: 'part: glimmer', amount: 2, label: 'Glimmer', name: 'Glimmer' },
     },
     { name: 'Four digits', props: { amount: 9999 } },
+    {
+      name: 'Inline (a cost inside a sentence or a button)',
+      props: { icon: 'part: tide-shard', amount: 12, label: 'Tide Shard', size: 'inline' },
+    },
   ],
   render: (p) => {
     const label = str(p, 'label');
@@ -163,8 +185,98 @@ const countBadge: Entry = {
         {...(label === '' ? {} : { label })}
         {...(entry === NONE ? {} : { entry })}
         {...(name === '' ? {} : { name })}
+        size={str(p, 'size') === 'inline' ? 'inline' : 'chip'}
       />
     );
+  },
+};
+
+const costLine: Entry = {
+  name: 'CostLine',
+  file: 'apps/activity/src/ui/CountBadge.tsx',
+  group: 'Tags & chips',
+  description:
+    'Costs, needs and holdings inside a line or a button: inline count badges, an icon and a number each, never the resource\'s name. CostLine is a row of them, PriceLine a price (or "free"), ShortOfLine the "You have; this costs" reason, SayLine a sentence with badges in it; the ActionButton takes its cost the same way. Shards use their element\'s icon, "any shard" the neutral one.',
+  controls: {
+    variant: {
+      kind: 'select',
+      options: [
+        'still needed',
+        'a price',
+        'free',
+        'short of',
+        'a sentence',
+        'a button cost',
+        'any shard rate',
+      ],
+    },
+  },
+  defaults: { variant: 'still needed' },
+  presets: [
+    { name: 'Still needed (a board)', props: { variant: 'still needed' } },
+    { name: 'A price', props: { variant: 'a price' } },
+    { name: 'Free', props: { variant: 'free' } },
+    { name: 'Short of (why not)', props: { variant: 'short of' } },
+    { name: 'A sentence with icons', props: { variant: 'a sentence' } },
+    { name: 'A button with its cost', props: { variant: 'a button cost' } },
+    { name: 'The any-shard rate', props: { variant: 'any shard rate' } },
+  ],
+  covers: ['PriceLine', 'ShortOfLine', 'SayLine'],
+  render: (p) => {
+    switch (str(p, 'variant')) {
+      case 'a price':
+        return (
+          <p>
+            Buy for <PriceLine price={priceOf([acornCount(875), scrapCount(36)])} />
+          </p>
+        );
+      case 'free':
+        return (
+          <p>
+            Buy for <PriceLine price={priceOf([acornCount(0)])} />
+          </p>
+        );
+      case 'short of':
+        return (
+          <p>
+            <ShortOfLine short={{ have: [acornCount(120)], cost: [acornCount(875)] }} />
+          </p>
+        );
+      case 'a sentence':
+        return (
+          <p>
+            <SayLine say={['Waiting for ', anyShardMark(), ' and ', resourceMark('scrap'), '.']} />
+          </p>
+        );
+      case 'a button cost':
+        return (
+          <ActionButton
+            label="Earn Bronze Ribbon"
+            cost={[scrapCount(6), shardCount('ember', 2)]}
+            onClick={() => undefined}
+          />
+        );
+      case 'any shard rate':
+        return (
+          <p>
+            <SayLine say={[anyShardCount(4), ' = ', acornCount(1)]} />
+          </p>
+        );
+      default:
+        return (
+          <p>
+            Still needed:{' '}
+            <CostLine
+              items={[
+                acornCount(240),
+                scrapCount(520),
+                shardCount('grove', 70),
+                shardCount('tide', 4),
+              ]}
+            />
+          </p>
+        );
+    }
   },
 };
 
@@ -184,7 +296,7 @@ const countBadgeList: Entry = {
   defaults: { bait: 3, essence: 12, scrap: 4, supplies: 0, names: false },
   presets: [
     { name: 'Bait, Essence and Scrap', props: {} },
-    { name: 'With names (the dungeon pack)', props: { names: true } },
+    { name: 'With glossary taps (the dungeon pack)', props: { names: true } },
     { name: 'And two supplies', props: { supplies: 2 } },
     { name: 'Nothing earned', props: { bait: 0, essence: 0, scrap: 0 } },
   ],
@@ -192,10 +304,8 @@ const countBadgeList: Entry = {
     const named = bool(p, 'names');
     const supplies = num(p, 'supplies');
     const items = [
-      ...(num(p, 'bait') > 0 ? [baitCount(num(p, 'bait'), { entry: !named, name: named })] : []),
-      ...(num(p, 'essence') > 0
-        ? [essenceCount(num(p, 'essence'), { entry: !named, name: named })]
-        : []),
+      ...(num(p, 'bait') > 0 ? [baitCount(num(p, 'bait'), { entry: !named })] : []),
+      ...(num(p, 'essence') > 0 ? [essenceCount(num(p, 'essence'), { entry: !named })] : []),
       ...partCountItems(num(p, 'scrap') > 0 ? { scrap: num(p, 'scrap') } : {}),
       ...supplyCounts(
         [
@@ -404,6 +514,7 @@ export const tagEntries: readonly Entry[] = [
   keywordText,
   landmarkChip,
   countBadge,
+  costLine,
   countBadgeList,
   elementChip,
   roleChip,

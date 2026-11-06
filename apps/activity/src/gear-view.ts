@@ -17,6 +17,8 @@ import {
   craftItemLevel,
   expeditionContent,
   gearBase,
+  patchworkBlueprint,
+  patchworkBlueprints,
   gearLine,
   gearLineHasV2Hook,
   gearSet,
@@ -35,6 +37,7 @@ import type { Creature } from './api';
 import { capitalize, creatureName, getSpecies } from './game';
 import { combatV2On } from './live-flags';
 import { percent } from './progress-math';
+import { ANY_SHARD_ICON, joinSay, resourceCount, type Say } from './resource-count';
 import { formatDuration } from './time-format';
 import { destinationName, supplyName } from './trip-view';
 import type { CountItem } from './ui/CountBadge';
@@ -75,7 +78,7 @@ export function rarityName(rarity: GearRarity): string {
 }
 
 export function gearName(baseId: string): string {
-  return gearBase(baseId)?.name ?? baseId;
+  return gearBase(baseId)?.name ?? patchworkBlueprint(baseId)?.name ?? baseId;
 }
 
 /** "Hat", "Scarf", "Charm". */
@@ -726,9 +729,8 @@ export function dismantleCountItems(range: DismantleRange): CountItem[] {
     else {
       items.push({
         key: 'shards',
-        icon: { kind: 'glyph', id: 'sparkle' },
-        label: 'Shards',
-        name: 'any kind',
+        icon: ANY_SHARD_ICON,
+        label: 'Shards of any kind',
         ...rangeBadge(range.shards),
       });
     }
@@ -803,7 +805,7 @@ export function startBlocker(
   gear: Pick<GearState, 'slots' | 'inventory' | 'parts' | 'balances'>,
   creatures: readonly Creature[],
   job: { kind: JobKind; cost: PartsBundle; essence?: number; bait?: number },
-): string | null {
+): string | Say | null {
   if (gear.slots.used >= gear.slots.total) {
     return `All ${String(gear.slots.total)} slots are busy.`;
   }
@@ -816,15 +818,15 @@ export function startBlocker(
   const missing = missingParts(gear.parts, job.cost);
   const entries = partsEntries(missing);
   const lackingEssence = Math.max(0, (job.essence ?? 0) - gear.balances.essence);
-  const lacks = [
-    ...entries.map((e) => `${String(e.amount)} more ${partName(e.kind)}`),
-    ...(lackingEssence > 0 ? [`${String(lackingEssence)} more ${resourceName('essence')}`] : []),
+  const lacks: CountItem[] = [
+    ...entries.map((e) => resourceCount(e.kind, e.amount)),
+    ...(lackingEssence > 0 ? [resourceCount('essence', lackingEssence)] : []),
   ];
-  if (lacks.length > 0) return `Needs ${lacks.join(' and ')}.`;
+  if (lacks.length > 0) return ['Needs ', ...joinSay(lacks, ' and '), ' more.'];
   // A lure costs Bait as well as parts.
   const bait = job.bait ?? 0;
   if (gear.balances.bait < bait) {
-    return `Needs ${String(bait - gear.balances.bait)} more ${resourceName('bait')}.`;
+    return ['Needs ', resourceCount('bait', bait - gear.balances.bait), ' more.'];
   }
   return null;
 }
@@ -920,6 +922,11 @@ export interface BlueprintView {
   slot: GearSlot;
   element: string | null;
   cost: PartsBundle;
+  /**
+   * A patchwork blueprint (V-FORGE-12): what a piece takes (scrap and shards of one element, chosen per order), and no quality or plain
+   * craft price. Only in the valley's Forge.
+   */
+  patchwork?: { scrap: number; shards: number };
   /** Marks, shown as blueprint quality (finds of it the player already knew), 0 to the most. */
   marks: number;
   /** The Crafting level a craft of it asks for (a better base unlocks at a higher item level); 1 for the plain ones. */
@@ -930,13 +937,27 @@ export interface BlueprintView {
 export function blueprintViews(
   blueprints: GearState['blueprints'],
   skills: GearState['skills'],
+  /** The valley's Forge is on: every player also knows the patchwork blueprints (V-FORGE-12). */
+  withPatchwork = false,
 ): BlueprintView[] {
   // The price of a plain craft grows with the item level, which follows the crafter's level: the card shows
   // the price for the best crafter (the craft panel shows the exact price for the one you pick).
   const itemLevel = craftItemLevel(Math.max(1, ...skills.map((s) => s.level)));
   const order: readonly GearSlot[] = ['hat', 'scarf', 'charm'];
-  return blueprints
-    .flatMap((bp) => {
+  const patchwork: BlueprintView[] = withPatchwork
+    ? patchworkBlueprints().map((bp) => ({
+        baseId: bp.id,
+        name: bp.name,
+        slot: bp.slot,
+        element: null,
+        cost: {},
+        patchwork: { scrap: bp.scrap, shards: bp.shards },
+        marks: 0,
+        needsCraftingLevel: 1,
+      }))
+    : [];
+  return [
+    ...blueprints.flatMap((bp) => {
       const base = gearBase(bp.baseId);
       return base === undefined
         ? []
@@ -951,8 +972,9 @@ export function blueprintViews(
               needsCraftingLevel: bp.needsCraftingLevel,
             },
           ];
-    })
-    .sort((a, b) => order.indexOf(a.slot) - order.indexOf(b.slot) || a.name.localeCompare(b.name));
+    }),
+    ...patchwork,
+  ].sort((a, b) => order.indexOf(a.slot) - order.indexOf(b.slot) || a.name.localeCompare(b.name));
 }
 
 // --- Grants and loot ---

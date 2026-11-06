@@ -71,7 +71,7 @@ export function teacherDay(
  * V-SCH-12 (the owner's words: "it's fine if it doesn't benefit many players ... select one that benefits hopefully more than one. But we
  * don't want ... everyone"). Of the talents that benefit at least one player: first those that benefit a few players, from 2 up to
  * max(2, 25% of the server's players) and never all; else those that benefit exactly one; else the fewest there are. (The first draft,
- * rule `several`: any number from 2 to all but one, else exactly one.) Null when no talent benefits anyone. `cull` is in no pool.
+ * rule `several`: any number from 2 to all but one, else exactly one.) Null when no talent benefits anyone. `cull` is in five pools and is drawn like any other talent.
  */
 export function drawTalent(server: Server, joined: readonly Player[]): number | null {
   const n = joined.length;

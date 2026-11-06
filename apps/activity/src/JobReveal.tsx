@@ -7,7 +7,7 @@ import { ExperienceGainRow } from './ExperienceGainRow';
 import { ItemFrame, ItemSprite, ItemThumb, PartsList, RarityTag } from './GearArt';
 import { GlossaryTag } from './Glossary';
 import type { GearItem, JobResult } from './gear-types';
-import { gearName, jobVerb, partsText, rarityName, reachName, slotName } from './gear-view';
+import { gearName, jobVerb, rarityName, reachName, slotName } from './gear-view';
 import { ItemLines } from './ItemLines';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
@@ -179,10 +179,7 @@ function Outcome({ result, items }: { result: JobResult; items: readonly GearIte
     case 'retired':
       return (
         <>
-          <p>
-            Old {result.was === 'improve' ? 'Improve' : 'Enchant'} job over. Parts back:{' '}
-            <strong>{partsText(result.refund)}</strong>.
-          </p>
+          <p>Old {result.was === 'improve' ? 'Improve' : 'Enchant'} job over. Parts back:</p>
           <PartsList parts={result.refund} />
         </>
       );

@@ -1,5 +1,6 @@
 import type { ComponentChildren } from 'preact';
 import { useEffect, useRef } from 'preact/hooks';
+import { keyboardHasFocus } from './focus-return';
 
 interface PickSheetProps {
   /** The dialog's name, which also heads it ("Choose a creature for Middle, lane 3"). */
@@ -34,6 +35,10 @@ export function PickSheet(props: PickSheetProps) {
   const sheetRef = useRef<HTMLDivElement>(null);
   const latest = useRef(props);
   latest.current = props;
+  // Asked while the sheet draws for the first time, before it moves the focus: only a keyboard user gets the
+  // focus back on the slot at the end (no ring left after a tap).
+  const byKeyboard = useRef<boolean | null>(null);
+  byKeyboard.current ??= keyboardHasFocus();
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent): void => {
@@ -48,7 +53,10 @@ export function PickSheet(props: PickSheetProps) {
       // Back to the slot that opened the sheet. After a pick the slot is switched off for a moment
       // (the request is in flight); the Roster focuses it again once it is back.
       const now = document.activeElement;
-      if (now === null || now === document.body || sheetRef.current?.contains(now) === true) {
+      if (
+        byKeyboard.current === true &&
+        (now === null || now === document.body || sheetRef.current?.contains(now) === true)
+      ) {
         latest.current.anchor()?.focus();
       }
     };

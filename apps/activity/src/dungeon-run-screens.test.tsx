@@ -38,6 +38,7 @@ import {
 } from './dungeon-path-samples';
 import type { DungeonAct, DungeonRunState, DungeonTreasureView } from './dungeon-types';
 import {
+  badgesIn,
   byClass,
   byName,
   byRole,
@@ -825,7 +826,10 @@ describe('the results of a path run', () => {
     expect(text).not.toContain('DEFEATED');
     // A line of what happened in the rooms that are not fights, as text.
     expect(text).toContain('Rested');
-    expect(text).toContain('1 Bait · 1 Scrap');
+    // A cache says what it gave as icons and numbers.
+    expect(badgesIn(byClass(root, 'room-strip')[0] as FakeElement)).toContainEqual(['Bait', '1']);
+    expect(badgesIn(byClass(root, 'room-strip')[0] as FakeElement)).toContainEqual(['Scrap', '1']);
+    expect(text).not.toContain('1 Bait');
     expect(text).toContain('You gain 1 scrap.');
   });
 

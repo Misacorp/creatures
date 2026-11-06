@@ -1,6 +1,15 @@
 import type { Collection } from './collection';
 import { PushOnBodySchema } from './collection-schemas';
-import { failure, invalidBody, invalidId, json, parseBody, pathId, type Routes } from './http';
+import {
+  failure,
+  invalidBody,
+  invalidId,
+  json,
+  notFound,
+  parseBody,
+  pathId,
+  type Routes,
+} from './http';
 
 /** What these routes need from the request context (GuildCore's context satisfies it). */
 export interface ExpeditionRouteContext {
@@ -9,6 +18,8 @@ export interface ExpeditionRouteContext {
   params: Record<string, string>;
   core: {
     collection: Collection;
+    /** The `VALLEY_SYSTEMS` flag: trips are gone, so the push-on route answers 404. */
+    valleySystems: boolean;
     /** The guild's timezone: night and Festival weeks are by guild-local time. */
     timezone(): string;
   };
@@ -18,6 +29,7 @@ export const expeditionRoutes: Routes<ExpeditionRouteContext> = {
   /** Choose a goal of a finished trip's end-of-trip offer. Ignoring the offer is coming home: claim as usual. */
   '/api/expeditions/:id/push-on': {
     POST: async (request, ctx) => {
+      if (ctx.core.valleySystems) return notFound();
       const id = pathId(ctx);
       if (id === undefined) return invalidId();
       const body = await parseBody(request, PushOnBodySchema);

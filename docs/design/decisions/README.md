@@ -464,6 +464,9 @@ Superseded: 1 entry (see the topic file).
 
 [ui.md](ui.md): Navigation and the frame, Home and the notice board, type scale, shared components, look and feel rules that apply across screens.
 
+- 2026-11-06 Costs show the resource's icon and a number, never its name \[Misa\]
+- 2026-11-06 \[Misa\] One pan hint, the same on every sideways-scrolling map; a popover never opens after a drag
+- 2026-11-06 Closing a drawer or popover gives the focus back only to a keyboard user
 - 2026-11-05 Dungeon depth picker is a dropdown with the scalars on every row \[Misa\]
 - 2026-11-04 Combat v2: a Guard's pulse of protection through the tiles replaces the bracket \[Misa\]
 - 2026-11-04 Combat v2 fight visuals: the Guard's burst, and boosts and debuffs as a background pattern \[Misa\] (amended)
@@ -539,6 +542,24 @@ Superseded: 1 entry (see the topic file).
 
 [valley.md](valley.md): The valley and peaceful systems overhaul planned in docs/design/valley/: job posts, the bonfire, the commons, the Forge loop, gear, trials, the School, the visitor, the economy lab, and Misa's question rounds.
 
+- 2026-11-06 Patchwork pieces built: the plainest piece of the shard's element, Rare at best
+- 2026-11-06 Patchwork pieces: blueprints that take any shard, with scrap \[Misa\] (amended)
+- 2026-11-06 The Market takes shards of any element, with no cap \[Misa\]
+- 2026-11-06 The Market is the second guided project, straight after the hearth (Q48, built) (amended)
+- 2026-11-06 Q64 built: the exchange at the Market only, the opening as a paper headline, the lab without an early exchange
+- 2026-11-06 The shard exchange opens with the Market, for everyone at once \[Misa\]
+- 2026-11-06 Phase 5 step 7: the Market and the broker (a one-shot place, the broker seat, trades inside the pass, the Market's page)
+- 2026-11-06 Phase 5 step 6b: the commons on the client (one project board for every place, the give drawer, scaffolding, helpers, plaque, collections, the fire, the grand bonfire, keepsakes)
+- 2026-11-06 Phase 5 step 6: the commons on the server (places and projects, gifts, plaque and keepsake, levels bound seats, communal seats, keystones and collections, the fire, the hearth) (amended)
+- 2026-11-06 Phase 5 step 5: the bonfire in full and fights (catch-up fixed per visit and fading, the middle once a day, small moments, who is online, a raider's post pauses)
+- 2026-11-06 Phase 5 step 4: the Gazette on real output, push on, one ranking
+- 2026-11-06 Phase 5 step 3b: the Forge's anvils on the client
+- 2026-11-06 Phase 5 step 2b: the Signpost's scouts on the client
+- 2026-11-05 Phase 5 step 3: the Forge loop on the server
+- 2026-11-05 Phase 5 step 2: scouts on the server
+- 2026-11-05 Phase 5 step 1b: the Bonfire opens in the client
+- 2026-11-05 Phase 5 step 1: resting and the lazy pass on the server
+- 2026-11-05 Econ lab after combat v2: cull is taught like any pooled talent; the tempering check reads the median of seeds
 - 2026-11-05 The month runs on staging; no keeper at launch; passes and the fair after phase 5 (round 28, Q61-Q63) \[Misa\]
 - 2026-11-05 Phase 5 step 0: one source of numbers, the VALLEY_SYSTEMS flag rule, the lazy-pass skeleton
 - 2026-11-05 Polish round: popovers above scenes, View scrolls, the Cave tells the truth, the Journal as list and pages, no ring on return

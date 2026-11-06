@@ -4,6 +4,30 @@ Navigation and the frame, Home and the notice board, type scale, shared componen
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-06: Costs show the resource's icon and a number, never its name [Misa]
+
+ID: `2026-11-06-costs-show-the-resource-s-icon` · Status: current
+
+**Decision.** Wherever the game shows an amount of Acorns, scrap or shards as a cost, a price, a need or a holding (spend buttons, project boards, the Give drawer, orders, the exchange, the broker, ribbon and evolve buttons, recipes), it shows the resource's icon from the resource library with the number, never the resource's name in words. Shards show their element's shard icon. One shared component draws it everywhere. Glossary and help pages that explain what a resource is may still name it.
+
+**Reasoning.** Misa (2026-11-06): "Use the shard icons to indicate cost. Don't spell them out anywhere. Same for acorns and scrap." Icons read faster than words and keep cards short; one component keeps them the same everywhere.
+
+## 2026-11-06: [Misa] One pan hint, the same on every sideways-scrolling map; a popover never opens after a drag
+
+ID: `2026-11-06-one-pan-hint-the-same-on` · Status: current
+
+**Decision.** Misa (2026-11-06): "add a hint and make it a single one that is uniform on all scrolling maps." `ui/PanHint` is that hint: a stepped fade and a small gold arrow at each edge with more to see, shown only while the box really pans, gone for the rest of the session once the player scrolls that map (memory in the page, no storage). It is on the Expeditions world map, the valley map (beside its edge chips) and the living room; `pan-hint-guard.test.ts` fails on a panning map without it. Second ask the same day: "make sure a popover doesn't open after a drag, only a click." `ui/drag-click-guard.ts` swallows the one click that follows any drag (`useDragDrop`, the Paddock's creature drag, `useDragScroll`), wherever it lands. On popover width Misa said to narrow it only if that needs no extra rules: the shared 17rem (`min(17rem, 100% - 8px)`) was left as it is, because a narrower fixed width would be a new number that every creature, item and tag popover has to fit.
+
+**Reasoning.** Each map had its own cue or none (the valley's edge chips name places out of view; the world map and the room had nothing), so a phone player could not tell they pan. One shared component keeps the cue the same and quiet. A click guard in one shared place covers every draggable, including ones whose element is drawn again at the drop, where a per-component flag is lost.
+
+## 2026-11-06: Closing a drawer or popover gives the focus back only to a keyboard user
+
+ID: `2026-11-06-closing-a-drawer-or-popover-gives` · Status: current
+
+**Decision.** `ui/Drawer`, `ui/Popover` and `ui/PickSheet` return the focus to the thing that opened them only when that opener had keyboard focus (`:focus-visible`, asked through `ui/focus-return.ts` when they open). After a tap or click, closing by Escape, a tap outside or the X leaves no focus ring behind. Opened from the keyboard, they still hand the focus back on close, ring and all. The same holds in today's game and in the valley, since both use these components.
+
+**Reasoning.** Misa (2026-11-05, on the valley's back from a place): a ring on the place just left "detracts from the experience", and accessibility need not go that far at this level. The overnight visual pass found the same leftover ring after drawers and popovers closed (the Signpost's pack bar, a glossary tag). Returning focus is still right for keyboard users, so the rule follows how the thing was opened rather than dropping the return.
+
 ## 2026-11-05: Dungeon depth picker is a dropdown with the scalars on every row [Misa]
 
 ID: `2026-11-05-dungeon-depth-picker-is-a-dropdown` · Status: current · Amends: `2026-11-05-combat-v2-dungeon-depth-picker-built`

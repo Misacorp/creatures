@@ -15,18 +15,20 @@ import { cssVars } from '../css-vars';
 import { usePrefersReducedMotion } from '../hooks';
 import { SmallCreature } from '../SmallCreature';
 import { Nameplate } from '../ui/Nameplate';
+import { swallowNextClick } from '../ui/drag-click-guard';
 import { dropPoint, pastThreshold, type Grab } from './creature-drag';
 import { PinnedAct } from './PinnedAct';
 import { SceneFrame, sceneGeometry, type SceneGeometry } from './SceneFrame';
 import { At, CreatureSprite, Pic, SpeechBubble, isStill, useTick } from './parts';
 import { CREATURE_PX, type Cast, type CastPlace } from './place-cast';
-import { BAND_ROWS, bandArtBox, bandScale, bandSceneDraw } from './place-scene';
+import { BAND_ROWS, BOSS_ASIDE, bandArtBox, bandScale, bandSceneDraw } from './place-scene';
 import { plateGap, roamPlan, standSpots } from './place-plates';
 import { frontProps, propDepth } from './place-props';
 import { useRoamers } from './use-roamers';
 import { depthOf } from './valley-logic';
-import { placeOf, type Rect } from './valley-art';
-import type { MapName } from './valley-places';
+import { WARMING_FLAME, placeOf, type Rect } from './valley-art';
+import { scaffoldUp } from './scaffold';
+import { glowSprite, type MapName } from './valley-places';
 
 /** The sprite each scene stands its place's art from. */
 export const SCENE_ART: Readonly<Record<CastPlace, MapName>> = {
@@ -35,6 +37,9 @@ export const SCENE_ART: Readonly<Record<CastPlace, MapName>> = {
   arena: 'arena',
   fair: 'fairground',
   paddock: 'paddock',
+  signpost: 'road',
+  forge: 'forge',
+  market: 'market',
 };
 
 /** The nameplates' layer: above every creature (`depthOf` stays below it). */
@@ -47,7 +52,10 @@ const LIFTED_Z = PLATES_Z - 1;
 const TICK_MS = 125;
 
 /** The popover's facts of one of the player's own creatures (its name as text, its species' element and role). */
-function infoOf(c: Creature): CreatureInfo {
+/** What a scene draws of a creature: the player's own, or (at the Bonfire) another online player's, which has no page of its own here. */
+export type StandCreature = Pick<Creature, 'id' | 'species' | 'level' | 'shiny' | 'nickname'>;
+
+function infoOf(c: StandCreature, owner?: string): CreatureInfo {
   const species = getSpecies(c.species);
   return {
     name: creatureName(c),
@@ -56,7 +64,8 @@ function infoOf(c: Creature): CreatureInfo {
     element: species?.element ?? 'unknown',
     role: species?.role ?? '',
     shiny: c.shiny,
-    creatureId: c.id,
+    // Another player's creature has no page to open and says whose it is.
+    ...(owner === undefined ? { creatureId: c.id } : { ownerName: owner }),
   };
 }
 
@@ -98,6 +107,7 @@ function Draggable({
     if (!dragging.current) return;
     dragging.current = false;
     swallow.current = true;
+    swallowNextClick();
     setTimeout(() => {
       swallow.current = false;
     }, 0);
@@ -145,7 +155,7 @@ function Draggable({
 }
 
 /** One creature standing at (`x`, `y`) scene pixels: a button that opens its popover. */
-function Stander({
+export function Stander({
   creature,
   x,
   y,
@@ -153,8 +163,11 @@ function Stander({
   label,
   g,
   hand,
+  gain,
+  owner,
+  warm = false,
 }: {
-  creature: Creature;
+  creature: StandCreature;
   x: number;
   y: number;
   flip: boolean;
@@ -162,14 +175,20 @@ function Stander({
   g: SceneGeometry;
   /** Given: a hand can move it (the paddock's roamers). */
   hand?: Hand;
+  /** The experience it gained this visit, "+N" on its nameplate (the Bonfire's resting creatures). */
+  gain?: number;
+  /** Another online player's creature (the Bonfire, V-BON-4): their name on its nameplate. */
+  owner?: string;
+  /** It is catching up toward the server (V-BON-2): a small flame over it. */
+  warm?: boolean;
 }) {
-  const info = infoOf(creature);
+  const info = infoOf(creature, owner);
   const button = (
     <SmallCreature
       info={info}
       id={`scene-${creature.id}`}
       class="vy-stand-btn"
-      label={`${info.name}, level ${String(info.level)}, ${label}`}
+      label={`${info.name}, level ${String(info.level)}${owner === undefined ? '' : `, ${owner}'s`}, ${label}${warm ? ', warming up' : ''}`}
     >
       <CreatureSprite creature={creature} scale={g.s} flip={flip} />
     </SmallCreature>
@@ -189,6 +208,11 @@ function Stander({
             {button}
           </Draggable>
         )}
+        {warm && (
+          <span class="vy-flame" aria-hidden="true">
+            <Pic sprite={WARMING_FLAME} scale={g.s} />
+          </span>
+        )}
       </At>
       {/* The nameplate, always shown under the feet (level first, in yellow, then the name): on a layer above every creature so a neighbour never hides it, in the creatures' own depth order. */}
       <At
@@ -197,8 +221,9 @@ function Stander({
         class="vy-feet-plate"
         z={PLATES_Z + depthOf(x, y)}
       >
-        <Nameplate size="sm" level={info.level}>
-          {info.name}
+        <Nameplate size="sm" level={info.level} gain={gain} owner={owner}>
+          {/* Another player's creature shows its level and its owner only; its own name is in its popover. */}
+          {owner === undefined ? info.name : undefined}
         </Nameplate>
       </At>
     </>
@@ -253,20 +278,31 @@ function Roamers({
 export function PlaceScene({ cast, onAct }: { cast: Cast; onAct: () => void }) {
   const art = SCENE_ART[cast.place];
   const bossId = cast.boss?.id ?? null;
+  // The boss stands beside the art: the pair is centred in the band, not the art alone.
+  const aside = bossId === null ? 0 : BOSS_ASIDE;
+  const steps = cast.scaffold;
   const draw = useMemo(
     () =>
-      bandSceneDraw(art, (box) =>
-        bossId === null
-          ? []
-          : [
-              {
-                sprite: bossArt(bossId).sprite,
-                x: box.x + box.width - 6,
-                y: box.y + box.height - 30,
-              },
-            ],
+      bandSceneDraw(
+        art,
+        (box) => [
+          // The scaffolding rises in front of the place as its project fills (V-COM-6).
+          ...(steps === 0
+            ? []
+            : [{ sprite: scaffoldUp(glowSprite(art), steps), x: box.x, y: box.y }]),
+          ...(bossId === null
+            ? []
+            : [
+                {
+                  sprite: bossArt(bossId).sprite,
+                  x: box.x + box.width - 6,
+                  y: box.y + box.height - 30,
+                },
+              ]),
+        ],
+        aside,
       ),
-    [art, bossId],
+    [art, bossId, aside, steps],
   );
   const name = placeOf(cast.place).name;
   return (
@@ -290,10 +326,10 @@ export function PlaceScene({ cast, onAct }: { cast: Cast; onAct: () => void }) {
       }
     >
       {(g) => {
-        const box = bandArtBox(g, art);
+        const box = bandArtBox(g, art, aside);
         // A scene not measured yet (width 0) is laid out as a phone's, so nothing waits for the first measure.
         const lay = g.W > 0 ? g : sceneGeometry(390, BAND_ROWS * g.s, g.s);
-        const laid = bandArtBox(lay, art);
+        const laid = bandArtBox(lay, art, aside);
         const scene = { W: lay.W, H: lay.H, s: g.s, top: lay.top };
         const gate = cast.gate.map((n) => ({ x: laid.x + n.x, y: laid.y + n.y }));
         const roam = roamPlan(cast, laid, scene);

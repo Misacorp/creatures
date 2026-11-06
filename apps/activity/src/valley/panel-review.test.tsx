@@ -22,6 +22,7 @@ import { PROPS, frontProps, propDepth } from './place-props';
 import {
   BAND_ROWS,
   artSize,
+  BOSS_ASIDE,
   bandArtBox,
   bandScale,
   placeScale,
@@ -170,6 +171,15 @@ describe('every scene scales by a whole number (row 17 check)', () => {
     const box = bandArtBox(sceneGeometry(390, BAND_ROWS * 3, 3), 'arena');
     expect(Number.isInteger(box.x) && Number.isInteger(box.y)).toBe(true);
     expect(art.width).toBeGreaterThan(0);
+  });
+
+  it('the arena’s boss and the art stand centred together in the band: equal room each side', () => {
+    const g = sceneGeometry(390, BAND_ROWS * 3, 3);
+    const box = bandArtBox(g, 'arena', BOSS_ASIDE);
+    const left = box.x;
+    const right = g.W - (box.x + box.width + BOSS_ASIDE);
+    expect(Math.abs(left - right)).toBeLessThanOrEqual(2);
+    expect(bandArtBox(g, 'arena').x).toBeGreaterThan(box.x);
   });
 });
 
