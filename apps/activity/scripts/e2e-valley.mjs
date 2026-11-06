@@ -2132,6 +2132,8 @@ try {
         await expectTopmost(shelf, 'the keepsake shelf');
         await page.waitForTimeout(300);
         await shot('commons-keepsakes');
+        await hudBack().click();
+        await waitFor(page.locator(VALLEY), 'attached');
       } finally {
         commonsOff();
       }

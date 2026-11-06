@@ -6,6 +6,13 @@
   align-content: start;
 }
 
+/* On a wide window a board is as wide as a seat card beside it, not the whole page. */
+@media (min-width: 45rem) {
+  .cm-board:not(.cm-sheet) {
+    max-width: 34rem;
+  }
+}
+
 .cm-helper {
   display: grid;
   grid-template-columns: minmax(0, 11rem) minmax(0, 1fr);
