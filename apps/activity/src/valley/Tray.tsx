@@ -58,6 +58,12 @@ function Mark({ badge }: { badge: TrayBadge }) {
         </span>
       );
     }
+    case 'helping':
+      return (
+        <span class="vy-mark">
+          <Sprite sprite={glyphOrUnknown('hand')} scale={2} />
+        </span>
+      );
     case 'resting':
       return (
         <span class="vy-mark">

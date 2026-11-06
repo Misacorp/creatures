@@ -12,6 +12,9 @@ import type { Creature, ValleyVisit } from '../api';
 import type { TabAlerts } from '../tab-alerts';
 import { scrollAndFocus } from '../scroll-to';
 import { BonfireScene } from './BonfireScene';
+import { CommonsBoard, type CommonsActions } from './CommonsBoard';
+import { Keepsakes } from './Keepsakes';
+import { commonsOf, levelOf } from './commons-view';
 import { PinnedAct } from './PinnedAct';
 import { PlaceScene, SCENE_ART } from './PlaceScene';
 import { PlaceRow, PlacesList } from './PlacesList';
@@ -23,11 +26,11 @@ import { placeBubbles, placeStates, type PlaceInput } from './place-state';
 import { castFor, hasScene, type CastExtra } from './place-cast';
 import { artSize, placeScale, placeSceneDraw } from './place-scene';
 import type { TrayInput } from './tray-state';
-import { trayFor, isAtHome, isScouting, isSmithing, trayStates } from './tray-state';
+import { trayFor, isAtHome, isHelping, isScouting, isSmithing, trayStates } from './tray-state';
 import { placeOf, type PlaceId } from './valley-art';
 import { placeLabel } from './valley-logic';
 import { soonLine, type SoonPlaceId, type ValleyView } from './valley-nav';
-import type { GlowName } from './valley-places';
+import { DEFAULT_LOOK, type GlowName } from './valley-places';
 
 /** The sprite of a place that is not open yet. */
 const SOON_ART: Readonly<Record<SoonPlaceId, GlowName>> = {
@@ -50,6 +53,9 @@ export function ValleyFrame({
   placeInput,
   castExtra,
   visit = null,
+  commons,
+  acorns = 0,
+  busy = false,
   focus,
   onOpen,
   onLeave,
@@ -70,6 +76,12 @@ export function ValleyFrame({
   castExtra: CastExtra;
   /** The valley's resting creatures and allowance (`VALLEY_SYSTEMS` on): the Bonfire opens with it; null (flag off, or not heard yet) leaves it "not open yet". */
   visit?: ValleyVisit | null;
+  /** The commons' gifts and communal seats (`VALLEY_SYSTEMS` on): the Bonfire's and the Paddock's project boards; absent shows none. */
+  commons?: CommonsActions;
+  /** The player's Acorns, for a gift. */
+  acorns?: number;
+  /** An action is under way: the boards' buttons wait. */
+  busy?: boolean;
   /** The place whose button takes the focus when the map comes back. */
   focus: PlaceId | null;
   /** Opens a place (from the map, the Places list or the tray). */
@@ -88,8 +100,8 @@ export function ValleyFrame({
   children: ComponentChildren;
 }) {
   const [places, setPlaces] = useState(false);
-  // The commons do not exist yet (phase 5 step 6): the fire is the plain one.
-  const bonfireLevel = 1;
+  // The bonfire's place level grows its art (V-BON-7); the plain fire until the commons say more.
+  const bonfireLevel = levelOf(commonsOf(visit), 'bonfire');
   const place = view.kind === 'valley' ? null : placeOf(view.place);
   const bubbles = placeBubbles(alerts, { ...placeInput, visit });
   // With the valley's systems on, a free creature rests at the fire and a posted one scouts: the tray says so.
@@ -131,8 +143,23 @@ export function ValleyFrame({
               }}
             />
           </ul>
+          <Keepsakes visit={visit} />
         </div>
       )}
+      {view.kind === 'place' &&
+        view.place === 'paddock' &&
+        view.book === null &&
+        visit !== null &&
+        commons !== undefined && (
+          <CommonsBoard
+            place="paddock"
+            visit={visit}
+            creatures={creatures}
+            acorns={acorns}
+            busy={busy}
+            actions={commons}
+          />
+        )}
       {children}
     </>
   );
@@ -147,8 +174,13 @@ export function ValleyFrame({
             <div class="vy-map-view">
               <ValleyMap
                 creatures={creatures.filter(
-                  (c) => isAtHome(c) && !isScouting(c, visit) && !isSmithing(c, visit),
+                  (c) =>
+                    isAtHome(c) &&
+                    !isScouting(c, visit) &&
+                    !isSmithing(c, visit) &&
+                    !isHelping(c, visit),
                 )}
+                look={{ ...DEFAULT_LOOK, bonfireLevel }}
                 at="start"
                 focus={focus}
                 bubbles={bubbles}
@@ -190,6 +222,7 @@ export function ValleyFrame({
               visit={visit}
               level={bonfireLevel}
               onLeave={onLeave}
+              {...(commons === undefined ? {} : { commons, acorns, busy })}
             />
           </section>
         )}

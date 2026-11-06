@@ -10,6 +10,8 @@ import {
   dismissLevelReset,
   exchangeShards,
   fetchState,
+  giveToProject,
+  postCommunal,
   postOrder,
   postScout,
   scoutKit,
@@ -97,6 +99,8 @@ import { Alert } from './ui/Alert';
 import { WelcomeBack } from './valley/gazette/WelcomeBack';
 import { ValleyFrame } from './valley/ValleyFrame';
 import { SignpostSeats, type SignpostActions } from './valley/SignpostSeats';
+import type { CommonsActions } from './valley/CommonsBoard';
+import { COMMONS_NAMES } from './valley/commons-view';
 import { ANVIL_KIT_INFO, shardName } from './valley/forge-view';
 import type { ForgeActions } from './valley/ForgeAnvils';
 import { KIT_INFO } from './valley/signpost-view';
@@ -409,6 +413,32 @@ export function Game({
       setNotice(`You traded for ${String(answer.gained)} ${shardName(to)}.`);
       return true;
     },
+  };
+  /**
+   * The commons (phase 5 step 6b): a gift to a place's project is a keyed spend; a creature on a communal seat is free. Each answer's
+   * `valley` and state are taken in at once.
+   */
+  const commonsActions: CommonsActions = {
+    give: async (place, row, units) => {
+      const answer = await runKeyed(ActionIds.gift(place, row.id, units, row.max), (key) =>
+        giveToProject({
+          place,
+          currency: row.part,
+          ...(row.element === null ? {} : { element: row.element }),
+          amount: units * row.per,
+          idempotencyKey: key,
+        }),
+      );
+      if (!takeValley(answer) || answer === undefined) return false;
+      setNotice(
+        answer.levelUp
+          ? `The ${COMMONS_NAMES[place] ?? 'place'} grew to level ${String(answer.level)}!`
+          : 'Thank you. Your gift is in.',
+      );
+      return true;
+    },
+    post: async (place, creatureId) =>
+      takeValley(await run(() => postCommunal({ place, creatureId }))),
   };
   /** Wears an item or takes it off (the card's and the dungeon's); true when the server took it. */
   const equipOn = async (gearId: string, creatureId: string | null): Promise<boolean> =>
@@ -791,6 +821,7 @@ export function Game({
           acorns={game.balances.bait}
           busy={busy}
           actions={signpostActions}
+          commons={commonsActions}
           onOpenPaddock={() => {
             openPlace('paddock');
           }}
@@ -856,6 +887,7 @@ export function Game({
                   },
                   acorns: game.balances.bait,
                   actions: forgeActions,
+                  commons: commonsActions,
                   onOpenPaddock: () => {
                     openPlace('paddock');
                   },
@@ -993,6 +1025,7 @@ export function Game({
           raid: raidGlance,
         }}
         visit={systems}
+        {...(systems === null ? {} : { commons: commonsActions, acorns: game.balances.bait, busy })}
         castExtra={{
           dungeonTeam,
           dungeonPhase,

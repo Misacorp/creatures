@@ -20,7 +20,9 @@ import type { RaidGlance } from '../home-view';
 import { isAtHome } from './tray-state';
 import type { PlaceBubble } from './place-state';
 import { bubbleAt, raidTiming } from './place-state';
+import { commonsOf, percentFilled, placeOf } from './commons-view';
 import { forgeCalm } from './forge-view';
+import { scaffoldSteps } from './scaffold';
 import { placeName, scoutsOut, signpostCalm } from './signpost-view';
 import type { PlaceId } from './valley-art';
 import type { Rect } from './valley-art';
@@ -114,6 +116,8 @@ export interface Cast {
   /** How many catches wait in all (the gate draws at most two). */
   waiting: number;
   act: CastAct;
+  /** The steps of scaffolding standing round the place while its project fills (0 to 11; V-COM-6). */
+  scaffold: number;
 }
 
 const byId = (creatures: readonly Creature[]): Map<string, Creature> =>
@@ -302,11 +306,30 @@ function fairCast(input: CastInput, art: Size): Pick<Cast, 'stands' | 'act'> {
  */
 export const PADDOCK_ROAM_AREA: Rect = { x: -24, y: 8, width: 68, height: 46 };
 
+/** Where the Paddock's communal helper stands, from the art's top-left (beside the rails, clear of the meadow and the gate). */
+const PADDOCK_HELPER = { x: -34, y: 24 };
+
 function paddockCast(
   input: CastInput,
   art: Size,
-): Pick<Cast, 'roamers' | 'roam' | 'gate' | 'waiting' | 'act'> {
-  const roamers = input.creatures.filter(isAtHome).slice(0, MAX_ROAMERS);
+): Pick<Cast, 'stands' | 'roamers' | 'roam' | 'gate' | 'waiting' | 'act'> {
+  // The helper on the Paddock's communal seat stands at the gate post instead of wandering (V-COM-6).
+  const helper = helperOf(input, 'paddock');
+  const roamers = input.creatures
+    .filter((c) => isAtHome(c) && c.id !== helper?.id)
+    .slice(0, MAX_ROAMERS);
+  const stands: Stand[] =
+    helper === undefined
+      ? []
+      : [
+          {
+            creature: helper,
+            x: PADDOCK_HELPER.x,
+            y: PADDOCK_HELPER.y,
+            flip: false,
+            where: 'helping build the Paddock',
+          },
+        ];
   // The waiting catches queue at the gate (the open side, bottom right of the rails), one below the other, at most two drawn.
   const gate = input.waiting.slice(0, 2).map((w, i) => ({
     ...w,
@@ -326,7 +349,21 @@ function paddockCast(
           kind: 'calm',
           line: roamers.length === 0 ? 'Nobody is home' : '',
         };
-  return { roamers, roam: PADDOCK_ROAM_AREA, gate, waiting: n, act };
+  return { stands, roamers, roam: PADDOCK_ROAM_AREA, gate, waiting: n, act };
+}
+
+// --- The commons in the scene (V-COM-6) ---
+
+/** The player's creature on a place's communal seat, if one stands there (it is drawn working in the scene). */
+function helperOf(input: CastInput, place: string): Creature | undefined {
+  const id = commonsOf(input.visit)?.communal.find((c) => c.place === place)?.creatureId ?? null;
+  return id === null ? undefined : input.creatures.find((c) => c.id === id);
+}
+
+/** The scaffolding's steps for a place's scene: how full its open project is (0 when none is open). */
+function scaffoldOf(input: CastInput, place: string): number {
+  const p = placeOf(commonsOf(input.visit), place);
+  return p?.state === 'open' ? scaffoldSteps(percentFilled(p) / 100) : 0;
 }
 
 // --- Signpost ---
@@ -344,22 +381,19 @@ function signpostCast(input: CastInput, art: Size): Pick<Cast, 'stands' | 'act'>
   if (visit == null) return { stands: [], act: { kind: 'calm', line: '' } };
   const scouts = visit.seats.flatMap((seat) => {
     const creature = input.creatures.find((c) => c.id === seat.creatureId);
-    return creature === undefined ? [] : [{ creature, seat }];
-  });
-  const spots = row(scouts.length, Math.floor(art.width / 2), art.height - 10, SCOUT_STEP);
-  const stands = scouts.flatMap(({ creature, seat }, i) => {
-    const spot = spots[i];
-    return spot === undefined
+    return creature === undefined
       ? []
-      : [
-          {
-            creature,
-            x: spot.x,
-            y: spot.y,
-            flip: i % 2 === 1,
-            where: `scouting at ${placeName(seat.destination)}`,
-          },
-        ];
+      : [{ creature, where: `scouting at ${placeName(seat.destination)}` }];
+  });
+  // The helper on the Signpost's communal seat stands with them (V-COM-6): it works on the road.
+  const helper = helperOf(input, 'signpost');
+  if (helper !== undefined) {
+    scouts.push({ creature: helper, where: 'helping build the road' });
+  }
+  const spots = row(scouts.length, Math.floor(art.width / 2), art.height - 10, SCOUT_STEP);
+  const stands = scouts.flatMap(({ creature, where }, i) => {
+    const spot = spots[i];
+    return spot === undefined ? [] : [{ creature, x: spot.x, y: spot.y, flip: i % 2 === 1, where }];
   });
   if (visit.seats.length === 0 && visit.seatPrices.next !== null) {
     return {
@@ -405,23 +439,18 @@ function forgeCast(input: CastInput, art: Size): Pick<Cast, 'stands' | 'act'> {
   if (visit == null) return { stands: [], act: { kind: 'calm', line: '' } };
   const smiths = visit.anvils.flatMap((anvil, n) => {
     const creature = input.creatures.find((c) => c.id === anvil.creatureId);
-    return creature === undefined ? [] : [{ creature, n }];
+    return creature === undefined
+      ? []
+      : [{ creature, where: `smithing at anvil ${String(n + 1)}` }];
   });
+  // The helper on the Forge's communal seat stands with them (V-COM-6): it hauls for the building.
+  const helper = helperOf(input, 'forge');
+  if (helper !== undefined) smiths.push({ creature: helper, where: 'helping build the Forge' });
   // Right of the door: the anvil stands at its left, and a smith in front of it would hide it.
   const spots = row(smiths.length, Math.floor(art.width / 2) + 10, art.height - 10, SMITH_STEP);
-  const stands = smiths.flatMap(({ creature, n }, i) => {
+  const stands = smiths.flatMap(({ creature, where }, i) => {
     const spot = spots[i];
-    return spot === undefined
-      ? []
-      : [
-          {
-            creature,
-            x: spot.x,
-            y: spot.y,
-            flip: i % 2 === 1,
-            where: `smithing at anvil ${String(n + 1)}`,
-          },
-        ];
+    return spot === undefined ? [] : [{ creature, x: spot.x, y: spot.y, flip: i % 2 === 1, where }];
   });
   if (visit.anvils.length === 0 && visit.anvilPrices.next !== null) {
     const free = visit.anvilPrices.next.acorns === 0 && visit.anvilPrices.next.scrap === 0;
@@ -468,7 +497,9 @@ export function castFor(
     gate: [],
     waiting: 0,
     act: { kind: 'calm', line: '' },
+    scaffold: 0,
   };
+  const scaffold = scaffoldOf(input, place);
   switch (place) {
     case 'house':
       return { ...base, ...houseCast() };
@@ -479,10 +510,10 @@ export function castFor(
     case 'fair':
       return { ...base, ...fairCast(input, art) };
     case 'paddock':
-      return { ...base, ...paddockCast(input, art) };
+      return { ...base, ...paddockCast(input, art), scaffold };
     case 'signpost':
-      return { ...base, ...signpostCast(input, art) };
+      return { ...base, ...signpostCast(input, art), scaffold };
     case 'forge':
-      return { ...base, ...forgeCast(input, art) };
+      return { ...base, ...forgeCast(input, art), scaffold };
   }
 }

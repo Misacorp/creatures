@@ -16,6 +16,7 @@ import { TABS, type Tab } from '../tabs';
 import { formatCountdown, formatZoned } from '../time-format';
 import type { ValleyVisit } from '../api';
 import { bonfireLine } from './bonfire-cast';
+import { commonsOf, placeMention } from './commons-view';
 import { forgeSystemsLine, fullFloors, longWaits } from './forge-view';
 import { fullPacks, signpostSystemsLine } from './signpost-view';
 import { placeLabel, readingOrder } from './valley-logic';
@@ -228,6 +229,14 @@ export function placeStates(input: PlaceInput): Record<PlaceId, string> {
   for (const id of OPEN_PLACES) out[id] = lines[id] ?? placeFallback(id);
   for (const id of ['bonfire', 'school', 'visitor', 'market'] as const) out[id] = placeFallback(id);
   out.bonfire = bonfireLine(input.visit, input.creatures) ?? out.bonfire;
+  // A project that is being built gets a mention (it matters: it has a clock); an open one does not, the board says it.
+  const commons = commonsOf(input.visit);
+  for (const id of ['bonfire', 'forge', 'signpost', 'paddock'] as const) {
+    const mention = placeMention(commons, id);
+    if (mention === null) continue;
+    // The Bonfire's line is only its resting count, so the hearth takes its place; the other lines keep what they say.
+    out[id] = id === 'bonfire' ? mention : `${out[id]} · ${mention}`;
+  }
   return out;
 }
 
