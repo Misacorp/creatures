@@ -67,7 +67,7 @@ export async function main(args: readonly string[], run: JobRunner = serial): Pr
   const gear = args.includes('--gear');
   if (args.includes('--journey')) return journey(quick, run, gear);
   if (args.includes('--dungeon-days')) return dungeonDays(args, quick, run);
-  if (args.includes('--undercroft-tools')) return undercroftTools(args, quick, run);
+  if (args.includes('--undercroft-tools')) return undercroftTools(args, quick, run, gear);
   if (args.includes('--four-slot')) return fourSlot(quick, run);
   if (args.includes('--rules')) return rules(quick, run);
   if (args.includes('--gate')) return gate(quick, run, gear);
@@ -217,11 +217,12 @@ async function journey(quick: boolean, run: JobRunner, gear = false): Promise<nu
   return 0;
 }
 
-/** `--undercroft-tools [--quick] [--tools a,b] [--servers n]`: the tools that make the Undercroft past depth 40 easier (`undercroftTools.ts`), to the console (nothing is written). */
+/** `--undercroft-tools [--quick] [--gear] [--tools a,b] [--servers n]`: the tools that make the Undercroft past depth 40 easier (`undercroftTools.ts`), to the console (nothing is written). */
 async function undercroftTools(
   args: readonly string[],
   quick: boolean,
   run: JobRunner,
+  gear = false,
 ): Promise<number> {
   const t0 = Date.now();
   const tools = flagValue(args, '--tools')?.split(',');
@@ -230,6 +231,7 @@ async function undercroftTools(
     planUndercroftTools({
       quick,
       ...(tools ? { tools } : {}),
+      ...(gear ? { gear: true } : {}),
       ...(servers ? { servers: Number(servers) } : {}),
     }),
     run,
