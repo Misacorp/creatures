@@ -3,6 +3,10 @@ import type { ValleyVisit } from '../api';
 import { HOME_NOW, homeInput } from '../workbench/home-sample';
 import {
   FIRE_SEATS,
+  GRAND_BOX,
+  GRAND_LAMPS,
+  GRAND_SEATS,
+  lamplighterSpot,
   MAX_AT_FIRE,
   bonfireCalm,
   bonfireLine,
@@ -275,5 +279,119 @@ describe('company and the warming flame (V-BON-2, V-BON-4)', () => {
     expect(spots).toHaveLength(3);
     expect(spots[2]).toMatchObject({ owner: 'Mia 1', where: 'visiting the fire', gained: 0 });
     expect(moreCount(2, spots.filter((s) => s.owner === undefined).length)).toBe(0);
+  });
+});
+
+describe('the ring round the grand hearth (level 2 and up)', () => {
+  const many = firesideOf(restingOf(creatures, visitOf(creatures)), HOME_NOW);
+  const scenes = [
+    { W: 130, H: 220, s: 3, top: 6 },
+    { W: 233, H: 220, s: 3, top: 6 },
+    { W: 275, H: 220, s: 4, top: 4 },
+    { W: 360, H: 220, s: 4, top: 4 },
+  ];
+  const box = (scene: { W: number; top: number }) => ({
+    x: Math.floor(scene.W / 2) - GRAND_BOX.width / 2,
+    y: scene.top + 20,
+  });
+  /** The sprite of a creature at `a` and its plate (as wide as a plate can be) under its feet, in scene pixels. */
+  const covers = (a: { x: number; y: number }, s: number) => {
+    const half = PLATE_MAX_PX / s / 2;
+    return [
+      { left: a.x, right: a.x + 16, top: a.y, bottom: a.y + 16 },
+      {
+        left: a.x + 8 - half,
+        right: a.x + 8 + half,
+        top: a.y + 16,
+        bottom: a.y + 16 + Math.ceil(PLATE_ROW_PX / s),
+      },
+    ];
+  };
+
+  it('no creature and no plate is over a lamp post, with or without a lamplighter', () => {
+    for (const lamplighter of [false, true]) {
+      for (const scene of scenes) {
+        const art = box(scene);
+        const spots = fireSpots(many, art, scene, { grand: true, lamplighter });
+        const drawn = spots.map((a) => ({ a, at: { x: a.x, y: a.y } }));
+        if (lamplighter) drawn.push({ a: undefined as never, at: lamplighterSpot(art, true) });
+        for (const { at } of drawn) {
+          for (const c of covers(at, scene.s)) {
+            for (const lamp of GRAND_LAMPS) {
+              const over =
+                c.left < art.x + lamp.x + lamp.width &&
+                c.right > art.x + lamp.x &&
+                c.top < art.y + lamp.y + lamp.height &&
+                c.bottom > art.y + lamp.y;
+              expect(over, `a creature or plate over a lamp at s=${String(scene.s)}`).toBe(false);
+            }
+          }
+        }
+      }
+    }
+  });
+
+  it('plates never overlap, everyone is inside the scene, the wide windows seat everyone', () => {
+    for (const scene of scenes) {
+      const art = box(scene);
+      const spots = fireSpots(many, art, scene, { grand: true });
+      const gap = plateGap(scene.s);
+      const bounds = standBounds(scene);
+      spots.forEach((a, i) => {
+        expect(a.x).toBeGreaterThanOrEqual(bounds.x);
+        expect(a.x).toBeLessThan(bounds.x + bounds.width);
+        expect(a.y).toBeLessThan(bounds.y + bounds.height);
+        spots.slice(i + 1).forEach((b) => {
+          expect(crowded(a, b, gap)).toBe(false);
+        });
+      });
+      expect(spots.length).toBeGreaterThanOrEqual(scene.W >= 275 ? MAX_AT_FIRE : 3);
+    }
+  });
+
+  it('a phone (390 px, scale 3) seats at least the front three', () => {
+    const phone = fireSpots(many, box(scenes[0]!), scenes[0]!, { grand: true });
+    expect(phone.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it('every seat keeps its feet on the meadow, and a side seat faces the fire', () => {
+    for (const seat of GRAND_SEATS) expect(seat.y + 16).toBeGreaterThanOrEqual(14);
+    const spots = fireSpots(
+      many,
+      { x: 100, y: 30 },
+      { W: 400, H: 220, s: 3, top: 6 },
+      { grand: true },
+    );
+    for (const spot of spots) {
+      expect(spot.flip).toBe(spot.x - 100 + 8 > GRAND_BOX.width / 2);
+    }
+  });
+
+  it('the lamplighter takes the ring’s second seat and nobody else sits on it', () => {
+    const scene = scenes[2]!;
+    const art = box(scene);
+    const spot = lamplighterSpot(art, true);
+    expect(spot).toEqual({
+      x: art.x + (GRAND_SEATS[1]?.x ?? 0),
+      y: art.y + (GRAND_SEATS[1]?.y ?? 0),
+    });
+    const spots = fireSpots(many, art, scene, { grand: true, lamplighter: true });
+    expect(spots.some((s) => s.x === spot.x && s.y === spot.y)).toBe(false);
+    const gap = plateGap(scene.s);
+    for (const s of spots) expect(crowded(s, spot, gap)).toBe(false);
+    // The plain fire's lamplighter takes its second seat too.
+    expect(lamplighterSpot({ x: 0, y: 0 }, false)).toEqual(FIRE_SEATS[1]);
+  });
+
+  it('the plain fire is unchanged', () => {
+    const scene = scenes[3]!;
+    const art = { x: 50, y: 30 };
+    const plain = fireSpots(many, art, scene);
+    expect(plain.map((p) => [p.x - art.x, p.y - art.y])).toEqual(
+      plain.map((p) => [p.x - art.x, p.y - art.y]),
+    );
+    expect(
+      plain.every((p) => FIRE_SEATS.some((s) => s.x + art.x === p.x && s.y + art.y === p.y)),
+    ).toBe(true);
   });
 });

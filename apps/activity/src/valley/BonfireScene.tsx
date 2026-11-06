@@ -19,6 +19,7 @@ import {
   atTheFire,
   bonfireCalm,
   fireSpots,
+  lamplighterSpot,
   moreSpot,
   moreCount,
   moreLabel,
@@ -28,7 +29,7 @@ import {
 import { commonsOf, daysLeft, hearthLine, percentFilled, placeOf } from './commons-view';
 import { placeArtBox, placeScale, placeSceneDraw } from './place-scene';
 import { scaffoldSteps, scaffoldUp } from './scaffold';
-import { bonfireName, glowSprite } from './valley-places';
+import { GRAND_LEVEL, bonfireName, glowSprite } from './valley-places';
 
 /** One creature's line in the list of everyone resting: its XP this visit, and that it is warming up while it catches up. */
 function restingNote(gained: number, warm: boolean): string {
@@ -135,7 +136,12 @@ export function BonfireScene({
           const actCss =
             (calm !== '' ? 1 : 0) + (act === null ? 0 : 1) === 2 ? ACT_CSS_TWO : ACT_CSS;
           const scene = { W: g.W, H: g.H - Math.ceil(actCss / g.s), s: g.s, top: g.top };
-          const spots = fireSpots(fireside, box, scene);
+          const grand = level >= GRAND_LEVEL;
+          const spots = fireSpots(fireside, box, scene, {
+            grand,
+            lamplighter: helper !== undefined,
+          });
+          const lamp = lamplighterSpot(box, grand);
           // "+N more" counts the player's own resting creatures that did not get a seat (a visitor's seat is not one of them).
           const more = moreCount(resting.length, spots.filter((s) => s.owner === undefined).length);
           return (
@@ -157,8 +163,8 @@ export function BonfireScene({
               {helper !== undefined && (
                 <Stander
                   creature={helper}
-                  x={box.x + box.width - 6}
-                  y={box.y + box.height - 20}
+                  x={lamp.x}
+                  y={lamp.y}
                   flip
                   label="lighting the lanterns, helping build the hearth"
                   g={g}
@@ -166,8 +172,8 @@ export function BonfireScene({
               )}
               {more > 0 && (
                 <At
-                  x={g.X(moreSpot(box, g.s).x)}
-                  y={g.Y(moreSpot(box, g.s).y)}
+                  x={g.X(moreSpot(box, g.s, grand).x)}
+                  y={g.Y(moreSpot(box, g.s, grand).y)}
                   class="vy-more-at vy-stand vy-over"
                   hidden={false}
                 >

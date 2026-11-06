@@ -136,6 +136,43 @@ export const FIRE_SEATS: readonly { x: number; y: number }[] = [
   { x: 2, y: -2 },
 ];
 
+/** The grand hearth's art is this big (it has lamp posts at both sides, 9 pixels wide, from row 13 to row 35, and log benches). */
+export const GRAND_BOX = { width: 64, height: 50 };
+
+/**
+ * The seats round the grand hearth, from its art's top-left, in the order they fill: the front (on the paved benches, under the
+ * lamps' lowest row), then the two front sides, then two beside the lamp posts and, on wide windows, two behind them. Every seat
+ * and its plate (up to `PLATE_MAX_PX` wide, a row under the feet) is clear of both lamp posts' boxes (`GRAND_LAMPS`), so no
+ * creature or plate is ever drawn over a lamp. The second seat is the lamplighter's when one is posted.
+ */
+export const GRAND_SEATS: readonly { x: number; y: number }[] = [
+  { x: 24, y: 58 },
+  { x: 50, y: 50 },
+  { x: -2, y: 50 },
+  { x: 66, y: 22 },
+  { x: -18, y: 22 },
+  { x: 72, y: -2 },
+  { x: -26, y: -2 },
+];
+
+/** The two lamp posts of the grand art, from its top-left (scene pixels): nothing stands over them. */
+export const GRAND_LAMPS: readonly { x: number; y: number; width: number; height: number }[] = [
+  { x: 0, y: 13, width: 9, height: 23 },
+  { x: 55, y: 13, width: 9, height: 23 },
+];
+
+/** The seat of the ring that the lamplighter (a helper posted at the Bonfire) takes: the second one. */
+const LAMPLIGHTER_SEAT = 1;
+
+/** Where the lamplighter stands, from the art's top-left: on the ring's second seat, facing the fire. */
+export function lamplighterSpot(
+  art: { x: number; y: number },
+  grand: boolean,
+): { x: number; y: number } {
+  const seat = (grand ? GRAND_SEATS : FIRE_SEATS)[LAMPLIGHTER_SEAT] ?? { x: 44, y: 42 };
+  return { x: art.x + seat.x, y: art.y + seat.y };
+}
+
 /** A creature sitting at the fire at its real spot in the scene. */
 export interface FireSpot extends FireStand {
   /** Scene pixels, the creature's top-left. */
@@ -152,14 +189,21 @@ export function fireSpots(
   fireside: readonly Resting[],
   art: { x: number; y: number },
   scene: PlateScene,
+  options: { grand?: boolean; lamplighter?: boolean } = {},
 ): FireSpot[] {
   const bounds = standBounds(scene);
   const gap = plateGap(scene.s);
+  const grand = options.grand === true;
+  const seats = grand ? GRAND_SEATS : FIRE_SEATS;
+  const middle = grand ? GRAND_BOX.width / 2 : FIRE_MIDDLE;
   const out: FireSpot[] = [];
+  // The lamplighter stands on its seat: it is a blocker for the others, never listed among the spots.
+  const blocker = options.lamplighter === true ? lamplighterSpot(art, grand) : null;
   let next = 0;
   for (const r of fireside) {
-    for (; next < FIRE_SEATS.length; next += 1) {
-      const seat = FIRE_SEATS[next];
+    for (; next < seats.length; next += 1) {
+      if (blocker !== null && next === LAMPLIGHTER_SEAT) continue;
+      const seat = seats[next];
       if (seat === undefined) break;
       const at = { x: art.x + seat.x, y: art.y + seat.y };
       const inside =
@@ -168,13 +212,14 @@ export function fireSpots(
         at.y >= bounds.y &&
         at.y < bounds.y + bounds.height;
       if (!inside || out.some((o) => crowded(o, at, gap))) continue;
+      if (blocker !== null && crowded(blocker, at, gap)) continue;
       out.push({
         creature: r.creature,
         gained: r.gained,
         warm: r.warm,
         ...(r.owner === undefined ? {} : { owner: r.owner }),
         ...at,
-        flip: seat.x + CREATURE_PX / 2 > FIRE_MIDDLE,
+        flip: seat.x + CREATURE_PX / 2 > middle,
         where:
           r.owner !== undefined
             ? 'visiting the fire'
@@ -190,8 +235,12 @@ export function fireSpots(
 }
 
 /** Where the "+N more" button's middle stands: on the ring's front edge, under the front seat's plate (scene pixels). */
-export function moreSpot(art: { x: number; y: number }, s: number): { x: number; y: number } {
-  const front = FIRE_SEATS[0] ?? { x: 20, y: 50 };
+export function moreSpot(
+  art: { x: number; y: number },
+  s: number,
+  grand = false,
+): { x: number; y: number } {
+  const front = (grand ? GRAND_SEATS : FIRE_SEATS)[0] ?? { x: 20, y: 50 };
   return {
     x: art.x + front.x + CREATURE_PX / 2,
     y: art.y + front.y + CREATURE_PX + Math.ceil(PLATE_ROW_PX / s) + 2,

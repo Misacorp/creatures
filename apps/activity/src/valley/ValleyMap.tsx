@@ -24,7 +24,7 @@ import {
   valleyDrawing,
   type PlaceId,
 } from './valley-art';
-import { DEFAULT_LOOK, type ValleyLook } from './valley-places';
+import { DEFAULT_LOOK, GRAND_LEVEL, artBox, bonfireName, type ValleyLook } from './valley-places';
 import { useRoamers } from './use-roamers';
 import {
   edgeArrows,
@@ -180,7 +180,11 @@ export function ValleyMap({
             {order.map((id, i) => {
               const place = placeOf(id);
               const bubble = bubbleAt(bubbles, id);
-              const r = place.rect;
+              // The grand hearth is a little bigger than the plain fire: its button is exactly its drawn art.
+              const r =
+                id === 'bonfire' && bonfireLevel >= GRAND_LEVEL
+                  ? artBox(bonfireName(bonfireLevel))
+                  : place.rect;
               return (
                 <li key={id}>
                   <button
