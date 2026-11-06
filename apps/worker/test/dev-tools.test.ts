@@ -10,8 +10,10 @@ import { RULES } from '@creatures/game';
 import { eventTimes } from '../src/raid-schedule';
 import { nextOccurrence } from '../src/time';
 import wranglerText from '../wrangler.jsonc?raw';
+import { DiscordError, type GuildApi } from '../src/discord';
+import { PERMISSION_MANAGE_GUILD } from '../src/discord-permissions';
 import { ON, player } from './dev-helpers';
-import { ORIGIN, callHandler, runCore } from './helpers';
+import { ORIGIN, callHandler, fakeGuildApi, runCore, type FakeGuildOptions } from './helpers';
 import { HELSINKI, HOUR, W02, count, nextGuild, runRaid } from './raid-helpers';
 import { DAY, newKey } from './kit';
 
@@ -130,8 +132,110 @@ describe('the DEV_TOOLS gate: off', () => {
   });
 });
 
+describe('the DEV_TOOLS gate: server managers only', () => {
+  const MANAGER_ROLE = '700000000000000009';
+  const roles = [{ id: MANAGER_ROLE, permissions: String(PERMISSION_MANAGE_GUILD) }];
+
+  /** One tester (id ending 1, a plain member), one manager (a Manage Server role), on a staging-like core. */
+  async function withTwo(
+    guild: FakeGuildOptions,
+    fn: (
+      manager: Awaited<ReturnType<typeof player>>,
+      tester: Awaited<ReturnType<typeof player>>,
+      calls: string[],
+    ) => Promise<void>,
+    api?: 'none',
+  ): Promise<void> {
+    const guildId = nextGuild();
+    // The players' ids are made by `player`, after the core: the api looks at the fake set up then.
+    let fake = fakeGuildApi(guildId, { roles, ...guild });
+    const delegate: GuildApi = {
+      getGuildOwnerId: (id) => fake.getGuildOwnerId(id),
+      getGuildRoles: (id) => fake.getGuildRoles(id),
+      getGuildMember: (id, userId) => fake.getGuildMember(id, userId),
+    };
+    await runCore(
+      guildId,
+      async (ctx) => {
+        const manager = await player(ctx, 1);
+        const tester = await player(ctx, 2);
+        fake = fakeGuildApi(guildId, {
+          roles,
+          members: { [manager.id]: [MANAGER_ROLE], [tester.id]: [] },
+          ...guild,
+        });
+        await fn(manager, tester, fake.calls);
+      },
+      { devTools: true, raidPractice: true, guildApi: api === 'none' ? null : delegate },
+    );
+  }
+
+  it('lets a manager reach the dev routes and says devTools in /api/me', async () => {
+    await withTwo({}, async (manager) => {
+      expect((await manager.call('GET', '/api/me')).body).toMatchObject({ devTools: true });
+      expect(await manager.call('GET', '/api/dev/state')).toMatchObject({ status: 200 });
+      expect(await manager.dev('set-balances', { bait: 5 })).toMatchObject({ status: 200 });
+    });
+  });
+
+  it('answers a non-manager with the plain 404 and no devTools flag', async () => {
+    await withTwo({}, async (_manager, tester) => {
+      expect((await tester.call('GET', '/api/me')).body).not.toHaveProperty('devTools');
+      for (const tool of DEV_READ_TOOLS) {
+        expect(await tester.call('GET', `/api/dev/${tool}`)).toEqual({
+          status: 404,
+          body: { error: 'not_found' },
+        });
+      }
+      // One gate for every tool; a few of them (the requests are rate-limited per player).
+      for (const tool of ['clock', 'grant-creature', 'raid-clear', 'reset-account']) {
+        expect(await tester.dev(tool, {})).toEqual({ status: 404, body: { error: 'not_found' } });
+      }
+      expect(await tester.dev('set-balances', { bait: 5 })).toMatchObject({ status: 404 });
+    });
+  });
+
+  it('refuses everyone when Discord cannot answer (fails closed) or no guild API exists', async () => {
+    await withTwo({ failure: new DiscordError('unavailable') }, async (manager) => {
+      expect((await manager.call('GET', '/api/me')).body).not.toHaveProperty('devTools');
+      expect(await manager.call('GET', '/api/dev/state')).toMatchObject({ status: 404 });
+      expect(await manager.dev('clock', { advanceMs: 1 })).toMatchObject({ status: 404 });
+    });
+    await withTwo(
+      {},
+      async (manager) => {
+        expect(await manager.call('GET', '/api/dev/state')).toMatchObject({ status: 404 });
+      },
+      'none',
+    );
+  });
+
+  it('asks Discord once a minute per player, not once per request', async () => {
+    await withTwo({}, async (manager, _tester, calls) => {
+      await manager.call('GET', '/api/me');
+      const after = calls.length;
+      for (let i = 0; i < 5; i++) await manager.call('GET', '/api/dev/state');
+      expect(calls.length).toBe(after);
+    });
+  });
+
+  it('is still off for everyone when the tools are off', async () => {
+    const guildId = nextGuild();
+    await runCore(
+      guildId,
+      async (ctx) => {
+        const p = await player(ctx);
+        // Even an owner of the server gets the 404: the var comes first.
+        expect(await p.call('GET', '/api/dev/state')).toMatchObject({ status: 404 });
+        expect((await p.call('GET', '/api/me')).body).not.toHaveProperty('devTools');
+      },
+      { guildApi: fakeGuildApi(guildId, { ownerId: '111111111111111111' }) },
+    );
+  });
+});
+
 describe('the DEV_TOOLS gate: on', () => {
-  it('lets the client know, in the config and in /api/me', async () => {
+  it('tells a server manager in /api/me, and never in the public config', async () => {
     const on = { ...env, DEV_TOOLS: 'on' } as Env;
     const handler = createHandler();
     const res = await Promise.resolve(
@@ -141,7 +245,7 @@ describe('the DEV_TOOLS gate: on', () => {
         props: {},
       } as unknown as ExecutionContext),
     );
-    expect(await res?.json()).toMatchObject({ devTools: true });
+    expect(await res?.json()).not.toHaveProperty('devTools');
     await runCore(
       nextGuild(),
       async (ctx) => {

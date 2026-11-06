@@ -6,6 +6,8 @@
  *   `wrangler.jsonc` sets for the staging environment only. With it off the Worker and the Durable Object
  *   both answer a plain 404 before anything else (not hidden: unknown routes answer 401 first), and `GuildCore` never builds
  *   a `DevTools`, so none of this code can run. A test pins production and the top level to "off".
+ * - **Managers only.** On top of the var, only a player who can manage the Discord server (`mayUseDevTools`)
+ *   reaches a dev route; anyone else gets the same plain 404, and `/api/me` does not say `devTools`.
  * - **Scope.** A tool acts on the caller's own guild (the Durable Object it runs in) and, for per-player
  *   tools, on the caller's own player data. Identity comes from the verified session, as for every route;
  *   no body carries a user id. Requests are rate-limited like any other.
@@ -100,6 +102,7 @@ import {
   readLimitedText,
   type Routes,
 } from './http';
+import { DiscordError } from './discord';
 import type { LedgerStorage } from './ledger';
 import type { Games } from './games';
 import type { Raid } from './raid';
@@ -364,7 +367,34 @@ export interface DevRouteContext {
   user: { id: string };
   /** Path parameters of a template route, raw: matched against the tool lists before use. */
   params: Record<string, string>;
-  core: { dev: DevTools | null };
+  core: DevAccessCore & { dev: DevTools | null };
+}
+
+/** What the manager gate needs from the guild core: the tools and the (cached) Discord permission check. */
+export interface DevAccessCore {
+  dev: DevTools | null;
+  canManageServer(userId: string, options?: { fresh?: boolean }): Promise<boolean>;
+}
+
+/**
+ * The manager gate (2026-11-06, on top of the `DEV_TOOLS` var): the dev tools are for the people who can
+ * manage the Discord server (the owner, Administrator or Manage Server) and nobody else, so testers never
+ * see them. It reuses `canManageServer` (the 60 s per-player cache of the raid channel check), so a player
+ * costs three Discord reads a minute at most, and only on staging. Fails closed: when Discord cannot
+ * answer, or anything else goes wrong, the answer is "no". No user id is written anywhere.
+ */
+export async function mayUseDevTools(core: DevAccessCore, userId: string): Promise<boolean> {
+  if (core.dev === null) return false;
+  try {
+    return await core.canManageServer(userId);
+  } catch (err) {
+    // Only the error kind is logged.
+    console.error(
+      'dev tools permission check failed',
+      err instanceof DiscordError ? err.kind : 'error',
+    );
+    return false;
+  }
 }
 
 /** A POST body: nothing (an empty object) or a small JSON object. `undefined`: refuse it. */
@@ -377,16 +407,18 @@ async function readToolBody(request: Request): Promise<unknown> {
 
 export const devRoutes: Routes<DevRouteContext> = {
   '/api/dev/:tool': {
-    GET: (_request, { user, params, core }) => {
+    GET: async (_request, { user, params, core }) => {
       const dev = core.dev;
       const toolId = params['tool'];
       if (dev === null || toolId === undefined || !READ_IDS.has(toolId)) return notFound();
+      if (!(await mayUseDevTools(core, user.id))) return notFound();
       return json(toolId === 'state' ? dev.state(user.id) : dev.events());
     },
     POST: async (request, { user, params, core }) => {
       const dev = core.dev;
       const toolId = params['tool'];
       if (dev === null || toolId === undefined || !TOOL_IDS.has(toolId)) return notFound();
+      if (!(await mayUseDevTools(core, user.id))) return notFound();
       const raw = await readToolBody(request);
       if (raw === undefined) return errorResponse('invalid_body', 400);
       const outcome = await dev.run(toolId, user.id, raw);
