@@ -85,13 +85,14 @@ describe('valley-fresh: the wipe', () => {
   });
 
   it('lists the valley tables it clears in one place: the server middle so far, and every listed table exists', async () => {
-    // Step 5 (migration 60) added the server's middle; later steps add theirs to the same list.
+    // Step 5 (migration 60) added the server's middle, step 8 (migration 64) the visitor's weeks; later steps add theirs to the same list.
     expect(VALLEY_GUILD_TABLES).toEqual([
       'valley_server',
       'valley_places',
       'valley_collections',
       'valley_fire_log',
       'valley_keystones',
+      'visitor_weeks',
     ]);
     await runCore(nextGuild(), (ctx) => {
       for (const table of VALLEY_GUILD_TABLES) {
