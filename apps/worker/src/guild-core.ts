@@ -1,4 +1,4 @@
-import { RULES, type Rng } from '@creatures/game';
+import { RULES, VALLEY_RULES, type Rng } from '@creatures/game';
 import * as v from 'valibot';
 import { DailyAllowance } from './allowance';
 import { Analytics, RETENTION_MS } from './analytics';
@@ -130,6 +130,7 @@ import { valleyRoutes } from './valley-routes';
 import { ValleyOrders } from './valley-orders';
 import { ValleySeats } from './valley-seats';
 import { ValleySettle } from './valley-settle';
+import { ValleyTrials } from './valley-trials';
 import { ValleyVisitor, VisitorWeeks } from './valley-visitor';
 import type { ValleyView } from '@creatures/game';
 import type { LoungeClient, LoungeResult } from './lounge-discord';
@@ -465,6 +466,8 @@ export class GuildCore {
   readonly valleyVisitor: ValleyVisitor | null;
   /** The visitor's weeks: his arrival, its post and the alarm for it (`VALLEY_SYSTEMS`), or null with the flag off. */
   readonly valleyVisitorWeeks: VisitorWeeks | null;
+  /** Trials and graduation (`VALLEY_SYSTEMS`), or null with the flag off. */
+  readonly valleyTrials: ValleyTrials | null;
   /** The `VALLEY_SYSTEMS` flag as the worker resolved it (see `valley-flag.ts`). */
   readonly valleySystems: boolean;
   private postsInFlight: Promise<void> | null = null;
@@ -578,6 +581,8 @@ export class GuildCore {
         rng: gearRng,
       });
       this.valleyVisitorWeeks = visitorWeeks;
+      const trials = new ValleyTrials({ storage, timezone: () => this.timezone() });
+      this.valleyTrials = trials;
       const valley = new ValleySettle({
         storage,
         now,
@@ -589,6 +594,7 @@ export class GuildCore {
         bonfire,
         commons,
         visitor: visitorWeeks,
+        trials,
       });
       this.valley = valley;
       this.valleySeats = new ValleySeats({
@@ -599,6 +605,7 @@ export class GuildCore {
         finds,
         gazette,
         commons,
+        trials,
       });
       this.valleyGazette = gazette;
       this.valleyOrders = new ValleyOrders({ storage, now, settle: valley, forge, commons });
@@ -617,6 +624,7 @@ export class GuildCore {
       this.valleyGifts = null;
       this.valleyVisitor = null;
       this.valleyVisitorWeeks = null;
+      this.valleyTrials = null;
       this.valleyGazette = null;
       this.valleyBonfire = null;
     }
@@ -638,6 +646,19 @@ export class GuildCore {
       dev: this.devState ?? undefined,
       weather: this.weather,
       ...(options.combatV2 === true ? { combatV2: true } : {}),
+      // The valley's trials: a clear ticks the dungeon and Undercroft boxes of the creatures that fought.
+      ...(this.valleyTrials === null
+        ? {}
+        : {
+            onCleared: (userId: string, ids: readonly string[], levels: number) => {
+              const trials = this.valleyTrials;
+              if (trials === null) return;
+              trials.tickEvent(userId, ids, 'dungeon', this.now());
+              if (levels >= VALLEY_RULES.honours.undercroftLevels) {
+                trials.tickEvent(userId, ids, 'undercroft', this.now());
+              }
+            },
+          }),
     });
     this.raid = new Raid({
       storage,
@@ -657,6 +678,14 @@ export class GuildCore {
       talentRng,
       gearRng,
       ...(options.combatV2 === true ? { combatV2: true } : {}),
+      // The valley's trials: a raid kill ticks Gold's combat box for the creatures of the party.
+      ...(this.valleyTrials === null
+        ? {}
+        : {
+            onKill: (userId: string, ids: readonly string[]) => {
+              this.valleyTrials?.tickEvent(userId, ids, 'raid', this.now());
+            },
+          }),
       ...(options.readinessRng === undefined ? {} : { readinessRng: options.readinessRng }),
       // Staging only: the dev tools' seats-per-player override. Without the dev tools nothing is read.
       ...(this.devState === null
@@ -705,6 +734,7 @@ export class GuildCore {
             combatV2: options.combatV2 === true,
             valleySystems: options.valleySystems === true,
             visitor: this.valleyVisitorWeeks,
+            trials: this.valleyTrials,
             rng: options.raidRng ?? liveRng(),
             gearRng,
             quirkRng,

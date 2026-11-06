@@ -3,6 +3,7 @@ import { ANVIL_KITS, KIT_NAMES } from './forge';
 import { ValleyCommonsViewSchema } from './commons';
 import { PaperSchema } from './gazette';
 import { SCOUT_KITS } from './scouts';
+import { ValleyTrialViewSchema } from './trials';
 
 /**
  * What `/api/state` carries about the valley when `VALLEY_SYSTEMS` is on (phase 5 step 1, `systems/bonfire.md` V-BON-3): the
@@ -35,6 +36,8 @@ export const ValleyCreatureViewSchema = v.strictObject({
   catchUpBp: int,
   /** The seat the creature stands at (null: resting). */
   seatId: v.nullable(id),
+  /** The creature's honours and its next trial (V-TRIAL-3). */
+  trial: v.optional(ValleyTrialViewSchema),
 });
 
 /** Why a post is paused (V-POST-7): its creature is in the raid, from the first stage's lock to the end of the finale. */
@@ -278,6 +281,8 @@ export const ValleyViewSchema = v.strictObject({
   market: v.optional(ValleyMarketViewSchema),
   /** The welcome-back Gazette's paper (V-RET-0): present only while the last paper is unread; closing it takes it away. */
   paper: v.optional(PaperSchema),
+  /** The School's ceremony (V-TRIAL-4): how many of the player's creatures are ready to graduate, and when the next ceremony is (UTC epoch ms). */
+  graduation: v.optional(v.strictObject({ ready: int, nextAt: int })),
 });
 
 export type ValleyCreatureView = v.InferOutput<typeof ValleyCreatureViewSchema>;

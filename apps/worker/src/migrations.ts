@@ -49,6 +49,7 @@ import { valleyBonfireMigration } from './valley-bonfire-migration';
 import { valleyCommonsMigration } from './valley-commons-migration';
 import { valleyMarketMigration } from './valley-market-migration';
 import { valleyMarketOpenMigration } from './valley-market-open-migration';
+import { valleyTrialsMigration } from './valley-trials-migration';
 import { valleyVisitorMigration } from './valley-visitor-migration';
 import { valleyGazetteMigration } from './valley-gazette-migration';
 import { weatherMigration } from './weather-migration';
@@ -369,6 +370,8 @@ export const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
   valleyMarketOpenMigration,
   // Version 64: the weekly visitor: his weeks and each player's rerolls (see valley-visitor-migration.ts).
   valleyVisitorMigration,
+  // Version 66 (step 9a's school tables are 65, merged by the lead before this line): the trials' state per creature (see valley-trials-migration.ts).
+  valleyTrialsMigration,
 ];
 
 /** The schema version of a fresh database. */

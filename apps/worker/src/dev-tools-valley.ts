@@ -11,7 +11,7 @@
  * sign-in and the guild's own rows), the players' dev state, and the valley's guild-level tables in `VALLEY_GUILD_TABLES`. Players
  * stay signed in with their rows in `players`; each starts again at the starter choice. The dev clock goes back to real time.
  */
-import { DevError, purgeUser, type ToolCtx } from './dev-context';
+import { DevError, ownCreature, purgeUser, type ToolCtx } from './dev-context';
 
 /**
  * The valley's tables that are NOT keyed by `user_id` (the guild-level ones), cleared whole. Per-player valley tables carry a
@@ -76,4 +76,34 @@ export function visitorArrive(ctx: ToolCtx): VisitorArriveResult {
     blueprintId: now.row.blueprint_id,
     posted: now.row.posted_at !== null,
   };
+}
+
+export interface TrialsTickResult {
+  /** Whether a trial's boxes were ticked (false: the creature already holds Gold). */
+  ticked: boolean;
+}
+
+/**
+ * The `trials-tick` dev tool (staging only, with the valley systems on; 404 otherwise): ticks every box of the next trial of one of the
+ * caller's creatures now, whatever its level, so a graduation can be seen. It then graduates at the next ceremony, or at `trials-ceremony`.
+ */
+export function trialsTick(ctx: ToolCtx, body: { creatureId: string }): TrialsTickResult {
+  if (!ctx.valleySystems || ctx.trials === null) throw new DevError(404, 'not_found');
+  ownCreature(ctx, body.creatureId);
+  return { ticked: ctx.trials.forceTicks(ctx.userId, body.creatureId, ctx.now) };
+}
+
+export interface TrialsCeremonyResult {
+  /** The caller's creatures that graduated now. */
+  graduated: number;
+}
+
+/** The `trials-ceremony` dev tool (staging only, with the valley systems on; 404 otherwise): the School's ceremony now, for the caller's ready creatures. */
+export function trialsCeremony(ctx: ToolCtx): TrialsCeremonyResult {
+  if (!ctx.valleySystems || ctx.trials === null) throw new DevError(404, 'not_found');
+  const ids = ctx.sql
+    .exec<{ id: string }>('SELECT id FROM creatures WHERE user_id = ?', ctx.userId)
+    .toArray()
+    .map((r) => r.id);
+  return { graduated: ctx.trials.ceremonyNow(ctx.userId, ids, ctx.now) };
 }

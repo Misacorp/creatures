@@ -443,6 +443,7 @@ export class ValleyCommons {
     snap: CommonsSnapshot,
     posted: ReadonlySet<string>,
     now: number,
+    foundAt?: string[],
   ): number {
     if (posted.size === 0) return 0;
     const ready = this.sql
@@ -466,6 +467,7 @@ export class ValleyCommons {
         `${String(now)}:k:${clock.destination}`,
       );
       found += 1;
+      foundAt?.push(clock.destination);
     }
     return found;
   }

@@ -57,6 +57,8 @@ export const DEV_ACTION_TOOLS = [
   'reset-raids-dungeons',
   'valley-fresh',
   'visitor-arrive',
+  'trials-tick',
+  'trials-ceremony',
   'apply-roster-preset',
   'reset-account',
 ] as const;
@@ -312,5 +314,9 @@ export const ResetAccountBodySchema = v.strictObject({ confirm: v.literal('RESET
 
 /** Wipes every raid and dungeon of the guild: the word must be typed. */
 export const ResetRaidsDungeonsBodySchema = v.strictObject({ confirm: v.literal('reset') });
+
+export const TrialsTickBodySchema = v.strictObject({
+  creatureId: v.pipe(v.string(), v.minLength(1), v.maxLength(64)),
+});
 
 export const NoBodySchema = Empty;

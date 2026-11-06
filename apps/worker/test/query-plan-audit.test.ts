@@ -728,6 +728,47 @@ describe('query plan audit', () => {
     expect(result.found, scanMessage(result.found)).toEqual([]);
   }, 60_000);
 
+  it("plans the trials' statements (the joined read in a pass, the ticks of a pass, an event tick, a ceremony that graduates and is told, the clean-up) without a whole-table scan", async () => {
+    const result = await audit({ valleySystems: true, fresh: true }, async (env, world) => {
+      const { clock } = env;
+      const relog = async (): Promise<void> => {
+        world.secrets.set(
+          userId(1),
+          await world.core.createSession(GUILD_ID, { id: userId(1), displayName: 'Player 1' }),
+        );
+      };
+      const sql = env.metered.sql;
+      clock.t += 6 * MINUTE;
+      await callAs(world.core, world.secrets, 1, '/api/state');
+      const ids = sql
+        .exec<{ id: string }>('SELECT id FROM creatures WHERE user_id = ?', userId(1))
+        .toArray()
+        .map((r) => r.id);
+      sql.exec('UPDATE creatures SET level = 12 WHERE user_id = ?', userId(1));
+      sql.exec(
+        'UPDATE valley_creatures SET scout_hours = 30, smith_hours = 30 WHERE user_id = ?',
+        userId(1),
+      );
+      clock.t += 2 * MINUTE;
+      await callAs(world.core, world.secrets, 1, '/api/state');
+      world.core.valleyTrials?.tickEvent(userId(1), ids.slice(0, 5), 'dungeon', clock.t);
+      world.core.valleyTrials?.tickEvent(userId(1), ids, 'fire', clock.t);
+      // Two days away: the ceremony has passed, so the arrival graduates them and the paper tells it; a creature that left is cleaned up.
+      sql.exec('DELETE FROM creatures WHERE id = ?', ids[0]);
+      clock.t += 2 * 24 * 60 * MINUTE;
+      await relog();
+      await callAs(world.core, world.secrets, 1, '/api/state');
+    });
+
+    expect(result.seen, 'statements recorded').toBeGreaterThan(40);
+    for (const table of ['creature_trials'])
+      expect(
+        result.statements.some((q) => q.includes(table)),
+        table,
+      ).toBe(true);
+    expect(result.found, scanMessage(result.found)).toEqual([]);
+  }, 60_000);
+
   it("plans the Gazette's statements (an arrival that writes a paper, a joined one, a look with it unread, taking a way deeper, closing it) without a whole-table scan", async () => {
     const result = await audit({ valleySystems: true, fresh: true }, async (env, world) => {
       const { clock } = env;
