@@ -60,19 +60,27 @@ export const MAX_VISITORS = 3;
 
 /** One creature of each player who is online now, with their name (the first of the up to three the server sends). */
 export function visitorsOf(visit: ValleyVisit): Resting[] {
-  return visit.online.flatMap((o) => {
-    const c = o.creatures[0];
-    return c === undefined
-      ? []
-      : [
-          {
-            creature: { id: c.id, species: c.species, level: c.level, shiny: c.shiny, nickname: c.name },
-            gained: 0,
-            warm: false,
-            owner: o.name,
-          },
-        ];
-  }).slice(0, MAX_VISITORS);
+  return visit.online
+    .flatMap((o) => {
+      const c = o.creatures[0];
+      return c === undefined
+        ? []
+        : [
+            {
+              creature: {
+                id: c.id,
+                species: c.species,
+                level: c.level,
+                shiny: c.shiny,
+                nickname: c.name,
+              },
+              gained: 0,
+              warm: false,
+              owner: o.name,
+            },
+          ];
+    })
+    .slice(0, MAX_VISITORS);
 }
 
 /** Who sits round the fire: the player's own first, the visitors on the seats after them (a visitor never takes an own creature's seat). */

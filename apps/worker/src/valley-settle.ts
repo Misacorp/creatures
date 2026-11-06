@@ -276,7 +276,11 @@ export class ValleySettle {
       for (const row of rows) {
         this.trackCreature(userId, row.id, 0, first.bpOf(row.level), 0, 0, 0);
       }
-      this.sql.exec('UPDATE valley_players SET catch_target = ? WHERE user_id = ?', first.target, userId);
+      this.sql.exec(
+        'UPDATE valley_players SET catch_target = ? WHERE user_id = ?',
+        first.target,
+        userId,
+      );
       const seats = this.seats(userId);
       return this.view({
         userId,
@@ -890,7 +894,10 @@ export class ValleySettle {
    * V-BON-2: the target the player's creatures catch up toward (the higher of their 3rd best level and the server's middle) and the
    * multiplier of a creature at a level, in basis points.
    */
-  private catchUpFor(levels: readonly number[]): { target: number; bpOf: (level: number) => number } {
+  private catchUpFor(levels: readonly number[]): {
+    target: number;
+    bpOf: (level: number) => number;
+  } {
     return this.catchUpAt(catchUpTarget(levels, this.deps.bonfire.middle()));
   }
 
@@ -989,8 +996,7 @@ export class ValleySettle {
       const hours = worker?.smith_hours ?? 0;
       const kit = anvilKitOfRow(a.kit_id);
       const mine = orders.filter((o) => o.seat_id === a.seat_id);
-      const reason =
-        worker === undefined || input.paused.has(worker.id) ? null : a.wait_reason;
+      const reason = worker === undefined || input.paused.has(worker.id) ? null : a.wait_reason;
       const current = mine.find((o) => o.for_team === 1 || o.made < o.count);
       const plain = anvilSpeed(rules, hours, kit, 0);
       const speed = anvilSpeed(

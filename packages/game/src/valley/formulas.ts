@@ -57,6 +57,7 @@ export function xpAtLevel(level: number): number {
 export function levelAtXp(xp: number): number {
   const table = levelTable();
   let level = 1;
-  while (level < GAME.experience.maxLevel && xp + 1e-9 >= (table[level + 1] ?? Infinity)) level += 1;
+  while (level < GAME.experience.maxLevel && xp + 1e-9 >= (table[level + 1] ?? Infinity))
+    level += 1;
   return level;
 }

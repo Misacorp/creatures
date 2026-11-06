@@ -270,7 +270,7 @@ const anvilView = (a) => ({
       ? { orderId: a.orders[0].id, rarity: 0, progress: 6, need: 16, leftHours: 10 }
       : null,
   tinkering:
-    a.creatureId !== null && a.orders.length === 0
+    a.creatureId !== null && a.orders.length === 0 && !bonfire.raid.has(a.creatureId)
       ? { reason: 'idle', shardElement: null, sinceHours: 3 }
       : null,
   floor: { count: 2, cap: 5, full: false, byRarity: [2, 0, 0] },
@@ -1551,20 +1551,36 @@ try {
     () => {
       const config = ROUTES.get('/api/config');
       answerOverride.set('/api/config', () => ({ ...config(), valleySystems: true }));
-      const creatures = baseState.creatures.map((c) => ({ ...c, busy: null, away: false }));
-      scouts.seats = [{ id: 'seat-1', destination: 'tidepools', creatureId: creatures[0].id, hours: 30 }];
+      // Eight of the player's own (the fixture has three): the first two are posted, two more are catching up.
+      const creatures = Array.from({ length: 8 }, (_, i) => {
+        const from = baseState.creatures[i % baseState.creatures.length];
+        return {
+          ...from,
+          id: i < baseState.creatures.length ? from.id : `${from.id}-r${String(i)}`,
+          level: 4 + ((i * 3) % 9),
+          busy: null,
+          away: false,
+        };
+      });
+      scouts.seats = [
+        { id: 'seat-1', destination: 'tidepools', creatureId: creatures[0].id, hours: 30 },
+      ];
       forgeState.anvils = [{ id: 'anvil-1', creatureId: creatures[1].id, kit: null, orders: [] }];
       scouts.ids = creatures.map((c) => c.id);
       bonfire.online = [
         {
           userId: '9001',
           name: 'Mia',
-          creatures: [{ id: 'v1', species: creatures[2].species, shiny: false, level: 9, name: null }],
+          creatures: [
+            { id: 'v1', species: creatures[2].species, shiny: false, level: 9, name: null },
+          ],
         },
         {
           userId: '9002',
           name: 'Tobias',
-          creatures: [{ id: 'v2', species: creatures[3].species, shiny: false, level: 14, name: 'Pebble' }],
+          creatures: [
+            { id: 'v2', species: creatures[3].species, shiny: false, level: 14, name: 'Pebble' },
+          ],
         },
       ];
       bonfire.warm = new Set([creatures[4].id, creatures[5].id]);
@@ -1598,7 +1614,10 @@ try {
         await place('forge').evaluate((el) => el.click());
         await waitFor(heading('Forge'));
         await waitFor(page.getByText('In the raid until Sunday'));
+        await page.getByText('In the raid until Sunday').first().scrollIntoViewIfNeeded();
         await shot('bonfire5-forge-paused');
+        await hudBack().click();
+        await waitFor(page.locator(VALLEY), 'attached');
       } finally {
         bonfire.online = [];
         bonfire.warm = new Set();

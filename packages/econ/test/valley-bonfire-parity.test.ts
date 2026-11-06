@@ -183,7 +183,9 @@ describe('the pass against the lab with stand-in fights (T-1)', () => {
     // The rest: the lab holds some creatures at a level an evolution waits at (a ceiling the replay, which starts from levels only,
     // cannot know), so a few of them are off by more; the typical creature is within a level and none is far.
     const sorted = [...diffs].sort((a, b) => a - b);
-    expect(sorted[Math.floor(sorted.length / 2)] ?? 0, 'the median creature').toBeLessThanOrEqual(1);
+    expect(sorted[Math.floor(sorted.length / 2)] ?? 0, 'the median creature').toBeLessThanOrEqual(
+      1,
+    );
     expect(Math.max(...diffs), 'the worst creature').toBeLessThanOrEqual(LEVEL_TOLERANCE + 2);
   });
 
@@ -226,7 +228,10 @@ describe('the pass against the lab with stand-in fights (T-2)', () => {
 
   it("gives a weekly player 70 to 85% of a daily player's idle XP (the idle floor), by the real pass", () => {
     const sum = (profile: string): number =>
-      replayAll(profile).weeks.reduce((s, w) => s + (w?.idleXp ?? 0) / Math.max(1, w?.levels.length ?? 1), 0);
+      replayAll(profile).weeks.reduce(
+        (s, w) => s + (w?.idleXp ?? 0) / Math.max(1, w?.levels.length ?? 1),
+        0,
+      );
     const ratio = sum('weekly') / sum('daily');
     expect(ratio).toBeGreaterThan(0.7);
     expect(ratio).toBeLessThan(0.85);

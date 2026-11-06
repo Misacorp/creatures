@@ -91,7 +91,9 @@ describe('Nameplate options', () => {
     ]);
     expect(visibleText(parts(el)[2] as FakeElement)).toBe('Mia');
     expect(parts(plate(<Nameplate owner="">Cindle</Nameplate>))).toHaveLength(1);
-    expect(visibleText(plate(<Nameplate owner="<b>x</b>">Cindle</Nameplate>))).toContain('<b>x</b>');
+    expect(visibleText(plate(<Nameplate owner="<b>x</b>">Cindle</Nameplate>))).toContain(
+      '<b>x</b>',
+    );
   });
 
   it('draws the words as text, never as markup', () => {

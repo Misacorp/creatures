@@ -9,6 +9,7 @@ import {
   fitPreview,
   packLine,
   perDayText,
+  signpostCalm,
   signpostSystemsLine,
 } from './signpost-view';
 import { trayBadge, trayStates } from './tray-state';
@@ -23,6 +24,16 @@ describe('the Signpost words', () => {
     expect(packLine(sampleSeat('s', 'tidepools', null, 0))).toBe('Nobody posted');
     expect(packLine(sampleSeat('s', 'tidepools', a.id, 72))).toBe('Pack full');
     expect(packLine(sampleSeat('s', 'tidepools', a.id, 24))).toBe('Full in 2 d');
+  });
+
+  it('a paused post (its scout is in the raid) says so, and is not counted as out', () => {
+    const paused = sampleSeat('s', 'tidepools', a.id, 24, { paused: 'raid' });
+    expect(packLine(paused)).toBe('In the raid until Sunday');
+    const visit = sampleValley(free, [paused]);
+    expect(signpostSystemsLine(visit)).toBe('scouts are in the raid');
+    expect(signpostCalm(visit)).toBe('Scouts are in the raid');
+    const both = sampleValley(free, [paused, sampleSeat('t', 'tidepools', b.id, 24)]);
+    expect(signpostSystemsLine(both)).toBe('a scout out');
   });
 
   it('numbers a day brings read short', () => {

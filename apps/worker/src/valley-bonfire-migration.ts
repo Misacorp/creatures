@@ -21,7 +21,5 @@ export function valleyBonfireMigration(sql: SqlStorage): void {
   )`);
   sql.exec('ALTER TABLE valley_players ADD COLUMN catch_target REAL NOT NULL DEFAULT 0');
   sql.exec('ALTER TABLE valley_creatures ADD COLUMN moment_day INTEGER');
-  sql.exec(
-    'CREATE INDEX IF NOT EXISTS raid_placements_user ON raid_placements (user_id, week_id)',
-  );
+  sql.exec('CREATE INDEX IF NOT EXISTS raid_placements_user ON raid_placements (user_id, week_id)');
 }

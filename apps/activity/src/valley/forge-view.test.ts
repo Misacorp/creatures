@@ -10,6 +10,7 @@ import {
   exchangeReason,
   exchangeSources,
   floorLine,
+  forgeCalm,
   forgeSystemsLine,
   needsText,
   orderWait,
@@ -25,6 +26,20 @@ const [a, b] = free;
 if (a === undefined || b === undefined) throw new Error('fixture');
 const plain = sampleValley(free, []);
 const BP = 'kelp-cap';
+
+describe('a smith in the raid (V-POST-7)', () => {
+  it('is paused, not at work and not tinkering, and the Forge says so when nobody else works', () => {
+    const paused = sampleAnvil('an', a.id, [sampleOrder('o1', BP, 3)], {
+      paused: 'raid',
+      tinkering: null,
+    });
+    const visit = withAnvils(plain, [paused]);
+    expect(forgeSystemsLine(visit)).toBe('a smith is in the raid');
+    expect(forgeCalm(visit)).toBe('A smith is in the raid');
+    const mixed = withAnvils(plain, [paused, sampleAnvil('an2', b.id, [sampleOrder('o2', BP, 3)])]);
+    expect(forgeSystemsLine(mixed)).toBe('1 smith at work');
+  });
+});
 
 describe('the Forge words', () => {
   it('an order says what a piece takes and what it waits on', () => {

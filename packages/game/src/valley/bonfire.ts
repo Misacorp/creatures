@@ -35,7 +35,11 @@ export function catchUpTarget(levels: readonly number[], middle: number): number
 }
 
 /** V-BON-2: a creature's multiplier in basis points, fixed at a visit (10000: none). */
-export function catchUpBpOf(rules: Pick<ValleyRules, 'bonfire'>, level: number, target: number): number {
+export function catchUpBpOf(
+  rules: Pick<ValleyRules, 'bonfire'>,
+  level: number,
+  target: number,
+): number {
   return Math.round(catchUpMultiplier(rules, target - level) * 10_000);
 }
 

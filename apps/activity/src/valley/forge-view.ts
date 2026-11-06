@@ -210,7 +210,8 @@ export function forgeSystemsLine(visit: ValleyVisit): string {
   const work = smithsAtWork(visit);
   if (work > 0) return `${plural(work, '1 smith', 'smiths')} at work`;
   const away = pausedAnvils(visit);
-  if (away > 0) return away === 1 ? 'a smith is in the raid' : `${String(away)} smiths are in the raid`;
+  if (away > 0)
+    return away === 1 ? 'a smith is in the raid' : `${String(away)} smiths are in the raid`;
   return visit.anvils.length === 0 ? 'a free anvil waits' : 'nobody at the anvils';
 }
 
@@ -224,7 +225,8 @@ export function forgeCalm(visit: ValleyVisit): string {
   const work = smithsAtWork(visit);
   if (visit.anvils.length === 0) return 'Your first anvil is free';
   const away = pausedAnvils(visit);
-  if (work === 0 && away > 0) return away === 1 ? 'A smith is in the raid' : 'Smiths are in the raid';
+  if (work === 0 && away > 0)
+    return away === 1 ? 'A smith is in the raid' : 'Smiths are in the raid';
   if (work === 0) return 'Nobody at the anvils';
   return work === 1 ? '1 smith at work' : `${String(work)} smiths at work`;
 }
