@@ -278,6 +278,36 @@ describe('the Talent Book under combat v2', () => {
     expect(byRole(root, 'dialog')).toHaveLength(0);
   });
 
+  it('shows the valley price (the price times the slot, step 9a) on the Learn button as an icon and a number, never as a word', () => {
+    // The server sends the price of the slot the learning fills (`learnBait`); with the valley's systems on it is `school.price` times the slot.
+    const scene = pageScene('v2: the book', { bait: 100 });
+    const v2 = creatureV2(scene.creature);
+    if (v2 === null) throw new Error('v2');
+    const creature: Creature = {
+      ...scene.creature,
+      talentsV2: { ...v2.talentsV2, learnBait: 24 },
+    };
+    page = createPage();
+    page.draw(
+      <CreaturePage
+        creature={creature}
+        state={scene.state}
+        gear={scene.gear}
+        busy={false}
+        actions={actionsWith()}
+        focus={null}
+        onBack={() => undefined}
+        onAnswerCatch={() => undefined}
+      />,
+    );
+    page.click(slotButton(page.root, /^Talent slot 2: /));
+    const dialog = first(byRole(page.root, 'dialog'));
+    const learn = first(byName(dialog, 'button', /^Learn /));
+    expect(badgesIn(learn)).toEqual([['Bait', '24']]);
+    expect(visibleText(learn)).toBe('Learn · 24');
+    expect(visibleText(learn)).not.toMatch(/Acorn|Bait/);
+  });
+
   it('offers Move here for a talent in another slot and Take out for the one in this slot', () => {
     const { root, page: p, actions, creature } = draw('v2: the book');
     p.click(slotButton(root, /^Talent slot 2: /));
