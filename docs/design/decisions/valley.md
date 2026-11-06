@@ -4,6 +4,14 @@ The valley and peaceful systems overhaul planned in docs/design/valley/: job pos
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-06: The shard exchange opens with the Market, for everyone at once [Misa]
+
+ID: `2026-11-06-the-shard-exchange-opens-with-the` · Status: current
+
+**Decision.** (Misa, Q64: A, amended.) Exchanging shards lives at the Market only. Nobody can exchange until the server has built the Market (its guided project, V-COM-15); then the exchange tap and the broker seat (V-FORGE-11) open together for everyone. Before that, the Forge's line for an anvil waiting on an element says the Market will trade for it once the valley builds it, and leads to the Market's project board; after, it leads to the exchange. The Market's opening is a server-wide moment: every player's next Gazette leads with it. Amends V-FORGE-10 (the exchange was a tap at the Forge from day one, Q34).
+
+**Reasoning.** Misa: "The market is where shards are exchanged ... don't let players exchange until they've built the market. I want there to be a communal moment of relief when exchanging becomes possible." One place for exchanging, and the Market's project gains a shared payoff. Nothing stalls before it (F-1): an anvil that waits on an element tinkers and makes scrap (V-FORGE-2); the early tinkering share rises, which the lab re-measures (T-4).
+
 ## 2026-11-06: Phase 5 step 7: the Market and the broker (a one-shot place, the broker seat, trades inside the pass, the Market's page)
 
 ID: `2026-11-06-phase-5-step-7-the-market` · Status: current

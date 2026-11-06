@@ -519,6 +519,7 @@ Superseded: 1 entry (see the topic file).
 
 [valley.md](valley.md): The valley and peaceful systems overhaul planned in docs/design/valley/: job posts, the bonfire, the commons, the Forge loop, gear, trials, the School, the visitor, the economy lab, and Misa's question rounds.
 
+- 2026-11-06 The shard exchange opens with the Market, for everyone at once \[Misa\]
 - 2026-11-06 Phase 5 step 7: the Market and the broker (a one-shot place, the broker seat, trades inside the pass, the Market's page)
 - 2026-11-06 Phase 5 step 6b: the commons on the client (one project board for every place, the give drawer, scaffolding, helpers, plaque, collections, the fire, the grand bonfire, keepsakes)
 - 2026-11-06 Phase 5 step 6: the commons on the server (places and projects, gifts, plaque and keepsake, levels bound seats, communal seats, keystones and collections, the fire, the hearth)
