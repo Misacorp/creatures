@@ -97,11 +97,14 @@ export function visitHours(profile: PlayerProfile, day: number, id: number): rea
 }
 
 /**
- * The kinds of player the staging bots are (`valley-bots`): the lab's mixed server of 8 (`mixed8`: two daily players, one of every other kind
- * but the hoarder) minus the one daily player who is the human on the staging server. The number is the lab's player number on that server
- * (0 is the human), which staggers the every-other-day player the same way.
+ * The players of the lab's mixed server of 8 (`mixed8`: two daily players, one of every other kind but the hoarder) that the staging bots
+ * play (`valley-bots`). The number is the lab's player number on that server, which staggers the every-other-day player the same way.
+ * Number 0 is the lab's first daily player, the human of a staging server: a month is played by a script that moves the clock, so nobody
+ * plays that seat, and a bot stands in for it (it is never reported; the report's "daily" is bot 1). Without it the server has 7 players
+ * where the lab has 8, and everything the players give together (the projects, the fire) comes out a seventh short.
  */
 export const MIXED8_BOTS: readonly { readonly profile: string; readonly id: number }[] = [
+  { profile: 'daily', id: 0 },
   { profile: 'daily', id: 1 },
   { profile: 'active', id: 2 },
   { profile: 'every-other-day', id: 3 },
@@ -110,3 +113,6 @@ export const MIXED8_BOTS: readonly { readonly profile: string; readonly id: numb
   { profile: 'new', id: 6 },
   { profile: 'returner', id: 7 },
 ];
+
+/** The number of the bot that stands in for the human's seat in the lab's server (never reported). */
+export const STAND_IN_BOT = 0;

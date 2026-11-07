@@ -16,6 +16,7 @@ import type { ValleySimDayBodySchema } from './dev-schemas';
 import type * as v from 'valibot';
 import {
   clearSim,
+  dropSimTables,
   valleyBots,
   valleyReport,
   valleySimDay,
@@ -62,6 +63,8 @@ export function valleyFresh(ctx: ToolCtx): ValleyFreshResult {
   for (const table of VALLEY_GUILD_TABLES) sql.exec(`DELETE FROM "${table}"`);
   // The simulated month's own state (the bots' flows are per player and went with `purgeUser`).
   clearSim(ctx);
+  // The month's dev triggers on `parts` and its two tables (made by `valley-bots`): staging pays nothing for them after a fresh start.
+  dropSimTables(sql);
   ctx.raid.invalidateReadiness();
   ctx.offset.set(0);
   return { players: ids.length, tablesCleared: [...VALLEY_GUILD_TABLES] };
@@ -159,7 +162,7 @@ export function trialsCeremony(ctx: ToolCtx): TrialsCeremonyResult {
 
 /**
  * The `valley-bots` dev tool (staging only, with the valley systems on; 404 otherwise): moves the dev clock to the next Monday 00:00 (guild
- * time) and makes the month's bots, `dev-guest-1` to `-7`, the lab's mixed server of 8 without the human (see `valley-bots.ts`). Safe to repeat.
+ * time) and makes the month's bots, `dev-guest-0` to `-7`, the lab's mixed server of 8 (bot 0 stands in for the human's seat; see `valley-bots.ts`). Safe to repeat.
  */
 export const valleyBotsTool = (ctx: ToolCtx): BotsResult => valleyBots(ctx);
 

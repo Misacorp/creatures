@@ -2,7 +2,8 @@
  * The staging bots and the simulated month (phase 5 step 10, `docs/design/valley/phase5-plan.md`). Dev tools only: `valley-bots` makes the
  * guild's bots, `valley-sim-day` plays one game day of them, `valley-report` answers the lab-shaped metrics (see `dev-tools-valley.ts`).
  *
- * A bot is a guest player (`dev-guest-<n>`) with one of the lab's profiles (`MIXED8_BOTS`: the mixed server of 8 minus the human). It starts
+ * A bot is a guest player (`dev-guest-<n>`) with one of the lab's profiles (`MIXED8_BOTS`: the mixed server of 8; bot 0 stands in for the
+ * human's seat, which nobody plays during a scripted month, and is never reported). It starts
  * as a fresh valley player does: the starter choice, two more common creatures (the lab's three), the lab's welcome Acorns and scrap, then
  * its first free scout seat and anvil. At each visit its profile says is due, the dev clock is moved to that hour and the bot plays the
  * lab's policy (`@creatures/game` `valley/policy.ts`, one module with the lab) through the SAME server code the routes call: the settle
@@ -13,8 +14,10 @@
  * - **Fights are stand-ins.** The server has no dungeon passes yet (Q63, before phase 6), so a fighting bot pays the lab's inputs: a daily
  *   pass (up to the lab's maximum) pays Acorns, scrap, Essence and XP to its best three creatures; Sunday's raid pays its XP, scrap and
  *   Essence and, at the server dial's half, warms the fire. No gear drops, no honours' boxes and no landmark embers.
- * - **No tempering, idol, equipping, dismantling or visitor rerolls** (the lab models them, the server's bots do not drive them); the
- *   bot buys the visitor's blueprint when it can.
+ * - **No tempering, idol, dismantling or visitor rerolls** (the lab models them, the server's bots do not drive them); the bot buys the
+ *   visitor's blueprint when it can. It does press Equip best, release duplicates at the Paddock gate, post a broker and learn talents.
+ * - **Choices the lab draws are drawn here too** (step 10b): the project a gift goes to (`drawByWeight`) and whether a scout seat's creature
+ *   fits its place (`pickScoutCreature`), so a bot of a kind is one sample of the lab's player of that kind, not a cleverer or duller one.
  * - **Orders are "for my team" orders**; the lab's anvil works pieces for the player's best creatures the same way.
  * - **Rotating Masters** is not done (the lab's optimiser moves a Master on).
  * - The metrics are read at the end of a day on the server (a snapshot settle at 23:59 of days 7, 14, 21 and 28), where the lab reads at
@@ -22,6 +25,7 @@
  */
 import {
   MIXED8_BOTS,
+  STAND_IN_BOT,
   VALLEY_ELEMENTS,
   VALLEY_RULES,
   anvilKitFor,
@@ -36,23 +40,29 @@ import {
   needsOf,
   nextKit,
   patchworkBlueprints,
+  drawByWeight,
   pickFreeCreature,
+  pickScoutCreature,
   profileById,
   retiltPlan,
   speciesAvailableAt,
   visitHours,
   type ForgeHours,
   type KitName,
+  type PlayerPolicy,
   type ValleyElement,
+  slotsOpen,
   type ValleyView,
 } from '@creatures/game';
 import type { Collection } from './collection';
+import { EQUIP_BEST_MAX_CREATURES, type Gear } from './gear';
 import type { ToolCtx } from './dev-context';
 import { creatureRngsOf, DevError } from './dev-context';
 import { awardExperience } from './creature-exp';
 import { creditParts, getParts } from './gear-store';
 import { credit, getBalances, type LedgerStorage } from './ledger';
 import { speciesOf } from './species';
+import { learnedOf, lineBook } from './talent-v2-store';
 import { insertCreature } from './talent-store';
 import { addDays, isoWeekday, zonedDate, zonedTimeToEpoch } from './time';
 import type { ValleyCommons } from './valley-commons';
@@ -74,6 +84,8 @@ export interface ValleyWorld {
   readonly school: ValleySchool;
   readonly commons: ValleyCommons;
   readonly collection: Collection;
+  /** The gear module, for "Equip best" (the module is made after the world, so it is read when needed). */
+  gear(): Gear;
   /** What the server runs by itself in a game day (the weather, due raid and Games events, the visitor and the teacher, `maintain`). */
   daily(): void;
   /** The rows read and written so far in this request (the read meter's peek). */
@@ -125,6 +137,8 @@ interface BotState {
   /** The game day of the last leet stand-in payout (-1: none). */
   leetDay: number;
   raidThisWeek: boolean;
+  /** The next patchwork blueprint (the lab's cursor). */
+  patchCursor: number;
   essenceCarry: number;
   visits: number;
   rows: { read: number; written: number };
@@ -154,6 +168,7 @@ const blankBot = (): BotState => ({
   passes: 1,
   leetDay: -1,
   raidThisWeek: false,
+  patchCursor: 0,
   essenceCarry: 0,
   visits: 0,
   rows: { read: 0, written: 0 },
@@ -196,9 +211,11 @@ function ensureFlows(sql: SqlStorage): void {
     PRIMARY KEY (user_id, kind)
   )`);
   sql.exec(`CREATE TABLE IF NOT EXISTS valley_sim_forge (
-    user_id TEXT PRIMARY KEY, work REAL NOT NULL DEFAULT 0, total REAL NOT NULL DEFAULT 0
+    user_id TEXT PRIMARY KEY, work REAL NOT NULL DEFAULT 0, total REAL NOT NULL DEFAULT 0,
+    scrap REAL NOT NULL DEFAULT 0, shard REAL NOT NULL DEFAULT 0, essence REAL NOT NULL DEFAULT 0,
+    floor REAL NOT NULL DEFAULT 0, idle REAL NOT NULL DEFAULT 0
   )`);
-  forgeTableMade = true;
+  forgeTable = 'made';
   sql.exec(`CREATE TRIGGER IF NOT EXISTS valley_sim_parts_insert AFTER INSERT ON parts BEGIN
     INSERT INTO valley_sim_flows (user_id, kind, inn, out) VALUES (NEW.user_id, NEW.kind, NEW.amount, 0)
     ON CONFLICT (user_id, kind) DO UPDATE SET inn = inn + NEW.amount;
@@ -210,34 +227,56 @@ function ensureFlows(sql: SqlStorage): void {
   END`);
 }
 
-/** Whether `valley_sim_forge` is known to exist (set when `valley-bots` makes it or the first pass finds it). */
-let forgeTableMade = false;
+/**
+ * What this object knows of `valley_sim_forge`: 'made' (`valley-bots` made it), 'absent' (looked up and not there, or dropped), or
+ * 'unknown' (not looked at since the object started). The answer is kept, so normal play pays one look per object start, never one per pass.
+ */
+let forgeTable: 'unknown' | 'made' | 'absent' = 'unknown';
+
+/**
+ * Takes the month's dev triggers and tables away (`valley-fresh`, and the last day of the month): the two triggers on `parts` would
+ * otherwise cost a write on every change of anyone's scrap or shards for as long as staging lives, and the forge table one per pass.
+ * Nothing the game reads is touched; the bots' snapshots (the report) live in the dev state, not in these tables.
+ */
+export function dropSimTables(sql: SqlStorage): void {
+  sql.exec('DROP TRIGGER IF EXISTS valley_sim_parts_insert');
+  sql.exec('DROP TRIGGER IF EXISTS valley_sim_parts_update');
+  sql.exec('DROP TABLE IF EXISTS valley_sim_flows');
+  sql.exec('DROP TABLE IF EXISTS valley_sim_forge');
+  forgeTable = 'absent';
+}
 
 /**
  * Staging only: adds the hours of one pass of a player's anvils to a dev table (`valley_sim_forge`), once the month's bots exist (the
- * table is made by `valley-bots`; before that nothing is written). Never throws into a pass.
+ * table is made by `valley-bots`; before that, and after the month, nothing is written). Never throws into a pass.
  */
 export function recordForgeHours(sql: SqlStorage, userId: string, hours: ForgeHours): void {
+  if (forgeTable === 'absent') return;
   try {
-    // Looked up once per object start (a master-table scan on every pass would be the month's own biggest read), then remembered.
-    if (!forgeTableMade) {
+    if (forgeTable === 'unknown') {
       const made = sql
         .exec("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'valley_sim_forge'")
         .toArray();
-      if (made.length === 0) return;
-      forgeTableMade = true;
+      forgeTable = made.length === 0 ? 'absent' : 'made';
+      if (forgeTable === 'absent') return;
     }
     const all = hours.work + hours.scrap + hours.shard + hours.essence + hours.floor + hours.idle;
     if (all <= 0) return;
     sql.exec(
-      `INSERT INTO valley_sim_forge (user_id, work, total) VALUES (?, ?, ?)
-       ON CONFLICT (user_id) DO UPDATE SET work = work + excluded.work, total = total + excluded.total`,
+      `INSERT INTO valley_sim_forge (user_id, work, total, scrap, shard, essence, floor, idle) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT (user_id) DO UPDATE SET work = work + excluded.work, total = total + excluded.total, scrap = scrap + excluded.scrap,
+         shard = shard + excluded.shard, essence = essence + excluded.essence, floor = floor + excluded.floor, idle = idle + excluded.idle`,
       userId,
       hours.work,
       all,
+      hours.scrap,
+      hours.shard,
+      hours.essence,
+      hours.floor,
+      hours.idle,
     );
   } catch (err) {
-    forgeTableMade = false;
+    forgeTable = 'unknown';
     console.error('valley forge hours failed', err instanceof Error ? err.name : 'unknown');
   }
 }
@@ -274,19 +313,23 @@ function flowsOf(sql: SqlStorage, userId: string): Flows {
       f.acornsOut = r.out;
     } else f.essenceIn = r.inn;
   }
-  for (const r of sql
-    .exec<{ kind: string; inn: number; out: number }>(
-      'SELECT kind, inn, out FROM valley_sim_flows WHERE user_id = ?',
-      userId,
-    )
-    .toArray()) {
-    if (r.kind === 'scrap') {
-      f.scrapIn += r.inn;
-      f.scrapOut += r.out;
-    } else if (r.kind.endsWith('-shard')) {
-      f.shardsIn += r.inn;
-      f.shardsOut += r.out;
+  try {
+    for (const r of sql
+      .exec<{ kind: string; inn: number; out: number }>(
+        'SELECT kind, inn, out FROM valley_sim_flows WHERE user_id = ?',
+        userId,
+      )
+      .toArray()) {
+      if (r.kind === 'scrap') {
+        f.scrapIn += r.inn;
+        f.scrapOut += r.out;
+      } else if (r.kind.endsWith('-shard')) {
+        f.shardsIn += r.inn;
+        f.shardsOut += r.out;
+      }
     }
+  } catch {
+    // The month's dev tables are gone (the month ended): the flows are not tracked any more.
   }
   return f;
 }
@@ -419,8 +462,8 @@ function makeBot(ctx: ToolCtx, w: ValleyWorld, sim: SimState, info: BotInfo): vo
   w.seats.buySeat(id, keyOf('seat'));
   w.orders.buyAnvil(id, keyOf('anvil'));
   const bot = blankBot();
-  seatFree(w, sim, id, ctx);
   setDestinations(w, sim, id, true);
+  seatFree(w, sim, id, ctx, profileById(info.profile).policy);
   addTeamOrders(w, sim, id);
   const flows = flowsOf(sql, id);
   bot.seen = { acorns: flows.acornsIn, scrap: flows.scrapIn, shards: flows.shardsIn };
@@ -430,12 +473,24 @@ function makeBot(ctx: ToolCtx, w: ValleyWorld, sim: SimState, info: BotInfo): vo
 
 // --- one visit ----------------------------------------------------------------------------------------------------------------
 
-/** Free seats (a scout seat, an anvil) take the creature the lab's rule picks. */
-function seatFree(w: ValleyWorld, sim: SimState, userId: string, ctx: ToolCtx): void {
+/**
+ * Free seats (a scout seat, an anvil, the broker) take a creature: the fewest hours of work, then the highest level (the lab's rule). A
+ * scout seat draws whether its creature fits the place, as often as the lab's average says (`pickScoutCreature`).
+ */
+function seatFree(
+  w: ValleyWorld,
+  sim: SimState,
+  userId: string,
+  ctx: ToolCtx,
+  policy: PlayerPolicy,
+): void {
   const sql = ctx.sql;
   const creatures = creaturesOf(sql, userId);
   for (const seat of seatsOf(sql, userId)) {
-    if (seat.creature_id !== null || (seat.place !== 'signpost' && seat.place !== 'forge'))
+    if (
+      seat.creature_id !== null ||
+      (seat.place !== 'signpost' && seat.place !== 'forge' && seat.place !== 'market')
+    )
       continue;
     const taken = new Set(
       seatsOf(sql, userId)
@@ -443,7 +498,19 @@ function seatFree(w: ValleyWorld, sim: SimState, userId: string, ctx: ToolCtx): 
         .filter((c): c is string => c !== null),
     );
     const free = creatures.filter((c) => !taken.has(c.id));
-    const best = pickFreeCreature(free.map((c) => ({ hours: c.work, level: c.level })));
+    const element = R.scouts.destinations.find((d) => d.id === seat.destination_id)?.element;
+    const best =
+      seat.place === 'signpost'
+        ? pickScoutCreature(
+            free.map((c) => ({
+              hours: c.work,
+              level: c.level,
+              fits: element !== null && element === speciesOf(c.species).element,
+            })),
+            R.posts.fitShare[policy],
+            ctx.rng.nextU32() / 0x1_0000_0000,
+          )
+        : pickFreeCreature(free.map((c) => ({ hours: c.work, level: c.level })));
     const chosen = free[best];
     if (chosen === undefined) return;
     const outcome = w.seats.post(userId, { seatId: seat.seat_id, creatureId: chosen.id });
@@ -600,23 +667,40 @@ function giveGifts(
   const parts = getParts(sql, userId);
   let scrap = Math.max(0, parts.scrap - R.forge.giveReserveScrap);
   const open = (view.commons?.places ?? []).filter((p) => p.state === 'open' && p.project !== null);
+  // Acorns and scrap: the lab's draw. Each gift goes to an open project that still takes that part, picked over the places' weights
+  // (V-COM-5, "the server chooses together"), up to six tries; what no project takes stays with the giver.
+  const rooms = new Map(
+    open.map((p) => [
+      p.id,
+      { acorns: p.project?.needs.acorns ?? 0, scrap: p.project?.needs.scrap ?? 0 },
+    ]),
+  );
+  for (const part of ['acorns', 'scrap'] as const) {
+    for (let tries = 0; tries < 6; tries++) {
+      const spare = part === 'acorns' ? acorns : scrap;
+      const budget = part === 'acorns' ? bot.budget.acorns : bot.budget.scrap;
+      const left = Math.floor(giftAmount(budget, spare, dumping));
+      const takers = open.filter((p) => (rooms.get(p.id)?.[part] ?? 0) >= 1);
+      if (left < 1 || takers.length === 0) break;
+      const weights = takers.map((p) => R.commons.placeWeights[p.id] ?? 1);
+      const place = takers[drawByWeight(weights, ctx.rng.nextU32() / 0x1_0000_0000)];
+      const cap = rooms.get(place?.id ?? '');
+      if (place === undefined || cap === undefined) break;
+      const given = give(place.id, part, Math.min(left, Math.ceil(cap[part])));
+      if (given === 0) break;
+      cap[part] = Math.max(0, cap[part] - given);
+      if (part === 'acorns') {
+        bot.budget.acorns = Math.max(0, bot.budget.acorns - given);
+        acorns -= given;
+      } else {
+        bot.budget.scrap = Math.max(0, bot.budget.scrap - given);
+        scrap -= given;
+      }
+    }
+  }
   for (const place of open) {
     const need = place.project?.needs;
     if (need === undefined) continue;
-    const a = Math.min(
-      Math.floor(giftAmount(bot.budget.acorns, acorns, dumping)),
-      Math.ceil(need.acorns),
-    );
-    const given = give(place.id, 'acorns', a);
-    bot.budget.acorns = Math.max(0, bot.budget.acorns - given);
-    acorns -= given;
-    const s = Math.min(
-      Math.floor(giftAmount(bot.budget.scrap, scrap, dumping)),
-      Math.ceil(need.scrap),
-    );
-    const sGiven = give(place.id, 'scrap', s);
-    bot.budget.scrap = Math.max(0, bot.budget.scrap - sGiven);
-    scrap -= sGiven;
     // Shards: the place's own element counts in full, any other at the exchange's rate; the Market takes any, each in full.
     let room = Math.ceil(need.shards);
     const shards = shardsOf(sql, userId);
@@ -675,30 +759,66 @@ function communalSeats(
 }
 
 /**
- * An anvil whose team order has waited a day for a shard it does not hold takes a patchwork order (V-FORGE-12: any shard, a plain piece)
- * ahead of it, so the piles the player does hold are used; the team order goes back behind it.
+ * V-FORGE-12 (the lab's `tryPatchwork`): an anvil that would tinker, because its shard is short or the team has nothing to be dressed with,
+ * is given patchwork orders ahead of the team order, from spare scrap and shards only: the scrap that dresses every slot of every
+ * creature once and the exchange's reserve of shards stay (the team's pieces come first). The blueprints go in turn (Cap, Shawl, Charm),
+ * each with the shards of the pile held most; as many pieces as the spare pays for, up to the queue's room (the lab's anvil does the same
+ * one piece at a time, all week). The waiting team order steps back behind them.
  */
-function unstickAnvils(w: ValleyWorld, sim: SimState, userId: string, view: ValleyView): void {
-  const patch = patchworkBlueprints()[0];
-  if (patch === undefined) return;
+function unstickAnvils(
+  ctx: ToolCtx,
+  w: ValleyWorld,
+  sim: SimState,
+  userId: string,
+  view: ValleyView,
+  bot: BotState,
+): void {
+  const blueprints = patchworkBlueprints();
+  if (blueprints.length === 0) return;
+  const sql = ctx.sql;
+  const creatures = creaturesOf(sql, userId).length;
+  const keepScrap = Math.max(
+    R.forge.giveReserveScrap,
+    creatures * R.forge.slotsPerCreature * R.forge.scrap,
+  );
+  let scrap = getParts(sql, userId).scrap - keepScrap;
+  const piles = shardsOf(sql, userId);
   for (const anvil of view.anvils) {
     const t = anvil.tinkering;
-    if (t?.reason !== 'shard' || (t.sinceHours ?? 0) < 24) continue;
+    if (t === null || (t.reason !== 'shard' && t.reason !== 'idle')) continue;
     const head = anvil.orders[0];
-    if (head === undefined || !head.forTeam || anvil.orders.length >= view.forge.queueMax) continue;
-    const added = w.orders.addOrder(userId, anvil.id, {
-      forTeam: false,
-      blueprintId: patch.id,
-      count: 3,
-      reach: 'none',
-    });
-    if (!added.ok) {
-      bump(sim, `patchwork:${added.error}`);
-      continue;
+    if (head === undefined || !head.forTeam) continue;
+    let room = view.forge.queueMax - anvil.orders.length;
+    let added = 0;
+    while (room > 0) {
+      const bp = blueprints[bot.patchCursor % blueprints.length];
+      if (bp === undefined) break;
+      let pile = 0;
+      piles.forEach((n, e) => {
+        if (n > (piles[pile] ?? 0)) pile = e;
+      });
+      if (scrap < bp.scrap || (piles[pile] ?? 0) - bp.shards < R.forge.giveReserveShards) break;
+      const result = w.orders.addOrder(userId, anvil.id, {
+        forTeam: false,
+        blueprintId: bp.id,
+        count: 1,
+        reach: 'none',
+      });
+      if (!result.ok) {
+        bump(sim, `patchwork:${result.error}`);
+        break;
+      }
+      scrap -= bp.scrap;
+      piles[pile] = (piles[pile] ?? 0) - bp.shards;
+      bot.patchCursor += 1;
+      room -= 1;
+      added += 1;
     }
-    // The waiting team order steps back: removed, then put again behind the patchwork order.
-    w.orders.removeOrder(userId, head.id);
-    w.orders.addOrder(userId, anvil.id, { forTeam: true, reach: 'none' });
+    if (added > 0) {
+      // The waiting team order steps back: removed, then put again behind the patchwork orders.
+      w.orders.removeOrder(userId, head.id);
+      w.orders.addOrder(userId, anvil.id, { forTeam: true, reach: 'none' });
+    }
   }
 }
 
@@ -759,9 +879,9 @@ function buyThings(
         bump(sim, `buy-seat:${outcome.error}`);
         return;
       }
-      seatFree(w, sim, userId, ctx);
       if (buy.offer.kind === 'scout') setDestinations(w, sim, userId, false);
-      else addTeamOrders(w, sim, userId);
+      seatFree(w, sim, userId, ctx, policy);
+      if (buy.offer.kind === 'anvil') addTeamOrders(w, sim, userId);
       continue;
     }
     const outcome = w.seats.buyKit(userId, buy.kit, keyOf('kit'));
@@ -773,6 +893,80 @@ function buyThings(
     const anvil = buy.kit === 'tongs' || buy.kit === 'loupe';
     const had = view.kit.owned.some((k) => (k === 'tongs' || k === 'loupe') === anvil);
     if (!had) setKitEverywhere(w, sim, userId, buy.kit, anvil);
+  }
+}
+
+/**
+ * First learnings on the creatures' cards (V-SCH-10, the lab's `startLearning`): a creature with a slot open and no talent learned for it
+ * learns one from its line's book, for the slot's Acorns, the creatures that fight first and then the highest level. Keyed spends.
+ */
+function learnTalents(
+  ctx: ToolCtx,
+  w: ValleyWorld,
+  sim: SimState,
+  userId: string,
+  fights: boolean,
+): void {
+  const v2 = w.collection.v2;
+  if (v2 === null) return;
+  const sql = ctx.sql;
+  const creatures = creaturesOf(sql, userId);
+  const team = new Set(
+    fights
+      ? [...creatures]
+          .sort((a, b) => b.level - a.level || b.exp - a.exp)
+          .slice(0, R.fights.team)
+          .map((c) => c.id)
+      : [],
+  );
+  const due = creatures
+    .map((c) => ({ c, learned: learnedOf(sql, c.id) }))
+    .filter(({ c, learned }) => learned.length < slotsOpen(speciesOf(c.species).rarity, c.level))
+    .sort(
+      (a, b) =>
+        Number(team.has(b.c.id)) - Number(team.has(a.c.id)) ||
+        b.c.level - a.c.level ||
+        a.learned.length - b.learned.length,
+    );
+  for (const { c, learned } of due) {
+    const known = new Set(learned.map((l) => l.talentId));
+    const entry = lineBook(sql, userId, speciesOf(c.species).line).find(
+      (e) => !known.has(e.talentId),
+    );
+    if (entry === undefined) continue;
+    if (getBalances(sql, userId).bait < v2.learnPrice(c.species, learned.length)) break;
+    const outcome = v2.learn(userId, c.id, entry.talentId, keyOf('learn'));
+    if (!outcome.ok) bump(sim, `learn:${outcome.error}`);
+  }
+}
+
+/**
+ * "Equip best" for the whole roster (the lab's `equipOrBag`: a piece that comes home dresses the weakest slot it improves): the server
+ * picks the best item of the bag for every slot, a slot changing only for a better item. Pieces "for my team" are worn at once by the
+ * Forge itself; found gear and the dungeon's land in the bag, where a player who looks at their creatures presses this.
+ */
+function equipAll(ctx: ToolCtx, w: ValleyWorld, sim: SimState, userId: string): void {
+  const ids = creaturesOf(ctx.sql, userId).map((c) => c.id);
+  for (let at = 0; at < ids.length; at += EQUIP_BEST_MAX_CREATURES) {
+    const outcome = w.gear().equipBest(userId, ids.slice(at, at + EQUIP_BEST_MAX_CREATURES));
+    if (!outcome.ok) bump(sim, `equip:${outcome.error}`);
+  }
+}
+
+/**
+ * The Paddock gate (V-SCOUT-3): the lab's player keeps one creature of a line ("duplicates become scrap", `economy/report.md`), so a
+ * duplicate that waits at a visit is released for its parts. (A duplicate nobody answers takes today's Recommended answer by itself after a
+ * day, which keeps a second branch of a line: the bots that visit seldom meet those as creatures, as a player would.)
+ */
+function answerGate(w: ValleyWorld, sim: SimState, userId: string): void {
+  for (const card of w.collection.choices.pending(userId)) {
+    const outcome = w.collection.choices.choose(
+      userId,
+      card.id,
+      { choice: 'release' },
+      keyOf('gate'),
+    );
+    if (!outcome.ok) bump(sim, `gate:${outcome.error}`);
   }
 }
 
@@ -810,6 +1004,44 @@ function schoolSeats(w: ValleyWorld, sim: SimState, userId: string): void {
   }
 }
 
+/**
+ * After a re-tilt an optimiser looks at the icons again (the lab's `fitShare`, 0.9): a scout seat whose creature does not fit its new
+ * place swaps with a creature of that place's element that is not already a good fit elsewhere, as often as the share says.
+ */
+function refit(ctx: ToolCtx, w: ValleyWorld, sim: SimState, userId: string): void {
+  const sql = ctx.sql;
+  const creatures = creaturesOf(sql, userId);
+  const byId = new Map(creatures.map((c) => [c.id, c]));
+  const seats = seatsOf(sql, userId);
+  const elementOf = (dest: string): string | null =>
+    R.scouts.destinations.find((d) => d.id === dest)?.element ?? null;
+  const fits = (seat: SeatLite): boolean => {
+    const element = elementOf(seat.destination_id);
+    const c = seat.creature_id === null ? undefined : byId.get(seat.creature_id);
+    return c !== undefined && element !== null && speciesOf(c.species).element === element;
+  };
+  const stays = new Set(
+    seats
+      .filter(
+        (s) => (s.place === 'signpost' && fits(s)) || s.place === 'forge' || s.place === 'market',
+      )
+      .map((s) => s.creature_id)
+      .filter((c): c is string => c !== null),
+  );
+  for (const seat of seats.filter((s) => s.place === 'signpost' && !fits(s))) {
+    if (ctx.rng.nextU32() / 0x1_0000_0000 >= R.posts.fitShare.optimiser) continue;
+    const element = elementOf(seat.destination_id);
+    if (element === null) continue;
+    const pick = creatures
+      .filter((c) => speciesOf(c.species).element === element && !stays.has(c.id))
+      .sort((a, b) => a.work - b.work || b.level - a.level)[0];
+    if (pick === undefined) continue;
+    const outcome = w.seats.post(userId, { seatId: seat.seat_id, creatureId: pick.id });
+    if (outcome.ok) stays.add(pick.id);
+    else bump(sim, `refit:${outcome.error}`);
+  }
+}
+
 /** The optimiser's re-tilt: every scout seat to the place that serves its needs, the kit that suits (V-POST-11). */
 function retilt(
   ctx: ToolCtx,
@@ -842,6 +1074,7 @@ function retilt(
       if (!outcome.ok) bump(sim, `retilt:${outcome.error}`);
     });
     setKitEverywhere(w, sim, userId, plan.kit, false);
+    refit(ctx, w, sim, userId);
   }
   const owned = {
     loupe: view.kit.owned.includes('loupe'),
@@ -851,19 +1084,54 @@ function retilt(
   setKitEverywhere(w, sim, userId, anvilKit, true);
 }
 
-/** What the shard-short anvils of a visit want exchanged: a set-and-forget player's one-tap fix, an optimiser's every visit. */
-function exchangeShards(w: ValleyWorld, sim: SimState, userId: string, view: ValleyView): void {
+/**
+ * What the shard-short anvils of a visit want exchanged (the lab's `exchangeFor`): for the element an anvil waits on, up to a piece for
+ * each anvil, from the biggest pile above the reserve (`giveReserveShards`: a donor never goes under it), one donor at a time.
+ */
+function exchangeShards(
+  ctx: ToolCtx,
+  w: ValleyWorld,
+  sim: SimState,
+  userId: string,
+  view: ValleyView,
+): void {
   if (view.market?.open !== true) return;
   const wanted = new Set<string>();
   for (const anvil of view.anvils) {
     const t = anvil.tinkering;
     if (t?.reason === 'shard' && t.shardElement !== null) wanted.add(t.shardElement);
   }
-  const times = Math.min(20, Math.max(1, view.anvils.length) * R.forge.shard);
+  const keep = R.forge.giveReserveShards;
+  const rate = R.forge.exchange.rate;
+  const want = Math.max(1, view.anvils.length) * R.forge.shard;
   for (const to of wanted) {
-    if (!(VALLEY_ELEMENTS as readonly string[]).includes(to)) continue;
-    const outcome = w.orders.exchange(userId, { to, from: null, times, key: keyOf('exch') });
-    if (!outcome.ok) bump(sim, `exchange:${outcome.error}`);
+    const target = (VALLEY_ELEMENTS as readonly string[]).indexOf(to);
+    if (target < 0) continue;
+    for (let guard = 0; guard < 20; guard++) {
+      const piles = shardsOf(ctx.sql, userId);
+      const need = want - (piles[target] ?? 0);
+      if (need < 1) break;
+      let donor = -1;
+      let best = rate - 1e-9;
+      piles.forEach((n, e) => {
+        if (e !== target && n - keep > best) {
+          best = n - keep;
+          donor = e;
+        }
+      });
+      if (donor < 0) break;
+      const times = Math.max(1, Math.min(Math.floor(((piles[donor] ?? 0) - keep) / rate), need));
+      const outcome = w.orders.exchange(userId, {
+        to,
+        from: VALLEY_ELEMENTS[donor] ?? null,
+        times,
+        key: keyOf('exch'),
+      });
+      if (!outcome.ok) {
+        bump(sim, `exchange:${outcome.error}`);
+        break;
+      }
+    }
   }
 }
 
@@ -891,19 +1159,22 @@ function visit(ctx: ToolCtx, w: ValleyWorld, sim: SimState, info: BotInfo, day: 
   // Everything that built up comes home: the real settle.
   let view = w.settle.settle(userId, 'now');
   if (view === null) return;
-  exchangeShards(w, sim, userId, view);
+  exchangeShards(ctx, w, sim, userId, view);
   if (profile.fights) {
     standInFights(ctx, userId, bot, day);
     if (day % 7 >= 4) bot.raidThisWeek = true;
   }
-  seatFree(w, sim, userId, ctx);
+  answerGate(w, sim, userId);
+  seatFree(w, sim, userId, ctx, profile.policy);
+  equipAll(ctx, w, sim, userId);
   evolveAll(ctx, w, sim, userId);
   view = w.settle.settle(userId, 'now') ?? view;
   giveGifts(ctx, w, sim, userId, bot, week, view);
   buyThings(ctx, w, sim, userId, profile.policy);
+  learnTalents(ctx, w, sim, userId, profile.fights);
   view = w.settle.settle(userId, 'now') ?? view;
   communalSeats(ctx, w, sim, userId, view);
-  unstickAnvils(w, sim, userId, view);
+  unstickAnvils(ctx, w, sim, userId, view, bot);
   schoolSeats(w, sim, userId);
   const visitor = w.visitor.buyBlueprint(userId, keyOf('visitor'));
   if (!visitor.ok && visitor.error !== 'visitor_away' && visitor.error !== 'already_bought') {
@@ -1042,6 +1313,8 @@ export function valleySimDay(ctx: ToolCtx, body: { maxVisits?: number | undefine
   if (done) {
     sim.day = day + 1;
     sim.cursor = 0;
+    // The month is over: its triggers and tables go, so staging's normal play pays nothing for them.
+    if (sim.day >= MAX_DAYS) dropSimTables(ctx.sql);
   }
   writeSim(ctx, sim);
   return { day, done, visits: played, rows, finished: sim.day >= MAX_DAYS };
@@ -1090,13 +1363,17 @@ function endDay(ctx: ToolCtx, w: ValleyWorld, sim: SimState, day: number): void 
 
 /** The share of the anvils' effective hours not spent working on a piece, since the player joined (0 before any hours). */
 function tinkerShareOf(sql: SqlStorage, userId: string): number {
-  const row = sql
-    .exec<{ work: number; total: number }>(
-      'SELECT work, total FROM valley_sim_forge WHERE user_id = ?',
-      userId,
-    )
-    .toArray()[0];
-  return row !== undefined && row.total > 0 ? 1 - row.work / row.total : 0;
+  try {
+    const row = sql
+      .exec<{ work: number; total: number }>(
+        'SELECT work, total FROM valley_sim_forge WHERE user_id = ?',
+        userId,
+      )
+      .toArray()[0];
+    return row !== undefined && row.total > 0 ? 1 - row.work / row.total : 0;
+  } catch {
+    return 0;
+  }
 }
 
 function metricsOf(sql: SqlStorage, userId: string, bot: BotState): Metrics {
@@ -1160,6 +1437,8 @@ export function valleyReport(ctx: ToolCtx): ReportResult {
   const profiles: ReportResult['report']['profiles'] = {};
   const days = new Set<number>();
   for (const info of sim.bots) {
+    // The stand-in for the human's seat only plays; the lab's "daily" in the report is bot 1.
+    if (info.n === STAND_IN_BOT) continue;
     const bot = readBot(ctx, info.id);
     const entry = (profiles[info.profile] ??= { days: [] });
     for (const [key, metrics] of Object.entries(bot.snaps)) {

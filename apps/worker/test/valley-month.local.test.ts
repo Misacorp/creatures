@@ -7,11 +7,24 @@
  * dev`); this is the dry run that needs no account: valley-fresh, valley-bots, 28 `valley-sim-day` calls, valley-report.
  */
 import { describe, it } from 'vitest';
+import { liveRng } from '../src/rng';
 import { ON, player } from './dev-helpers';
 import { runCore } from './helpers';
 import { nextGuild } from './raid-helpers';
 
-const SYSTEMS = { ...ON, valleySystems: true, combatV2: true, dailyAllowance: true } as const;
+// The month plays with live dice, as staging does: the harness's seeded ones would give the same seven (now eight) bots every run, one
+// sample of the starters' elements that the lab's 20 seeds average over.
+const SYSTEMS = {
+  ...ON,
+  valleySystems: true,
+  combatV2: true,
+  dailyAllowance: true,
+  rng: liveRng(),
+  talentRng: liveRng(),
+  gearRng: liveRng(),
+  raidRng: liveRng(),
+  dungeonRng: liveRng(),
+} as const;
 
 describe('the simulated month, locally', () => {
   it('plays 28 game days of the bots and prints the report', async () => {

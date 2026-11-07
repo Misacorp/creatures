@@ -903,3 +903,104 @@ describe('item level is quality, not a requirement (V-GEAR-3, with the valley sy
     );
   });
 });
+
+describe('the daily job: unfunded projects follow the weight, Master titles warm the fire', () => {
+  const size = (sql: SqlStorage, place: string): number =>
+    sql.exec<{ size: number }>('SELECT size FROM valley_places WHERE place = ?', place).one().size;
+
+  it("resizes an open project nobody has given to by the day's weight, and leaves one with a gift alone (V-COM-5)", async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await newPlayer(ctx, 1);
+        await view(p);
+        // Opened by the first visit, when the weight is one.
+        const one =
+          R.commons.baseSize * R.commons.levelFactor[0]! * (1 / 8) ** R.commons.sizeExponent;
+        expect(size(ctx.sql, 'bonfire')).toBeCloseTo(one, 6);
+        // Two more players arrive the same day; the daily job writes a weight of three and resizes the unfunded project.
+        for (const n of [2, 3]) await (await newPlayer(ctx, n)).state();
+        ctx.clock.t += DAY;
+        await ctx.core.alarm();
+        const three =
+          R.commons.baseSize * R.commons.levelFactor[0]! * (3 / 8) ** R.commons.sizeExponent;
+        expect(size(ctx.sql, 'bonfire')).toBeCloseTo(three, 6);
+        // One Acorn in it fixes the size: a later, bigger weight does not move it (V-COM-4: a project never changes).
+        creditParts(ctx.sql, p.id, { scrap: 10 });
+        expect((await gift(p, { place: 'bonfire', currency: 'scrap', amount: 5 })).status).toBe(
+          200,
+        );
+        ctx.sql.exec('UPDATE valley_server SET weight = 8');
+        ctx.core.valleyCommons?.resizeUnfunded(8);
+        expect(size(ctx.sql, 'bonfire')).toBeCloseTo(three, 6);
+      },
+      SYSTEMS,
+    );
+  });
+
+  it('warms the fire one step for every five Master titles, once, and never takes it back (V-COM-13)', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await newPlayer(ctx, 1);
+        await p.state();
+        const top = R.posts.mastery.at(-1)!.hours;
+        const fire = async (): Promise<number> => (await view(p)).commons?.fire.level ?? 0;
+        const masterSteps = (): number =>
+          ctx.sql
+            .exec<{ n: number }>(
+              "SELECT COUNT(*) AS n FROM valley_fire_log WHERE source = 'master'",
+            )
+            .one().n;
+        const start = await fire();
+        // Four titles are not a step.
+        ctx.sql.exec(
+          'UPDATE valley_creatures SET scout_hours = ? WHERE creature_id = ?',
+          top,
+          p.creatureIds[0],
+        );
+        ctx.sql.exec(
+          'UPDATE valley_creatures SET smith_hours = ? WHERE creature_id = ?',
+          top,
+          p.creatureIds[0],
+        );
+        ctx.sql.exec(
+          'UPDATE valley_creatures SET scout_hours = ? WHERE creature_id = ?',
+          top,
+          p.creatureIds[1],
+        );
+        ctx.sql.exec(
+          'UPDATE valley_creatures SET smith_hours = ? WHERE creature_id = ?',
+          top,
+          p.creatureIds[1],
+        );
+        ctx.core.valleyCommons?.warmMasters(ctx.clock.t);
+        expect(masterSteps()).toBe(0);
+        expect(await fire()).toBe(start);
+        // The fifth title (a hair under the top step is not a title) makes one step.
+        ctx.sql.exec(
+          'UPDATE valley_creatures SET scout_hours = ? WHERE creature_id = ?',
+          top - 0.5,
+          p.creatureIds[2],
+        );
+        ctx.core.valleyCommons?.warmMasters(ctx.clock.t);
+        expect(masterSteps()).toBe(0);
+        ctx.sql.exec(
+          'UPDATE valley_creatures SET scout_hours = ? WHERE creature_id = ?',
+          top,
+          p.creatureIds[2],
+        );
+        ctx.core.valleyCommons?.warmMasters(ctx.clock.t);
+        expect(masterSteps()).toBe(1);
+        expect(await fire()).toBe(start + 1);
+        // Calling again owes nothing; the daily job calls it.
+        ctx.core.valleyCommons?.warmMasters(ctx.clock.t);
+        ctx.clock.t += DAY;
+        await ctx.core.alarm();
+        expect(masterSteps()).toBe(1);
+        expect(await fire()).toBe(start + 1);
+      },
+      SYSTEMS,
+    );
+  });
+});

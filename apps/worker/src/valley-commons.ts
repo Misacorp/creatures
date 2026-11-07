@@ -200,6 +200,25 @@ export class ValleyCommons {
     }
   }
 
+  /**
+   * The daily job's weight resizes the open projects nobody has given to yet (no Acorns, scrap, shards or communal work in them). A
+   * project is sized when it opens; on a new server that is the first visit, when the weight is one, so the first project would stay
+   * sized for one player however many join in the next hours. Once anything is in a project its size is fixed (V-COM-4: never changes).
+   */
+  resizeUnfunded(weight: number): void {
+    const rows = this.sql
+      .exec<{ place: string; level: number; size: number }>(
+        `SELECT place, level, size FROM valley_places
+         WHERE size > 0 AND have_acorns = 0 AND have_scrap = 0 AND have_shards = 0`,
+      )
+      .toArray();
+    for (const row of rows) {
+      const size = projectSize(VALLEY_RULES, row.level, weight, row.place);
+      if (Math.abs(size - row.size) < 1e-9) continue;
+      this.sql.exec('UPDATE valley_places SET size = ? WHERE place = ?', size, row.place);
+    }
+  }
+
   /** V-BON-7: the hearth's growth multiplier in basis points now (the bonfire's level). */
   hearth(snap: CommonsSnapshot): number {
     return hearthBp(VALLEY_RULES, snap.places.get('bonfire')?.level ?? 1);
@@ -220,6 +239,31 @@ export class ValleyCommons {
    */
   bossFell(now: number): void {
     this.warm(this.load(now), 'boss', null, now);
+  }
+
+  /**
+   * V-COM-13: every `masterTitlesPerPoint` Master titles in the valley warm the fire by one step. A title is a creature's mastery of one
+   * work (scouting, smithing) at the top step of the ladder (V-POST-12: 504 hours); the hours stay with the creature. Called once a game
+   * day by `maintain`: the steps owed are the points the titles make now, less the 'master' steps already in the fire's log, so it never
+   * warms twice for a title and never takes warmth back (the fire never falls).
+   */
+  warmMasters(now: number): void {
+    const top = VALLEY_RULES.posts.mastery.at(-1)?.hours;
+    if (top === undefined) return;
+    const row = this.sql
+      .exec<{ titles: number | null }>(
+        `SELECT SUM(scout_hours >= ?) + SUM(smith_hours >= ?) AS titles FROM valley_creatures`,
+        top,
+        top,
+      )
+      .one();
+    const points = Math.floor((row.titles ?? 0) / VALLEY_RULES.fire.warmth.masterTitlesPerPoint);
+    const done = this.sql
+      .exec<{ n: number }>("SELECT COUNT(*) AS n FROM valley_fire_log WHERE source = 'master'")
+      .one().n;
+    if (points <= done) return;
+    const snap = this.load(now);
+    for (let i = done; i < points; i++) this.warm(snap, 'master', null, now);
   }
 
   /** Warms the fire by a step of a source (V-COM-13). */

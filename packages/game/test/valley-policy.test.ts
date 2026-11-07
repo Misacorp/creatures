@@ -2,12 +2,14 @@ import { describe, expect, it } from 'vitest';
 import {
   MIXED8_BOTS,
   PROFILES,
+  STAND_IN_BOT,
   ProfileSchema,
   VALLEY_ELEMENTS,
   VALLEY_RULES,
   anvilKitFor,
   choosePurchase,
   defaultDestination,
+  drawByWeight,
   evolutionOrder,
   giftAmount,
   giftBudgetAfterIncome,
@@ -17,6 +19,7 @@ import {
   needsOf,
   nextKit,
   pickFreeCreature,
+  pickScoutCreature,
   profileById,
   retiltPlan,
   speciesAvailableAt,
@@ -27,11 +30,13 @@ import * as v from 'valibot';
 const R = VALLEY_RULES;
 
 describe('the profiles', () => {
-  it('are valid data, one id each, and the bots are the lab mixed server of 8 without one daily player', () => {
+  it('are valid data, one id each, and the bots are the lab mixed server of 8 (bot 0 stands in for the human seat)', () => {
     for (const p of PROFILES) expect(v.safeParse(ProfileSchema, p).success).toBe(true);
     expect(new Set(PROFILES.map((p) => p.id)).size).toBe(PROFILES.length);
     const ids = MIXED8_BOTS.map((b) => b.id);
-    expect(ids).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    expect(ids).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
+    expect(STAND_IN_BOT).toBe(0);
+    expect(MIXED8_BOTS.filter((b) => b.profile === 'daily').map((b) => b.id)).toEqual([0, 1]);
     for (const b of MIXED8_BOTS) expect(() => profileById(b.profile)).not.toThrow();
   });
 
@@ -151,6 +156,42 @@ describe('who works, who evolves, what is given', () => {
         { hours: 0, level: 6 },
       ]),
     ).toBe(2);
+  });
+
+  it("a gift goes to an open project drawn over the places' weights, the lab's arithmetic", () => {
+    // Weights 2, 3, 1 (total 6): the draw splits [0, 1/3), [1/3, 5/6), [5/6, 1).
+    expect([0, 0.32, 0.34, 0.8, 0.84, 0.999].map((u) => drawByWeight([2, 3, 1], u))).toEqual([
+      0, 0, 1, 1, 2, 2,
+    ]);
+    expect(drawByWeight([1], 0.7)).toBe(0);
+    // The lab draws with `weighted(rng, weights)`: the same thing on a seeded number.
+    expect(
+      drawByWeight([R.commons.placeWeights['bonfire']!, R.commons.placeWeights['market']!], 0),
+    ).toBe(0);
+  });
+
+  it('a scout seat takes a creature that fits its place as often as the share says, else one that does not', () => {
+    const roster = [
+      { hours: 0, level: 9, fits: false },
+      { hours: 0, level: 5, fits: true },
+      { hours: 0, level: 7, fits: true },
+      { hours: 3, level: 20, fits: false },
+    ];
+    // Below the share: among the fitting ones, the fewest hours and then the highest level.
+    expect(pickScoutCreature(roster, 0.3, 0.1)).toBe(2);
+    // At or above it: among the others by the same rule.
+    expect(pickScoutCreature(roster, 0.3, 0.3)).toBe(0);
+    // A wanted kind nobody is falls back to all of them.
+    expect(
+      pickScoutCreature(
+        roster.filter((c) => !c.fits),
+        0.9,
+        0.1,
+      ),
+    ).toBe(0);
+    expect(pickScoutCreature([], 0.5, 0.5)).toBe(-1);
+    // The shares are the lab's: a set-and-forget player about a third of the time, an optimiser almost always.
+    expect(R.posts.fitShare.setAndForget).toBeLessThan(R.posts.fitShare.optimiser);
   });
 
   it('creatures waiting to evolve go best first, keeping the roster order on a tie', () => {

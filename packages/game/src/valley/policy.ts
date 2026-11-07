@@ -8,8 +8,9 @@ import { kitTilt, type ScoutKit } from './scouts';
  * a kind plays the way the lab's player of that kind does.
  *
  * What is shared: which seat or kit to buy (`choosePurchase`), where scouts go and which kit they carry (`defaultDestination`, `needsOf`,
- * `retiltPlan`, `anvilKitFor`), who takes a free seat (`pickFreeCreature`), the evolution order (`evolutionOrder`) and how much of the income
- * goes to the projects (`giftBudgetAfterIncome`, `giftAmount`, `isHoarding`, `isDumping`, `keepOf`).
+ * `retiltPlan`, `anvilKitFor`), who takes a free seat (`pickFreeCreature`, and `pickScoutCreature` for a scout seat, where the lab's average
+ * fit becomes a draw), the evolution order (`evolutionOrder`), how much of the income goes to the projects (`giftBudgetAfterIncome`,
+ * `giftAmount`, `isHoarding`, `isDumping`, `keepOf`) and which open project a gift goes to (`drawByWeight`).
  *
  * What only one side has: the lab models the dungeon's and the raid's gear, honours' boxes, tempering and the idol; the server has none of
  * them in the bots (their fights are stand-ins that pay the lab's inputs). The server has the Paddock gate, the School's seats, the visitor's
@@ -216,9 +217,50 @@ export function pickFreeCreature(candidates: readonly SeatCandidate[]): number {
   return best;
 }
 
+/** A creature that could stand at a seat, and whether its element is the seat's place's (V-POST-4: it fits). */
+export interface FitCandidate extends SeatCandidate {
+  readonly fits: boolean;
+}
+
+/**
+ * Which creature takes a free scout seat. The lab models how often a seat's creature happens to fit its post as an average
+ * (`rules.posts.fitShare`: a set-and-forget player looks at the icon about a third of the time, an optimiser almost always); a bot draws
+ * it: with that chance (`u` below the share) it picks among the creatures that fit, otherwise among those that do not, each by
+ * `pickFreeCreature`'s rule, and falls back to all of them when the wanted kind has none. Returns the index, -1 for none.
+ */
+export function pickScoutCreature(
+  candidates: readonly FitCandidate[],
+  fitShare: number,
+  u: number,
+): number {
+  const wantFit = u < fitShare;
+  const kind = candidates.filter((c) => c.fits === wantFit);
+  const pool = kind.length > 0 ? kind : candidates;
+  const at = pickFreeCreature(pool);
+  return at < 0 ? -1 : candidates.indexOf(pool[at] as FitCandidate);
+}
+
 /** Creatures waiting at the evolve level take the Essence best first: highest level first (a stable sort keeps the roster order). */
 export function evolutionOrder<T extends { readonly level: number }>(waiting: readonly T[]): T[] {
   return [...waiting].sort((a, b) => b.level - a.level);
+}
+
+// ---------- where a gift goes (V-COM-5: "the server chooses together") ----------
+
+/**
+ * Which open project a gift of Acorns or scrap goes to: a draw over the places' weights (`rules.commons.placeWeights`, 1 for a place
+ * with none), `u` a uniform number in [0, 1). The lab draws with its seeded numbers, the staging bots with the live ones; the weights
+ * and the arithmetic are the same. Returns the index into `weights`.
+ */
+export function drawByWeight(weights: readonly number[], u: number): number {
+  let total = 0;
+  for (const w of weights) total += w;
+  let point = u * total;
+  for (let i = 0; i < weights.length; i++) {
+    point -= weights[i] ?? 0;
+    if (point < 0) return i;
+  }
+  return weights.length - 1;
 }
 
 // ---------- gifts to the projects (V-COM-5: "about a third of income") ----------

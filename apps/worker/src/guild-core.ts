@@ -462,6 +462,7 @@ export class GuildCore {
   readonly valleyGazette: ValleyGazette | null;
   /** The server's middle, who is online and the raid's pause of posts (`VALLEY_SYSTEMS`), or null with the flag off. */
   readonly valleyBonfire: ValleyBonfire | null;
+  readonly valleyCommons: ValleyCommons | null;
   /** Gifts to the commons' projects (`VALLEY_SYSTEMS`), or null with the flag off. */
   readonly valleyGifts: ValleyGifts | null;
   /** The weekly visitor's reads and spends (`VALLEY_SYSTEMS`), or null with the flag off. */
@@ -582,6 +583,7 @@ export class GuildCore {
       });
       this.valleyBonfire = bonfire;
       const commons = new ValleyCommons({ storage, now, roll: () => finds.roll() });
+      this.valleyCommons = commons;
       const visitorWeeks = new VisitorWeeks({
         storage,
         now,
@@ -664,6 +666,8 @@ export class GuildCore {
           school: this.valleySchool,
           commons,
           collection: this.collection,
+          // The player's gear module (Equip best), which the bots press at a visit (staging only).
+          gear: () => this.gear,
           // What the alarm runs by itself in a game day, for the simulated month's day calls (staging only).
           daily: () => {
             this.weather.ensure();
@@ -688,6 +692,7 @@ export class GuildCore {
       this.valleyTrials = null;
       this.valleyGazette = null;
       this.valleyBonfire = null;
+      this.valleyCommons = null;
     }
     this.gear = new Gear({
       storage,
@@ -1949,7 +1954,13 @@ export class GuildCore {
     this.dungeon.prune();
     pruneAway(this.sql, this.now());
     // The valley's server middle (V-BON-2), once a game day: one read of the active players' levels and one row written.
-    this.valleyBonfire?.writeMiddle(this.now());
+    const written = this.valleyBonfire?.writeMiddle(this.now());
+    // A project nobody has given to yet follows the day's weight, so a server that filled up after its first visit is sized for the
+    // players it has now (V-COM-5), not for the one who opened the valley.
+    if (written !== undefined && written.weight > 0)
+      this.valleyCommons?.resizeUnfunded(written.weight);
+    // Master titles warm the fire a step for every few of them (V-COM-13).
+    this.valleyCommons?.warmMasters(this.now());
     const oldBacklog = pruneOldData(this.storage, this.now(), this.timezone());
     this.pruneBacklog = analyticsBacklog || oldBacklog;
     if (!this.pruneBacklog) markMaintained(this.sql, day);

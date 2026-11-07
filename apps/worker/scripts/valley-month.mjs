@@ -10,7 +10,7 @@
 //            --no-rerun        do not play the month a second time when something disagrees
 //
 // WHAT IT DOES TO THE SERVER: `valley-fresh` wipes EVERY player's progress in the guild (the one that owns the token too), `valley-bots` moves
-// the dev clock to the next Monday and makes seven bots, 28 `valley-sim-day` calls move it a month on. Run it only on staging, only when
+// the dev clock to the next Monday and makes eight bots (the lab's mixed server of 8; one stands in for the human), 28 `valley-sim-day` calls move it a month on. Run it only on staging, only when
 // Misa asks. The token is a session token of someone who manages the Discord server (the dev tools' gate); it is read from the environment,
 // sent only to the host named on the command line (https staging, or an http loopback address) and never printed or written.
 //
