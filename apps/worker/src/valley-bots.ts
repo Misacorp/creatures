@@ -122,6 +122,8 @@ interface SimState {
   rowsLog: { day: number; read: number; written: number; visits: number }[];
   /** The day (0-based) of the server's first place level-up, once it came. */
   firstLevelUpDay: number | null;
+  /** The day (0-based) each place first reached level 2 (the hearth's first level, the Market's build), for the month's own report. */
+  placeDays?: Record<string, number>;
   /** The valley's own numbers at the end of each snapshot day (keyed by the count of days played). */
   serverSnaps: Record<string, Record<string, number>>;
   /** Declined intents by kind (a keyed spend the server refused, a seat that would not take a creature, ...). */
@@ -709,12 +711,20 @@ function giveGifts(
     const rate = R.forge.exchange.rate;
     const anyElement = place.project?.anyShard !== null && place.project?.anyShard !== undefined;
     const own = VALLEY_ELEMENTS.indexOf((place.project?.shardElement ?? '') as never);
-    const order = VALLEY_ELEMENTS.map((_, e) => e).sort((x, y) => spareOf(y) - spareOf(x));
+    // The lab's order: the place's own element first, in full, then the others by their spare (each at the exchange's rate), so the
+    // budget is not spent at 3 for 1 while the place's own element is held.
+    const order = VALLEY_ELEMENTS.map((_, e) => e)
+      .sort((x, y) => spareOf(y) - spareOf(x))
+      .sort((x, y) => Number(y === own && !anyElement) - Number(x === own && !anyElement));
     for (const e of order) {
       if (room < 1) break;
       const inFull = anyElement || e === own;
       const spare = Math.floor(giftAmount(bot.budget.shards, spareOf(e), dumping));
-      const amount = inFull ? Math.min(spare, room) : Math.min(spare, room * rate);
+      // Another element's shards go in whole sets of `rate` (the lab's `floor(budget / rate)` units): the server spends units times the
+      // rate, so an odd shard asked for would be taken off the budget without being spent.
+      const amount = inFull
+        ? Math.min(spare, room)
+        : Math.floor(Math.min(spare, room * rate) / rate) * rate;
       if (amount < (inFull ? 1 : rate)) continue;
       const element = VALLEY_ELEMENTS[e];
       const sGiven2 = give(place.id, 'shards', amount, element);
@@ -1330,6 +1340,10 @@ function endDay(ctx: ToolCtx, w: ValleyWorld, sim: SimState, day: number): void 
   if (day % 7 === 6) standInRaid(at, w, ids, Math.floor(day / 7));
   const levels = R.commons.places.map((place) => w.commons.levelOf(place));
   if (sim.firstLevelUpDay === null && levels.some((l) => l > 1)) sim.firstLevelUpDay = day;
+  R.commons.places.forEach((place, i) => {
+    sim.placeDays ??= {};
+    if (sim.placeDays[place] === undefined && (levels[i] ?? 1) > 1) sim.placeDays[place] = day;
+  });
   if (!isSnapshotDay(day)) return;
   moveClockTo(ctx, dayStart(sim, day, tz) + 23 * HOUR_MS + 59 * 60_000);
   const key = String(day + 1);
@@ -1421,6 +1435,7 @@ export interface ReportResult {
     rowsTotal: { read: number; written: number };
     declined: Record<string, number>;
     firstLevelUpDay: number | null;
+    placeDays: Record<string, number>;
     players: { id: string; kind: string; metricsNow: Metrics }[];
   };
 }
@@ -1473,6 +1488,7 @@ export function valleyReport(ctx: ToolCtx): ReportResult {
       },
       declined: sim.declined,
       firstLevelUpDay: sim.firstLevelUpDay,
+      placeDays: sim.placeDays ?? {},
       players: humans.map((h, i) => ({
         id: `player-${String(i + 1)}`,
         kind: 'human',

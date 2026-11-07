@@ -53,6 +53,7 @@ describe('the simulated month, locally', () => {
         console.log('LIVE-REPORT-END');
         console.log(`MONTH-ROWS ${JSON.stringify(report.month.rowsTotal)}`);
         console.log(`MONTH-DECLINED ${JSON.stringify(report.month.declined)}`);
+        console.log(`MONTH-PLACE-DAYS ${JSON.stringify(report.month.placeDays)}`);
         console.log(`MONTH-FIRST-LEVELUP ${String(report.month.firstLevelUpDay)}`);
       },
       SYSTEMS,

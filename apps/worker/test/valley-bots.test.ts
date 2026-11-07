@@ -140,6 +140,11 @@ describe('a few days of the month', () => {
         expect(xp).toBeGreaterThan(0);
         const report = await p.tool('valley-report', {});
         expect(report.report.version).toBe(1);
+        // The server's Market takes shards of any element (V-COM-15), which is the lab's `mixed8-market`; `mixed8-market-shards` pays the
+        // Market like the other projects and is built in week 10 (step 10c: the compare against it blamed the live valley for the lab's
+        // own starving anvils).
+        expect(report.report.scenario).toBe('mixed8-market');
+        expect(report.month.placeDays).toBeTypeOf('object');
         // The stand-in for the human's seat plays but is not reported: the report's "daily" is bot 1 alone.
         expect(report.report.profiles.daily.days.length).toBeLessThanOrEqual(1);
         expect(report.month.daysPlayed).toBe(3);
@@ -244,6 +249,8 @@ describe("the month's dev triggers and tables", () => {
         ctx.clock.t += 2_000;
         const report = await p.tool('valley-report', {});
         expect(report.month.daysPlayed).toBe(28);
+        // The days the hearth and the Market first levelled are kept for the month's own report (0-based, both within the month).
+        for (const day of Object.values(report.month.placeDays)) expect(day).toBeLessThan(28);
         expect(report.report.profiles.weekly.days).toHaveLength(4);
         expect(report.report.profiles.weekly.days[3].metrics.scrapIn).toBeGreaterThan(0);
       },
