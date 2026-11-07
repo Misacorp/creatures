@@ -1204,7 +1204,7 @@ export function valleyBots(ctx: ToolCtx): BotsResult {
   ensureFlows(ctx.sql);
   const existing = readSim(ctx);
   const sim: SimState = existing ?? {
-    scenario: 'mixed8-market-shards',
+    scenario: 'mixed8-market',
     startMs: nextMonday(ctx.now, ctx.tz),
     day: 0,
     cursor: 0,
