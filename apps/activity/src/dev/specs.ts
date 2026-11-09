@@ -111,6 +111,73 @@ export const ROSTER_PRESET_SPEC: ToolSpec = {
   fields: [],
 };
 
+/**
+ * The Valley group (shown only with the valley systems on). "Play days" is its own component (`PlayDays.tsx`), so it has no spec.
+ * `valley-fresh` wipes every player, so it needs the word `everyone` typed; the server's body for it is empty, so `build` drops the word.
+ */
+export const VALLEY_SPECS: readonly ToolSpec[] = [
+  {
+    tool: 'valley-fresh',
+    label: 'Valley fresh',
+    fields: [{ kind: 'text', key: 'confirm', label: 'Type everyone', must: 'everyone' }],
+    build: () => ({}),
+    danger: true,
+    hint: "Wipes EVERY player's progress on this server (creatures, gear, jobs, the valley, the bots) and resets the dev clock. Everyone starts again at the starter choice.",
+  },
+  {
+    tool: 'valley-bots',
+    label: 'Make the bots',
+    fields: [],
+    hint: 'Moves the dev clock to next Monday 00:00 and makes the 8 bots of the simulated month. Safe to repeat. Play days does this by itself.',
+  },
+  {
+    tool: 'valley-sim-day',
+    label: 'Play one day',
+    button: 'Play',
+    fields: [int('maxVisits', 'Visits (empty: all)', 1, 200, true)],
+    hint: 'One game day of the bots. Fill in Visits to play only that many of the day.',
+  },
+  {
+    tool: 'valley-report',
+    label: 'Month report',
+    fields: [],
+    hint: 'The main numbers of the month so far.',
+  },
+  {
+    tool: 'visitor-arrive',
+    label: 'Visitor arrives now',
+    fields: [],
+    hint: "Brings this week's visitor now, whatever the weekday. Safe to repeat.",
+  },
+  {
+    tool: 'school-teacher',
+    label: 'Teacher arrives now',
+    fields: [],
+    fixed: { mode: 'arrive' },
+    hint: "Brings the School's teacher now for this week's stay.",
+  },
+  {
+    tool: 'school-teacher',
+    label: 'Announce next teacher',
+    fields: [],
+    fixed: { mode: 'announce' },
+    hint: "Announces next week's teacher now.",
+  },
+  {
+    tool: 'trials-tick',
+    label: "Tick a creature's trial",
+    button: 'Tick',
+    fields: [creature()],
+    hint: 'Ticks every box of its next trial now, whatever its level. It graduates at the next ceremony.',
+  },
+  {
+    tool: 'trials-ceremony',
+    label: 'Hold the ceremony now',
+    fields: [],
+    hint: 'Graduates your creatures whose trial boxes are all ticked.',
+  },
+];
+
 const CREATURES_SPECS: readonly ToolSpec[] = [
   {
     tool: 'grant-creature',
@@ -374,6 +441,7 @@ export const ALL_SPECS: readonly ToolSpec[] = [
   ...GOODS_SPECS,
   RESET_ACCOUNT_SPEC,
   ROSTER_PRESET_SPEC,
+  ...VALLEY_SPECS,
   ...SECTIONS.flatMap((s) => s.specs),
 ];
 

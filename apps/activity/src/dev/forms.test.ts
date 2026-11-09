@@ -404,6 +404,28 @@ describe('the weather tool', () => {
   });
 });
 
+describe('the Valley group', () => {
+  it('wipes everyone only after "everyone" is typed, and sends an empty body', () => {
+    expect(problem('valley-fresh', 'Valley fresh')).toMatch(/everyone/);
+    expect(problem('valley-fresh', 'Valley fresh', { confirm: 'Everyone' })).toMatch(/everyone/);
+    expect(body('valley-fresh', 'Valley fresh', { confirm: 'everyone' })).toEqual({});
+    expect(spec('valley-fresh', 'Valley fresh').danger).toBe(true);
+  });
+
+  it('sends the bodies the worker schemas take', () => {
+    expect(body('valley-bots', 'Make the bots')).toEqual({});
+    expect(body('valley-sim-day', 'Play one day')).toEqual({});
+    expect(body('valley-sim-day', 'Play one day', { maxVisits: '3' })).toEqual({ maxVisits: 3 });
+    expect(problem('valley-sim-day', 'Play one day', { maxVisits: '201' })).toMatch(/1 to 200/);
+    expect(body('valley-report', 'Month report')).toEqual({});
+    expect(body('visitor-arrive', 'Visitor arrives now')).toEqual({});
+    expect(body('school-teacher', 'Teacher arrives now')).toEqual({ mode: 'arrive' });
+    expect(body('school-teacher', 'Announce next teacher')).toEqual({ mode: 'announce' });
+    expect(body('trials-tick', "Tick a creature's trial")).toEqual({ creatureId: 'c-1' });
+    expect(body('trials-ceremony', 'Hold the ceremony now')).toEqual({});
+  });
+});
+
 describe('the section order', () => {
   it('puts the current tab first and keeps every section', () => {
     expect(orderedSections('dungeon').map((s) => s.id)).toEqual([
