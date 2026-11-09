@@ -22,7 +22,7 @@ type Colour = (x: number, y: number) => string;
 const GROUND = '.123';
 
 const GLOW = {
-  night: { '1': '#55703f', '2': '#8a8a40', '3': '#d09a3c' },
+  night: { '1': '#7a6a34', '2': '#b08a38', '3': '#e8a83c' },
   day: { '1': '#467a4c', '2': '#8e7e4c', '3': '#5e4a3a' },
 };
 const FIRE = {
@@ -156,7 +156,9 @@ function paving(g: Grid, cx: number, cy: number, rx: number, ry: number, lit: nu
       const off = Math.floor(y / 3) % 2 === 0 ? 0 : 3;
       const joint = y % 3 === 2 || (x + off) % 6 === 5;
       const near = ((x - cx) / lit) ** 2 + ((y - cy) / ((lit * ry) / rx)) ** 2 < 1;
-      if (near) return joint ? 'S' : 'T';
+      const hot = ((x - cx) / (lit * 0.7)) ** 2 + ((y - cy) / ((lit * 0.7 * ry) / rx)) ** 2 < 1;
+      if (hot) return joint ? '2' : '3';
+      if (near) return joint ? '1' : '2';
       return joint ? 'k' : 'S';
     },
     false,
@@ -173,14 +175,15 @@ function arcBench(
   top: (x: number, y: number) => string,
 ): void {
   const pts: Pt[] = [];
-  for (const deg of [20, 40, 70, 90, 110, 140, 160]) {
+  for (const deg of [160, 125, 90, 55, 20]) {
     const a = (deg * Math.PI) / 180;
     pts.push([Math.round(cx + rx * Math.cos(a)), Math.round(cy + ry * Math.sin(a))]);
   }
   pts.sort((a, b) => a[1] - b[1]);
+  // separate low slabs: a lit top, a darker front face, a shadowed foot (the ink outline is the shadow beneath)
   for (const [x, y] of pts) {
     paint(g, rectPts(x - 4, y - 2, 8, 5), (px, py) =>
-      py === y - 2 ? top(px, py) : py === y + 2 ? 'S' : 'T',
+      py === y - 2 ? top(px, py) : py === y - 1 ? 'L' : py === y + 2 ? 'S' : 'T',
     );
   }
 }
@@ -223,12 +226,12 @@ const none = { night: {}, day: {} };
 // ---- Level 1: Humble ----------------------------------------------------------------------------------------
 const L1 = build(
   (g) => {
-    glow(g, 32, 46, 21, 8);
+    glow(g, 32, 46, 22, 8);
     paint(g, ellPts(32, 45, 10, 4), 'e', false);
     const rock = (x: number, y: number): void => paint(g, rectPts(x - 2, y - 1, 4, 3), 't');
     ringItems(32, 45, 9, 3.5, 8, 'back', rock);
     fireLogs(g, 32, 41, 10);
-    flame(g, 32, 41, 11, 7);
+    flame(g, 32, 41, 9, 6);
     ringItems(32, 45, 9, 3.5, 8, 'front', rock);
     // the seat log, with a rope lashing and pale cut ends
     paint(g, rectPts(40, 48, 15, 4), (_x, y) => (y === 51 ? 'w' : 'v'));
@@ -279,7 +282,7 @@ const L2 = build(
     const rock = (x: number, y: number): void => paint(g, rectPts(x - 2, y - 1, 5, 3), 't');
     ringItems(32, 43, 11, 4, 10, 'back', rock);
     fireLogs(g, 32, 38, 12);
-    flame(g, 32, 38, 15, 9);
+    flame(g, 32, 38, 12, 8);
     ringItems(32, 43, 11, 4, 10, 'front', rock);
     // benches: left, right and front
     plankBench(g, 5, 42, 16);
@@ -305,12 +308,12 @@ function stonePit(g: Grid, fireTop: (g: Grid) => void): void {
 
 const L3 = build(
   (g) => {
-    glow(g, 32, 46, 29, 10);
+    glow(g, 32, 46, 29, 11);
     // firewood pile at the back right
     for (let r = 0; r < 3; r++) {
       for (let i = 0; i < 4 - r; i++) {
-        paint(g, rectPts(47 + i * 4 + r * 2, 32 + r * 3, 4, 3), (_x, y) =>
-          y === 34 + r * 3 ? 'w' : 'v',
+        paint(g, rectPts(47 + i * 4 + r * 2, 34 + r * 3, 4, 3), (_x, y) =>
+          y === 36 + r * 3 ? 'w' : 'v',
         );
       }
     }
@@ -320,11 +323,15 @@ const L3 = build(
     paint(g, rectPts(12, 21, 14, 2), 'i');
     for (let y = 23; y < 28; y++) put(g, 25, y, 'i');
     paint(g, ellPts(25, 31, 4, 3.5), 'i');
-    put(g, 23, 29, 'T');
-    put(g, 24, 29, 'T');
+    for (let x = 22; x <= 28; x++) put(g, x, 28, 'S');
+    put(g, 22, 31, 'S');
+    put(g, 23, 33, 'S');
+    // a bail handle over the pot
+    for (const x of [22, 28]) put(g, x, 27, 'i');
+    for (let x = 23; x <= 27; x++) put(g, x, 26, 'i');
     stonePit(g, (gg) => {
       fireLogs(gg, 32, 36, 10);
-      flame(gg, 32, 36, 15, 8);
+      flame(gg, 32, 36, 16, 9);
       // iron grate bar over the logs
       paint(gg, rectPts(26, 39, 12, 1), 'i', false);
     });
@@ -359,13 +366,13 @@ function lampPost(g: Grid, x: number): void {
 
 const L4 = build(
   (g) => {
-    glow(g, 32, 46, 30, 10);
-    paving(g, 32, 46, 27, 9, 17);
+    glow(g, 32, 46, 30, 11);
+    paving(g, 32, 46, 27, 9, 25);
     lampPost(g, 6);
     lampPost(g, 58);
     stonePit(g, (gg) => {
       fireLogs(gg, 32, 36, 10, 'k');
-      flame(gg, 32, 36, 15, 8);
+      flame(gg, 32, 36, 20, 11);
     });
     arcBench(g, 32, 43, 25, 9, () => 'L');
     // teal cushions with a cream edge on the three seats
@@ -403,13 +410,13 @@ function shard(g: Grid, x: number, by: number, h: number, w: number, lean: numbe
 function crystalPost(g: Grid, x: number): void {
   paint(g, rectPts(x - 3, 38, 7, 6), (_x, py) => (py === 38 ? 'L' : py === 43 ? 'S' : 'T'));
   paint(g, rectPts(x - 3, 36, 7, 1), 'g');
-  shard(g, x, 35, 16, 5, 0);
+  shard(g, x, 35, 10, 5, 0);
 }
 
 const L5 = build(
   (g) => {
-    glow(g, 32, 46, 31, 10);
-    paving(g, 32, 46, 28, 10, 18);
+    glow(g, 32, 46, 31, 12);
+    paving(g, 32, 46, 28, 10, 27);
     for (const [x, y] of [
       [12, 48],
       [20, 52],
@@ -422,10 +429,8 @@ const L5 = build(
     crystalPost(g, 5);
     crystalPost(g, 59);
     // the brazier: stone plinth, gold band, a bowl crowned with crystal
-    shard(g, 22, 36, 12, 4, -2);
-    shard(g, 42, 36, 12, 4, 2);
-    shard(g, 27, 34, 9, 3, -1);
-    shard(g, 37, 34, 9, 3, 1);
+    shard(g, 25, 36, 15, 4, -2);
+    shard(g, 39, 36, 17, 4, 2);
     paint(g, ellPts(32, 44, 10, 3.5), (_x, py) => (py > 45 ? 'S' : 'T'));
     paint(g, rectPts(26, 41, 13, 4), (_x, py) => (py === 41 ? 'L' : 'T'));
     paint(g, rectPts(26, 43, 13, 1), 'g', false);
@@ -436,8 +441,7 @@ const L5 = build(
       put(g, x, 38 + dy, 'g');
       put(g, x, 38 - dy, 'g');
     }
-    flame(g, 32, 38, 15, 9);
-    put(g, 32, 47, 'h');
+    flame(g, 32, 38, 26, 13);
     // gold-edged benches with crystal inlay
     arcBench(g, 32, 43, 25, 9, () => 'g');
     for (const [x, y] of [
@@ -457,7 +461,6 @@ const L5 = build(
       l: 'crystalLight',
       D: 'crystalShade',
       g: 'gold',
-      h: 'goldShade',
     }),
   ],
   none,
@@ -490,7 +493,7 @@ export const VALLEY_LEVELS_BONFIRE_CONCEPTS: ConceptSet = {
     'All five levels are 64x56 with the hearth at the same spot (fire centred on x 32) and the art on one base row; smaller levels leave the top and sides empty. Night is the main palette with the firelight in stepped rings on the ground; alts.day keeps the fire lit.',
     'Level 1 Humble: a small fire in a loose ring of fieldstones on packed earth, one log to sit on (rope lashing, pale cut ends) and two sticks. Seat: (47, 52).',
     'Level 2 Settled: a neater fire ring, two sawn plank benches and a front bench, a plank sign, and a wood store with the red-brown shingle roof. Seats: (13, 48), (51, 48), (32, 54).',
-    'Level 3 Stone: a pit of dressed grey stone, a curved bench of dressed stone blocks, black iron: a grate over the logs, a crane with a hanging cauldron, bands on the bench ends, and a firewood pile. Seats: (9, 49), (32, 55), (55, 49).',
+    'Level 3 Stone: a pit of dressed grey stone, an arc of five separate dressed-stone slab seats, black iron: a grate over the logs, a crane with a hanging cauldron, bands on the bench ends, and a firewood pile. Seats: (9, 49), (32, 55), (55, 49).',
     'Level 4 Valley: the stone pit on a paved floor lit by the fire, teal-and-cream cushions on the three seats, brass lamps on posts with teal banners (lamp glass lit at night, plain by day). Seats as level 3.',
     'Level 5 Crystal: a stone brazier with a gold band and gold rim, crowned with four crystal shards (the crystal glows by day too), crystal posts with gold caps, gold-edged benches with crystal inlay, crystal inlay in the paving. Seats as level 3. The 16-colour limit leaves no room for the level 4 pennants here; the crystal posts replace the lamps.',
   ],
