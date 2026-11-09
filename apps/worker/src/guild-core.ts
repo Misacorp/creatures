@@ -1,4 +1,4 @@
-import { RULES, type Rng } from '@creatures/game';
+import { RULES, type HousingHook, type Rng } from '@creatures/game';
 import * as v from 'valibot';
 import { DailyAllowance } from './allowance';
 import { Analytics, RETENTION_MS } from './analytics';
@@ -9,7 +9,11 @@ import { Dungeon } from './dungeon';
 import { dungeonRoutes } from './dungeon-routes';
 import { Gear } from './gear';
 import { Games } from './games';
+import { Housing } from './housing';
+import { HousingDrops } from './housing-drops';
+import { housingRoutes, isHousingPath } from './housing-routes';
 import { gamesRoutes } from './games-routes';
+import { weekIdFor } from './raid-schedule';
 import { convertPendingGear } from './gear-convert';
 import { normaliseGearRows } from './gear-normalise';
 import { rollMissingTalents } from './talent-store';
@@ -235,7 +239,10 @@ function isIntent(method: string, pathname: string): boolean {
   if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS') return false;
   // Closing the Gazette's paper depends on nothing the pass reads.
   return (
-    pathname !== '/api/room' && pathname !== '/api/valley/gazette/close' && !isDevPath(pathname)
+    pathname !== '/api/room' &&
+    pathname !== '/api/valley/gazette/close' &&
+    !isHousingPath(pathname) &&
+    !isDevPath(pathname)
   );
 }
 
@@ -248,6 +255,7 @@ const routes: Routes<RequestContext> = {
   ...raidRoutes,
   ...weatherRoutes,
   ...gamesRoutes,
+  ...housingRoutes,
   ...dmRoutes,
   ...liveRoutes,
   ...devRoutes,
@@ -388,6 +396,16 @@ export interface GuildCoreOptions {
   /** The valley's base systems (`VALLEY_SYSTEMS` on with `VALLEY` and `COMBAT_V2` on, see `valley-flag.ts`): the `valley-fresh` dev tool can run. */
   valleySystems?: boolean;
   /**
+   * Player housing (the `HOUSING` var is "on", see `docs/design/housing.md`): the `/api/house` routes exist and the drop hook is built.
+   * Off (the default): the routes answer like a missing route, there is no hook and nothing of housing is read or written.
+   */
+  housing?: boolean;
+  /**
+   * Live randomness for what the reward moments drop into the house. Defaults to crypto.getRandomValues; separate from the others, so a
+   * drop never consumes a test's scripted draws and a test can seed it.
+   */
+  housingRng?: Rng;
+  /**
    * Live randomness for what scouts find (`VALLEY_SYSTEMS`): how many creatures, gear pieces, blueprints and pages each stretch brings
    * and which species. Defaults to crypto.getRandomValues; separate from the others so a scout's draw never consumes a scripted one.
    */
@@ -462,6 +480,10 @@ export class GuildCore {
   readonly valleyGifts: ValleyGifts | null;
   /** The `VALLEY_SYSTEMS` flag as the worker resolved it (see `valley-flag.ts`). */
   readonly valleySystems: boolean;
+  /** Player housing (`HOUSING`), or null with the flag off: its routes answer like a missing route. */
+  readonly housing: Housing | null;
+  /** The reward paths' hook into the house (`HousingDrops`), or null with the flag off. Package F passes it to each reward system. */
+  readonly housingHook: HousingHook | null;
   private postsInFlight: Promise<void> | null = null;
   private dmsInFlight: Promise<void> | null = null;
   private loungeInFlight: Promise<void> | null = null;
@@ -526,6 +548,23 @@ export class GuildCore {
     this.valleySystems = options.valleySystems === true;
     const gearRng = options.gearRng ?? liveRng();
     this.gearRng = gearRng;
+    // Player housing (`HOUSING`): the house and the hook the reward paths call. Without the flag neither exists.
+    if (options.housing === true) {
+      this.housing = new Housing({
+        storage,
+        now,
+        timezone: () => this.timezone(),
+        currentBoss: () => this.raid.week(weekIdFor(now(), this.timezone()))?.bossId ?? null,
+      });
+      this.housingHook = new HousingDrops({
+        storage,
+        now,
+        rng: options.housingRng ?? liveRng(),
+      });
+    } else {
+      this.housing = null;
+      this.housingHook = null;
+    }
     this.collection = new Collection({
       storage,
       now,
@@ -680,6 +719,7 @@ export class GuildCore {
             raid: this.raid,
             games: this.games,
             weather: this.weather,
+            housing: this.housing,
             combatV2: options.combatV2 === true,
             valleySystems: options.valleySystems === true,
             rng: options.raidRng ?? liveRng(),
@@ -1052,6 +1092,8 @@ export class GuildCore {
         console.error('valley settle failed', err instanceof Error ? err.name : 'unknown');
       }
     }
+    // With player housing off its routes do not exist: the same answer as any missing route.
+    if (this.housing === null && isHousingPath(pathname)) return notFound();
     const template = matchTemplate(ROUTE_KEYS, pathname);
     const response = await dispatch(routes, request, template?.template ?? pathname, {
       user,
