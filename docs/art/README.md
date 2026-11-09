@@ -23,6 +23,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | [Valley places: posters](#valley-posters) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
 | [The School's visiting teacher](#valley-school) | draft | 4 | 2026-11-03 (via the valley session, Misa's round 22 decision): show the visiting teacher with no banner: the bell swings, a lectern at the door, a bench of students, a teacher prop. |
 | [Valley sky, day and night](#valley-sky) | draft | 2 | 2026-11-03 (Q50, via the valley session): place screens drop the poster; Misa likes "the added depth of having a sky in the background ... We'd just need the proper sky images. Eventually the sky backdrop could vary based on location." |
+| [Valley building levels: the shared materials](#valley-tiers) | draft | 5 | 2026-11-09 (Misa): buildings get better level by level and may change material; the same level shares a motif across buildings, like a new town hall look. |
 | [Void, a raid boss, three foes and two floor bosses](#void-foes) | draft | 6 | 2026-10-31: a Void raid boss, dungeon foes and dungeon bosses. |
 | [Void gear: tint, plain pieces, a set, a shard](#void-gear) | draft | 11 | 2026-10-31: design Void gear. |
 | [Void place, the Quiet Verge (banners)](#void-place) | liked | 2 | 2026-10-31: design a Void area that can be explored (banner and place). |
@@ -400,6 +401,32 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | --- | --- | --- | --- | --- |
 | `valley` | free |  | draft | A sky strip with far rolling hills and a hazy treeline at the bottom that meet the grass. Night: violet bands and stars. Day: blue bands and a few clouds. |
 | `moon` | free |  | draft | An optional small moon the scene places once in the night sky (not part of the tiled strip). Hidden by day. |
+
+<a id="valley-tiers"></a>
+
+## Valley building levels: the shared materials
+
+![Valley building levels: the shared materials](valley-tiers.png)
+
+- **Status:** draft
+- **Requested:** 2026-11-09 (Misa): buildings get better level by level and may change material; the same level shares a motif across buildings, like a new town hall look.
+- **Source:** `apps/activity/src/sprites/concepts/valley-tiers.ts` (draw it with `pnpm art valley-tiers`)
+- **Sheet of:** `d1d1161bacdf`
+- The material board is `TIERS` in `valley-tiers.ts` (night and day colour per material); `tierPalette(level, { key: "material" })` builds a sprite palette and its day alt. Spec: docs/design/art-levels.md.
+- Level 1, Humble: raw logs, rope lashings, straw, packed earth and loose fieldstones; small, home-made, a little crooked.
+- Level 2, Settled: sawn planks with nails, the red-brown shingle roof and a plank sign.
+- Level 3, Stone: grey cut stone with lighter corner stones, a slate edge and black iron bands and brackets.
+- Level 4, Valley: cream plaster and teal trim, the valley's teal-and-cream pennant and a brass lamp with lit glass (plain glass by day).
+- Level 5, Crystal: the Market's teal shard as a glowing finial (it glows by day too) and gold trim, on a stone cap.
+- The samples are 40x24 motif references on the valley-glow ground: night is the main palette, `alts.day` recolours the same pixels. Buildings copy their level's materials and signature from them.
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `tier-1` | free |  | draft | Level 1, Humble: a rope-lashed log post with a crooked cross branch, a straw tuft and fieldstones on packed earth. |
+| `tier-2` | free |  | draft | Level 2, Settled: a plank wall corner with nailed boards and a plank sign under a red-brown shingle eave. |
+| `tier-3` | free |  | draft | Level 3, Stone: a cut-stone corner with lighter corner stones, a black iron bracket and a slate edge. |
+| `tier-4` | free |  | draft | Level 4, Valley: a cream post with a teal-and-cream pennant and a brass lamp; the lamp glows at night, plain glass by day. |
+| `tier-5` | free |  | draft | Level 5, Crystal: a glowing teal crystal finial in a gold collar on a stone cap with gold trim; the crystal glows by day too. |
 
 <a id="void-foes"></a>
 
