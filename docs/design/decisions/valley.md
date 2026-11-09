@@ -4,6 +4,14 @@ The valley and peaceful systems overhaul planned in docs/design/valley/: job pos
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-09: The visitor's weekly blueprint may be any existing piece [Misa]
+
+ID: `2026-11-09-the-visitor-s-weekly-blueprint-may` · Status: current
+
+**Decision.** V-VIS-5 is amended: the visitor's one rotating blueprint a week may be any existing craftable piece, drawn each week by the server (as step 8a built it), so scouts can find it too. "Something found nowhere else" is dropped. Misa, 2026-11-09: "It can absolutely be an existing one."
+
+**Reasoning.** Pieces found nowhere else would need new names and art first; an existing piece costs nothing to add and still gives every player the same weekly offer, and a copy of a known blueprint still raises its quality (V-FORGE-9).
+
 ## 2026-11-07: Step 10c: the month compares against the lab's mixed8-market, the Market the server builds
 
 ID: `2026-11-07-step-10c-the-month-compares-against` · Status: current · Amends: `2026-11-07-step-10b-what-the-compare-cannot`

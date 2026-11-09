@@ -546,6 +546,7 @@ Superseded: 1 entry (see the topic file).
 
 [valley.md](valley.md): The valley and peaceful systems overhaul planned in docs/design/valley/: job posts, the bonfire, the commons, the Forge loop, gear, trials, the School, the visitor, the economy lab, and Misa's question rounds.
 
+- 2026-11-09 The visitor's weekly blueprint may be any existing piece \[Misa\]
 - 2026-11-07 Step 10c: the month compares against the lab's mixed8-market, the Market the server builds
 - 2026-11-07 Step 10b: what the compare cannot judge, and the waiting team order (not changed) (amended)
 - 2026-11-07 Step 10b: valley-fresh and the end of the month drop the month's dev triggers and tables
