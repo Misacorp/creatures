@@ -4,6 +4,24 @@ The living room and lounging, the lounge message, Discord DMs and other social f
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-09: Housing server: how the rules of the first build read
+
+ID: `2026-11-09-housing-server-how-the-rules-of` · Status: current
+
+**Decision.** The worker's housing module (`apps/worker/src/housing*.ts`, migration 67, flag `HOUSING`) reads the spec this way where it was open:
+
+- **Placing.** A piece goes where it fits (`canPlace`) and a copy is free. When every copy is placed the answer is `none_free`; the client empties the other spot first (there is no move across rooms). Replacing a piece frees its copy. One bed per room, enforced as `spot_mismatch`. A bed keeps its sleeper only when another bed replaces it.
+- **Housemates.** At most three per house. Putting a creature on a second bed moves it (the old bed is made up); `already_housemate` is never answered. A creature that is gone drops off its bed on the next read of the own house.
+- **Payments.** `applyPayment` never refuses; the route answers `insufficient_funds`, `insufficient_parts` or `insufficient_materials` when nothing at all could be taken because the player holds none of what the offer named, `nothing_to_pay` when the offer names nothing still owed. A part that is built teaches its exterior skin as a learned blueprint.
+- **Crafting.** A family line of a piece's price takes the family's common materials before rare ones, then the most plentiful.
+- **Feats.** Run when the own house is opened, in the same transaction. The starter set (tier 0) is whole from the first minute, so it does not count for the Matched Set stamp; it does show in the cabinet (`setsComplete` lists it).
+- **Visiting.** The visit path takes a Discord snowflake or a staging dev guest (`dev-guest-<n>`), so the guests the dev tool makes can be opened. The list and the guestbook read each house by index; the guestbook keeps 30 with one boundary read.
+- **Reads.** Measured on 15 full houses (`apps/worker/test/housing-reads.test.ts`): the own house 541 rows, a visit 317, the list 220, the catalogue 350, a partial payment 45. Nothing runs on `/api/state`, the alarm or the start.
+- **The drop hook** never throws into the reward that calls it: a failed drop rolls back its own savepoint, logs the error's name and the reward goes on.
+- **Migrations.** Housing is migration 67; versions 64 to 66 are reserved as no-ops for the valley branch's three migrations, which replace them at the merge.
+
+**Reasoning.** The spec left these open or contradicted itself (`none_free` against "moves it"; `already_housemate` against "it moves"). Each pick keeps the server authoritative and the answers small and strict, and none changes a rule a player must learn. The reads were priced before shipping (`docs/design/database-reads.md`) and are tested against budgets, so a change shows up as a failing test.
+
 ## 2026-11-09: Player housing: what is built and its standing rules **[Misa]**
 
 ID: `2026-11-09-player-housing-what-is-built-and` · Status: current

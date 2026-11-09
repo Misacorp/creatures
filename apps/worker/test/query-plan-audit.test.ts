@@ -17,6 +17,7 @@
 import { knownKnacks, v2Pool } from '@creatures/game/combat-v2';
 import { describe, expect, it } from 'vitest';
 import { playV2Day, scaleV2Foes } from './dungeon-v2-reads';
+import { housingCore, runHousingPaths } from './housing-world';
 import { HELSINKI, MINUTE } from './raid-helpers';
 import { V2_WEEK } from './raid-v2-helpers';
 import {
@@ -731,6 +732,59 @@ describe('query plan audit', () => {
     ).toBe(true);
     expect(result.found, scanMessage(result.found)).toEqual([]);
   }, 60_000);
+
+  it("plans housing's statements (the house, a visit, the list, the catalogue, a payment and the finishing one, a craft, a placement, a skin, a housemate, a gift, a stamp, the mailbox, and the drop hook) without a whole-table scan", async () => {
+    const result = await audit({ fresh: true }, async (env, world) => {
+      const { clock } = env;
+      clock.t += 6 * MINUTE;
+      const core = housingCore(env, world, BUILD);
+      // Twice: the first call of a day pays one-off work.
+      for (let round = 0; round < 2; round++) {
+        await callAs(core, world.secrets, 1, '/api/state');
+        await callAs(core, world.secrets, 1, '/api/house');
+      }
+      await runHousingPaths(env, world, core, async (_name, run) => {
+        await run();
+      });
+      // The drop hook, for every kind of moment (a cleared raid reads what the player holds and writes the trophies).
+      const hook = core.housingHook;
+      if (hook === null) throw new Error('no housing hook');
+      hook.drop(userId(1), {
+        kind: 'trip',
+        key: 'trip:audit',
+        place: 'tidepools',
+        element: 'tide',
+        ticks: 6,
+      });
+      hook.drop(userId(1), {
+        kind: 'raid',
+        key: 'raid:audit',
+        weekId: '2027-W02',
+        bossId: 'tidal-colossus',
+        rank: 2,
+        cleared: true,
+        festival: 'sunbird',
+        element: 'tide',
+      });
+      hook.drop(userId(1), { kind: 'dungeon', key: 'dungeon:audit', depth: 12, cleared: true });
+      hook.drop(userId(1), { kind: 'games', key: 'games:audit', medal: 'gold' });
+    });
+
+    expect(result.seen, 'statements recorded').toBeGreaterThan(40);
+    for (const table of [
+      'house_items',
+      'house_guestbook',
+      'house_mail',
+      'house_trophies',
+      'house_drops',
+    ]) {
+      expect(
+        result.statements.some((q) => q.includes(table)),
+        table,
+      ).toBe(true);
+    }
+    expect(result.found, scanMessage(result.found)).toEqual([]);
+  }, 120_000);
 
   it('sees a full scan, an indexed search and an aliased scan in this SQLite (the detector works)', async () => {
     await inGuild(({ metered }) => {

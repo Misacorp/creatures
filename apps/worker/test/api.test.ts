@@ -38,6 +38,8 @@ describe('GET /api/config', () => {
       loungeLive: true,
       finaleLive: true,
       raidLive: true,
+      // Player housing is on in the local config (and staging); production has it off (housing.test.ts).
+      housing: true,
     });
     expectApiHeaders(res);
   });

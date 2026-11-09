@@ -24,6 +24,7 @@ import { gamesBadgesMigration } from './games-badges-migration';
 import { gamesMigrationV39 } from './games-migration';
 import { gearMigration } from './gear-migration';
 import { gearV2Migration } from './gear-v2-migration';
+import { housingMigration } from './housing-migration';
 import { loungeMigration } from './lounge';
 import { loungeCompanyMigration } from './lounge-company';
 import { maintenanceMigration } from './maintenance';
@@ -366,6 +367,13 @@ export const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
   valleyMarketMigration,
   // Version 63: the Market's opening is told once to each player in the paper (see valley-market-open-migration.ts).
   valleyMarketOpenMigration,
+  // Versions 64 to 66 are reserved for the valley session's branch (the weekly visitor, the School, the trials). These three
+  // no-ops only keep housing at its number, 67; the merge replaces them with the real migrations (a released number is never reused).
+  () => undefined,
+  () => undefined,
+  () => undefined,
+  // Version 67: player housing: houses, parts, rooms, items, trophies, guestbook, mail and drops (see housing-migration.ts).
+  housingMigration,
 ];
 
 /** The schema version of a fresh database. */

@@ -3,6 +3,7 @@ import { expect } from 'vitest';
 import { env } from 'cloudflare:workers';
 import { runInDurableObject } from 'cloudflare:test';
 import { GAMES_TABLES } from '../src/games-migration';
+import { HOUSING_TABLES } from '../src/housing-migration';
 import { GuildCore, type GuildCoreOptions } from '../src/guild-core';
 import { DiscordError, type DiscordApi, type GuildApi } from '../src/discord';
 import { createHandler } from '../src/index';
@@ -315,8 +316,18 @@ export function undoGamesIndexMigration(sql: SqlStorage): void {
   sql.exec('DELETE FROM schema_version WHERE version = 42');
 }
 
+/**
+ * Puts a database back to before migration 67 (player housing): its tables go. Versions 64 to 66 are reserved for the valley session's
+ * branch (no-ops here), so their rows go with it; the merge puts that branch's own undo between this one and the Market's.
+ */
+export function undoHousingMigration(sql: SqlStorage): void {
+  for (const table of HOUSING_TABLES) sql.exec(`DROP TABLE IF EXISTS ${table}`);
+  sql.exec('DELETE FROM schema_version WHERE version IN (64, 65, 66, 67)');
+}
+
 /** Puts a database back to before migration 63 (the Market's opening in the paper): the told mark goes. */
 export function undoValleyMarketOpenMigration(sql: SqlStorage): void {
+  undoHousingMigration(sql);
   const has = sql
     .exec("SELECT 1 FROM pragma_table_info('valley_gazette') WHERE name = 'market_told'")
     .toArray();
