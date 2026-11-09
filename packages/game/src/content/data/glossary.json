@@ -2447,5 +2447,92 @@
       "id": "fav-big"
     },
     "section": "games"
+  },
+  {
+    "id": "house",
+    "title": "House",
+    "short": "Your own little house. It grows as you build it.",
+    "lines": [
+      "Furnish it, add rooms and wings, and invite the valley to look around.",
+      "It never makes anything stronger. It is only for you, and for fun."
+    ],
+    "section": "workshop"
+  },
+  {
+    "id": "house-part",
+    "title": "House part",
+    "short": "One piece of the house to build: a room, a wing or a garden.",
+    "lines": [
+      "Pay into it whenever you like, a little at a time. There is no deadline.",
+      "It is built the moment the last piece is paid."
+    ],
+    "section": "workshop"
+  },
+  {
+    "id": "luxury-material",
+    "title": "Luxury material",
+    "short": "Fine woods, stones, metals and cloth for the house.",
+    "lines": [
+      "Trips, scouts, the dungeon, raids and the Games bring them home.",
+      "They are used for building and furniture, and for nothing else."
+    ],
+    "section": "workshop"
+  },
+  {
+    "id": "furniture-blueprint",
+    "title": "Furniture blueprint",
+    "short": "Shows you how to make one piece of furniture.",
+    "lines": [
+      "Blueprints are found on trips, in fights and as feats. Learn each one once.",
+      "Make the piece at the workbench from its materials, Bait and scrap."
+    ],
+    "section": "workshop"
+  },
+  {
+    "id": "furniture-set",
+    "title": "Furniture set",
+    "short": "Nine pieces that look like they belong together.",
+    "lines": [
+      "Each set belongs to a place and its element.",
+      "Finish a set and its keepsake goes into the trophy hall."
+    ],
+    "section": "workshop"
+  },
+  {
+    "id": "housemate",
+    "title": "Housemate",
+    "short": "A creature that sleeps in a bed of your house.",
+    "lines": [
+      "It is drawn asleep when it is home, and the bed is just made when it is away.",
+      "It is a picture, not a post. It earns nothing different from resting."
+    ],
+    "section": "workshop"
+  },
+  {
+    "id": "stamp",
+    "title": "Stamp",
+    "short": "A little mark to leave in a friend's guestbook.",
+    "lines": [
+      "You hold one from the start. Feats and rare finds bring the rest.",
+      "Visitors can only leave stamps they own."
+    ],
+    "section": "workshop"
+  },
+  {
+    "id": "guestbook",
+    "title": "Guestbook",
+    "short": "The latest stamps left at your house, and by whom.",
+    "lines": ["Stamps only, never words. Old ones make room for new ones."],
+    "section": "workshop"
+  },
+  {
+    "id": "mailbox",
+    "title": "Mailbox",
+    "short": "Where a friend's gift waits for you.",
+    "lines": [
+      "Visitors can leave a small gift. It waits here until you collect it.",
+      "It never goes stale."
+    ],
+    "section": "workshop"
   }
 ]
