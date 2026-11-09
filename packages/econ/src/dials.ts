@@ -138,7 +138,7 @@ export const DIALS: readonly Dial[] = [
   {
     id: 'learningPrice',
     label:
-      "Acorns a first learning at the School costs (slot N costs N times this; 60 in the doc's example)",
+      "Acorns a first learning at the School costs (slot N costs N times this; the born talent, slot 1, is free; 60 in the doc's example)",
     paths: [['school', 'price']],
     integer: true,
     min: 0.1,

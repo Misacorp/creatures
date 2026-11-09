@@ -252,7 +252,8 @@ export function addCreature(p: Player, species: number, hour = 0): Creature {
     capXp: 0,
     catchMult: 1,
     catchTarget: 0,
-    learned: 0,
+    // The talent it is born with (slot 1) is free and already learned (the owner, 2026-11-09).
+    learned: 1,
     gear: new Array<number>(rules.forge.slotsPerCreature).fill(0),
     gearRarity: new Array<number>(rules.forge.slotsPerCreature).fill(0),
     gearLines: Array.from({ length: rules.forge.slotsPerCreature }, () => [] as number[]),

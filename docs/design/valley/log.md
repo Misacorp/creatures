@@ -485,3 +485,13 @@ Misa added: nameplates sit under the creature on an ink background, level first 
 **What remains:** the weekly player (live 17.5 pieces against 12.5; the lab's weekly player starves on scrap in week 1, the live one does not); the fire (19.5 against 23: the stand-ins pay no dungeon gear); place levels 8 against 9; Acorns out (10b's list, 1 and 3); the hearth's one day. `month.placeDays` and `MONTH-PLACE-DAYS` in `month:local` measure the hearth and the Market per month.
 
 **Pick up here: run the month on staging (`VALLEY_MONTH_TOKEN=... node apps/worker/scripts/valley-month.mjs staging`, when Misa asks; it wipes his staging valley), then the gate: read the misses with Misa's questions in mind (are the lab or the live numbers the ones to move? the first-talent question above), then phase 5's last boxes.**
+
+## 2026-11-09: a creature's born talent is free (implementer, worktree of `ccr-93a1de17-yutb1a`)
+
+**Answer (Misa).** The first talent, given when a creature is caught, stays free. This closes the first cause of the "Acorns out" miss (10b, 10c).
+
+**Done.** `learningPrice` (`packages/game`) is 0 for slot 1 and `school.price` times the slot after; the server needed no change (its born talent is already learned, so `learnBait` is `price x 2` for the next one, tested in `valley-school.test.ts`). The lab starts a creature with `learned: 1`; a teacher's lesson is priced as slot 2. The parity test and the lab's school tests assert 0, then 2 and 3 times the price.
+
+**Lab Acorns out, day 28** (lab median before → after; the live column is the median of five local months, not changed by this): daily 956 → 842 (live 744), active 1287 → 1174 (784), every-other-day 928 → 762 (697), weekend-off 867 → 778 (729), weekly 514 → 452 (413), returner 966 → 844 (744). Compare agreements per profile at day 28: weekly agrees in five of five months, every-other-day in four, weekend-off in three, returner in two, daily in one, active in none (the bots drive no rerolls, tempering or idol, which the lab's players do pay for; not measured separately).
+
+**Report targets** (regenerated): none fails except what is below. T-2a went from FAIL (112%) to PASS (102%); T-1, T-3, T-8 moved by a point or a level; T-4 weekly shard loss 6 to 13% (info); T-9 2 → 3 creatures waiting for Essence (limit 3, passes at the limit). The tempering section now lists T-4 failing with tempering on (0.27; the switch is off by default). The test "empties the late scrap pile of a daily player" now reads 0.601 of the pile without tempering against its bound of 0.6 (before: 0.476): with more Acorns left, other sinks drain the pile without tempering, too. Left red on purpose, not loosened: it needs a decision.

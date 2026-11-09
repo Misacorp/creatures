@@ -45,6 +45,9 @@ describe('the lab and the game agree on the School', () => {
     for (let slot = 0; slot <= 3; slot++) {
       expect(learningPrice(VALLEY_RULES, slot)).toBe(gameLearningPrice(VALLEY_RULES, slot));
     }
+    // The born talent is free in both; a later one costs the price times its slot.
+    expect(learningPrice(VALLEY_RULES, 1)).toBe(0);
+    expect(learningPrice(VALLEY_RULES, 2)).toBe(2 * VALLEY_RULES.school.price);
   });
 
   it('"would benefit" is the game’s on a sparse book, for every talent', () => {

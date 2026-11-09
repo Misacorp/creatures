@@ -11,7 +11,7 @@ import { debit, speciesRarities } from './world';
 /**
  * The School (docs/design/valley/systems/school.md, "As decided (round 22)", V-SCH-10..15).
  *
- * First learning (V-SCH-10): a creature learns a talent the first time a slot opens, ON ITS CARD (not at the School): slot 1 when it is caught,
+ * First learning (V-SCH-10): a creature learns a talent the first time a slot opens, ON ITS CARD (not at the School): slot 1 when it is caught (free: the born talent, the owner 2026-11-09),
  * slot 2 at level 20, slot 3 at level 25 on rare and epic lines. It is instant at the player's visit and pays Acorns once (the slot's number
  * times `school.price`); swapping between learned talents is free and is not modelled. (Before round 22 the lab seated the creature at the
  * School for 24 hours for the same price.)
@@ -20,7 +20,7 @@ import { debit, speciesRarities } from './world';
  * drawn among the talents that would benefit at least one player, preferring ones that benefit more than one and never all of them. A player
  * seats a student (up to `school.seats`, one per line) at a visit once the announcement shows one of their lines benefits; a creature seated
  * before the arrival or on any day of the stay learns by the next morning: the talent enters that player's book for the line. A lesson is
- * free at the School; the talent is then learned on a creature's card for the price of a first learning (the lab's old lesson price) and adds no slot. Graduation is held at the School and has no cost here.
+ * free at the School; the talent is then learned on a creature's card for the price of a later first learning (slot 2) and adds no slot. Graduation is held at the School and has no cost here.
  */
 
 /** How many talent slots a creature has open at its level (the third only on rare and epic lines). */
@@ -32,7 +32,13 @@ export function openSlots(rules: Rules, c: Creature): number {
   ).length;
 }
 
-/** The Acorns a first learning of this slot costs. */
+/**
+ * A creature is born with its first talent (free, learned at catch); the talent a lesson adds is learned on the card as a later talent, so
+ * the server charges at least the second slot's price for it.
+ */
+const LESSON_SLOT = 2;
+
+/** The Acorns a first learning of this slot costs (slot 1, the born talent, is free). */
 export const learningPrice = (rules: Rules, slot: number): number => gameLearningPrice(rules, slot);
 
 /**
@@ -141,8 +147,8 @@ export function startLearning(p: Player, hour: number, server?: Server): void {
     }
   }
   // A talent that entered the book is learned on a creature's card for the price of a first learning (the Acorn sink the lab had for a lesson).
-  while (p.lessonsToPay > 0 && (p.stock[R.acorns] ?? 0) >= learningPrice(rules, 1)) {
-    const price = learningPrice(rules, 1);
+  while (p.lessonsToPay > 0 && (p.stock[R.acorns] ?? 0) >= learningPrice(rules, LESSON_SLOT)) {
+    const price = learningPrice(rules, LESSON_SLOT);
     debit(p, R.acorns, price, 'school');
     p.wk.learnAcorns += price;
     p.lessonsToPay -= 1;

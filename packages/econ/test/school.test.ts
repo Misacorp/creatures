@@ -39,21 +39,32 @@ describe('talent slots', () => {
     expect(openSlots(RULES, rare)).toBe(3);
   });
 
-  it('cost the slot number times the price', () => {
-    expect(learningPrice(RULES, 1)).toBe(RULES.school.price);
+  it('cost the slot number times the price, the born talent (slot 1) nothing', () => {
+    expect(learningPrice(RULES, 1)).toBe(0);
+    expect(learningPrice(RULES, 2)).toBe(2 * RULES.school.price);
     expect(learningPrice(RULES, 3)).toBe(3 * RULES.school.price);
   });
 });
 
 describe('first learning, on the card (V-SCH-10)', () => {
-  it('is instant at the visit, pays the Acorns once and takes no School seat', () => {
+  it('a creature is born with its first talent, free', () => {
     const p = setup(1);
     const before = p.stock[R.acorns]!;
     startLearning(p, MONDAY);
-    expect(p.school).toHaveLength(0);
     expect(p.creatures[0]!.learned).toBe(1);
-    expect(before - p.stock[R.acorns]!).toBe(RULES.school.price);
-    expect(p.wk.learnAcorns).toBe(RULES.school.price);
+    expect(p.stock[R.acorns]).toBe(before);
+    expect(p.wk.learnings).toBe(0);
+  });
+
+  it('is instant at the visit, pays the Acorns once and takes no School seat', () => {
+    const p = setup(1);
+    p.creatures[0]!.level = 20;
+    const before = p.stock[R.acorns]!;
+    startLearning(p, MONDAY);
+    expect(p.school).toHaveLength(0);
+    expect(p.creatures[0]!.learned).toBe(2);
+    expect(before - p.stock[R.acorns]!).toBe(2 * RULES.school.price);
+    expect(p.wk.learnAcorns).toBe(2 * RULES.school.price);
     expect(p.wk.learnings).toBe(1);
     const acorns = p.stock[R.acorns]!;
     startLearning(p, MONDAY + 24);
@@ -62,10 +73,11 @@ describe('first learning, on the card (V-SCH-10)', () => {
 
   it('waits for Acorns it does not have', () => {
     const poor = setup(2);
-    poor.stock[R.acorns] = RULES.school.price - 1;
+    for (const c of poor.creatures) c.level = 20;
+    poor.stock[R.acorns] = 2 * RULES.school.price - 1;
     startLearning(poor, MONDAY);
-    expect(poor.creatures.every((c) => c.learned === 0)).toBe(true);
-    expect(poor.stock[R.acorns]).toBe(RULES.school.price - 1);
+    expect(poor.creatures.every((c) => c.learned === 1)).toBe(true);
+    expect(poor.stock[R.acorns]).toBe(2 * RULES.school.price - 1);
   });
 });
 

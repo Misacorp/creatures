@@ -12,6 +12,14 @@ ID: `2026-11-09-the-visitor-s-weekly-blueprint-may` · Status: current
 
 **Reasoning.** Pieces found nowhere else would need new names and art first; an existing piece costs nothing to add and still gives every player the same weekly offer, and a copy of a known blueprint still raises its quality (V-FORGE-9).
 
+## 2026-11-09: A creature's born talent is free [Misa]
+
+ID: `2026-11-09-a-creature-s-born-talent-is` · Status: current
+
+**Decision.** A creature's born talent (the first one, given when it is caught) stays free: it costs no Acorns. Only the talents learned after it on the card cost, `school.price` times the slot's number (slot 2 twice the price, slot 3 three times). `learningPrice` in `packages/game/src/valley/school.ts` is 0 for slot 1; the lab starts every creature with that talent learned, and a teacher's lesson (learned on the card as a later talent) is priced as slot 2, the cheapest the server charges for it.
+
+**Reasoning.** Misa answered (2026-11-09) the question the month compare left open ("Acorns out", step 10b). The server already gives the first talent at catch and charges `price x slot` from the second learning on (`CreatureV2.learnPrice`: the born talent counts as learned, so the next slot is 2), so the game was right and the lab charged for a talent players never pay for. With the lab fixed, its Acorns out at day 28 fall 10 to 20% and move toward the live month's (daily 956 to 842, active 1287 to 1174, every-other-day 928 to 762, weekend-off 867 to 778, weekly 514 to 452, returner 966 to 844; live medians of five local months 744, 784, 697, 729, 413, 744).
+
 ## 2026-11-07: Step 10c: the month compares against the lab's mixed8-market, the Market the server builds
 
 ID: `2026-11-07-step-10c-the-month-compares-against` · Status: current · Amends: `2026-11-07-step-10b-what-the-compare-cannot`
