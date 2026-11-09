@@ -85,6 +85,7 @@ const NIGHT_PALETTE: Readonly<Record<string, string>> = {
   G: '#ffd966',
   H: '#fff6c8',
   T: '#3fb6a8',
+  A: '#9a7060',
 };
 
 /** Same pixels by day: the fire stays lit, the lamp glass is unlit (as in `bonfire-grand`). */
@@ -105,6 +106,7 @@ const DAY_PALETTE: Readonly<Record<string, string>> = {
   G: '#8fa8b8',
   H: '#c4d6e0',
   T: '#2f9a94',
+  A: '#9a9088',
 };
 
 type Grid = string[][];
@@ -128,26 +130,52 @@ const GROUND = '123';
 const AIR = '.';
 
 /**
- * Level 3: the paved ring. Every bit of grass round the hearth, inside an oval, becomes flagstones laid in
- * a brick pattern (body `t`, joints `s`, a pale top-left corner `S`), so the hearth sits on a stone floor.
+ * Level 3: the paved ring. Every bit of grass round the hearth, inside an oval, becomes irregular flagstones (rows of
+ * varied height, stones of varied length, joints that never line up). Each stone is lit by what is nearest: warm (`A`
+ * body, `v` joints) beside the fire and under each lamp, a mix of warm and cold stones further out, and the dark stone
+ * (`s` body, lighter `t` joints) at the edge.
  */
 function pave(g: Grid): void {
-  for (let y = 0; y < H; y++) {
-    for (let x = 0; x < W; x++) {
-      const dx = (x - 31.5) / 31.5;
-      const dy = (y - 38) / 12.2;
-      if (dx * dx + dy * dy > 1) continue;
-      const band = Math.floor((y - 26) / 3);
-      const slab = (x + (band % 2 === 0 ? 0 : 3)) % 6;
-      const inRow = (y - 26) % 3;
-      let ch = 't';
-      if (inRow === 2 || slab === 5) ch = 's';
-      else if (inRow === 0 && slab === 0) ch = 'S';
-      put(g, x, y, ch, GROUND);
+  let seed = 7;
+  const next = (n: number): number => {
+    seed = (seed * 1103515245 + 12345) % 2147483648;
+    return Math.floor(seed / 65536) % n;
+  };
+  // lay the stones row by row: [x0, x1, y0, y1] boxes, each with its joint on its right and bottom
+  const stones: { x0: number; x1: number; y0: number; y1: number }[] = [];
+  let y = 25;
+  while (y < H) {
+    const h = 3 + next(2);
+    let x = -next(5);
+    while (x < W) {
+      const w = 4 + next(5);
+      stones.push({ x0: x, x1: x + w - 1, y0: y, y1: y + h - 1 });
+      x += w;
+    }
+    y += h;
+  }
+  const lamps = [
+    { x: 4, y: 36 },
+    { x: 59, y: 36 },
+  ];
+  for (const st of stones) {
+    const cx = (st.x0 + st.x1) / 2;
+    const cy = (st.y0 + st.y1) / 2;
+    const fire = ((cx - 32) / 21) ** 2 + ((cy - 36) / 10) ** 2;
+    const lamp = Math.min(...lamps.map((l) => Math.hypot(l.x - cx, (l.y - cy) * 1.4)));
+    const lit = Math.min(fire, (lamp / 8) ** 2);
+    const warm = lit <= 1 ? true : lit <= 2.2 ? next(2) === 0 : false;
+    for (let yy = st.y0; yy <= st.y1; yy++) {
+      for (let xx = st.x0; xx <= st.x1; xx++) {
+        const joint = yy === st.y1 || xx === st.x1;
+        const inside = ((xx - 31.5) / 31.5) ** 2 + ((yy - 38) / 12.2) ** 2 <= 1;
+        if (!inside) continue;
+        put(g, xx, yy, warm ? (joint ? 'v' : 'A') : joint ? 't' : 's', GROUND);
+      }
     }
   }
-  // the outer ring of light spill left on the grass joins the one inside it (one colour fewer; sprites keep to 16)
-  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) put(g, x, y, '2', '3');
+  // grass the paving leaves has no light spill any more (two colours fewer; sprites keep to 16)
+  for (let yy = 0; yy < H; yy++) for (let xx = 0; xx < W; xx++) put(g, xx, yy, '1', '23');
 }
 
 /**
@@ -198,19 +226,12 @@ function crown(g: Grid): void {
     }
     for (const y of [26, 29, 32]) put(g, px, y, 'y', 'w');
   }
-  const stones: readonly (readonly [number, number])[] = [
-    [10, 42],
-    [14, 45],
-    [19, 47],
-    [44, 47],
-    [49, 45],
-    [53, 42],
-    [6, 38],
-    [57, 38],
-  ];
-  for (const [x, y] of stones) {
-    put(g, x, y, 'u', 'tsS');
-    put(g, x + 1, y, 'y', 'tsS');
+  // two inlaid gold stones in the paving near the front bench (gold, with a lit lower edge)
+  for (const x0 of [13, 46]) {
+    for (let x = x0; x < x0 + 5; x++) {
+      put(g, x, 43, 'y', 'AstvS');
+      put(g, x, 44, 'u', 'AstvS');
+    }
   }
 }
 

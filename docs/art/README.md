@@ -197,7 +197,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 - **Status:** draft
 - **Requested:** 2026-11-09 (Misa, via the valley session): each valley building visibly grows level by level, 1 to 5, by day and night.
 - **Source:** `apps/activity/src/sprites/concepts/valley-levels-bonfire.ts` (draw it with `pnpm art valley-levels-bonfire`)
-- **Sheet of:** `547162cf795b`
+- **Sheet of:** `a8e56549e633`
 - Levels 1 and 2 are `valley-glow/bonfire` and `valley-glow/bonfire-grand`; levels 3 to 5 here are 64x50 like the grand hearth, drawn from its pixels, so the map spot and the scene need no change. Each level keeps everything of the one below.
 - Level 3 (bonfire-3): a paved ring. The grass round the hearth becomes flagstones in a brick pattern, so the hearth stands on a stone floor.
 - Level 4 (bonfire-4): bunting. A rope with a sag from lamp to lamp, behind the flames, with red, gold and teal pennants.
