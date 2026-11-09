@@ -56,14 +56,15 @@ const box = (g: Grid, x: number, y: number, w: number, h: number, fill: string):
 
 /** The ember glow on the ground: stepped rings, dithered at each step, in front of the fire at column fx. */
 function glow(g: Grid, fx: number, rx: number, ry: number): void {
-  const cy = 53;
+  const cy = 54;
   for (let y = 0; y < H; y++)
     for (let x = 0; x < W; x++) {
       const d = ((x - fx) / rx) ** 2 + ((y - cy) / ry) ** 2;
       const odd = (x + y) % 2 === 1;
       let c = '.';
-      if (d < 0.22 || (d < 0.3 && !odd)) c = '3';
-      else if (d < 0.55 || (d < 0.66 && !odd)) c = '2';
+      if (d < 0.1 || (d < 0.15 && !odd)) c = '4';
+      else if (d < 0.28 || (d < 0.36 && !odd)) c = '3';
+      else if (d < 0.58 || (d < 0.68 && !odd)) c = '2';
       else if (d < 0.9 || (d < 1 && !odd)) c = '1';
       if (c !== '.') px(g, x, y, c);
     }
@@ -133,22 +134,22 @@ function roof(
 
 const OWN_NIGHT = {
   k: '#0d0a1a',
-  x: '#112430',
   o: '#ff9a2e',
   y: '#ffd966',
   c: '#fff6c8',
-  '1': '#5a6a3c',
-  '2': '#9a5a2c',
-  '3': '#e8742c',
+  '1': '#6a7a3a',
+  '2': '#a8742c',
+  '3': '#e8923a',
+  '4': '#ffc860',
 };
 const OWN_DAY = {
-  x: '#2f5a38',
   o: '#ff9a2e',
   y: '#ffd966',
   c: '#fff6c8',
   '1': '#3e6a44',
   '2': '#4a4038',
   '3': '#2e2828',
+  '4': '#242020',
 };
 type Part = { palette: Record<string, string>; day: Record<string, string> };
 const IRON: Part = { palette: { i: '#1c1a2c' }, day: { i: '#2e2c3a' } };
@@ -180,8 +181,7 @@ const finish = (
 function forge1(): Built {
   const g = blank();
   const FX = 24;
-  rect(g, 9, 52, 36, 1, 'x');
-  glow(g, FX, 17, 5);
+  glow(g, FX, 22, 5.5);
   // lean-to: two crooked posts, a crossbeam, a straw roof
   rect(g, 11, 28, 3, 24, 'L');
   rect(g, 13, 28, 1, 24, 'M');
@@ -274,8 +274,7 @@ function forge1(): Built {
 function forge2(): Built {
   const g = blank();
   const FX = 22;
-  rect(g, 4, 52, 40, 1, 'x');
-  glow(g, FX, 19, 5.5);
+  glow(g, FX, 24, 5.5);
   // fieldstone walls with a timber frame
   masonry(g, 8, 32, 31, 20, 'F', 'k', 5);
   rect(g, 7, 31, 33, 1, 'k');
@@ -408,8 +407,7 @@ const BIG_ANVIL = [
 function forge3(): Built {
   const g = blank();
   const FX = 22;
-  rect(g, 4, 52, 48, 1, 'x');
-  glow(g, FX, 21, 5.5);
+  glow(g, FX, 27, 5.5);
   stoneSmithy(g, FX);
   dots(g, [
     [40, 1, 'o'],
@@ -438,8 +436,7 @@ function forge3(): Built {
 function forge4(): Built {
   const g = blank();
   const FX = 22;
-  rect(g, 4, 52, 48, 1, 'x');
-  glow(g, FX, 22, 5.5);
+  glow(g, FX, 27, 5.5);
   stoneSmithy(g, FX, 'G', 'k');
   dots(g, [
     [40, 1, 'o'],
@@ -477,9 +474,18 @@ function forge4(): Built {
   rect(g, 4, 51, 9, 1, 'k');
   stamp(g, 1, 41, BIG_ANVIL);
   // the pennant on a pole above the roof
-  rect(g, 19, 6, 1, 13, 'k');
-  px(g, 19, 5, 'b');
-  stamp(g, 20, 6, ['tttttt', 'ttmmmt', 'tmmmt.', 'ttmt..', 'tt....']);
+  rect(g, 19, 3, 1, 16, 'k');
+  px(g, 19, 2, 'b');
+  stamp(g, 20, 3, [
+    'tttttttttt',
+    'ttmmmmmmtt',
+    'tmmttttmmt',
+    'ttmmmmmmt.',
+    'tttttttt..',
+    'ttmmmmt...',
+    'tttttt....',
+    'tttt......',
+  ]);
   return finish(
     g,
     [
@@ -496,8 +502,7 @@ function forge4(): Built {
 function forge5(): Built {
   const g = blank();
   const FX = 22;
-  rect(g, 4, 52, 48, 1, 'x');
-  glow(g, FX, 23, 5.5);
+  glow(g, FX, 28, 5.5);
   stoneSmithy(g, FX, 'G', 'k');
   // a crystal finial on the chimney, with sparks
   stamp(g, 38, 0, ['..DD....', '.DCCd...', '.DCCCd..', 'DCCDCCd.', 'DCCCCCd.', '.dCCCd..']);
@@ -525,6 +530,15 @@ function forge5(): Built {
   for (const sx of [3, 48]) stamp(g, sx, 25, ['.D.', 'DCd', 'dCd', '.d.']);
   // crystal inlays in the wall either side of the arch
   for (const cx of [10, 34]) stamp(g, cx, 40, ['.D.', 'DCd', 'DCd', 'dCd', '.d.']);
+  // a second crystal spire on the ridge, gold-footed
+  stamp(g, 25, 8, ['..D..', '.DCd.', '.DCd.', 'DCCCd', 'DCDCd', 'dCCCd', '.dCd.']);
+  rect(g, 24, 15, 7, 1, 'Z');
+  rect(g, 25, 16, 5, 2, 'Z');
+  dots(g, [
+    [23, 9, 'y'],
+    [31, 6, 'o'],
+    [27, 5, 'y'],
+  ]);
   // a crystal pane in a gold frame, lit by day too
   box(g, 38, 36, 9, 9, 'Z');
   rect(g, 39, 37, 7, 7, 'C');
