@@ -100,6 +100,22 @@ Nine sets: the starter set and eight to collect, each with its own palette and o
 | Ancient       | None    | Gold Spiral: A small spiral of gold leaf, worn thin by hands.      | Carved standing-stone slabs, spiral carvings, worn gold leaf; sandstone, faded gold, patina teal.             |
 | Lantern Night | None    | Paper Tassel: A red tassel that still smells of festival evenings. | Paper lanterns and bunting on painted wood; festival red, gold, cream.                                        |
 
+### Keepsakes
+
+Shown in the cabinet when the set is complete. `(content: sets.json)`
+
+| Keepsake       | Set           | Line `(content)`                                      |
+| -------------- | ------------- | ----------------------------------------------------- |
+| Hearth Bell    | Cosy          | A small brass bell. It rings when someone comes home. |
+| Pearl Shell    | Tidepool      | A shell with a pearl still inside.                    |
+| Moon Pebble    | Moonlit       | A smooth stone, cool at noon and warm at midnight.    |
+| Forge Ember    | Emberhold     | A coal that has never gone out.                       |
+| Acorn Seedling | Rootwood      | A seedling in a thimble, and growing.                 |
+| Spark Bead     | Stormglass    | A glass bead with a small storm inside.               |
+| Opal Drop      | Fenkeeper     | A drop of opal on a reed string.                      |
+| Gold Spiral    | Ancient       | A small spiral of gold leaf, worn thin by hands.      |
+| Paper Tassel   | Lantern Night | A red tassel that still smells of festival evenings.  |
+
 ### Cosy set
 
 Warm wood and cream cushions. The room you started in. `(content)`

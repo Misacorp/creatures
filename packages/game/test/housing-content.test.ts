@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { housing, resource, resources } from '../src/index';
+import { housing, houseGrid, resource, resources } from '../src/index';
 
 /** The shipped housing content (docs/design/housing.md 2.5): it loads, it has the counts of the spec, and the compendium names it. */
 
@@ -213,5 +213,46 @@ describe('housing content: text', () => {
       expect(p.line.length, p.id).toBeLessThanOrEqual(90);
       expect(p.hint.length, p.id).toBeLessThanOrEqual(90);
     }
+  });
+});
+
+describe('housing content: the full house layout (housing.md 2.4)', () => {
+  const grid = houseGrid(housing, new Set(housing.parts.map((p) => p.id)));
+  const at = (id: string) => {
+    const room = grid.find((r) => r.roomId === id);
+    if (room === undefined) throw new Error(`no room ${id}`);
+    return { col: room.col, floor: room.floor, w: room.w };
+  };
+
+  it('places the core rooms where the table says', () => {
+    expect(at('hut:hearth')).toEqual({ col: 0, floor: 0, w: 1 });
+    expect(at('cottage:kitchen')).toEqual({ col: 1, floor: 0, w: 1 });
+    expect(at('cottage:loft')).toEqual({ col: 0, floor: 1, w: 1 });
+    expect(at('house:study')).toEqual({ col: 1, floor: 1, w: 1 });
+    expect(at('house:attic')).toEqual({ col: 0, floor: 2, w: 2 });
+    expect(at('cellar:cellar')).toEqual({ col: 0, floor: -1, w: 2 });
+  });
+
+  it('puts the west wing and terrace on the west edge, the east wing, garden and pool on the east', () => {
+    expect(at('west-wing:hall')).toEqual({ col: -2, floor: 0, w: 2 });
+    expect(at('west-upper:gallery')).toEqual({ col: -2, floor: 1, w: 2 });
+    expect(at('terrace:terrace')).toEqual({ col: -4, floor: 0, w: 2 });
+    expect(at('east-wing:conservatory')).toEqual({ col: 2, floor: 0, w: 2 });
+    expect(at('east-upper:bath')).toEqual({ col: 2, floor: 1, w: 1 });
+    expect(at('east-upper:guest')).toEqual({ col: 3, floor: 1, w: 1 });
+    expect(at('garden:garden')).toEqual({ col: 4, floor: 0, w: 2 });
+    expect(at('pool:pool')).toEqual({ col: 6, floor: 0, w: 2 });
+  });
+
+  it('has no overlapping cells and no negative relative columns in the data', () => {
+    const seen = new Set<string>();
+    for (const r of grid) {
+      for (let c = r.col; c < r.col + r.w; c++) {
+        const key = `${c},${r.floor}`;
+        expect(seen.has(key), key).toBe(false);
+        seen.add(key);
+      }
+    }
+    for (const p of housing.parts) for (const r of p.rooms) expect(r.col).toBeGreaterThanOrEqual(0);
   });
 });

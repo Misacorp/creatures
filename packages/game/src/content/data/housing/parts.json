@@ -149,7 +149,7 @@
       {
         "key": "terrace",
         "kind": "terrace",
-        "col": -4,
+        "col": 0,
         "floor": 0
       }
     ],
@@ -187,7 +187,7 @@
       {
         "key": "garden",
         "kind": "garden",
-        "col": 4,
+        "col": 0,
         "floor": 0
       }
     ],
@@ -230,7 +230,7 @@
       {
         "key": "hall",
         "kind": "hall",
-        "col": -2,
+        "col": 0,
         "floor": 0
       }
     ],
@@ -273,7 +273,7 @@
       {
         "key": "gallery",
         "kind": "gallery",
-        "col": -2,
+        "col": 0,
         "floor": 1
       }
     ],
@@ -311,7 +311,7 @@
       {
         "key": "conservatory",
         "kind": "conservatory",
-        "col": 2,
+        "col": 0,
         "floor": 0
       }
     ],
@@ -354,13 +354,13 @@
       {
         "key": "bath",
         "kind": "bath",
-        "col": 2,
+        "col": 0,
         "floor": 1
       },
       {
         "key": "guest",
         "kind": "guest",
-        "col": 3,
+        "col": 1,
         "floor": 1
       }
     ],
@@ -398,7 +398,7 @@
       {
         "key": "pool",
         "kind": "pool",
-        "col": 6,
+        "col": 0,
         "floor": 0
       }
     ],

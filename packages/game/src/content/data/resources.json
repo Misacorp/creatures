@@ -269,8 +269,7 @@
     "icon": {
       "kind": "glyph",
       "id": "lux-driftwood"
-    },
-    "glossary": "luxury-material"
+    }
   },
   {
     "id": "charwood",
@@ -280,8 +279,7 @@
     "icon": {
       "kind": "glyph",
       "id": "lux-charwood"
-    },
-    "glossary": "luxury-material"
+    }
   },
   {
     "id": "heartbark",
@@ -291,8 +289,7 @@
     "icon": {
       "kind": "glyph",
       "id": "lux-heartbark"
-    },
-    "glossary": "luxury-material"
+    }
   },
   {
     "id": "lightning-ash",
@@ -302,8 +299,7 @@
     "icon": {
       "kind": "glyph",
       "id": "lux-lightning-ash"
-    },
-    "glossary": "luxury-material"
+    }
   },
   {
     "id": "bog-oak",
@@ -313,8 +309,7 @@
     "icon": {
       "kind": "glyph",
       "id": "lux-bog-oak"
-    },
-    "glossary": "luxury-material"
+    }
   },
   {
     "id": "sea-glass",
@@ -324,8 +319,7 @@
     "icon": {
       "kind": "glyph",
       "id": "lux-sea-glass"
-    },
-    "glossary": "luxury-material"
+    }
   },
   {
     "id": "moonstone",
@@ -335,8 +329,7 @@
     "icon": {
       "kind": "glyph",
       "id": "lux-moonstone"
-    },
-    "glossary": "luxury-material"
+    }
   },
   {
     "id": "cinder-garnet",
@@ -346,8 +339,7 @@
     "icon": {
       "kind": "glyph",
       "id": "lux-cinder-garnet"
-    },
-    "glossary": "luxury-material"
+    }
   },
   {
     "id": "storm-quartz",
@@ -357,8 +349,7 @@
     "icon": {
       "kind": "glyph",
       "id": "lux-storm-quartz"
-    },
-    "glossary": "luxury-material"
+    }
   },
   {
     "id": "fen-opal",
@@ -368,8 +359,7 @@
     "icon": {
       "kind": "glyph",
       "id": "lux-fen-opal"
-    },
-    "glossary": "luxury-material"
+    }
   },
   {
     "id": "cinder-iron",
@@ -379,8 +369,7 @@
     "icon": {
       "kind": "glyph",
       "id": "lux-cinder-iron"
-    },
-    "glossary": "luxury-material"
+    }
   },
   {
     "id": "bright-copper",
@@ -390,8 +379,7 @@
     "icon": {
       "kind": "glyph",
       "id": "lux-bright-copper"
-    },
-    "glossary": "luxury-material"
+    }
   },
   {
     "id": "old-gold",
@@ -401,8 +389,7 @@
     "icon": {
       "kind": "glyph",
       "id": "lux-old-gold"
-    },
-    "glossary": "luxury-material"
+    }
   },
   {
     "id": "sea-silk",
@@ -412,8 +399,7 @@
     "icon": {
       "kind": "glyph",
       "id": "lux-sea-silk"
-    },
-    "glossary": "luxury-material"
+    }
   },
   {
     "id": "moss-velvet",
@@ -423,8 +409,7 @@
     "icon": {
       "kind": "glyph",
       "id": "lux-moss-velvet"
-    },
-    "glossary": "luxury-material"
+    }
   },
   {
     "id": "lantern-silk",
@@ -434,7 +419,6 @@
     "icon": {
       "kind": "glyph",
       "id": "lux-lantern-silk"
-    },
-    "glossary": "luxury-material"
+    }
   }
 ]

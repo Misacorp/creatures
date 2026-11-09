@@ -81,7 +81,7 @@ export const GlossaryEntrySchema = v.strictObject({
 });
 export type GlossaryEntry = v.InferOutput<typeof GlossaryEntrySchema>;
 
-export const GlossarySchema = v.pipe(v.array(GlossaryEntrySchema), v.maxLength(400));
+export const GlossarySchema = v.pipe(v.array(GlossaryEntrySchema), v.maxLength(600));
 export type Glossary = v.InferOutput<typeof GlossarySchema>;
 
 const sectionOf = <T extends v.GenericSchema<string>>(id: T) =>
