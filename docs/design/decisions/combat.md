@@ -4,6 +4,14 @@ The shared combat engine, abilities, statuses, elements, the balance simulator, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-09: Finale actions stay as they are until the playtest; Rally unchanged; six icons accepted [Misa]
+
+ID: `2026-11-09-finale-actions-stay-as-they-are` · Status: current
+
+**Decision.** The live finale's one input stays as it is, a small moment, until the staging playtest shows how it feels ("Leave for now"). Rally keeps its +10% for one round, with no second round or mark: "Let's try to keep it simple for now. 10% damage for one round, when staggered to 8 rounds total from many participants, does add up to something." The six icons not yet reviewed on the board (Boost, Escalating, armour, cracked armour, silence ward, Determination) count as accepted unless Misa says otherwise.
+
+**Reasoning.** The lab (`balance.md` section 10) found no finale action dominating and Rally worth about nothing alone. Misa prefers the simpler rule, and the playtest will show whether the finale needs more weight.
+
 ## 2026-11-06: Finale actions measured: none dominates, Rally is worth about nothing, and picking the best action changes nothing at three players or more
 
 ID: `2026-11-06-finale-actions-measured-none-dominates-rally` · Status: current
