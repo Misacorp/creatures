@@ -42,13 +42,13 @@ const day = (done: boolean, visits = 5): ToolOutcome => ({
 const fail = (error: string): ToolOutcome => ({ ok: false, error });
 
 describe('playDays', () => {
-  it('plays one call per day and shows "Day n of N"', async () => {
+  it('plays one call per day and shows "Day n / N"', async () => {
     const f = fake({ 'valley-sim-day': [day(true)] });
     expect(await playDays(3, f.env)).toEqual({ kind: 'finished', played: 3 });
     expect(f.calls.map((c) => c.tool)).toEqual(Array(3).fill('valley-sim-day'));
     expect(f.calls.every((c) => Object.keys(c.body).length === 0)).toBe(true);
-    expect(f.lines).toContain('Day 1 of 3');
-    expect(f.lines).toContain('Day 3 of 3');
+    expect(f.lines).toContain('Day 1 / 3');
+    expect(f.lines).toContain('Day 3 / 3');
     expect(f.lines.at(-1)).toBe('Played 3 days');
     expect(f.sleeps.every((ms) => ms === PACE_MS)).toBe(true);
   });

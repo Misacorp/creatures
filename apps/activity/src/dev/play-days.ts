@@ -9,6 +9,7 @@
 import type { DataRow } from '../ui/DataTable';
 import { isRecord } from '../parse-core';
 import type { ToolOutcome } from './dev-api';
+import type { DevToolId } from './forms';
 
 export const MAX_DAYS = 28;
 export const DEFAULT_DAYS = 28;
@@ -19,7 +20,7 @@ export const PACE_MS = 1200;
 const RATE_LIMIT_WAIT_MS = 2000;
 const RATE_LIMIT_TRIES = 30;
 
-export type CallTool = (tool: string, body: Record<string, unknown>) => Promise<ToolOutcome>;
+export type CallTool = (tool: DevToolId, body: Record<string, unknown>) => Promise<ToolOutcome>;
 
 export interface PlayProgress {
   /** Days finished in this run. */
@@ -89,7 +90,7 @@ export async function playDays(days: number, env: PlayDaysEnv): Promise<PlayEnd>
 
   while (played < total) {
     if (env.stopped()) return { kind: 'stopped', played };
-    const label = `Day ${String(played + 1)} of ${String(total)}`;
+    const label = `Day ${String(played + 1)} / ${String(total)}`;
     report(label);
     let maxVisits: number | undefined;
     for (;;) {
@@ -120,7 +121,7 @@ export async function playDays(days: number, env: PlayDaysEnv): Promise<PlayEnd>
     played += 1;
     report(
       played < total
-        ? `Day ${String(played + 1)} of ${String(total)}`
+        ? `Day ${String(played + 1)} / ${String(total)}`
         : `Played ${String(total)} days`,
     );
   }
