@@ -294,7 +294,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 - **Status:** draft
 - **Requested:** 2026-11-09 (Misa): "Each building can absolutely change building material as it upgrades in levels, and I'm thinking we might even want to tweak the earlier levels to be less elaborate... If you change materials, there needs to be a common motif between buildings of the same level... Think of how Clash of Clans brings a new look with each new town hall level." Earlier (2026-11-05): the road is short and heads right from the post, and every sign has its full ink outline.
 - **Source:** `apps/activity/src/sprites/concepts/valley-levels-signpost.ts` (draw it with `pnpm art valley-levels-signpost`)
-- **Sheet of:** `f2caed9de17e`
+- **Sheet of:** `9b60a500c6c8`
 - V-COM-1: the Signpost shows its level by its material (docs/design/art-levels.md): Humble, Settled, Stone, Valley, Crystal. `pnpm art levels` draws them side by side (`docs/art/levels/signpost.png`, `market.png`).
 - Signpost, all levels: one 64x56 canvas, the post's foot on row 50, the road short and heading right from the foot (it never reaches the top edge), every sign with its full ink outline, no text on any sign. Night has the lantern's light lying on the ground (the crystal's teal light at level 5); by day the lanterns are unlit and the crystal keeps glowing. Colours from `valley-tiers.ts` (Humble, Settled, Stone, Valley, Crystal).
 - Market: built once. Level 1 is the plot staked out and begun (the shard post with its big sign already stands, a bare counter frame with a few planks laid, a rolled-up awning on the beam, crates, planks, a sack, stakes and string); level 2 is `valley-glow/market`. The shard keeps glowing by day.
