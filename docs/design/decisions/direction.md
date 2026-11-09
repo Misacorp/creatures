@@ -4,13 +4,13 @@ Roadmap calls, Misa's standing direction, naming and tone, content policy, how a
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
-## 2026-11-09: Building level art keeps its level 1 canvas
+## 2026-11-09: [Misa] Valley building levels share one look per level
 
-ID: `2026-11-09-building-level-art-keeps-its-level` · Status: current
+ID: `2026-11-09-valley-building-levels-share-one-look` · Status: current · Supersedes: `2026-11-09-building-level-art-keeps-its-level`
 
-**Decision.** Each valley building's art for levels 2 to 5 is drawn on the canvas size of its level 1 (the Bonfire: its level 2, `bonfire-grand`), keeping the parts the game depends on (the School's door and bell cupola, the Paddock's roam rectangle, the hearth's seats) pixel for pixel; tests check the School and the Paddock. Levels are listed per place in a concept set's `levels`, and `pnpm art levels` draws each place's progression into `docs/art/levels/`. Concept sets `valley-levels-bonfire`, `-forge`, `-signpost` (with the unbuilt Market), `-paddock` and `-school`.
+**Decision.** Every valley building goes through the same five levels: Humble (raw logs, rope, packed earth), Settled (planks, red-brown shingles), Stone (cut stone, slate, black iron), Valley (teal-and-cream banners, brass lamps) and Crystal (glowing valley crystal, gold trim). Each level's materials come from one shared palette, `concepts/valley-tiers.ts`, so a level looks the same on every building, and level 1 is humbler than the old glow art. Each building keeps one canvas for all five levels (Bonfire 64x56, Forge 56x60, Signpost 64x56, Paddock 64x64, School 64x64), with the art on one base row. The rules are in `docs/design/art-levels.md`.
 
-**Reasoning.** The same canvas needs no new map spot, button, name plate or scene placement, so the valley session can wire a level by swapping the sprite name. The cost is that the tightest canvases (the Paddock, the School's side wing) grow only a little; a bigger canvas is Misa's call, since it moves the map layout.
+**Reasoning.** Misa (2026-11-09): buildings should get "better, not just more decorative", may change material as they level, and need "a common motif between buildings of the same level", like "how Clash of Clans brings a new look with each new town hall level"; he agreed to the Paddock's taller canvas. One canvas per building means one map footprint and one scene placement for all its levels.
 
 ## 2026-11-06: Overnight sessions: quiet until news, then one message with every open question [Misa]
 
@@ -268,3 +268,15 @@ Misa reviewed the research defaults (`docs/research/`). **[Misa]** on all of the
 ID: `2026-10-10-name-and-tone` · Status: current
 
 **Decision.** The game is called **Leet Creatures** **[Misa]**. The game stands on its own: creatures, art and mechanics are not built around leet or tech humour. Leet is the currency source; light references are fine **[Misa]**.
+
+<!-- Superseded entries below: kept for history, no longer in force. -->
+
+# Superseded
+
+## 2026-11-09: Building level art keeps its level 1 canvas
+
+ID: `2026-11-09-building-level-art-keeps-its-level` · Status: superseded by `2026-11-09-valley-building-levels-share-one-look`
+
+**Decision.** Each valley building's art for levels 2 to 5 is drawn on the canvas size of its level 1 (the Bonfire: its level 2, `bonfire-grand`), keeping the parts the game depends on (the School's door and bell cupola, the Paddock's roam rectangle, the hearth's seats) pixel for pixel; tests check the School and the Paddock. Levels are listed per place in a concept set's `levels`, and `pnpm art levels` draws each place's progression into `docs/art/levels/`. Concept sets `valley-levels-bonfire`, `-forge`, `-signpost` (with the unbuilt Market), `-paddock` and `-school`.
+
+**Reasoning.** The same canvas needs no new map spot, button, name plate or scene placement, so the valley session can wire a level by swapping the sprite name. The cost is that the tightest canvases (the Paddock, the School's side wing) grow only a little; a bigger canvas is Misa's call, since it moves the map layout.

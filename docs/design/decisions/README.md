@@ -23,7 +23,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [direction.md](direction.md): Roadmap calls, Misa's standing direction, naming and tone, content policy, how agents and Misa work.
 
-- 2026-11-09 Building level art keeps its level 1 canvas
+- 2026-11-09 \[Misa\] Valley building levels share one look per level
 - 2026-11-06 Overnight sessions: quiet until news, then one message with every open question \[Misa\]
 - 2026-11-05 \[Misa\] Working rules: scalars best-guess and ask later, invent content for misses, fewer decisions for Misa
 - 2026-11-05 \[Misa\] CI runs the full check; agents push after quick local checks
@@ -47,6 +47,8 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 - 2026-10-13 Roadmap after M6 (Misa) (amended)
 - 2026-10-10 Game rules from the research review (amended)
 - 2026-10-10 Name and tone
+
+Superseded: 1 entry (see the topic file).
 
 ## Platform, data and tooling
 
