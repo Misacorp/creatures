@@ -29,9 +29,7 @@
     }
    },
    "events": [
-    "new line: splashet",
-    "school: a creature learned its talent 1 on its card (12 Acorns)",
-    "school: a creature learned its talent 1 on its card (12 Acorns)"
+    "new line: splashet"
    ],
    "top5": [
     5,
@@ -59,10 +57,7 @@
      "bagged": 0
     }
    },
-   "events": [
-    "school: a creature learned its talent 1 on its card (12 Acorns)",
-    "school: a creature learned its talent 1 on its card (12 Acorns)"
-   ],
+   "events": [],
    "top5": [
     6,
     6,
@@ -145,33 +140,25 @@
     "acorns": 52,
     "scrap": 124.32,
     "shards": {
-     "ember": 7.15,
-     "spark": 3.58
+     "tide": 2,
+     "ember": 4.15,
+     "spark": 0.58
     },
-    "creatures": [
-     {
-      "line": "mudlump",
-      "count": 1,
-      "newLine": true
-     }
-    ],
+    "creatures": [],
     "pieces": {
-     "collected": 2,
-     "worn": 3,
-     "bagged": 3
+     "collected": 1,
+     "worn": 1,
+     "bagged": 4
     }
    },
    "events": [
-    "new line: mudlump",
-    "school: a student seated for crit-damage",
-    "school: a creature learned its talent 1 on its card (12 Acorns)"
+    "school: a student seated for crit-damage"
    ],
    "top5": [
     8,
     8,
     8,
-    7,
-    1
+    7
    ]
   },
   {
@@ -184,32 +171,24 @@
     "scrap": 124.32,
     "shards": {
      "tide": 2,
-     "ember": 1.15,
-     "spark": 3.58
+     "ember": 4.15,
+     "spark": 0.58
     },
-    "creatures": [
-     {
-      "line": "ashmole",
-      "count": 1,
-      "newLine": true
-     }
-    ],
+    "creatures": [],
     "pieces": {
-     "collected": 1,
+     "collected": 2,
      "worn": 2,
-     "bagged": 0
+     "bagged": 1
     }
    },
    "events": [
-    "new line: ashmole",
-    "school: a creature learned its talent 1 on its card (12 Acorns)"
+    "mastery: anvil 2 reached Apprentice"
    ],
    "top5": [
     9,
     9,
     9,
-    7,
-    5
+    7
    ]
   },
   {
@@ -219,27 +198,25 @@
    "hour": 20,
    "cameHome": {
     "acorns": 52,
-    "scrap": 124.32,
+    "scrap": 129.32,
     "shards": {
-     "ember": 7.15,
-     "spark": 3.58
+     "tide": 2,
+     "ember": 4.15,
+     "spark": 0.58
     },
     "creatures": [],
     "pieces": {
      "collected": 2,
-     "worn": 3,
-     "bagged": 0
+     "worn": 2,
+     "bagged": 1
     }
    },
-   "events": [
-    "mastery: anvil 2 reached Apprentice"
-   ],
+   "events": [],
    "top5": [
     10,
     10,
     10,
-    8,
-    6
+    8
    ]
   },
   {
@@ -256,9 +233,9 @@
     },
     "creatures": [],
     "pieces": {
-     "collected": 4,
-     "worn": 4,
-     "bagged": 4
+     "collected": 2,
+     "worn": 2,
+     "bagged": 0
     }
    },
    "events": [
@@ -272,8 +249,7 @@
     11,
     11,
     11,
-    8,
-    7
+    8
    ]
   },
   {
@@ -283,27 +259,39 @@
    "hour": 20,
    "cameHome": {
     "acorns": 52,
-    "scrap": 129.76,
+    "scrap": 137.76,
     "shards": {
      "ember": 7.49,
      "spark": 3.75
     },
-    "creatures": [],
+    "creatures": [
+     {
+      "line": "sproutle",
+      "count": 1,
+      "newLine": true
+     },
+     {
+      "line": "zipmouse",
+      "count": 1,
+      "newLine": false
+     }
+    ],
     "pieces": {
-     "collected": 2,
-     "worn": 2,
-     "bagged": 1
+     "collected": 1,
+     "worn": 1,
+     "bagged": 2
     }
    },
    "events": [
-    "school: a creature learned the teacher's talent on its card (12 Acorns)"
+    "new line: sproutle",
+    "school: a creature learned the teacher's talent on its card (24 Acorns)"
    ],
    "top5": [
     12,
     12,
     12,
     9,
-    8
+    1
    ]
   },
   {
@@ -318,20 +306,28 @@
      "ember": 7.49,
      "spark": 3.75
     },
-    "creatures": [],
+    "creatures": [
+     {
+      "line": "squelch",
+      "count": 1,
+      "newLine": true
+     }
+    ],
     "pieces": {
-     "collected": 0,
-     "worn": 0,
+     "collected": 2,
+     "worn": 2,
      "bagged": 1
     }
    },
-   "events": [],
+   "events": [
+    "new line: squelch"
+   ],
    "top5": [
     12,
     12,
     12,
     10,
-    9
+    5
    ]
   },
   {
@@ -348,20 +344,21 @@
     },
     "creatures": [],
     "pieces": {
-     "collected": 0,
-     "worn": 0,
-     "bagged": 0
+     "collected": 3,
+     "worn": 3,
+     "bagged": 1
     }
    },
    "events": [
-    "visitor: he is in the valley until the raid finale"
+    "visitor: he is in the valley until the raid finale",
+    "mastery: anvil 2 reached Expert"
    ],
    "top5": [
     12,
     12,
     12,
     10,
-    9
+    7
    ]
   },
   {
@@ -384,22 +381,20 @@
      }
     ],
     "pieces": {
-     "collected": 0,
-     "worn": 0,
-     "bagged": 1
+     "collected": 1,
+     "worn": 1,
+     "bagged": 2
     }
    },
    "events": [
-    "school: a student seated for deep-ink",
-    "visitor: bought the week's blueprint (a new one) for 40 Acorns and 50 shards",
-    "mastery: anvil 2 reached Expert"
+    "school: a student seated for sharp-claws"
    ],
    "top5": [
     13,
     13,
     13,
     11,
-    10
+    8
    ]
   },
   {
@@ -418,7 +413,7 @@
     "pieces": {
      "collected": 0,
      "worn": 0,
-     "bagged": 1
+     "bagged": 0
     }
    },
    "events": [],
@@ -427,7 +422,7 @@
     13,
     13,
     11,
-    10
+    9
    ]
   },
   {
@@ -437,31 +432,27 @@
    "hour": 20,
    "cameHome": {
     "acorns": 52,
-    "scrap": 137.76,
+    "scrap": 129.76,
     "shards": {
      "ember": 7.49,
      "spark": 3.75
     },
-    "creatures": [
-     {
-      "line": "ashmole",
-      "count": 1,
-      "newLine": false
-     }
-    ],
+    "creatures": [],
     "pieces": {
      "collected": 0,
      "worn": 0,
-     "bagged": 2
+     "bagged": 1
     }
    },
-   "events": [],
+   "events": [
+    "visitor: bought the week's blueprint (a new one) for 40 Acorns and 50 shards"
+   ],
    "top5": [
     14,
     14,
     14,
     11,
-    11
+    9
    ]
   },
   {
@@ -471,6 +462,34 @@
    "hour": 20,
    "cameHome": {
     "acorns": 52,
+    "scrap": 129.76,
+    "shards": {
+     "ember": 7.49,
+     "spark": 3.75
+    },
+    "creatures": [],
+    "pieces": {
+     "collected": 0,
+     "worn": 0,
+     "bagged": 2
+    }
+   },
+   "events": [],
+   "top5": [
+    15,
+    15,
+    15,
+    12,
+    10
+   ]
+  },
+  {
+   "week": 3,
+   "day": 16,
+   "weekday": "Tuesday",
+   "hour": 20,
+   "cameHome": {
+    "acorns": 52,
     "scrap": 137.76,
     "shards": {
      "ember": 7.49,
@@ -478,14 +497,9 @@
     },
     "creatures": [
      {
-      "line": "ashmole",
+      "line": "sproutle",
       "count": 1,
       "newLine": false
-     },
-     {
-      "line": "stormray",
-      "count": 1,
-      "newLine": true
      }
     ],
     "pieces": {
@@ -495,8 +509,7 @@
     }
    },
    "events": [
-    "new line: stormray",
-    "school: a creature learned its talent 1 on its card (12 Acorns)"
+    "school: a creature learned the teacher's talent on its card (24 Acorns)"
    ],
    "top5": [
     15,
@@ -508,51 +521,27 @@
   },
   {
    "week": 3,
-   "day": 16,
-   "weekday": "Tuesday",
-   "hour": 20,
-   "cameHome": {
-    "acorns": 52,
-    "scrap": 129.76,
-    "shards": {
-     "ember": 7.49,
-     "spark": 3.75
-    },
-    "creatures": [],
-    "pieces": {
-     "collected": 2,
-     "worn": 2,
-     "bagged": 1
-    }
-   },
-   "events": [
-    "school: a creature learned the teacher's talent on its card (12 Acorns)"
-   ],
-   "top5": [
-    15,
-    15,
-    15,
-    12,
-    12
-   ]
-  },
-  {
-   "week": 3,
    "day": 17,
    "weekday": "Wednesday",
    "hour": 20,
    "cameHome": {
     "acorns": 52,
-    "scrap": 129.76,
+    "scrap": 137.76,
     "shards": {
      "ember": 7.49,
      "spark": 3.75
     },
-    "creatures": [],
+    "creatures": [
+     {
+      "line": "mistnewt",
+      "count": 1,
+      "newLine": false
+     }
+    ],
     "pieces": {
-     "collected": 1,
-     "worn": 1,
-     "bagged": 2
+     "collected": 0,
+     "worn": 0,
+     "bagged": 0
     }
    },
    "events": [],
@@ -561,7 +550,7 @@
     15,
     15,
     13,
-    12
+    11
    ]
   },
   {
@@ -578,27 +567,26 @@
     },
     "creatures": [
      {
-      "line": "mudlump",
+      "line": "mistnewt",
       "count": 1,
       "newLine": false
      }
     ],
     "pieces": {
-     "collected": 0,
+     "collected": 1,
      "worn": 0,
-     "bagged": 2
+     "bagged": 3
     }
    },
    "events": [
-    "visitor: he is in the valley until the raid finale",
-    "visitor: rerolled a epic piece (item level 10) for 60 Acorns and 400 scrap: lines [1, 1, 1, 2, 1] became [1, 2, 1, 1, 1] (1 at the top pip)"
+    "visitor: he is in the valley until the raid finale"
    ],
    "top5": [
     15,
     15,
     15,
     13,
-    13
+    12
    ]
   },
   {
@@ -608,27 +596,39 @@
    "hour": 20,
    "cameHome": {
     "acorns": 52,
-    "scrap": 129.76,
+    "scrap": 137.76,
     "shards": {
      "ember": 7.49,
      "spark": 3.75
     },
-    "creatures": [],
+    "creatures": [
+     {
+      "line": "splashet",
+      "count": 1,
+      "newLine": false
+     },
+     {
+      "line": "ashmole",
+      "count": 1,
+      "newLine": true
+     }
+    ],
     "pieces": {
-     "collected": 0,
-     "worn": 0,
-     "bagged": 2
+     "collected": 2,
+     "worn": 1,
+     "bagged": 3
     }
    },
    "events": [
-    "visitor: bought the week's blueprint (a new one) for 40 Acorns and 50 shards"
+    "new line: ashmole",
+    "school: a student seated for deep-ink"
    ],
    "top5": [
     16,
-    16,
+    15,
     15,
     13,
-    13
+    12
    ]
   },
   {
@@ -645,15 +645,15 @@
     },
     "creatures": [],
     "pieces": {
-     "collected": 0,
-     "worn": 0,
+     "collected": 2,
+     "worn": 2,
      "bagged": 0
     }
    },
    "events": [],
    "top5": [
     16,
-    16,
+    15,
     15,
     14,
     13
@@ -675,16 +675,16 @@
     "pieces": {
      "collected": 0,
      "worn": 0,
-     "bagged": 2
+     "bagged": 0
     }
    },
    "events": [],
    "top5": [
     16,
-    16,
+    15,
     15,
     14,
-    14
+    13
    ]
   },
   {
@@ -694,44 +694,41 @@
    "hour": 20,
    "cameHome": {
     "acorns": 52,
-    "scrap": 141.47,
+    "scrap": 149.47,
     "shards": {
      "ember": 7.83,
      "spark": 3.92
     },
     "creatures": [
      {
-      "line": "sproutle",
+      "line": "zipmouse",
       "count": 1,
-      "newLine": true
+      "newLine": false
      },
      {
-      "line": "new line 16 (common)",
+      "line": "new line 21 (rare)",
       "count": 1,
       "newLine": true
      }
     ],
     "pieces": {
-     "collected": 0,
+     "collected": 1,
      "worn": 1,
      "bagged": 2
     }
    },
    "events": [
-    "new line: sproutle",
-    "new line: new line 16 (common)",
-    "school: a creature learned its talent 1 on its card (12 Acorns)",
-    "school: a creature learned its talent 1 on its card (12 Acorns)",
+    "new line: new line 21 (rare)",
     "mastery: scout seat 1 reached Master",
     "mastery: scout seat 2 reached Master",
     "mastery: anvil 1 reached Master"
    ],
    "top5": [
     17,
-    17,
+    16,
     16,
     14,
-    14
+    13
    ]
   },
   {
@@ -741,22 +738,28 @@
    "hour": 20,
    "cameHome": {
     "acorns": 52,
-    "scrap": 141.47,
+    "scrap": 149.47,
     "shards": {
      "ember": 7.83,
      "spark": 3.92
     },
-    "creatures": [],
+    "creatures": [
+     {
+      "line": "zipmouse",
+      "count": 1,
+      "newLine": false
+     }
+    ],
     "pieces": {
-     "collected": 2,
-     "worn": 3,
+     "collected": 3,
+     "worn": 2,
      "bagged": 1
     }
    },
    "events": [],
    "top5": [
     17,
-    17,
+    16,
     16,
     14,
     14
@@ -776,15 +779,15 @@
     },
     "creatures": [],
     "pieces": {
-     "collected": 4,
-     "worn": 4,
+     "collected": 1,
+     "worn": 1,
      "bagged": 1
     }
    },
    "events": [],
    "top5": [
     18,
-    18,
+    16,
     16,
     15,
     14
@@ -804,21 +807,22 @@
     },
     "creatures": [],
     "pieces": {
-     "collected": 1,
-     "worn": 1,
+     "collected": 2,
+     "worn": 0,
      "bagged": 3
     }
    },
    "events": [
     "visitor: he is in the valley until the raid finale",
-    "visitor: rerolled a epic piece (item level 10) for 60 Acorns and 400 scrap: lines [1, 2, 1, 1, 1] became [1, 1, 1, 2, 1] (1 at the top pip)"
+    "visitor: bought the week's blueprint (a new one) for 40 Acorns and 50 shards",
+    "mastery: anvil 2 reached Master"
    ],
    "top5": [
     18,
-    18,
+    16,
     16,
     15,
-    15
+    14
    ]
   },
   {
@@ -836,16 +840,14 @@
     "creatures": [],
     "pieces": {
      "collected": 0,
-     "worn": 0,
-     "bagged": 0
+     "worn": 1,
+     "bagged": 3
     }
    },
-   "events": [
-    "mastery: anvil 2 reached Master"
-   ],
+   "events": [],
    "top5": [
     18,
-    18,
+    17,
     17,
     15,
     15
@@ -860,30 +862,21 @@
     "acorns": 52,
     "scrap": 141.47,
     "shards": {
-     "ember": 7.83,
+     "tide": 2,
+     "ember": 4.83,
      "spark": 3.92
     },
-    "creatures": [
-     {
-      "line": "new line 17 (common)",
-      "count": 1,
-      "newLine": true
-     }
-    ],
+    "creatures": [],
     "pieces": {
-     "collected": 0,
-     "worn": 0,
-     "bagged": 0
+     "collected": 2,
+     "worn": 2,
+     "bagged": 3
     }
    },
-   "events": [
-    "new line: new line 17 (common)",
-    "school: a creature learned its talent 1 on its card (12 Acorns)",
-    "visitor: bought the week's blueprint (a new one) for 40 Acorns and 50 shards"
-   ],
+   "events": [],
    "top5": [
     18,
-    18,
+    17,
     17,
     15,
     15
@@ -898,22 +891,31 @@
     "acorns": 52,
     "scrap": 141.47,
     "shards": {
-     "ember": 7.83,
+     "tide": 2,
+     "ember": 1.83,
      "spark": 3.92
     },
-    "creatures": [],
+    "creatures": [
+     {
+      "line": "mudlump",
+      "count": 1,
+      "newLine": true
+     }
+    ],
     "pieces": {
      "collected": 2,
      "worn": 3,
-     "bagged": 1
+     "bagged": 2
     }
    },
-   "events": [],
+   "events": [
+    "new line: mudlump"
+   ],
    "top5": [
     18,
-    18,
     17,
-    16,
+    17,
+    15,
     15
    ]
   }
