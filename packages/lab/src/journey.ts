@@ -42,10 +42,12 @@ import { withGear } from './gear';
 import {
   EVERYONE_REPLACES,
   HABITS,
+  HABITS_BEST_FINALE,
   HABITS_FIRST_KNACK,
   REPLACE_CHANCE,
   REPLACE_ONLY,
   chanceHits,
+  bestAbilityFor,
   finaleActions,
   habitsOf,
   shuffled,
@@ -349,6 +351,7 @@ export function playJourneyWeekend(
             w.players.map((p) => p.finale),
             w.boss.rounds,
             (i) => (w.players[i] as JourneyPlayer).owner,
+            bestAbilityFor(w.boss),
           )
         : [];
     if (actions.length) finale = actions;
@@ -638,9 +641,14 @@ export function planJourney(options: JourneyPlanOptions): Plan<JourneyReport> {
       ),
     ),
   ].map(gearOn);
-  const killSets = [EVERYONE_REPLACES, REPLACE_ONLY, HABITS, HABITS_FIRST_KNACK]
+  // The best-finale-ability habits are in the one-weekend kills only when asked for (the default report is what it was).
+  const killSets = [EVERYONE_REPLACES, REPLACE_ONLY, HABITS, HABITS_FIRST_KNACK, HABITS_BEST_FINALE]
     .map((h) => h.id)
-    .filter((id) => options.habitSets === undefined || options.habitSets.includes(id));
+    .filter((id) =>
+      options.habitSets === undefined
+        ? id !== HABITS_BEST_FINALE.id
+        : options.habitSets.includes(id),
+    );
   const killsOf = (
     server: string,
     sets: readonly [JourneyRules, readonly string[]][],
@@ -793,13 +801,14 @@ function journeyMarkdown(
       }
       md.push('');
     }
+  const withBest = mixedKill.some((m) => m.habits === HABITS_BEST_FINALE.id);
   md.push(
     "### The mixed server: one weekend at the slot's week (the track's three misses)",
     '',
     `The share of mixed servers that kill the boss in one weekend at the week the slot is tuned for (\`SLOT_WEEKS\`), expected speed, no Determination. The target is at least ${pct(MIXED_KILL_MIN)} (slot 1 asks 80%). The game's rules, by who plays: everyone replaces (step 1); only the replacement habit (daily players always, weekly players ${pct(REPLACE_CHANCE.weekly)}: confirmed by Misa, 2026-11-04); all the habits (also talents from the line's pool, golden at 1 in ${RULES.talents.golden.denominator}, casual players in random rows and no Knack, every finale ability fired at its default round); the habits with casual players equipping their first known Knack.`,
     '',
-    '| Slot | Boss | Week | Lab | Game: everyone replaces | Game: replacement habit only | Game: habits | Game: habits, first-known Knack |',
-    '| ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: |',
+    `| Slot | Boss | Week | Lab | Game: everyone replaces | Game: replacement habit only | Game: habits | Game: habits, first-known Knack |${withBest ? ' Game: habits, daily players pick the best finale ability |' : ''}`,
+    `| ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: |${withBest ? ' ---: |' : ''}`,
   );
   for (const s of slots) {
     const lab = mixedKill.find((m) => m.rules === 'lab' && m.slot === s);
@@ -812,7 +821,7 @@ function journeyMarkdown(
       return x ? pct(x.kill) : '-';
     };
     md.push(
-      `| ${s} | ${trackSlot(s).bossId} | ${lab?.week ?? '-'} | ${lab ? pct(lab.kill) : '-'} | ${g(EVERYONE_REPLACES.id)} | ${g(REPLACE_ONLY.id)} | ${g(HABITS.id)} | ${g(HABITS_FIRST_KNACK.id)} |`,
+      `| ${s} | ${trackSlot(s).bossId} | ${lab?.week ?? '-'} | ${lab ? pct(lab.kill) : '-'} | ${g(EVERYONE_REPLACES.id)} | ${g(REPLACE_ONLY.id)} | ${g(HABITS.id)} | ${g(HABITS_FIRST_KNACK.id)} |${withBest ? ` ${g(HABITS_BEST_FINALE.id)} |` : ''}`,
     );
   }
   md.push('');

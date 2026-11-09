@@ -145,6 +145,8 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [combat.md](combat.md): The shared combat engine, abilities, statuses, elements, the balance simulator, balance passes, and combat v2 in the lab.
 
+- 2026-11-09 Finale actions stay as they are until the playtest; Rally unchanged; six icons accepted \[Misa\]
+- 2026-11-06 Finale actions measured: none dominates, Rally is worth about nothing, and picking the best action changes nothing at three players or more
 - 2026-11-06 Combat v2 goes live with the valley rework in one reset \[Misa\]
 - 2026-11-06 Talents' raid share back in band: Opportunist +50%, Steady Rhythm without its crit bonus
 - 2026-11-06 \[Misa\] Fizzle becomes a telegraphed boss move: immune to reactions every second turn
@@ -542,6 +544,7 @@ Superseded: 1 entry (see the topic file).
 
 [valley.md](valley.md): The valley and peaceful systems overhaul planned in docs/design/valley/: job posts, the bonfire, the commons, the Forge loop, gear, trials, the School, the visitor, the economy lab, and Misa's question rounds.
 
+- 2026-11-06 Combat v2 and the valley systems together: a knocked-out raider stays paused; presets empty seats
 - 2026-11-06 Patchwork pieces built: the plainest piece of the shard's element, Rare at best
 - 2026-11-06 Patchwork pieces: blueprints that take any shard, with scrap \[Misa\] (amended)
 - 2026-11-06 The Market takes shards of any element, with no cap \[Misa\]

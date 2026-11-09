@@ -4,6 +4,22 @@ The shared combat engine, abilities, statuses, elements, the balance simulator, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-09: Finale actions stay as they are until the playtest; Rally unchanged; six icons accepted [Misa]
+
+ID: `2026-11-09-finale-actions-stay-as-they-are` · Status: current
+
+**Decision.** The live finale's one input stays as it is, a small moment, until the staging playtest shows how it feels ("Leave for now"). Rally keeps its +10% for one round, with no second round or mark: "Let's try to keep it simple for now. 10% damage for one round, when staggered to 8 rounds total from many participants, does add up to something." The six icons not yet reviewed on the board (Boost, Escalating, armour, cracked armour, silence ward, Determination) count as accepted unless Misa says otherwise.
+
+**Reasoning.** The lab (`balance.md` section 10) found no finale action dominating and Rally worth about nothing alone. Misa prefers the simpler rule, and the playtest will show whether the finale needs more weight.
+
+## 2026-11-06: Finale actions measured: none dominates, Rally is worth about nothing, and picking the best action changes nothing at three players or more
+
+ID: `2026-11-06-finale-actions-measured-none-dominates-rally` · Status: current
+
+**Decision.** The lab measures what each live-finale action is worth (`packages/lab/src/finaleWorth.ts`, `report.mjs --finale-worth`) and models a daily player who picks the best action for the boss (`HABITS_BEST_FINALE`, `bestAbilityFor`: Purge for an Element Resistance boss with a three-row arena or more, else Shield Wall). The default habits stay as they were. No scalar changed. Rally (+10% for one round) is worth about nothing and is proposed to Misa, not changed.
+
+**Reasoning.** No action dominates: Purge is best on Old Bogback, Shield Wall on Storm Sovereign and Tidal Colossus, each worth 0 to 9 points of kill chance in the cells where the finale is reached (under half the weekends). Picking the best action moves the mixed server's kill at slots 8 / 11 / 14 by 0, because the worker deals Rally, Shield Wall and Purge to the first three players and a party of three or more already fires every kind. Rally stays as is because the basic abilities are weak by design (decision 2026-10-11) and `rallyBp` 3000 alone would still be under Shield Wall; the numbers and the open proposal are in `docs/design/combat/balance.md` section 10 and `for-misa.md`.
+
 ## 2026-11-06: Combat v2 goes live with the valley rework in one reset [Misa]
 
 ID: `2026-11-06-combat-v2-goes-live-with-the` · Status: current
