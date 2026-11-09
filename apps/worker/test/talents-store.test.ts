@@ -1,4 +1,4 @@
-import { SCHEMA_VERSION } from '../src/migrations';
+import { MIGRATION_ROWS, SCHEMA_VERSION } from '../src/migrations';
 import {
   RULES,
   applyGear,
@@ -216,7 +216,7 @@ describe('rollMissingTalents (existing creatures, once, on the first load after 
         expect(rows(ctx.sql, 'SELECT * FROM creature_talents ORDER BY creature_id')).toEqual(
           before,
         );
-        expect(count(ctx.sql, 'schema_version')).toBe(SCHEMA_VERSION);
+        expect(count(ctx.sql, 'schema_version')).toBe(MIGRATION_ROWS);
         return Promise.resolve();
       },
       { talentRng: createSeededRng('migration-talents') },

@@ -121,7 +121,7 @@ import {
   storeSignature,
   trackedInstances,
 } from './lounge';
-import { MIGRATIONS } from './migrations';
+import { applyMigrations } from './migrations';
 import { ReadMeter, pruneReads, readSourceOfPath, type ReadSource } from './read-meter';
 import { liveRng } from './rng';
 import { ValleyBonfire } from './valley-bonfire';
@@ -578,6 +578,7 @@ export class GuildCore {
       ...(options.combatV2 === true ? { combatV2: true } : {}),
       ...(this.valleySystems ? { valleySystems: true } : {}),
       tripRng: options.tripRng ?? liveRng(),
+      ...(this.housingHook === null ? {} : { housing: this.housingHook }),
       weather: this.weather,
       // With the valley on there is no lounge XP and no daily cap to show (the bonfire's idle XP takes over).
       ...(this.valleySystems ? {} : { gameDay: () => loungeDay(this.now(), this.timezone()).day }),
@@ -594,6 +595,7 @@ export class GuildCore {
         combatV2: options.combatV2 === true,
         choices: this.collection.choices,
         analytics: this.analytics,
+        ...(this.housingHook === null ? {} : { housing: this.housingHook }),
       });
       const forge = new ValleyForgePass({ storage, now, rng: gearRng });
       const gazette = new ValleyGazette(storage, now);
@@ -655,6 +657,7 @@ export class GuildCore {
       dev: this.devState ?? undefined,
       weather: this.weather,
       ...(options.combatV2 === true ? { combatV2: true } : {}),
+      ...(this.housingHook === null ? {} : { housing: this.housingHook }),
     });
     this.raid = new Raid({
       storage,
@@ -673,6 +676,7 @@ export class GuildCore {
       quirkRng,
       talentRng,
       gearRng,
+      ...(this.housingHook === null ? {} : { housing: this.housingHook }),
       ...(options.combatV2 === true ? { combatV2: true } : {}),
       ...(options.readinessRng === undefined ? {} : { readinessRng: options.readinessRng }),
       // Staging only: the dev tools' seats-per-player override. Without the dev tools nothing is read.
@@ -683,6 +687,7 @@ export class GuildCore {
     this.games = new Games({
       storage,
       now,
+      ...(this.housingHook === null ? {} : { housing: this.housingHook }),
       rng: options.gamesRng ?? liveRng(),
       gearRng,
       timezone: () => this.timezone(),
@@ -799,19 +804,7 @@ export class GuildCore {
   }
 
   private runMigrations(): void {
-    this.sql.exec('CREATE TABLE IF NOT EXISTS schema_version (version INTEGER NOT NULL)');
-    const row = this.sql
-      .exec<{ version: number | null }>('SELECT MAX(version) AS version FROM schema_version')
-      .one();
-    const current = row.version ?? 0;
-    for (let version = current + 1; version <= MIGRATIONS.length; version++) {
-      const migration = MIGRATIONS[version - 1];
-      if (migration === undefined) throw new Error(`missing migration ${String(version)}`);
-      this.storage.transactionSync(() => {
-        migration(this.sql);
-        this.sql.exec('INSERT INTO schema_version (version) VALUES (?)', version);
-      });
-    }
+    applyMigrations(this.storage, this.sql);
     // The lounge tables, even where another branch's migration 33 ran first (staging; see lounge.ts).
     this.storage.transactionSync(() => {
       loungeMigration(this.sql);

@@ -35,6 +35,7 @@ import {
   type Rng,
   type ScoutSpecial,
   type SeatStretch,
+  type HousingHook,
 } from '@creatures/game';
 import type { Analytics } from './analytics';
 import type { CatchChoices } from './catch-choices';
@@ -74,6 +75,8 @@ export interface ScoutDeps {
   readonly combatV2: boolean;
   readonly choices: CatchChoices;
   readonly analytics?: Analytics | undefined;
+  /** Player housing's reward hook (`HOUSING` on): a drop at the reward moment. Absent: nothing happens. */
+  readonly housing?: HousingHook | undefined;
 }
 
 /** A seat's waiting finds that are rolled when they come home. */
@@ -318,6 +321,13 @@ export class ValleyFinds {
     let pages = 0;
     if (store.pages > 0) pages = this.rollPages(userId, place, store.pages, at);
     creditParts(this.sql, userId, parts);
+    this.deps.housing?.drop(userId, {
+      kind: 'scout',
+      key: `scout:${seatId}:${String(at)}`,
+      place: place.id,
+      element: place.element,
+      finds: store.gear + store.blueprints + store.pages,
+    });
     if (paper !== undefined) {
       paper.rec.parts(store.scrap, store.shards);
       paper.rec.pages(pages);

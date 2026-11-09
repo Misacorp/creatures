@@ -459,7 +459,7 @@ Set piece ids are `<set>-<form>` for the nine forms (`ancient-stool`, `ancient-c
 
 ### 3.2 Tables: migration 67
 
-Migration **67** (`apps/worker/src/housing-migration.ts`, `housingMigration`). Versions 64 to 66 are taken by the valley session's branch (`ccr-93a1de17-yutb1a`: visitor, school, trials); whichever merges second renumbers only if the other has not been released, and a released number is never reused. If housing needs a second migration tonight it is **68**. Additive; production runs it with the flag off and every table stays empty.
+Migration **67** (`apps/worker/src/housing-migration.ts`, `housingMigration`). Versions 64 to 66 belong to the valley session's branch (`ccr-93a1de17-yutb1a`: visitor, school, trials), which has already run them on staging. They are **reserved** in `MIGRATIONS` as three `null` entries, not no-ops. The runner (`applyMigrations` in `migrations.ts`) applies every version it has not recorded in `schema_version` (it no longer applies "everything above the highest"), and a reserved version is skipped without a record. So in either merge order each real migration runs exactly once: if housing reaches production first, production records 67 but not 64 to 66, and the valley's real migrations run there later, after 67; staging, which has 64 to 66, runs only 67. **When the valley branch merges:** replace the three `null`s with its migrations in place and keep housing at 67; nothing else changes. Migrations must therefore not depend on running in version order against a later one (64 to 66 and 67 are independent tables). If housing needs a second migration it is **68**. Additive; production runs it with the flag off and every table stays empty.
 
 ```sql
 CREATE TABLE houses (
@@ -952,7 +952,7 @@ Every brief starts with `git fetch origin <session branch> && git reset --hard o
 
 ## 7. Risks and touch points on other sessions' files
 
-- **Migration numbers.** 64 to 66 are on the valley session's open branch. Housing takes 67. If that branch is abandoned or renumbers, housing keeps 67 only if it is still unreleased; otherwise the second to merge takes the next free number. The lead checks `MIGRATIONS.length` on both branches before merging.
+- **Migration numbers.** 64 to 66 are reserved (`null`) for the valley session's open branch; housing takes 67 (see 3.2). The valley branch replaces the `null`s with its real migrations when it merges, in either order. If that branch renumbers or is abandoned, the reserved gaps stay harmless (they are never recorded).
 - **Combat v2 and valley rework sessions** edit `raid-resolve.ts`, `raid.ts`, `raid-v2-*`, `valley-*` and `ValleyFrame.tsx`. Housing's edits there are one optional deps field and one call each (3.6) and one `PlaceRow` plus one prop (4.1). Conflicts, if any, are line-level; F lands last to keep the window small. The weekly visitor (`valley-visitor.ts`, not on `main`) gets no hook tonight.
 - **Shared client files.** `tabs.ts`, `nav-places.ts`, `Game.tsx`, `App.tsx`, `api.ts`, `icon-ref.ts`, `ui/GameIcon.tsx`, `glyphs.ts`, `styles/index.css`, `workbench/registry.ts`, `valley/valley-nav.ts`, `valley/ValleyFrame.tsx`: each gets a few lines. A ninth place moves the phone bar's breakpoint (`ux-patterns.md`: "each added place pushes the breakpoint up by about 5 rem").
 - **Shared game files.** `resources.json` and `resources-schema.ts` (a new kind; screens that list resources by kind must not start showing luxury materials in the currency popover: check `CurrencyPile`'s filter), `glossary.json`, `content/index.ts`, `game/src/index.ts`.

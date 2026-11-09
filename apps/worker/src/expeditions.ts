@@ -58,6 +58,7 @@ import {
   type SuppliesId,
   type TripWeather,
   type XpBoostPart,
+  type HousingHook,
 } from '@creatures/game';
 import * as v from 'valibot';
 import type { Analytics, PushOnOutcome } from './analytics';
@@ -190,6 +191,8 @@ export interface ExpeditionsDeps {
   dev?: DevFlags | undefined;
   /** The valley's weather: a trip is sent under the day's Boon and Omen and keeps what they did. */
   weather?: Weather | undefined;
+  /** Player housing's reward hook (`HOUSING` on): a drop at the reward moment. Absent: nothing happens. */
+  housing?: HousingHook | undefined;
 }
 
 const TIER_ORDER = ['basic', 'good', 'great'] as const;

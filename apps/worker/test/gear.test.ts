@@ -1,4 +1,4 @@
-import { SCHEMA_VERSION } from '../src/migrations';
+import { MIGRATION_ROWS, SCHEMA_VERSION } from '../src/migrations';
 import {
   PART_KINDS,
   RULES,
@@ -323,7 +323,7 @@ describe('migration 27', () => {
         { slot: 'hat' },
       ]);
       ctx.core.migrate();
-      expect(count(sql, 'schema_version')).toBe(SCHEMA_VERSION);
+      expect(count(sql, 'schema_version')).toBe(MIGRATION_ROWS);
       expect(count(sql, 'gear_items')).toBe(1);
     });
   });
