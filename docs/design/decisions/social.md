@@ -4,6 +4,24 @@ The living room and lounging, the lounge message, Discord DMs and other social f
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-09: Player housing: what is built and its standing rules **[Misa]**
+
+ID: `2026-11-09-player-housing-what-is-built-and` · Status: current
+
+**Decision.** Misa read the housing research (`docs/research/player-housing.md`) and asked for items 1 to 5, 7 and 8 of its ranking to be built as one shippable feature; porch visitors wait. The spec is `docs/design/housing.md`. His rules:
+
+- The house grows visibly as it is built, beyond floors: wings, pools, decorative gardens.
+- Scouts and trips bring luxury materials (exotic woods, gemstones, rare metals) that fuel housing alone.
+- Furniture comes in sets whose pieces look alike, plus wild pieces; the fun is collecting and crafting everything, and only cost needs balancing. Art is not a limit.
+- The house gives no power, ever.
+- The guestbook is stamps, not text. Stamps are collectibles from feats (the journal especially) and rare drops.
+- The bonfire is not emptied at night, and there is no reason to send a creature home over the bonfire.
+- Porch visitors, later: rare, mysterious choices with unknown outcomes (for example sending a creature on a quest to meet the visitor and learn a talent).
+
+The lead's picks, for Misa to change: housing is self-contained behind a `HOUSING` flag (off in production); a bed holds a housemate for show only; crafting is instant at a workbench, with no timer; a part is paid into at any pace and built when fully paid; one free gift a day; displays (raid plaques, medals, keepsakes) fill themselves.
+
+**Reasoning.** The research found homes are loved when they record what a player did and hold something of theirs, and resented when they charge rent, run out or turn decorating into a score. Keeping housing in its own modules, with one hook per reward path, lets it ship while combat and the valley are being reworked in other sessions.
+
 ## 2026-10-25: Opt-in Discord DMs, derived from the game's tables
 
 ID: `2026-10-25-opt-in-discord-dms-derived-from` · Status: current
