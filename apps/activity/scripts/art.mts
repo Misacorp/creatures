@@ -662,7 +662,91 @@ async function drawItems(slot: string | undefined, out: string): Promise<void> {
   }
 }
 
+/** Every place's level list, from every set that declares one (a later set replaces an earlier one's place). */
+function levelLists(): Map<string, { refs: readonly string[]; backdrop: Backdrop }> {
+  const out = new Map<string, { refs: readonly string[]; backdrop: Backdrop }>();
+  for (const set of CONCEPT_SETS) {
+    for (const [place, refs] of Object.entries(set.levels ?? {})) {
+      out.set(place, { refs, backdrop: set.backdrop });
+    }
+  }
+  return out;
+}
+
+/** The concept a `set/sprite` reference names; throws on a missing one, so a broken list fails the check. */
+function conceptAt(ref: string): Concept {
+  const [setId, spriteId] = ref.split('/');
+  const found = CONCEPT_SETS.find((s) => s.id === setId)?.sprites[spriteId ?? ''];
+  if (found === undefined) throw new Error(`levels: no sprite ${ref}`);
+  return found;
+}
+
+/**
+ * One place at every level side by side, a night row on the night ground and a day row on the day ground,
+ * each sprite standing on the same base line (its bottom row) at 4x, labelled with its level.
+ */
+function drawLevels(
+  place: string,
+  refs: readonly string[],
+  backdrop: Backdrop,
+  file: string,
+): void {
+  const scale = 4;
+  const concepts = refs.map(conceptAt);
+  const sizes = concepts.map((c) => sizeOf(c.sprite));
+  const cell = Math.max(...sizes.map((s) => s.width)) * scale + 24;
+  const tall = Math.max(...sizes.map((s) => s.height)) * scale;
+  const rowH = tall + 24 + 20;
+  const W = 24 + refs.length * cell;
+  const H = 40 + 2 * rowH;
+  const c = new Canvas(W, H, NIGHT);
+  c.text(`${place.toUpperCase()}: LEVELS 1 TO ${String(refs.length)}`, 24, 12, 2, TEXT);
+  const rows: [string, string | undefined][] = [
+    ['NIGHT', undefined],
+    ['DAY', 'day'],
+  ];
+  for (const [r, [label, alt]] of rows.entries()) {
+    const top = 40 + r * rowH;
+    const tile = backdropFor(backdrop, alt);
+    for (const [i, concept] of concepts.entries()) {
+      const x = 24 + i * cell;
+      const size = sizes[i] ?? { width: 0, height: 0 };
+      if (tile !== undefined) c.tiled(tile, x - 8, top, cell - 8, tall + 16, scale);
+      const over = alt === undefined ? undefined : concept.alts?.[alt];
+      const def =
+        over === undefined
+          ? concept.sprite
+          : { ...concept.sprite, palette: { ...concept.sprite.palette, ...over } };
+      const sx = x - 8 + Math.floor((cell - 8 - size.width * scale) / 2);
+      c.sprite(def, sx, top + 8 + tall - size.height * scale, scale);
+      c.text(
+        `${label} ${String(i + 1)}`,
+        x - 8,
+        top + tall + 20,
+        2,
+        alt === undefined ? MUTED : TEXT,
+      );
+    }
+  }
+  c.save(file);
+}
+
 const args = process.argv.slice(2);
+if (args[0] === 'levels') {
+  const at = args.indexOf('--out');
+  const dir = resolve(
+    at < 0
+      ? join(import.meta.dirname, '..', '..', '..', 'docs', 'art', 'levels')
+      : (args[at + 1] ?? '.'),
+  );
+  mkdirSync(dir, { recursive: true });
+  for (const [place, { refs, backdrop }] of levelLists()) {
+    drawLevels(place, refs, backdrop, join(dir, `${place}.png`));
+    console.log(`${place}: ${String(refs.length)} levels`);
+  }
+  console.log(`wrote ${dir}`);
+  process.exit();
+}
 if (args[0] === 'review') {
   const { writeReviewPage } = await import('./art-review.mts');
   const at = args.indexOf('--out');
@@ -697,6 +781,10 @@ if (args[0] === 'library') {
       drawSet(set, Object.keys(set.sprites), join(docs, `${set.id}.png`), true);
     }
     writeFileSync(join(docs, 'README.md'), catalogue());
+    mkdirSync(join(docs, 'levels'), { recursive: true });
+    for (const [place, { refs, backdrop }] of levelLists()) {
+      drawLevels(place, refs, backdrop, join(docs, 'levels', `${place}.png`));
+    }
     console.log(`wrote ${docs}`);
     process.exit(0);
   }
@@ -708,6 +796,8 @@ if (args[0] === 'library') {
     for (const [id, concept] of Object.entries(set.sprites))
       drawCard(id, concept, 'dry.png', set.backdrop);
   }
+  for (const [place, { refs, backdrop }] of levelLists())
+    drawLevels(place, refs, backdrop, 'dry.png');
   // The README carries each set's fingerprint, so comparing it (and that the sheets are exactly one
   // per set) is enough; PNG bytes can differ between zlib versions, so they are not compared.
   let have = '';
