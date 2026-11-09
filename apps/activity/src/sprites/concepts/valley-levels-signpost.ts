@@ -481,7 +481,9 @@ export const VALLEY_LEVELS_SIGNPOST_CONCEPTS: ConceptSet = {
     'Market: built once. Level 1 is the plot staked out and begun (the shard post with its big sign already stands, a bare counter frame with a few planks laid, a rolled-up awning on the beam, crates, planks, a sack, stakes and string); level 2 is `valley-glow/market`. The shard keeps glowing by day.',
     'The content needs the Signpost and the Market (V-COM-1) before this art is used; the map and the scenes need no new placement, every sprite keeps the canvas size of its building.',
   ],
-  backdrop: VALLEY_GLOW_CONCEPTS.backdrop,
+  ...(VALLEY_GLOW_CONCEPTS.backdrop === undefined
+    ? {}
+    : { backdrop: VALLEY_GLOW_CONCEPTS.backdrop }),
   levels: {
     signpost: [
       'valley-glow-camp/road',

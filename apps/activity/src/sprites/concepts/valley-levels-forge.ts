@@ -284,7 +284,9 @@ export const VALLEY_LEVELS_FORGE_CONCEPTS: ConceptSet = {
     'Level 5: the master forge: a red pennant on a pole above the roof, a taller and broader stone chimney stack, a lit hanging lantern, more sparks.',
     'Day palette: same pixels as night; the fire stays lit, the wood is a little lighter than level 1 so tools and beams read on the soot-dark day yard.',
   ],
-  backdrop: VALLEY_GLOW_CONCEPTS.backdrop,
+  ...(VALLEY_GLOW_CONCEPTS.backdrop === undefined
+    ? {}
+    : { backdrop: VALLEY_GLOW_CONCEPTS.backdrop }),
   sprites: {
     'forge-2': level('Level 2: bellows and a tool rack on the walls.', FORGE_2),
     'forge-3': level('Level 3: a second chimney and a quench trough.', FORGE_3),

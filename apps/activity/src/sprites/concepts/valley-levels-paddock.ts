@@ -151,7 +151,9 @@ export const VALLEY_LEVELS_PADDOCK_CONCEPTS: ConceptSet = {
     'The roam rectangle (x 8..41, y 9..26) holds exactly the pixels of level 1 at every level: nothing is added in it (a test checks). Level 1 itself already has the back rail, the hay pile and the left end of the trough inside that rectangle; creatures walk in front of them.',
     'The back rail below the roam top (rows 9 to 13) is unchanged; the plank wall of level 4 replaces only the rail rows above the rectangle (6 to 8) under the left part of the roof.',
   ],
-  backdrop: VALLEY_GLOW_CONCEPTS.backdrop!,
+  ...(VALLEY_GLOW_CONCEPTS.backdrop === undefined
+    ? {}
+    : { backdrop: VALLEY_GLOW_CONCEPTS.backdrop }),
   levels: {
     paddock: [
       'valley-glow-camp/paddock',

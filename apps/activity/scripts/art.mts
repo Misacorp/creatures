@@ -667,6 +667,9 @@ function levelLists(): Map<string, { refs: readonly string[]; backdrop: Backdrop
   const out = new Map<string, { refs: readonly string[]; backdrop: Backdrop }>();
   for (const set of CONCEPT_SETS) {
     for (const [place, refs] of Object.entries(set.levels ?? {})) {
+      // Two sets listing one place would silently hide one list: fail instead.
+      if (out.has(place))
+        throw new Error(`levels: ${place} is listed by two sets (${set.id} and an earlier one)`);
       out.set(place, { refs, backdrop: set.backdrop });
     }
   }

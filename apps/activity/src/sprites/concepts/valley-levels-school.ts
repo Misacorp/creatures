@@ -133,7 +133,9 @@ export const VALLEY_LEVELS_SCHOOL_CONCEPTS: ConceptSet = {
     'Level 2 flagpole and flower boxes; 3 side wing with a third window; 4 garden fence and chalkboard; 5 gold finial, door lanterns and bunting.',
     'Needs the School building levels (V-COM-1) before this art is used.',
   ],
-  backdrop: VALLEY_GLOW_CONCEPTS.backdrop,
+  ...(VALLEY_GLOW_CONCEPTS.backdrop === undefined
+    ? {}
+    : { backdrop: VALLEY_GLOW_CONCEPTS.backdrop }),
   levels: {
     school: [
       'valley-glow/school',
