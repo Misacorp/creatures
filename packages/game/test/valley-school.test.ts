@@ -113,12 +113,12 @@ describe('the band rule (V-SCH-12)', () => {
 });
 
 describe('learning on a card (V-SCH-10)', () => {
-  it('costs the price times the slot, at least once the price', () => {
+  it('costs the price times the slot; the born talent (slot 1) is free', () => {
     const price = VALLEY_RULES.school.price;
-    expect(learningPrice(VALLEY_RULES, 1)).toBe(price);
+    expect(learningPrice(VALLEY_RULES, 1)).toBe(0);
     expect(learningPrice(VALLEY_RULES, 2)).toBe(price * 2);
     expect(learningPrice(VALLEY_RULES, 3)).toBe(price * 3);
-    expect(learningPrice(VALLEY_RULES, 0)).toBe(price);
+    expect(learningPrice(VALLEY_RULES, 0)).toBe(0);
   });
 });
 

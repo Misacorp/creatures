@@ -51,9 +51,13 @@ export function teacherWeekOf(
   return { phase, key: null };
 }
 
-/** V-SCH-10: the Acorns a first learning of slot `slot` (1-based) costs on a creature's card: the price times the slot's number. */
+/**
+ * V-SCH-10: the Acorns a first learning of slot `slot` (1-based) costs on a creature's card: the price times the slot's number. Slot 1 is
+ * the talent a creature is born with (given when it is caught, the owner's answer of 2026-11-09), so it is free; the server never charges
+ * it (the born talent is already learned, the next learning is slot 2), and the lab starts every creature with it learned.
+ */
 export const learningPrice = (rules: SchoolRules, slot: number): number =>
-  rules.school.price * Math.max(1, slot);
+  slot <= 1 ? 0 : rules.school.price * slot;
 
 /** Whether a talent would benefit a player: a line they own has it in its pool and their book for that line lacks it. */
 export function wouldBenefit<T>(
