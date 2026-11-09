@@ -63,6 +63,8 @@ export interface AppConfig {
   valley: boolean;
   /** True when the valley's base systems are on (`VALLEY_SYSTEMS`, needs `VALLEY` and `COMBAT_V2`; staging only until phase 6). Nothing reads it yet. */
   valleySystems: boolean;
+  /** True when the server offers the player's house (`HOUSING`; absent from the config when off): the House place is in the navigation. */
+  housing: boolean;
 }
 
 export interface SessionUser {
@@ -226,6 +228,7 @@ export async function fetchConfig(): Promise<AppConfig> {
     combatV2: data['combatV2'] === true,
     valley: data['valley'] === true,
     valleySystems: data['valleySystems'] === true,
+    housing: data['housing'] === true,
   };
 }
 

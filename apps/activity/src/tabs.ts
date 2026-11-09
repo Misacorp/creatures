@@ -7,7 +7,15 @@
  */
 
 export type Tab =
-  'collection' | 'journal' | 'stats' | 'expeditions' | 'games' | 'raid' | 'workshop' | 'dungeon';
+  | 'collection'
+  | 'journal'
+  | 'stats'
+  | 'house'
+  | 'expeditions'
+  | 'games'
+  | 'raid'
+  | 'workshop'
+  | 'dungeon';
 
 /** Every place of the game screen: Home (the page the app opens on) and the tabs. */
 export type Place = 'home' | Tab;
@@ -65,7 +73,8 @@ export const NAV_GROUPS: readonly TabGroupDef[] = [
 export const NAV_HOME = { id: 'home', label: 'Home', glyph: 'home' } as const;
 
 /**
- * In list order, which is the order inside a group: your creatures, the Workshop, the Journal and the Stats, then the
+ * In list order, which is the order inside a group: your creatures, the Workshop, the Journal, the Stats and the House (behind
+ * the `HOUSING` flag: `navPlaces` leaves it out unless the server offers it), then the
  * adventures in rising danger (Expeditions, Dungeon, Raid), and the Valley Games last (Misa, 2026-10-24: "the
  * current adventures button but it could include the games section too").
  */
@@ -74,6 +83,7 @@ export const TABS: readonly TabDef[] = [
   { id: 'workshop', label: 'Workshop', glyph: 'anvil', group: 'collection' },
   { id: 'journal', label: 'Journal', glyph: 'journal', group: 'collection' },
   { id: 'stats', label: 'Stats', glyph: 'stats', group: 'collection' },
+  { id: 'house', label: 'House', glyph: 'house-nav', group: 'collection' },
   { id: 'expeditions', label: 'Expeditions', glyph: 'compass', group: 'adventure' },
   { id: 'dungeon', label: 'Dungeon', glyph: 'door', group: 'adventure' },
   { id: 'raid', label: 'Raid', glyph: 'blade', group: 'adventure' },

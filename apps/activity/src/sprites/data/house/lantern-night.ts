@@ -4,18 +4,7 @@
  * Pieces stand on their bottom row and fit their form's box (`docs/design/housing.md` 2.5).
  */
 import type { SpriteDef } from '../../sprite-data';
-
-export interface PieceArt {
-  sprite: SpriteDef;
-  front?: SpriteDef;
-  sleep?: { x: number; y: number };
-  glow?: SpriteDef;
-}
-export interface HouseArtPack {
-  pieces?: Record<string, PieceArt>;
-  skins?: Record<string, { tile: SpriteDef; ridge?: SpriteDef; eave?: SpriteDef }>;
-  keepsakes?: Record<string, SpriteDef>;
-}
+import type { HouseArtPack } from '../../../housing/house-art';
 
 const PALETTE: Readonly<Record<string, string>> = {
   k: '#0d0a1a',

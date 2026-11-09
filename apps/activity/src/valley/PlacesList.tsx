@@ -16,6 +16,7 @@ export function PlaceRow({
   line,
   label,
   muted = false,
+  pip = false,
   onClick,
 }: {
   glyph: string;
@@ -25,6 +26,8 @@ export function PlaceRow({
   label?: string;
   /** A row for something not open yet: its words are muted (a tone of the row, not another look). */
   muted?: boolean;
+  /** Something waits here: a small gold square after the line (the House's mailbox). Never the only cue: the line says it. */
+  pip?: boolean;
   onClick: () => void;
 }) {
   return (
@@ -38,6 +41,7 @@ export function PlaceRow({
         <Glyph id={glyph} scale={3} />
         <span class="vy-row-name pix">{name}</span>
         <span class="vy-row-line">{line}</span>
+        {pip && <span class="vy-row-pip" aria-hidden="true" />}
       </button>
     </li>
   );

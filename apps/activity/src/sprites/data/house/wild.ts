@@ -6,7 +6,8 @@
  * hammock is a bed, so it has a `sleep` anchor and a front layer (the near side of the cloth) over a
  * creature lying in it.
  */
-import { drawn, type HouseArtPack } from './cosy';
+import type { HouseArtPack } from '../../../housing/house-art';
+import { drawn } from './cosy';
 
 // <generated>
 const PALETTE: Readonly<Record<string, string>> = {

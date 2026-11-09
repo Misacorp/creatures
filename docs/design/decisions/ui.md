@@ -4,6 +4,14 @@ Navigation and the frame, Home and the notice board, type scale, shared componen
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-10: House scene: canvases at 1x scaled by CSS, yard fixtures, one light
+
+ID: `2026-11-10-house-scene-canvases-at-1x-scaled` · Status: current
+
+**Decision.** The house scene (`apps/activity/src/housing/`) is two canvases drawn at one pixel per scene pixel and shown at an integer CSS scale with `image-rendering: pixelated`; the workbench and the mailbox stand in the yard right of the building (not in the Hearth); rugs are drawn first in a room, under the furniture; the scene ships one light (day), because most set art has no twilight or night row; the art registry's `ART_PENDING` also lists `keepsake:<set>` for a set with no keepsake art (the Cosy set today); the roof is one gable per run of columns with the same top floor (a low hip on wings, glass-tinted over a one-storey conservatory).
+
+**Reasoning.** A mansion is about 1,350 x 360 scene px: at scale 3 two canvases would be 36 MB, at 1x about 2 MB, and the crop is the same. The Hearth has no free floor for a 32 px bench (every spot is taken by the starter layout), and the carpenter seam reads well outdoors. A rug under a stool would hide its feet. Day-only keeps every pack as drawn; a phase colour map can come later without touching the scene's geometry.
+
 ## 2026-11-06: Costs show the resource's icon and a number, never its name [Misa]
 
 ID: `2026-11-06-costs-show-the-resource-s-icon` · Status: current
