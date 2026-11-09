@@ -20,8 +20,9 @@ export const VALLEY_HONOURS_CONCEPTS: ConceptSet = {
   title: 'The honour ribbon',
   requested:
     "2026-11-06 (valley phase 5 step 9b, trials.md V-TRIAL-1): a ribbon worn on a graduate's sprite, one for each honour (Bronze, Silver, Gold).",
-  status: 'draft',
+  status: 'liked',
   notes: [
+    'Misa, 2026-11-09: "Keep it and I\'ll come back to it if it\'s bad."',
     'Where it goes: on the creature sprite at the card, the page and the scenes, its top-left at (10, 10) of the 16x16 sprite, so its bottom-right is the sprite corner; it stays below the face (rows 8 to 10 are the chibi face).',
     'The same drawing in three metals: the main palette is Bronze, `silver` and `gold` are the other two. Colour is not the only cue: the badge and the title ("Pip, Silver") say the honour in words.',
     'Drawn from the prototype school scene ribbon (`proto/valley/school-sample.ts`, a 7 x 8 bronze rosette), a little smaller so it sits under the face on a 16x16 creature.',

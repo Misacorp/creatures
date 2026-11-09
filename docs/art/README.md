@@ -12,7 +12,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | [Element shards, told apart by shape](#shards) | liked | 15 | 2026-11-03: the element shard icons must differ by shape, not only colour (accessibility review from the valley session; Misa asked to provide what the valley needs). |
 | [The camp's other places, glow style](#valley-glow-camp) | draft | 6 | 2026-11-03: the valley prototype's remaining places (arena, fairground, road, chest, lectern, paddock) in the liked glow style, day and night. |
 | [Valley places: glow, day and night](#valley-glow) | liked | 9 | 2026-10-31: night glow redone to stand on the valley ground, with a daytime version of the same assets. |
-| [The honour ribbon](#valley-honours) | draft | 1 | 2026-11-06 (valley phase 5 step 9b, trials.md V-TRIAL-1): a ribbon worn on a graduate's sprite, one for each honour (Bronze, Silver, Gold). |
+| [The honour ribbon](#valley-honours) | liked | 1 | 2026-11-06 (valley phase 5 step 9b, trials.md V-TRIAL-1): a ribbon worn on a graduate's sprite, one for each honour (Bronze, Silver, Gold). |
 | [Valley places: map landmarks](#valley-landmarks) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
 | [Valley places: night glow](#valley-night) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
 | [Valley places: posters](#valley-posters) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
@@ -151,17 +151,18 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 
 ![The honour ribbon](valley-honours.png)
 
-- **Status:** draft
+- **Status:** liked
 - **Requested:** 2026-11-06 (valley phase 5 step 9b, trials.md V-TRIAL-1): a ribbon worn on a graduate's sprite, one for each honour (Bronze, Silver, Gold).
 - **Source:** `apps/activity/src/sprites/concepts/valley-honours.ts` (draw it with `pnpm art valley-honours`)
 - **Sheet of:** `df20e3e713cf`
+- Misa, 2026-11-09: "Keep it and I'll come back to it if it's bad."
 - Where it goes: on the creature sprite at the card, the page and the scenes, its top-left at (10, 10) of the 16x16 sprite, so its bottom-right is the sprite corner; it stays below the face (rows 8 to 10 are the chibi face).
 - The same drawing in three metals: the main palette is Bronze, `silver` and `gold` are the other two. Colour is not the only cue: the badge and the title ("Pip, Silver") say the honour in words.
 - Drawn from the prototype school scene ribbon (`proto/valley/school-sample.ts`, a 7 x 8 bronze rosette), a little smaller so it sits under the face on a 16x16 creature.
 
 | Code | Kind | Role | Status | Idea |
 | --- | --- | --- | --- | --- |
-| `honour-ribbon` | free |  | draft | A rosette with two tails, 6 x 6, ink outline, two tones of metal. Bronze main; Silver and Gold as palettes. |
+| `honour-ribbon` | free |  | liked | A rosette with two tails, 6 x 6, ink outline, two tones of metal. Bronze main; Silver and Gold as palettes. |
 
 <a id="valley-landmarks"></a>
 
