@@ -15,6 +15,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | [The honour ribbon](#valley-honours) | liked | 1 | 2026-11-06 (valley phase 5 step 9b, trials.md V-TRIAL-1): a ribbon worn on a graduate's sprite, one for each honour (Bronze, Silver, Gold). |
 | [Valley places: map landmarks](#valley-landmarks) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
 | [The Bonfire, level by level](#valley-levels-bonfire) | draft | 3 | 2026-11-09 (Misa, via the valley session): each valley building visibly grows level by level, 1 to 5, by day and night. |
+| [The School, level by level](#valley-levels-school) | draft | 4 | 2026-11-09 (Misa, via the valley session): each valley building visibly grows level by level, 1 to 5, by day and night. |
 | [Valley places: night glow](#valley-night) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
 | [Valley places: posters](#valley-posters) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
 | [The School's visiting teacher](#valley-school) | draft | 4 | 2026-11-03 (via the valley session, Misa's round 22 decision): show the visiting teacher with no banner: the bell swings, a lectern at the door, a bench of students, a teacher prop. |
@@ -209,6 +210,27 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | `bonfire-3` | free |  | draft | Level 3: the grand hearth on a paved ring of flagstones. |
 | `bonfire-4` | free |  | draft | Level 4: the paved hearth with bunting strung between the lamp posts. |
 | `bonfire-5` | free |  | draft | Level 5: crowned posts with flagpoles, banners and gold, over the bunting and the paving. |
+
+<a id="valley-levels-school"></a>
+
+## The School, level by level
+
+![The School, level by level](valley-levels-school.png)
+
+- **Status:** draft
+- **Requested:** 2026-11-09 (Misa, via the valley session): each valley building visibly grows level by level, 1 to 5, by day and night.
+- **Source:** `apps/activity/src/sprites/concepts/valley-levels-school.ts` (draw it with `pnpm art valley-levels-school`)
+- **Sheet of:** `c6709b5c1d67`
+- Level 1 is `valley-glow/school`; each level keeps everything of the one below. The door, the sign and the bell cupola (rows 7-12, x 27-32) never change, so the visiting-teacher yard and bell overlay keep fitting.
+- Level 2 flagpole and flower boxes; 3 side wing with a third window; 4 garden fence and chalkboard; 5 gold finial, door lanterns and bunting.
+- Needs the School building levels (V-COM-1) before this art is used.
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `school-2` | free |  | draft | The School at level 2: a flagpole with an orange pennant on the right and a flower box under each window. |
+| `school-3` | free |  | draft | Level 3: a side wing on the right with a third lit window (plain glass by day). |
+| `school-4` | free |  | draft | Level 4: a garden fence with flowers in front of the school and a chalkboard sign by the wing. |
+| `school-5` | free |  | draft | Level 5: a gold finial and band on the cupola roof, a lantern each side of the door and bunting along the eaves. |
 
 <a id="valley-night"></a>
 
