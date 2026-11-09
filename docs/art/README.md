@@ -17,6 +17,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | [The Bonfire, level by level](#valley-levels-bonfire) | draft | 3 | 2026-11-09 (Misa, via the valley session): each valley building visibly grows level by level, 1 to 5, by day and night. |
 | [The Forge, level by level](#valley-levels-forge) | draft | 4 | 2026-11-09 (Misa, via the valley session): each valley building visibly grows level by level, 1 to 5, by day and night. |
 | [The School, level by level](#valley-levels-school) | draft | 4 | 2026-11-09 (Misa, via the valley session): each valley building visibly grows level by level, 1 to 5, by day and night. |
+| [The Signpost and the Market, level by level](#valley-levels-signpost) | draft | 5 | 2026-11-09 (Misa, via the valley session): each valley building visibly grows level by level, by day and night. |
 | [Valley places: night glow](#valley-night) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
 | [Valley places: posters](#valley-posters) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
 | [The School's visiting teacher](#valley-school) | draft | 4 | 2026-11-03 (via the valley session, Misa's round 22 decision): show the visiting teacher with no banner: the bell swings, a lectern at the door, a bench of students, a teacher prop. |
@@ -256,6 +257,29 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | `school-3` | free |  | draft | Level 3: a side wing on the right with a third lit window (plain glass by day). |
 | `school-4` | free |  | draft | Level 4: a garden fence with flowers in front of the school and a chalkboard sign by the wing. |
 | `school-5` | free |  | draft | Level 5: a gold finial and band on the cupola roof, a lantern each side of the door and bunting along the eaves. |
+
+<a id="valley-levels-signpost"></a>
+
+## The Signpost and the Market, level by level
+
+![The Signpost and the Market, level by level](valley-levels-signpost.png)
+
+- **Status:** draft
+- **Requested:** 2026-11-09 (Misa, via the valley session): each valley building visibly grows level by level, by day and night.
+- **Source:** `apps/activity/src/sprites/concepts/valley-levels-signpost.ts` (draw it with `pnpm art valley-levels-signpost`)
+- **Sheet of:** `dfb12cfa696e`
+- V-COM-1: a building shows its level (a second chimney, a longer road, banners). Max level 5. Each level is the same place grown: everything of the level below stays and one clear thing is added. `pnpm art levels` draws them side by side (`docs/art/levels/signpost.png`, `market.png`).
+- Signpost: level 1 is `valley-glow-camp/road` (three arrows, a lantern, a short road bending up to the right). Levels 2 to 5 keep its road and add, in order: a fourth arrow and a second lantern; a bench and a milestone stone; a peaked wayside roof over the signs; a timber gate arch over the road with a lantern on each post and a banner under the arch. No new colours, no text on any sign.
+- Market: built once. Level 1 is the plot staked out and begun (the shard post with its big sign already stands, a bare counter frame with a few planks laid, a rolled-up awning on the beam, crates, planks, a sack, stakes and string); level 2 is `valley-glow/market`. The shard keeps glowing by day.
+- The content needs the Signpost and the Market (V-COM-1) before this art is used; the map and the scenes need no new placement, every sprite keeps the canvas size of its building.
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `road-2` | free |  | draft | Signpost level 2: a fourth plank arrow pointing left below the third, and a second lantern hanging on the left of the post. Its light lies on the ground left of the foot. By day both lanterns are unlit. |
+| `road-3` | free |  | draft | Signpost level 3: level 2 plus a small bench at the post foot and a milestone stone with a groove, on a grass patch beside the road. |
+| `road-4` | free |  | draft | Signpost level 4: level 3 plus a peaked shingle roof over the signs, a wayside shelter resting on the post top. |
+| `road-5` | free |  | draft | Signpost level 5, the waystation: level 4 plus a timber gate arch over the road with a lantern on each post and a gold banner hanging under the arch. |
+| `market-1` | free |  | draft | Market level 1, not built yet: the spot staked out and begun. The post with the big shard sign (the landmark) already stands and keeps glowing by day; a bare counter frame with a few planks laid and a rolled-up awning on the beam, a crate, stacked planks, a sack and stakes with string. |
 
 <a id="valley-night"></a>
 
