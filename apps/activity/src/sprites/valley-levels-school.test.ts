@@ -1,39 +1,60 @@
 import { describe, expect, it } from 'vitest';
 import { expandRows } from './sprite-data';
-import { VALLEY_GLOW_CONCEPTS } from './concepts/valley-glow';
-import { VALLEY_LEVELS_SCHOOL_CONCEPTS } from './concepts/valley-levels-school';
+import {
+  SCHOOL_BELL_BOXES,
+  SCHOOL_BELL_KEYS,
+  SCHOOL_DOOR,
+  SCHOOL_SIZE,
+  VALLEY_LEVELS_SCHOOL_CONCEPTS,
+} from './concepts/valley-levels-school';
 
-const level1 = VALLEY_GLOW_CONCEPTS.sprites['school'];
-if (level1 === undefined) throw new Error('no school');
-const base = expandRows(level1.sprite);
-const IDS = ['school-2', 'school-3', 'school-4', 'school-5'];
+const LEVELS = [1, 2, 3, 4, 5] as const;
 
-function rowsOf(id: string): string[] {
-  const concept = VALLEY_LEVELS_SCHOOL_CONCEPTS.sprites[id];
-  if (concept === undefined) throw new Error(`no ${id}`);
+function rowsOf(level: number): string[] {
+  const concept = VALLEY_LEVELS_SCHOOL_CONCEPTS.sprites[`school-${String(level)}`];
+  if (concept === undefined) throw new Error(`no school-${String(level)}`);
   return expandRows(concept.sprite);
 }
 
 describe('valley-levels-school', () => {
-  it('lists five levels, all drawn at 60x50', () => {
-    expect(VALLEY_LEVELS_SCHOOL_CONCEPTS.levels?.['school']).toHaveLength(5);
-    for (const id of IDS) {
-      const rows = rowsOf(id);
-      expect(rows, id).toHaveLength(50);
-      expect(new Set(rows.map((r) => r.length)), id).toEqual(new Set([60]));
-    }
+  it('lists the five levels in order', () => {
+    expect(VALLEY_LEVELS_SCHOOL_CONCEPTS.levels?.['school']).toEqual(
+      LEVELS.map((l) => `valley-levels-school/school-${String(l)}`),
+    );
   });
 
-  for (const id of IDS) {
-    it(`${id} keeps the bell cupola and the door of level 1`, () => {
-      const rows = rowsOf(id);
-      for (let y = 7; y <= 12; y += 1) {
-        expect(rows[y]?.slice(27, 33), `cupola row ${y}`).toBe(base[y]?.slice(27, 33));
-      }
-      // The door (x 26-33, rows 27-38) and the step below it stay where the yard expects them.
-      for (let y = 27; y <= 40; y += 1) {
-        expect(rows[y]?.slice(26, 34), `door row ${y}`).toBe(base[y]?.slice(26, 34));
-      }
+  for (const level of LEVELS) {
+    describe(`level ${String(level)}`, () => {
+      const rows = rowsOf(level);
+
+      it('is 64x64', () => {
+        expect(rows).toHaveLength(SCHOOL_SIZE);
+        expect(new Set(rows.map((r) => r.length))).toEqual(new Set([SCHOOL_SIZE]));
+      });
+
+      it('has the door at x 31-32 on the same rows, ending on the base row', () => {
+        for (let y = SCHOOL_DOOR.top; y <= SCHOOL_DOOR.bottom; y += 1)
+          for (const x of [SCHOOL_DOOR.x0, SCHOOL_DOOR.x1])
+            expect(rows[y]?.[x], `${String(x)},${String(y)}`).toBe('d');
+        // the door is no taller than the shared rows
+        expect(rows[SCHOOL_DOOR.top - 1]?.[SCHOOL_DOOR.x0]).not.toBe('d');
+        expect(rows[SCHOOL_DOOR.bottom + 1]?.[SCHOOL_DOOR.x0]).not.toBe('d');
+      });
+
+      it('holds bell pixels in its bell box', () => {
+        const [bx, by] = SCHOOL_BELL_BOXES[level];
+        let bell = 0;
+        for (let y = by; y < by + 6; y += 1)
+          for (let x = bx; x < bx + 6; x += 1)
+            if (SCHOOL_BELL_KEYS.includes(rows[y]?.[x] ?? '.')) bell += 1;
+        expect(bell).toBeGreaterThanOrEqual(10);
+      });
     });
   }
+
+  it('moves the bell from a post to a tower on the door axis', () => {
+    expect(SCHOOL_BELL_BOXES[1][0]).toBeGreaterThan(44);
+    expect(SCHOOL_BELL_BOXES[2][0]).toBeGreaterThan(44);
+    for (const level of [3, 4, 5] as const) expect(SCHOOL_BELL_BOXES[level][0]).toBe(29);
+  });
 });

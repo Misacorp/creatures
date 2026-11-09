@@ -17,7 +17,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | [The Bonfire, level by level](#valley-levels-bonfire) | draft | 3 | 2026-11-09 (Misa, via the valley session): each valley building visibly grows level by level, 1 to 5, by day and night. |
 | [The Forge, level by level](#valley-levels-forge) | draft | 4 | 2026-11-09 (Misa, via the valley session): each valley building visibly grows level by level, 1 to 5, by day and night. |
 | [The Paddock, level by level](#valley-levels-paddock) | draft | 4 | 2026-11-09 (Misa, via the valley session): each valley building visibly grows level by level, 1 to 5, by day and night. |
-| [The School, level by level](#valley-levels-school) | draft | 4 | 2026-11-09 (Misa, via the valley session): each valley building visibly grows level by level, 1 to 5, by day and night. |
+| [The School, level by level](#valley-levels-school) | draft | 5 | 2026-11-09 (Misa): "Each building can absolutely change building material as it upgrades in levels, and I'm thinking we might even want to tweak the earlier levels to be less elaborate. Think the school for example. Its bell could be just on the side of the building until a bell tower replaces it in later levels. If you change materials, there needs to be a common motif between buildings of the same level... Think of how Clash of Clans brings a new look with each new town hall level." |
 | [The Signpost and the Market, level by level](#valley-levels-signpost) | draft | 5 | 2026-11-09 (Misa, via the valley session): each valley building visibly grows level by level, by day and night. |
 | [Valley places: night glow](#valley-night) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
 | [Valley places: posters](#valley-posters) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
@@ -271,19 +271,23 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 ![The School, level by level](valley-levels-school.png)
 
 - **Status:** draft
-- **Requested:** 2026-11-09 (Misa, via the valley session): each valley building visibly grows level by level, 1 to 5, by day and night.
+- **Requested:** 2026-11-09 (Misa): "Each building can absolutely change building material as it upgrades in levels, and I'm thinking we might even want to tweak the earlier levels to be less elaborate. Think the school for example. Its bell could be just on the side of the building until a bell tower replaces it in later levels. If you change materials, there needs to be a common motif between buildings of the same level... Think of how Clash of Clans brings a new look with each new town hall level."
 - **Source:** `apps/activity/src/sprites/concepts/valley-levels-school.ts` (draw it with `pnpm art valley-levels-school`)
-- **Sheet of:** `c6709b5c1d67`
-- Level 1 is `valley-glow/school`; each level keeps everything of the one below. The door, the sign and the bell cupola (rows 7-12, x 27-32) never change, so the visiting-teacher yard and bell overlay keep fitting.
-- Level 2 flagpole and flower boxes; 3 side wing with a third window; 4 garden fence and chalkboard; 5 gold finial, door lanterns and bunting.
+- **Sheet of:** `74ab75bfc6f5`
+- Canvas 64x64 at every level, the art centred on the door axis (between x 31 and 32) and standing on the same base row: the last wall row is y 57, the ink edge y 58.
+- What the game relies on: the door is the two columns x 31-32, rows 51-57 (bottom row 57, key d), the same at every level, so the visiting teacher's yard (80x24, drawn with x 31 and 32 under the door) fits all five. A test checks it.
+- The bell is drawn at rest in a 6x6 box (4 wide with an ink rim; the old `school-bell` overlay frames need redrawing for it). Bell box top-left (x, y): level 1 (53, 37) on the post arm; level 2 (52, 38) in the timber frame; levels 3, 4 and 5 (29, 18) in the tower opening. The same numbers are `SCHOOL_BELL_BOXES` in the set file.
+- Level 1 Humble (log hut, thatch, one window, bell on a rope-lashed post beside it); 2 Settled (planks, shingles, two windows, plank sign, bell on a timber frame); 3 Stone (stone walls, slate roof, bell tower over the door, black iron bands); 4 Valley (cream trim, teal shutters, a teal-and-cream pennant on the tower, brass lamps by the door, glass windows); 5 Crystal (a crystal on the tower spire and an inlay on its face, gold eaves, a wider hall with four windows).
+- Window light spills on the grass at night; by day the windows are plain glass (the lamps too). Crystal stays teal by day.
 - Needs the School building levels (V-COM-1) before this art is used.
 
 | Code | Kind | Role | Status | Idea |
 | --- | --- | --- | --- | --- |
-| `school-2` | free |  | draft | The School at level 2: a flagpole with an orange pennant on the right and a flower box under each window. |
-| `school-3` | free |  | draft | Level 3: a side wing on the right with a third lit window (plain glass by day). |
-| `school-4` | free |  | draft | Level 4: a garden fence with flowers in front of the school and a chalkboard sign by the wing. |
-| `school-5` | free |  | draft | Level 5: a gold finial and band on the cupola roof, a lantern each side of the door and bunting along the eaves. |
+| `school-1` | free |  | draft | Level 1, Humble: a small log hut with a thatch roof, one window and a door on packed earth; the bell hangs from a rope-lashed post beside it. Bell box (53, 37). |
+| `school-2` | free |  | draft | Level 2, Settled: a plank schoolhouse with a red-brown shingle roof, two windows and a plank sign over the door; the bell on a little timber frame at the side. Bell box (52, 38). |
+| `school-3` | free |  | draft | Level 3, Stone: cut stone walls, a slate roof, black iron bands and window bars; a stone bell tower over the door replaces the side bell. Bell box (29, 18). |
+| `school-4` | free |  | draft | Level 4, Valley: cream trim and teal shutters, brass lamps by the door, glass windows, a teal-and-cream pennant on the tower. Bell box (29, 18). |
+| `school-5` | free |  | draft | Level 5, Crystal: a glowing crystal on the tower spire and an inlay on its face, gold trim on the eaves and door, a wider hall with four windows. Bell box (29, 18). |
 
 <a id="valley-levels-signpost"></a>
 
