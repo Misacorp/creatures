@@ -1,47 +1,32 @@
 import { describe, expect, it } from 'vitest';
-import { VALLEY_GLOW_CAMP_CONCEPTS } from './concepts/valley-glow-camp';
-import { VALLEY_LEVELS_PADDOCK_CONCEPTS } from './concepts/valley-levels-paddock';
+import { PADDOCK_ROAM, VALLEY_LEVELS_PADDOCK_CONCEPTS } from './concepts/valley-levels-paddock';
 
-/** `PADDOCK_ROAM_OFFSET` in `valley/valley-art.ts`: the sprite's rectangle where creatures roam. */
-const ROAM = { x: 8, y: 9, width: 33, height: 17 };
-
-const level1 = VALLEY_GLOW_CAMP_CONCEPTS.sprites['paddock']!.sprite;
-/** Level 1 with its three pebbles turned into ground flowers, as the level sprites draw them. */
-const base1 = level1.rows.map((r) => r.replaceAll('p', 'j'));
 const levels = Object.entries(VALLEY_LEVELS_PADDOCK_CONCEPTS.sprites);
-
-function roam(rows: readonly string[]): string[] {
-  return rows.slice(ROAM.y, ROAM.y + ROAM.height).map((r) => r.slice(ROAM.x, ROAM.x + ROAM.width));
-}
+/** Keys that are ground: transparent (grass shows) and the lantern's light lying on it. */
+const GROUND = new Set(['.', '1', '2', '3']);
 
 describe('paddock levels', () => {
-  it('has levels 2 to 5, all 64x51 like level 1', () => {
-    expect(levels.map(([id]) => id)).toEqual(['paddock-2', 'paddock-3', 'paddock-4', 'paddock-5']);
+  it('has levels 1 to 5, all 64x64', () => {
+    expect(levels.map(([id]) => id)).toEqual([1, 2, 3, 4, 5].map((n) => `paddock-${n}`));
+    expect(VALLEY_LEVELS_PADDOCK_CONCEPTS.levels?.['paddock']).toHaveLength(5);
     for (const [, c] of levels) {
-      expect(c.sprite.rows).toHaveLength(level1.rows.length);
+      expect(c.sprite.rows).toHaveLength(64);
       for (const r of c.sprite.rows) expect(r).toHaveLength(64);
     }
   });
 
-  it('keeps the roam rectangle exactly as level 1 draws it (nothing added in it)', () => {
-    // Level 1's rectangle holds open grass (`.`) plus the back rail, the hay pile and the trough's left end;
-    // every level has the same pixels there, so no level adds a non-grass pixel.
-    const base = roam(base1);
-    for (const [id, c] of levels) expect(roam(c.sprite.rows), id).toEqual(base);
-  });
-
-  it('keeps every pixel of the level below, adding only', () => {
-    let below: readonly string[] = base1;
+  it('keeps the roam rectangle open ground at every level', () => {
+    expect(PADDOCK_ROAM.y + PADDOCK_ROAM.height).toBeLessThanOrEqual(64);
+    expect(PADDOCK_ROAM.x + PADDOCK_ROAM.width).toBeLessThanOrEqual(64);
     for (const [id, c] of levels) {
-      const rows = c.sprite.rows;
-      const lost: string[] = [];
-      below.forEach((r, y) => {
-        [...r].forEach((ch, x) => {
-          if (ch !== '.' && rows[y]![x] === '.') lost.push(`${x},${y}`);
-        });
-      });
-      expect(lost, `${id} loses pixels`).toEqual([]);
-      below = rows;
+      const bad: string[] = [];
+      for (let y = PADDOCK_ROAM.y; y < PADDOCK_ROAM.y + PADDOCK_ROAM.height; y++) {
+        for (let x = PADDOCK_ROAM.x; x < PADDOCK_ROAM.x + PADDOCK_ROAM.width; x++) {
+          const ch = c.sprite.rows[y]![x]!;
+          if (!GROUND.has(ch)) bad.push(`${x},${y}=${ch}`);
+        }
+      }
+      expect(bad, id).toEqual([]);
     }
   });
 
