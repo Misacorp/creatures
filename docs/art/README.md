@@ -197,7 +197,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 - **Status:** draft
 - **Requested:** 2026-11-09 (Misa, via the valley session): each valley building visibly grows level by level, 1 to 5, by day and night.
 - **Source:** `apps/activity/src/sprites/concepts/valley-levels-forge.ts` (draw it with `pnpm art valley-levels-forge`)
-- **Sheet of:** `4706a150b2f9`
+- **Sheet of:** `e23c9d0aa501`
 - Level 1 is valley-glow/forge; each level keeps everything of the one below and adds clear things, on the same 48x50 canvas.
 - Level 2: a bellows on the left wall pointing at the fire mouth, and a tool rack on the right wall (hammer, tongs, shovel).
 - Level 3: a second, smaller chimney on the roof with its own embers, and a water quench trough against the right wall.
