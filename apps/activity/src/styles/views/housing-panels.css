@@ -1,0 +1,4 @@
+/*
+  The housing panels of package C2 (BuildPanel, WorkbenchPanel, CataloguePanel, SpotPicker, SkinPicker, MailboxPanel, VisitList,
+  Guestbook, StampPicker, GiftButton in src/housing/). C1 only adds this file and its @import line; C2 owns what is in it.
+*/

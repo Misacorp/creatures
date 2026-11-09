@@ -9,7 +9,7 @@ import { HOUSE_ART as stormglass } from '../data/house/stormglass';
 import { HOUSE_ART as fenkeeper } from '../data/house/fenkeeper';
 import { HOUSE_ART as ancient } from '../data/house/ancient';
 import { HOUSE_ART as lanternNight } from '../data/house/lantern-night';
-import type { HouseArtPack } from '../data/house/stormglass';
+import type { HouseArtPack } from '../../housing/house-art';
 import type { Concept, ConceptSet } from './index';
 
 const FORM_NOTES: Readonly<Record<string, string>> = {

@@ -11,7 +11,9 @@ export type IconRef =
   | { kind: 'supply'; id: string }
   | { kind: 'part'; part: PartKind }
   | { kind: 'gear'; baseId: string }
-  | { kind: 'element'; element: string };
+  | { kind: 'element'; element: string }
+  /** A piece or a skin of the player's house, drawn from its art pack at 1x (or the `scale` it is asked for); a grey box until drawn. */
+  | { kind: 'house'; id: string };
 
 /** The icon of a resource from the resource library (a plain diamond for an id it does not know). */
 export function resourceIconRef(id: string): IconRef {

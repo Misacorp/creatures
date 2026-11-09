@@ -9,7 +9,8 @@
  * of light on the ground around it, drawn at night, centred on the piece with its top 4 px below the
  * piece's top (the same rule as the Cosy lamp).
  */
-import { drawn, type HouseArtPack } from './cosy';
+import type { HouseArtPack } from '../../../housing/house-art';
+import { drawn } from './cosy';
 
 // <generated>
 const PALETTE: Readonly<Record<string, string>> = {

@@ -14,23 +14,8 @@
  */
 import type { RoomPhase } from '@creatures/game';
 import type { SpriteDef } from '../../sprite-data';
+import type { HouseArtPack, PieceArt } from '../../../housing/house-art';
 import { ROOM_SPRITE_DATA, type RoomPropName } from '../room-sprites';
-
-// This is the shape of section 5 of `docs/design/housing.md`. It moves to `house-art.ts` when that lands.
-export interface PieceArt {
-  sprite: SpriteDef;
-  front?: SpriteDef;
-  sleep?: { x: number; y: number };
-  glow?: SpriteDef;
-}
-export interface HouseArtPack {
-  pieces?: Record<string, PieceArt>;
-  skins?: Record<string, { tile: SpriteDef; ridge?: SpriteDef; eave?: SpriteDef }>;
-  stamps?: Record<string, SpriteDef>;
-  keepsakes?: Record<string, SpriteDef>;
-  displays?: Partial<Record<string, SpriteDef>>;
-  shell?: Partial<Record<string, SpriteDef>>;
-}
 
 /** The pixel rows of the three new pieces (drawn from shapes, then kept as data). */
 // <generated>
