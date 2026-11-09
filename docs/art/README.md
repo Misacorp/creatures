@@ -14,6 +14,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | [Valley places: glow, day and night](#valley-glow) | liked | 9 | 2026-10-31: night glow redone to stand on the valley ground, with a daytime version of the same assets. |
 | [The honour ribbon](#valley-honours) | liked | 1 | 2026-11-06 (valley phase 5 step 9b, trials.md V-TRIAL-1): a ribbon worn on a graduate's sprite, one for each honour (Bronze, Silver, Gold). |
 | [Valley places: map landmarks](#valley-landmarks) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
+| [The Bonfire, level by level](#valley-levels-bonfire) | draft | 3 | 2026-11-09 (Misa, via the valley session): each valley building visibly grows level by level, 1 to 5, by day and night. |
 | [Valley places: night glow](#valley-night) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
 | [Valley places: posters](#valley-posters) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
 | [The School's visiting teacher](#valley-school) | draft | 4 | 2026-11-03 (via the valley session, Misa's round 22 decision): show the visiting teacher with no banner: the bell swings, a lectern at the door, a bench of students, a teacher prop. |
@@ -186,6 +187,28 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | `visitor` | free |  | draft | A hooded stranger with glowing eyes behind a purple-awninged stall, a crescent moon on the awning and a lit lantern. |
 | `visitor-away` | free |  | draft | The same stall shuttered, lantern out, a sign with a calendar page and a moon: 'back Thursday'. |
 | `market` | free |  | draft | A red and cream striped tent stall where a tiny creature in a cap trades shards from two crates; sign shows shard and coin. |
+
+<a id="valley-levels-bonfire"></a>
+
+## The Bonfire, level by level
+
+![The Bonfire, level by level](valley-levels-bonfire.png)
+
+- **Status:** draft
+- **Requested:** 2026-11-09 (Misa, via the valley session): each valley building visibly grows level by level, 1 to 5, by day and night.
+- **Source:** `apps/activity/src/sprites/concepts/valley-levels-bonfire.ts` (draw it with `pnpm art valley-levels-bonfire`)
+- **Sheet of:** `547162cf795b`
+- Levels 1 and 2 are `valley-glow/bonfire` and `valley-glow/bonfire-grand`; levels 3 to 5 here are 64x50 like the grand hearth, drawn from its pixels, so the map spot and the scene need no change. Each level keeps everything of the one below.
+- Level 3 (bonfire-3): a paved ring. The grass round the hearth becomes flagstones in a brick pattern, so the hearth stands on a stone floor.
+- Level 4 (bonfire-4): bunting. A rope with a sag from lamp to lamp, behind the flames, with red, gold and teal pennants.
+- Level 5 (bonfire-5): the crowned hearth. Tall flagpoles over both lamp posts with a gold ball and a red swallow-tailed banner each, gold bands carved into the posts, and gold-lit stones in the paving.
+- Seats: the same as bonfire-grand (`GRAND_SEATS`); the paving and the bunting are ground and sky, the logs and the front bench are untouched, and the posts stay in `GRAND_LAMPS` boxes.
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `bonfire-3` | free |  | draft | Level 3: the grand hearth on a paved ring of flagstones. |
+| `bonfire-4` | free |  | draft | Level 4: the paved hearth with bunting strung between the lamp posts. |
+| `bonfire-5` | free |  | draft | Level 5: crowned posts with flagpoles, banners and gold, over the bunting and the paving. |
 
 <a id="valley-night"></a>
 
