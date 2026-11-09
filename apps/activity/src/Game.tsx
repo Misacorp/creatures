@@ -761,7 +761,13 @@ export function Game({
   );
 
   const devPanel = (
-    <DevPanelHost enabled={devTools} tab={tab} creatures={game.creatures} onChanged={devRefresh} />
+    <DevPanelHost
+      enabled={devTools}
+      tab={tab}
+      creatures={game.creatures}
+      valleySystems={valleySystems}
+      onChanged={devRefresh}
+    />
   );
 
   /** What the dungeon's and the raid's team screens need to get creatures ready (their configurator and page). */

@@ -33,8 +33,11 @@ import {
   GOODS_SPECS,
   RESET_ACCOUNT_SPEC,
   ROSTER_PRESET_SPEC,
+  VALLEY_SPECS,
   orderedSections,
 } from './specs';
+import { PlayDays } from './PlayDays';
+import { reportRows } from './play-days';
 import { RosterPresets } from './RosterPresets';
 import { ToolForm } from './ToolForm';
 import { COMBAT_LAB_URL } from './combat-lab-link';
@@ -42,7 +45,7 @@ import { PROTOTYPE_URL } from './prototype-link';
 import { WORKBENCH_URL } from './workbench-link';
 import { Replay } from '../Replay';
 import { Accordion } from '../ui/Accordion';
-import { DataTable } from '../ui/DataTable';
+import { DataTable, type DataRow } from '../ui/DataTable';
 
 /** The "Look" section: which look and room band mode this device tries (remembered on the device). */
 function LookSwitch(): JSX.Element {
@@ -211,7 +214,12 @@ function ClockStatus({ view }: { view: DevStateView | null }): JSX.Element {
   return <DataTable class="dev-clock" rows={clockRows(view)} />;
 }
 
-export default function DevPanel({ tab, creatures, onChanged }: DevPanelProps): JSX.Element {
+export default function DevPanel({
+  tab,
+  creatures,
+  valleySystems = false,
+  onChanged,
+}: DevPanelProps): JSX.Element {
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<DevStateView | null>(null);
   const [status, setStatus] = useState<Status | null>(null);
@@ -222,6 +230,8 @@ export default function DevPanel({ tab, creatures, onChanged }: DevPanelProps): 
   const [watch, setWatch] = useState<WatchTarget | null>(null);
   /** Counts the tools that ran, so lists that show what players own are read again. */
   const [ran, setRan] = useState(0);
+  /** The month report's rows, once "Month report" ran. */
+  const [report, setReport] = useState<DataRow[] | null>(null);
   const inFlight = useRef(false);
 
   const choices = useMemo<CreatureChoice[]>(
@@ -260,7 +270,11 @@ export default function DevPanel({ tab, creatures, onChanged }: DevPanelProps): 
       }
       setStatus({
         ok: true,
-        text: `${spec.label}: ${describeBench(spec.tool, outcome.result) ?? describeResult(outcome.result)}`,
+        text: `${spec.label}: ${
+          spec.tool === 'valley-report'
+            ? 'shown in the Valley group.'
+            : (describeBench(spec.tool, outcome.result) ?? describeResult(outcome.result))
+        }`,
       });
       // A played stage opens its replay at once (a live finale has none: the game's own finale screen shows it).
       const target = spec.tool === 'raid-play' ? parseWatch(outcome.result) : null;
@@ -268,6 +282,7 @@ export default function DevPanel({ tab, creatures, onChanged }: DevPanelProps): 
         setWatch(target);
         setOpen(false);
       }
+      if (spec.tool === 'valley-report') setReport(reportRows(outcome.result));
       reloadView();
       setRan((n) => n + 1);
       if (spec.tool === 'analytics-rollup' && events !== null) loadEvents();
@@ -422,6 +437,30 @@ export default function DevPanel({ tab, creatures, onChanged }: DevPanelProps): 
                 }}
               />
             </Section>
+            {valleySystems && (
+              <Section
+                title="Valley"
+                open={sectionOpen('valley', false)}
+                onToggle={toggle('valley')}
+              >
+                <p class="dev-hint">
+                  For a playtest, in this order: Valley fresh, Play days, a roster preset per tester
+                  (Playtest group), then the timed tools below.
+                </p>
+                {steps(VALLEY_SPECS.slice(0, 1))}
+                <PlayDays
+                  busy={busy}
+                  onRunning={setBusy}
+                  onDone={() => {
+                    reloadView();
+                    setRan((n) => n + 1);
+                    onChanged();
+                  }}
+                />
+                {steps(VALLEY_SPECS.slice(1))}
+                {report !== null && <DataTable class="dev-clock" rows={report} />}
+              </Section>
+            )}
             <Section title="Look" open={sectionOpen('look', false)} onToggle={toggle('look')}>
               <LookSwitch />
               <p class="dev-hint">

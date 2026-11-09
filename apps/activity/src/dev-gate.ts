@@ -18,6 +18,8 @@ export interface DevPanelProps {
   tab: Place;
   /** The player's creatures, for the pickers. */
   creatures: readonly Creature[];
+  /** The valley's systems are on (`valleySystems` of `/api/config`): the panel shows the Valley group. */
+  valleySystems?: boolean;
   /** Called after a tool changed something, so the game reloads its state and views. */
   onChanged: () => void;
 }
