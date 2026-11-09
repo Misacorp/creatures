@@ -16,6 +16,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | [Valley places: map landmarks](#valley-landmarks) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
 | [The Bonfire, level by level](#valley-levels-bonfire) | draft | 3 | 2026-11-09 (Misa, via the valley session): each valley building visibly grows level by level, 1 to 5, by day and night. |
 | [The Forge, level by level](#valley-levels-forge) | draft | 4 | 2026-11-09 (Misa, via the valley session): each valley building visibly grows level by level, 1 to 5, by day and night. |
+| [The Paddock, level by level](#valley-levels-paddock) | draft | 4 | 2026-11-09 (Misa, via the valley session): each valley building visibly grows level by level, 1 to 5, by day and night. |
 | [The School, level by level](#valley-levels-school) | draft | 4 | 2026-11-09 (Misa, via the valley session): each valley building visibly grows level by level, 1 to 5, by day and night. |
 | [The Signpost and the Market, level by level](#valley-levels-signpost) | draft | 5 | 2026-11-09 (Misa, via the valley session): each valley building visibly grows level by level, by day and night. |
 | [Valley places: night glow](#valley-night) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
@@ -236,6 +237,31 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | `forge-3` | free |  | draft | Level 3: a second chimney and a quench trough. |
 | `forge-4` | free |  | draft | Level 4: a timber lean-to roof over the anvil with hanging tools. |
 | `forge-5` | free |  | draft | Level 5: the master forge: pennant, broad tall chimney, lantern, more sparks. |
+
+<a id="valley-levels-paddock"></a>
+
+## The Paddock, level by level
+
+![The Paddock, level by level](valley-levels-paddock.png)
+
+- **Status:** draft
+- **Requested:** 2026-11-09 (Misa, via the valley session): each valley building visibly grows level by level, 1 to 5, by day and night.
+- **Source:** `apps/activity/src/sprites/concepts/valley-levels-paddock.ts` (draw it with `pnpm art valley-levels-paddock`)
+- **Sheet of:** `279443661910`
+- Levels 2 to 5 of the Paddock (level 1 is `valley-glow-camp/paddock`). Each keeps everything of the level below and adds one thing; all are 64x51 and start from level 1's pixels. The three pebble pixels of level 1 become ground flowers so the key `p` is free for the barn red.
+- Level 2: a gate swung open on the left front post and a hay bale and a water bucket in front of it.
+- Level 3: a lean-to roof on the back posts over the trough side.
+- Level 4: the roof carries on over the whole back, with a gable, a plank wall and a lit hatch: a small barn front.
+- Level 5: a weathervane on the gable, flower boxes in front of the fence and a pennant on a pole at the right.
+- The roam rectangle (x 8..41, y 9..26) holds exactly the pixels of level 1 at every level: nothing is added in it (a test checks). Level 1 itself already has the back rail, the hay pile and the left end of the trough inside that rectangle; creatures walk in front of them.
+- The back rail below the roam top (rows 9 to 13) is unchanged; the plank wall of level 4 replaces only the rail rows above the rectangle (6 to 8) under the left part of the roof.
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `paddock-2` | free |  | draft | Level 2: the front gap gets a gate swung open on the left post with a hay bale and a water bucket in front. |
+| `paddock-3` | free |  | draft | Level 3: a lean-to roof of red shingles over the back posts at the right, above the trough. |
+| `paddock-4` | free |  | draft | Level 4: the roof runs over the whole back with a gable, a plank wall and a lit hatch (lamp glow by night, pale glass by day). |
+| `paddock-5` | free |  | draft | Level 5: a weathervane on the gable, flower boxes before the front rails and a red pennant on a pole. |
 
 <a id="valley-levels-school"></a>
 
