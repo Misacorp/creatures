@@ -16,7 +16,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | [Valley places: map landmarks](#valley-landmarks) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
 | [The Bonfire, level by level](#valley-levels-bonfire) | draft | 3 | 2026-11-09 (Misa, via the valley session): each valley building visibly grows level by level, 1 to 5, by day and night. |
 | [The Forge, level by level](#valley-levels-forge) | draft | 4 | 2026-11-09 (Misa, via the valley session): each valley building visibly grows level by level, 1 to 5, by day and night. |
-| [The Paddock, level by level](#valley-levels-paddock) | draft | 4 | 2026-11-09 (Misa, via the valley session): each valley building visibly grows level by level, 1 to 5, by day and night. |
+| [The Paddock, level by level](#valley-levels-paddock) | draft | 5 | 2026-11-09 (Misa): "Each building can absolutely change building material as it upgrades in levels, and I'm thinking we might even want to tweak the earlier levels to be less elaborate... If you change materials, there needs to be a common motif between buildings of the same level... Think of how Clash of Clans brings a new look with each new town hall level." The Paddock gets a taller canvas (64x64) so its barn can grow. |
 | [The School, level by level](#valley-levels-school) | draft | 4 | 2026-11-09 (Misa, via the valley session): each valley building visibly grows level by level, 1 to 5, by day and night. |
 | [The Signpost and the Market, level by level](#valley-levels-signpost) | draft | 5 | 2026-11-09 (Misa, via the valley session): each valley building visibly grows level by level, by day and night. |
 | [Valley places: night glow](#valley-night) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
@@ -246,23 +246,24 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 ![The Paddock, level by level](valley-levels-paddock.png)
 
 - **Status:** draft
-- **Requested:** 2026-11-09 (Misa, via the valley session): each valley building visibly grows level by level, 1 to 5, by day and night.
+- **Requested:** 2026-11-09 (Misa): "Each building can absolutely change building material as it upgrades in levels, and I'm thinking we might even want to tweak the earlier levels to be less elaborate... If you change materials, there needs to be a common motif between buildings of the same level... Think of how Clash of Clans brings a new look with each new town hall level." The Paddock gets a taller canvas (64x64) so its barn can grow.
 - **Source:** `apps/activity/src/sprites/concepts/valley-levels-paddock.ts` (draw it with `pnpm art valley-levels-paddock`)
-- **Sheet of:** `279443661910`
-- Levels 2 to 5 of the Paddock (level 1 is `valley-glow-camp/paddock`). Each keeps everything of the level below and adds one thing; all are 64x51 and start from level 1's pixels. The three pebble pixels of level 1 become ground flowers so the key `p` is free for the barn red.
-- Level 2: a gate swung open on the left front post and a hay bale and a water bucket in front of it.
-- Level 3: a lean-to roof on the back posts over the trough side.
-- Level 4: the roof carries on over the whole back, with a gable, a plank wall and a lit hatch: a small barn front.
-- Level 5: a weathervane on the gable, flower boxes in front of the fence and a pennant on a pole at the right.
-- The roam rectangle (x 8..41, y 9..26) holds exactly the pixels of level 1 at every level: nothing is added in it (a test checks). Level 1 itself already has the back rail, the hay pile and the left end of the trough inside that rectangle; creatures walk in front of them.
-- The back rail below the roam top (rows 9 to 13) is unchanged; the plank wall of level 4 replaces only the rail rows above the rectangle (6 to 8) under the left part of the roof.
+- **Sheet of:** `05f8affd8ba0`
+- The Paddock at the five valley levels of `docs/design/art-levels.md`. All five are 64x64 on one footprint: side fences at x 3..7 and 56..60, back fence at rows 20..23, front fence at rows 42..50 with the gate gap at x 28..37 (the open gate leaf, from level 2, stands at x 28..30); the fence changes material, not place. The pen stands on the same base row (bottom of the front fence, row 50).
+- ROAM RECTANGLE for creatures, one for all levels: x 15..48, y 24..40 of the sprite (34x17, exported as PADDOCK_ROAM). It is open grass (transparent, or the lantern's light on the ground) at every level; a test checks it.
+- Level 1 Humble: stakes of raw logs lashed with rope, a hay heap, a bucket on a rope handle, loose fieldstones, a tin lantern on a branch. No building.
+- Level 2 Settled: sawn plank rails with nails and a swung-open plank gate, a small shelter with a red-brown shingle roof and a plank sign at the back, a stave bucket with an iron band.
+- Level 3 Stone: a dressed-stone wall under the rails and along the sides, a stone trough, a small stone-and-timber barn with a slate roof and black iron straps and hinges.
+- Level 4 Valley: the barn painted cream with teal trim, teal-and-cream bunting from its eaves to the corner posts and a pennant on its ridge, brass lamps, flower boxes on the fence. The hay moved into the barn.
+- Level 5 Crystal: a teal crystal finial on the ridge and an inlay in the door, gold trim on the roof, posts and rim, a crystal-lit trough with a shard. Crystal glows by day too.
 
 | Code | Kind | Role | Status | Idea |
 | --- | --- | --- | --- | --- |
-| `paddock-2` | free |  | draft | Level 2: the front gap gets a gate swung open on the left post with a hay bale and a water bucket in front. |
-| `paddock-3` | free |  | draft | Level 3: a lean-to roof of red shingles over the back posts at the right, above the trough. |
-| `paddock-4` | free |  | draft | Level 4: the roof runs over the whole back with a gable, a plank wall and a lit hatch (lamp glow by night, pale glass by day). |
-| `paddock-5` | free |  | draft | Level 5: a weathervane on the gable, flower boxes before the front rails and a red pennant on a pole. |
+| `paddock-1` | free |  | draft | Level 1 Humble: rough stakes and rope, a hay heap, a bucket, no building. |
+| `paddock-2` | free |  | draft | Level 2 Settled: plank fence with an open gate, a small shingle-roofed shelter and a plank sign. |
+| `paddock-3` | free |  | draft | Level 3 Stone: stone wall base, stone trough, a stone-and-timber barn with a slate roof and iron fittings. |
+| `paddock-4` | free |  | draft | Level 4 Valley: the barn painted cream and teal, bunting and pennant, brass lamps, flower boxes. |
+| `paddock-5` | free |  | draft | Level 5 Crystal: a crystal finial on the ridge, gold trim, a crystal-lit trough. |
 
 <a id="valley-levels-school"></a>
 
