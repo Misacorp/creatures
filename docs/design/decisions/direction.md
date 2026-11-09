@@ -4,6 +4,14 @@ Roadmap calls, Misa's standing direction, naming and tone, content policy, how a
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-09: Building level art keeps its level 1 canvas
+
+ID: `2026-11-09-building-level-art-keeps-its-level` · Status: current
+
+**Decision.** Each valley building's art for levels 2 to 5 is drawn on the canvas size of its level 1 (the Bonfire: its level 2, `bonfire-grand`), keeping the parts the game depends on (the School's door and bell cupola, the Paddock's roam rectangle, the hearth's seats) pixel for pixel; tests check the School and the Paddock. Levels are listed per place in a concept set's `levels`, and `pnpm art levels` draws each place's progression into `docs/art/levels/`. Concept sets `valley-levels-bonfire`, `-forge`, `-signpost` (with the unbuilt Market), `-paddock` and `-school`.
+
+**Reasoning.** The same canvas needs no new map spot, button, name plate or scene placement, so the valley session can wire a level by swapping the sprite name. The cost is that the tightest canvases (the Paddock, the School's side wing) grow only a little; a bigger canvas is Misa's call, since it moves the map layout.
+
 ## 2026-11-06: Overnight sessions: quiet until news, then one message with every open question [Misa]
 
 ID: `2026-11-06-overnight-sessions-quiet-until-news-then` · Status: current
