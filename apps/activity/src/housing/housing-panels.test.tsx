@@ -1,0 +1,466 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { SAMPLE_STATE } from '../creature-card-sample';
+import {
+  badgesIn,
+  byClass,
+  byName,
+  byRole,
+  createPage,
+  nameOf,
+  visibleText,
+  type FakeElement,
+  type Page,
+} from '../test-dom';
+import { BuildPanel } from './BuildPanel';
+import { CataloguePanel } from './CataloguePanel';
+import { GiftButton } from './GiftButton';
+import { Guestbook } from './Guestbook';
+import { MailboxPanel } from './MailboxPanel';
+import { SkinPicker } from './SkinPicker';
+import { SpotPicker } from './SpotPicker';
+import { StampPicker } from './StampPicker';
+import { VisitList } from './VisitList';
+import { WorkbenchPanel } from './WorkbenchPanel';
+import {
+  SAMPLE_NOW,
+  sampleCatalogue,
+  sampleGuestbook,
+  sampleHouse,
+  sampleList,
+  sampleOwn,
+} from './house-sample';
+
+let page: Page | null = null;
+
+beforeEach(() => {
+  Reflect.set(globalThis, 'window', {
+    innerHeight: 800,
+    innerWidth: 390,
+    addEventListener: () => undefined,
+    removeEventListener: () => undefined,
+    scrollTo: () => undefined,
+  });
+});
+
+afterEach(() => {
+  page?.unmount();
+  page = null;
+  Reflect.deleteProperty(globalThis, 'window');
+});
+
+function draw(vnode: Parameters<Page['draw']>[0]): Page {
+  page?.unmount();
+  page = createPage();
+  page.draw(vnode);
+  return page;
+}
+
+function first(list: FakeElement[]): FakeElement {
+  const [el] = list;
+  if (el === undefined) throw new Error('not found');
+  return el;
+}
+
+const house = sampleHouse();
+const noop = () => undefined;
+
+describe('BuildPanel', () => {
+  it('pays what is held when "Pay in" is pressed, for the part it belongs to', () => {
+    const onPay = vi.fn();
+    const p = draw(
+      <BuildPanel house={house} own={sampleOwn('rich')} busy={false} error={null} onPay={onPay} />,
+    );
+    const cellar = first(byName(p.root, 'section', 'Cellar'));
+    p.click(first(byName(cellar, 'button', 'Pay in')));
+    expect(onPay).toHaveBeenCalledTimes(1);
+    const [partId, pay] = onPay.mock.calls[0] as [string, { bait?: number; scrap?: number }];
+    expect(partId).toBe('cellar');
+    expect(pay.bait).toBe(125);
+    expect(pay.scrap).toBe(800);
+  });
+
+  it('shows have / need, marks the short line and names no currency in words', () => {
+    const p = draw(
+      <BuildPanel house={house} own={sampleOwn('rich')} busy={false} error={null} onPay={noop} />,
+    );
+    const cellar = first(byName(p.root, 'section', 'Cellar'));
+    expect(visibleText(cellar)).toContain('0 / 4');
+    expect(byClass(cellar, 'short')).toHaveLength(1);
+    expect(visibleText(cellar)).not.toMatch(/acorns|scrap|shard/i);
+    expect(
+      badgesIn(cellar).some(([name, n]) => /acorn|bait/i.test(name) && n === '640 / 125'),
+    ).toBe(true);
+  });
+
+  it('is off while busy, off with a reason when nothing can be paid, and shows a refusal', () => {
+    const busy = draw(
+      <BuildPanel house={house} own={sampleOwn('rich')} busy error={null} onPay={noop} />,
+    );
+    expect(first(byName(busy.root, 'button', 'Pay in')).hasAttribute('disabled')).toBe(true);
+    const none = draw(
+      <BuildPanel
+        house={house}
+        own={sampleOwn('empty')}
+        busy={false}
+        error="Not enough."
+        onPay={noop}
+      />,
+    );
+    expect(visibleText(none.root)).toContain('Nothing to pay in yet.');
+    expect(first(byName(none.root, 'button', 'Pay in')).hasAttribute('disabled')).toBe(true);
+    expect(byRole(none.root, 'alert')).toHaveLength(1);
+  });
+
+  it('lists what cannot be built yet, muted, with its reason', () => {
+    const p = draw(
+      <BuildPanel house={house} own={sampleOwn('rich')} busy={false} error={null} onPay={noop} />,
+    );
+    const text = visibleText(p.root);
+    expect(text).toContain('Needs the Garden');
+    expect(byClass(p.root, 'vy-row-muted').length).toBeGreaterThan(0);
+  });
+
+  it('says everything is built when there is nothing left', () => {
+    const own = { ...sampleOwn('rich'), buildable: [], progress: [] };
+    const all = { ...house, built: housingPartIds() };
+    const p = draw(<BuildPanel house={all} own={own} busy={false} error={null} onPay={noop} />);
+    expect(visibleText(p.root)).toContain('Everything is built.');
+  });
+});
+
+function housingPartIds(): string[] {
+  return [
+    'hut',
+    'cottage',
+    'house',
+    'cellar',
+    'terrace',
+    'garden',
+    'west-wing',
+    'west-upper',
+    'east-wing',
+    'east-upper',
+    'pool',
+  ];
+}
+
+describe('WorkbenchPanel', () => {
+  it('makes a piece when Make is pressed', () => {
+    const onCraft = vi.fn();
+    const p = draw(
+      <WorkbenchPanel
+        own={sampleOwn('rich')}
+        busy={false}
+        error={null}
+        focus="tidepool-stool"
+        onCraft={onCraft}
+      />,
+    );
+    const buttons = byName(p.root, 'button', 'Make');
+    expect(buttons.length).toBeGreaterThan(0);
+    const enabled = buttons.filter((b) => !b.hasAttribute('disabled'));
+    p.click(first(enabled));
+    expect(onCraft).toHaveBeenCalledTimes(1);
+  });
+
+  it('marks a recipe the player is short of and keeps its button off', () => {
+    const p = draw(
+      <WorkbenchPanel
+        own={sampleOwn('poor')}
+        busy={false}
+        error={null}
+        focus="tidepool-table"
+        onCraft={noop}
+      />,
+    );
+    expect(byClass(p.root, 'short').length).toBeGreaterThan(0);
+    expect(visibleText(p.root)).toContain('Not enough yet.');
+  });
+
+  it('says so with nothing known beyond the starters, and shows a refusal', () => {
+    const p = draw(
+      <WorkbenchPanel own={sampleOwn('empty')} busy={false} error="Nope." onCraft={noop} />,
+    );
+    expect(byRole(p.root, 'alert')).toHaveLength(1);
+    expect(visibleText(p.root)).toContain('Cosy');
+  });
+});
+
+describe('CataloguePanel', () => {
+  it('shows the found count and the kinds, and switches kind', () => {
+    const p = draw(<CataloguePanel catalogue={sampleCatalogue()} failed={false} onRetry={noop} />);
+    expect(visibleText(p.root)).toMatch(/\d+ \/ 196 found/);
+    p.click(first(byName(p.root, 'button', 'Stamps')));
+    const tiles = byName(p.root, 'button', /^Unknown\./);
+    expect(tiles.length).toBeGreaterThan(0);
+  });
+
+  it('names an unknown tile Unknown and speaks its hint', () => {
+    const p = draw(<CataloguePanel catalogue={sampleCatalogue()} failed={false} onRetry={noop} />);
+    p.click(first(byName(p.root, 'button', /Tidepool/)));
+    expect(byName(p.root, 'button', /^Unknown\. /).length).toBeGreaterThan(0);
+  });
+
+  it('retries after a failed load', () => {
+    const onRetry = vi.fn();
+    const p = draw(<CataloguePanel catalogue={null} failed onRetry={onRetry} />);
+    p.click(first(byName(p.root, 'button', 'Try again')));
+    expect(onRetry).toHaveBeenCalled();
+    const loading = draw(<CataloguePanel catalogue={null} failed={false} onRetry={noop} />);
+    expect(visibleText(loading.root)).toContain('Loading');
+  });
+});
+
+describe('SpotPicker', () => {
+  const hearth = house.rooms.find((r) => r.id === 'hut:hearth');
+  const loft = house.rooms.find((r) => r.id === 'cottage:loft');
+  if (hearth === undefined || loft === undefined) throw new Error('rooms');
+  const props = {
+    own: sampleOwn('rich'),
+    housemates: house.housemates,
+    creatures: SAMPLE_STATE.creatures,
+    busy: false,
+    onPlace: noop,
+    onHousemate: noop,
+    onMake: noop,
+  };
+
+  it('lists Empty first and places the chosen piece', () => {
+    const onPlace = vi.fn();
+    const p = draw(
+      <SpotPicker {...props} room={hearth} spotId="floor-small-b" onPlace={onPlace} />,
+    );
+    const group = first(byRole(p.root, 'group'));
+    const tiles = byName(group, 'button', /./);
+    expect(nameOf(first(tiles)).startsWith('Empty')).toBe(true);
+    p.click(first(byName(group, 'button', /^Cosy Chair/)));
+    p.click(first(byName(p.root, 'button', /^Place here/)));
+    expect(onPlace).toHaveBeenCalledWith('cosy-chair');
+  });
+
+  it('empties a filled spot', () => {
+    const onPlace = vi.fn();
+    const p = draw(
+      <SpotPicker {...props} room={hearth} spotId="floor-small-a" onPlace={onPlace} />,
+    );
+    p.click(first(byName(p.root, 'button', /^Empty/)));
+    p.click(first(byName(p.root, 'button', /^Empty the spot/)));
+    expect(onPlace).toHaveBeenCalledWith(null);
+  });
+
+  it("opens a blueprint's recipe in the same drawer, and Back returns", () => {
+    const onMake = vi.fn();
+    const p = draw(<SpotPicker {...props} room={loft} spotId="floor-large-a" onMake={onMake} />);
+    p.click(first(byName(p.root, 'button', /^Hammock/)));
+    p.click(first(byName(p.root, 'button', /^Make/)));
+    expect(visibleText(p.root)).toContain('Back');
+    expect(byClass(p.root, 'recipe-card')).toHaveLength(1);
+    const make = byName(p.root, 'button', 'Make');
+    p.click(first(make));
+    expect(onMake).toHaveBeenCalledWith('hammock');
+    p.click(first(byName(p.root, 'button', /Back/)));
+    expect(byClass(p.root, 'recipe-card')).toHaveLength(0);
+  });
+
+  it('shows who sleeps in a bed and lists creatures with Away as a reason', () => {
+    const onHousemate = vi.fn();
+    const creatures = SAMPLE_STATE.creatures.map((c, i) => (i === 0 ? { ...c, away: true } : c));
+    const p = draw(
+      <SpotPicker
+        {...props}
+        room={loft}
+        spotId="floor-large-a"
+        creatures={creatures}
+        onHousemate={onHousemate}
+      />,
+    );
+    p.click(first(byName(p.root, 'button', /^Who sleeps here:/)));
+    expect(visibleText(p.root)).toContain('Away');
+    const options = byRole(p.root, 'option');
+    const free = options.find(
+      (o) => !visibleText(o).includes('Away') && o.getAttribute('aria-disabled') !== 'true',
+    );
+    expect(free).toBeDefined();
+  });
+
+  it('has no spot buttons to pick for a display, only a note', () => {
+    const p = draw(<SpotPicker {...props} room={hearth} spotId="mantel" />);
+    expect(visibleText(p.root)).toContain('fills itself');
+  });
+});
+
+describe('SkinPicker', () => {
+  it('uses a skin the player has and makes one known but not made', () => {
+    const onPick = vi.fn();
+    const own = sampleOwn('rich');
+    const p = draw(
+      <SkinPicker
+        kind="wall"
+        current="tidepool-wall"
+        own={own}
+        busy={false}
+        onPick={onPick}
+        onMake={noop}
+      />,
+    );
+    p.click(first(byName(p.root, 'button', /^Cosy Wallpaper/)));
+    p.click(first(byName(p.root, 'button', /^Use it/)));
+    expect(onPick).toHaveBeenCalledWith('cosy-wall');
+  });
+
+  it('keeps Use it off for the skin in use', () => {
+    const p = draw(
+      <SkinPicker
+        kind="wall"
+        current="cosy-wall"
+        own={sampleOwn('rich')}
+        busy={false}
+        onPick={noop}
+        onMake={noop}
+      />,
+    );
+    expect(first(byName(p.root, 'button', /^Use it/)).hasAttribute('disabled')).toBe(true);
+  });
+});
+
+describe('MailboxPanel', () => {
+  it('lists each gift with its giver and collects once', () => {
+    const onCollect = vi.fn();
+    const p = draw(
+      <MailboxPanel mailbox={sampleOwn('rich').mailbox} busy={false} onCollect={onCollect} />,
+    );
+    expect(byClass(p.root, 'hp-gift')).toHaveLength(2);
+    expect(visibleText(p.root)).toContain('Mika');
+    p.click(first(byName(p.root, 'button', /^Collect/)));
+    expect(onCollect).toHaveBeenCalledTimes(1);
+  });
+
+  it('is empty and off with nothing waiting, and off while busy', () => {
+    const p = draw(
+      <MailboxPanel mailbox={sampleOwn('empty').mailbox} busy={false} onCollect={noop} />,
+    );
+    expect(visibleText(p.root)).toContain('The mailbox is empty');
+    expect(first(byName(p.root, 'button', /^Collect/)).hasAttribute('disabled')).toBe(true);
+    const busy = draw(<MailboxPanel mailbox={sampleOwn('rich').mailbox} busy onCollect={noop} />);
+    expect(first(byName(busy.root, 'button', /^Collect/)).hasAttribute('disabled')).toBe(true);
+  });
+});
+
+describe('VisitList', () => {
+  it('opens a house, cuts a long name and keeps the full name in the spoken one', () => {
+    const onOpen = vi.fn();
+    const p = draw(<VisitList list={sampleList()} failed={false} onRetry={noop} onOpen={onOpen} />);
+    expect(visibleText(p.root)).toContain('…');
+    const row = first(byName(p.root, 'button', /^Bartholomew-Alexander the Third of Hollowmere/));
+    p.click(row);
+    expect(onOpen).toHaveBeenCalledWith('100000000000000003');
+    expect(visibleText(p.root)).toContain('Gift given · Stamped');
+  });
+
+  it('says so when empty, loading or failed', () => {
+    const empty = draw(
+      <VisitList
+        list={{ houses: [], me: { giftLeft: true } }}
+        failed={false}
+        onRetry={noop}
+        onOpen={noop}
+      />,
+    );
+    expect(visibleText(empty.root)).toContain('No other houses yet.');
+    const retry = vi.fn();
+    const failed = draw(<VisitList list={null} failed onRetry={retry} onOpen={noop} />);
+    failed.click(first(byName(failed.root, 'button', 'Try again')));
+    expect(retry).toHaveBeenCalled();
+  });
+});
+
+describe('Guestbook', () => {
+  it('lists stamps with who and when, newest first, cutting a long name', () => {
+    const p = draw(<Guestbook entries={sampleGuestbook()} now={SAMPLE_NOW} />);
+    const rows = byClass(p.root, 'hp-guest');
+    expect(rows).toHaveLength(3);
+    expect(visibleText(first(rows))).toContain('Mika');
+    expect(visibleText(first(rows))).toContain('5 minutes ago');
+    expect(visibleText(p.root)).toContain('…');
+    expect(visibleText(p.root)).toContain('stamp from');
+  });
+
+  it('says so when nobody has signed', () => {
+    const p = draw(<Guestbook entries={[]} now={SAMPLE_NOW} />);
+    expect(visibleText(p.root)).toContain('Nobody has signed');
+  });
+
+  it('renders a name as text, never markup', () => {
+    const entries = [
+      { visitor: { userId: '1', name: '<b>x</b>' }, stampId: 'paw-print', at: SAMPLE_NOW },
+    ];
+    const p = draw(<Guestbook entries={entries} now={SAMPLE_NOW} />);
+    expect(visibleText(p.root)).toContain('<b>x</b>');
+    expect(byName(p.root, 'b', /./)).toHaveLength(0);
+  });
+});
+
+describe('StampPicker', () => {
+  it('offers only owned stamps and stamps at once on a pick', () => {
+    const onStamp = vi.fn();
+    const p = draw(
+      <StampPicker
+        owned={['paw-print', 'housewarming']}
+        used={false}
+        busy={false}
+        onStamp={onStamp}
+      />,
+    );
+    p.click(first(byName(p.root, 'button', 'Leave a stamp')));
+    const options = byRole(p.root, 'option');
+    expect(options.map(nameOf)).toEqual(['Paw Print', 'Housewarming']);
+    p.click(first(options));
+    expect(onStamp).toHaveBeenCalledWith('paw-print');
+  });
+
+  it("is off and says Stamped today after the day's stamp", () => {
+    const p = draw(<StampPicker owned={['paw-print']} used busy={false} onStamp={noop} />);
+    const trigger = first(byName(p.root, 'button', 'Stamped today'));
+    expect(trigger.hasAttribute('disabled')).toBe(true);
+  });
+});
+
+describe('GiftButton', () => {
+  it('has three states: ready, given here today, given elsewhere today', () => {
+    const onGift = vi.fn();
+    const ready = draw(
+      <GiftButton
+        today={{ gifted: false, stamped: false }}
+        giftLeft
+        busy={false}
+        onGift={onGift}
+      />,
+    );
+    ready.click(first(byName(ready.root, 'button', 'Gift')));
+    expect(onGift).toHaveBeenCalledTimes(1);
+    const here = draw(
+      <GiftButton
+        today={{ gifted: true, stamped: false }}
+        giftLeft={false}
+        busy={false}
+        onGift={onGift}
+      />,
+    );
+    expect(first(byName(here.root, 'button', /Given today/)).hasAttribute('disabled')).toBe(true);
+    const elsewhere = draw(
+      <GiftButton
+        today={{ gifted: false, stamped: false }}
+        giftLeft={false}
+        busy={false}
+        onGift={onGift}
+      />,
+    );
+    expect(
+      first(byName(elsewhere.root, 'button', /Given elsewhere today/)).hasAttribute('disabled'),
+    ).toBe(true);
+    const busy = draw(
+      <GiftButton today={{ gifted: false, stamped: false }} giftLeft busy onGift={onGift} />,
+    );
+    expect(first(byName(busy.root, 'button', 'Gift')).hasAttribute('disabled')).toBe(true);
+  });
+});
