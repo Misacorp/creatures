@@ -14,6 +14,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | [Valley places: glow, day and night](#valley-glow) | liked | 9 | 2026-10-31: night glow redone to stand on the valley ground, with a daytime version of the same assets. |
 | [The honour ribbon](#valley-honours) | liked | 1 | 2026-11-06 (valley phase 5 step 9b, trials.md V-TRIAL-1): a ribbon worn on a graduate's sprite, one for each honour (Bronze, Silver, Gold). |
 | [Valley places: map landmarks](#valley-landmarks) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
+| [The Paddock, level by level](#valley-levels-paddock) | draft | 4 | 2026-11-09 (Misa, via the valley session): each valley building visibly grows level by level, 1 to 5, by day and night. |
 | [Valley places: night glow](#valley-night) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
 | [Valley places: posters](#valley-posters) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
 | [The School's visiting teacher](#valley-school) | draft | 4 | 2026-11-03 (via the valley session, Misa's round 22 decision): show the visiting teacher with no banner: the bell swings, a lectern at the door, a bench of students, a teacher prop. |
@@ -186,6 +187,31 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | `visitor` | free |  | draft | A hooded stranger with glowing eyes behind a purple-awninged stall, a crescent moon on the awning and a lit lantern. |
 | `visitor-away` | free |  | draft | The same stall shuttered, lantern out, a sign with a calendar page and a moon: 'back Thursday'. |
 | `market` | free |  | draft | A red and cream striped tent stall where a tiny creature in a cap trades shards from two crates; sign shows shard and coin. |
+
+<a id="valley-levels-paddock"></a>
+
+## The Paddock, level by level
+
+![The Paddock, level by level](valley-levels-paddock.png)
+
+- **Status:** draft
+- **Requested:** 2026-11-09 (Misa, via the valley session): each valley building visibly grows level by level, 1 to 5, by day and night.
+- **Source:** `apps/activity/src/sprites/concepts/valley-levels-paddock.ts` (draw it with `pnpm art valley-levels-paddock`)
+- **Sheet of:** `279443661910`
+- Levels 2 to 5 of the Paddock (level 1 is `valley-glow-camp/paddock`). Each keeps everything of the level below and adds one thing; all are 64x51 and start from level 1's pixels. The three pebble pixels of level 1 become ground flowers so the key `p` is free for the barn red.
+- Level 2: a gate swung open on the left front post and a hay bale and a water bucket in front of it.
+- Level 3: a lean-to roof on the back posts over the trough side.
+- Level 4: the roof carries on over the whole back, with a gable, a plank wall and a lit hatch: a small barn front.
+- Level 5: a weathervane on the gable, flower boxes in front of the fence and a pennant on a pole at the right.
+- The roam rectangle (x 8..41, y 9..26) holds exactly the pixels of level 1 at every level: nothing is added in it (a test checks). Level 1 itself already has the back rail, the hay pile and the left end of the trough inside that rectangle; creatures walk in front of them.
+- The back rail below the roam top (rows 9 to 13) is unchanged; the plank wall of level 4 replaces only the rail rows above the rectangle (6 to 8) under the left part of the roof.
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `paddock-2` | free |  | draft | Level 2: the front gap gets a gate swung open on the left post with a hay bale and a water bucket in front. |
+| `paddock-3` | free |  | draft | Level 3: a lean-to roof of red shingles over the back posts at the right, above the trough. |
+| `paddock-4` | free |  | draft | Level 4: the roof runs over the whole back with a gable, a plank wall and a lit hatch (lamp glow by night, pale glass by day). |
+| `paddock-5` | free |  | draft | Level 5: a weathervane on the gable, flower boxes before the front rails and a red pennant on a pole. |
 
 <a id="valley-night"></a>
 
