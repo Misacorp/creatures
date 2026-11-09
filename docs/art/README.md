@@ -14,6 +14,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | [Valley places: glow, day and night](#valley-glow) | liked | 9 | 2026-10-31: night glow redone to stand on the valley ground, with a daytime version of the same assets. |
 | [The honour ribbon](#valley-honours) | liked | 1 | 2026-11-06 (valley phase 5 step 9b, trials.md V-TRIAL-1): a ribbon worn on a graduate's sprite, one for each honour (Bronze, Silver, Gold). |
 | [Valley places: map landmarks](#valley-landmarks) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
+| [The Forge, level by level](#valley-levels-forge) | draft | 4 | 2026-11-09 (Misa, via the valley session): each valley building visibly grows level by level, 1 to 5, by day and night. |
 | [Valley places: night glow](#valley-night) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
 | [Valley places: posters](#valley-posters) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
 | [The School's visiting teacher](#valley-school) | draft | 4 | 2026-11-03 (via the valley session, Misa's round 22 decision): show the visiting teacher with no banner: the bell swings, a lectern at the door, a bench of students, a teacher prop. |
@@ -186,6 +187,30 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | `visitor` | free |  | draft | A hooded stranger with glowing eyes behind a purple-awninged stall, a crescent moon on the awning and a lit lantern. |
 | `visitor-away` | free |  | draft | The same stall shuttered, lantern out, a sign with a calendar page and a moon: 'back Thursday'. |
 | `market` | free |  | draft | A red and cream striped tent stall where a tiny creature in a cap trades shards from two crates; sign shows shard and coin. |
+
+<a id="valley-levels-forge"></a>
+
+## The Forge, level by level
+
+![The Forge, level by level](valley-levels-forge.png)
+
+- **Status:** draft
+- **Requested:** 2026-11-09 (Misa, via the valley session): each valley building visibly grows level by level, 1 to 5, by day and night.
+- **Source:** `apps/activity/src/sprites/concepts/valley-levels-forge.ts` (draw it with `pnpm art valley-levels-forge`)
+- **Sheet of:** `4706a150b2f9`
+- Level 1 is valley-glow/forge; each level keeps everything of the one below and adds clear things, on the same 48x50 canvas.
+- Level 2: a bellows on the left wall pointing at the fire mouth, and a tool rack on the right wall (hammer, tongs, shovel).
+- Level 3: a second, smaller chimney on the roof with its own embers, and a water quench trough against the right wall.
+- Level 4: a timber lean-to roof over the anvil with a hanging hammer and tongs, held by a post.
+- Level 5: the master forge: a red pennant on a pole above the roof, a taller and broader stone chimney stack, a lit hanging lantern, more sparks.
+- Day palette: same pixels as night; the fire stays lit, the wood is a little lighter than level 1 so tools and beams read on the soot-dark day yard.
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `forge-2` | free |  | draft | Level 2: bellows and a tool rack on the walls. |
+| `forge-3` | free |  | draft | Level 3: a second chimney and a quench trough. |
+| `forge-4` | free |  | draft | Level 4: a timber lean-to roof over the anvil with hanging tools. |
+| `forge-5` | free |  | draft | Level 5: the master forge: pennant, broad tall chimney, lantern, more sparks. |
 
 <a id="valley-night"></a>
 
