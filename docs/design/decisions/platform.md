@@ -4,6 +4,14 @@ Hosting, Durable Objects, scheduling, CI and deploys, staging, dependencies, sec
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-06: The settlers' record lives in a production archive object, not the public repo, and keeps no Discord IDs
+
+ID: `2026-11-06-the-settlers-record-lives-in-a` · Status: current, amended by `2026-11-06-the-reset-settlers-appear-on-every`
+
+**Decision.** For the reset (`docs/design/reset.md`), each server writes its settlers' record into one archive Durable Object in production just before it wipes, and wipes only after the write is confirmed. The record is never committed to the repository or kept as a workflow artifact. It keeps no Discord user IDs and no server IDs: each settler and server gets a random id. Player-typed text is kept as it was cleaned at entry and shown only as text; private creature notes are not recorded. Lore written by hand from the record enters the repo only after Misa approves the names. If Misa wants returning players recognised, the record adds an HMAC of the Discord ID keyed by a Worker secret, never the ID itself. After the wipe, leet payouts start from the switch day instead of the usual 7-day backfill, so no day is paid twice.
+
+**Reasoning.** The repository is public, and workflow artifacts of a public repository can be downloaded by any signed-in GitHub user, so neither may hold player names. Keeping the record in the Worker lets later content read it at runtime without copying names anywhere. Dropping raw IDs keeps Misa's "leave no trace" as far as the record allows; the keyed hash is the smallest identifier that still lets a player be recognised. Writing before wiping, in that order, means a failed write loses nothing.
+
 ## 2026-11-06: Dev tools: server managers only, roster presets, creatures-per-player override [Misa]
 
 ID: `2026-11-06-dev-tools-server-managers-only-roster` · Status: current
