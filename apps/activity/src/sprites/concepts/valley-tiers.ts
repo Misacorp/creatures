@@ -89,7 +89,8 @@ export function tierPalette<L extends TierLevel>(
   const palette: Record<string, string> = {};
   const day: Record<string, string> = {};
   for (const [key, material] of Object.entries(keys)) {
-    const colour = materials[material as string];
+    // Own properties only, so a name such as "toString" never finds an inherited value.
+    const colour = Object.hasOwn(materials, material) ? materials[material as string] : undefined;
     if (colour === undefined || typeof colour === 'string') {
       throw new Error(`tierPalette: level ${level} has no material "${String(material)}"`);
     }
