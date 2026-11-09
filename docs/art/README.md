@@ -15,7 +15,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | [The honour ribbon](#valley-honours) | liked | 1 | 2026-11-06 (valley phase 5 step 9b, trials.md V-TRIAL-1): a ribbon worn on a graduate's sprite, one for each honour (Bronze, Silver, Gold). |
 | [Valley places: map landmarks](#valley-landmarks) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
 | [The Bonfire, level by level](#valley-levels-bonfire) | draft | 3 | 2026-11-09 (Misa, via the valley session): each valley building visibly grows level by level, 1 to 5, by day and night. |
-| [The Forge, level by level](#valley-levels-forge) | draft | 4 | 2026-11-09 (Misa, via the valley session): each valley building visibly grows level by level, 1 to 5, by day and night. |
+| [The Forge, level by level](#valley-levels-forge) | draft | 5 | 2026-11-09 (Misa): "Each building can absolutely change building material as it upgrades in levels ... Naturally a forge can't be made of wood, but it can have wooden elements on it ... Think of how Clash of Clans brings a new look with each new town hall level." |
 | [The Paddock, level by level](#valley-levels-paddock) | draft | 4 | 2026-11-09 (Misa, via the valley session): each valley building visibly grows level by level, 1 to 5, by day and night. |
 | [The School, level by level](#valley-levels-school) | draft | 4 | 2026-11-09 (Misa, via the valley session): each valley building visibly grows level by level, 1 to 5, by day and night. |
 | [The Signpost and the Market, level by level](#valley-levels-signpost) | draft | 5 | 2026-11-09 (Misa, via the valley session): each valley building visibly grows level by level, by day and night. |
@@ -222,22 +222,24 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 ![The Forge, level by level](valley-levels-forge.png)
 
 - **Status:** draft
-- **Requested:** 2026-11-09 (Misa, via the valley session): each valley building visibly grows level by level, 1 to 5, by day and night.
+- **Requested:** 2026-11-09 (Misa): "Each building can absolutely change building material as it upgrades in levels ... Naturally a forge can't be made of wood, but it can have wooden elements on it ... Think of how Clash of Clans brings a new look with each new town hall level."
 - **Source:** `apps/activity/src/sprites/concepts/valley-levels-forge.ts` (draw it with `pnpm art valley-levels-forge`)
-- **Sheet of:** `e23c9d0aa501`
-- Level 1 is valley-glow/forge; each level keeps everything of the one below and adds clear things, on the same 48x50 canvas.
-- Level 2: a bellows on the left wall pointing at the fire mouth, and a tool rack on the right wall (hammer, tongs, shovel).
-- Level 3: a second, smaller chimney on the roof with its own embers, and a water quench trough against the right wall.
-- Level 4: a timber lean-to roof over the anvil with a hanging hammer and tongs, held by a post.
-- Level 5: the master forge: a red pennant on a pole above the roof, a taller and broader stone chimney stack, a lit hanging lantern, more sparks.
-- Day palette: same pixels as night; the fire stays lit, the wood is a little lighter than level 1 so tools and beams read on the soot-dark day yard.
+- **Sheet of:** `599842ca870e`
+- Five levels on one 56x60 canvas, all standing on row 51, centred; smaller levels leave the top and sides empty. Colours from valley-tiers, 16 or fewer per sprite.
+- Night is the main palette with the ember glow lying on the ground in stepped rings in front of the fire; alts.day is the same pixels with the fire still lit and a soot-dark yard.
+- Level 1 Humble: an open-air smithy: a fieldstone hearth mound with a small fire, a stump with a small anvil, a crooked rope-lashed log frame under a straw roof.
+- Level 2 Settled: a small fieldstone forge in a sawn-timber frame under a red-brown shingle roof, a stone chimney, a bellows, a plank sign with a hammer.
+- Level 3 Stone: a cut-stone smithy with a slate roof, black iron eave band and lintel, a tall stone chimney, a plank door with iron hinges and a big iron anvil.
+- Level 4 Valley: the stone forge with a teal-and-cream awning over the fire, a teal pennant, brass lamps, a glass window and a quench trough.
+- Level 5 Crystal: the master forge: a glowing crystal finial on the chimney, crystal inlays and pane, gold trim on eaves and lintel, gold lamps, sparks. The crystal glows by day too.
 
 | Code | Kind | Role | Status | Idea |
 | --- | --- | --- | --- | --- |
-| `forge-2` | free |  | draft | Level 2: bellows and a tool rack on the walls. |
-| `forge-3` | free |  | draft | Level 3: a second chimney and a quench trough. |
-| `forge-4` | free |  | draft | Level 4: a timber lean-to roof over the anvil with hanging tools. |
-| `forge-5` | free |  | draft | Level 5: the master forge: pennant, broad tall chimney, lantern, more sparks. |
+| `forge-1` | free |  | draft | Level 1: open-air smithy, stone hearth, stump anvil, rope-lashed frame. |
+| `forge-2` | free |  | draft | Level 2: fieldstone forge, timber frame, shingles, bellows, sign. |
+| `forge-3` | free |  | draft | Level 3: cut stone, slate, black iron, tall chimney, big anvil. |
+| `forge-4` | free |  | draft | Level 4: teal-and-cream awning, pennant, brass lamps, glass, trough. |
+| `forge-5` | free |  | draft | Level 5: crystal finial and inlays, gold trim, sparks. |
 
 <a id="valley-levels-paddock"></a>
 
