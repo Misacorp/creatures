@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment --
+/* eslint-disable @typescript-eslint/no-unsafe-member-access --
    These tests read parts of response bodies (`Json.body` is `any` on purpose); the house answer is parsed with its strict schema. */
 /**
  * Package F of player housing (`docs/design/housing.md` 3.6): every reward moment calls the housing hook once, inside its own
