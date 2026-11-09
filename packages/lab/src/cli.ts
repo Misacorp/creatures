@@ -5,10 +5,18 @@ import { RAID_BOSS_IDS } from './bosses';
 import { planBosses } from './bossReport';
 import { planDungeonDays } from './dungeonMeasure';
 import { planUndercroftTools } from './undercroftTools';
+import { planWorth } from './finaleWorth';
 import { planFourSlot } from './fourSlot';
 import { planGate } from './gate';
 import { gearMarkdown } from './gearReport';
 import { planJourney } from './journey';
+import {
+  EVERYONE_REPLACES,
+  HABITS,
+  HABITS_BEST_FINALE,
+  HABITS_FIRST_KNACK,
+  REPLACE_ONLY,
+} from './habits';
 import { planPath, type PathSummary } from './path';
 import { planRules } from './ruleCheck';
 import { ownabilityMarkdown, ownabilityTable } from './ownability';
@@ -65,9 +73,10 @@ export async function main(args: readonly string[], run: JobRunner = serial): Pr
   }
   if (args.includes('--path')) return path(args, quick, run);
   const gear = args.includes('--gear');
-  if (args.includes('--journey')) return journey(quick, run, gear);
+  if (args.includes('--journey')) return journey(args, quick, run, gear);
   if (args.includes('--dungeon-days')) return dungeonDays(args, quick, run);
   if (args.includes('--undercroft-tools')) return undercroftTools(args, quick, run, gear);
+  if (args.includes('--finale-worth')) return finaleWorth(args, quick, run);
   if (args.includes('--four-slot')) return fourSlot(quick, run);
   if (args.includes('--rules')) return rules(quick, run);
   if (args.includes('--gate')) return gate(quick, run, gear);
@@ -203,9 +212,39 @@ function gearCli(quick: boolean): number {
   return 0;
 }
 
-/** `--journey [--quick] [--gear]`: the journey on the game's rules (`journey.ts`), beside the lab's, to the console (nothing is written). */
-async function journey(quick: boolean, run: JobRunner, gear = false): Promise<number> {
+/** `--journey [--quick] [--gear] [--mixed-kill [--servers n]]`: the journey on the game's rules (`journey.ts`), beside the lab's, to the console (nothing is written). */
+async function journey(
+  args: readonly string[],
+  quick: boolean,
+  run: JobRunner,
+  gear = false,
+): Promise<number> {
   const t0 = Date.now();
+  // `--mixed-kill [--servers n]`: only the mixed server's one-weekend kills (the track's three misses), every habits set including the
+  // daily players' best finale ability.
+  if (args.includes('--mixed-kill')) {
+    const servers = flagValue(args, '--servers');
+    const { value } = await runPlan(
+      planJourney({
+        quick,
+        compared: [],
+        sizes: [],
+        gameOnly: true,
+        habitSets: [
+          EVERYONE_REPLACES.id,
+          REPLACE_ONLY.id,
+          HABITS.id,
+          HABITS_FIRST_KNACK.id,
+          HABITS_BEST_FINALE.id,
+        ],
+        ...(servers ? { servers: Number(servers) } : {}),
+      }),
+      run,
+    );
+    console.log(value.md.join('\n'));
+    console.log(`journey (mixed kills) in ${secondsSince(t0)} s`);
+    return 0;
+  }
   // With gear the journey plays the game's rules only (the lab's twin has no gear).
   const { value, timings } = await runPlan(
     planJourney({ quick, ...(gear ? { gear: true, gameOnly: true } : {}) }),
@@ -268,6 +307,30 @@ async function rules(quick: boolean, run: JobRunner): Promise<number> {
   console.log(value.md.join('\n'));
   console.log(`rules in ${secondsSince(t0)} s`);
   console.log(timings);
+  return 0;
+}
+
+/** `--finale-worth [--quick] [--servers n] [--slots a,b] [--server-ids a,b]`: what each finale action is worth (`finaleWorth.ts`), to the console (nothing is written). */
+async function finaleWorth(
+  args: readonly string[],
+  quick: boolean,
+  run: JobRunner,
+): Promise<number> {
+  const t0 = Date.now();
+  const servers = flagValue(args, '--servers');
+  const slots = flagValue(args, '--slots')?.split(',').map(Number);
+  const serverIds = flagValue(args, '--server-ids')?.split(',');
+  const { value } = await runPlan(
+    planWorth({
+      ...(serverIds ? { serverIds } : {}),
+      quick,
+      ...(servers ? { servers: Number(servers) } : {}),
+      ...(slots ? { slots } : {}),
+    }),
+    run,
+  );
+  console.log(value.md.join('\n'));
+  console.log(`finale worth in ${secondsSince(t0)} s`);
   return 0;
 }
 

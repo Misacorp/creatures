@@ -104,7 +104,12 @@ export function replaceRoster(ctx: ToolCtx, userId: string, preset: RosterPreset
     )
     .toArray();
   for (const { name } of tables) {
-    sql.exec(`DELETE FROM "${name.replaceAll('"', '""')}" WHERE creature_id IN (${mine})`, userId);
+    // A post is a seat the player bought (and what it stored, and an anvil's orders and floor): it is emptied, not deleted.
+    const sqlText =
+      name === 'valley_seats'
+        ? `UPDATE valley_seats SET creature_id = NULL WHERE creature_id IN (${mine})`
+        : `DELETE FROM "${name.replaceAll('"', '""')}" WHERE creature_id IN (${mine})`;
+    sql.exec(sqlText, userId);
   }
   sql.exec('DELETE FROM creatures WHERE user_id = ?', userId);
   sql.exec('DELETE FROM line_talents WHERE user_id = ?', userId);
