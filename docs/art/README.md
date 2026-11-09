@@ -273,7 +273,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 - **Status:** draft
 - **Requested:** 2026-11-09 (Misa): "Each building can absolutely change building material as it upgrades in levels, and I'm thinking we might even want to tweak the earlier levels to be less elaborate. Think the school for example. Its bell could be just on the side of the building until a bell tower replaces it in later levels. If you change materials, there needs to be a common motif between buildings of the same level... Think of how Clash of Clans brings a new look with each new town hall level."
 - **Source:** `apps/activity/src/sprites/concepts/valley-levels-school.ts` (draw it with `pnpm art valley-levels-school`)
-- **Sheet of:** `74ab75bfc6f5`
+- **Sheet of:** `35f8d97debaa`
 - Canvas 64x64 at every level, the art centred on the door axis (between x 31 and 32) and standing on the same base row: the last wall row is y 57, the ink edge y 58.
 - What the game relies on: the door is the two columns x 31-32, rows 51-57 (bottom row 57, key d), the same at every level, so the visiting teacher's yard (80x24, drawn with x 31 and 32 under the door) fits all five. A test checks it.
 - The bell is drawn at rest in a 6x6 box (4 wide with an ink rim; the old `school-bell` overlay frames need redrawing for it). Bell box top-left (x, y): level 1 (53, 37) on the post arm; level 2 (52, 38) in the timber frame; levels 3, 4 and 5 (29, 18) in the tower opening. The same numbers are `SCHOOL_BELL_BOXES` in the set file.

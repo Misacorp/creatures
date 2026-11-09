@@ -82,13 +82,15 @@ function drawer(c: Canvas) {
       }
   };
   /** Warm light on the grass below a window or lamp: ellipse, bright core, dithered rim. */
-  const spill = (cx: number, rx: number, rows = 4): void => {
+  const spill = (cx: number, rx: number, rows = 6): void => {
     for (let dy = 0; dy < rows; dy += 1)
-      for (let x = Math.floor(cx - rx - 1); x <= Math.ceil(cx + rx + 1); x += 1) {
-        const d = Math.hypot((x + 0.5 - cx) / rx, (dy + 0.3) / rows);
-        if (d < 0.45) g(x, 59 + dy, '3');
-        else if (d < 0.8) g(x, 59 + dy, '2');
-        else if (d < 1.1 && (x + dy) % 2 === 0) g(x, 59 + dy, '1');
+      for (let x = Math.floor(cx - rx - 2); x <= Math.ceil(cx + rx + 2); x += 1) {
+        const d = Math.hypot((x + 0.5 - cx) / rx, (dy + 0.2) / rows);
+        const y = 58 + dy;
+        if (d < 0.55) g(x, y, '3');
+        else if (d < 0.8) g(x, y, '2');
+        else if (d < 1.05) g(x, y, '1');
+        else if (d < 1.25 && (x + dy) % 2 === 0) g(x, y, '1');
       }
   };
   const shadow = (x0: number, x1: number): void => {
@@ -138,7 +140,7 @@ const thatchTex = (x: number, y: number): string => ((x * 2 + y * 3) % 7 === 0 ?
 function level1(c: Canvas): void {
   const d = drawer(c);
   d.shadow(21, 52);
-  d.spill(26.5, 4.5);
+  d.spill(26.5, 8);
   for (let x = 29; x <= 34; x += 1) for (let y = 58; y <= 60; y += 1) d.g(x, y, 'e');
   d.g(28, 59, 'e');
   d.g(35, 59, 'e');
@@ -183,8 +185,8 @@ function level1(c: Canvas): void {
 function level2(c: Canvas): void {
   const d = drawer(c);
   d.shadow(15, 60);
-  d.spill(22.5, 5.5);
-  d.spill(41.5, 5.5);
+  d.spill(22.5, 9);
+  d.spill(41.5, 9);
   d.rect(30, 58, 33, 58, 'p');
   // the bell frame: two posts, a beam, a little shingled cap
   d.rect(50, 36, 51, BASE, plankTex);
@@ -226,12 +228,12 @@ function hall(c: Canvas, level: 3 | 4 | 5): void {
   const wins = wide ? [11, 19] : [18];
   const winFrame = level === 3 ? 'k' : 'm';
   for (const wx of wins) {
-    d.spill(wx + 2.5, 5);
-    d.spill(63 - wx - 2.5, 5);
+    d.spill(wx + 2.5, 8);
+    d.spill(63 - wx - 2.5, 8);
   }
   if (level >= 4) {
-    d.spill(28.5, 3.5, 3);
-    d.spill(35.5, 3.5, 3);
+    d.spill(28.5, 4.5, 4);
+    d.spill(35.5, 4.5, 4);
   }
   d.rect(29, 58, 34, 60, (x, y) => ((x + y) % 3 === 0 ? 'T' : 't'));
   // hall
