@@ -1,0 +1,320 @@
+[
+  {
+    "id": "cosy-wall",
+    "name": "Cosy Wallpaper",
+    "kind": "wall",
+    "set": "cosy",
+    "unlock": {
+      "kind": "starter"
+    },
+    "hint": "Yours from the start."
+  },
+  {
+    "id": "cosy-floor",
+    "name": "Cosy Floor",
+    "kind": "floor",
+    "set": "cosy",
+    "unlock": {
+      "kind": "starter"
+    },
+    "hint": "Yours from the start."
+  },
+  {
+    "id": "tidepool-wall",
+    "name": "Tidepool Wallpaper",
+    "kind": "wall",
+    "set": "tidepool",
+    "unlock": {
+      "kind": "drop"
+    },
+    "hint": "A blueprint from the Tidepools or the Tidal Colossus."
+  },
+  {
+    "id": "tidepool-floor",
+    "name": "Tidepool Floor",
+    "kind": "floor",
+    "set": "tidepool",
+    "unlock": {
+      "kind": "drop"
+    },
+    "hint": "A blueprint from the Tidepools or the Tidal Colossus."
+  },
+  {
+    "id": "moonlit-wall",
+    "name": "Moonlit Wallpaper",
+    "kind": "wall",
+    "set": "moonlit",
+    "unlock": {
+      "kind": "drop"
+    },
+    "hint": "A blueprint from the Moonlit Reef or a Tide boss."
+  },
+  {
+    "id": "moonlit-floor",
+    "name": "Moonlit Floor",
+    "kind": "floor",
+    "set": "moonlit",
+    "unlock": {
+      "kind": "drop"
+    },
+    "hint": "A blueprint from the Moonlit Reef or a Tide boss."
+  },
+  {
+    "id": "emberhold-wall",
+    "name": "Emberhold Wallpaper",
+    "kind": "wall",
+    "set": "emberhold",
+    "unlock": {
+      "kind": "drop"
+    },
+    "hint": "A blueprint from the Ember Caves, the dungeon or the Cinder Wyrm."
+  },
+  {
+    "id": "emberhold-floor",
+    "name": "Emberhold Floor",
+    "kind": "floor",
+    "set": "emberhold",
+    "unlock": {
+      "kind": "drop"
+    },
+    "hint": "A blueprint from the Ember Caves, the dungeon or the Cinder Wyrm."
+  },
+  {
+    "id": "rootwood-wall",
+    "name": "Rootwood Wallpaper",
+    "kind": "wall",
+    "set": "rootwood",
+    "unlock": {
+      "kind": "drop"
+    },
+    "hint": "A blueprint from the Verdant Hollow or the Thornmother."
+  },
+  {
+    "id": "rootwood-floor",
+    "name": "Rootwood Floor",
+    "kind": "floor",
+    "set": "rootwood",
+    "unlock": {
+      "kind": "drop"
+    },
+    "hint": "A blueprint from the Verdant Hollow or the Thornmother."
+  },
+  {
+    "id": "stormglass-wall",
+    "name": "Stormglass Wallpaper",
+    "kind": "wall",
+    "set": "stormglass",
+    "unlock": {
+      "kind": "drop"
+    },
+    "hint": "A blueprint from Storm Ridge or the Storm Sovereign."
+  },
+  {
+    "id": "stormglass-floor",
+    "name": "Stormglass Floor",
+    "kind": "floor",
+    "set": "stormglass",
+    "unlock": {
+      "kind": "drop"
+    },
+    "hint": "A blueprint from Storm Ridge or the Storm Sovereign."
+  },
+  {
+    "id": "fenkeeper-wall",
+    "name": "Fenkeeper Wallpaper",
+    "kind": "wall",
+    "set": "fenkeeper",
+    "unlock": {
+      "kind": "drop"
+    },
+    "hint": "A blueprint from the Sunken Fen, the dungeon or Old Bogback."
+  },
+  {
+    "id": "fenkeeper-floor",
+    "name": "Fenkeeper Floor",
+    "kind": "floor",
+    "set": "fenkeeper",
+    "unlock": {
+      "kind": "drop"
+    },
+    "hint": "A blueprint from the Sunken Fen, the dungeon or Old Bogback."
+  },
+  {
+    "id": "ancient-wall",
+    "name": "Ancient Wallpaper",
+    "kind": "wall",
+    "set": "ancient",
+    "unlock": {
+      "kind": "drop"
+    },
+    "hint": "A blueprint from the Old Crossroads or any cleared finale."
+  },
+  {
+    "id": "ancient-floor",
+    "name": "Ancient Floor",
+    "kind": "floor",
+    "set": "ancient",
+    "unlock": {
+      "kind": "drop"
+    },
+    "hint": "A blueprint from the Old Crossroads or any cleared finale."
+  },
+  {
+    "id": "lantern-night-wall",
+    "name": "Lantern Night Wallpaper",
+    "kind": "wall",
+    "set": "lantern-night",
+    "unlock": {
+      "kind": "drop"
+    },
+    "hint": "A blueprint from the Festival Grounds, a Festival finale or a Games gold."
+  },
+  {
+    "id": "lantern-night-floor",
+    "name": "Lantern Night Floor",
+    "kind": "floor",
+    "set": "lantern-night",
+    "unlock": {
+      "kind": "drop"
+    },
+    "hint": "A blueprint from the Festival Grounds, a Festival finale or a Games gold."
+  },
+  {
+    "id": "thatch",
+    "name": "Thatch",
+    "kind": "roof",
+    "set": null,
+    "unlock": {
+      "kind": "starter"
+    },
+    "hint": "Yours from the start."
+  },
+  {
+    "id": "slate",
+    "name": "Slate",
+    "kind": "roof",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "cottage"
+    },
+    "hint": "Learned by building the Cottage."
+  },
+  {
+    "id": "red-tile",
+    "name": "Red Tile",
+    "kind": "roof",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "west-wing"
+    },
+    "hint": "Learned by building the West Wing."
+  },
+  {
+    "id": "copper-green",
+    "name": "Copper Green",
+    "kind": "roof",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "east-wing"
+    },
+    "hint": "Learned by building the East Wing."
+  },
+  {
+    "id": "moss",
+    "name": "Moss",
+    "kind": "roof",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "garden"
+    },
+    "hint": "Learned by building the Garden."
+  },
+  {
+    "id": "plaster",
+    "name": "Plaster",
+    "kind": "walls",
+    "set": null,
+    "unlock": {
+      "kind": "starter"
+    },
+    "hint": "Yours from the start."
+  },
+  {
+    "id": "timber",
+    "name": "Timber",
+    "kind": "walls",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "house"
+    },
+    "hint": "Learned by building the House."
+  },
+  {
+    "id": "fieldstone",
+    "name": "Fieldstone",
+    "kind": "walls",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "cellar"
+    },
+    "hint": "Learned by building the Cellar."
+  },
+  {
+    "id": "brick",
+    "name": "Brick",
+    "kind": "walls",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "terrace"
+    },
+    "hint": "Learned by building the Terrace."
+  },
+  {
+    "id": "shingle",
+    "name": "Shingle",
+    "kind": "walls",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "pool"
+    },
+    "hint": "Learned by building the Pool."
+  },
+  {
+    "id": "lawn",
+    "name": "Lawn",
+    "kind": "ground",
+    "set": null,
+    "unlock": {
+      "kind": "starter"
+    },
+    "hint": "Yours from the start."
+  },
+  {
+    "id": "deck",
+    "name": "Deck",
+    "kind": "ground",
+    "set": null,
+    "unlock": {
+      "kind": "starter"
+    },
+    "hint": "Yours from the start."
+  },
+  {
+    "id": "pool-tile",
+    "name": "Pool Tile",
+    "kind": "ground",
+    "set": null,
+    "unlock": {
+      "kind": "starter"
+    },
+    "hint": "Yours from the start."
+  }
+]

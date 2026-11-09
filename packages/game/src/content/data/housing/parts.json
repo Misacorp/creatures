@@ -1,0 +1,440 @@
+[
+  {
+    "id": "hut",
+    "name": "Hut",
+    "kind": "core",
+    "requires": [],
+    "rooms": [
+      {
+        "key": "hearth",
+        "kind": "hearth",
+        "col": 0,
+        "floor": 0
+      }
+    ],
+    "price": [],
+    "unlocks": [],
+    "line": "One room and a good fire.",
+    "order": 0
+  },
+  {
+    "id": "cottage",
+    "name": "Cottage",
+    "kind": "core",
+    "requires": ["hut"],
+    "rooms": [
+      {
+        "key": "kitchen",
+        "kind": "kitchen",
+        "col": 1,
+        "floor": 0
+      },
+      {
+        "key": "loft",
+        "kind": "loft",
+        "col": 0,
+        "floor": 1
+      }
+    ],
+    "price": [
+      {
+        "kind": "bait",
+        "amount": 75
+      },
+      {
+        "kind": "scrap",
+        "amount": 400
+      },
+      {
+        "kind": "family",
+        "family": "wood",
+        "amount": 6
+      }
+    ],
+    "unlocks": ["slate"],
+    "line": "A kitchen, and a bed upstairs.",
+    "order": 1
+  },
+  {
+    "id": "house",
+    "name": "House",
+    "kind": "core",
+    "requires": ["cottage"],
+    "rooms": [
+      {
+        "key": "study",
+        "kind": "study",
+        "col": 1,
+        "floor": 1
+      },
+      {
+        "key": "attic",
+        "kind": "attic",
+        "col": 0,
+        "floor": 2
+      }
+    ],
+    "price": [
+      {
+        "kind": "bait",
+        "amount": 200
+      },
+      {
+        "kind": "scrap",
+        "amount": 1200
+      },
+      {
+        "kind": "family",
+        "family": "wood",
+        "amount": 12
+      },
+      {
+        "kind": "family",
+        "family": "stone",
+        "amount": 6
+      }
+    ],
+    "unlocks": ["timber"],
+    "line": "Three storeys and a roof over all of it.",
+    "order": 2
+  },
+  {
+    "id": "cellar",
+    "name": "Cellar",
+    "kind": "cellar",
+    "requires": ["cottage"],
+    "rooms": [
+      {
+        "key": "cellar",
+        "kind": "cellar",
+        "col": 0,
+        "floor": -1
+      }
+    ],
+    "price": [
+      {
+        "kind": "bait",
+        "amount": 125
+      },
+      {
+        "kind": "scrap",
+        "amount": 800
+      },
+      {
+        "kind": "shard",
+        "element": "mire",
+        "amount": 10
+      },
+      {
+        "kind": "family",
+        "family": "stone",
+        "amount": 6
+      },
+      {
+        "kind": "material",
+        "id": "bog-oak",
+        "amount": 4
+      }
+    ],
+    "unlocks": ["fieldstone"],
+    "line": "Cool and quiet, under the floor.",
+    "order": 3
+  },
+  {
+    "id": "terrace",
+    "name": "Terrace",
+    "kind": "grounds",
+    "requires": ["cottage"],
+    "rooms": [
+      {
+        "key": "terrace",
+        "kind": "terrace",
+        "col": -4,
+        "floor": 0
+      }
+    ],
+    "price": [
+      {
+        "kind": "bait",
+        "amount": 100
+      },
+      {
+        "kind": "scrap",
+        "amount": 600
+      },
+      {
+        "kind": "family",
+        "family": "stone",
+        "amount": 8
+      },
+      {
+        "kind": "family",
+        "family": "metal",
+        "amount": 4
+      }
+    ],
+    "side": "west",
+    "unlocks": ["brick"],
+    "line": "A stone deck for sunny mornings.",
+    "order": 4
+  },
+  {
+    "id": "garden",
+    "name": "Garden",
+    "kind": "grounds",
+    "requires": ["cottage"],
+    "rooms": [
+      {
+        "key": "garden",
+        "kind": "garden",
+        "col": 4,
+        "floor": 0
+      }
+    ],
+    "price": [
+      {
+        "kind": "bait",
+        "amount": 100
+      },
+      {
+        "kind": "scrap",
+        "amount": 500
+      },
+      {
+        "kind": "shard",
+        "element": "grove",
+        "amount": 10
+      },
+      {
+        "kind": "family",
+        "family": "wood",
+        "amount": 6
+      },
+      {
+        "kind": "material",
+        "id": "moss-velvet",
+        "amount": 4
+      }
+    ],
+    "side": "east",
+    "unlocks": ["moss"],
+    "line": "A lawn, a hedge and room for flowers.",
+    "order": 5
+  },
+  {
+    "id": "west-wing",
+    "name": "West Wing",
+    "kind": "wing",
+    "requires": ["house"],
+    "rooms": [
+      {
+        "key": "hall",
+        "kind": "hall",
+        "col": -2,
+        "floor": 0
+      }
+    ],
+    "price": [
+      {
+        "kind": "bait",
+        "amount": 300
+      },
+      {
+        "kind": "scrap",
+        "amount": 2000
+      },
+      {
+        "kind": "family",
+        "family": "wood",
+        "amount": 16
+      },
+      {
+        "kind": "family",
+        "family": "metal",
+        "amount": 8
+      },
+      {
+        "kind": "material",
+        "id": "old-gold",
+        "amount": 2
+      }
+    ],
+    "side": "west",
+    "unlocks": ["red-tile"],
+    "line": "A long hall for everything you have won.",
+    "order": 6
+  },
+  {
+    "id": "west-upper",
+    "name": "West Upper Floor",
+    "kind": "wing",
+    "requires": ["west-wing"],
+    "rooms": [
+      {
+        "key": "gallery",
+        "kind": "gallery",
+        "col": -2,
+        "floor": 1
+      }
+    ],
+    "price": [
+      {
+        "kind": "bait",
+        "amount": 225
+      },
+      {
+        "kind": "scrap",
+        "amount": 1500
+      },
+      {
+        "kind": "family",
+        "family": "wood",
+        "amount": 10
+      },
+      {
+        "kind": "family",
+        "family": "cloth",
+        "amount": 6
+      }
+    ],
+    "side": "west",
+    "unlocks": [],
+    "line": "A gallery above the hall.",
+    "order": 7
+  },
+  {
+    "id": "east-wing",
+    "name": "East Wing",
+    "kind": "wing",
+    "requires": ["house"],
+    "rooms": [
+      {
+        "key": "conservatory",
+        "kind": "conservatory",
+        "col": 2,
+        "floor": 0
+      }
+    ],
+    "price": [
+      {
+        "kind": "bait",
+        "amount": 300
+      },
+      {
+        "kind": "scrap",
+        "amount": 2000
+      },
+      {
+        "kind": "family",
+        "family": "wood",
+        "amount": 16
+      },
+      {
+        "kind": "family",
+        "family": "stone",
+        "amount": 8
+      },
+      {
+        "kind": "material",
+        "id": "sea-glass",
+        "amount": 6
+      }
+    ],
+    "side": "east",
+    "unlocks": ["copper-green"],
+    "line": "A glass room full of light.",
+    "order": 8
+  },
+  {
+    "id": "east-upper",
+    "name": "East Upper Floor",
+    "kind": "wing",
+    "requires": ["east-wing"],
+    "rooms": [
+      {
+        "key": "bath",
+        "kind": "bath",
+        "col": 2,
+        "floor": 1
+      },
+      {
+        "key": "guest",
+        "kind": "guest",
+        "col": 3,
+        "floor": 1
+      }
+    ],
+    "price": [
+      {
+        "kind": "bait",
+        "amount": 225
+      },
+      {
+        "kind": "scrap",
+        "amount": 1500
+      },
+      {
+        "kind": "family",
+        "family": "wood",
+        "amount": 10
+      },
+      {
+        "kind": "family",
+        "family": "cloth",
+        "amount": 6
+      }
+    ],
+    "side": "east",
+    "unlocks": [],
+    "line": "A bath, and a room for guests.",
+    "order": 9
+  },
+  {
+    "id": "pool",
+    "name": "Pool",
+    "kind": "grounds",
+    "requires": ["garden", "house"],
+    "rooms": [
+      {
+        "key": "pool",
+        "kind": "pool",
+        "col": 6,
+        "floor": 0
+      }
+    ],
+    "price": [
+      {
+        "kind": "bait",
+        "amount": 350
+      },
+      {
+        "kind": "scrap",
+        "amount": 2500
+      },
+      {
+        "kind": "shard",
+        "element": "tide",
+        "amount": 20
+      },
+      {
+        "kind": "family",
+        "family": "stone",
+        "amount": 12
+      },
+      {
+        "kind": "material",
+        "id": "sea-glass",
+        "amount": 6
+      },
+      {
+        "kind": "material",
+        "id": "moonstone",
+        "amount": 2
+      }
+    ],
+    "side": "east",
+    "unlocks": ["shingle"],
+    "line": "A tiled pool, deep enough to float in.",
+    "order": 10
+  }
+]

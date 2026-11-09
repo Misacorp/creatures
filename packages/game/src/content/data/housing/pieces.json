@@ -1,0 +1,1357 @@
+[
+  {
+    "id": "cosy-bed",
+    "name": "Cosy Bed",
+    "form": "bed",
+    "set": "cosy",
+    "unlock": {
+      "kind": "starter"
+    },
+    "line": "A plain wooden bed with a cream quilt.",
+    "hint": "Yours from the start."
+  },
+  {
+    "id": "cosy-cupboard",
+    "name": "Cosy Cupboard",
+    "form": "cupboard",
+    "set": "cosy",
+    "unlock": {
+      "kind": "starter"
+    },
+    "line": "A sturdy cupboard in warm wood.",
+    "hint": "Yours from the start."
+  },
+  {
+    "id": "cosy-table",
+    "name": "Cosy Table",
+    "form": "table",
+    "set": "cosy",
+    "unlock": {
+      "kind": "starter"
+    },
+    "line": "A low wooden table that has seen a lot of tea.",
+    "hint": "Yours from the start."
+  },
+  {
+    "id": "cosy-shelf-wall",
+    "name": "Cosy Wall Shelf",
+    "form": "shelf",
+    "set": "cosy",
+    "unlock": {
+      "kind": "starter"
+    },
+    "line": "A simple wall shelf for small things.",
+    "hint": "Yours from the start."
+  },
+  {
+    "id": "cosy-shelf",
+    "name": "Cosy Bookshelf",
+    "form": "cupboard",
+    "set": "cosy",
+    "unlock": {
+      "kind": "starter"
+    },
+    "line": "A bookshelf with room for one more book.",
+    "hint": "Yours from the start."
+  },
+  {
+    "id": "cosy-stool",
+    "name": "Cosy Stool",
+    "form": "stool",
+    "set": "cosy",
+    "unlock": {
+      "kind": "starter"
+    },
+    "line": "A little stool, handy for everything.",
+    "hint": "Yours from the start."
+  },
+  {
+    "id": "cosy-lamp",
+    "name": "Cosy Lamp",
+    "form": "lamp",
+    "set": "cosy",
+    "unlock": {
+      "kind": "starter"
+    },
+    "line": "A lamp with a warm, yellow glow.",
+    "hint": "Yours from the start."
+  },
+  {
+    "id": "cosy-rug",
+    "name": "Cosy Rug",
+    "form": "rug",
+    "set": "cosy",
+    "unlock": {
+      "kind": "starter"
+    },
+    "line": "A soft rug to stand on.",
+    "hint": "Yours from the start."
+  },
+  {
+    "id": "cosy-frame",
+    "name": "Cosy Picture",
+    "form": "frame",
+    "set": "cosy",
+    "unlock": {
+      "kind": "starter"
+    },
+    "line": "A picture of a meadow in a plain frame.",
+    "hint": "Yours from the start."
+  },
+  {
+    "id": "cosy-curtains",
+    "name": "Cosy Curtains",
+    "form": "curtains",
+    "set": "cosy",
+    "unlock": {
+      "kind": "starter"
+    },
+    "line": "Cream curtains that let the light in.",
+    "hint": "Yours from the start."
+  },
+  {
+    "id": "cosy-sofa",
+    "name": "Cosy Sofa",
+    "form": "sofa",
+    "set": "cosy",
+    "unlock": {
+      "kind": "starter"
+    },
+    "line": "A deep sofa with cream cushions.",
+    "hint": "Yours from the start."
+  },
+  {
+    "id": "cosy-hearth",
+    "name": "Cosy Fireplace",
+    "form": "hearth",
+    "set": "cosy",
+    "unlock": {
+      "kind": "starter"
+    },
+    "line": "A little fireplace that is always lit.",
+    "hint": "Yours from the start."
+  },
+  {
+    "id": "cosy-chair",
+    "name": "Cosy Chair",
+    "form": "chair",
+    "set": "cosy",
+    "unlock": {
+      "kind": "starter"
+    },
+    "line": "A wooden chair with a soft seat.",
+    "hint": "Yours from the start."
+  },
+  {
+    "id": "cosy-plant",
+    "name": "Cosy Plant",
+    "form": "plant",
+    "set": "cosy",
+    "unlock": {
+      "kind": "starter"
+    },
+    "line": "A potted plant, doing its best.",
+    "hint": "Yours from the start."
+  },
+  {
+    "id": "cosy-seat",
+    "name": "Cosy Pouf",
+    "form": "seat",
+    "set": "cosy",
+    "unlock": {
+      "kind": "starter"
+    },
+    "line": "A round pouf, soft as a cloud.",
+    "hint": "Yours from the start."
+  },
+  {
+    "id": "cosy-beanbag",
+    "name": "Cosy Beanbag",
+    "form": "seat",
+    "set": "cosy",
+    "unlock": {
+      "kind": "starter"
+    },
+    "line": "A beanbag that takes the shape of whoever sits.",
+    "hint": "Yours from the start."
+  },
+  {
+    "id": "cosy-cushion",
+    "name": "Cosy Cushion",
+    "form": "seat",
+    "set": "cosy",
+    "unlock": {
+      "kind": "starter"
+    },
+    "line": "A cushion for the floor.",
+    "hint": "Yours from the start."
+  },
+  {
+    "id": "cosy-clock",
+    "name": "Cosy Clock",
+    "form": "clock",
+    "set": "cosy",
+    "unlock": {
+      "kind": "starter"
+    },
+    "line": "A small clock that is only slightly wrong.",
+    "hint": "Yours from the start."
+  },
+  {
+    "id": "tidepool-bed",
+    "name": "Tidepool Bed",
+    "form": "bed",
+    "set": "tidepool",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "Driftwood slats and a shell-edged headboard. Smells faintly of salt.",
+    "hint": "A blueprint from the Tidepools or the Tidal Colossus."
+  },
+  {
+    "id": "tidepool-cupboard",
+    "name": "Tidepool Cupboard",
+    "form": "cupboard",
+    "set": "tidepool",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A cupboard of sanded driftwood, its doors scalloped like a shell.",
+    "hint": "A blueprint from the Tidepools or the Tidal Colossus."
+  },
+  {
+    "id": "tidepool-table",
+    "name": "Tidepool Table",
+    "form": "table",
+    "set": "tidepool",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A low table from one long plank the tide delivered.",
+    "hint": "A blueprint from the Tidepools or the Tidal Colossus."
+  },
+  {
+    "id": "tidepool-shelf",
+    "name": "Tidepool Shelf",
+    "form": "shelf",
+    "set": "tidepool",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A shelf for small finds, with a scallop along every edge.",
+    "hint": "A blueprint from the Tidepools or the Tidal Colossus."
+  },
+  {
+    "id": "tidepool-stool",
+    "name": "Tidepool Stool",
+    "form": "stool",
+    "set": "tidepool",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A round stool on three driftwood legs.",
+    "hint": "A blueprint from the Tidepools or the Tidal Colossus."
+  },
+  {
+    "id": "tidepool-lamp",
+    "name": "Tidepool Lamp",
+    "form": "lamp",
+    "set": "tidepool",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A glass float in a rope net, glowing pearl white.",
+    "hint": "A blueprint from the Tidepools or the Tidal Colossus."
+  },
+  {
+    "id": "tidepool-rug",
+    "name": "Tidepool Rug",
+    "form": "rug",
+    "set": "tidepool",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A sand-coloured rug with a wave stitched along its edge.",
+    "hint": "A blueprint from the Tidepools or the Tidal Colossus."
+  },
+  {
+    "id": "tidepool-frame",
+    "name": "Tidepool Frame",
+    "form": "frame",
+    "set": "tidepool",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A frame of tiny shells around a picture of the sea.",
+    "hint": "A blueprint from the Tidepools or the Tidal Colossus."
+  },
+  {
+    "id": "tidepool-curtains",
+    "name": "Tidepool Curtains",
+    "form": "curtains",
+    "set": "tidepool",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "Pale blue curtains with a shell-shaped hem.",
+    "hint": "A blueprint from the Tidepools or the Tidal Colossus."
+  },
+  {
+    "id": "moonlit-bed",
+    "name": "Moonlit Bed",
+    "form": "bed",
+    "set": "moonlit",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "Blue lacquer with a coral inlay and a crescent on the headboard.",
+    "hint": "A blueprint from the Moonlit Reef or a Tide boss."
+  },
+  {
+    "id": "moonlit-cupboard",
+    "name": "Moonlit Cupboard",
+    "form": "cupboard",
+    "set": "moonlit",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A night-blue cupboard with a soft moonstone knob.",
+    "hint": "A blueprint from the Moonlit Reef or a Tide boss."
+  },
+  {
+    "id": "moonlit-table",
+    "name": "Moonlit Table",
+    "form": "table",
+    "set": "moonlit",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A lacquered table that holds the light like water.",
+    "hint": "A blueprint from the Moonlit Reef or a Tide boss."
+  },
+  {
+    "id": "moonlit-shelf",
+    "name": "Moonlit Shelf",
+    "form": "shelf",
+    "set": "moonlit",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A silver-edged shelf with a crescent cut at each end.",
+    "hint": "A blueprint from the Moonlit Reef or a Tide boss."
+  },
+  {
+    "id": "moonlit-stool",
+    "name": "Moonlit Stool",
+    "form": "stool",
+    "set": "moonlit",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A little blue stool with a coral top.",
+    "hint": "A blueprint from the Moonlit Reef or a Tide boss."
+  },
+  {
+    "id": "moonlit-lamp",
+    "name": "Moonlit Lamp",
+    "form": "lamp",
+    "set": "moonlit",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A crescent lantern with a soft white glow.",
+    "hint": "A blueprint from the Moonlit Reef or a Tide boss."
+  },
+  {
+    "id": "moonlit-rug",
+    "name": "Moonlit Rug",
+    "form": "rug",
+    "set": "moonlit",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A deep blue rug with silver tide lines.",
+    "hint": "A blueprint from the Moonlit Reef or a Tide boss."
+  },
+  {
+    "id": "moonlit-frame",
+    "name": "Moonlit Frame",
+    "form": "frame",
+    "set": "moonlit",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A coral-inlaid frame around a picture of the reef at night.",
+    "hint": "A blueprint from the Moonlit Reef or a Tide boss."
+  },
+  {
+    "id": "moonlit-curtains",
+    "name": "Moonlit Curtains",
+    "form": "curtains",
+    "set": "moonlit",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "Sea silk curtains that shimmer when anyone walks past.",
+    "hint": "A blueprint from the Moonlit Reef or a Tide boss."
+  },
+  {
+    "id": "emberhold-bed",
+    "name": "Emberhold Bed",
+    "form": "bed",
+    "set": "emberhold",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A charwood bed with iron bands, warm as a banked fire.",
+    "hint": "A blueprint from the Ember Caves, the dungeon or the Cinder Wyrm."
+  },
+  {
+    "id": "emberhold-cupboard",
+    "name": "Emberhold Cupboard",
+    "form": "cupboard",
+    "set": "emberhold",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "Black charwood doors held by riveted iron straps.",
+    "hint": "A blueprint from the Ember Caves, the dungeon or the Cinder Wyrm."
+  },
+  {
+    "id": "emberhold-table",
+    "name": "Emberhold Table",
+    "form": "table",
+    "set": "emberhold",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A forge table, banded in iron, with a glow underneath.",
+    "hint": "A blueprint from the Ember Caves, the dungeon or the Cinder Wyrm."
+  },
+  {
+    "id": "emberhold-shelf",
+    "name": "Emberhold Shelf",
+    "form": "shelf",
+    "set": "emberhold",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "An iron-banded shelf that still feels warm.",
+    "hint": "A blueprint from the Ember Caves, the dungeon or the Cinder Wyrm."
+  },
+  {
+    "id": "emberhold-stool",
+    "name": "Emberhold Stool",
+    "form": "stool",
+    "set": "emberhold",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A short charwood stool with three rivets on the seat.",
+    "hint": "A blueprint from the Ember Caves, the dungeon or the Cinder Wyrm."
+  },
+  {
+    "id": "emberhold-lamp",
+    "name": "Emberhold Lamp",
+    "form": "lamp",
+    "set": "emberhold",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A hanging forge lamp with an amber glow behind iron bars.",
+    "hint": "A blueprint from the Ember Caves, the dungeon or the Cinder Wyrm."
+  },
+  {
+    "id": "emberhold-rug",
+    "name": "Emberhold Rug",
+    "form": "rug",
+    "set": "emberhold",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A coal-grey rug edged in ember orange.",
+    "hint": "A blueprint from the Ember Caves, the dungeon or the Cinder Wyrm."
+  },
+  {
+    "id": "emberhold-frame",
+    "name": "Emberhold Frame",
+    "form": "frame",
+    "set": "emberhold",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A riveted iron frame around a picture of the caves.",
+    "hint": "A blueprint from the Ember Caves, the dungeon or the Cinder Wyrm."
+  },
+  {
+    "id": "emberhold-curtains",
+    "name": "Emberhold Curtains",
+    "form": "curtains",
+    "set": "emberhold",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "Heavy rust-red curtains, hemmed to keep the heat in.",
+    "hint": "A blueprint from the Ember Caves, the dungeon or the Cinder Wyrm."
+  },
+  {
+    "id": "rootwood-bed",
+    "name": "Rootwood Bed",
+    "form": "bed",
+    "set": "rootwood",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A bed grown into curves, with a leaf curling at each top corner.",
+    "hint": "A blueprint from the Verdant Hollow or the Thornmother."
+  },
+  {
+    "id": "rootwood-cupboard",
+    "name": "Rootwood Cupboard",
+    "form": "cupboard",
+    "set": "rootwood",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "Living-wood doors carved with leaves.",
+    "hint": "A blueprint from the Verdant Hollow or the Thornmother."
+  },
+  {
+    "id": "rootwood-table",
+    "name": "Rootwood Table",
+    "form": "table",
+    "set": "rootwood",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A round table on roots that still seem to be reaching.",
+    "hint": "A blueprint from the Verdant Hollow or the Thornmother."
+  },
+  {
+    "id": "rootwood-shelf",
+    "name": "Rootwood Shelf",
+    "form": "shelf",
+    "set": "rootwood",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A bark shelf with a curl of leaf at each end.",
+    "hint": "A blueprint from the Verdant Hollow or the Thornmother."
+  },
+  {
+    "id": "rootwood-stool",
+    "name": "Rootwood Stool",
+    "form": "stool",
+    "set": "rootwood",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A stump stool with a moss cushion.",
+    "hint": "A blueprint from the Verdant Hollow or the Thornmother."
+  },
+  {
+    "id": "rootwood-lamp",
+    "name": "Rootwood Lamp",
+    "form": "lamp",
+    "set": "rootwood",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A seed-pod lantern, green as new leaves.",
+    "hint": "A blueprint from the Verdant Hollow or the Thornmother."
+  },
+  {
+    "id": "rootwood-rug",
+    "name": "Rootwood Rug",
+    "form": "rug",
+    "set": "rootwood",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A mossy rug, nearly soft enough to nap on.",
+    "hint": "A blueprint from the Verdant Hollow or the Thornmother."
+  },
+  {
+    "id": "rootwood-frame",
+    "name": "Rootwood Frame",
+    "form": "frame",
+    "set": "rootwood",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A frame of twisted twigs with a leaf in each corner.",
+    "hint": "A blueprint from the Verdant Hollow or the Thornmother."
+  },
+  {
+    "id": "rootwood-curtains",
+    "name": "Rootwood Curtains",
+    "form": "curtains",
+    "set": "rootwood",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "Moss velvet curtains, heavy and green.",
+    "hint": "A blueprint from the Verdant Hollow or the Thornmother."
+  },
+  {
+    "id": "stormglass-bed",
+    "name": "Stormglass Bed",
+    "form": "bed",
+    "set": "stormglass",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "Pale ash with a lightning scar down the headboard and copper trim.",
+    "hint": "A blueprint from Storm Ridge or the Storm Sovereign."
+  },
+  {
+    "id": "stormglass-cupboard",
+    "name": "Stormglass Cupboard",
+    "form": "cupboard",
+    "set": "stormglass",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A cupboard of ash, bound with copper coils.",
+    "hint": "A blueprint from Storm Ridge or the Storm Sovereign."
+  },
+  {
+    "id": "stormglass-table",
+    "name": "Stormglass Table",
+    "form": "table",
+    "set": "stormglass",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A grey-white table with a zigzag of copper across it.",
+    "hint": "A blueprint from Storm Ridge or the Storm Sovereign."
+  },
+  {
+    "id": "stormglass-shelf",
+    "name": "Stormglass Shelf",
+    "form": "shelf",
+    "set": "stormglass",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A shelf strung with glass beads on copper wire.",
+    "hint": "A blueprint from Storm Ridge or the Storm Sovereign."
+  },
+  {
+    "id": "stormglass-stool",
+    "name": "Stormglass Stool",
+    "form": "stool",
+    "set": "stormglass",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "An ash stool with a bead on each leg.",
+    "hint": "A blueprint from Storm Ridge or the Storm Sovereign."
+  },
+  {
+    "id": "stormglass-lamp",
+    "name": "Stormglass Lamp",
+    "form": "lamp",
+    "set": "stormglass",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A glass bulb wrapped in copper, faintly crackling.",
+    "hint": "A blueprint from Storm Ridge or the Storm Sovereign."
+  },
+  {
+    "id": "stormglass-rug",
+    "name": "Stormglass Rug",
+    "form": "rug",
+    "set": "stormglass",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A slate rug with a violet zigzag.",
+    "hint": "A blueprint from Storm Ridge or the Storm Sovereign."
+  },
+  {
+    "id": "stormglass-frame",
+    "name": "Stormglass Frame",
+    "form": "frame",
+    "set": "stormglass",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A copper-trimmed frame around a picture of a storm.",
+    "hint": "A blueprint from Storm Ridge or the Storm Sovereign."
+  },
+  {
+    "id": "stormglass-curtains",
+    "name": "Stormglass Curtains",
+    "form": "curtains",
+    "set": "stormglass",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "Slate curtains with a copper thread that sparks in the dark.",
+    "hint": "A blueprint from Storm Ridge or the Storm Sovereign."
+  },
+  {
+    "id": "fenkeeper-bed",
+    "name": "Fenkeeper Bed",
+    "form": "bed",
+    "set": "fenkeeper",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "Dark bog oak bound with reed, an opal drop on the headboard.",
+    "hint": "A blueprint from the Sunken Fen, the dungeon or Old Bogback."
+  },
+  {
+    "id": "fenkeeper-cupboard",
+    "name": "Fenkeeper Cupboard",
+    "form": "cupboard",
+    "set": "fenkeeper",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A cupboard the bog kept for a hundred years, with a reed-wrapped handle.",
+    "hint": "A blueprint from the Sunken Fen, the dungeon or Old Bogback."
+  },
+  {
+    "id": "fenkeeper-table",
+    "name": "Fenkeeper Table",
+    "form": "table",
+    "set": "fenkeeper",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A peat-brown table with a rim of tied reeds.",
+    "hint": "A blueprint from the Sunken Fen, the dungeon or Old Bogback."
+  },
+  {
+    "id": "fenkeeper-shelf",
+    "name": "Fenkeeper Shelf",
+    "form": "shelf",
+    "set": "fenkeeper",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A reed-bound shelf with an opal at one end.",
+    "hint": "A blueprint from the Sunken Fen, the dungeon or Old Bogback."
+  },
+  {
+    "id": "fenkeeper-stool",
+    "name": "Fenkeeper Stool",
+    "form": "stool",
+    "set": "fenkeeper",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A squat stool, bound with reed and never quite dry.",
+    "hint": "A blueprint from the Sunken Fen, the dungeon or Old Bogback."
+  },
+  {
+    "id": "fenkeeper-lamp",
+    "name": "Fenkeeper Lamp",
+    "form": "lamp",
+    "set": "fenkeeper",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A fen lantern that hangs from reeds, glowing teal.",
+    "hint": "A blueprint from the Sunken Fen, the dungeon or Old Bogback."
+  },
+  {
+    "id": "fenkeeper-rug",
+    "name": "Fenkeeper Rug",
+    "form": "rug",
+    "set": "fenkeeper",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A woven reed mat in peat brown and murky teal.",
+    "hint": "A blueprint from the Sunken Fen, the dungeon or Old Bogback."
+  },
+  {
+    "id": "fenkeeper-frame",
+    "name": "Fenkeeper Frame",
+    "form": "frame",
+    "set": "fenkeeper",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A bog oak frame with a drop of opal on top.",
+    "hint": "A blueprint from the Sunken Fen, the dungeon or Old Bogback."
+  },
+  {
+    "id": "fenkeeper-curtains",
+    "name": "Fenkeeper Curtains",
+    "form": "curtains",
+    "set": "fenkeeper",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "Reed-green curtains with a violet glint in the weave.",
+    "hint": "A blueprint from the Sunken Fen, the dungeon or Old Bogback."
+  },
+  {
+    "id": "ancient-bed",
+    "name": "Ancient Bed",
+    "form": "bed",
+    "set": "ancient",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A slab bed carved with spirals and a stepped headboard.",
+    "hint": "A blueprint from the Old Crossroads or any cleared finale."
+  },
+  {
+    "id": "ancient-cupboard",
+    "name": "Ancient Cupboard",
+    "form": "cupboard",
+    "set": "ancient",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A standing-stone cupboard, its doors worn smooth by time.",
+    "hint": "A blueprint from the Old Crossroads or any cleared finale."
+  },
+  {
+    "id": "ancient-table",
+    "name": "Ancient Table",
+    "form": "table",
+    "set": "ancient",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A stone table with a ring of spirals and a gold-leaf edge.",
+    "hint": "A blueprint from the Old Crossroads or any cleared finale."
+  },
+  {
+    "id": "ancient-shelf",
+    "name": "Ancient Shelf",
+    "form": "shelf",
+    "set": "ancient",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A stepped stone shelf with a thread of gold.",
+    "hint": "A blueprint from the Old Crossroads or any cleared finale."
+  },
+  {
+    "id": "ancient-stool",
+    "name": "Ancient Stool",
+    "form": "stool",
+    "set": "ancient",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A small stone seat, spiral-carved and surprisingly comfortable.",
+    "hint": "A blueprint from the Old Crossroads or any cleared finale."
+  },
+  {
+    "id": "ancient-lamp",
+    "name": "Ancient Lamp",
+    "form": "lamp",
+    "set": "ancient",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A bowl lamp of patina-green bronze, stepped like a little temple.",
+    "hint": "A blueprint from the Old Crossroads or any cleared finale."
+  },
+  {
+    "id": "ancient-rug",
+    "name": "Ancient Rug",
+    "form": "rug",
+    "set": "ancient",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A sandstone rug woven with faded gold spirals.",
+    "hint": "A blueprint from the Old Crossroads or any cleared finale."
+  },
+  {
+    "id": "ancient-frame",
+    "name": "Ancient Frame",
+    "form": "frame",
+    "set": "ancient",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A stone frame with a worn gold border.",
+    "hint": "A blueprint from the Old Crossroads or any cleared finale."
+  },
+  {
+    "id": "ancient-curtains",
+    "name": "Ancient Curtains",
+    "form": "curtains",
+    "set": "ancient",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "Faded gold curtains, heavy as old banners.",
+    "hint": "A blueprint from the Old Crossroads or any cleared finale."
+  },
+  {
+    "id": "lantern-night-bed",
+    "name": "Lantern Night Bed",
+    "form": "bed",
+    "set": "lantern-night",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A painted bed hung with bunting and a small red tassel.",
+    "hint": "A blueprint from the Festival Grounds, a Festival finale or a Games gold."
+  },
+  {
+    "id": "lantern-night-cupboard",
+    "name": "Lantern Night Cupboard",
+    "form": "cupboard",
+    "set": "lantern-night",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A red lacquer cupboard with gold paint around the doors.",
+    "hint": "A blueprint from the Festival Grounds, a Festival finale or a Games gold."
+  },
+  {
+    "id": "lantern-night-table",
+    "name": "Lantern Night Table",
+    "form": "table",
+    "set": "lantern-night",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A low painted table with paper lanterns strung above.",
+    "hint": "A blueprint from the Festival Grounds, a Festival finale or a Games gold."
+  },
+  {
+    "id": "lantern-night-shelf",
+    "name": "Lantern Night Shelf",
+    "form": "shelf",
+    "set": "lantern-night",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A shelf with a tassel at each end, painted festival red.",
+    "hint": "A blueprint from the Festival Grounds, a Festival finale or a Games gold."
+  },
+  {
+    "id": "lantern-night-stool",
+    "name": "Lantern Night Stool",
+    "form": "stool",
+    "set": "lantern-night",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A cream stool with a red tassel under the seat.",
+    "hint": "A blueprint from the Festival Grounds, a Festival finale or a Games gold."
+  },
+  {
+    "id": "lantern-night-lamp",
+    "name": "Lantern Night Lamp",
+    "form": "lamp",
+    "set": "lantern-night",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A round paper lantern that glows warm all evening.",
+    "hint": "A blueprint from the Festival Grounds, a Festival finale or a Games gold."
+  },
+  {
+    "id": "lantern-night-rug",
+    "name": "Lantern Night Rug",
+    "form": "rug",
+    "set": "lantern-night",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A cream rug with red and gold bunting woven in.",
+    "hint": "A blueprint from the Festival Grounds, a Festival finale or a Games gold."
+  },
+  {
+    "id": "lantern-night-frame",
+    "name": "Lantern Night Frame",
+    "form": "frame",
+    "set": "lantern-night",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A red frame with a tiny tassel at the corner.",
+    "hint": "A blueprint from the Festival Grounds, a Festival finale or a Games gold."
+  },
+  {
+    "id": "lantern-night-curtains",
+    "name": "Lantern Night Curtains",
+    "form": "curtains",
+    "set": "lantern-night",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "Lantern silk curtains, red and gold, that glow in the evening.",
+    "hint": "A blueprint from the Festival Grounds, a Festival finale or a Games gold."
+  },
+  {
+    "id": "rocking-chair",
+    "name": "Rocking Chair",
+    "form": "chair",
+    "set": null,
+    "unlock": {
+      "kind": "starter"
+    },
+    "line": "A chair that rocks itself a little when nobody is looking.",
+    "hint": "Yours from the start."
+  },
+  {
+    "id": "hammock",
+    "name": "Hammock",
+    "form": "bed",
+    "set": null,
+    "unlock": {
+      "kind": "drop"
+    },
+    "sources": {
+      "moments": ["trip", "scout"],
+      "places": ["tidepools"],
+      "bosses": []
+    },
+    "line": "A net bed strung between two driftwood posts.",
+    "hint": "Found on trips to the Tidepools."
+  },
+  {
+    "id": "reef-tank",
+    "name": "Reef Tank",
+    "form": "tall",
+    "set": null,
+    "unlock": {
+      "kind": "drop"
+    },
+    "sources": {
+      "moments": ["trip", "scout"],
+      "places": ["moonlit-reef"],
+      "bosses": []
+    },
+    "line": "A tall glass tank of slow, glowing reef.",
+    "hint": "Found on trips to the Moonlit Reef."
+  },
+  {
+    "id": "tall-clock",
+    "name": "Tall Clock",
+    "form": "tall",
+    "set": null,
+    "unlock": {
+      "kind": "drop"
+    },
+    "sources": {
+      "moments": ["raid"],
+      "places": [],
+      "bosses": []
+    },
+    "line": "A tall clock with a slow tick, and a very old face.",
+    "hint": "Won after a cleared raid finale."
+  },
+  {
+    "id": "cuckoo-clock",
+    "name": "Cuckoo Clock",
+    "form": "clock",
+    "set": null,
+    "unlock": {
+      "kind": "drop"
+    },
+    "sources": {
+      "moments": ["dungeon"],
+      "places": [],
+      "bosses": []
+    },
+    "line": "The cuckoo comes out on the hour and bows.",
+    "hint": "Found at the end of a dungeon run."
+  },
+  {
+    "id": "wayfarer-globe",
+    "name": "Wayfarer Globe",
+    "form": "stool",
+    "set": null,
+    "unlock": {
+      "kind": "feat",
+      "stamp": "wayfarer"
+    },
+    "line": "A small globe with a pin in every place you have been.",
+    "hint": "Earned with the Wayfarer stamp."
+  },
+  {
+    "id": "music-box",
+    "name": "Music Box",
+    "form": "stool",
+    "set": null,
+    "unlock": {
+      "kind": "drop"
+    },
+    "sources": {
+      "moments": ["games"],
+      "places": [],
+      "bosses": []
+    },
+    "line": "Wind it up and it plays something you almost remember.",
+    "hint": "Won with a Games gold."
+  },
+  {
+    "id": "moss-terrarium",
+    "name": "Moss Terrarium",
+    "form": "plant",
+    "set": null,
+    "unlock": {
+      "kind": "drop"
+    },
+    "sources": {
+      "moments": ["trip", "scout"],
+      "places": ["verdant-hollow"],
+      "bosses": []
+    },
+    "line": "A glass jar with a small, damp forest inside.",
+    "hint": "Found on trips to the Verdant Hollow."
+  },
+  {
+    "id": "star-chart",
+    "name": "Star Chart",
+    "form": "shelf",
+    "set": null,
+    "unlock": {
+      "kind": "drop"
+    },
+    "sources": {
+      "moments": ["trip", "scout"],
+      "places": ["storm-ridge"],
+      "bosses": []
+    },
+    "line": "A chart of the night sky, with a few stars added by hand.",
+    "hint": "Found on trips to Storm Ridge."
+  },
+  {
+    "id": "old-map",
+    "name": "Old Map",
+    "form": "shelf",
+    "set": null,
+    "unlock": {
+      "kind": "drop"
+    },
+    "sources": {
+      "moments": ["trip", "scout"],
+      "places": ["old-crossroads"],
+      "bosses": []
+    },
+    "line": "A map of roads that may not be there any more.",
+    "hint": "Found on trips to the Old Crossroads."
+  },
+  {
+    "id": "wind-chime",
+    "name": "Wind Chime",
+    "form": "hanging",
+    "set": null,
+    "unlock": {
+      "kind": "drop"
+    },
+    "sources": {
+      "moments": ["trip", "scout"],
+      "places": ["storm-ridge"],
+      "bosses": []
+    },
+    "line": "Copper and glass that ring before the storm does.",
+    "hint": "Found on trips to Storm Ridge."
+  },
+  {
+    "id": "paper-mobile",
+    "name": "Paper Mobile",
+    "form": "hanging",
+    "set": null,
+    "unlock": {
+      "kind": "drop"
+    },
+    "sources": {
+      "moments": ["trip", "scout"],
+      "places": ["festival-grounds"],
+      "bosses": []
+    },
+    "line": "Paper lanterns turning slowly in the warm air.",
+    "hint": "Found on trips to the Festival Grounds."
+  },
+  {
+    "id": "stone-fountain",
+    "name": "Stone Fountain",
+    "form": "yard-big",
+    "set": null,
+    "unlock": {
+      "kind": "drop"
+    },
+    "sources": {
+      "moments": ["trip", "scout"],
+      "places": ["tidepools"],
+      "bosses": []
+    },
+    "line": "A stone fountain with water that sings.",
+    "hint": "Found on trips to the Tidepools."
+  },
+  {
+    "id": "mossback-topiary",
+    "name": "Mossback Topiary",
+    "form": "yard-big",
+    "set": null,
+    "unlock": {
+      "kind": "drop"
+    },
+    "sources": {
+      "moments": ["trip", "scout"],
+      "places": ["verdant-hollow"],
+      "bosses": []
+    },
+    "line": "A hedge clipped into a big, round, sleepy shape.",
+    "hint": "Found on trips to the Verdant Hollow."
+  },
+  {
+    "id": "rose-arbor",
+    "name": "Rose Arbor",
+    "form": "yard-big",
+    "set": null,
+    "unlock": {
+      "kind": "drop"
+    },
+    "sources": {
+      "moments": ["trip", "scout"],
+      "places": ["old-crossroads"],
+      "bosses": []
+    },
+    "line": "An arch of roses that smells like summer.",
+    "hint": "Found on trips to the Old Crossroads."
+  },
+  {
+    "id": "flowerbed",
+    "name": "Flowerbed",
+    "form": "yard-bit",
+    "set": null,
+    "unlock": {
+      "kind": "starter"
+    },
+    "line": "A small bed of whatever is in season.",
+    "hint": "Yours from the start."
+  },
+  {
+    "id": "lantern-post",
+    "name": "Lantern Post",
+    "form": "yard-bit",
+    "set": null,
+    "unlock": {
+      "kind": "drop"
+    },
+    "sources": {
+      "moments": ["trip", "scout"],
+      "places": ["festival-grounds"],
+      "bosses": []
+    },
+    "line": "A post with a paper lantern for late evenings.",
+    "hint": "Found on trips to the Festival Grounds."
+  },
+  {
+    "id": "birdbath",
+    "name": "Birdbath",
+    "form": "yard-bit",
+    "set": null,
+    "unlock": {
+      "kind": "drop"
+    },
+    "sources": {
+      "moments": ["trip", "scout"],
+      "places": ["storm-ridge"],
+      "bosses": []
+    },
+    "line": "A shallow dish for the rain to fill.",
+    "hint": "Found on trips to the Storm Ridge."
+  },
+  {
+    "id": "garden-bench",
+    "name": "Garden Bench",
+    "form": "yard-bit",
+    "set": null,
+    "unlock": {
+      "kind": "drop"
+    },
+    "sources": {
+      "moments": ["trip", "scout"],
+      "places": ["sunken-fen"],
+      "bosses": []
+    },
+    "line": "A bench just big enough for two and a cup of tea.",
+    "hint": "Found on trips to the Sunken Fen."
+  },
+  {
+    "id": "sundial",
+    "name": "Sundial",
+    "form": "yard-bit",
+    "set": null,
+    "unlock": {
+      "kind": "drop"
+    },
+    "sources": {
+      "moments": ["trip", "scout"],
+      "places": ["ember-caves"],
+      "bosses": []
+    },
+    "line": "It tells the time on sunny days, and is honest about the rest.",
+    "hint": "Found on trips to the Ember Caves."
+  },
+  {
+    "id": "hedge",
+    "name": "Hedge",
+    "form": "fence",
+    "set": null,
+    "unlock": {
+      "kind": "starter"
+    },
+    "line": "A tidy green hedge, almost.",
+    "hint": "Yours from the start."
+  },
+  {
+    "id": "picket-fence",
+    "name": "Picket Fence",
+    "form": "fence",
+    "set": null,
+    "unlock": {
+      "kind": "drop"
+    },
+    "sources": {
+      "moments": ["trip", "scout"],
+      "places": ["old-crossroads"],
+      "bosses": []
+    },
+    "line": "White pickets, a little crooked, all the nicer for it.",
+    "hint": "Found on trips to the Old Crossroads."
+  },
+  {
+    "id": "lounger",
+    "name": "Lounger",
+    "form": "poolside",
+    "set": null,
+    "unlock": {
+      "kind": "drop"
+    },
+    "sources": {
+      "moments": ["trip", "scout"],
+      "places": ["moonlit-reef"],
+      "bosses": []
+    },
+    "line": "A long chair for doing nothing beside the water.",
+    "hint": "Found on trips to the Moonlit Reef."
+  },
+  {
+    "id": "swim-ring",
+    "name": "Swim Ring",
+    "form": "float",
+    "set": null,
+    "unlock": {
+      "kind": "drop"
+    },
+    "sources": {
+      "moments": ["trip", "scout"],
+      "places": ["tidepools"],
+      "bosses": []
+    },
+    "line": "A ring that floats, and a creature that does not want to get out.",
+    "hint": "Found on trips to the Tidepools."
+  }
+]

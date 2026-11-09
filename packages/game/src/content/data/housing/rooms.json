@@ -1,0 +1,1011 @@
+[
+  {
+    "id": "hearth",
+    "name": "Hearth",
+    "outdoor": false,
+    "cells": {
+      "w": 1,
+      "h": 1
+    },
+    "spots": [
+      {
+        "id": "window-a",
+        "type": "window",
+        "x": 2,
+        "w": 36,
+        "y": 8
+      },
+      {
+        "id": "wall-large-a",
+        "type": "wall-large",
+        "x": 40,
+        "w": 40,
+        "y": 4
+      },
+      {
+        "id": "wall-small-a",
+        "type": "wall-small",
+        "x": 48,
+        "w": 24,
+        "y": 28
+      },
+      {
+        "id": "ceiling-a",
+        "type": "ceiling",
+        "x": 46,
+        "w": 20,
+        "y": 0
+      },
+      {
+        "id": "floor-large-a",
+        "type": "floor-large",
+        "x": 24,
+        "w": 64
+      },
+      {
+        "id": "floor-small-a",
+        "type": "floor-small",
+        "x": 3,
+        "w": 20
+      },
+      {
+        "id": "floor-small-b",
+        "type": "floor-small",
+        "x": 90,
+        "w": 20
+      },
+      {
+        "id": "rug-a",
+        "type": "rug",
+        "x": 28,
+        "w": 56
+      },
+      {
+        "id": "mantel",
+        "type": "display",
+        "x": 82,
+        "w": 28,
+        "y": 8,
+        "display": "raid-plaques",
+        "layout": "one"
+      }
+    ],
+    "fixtures": ["workbench", "mailbox"],
+    "wall": "cosy-wall",
+    "floor": "cosy-floor"
+  },
+  {
+    "id": "kitchen",
+    "name": "Kitchen",
+    "outdoor": false,
+    "cells": {
+      "w": 1,
+      "h": 1
+    },
+    "spots": [
+      {
+        "id": "window-a",
+        "type": "window",
+        "x": 2,
+        "w": 36,
+        "y": 8
+      },
+      {
+        "id": "wall-large-a",
+        "type": "wall-large",
+        "x": 42,
+        "w": 40,
+        "y": 6
+      },
+      {
+        "id": "wall-small-a",
+        "type": "wall-small",
+        "x": 86,
+        "w": 24,
+        "y": 10
+      },
+      {
+        "id": "ceiling-a",
+        "type": "ceiling",
+        "x": 46,
+        "w": 20,
+        "y": 0
+      },
+      {
+        "id": "floor-large-a",
+        "type": "floor-large",
+        "x": 24,
+        "w": 64
+      },
+      {
+        "id": "floor-small-a",
+        "type": "floor-small",
+        "x": 3,
+        "w": 20
+      },
+      {
+        "id": "floor-small-b",
+        "type": "floor-small",
+        "x": 90,
+        "w": 20
+      },
+      {
+        "id": "rug-a",
+        "type": "rug",
+        "x": 28,
+        "w": 56
+      }
+    ],
+    "fixtures": [],
+    "wall": "cosy-wall",
+    "floor": "cosy-floor"
+  },
+  {
+    "id": "loft",
+    "name": "Loft",
+    "outdoor": false,
+    "cells": {
+      "w": 1,
+      "h": 1
+    },
+    "spots": [
+      {
+        "id": "window-a",
+        "type": "window",
+        "x": 2,
+        "w": 36,
+        "y": 8
+      },
+      {
+        "id": "wall-small-a",
+        "type": "wall-small",
+        "x": 56,
+        "w": 24,
+        "y": 10
+      },
+      {
+        "id": "ceiling-a",
+        "type": "ceiling",
+        "x": 46,
+        "w": 20,
+        "y": 0
+      },
+      {
+        "id": "floor-large-a",
+        "type": "floor-large",
+        "x": 2,
+        "w": 50
+      },
+      {
+        "id": "floor-large-b",
+        "type": "floor-large",
+        "x": 60,
+        "w": 50
+      },
+      {
+        "id": "floor-small-a",
+        "type": "floor-small",
+        "x": 46,
+        "w": 20
+      },
+      {
+        "id": "rug-a",
+        "type": "rug",
+        "x": 28,
+        "w": 56
+      }
+    ],
+    "fixtures": [],
+    "wall": "cosy-wall",
+    "floor": "cosy-floor"
+  },
+  {
+    "id": "study",
+    "name": "Study",
+    "outdoor": false,
+    "cells": {
+      "w": 1,
+      "h": 1
+    },
+    "spots": [
+      {
+        "id": "window-a",
+        "type": "window",
+        "x": 2,
+        "w": 36,
+        "y": 8
+      },
+      {
+        "id": "wall-large-a",
+        "type": "wall-large",
+        "x": 42,
+        "w": 40,
+        "y": 6
+      },
+      {
+        "id": "wall-small-a",
+        "type": "wall-small",
+        "x": 86,
+        "w": 24,
+        "y": 10
+      },
+      {
+        "id": "wall-small-b",
+        "type": "wall-small",
+        "x": 50,
+        "w": 24,
+        "y": 28
+      },
+      {
+        "id": "ceiling-a",
+        "type": "ceiling",
+        "x": 46,
+        "w": 20,
+        "y": 0
+      },
+      {
+        "id": "floor-large-a",
+        "type": "floor-large",
+        "x": 24,
+        "w": 64
+      },
+      {
+        "id": "floor-small-a",
+        "type": "floor-small",
+        "x": 92,
+        "w": 18
+      },
+      {
+        "id": "rug-a",
+        "type": "rug",
+        "x": 28,
+        "w": 56
+      }
+    ],
+    "fixtures": [],
+    "wall": "cosy-wall",
+    "floor": "cosy-floor"
+  },
+  {
+    "id": "attic",
+    "name": "Attic",
+    "outdoor": false,
+    "cells": {
+      "w": 2,
+      "h": 1
+    },
+    "spots": [
+      {
+        "id": "window-a",
+        "type": "window",
+        "x": 40,
+        "w": 36,
+        "y": 8
+      },
+      {
+        "id": "window-b",
+        "type": "window",
+        "x": 148,
+        "w": 36,
+        "y": 8
+      },
+      {
+        "id": "wall-small-a",
+        "type": "wall-small",
+        "x": 88,
+        "w": 24,
+        "y": 10
+      },
+      {
+        "id": "wall-small-b",
+        "type": "wall-small",
+        "x": 112,
+        "w": 24,
+        "y": 10
+      },
+      {
+        "id": "ceiling-a",
+        "type": "ceiling",
+        "x": 56,
+        "w": 20,
+        "y": 0
+      },
+      {
+        "id": "ceiling-b",
+        "type": "ceiling",
+        "x": 148,
+        "w": 20,
+        "y": 0
+      },
+      {
+        "id": "floor-large-a",
+        "type": "floor-large",
+        "x": 30,
+        "w": 64
+      },
+      {
+        "id": "floor-large-b",
+        "type": "floor-large",
+        "x": 130,
+        "w": 64
+      },
+      {
+        "id": "floor-small-a",
+        "type": "floor-small",
+        "x": 94,
+        "w": 18
+      },
+      {
+        "id": "floor-small-b",
+        "type": "floor-small",
+        "x": 112,
+        "w": 18
+      },
+      {
+        "id": "rug-a",
+        "type": "rug",
+        "x": 84,
+        "w": 56
+      }
+    ],
+    "fixtures": [],
+    "wall": "cosy-wall",
+    "floor": "cosy-floor"
+  },
+  {
+    "id": "cellar",
+    "name": "Cellar",
+    "outdoor": false,
+    "cells": {
+      "w": 2,
+      "h": 1
+    },
+    "spots": [
+      {
+        "id": "wall-large-a",
+        "type": "wall-large",
+        "x": 36,
+        "w": 40,
+        "y": 6
+      },
+      {
+        "id": "wall-large-b",
+        "type": "wall-large",
+        "x": 148,
+        "w": 40,
+        "y": 6
+      },
+      {
+        "id": "wall-small-a",
+        "type": "wall-small",
+        "x": 100,
+        "w": 24,
+        "y": 10
+      },
+      {
+        "id": "ceiling-a",
+        "type": "ceiling",
+        "x": 48,
+        "w": 20,
+        "y": 0
+      },
+      {
+        "id": "ceiling-b",
+        "type": "ceiling",
+        "x": 156,
+        "w": 20,
+        "y": 0
+      },
+      {
+        "id": "floor-large-a",
+        "type": "floor-large",
+        "x": 24,
+        "w": 64
+      },
+      {
+        "id": "floor-large-b",
+        "type": "floor-large",
+        "x": 136,
+        "w": 64
+      },
+      {
+        "id": "floor-small-a",
+        "type": "floor-small",
+        "x": 94,
+        "w": 18
+      },
+      {
+        "id": "floor-small-b",
+        "type": "floor-small",
+        "x": 114,
+        "w": 18
+      },
+      {
+        "id": "rug-a",
+        "type": "rug",
+        "x": 84,
+        "w": 56
+      }
+    ],
+    "fixtures": [],
+    "wall": "cosy-wall",
+    "floor": "cosy-floor"
+  },
+  {
+    "id": "hall",
+    "name": "Trophy Hall",
+    "outdoor": false,
+    "cells": {
+      "w": 2,
+      "h": 1
+    },
+    "spots": [
+      {
+        "id": "plaques",
+        "type": "display",
+        "x": 8,
+        "w": 26,
+        "y": 8,
+        "display": "raid-plaques",
+        "layout": "row"
+      },
+      {
+        "id": "bench",
+        "type": "display",
+        "x": 34,
+        "w": 26,
+        "y": 8,
+        "display": "games-medals",
+        "layout": "row"
+      },
+      {
+        "id": "badges",
+        "type": "display",
+        "x": 60,
+        "w": 26,
+        "y": 8,
+        "display": "games-badges",
+        "layout": "row"
+      },
+      {
+        "id": "case",
+        "type": "display",
+        "x": 86,
+        "w": 26,
+        "y": 8,
+        "display": "festival",
+        "layout": "one"
+      },
+      {
+        "id": "shelf",
+        "type": "display",
+        "x": 112,
+        "w": 26,
+        "y": 8,
+        "display": "keepsakes",
+        "layout": "row"
+      },
+      {
+        "id": "books",
+        "type": "display",
+        "x": 138,
+        "w": 26,
+        "y": 8,
+        "display": "journal",
+        "layout": "row"
+      },
+      {
+        "id": "marker",
+        "type": "display",
+        "x": 164,
+        "w": 26,
+        "y": 8,
+        "display": "dungeon",
+        "layout": "one"
+      },
+      {
+        "id": "cabinet",
+        "type": "display",
+        "x": 190,
+        "w": 26,
+        "y": 8,
+        "display": "set-keepsakes",
+        "layout": "row"
+      },
+      {
+        "id": "ceiling-a",
+        "type": "ceiling",
+        "x": 60,
+        "w": 20,
+        "y": 0
+      },
+      {
+        "id": "ceiling-b",
+        "type": "ceiling",
+        "x": 144,
+        "w": 20,
+        "y": 0
+      },
+      {
+        "id": "rug-a",
+        "type": "rug",
+        "x": 84,
+        "w": 56
+      }
+    ],
+    "fixtures": [],
+    "wall": "cosy-wall",
+    "floor": "cosy-floor"
+  },
+  {
+    "id": "gallery",
+    "name": "Gallery",
+    "outdoor": false,
+    "cells": {
+      "w": 2,
+      "h": 1
+    },
+    "spots": [
+      {
+        "id": "wall-large-a",
+        "type": "wall-large",
+        "x": 8,
+        "w": 40,
+        "y": 6
+      },
+      {
+        "id": "wall-large-b",
+        "type": "wall-large",
+        "x": 92,
+        "w": 40,
+        "y": 6
+      },
+      {
+        "id": "wall-large-c",
+        "type": "wall-large",
+        "x": 176,
+        "w": 40,
+        "y": 6
+      },
+      {
+        "id": "wall-small-a",
+        "type": "wall-small",
+        "x": 56,
+        "w": 24,
+        "y": 10
+      },
+      {
+        "id": "wall-small-b",
+        "type": "wall-small",
+        "x": 140,
+        "w": 24,
+        "y": 10
+      },
+      {
+        "id": "ceiling-a",
+        "type": "ceiling",
+        "x": 54,
+        "w": 20,
+        "y": 0
+      },
+      {
+        "id": "ceiling-b",
+        "type": "ceiling",
+        "x": 150,
+        "w": 20,
+        "y": 0
+      },
+      {
+        "id": "floor-small-a",
+        "type": "floor-small",
+        "x": 20,
+        "w": 20
+      },
+      {
+        "id": "floor-small-b",
+        "type": "floor-small",
+        "x": 184,
+        "w": 20
+      },
+      {
+        "id": "rug-a",
+        "type": "rug",
+        "x": 84,
+        "w": 56
+      }
+    ],
+    "fixtures": [],
+    "wall": "cosy-wall",
+    "floor": "cosy-floor"
+  },
+  {
+    "id": "conservatory",
+    "name": "Conservatory",
+    "outdoor": false,
+    "cells": {
+      "w": 2,
+      "h": 1
+    },
+    "spots": [
+      {
+        "id": "window-a",
+        "type": "window",
+        "x": 6,
+        "w": 36,
+        "y": 4
+      },
+      {
+        "id": "window-b",
+        "type": "window",
+        "x": 94,
+        "w": 36,
+        "y": 4
+      },
+      {
+        "id": "window-c",
+        "type": "window",
+        "x": 182,
+        "w": 36,
+        "y": 4
+      },
+      {
+        "id": "ceiling-a",
+        "type": "ceiling",
+        "x": 56,
+        "w": 20,
+        "y": 0
+      },
+      {
+        "id": "ceiling-b",
+        "type": "ceiling",
+        "x": 148,
+        "w": 20,
+        "y": 0
+      },
+      {
+        "id": "floor-large-a",
+        "type": "floor-large",
+        "x": 44,
+        "w": 64
+      },
+      {
+        "id": "floor-large-b",
+        "type": "floor-large",
+        "x": 116,
+        "w": 64
+      },
+      {
+        "id": "floor-small-a",
+        "type": "floor-small",
+        "x": 6,
+        "w": 20
+      },
+      {
+        "id": "floor-small-b",
+        "type": "floor-small",
+        "x": 24,
+        "w": 18
+      },
+      {
+        "id": "floor-small-c",
+        "type": "floor-small",
+        "x": 186,
+        "w": 20
+      },
+      {
+        "id": "rug-a",
+        "type": "rug",
+        "x": 84,
+        "w": 56
+      }
+    ],
+    "fixtures": [],
+    "wall": "cosy-wall",
+    "floor": "cosy-floor"
+  },
+  {
+    "id": "bath",
+    "name": "Bath",
+    "outdoor": false,
+    "cells": {
+      "w": 1,
+      "h": 1
+    },
+    "spots": [
+      {
+        "id": "window-a",
+        "type": "window",
+        "x": 2,
+        "w": 36,
+        "y": 8
+      },
+      {
+        "id": "wall-small-a",
+        "type": "wall-small",
+        "x": 86,
+        "w": 24,
+        "y": 10
+      },
+      {
+        "id": "ceiling-a",
+        "type": "ceiling",
+        "x": 46,
+        "w": 20,
+        "y": 0
+      },
+      {
+        "id": "floor-large-a",
+        "type": "floor-large",
+        "x": 24,
+        "w": 64
+      },
+      {
+        "id": "floor-small-a",
+        "type": "floor-small",
+        "x": 3,
+        "w": 20
+      },
+      {
+        "id": "floor-small-b",
+        "type": "floor-small",
+        "x": 90,
+        "w": 20
+      },
+      {
+        "id": "rug-a",
+        "type": "rug",
+        "x": 28,
+        "w": 56
+      }
+    ],
+    "fixtures": [],
+    "wall": "cosy-wall",
+    "floor": "cosy-floor"
+  },
+  {
+    "id": "guest",
+    "name": "Guest Room",
+    "outdoor": false,
+    "cells": {
+      "w": 1,
+      "h": 1
+    },
+    "spots": [
+      {
+        "id": "window-a",
+        "type": "window",
+        "x": 2,
+        "w": 36,
+        "y": 8
+      },
+      {
+        "id": "wall-large-a",
+        "type": "wall-large",
+        "x": 42,
+        "w": 40,
+        "y": 6
+      },
+      {
+        "id": "ceiling-a",
+        "type": "ceiling",
+        "x": 46,
+        "w": 20,
+        "y": 0
+      },
+      {
+        "id": "floor-large-a",
+        "type": "floor-large",
+        "x": 24,
+        "w": 64
+      },
+      {
+        "id": "floor-small-a",
+        "type": "floor-small",
+        "x": 90,
+        "w": 20
+      },
+      {
+        "id": "rug-a",
+        "type": "rug",
+        "x": 28,
+        "w": 56
+      },
+      {
+        "id": "wall-small-a",
+        "type": "wall-small",
+        "x": 86,
+        "w": 24,
+        "y": 10
+      }
+    ],
+    "fixtures": [],
+    "wall": "cosy-wall",
+    "floor": "cosy-floor"
+  },
+  {
+    "id": "terrace",
+    "name": "Terrace",
+    "outdoor": true,
+    "cells": {
+      "w": 2,
+      "h": 1
+    },
+    "spots": [
+      {
+        "id": "fence-a",
+        "type": "fence",
+        "x": 2,
+        "w": 16
+      },
+      {
+        "id": "yard-small-a",
+        "type": "yard-small",
+        "x": 22,
+        "w": 20
+      },
+      {
+        "id": "yard-small-b",
+        "type": "yard-small",
+        "x": 46,
+        "w": 20
+      },
+      {
+        "id": "yard-large-a",
+        "type": "yard-large",
+        "x": 72,
+        "w": 40
+      },
+      {
+        "id": "poolside-a",
+        "type": "poolside",
+        "x": 116,
+        "w": 32
+      },
+      {
+        "id": "yard-small-c",
+        "type": "yard-small",
+        "x": 154,
+        "w": 20
+      },
+      {
+        "id": "yard-small-d",
+        "type": "yard-small",
+        "x": 178,
+        "w": 20
+      },
+      {
+        "id": "fence-b",
+        "type": "fence",
+        "x": 206,
+        "w": 16
+      }
+    ],
+    "fixtures": [],
+    "wall": "deck",
+    "floor": "deck"
+  },
+  {
+    "id": "garden",
+    "name": "Garden",
+    "outdoor": true,
+    "cells": {
+      "w": 2,
+      "h": 1
+    },
+    "spots": [
+      {
+        "id": "fence-a",
+        "type": "fence",
+        "x": 2,
+        "w": 16
+      },
+      {
+        "id": "yard-small-a",
+        "type": "yard-small",
+        "x": 22,
+        "w": 20
+      },
+      {
+        "id": "yard-large-a",
+        "type": "yard-large",
+        "x": 48,
+        "w": 40
+      },
+      {
+        "id": "yard-small-b",
+        "type": "yard-small",
+        "x": 94,
+        "w": 20
+      },
+      {
+        "id": "yard-small-c",
+        "type": "yard-small",
+        "x": 120,
+        "w": 20
+      },
+      {
+        "id": "yard-large-b",
+        "type": "yard-large",
+        "x": 144,
+        "w": 40
+      },
+      {
+        "id": "yard-small-d",
+        "type": "yard-small",
+        "x": 188,
+        "w": 20
+      },
+      {
+        "id": "fence-b",
+        "type": "fence",
+        "x": 208,
+        "w": 16
+      }
+    ],
+    "fixtures": [],
+    "wall": "lawn",
+    "floor": "lawn"
+  },
+  {
+    "id": "pool",
+    "name": "Pool",
+    "outdoor": true,
+    "cells": {
+      "w": 2,
+      "h": 1
+    },
+    "spots": [
+      {
+        "id": "poolside-a",
+        "type": "poolside",
+        "x": 2,
+        "w": 32
+      },
+      {
+        "id": "water-a",
+        "type": "water",
+        "x": 38,
+        "w": 28
+      },
+      {
+        "id": "water-b",
+        "type": "water",
+        "x": 68,
+        "w": 28
+      },
+      {
+        "id": "water-c",
+        "type": "water",
+        "x": 98,
+        "w": 28
+      },
+      {
+        "id": "poolside-b",
+        "type": "poolside",
+        "x": 130,
+        "w": 32
+      },
+      {
+        "id": "poolside-c",
+        "type": "poolside",
+        "x": 164,
+        "w": 32
+      },
+      {
+        "id": "yard-small-a",
+        "type": "yard-small",
+        "x": 198,
+        "w": 20
+      },
+      {
+        "id": "fence-a",
+        "type": "fence",
+        "x": 206,
+        "w": 16
+      }
+    ],
+    "fixtures": [],
+    "wall": "pool-tile",
+    "floor": "pool-tile"
+  }
+]

@@ -1,0 +1,244 @@
+[
+  {
+    "id": "paw-print",
+    "name": "Paw Print",
+    "unlock": {
+      "kind": "starter"
+    },
+    "line": "A paw print in ink. Everyone has one.",
+    "hint": "Everyone starts with this one."
+  },
+  {
+    "id": "ledger-shell",
+    "name": "Ledger Shell",
+    "unlock": {
+      "kind": "journal-set",
+      "set": "tide-ledger"
+    },
+    "line": "A tiny shell with a line of writing.",
+    "hint": "Find every page of The Tide Ledger."
+  },
+  {
+    "id": "ash-feather",
+    "name": "Ash Feather",
+    "unlock": {
+      "kind": "journal-set",
+      "set": "ash-records"
+    },
+    "line": "A feather, burnt at the tip.",
+    "hint": "Find every page of The Ash Records."
+  },
+  {
+    "id": "root-knot",
+    "name": "Root Knot",
+    "unlock": {
+      "kind": "journal-set",
+      "set": "rootwork-notes"
+    },
+    "line": "A knot of root, tied tight.",
+    "hint": "Find every page of Rootwork Notes."
+  },
+  {
+    "id": "static-spark",
+    "name": "Static Spark",
+    "unlock": {
+      "kind": "journal-set",
+      "set": "static-letters"
+    },
+    "line": "A little blue spark that tickles.",
+    "hint": "Find every page of Static Letters."
+  },
+  {
+    "id": "signpost",
+    "name": "Signpost",
+    "unlock": {
+      "kind": "journal-set",
+      "set": "signpost-series"
+    },
+    "line": "A signpost with too many arrows.",
+    "hint": "Find every page of The Signpost Series."
+  },
+  {
+    "id": "crescent",
+    "name": "Crescent",
+    "unlock": {
+      "kind": "journal-set",
+      "set": "moonlit-verses"
+    },
+    "line": "A pale crescent, like a nail clipping of the moon.",
+    "hint": "Find every page of Moonlit Verses."
+  },
+  {
+    "id": "peat-bubble",
+    "name": "Peat Bubble",
+    "unlock": {
+      "kind": "journal-set",
+      "set": "peat-notes"
+    },
+    "line": "A bubble from the fen, just about to pop.",
+    "hint": "Find every page of The Peat Notes."
+  },
+  {
+    "id": "torn-page",
+    "name": "Torn Page",
+    "unlock": {
+      "kind": "journal-set",
+      "set": "lost-pages"
+    },
+    "line": "A page with one corner torn off.",
+    "hint": "Find every page of Lost Pages."
+  },
+  {
+    "id": "colossus-wave",
+    "name": "Colossus Wave",
+    "unlock": {
+      "kind": "raid-boss",
+      "boss": "tidal-colossus"
+    },
+    "line": "A wave as big as a house.",
+    "hint": "Beat Tidal Colossus in a raid."
+  },
+  {
+    "id": "wyrm-coil",
+    "name": "Wyrm Coil",
+    "unlock": {
+      "kind": "raid-boss",
+      "boss": "cinder-wyrm"
+    },
+    "line": "A coil of scales, still warm.",
+    "hint": "Beat Cinder Wyrm in a raid."
+  },
+  {
+    "id": "thorn-crown",
+    "name": "Thorn Crown",
+    "unlock": {
+      "kind": "raid-boss",
+      "boss": "thornmother"
+    },
+    "line": "A crown of thorns with a flower in it.",
+    "hint": "Beat Thornmother in a raid."
+  },
+  {
+    "id": "storm-crown",
+    "name": "Storm Crown",
+    "unlock": {
+      "kind": "raid-boss",
+      "boss": "storm-sovereign"
+    },
+    "line": "A crown with a crack of lightning.",
+    "hint": "Beat Storm Sovereign in a raid."
+  },
+  {
+    "id": "bogback-moss",
+    "name": "Bogback Moss",
+    "unlock": {
+      "kind": "raid-boss",
+      "boss": "old-bogback"
+    },
+    "line": "A tuft of moss from a very large back.",
+    "hint": "Beat Old Bogback in a raid."
+  },
+  {
+    "id": "deep-door",
+    "name": "Deep Door",
+    "unlock": {
+      "kind": "dungeon-depth",
+      "at": 10
+    },
+    "line": "A door standing open on the dark.",
+    "hint": "Go ten floors deep in the dungeon."
+  },
+  {
+    "id": "gold-medal",
+    "name": "Gold Medal",
+    "unlock": {
+      "kind": "games-medal",
+      "medal": "gold",
+      "at": 1
+    },
+    "line": "A gold medal on a ribbon.",
+    "hint": "Win gold at the Valley Games."
+  },
+  {
+    "id": "wayfarer",
+    "name": "Wayfarer",
+    "unlock": {
+      "kind": "stat",
+      "stat": "places_visited",
+      "at": 7
+    },
+    "line": "A boot print from every road.",
+    "hint": "Visit seven different places."
+  },
+  {
+    "id": "glimmer-star",
+    "name": "Glimmer Star",
+    "unlock": {
+      "kind": "stat",
+      "stat": "shinies_found",
+      "at": 1
+    },
+    "line": "A star that only shines on some.",
+    "hint": "Find a shiny creature."
+  },
+  {
+    "id": "housewarming",
+    "name": "Housewarming",
+    "unlock": {
+      "kind": "house-part",
+      "part": "cottage"
+    },
+    "line": "A small house with smoke from the chimney.",
+    "hint": "Build the Cottage."
+  },
+  {
+    "id": "matched-set",
+    "name": "Matched Set",
+    "unlock": {
+      "kind": "house-sets",
+      "at": 1
+    },
+    "line": "Two chairs that match.",
+    "hint": "Finish a furniture set."
+  },
+  {
+    "id": "old-coin",
+    "name": "Old Coin",
+    "unlock": {
+      "kind": "drop",
+      "moments": ["raid"]
+    },
+    "line": "An old coin with a worn face.",
+    "hint": "A rare find after a raid."
+  },
+  {
+    "id": "lantern-key",
+    "name": "Lantern Key",
+    "unlock": {
+      "kind": "drop",
+      "moments": ["dungeon"]
+    },
+    "line": "A key on a lantern ring.",
+    "hint": "A rare find at the end of a dungeon run."
+  },
+  {
+    "id": "pressed-flower",
+    "name": "Pressed Flower",
+    "unlock": {
+      "kind": "drop",
+      "moments": ["trip", "scout"]
+    },
+    "line": "A flower, pressed flat.",
+    "hint": "A rare find on trips and scouts."
+  },
+  {
+    "id": "rosette",
+    "name": "Rosette",
+    "unlock": {
+      "kind": "drop",
+      "moments": ["games"]
+    },
+    "line": "A ribbon rosette.",
+    "hint": "A rare find at the Valley Games."
+  }
+]
