@@ -14,7 +14,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | [Valley places: glow, day and night](#valley-glow) | liked | 9 | 2026-10-31: night glow redone to stand on the valley ground, with a daytime version of the same assets. |
 | [The honour ribbon](#valley-honours) | liked | 1 | 2026-11-06 (valley phase 5 step 9b, trials.md V-TRIAL-1): a ribbon worn on a graduate's sprite, one for each honour (Bronze, Silver, Gold). |
 | [Valley places: map landmarks](#valley-landmarks) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
-| [The Bonfire, level by level](#valley-levels-bonfire) | draft | 3 | 2026-11-09 (Misa, via the valley session): each valley building visibly grows level by level, 1 to 5, by day and night. |
+| [The Bonfire, level by level](#valley-levels-bonfire) | draft | 5 | 2026-11-09 (Misa): "The campfire could also get better, not just more decorative. Think from a humble campfire to a fire pit with cool stone benches and the sort. Each building can absolutely change building material as it upgrades in levels, and I'm thinking we might even want to tweak the earlier levels to be less elaborate... If you change materials, there needs to be a common motif between buildings of the same level... Think of how Clash of Clans brings a new look with each new town hall level." |
 | [The Forge, level by level](#valley-levels-forge) | draft | 4 | 2026-11-09 (Misa, via the valley session): each valley building visibly grows level by level, 1 to 5, by day and night. |
 | [The Paddock, level by level](#valley-levels-paddock) | draft | 4 | 2026-11-09 (Misa, via the valley session): each valley building visibly grows level by level, 1 to 5, by day and night. |
 | [The School, level by level](#valley-levels-school) | draft | 4 | 2026-11-09 (Misa, via the valley session): each valley building visibly grows level by level, 1 to 5, by day and night. |
@@ -200,20 +200,23 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 ![The Bonfire, level by level](valley-levels-bonfire.png)
 
 - **Status:** draft
-- **Requested:** 2026-11-09 (Misa, via the valley session): each valley building visibly grows level by level, 1 to 5, by day and night.
+- **Requested:** 2026-11-09 (Misa): "The campfire could also get better, not just more decorative. Think from a humble campfire to a fire pit with cool stone benches and the sort. Each building can absolutely change building material as it upgrades in levels, and I'm thinking we might even want to tweak the earlier levels to be less elaborate... If you change materials, there needs to be a common motif between buildings of the same level... Think of how Clash of Clans brings a new look with each new town hall level."
 - **Source:** `apps/activity/src/sprites/concepts/valley-levels-bonfire.ts` (draw it with `pnpm art valley-levels-bonfire`)
-- **Sheet of:** `a8e56549e633`
-- Levels 1 and 2 are `valley-glow/bonfire` and `valley-glow/bonfire-grand`; levels 3 to 5 here are 64x50 like the grand hearth, drawn from its pixels, so the map spot and the scene need no change. Each level keeps everything of the one below.
-- Level 3 (bonfire-3): a paved ring. The grass round the hearth becomes flagstones in a brick pattern, so the hearth stands on a stone floor.
-- Level 4 (bonfire-4): bunting. A rope with a sag from lamp to lamp, behind the flames, with red, gold and teal pennants.
-- Level 5 (bonfire-5): the crowned hearth. Tall flagpoles over both lamp posts with a gold ball and a red swallow-tailed banner each, gold bands carved into the posts, and gold-lit stones in the paving.
-- Seats: the same as bonfire-grand (`GRAND_SEATS`); the paving and the bunting are ground and sky, the logs and the front bench are untouched, and the posts stay in `GRAND_LAMPS` boxes.
+- **Sheet of:** `bd320d044c7a`
+- All five levels are 64x56 with the hearth at the same spot (fire centred on x 32) and the art on one base row; smaller levels leave the top and sides empty. Night is the main palette with the firelight in stepped rings on the ground; alts.day keeps the fire lit.
+- Level 1 Humble: a small fire in a loose ring of fieldstones on packed earth, one log to sit on (rope lashing, pale cut ends) and two sticks. Seat: (47, 52).
+- Level 2 Settled: a neater fire ring, two sawn plank benches and a front bench, a plank sign, and a wood store with the red-brown shingle roof. Seats: (13, 48), (51, 48), (32, 54).
+- Level 3 Stone: a pit of dressed grey stone, a curved bench of dressed stone blocks, black iron: a grate over the logs, a crane with a hanging cauldron, bands on the bench ends, and a firewood pile. Seats: (9, 49), (32, 55), (55, 49).
+- Level 4 Valley: the stone pit on a paved floor lit by the fire, teal-and-cream cushions on the three seats, brass lamps on posts with teal banners (lamp glass lit at night, plain by day). Seats as level 3.
+- Level 5 Crystal: a stone brazier with a gold band and gold rim, crowned with four crystal shards (the crystal glows by day too), crystal posts with gold caps, gold-edged benches with crystal inlay, crystal inlay in the paving. Seats as level 3. The 16-colour limit leaves no room for the level 4 pennants here; the crystal posts replace the lamps.
 
 | Code | Kind | Role | Status | Idea |
 | --- | --- | --- | --- | --- |
-| `bonfire-3` | free |  | draft | Level 3: the grand hearth on a paved ring of flagstones. |
-| `bonfire-4` | free |  | draft | Level 4: the paved hearth with bunting strung between the lamp posts. |
-| `bonfire-5` | free |  | draft | Level 5: crowned posts with flagpoles, banners and gold, over the bunting and the paving. |
+| `bonfire-1` | free |  | draft | A small campfire in a loose ring of fieldstones, a log to sit on, two sticks. |
+| `bonfire-2` | free |  | draft | A fire ring with sawn plank benches, a plank sign and a shingle-roofed wood store. |
+| `bonfire-3` | free |  | draft | A dressed-stone pit, curved stone bench, black iron grate and cauldron crane. |
+| `bonfire-4` | free |  | draft | The stone pit on a paved floor, teal and cream cushions, brass lamps with banners. |
+| `bonfire-5` | free |  | draft | A crystal-crowned stone brazier with gold trim, gold-edged benches, crystal posts. |
 
 <a id="valley-levels-forge"></a>
 
