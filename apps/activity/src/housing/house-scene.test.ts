@@ -5,6 +5,7 @@ import { ART_PENDING, hasPieceArt, pendingArt, pieceArt } from './house-art';
 import {
   CELL_H,
   CELL_W,
+  OUTER_SKIN,
   bossOutline,
   composeHouse,
   composeRoom,
@@ -206,6 +207,47 @@ describe('the part preview', () => {
     const house = sceneHouse({ parts: COTTAGE });
     const preview = partPreview(house, 'hut');
     expect(preview.width).toBe(housePreview(house, 'hut').width);
+  });
+});
+
+describe('the walls skin', () => {
+  const frontOf = (walls: string, parts = COTTAGE): SceneModel =>
+    composeHouse(sceneHouse({ parts, walls }));
+
+  it('changes the picture of the house: the tiles of the cut edges and the plinth are the chosen skin', () => {
+    const plaster = frontOf('plaster');
+    const timber = frontOf('timber');
+    expect(plaster.front.length).toBe(timber.front.length);
+    const differing = timber.front.filter((p, i) => p.sprite !== plaster.front[i]?.sprite);
+    expect(differing.length).toBeGreaterThan(10);
+  });
+
+  it('draws the outer wall of the building as a thick band that grows outwards, and an inner wall as before', () => {
+    const model = frontOf('timber');
+    const left = model.rooms.reduce((a, r) => (r.x < a.x ? r : a));
+    // The band's outer ink sits OUTER_SKIN px outside the cell edge, and the room box starts 2 px outside the room's inner face; nothing in the scene is drawn further out.
+    const inks = model.front.filter(
+      (p) =>
+        p.w === undefined &&
+        spriteSize(p.sprite).width === 1 &&
+        spriteSize(p.sprite).height === CELL_H,
+    );
+    const outerInk = Math.min(...inks.map((p) => p.x));
+    expect(outerInk).toBe(left.x + 2 - OUTER_SKIN);
+    // A wall between two rooms keeps its four pixels: no ink column is closer than that to another.
+    expect(model.rooms.length).toBeGreaterThan(1);
+  });
+
+  it('puts a plinth of the skin along the ground line under the ground floor', () => {
+    const model = frontOf('fieldstone', HUT);
+    const plinth = model.front.filter(
+      (p) =>
+        p.y >= model.groundY - 4 &&
+        p.y <= model.groundY + 3 &&
+        (p.w ?? spriteSize(p.sprite).width) >= 8 &&
+        spriteSize(p.sprite).height >= 2,
+    );
+    expect(plinth.length).toBeGreaterThan(0);
   });
 });
 

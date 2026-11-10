@@ -10,6 +10,7 @@ import { housing, type HouseView } from '@creatures/game';
 import { bossSprite } from '../sprites/creature-sprites';
 import { FALLBACK_SILHOUETTE } from '../sprites/creature-sprites';
 import { cssVars } from '../css-vars';
+import { creatureName } from '../game';
 import { useElementWidth } from '../hooks';
 import { PanHint } from '../ui/PanHint';
 import { useDragScroll } from '../ui/use-drag-scroll';
@@ -24,6 +25,7 @@ import {
   type DisplayDrawing,
   type Placement,
   SIDE,
+  type SceneCreature,
   type SceneModel,
 } from './house-scene';
 import { useEffect } from 'preact/hooks';
@@ -223,7 +225,10 @@ export function HouseScene({
               class="house-room"
               data-outdoor={room.outdoor ? 'true' : undefined}
               data-room={room.roomId}
-              aria-label={room.name}
+              aria-label={roomLabel(
+                room.name,
+                model.creatures.filter((c) => c.roomId === room.roomId),
+              )}
               ref={boxVars(room, scale)}
               onClick={() => {
                 onRoom(room.roomId);
@@ -260,6 +265,18 @@ export function HouseScene({
       <PanHint target={viewRef} id="house" />
     </div>
   );
+}
+
+/** A room button's spoken name: the room, and who is asleep in it ("Loft, Splashet asleep"). */
+export function roomLabel(name: string, sleepers: readonly SceneCreature[]): string {
+  if (sleepers.length === 0) return name;
+  const who = sleepers.map((c) =>
+    creatureName({
+      nickname: c.housemate.creature.nickname,
+      species: c.housemate.creature.species,
+    }),
+  );
+  return `${name}, ${who.join(' and ')} asleep`;
 }
 
 /** A box in scene pixels as CSS custom properties in screen pixels (`--x`, `--y`, `--w`, `--h`). */

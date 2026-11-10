@@ -88,7 +88,9 @@ export function SpotPicker({
   const key = `${room.id}/${spotId}`;
   const [picked, setPicked] = useState<{ key: string; id: string } | null>(null);
   const [drill, setDrill] = useState<Drill>(null);
-  const selectedId = picked?.key === key ? picked.id : (view.current ?? EMPTY_CHOICE);
+  // An empty spot starts on the first piece that is free to place, so the main button is "Place here", not an "Already empty" one.
+  const firstFree = view.choices.find((c) => c.kind === 'free')?.id;
+  const selectedId = picked?.key === key ? picked.id : (view.current ?? firstFree ?? EMPTY_CHOICE);
   const choice = view.choices.find((c) => c.id === selectedId) ?? view.choices[0];
   const sleeper = sleeperAt(housemates, room.id, spotId);
   const def = spotDef(room, spotId);

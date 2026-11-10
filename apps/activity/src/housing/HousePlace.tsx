@@ -425,7 +425,7 @@ export function HousePlace({ creatures, now, onSpent }: HousePlaceProps) {
             setMoment(null);
           }}
         >
-          <HousePostcard house={view_} maxWidth={320} label="Your house" />
+          <HousePostcard house={view_} maxWidth={180} label="Your house" />
         </Alert>
       )}
       {scene}

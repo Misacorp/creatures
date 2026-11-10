@@ -8,7 +8,7 @@ import {
 } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import { SAMPLE_STATE } from '../creature-card-sample';
-import { lockedParts, partCards, payOf, takeFor } from './build-view';
+import { linesPaid, lockedParts, partCards, payOf, takeFor } from './build-view';
 import { CATALOGUE_KINDS, catalogueGroups, catalogueTotals } from './catalogue-view';
 import { cut } from './house-names';
 import {
@@ -99,7 +99,24 @@ describe('build view', () => {
   it('counts lines paid for a part in progress', () => {
     const card = partCards(sampleOwn('rich')).find((c) => c.id === 'west-upper');
     expect(card?.started).toBe(true);
-    expect(card?.lines).toEqual({ total: 4, paid: 0 });
+    // A pip is lit for every line something was paid into, paid in full or not.
+    expect(card?.lines).toEqual({ total: 4, paid: 2 });
+  });
+
+  it('lights a pip for a line paid into, and counts the lines paid in full', () => {
+    const price = [
+      { kind: 'bait' as const, amount: 75 },
+      { kind: 'scrap' as const, amount: 400 },
+      { kind: 'material' as const, id: 'oak', amount: 6 },
+    ];
+    expect(linesPaid(price, undefined)).toEqual({ total: 3, touched: 0, full: 0 });
+    // 70 of 75 Acorns paid: the first pip is lit, though the line is not paid in full.
+    expect(linesPaid(price, [{ kind: 'bait', amount: 5 }, price[1]!, price[2]!])).toEqual({
+      total: 3,
+      touched: 1,
+      full: 0,
+    });
+    expect(linesPaid(price, [price[1]!, price[2]!])).toEqual({ total: 3, touched: 1, full: 1 });
   });
 
   it('gives each part that cannot be built yet its reason', () => {
@@ -169,6 +186,28 @@ describe('catalogue view', () => {
     expect(moon?.label.startsWith('Unknown.')).toBe(true);
     const cosy = tiles.find((t) => t.id === 'cosy-bed');
     expect(cosy).toMatchObject({ unknown: false, name: 'Cosy Bed', owned: 1 });
+  });
+
+  it('has four tabs, so they fit one row on a phone, and the garden pieces are groups of Furniture', () => {
+    expect(CATALOGUE_KINDS.map((k) => k.id)).toEqual(['furniture', 'skins', 'stamps', 'materials']);
+    const groups = catalogueGroups(sampleCatalogue(), 'furniture');
+    expect(groups.some((g) => g.id === 'garden')).toBe(true);
+    expect(new Set(groups.map((g) => g.id)).size).toBe(groups.length);
+  });
+
+  it('agrees with the workbench on how many pieces of a set are made', () => {
+    const catalogue = catalogueGroups(sampleCatalogue(), 'furniture');
+    const own = sampleOwn('rich');
+    for (const group of workbenchGroups(own)) {
+      if (group.held === null) continue;
+      const same = catalogue.find((g) => g.id === group.id);
+      expect(same, group.id).toBeDefined();
+      expect(group.held.total, group.id).toBe(same?.tiles.length);
+    }
+    const cosy = workbenchGroups(own).find((g) => g.id === 'cosy');
+    expect(cosy?.held?.owned).toBe(
+      housing.pieces.filter((p) => p.set === 'cosy' && (own.items.pieces[p.id] ?? 0) > 0).length,
+    );
   });
 
   it('has tiles for every kind', () => {

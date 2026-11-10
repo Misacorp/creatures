@@ -23,6 +23,13 @@ export function GameIcon({ icon, scale = 3 }: { icon: IconRef; scale?: number })
         <Sprite sprite={elementIcon(icon.element) ?? glyphOrUnknown('unknown')} scale={scale} />
       );
     case 'house':
-      return <HouseIcon id={icon.id} scale={scale} />;
+      return (
+        <HouseIcon
+          id={icon.id}
+          scale={scale}
+          silhouette={icon.silhouette === true}
+          box={icon.box}
+        />
+      );
   }
 }

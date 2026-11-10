@@ -99,11 +99,17 @@ export function WorkbenchPanel({ own, busy, error, focus, onCraft }: WorkbenchPa
         <Accordion
           key={group.id}
           title={group.title}
-          meta={group.ready > 0 ? String(group.ready) : undefined}
-          metaTone="gold"
-          label={
-            group.ready > 0 ? `${group.title}, ${String(group.ready)} ready to make` : group.title
+          meta={
+            group.held === null
+              ? undefined
+              : `${String(group.held.owned)} / ${String(group.held.total)}`
           }
+          metaTone={group.ready > 0 ? 'gold' : 'quiet'}
+          label={`${group.title}${
+            group.held === null
+              ? ''
+              : `, ${String(group.held.owned)} of ${String(group.held.total)} made`
+          }${group.ready > 0 ? `, ${String(group.ready)} ready to make` : ''}`}
           headingLevel={3}
           defaultOpen={target === null ? index === 0 : target === group.id}
         >

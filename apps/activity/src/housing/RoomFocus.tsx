@@ -22,7 +22,7 @@ import { PopoverCard, popupProps } from '../ui/Popover';
 import { PanHint } from '../ui/PanHint';
 import { Tag } from '../ui/Tag';
 import { useDragScroll } from '../ui/use-drag-scroll';
-import { pieceArt } from './house-art';
+import { pieceArt, shellArt } from './house-art';
 import { composeRoom, type SceneCreature, type SceneSpot } from './house-scene';
 import { displayText, itemName, spotLabel } from './house-text';
 import { boxVars, HOUSE_DRAWING, SceneLayer } from './HouseScene';
@@ -173,6 +173,14 @@ function Sleeper({
           {...(palette === undefined ? {} : { palette })}
         />
       </SmallCreature>
+      {/* The "z" over the sleeper, as the house view draws it. */}
+      <span
+        class="house-z"
+        aria-hidden="true"
+        ref={cssVars({ '--zx': `${String(12 * scale)}px`, '--zy': `${String(-8 * scale)}px` })}
+      >
+        <Sprite sprite={shellArt('z')} scale={scale} />
+      </span>
     </div>
   );
 }

@@ -207,6 +207,13 @@
   top: var(--y);
 }
 
+.house-sleeper .house-z {
+  position: absolute;
+  left: var(--zx);
+  top: var(--zy);
+  pointer-events: none;
+}
+
 .house-sleeper .house-creature {
   min-height: 0;
   padding: 0;
@@ -235,7 +242,13 @@
 
 /* --- The page and a visit --- */
 .house-finds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.5rem;
   min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 .house-visit > * + * {

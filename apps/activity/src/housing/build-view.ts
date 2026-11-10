@@ -6,6 +6,7 @@
 import {
   applyPayment,
   housing,
+  lineKey,
   type HousePay,
   type HouseView,
   type OwnHouseView,
@@ -25,7 +26,7 @@ export interface PartCard {
   line: string;
   /** What is still owed, each line with have / need. */
   inputs: RecipeInput[];
-  /** Lines of the price, and how many of them are paid in full. */
+  /** Lines of the price, and how many have had something paid into them (the lit pips). */
   lines: { total: number; paid: number };
   /** Something has been paid into it already. */
   started: boolean;
@@ -47,6 +48,26 @@ export interface LockedPart {
   inputs: RecipeInput[];
   /** How many lines the price has (the pips, none lit). */
   lines: number;
+}
+
+/**
+ * How many lines of a part's price have had something paid into them (`touched`, the lit pips: a first payment lights a pip even
+ * when it does not cover its line) and how many are paid in full (`full`). `remaining` is what the player still owes, in the
+ * price's own order; absent: nothing paid yet.
+ */
+export function linesPaid(
+  price: readonly PriceLine[],
+  remaining: readonly PriceLine[] | undefined,
+): { total: number; touched: number; full: number } {
+  const owed = new Map((remaining ?? price).map((line) => [lineKey(line), line.amount]));
+  let touched = 0;
+  let full = 0;
+  for (const line of price) {
+    const left = owed.get(lineKey(line)) ?? 0;
+    if (left < line.amount) touched += 1;
+    if (left === 0) full += 1;
+  }
+  return { total: price.length, touched, full };
 }
 
 /** What a payment took, as the request body (zero amounts left out). */
@@ -98,7 +119,7 @@ function cardOf(part: PartDef, own: OwnHouseView): PartCard {
     name: part.name,
     line: part.line,
     inputs: recipeInputs(remaining, own),
-    lines: { total: part.price.length, paid: part.price.length - remaining.length },
+    lines: { total: part.price.length, paid: linesPaid(part.price, progress?.remaining).touched },
     started: progress !== undefined && progress.paid.length > 0,
     pay,
     payItems: payItems(take),

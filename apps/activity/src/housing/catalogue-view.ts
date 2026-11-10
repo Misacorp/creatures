@@ -7,13 +7,16 @@ import { setName } from './house-names';
 
 export type CatalogueKind = 'furniture' | 'garden' | 'skins' | 'stamps' | 'materials' | 'parts';
 
+/**
+ * The kinds the catalogue shows as tabs: four, so they fit one row on a 390 px phone. The garden and pool pieces are the last groups
+ * of Furniture; the parts are the Build page's (each part is its own page there).
+ */
+
 export const CATALOGUE_KINDS: readonly { id: CatalogueKind; label: string }[] = [
   { id: 'furniture', label: 'Furniture' },
-  { id: 'garden', label: 'Garden' },
   { id: 'skins', label: 'Skins' },
   { id: 'stamps', label: 'Stamps' },
   { id: 'materials', label: 'Materials' },
-  { id: 'parts', label: 'Parts' },
 ];
 
 /** What a tile draws: a house item's art (piece, skin, stamp), or a bundled glyph (a material, a part). */
@@ -133,7 +136,9 @@ function furnitureGroups(c: CatalogueView, outdoor: boolean): CatalogueGroup[] {
   }
   const loose = bySet.get(null);
   if (loose !== undefined)
-    out.push(group('wild', outdoor ? 'Garden and pool' : 'Wild pieces', loose));
+    out.push(
+      group(outdoor ? 'garden' : 'wild', outdoor ? 'Garden and pool' : 'Wild pieces', loose),
+    );
   return out;
 }
 
@@ -173,7 +178,7 @@ function skinGroups(c: CatalogueView): CatalogueGroup[] {
 export function catalogueGroups(c: CatalogueView, kind: CatalogueKind): CatalogueGroup[] {
   switch (kind) {
     case 'furniture':
-      return furnitureGroups(c, false);
+      return [...furnitureGroups(c, false), ...furnitureGroups(c, true)];
     case 'garden':
       return furnitureGroups(c, true);
     case 'skins':

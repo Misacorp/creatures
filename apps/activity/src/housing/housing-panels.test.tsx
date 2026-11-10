@@ -80,7 +80,7 @@ describe('BuildPanel', () => {
     );
     const rows = byClass(p.root, 'vy-row');
     expect(rows.length).toBeGreaterThan(2);
-    const cellar = first(byName(p.root, 'button', /^Cellar, \d of \d lines paid$/));
+    const cellar = first(byName(p.root, 'button', /^Cellar, \d of \d lines paid into$/));
     expect(byClass(cellar, 'pips')).toHaveLength(1);
     // No Pay in on the list, and no fold: the part's page has them.
     expect(byName(p.root, 'button', 'Pay in')).toHaveLength(0);
@@ -273,6 +273,38 @@ describe('WorkbenchPanel', () => {
     const enabled = buttons.filter((b) => !b.hasAttribute('disabled'));
     p.click(first(enabled));
     expect(onCraft).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows a set as pictures over one card, and the card follows the picture picked', () => {
+    const onCraft = vi.fn();
+    const p = draw(
+      <WorkbenchPanel
+        own={sampleOwn('rich')}
+        busy={false}
+        error={null}
+        focus="tidepool-stool"
+        onCraft={onCraft}
+      />,
+    );
+    // One card (one Make button), not a card for every recipe of the set.
+    expect(byClass(p.root, 'recipe-card')).toHaveLength(1);
+    expect(byClass(p.root, 'supply-flat').length).toBeGreaterThan(0);
+    const stool = first(byName(p.root, 'button', /^Tidepool Stool/));
+    expect(stool.getAttribute('aria-pressed')).toBe('true');
+    const table = first(byName(p.root, 'button', /^Tidepool Table/));
+    p.click(table);
+    expect(first(byName(p.root, 'button', /^Tidepool Table/)).getAttribute('aria-pressed')).toBe(
+      'true',
+    );
+    expect(byClass(p.root, 'recipe-card')).toHaveLength(1);
+  });
+
+  it('dims a picture that cannot be made now, with the owned count in the corner', () => {
+    const p = draw(
+      <WorkbenchPanel own={sampleOwn('poor')} busy={false} error={null} onCraft={noop} />,
+    );
+    expect(byClass(p.root, 'blocked').length).toBeGreaterThan(0);
+    expect(byClass(p.root, 'supply-count').length).toBeGreaterThan(0);
   });
 
   it('marks a recipe the player is short of and keeps its button off', () => {

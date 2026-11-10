@@ -4,6 +4,7 @@
  * resolver that `house-art.ts` registers when it loads: `GameIcon` is in the first load of the game and must not
  * pull the furniture art in with it (`HousePlace` is loaded on demand).
  */
+import { silhouettePalette } from '../art';
 import { glyphOrUnknown } from '../glyphs';
 import { Sprite } from '../sprites/Sprite';
 import { spriteSize, type SpriteDef } from '../sprites/sprite-data';
@@ -29,11 +30,28 @@ export function fitScale(sprite: SpriteDef, box: number, max: number): number {
 }
 
 /**
- * One item's picture, at a whole-pixel scale that keeps it inside a chip (an icon scale of 2 is a 32 px box).
- * An item with no art yet shows the plain unknown glyph. Decoration: hidden from assistive technology.
+ * One item's picture, at the largest whole-pixel scale up to `scale` that keeps it inside a square of `box` CSS px (default: a
+ * chip's, `scale` x 16). With `silhouette` it is the flat shape of the art (`silhouettePalette`: an item not found yet). An item with
+ * no art yet shows the plain unknown glyph. Decoration: hidden from assistive technology.
  */
-export function HouseIcon({ id, scale }: { id: string; scale: number }) {
+export function HouseIcon({
+  id,
+  scale,
+  silhouette = false,
+  box,
+}: {
+  id: string;
+  scale: number;
+  silhouette?: boolean;
+  box?: number | undefined;
+}) {
   const sprite = resolver(id);
   if (sprite === undefined) return <Sprite sprite={glyphOrUnknown('unknown')} scale={scale} />;
-  return <Sprite sprite={sprite} scale={fitScale(sprite, scale * 16, scale)} />;
+  return (
+    <Sprite
+      sprite={sprite}
+      scale={fitScale(sprite, box ?? scale * 16, scale)}
+      {...(silhouette ? { palette: silhouettePalette(sprite) } : {})}
+    />
+  );
 }

@@ -5,6 +5,7 @@
  */
 import { housing, knownBlueprints, type HouseView, type OwnHouseView } from '@creatures/game';
 import { PipRow } from '../ui/PipRow';
+import { linesPaid } from './build-view';
 import { PlaceRow } from '../valley/PlacesList';
 
 export type HouseDrill = 'build' | 'workbench' | 'catalogue' | 'mailbox' | 'visits';
@@ -60,7 +61,7 @@ export function houseRowLines(
     const part = housing.parts.find((p) => p.id === next);
     const total = part?.price.length ?? 0;
     const progress = own.progress.find((p) => p.partId === next);
-    const paid = progress === undefined ? 0 : Math.max(0, total - progress.remaining.length);
+    const paid = part === undefined ? 0 : linesPaid(part.price, progress?.remaining).touched;
     build = `next: ${partName(next)}`;
     buildPips = { total, paid };
   }
@@ -104,7 +105,7 @@ export function HouseRows({
                 <PipRow
                   count={lines.buildPips.total}
                   lit={lines.buildPips.paid}
-                  label={`${String(lines.buildPips.paid)} of ${String(lines.buildPips.total)} lines paid`}
+                  label={`${String(lines.buildPips.paid)} of ${String(lines.buildPips.total)} lines paid into`}
                 />
               ),
             })}

@@ -13,7 +13,8 @@ export type IconRef =
   | { kind: 'part'; part: PartKind }
   | { kind: 'gear'; baseId: string }
   | { kind: 'element'; element: string }
-  | { kind: 'house'; id: string };
+  /** A house piece, skin or stamp; `silhouette`: its shape in one flat colour (not found yet); `box`: fit a square of this many CSS px. */
+  | { kind: 'house'; id: string; silhouette?: boolean; box?: number };
 
 /** The icon of a resource from the resource library (a plain diamond for an id it does not know). */
 export function resourceIconRef(id: string): IconRef {
