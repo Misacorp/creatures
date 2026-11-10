@@ -30,7 +30,12 @@ import {
   type HouseDrop,
   type HouseListView,
   type HousePay,
+  type BuildAnswer,
+  type BuildGrown,
+  type CraftAnswer,
   type HouseView,
+  type PurseView,
+  type SkinAnswer,
   type HousemateView,
   type HousingContent,
   type OwnHouseView,
@@ -46,7 +51,7 @@ import {
 import { parseState } from './dungeon-state';
 import { busyReason } from './gear-access';
 import { debitParts, getParts } from './gear-store';
-import { DISPLAY_PROVIDERS } from './housing-displays';
+import { DISPLAY_PROVIDERS, type DisplayCtx as DisplayContext } from './housing-displays';
 import { awardFeats, houseReads, type HouseReads } from './housing-feats';
 import type { BuildBody, CraftBody, HousemateBody, PlaceBody, SkinBody } from './housing-schemas';
 import {
@@ -58,6 +63,7 @@ import {
   getHouse,
   getItem,
   getPart,
+  getRoom,
   giftGivenToday,
   giftsReceivedToday,
   grantOnce,
@@ -401,6 +407,16 @@ export class Housing {
     }));
   }
 
+  /** The display spots of a room, each with its data. */
+  private displaysOf(ctx: DisplayContext, roomId: string, kind: RoomKindDef): DisplayView[] {
+    const out: DisplayView[] = [];
+    for (const spot of kind.spots) {
+      if (spot.type !== 'display' || spot.display === undefined) continue;
+      out.push({ roomId, spotId: spot.id, ...DISPLAY_PROVIDERS[spot.display](ctx) });
+    }
+    return out;
+  }
+
   private houseView(userId: string, loaded: Loaded, reads: HouseReads, clean: boolean): HouseView {
     const grid = houseGrid(this.content, loaded.built);
     const setsComplete = completeSets(this.content, loaded.owned);
@@ -418,14 +434,7 @@ export class Housing {
       if (view === null) continue;
       rooms.push(view);
       const kind = this.kindById.get(g.kind);
-      for (const spot of kind?.spots ?? []) {
-        if (spot.type !== 'display' || spot.display === undefined) continue;
-        displays.push({
-          roomId: g.roomId,
-          spotId: spot.id,
-          ...DISPLAY_PROVIDERS[spot.display](ctx),
-        });
-      }
+      if (kind !== undefined) displays.push(...this.displaysOf(ctx, g.roomId, kind));
     }
     const names = playerNames(this.sql, [userId]);
     return {
@@ -662,14 +671,14 @@ export class Housing {
 
   // --- Building ---
 
-  /** Pays into a part; the part is built the moment it is fully paid. */
-  build(
-    userId: string,
-    body: BuildBody,
-  ): AnswerOf<{ part: PartProgressView; built: boolean; house?: HouseView; own?: OwnHouseView }> {
+  /**
+   * Pays into a part; the part is built the moment it is fully paid. The answer carries what changed (progress, purse, the materials
+   * paid), and when built what the house grew by; it is stored whole, so a retry answers the same.
+   */
+  build(userId: string, body: BuildBody): AnswerOf<BuildAnswer> {
     return atomically(this.deps.storage, () => {
       this.ensure(userId);
-      const stored = runKeyed(
+      return runKeyed(
         this.sql,
         this.deps.now,
         {
@@ -680,17 +689,74 @@ export class Housing {
         },
         () => this.pay(userId, body),
       );
-      if (!stored.built) return stored;
-      const loaded = this.reload(userId);
-      return {
-        ...stored,
-        house: this.houseView(userId, loaded, houseReads(this.sql, userId), true),
-        own: this.ownView(userId, loaded),
-      };
     });
   }
 
-  private pay(userId: string, body: BuildBody): { part: PartProgressView; built: boolean } {
+  /** The purse, and the rows of the materials named (what a build or craft changed). */
+  private holdings(
+    userId: string,
+    materialIds: Iterable<string>,
+  ): { purse: PurseView; materials: Record<string, { have: number; fresh: number }> } {
+    const held = getParts(this.sql, userId);
+    const shards = emptyShards();
+    for (const element of ELEMENTS) shards[element] = held[shardKind(element)];
+    const materials: Record<string, { have: number; fresh: number }> = {};
+    for (const id of materialIds) {
+      const item = getItem(this.sql, userId, 'material', id);
+      materials[id] = {
+        have: item?.count ?? 0,
+        fresh: Math.min(item?.fresh ?? 0, item?.count ?? 0),
+      };
+    }
+    return {
+      purse: { bait: getBalance(this.sql, userId, 'bait'), scrap: held.scrap, shards },
+      materials,
+    };
+  }
+
+  /** What a finished part added: the built and buildable lists, the blueprints it taught, its rooms and their display spots. */
+  private grown(userId: string, part: PartDef, built: ReadonlySet<string>): BuildGrown {
+    const now = new Set([...built, part.id]);
+    const rooms: RoomView[] = [];
+    const displayKinds: { roomId: string; kind: RoomKindDef }[] = [];
+    for (const room of part.rooms) {
+      const roomId = `${part.id}:${room.key}`;
+      const row = getRoom(this.sql, userId, roomId);
+      if (row === null) continue;
+      const spots = parseSpots(row.spots_json);
+      this.dropStaleSpots(roomId, spots);
+      const view = this.roomView(roomId, { row, spots });
+      if (view === null) continue;
+      rooms.push(view);
+      const kind = this.kindById.get(room.kind);
+      if (kind !== undefined) displayKinds.push({ roomId, kind });
+    }
+    const displays: DisplayView[] = [];
+    if (displayKinds.some((d) => d.kind.spots.some((s) => s.type === 'display'))) {
+      // Only when a new room has a display spot: the providers need the held pieces and the counters.
+      const owned = new Map(
+        listItemsOf(this.sql, userId, 'piece')
+          .filter((i) => i.count > 0)
+          .map((i) => [i.item_id, i.count]),
+      );
+      const ctx = {
+        reads: houseReads(this.sql, userId),
+        currentBoss: this.deps.currentBoss,
+        setsComplete: completeSets(this.content, owned),
+      };
+      for (const { roomId, kind } of displayKinds)
+        displays.push(...this.displaysOf(ctx, roomId, kind));
+    }
+    return {
+      parts: this.content.parts.filter((p) => now.has(p.id)).map((p) => p.id),
+      buildable: buildable(this.content, now),
+      learned: [...part.unlocks],
+      rooms,
+      displays,
+    };
+  }
+
+  private pay(userId: string, body: BuildBody): BuildAnswer {
     const { sql, content } = this;
     const now = this.deps.now();
     const part = this.partById.get(body.partId);
@@ -710,7 +776,12 @@ export class Housing {
       upsertPart(sql, userId, part.id, paid, now);
       this.finishPart(userId, part, now);
       touchHouse(sql, userId, now);
-      return { part: this.partProgress(part, paid), built: true };
+      return {
+        part: this.partProgress(part, paid),
+        built: true,
+        ...this.holdings(userId, []),
+        grown: this.grown(userId, part, built),
+      };
     }
     const parts = getParts(sql, userId);
     const shards: Partial<Record<Element, number>> = {};
@@ -761,7 +832,12 @@ export class Housing {
     upsertPart(sql, userId, part.id, result.paid, result.complete ? now : null);
     if (result.complete) this.finishPart(userId, part, now);
     touchHouse(sql, userId, now);
-    return { part: this.partProgress(part, result.paid), built: result.complete };
+    return {
+      part: this.partProgress(part, result.paid),
+      built: result.complete,
+      ...this.holdings(userId, Object.keys(take.materials)),
+      ...(result.complete ? { grown: this.grown(userId, part, built) } : {}),
+    };
   }
 
   /** A part is built: its rooms exist (bare) and the blueprints it teaches are learned. The part's own row is the caller's to write. */
@@ -806,23 +882,19 @@ export class Housing {
   // --- The workbench ---
 
   /** Makes a piece (one more copy) or a skin from a known blueprint, at once: the materials, Acorns and scrap are taken in one transaction. */
-  craft(
-    userId: string,
-    body: CraftBody,
-  ): AnswerOf<{ itemId: string; count: number; own: OwnHouseView }> {
+  craft(userId: string, body: CraftBody): AnswerOf<CraftAnswer> {
     return atomically(this.deps.storage, () => {
       this.ensure(userId);
-      const stored = runKeyed(
+      return runKeyed(
         this.sql,
         this.deps.now,
         { userId, key: body.idempotencyKey, kind: 'house_craft', fingerprint: body.itemId },
         () => this.make(userId, body),
       );
-      return { ...stored, own: this.ownView(userId, this.reload(userId)) };
     });
   }
 
-  private make(userId: string, body: CraftBody): { itemId: string; count: number } {
+  private make(userId: string, body: CraftBody): CraftAnswer {
     const { sql, content } = this;
     const now = this.deps.now();
     const id = body.itemId;
@@ -882,7 +954,12 @@ export class Housing {
       count = 1;
     }
     touchHouse(sql, userId, now);
-    return { itemId: id, count };
+    return {
+      itemId: id,
+      kind: isPiece ? 'piece' : 'skin',
+      count,
+      ...this.holdings(userId, Object.keys(need.materials)),
+    };
   }
 
   /**
@@ -1019,9 +1096,9 @@ export class Housing {
   }
 
   /** Wallpaper and floor of a room, or the roof and walls of the house, from skins the caller owns. */
-  skin(userId: string, body: SkinBody): AnswerOf<{ house: HouseView }> {
+  skin(userId: string, body: SkinBody): AnswerOf<SkinAnswer> {
     return atomically(this.deps.storage, () => {
-      const loaded = this.loadLight(userId);
+      const house = this.ensure(userId);
       const owns = (skinId: string): boolean =>
         (getItem(this.sql, userId, 'skin', skinId)?.count ?? 0) > 0;
       const check = (skinId: string, kinds: readonly string[]): void => {
@@ -1032,31 +1109,40 @@ export class Housing {
       };
       const now = this.deps.now();
       if (body.target === 'room') {
-        const entry = loaded.rooms.get(body.roomId);
+        const row = getRoom(this.sql, userId, body.roomId);
         const kind = this.roomKind(body.roomId);
-        if (entry === undefined || kind === undefined) throw new GameError(404, 'not_found');
+        if (row === null || kind === undefined) throw new GameError(404, 'not_found');
         if (body.wall !== undefined) check(body.wall, kind.outdoor ? ['ground'] : ['wall']);
         if (body.floor !== undefined) check(body.floor, kind.outdoor ? ['ground'] : ['floor']);
         setRoomSkins(this.sql, userId, body.roomId, {
           ...(body.wall === undefined ? {} : { wall: body.wall }),
           ...(body.floor === undefined ? {} : { floor: body.floor }),
         });
-      } else {
-        if (body.roof !== undefined) check(body.roof, ['roof']);
-        if (body.walls !== undefined) check(body.walls, ['walls']);
-        setExterior(
-          this.sql,
-          userId,
-          {
-            ...(body.roof === undefined ? {} : { roof: body.roof }),
-            ...(body.walls === undefined ? {} : { walls: body.walls }),
-          },
-          now,
-        );
+        touchHouse(this.sql, userId, now);
+        const spots = parseSpots(row.spots_json);
+        this.dropStaleSpots(body.roomId, spots);
+        const room = this.roomView(body.roomId, {
+          row: { ...row, wall: body.wall ?? row.wall, floor: body.floor ?? row.floor },
+          spots,
+        });
+        if (room === null) throw new GameError(404, 'not_found');
+        return { target: 'room' as const, room };
       }
+      if (body.roof !== undefined) check(body.roof, ['roof']);
+      if (body.walls !== undefined) check(body.walls, ['walls']);
+      setExterior(
+        this.sql,
+        userId,
+        {
+          ...(body.roof === undefined ? {} : { roof: body.roof }),
+          ...(body.walls === undefined ? {} : { walls: body.walls }),
+        },
+        now,
+      );
       touchHouse(this.sql, userId, now);
       return {
-        house: this.houseView(userId, this.loadLight(userId), houseReads(this.sql, userId), true),
+        target: 'exterior' as const,
+        exterior: { roof: body.roof ?? house.roof, walls: body.walls ?? house.walls },
       };
     });
   }

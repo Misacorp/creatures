@@ -737,12 +737,12 @@ describe('a v2 raid weekend day with the valley systems on', () => {
 });
 
 /**
- * A housing day for one active player on a server of 15 full houses (`docs/design/database-reads.md`, checklist item 6): three opens of the
+ * A housing day for one active player on a server of 15 full houses (`docs/design/database-reads.md`, checklist item 6): two opens of the
  * house, four placements, a craft, a payment, a look at the visit list and a visit with a gift and a stamp, a collect and the "seen" mark.
  * The rest of the day is the other tests' (housing reads nothing on `/api/state`, an alarm tick or the object's start).
  */
-// Measured 3,665 rows read and 153 written (0.07% of the free tier): house:own 1,655 (x3), house:place 671 (x4), house:craft 441, visit 320, list 221, collect 110, stamp 107, gift 52, pay 47, seen 41.
-const HOUSING_DAY_BUDGET = 5_500;
+// Measured 2,717 rows read and 149 written (0.05% of the free tier; was 3,665: craft 441 now 57, and no re-read of the house after the payment): house:own 1,088 (x2), house:place 671 (x4), visit 320, list 221, collect 110, stamp 109, craft 57, pay 50, gift 50, seen 41.
+const HOUSING_DAY_BUDGET = 4_100;
 describe('a housing day', () => {
   it('reads few rows in a realistic day of an active house owner', async () => {
     const reads = new DayReads();
@@ -787,7 +787,7 @@ describe('a housing day', () => {
           pay: { bait: 50 },
           idempotencyKey: 'housing-day-pay',
         });
-        await step('house:own', '/api/house');
+        // No re-read of the house after the payment: the answer carries what changed.
         await step('house:list', '/api/houses');
         await step('house:visit', `/api/houses/${userId(2)}`);
         await step('house:gift', `/api/houses/${userId(2)}/gift`, 'POST', {

@@ -17,11 +17,11 @@ const BUDGET = {
   visit: { reads: 480, writes: 5 }, // measured 317, 2 written (another house: its pieces, rooms, displays, guestbook of 30)
   list: { reads: 330, writes: 5 }, // measured 220, 1 written (15 houses: 15 names and each house's part rows)
   catalogue: { reads: 530, writes: 5 }, // measured 350, 1 written
-  pay: { reads: 70, writes: 25 }, // measured 45, 14 written: a partial payment into a part (the common call)
-  build: { reads: 880, writes: 40 }, // measured 582, 20 written: the payment that finishes a part answers with the new house and the own view
-  craft: { reads: 630, writes: 25 }, // measured 420, 14 written: one id's checks, the debit, and the own view
+  pay: { reads: 70, writes: 25 }, // measured 48, 14 written: a partial payment into a part (the common call)
+  build: { reads: 105, writes: 40 }, // measured 68, 20 written (was 582): the payment that finishes a part answers with its new rooms, displays and lists, not the house
+  craft: { reads: 85, writes: 25 }, // measured 55, 14 written (was 420): one id's checks, the debit, and the new count, purse and materials
   place: { reads: 250, writes: 10 }, // measured 167, 4 written
-  skin: { reads: 700, writes: 10 }, // measured 465, 6 written (answers with the house view)
+  skin: { reads: 40, writes: 10 }, // measured 27, 6 written (was 465): answers with the room or the exterior only
   housemate: { reads: 260, writes: 10 }, // measured 172, 4 written
   gift: { reads: 75, writes: 15 }, // measured 48, 3 written: was 27 before the mailbox cap; the cap check counts the receiver's open mail (20 here, at most 30)
   stamp: { reads: 160, writes: 15 }, // measured 105, 7 written (14 visitor names of the guestbook)
