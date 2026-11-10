@@ -5,25 +5,7 @@
  * it through `house-art.ts`. The materials and the House glyphs are in `housing/housing-glyphs.ts`.
  */
 import type { SpriteDef } from '../../sprite-data';
-
-/** The art pack shape of `docs/design/housing.md` section 5 (C1 defines the shared type in `house-art.ts`). */
-interface HouseArtPack {
-  stamps?: Record<string, SpriteDef>;
-  displays?: Partial<
-    Record<
-      | 'plaque'
-      | 'plaque-empty'
-      | 'bench'
-      | 'badge-slot'
-      | 'case'
-      | 'shelf'
-      | 'books'
-      | 'marker'
-      | 'cabinet',
-      SpriteDef
-    >
-  >;
-}
+import type { HouseArtPack } from '../../../housing/house-art';
 
 /** Where the plaque's parts sit on its 28x32 board, in board pixels. */
 export const PLAQUE_BOSS_AT = { x: 2, y: 1 } as const;

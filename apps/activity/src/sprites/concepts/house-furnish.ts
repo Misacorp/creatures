@@ -13,7 +13,8 @@
  */
 import type { SpriteDef } from '../sprite-data';
 import { ROOM_SPRITE_DATA } from '../data/room-sprites';
-import { HOUSE_ART as COSY, cosyPieces, type PieceArt } from '../data/house/cosy';
+import type { PieceArt } from '../../housing/house-art';
+import { HOUSE_ART as COSY, cosyPieces } from '../data/house/cosy';
 import { HOUSE_ART as WILD } from '../data/house/wild';
 import { HOUSE_ART as GARDEN } from '../data/house/garden';
 import { WORLD_MAP_SPRITE_DATA } from '../data/world-map-sprites';
@@ -193,6 +194,16 @@ export const HOUSE_COSY_CONCEPTS: ConceptSet = {
       note: 'The starter floor, 16x8: two rows of the living room planks.',
       sprite: COSY.skins?.['cosy-floor']?.tile ?? WALL,
     },
+    ...Object.fromEntries(
+      Object.entries(COSY.keepsakes ?? {}).map(([id, sprite]) => [
+        `${id}-keepsake`,
+        {
+          kind: 'free' as const,
+          note: 'The Hearth Bell, 12x12: the keepsake in the trophy hall cabinet when the Cosy set is complete.',
+          sprite,
+        },
+      ]),
+    ),
   },
 };
 

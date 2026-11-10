@@ -27,8 +27,6 @@ export interface PartCard {
   line: string;
   /** What is still owed, each line with have / need. */
   inputs: RecipeInput[];
-  /** The part itself, as the recipe's output. */
-  output: CountItem;
   /** Lines of the price, and how many of them are paid in full. */
   lines: { total: number; paid: number };
   /** Something has been paid into it already. */
@@ -106,12 +104,6 @@ function cardOf(part: PartDef, own: OwnHouseView, off: ReadonlySet<string>): Par
     name: part.name,
     line: part.line,
     inputs: recipeInputs(remaining, own),
-    output: {
-      key: part.id,
-      icon: { kind: 'glyph', id: 'house-nav' },
-      label: part.name,
-      name: part.name,
-    },
     lines: { total: part.price.length, paid: part.price.length - remaining.length },
     started: progress !== undefined && progress.paid.length > 0,
     switches: remaining.map((line) => ({

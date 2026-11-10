@@ -7,19 +7,7 @@
  * top left of the 16x16 sleeper in the bed's own pixels; its `front` (the blanket) is drawn over the sleeper.
  */
 import type { SpriteDef } from '../../sprite-data';
-
-// Declared here until the house scene's `house-art.ts` defines them; then import them from there.
-interface PieceArt {
-  sprite: SpriteDef;
-  front?: SpriteDef;
-  sleep?: { x: number; y: number };
-  glow?: SpriteDef;
-}
-interface HouseArtPack {
-  pieces?: Record<string, PieceArt>;
-  skins?: Record<string, { tile: SpriteDef; ridge?: SpriteDef; eave?: SpriteDef }>;
-  keepsakes?: Record<string, SpriteDef>;
-}
+import type { HouseArtPack } from '../../../housing/house-art';
 
 const PALETTE: Readonly<Record<string, string>> = {
   k: '#0d0a1a',

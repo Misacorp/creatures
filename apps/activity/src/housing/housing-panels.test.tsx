@@ -65,13 +65,43 @@ const house = sampleHouse();
 const noop = () => undefined;
 
 describe('BuildPanel', () => {
-  it('pays what is held when "Pay in" is pressed, for the part it belongs to', () => {
+  it('lists the buildable parts as rows with a pip per line, and opens one on a tap', () => {
+    const onOpen = vi.fn();
+    const p = draw(
+      <BuildPanel
+        house={house}
+        own={sampleOwn('rich')}
+        busy={false}
+        error={null}
+        onPay={noop}
+        open={null}
+        onOpen={onOpen}
+      />,
+    );
+    const rows = byClass(p.root, 'vy-row');
+    expect(rows.length).toBeGreaterThan(2);
+    const cellar = first(byName(p.root, 'button', /^Cellar, \d \/ \d lines paid$/));
+    expect(byClass(cellar, 'pips')).toHaveLength(1);
+    // No Pay in on the list, and no fold: the part's page has them.
+    expect(byName(p.root, 'button', 'Pay in')).toHaveLength(0);
+    expect(visibleText(p.root)).not.toContain('Hold something back');
+    p.click(cellar);
+    expect(onOpen).toHaveBeenCalledWith('cellar');
+  });
+
+  it('pays what is held when "Pay in" is pressed on the part page, for the part it belongs to', () => {
     const onPay = vi.fn();
     const p = draw(
-      <BuildPanel house={house} own={sampleOwn('rich')} busy={false} error={null} onPay={onPay} />,
+      <BuildPanel
+        house={house}
+        own={sampleOwn('rich')}
+        busy={false}
+        error={null}
+        onPay={onPay}
+        open="cellar"
+      />,
     );
-    const cellar = first(byName(p.root, 'section', 'Cellar'));
-    p.click(first(byName(cellar, 'button', 'Pay in')));
+    p.click(first(byName(p.root, 'button', 'Pay in')));
     expect(onPay).toHaveBeenCalledTimes(1);
     const [partId, pay] = onPay.mock.calls[0] as [string, { bait?: number; scrap?: number }];
     expect(partId).toBe('cellar');
@@ -79,14 +109,22 @@ describe('BuildPanel', () => {
     expect(pay.scrap).toBe(800);
   });
 
-  it('shows have / need, marks the short line and names no currency in words', () => {
+  it('shows have / need, marks the short line, names no currency in words and no output chip', () => {
     const p = draw(
-      <BuildPanel house={house} own={sampleOwn('rich')} busy={false} error={null} onPay={noop} />,
+      <BuildPanel
+        house={house}
+        own={sampleOwn('rich')}
+        busy={false}
+        error={null}
+        onPay={noop}
+        open="cellar"
+      />,
     );
     const cellar = first(byName(p.root, 'section', 'Cellar'));
     expect(visibleText(cellar)).toContain('0 / 4');
     expect(byClass(cellar, 'short')).toHaveLength(1);
     expect(visibleText(cellar)).not.toMatch(/acorns|scrap|shard/i);
+    expect(byClass(cellar, 'recipe-arrow')).toHaveLength(0);
     expect(
       badgesIn(cellar).some(([name, n]) => /acorn|bait/i.test(name) && n === '640 / 125'),
     ).toBe(true);
@@ -94,7 +132,14 @@ describe('BuildPanel', () => {
 
   it('is off while busy, off with a reason when nothing can be paid, and shows a refusal', () => {
     const busy = draw(
-      <BuildPanel house={house} own={sampleOwn('rich')} busy error={null} onPay={noop} />,
+      <BuildPanel
+        house={house}
+        own={sampleOwn('rich')}
+        busy
+        error={null}
+        onPay={noop}
+        open="cellar"
+      />,
     );
     expect(first(byName(busy.root, 'button', 'Pay in')).hasAttribute('disabled')).toBe(true);
     const none = draw(
@@ -104,6 +149,7 @@ describe('BuildPanel', () => {
         busy={false}
         error="Not enough."
         onPay={noop}
+        open="cottage"
       />,
     );
     expect(visibleText(none.root)).toContain('Nothing to pay in yet.');
@@ -118,6 +164,21 @@ describe('BuildPanel', () => {
     const text = visibleText(p.root);
     expect(text).toContain('Needs the Garden');
     expect(byClass(p.root, 'vy-row-muted').length).toBeGreaterThan(0);
+  });
+
+  it('goes back to the list when the open part is no longer buildable', () => {
+    const p = draw(
+      <BuildPanel
+        house={house}
+        own={sampleOwn('rich')}
+        busy={false}
+        error={null}
+        onPay={noop}
+        open="hut"
+      />,
+    );
+    expect(byName(p.root, 'button', 'Pay in')).toHaveLength(0);
+    expect(byClass(p.root, 'vy-row').length).toBeGreaterThan(0);
   });
 
   it('says everything is built when there is nothing left', () => {
@@ -335,12 +396,12 @@ describe('MailboxPanel', () => {
     expect(onCollect).toHaveBeenCalledTimes(1);
   });
 
-  it('is empty and off with nothing waiting, and off while busy', () => {
+  it('says so with no button when nothing waits, and is off while busy', () => {
     const p = draw(
       <MailboxPanel mailbox={sampleOwn('empty').mailbox} busy={false} onCollect={noop} />,
     );
     expect(visibleText(p.root)).toContain('The mailbox is empty');
-    expect(first(byName(p.root, 'button', /^Collect/)).hasAttribute('disabled')).toBe(true);
+    expect(byName(p.root, 'button', /^Collect/)).toHaveLength(0);
     const busy = draw(<MailboxPanel mailbox={sampleOwn('rich').mailbox} busy onCollect={noop} />);
     expect(first(byName(busy.root, 'button', /^Collect/)).hasAttribute('disabled')).toBe(true);
   });

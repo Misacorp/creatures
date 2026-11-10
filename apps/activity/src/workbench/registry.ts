@@ -17,6 +17,8 @@ import { effectEntries } from './entries/effects';
 import { dungeonMapEntries } from './entries/dungeon-map';
 import { dungeonRunEntries } from './entries/dungeon-run';
 import { headingEntries } from './entries/headings';
+import { housingEntries } from './entries/housing';
+import { housingPanelEntries } from './entries/housing-panels';
 import { iconEntries } from './entries/icons';
 import { jobRevealEntries } from './entries/job-reveal';
 import { findEntries } from './entries/find';
@@ -100,6 +102,8 @@ export const ENTRIES: readonly Entry[] = [
   ...settingsEntries,
   ...gameScreensEntries,
   ...valleyShellEntries,
+  ...housingEntries,
+  ...housingPanelEntries,
 ];
 
 export function findEntry(name: string | null): Entry | null {

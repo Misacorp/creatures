@@ -1,0 +1,209 @@
+/*
+  The player's house (src/housing/): the cutaway scene (HouseScene.tsx), one room at a larger scale (RoomFocus.tsx), the
+  host page (HousePlace.tsx) and a visit (VisitHouse.tsx). The pictures are canvases at one pixel per scene pixel, shown at an
+  integer scale (JS sets --hw and --hh, the stage in CSS px, and every button's --x --y --w --h with style.setProperty; there
+  are no inline style attributes) with `image-rendering: pixelated`, so the art stays crisp. The housing panels
+  (C2) have their own file, housing-panels.css.
+*/
+.house-place {
+  min-width: 0;
+}
+
+.house-home {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+}
+
+/* --- The scene --- */
+.house-scene,
+.house-focus {
+  position: relative;
+  min-width: 0;
+}
+
+/* The scene pans both ways inside a box at most 60vh high; it starts on the Hearth at the ground. */
+.house-view {
+  overflow: auto;
+  max-height: 60vh;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  background: var(--night);
+  cursor: grab;
+}
+
+.house-view::-webkit-scrollbar,
+.house-focus-view::-webkit-scrollbar {
+  display: none;
+}
+
+.house-view.dragging,
+.house-focus-view.dragging {
+  cursor: grabbing;
+  user-select: none;
+}
+
+/* A room alone: centred when it fits, panning sideways when it does not. */
+.house-focus-view {
+  margin-inline: calc(var(--focus-bleed, 12px) / -2);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  background: var(--night);
+}
+
+/* Its own stacking context: nothing in the picture rises over a popover or a drawer. */
+.house-stage {
+  position: relative;
+  isolation: isolate;
+  width: var(--hw);
+  height: var(--hh);
+  margin-inline: auto;
+}
+
+.house-layer {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--hw);
+  height: var(--hh);
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+
+.house-front {
+  z-index: 2;
+}
+
+/* The things in the picture are buttons laid over it: the art is the button, so no raised panel. */
+.house-scene :is(.house-room, .house-fixture),
+.house-focus :is(.house-spot, .house-fixture),
+.house-scene :is(.house-room, .house-fixture):is(:hover, :active),
+.house-focus :is(.house-spot, .house-fixture):is(:hover, :active) {
+  position: absolute;
+  z-index: 3;
+  left: var(--x);
+  top: var(--y);
+  width: var(--w);
+  height: var(--h);
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  filter: none;
+  transform: none;
+  color: var(--bone);
+}
+
+/* A room is the biggest target and sits under the fixtures. */
+.house-scene .house-room {
+  z-index: 3;
+}
+
+.house-scene .house-fixture {
+  z-index: 4;
+}
+
+.house-scene .house-room:hover,
+.house-scene .house-fixture:hover,
+.house-focus .house-spot:hover,
+.house-focus .house-fixture:hover {
+  box-shadow: inset 0 0 0 calc(var(--px) * 2) rgb(var(--gold-rgb, 255 210 90) / 0.6);
+}
+
+.house-scene :is(.house-room, .house-fixture):focus-visible,
+.house-focus :is(.house-spot, .house-fixture):focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+/* An empty spot of your own room: a dashed outline. A filled one shows only its piece. */
+.house-focus .house-spot[data-empty='true'] {
+  outline: calc(var(--px) * 2) dashed rgb(244 238 220 / 0.75);
+  outline-offset: calc(var(--px) * -2);
+}
+
+.house-focus .house-spot[data-selected='true'] {
+  outline: calc(var(--px) * 2) solid var(--gold);
+  outline-offset: calc(var(--px) * -2);
+}
+
+/* A visit: a spot is only a picture, so it shows no outline until it is looked at. */
+.house-focus[data-mode='visit'] .house-spot {
+  outline: none;
+}
+
+/* The housemate asleep: a creature button between the two layers. */
+.house-sleeper {
+  position: absolute;
+  z-index: 1;
+  left: var(--x);
+  top: var(--y);
+}
+
+.house-sleeper .house-creature {
+  min-height: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.house-sleeper .house-creature:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+/* --- Chips under the scene or the room (roof, walls, wallpaper, floor) --- */
+.house-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.chip.chip-button {
+  min-height: 2.75rem;
+  padding-inline: 0.75rem;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.chip.chip-button:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+/* --- The page and a visit --- */
+.house-finds {
+  min-width: 0;
+}
+
+.house-visit > * + * {
+  margin-top: 0.75rem;
+}
+
+/* A visitor's two actions, pinned like a place's one action (valley/PinnedAct). */
+.house-visit-act {
+  display: grid;
+  gap: 0.375rem;
+  width: 100%;
+  max-width: 30rem;
+  margin: 0 auto;
+}
+
+.house-visit .house-visit-act {
+  position: sticky;
+  bottom: max(0.5rem, var(--discord-safe-area-inset-bottom, 0px));
+  z-index: 5;
+}
+
+.side-panel-foot .house-visit-act {
+  position: static;
+}

@@ -33,9 +33,42 @@
   min-width: 0;
 }
 
-.hp-part-name {
-  margin: 0;
-  font-size: var(--fs-heading);
+/* A part's picture: its new rooms and the roof over them. The row's is small and fitted to its box; the page's is drawn
+   at a whole scale (JS sets --pw and --ph) on the sky's colour. */
+.hp-preview {
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: var(--night);
+}
+
+.hp-preview canvas {
+  display: block;
+  image-rendering: pixelated;
+}
+
+.hp-preview-row {
+  width: 5.5rem;
+  height: 3.5rem;
+}
+
+.hp-preview-row canvas {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.hp-preview-page {
+  width: fit-content;
+  max-width: 100%;
+  min-height: 4rem;
+}
+
+.hp-preview-page canvas {
+  width: var(--pw);
+  height: var(--ph);
+  max-width: 100%;
+  object-fit: contain;
 }
 
 .hp-part-line,

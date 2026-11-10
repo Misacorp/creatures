@@ -14,23 +14,8 @@
  */
 import type { RoomPhase } from '@creatures/game';
 import type { SpriteDef } from '../../sprite-data';
+import type { HouseArtPack, PieceArt } from '../../../housing/house-art';
 import { ROOM_SPRITE_DATA, type RoomPropName } from '../room-sprites';
-
-// This is the shape of section 5 of `docs/design/housing.md`. It moves to `house-art.ts` when that lands.
-export interface PieceArt {
-  sprite: SpriteDef;
-  front?: SpriteDef;
-  sleep?: { x: number; y: number };
-  glow?: SpriteDef;
-}
-export interface HouseArtPack {
-  pieces?: Record<string, PieceArt>;
-  skins?: Record<string, { tile: SpriteDef; ridge?: SpriteDef; eave?: SpriteDef }>;
-  stamps?: Record<string, SpriteDef>;
-  keepsakes?: Record<string, SpriteDef>;
-  displays?: Partial<Record<string, SpriteDef>>;
-  shell?: Partial<Record<string, SpriteDef>>;
-}
 
 /** The pixel rows of the three new pieces (drawn from shapes, then kept as data). */
 // <generated>
@@ -301,4 +286,35 @@ function cosySkins(): NonNullable<HouseArtPack['skins']> {
   return { 'cosy-wall': { tile: tileOf(edge, wall) }, 'cosy-floor': { tile: tileOf(edge, floor) } };
 }
 
-export const HOUSE_ART: HouseArtPack = { pieces: cosyPieces('day'), skins: cosySkins() };
+/**
+ * The Cosy set's keepsake, the Hearth Bell (12x12, ink outline like the other sets' keepsakes): a small brass bell on a
+ * loop, cream light on its shoulder, the rim and the clapper below. Drawn from the room's own brass and cream.
+ */
+const HEARTH_BELL: readonly string[] = [
+  '.....kk.....',
+  '....kmmk....',
+  '...kkmmkk...',
+  '..kmfmmmnk..',
+  '..kmfmmmnk..',
+  '..kmfmmmnk..',
+  '.kmmfmmmnnk.',
+  '.kmmmmmmnnk.',
+  'kmmmmmmmnnnk',
+  'kcccccccccck',
+  '.kkkkmmkkkk.',
+  '.....kk.....',
+];
+
+function keepsake(rows: readonly string[]): SpriteDef {
+  const used = new Set(rows.join(''));
+  return {
+    rows,
+    palette: Object.fromEntries(Object.entries(PALETTE).filter(([key]) => used.has(key))),
+  };
+}
+
+export const HOUSE_ART: HouseArtPack = {
+  pieces: cosyPieces('day'),
+  skins: cosySkins(),
+  keepsakes: { cosy: keepsake(HEARTH_BELL) },
+};

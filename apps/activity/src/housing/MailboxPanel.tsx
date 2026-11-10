@@ -35,7 +35,7 @@ export function giftRows(
 
 /**
  * The mailbox: one row per waiting gift (the giver's name and its Acorns) and one button, Collect, that takes them all
- * and says the total. Nothing waiting: a short line and a button that is off. Data in, callbacks out: it fetches nothing.
+ * and says the total. Nothing waiting: a short line, no button. Data in, callbacks out: it fetches nothing.
  */
 export function MailboxPanel({ mailbox, busy, onCollect }: MailboxPanelProps) {
   const rows = giftRows(mailbox);
@@ -59,14 +59,16 @@ export function MailboxPanel({ mailbox, busy, onCollect }: MailboxPanelProps) {
           ))}
         </ul>
       )}
-      <ActionButton
-        wide
-        large
-        label="Collect"
-        cost={rows.length === 0 ? undefined : [acornCount(mailbox.acorns)]}
-        disabled={busy || mailbox.acorns === 0}
-        onClick={onCollect}
-      />
+      {rows.length > 0 && (
+        <ActionButton
+          wide
+          large
+          label="Collect"
+          cost={[acornCount(mailbox.acorns)]}
+          disabled={busy || mailbox.acorns === 0}
+          onClick={onCollect}
+        />
+      )}
     </div>
   );
 }

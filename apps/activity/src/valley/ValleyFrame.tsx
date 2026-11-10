@@ -13,6 +13,7 @@ import type { TabAlerts } from '../tab-alerts';
 import { scrollAndFocus } from '../scroll-to';
 import { BonfireScene } from './BonfireScene';
 import { CommonsBoard, type CommonsActions, type CommonsStart } from './CommonsBoard';
+import { YourHouseRow } from '../housing/HouseRows';
 import { Keepsakes } from './Keepsakes';
 import { MarketPage, type MarketActions, type MarketStart } from './MarketPage';
 import { marketState } from './market-view';
@@ -70,6 +71,7 @@ export function ValleyFrame({
   marketStart,
   busy = false,
   error = null,
+  housing = false,
   focus,
   onOpen,
   onLeave,
@@ -104,14 +106,16 @@ export function ValleyFrame({
   busy?: boolean;
   /** The server's last error, for the Market's exchange drawer (the notice line is behind it). */
   error?: string | null;
+  /** The player's house is on (`housing` of `/api/config`): the House place gets a third row, "Your house". */
+  housing?: boolean;
   /** The place whose button takes the focus when the map comes back. */
   focus: PlaceId | null;
   /** Opens a place (from the map, the Places list or the tray). */
   onOpen: (id: PlaceId) => void;
   /** Leaves a place for the valley. */
   onLeave: () => void;
-  /** Opens one of the House's two entries. */
-  onBook: (book: 'journal' | 'stats') => void;
+  /** Opens one of the House's entries (the Journal, the Stats, or with housing on, the player's house). */
+  onBook: (book: 'journal' | 'stats' | 'house') => void;
   /** Errors, notes, the wipe notice and the level-reset card, over the valley as over the tab pages. */
   notices: ComponentChildren;
   /** The "While you were away" paper, over the map: the game passes null (the welcome-back Gazette, `gazette/WelcomeBack`, is a sheet of its own); the workbench demo still shows the paper here. */
@@ -160,6 +164,13 @@ export function ValleyFrame({
       {view.kind === 'place' && view.place === 'house' && view.book === null && (
         <div class="vy-house">
           <ul class="vy-rows" aria-label="In the house">
+            {housing && (
+              <YourHouseRow
+                onClick={() => {
+                  onBook('house');
+                }}
+              />
+            )}
             <PlaceRow
               glyph="journal"
               name="Journal"

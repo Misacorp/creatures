@@ -28,6 +28,11 @@ export interface SpotPickerProps {
   own: OwnHouseView;
   housemates: HousemateView[];
   creatures: readonly Creature[];
+  /**
+   * Where each piece whose every copy is placed stands now, by piece id (the room's name): choosing one moves it here, and the
+   * button says from where. A piece missing from it just says "Moves here".
+   */
+  placedIn?: Readonly<Record<string, string>> | undefined;
   /** A request is running: every button waits. */
   busy: boolean;
   /** A piece (or null: empty the spot) was chosen for the spot. */
@@ -72,6 +77,7 @@ export function SpotPicker({
   own,
   housemates,
   creatures,
+  placedIn,
   busy,
   onPlace,
   onHousemate,
@@ -153,10 +159,14 @@ export function SpotPicker({
           },
         };
       case 'placed':
+        // Every copy stands in a spot already: choosing it takes it from there (the host empties that spot, then places it here).
         return {
-          label: 'Place here',
-          detail: 'Every copy is placed',
-          disabled: true,
+          label: 'Move here',
+          detail:
+            placedIn?.[choice.id] === undefined
+              ? undefined
+              : `From the ${placedIn[choice.id] ?? ''}`,
+          disabled: busy,
           onClick: () => {
             onPlace(choice.id);
           },

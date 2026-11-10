@@ -18,23 +18,7 @@
  * sits on the same line. Pool water is 16 x 8 and wraps sideways without a seam.
  */
 import type { SpriteDef } from '../../sprite-data';
-
-export interface PieceArt {
-  sprite: SpriteDef;
-  front?: SpriteDef;
-  sleep?: { x: number; y: number };
-  glow?: SpriteDef;
-}
-type SkinArt = { tile: SpriteDef; ridge?: SpriteDef; eave?: SpriteDef };
-type ShellKey = 'slab' | 'earth' | 'chimney' | 'door' | 'mailbox' | 'workbench' | 'vent' | 'z';
-export interface HouseArtPack {
-  pieces?: Record<string, PieceArt>;
-  skins?: Record<string, SkinArt>;
-  stamps?: Record<string, SpriteDef>;
-  keepsakes?: Record<string, SpriteDef>;
-  displays?: Record<string, SpriteDef>;
-  shell?: Partial<Record<ShellKey, SpriteDef>>;
-}
+import type { HouseArtPack, SkinArt } from '../../../housing/house-art';
 
 const INK = '#0d0a1a';
 

@@ -704,6 +704,26 @@ main.card:has(.vy-frame) > .hud {
   opacity: 0.6;
 }
 
+/* Something waits at the place (the House's mailbox): a gold square after the line. */
+.vy-row:has(.vy-row-pip) {
+  grid-template-columns: auto auto 1fr auto;
+}
+
+/* A row that closes with progress pips (the House's parts): the pips sit at the right edge. */
+.vy-row-aside {
+  justify-self: end;
+}
+
+.vy-row:has(.vy-row-aside):not(:has(.vy-row-line)) {
+  grid-template-columns: auto 1fr auto;
+}
+
+.vy-row-pip {
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--gold);
+}
+
 .vy-row-name {
   font-size: var(--fs-heading);
 }
