@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { OwnHouseView, RoomView } from '@creatures/game';
+import { housing, type OwnHouseView, type RoomView } from '@creatures/game';
 import { SAMPLE_STATE } from '../creature-card-sample';
 import { byClass, byName, createPage, visibleText, type FakeElement, type Page } from '../test-dom';
 import { SAMPLE_NOW, sampleHouse, sampleList, sampleOwn } from './house-sample';
@@ -15,6 +15,30 @@ vi.mock('./housing-api', async (importOriginal) => ({
   fetchHouses: () => Promise.resolve(sampleList()),
   fetchCatalogue: () => Promise.reject(new Error('not needed here')),
   markSeen: () => Promise.resolve(),
+  buildPart: (partId: string) => {
+    const kind = housing.rooms.find((k) => k.id === 'cellar');
+    return Promise.resolve({
+      part: { partId, paid: [], remaining: [] },
+      built: true,
+      purse: own.purse,
+      materials: {},
+      grown: {
+        parts: [...sampleHouse().built, partId],
+        buildable: [],
+        learned: [],
+        rooms: [
+          {
+            id: `${partId}:cellar`,
+            kind: 'cellar',
+            wall: kind?.wall ?? '',
+            floor: kind?.floor ?? '',
+            spots: {},
+          },
+        ],
+        displays: [],
+      },
+    });
+  },
   placePiece: (roomId: string, spotId: string, pieceId: string | null) => {
     placeCalls.push([roomId, spotId, pieceId]);
     const room: RoomView = {
@@ -69,7 +93,9 @@ describe('the House place on sample data', () => {
   it('shows the scene, the two skin chips, the five rows and the guestbook', async () => {
     const p = await open();
     expect(byClass(p.root, 'house-room').length).toBeGreaterThanOrEqual(4);
-    expect(byName(p.root, 'button', /^Roof: /)).toHaveLength(1);
+    // The roof and the walls are dropdown triggers, not chips.
+    const roof = first(byName(p.root, 'button', /^Roof: /));
+    expect(roof.getAttribute('class')).toContain('equip-trigger');
     expect(byName(p.root, 'button', /^Walls: /)).toHaveLength(1);
     const rows = byClass(p.root, 'vy-row');
     expect(
@@ -125,6 +151,32 @@ describe('the House place on sample data', () => {
     expect(placeCalls[1]?.[2]).toBe('cosy-plant');
     expect(placeCalls).toHaveLength(2);
     expect(placeCalls[1]?.[1]).not.toBe(plantSpot?.[1]);
+  });
+
+  it('finishing a part goes back to the house with a success note and the new room, not to the build list', async () => {
+    const p = await open();
+    p.click(first(byName(p.root, 'button', /^Build, /)));
+    await settle(p);
+    p.click(first(byName(p.root, 'button', /^Cellar, /)));
+    await settle(p);
+    p.click(first(byName(p.root, 'button', 'Pay in')));
+    await settle(p);
+    // The page of the part and the build list are gone: the house shows, with the note.
+    expect(byName(p.root, 'button', 'Pay in')).toHaveLength(0);
+    expect(byClass(p.root, 'house-room').length).toBeGreaterThan(0);
+    expect(visibleText(p.root)).toContain('The Cellar is built');
+    expect(byClass(p.root, 'alert').some((a) => a.getAttribute('class')?.includes('success'))).toBe(
+      true,
+    );
+    // The new room is a button in the scene, and is revealed.
+    expect(byName(p.root, 'button', 'Cellar').length).toBeGreaterThan(0);
+    expect(byClass(p.root, 'house-reveal').length).toBeGreaterThan(0);
+    // The note goes when the player goes on.
+    p.click(first(byName(p.root, 'button', /^Build, /)));
+    await settle(p);
+    p.click(first(byName(p.root, 'button', /Back/)));
+    await settle(p);
+    expect(visibleText(p.root)).not.toContain('The Cellar is built');
   });
 
   it('places a piece that has a free copy with one request', async () => {

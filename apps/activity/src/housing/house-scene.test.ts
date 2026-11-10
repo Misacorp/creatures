@@ -5,13 +5,14 @@ import { ART_PENDING, hasPieceArt, pendingArt, pieceArt } from './house-art';
 import {
   CELL_H,
   CELL_W,
+  OUTER_SKIN,
   bossOutline,
   composeHouse,
   composeRoom,
-  coreBox,
   digitsSprite,
   housePreview,
   overviewScale,
+  overviewScroll,
   partPreview,
   roofShape,
   roofRowAt,
@@ -209,27 +210,78 @@ describe('the part preview', () => {
   });
 });
 
-describe('where the overview starts', () => {
-  it('is centred on the core: the hut, cottage and house rooms and nothing else', () => {
-    const model = composeHouse(sceneHouse({ parts: MANSION }));
-    const core = coreBox(model.rooms);
-    expect(core).not.toBeNull();
-    const hearth = model.rooms.find((r) => r.roomId === 'hut:hearth');
-    const west = model.rooms.find((r) => r.roomId.startsWith('west-wing:'));
-    if (core === null || hearth === undefined || west === undefined) throw new Error('rooms');
-    expect(core.x).toBeLessThanOrEqual(hearth.x);
-    expect(core.x + core.w).toBeLessThanOrEqual(west.x === undefined ? 0 : model.width);
-    // The wings and the grounds are outside it.
-    expect(core.x).toBeGreaterThanOrEqual(west.x + west.w - 4);
-    expect(coreBox([])).toBeNull();
+describe('the walls skin', () => {
+  const frontOf = (walls: string, parts = COTTAGE): SceneModel =>
+    composeHouse(sceneHouse({ parts, walls }));
+
+  it('changes the picture of the house: the tiles of the cut edges and the plinth are the chosen skin', () => {
+    const plaster = frontOf('plaster');
+    const timber = frontOf('timber');
+    expect(plaster.front.length).toBe(timber.front.length);
+    const differing = timber.front.filter((p, i) => p.sprite !== plaster.front[i]?.sprite);
+    expect(differing.length).toBeGreaterThan(10);
   });
 
-  it('shows the whole house when it fits at scale 3, else at 2, else centres it at 3; a phone is 2', () => {
+  it('draws the outer wall of the building as a thick band that grows outwards, and an inner wall as before', () => {
+    const model = frontOf('timber');
+    const left = model.rooms.reduce((a, r) => (r.x < a.x ? r : a));
+    // The band's outer ink sits OUTER_SKIN px outside the cell edge, and the room box starts 2 px outside the room's inner face; nothing in the scene is drawn further out.
+    const inks = model.front.filter(
+      (p) =>
+        p.w === undefined &&
+        spriteSize(p.sprite).width === 1 &&
+        spriteSize(p.sprite).height === CELL_H,
+    );
+    const outerInk = Math.min(...inks.map((p) => p.x));
+    expect(outerInk).toBe(left.x + 2 - OUTER_SKIN);
+    // A wall between two rooms keeps its four pixels: no ink column is closer than that to another.
+    expect(model.rooms.length).toBeGreaterThan(1);
+  });
+
+  it('puts a plinth of the skin along the ground line under the ground floor', () => {
+    const model = frontOf('fieldstone', HUT);
+    const plinth = model.front.filter(
+      (p) =>
+        p.y >= model.groundY - 4 &&
+        p.y <= model.groundY + 3 &&
+        (p.w ?? spriteSize(p.sprite).width) >= 8 &&
+        spriteSize(p.sprite).height >= 2,
+    );
+    expect(plinth.length).toBeGreaterThan(0);
+  });
+});
+
+describe('where the overview starts', () => {
+  it('uses the largest whole scale that fits the house: at most 3 wide, 2 on a phone, down to 1', () => {
     expect(overviewScale(924, 260)).toEqual({ scale: 3, fits: true });
+    // It goes smaller, never bigger, when the house does not fit at 2.
     expect(overviewScale(924, 400)).toEqual({ scale: 2, fits: true });
-    expect(overviewScale(924, 1428)).toEqual({ scale: 3, fits: false });
-    expect(overviewScale(340, 260)).toEqual({ scale: 2, fits: false });
+    expect(overviewScale(924, 600)).toEqual({ scale: 1, fits: true });
+    expect(overviewScale(340, 160)).toEqual({ scale: 2, fits: true });
+    expect(overviewScale(390, 300)).toEqual({ scale: 1, fits: true });
     expect(overviewScale(700, 232)).toEqual({ scale: 3, fits: true });
+  });
+
+  it('draws at the phone scale, not whole, when nothing fits; a tall house is not whole in a short box', () => {
+    expect(overviewScale(924, 1428)).toEqual({ scale: 2, fits: false });
+    expect(overviewScale(390, 900)).toEqual({ scale: 2, fits: false });
+    expect(overviewScale(924, 260, 400, 300)).toEqual({ scale: 3, fits: false });
+    expect(overviewScale(924, 260, 90, 300)).toEqual({ scale: 3, fits: true });
+  });
+
+  it('shows a house that fits whole, and centres one that does not on the building with the grass near the bottom', () => {
+    const small = composeHouse(sceneHouse({ parts: ['hut'] }), { minWidth: 195 });
+    expect(overviewScroll(small, 2, 390, small.height * 2)).toEqual({ left: 0, top: 0 });
+    const model = composeHouse(sceneHouse({ parts: MANSION }));
+    const scale = 2;
+    const at = overviewScroll(model, scale, 390, 400);
+    expect(at.left).toBe(Math.round((model.box.x + model.box.w / 2) * scale - 195));
+    // The grass line is in the view, near its bottom.
+    const grass = model.groundY * scale - at.top;
+    expect(grass).toBeLessThanOrEqual(400);
+    expect(grass).toBeGreaterThan(400 - 40);
+    // A box taller than the picture does not scroll.
+    expect(overviewScroll(model, scale, 390, model.height * scale + 50).top).toBe(0);
   });
 });
 

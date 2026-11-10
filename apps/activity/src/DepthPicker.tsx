@@ -1,5 +1,5 @@
 import { isLandmark } from '@creatures/game';
-import { useEffect, useRef, useState } from 'preact/hooks';
+import { useRef, useState } from 'preact/hooks';
 import { GlossaryTag } from './Glossary';
 import { depthName, depthPickNote, depthScalarChips, depthSpoken } from './dungeon-depth';
 import { glyphOrUnknown } from './glyphs';
@@ -7,6 +7,7 @@ import { Sprite } from './sprites/Sprite';
 import { DropChevron } from './ui/DropChevron';
 import { DropList } from './ui/DropList';
 import { PreviewStatus } from './ui/PreviewStatus';
+import { useRovingList } from './ui/use-roving-list';
 import type { PreviewStatusName } from './use-job-preview';
 
 /**
@@ -50,44 +51,23 @@ function DepthList({
   picked: number;
   onPick: (depth: number) => void;
 }) {
-  const listRef = useRef<HTMLUListElement>(null);
   const depths = Array.from({ length: own }, (_, i) => own - i);
-  const [active, setActive] = useState(own - picked);
-  function focusOption(index: number, center: boolean): void {
-    setActive(index);
-    const el = listRef.current?.querySelectorAll<HTMLElement>('[role="option"]')[index];
-    if (el === undefined) return;
-    if (center) el.scrollIntoView?.({ block: 'center' });
-    el.focus({ preventScroll: center });
-  }
-  useEffect(() => {
-    focusOption(active, true);
-  }, []);
-  function onKey(event: KeyboardEvent): void {
-    const last = depths.length - 1;
-    const keys: Record<string, number> = {
-      ArrowDown: Math.min(last, active + 1),
-      ArrowUp: Math.max(0, active - 1),
-      Home: 0,
-      End: last,
-    };
-    const to = keys[event.key];
-    if (to !== undefined) {
-      event.preventDefault();
-      focusOption(to, false);
-    } else if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      const depth = depths[active];
+  const { listRef, active, onKeyDown } = useRovingList({
+    count: depths.length,
+    initial: own - picked,
+    center: true,
+    onChoose: (index) => {
+      const depth = depths[index];
       if (depth !== undefined) onPick(depth);
-    }
-  }
+    },
+  });
   return (
     <ul
       ref={listRef}
       class="roster-list depth-list"
       role="listbox"
       aria-label="Depths, deepest first"
-      onKeyDown={onKey}
+      onKeyDown={onKeyDown}
     >
       {depths.map((depth, index) => (
         <li

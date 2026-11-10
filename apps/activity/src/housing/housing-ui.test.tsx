@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { byClass, byName, createPage, type Page } from '../test-dom';
 import { viewOf } from '../valley/valley-nav';
 import { HouseRows, houseRowLines, YourHouseRow } from './HouseRows';
-import { HouseScene } from './HouseScene';
+import { HouseScene, roomLabel } from './HouseScene';
 import { RoomFocus, focusScale, spotLayers } from './RoomFocus';
 import { placedNames, standsAt } from './HousePlace';
 import { defaultHouseScale } from './HouseScene';
@@ -16,6 +16,7 @@ import {
   afterPlace,
   afterSeen,
   afterSkin,
+  freshFinds,
   hasFresh,
   stableJson,
   HouseActionIds,
@@ -129,6 +130,32 @@ describe('HouseScene', () => {
     expect(Reflect.get(view, 'scrollLeft')).toBe(200);
   });
 
+  it('says who is asleep in a room on its button, and the whole house as a postcard when the cutaway cannot show it', () => {
+    stubWindow();
+    page = createPage();
+    page.draw(
+      <HouseScene
+        house={sceneHouse({ parts: MANSION, housemates: 1 })}
+        mode="own"
+        onRoom={() => undefined}
+      />,
+    );
+    const names = byClass(page.root, 'house-room').map((r) => r.getAttribute('aria-label') ?? '');
+    expect(names.some((n) => / asleep$/.test(n))).toBe(true);
+    // The mansion is wider than a phone at any scale of 2 or 1: the postcard shows all of it above.
+    expect(byClass(page.root, 'house-postcard-band')).toHaveLength(1);
+    expect(roomLabel('Loft', [])).toBe('Loft');
+  });
+
+  it('shows no postcard when the cutaway shows the whole house', () => {
+    stubWindow();
+    page = createPage();
+    page.draw(
+      <HouseScene house={sceneHouse({ parts: HUT })} mode="own" onRoom={() => undefined} />,
+    );
+    expect(byClass(page.root, 'house-postcard-band')).toHaveLength(0);
+  });
+
   it('uses whole scales only: 2 on a phone, 3 from 700 px', () => {
     expect(defaultHouseScale(390)).toBe(2);
     expect(defaultHouseScale(699)).toBe(2);
@@ -230,7 +257,8 @@ describe('the rows', () => {
 
   it('say what is next at each place', () => {
     const lines = houseRowLines(house, own, 7);
-    expect(lines.build).toMatch(/^House: \d+ \/ \d+ lines paid$/);
+    expect(lines.build).toBe('next: House');
+    expect(lines.buildPips?.total).toBeGreaterThan(0);
     expect(lines.mailbox).toBe('2 gifts waiting');
     expect(lines.pip).toBe(true);
     expect(lines.visits).toBe('7 houses');
@@ -272,6 +300,31 @@ describe('the rows', () => {
 describe('the valley', () => {
   it('draws the house tab as the House place with the house book', () => {
     expect(viewOf('house', 'valley')).toEqual({ kind: 'place', place: 'house', book: 'house' });
+  });
+});
+
+describe('finds since the last look', () => {
+  const own = sceneOwn(sceneHouse());
+  it('says nothing on the first open, when every material is new', () => {
+    expect(
+      freshFinds(
+        { ...own, materials: { oak: { have: 3, fresh: 3 }, glass: { have: 2, fresh: 2 } } },
+        1,
+      ),
+    ).toEqual([]);
+  });
+
+  it('lists the materials that grew since the player last looked', () => {
+    expect(
+      freshFinds(
+        { ...own, materials: { oak: { have: 9, fresh: 2 }, glass: { have: 4, fresh: 0 } } },
+        1,
+      ),
+    ).toEqual([{ id: 'oak', n: 2 }]);
+    // A player who has built something has looked before.
+    expect(freshFinds({ ...own, materials: { oak: { have: 3, fresh: 3 } } }, 2)).toEqual([
+      { id: 'oak', n: 3 },
+    ]);
   });
 });
 

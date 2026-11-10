@@ -31,25 +31,11 @@ interface TagProps {
   label?: string;
   /** Where it is used (extra look for one place); never the colour. */
   class?: string;
-  /**
-   * A chip that does something (the house's wallpaper and floor chips open their picker): it is drawn as a button, the same
-   * pill. Give it a `label` (its spoken name). Not with an `entry`: a glossary tag already opens something.
-   */
-  onClick?: () => void;
   children?: ComponentChildren;
 }
 
-/** The one small pill of the game: a tag, a badge or a chip, tappable when it has a glossary entry or an `onClick`. */
-export function Tag({
-  kind = 'tag',
-  tone,
-  entry,
-  icon,
-  label,
-  class: extra,
-  onClick,
-  children,
-}: TagProps) {
+/** The one small pill of the game: a tag, a badge or a chip, tappable when it has a glossary entry. */
+export function Tag({ kind = 'tag', tone, entry, icon, label, class: extra, children }: TagProps) {
   const classes = [kind, tone, extra].filter((c) => c !== undefined && c !== '').join(' ');
   const content =
     kind === 'chip' ? (
@@ -60,18 +46,6 @@ export function Tag({
     ) : (
       children
     );
-  if (entry === undefined && onClick !== undefined) {
-    return (
-      <button
-        type="button"
-        class={`${classes} chip-button`}
-        {...(label === undefined ? {} : { 'aria-label': label })}
-        onClick={onClick}
-      >
-        {content}
-      </button>
-    );
-  }
   if (entry === undefined) return <span class={classes}>{content}</span>;
   return (
     <GlossaryTag

@@ -5,7 +5,7 @@ import { Tag } from '../ui/Tag';
 
 /**
  * The card under a picture grid for the chosen thing (`SupplyCrafting`'s pattern): its picture, name and set, how many
- * copies are free, and one main button with its reason. The spot picker and the skin picker both end in it.
+ * copies are free (nothing when none are), and one main button with its reason. The spot picker and the skin picker both end in it.
  */
 export function PickCard({
   picture,
@@ -13,6 +13,7 @@ export function PickCard({
   set,
   free,
   iconId,
+  between,
   action,
 }: {
   picture: ComponentChildren;
@@ -22,6 +23,8 @@ export function PickCard({
   free?: number | undefined;
   /** The item id of the badge's picture. */
   iconId?: string | undefined;
+  /** Something about the chosen thing that sits above the button (a bed's sleeper). */
+  between?: ComponentChildren;
   action: { label: string; detail?: string | undefined; disabled: boolean; onClick: () => void };
 }) {
   return (
@@ -33,7 +36,7 @@ export function PickCard({
         <span class="hp-pick-text">
           <span class="hp-pick-name pix">{name}</span>
           {set !== null && <Tag>{set}</Tag>}
-          {free !== undefined && iconId !== undefined && (
+          {free !== undefined && free > 0 && iconId !== undefined && (
             <CountBadge
               icon={{ kind: 'house', id: iconId }}
               amount={free}
@@ -43,6 +46,7 @@ export function PickCard({
           )}
         </span>
       </div>
+      {between}
       <ActionButton
         wide
         label={action.label}

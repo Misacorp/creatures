@@ -38,6 +38,8 @@ export interface RecipeGroup {
   recipes: RecipeView[];
   /** Recipes that can be made right now. */
   ready: number;
+  /** The pieces of the set (or of the wild or garden pieces) the player owns, and how many there are: the catalogue's "3 / 9". Null for the skins. */
+  held: { owned: number; total: number } | null;
 }
 
 const OUTDOOR_SPOTS: ReadonlySet<SpotType> = new Set([
@@ -124,7 +126,11 @@ export function workbenchGroups(own: OwnHouseView): RecipeGroup[] {
     const skin = housing.skins.find((s) => s.id === skinId);
     return skin !== undefined && skin.kind !== 'ground' && known.has(skinId);
   };
-  const groups: { id: string; title: string; recipes: RecipeView[] }[] = [];
+  const groups: Omit<RecipeGroup, 'ready'>[] = [];
+  const heldOf = (pieces: readonly { id: string }[]): { owned: number; total: number } => ({
+    owned: pieces.filter((p) => (own.items.pieces[p.id] ?? 0) > 0).length,
+    total: pieces.length,
+  });
   for (const set of housing.sets) {
     groups.push({
       id: set.id,
@@ -137,6 +143,7 @@ export function workbenchGroups(own: OwnHouseView): RecipeGroup[] {
           .filter((s) => s.set === set.id && makeable(s.id))
           .map((s) => skinRecipe(s.id)),
       ],
+      held: heldOf(housing.pieces.filter((p) => p.set === set.id)),
     });
   }
   const formSpot = new Map(housing.forms.map((f) => [f.id, f.spot]));
@@ -149,11 +156,13 @@ export function workbenchGroups(own: OwnHouseView): RecipeGroup[] {
     id: 'wild',
     title: 'Wild pieces',
     recipes: loose.filter((p) => !outdoor(p.form)).map((p) => pieceRecipe(p.id)),
+    held: heldOf(housing.pieces.filter((p) => p.set === null && !outdoor(p.form))),
   });
   groups.push({
     id: 'garden',
     title: 'Garden and pool',
     recipes: loose.filter((p) => outdoor(p.form)).map((p) => pieceRecipe(p.id)),
+    held: heldOf(housing.pieces.filter((p) => p.set === null && outdoor(p.form))),
   });
   groups.push({
     id: 'exterior',
@@ -161,6 +170,7 @@ export function workbenchGroups(own: OwnHouseView): RecipeGroup[] {
     recipes: housing.skins
       .filter((s) => s.set === null && makeable(s.id))
       .map((s) => skinRecipe(s.id)),
+    held: null,
   });
   return groups
     .filter((g) => g.recipes.length > 0)

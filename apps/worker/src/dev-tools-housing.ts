@@ -145,6 +145,8 @@ function furnishGuest(ctx: ToolCtx, guest: string, c: HousingContent): void {
   // Furniture: a copy is granted for every piece that is placed.
   const beds = new Map<string, boolean>();
   let sleeper = false;
+  // Pieces already placed in this house: the next spot takes one that is not, so a garden is not one arbour many times.
+  const used = new Set<string>();
   const creature = sql
     .exec<{ id: string }>('SELECT id FROM creatures WHERE user_id = ? LIMIT 1', guest)
     .toArray()[0]?.id;
@@ -163,8 +165,10 @@ function furnishGuest(ctx: ToolCtx, guest: string, c: HousingContent): void {
         const isBed = c.forms.find((f) => f.id === p.form)?.bed === true;
         return !isBed || beds.get(row.room_id) !== true;
       });
-      const piece = pick(ctx, fits);
+      const fresh = fits.filter((p) => !used.has(p.id));
+      const piece = pick(ctx, fresh.length > 0 ? fresh : fits);
       if (piece === undefined) continue;
+      used.add(piece.id);
       addItem(sql, guest, 'piece', piece.id, 1, 0, now);
       const isBed = c.forms.find((f) => f.id === piece.form)?.bed === true;
       if (isBed) beds.set(row.room_id, true);

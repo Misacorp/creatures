@@ -16,16 +16,6 @@
   font-size: var(--fs-row);
 }
 
-/* What the player holds, above the things it is spent on. */
-.hp-holdings {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem 0.5rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
 /* --- Build --- */
 .hp-part {
   display: grid;
@@ -161,18 +151,21 @@
   font-size: var(--fs-heading);
 }
 
-.hp-sleeper-section {
+/* A set's run of tiles in the spot picker, with the set's name as a small label above it. */
+.hp-spot {
   display: grid;
-  gap: 0.25rem;
+  gap: 1rem;
 }
 
-.hp-sleeper-title {
+.hp-set-group {
+  display: grid;
+  gap: 0.125rem;
+}
+
+.hp-set-label {
   margin: 0;
-  font-size: var(--fs-heading);
-}
-
-.hp-sleeper {
-  grid-template-columns: auto 1fr auto;
+  color: var(--haze);
+  font-size: var(--fs-small, 0.75rem);
 }
 
 /* --- Catalogue --- */
@@ -278,9 +271,28 @@
   height: var(--ph);
 }
 
+/* In a row: the row's picture box, the whole house fitted into it with its own shape (never stretched). */
+.hp-postcard.fit {
+  width: 100%;
+  height: 100%;
+}
+
+.hp-postcard-row {
+  display: block;
+  flex: none;
+  width: 5.5rem;
+  height: 3.5rem;
+}
+
+.vy-row-muted .hp-preview {
+  opacity: 0.6;
+}
+
 .hp-postcard canvas {
   display: block;
   width: 100%;
   height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
   image-rendering: pixelated;
 }

@@ -2,15 +2,12 @@ import type { HousePay, HouseView, OwnHouseView } from '@creatures/game';
 import type { ComponentChildren } from 'preact';
 import { useState } from 'preact/hooks';
 import { PlaceRow } from '../valley/PlacesList';
-import { Accordion } from '../ui/Accordion';
 import { Alert } from '../ui/Alert';
-import { CountBadge } from '../ui/CountBadge';
+import { ShortOfLine } from '../ui/CountBadge';
 import { GameIcon } from '../ui/GameIcon';
 import { PipRow } from '../ui/PipRow';
 import { RecipeCard } from '../ui/RecipeCard';
-import { Switch } from '../ui/Switch';
-import { lockedParts, partCards, type PartCard } from './build-view';
-import { HoldingsStrip } from './HoldingsStrip';
+import { lockedParts, partCards, type LockedPart, type PartCard } from './build-view';
 
 export interface BuildPanelProps {
   house: HouseView;
@@ -19,7 +16,7 @@ export interface BuildPanelProps {
   busy: boolean;
   /** A refusal of the last payment, in words, or null. */
   error: string | null;
-  /** "Pay in" was pressed for this part with this payment (what the player holds of each line that is on). */
+  /** "Pay in" was pressed for this part with this payment (what the player holds of each line, up to the price). */
   onPay: (partId: string, pay: HousePay) => void;
   /** The part whose page is open, or null for the list of parts (the host keeps it, so its Back and title follow). */
   open?: string | null | undefined;
@@ -29,64 +26,90 @@ export interface BuildPanelProps {
   renderPreview?: ((partId: string, size: 'row' | 'page') => ComponentChildren) | undefined;
 }
 
-/** One part's page: its picture, what is still owed (have / need), "Pay in", and a fold to hold a line back. */
+/** The pips of a part's price: one per line, lit when paid. */
+function PartPips({ total, paid, name }: { total: number; paid: number; name: string }) {
+  return (
+    <PipRow
+      count={total}
+      lit={paid}
+      label={`${name}: ${String(paid)} / ${String(total)} lines paid into`}
+    />
+  );
+}
+
+/**
+ * One part's page: its picture, its pips (a first payment lights one), what is still owed (have / need) and "Pay in", which
+ * takes what the player holds up to the price. With nothing to pay in the button gives way to what the player has against
+ * what the first line costs.
+ */
 function PartPage({
   card,
   busy,
   preview,
-  onToggle,
   onPay,
-  own,
 }: {
   card: PartCard;
   busy: boolean;
   preview: ComponentChildren;
-  onToggle: (key: string, on: boolean) => void;
   onPay: () => void;
-  own: OwnHouseView;
 }) {
   return (
     <section class="hp-part" aria-label={card.name}>
       <p class="hp-part-line">{card.line}</p>
       {preview}
-      <HoldingsStrip own={own} />
+      <PartPips total={card.lines.total} paid={card.lines.paid} name={card.name} />
+      {card.short === null ? (
+        <RecipeCard
+          inputs={card.inputs}
+          outputs={[]}
+          actionLabel="Pay in"
+          busy={busy}
+          onStart={onPay}
+        />
+      ) : (
+        <>
+          <RecipeCard
+            inputs={card.inputs}
+            outputs={[]}
+            actionLabel="Pay in"
+            compact
+            onStart={onPay}
+          />
+          <p class="reason" role="status">
+            <ShortOfLine short={card.short} />
+          </p>
+        </>
+      )}
+    </section>
+  );
+}
+
+/** A part that cannot be built yet, as a goal: its picture, what it needs first (in place of "Pay in"), and its price. */
+function LockedPage({ part, preview }: { part: LockedPart; preview: ComponentChildren }) {
+  return (
+    <section class="hp-part" aria-label={part.name}>
+      <p class="hp-part-line">{part.line}</p>
+      {preview}
+      <PartPips total={part.lines} paid={0} name={part.name} />
       <RecipeCard
-        inputs={card.inputs}
+        inputs={part.inputs}
         outputs={[]}
         actionLabel="Pay in"
-        disabledReason={card.reason}
-        busy={busy}
-        onStart={onPay}
+        compact
+        onStart={() => undefined}
       />
-      {card.switches.length > 1 && (
-        <Accordion title="Hold something back" variant="compact" headingLevel={4}>
-          <ul class="hp-switches">
-            {card.switches.map((line) => (
-              <li key={line.key}>
-                <Switch
-                  on={line.on}
-                  label=""
-                  spoken={`Pay ${line.item.label ?? line.key}`}
-                  onChange={(on) => {
-                    onToggle(line.key, on);
-                  }}
-                >
-                  <CountBadge size="inline" {...line.item} />
-                </Switch>
-              </li>
-            ))}
-          </ul>
-        </Accordion>
-      )}
+      <p class="reason" role="status">
+        {part.reason}
+      </p>
     </section>
   );
 }
 
 /**
  * The parts of the house as rows (a small picture, the name, a pip per line of the price, lit when paid): a tap opens the
- * part's page with what is still owed on it and "Pay in" (what the player holds of every line, minus the lines switched off).
- * The parts that cannot be built yet follow, muted, with their reason. Data in, callbacks out: it fetches nothing. The open
- * part is the host's (`open`, `onOpen`); without a host it keeps its own.
+ * part's page with what is still owed on it and "Pay in" (what the player holds of every line, up to the price). The parts
+ * that cannot be built yet follow, muted, and open a page too: their picture, their price and what they need first. Data in,
+ * callbacks out: it fetches nothing. The open part is the host's (`open`, `onOpen`); without a host it keeps its own.
  */
 export function BuildPanel({
   house,
@@ -98,65 +121,57 @@ export function BuildPanel({
   onOpen,
   renderPreview,
 }: BuildPanelProps) {
-  const [off, setOff] = useState<Record<string, ReadonlySet<string>>>({});
   const [own_open, setOwnOpen] = useState<string | null>(null);
   const shown = open === undefined ? own_open : open;
   const pick = onOpen ?? setOwnOpen;
-  const cards = partCards(own, off);
+  const cards = partCards(own);
   const locked = lockedParts(house, own);
   const card = shown === null ? undefined : cards.find((c) => c.id === shown);
+  const lockedCard = shown === null ? undefined : locked.find((c) => c.id === shown);
+  const picture = (id: string, size: 'row' | 'page'): ComponentChildren =>
+    renderPreview?.(id, size) ?? <GameIcon icon={{ kind: 'glyph', id: 'house-nav' }} scale={3} />;
   return (
     <div class="hp-panel hp-build">
       {error !== null && <Alert level="alert">{error}</Alert>}
       {card !== undefined ? (
         <PartPage
           card={card}
-          own={own}
           busy={busy}
-          preview={renderPreview?.(card.id, 'page')}
-          onToggle={(key, on) => {
-            setOff((prev) => {
-              const next = new Set(prev[card.id] ?? []);
-              if (on) next.delete(key);
-              else next.add(key);
-              return { ...prev, [card.id]: next };
-            });
-          }}
+          preview={picture(card.id, 'page')}
           onPay={() => {
             onPay(card.id, card.pay);
           }}
         />
+      ) : lockedCard !== undefined ? (
+        <LockedPage part={lockedCard} preview={picture(lockedCard.id, 'page')} />
       ) : (
         <>
           <ul class="vy-rows hp-parts" aria-label="Parts to build">
             {cards.map((part) => (
               <PlaceRow
                 key={part.id}
-                picture={
-                  renderPreview?.(part.id, 'row') ?? (
-                    <GameIcon icon={{ kind: 'glyph', id: 'house-nav' }} scale={3} />
-                  )
-                }
+                picture={picture(part.id, 'row')}
                 name={part.name}
                 aside={
-                  <PipRow
-                    count={part.lines.total}
-                    lit={part.lines.paid}
-                    label={`${String(part.lines.paid)} / ${String(part.lines.total)} lines paid`}
-                  />
+                  <PartPips total={part.lines.total} paid={part.lines.paid} name={part.name} />
                 }
-                label={`${part.name}, ${String(part.lines.paid)} / ${String(part.lines.total)} lines paid`}
+                label={`${part.name}, ${String(part.lines.paid)} / ${String(part.lines.total)} lines paid into`}
                 onClick={() => {
                   pick(part.id);
                 }}
               />
             ))}
             {locked.map((part) => (
-              <li key={part.id} class="vy-row vy-row-muted hp-static">
-                <GameIcon icon={{ kind: 'glyph', id: 'house-nav' }} scale={3} />
-                <span class="vy-row-name pix">{part.name}</span>
-                <span class="vy-row-line">{part.reason}</span>
-              </li>
+              <PlaceRow
+                key={part.id}
+                muted
+                picture={picture(part.id, 'row')}
+                name={part.name}
+                line={part.reason}
+                onClick={() => {
+                  pick(part.id);
+                }}
+              />
             ))}
           </ul>
           {cards.length === 0 && locked.length === 0 && (

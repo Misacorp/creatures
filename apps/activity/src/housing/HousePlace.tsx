@@ -11,17 +11,16 @@
  */
 import type { ComponentChildren } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
-import { housing, resourceName, type HousePay, type HouseView } from '@creatures/game';
+import { housing, type HousePay, type HouseView } from '@creatures/game';
 import type { Creature } from '../api';
 import { useLoaded } from '../use-loaded';
+import { resourceCount } from '../resource-count';
 import { Alert } from '../ui/Alert';
 import { Drawer } from '../ui/Drawer';
 import { DrillHead } from '../ui/DrillHead';
 import { onDrillKey } from '../ui/drill-keys';
-import { FindList, FindRow } from '../ui/FindRow';
-import { GameIcon } from '../ui/GameIcon';
+import { CountBadgeList } from '../ui/CountBadge';
 import { SidePanel } from '../ui/SidePanel';
-import { Tag } from '../ui/Tag';
 import { useWide } from '../ui/wide-layout';
 import { WideLayout } from '../ui/WideLayout';
 import {
@@ -37,10 +36,12 @@ import {
 import { fetchCatalogue, fetchHouses } from './housing-api';
 import { HouseRows, type HouseDrill } from './HouseRows';
 import { HouseScene, type ScrollMemory } from './HouseScene';
-import { itemName, SPOT_NAMES } from './house-text';
+import { SPOT_NAMES } from './house-text';
+import { HousePostcard } from './HousePostcard';
 import { PartPreview } from './PartPreview';
 import { RoomFocus } from './RoomFocus';
-import { hasFresh, useHouse, type OwnHouse } from './use-house';
+import { SkinTrigger } from './SkinTrigger';
+import { freshFinds, hasFresh, useHouse, type OwnHouse } from './use-house';
 import { VisitHouse } from './VisitHouse';
 
 type View =
@@ -112,16 +113,16 @@ export function HousePlace({ creatures, now, onSpent }: HousePlaceProps) {
   // What grew since the player last looked, shown once.
   const [finds, setFinds] = useState<{ id: string; n: number }[] | null>(null);
   const announced = useRef(false);
+  // The part that was just built: the house shows it, with its name and a picture, until the player goes on.
+  const [moment, setMoment] = useState<string | null>(null);
   const state: OwnHouse | null = house.state;
   useEffect(() => {
     if (state === null || announced.current) return;
     announced.current = true;
     if (!hasFresh(state.own)) return;
-    setFinds(
-      Object.entries(state.own.materials)
-        .filter(([, m]) => m.fresh > 0)
-        .map(([id, m]) => ({ id, n: m.fresh })),
-    );
+    // Only what grew since the last look; the first open says nothing (and still marks everything seen).
+    const grown = freshFinds(state.own, state.house.built.length);
+    if (grown.length > 0) setFinds(grown);
     house.actions.seen();
   }, [state === null]);
 
@@ -139,9 +140,13 @@ export function HousePlace({ creatures, now, onSpent }: HousePlaceProps) {
   }
   const { house: view_, own } = state;
 
-  // The part whose page is open in Build (a part that has just been built has no page: the list shows).
+  // The part whose page is open in Build: one to build, or one that waits for another (a goal to look at). A part that has just
+  // been built has no page: the list shows.
   const buildOpen =
-    view.kind === 'drill' && view.drill === 'build' && own.buildable.includes(view.focus ?? '')
+    view.kind === 'drill' &&
+    view.drill === 'build' &&
+    housing.parts.some((p) => p.id === view.focus) &&
+    !view_.built.includes(view.focus ?? '')
       ? view.focus
       : undefined;
   const drillTitle = (drill: HouseDrill): string =>
@@ -167,6 +172,7 @@ export function HousePlace({ creatures, now, onSpent }: HousePlaceProps) {
     } else home();
   };
   const open = (drill: HouseDrill): void => {
+    setMoment(null);
     if (drill === 'visits') list.reload();
     setView({ kind: 'drill', drill, from: view });
   };
@@ -176,7 +182,13 @@ export function HousePlace({ creatures, now, onSpent }: HousePlaceProps) {
   };
 
   const pay = (partId: string, offer: HousePay): void => {
-    void house.actions.build(partId, offer);
+    void house.actions.build(partId, offer).then((done) => {
+      if (done === false || !done.built) return;
+      // The part is built: leave its page, go back to the house and show the new rooms.
+      setPicker(null);
+      setView({ kind: 'home' });
+      setMoment(partId);
+    });
   };
   const mailLabel =
     own.mailbox.gifts === 0
@@ -227,9 +239,7 @@ export function HousePlace({ creatures, now, onSpent }: HousePlaceProps) {
           <MailboxPanel
             mailbox={own.mailbox}
             busy={house.busy}
-            onCollect={() => {
-              void house.actions.collect();
-            }}
+            onCollect={() => house.actions.collect()}
           />
         );
       case 'visits':
@@ -247,7 +257,9 @@ export function HousePlace({ creatures, now, onSpent }: HousePlaceProps) {
   };
 
   // The picker of a spot or a skin.
-  const pickerBody = (p: Picker): { title: string; body: ComponentChildren } | null => {
+  const pickerBody = (
+    p: Picker,
+  ): { title: string; hidden: boolean; body: ComponentChildren } | null => {
     if (p.kind === 'spot') {
       const room = view_.rooms.find((r) => r.id === p.roomId);
       if (room === undefined) return null;
@@ -255,7 +267,9 @@ export function HousePlace({ creatures, now, onSpent }: HousePlaceProps) {
         .find((k) => k.id === room.kind)
         ?.spots.find((s) => s.id === p.spotId);
       return {
+        // The spot's name is spoken, not shown: the tiles under it say what goes there.
         title: spot === undefined ? 'Spot' : SPOT_NAMES[spot.type],
+        hidden: true,
         body: (
           <SpotPicker
             room={room}
@@ -298,6 +312,7 @@ export function HousePlace({ creatures, now, onSpent }: HousePlaceProps) {
     const titles = { wall: 'Wallpaper', floor: 'Floor', roof: 'Roof', walls: 'Walls' } as const;
     return {
       title: titles[p.skin],
+      hidden: false,
       body: (
         <SkinPicker
           kind={p.skin}
@@ -357,14 +372,23 @@ export function HousePlace({ creatures, now, onSpent }: HousePlaceProps) {
     </Alert>
   );
 
+  // The rooms of the part that was just built.
+  const builtRooms =
+    moment === null
+      ? []
+      : (housing.parts.find((p) => p.id === moment)?.rooms ?? []).map((r) => `${moment}:${r.key}`);
   const scene = (
     <>
       <HouseScene
         house={view_}
         mode="own"
         mailboxLabel={mailLabel}
+        mailWaiting={own.mailbox.gifts > 0}
         memory={memory}
+        focusRoom={builtRooms[0] ?? null}
+        reveal={builtRooms}
         onRoom={(id) => {
+          setMoment(null);
           setView({ kind: 'room', roomId: id });
         }}
         onFixture={(kind) => {
@@ -372,47 +396,50 @@ export function HousePlace({ creatures, now, onSpent }: HousePlaceProps) {
         }}
       />
       <div class="house-chips">
-        <Tag
-          kind="chip"
-          icon={{ kind: 'house', id: view_.exterior.roof }}
-          label={`Roof: ${itemName(view_.exterior.roof)}`}
-          onClick={() => {
+        <SkinTrigger
+          kind="roof"
+          id={view_.exterior.roof}
+          onOpen={() => {
             setPicker({ kind: 'skin', skin: 'roof', roomId: null });
           }}
-        >
-          {itemName(view_.exterior.roof)}
-        </Tag>
-        <Tag
-          kind="chip"
-          icon={{ kind: 'house', id: view_.exterior.walls }}
-          label={`Walls: ${itemName(view_.exterior.walls)}`}
-          onClick={() => {
+        />
+        <SkinTrigger
+          kind="walls"
+          id={view_.exterior.walls}
+          onOpen={() => {
             setPicker({ kind: 'skin', skin: 'walls', roomId: null });
           }}
-        >
-          {itemName(view_.exterior.walls)}
-        </Tag>
+        />
       </div>
     </>
   );
 
   const houseHome = (
     <div class="house-home">
-      {finds !== null && (
-        <section class="house-finds" aria-label="Since you last looked">
-          <FindList label="Since you last looked" compact>
-            {finds.map((f) => (
-              <FindRow
-                key={f.id}
-                compact
-                image={<GameIcon icon={{ kind: 'glyph', id: `lux-${f.id}` }} scale={3} />}
-                name={`${resourceName(f.id)} +${String(f.n)}`}
-              />
-            ))}
-          </FindList>
-        </section>
+      {moment !== null && (
+        <Alert
+          level="success"
+          layout="stacked"
+          title={`The ${housing.parts.find((p) => p.id === moment)?.name ?? 'part'} is built`}
+          onDismiss={() => {
+            setMoment(null);
+          }}
+        >
+          <HousePostcard house={view_} maxWidth={180} label="Your house" />
+        </Alert>
       )}
       {scene}
+      {finds !== null && (
+        <CountBadgeList
+          class="house-finds"
+          label="Since you last looked"
+          items={finds.map((f) => ({
+            ...resourceCount(f.id, f.n),
+            amount: `+${String(f.n)}`,
+            spokenAmount: `${String(f.n)} new`,
+          }))}
+        />
+      )}
       <HouseRows
         house={view_}
         own={own}
@@ -455,6 +482,7 @@ export function HousePlace({ creatures, now, onSpent }: HousePlaceProps) {
         <SidePanel
           title={pickerPage.title}
           titleId="house-panel-title"
+          titleHidden={pickerPage.hidden}
           onClose={() => {
             setPicker(null);
           }}
@@ -512,6 +540,7 @@ export function HousePlace({ creatures, now, onSpent }: HousePlaceProps) {
       <Drawer
         open={pickerPage !== null}
         title={pickerPage?.title ?? 'Choose'}
+        titleHidden={pickerPage?.hidden}
         onClose={() => {
           setPicker(null);
         }}

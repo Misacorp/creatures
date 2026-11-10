@@ -4,6 +4,14 @@ Navigation and the frame, Home and the notice board, type scale, shared componen
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-10: Housing screen pass: the whole house, build moment, one pinned action
+
+ID: `2026-11-10-housing-screen-pass-the-whole-house` · Status: current
+
+**Decision.** Amends the overview rule of the housing client entry. The cutaway uses the largest whole scale of 1 or more (at most 2 on a phone, 3 wide) at which the building fits, never a bigger one; when nothing fits it draws at 2 centred on the building with the grass line near the bottom, and the whole house shows above it as a `HousePostcard` (also in the visit list's rows and in the build-complete note). Finishing a part returns to the house with a success `Alert`, the new rooms revealed and focused. A payment takes what the player holds up to the price (no hold-back fold, no holdings strip); a first payment lights a pip (a line paid into counts); with nothing to pay the button gives way to a `ShortOfLine`. A visit pins one action at a time with `PinnedAct` (Gift, then the stamp, then a calm line). Empty spots show a small plus, not a lattice of dashed outlines. The workbench shows a set's pieces as pictures over one card. The catalogue has four tabs (the garden pieces are groups of Furniture) and the workbench shows the same made / total per set. A fresh account starts with the 18 Cosy pieces, the starter skins and stamp and 28 known blueprints (27 / 196 found): the larger numbers in the first walk came from the dev grant.
+
+**Reasoning.** An independent review of the first screens found a tall house opening on bare wallpaper, no moment when a part finished, and a lot of boxes (cards in a list, holdings strips, two buttons). Each change takes a box away or shows the thing itself: the whole house, the new rooms, the next action. The new-account numbers match the design (housing.md section 1), so no server rule changed.
+
 ## 2026-11-10: Housing client: the build list is rows of parts, a piece moves by emptying then placing, the overview starts on the core
 
 ID: `2026-11-10-housing-client-the-build-list-is` · Status: current

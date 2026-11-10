@@ -80,7 +80,7 @@ describe('BuildPanel', () => {
     );
     const rows = byClass(p.root, 'vy-row');
     expect(rows.length).toBeGreaterThan(2);
-    const cellar = first(byName(p.root, 'button', /^Cellar, \d \/ \d lines paid$/));
+    const cellar = first(byName(p.root, 'button', /^Cellar, \d \/ \d lines paid into$/));
     expect(byClass(cellar, 'pips')).toHaveLength(1);
     // No Pay in on the list, and no fold: the part's page has them.
     expect(byName(p.root, 'button', 'Pay in')).toHaveLength(0);
@@ -152,9 +152,55 @@ describe('BuildPanel', () => {
         open="cottage"
       />,
     );
-    expect(visibleText(none.root)).toContain('Nothing to pay in yet.');
-    expect(first(byName(none.root, 'button', 'Pay in')).hasAttribute('disabled')).toBe(true);
+    // Nothing to pay in: no disabled button, the line says what the player has against what the first line costs.
+    expect(byName(none.root, 'button', 'Pay in')).toHaveLength(0);
+    expect(visibleText(none.root)).toContain('You have 0; this costs 75.');
     expect(byRole(none.root, 'alert')).toHaveLength(1);
+  });
+
+  it('lights a pip on the part page for a line already paid, and has no fold to hold a line back', () => {
+    const own = sampleOwn('rich');
+    const p = draw(
+      <BuildPanel house={house} own={own} busy={false} error={null} onPay={noop} open="cellar" />,
+    );
+    expect(byClass(p.root, 'pips')).toHaveLength(1);
+    expect(visibleText(p.root)).not.toContain('Hold something back');
+    expect(
+      byRole(p.root, 'img')
+        .map(nameOf)
+        .some((n) => /lines paid/.test(n)),
+    ).toBe(true);
+  });
+
+  it('opens a part that cannot be built yet as a goal: its picture, its price and what it needs, no Pay in', () => {
+    const onOpen = vi.fn();
+    const list = draw(
+      <BuildPanel
+        house={house}
+        own={sampleOwn('rich')}
+        busy={false}
+        error={null}
+        onPay={noop}
+        open={null}
+        onOpen={onOpen}
+      />,
+    );
+    p_click(list, /^Pool/, onOpen);
+    const page = draw(
+      <BuildPanel
+        house={house}
+        own={sampleOwn('rich')}
+        busy={false}
+        error={null}
+        onPay={noop}
+        open="pool"
+        renderPreview={() => <span class="preview-stub" />}
+      />,
+    );
+    expect(visibleText(page.root)).toContain('Needs the Garden first');
+    expect(byName(page.root, 'button', 'Pay in')).toHaveLength(0);
+    expect(byClass(page.root, 'preview-stub')).toHaveLength(1);
+    expect(byClass(page.root, 'recipe-card')).toHaveLength(1);
   });
 
   it('lists what cannot be built yet, muted, with its reason', () => {
@@ -162,7 +208,7 @@ describe('BuildPanel', () => {
       <BuildPanel house={house} own={sampleOwn('rich')} busy={false} error={null} onPay={noop} />,
     );
     const text = visibleText(p.root);
-    expect(text).toContain('Needs the Garden');
+    expect(text).toContain('Needs the Garden first');
     expect(byClass(p.root, 'vy-row-muted').length).toBeGreaterThan(0);
   });
 
@@ -188,6 +234,11 @@ describe('BuildPanel', () => {
     expect(visibleText(p.root)).toContain('Everything is built.');
   });
 });
+
+function p_click(p: ReturnType<typeof draw>, name: RegExp, onOpen: ReturnType<typeof vi.fn>): void {
+  p.click(first(byName(p.root, 'button', name)));
+  expect(onOpen).toHaveBeenCalledWith('pool');
+}
 
 function housingPartIds(): string[] {
   return [
@@ -222,6 +273,38 @@ describe('WorkbenchPanel', () => {
     const enabled = buttons.filter((b) => !b.hasAttribute('disabled'));
     p.click(first(enabled));
     expect(onCraft).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows a set as pictures over one card, and the card follows the picture picked', () => {
+    const onCraft = vi.fn();
+    const p = draw(
+      <WorkbenchPanel
+        own={sampleOwn('rich')}
+        busy={false}
+        error={null}
+        focus="tidepool-stool"
+        onCraft={onCraft}
+      />,
+    );
+    // One card (one Make button), not a card for every recipe of the set.
+    expect(byClass(p.root, 'recipe-card')).toHaveLength(1);
+    expect(byClass(p.root, 'supply-flat').length).toBeGreaterThan(0);
+    const stool = first(byName(p.root, 'button', /^Tidepool Stool/));
+    expect(stool.getAttribute('aria-pressed')).toBe('true');
+    const table = first(byName(p.root, 'button', /^Tidepool Table/));
+    p.click(table);
+    expect(first(byName(p.root, 'button', /^Tidepool Table/)).getAttribute('aria-pressed')).toBe(
+      'true',
+    );
+    expect(byClass(p.root, 'recipe-card')).toHaveLength(1);
+  });
+
+  it('dims a picture that cannot be made now, with the owned count in the corner', () => {
+    const p = draw(
+      <WorkbenchPanel own={sampleOwn('poor')} busy={false} error={null} onCraft={noop} />,
+    );
+    expect(byClass(p.root, 'blocked').length).toBeGreaterThan(0);
+    expect(byClass(p.root, 'supply-count').length).toBeGreaterThan(0);
   });
 
   it('marks a recipe the player is short of and keeps its button off', () => {
@@ -291,10 +374,12 @@ describe('SpotPicker', () => {
     const p = draw(
       <SpotPicker {...props} room={hearth} spotId="floor-small-b" onPlace={onPlace} />,
     );
-    const group = first(byRole(p.root, 'group'));
-    const tiles = byName(group, 'button', /./);
+    const groups = byRole(p.root, 'group');
+    const tiles = groups.flatMap((g) => byName(g, 'button', /./));
     expect(nameOf(first(tiles)).startsWith('Empty')).toBe(true);
-    p.click(first(byName(group, 'button', /^Cosy Chair/)));
+    // The set's name is a small label over its run of tiles.
+    expect(visibleText(p.root)).toContain('Cosy');
+    p.click(first(byName(p.root, 'button', /^Cosy Chair/)));
     p.click(first(byName(p.root, 'button', /^Place here/)));
     expect(onPlace).toHaveBeenCalledWith('cosy-chair');
   });
@@ -396,6 +481,18 @@ describe('MailboxPanel', () => {
     expect(onCollect).toHaveBeenCalledTimes(1);
   });
 
+  it('shows what came in, "+N", with the givers\' names, once the server took the gifts', async () => {
+    const onCollect = vi.fn(() => Promise.resolve(true));
+    const mailbox = sampleOwn('rich').mailbox;
+    const p = draw(<MailboxPanel mailbox={mailbox} busy={false} onCollect={onCollect} />);
+    p.click(first(byName(p.root, 'button', /^Collect/)));
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(visibleText(p.root)).toContain(`+${String(mailbox.acorns)}`);
+    expect(visibleText(p.root)).toContain('from ');
+    expect(visibleText(p.root)).toContain('Mika');
+  });
+
   it('says so with no button when nothing waits, and is off while busy', () => {
     const p = draw(
       <MailboxPanel mailbox={sampleOwn('empty').mailbox} busy={false} onCollect={noop} />,
@@ -479,49 +576,68 @@ describe('StampPicker', () => {
     expect(onStamp).toHaveBeenCalledWith('paw-print');
   });
 
-  it("is off and says Stamped today after the day's stamp", () => {
-    const p = draw(<StampPicker owned={['paw-print']} used busy={false} onStamp={noop} />);
-    const trigger = first(byName(p.root, 'button', 'Stamped today'));
-    expect(trigger.hasAttribute('disabled')).toBe(true);
+  it("is a calm line, never a disabled button, after the day's stamp and with no stamps held", () => {
+    const used = draw(<StampPicker owned={['paw-print']} used busy={false} onStamp={noop} />);
+    expect(visibleText(used.root)).toContain('Stamped today');
+    expect(byName(used.root, 'button', /./)).toHaveLength(0);
+    const none = draw(<StampPicker owned={[]} used={false} busy={false} onStamp={noop} />);
+    expect(visibleText(none.root)).toContain('No stamps yet');
+    expect(byName(none.root, 'button', /./)).toHaveLength(0);
   });
 });
 
 describe('GiftButton', () => {
-  it('has three states: ready, given here today, given elsewhere today', () => {
+  it('is the gold Gift button saying what it gives, then a calm line once the gift is used', () => {
     const onGift = vi.fn();
     const ready = draw(
       <GiftButton
         today={{ gifted: false, stamped: false }}
         giftLeft
         busy={false}
+        owner="Anna"
         onGift={onGift}
       />,
     );
-    ready.click(first(byName(ready.root, 'button', 'Gift')));
+    const button = first(byName(ready.root, 'button', /^Gift/));
+    expect(nameOf(button)).toContain('+5 for Anna');
+    ready.click(button);
     expect(onGift).toHaveBeenCalledTimes(1);
     const here = draw(
       <GiftButton
         today={{ gifted: true, stamped: false }}
         giftLeft={false}
         busy={false}
+        owner="Anna"
         onGift={onGift}
       />,
     );
-    expect(first(byName(here.root, 'button', /Given today/)).hasAttribute('disabled')).toBe(true);
+    expect(visibleText(here.root)).toContain('Gift given today');
+    expect(byName(here.root, 'button', /./)).toHaveLength(0);
     const elsewhere = draw(
       <GiftButton
         today={{ gifted: false, stamped: false }}
         giftLeft={false}
         busy={false}
+        owner="Anna"
         onGift={onGift}
       />,
     );
-    expect(
-      first(byName(elsewhere.root, 'button', /Given elsewhere today/)).hasAttribute('disabled'),
-    ).toBe(true);
+    expect(visibleText(elsewhere.root)).toContain('Gift given elsewhere today');
+    expect(byName(elsewhere.root, 'button', /./)).toHaveLength(0);
+  });
+
+  it('ignores a press while a request runs', () => {
+    const onGift = vi.fn();
     const busy = draw(
-      <GiftButton today={{ gifted: false, stamped: false }} giftLeft busy onGift={onGift} />,
+      <GiftButton
+        today={{ gifted: false, stamped: false }}
+        giftLeft
+        busy
+        owner="Anna"
+        onGift={onGift}
+      />,
     );
-    expect(first(byName(busy.root, 'button', 'Gift')).hasAttribute('disabled')).toBe(true);
+    busy.click(first(byName(busy.root, 'button', /^Gift/)));
+    expect(onGift).not.toHaveBeenCalled();
   });
 });

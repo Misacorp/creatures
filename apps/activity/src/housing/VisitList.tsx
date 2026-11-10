@@ -1,7 +1,8 @@
-import type { HouseListView } from '@creatures/game';
+import { housing, type HouseListView } from '@creatures/game';
 import { Alert } from '../ui/Alert';
 import { PlaceRow } from '../valley/PlacesList';
 import { cut } from './house-names';
+import { HousePostcard } from './HousePostcard';
 
 export interface VisitListProps {
   /** The houses of the server, or null while they load. */
@@ -15,6 +16,12 @@ export interface VisitListProps {
 
 /** A name longer than this is cut with an ellipsis in the row (the spoken name keeps all of it). */
 const NAME_MAX = 22;
+
+/** The roof and walls the list draws a house in (it does not carry the owner's: the first starter ones). */
+const LIST_ROOF =
+  housing.skins.find((k) => k.kind === 'roof' && k.unlock.kind === 'starter')?.id ?? '';
+const LIST_WALLS =
+  housing.skins.find((k) => k.kind === 'walls' && k.unlock.kind === 'starter')?.id ?? '';
 
 /** What the row says about today: "Gift given · Stamped", or nothing. */
 export function todayLine(today: { gifted: boolean; stamped: boolean }): string {
@@ -67,7 +74,16 @@ export function VisitList({ list, failed, onRetry, onOpen }: VisitListProps) {
             return (
               <PlaceRow
                 key={house.userId}
-                glyph="house-nav"
+                picture={
+                  <span class="hp-postcard-row">
+                    <HousePostcard
+                      house={{ parts: house.built, roof: LIST_ROOF, walls: LIST_WALLS }}
+                      maxWidth={88}
+                      label={`${house.name}'s house`}
+                      fit
+                    />
+                  </span>
+                }
                 name={cut(house.name, NAME_MAX)}
                 line={line}
                 label={line === '' ? house.name : `${house.name}, ${line}`}

@@ -4,6 +4,8 @@
  * lines are pure (`houseRowLines`) and read only what the page already holds.
  */
 import { housing, knownBlueprints, type HouseView, type OwnHouseView } from '@creatures/game';
+import { PipRow } from '../ui/PipRow';
+import { linesPaid } from './build-view';
 import { PlaceRow } from '../valley/PlacesList';
 
 export type HouseDrill = 'build' | 'workbench' | 'catalogue' | 'mailbox' | 'visits';
@@ -36,6 +38,8 @@ export function foundCounts(house: HouseView, own: OwnHouseView): { found: numbe
 
 export interface HouseRowLines {
   build: string;
+  /** The next part's price as pips (one per line, lit when paid), or null when everything is built. */
+  buildPips: { total: number; paid: number } | null;
   workbench: string;
   catalogue: string;
   mailbox: string;
@@ -52,18 +56,21 @@ export function houseRowLines(
 ): HouseRowLines {
   const next = own.buildable[0];
   let build = 'everything is built';
+  let buildPips: { total: number; paid: number } | null = null;
   if (next !== undefined) {
     const part = housing.parts.find((p) => p.id === next);
     const total = part?.price.length ?? 0;
     const progress = own.progress.find((p) => p.partId === next);
-    const paid = progress === undefined ? 0 : Math.max(0, total - progress.remaining.length);
-    build = `${partName(next)}: ${String(paid)} / ${String(total)} lines paid`;
+    const paid = part === undefined ? 0 : linesPaid(part.price, progress?.remaining).touched;
+    build = `next: ${partName(next)}`;
+    buildPips = { total, paid };
   }
   const known = knownBlueprints(housing, new Set(own.items.blueprints), new Set(house.built)).size;
   const { found, total } = foundCounts(house, own);
   const gifts = own.mailbox.gifts;
   return {
     build,
+    buildPips,
     workbench: plural(known, 'blueprint known', 'blueprints known'),
     catalogue: `${String(found)} / ${String(total)} found`,
     mailbox: gifts === 0 ? 'no gifts waiting' : plural(gifts, 'gift waiting', 'gifts waiting'),
@@ -91,6 +98,17 @@ export function HouseRows({
         glyph="home"
         name="Build"
         line={lines.build}
+        {...(lines.buildPips === null
+          ? {}
+          : {
+              aside: (
+                <PipRow
+                  count={lines.buildPips.total}
+                  lit={lines.buildPips.paid}
+                  label={`${String(lines.buildPips.paid)} / ${String(lines.buildPips.total)} lines paid into`}
+                />
+              ),
+            })}
         onClick={() => {
           onOpen('build');
         }}

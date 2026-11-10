@@ -47,9 +47,13 @@ const houseScene: Entry = {
   file: 'apps/activity/src/housing/HouseScene.tsx',
   group: 'Creatures & game pieces',
   description:
-    'The player’s house as one cutaway picture on the valley’s grass: a hut, a cottage, a three-floor house or the whole mansion, drawn at an integer scale (2 on a phone, 3 from 700 px) in a box that pans both ways, starting on the Hearth. Every room is a button (tap to focus it); the mailbox is a button in your own house. Housemates sleep in their beds.',
-  controls: { ...common, mode: { kind: 'select', options: ['own', 'visit'] } },
-  defaults: { ...commonDefaults, mode: 'own' },
+    'The player’s house as one cutaway picture on the valley’s grass: a hut, a cottage, a three-floor house or the whole mansion, drawn at the largest whole scale at which the building fits (3 on a wide window, 2 on a phone, down to 1) in a box that pans both ways. A house that fits at no scale is centred on the building with the grass line near the bottom, and the whole house shows above it as a postcard. Every room is a button (tap to focus it, its name says who sleeps in it); the mailbox is a button in your own house and its flag is up when gifts wait. The walls skin shows as a thick band on the cut edges and as a plinth. Housemates sleep in their beds.',
+  controls: {
+    ...common,
+    mode: { kind: 'select', options: ['own', 'visit'] },
+    mail: { kind: 'toggle' },
+  },
+  defaults: { ...commonDefaults, mode: 'own', mail: false },
   presets: [
     { name: 'The hut', props: {} },
     { name: 'The cottage, a housemate', props: { house: 'cottage', housemates: 1 } },
@@ -65,6 +69,7 @@ const houseScene: Entry = {
     <HouseScene
       house={houseOf(p)}
       mode={str(p, 'mode') === 'visit' ? 'visit' : 'own'}
+      mailWaiting={p['mail'] === true}
       onRoom={() => undefined}
       {...(str(p, 'mode') === 'visit' ? {} : { onFixture: () => undefined })}
     />
@@ -101,7 +106,7 @@ const roomFocus: Entry = {
   file: 'apps/activity/src/housing/RoomFocus.tsx',
   group: 'Creatures & game pieces',
   description:
-    'One room of the house at a larger scale (up to 4). In your own house every spot is a button over the picture (an empty one has a dashed outline) and the wallpaper and floor are two chips under it; in a visit pieces and displays are tappable pictures that open a popover. The housemate sleeps in its bed.',
+    'One room of the house at a larger scale (up to 4). In your own house every spot is a button over the picture (an empty one shows a small pixel plus, and a dashed outline only while hovered or focused) and the wallpaper and floor are two dropdown triggers under it; in a visit pieces and displays are tappable pictures that open a popover. The housemate sleeps in its bed.',
   controls: {
     room: { kind: 'select', options: ROOM_OPTIONS },
     housemates: common.housemates,

@@ -27,7 +27,10 @@ export interface SpotChoice {
   id: string;
   kind: SpotChoiceKind;
   name: string;
+  /** The set's name, or null for a piece in no set. */
   set: string | null;
+  /** The set's id, or null: what the picker groups its tiles by. */
+  setId: string | null;
   /** Copies owned and copies not placed (0 for empty and blueprints). */
   owned: number;
   free: number;
@@ -37,13 +40,23 @@ export interface SpotChoice {
   label: string;
 }
 
+/** A run of tiles that share a set (and are all owned, or all still to make): the picker draws the set's name above it. */
+export interface ChoiceGroup {
+  /** The set's name, or null for pieces in no set (and the Empty tile). */
+  label: string | null;
+  choices: SpotChoice[];
+}
+
 export interface SpotView {
   /** The spot's name ("Small floor") and its type. */
   name: string;
   type: string;
   /** The piece the spot holds, or null. */
   current: string | null;
+  /** Every tile in a fixed order: Empty, the pieces owned, then the blueprints; each by set (no set first), then the content's order. */
   choices: SpotChoice[];
+  /** The same tiles in runs by set, for the labels. */
+  groups: ChoiceGroup[];
   /** The spot's piece is a bed: a housemate can sleep in it. */
   bed: boolean;
 }
@@ -76,6 +89,7 @@ export function spotView(room: RoomView, spotId: string, own: OwnHouseView): Spo
     kind: 'empty',
     name: 'Empty',
     set: null,
+    setId: null,
     owned: 0,
     free: 0,
     here: current === null,
@@ -93,6 +107,7 @@ export function spotView(room: RoomView, spotId: string, own: OwnHouseView): Spo
       kind: spare > 0 || here ? 'free' : 'placed',
       name: piece.name,
       set: setName(piece.set),
+      setId: piece.set,
       owned: count,
       free: spare,
       here,
@@ -104,8 +119,6 @@ export function spotView(room: RoomView, spotId: string, own: OwnHouseView): Spo
     };
     (choice.kind === 'free' ? free : placed).push(choice);
   }
-  // The piece in the spot first, then the others with free copies.
-  free.sort((a, b) => Number(b.here) - Number(a.here));
   const known = knownIds(own);
   const blueprints: SpotChoice[] = housing.pieces
     .filter((p) => known.has(p.id) && (own.items.pieces[p.id] ?? 0) === 0 && fits(p.id))
@@ -114,18 +127,34 @@ export function spotView(room: RoomView, spotId: string, own: OwnHouseView): Spo
       kind: 'blueprint' as const,
       name: p.name,
       set: setName(p.set),
+      setId: p.set,
       owned: 0,
       free: 0,
       here: false,
       label: `${p.name}, not made yet`,
     }));
-  return {
-    name,
-    type: def?.type ?? '',
-    current,
-    choices: [empty, ...free, ...placed, ...blueprints],
-    bed: isBed(current),
-  };
+  // A fixed order, so a tile never jumps when it is chosen or placed: the owned pieces (free or placed elsewhere alike), then the
+  // blueprints; each by set (pieces in no set first), then the content's own order.
+  const setIndex = (id: string | null): number =>
+    id === null ? -1 : housing.sets.findIndex((k) => k.id === id);
+  const pieceIndex = new Map(housing.pieces.map((p, i) => [p.id, i]));
+  const byContent = (a: SpotChoice, b: SpotChoice): number =>
+    setIndex(a.setId) - setIndex(b.setId) ||
+    (pieceIndex.get(a.id) ?? 0) - (pieceIndex.get(b.id) ?? 0);
+  const owned_ = [...free, ...placed].sort(byContent);
+  blueprints.sort(byContent);
+  const choices = [empty, ...owned_, ...blueprints];
+  const groups: ChoiceGroup[] = [];
+  const split = owned_.length + 1;
+  let lastKey = '';
+  choices.forEach((choice, i) => {
+    const key = `${i < split ? 'own' : 'make'}:${choice.setId ?? ''}`;
+    const last = groups[groups.length - 1];
+    if (last !== undefined && key === lastKey) last.choices.push(choice);
+    else groups.push({ label: choice.set, choices: [choice] });
+    lastKey = key;
+  });
+  return { name, type: def?.type ?? '', current, choices, groups, bed: isBed(current) };
 }
 
 /** The creature sleeping in this bed, if any. */

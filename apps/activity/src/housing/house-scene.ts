@@ -142,6 +142,8 @@ export interface ComposeOptions {
   creatures?: 'draw' | 'skip';
   /** Parts built on top of the house's own (the build panel's preview); their rooms are empty. */
   extraBuilt?: readonly string[];
+  /** Gifts wait in the mailbox: its flag is up. Otherwise (and in every visit) the flag is down. */
+  mailWaiting?: boolean;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -707,6 +709,7 @@ function drawRoom(
   y: number,
   groundY: number,
   drawing: DisplayDrawing,
+  outer: { left: boolean; right: boolean } = { left: false, right: false },
 ): void {
   const { content } = frame;
   const width = room.w * CELL_W;
@@ -792,7 +795,7 @@ function drawRoom(
     if (art.front !== undefined) front.push({ sprite: art.front, x: px, y: py });
   }
   if (!room.outdoor) {
-    drawWalls(frame, layers, room, x, y, width);
+    drawWalls(frame, layers, x, y, width, outer);
   }
 }
 
@@ -814,23 +817,39 @@ function order(type: SpotType): number {
   }
 }
 
-/** The room's left and right walls: ink, two tile columns, ink; straddling the cell edge. */
+/** How thick the skin of an outer wall is (the cut edge of the building): three times an inner wall's. */
+export const OUTER_SKIN = 6;
+
+/**
+ * The room's left and right walls: ink, the walls skin, ink; straddling the cell edge. An inner wall is two tile columns; the
+ * outer wall of the building (no room beside it on that floor) is a thicker band of the skin, growing outwards, so the walls
+ * the player chose (Timber, Fieldstone) show on the cut edge of the house.
+ */
 function drawWalls(
   frame: Frame,
   layers: Layers,
-  room: GridRoom,
   x: number,
   y: number,
   width: number,
+  outer: { left: boolean; right: boolean },
 ): void {
   const walls = skinArt(frame.house.exterior.walls, 'walls').tile;
-  for (const wx of [x - 2, x + width - 2]) {
-    layers.front.push({ sprite: solid(1, CELL_H, INK), x: wx, y });
-    tileFill(layers.front, walls, wx + 1, y, 2, CELL_H);
-    layers.front.push({ sprite: solid(1, CELL_H, INK), x: wx + 3, y });
+  for (const side of ['left', 'right'] as const) {
+    const wx = side === 'left' ? x - 2 : x + width - 2;
+    const thick = outer[side];
+    const skin = thick ? OUTER_SKIN : 2;
+    // The inner face keeps its place (a room's inside does not shrink); an outer wall grows outwards.
+    const from = side === 'left' ? (thick ? wx + 1 + 2 - skin : wx + 1) : wx + 1;
+    const inkAt = side === 'left' ? [from - 1, wx + 3] : [wx, wx + 1 + skin];
+    layers.front.push({ sprite: solid(1, CELL_H, INK), x: inkAt[0] ?? wx, y });
+    tileFill(layers.front, walls, from, y, skin, CELL_H);
+    layers.front.push({ sprite: solid(1, CELL_H, INK), x: inkAt[1] ?? wx + 3, y });
   }
-  void room;
 }
+
+/** The plinth under the ground floor: a band of the walls skin along the ground line, a little into the lawn. */
+const PLINTH_ABOVE = 4;
+const PLINTH_BELOW = 3;
 
 interface Run {
   from: number;
@@ -999,6 +1018,12 @@ export function composeHouse(
     const glass = roof.run.glass && roof.run.top === 0;
     back.push({ sprite: roofSprite(roofSkin, roof.shape.width, roof.kind, glass), x, y });
   }
+  // A wall with no room beside it on its floor is the building's cut edge: it gets the thick band of the walls skin.
+  const indoorAt = new Set(indoor.map((r) => `${String(r.floor)}:${String(r.col)}`));
+  const outerOf = (room: GridRoom): { left: boolean; right: boolean } => ({
+    left: !indoorAt.has(`${String(room.floor)}:${String(room.col - 1)}`),
+    right: !indoorAt.has(`${String(room.floor)}:${String(room.col + room.w)}`),
+  });
   const drawRoomAt = (room: GridRoom): void => {
     const kind = kinds.get(room.kind);
     if (kind === undefined) return;
@@ -1013,10 +1038,23 @@ export function composeHouse(
       groundY - (room.floor + 1) * CELL_H,
       groundY,
       drawing,
+      room.outdoor ? undefined : outerOf(room),
     );
   };
   for (const room of grid.filter((r) => r.outdoor)) drawRoomAt(room);
   for (const room of [...indoor].sort((a, b) => a.floor - b.floor)) drawRoomAt(room);
+  // The plinth: the walls skin along the ground line under every ground-floor room, ink above and below.
+  const wallsTile = skinArt(house.exterior.walls, 'walls').tile;
+  for (const room of indoor.filter((r) => r.floor === 0)) {
+    const edge = outerOf(room);
+    const left = originX + room.col * CELL_W - (edge.left ? OUTER_SKIN : 2);
+    const right = originX + (room.col + room.w) * CELL_W + (edge.right ? OUTER_SKIN : 2);
+    const top = groundY - PLINTH_ABOVE;
+    const h = PLINTH_ABOVE + PLINTH_BELOW;
+    front.push({ sprite: solid(right - left, 1, INK), x: left, y: top });
+    tileFill(front, wallsTile, left, top + 1, right - left, h - 2);
+    front.push({ sprite: solid(right - left, 1, INK), x: left, y: top + h - 1 });
+  }
 
   // the door and the mailbox
   const fixtures = layers.fixtures;
@@ -1037,7 +1075,7 @@ export function composeHouse(
   const by = groundY + 2 - bh;
   back.push({ sprite: bench, x: yardX, y: by });
   fixtures.push({ kind: 'workbench', roomId: null, x: yardX, y: by, w: bw, h: bh });
-  const mail = shellArt('mailbox');
+  const mail = shellArt(options.mailWaiting === true ? 'mailbox' : 'mailbox-empty');
   const { width: mw, height: mh } = spriteSize(mail);
   const mx = yardX + bw + 6;
   const my = groundY + 2 - mh;
@@ -1253,8 +1291,21 @@ export function partPreview(
     ...(options.drawing === undefined ? {} : { drawing: options.drawing }),
     creatures: 'skip' as const,
   };
-  const before = new Set(composeHouse(house, shared).rooms.map((r) => r.roomId));
-  const model = composeHouse(house, { ...shared, extraBuilt: [partId] });
+  // A part that waits for others is drawn with them built (their rooms are not what it adds).
+  const content = options.content ?? housing;
+  const needs: string[] = [];
+  const collect = (id: string): void => {
+    for (const need of content.parts.find((p) => p.id === id)?.requires ?? []) {
+      if (house.built.includes(need) || needs.includes(need)) continue;
+      needs.push(need);
+      collect(need);
+    }
+  };
+  collect(partId);
+  const before = new Set(
+    composeHouse(house, { ...shared, extraBuilt: needs }).rooms.map((r) => r.roomId),
+  );
+  const model = composeHouse(house, { ...shared, extraBuilt: [...needs, partId] });
   const fresh = model.rooms.filter((r) => !before.has(r.roomId));
   const all = [...model.back, ...model.front];
   if (fresh.length === 0) return { placements: all, width: model.width, height: model.height };
@@ -1272,33 +1323,52 @@ export function partPreview(
   };
 }
 
-/** The parts of the core: where the overview starts. */
-const CORE_PARTS: ReadonlySet<string> = new Set(['hut', 'cottage', 'house']);
-
-/** The box of the core (the hut, cottage and house rooms, one above the other), or null when the model has none. */
-export function coreBox(
-  rooms: readonly SceneRoom[],
-): { x: number; y: number; w: number; h: number } | null {
-  const core = rooms.filter((r) => CORE_PARTS.has(r.roomId.split(':')[0] ?? ''));
-  if (core.length === 0) return null;
-  const x0 = Math.min(...core.map((r) => r.x));
-  const y0 = Math.min(...core.map((r) => r.y));
-  const x1 = Math.max(...core.map((r) => r.x + r.w));
-  const y1 = Math.max(...core.map((r) => r.y + r.h));
-  return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
-}
+/** The scale a phone draws the overview at, and the most a wide window does. */
+export const PHONE_SCALE = 2;
+export const WIDE_SCALE = 3;
 
 /**
- * The scale of the overview for a box `boxWidth` CSS px wide, and whether the whole house is on show. A phone (under 700 px)
- * draws at 2. A wide window draws at 3, or at 2 when the whole house fits at 2 but not at 3; a house that fits at neither
- * stays at 3 and starts centred on the core (`coreBox`).
+ * The scale of the overview for a box `boxWidth` CSS px wide: the largest whole scale of 1 or more, at most 2 on a phone
+ * (under 700 px) and 3 on a wide window, at which a house `houseWidth` scene px wide fits. `fits` says the whole house is on
+ * show: it fits by width and (when `houseHeight` and `boxHeight` are given) by height. A house that fits at no scale draws at
+ * the phone scale with `fits` false: the scene then centres on the building (`overviewScroll`) and the caller shows the
+ * postcard so the player still sees the whole of it.
  */
 export function overviewScale(
   boxWidth: number,
   houseWidth: number,
+  houseHeight = 0,
+  boxHeight = Number.POSITIVE_INFINITY,
 ): { scale: number; fits: boolean } {
-  if (boxWidth < 700) return { scale: 2, fits: houseWidth * 2 <= boxWidth };
-  if (houseWidth * 3 <= boxWidth) return { scale: 3, fits: true };
-  if (houseWidth * 2 <= boxWidth) return { scale: 2, fits: true };
-  return { scale: 3, fits: false };
+  const cap = boxWidth < 700 ? PHONE_SCALE : WIDE_SCALE;
+  for (let scale = cap; scale >= 1; scale--) {
+    if (houseWidth * scale <= boxWidth) return { scale, fits: houseHeight * scale <= boxHeight };
+  }
+  return { scale: PHONE_SCALE, fits: false };
+}
+
+/** How much of the earth shows under the grass line when the overview is placed on the ground (scene px). */
+export const GROUND_MARGIN = 12;
+
+/**
+ * Where the overview's scroll starts for a view `viewWidth` x `viewHeight` CSS px: centred on the building's whole box, and
+ * placed down so the grass line sits near the bottom of the view with as much roof above it as fits. A house that fits is
+ * not scrolled at all (the clamps give 0).
+ */
+export function overviewScroll(
+  model: Pick<SceneModel, 'box' | 'groundY' | 'width' | 'height'>,
+  scale: number,
+  viewWidth: number,
+  viewHeight: number,
+): { left: number; top: number } {
+  const clamp = (n: number, max: number): number =>
+    Math.min(Math.max(0, Math.round(n)), Math.max(0, max));
+  const cx = model.box.x + model.box.w / 2;
+  return {
+    left: clamp(cx * scale - viewWidth / 2, model.width * scale - viewWidth),
+    top: clamp(
+      (model.groundY + GROUND_MARGIN) * scale - viewHeight,
+      model.height * scale - viewHeight,
+    ),
+  };
 }

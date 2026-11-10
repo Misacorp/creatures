@@ -10,20 +10,28 @@ import { housing, type HouseView } from '@creatures/game';
 import { bossSprite } from '../sprites/creature-sprites';
 import { FALLBACK_SILHOUETTE } from '../sprites/creature-sprites';
 import { cssVars } from '../css-vars';
+import { creatureName } from '../game';
 import { useElementWidth } from '../hooks';
 import { PanHint } from '../ui/PanHint';
 import { useDragScroll } from '../ui/use-drag-scroll';
 import { keepsakeArt } from './house-art';
 import { paintPlacements } from './house-paint';
+import { HousePostcard } from './HousePostcard';
 import {
   composeHouse,
-  coreBox,
+  GROUND_MARGIN,
   overviewScale,
+  overviewScroll,
   type DisplayDrawing,
   type Placement,
+  SIDE,
+  type SceneCreature,
   type SceneModel,
 } from './house-scene';
 import { useEffect } from 'preact/hooks';
+
+/** The view is at most this share of the window's height (the stylesheet's 60vh). */
+const VIEW_HEIGHT = 0.6;
 
 /** The width assumed until the box has been measured. */
 const FALLBACK_WIDTH = 390;
@@ -81,13 +89,21 @@ export interface HouseSceneProps {
   onFixture?: (kind: 'mailbox' | 'workbench') => void;
   /** The mailbox's spoken name ("Mailbox, 2 gifts waiting"). */
   mailboxLabel?: string;
+  /** Gifts wait in the mailbox: its flag is up (down otherwise). */
+  mailWaiting?: boolean;
   /**
-   * The integer scale for a box this wide (CSS px). Default (`overviewScale`): 2 on a phone; on a wide window 3, or 2 when the
-   * whole house fits at 2 and not at 3.
+   * The integer scale for a box this wide (CSS px). Default (`overviewScale`): the largest whole scale (2 on a phone, 3 on a wide
+   * window at most) at which the building fits; else 2, centred on the building.
    */
   scaleFor?: (width: number) => number;
   /** Where the box's scroll is kept while a room is open. */
   memory?: ScrollMemory;
+  /** Show the whole house as a postcard above the cutaway when the cutaway cannot (default: yes). */
+  postcard?: boolean;
+  /** A room to bring into view and focus (the part that was just built): the cutaway scrolls to it. */
+  focusRoom?: string | null;
+  /** Rooms that open with a short stepped reveal (the new part); with reduced motion they simply appear. */
+  reveal?: readonly string[];
 }
 
 /** The cutaway: see the file comment. */
@@ -97,24 +113,31 @@ export function HouseScene({
   onRoom,
   onFixture,
   mailboxLabel = 'Mailbox',
+  mailWaiting = false,
   scaleFor,
   memory,
+  postcard,
+  focusRoom = null,
+  reveal = [],
 }: HouseSceneProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<HTMLDivElement>(null);
   const boxWidth = useElementWidth(rootRef, FALLBACK_WIDTH);
-  // How wide the house is by itself: a wide window shows all of it when it fits at scale 2 or more.
+  // How big the house is by itself: the scale is the largest that shows all of it, if any does.
   const natural = useMemo(
-    () =>
-      composeHouse(house, { content: housing, creatures: 'skip', drawing: HOUSE_DRAWING }).width,
+    () => composeHouse(house, { content: housing, creatures: 'skip', drawing: HOUSE_DRAWING }),
     [house],
   );
-  const scale = Math.max(
-    1,
-    Math.floor(
-      scaleFor === undefined ? overviewScale(boxWidth, natural).scale : scaleFor(boxWidth),
-    ),
+  const boxHeight = typeof window === 'undefined' ? 480 : window.innerHeight * VIEW_HEIGHT;
+  // The building is what has to fit (with the grass its door stands on): the workbench and the mailbox in the yard are a pan away.
+  const fit = overviewScale(
+    boxWidth,
+    natural.box.w + 2 * SIDE,
+    natural.box.h + GROUND_MARGIN,
+    boxHeight,
   );
+  const scale = Math.max(1, Math.floor(scaleFor === undefined ? fit.scale : scaleFor(boxWidth)));
+  const wholeInView = scaleFor === undefined ? fit.fits : true;
   const model: SceneModel = useMemo(
     () =>
       composeHouse(house, {
@@ -122,12 +145,13 @@ export function HouseScene({
         minWidth: Math.ceil(boxWidth / scale),
         creatures: 'draw',
         drawing: HOUSE_DRAWING,
+        mailWaiting,
       }),
-    [house, boxWidth, scale],
+    [house, boxWidth, scale, mailWaiting],
   );
   useDragScroll(viewRef);
-  // Start where the house is: all of it in view when it fits, else centred on the core (the hut, cottage and house column);
-  // come back to where it was after a visit to a room.
+  // Start where the whole house is: all of it in view when it fits, else centred on the building with the grass line near the
+  // bottom of the box; come back to where it was after a visit to a room.
   const placedFor = useRef('');
   useLayoutEffect(() => {
     const view = viewRef.current;
@@ -140,12 +164,20 @@ export function HouseScene({
       view.scrollTop = memory.current.top;
       return;
     }
-    const core = coreBox(model.rooms);
-    const cx = core === null ? model.start.x : core.x + core.w / 2;
-    const cy = core === null ? model.start.y : core.y + core.h / 2;
-    view.scrollLeft = Math.max(0, Math.round(cx * scale - (view.clientWidth || 0) / 2));
-    view.scrollTop = Math.max(0, Math.round(cy * scale - (view.clientHeight || 0) / 2));
+    const at = overviewScroll(model, scale, view.clientWidth || boxWidth, view.clientHeight || 0);
+    view.scrollLeft = at.left;
+    view.scrollTop = at.top;
   }, [scale, model.width, model.height]);
+  // The room that was just built: scrolled into the middle of the view, and focused for a screen reader and the keyboard.
+  const focusRoomReady = focusRoom !== null && model.rooms.some((r) => r.roomId === focusRoom);
+  useLayoutEffect(() => {
+    const view = viewRef.current;
+    const room = model.rooms.find((r) => r.roomId === focusRoom);
+    if (view === null || room === undefined) return;
+    view.scrollLeft = Math.max(0, Math.round((room.x + room.w / 2) * scale - view.clientWidth / 2));
+    view.scrollTop = Math.max(0, Math.round((room.y + room.h / 2) * scale - view.clientHeight / 2));
+    view.querySelector<HTMLElement>(`[data-room="${room.roomId}"]`)?.focus({ preventScroll: true });
+  }, [focusRoom, focusRoomReady]);
   useEffect(() => {
     const view = viewRef.current;
     if (view === null || memory === undefined) return undefined;
@@ -161,6 +193,11 @@ export function HouseScene({
   const label = mode === 'own' ? 'Your house' : `${owner}'s house`;
   return (
     <div class="house-scene" data-mode={mode} data-scale={scale} ref={rootRef}>
+      {!wholeInView && postcard !== false && (
+        <div class="house-postcard-band">
+          <HousePostcard house={house} maxWidth={boxWidth} label={label} />
+        </div>
+      )}
       <div class="house-view" ref={viewRef} role="group" aria-label={label} data-audit-clip>
         <div
           class="house-stage"
@@ -187,13 +224,27 @@ export function HouseScene({
               type="button"
               class="house-room"
               data-outdoor={room.outdoor ? 'true' : undefined}
-              aria-label={room.name}
+              data-room={room.roomId}
+              aria-label={roomLabel(
+                room.name,
+                model.creatures.filter((c) => c.roomId === room.roomId),
+              )}
               ref={boxVars(room, scale)}
               onClick={() => {
                 onRoom(room.roomId);
               }}
             />
           ))}
+          {model.rooms
+            .filter((room) => reveal.includes(room.roomId))
+            .map((room) => (
+              <span
+                key={room.roomId}
+                class="house-reveal"
+                aria-hidden="true"
+                ref={boxVars(room, scale)}
+              />
+            ))}
           {onFixture !== undefined &&
             model.fixtures
               .filter((f) => f.kind === 'mailbox' || f.kind === 'workbench')
@@ -214,6 +265,18 @@ export function HouseScene({
       <PanHint target={viewRef} id="house" />
     </div>
   );
+}
+
+/** A room button's spoken name: the room, and who is asleep in it ("Loft, Splashet asleep"). */
+export function roomLabel(name: string, sleepers: readonly SceneCreature[]): string {
+  if (sleepers.length === 0) return name;
+  const who = sleepers.map((c) =>
+    creatureName({
+      nickname: c.housemate.creature.nickname,
+      species: c.housemate.creature.species,
+    }),
+  );
+  return `${name}, ${who.join(' and ')} asleep`;
 }
 
 /** A box in scene pixels as CSS custom properties in screen pixels (`--x`, `--y`, `--w`, `--h`). */

@@ -1,16 +1,16 @@
 import { housing } from '@creatures/game';
-import { useEffect, useRef, useState } from 'preact/hooks';
-import { DropChevron } from '../ui/DropChevron';
+import { useRef, useState } from 'preact/hooks';
 import { DropList } from '../ui/DropList';
-import { GameIcon } from '../ui/GameIcon';
+import { useRovingList } from '../ui/use-roving-list';
+import { PinnedAct } from '../valley/PinnedAct';
 import { HouseThumb } from './HouseThumb';
 
 export interface StampPickerProps {
   /** The stamp ids the visitor holds: only these are offered. */
   owned: readonly string[];
-  /** The visitor stamped this house today: the trigger is off and says so. */
+  /** The visitor stamped this house today: the line says so. */
   used: boolean;
-  /** A request is running: the trigger waits. */
+  /** A request is running: the list does not open. */
   busy: boolean;
   /** A stamp was picked: leave it at once. */
   onStamp: (stampId: string) => void;
@@ -29,35 +29,22 @@ function StampList({
   stamps: readonly { id: string; name: string }[];
   onPick: (id: string) => void;
 }) {
-  const list = useRef<HTMLUListElement>(null);
-  const [active, setActive] = useState(0);
-  function focusOption(index: number): void {
-    setActive(index);
-    list.current?.querySelectorAll<HTMLElement>('[role="option"]')[index]?.focus();
-  }
-  useEffect(() => {
-    focusOption(0);
-  }, []);
-  function onKey(event: KeyboardEvent): void {
-    const last = stamps.length - 1;
-    const keys: Record<string, number> = {
-      ArrowDown: Math.min(last, active + 1),
-      ArrowUp: Math.max(0, active - 1),
-      Home: 0,
-      End: last,
-    };
-    const to = keys[event.key];
-    if (to !== undefined) {
-      event.preventDefault();
-      focusOption(to);
-    } else if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      const stamp = stamps[active];
+  const { listRef, active, onKeyDown } = useRovingList({
+    count: stamps.length,
+    initial: 0,
+    onChoose: (index) => {
+      const stamp = stamps[index];
       if (stamp !== undefined) onPick(stamp.id);
-    }
-  }
+    },
+  });
   return (
-    <ul ref={list} class="roster-list" role="listbox" aria-label="Your stamps" onKeyDown={onKey}>
+    <ul
+      ref={listRef}
+      class="roster-list"
+      role="listbox"
+      aria-label="Your stamps"
+      onKeyDown={onKeyDown}
+    >
       {stamps.map((stamp, index) => (
         <li
           key={stamp.id}
@@ -79,35 +66,27 @@ function StampList({
 }
 
 /**
- * A visitor's stamp: a trigger that looks like a dropdown (the stamp glyph, "Leave a stamp", a chevron) that opens
- * the stamps the visitor holds; a pick leaves it at once. After today's stamp the trigger is off and reads
- * "Stamped today". Data in, callbacks out: it fetches nothing.
+ * A visitor's stamp, pinned like a place's one action (`valley/PinnedAct`): "Leave a stamp" opens the stamps the visitor holds
+ * in a dropdown list; a pick leaves it at once. It is never shown as a disabled button: after today's stamp it is the calm line
+ * "Stamped today" (with the check), and with no stamp held the calm line "No stamps yet". Data in, callbacks out: it fetches nothing.
  */
 export function StampPicker({ owned, used, busy, onStamp }: StampPickerProps) {
   const [open, setOpen] = useState(false);
-  const trigger = useRef<HTMLButtonElement>(null);
+  const anchor = useRef<HTMLDivElement>(null);
   const stamps = ownedStamps(owned);
-  const disabled = used || busy || stamps.length === 0;
+  if (used) return <PinnedAct calm="Stamped today" mark />;
+  if (stamps.length === 0) return <PinnedAct calm="No stamps yet" />;
   return (
-    <div class="hp-stamp">
-      <button
-        ref={trigger}
-        type="button"
-        class="equip-trigger hp-stamp-trigger"
-        aria-haspopup="listbox"
-        aria-expanded={open && !used}
-        disabled={disabled}
+    <div class="hp-stamp" ref={anchor}>
+      <PinnedAct
+        label="Leave a stamp"
         onClick={() => {
-          setOpen(!open);
+          if (!busy) setOpen(!open);
         }}
-      >
-        <GameIcon icon={{ kind: 'glyph', id: 'stamp' }} scale={3} />
-        <span class="equip-name">{used ? 'Stamped today' : 'Leave a stamp'}</span>
-        {!used && <DropChevron />}
-      </button>
-      {open && !disabled && (
+      />
+      {open && (
         <DropList
-          anchor={() => trigger.current}
+          anchor={() => anchor.current}
           onClose={() => {
             setOpen(false);
           }}

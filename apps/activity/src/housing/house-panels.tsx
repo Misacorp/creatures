@@ -10,5 +10,5 @@ export { SkinPicker } from './SkinPicker';
 export { MailboxPanel } from './MailboxPanel';
 export { VisitList } from './VisitList';
 export { Guestbook } from './Guestbook';
-export { StampPicker } from './StampPicker';
-export { GiftButton } from './GiftButton';
+export { StampPicker, ownedStamps } from './StampPicker';
+export { GiftButton, giftReason } from './GiftButton';

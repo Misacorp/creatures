@@ -8,7 +8,7 @@ import {
 } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import { SAMPLE_STATE } from '../creature-card-sample';
-import { lockedParts, partCards, payOf, takeFor } from './build-view';
+import { linesPaid, lockedParts, partCards, payOf, takeFor } from './build-view';
 import { CATALOGUE_KINDS, catalogueGroups, catalogueTotals } from './catalogue-view';
 import { cut } from './house-names';
 import {
@@ -85,35 +85,45 @@ describe('build view', () => {
   it('pays what is held when short, and nothing for a player with nothing', () => {
     const poor = partCards(sampleOwn('poor')).find((c) => c.id === 'cellar');
     expect(poor?.pay.bait).toBe(35);
-    expect(poor?.reason).toBeNull();
+    expect(poor?.short).toBeNull();
     const none = partCards(sampleOwn('empty'));
     expect(none.map((c) => c.id)).toEqual(['cottage']);
     expect(none[0]?.pay).toEqual({});
-    expect(none[0]?.reason).toBe('Nothing to pay in yet.');
-  });
-
-  it('holds a line back when it is switched off', () => {
-    const own = sampleOwn('rich');
-    const card = partCards(own, { cellar: new Set(['bait']) }).find((c) => c.id === 'cellar');
-    expect(card?.pay.bait).toBeUndefined();
-    expect(card?.switches.find((s) => s.key === 'bait')?.on).toBe(false);
-    const all = partCards(own, { cellar: new Set(card?.switches.map((s) => s.key) ?? []) }).find(
-      (c) => c.id === 'cellar',
-    );
-    expect(all?.reason).toBe('Switch a line on to pay it.');
+    // Nothing to pay in: what the player has against what the first line asks, not a disabled button.
+    expect(none[0]?.short).toEqual({
+      have: [expect.objectContaining({ amount: 0 })],
+      cost: [expect.objectContaining({ amount: 75 })],
+    });
   });
 
   it('counts lines paid for a part in progress', () => {
     const card = partCards(sampleOwn('rich')).find((c) => c.id === 'west-upper');
     expect(card?.started).toBe(true);
-    expect(card?.lines).toEqual({ total: 4, paid: 0 });
+    // A pip is lit for every line something was paid into, paid in full or not.
+    expect(card?.lines).toEqual({ total: 4, paid: 2 });
+  });
+
+  it('lights a pip for a line paid into, and counts the lines paid in full', () => {
+    const price = [
+      { kind: 'bait' as const, amount: 75 },
+      { kind: 'scrap' as const, amount: 400 },
+      { kind: 'material' as const, id: 'oak', amount: 6 },
+    ];
+    expect(linesPaid(price, undefined)).toEqual({ total: 3, touched: 0, full: 0 });
+    // 70 of 75 Acorns paid: the first pip is lit, though the line is not paid in full.
+    expect(linesPaid(price, [{ kind: 'bait', amount: 5 }, price[1]!, price[2]!])).toEqual({
+      total: 3,
+      touched: 1,
+      full: 0,
+    });
+    expect(linesPaid(price, [price[1]!, price[2]!])).toEqual({ total: 3, touched: 1, full: 1 });
   });
 
   it('gives each part that cannot be built yet its reason', () => {
     const house = sampleHouse();
     const locked = lockedParts(house, sampleOwn('rich'));
-    expect(locked.find((p) => p.id === 'pool')?.reason).toBe('Needs the Garden');
-    expect(locked.find((p) => p.id === 'east-upper')?.reason).toBe('Needs the East Wing');
+    expect(locked.find((p) => p.id === 'pool')?.reason).toBe('Needs the Garden first');
+    expect(locked.find((p) => p.id === 'east-upper')?.reason).toBe('Needs the East Wing first');
   });
 
   it('payOf leaves out zero amounts', () => {
@@ -178,6 +188,28 @@ describe('catalogue view', () => {
     expect(cosy).toMatchObject({ unknown: false, name: 'Cosy Bed', owned: 1 });
   });
 
+  it('has four tabs, so they fit one row on a phone, and the garden pieces are groups of Furniture', () => {
+    expect(CATALOGUE_KINDS.map((k) => k.id)).toEqual(['furniture', 'skins', 'stamps', 'materials']);
+    const groups = catalogueGroups(sampleCatalogue(), 'furniture');
+    expect(groups.some((g) => g.id === 'garden')).toBe(true);
+    expect(new Set(groups.map((g) => g.id)).size).toBe(groups.length);
+  });
+
+  it('agrees with the workbench on how many pieces of a set are made', () => {
+    const catalogue = catalogueGroups(sampleCatalogue(), 'furniture');
+    const own = sampleOwn('rich');
+    for (const group of workbenchGroups(own)) {
+      if (group.held === null) continue;
+      const same = catalogue.find((g) => g.id === group.id);
+      expect(same, group.id).toBeDefined();
+      expect(group.held.total, group.id).toBe(same?.tiles.length);
+    }
+    const cosy = workbenchGroups(own).find((g) => g.id === 'cosy');
+    expect(cosy?.held?.owned).toBe(
+      housing.pieces.filter((p) => p.set === 'cosy' && (own.items.pieces[p.id] ?? 0) > 0).length,
+    );
+  });
+
   it('has tiles for every kind', () => {
     for (const kind of CATALOGUE_KINDS) {
       const groups = catalogueGroups(sampleCatalogue(), kind.id);
@@ -187,11 +219,11 @@ describe('catalogue view', () => {
 });
 
 describe('spot view', () => {
-  it('lists Empty first, then pieces that fit with free copies first, then blueprints', () => {
+  it('lists Empty first, then the pieces that fit, then blueprints', () => {
     const view = spotView(room('hut:hearth'), 'floor-small-a', sampleOwn('rich'));
     expect(view.choices[0]?.id).toBe(EMPTY_CHOICE);
     expect(view.current).toBe('cosy-chair');
-    expect(view.choices[1]?.id).toBe('cosy-chair');
+    expect(view.choices.some((c) => c.id === 'cosy-chair' && c.here)).toBe(true);
     for (const choice of view.choices.slice(1)) {
       const piece = housing.pieces.find((p) => p.id === choice.id);
       expect(housing.forms.find((f) => f.id === piece?.form)?.spot).toBe('floor-small');
@@ -199,15 +231,42 @@ describe('spot view', () => {
     expect(view.choices.some((c) => c.id === 'cosy-bed')).toBe(false);
   });
 
-  it('puts a piece with every copy placed after the free ones', () => {
+  it('keeps the tiles in a fixed order: owned before blueprints, by set, the piece in the spot not moved up', () => {
+    const own = sampleOwn('rich');
+    const here = spotView(room('hut:hearth'), 'floor-small-a', own);
+    const elsewhere = spotView(room('hut:hearth'), 'floor-small-b', own);
+    const ids = (v: typeof here): string[] =>
+      v.choices.map((c) => c.id).filter((id) => id !== EMPTY_CHOICE);
+    // The same tiles in the same order whichever piece the spot holds.
+    expect(ids(here)).toEqual(ids(elsewhere));
+    const order = housing.sets.map((s) => s.id);
+    const owned = here.choices.filter((c) => c.kind === 'free' || c.kind === 'placed');
+    const sets = owned.map((c) => (c.setId === null ? -1 : order.indexOf(c.setId)));
+    expect(sets).toEqual([...sets].sort((a, b) => a - b));
+  });
+
+  it('groups the tiles in runs by set, with the set name as the label and no label for no set', () => {
+    const view = spotView(room('hut:hearth'), 'floor-small-a', sampleOwn('rich'));
+    expect(view.groups.flatMap((g) => g.choices)).toEqual(view.choices);
+    expect(view.groups[0]?.label).toBeNull();
+    for (const group of view.groups) {
+      expect(
+        new Set(group.choices.filter((c) => c.kind !== 'empty').map((c) => c.setId)).size,
+      ).toBeLessThanOrEqual(1);
+      const named = group.choices.find((c) => c.set !== null);
+      if (named !== undefined) expect(group.label).toBe(named.set);
+    }
+  });
+
+  it('puts a piece with every copy placed among the owned ones, before the blueprints', () => {
     const own = sampleOwn('rich');
     const view = spotView(room('cottage:loft'), 'floor-large-a', own);
     expect(view.bed).toBe(true);
     const placed = view.choices.filter((c) => c.kind === 'placed');
     expect(placed.length).toBeGreaterThan(0);
     const kinds = view.choices.map((c) => c.kind);
-    expect(kinds.indexOf('placed')).toBeGreaterThan(kinds.lastIndexOf('free'));
     expect(kinds.indexOf('blueprint')).toBeGreaterThan(kinds.lastIndexOf('placed'));
+    expect(kinds.indexOf('blueprint')).toBeGreaterThan(kinds.lastIndexOf('free'));
     expect(view.choices.find((c) => c.id === 'hammock')?.kind).toBe('blueprint');
   });
 

@@ -193,6 +193,17 @@ export function afterSeen(state: OwnHouse): OwnHouse {
   return { house: state.house, own: { ...state.own, materials } };
 }
 
+/**
+ * The materials that grew since the player last looked, for the "+N" badges under the scene. Nothing on the first open: a
+ * player who has never looked (one hut, and every material they hold is new) is not told about what they found on the way.
+ */
+export function freshFinds(own: OwnHouseView, builtParts: number): { id: string; n: number }[] {
+  const held = Object.entries(own.materials);
+  const looked = builtParts > 1 || held.some(([, m]) => m.fresh < m.have);
+  if (!looked) return [];
+  return held.filter(([, m]) => m.fresh > 0).map(([id, m]) => ({ id, n: m.fresh }));
+}
+
 /** True when some material grew since the player last looked. */
 export function hasFresh(own: OwnHouseView): boolean {
   return Object.values(own.materials).some((m) => m.fresh > 0);
@@ -202,7 +213,8 @@ export function hasFresh(own: OwnHouseView): boolean {
 
 /** What the screen can do to the house; each returns true when the server accepted it. */
 export interface HouseActions {
-  build: (partId: string, pay: HousePay) => Promise<boolean>;
+  /** False when refused; else whether this payment finished the part (it is built, its rooms are on screen). */
+  build: (partId: string, pay: HousePay) => Promise<false | { built: boolean }>;
   craft: (itemId: string) => Promise<boolean>;
   place: (roomId: string, spotId: string, pieceId: string | null) => Promise<boolean>;
   /**
@@ -284,7 +296,7 @@ export function useHouse(enabled: boolean, onSpent?: () => void): UseHouse {
       );
       if (answer === undefined) return false;
       take(afterBuild(latest.current ?? at, answer), true);
-      return true;
+      return { built: answer.built };
     },
     craft: async (itemId) => {
       const at = current();

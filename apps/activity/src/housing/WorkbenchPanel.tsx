@@ -1,10 +1,11 @@
 import type { OwnHouseView } from '@creatures/game';
-import { useEffect, useRef } from 'preact/hooks';
+import { useState } from 'preact/hooks';
 import { Accordion } from '../ui/Accordion';
 import { Alert } from '../ui/Alert';
-import { HoldingsStrip } from './HoldingsStrip';
+import { SupplyGrid, type SupplyCell } from '../ui/SupplyGrid';
+import { HouseThumb } from './HouseThumb';
 import { MakeCard } from './MakeCard';
-import { groupOf, workbenchGroups } from './workbench-view';
+import { groupOf, workbenchGroups, type RecipeGroup, type RecipeView } from './workbench-view';
 
 export interface WorkbenchPanelProps {
   own: OwnHouseView;
@@ -18,21 +19,77 @@ export interface WorkbenchPanelProps {
   onCraft: (itemId: string) => void;
 }
 
+/** The picture of one recipe in the grid: dimmed when it cannot be made now, the owned count in the corner. */
+export function recipeCell(recipe: RecipeView): SupplyCell {
+  const state = recipe.done
+    ? 'made already'
+    : recipe.affordable
+      ? 'ready to make'
+      : 'not enough yet';
+  return {
+    id: recipe.id,
+    kind: recipe.id,
+    tier: 'basic',
+    label: `${recipe.name}, ${recipe.owned > 0 ? `${String(recipe.owned)} owned, ` : ''}${state}`,
+    owned: recipe.owned,
+    muted: recipe.done || !recipe.affordable,
+    picture: <HouseThumb id={recipe.id} />,
+  };
+}
+
+/** The piece a set's grid starts on: the asked-for one, else the first that can be made now, else the first. */
+export function startingRecipe(
+  group: RecipeGroup,
+  focus: string | undefined,
+): RecipeView | undefined {
+  return (
+    group.recipes.find((r) => r.id === focus) ??
+    group.recipes.find((r) => !r.done && r.affordable) ??
+    group.recipes[0]
+  );
+}
+
+/** One set: its pieces as pictures, and the card of the chosen one under them. */
+function GroupBody({
+  group,
+  focus,
+  busy,
+  onCraft,
+}: {
+  group: RecipeGroup;
+  focus: string | undefined;
+  busy: boolean;
+  onCraft: (itemId: string) => void;
+}) {
+  const [picked, setPicked] = useState<string | null>(null);
+  const chosen =
+    group.recipes.find((r) => r.id === picked) ?? startingRecipe(group, focus) ?? group.recipes[0];
+  if (chosen === undefined) return null;
+  return (
+    <div class="hp-recipes">
+      <SupplyGrid
+        flat
+        label={`${group.title}: pieces to make`}
+        cells={group.recipes.map(recipeCell)}
+        selected={chosen.id}
+        onSelect={setPicked}
+      />
+      <MakeCard recipe={chosen} busy={busy} onMake={onCraft} />
+    </div>
+  );
+}
+
 /**
- * The workbench: every blueprint the player knows as a recipe card, by set in accordions (the first one open, or the
- * one that holds `focus`). Make crafts at once. Data in, callbacks out: it fetches nothing.
+ * The workbench: the blueprints the player knows by set in accordions (the first one open, or the one that holds `focus`);
+ * inside one, its pieces as pictures (dimmed when short, the owned count in the corner) over the card of the chosen one.
+ * Make crafts at once. Data in, callbacks out: it fetches nothing.
  */
 export function WorkbenchPanel({ own, busy, error, focus, onCraft }: WorkbenchPanelProps) {
   const groups = workbenchGroups(own);
   const target = focus === undefined ? null : groupOf(groups, focus);
-  const focused = useRef<HTMLLIElement | null>(null);
-  useEffect(() => {
-    focused.current?.scrollIntoView?.({ block: 'center' });
-  }, [focus]);
   return (
     <div class="hp-panel hp-workbench">
       {error !== null && <Alert level="alert">{error}</Alert>}
-      <HoldingsStrip own={own} />
       {groups.length === 0 && (
         <p class="hp-empty" role="status">
           No blueprints yet. Trips, scouts and fights turn some up.
@@ -42,26 +99,21 @@ export function WorkbenchPanel({ own, busy, error, focus, onCraft }: WorkbenchPa
         <Accordion
           key={group.id}
           title={group.title}
-          meta={group.ready > 0 ? String(group.ready) : undefined}
-          metaTone="gold"
-          label={
-            group.ready > 0 ? `${group.title}, ${String(group.ready)} ready to make` : group.title
+          meta={
+            group.held === null
+              ? undefined
+              : `${String(group.held.owned)} / ${String(group.held.total)}`
           }
+          metaTone={group.ready > 0 ? 'gold' : 'quiet'}
+          label={`${group.title}${
+            group.held === null
+              ? ''
+              : `, ${String(group.held.owned)} / ${String(group.held.total)} made`
+          }${group.ready > 0 ? `, ${String(group.ready)} ready to make` : ''}`}
           headingLevel={3}
           defaultOpen={target === null ? index === 0 : target === group.id}
         >
-          <ul class="hp-recipes">
-            {group.recipes.map((recipe) => (
-              <li
-                key={recipe.id}
-                ref={(el) => {
-                  if (recipe.id === focus) focused.current = el;
-                }}
-              >
-                <MakeCard recipe={recipe} busy={busy} onMake={onCraft} />
-              </li>
-            ))}
-          </ul>
+          <GroupBody group={group} focus={focus} busy={busy} onCraft={onCraft} />
         </Accordion>
       ))}
     </div>
