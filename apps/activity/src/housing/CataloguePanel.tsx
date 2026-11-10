@@ -160,7 +160,7 @@ export function CataloguePanel({ catalogue, failed, onRetry }: CataloguePanelPro
             title={group.title}
             meta={`${String(group.found)} / ${String(group.tiles.length)}`}
             metaTone={group.found > 0 ? 'gold' : 'quiet'}
-            label={`${group.title}, ${String(group.found)} of ${String(group.tiles.length)} found`}
+            label={`${group.title}, ${String(group.found)} / ${String(group.tiles.length)} found`}
             headingLevel={3}
             defaultOpen={index === firstWithFinds}
           >
