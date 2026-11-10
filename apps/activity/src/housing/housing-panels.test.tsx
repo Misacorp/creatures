@@ -250,7 +250,7 @@ describe('WorkbenchPanel', () => {
 describe('CataloguePanel', () => {
   it('shows the found count and the kinds, and switches kind', () => {
     const p = draw(<CataloguePanel catalogue={sampleCatalogue()} failed={false} onRetry={noop} />);
-    expect(visibleText(p.root)).toMatch(/\d+ \/ 196 found/);
+    expect(visibleText(p.root)).toMatch(/\d+ \/ 212 found/);
     p.click(first(byName(p.root, 'button', 'Stamps')));
     const tiles = byName(p.root, 'button', /^Unknown\./);
     expect(tiles.length).toBeGreaterThan(0);

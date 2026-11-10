@@ -13,6 +13,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | [House: garden and pool pieces](#house-garden) | draft | 13 | 2026-11-09: player housing, art batch E4: twelve garden and pool pieces that sit on grass and by water and read from a distance. |
 | [House: the wild pieces](#house-wild) | draft | 13 | 2026-11-09: player housing, art batch E4: twelve one-off pieces that belong to no set, each with character. |
 | [House: stamps, displays, materials and glyphs](#house-marks) | draft | 33 | 2026-11-09: housing art batch E5 (docs/design/housing.md, section 5): 24 stamps, the hall displays, 16 luxury materials, the House glyphs. |
+| [House: room skins](#house-rooms) | draft | 16 | 2026-11-10: player housing art pass 2, a default wallpaper and floor for every room kind (art director review: every room looked the same). |
 | [House set: Emberhold](#house-emberhold) | draft | 14 | 2026-11-09: player housing, furniture set art (batch E2). |
 | [House set: Moonlit](#house-moonlit) | draft | 14 | 2026-11-09: player housing, furniture set art (batch E2). |
 | [House set: Rootwood](#house-rootwood) | draft | 14 | 2026-11-09: player housing, furniture set art (batch E2). |
@@ -21,7 +22,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | [House: Fenkeeper set](#house-fenkeeper) | draft | 14 | 2026-11-09: player housing furniture, batch E3 (Stormglass, Fenkeeper, Ancient, Lantern Night), see docs/design/housing.md section 5. |
 | [House: Lantern Night set](#house-lantern-night) | draft | 14 | 2026-11-09: player housing furniture, batch E3 (Stormglass, Fenkeeper, Ancient, Lantern Night), see docs/design/housing.md section 5. |
 | [House: Stormglass set](#house-stormglass) | draft | 14 | 2026-11-09: player housing furniture, batch E3 (Stormglass, Fenkeeper, Ancient, Lantern Night), see docs/design/housing.md section 5. |
-| [House shell (housing E1)](#house-shell) | draft | 32 | 2026-11-09: housing art batch E1, the building, roofs, walls and ground skins. |
+| [House shell (housing E1)](#house-shell) | draft | 33 | 2026-11-09: housing art batch E1, the building, roofs, walls and ground skins. |
 | [Element shards, told apart by shape](#shards) | liked | 15 | 2026-11-03: the element shard icons must differ by shape, not only colour (accessibility review from the valley session; Misa asked to provide what the valley needs). |
 | [The camp's other places, glow style](#valley-glow-camp) | draft | 6 | 2026-11-03: the valley prototype's remaining places (arena, fairground, road, chest, lectern, paddock) in the liked glow style, day and night. |
 | [Valley places: glow, day and night](#valley-glow) | liked | 9 | 2026-10-31: night glow redone to stand on the valley ground, with a daytime version of the same assets. |
@@ -121,7 +122,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 - **Status:** draft
 - **Requested:** 2026-11-09: player housing, art batch E4: twelve garden and pool pieces that sit on grass and by water and read from a distance.
 - **Source:** `apps/activity/src/sprites/concepts/house-garden.ts` (draw it with `pnpm art house-garden`)
-- **Sheet of:** `bbeaa6d956e3`
+- **Sheet of:** `7dd08b701606`
 - Drawn for the valley grass (the sheet stands them on the world map grass tile, night on the night tile). Stone is pale and the leaves are lighter than the grass so they read against it.
 - The hedge and picket fence are repeating segments; their side edges are open so neighbours join.
 - The lantern post has a glow sprite for night. The night row keeps the lantern lit.
@@ -152,7 +153,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 - **Status:** draft
 - **Requested:** 2026-11-09: player housing, art batch E4: twelve one-off pieces that belong to no set, each with character.
 - **Source:** `apps/activity/src/sprites/concepts/house-wild.ts` (draw it with `pnpm art house-wild`)
-- **Sheet of:** `240003441bf5`
+- **Sheet of:** `0a721658207d`
 - Twelve pieces, one palette for the pack. Each is a different form (chair, bed, tall, clock, stool, plant, shelf, hanging) so it fits its spot box (`docs/design/housing.md`, 2.5).
 - The hammock is a bed: it has a sleep anchor and a front layer.
 - The night row is a plain dusk recolour (the house colours its pieces by phase itself).
@@ -223,6 +224,38 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | `display-marker` | free |  | draft | Dungeon depth: a standing stone with tally marks and a small light. |
 | `display-cabinet` | free |  | draft | Set keepsakes: a glass-fronted cabinet with three shelves. |
 
+<a id="house-rooms"></a>
+
+## House: room skins
+
+![House: room skins](house-rooms.png)
+
+- **Status:** draft
+- **Requested:** 2026-11-10: player housing art pass 2, a default wallpaper and floor for every room kind (art director review: every room looked the same).
+- **Source:** `apps/activity/src/sprites/concepts/house-rooms.ts` (draw it with `pnpm art house-rooms`)
+- **Sheet of:** `8295b366b58a`
+- Free skins that come with the part that has the room (unlock kind part); also choices for other rooms once built. The Hearth, Loft and Study stay on Cosy.
+- The pack is data/house/rooms.ts, read by house-art.ts.
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `kitchen-wall` | free |  | draft | Wallpaper 16x52, repeats across. Warm: cream plaster over a terracotta backsplash; terracotta and cream floor squares. |
+| `kitchen-floor` | free |  | draft | Floor 16x8, repeats across. Warm: cream plaster over a terracotta backsplash; terracotta and cream floor squares. |
+| `attic-wall` | free |  | draft | Wallpaper 16x52, repeats across. Bare boards between a rafter, a tie beam on top; dusty bare floorboards. |
+| `attic-floor` | free |  | draft | Floor 16x8, repeats across. Bare boards between a rafter, a tie beam on top; dusty bare floorboards. |
+| `cellar-wall` | free |  | draft | Wallpaper 16x52, repeats across. Cool: damp stone blocks with a mossy foot; flagstones. |
+| `cellar-floor` | free |  | draft | Floor 16x8, repeats across. Cool: damp stone blocks with a mossy foot; flagstones. |
+| `hall-wall` | free |  | draft | Wallpaper 16x52, repeats across. Dark mahogany panelling with brass studs and a chair rail; basket-weave parquet. |
+| `hall-floor` | free |  | draft | Floor 16x8, repeats across. Dark mahogany panelling with brass studs and a chair rail; basket-weave parquet. |
+| `gallery-wall` | free |  | draft | Wallpaper 16x52, repeats across. Pale plaster with a gold picture rail over a sage dado; chevron oak. |
+| `gallery-floor` | free |  | draft | Floor 16x8, repeats across. Pale plaster with a gold picture rail over a sage dado; chevron oak. |
+| `conservatory-wall` | free |  | draft | Wallpaper 16x52, repeats across. Panes of sky and cloud in thin frames over a whitewashed low wall; diamond tiles. |
+| `conservatory-floor` | free |  | draft | Floor 16x8, repeats across. Panes of sky and cloud in thin frames over a whitewashed low wall; diamond tiles. |
+| `bath-wall` | free |  | draft | Wallpaper 16x52, repeats across. Small white tiles with a teal band and a teal dado; blue and white mosaic floor. |
+| `bath-floor` | free |  | draft | Floor 16x8, repeats across. Small white tiles with a teal band and a teal dado; blue and white mosaic floor. |
+| `guest-wall` | free |  | draft | Wallpaper 16x52, repeats across. Calm: sage pinstripes over cream beadboard; whitewashed planks. |
+| `guest-floor` | free |  | draft | Floor 16x8, repeats across. Calm: sage pinstripes over cream beadboard; whitewashed planks. |
+
 <a id="house-emberhold"></a>
 
 ## House set: Emberhold
@@ -232,7 +265,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 - **Status:** draft
 - **Requested:** 2026-11-09: player housing, furniture set art (batch E2).
 - **Source:** `apps/activity/src/sprites/concepts/house-emberhold.ts` (draw it with `pnpm art house-emberhold`)
-- **Sheet of:** `6118c6b6715e`
+- **Sheet of:** `0015e08163b2`
 - Used by the housing feature (docs/design/housing.md): piece ids are <set>-<form>, skin ids <set>-wall and <set>-floor.
 - Square black charwood with riveted iron bands and an amber glow.
 
@@ -262,7 +295,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 - **Status:** draft
 - **Requested:** 2026-11-09: player housing, furniture set art (batch E2).
 - **Source:** `apps/activity/src/sprites/concepts/house-moonlit.ts` (draw it with `pnpm art house-moonlit`)
-- **Sheet of:** `a49e699edf2a`
+- **Sheet of:** `194b18e2bf97`
 - Used by the housing feature (docs/design/housing.md): piece ids are <set>-<form>, skin ids <set>-wall and <set>-floor.
 - Slim night-reef lacquer with a crescent inlay, coral pink trim, a moonstone knob and silver rims.
 
@@ -292,7 +325,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 - **Status:** draft
 - **Requested:** 2026-11-09: player housing, furniture set art (batch E2).
 - **Source:** `apps/activity/src/sprites/concepts/house-rootwood.ts` (draw it with `pnpm art house-rootwood`)
-- **Sheet of:** `f97a5a14df8c`
+- **Sheet of:** `c645dff8372b`
 - Used by the housing feature (docs/design/housing.md): piece ids are <set>-<form>, skin ids <set>-wall and <set>-floor.
 - Living-wood curves with a leaf curl at the top corners and moss cushions.
 
@@ -322,7 +355,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 - **Status:** draft
 - **Requested:** 2026-11-09: player housing, furniture set art (batch E2).
 - **Source:** `apps/activity/src/sprites/concepts/house-tidepool.ts` (draw it with `pnpm art house-tidepool`)
-- **Sheet of:** `749215950665`
+- **Sheet of:** `cdb41fa9912b`
 - Used by the housing feature (docs/design/housing.md): piece ids are <set>-<form>, skin ids <set>-wall and <set>-floor.
 - Driftwood with scalloped shell edges; sea blue, sand, pearl white.
 
@@ -352,7 +385,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 - **Status:** draft
 - **Requested:** 2026-11-09: player housing furniture, batch E3 (Stormglass, Fenkeeper, Ancient, Lantern Night), see docs/design/housing.md section 5.
 - **Source:** `apps/activity/src/sprites/concepts/house-ancient.ts` (draw it with `pnpm art house-ancient`)
-- **Sheet of:** `eeaa6bc84a68`
+- **Sheet of:** `87baeec22504`
 - Neutral set: sandstone, faded gold, patina teal; stepped ziggurat tops, thick square legs, spirals carved in every piece.
 - Needs the housing content (piece, skin and set ids as drawn); the pack goes to data/house/ancient.ts and is read by house-art.ts.
 
@@ -382,7 +415,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 - **Status:** draft
 - **Requested:** 2026-11-09: player housing furniture, batch E3 (Stormglass, Fenkeeper, Ancient, Lantern Night), see docs/design/housing.md section 5.
 - **Source:** `apps/activity/src/sprites/concepts/house-fenkeeper.ts` (draw it with `pnpm art house-fenkeeper`)
-- **Sheet of:** `ae8fb8587e6c`
+- **Sheet of:** `a3c6125e8d56`
 - Mire set: dark bog oak, reed binding, murky teal and an opal drop; squat, round, bulb legs, uneven drips.
 - Needs the housing content (piece, skin and set ids as drawn); the pack goes to data/house/fenkeeper.ts and is read by house-art.ts.
 
@@ -442,7 +475,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 - **Status:** draft
 - **Requested:** 2026-11-09: player housing furniture, batch E3 (Stormglass, Fenkeeper, Ancient, Lantern Night), see docs/design/housing.md section 5.
 - **Source:** `apps/activity/src/sprites/concepts/house-stormglass.ts` (draw it with `pnpm art house-stormglass`)
-- **Sheet of:** `51ba7eb297fe`
+- **Sheet of:** `ec4755589efa`
 - Spark set: pale ash wood, slate, copper zigzag trim, storm-violet glass beads; angular, chamfered, splayed legs.
 - Needs the housing content (piece, skin and set ids as drawn); the pack goes to data/house/stormglass.ts and is read by house-art.ts.
 
@@ -472,7 +505,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 - **Status:** draft
 - **Requested:** 2026-11-09: housing art batch E1, the building, roofs, walls and ground skins.
 - **Source:** `apps/activity/src/sprites/concepts/house-shell.ts` (draw it with `pnpm art house-shell`)
-- **Sheet of:** `e421550ed341`
+- **Sheet of:** `d9ede3590862`
 - Pack: `src/sprites/data/house/shell.ts` (`HOUSE_ART`). Roof skins thatch, slate, red-tile, copper-green, moss; wall skins plaster, timber, fieldstone, brick, shingle; ground skins lawn, deck, pool-tile, pool-water.
 - Skin colour keys are always L M D A B (light, mid, shade, accents); fixtures have their own keys.
 
@@ -506,7 +539,8 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | `earth` | free |  | draft | Earth around the cellar, 16 x 16 (tiles both ways). |
 | `chimney` | free |  | draft | A brick chimney with a stone cap, 12 x 22; the scene sinks its foot into the roof. |
 | `door` | free |  | draft | The front door with its step, 16 x 30, standing on the ground line. |
-| `mailbox` | free |  | draft | The mailbox on its post, flag up, 12 x 18. |
+| `mailbox` | free |  | draft | The mailbox on its post, flag up (gifts wait), 14 x 21. |
+| `mailbox-empty` | free |  | draft | The same mailbox with the flag down (nothing waits), 14 x 21. |
 | `workbench` | free |  | draft | The Hearth's workbench: a vise, a saw and a hammer. |
 | `vent` | free |  | draft | The cellar vent window. |
 | `z` | free |  | draft | The sleeping "z" over a housemate. |

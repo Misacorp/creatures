@@ -34,7 +34,7 @@ describe('housing content: counts', () => {
     expect(housing.materials).toHaveLength(16);
     expect(housing.sets).toHaveLength(9);
     expect(housing.pieces).toHaveLength(114);
-    expect(housing.skins).toHaveLength(31);
+    expect(housing.skins).toHaveLength(47);
     expect(housing.stamps).toHaveLength(24);
   });
 
@@ -254,5 +254,25 @@ describe('housing content: the full house layout (housing.md 2.4)', () => {
       }
     }
     for (const p of housing.parts) for (const r of p.rooms) expect(r.col).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe('housing content: room skins (art pass 2)', () => {
+  const COSY_ROOMS = ['hearth', 'loft', 'study'];
+
+  it('every indoor room outside the starter three has its own free, part-unlocked skins', () => {
+    for (const room of housing.rooms.filter((r) => !r.outdoor)) {
+      if (COSY_ROOMS.includes(room.id)) {
+        expect([room.wall, room.floor]).toEqual(['cosy-wall', 'cosy-floor']);
+        continue;
+      }
+      expect([room.wall, room.floor]).toEqual([`${room.id}-wall`, `${room.id}-floor`]);
+      const part = housing.parts.find((p) => p.rooms.some((r) => r.kind === room.id));
+      for (const id of [room.wall, room.floor]) {
+        const skin = housing.skins.find((s) => s.id === id);
+        expect(skin?.set, id).toBeNull();
+        expect(skin?.unlock, id).toEqual({ kind: 'part', part: part?.id });
+      }
+    }
   });
 });

@@ -431,6 +431,20 @@ const MAILBOX = paint(14, 21, [
   [4, 19, 6, 1, 'z'],
 ]);
 
+// The mailbox with its flag down (nothing waits): the same box, the flag drooping along the right end.
+const MAILBOX_EMPTY = paint(14, 21, [
+  [12, 4, 1, 1, 'j'],
+  [12, 5, 2, 3, 'r'],
+  [3, 3, 8, 1, 'j'],
+  [2, 4, 10, 5, 'j'],
+  [10, 4, 2, 5, 'i'],
+  [3, 8, 8, 1, 'i'],
+  [4, 6, 5, 1, 'i'],
+  [6, 9, 2, 10, 'f'],
+  [7, 9, 1, 10, 'h'],
+  [4, 19, 6, 1, 'z'],
+]);
+
 // The workbench: a plank top on trestle legs with a shelf, a vise at one end, a hammer and planks.
 const WORKBENCH = paint(32, 22, [
   [1, 9, 30, 1, 'a'],
@@ -506,6 +520,7 @@ export const HOUSE_ART: HouseArtPack = {
     chimney: draw(CHIMNEY, FIXTURE),
     door: draw(DOOR, FIXTURE),
     mailbox: draw(MAILBOX, FIXTURE),
+    'mailbox-empty': draw(MAILBOX_EMPTY, FIXTURE),
     workbench: draw(WORKBENCH, FIXTURE),
     vent: draw(VENT, FIXTURE),
     z: draw(Z, FIXTURE),

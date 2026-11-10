@@ -354,6 +354,22 @@ Wallpapers and floors for the rooms, roofs and walls for the outside of the hous
 | Ancient Floor           | floor       | A blueprint from the Old Crossroads or any cleared finale.                |
 | Lantern Night Wallpaper | wall        | A blueprint from the Festival Grounds, a Festival finale or a Games gold. |
 | Lantern Night Floor     | floor       | A blueprint from the Festival Grounds, a Festival finale or a Games gold. |
+| Kitchen Wallpaper       | wall        | Comes with the Cottage.                                                   |
+| Kitchen Floor           | floor       | Comes with the Cottage.                                                   |
+| Attic Wallpaper         | wall        | Comes with the House.                                                     |
+| Attic Floor             | floor       | Comes with the House.                                                     |
+| Cellar Wallpaper        | wall        | Comes with the Cellar.                                                    |
+| Cellar Floor            | floor       | Comes with the Cellar.                                                    |
+| Trophy Hall Wallpaper   | wall        | Comes with the West Wing.                                                 |
+| Trophy Hall Floor       | floor       | Comes with the West Wing.                                                 |
+| Gallery Wallpaper       | wall        | Comes with the West Upper Floor.                                          |
+| Gallery Floor           | floor       | Comes with the West Upper Floor.                                          |
+| Conservatory Wallpaper  | wall        | Comes with the East Wing.                                                 |
+| Conservatory Floor      | floor       | Comes with the East Wing.                                                 |
+| Bath Wallpaper          | wall        | Comes with the East Upper Floor.                                          |
+| Bath Floor              | floor       | Comes with the East Upper Floor.                                          |
+| Guest Room Wallpaper    | wall        | Comes with the East Upper Floor.                                          |
+| Guest Room Floor        | floor       | Comes with the East Upper Floor.                                          |
 | Thatch                  | roof        | Yours from the start.                                                     |
 | Slate                   | roof        | Learned by building the Cottage.                                          |
 | Red Tile                | roof        | Learned by building the West Wing.                                        |
@@ -367,6 +383,17 @@ Wallpapers and floors for the rooms, roofs and walls for the outside of the hous
 | Lawn                    | ground      | Yours from the start.                                                     |
 | Deck                    | ground      | Yours from the start.                                                     |
 | Pool Tile               | ground      | Yours from the start.                                                     |
+
+Room skins (art pass 2): every indoor room except the Hearth, Loft and Study starts in its own wallpaper and floor, so the parts of a big house read as different rooms. They are free, come with the part that has the room (and so also show up as choices for other rooms once that part is built), and belong to no set.
+
+- **Kitchen** (`kitchen-wall`, `kitchen-floor`): Cream plaster over terracotta tiles, and a floor of terracotta and cream squares. As warm as the oven.
+- **Attic** (`attic-wall`, `attic-floor`): Bare boards between the rafters, and dusty floorboards nobody minds.
+- **Cellar** (`cellar-wall`, `cellar-floor`): Damp stone laid block on block, with moss at its foot, and flagstones, cool underfoot.
+- **Trophy Hall** (`hall-wall`, `hall-floor`): Dark panelling with brass studs and a chair rail, and a parquet floor that has seen a lot of boots.
+- **Gallery** (`gallery-wall`, `gallery-floor`): Pale plaster under a gold picture rail, and pale oak laid in chevrons.
+- **Conservatory** (`conservatory-wall`, `conservatory-floor`): Panes of sky and cloud in thin frames over a whitewashed low wall, and diamond tiles that hold the sun.
+- **Bath** (`bath-wall`, `bath-floor`): Small white tiles with a teal stripe, and a mosaic floor of blue and white.
+- **Guest Room** (`guest-wall`, `guest-floor`): Soft sage stripes over cream beadboard, and whitewashed planks that are quiet to walk on.
 
 ## Stamps
 
