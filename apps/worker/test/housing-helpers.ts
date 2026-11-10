@@ -2,7 +2,8 @@
  * Shared by the housing tests: a guild core with housing on and a seeded hook RNG, a player with a session, and shortcuts that put
  * holdings straight into the tables (the way a long-running game would have them).
  */
-import { createSeededRng, housing as content } from '@creatures/game';
+import { createSeededRng } from '@creatures/game';
+import { housing as content } from '@creatures/game/housing-content';
 import * as v from 'valibot';
 import { expect } from 'vitest';
 import { creditParts } from '../src/gear-store';

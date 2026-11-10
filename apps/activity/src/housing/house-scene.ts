@@ -13,7 +13,6 @@
  */
 import {
   houseGrid,
-  housing,
   type DisplayView,
   type GridRoom,
   type HousemateView,
@@ -24,6 +23,7 @@ import {
   type SpotDef,
   type SpotType,
 } from '@creatures/game';
+import { housing } from '@creatures/game/housing-content';
 import { shinyPalette } from '../art';
 import { creatureSpriteOrFallback } from '../sprites/creature-sprites';
 import { expandRows, spriteSize, swapPalette, type SpriteDef } from '../sprites/sprite-data';

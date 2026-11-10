@@ -93,10 +93,17 @@ export async function placePiece(
   roomId: string,
   spotId: string,
   pieceId: string | null,
+  from?: { roomId: string; spotId: string },
 ): Promise<PlaceAnswer> {
   return parsed(
     PlaceAnswerSchema,
-    await apiFetch('/api/house/place', jsonRequest('PUT', { roomId, spotId, pieceId })),
+    await apiFetch(
+      '/api/house/place',
+      jsonRequest(
+        'PUT',
+        from === undefined ? { roomId, spotId, pieceId } : { roomId, spotId, pieceId, from },
+      ),
+    ),
     'place answer',
   );
 }
@@ -170,7 +177,7 @@ export const HOUSE_ERRORS: Readonly<Record<string, string>> = {
   already_housemate: 'That creature sleeps elsewhere.',
   own_house: 'That is your own house.',
   gift_used_today: 'You gave a gift today.',
-  gift_cap_reached: 'They have had enough gifts today.',
+  gift_cap_reached: 'Their mailbox is full for now.',
   stamp_used_today: 'You stamped here today.',
   stamp_not_owned: 'You do not have that stamp.',
   nothing_to_collect: 'Nothing in the mailbox.',

@@ -5,7 +5,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./combat-v2": "./src/combat-v2/index.ts"
+    "./combat-v2": "./src/combat-v2/index.ts",
+    "./housing-content": "./src/content/housing.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",

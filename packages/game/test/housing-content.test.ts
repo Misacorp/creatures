@@ -2,7 +2,8 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { housing, houseGrid, resource, resources } from '../src/index';
+import { houseGrid, resource, resources } from '../src/index';
+import { housing } from '../src/content/housing';
 
 /** The shipped housing content (docs/design/housing.md 2.5): it loads, it has the counts of the spec, and the compendium names it. */
 

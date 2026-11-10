@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef } from 'preact/hooks';
-import { housing, type HouseView } from '@creatures/game';
+import { type HouseView } from '@creatures/game';
+import { housing } from '@creatures/game/housing-content';
 import { cssVars } from '../css-vars';
 import { HOUSE_DRAWING } from './HouseScene';
 import { paintPlacements } from './house-paint';

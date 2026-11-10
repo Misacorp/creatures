@@ -46,6 +46,8 @@ export const PlaceBodySchema = v.strictObject({
   roomId: RoomIdSchema,
   spotId: HouseIdSchema,
   pieceId: v.nullable(HouseIdSchema),
+  /** A move: the spot the piece stands in now (it is emptied and the piece placed in `roomId`/`spotId`, a bed with its sleeper). */
+  from: v.optional(v.strictObject({ roomId: RoomIdSchema, spotId: HouseIdSchema })),
 });
 
 export const SkinBodySchema = v.union([

@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { byClass, byName, createPage, type Page } from '../test-dom';
 import { viewOf } from '../valley/valley-nav';
-import { HouseRows, houseRowLines, YourHouseRow } from './HouseRows';
+import { HouseRows, houseRowLines } from './HouseRows';
+import { YourHouseRow } from '../valley/YourHouseRow';
 import { HouseScene, roomLabel } from './HouseScene';
 import { RoomFocus, focusScale, spotLayers } from './RoomFocus';
 import { placedNames, standsAt } from './HousePlace';
@@ -424,7 +425,12 @@ describe('answers folded into the page', () => {
 
   it('placing replaces the room and the free copies', () => {
     const room = { ...(house.rooms[0] as (typeof house.rooms)[number]), spots: { 'rug-a': null } };
-    const next = afterPlace(state, { room, own: { free: { 'cosy-rug': 1 } } });
+    const next = afterPlace(state, {
+      room,
+      from: null,
+      own: { free: { 'cosy-rug': 1 } },
+      housemates: [],
+    });
     expect(next.house.rooms[0]?.spots).toEqual({ 'rug-a': null });
     expect(next.own.free).toEqual({ 'cosy-rug': 1 });
   });

@@ -4,13 +4,13 @@
  * the exterior skins. Pure.
  */
 import {
-  housing,
   piecePrice,
   skinPrice,
   type OwnHouseView,
   type PriceLine,
   type SpotType,
 } from '@creatures/game';
+import { housing } from '@creatures/game/housing-content';
 import type { CountItem } from '../count-types';
 import { canAfford, itemName, recipeInputs, setName } from './house-names';
 import type { RecipeInput } from '../ui/RecipeCard';

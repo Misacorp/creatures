@@ -1,4 +1,5 @@
-import { housing, type GuestbookEntry } from '@creatures/game';
+import { type GuestbookEntry } from '@creatures/game';
+import { housing } from '@creatures/game/housing-content';
 import { formatRelative } from '../time-format';
 import { ScrollHint } from '../ui/ScrollHint';
 import { HouseThumb } from './HouseThumb';

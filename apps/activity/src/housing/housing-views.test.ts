@@ -1,11 +1,11 @@
 import {
-  housing,
   parseCatalogueView,
   parseHouseListView,
   parseHouseView,
   parseOwnHouseView,
   type HousemateView,
 } from '@creatures/game';
+import { housing } from '@creatures/game/housing-content';
 import { describe, expect, it } from 'vitest';
 import { SAMPLE_STATE } from '../creature-card-sample';
 import { linesPaid, lockedParts, partCards, payOf, takeFor } from './build-view';

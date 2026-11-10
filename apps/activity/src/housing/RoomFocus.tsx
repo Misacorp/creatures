@@ -8,7 +8,8 @@
  * small dropdown triggers under the room (own house) that ask for the skin picker (`onSkin`).
  */
 import { useMemo, useRef } from 'preact/hooks';
-import { housing, type HousemateView, type HouseView } from '@creatures/game';
+import { type HousemateView, type HouseView } from '@creatures/game';
+import { housing } from '@creatures/game/housing-content';
 import { cssVars } from '../css-vars';
 import { creatureName, getSpecies } from '../game';
 import { useElementWidth } from '../hooks';

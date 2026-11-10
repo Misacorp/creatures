@@ -13,7 +13,7 @@ import type { TabAlerts } from '../tab-alerts';
 import { scrollAndFocus } from '../scroll-to';
 import { BonfireScene } from './BonfireScene';
 import { CommonsBoard, type CommonsActions, type CommonsStart } from './CommonsBoard';
-import { YourHouseRow } from '../housing/HouseRows';
+import { YourHouseRow } from './YourHouseRow';
 import { Keepsakes } from './Keepsakes';
 import { MarketPage, type MarketActions, type MarketStart } from './MarketPage';
 import { marketState } from './market-view';

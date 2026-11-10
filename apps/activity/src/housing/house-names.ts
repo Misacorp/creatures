@@ -3,7 +3,6 @@
  * (icons and numbers, never the currency's name), and what a player holds against a price. Pure.
  */
 import {
-  housing,
   lineKey,
   type Holdings,
   type OwnHouseView,
@@ -12,6 +11,7 @@ import {
   type SkinDef,
   type SpotType,
 } from '@creatures/game';
+import { housing } from '@creatures/game/housing-content';
 import type { CountItem } from '../count-types';
 import { acornCount, resourceCount, scrapCount, shardCount } from '../resource-count';
 import type { RecipeInput } from '../ui/RecipeCard';

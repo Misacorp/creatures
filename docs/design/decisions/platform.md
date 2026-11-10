@@ -4,6 +4,14 @@ Hosting, Durable Objects, scheduling, CI and deploys, staging, dependencies, sec
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-10: Housing: a bed moves with its sleeper, and the housing content is its own package entry
+
+ID: `2026-11-10-housing-a-bed-moves-with-its` · Status: current
+
+**Decision.** `PUT /api/house/place` takes an optional `from` spot: a move empties it and places the piece in one transaction, and a bed takes its sleeper along. The answer carries `housemates` and the room a move left (`from`), so a sleeper sent home by an emptied or replaced bed is gone on screen at once. The housing content is the package entry `@creatures/game/housing-content`, not part of the `@creatures/game` barrel; the valley's "Your house" row lives in `valley/YourHouseRow`. The worker still loads the content eagerly.
+
+**Reasoning.** The client's empty-then-place move lost the sleeper and could leave half a move after a refusal. The barrel put about 89 KB of JSON and its validation in every player's first load (main chunk 1,905 kB, now 1,840 kB); `first-load-housing.test.ts` keeps it out.
+
 ## 2026-11-10: Housing build, craft and skin answer with what changed
 
 ID: `2026-11-10-housing-build-craft-and-skin-answer` · Status: current

@@ -5,7 +5,9 @@
  * guestbook and the actions sit in the side panel. Back leaves a room first, then the house.
  */
 import { useRef, useState } from 'preact/hooks';
-import { housing, type GuestbookEntry, type HouseView, type VisitToday } from '@creatures/game';
+import { type GuestbookEntry, type HouseView, type VisitToday } from '@creatures/game';
+import { housing } from '@creatures/game/housing-content';
+import { ApiError } from '../api';
 import { errorText } from '../game';
 import { useLoaded } from '../use-loaded';
 import { useActionRunner } from '../use-action-runner';
@@ -43,6 +45,29 @@ export interface VisitHouseProps {
   house?: HouseView;
 }
 
+/** What the server turned a visitor away with that the screen did not know: the owner's mailbox is full, or the house is gone. */
+type Blocked = 'mailbox' | 'gone' | null;
+
+/** What a refusal says about the day, so the pinned action moves on: the gift or the stamp is used, or none can be given. */
+export function refusalEffect(code: string | undefined): {
+  gifted?: true;
+  stamped?: true;
+  blocked?: Exclude<Blocked, null>;
+} {
+  switch (code) {
+    case 'gift_used_today':
+      return { gifted: true };
+    case 'stamp_used_today':
+      return { stamped: true };
+    case 'gift_cap_reached':
+      return { blocked: 'mailbox' };
+    case 'no_house':
+      return { blocked: 'gone' };
+    default:
+      return {};
+  }
+}
+
 /**
  * The calm line when neither the gift nor the stamp can be given: what was done today. The check is for a line that says
  * something was finished (a gift or a stamp given), not for "come back tomorrow".
@@ -50,11 +75,14 @@ export interface VisitHouseProps {
 export function visitDoneLine(
   today: VisitToday,
   hasStamps: boolean,
+  blocked: Blocked = null,
 ): { line: string; mark: boolean } {
+  if (blocked === 'gone') return { line: 'That house is gone', mark: false };
   if (today.gifted && today.stamped) return { line: 'Gift and stamp given today', mark: true };
   if (today.gifted)
     return { line: hasStamps ? 'Gift given today' : 'Gift given · no stamps yet', mark: true };
   if (today.stamped) return { line: 'Stamped today', mark: true };
+  if (blocked === 'mailbox') return { line: 'Their mailbox is full', mark: false };
   return { line: 'Come back tomorrow', mark: false };
 }
 
@@ -77,11 +105,21 @@ export function VisitHouse({
   const [room, setRoom] = useState<string | null>(null);
   const [today, setToday] = useState<VisitToday>(initialToday);
   const [gifted, setGifted] = useState(false);
+  const [blocked, setBlocked] = useState<Blocked>(null);
   const [guestbook, setGuestbook] = useState<readonly GuestbookEntry[] | null>(null);
   const wide = useWide();
   const memory = useRef<ScrollMemory['current']>(null) as ScrollMemory;
   const { busy, error, setError, runKeyed } = useActionRunner({
     errorText: (err) => errorText(err, undefined, HOUSE_ERRORS),
+    // A refusal that says the screen was wrong about today: the pinned action moves on, and the visit list is read again.
+    onFail: (err) => {
+      const effect = refusalEffect(err instanceof ApiError ? (err.code ?? undefined) : undefined);
+      if (effect.gifted === true) setGifted(true);
+      if (effect.blocked !== undefined) setBlocked(effect.blocked);
+      const next = effect.stamped === true ? { ...today, stamped: true } : today;
+      if (effect.stamped === true) setToday(next);
+      if (Object.keys(effect).length > 0) onToday?.(next, effect.gifted === true);
+    },
   });
   const house = loaded.value;
   const back = (): void => {
@@ -110,10 +148,10 @@ export function VisitHouse({
     onToday?.(answer.today, false);
   };
 
-  const giftOpen = giftReason(today, giftLeft && !gifted) === null;
-  const stampOpen = !today.stamped && ownedStamps(ownedStampIds).length > 0;
+  const giftOpen = blocked === null && giftReason(today, giftLeft && !gifted) === null;
+  const stampOpen = blocked !== 'gone' && !today.stamped && ownedStamps(ownedStampIds).length > 0;
   // One action at a time, pinned: the gift first, then the stamp, then a calm line (never a disabled button).
-  const done = visitDoneLine(today, ownedStampIds.length > 0);
+  const done = visitDoneLine(today, ownedStampIds.length > 0, blocked);
   const actions = (
     <div class="vy-act">
       {giftOpen ? (

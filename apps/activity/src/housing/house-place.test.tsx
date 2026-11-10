@@ -1,12 +1,20 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { housing, type OwnHouseView, type RoomView } from '@creatures/game';
+import { type OwnHouseView, type RoomView } from '@creatures/game';
+import { housing } from '@creatures/game/housing-content';
+import { ApiError } from '../api';
 import { SAMPLE_STATE } from '../creature-card-sample';
 import { byClass, byName, createPage, visibleText, type FakeElement, type Page } from '../test-dom';
 import { SAMPLE_NOW, sampleHouse, sampleList, sampleOwn } from './house-sample';
 
 /** The House place on the panels' sample data: the network is a stand-in, everything else is the real page. */
 
-const placeCalls: [string, string, string | null][] = [];
+const placeCalls: [
+  string,
+  string,
+  string | null,
+  { roomId: string; spotId: string } | undefined,
+][] = [];
+let failBuild = false;
 let own: OwnHouseView = sampleOwn('rich');
 
 vi.mock('./housing-api', async (importOriginal) => ({
@@ -16,6 +24,7 @@ vi.mock('./housing-api', async (importOriginal) => ({
   fetchCatalogue: () => Promise.reject(new Error('not needed here')),
   markSeen: () => Promise.resolve(),
   buildPart: (partId: string) => {
+    if (failBuild) return Promise.reject(new ApiError(409, 'insufficient_funds'));
     const kind = housing.rooms.find((k) => k.id === 'cellar');
     return Promise.resolve({
       part: { partId, paid: [], remaining: [] },
@@ -39,13 +48,19 @@ vi.mock('./housing-api', async (importOriginal) => ({
       },
     });
   },
-  placePiece: (roomId: string, spotId: string, pieceId: string | null) => {
-    placeCalls.push([roomId, spotId, pieceId]);
+  placePiece: (
+    roomId: string,
+    spotId: string,
+    pieceId: string | null,
+    from?: { roomId: string; spotId: string },
+  ) => {
+    placeCalls.push([roomId, spotId, pieceId, from]);
     const room: RoomView = {
       ...(sampleHouse().rooms.find((r) => r.id === roomId) as RoomView),
     };
     room.spots = { ...room.spots, [spotId]: pieceId };
-    return Promise.resolve({ room, own: { free: own.free } });
+    if (from !== undefined && from.roomId === roomId) room.spots[from.spotId] = null;
+    return Promise.resolve({ room, from: null, own: { free: own.free }, housemates: [] });
   },
 }));
 
@@ -55,6 +70,7 @@ let page: Page | null = null;
 
 beforeEach(() => {
   placeCalls.length = 0;
+  failBuild = false;
   own = sampleOwn('rich');
   Reflect.set(globalThis, 'window', {
     innerHeight: 800,
@@ -130,7 +146,7 @@ describe('the House place on sample data', () => {
     expect(byClass(p.root, 'house-room').length).toBeGreaterThan(0);
   });
 
-  it('focuses a room, opens a spot in a drawer, and moves a piece with no free copy: the old spot is emptied, then it is placed', async () => {
+  it('focuses a room, opens a spot in a drawer, and moves a piece with no free copy: one request names the old spot and the new one', async () => {
     const p = await open();
     p.click(first(byName(p.root, 'button', 'Hearth')));
     await settle(p);
@@ -146,11 +162,27 @@ describe('the House place on sample data', () => {
     expect(visibleText(p.root)).toContain('From the Hearth');
     p.click(first(byName(p.root, 'button', /^Move here/)));
     await settle(p);
-    const plantSpot = placeCalls[0];
-    expect(plantSpot?.[2]).toBeNull();
-    expect(placeCalls[1]?.[2]).toBe('cosy-plant');
-    expect(placeCalls).toHaveLength(2);
-    expect(placeCalls[1]?.[1]).not.toBe(plantSpot?.[1]);
+    // One request (a bed would take its sleeper along): the piece, where it goes and where it stood.
+    expect(placeCalls).toHaveLength(1);
+    const [roomId, spotId, pieceId, from] = placeCalls[0] ?? [];
+    expect(pieceId).toBe('cosy-plant');
+    expect(from?.roomId).toBe(roomId);
+    expect(from?.spotId).not.toBe(spotId);
+  });
+
+  it('shows a refusal once on the Build page, not twice', async () => {
+    failBuild = true;
+    const p = await open();
+    p.click(first(byName(p.root, 'button', /^Build, /)));
+    await settle(p);
+    p.click(first(byName(p.root, 'button', /^Cellar, /)));
+    await settle(p);
+    p.click(first(byName(p.root, 'button', 'Pay in')));
+    await settle(p);
+    const shown = byClass(p.root, 'alert').filter((a) =>
+      visibleText(a).includes('Not enough Acorns'),
+    );
+    expect(shown).toHaveLength(1);
   });
 
   it('finishing a part goes back to the house with a success note and the new room, not to the build list', async () => {

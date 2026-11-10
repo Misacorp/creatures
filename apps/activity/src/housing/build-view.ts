@@ -5,7 +5,6 @@
  */
 import {
   applyPayment,
-  housing,
   lineKey,
   type HousePay,
   type HouseView,
@@ -14,6 +13,7 @@ import {
   type PriceLine,
   type Taken,
 } from '@creatures/game';
+import { housing } from '@creatures/game/housing-content';
 import type { CountItem } from '../count-types';
 import { acornCount, resourceCount, scrapCount, shardCount, type ShortOf } from '../resource-count';
 import type { RecipeInput } from '../ui/RecipeCard';

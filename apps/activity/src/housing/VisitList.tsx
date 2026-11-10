@@ -1,4 +1,5 @@
-import { housing, type HouseListView } from '@creatures/game';
+import { type HouseListView } from '@creatures/game';
+import { housing } from '@creatures/game/housing-content';
 import { Alert } from '../ui/Alert';
 import { PlaceRow } from '../valley/PlacesList';
 import { cut } from './house-names';

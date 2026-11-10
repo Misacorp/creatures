@@ -5,14 +5,16 @@
  * was out of date (404, 409) loads the house again. Nothing here polls.
  */
 import { useEffect, useRef, useState } from 'preact/hooks';
-import type {
-  HousePay,
-  HouseView,
-  HousemateView,
-  OwnHouseView,
-  PartProgressView,
-  RoomView,
+import {
+  completeSets,
+  type HousePay,
+  type HouseView,
+  type HousemateView,
+  type OwnHouseView,
+  type PartProgressView,
+  type RoomView,
 } from '@creatures/game';
+import { housing } from '@creatures/game/housing-content';
 import { errorText } from '../game';
 import { useActionRunner } from '../use-action-runner';
 import {
@@ -39,9 +41,11 @@ export const HouseActionIds = {
   build: (partId: string, pay: HousePay): string => `house-build:${partId}:${stableJson(pay)}`,
   /** The next copy of a piece is another craft: how many were held makes it this one. */
   craft: (itemId: string, held: number): string => `house-craft:${itemId}:${String(held)}`,
-  /** What the mailbox held makes the collect this one. */
-  collect: (gifts: number, acorns: number): string =>
-    `house-collect:${String(gifts)}:${String(acorns)}`,
+  /**
+   * One tap is one collect: `round` stays the same while a tap's outcome is unknown (the retry reuses the key) and moves on when
+   * the house is loaded again, so a later collect of the same total never replays an old answer.
+   */
+  collect: (round: number): string => `house-collect:${String(round)}`,
   /** One gift to one house; the server allows one a day, so the key is dropped on any definite answer. */
   gift: (userId: string): string => `house-gift:${userId}`,
 };
@@ -118,6 +122,14 @@ export function afterBuild(state: OwnHouse, answer: BuildAnswer): OwnHouse {
   };
 }
 
+/** True when the answer finished a set whose keepsake the house on screen does not show yet (the house is loaded again). */
+export function finishesSet(state: OwnHouse, answer: CraftAnswer): boolean {
+  if (answer.kind !== 'piece') return false;
+  const pieces = { ...state.own.items.pieces, [answer.itemId]: answer.count };
+  const done = completeSets(housing, new Map(Object.entries(pieces)));
+  return done.some((id) => !state.house.setsComplete.includes(id));
+}
+
 /** A piece or a skin was made: its new count, the purse and the changed materials. */
 export function afterCraft(state: OwnHouse, answer: CraftAnswer): OwnHouse {
   const { items, free } = state.own;
@@ -148,14 +160,19 @@ export function afterCraft(state: OwnHouse, answer: CraftAnswer): OwnHouse {
   };
 }
 
-/** A piece was placed or taken away: the room and the free copies are replaced. */
+/**
+ * A piece was placed, moved or taken away: the room (and the room a moved piece left), the free copies and the housemates are
+ * replaced; a sleeper whose bed was emptied or replaced is gone from the list, one on a moved bed is at its new spot.
+ */
 export function afterPlace(state: OwnHouse, answer: PlaceAnswer): OwnHouse {
-  const exists = state.house.rooms.some((r) => r.id === answer.room.id);
-  const rooms: RoomView[] = exists
-    ? state.house.rooms.map((r) => (r.id === answer.room.id ? answer.room : r))
-    : [...state.house.rooms, answer.room];
+  const put = (rooms: RoomView[], room: RoomView): RoomView[] =>
+    rooms.some((r) => r.id === room.id)
+      ? rooms.map((r) => (r.id === room.id ? room : r))
+      : [...rooms, room];
+  let rooms = put(state.house.rooms, answer.room);
+  if (answer.from !== null) rooms = put(rooms, answer.from);
   return {
-    house: { ...state.house, rooms },
+    house: { ...state.house, rooms, housemates: [...answer.housemates] },
     own: { ...state.own, free: answer.own.free },
   };
 }
@@ -218,8 +235,8 @@ export interface HouseActions {
   craft: (itemId: string) => Promise<boolean>;
   place: (roomId: string, spotId: string, pieceId: string | null) => Promise<boolean>;
   /**
-   * A piece with every copy placed goes to another spot: the server refuses to place a piece with no free copy, so the spot it
-   * stands in is emptied first and the piece placed in the new one, as one action for the player.
+   * A piece goes to another spot, one request: the server empties the old spot and places the piece in the new one together
+   * (a refusal changes nothing), and a bed takes its sleeper along.
    */
   move: (
     from: { roomId: string; spotId: string },
@@ -253,6 +270,8 @@ export function useHouse(enabled: boolean, onSpent?: () => void): UseHouse {
   const latest = useRef<OwnHouse | null>(null);
   latest.current = state;
   const seq = useRef(0);
+  /** Which collect a tap belongs to; a new load starts a new one (`HouseActionIds.collect`). */
+  const round = useRef(0);
   const spent = useRef(onSpent);
   spent.current = onSpent;
 
@@ -261,6 +280,7 @@ export function useHouse(enabled: boolean, onSpent?: () => void): UseHouse {
     try {
       const answer = await fetchOwnHouse();
       if (mine !== seq.current) return;
+      round.current += 1;
       setState(answer);
       setFailed(false);
     } catch {
@@ -306,7 +326,10 @@ export function useHouse(enabled: boolean, onSpent?: () => void): UseHouse {
         craftItem(itemId, key),
       );
       if (answer === undefined) return false;
+      const finished = finishesSet(latest.current ?? at, answer);
       take(afterCraft(latest.current ?? at, answer), true);
+      // A finished set brings its keepsake display and the set count: only the server knows them, so read the house again.
+      if (finished) void load();
       return true;
     },
     place: async (roomId, spotId, pieceId) => {
@@ -318,9 +341,12 @@ export function useHouse(enabled: boolean, onSpent?: () => void): UseHouse {
       return true;
     },
     move: async (from, to, pieceId) => {
-      if (!(await actions.place(from.roomId, from.spotId, null))) return false;
-      // A refusal leaves the piece unplaced (in the bag) and says why; the screen has reloaded the house by then.
-      return actions.place(to.roomId, to.spotId, pieceId);
+      const at = current();
+      if (at === null) return false;
+      const answer = await run(() => placePiece(to.roomId, to.spotId, pieceId, from));
+      if (answer === undefined) return false;
+      take(afterPlace(latest.current ?? at, answer));
+      return true;
     },
     skin: async (body) => {
       const at = current();
@@ -341,8 +367,7 @@ export function useHouse(enabled: boolean, onSpent?: () => void): UseHouse {
     collect: async () => {
       const at = current();
       if (at === null) return false;
-      const { gifts, acorns } = at.own.mailbox;
-      const answer = await runKeyed(HouseActionIds.collect(gifts, acorns), (key) =>
+      const answer = await runKeyed(HouseActionIds.collect(round.current), (key) =>
         collectMail(key),
       );
       if (answer === undefined) return false;

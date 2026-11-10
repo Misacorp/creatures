@@ -1,5 +1,6 @@
 import { useState } from 'preact/hooks';
-import { houseGrid, housing } from '@creatures/game';
+import { houseGrid } from '@creatures/game';
+import { housing } from '@creatures/game/housing-content';
 import { HouseRows } from '../../housing/HouseRows';
 import { HouseScene } from '../../housing/HouseScene';
 import { RoomFocus } from '../../housing/RoomFocus';

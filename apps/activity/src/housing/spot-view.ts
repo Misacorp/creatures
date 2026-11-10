@@ -5,12 +5,12 @@
  */
 import {
   canPlace,
-  housing,
   HOUSING_RULES,
   type HousemateView,
   type OwnHouseView,
   type RoomView,
 } from '@creatures/game';
+import { housing } from '@creatures/game/housing-content';
 import type { Creature } from '../api';
 import { creatureName } from '../game';
 import { baseOption, type PickerOption } from '../roster-picker';

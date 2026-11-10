@@ -15,7 +15,6 @@ import {
   buildable,
   canPlace,
   completeSets,
-  housing as shippedHousing,
   houseGrid,
   knownBlueprints,
   partPaidLines,
@@ -48,6 +47,7 @@ import {
   type RoomKindDef,
   type RoomView,
 } from '@creatures/game';
+import { housing as shippedHousing } from '@creatures/game/housing-content';
 import { parseState } from './dungeon-state';
 import { busyReason } from './gear-access';
 import { debitParts, getParts } from './gear-store';
@@ -1047,11 +1047,21 @@ export class Housing {
 
   // --- Decorating ---
 
-  /** Puts a piece in a spot (or empties it). Replacing a piece frees its copy; a bed keeps its sleeper only for another bed. */
+  /**
+   * Puts a piece in a spot (or empties it). Replacing a piece frees its copy; a bed keeps its sleeper only for another bed.
+   * With `from` the piece is moved: its old spot is emptied and the piece placed in the new one in this one transaction (a
+   * refusal changes nothing), and a bed takes its sleeper along. The answer carries the housemates as they now stand, so a
+   * sleeper sent home (a bed emptied or replaced by a piece that is no bed) or carried to another spot is on screen at once.
+   */
   place(
     userId: string,
     body: PlaceBody,
-  ): AnswerOf<{ room: RoomView; own: { free: Record<string, number> } }> {
+  ): AnswerOf<{
+    room: RoomView;
+    from: RoomView | null;
+    own: { free: Record<string, number> };
+    housemates: HousemateView[];
+  }> {
     return atomically(this.deps.storage, () => {
       const loaded = this.loadLight(userId);
       const entry = loaded.rooms.get(body.roomId);
@@ -1059,6 +1069,29 @@ export class Housing {
       if (entry === undefined || kind === undefined) throw new GameError(404, 'not_found');
       if (!kind.spots.some((s) => s.id === body.spotId)) throw new GameError(404, 'not_found');
       const spots = entry.spots;
+      const changed = new Set<string>([body.roomId]);
+      // A moved piece leaves its old spot first; its sleeper (if any) waits here to be carried.
+      let carried: string | undefined;
+      let fromId: string | null = null;
+      if (body.from !== undefined) {
+        if (body.pieceId === null) throw new GameError(409, 'spot_mismatch');
+        const fromEntry = loaded.rooms.get(body.from.roomId);
+        const fromKind = this.roomKind(body.from.roomId);
+        if (fromEntry === undefined || fromKind === undefined)
+          throw new GameError(404, 'not_found');
+        if (!fromKind.spots.some((s) => s.id === body.from?.spotId)) {
+          throw new GameError(404, 'not_found');
+        }
+        const held = fromEntry.spots[body.from.spotId];
+        if (held?.p !== body.pieceId) throw new GameError(409, 'spot_mismatch');
+        if (body.from.roomId === body.roomId && body.from.spotId === body.spotId) {
+          throw new GameError(409, 'spot_mismatch');
+        }
+        carried = held.m;
+        delete fromEntry.spots[body.from.spotId];
+        fromId = body.from.roomId;
+        changed.add(fromId);
+      }
       const current = spots[body.spotId];
       if (body.pieceId === null) {
         delete spots[body.spotId];
@@ -1081,17 +1114,28 @@ export class Housing {
           if ((loaded.owned.get(body.pieceId) ?? 0) - placed <= 0) {
             throw new GameError(409, 'none_free');
           }
-          const keep = form.bed === true && current?.m !== undefined;
-          spots[body.spotId] = keep
-            ? { p: body.pieceId, m: current.m as string }
-            : { p: body.pieceId };
+          // A moved bed brings its sleeper; else a bed keeps the one it had when another bed replaces it.
+          const sleeper = form.bed === true ? (carried ?? current?.m) : undefined;
+          spots[body.spotId] =
+            sleeper === undefined ? { p: body.pieceId } : { p: body.pieceId, m: sleeper };
         }
       }
-      setRoomSpots(this.sql, userId, body.roomId, spots);
+      for (const roomId of changed) {
+        const room = loaded.rooms.get(roomId);
+        if (room !== undefined) setRoomSpots(this.sql, userId, roomId, room.spots);
+      }
       touchHouse(this.sql, userId, this.deps.now());
       const room = this.roomView(body.roomId, entry);
       if (room === null) throw new GameError(404, 'not_found');
-      return { room, own: { free: this.freeCounts(loaded) } };
+      const fromEntry =
+        fromId === null || fromId === body.roomId ? undefined : loaded.rooms.get(fromId);
+      const fromView = fromEntry === undefined ? null : this.roomView(fromId as string, fromEntry);
+      return {
+        room,
+        from: fromView,
+        own: { free: this.freeCounts(loaded) },
+        housemates: this.housemateViews(userId, loaded, true),
+      };
     });
   }
 

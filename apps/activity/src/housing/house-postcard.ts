@@ -11,13 +11,8 @@
  * the facade, so thatch reads as thatch and slate as slate. The picture is one sprite on a transparent ground (no sky), so
  * it sits on any backdrop; `placements` has it for `paintPlacements`.
  */
-import {
-  houseGrid,
-  housing,
-  type HouseView,
-  type HousingContent,
-  type PartDef,
-} from '@creatures/game';
+import { houseGrid, type HouseView, type HousingContent, type PartDef } from '@creatures/game';
+import { housing } from '@creatures/game/housing-content';
 import { expandRows, spriteSize, swapPalette, type SpriteDef } from '../sprites/sprite-data';
 import {
   BOARD,

@@ -1,4 +1,4 @@
-import { housing } from '@creatures/game';
+import { housing } from '@creatures/game/housing-content';
 import { HousePostcard } from '../../housing/HousePostcard';
 import { COTTAGE, HUT, MANSION, THREE_FLOORS } from '../../housing/house-scene-sample';
 import { num, str } from '../props';

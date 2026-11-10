@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { houseGrid, housing } from '@creatures/game';
+import { houseGrid } from '@creatures/game';
+import { housing } from '@creatures/game/housing-content';
 import { byRole, createPage, type Page } from '../test-dom';
 import { expandRows } from '../sprites/sprite-data';
 import { POSTCARD_ART } from '../sprites/data/house/postcard';

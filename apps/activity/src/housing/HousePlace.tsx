@@ -11,7 +11,8 @@
  */
 import type { ComponentChildren } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
-import { housing, type HousePay, type HouseView } from '@creatures/game';
+import { type HousePay, type HouseView } from '@creatures/game';
+import { housing } from '@creatures/game/housing-content';
 import type { Creature } from '../api';
 import { useLoaded } from '../use-loaded';
 import { resourceCount } from '../resource-count';
@@ -366,7 +367,10 @@ export function HousePlace({ creatures, now, onSpent }: HousePlaceProps) {
         ? drillView.from.roomId
         : null;
   const pickerPage = picker === null ? null : pickerBody(picker);
-  const alert = house.error !== null && (
+  // The Build and Workbench panels show the error themselves, next to what was tapped: one alert, not two.
+  const panelShowsError =
+    drillView !== null && (drillView.drill === 'build' || drillView.drill === 'workbench');
+  const alert = house.error !== null && !panelShowsError && (
     <Alert level="alert" onDismiss={house.clearError}>
       {house.error}
     </Alert>

@@ -14,6 +14,7 @@ import { householder, parsed, runHouse, stock } from './housing-helpers';
 import { count } from './raid-helpers';
 
 const HEARTH = 'hut:hearth';
+const LOFT = 'cottage:loft';
 
 const place = (p: Dev, roomId: string, spotId: string, pieceId: string | null) =>
   p.call('PUT', '/api/house/place', { roomId, spotId, pieceId });
@@ -294,6 +295,64 @@ describe('housemates', () => {
           await mate(p, 'cottage:loft', 'floor-large-a', null),
         );
         expect(cleared.housemates).toEqual([]);
+      },
+      { dev: true },
+    );
+  });
+
+  it('carries a sleeper with a moved bed, and sends it home when the bed is emptied or replaced', async () => {
+    await runHouse(
+      async (ctx) => {
+        const p = await homebody(ctx);
+        stock(ctx, p.id, { pieces: { 'cosy-cupboard': 1 } });
+        const [a] = p.creatureIds;
+        await place(p, LOFT, 'floor-large-a', 'cosy-bed');
+        await mate(p, LOFT, 'floor-large-a', a ?? '');
+        const move = (
+          roomId: string,
+          spotId: string,
+          from: { roomId: string; spotId: string },
+          pieceId = 'cosy-bed',
+        ) => p.call('PUT', '/api/house/place', { roomId, spotId, pieceId, from });
+        // Within the room: the one copy is moved with its sleeper, and the answer says so.
+        const same = parsed(
+          PlaceAnswerSchema,
+          await move(LOFT, 'floor-large-b', { roomId: LOFT, spotId: 'floor-large-a' }),
+        );
+        expect(same.from).toBeNull();
+        expect(same.room.spots['floor-large-a']).toBeNull();
+        expect(same.room.spots['floor-large-b']).toBe('cosy-bed');
+        expect(same.own.free['cosy-bed']).toBe(0);
+        expect(same.housemates).toHaveLength(1);
+        expect(same.housemates[0]).toMatchObject({ roomId: LOFT, spotId: 'floor-large-b' });
+        // To another room: both rooms come back.
+        const across = parsed(
+          PlaceAnswerSchema,
+          await move(HEARTH, 'floor-large-a', { roomId: LOFT, spotId: 'floor-large-b' }),
+        );
+        expect(across.from?.id).toBe(LOFT);
+        expect(across.from?.spots['floor-large-b']).toBeNull();
+        expect(across.housemates[0]).toMatchObject({
+          roomId: HEARTH,
+          spotId: 'floor-large-a',
+        });
+        expect((await own(p)).house.housemates[0]?.creature.id).toBe(a);
+        // A refused move changes nothing: the bed is not where it was said to be.
+        expect(
+          await move(LOFT, 'floor-large-a', { roomId: LOFT, spotId: 'floor-large-b' }),
+        ).toMatchObject({ status: 409, body: { error: 'spot_mismatch' } });
+        expect((await own(p)).house.housemates).toHaveLength(1);
+        // Replaced by a piece that is no bed: the sleeper goes home to no bed.
+        const replaced = parsed(
+          PlaceAnswerSchema,
+          await place(p, HEARTH, 'floor-large-a', 'cosy-cupboard'),
+        );
+        expect(replaced.housemates).toEqual([]);
+        // And an emptied bed does the same.
+        await place(p, HEARTH, 'floor-large-a', 'cosy-bed');
+        await mate(p, HEARTH, 'floor-large-a', a ?? '');
+        const emptied = parsed(PlaceAnswerSchema, await place(p, HEARTH, 'floor-large-a', null));
+        expect(emptied.housemates).toEqual([]);
       },
       { dev: true },
     );

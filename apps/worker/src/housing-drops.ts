@@ -9,7 +9,6 @@
  */
 import {
   HOUSING_RULES,
-  housing as shippedHousing,
   rollHouseDropsLazy,
   type HouseDrop,
   type HousingContent,
@@ -17,6 +16,7 @@ import {
   type HousingMoment,
   type Rng,
 } from '@creatures/game';
+import { housing as shippedHousing } from '@creatures/game/housing-content';
 import {
   addItem,
   addTrophy,

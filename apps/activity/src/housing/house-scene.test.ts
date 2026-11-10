@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { HouseViewSchema, houseGrid, housing, parseHouseAnswer } from '@creatures/game';
+import { HouseViewSchema, houseGrid, parseHouseAnswer } from '@creatures/game';
+import { housing } from '@creatures/game/housing-content';
 import { spriteSize } from '../sprites/sprite-data';
 import { ART_PENDING, hasPieceArt, pendingArt, pieceArt } from './house-art';
 import {

@@ -51,6 +51,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [platform.md](platform.md): Hosting, Durable Objects, scheduling, CI and deploys, staging, dependencies, security, database reads, data cleanup, analytics, dev tools, the workbench, player feedback, sockets.
 
+- 2026-11-10 Housing: a bed moves with its sleeper, and the housing content is its own package entry
 - 2026-11-10 Housing build, craft and skin answer with what changed
 - 2026-11-10 Migrations: applied by recorded version, reserved gaps, never revert the runner
 - 2026-11-06 Dev tools: server managers only, roster presets, creatures-per-player override \[Misa\]

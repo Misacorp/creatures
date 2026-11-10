@@ -2,7 +2,8 @@
  * The catalogue as plain data (`CataloguePanel.tsx` draws it): everything that exists, by kind, with owned and placed
  * counts; what the player has not found is a silhouette with a one-line hint. Pure.
  */
-import { housing, resourceName, type CatalogueView, type SpotType } from '@creatures/game';
+import { resourceName, type CatalogueView, type SpotType } from '@creatures/game';
+import { housing } from '@creatures/game/housing-content';
 import { setName } from './house-names';
 
 export type CatalogueKind = 'furniture' | 'garden' | 'skins' | 'stamps' | 'materials' | 'parts';

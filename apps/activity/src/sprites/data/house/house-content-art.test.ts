@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { housing, resources } from '@creatures/game';
+import { resources } from '@creatures/game';
+import { housing } from '@creatures/game/housing-content';
 import { spriteSize, type SpriteDef } from '../../sprite-data';
 import { HOUSING_GLYPHS } from '../../../housing/housing-glyphs';
 

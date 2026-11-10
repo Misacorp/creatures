@@ -4,13 +4,13 @@
  * the strict view schemas (`house-sample.test.ts`). Pure.
  */
 import {
-  housing,
   type CatalogueView,
   type GuestbookEntry,
   type HouseListView,
   type HouseView,
   type OwnHouseView,
 } from '@creatures/game';
+import { housing } from '@creatures/game/housing-content';
 
 /** The clock of the samples (epoch ms): guestbook times are relative to it. */
 export const SAMPLE_NOW = 1_800_000_000_000;

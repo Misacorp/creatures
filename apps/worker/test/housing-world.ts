@@ -1,7 +1,8 @@
 // The seeded guild with 15 FULL houses, shared by the read budget (`housing-reads.test.ts`) and the query plan audit
 // (`query-plan-audit.test.ts`): every part built, every spot filled, every piece, skin, stamp, blueprint and material held, the guestbook
 // at its keep, a mailbox with 20 gifts, a trophy hall with every display fed. The worst case of each housing path.
-import { canPlace, expeditionContent, housing as content, type PriceLine } from '@creatures/game';
+import { canPlace, expeditionContent, type PriceLine } from '@creatures/game';
+import { housing as content } from '@creatures/game/housing-content';
 import {
   addItem,
   addStamp,

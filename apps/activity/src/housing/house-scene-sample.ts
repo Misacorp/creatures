@@ -6,7 +6,6 @@
  */
 import {
   houseGrid,
-  housing,
   type DisplayView,
   type HousemateView,
   type HouseView,
@@ -14,6 +13,7 @@ import {
   type OwnHouseView,
   type RoomView,
 } from '@creatures/game';
+import { housing } from '@creatures/game/housing-content';
 
 /** The parts of a hut, a three-floor house and the whole mansion (the order is the build order). */
 export const HUT: readonly string[] = ['hut'];

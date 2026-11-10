@@ -173,7 +173,11 @@ describe('housing view schemas', () => {
       SkinAnswerSchema,
       { target: 'exterior', exterior: { roof: 'slate', walls: 'timber' } },
     ],
-    ['place answer', PlaceAnswerSchema, { room, own: { free: { 'cosy-bed': 0 } } }],
+    [
+      'place answer',
+      PlaceAnswerSchema,
+      { room, from: null, own: { free: { 'cosy-bed': 0 } }, housemates: [] },
+    ],
     ['housemate answer', HousemateAnswerSchema, { housemates: [housemate] }],
     [
       'gift answer',

@@ -6,7 +6,8 @@
  * grey, ink-outlined box of its size (`house-placeholder.ts`) and is listed in `ART_PENDING`, which is empty
  * when every pack is in. Nothing else in the game reads the packs.
  */
-import { housing, type HousingContent } from '@creatures/game';
+import { type HousingContent } from '@creatures/game';
+import { housing } from '@creatures/game/housing-content';
 import type { SpriteDef } from '../sprites/sprite-data';
 import { registerHouseIcons } from './house-icon';
 import { placeholderSprite, placeholderTile } from './house-placeholder';

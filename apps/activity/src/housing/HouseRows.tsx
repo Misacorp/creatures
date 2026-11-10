@@ -1,17 +1,15 @@
 /**
  * The house page's rows (`docs/design/housing.md` 4.5): Build, Workbench, Catalogue, Mailbox and Visit, each a
- * `valley/PlaceRow` (glyph, name, the line of what is next there), never a toolbar; and the valley's "Your house" row. The
+ * `valley/PlaceRow` (glyph, name, the line of what is next there), never a toolbar;. (The valley's "Your house" row is `valley/YourHouseRow`, which does not touch the housing content.) The
  * lines are pure (`houseRowLines`) and read only what the page already holds.
  */
-import { housing, knownBlueprints, type HouseView, type OwnHouseView } from '@creatures/game';
+import { knownBlueprints, type HouseView, type OwnHouseView } from '@creatures/game';
+import { housing } from '@creatures/game/housing-content';
 import { PipRow } from '../ui/PipRow';
 import { linesPaid } from './build-view';
 import { PlaceRow } from '../valley/PlacesList';
 
 export type HouseDrill = 'build' | 'workbench' | 'catalogue' | 'mailbox' | 'visits';
-
-/** The line under the valley House's "Your house" row (the house itself is not loaded there). */
-export const YOUR_HOUSE_LINE = 'rooms, guests and gifts';
 
 function plural(n: number, one: string, many: string): string {
   return `${String(n)} ${n === 1 ? one : many}`;
@@ -148,9 +146,4 @@ export function HouseRows({
       />
     </ul>
   );
-}
-
-/** The valley House's third row: it opens the same page. */
-export function YourHouseRow({ onClick }: { onClick: () => void }) {
-  return <PlaceRow glyph="house-nav" name="Your house" line={YOUR_HOUSE_LINE} onClick={onClick} />;
 }

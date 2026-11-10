@@ -2,7 +2,8 @@
  * Words for the house scene's buttons and popovers (pure): the spoken name of a spot, and what a trophy display lists when
  * it is tapped. Names come from the housing content and the game's content; every string is plain text.
  */
-import { content, housing, type DisplayView, type SpotType } from '@creatures/game';
+import { content, type DisplayView, type SpotType } from '@creatures/game';
+import { housing } from '@creatures/game/housing-content';
 import { speciesName } from '../game';
 import { destinationName } from '../trip-view';
 

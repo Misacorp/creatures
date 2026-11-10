@@ -13,10 +13,10 @@ import {
   RULES,
   buildable,
   canPlace,
-  housing as content,
   int,
   type HousingContent,
 } from '@creatures/game';
+import { housing as content } from '@creatures/game/housing-content';
 import type * as v from 'valibot';
 import { DevError, type ToolCtx } from './dev-context';
 import type {

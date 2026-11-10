@@ -1,4 +1,4 @@
-import { housing } from '@creatures/game';
+import { housing } from '@creatures/game/housing-content';
 import { useRef, useState } from 'preact/hooks';
 import { DropList } from '../ui/DropList';
 import { useRovingList } from '../ui/use-roving-list';

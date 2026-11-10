@@ -251,7 +251,11 @@ export type BuildAnswer = v.InferOutput<typeof BuildAnswerSchema>;
 export type CraftAnswer = v.InferOutput<typeof CraftAnswerSchema>;
 export const PlaceAnswerSchema = v.strictObject({
   room: RoomViewSchema,
+  /** The room a moved piece left, when that is another room; else null. */
+  from: v.nullable(RoomViewSchema),
   own: v.strictObject({ free: record(Count, 400) }),
+  /** The housemates as they now stand: a sleeper whose bed was emptied or replaced is gone, one on a moved bed is carried. */
+  housemates: v.pipe(v.array(HousemateViewSchema), v.maxLength(8)),
 });
 /** A skin change: the room (a wallpaper or floor) or the exterior (roof and walls) as it now stands. */
 export const SkinAnswerSchema = v.variant('target', [

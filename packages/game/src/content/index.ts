@@ -199,5 +199,3 @@ export function evolutionsOf(
 ): Evolution[] {
   return [species.evolvesTo, species.altEvolvesTo].filter((e): e is Evolution => e !== undefined);
 }
-
-export * from './housing';

@@ -6,7 +6,8 @@
  * captions over rooms. Nothing moves; the housemates breathe only in the focus view (`RoomFocus`).
  */
 import { useLayoutEffect, useMemo, useRef } from 'preact/hooks';
-import { housing, type HouseView } from '@creatures/game';
+import { type HouseView } from '@creatures/game';
+import { housing } from '@creatures/game/housing-content';
 import { bossSprite } from '../sprites/creature-sprites';
 import { FALLBACK_SILHOUETTE } from '../sprites/creature-sprites';
 import { cssVars } from '../css-vars';
