@@ -269,3 +269,18 @@
   min-width: 0;
   overflow-wrap: anywhere;
 }
+
+/* The postcard: a whole house seen from outside, a canvas at a whole scale (JS sets --pw and --ph), clear round the house. */
+.hp-postcard {
+  display: block;
+  width: var(--pw);
+  max-width: 100%;
+  height: var(--ph);
+}
+
+.hp-postcard canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}

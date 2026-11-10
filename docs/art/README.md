@@ -13,6 +13,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | [House: garden and pool pieces](#house-garden) | draft | 13 | 2026-11-09: player housing, art batch E4: twelve garden and pool pieces that sit on grass and by water and read from a distance. |
 | [House: the wild pieces](#house-wild) | draft | 13 | 2026-11-09: player housing, art batch E4: twelve one-off pieces that belong to no set, each with character. |
 | [House: stamps, displays, materials and glyphs](#house-marks) | draft | 33 | 2026-11-09: housing art batch E5 (docs/design/housing.md, section 5): 24 stamps, the hall displays, 16 luxury materials, the House glyphs. |
+| [House postcard (outside view)](#house-postcard) | draft | 14 | 2026-11-10: a house that visibly grows into a mansion with wings, a pool and gardens, seen whole on a phone. |
 | [House set: Emberhold](#house-emberhold) | draft | 14 | 2026-11-09: player housing, furniture set art (batch E2). |
 | [House set: Moonlit](#house-moonlit) | draft | 14 | 2026-11-09: player housing, furniture set art (batch E2). |
 | [House set: Rootwood](#house-rootwood) | draft | 14 | 2026-11-09: player housing, furniture set art (batch E2). |
@@ -222,6 +223,35 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | `display-books` | free |  | draft | Journal: a row of spines. |
 | `display-marker` | free |  | draft | Dungeon depth: a standing stone with tally marks and a small light. |
 | `display-cabinet` | free |  | draft | Set keepsakes: a glass-fronted cabinet with three shelves. |
+
+<a id="house-postcard"></a>
+
+## House postcard (outside view)
+
+![House postcard (outside view)](house-postcard.png)
+
+- **Status:** draft
+- **Requested:** 2026-11-10: a house that visibly grows into a mansion with wings, a pool and gardens, seen whole on a phone.
+- **Source:** `apps/activity/src/sprites/concepts/house-postcard.ts` (draw it with `pnpm art house-postcard`)
+- **Sheet of:** `d34e7e4a40c2`
+- Pack: `src/sprites/data/house/postcard.ts` (`POSTCARD_ART`). The picture is composed by `src/housing/house-postcard.ts` at 28 x 16 px a room cell; see it in the workbench page HousePostcard.
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `postcard-window` | free |  | draft | A window with shutters and a sill: the shutters take the roof skin, the sill the wall skin (shown in thatch and plaster). |
+| `postcard-door` | free |  | draft | The front door on the Hearth, arched, planks and a brass knob. |
+| `postcard-chimney` | free |  | draft | The brick chimney with a stone cap; the composer sinks its foot into the roof. |
+| `postcard-smoke-near` | free |  | draft | The near puff of smoke over the chimney. |
+| `postcard-smoke-far` | free |  | draft | The far, smaller puff of smoke. |
+| `postcard-vent` | free |  | draft | The cellar window in the stone course, barred. |
+| `postcard-flower-red` | free |  | draft | A flower in the garden grass, red petals. |
+| `postcard-flower-pink` | free |  | draft | A flower in the garden grass, pink petals. |
+| `postcard-flower-white` | free |  | draft | A flower in the garden grass, white petals. |
+| `postcard-flower-violet` | free |  | draft | A flower in the garden grass, violet petals. |
+| `postcard-tree` | free |  | draft | A round garden tree beside the hedge. |
+| `postcard-ladder` | free |  | draft | The pool ladder over the coping. |
+| `postcard-diving-board` | free |  | draft | The pool diving board on its foot. |
+| `postcard-parasol` | free |  | draft | The terrace parasol, red and cream stripes on a pole. |
 
 <a id="house-emberhold"></a>
 
