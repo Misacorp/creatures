@@ -286,4 +286,35 @@ function cosySkins(): NonNullable<HouseArtPack['skins']> {
   return { 'cosy-wall': { tile: tileOf(edge, wall) }, 'cosy-floor': { tile: tileOf(edge, floor) } };
 }
 
-export const HOUSE_ART: HouseArtPack = { pieces: cosyPieces('day'), skins: cosySkins() };
+/**
+ * The Cosy set's keepsake, the Hearth Bell (12x12, ink outline like the other sets' keepsakes): a small brass bell on a
+ * loop, cream light on its shoulder, the rim and the clapper below. Drawn from the room's own brass and cream.
+ */
+const HEARTH_BELL: readonly string[] = [
+  '.....kk.....',
+  '....kmmk....',
+  '...kkmmkk...',
+  '..kmfmmmnk..',
+  '..kmfmmmnk..',
+  '..kmfmmmnk..',
+  '.kmmfmmmnnk.',
+  '.kmmmmmmnnk.',
+  'kmmmmmmmnnnk',
+  'kcccccccccck',
+  '.kkkkmmkkkk.',
+  '.....kk.....',
+];
+
+function keepsake(rows: readonly string[]): SpriteDef {
+  const used = new Set(rows.join(''));
+  return {
+    rows,
+    palette: Object.fromEntries(Object.entries(PALETTE).filter(([key]) => used.has(key))),
+  };
+}
+
+export const HOUSE_ART: HouseArtPack = {
+  pieces: cosyPieces('day'),
+  skins: cosySkins(),
+  keepsakes: { cosy: keepsake(HEARTH_BELL) },
+};

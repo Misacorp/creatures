@@ -9,7 +9,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | Set | Status | Pieces | Requested |
 | --- | --- | --- | --- |
 | [Combat v2 icons: attack shapes, board states, store meters](#combat-icons) | draft | 11 | 2026-10-31, Misa: "icons for keywords and attack shapes" (roadmap phase 3, combat v2). |
-| [House: the Cosy starter set](#house-cosy) | draft | 26 | 2026-11-09: player housing, art batch E4: the starter set mapped from the living room and its three new pieces. |
+| [House: the Cosy starter set](#house-cosy) | draft | 27 | 2026-11-09: player housing, art batch E4: the starter set mapped from the living room and its three new pieces. |
 | [House: garden and pool pieces](#house-garden) | draft | 13 | 2026-11-09: player housing, art batch E4: twelve garden and pool pieces that sit on grass and by water and read from a distance. |
 | [House: the wild pieces](#house-wild) | draft | 13 | 2026-11-09: player housing, art batch E4: twelve one-off pieces that belong to no set, each with character. |
 | [House: stamps, displays, materials and glyphs](#house-marks) | draft | 33 | 2026-11-09: housing art batch E5 (docs/design/housing.md, section 5): 24 stamps, the hall displays, 16 luxury materials, the House glyphs. |
@@ -76,7 +76,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 - **Status:** draft
 - **Requested:** 2026-11-09: player housing, art batch E4: the starter set mapped from the living room and its three new pieces.
 - **Source:** `apps/activity/src/sprites/concepts/house-cosy.ts` (draw it with `pnpm art house-cosy`)
-- **Sheet of:** `c89576d01012`
+- **Sheet of:** `a9bfef315abd`
 - Fifteen of the eighteen pieces are the living room props (`data/room-sprites.ts`) shared, not copied; the sofa, pouf and beanbag stack their back and front prop into one piece plus a front layer.
 - New: bed, cupboard, wall shelf, and the cut-apart wallpaper and floor.
 - The backdrop is the starter wallpaper; the night row of each piece is the room at night.
@@ -110,6 +110,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | `cosy-shelf-wall` | free |  | draft | NEW. A wall shelf on two brackets with leaning books, a cream mug and a small plant. |
 | `cosy-wall` | free |  | draft | The starter wallpaper, 16x52, repeats across: the living room wall cut down to its trim, stripes and wainscot. |
 | `cosy-floor` | free |  | draft | The starter floor, 16x8: two rows of the living room planks. |
+| `cosy-keepsake` | free |  | draft | The Hearth Bell, 12x12: the keepsake in the trophy hall cabinet when the Cosy set is complete. |
 
 <a id="house-garden"></a>
 

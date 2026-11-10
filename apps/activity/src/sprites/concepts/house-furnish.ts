@@ -194,6 +194,16 @@ export const HOUSE_COSY_CONCEPTS: ConceptSet = {
       note: 'The starter floor, 16x8: two rows of the living room planks.',
       sprite: COSY.skins?.['cosy-floor']?.tile ?? WALL,
     },
+    ...Object.fromEntries(
+      Object.entries(COSY.keepsakes ?? {}).map(([id, sprite]) => [
+        `${id}-keepsake`,
+        {
+          kind: 'free' as const,
+          note: 'The Hearth Bell, 12x12: the keepsake in the trophy hall cabinet when the Cosy set is complete.',
+          sprite,
+        },
+      ]),
+    ),
   },
 };
 

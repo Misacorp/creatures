@@ -53,11 +53,7 @@ describe('housing content has art', () => {
   });
 
   it('every set has a keepsake sprite', () => {
-    // Known gap: no art batch of housing.md 5 draws the Cosy set's keepsake (Hearth Bell). Remove the exemption
-    // when it is drawn.
-    const missing = housing.sets.filter(
-      (s) => s.id !== 'cosy' && find((p) => p.keepsakes, s.id) === undefined,
-    );
+    const missing = housing.sets.filter((s) => find((p) => p.keepsakes, s.id) === undefined);
     expect(missing.map((s) => s.id)).toEqual([]);
   });
 
