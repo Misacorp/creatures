@@ -2,6 +2,7 @@ import { useState } from 'preact/hooks';
 import { houseGrid } from '@creatures/game';
 import { housing } from '@creatures/game/housing-content';
 import { HouseRows } from '../../housing/HouseRows';
+import { YourHouseRow } from '../../valley/YourHouseRow';
 import { HouseScene } from '../../housing/HouseScene';
 import { RoomFocus } from '../../housing/RoomFocus';
 import { VisitHouse } from '../../housing/VisitHouse';
@@ -142,11 +143,22 @@ const houseRows: Entry = {
     { name: 'The hut', props: { house: 'hut' } },
     { name: 'The mansion (everything built)', props: { house: 'mansion' } },
   ],
-  covers: ['YourHouseRow'],
   render: (p) => {
     const house = sceneHouse({ parts: HOUSES[str(p, 'house')] ?? HUT });
     return <HouseRows house={house} own={sceneOwn(house)} houses={7} onOpen={() => undefined} />;
   },
+};
+
+const yourHouseRow: Entry = {
+  name: 'YourHouseRow',
+  file: 'apps/activity/src/valley/YourHouseRow.tsx',
+  group: 'Creatures & game pieces',
+  description:
+    'The valley House’s “Your house” row, which opens the house page. It lives apart from the house page’s rows so the valley does not load the housing content.',
+  controls: {},
+  defaults: {},
+  presets: [{ name: 'The row', props: {} }],
+  render: () => <YourHouseRow onClick={() => undefined} />,
 };
 
 const visitHouse: Entry = {
@@ -178,4 +190,10 @@ const visitHouse: Entry = {
   ),
 };
 
-export const housingEntries: readonly Entry[] = [houseScene, roomFocus, houseRows, visitHouse];
+export const housingEntries: readonly Entry[] = [
+  houseScene,
+  roomFocus,
+  houseRows,
+  yourHouseRow,
+  visitHouse,
+];
