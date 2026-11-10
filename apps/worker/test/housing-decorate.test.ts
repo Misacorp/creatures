@@ -177,18 +177,24 @@ describe('skins', () => {
           floor: 'tidepool-floor',
         }),
       );
-      expect(room.house.rooms[0]).toMatchObject({ wall: 'tidepool-wall', floor: 'tidepool-floor' });
+      expect(room).toMatchObject({
+        target: 'room',
+        room: { id: HEARTH, wall: 'tidepool-wall', floor: 'tidepool-floor' },
+      });
       const outside = parsed(
         SkinAnswerSchema,
         await skin(p, { target: 'exterior', roof: 'slate', walls: 'timber' }),
       );
-      expect(outside.house.exterior).toEqual({ roof: 'slate', walls: 'timber' });
+      expect(outside).toEqual({ target: 'exterior', exterior: { roof: 'slate', walls: 'timber' } });
       // Only the named side changes.
       const roofOnly = parsed(
         SkinAnswerSchema,
         await skin(p, { target: 'exterior', roof: 'thatch' }),
       );
-      expect(roofOnly.house.exterior).toEqual({ roof: 'thatch', walls: 'timber' });
+      expect(roofOnly).toEqual({
+        target: 'exterior',
+        exterior: { roof: 'thatch', walls: 'timber' },
+      });
     });
   });
 
@@ -235,9 +241,10 @@ describe('skins', () => {
         const p = await householder(ctx);
         await p.tool('housing-build', { parts: ['cottage', 'garden'] });
         const ok = await skin(p, { target: 'room', roomId: 'garden:garden', floor: 'deck' });
-        expect(
-          parsed(SkinAnswerSchema, ok).house.rooms.find((r) => r.id === 'garden:garden')?.floor,
-        ).toBe('deck');
+        expect(parsed(SkinAnswerSchema, ok)).toMatchObject({
+          target: 'room',
+          room: { id: 'garden:garden', floor: 'deck' },
+        });
         expect(
           await skin(p, { target: 'room', roomId: 'garden:garden', floor: 'cosy-floor' }),
         ).toMatchObject({

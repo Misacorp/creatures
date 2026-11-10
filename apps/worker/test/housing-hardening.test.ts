@@ -56,7 +56,7 @@ describe('a part paid in full but not built (a price was lowered)', () => {
       );
       expect(res.built).toBe(true);
       expect(res.part.remaining).toEqual([]);
-      expect(res.house?.built).toContain('cottage');
+      expect(res.grown?.parts).toContain('cottage');
       expect(ctx.core.balances(p.id).bait).toBe(bait);
       expect(count(ctx.sql, 'house_parts', `user_id = '${p.id}' AND built_at IS NULL`)).toBe(0);
     });

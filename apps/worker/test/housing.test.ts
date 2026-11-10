@@ -196,7 +196,9 @@ describe('building a part', () => {
       stock(ctx, p.id, { bait: 100, scrap: 1000, materials: { heartbark: 4, driftwood: 4 } });
       const one = parsed(BuildAnswerSchema, await pay(p, 'cottage', { bait: 40 }));
       expect(one.built).toBe(false);
-      expect(one.house).toBeUndefined();
+      expect(one.grown).toBeUndefined();
+      expect(one.purse.bait).toBe(60);
+      expect(one.materials).toEqual({});
       expect(one.part.paid).toEqual([{ kind: 'bait', amount: 40 }]);
       expect(one.part.remaining).toEqual([
         { kind: 'bait', amount: 35 },
@@ -209,6 +211,8 @@ describe('building a part', () => {
         await pay(p, 'cottage', { scrap: 900, materials: { heartbark: 3 } }),
       );
       expect(two.built).toBe(false);
+      expect(two.purse.scrap).toBe(600);
+      expect(two.materials).toEqual({ heartbark: { have: 1, fresh: 1 } });
       expect(two.part.paid).toEqual([
         { kind: 'bait', amount: 40 },
         { kind: 'scrap', amount: 400 },
@@ -226,21 +230,38 @@ describe('building a part', () => {
       );
       expect(three.built).toBe(true);
       expect(three.part.remaining).toEqual([]);
-      expect(three.house?.built).toEqual(['hut', 'cottage']);
-      expect(three.house?.rooms.map((r) => r.id).sort()).toEqual([
+      expect(three.grown?.parts).toEqual(['hut', 'cottage']);
+      expect(three.grown?.rooms.map((r) => r.id).sort()).toEqual([
         'cottage:kitchen',
         'cottage:loft',
-        'hut:hearth',
       ]);
-      expect(three.own?.purse.bait).toBe(25);
-      expect(three.own?.purse.scrap).toBe(600);
+      expect(three.purse.bait).toBe(25);
+      expect(three.purse.scrap).toBe(600);
       // 6 wood in all: 3 heartbark, then 3 more (a family line takes the offered materials by id: driftwood first).
-      expect(three.own?.materials['driftwood']).toEqual({ have: 1, fresh: 1 });
-      expect(three.own?.materials['heartbark']).toEqual({ have: 1, fresh: 1 });
-      expect(three.own?.progress).toEqual([]);
+      expect(three.materials['driftwood']).toEqual({ have: 1, fresh: 1 });
+      // Only the materials the payment took are in the answer.
+      expect(three.materials['heartbark']).toBeUndefined();
       // The cottage teaches its roof: the blueprint is learned, and the next parts open.
-      expect(three.own?.items.blueprints).toContain('slate');
-      expect(three.own?.buildable.sort()).toEqual(['cellar', 'garden', 'house', 'terrace']);
+      expect(three.grown?.learned).toContain('slate');
+      expect([...(three.grown?.buildable ?? [])].sort()).toEqual([
+        'cellar',
+        'garden',
+        'house',
+        'terrace',
+      ]);
+      // What the answer says is what the house holds.
+      const after = parsed(HouseAnswerSchema, await p.call('GET', '/api/house'));
+      expect(after.house.built).toEqual(three.grown?.parts);
+      expect(after.own.purse).toEqual(three.purse);
+      expect(after.own.materials['driftwood']).toEqual(three.materials['driftwood']);
+      expect(after.own.materials['heartbark']).toEqual({ have: 1, fresh: 1 });
+      expect(after.own.buildable.sort()).toEqual([...(three.grown?.buildable ?? [])].sort());
+      for (const room of three.grown?.rooms ?? []) {
+        expect(after.house.rooms).toContainEqual(room);
+      }
+      expect(after.house.displays.filter((d) => d.roomId.startsWith('cottage:'))).toEqual(
+        three.grown?.displays,
+      );
       expect(count(ctx.sql, 'house_rooms')).toBe(3);
     });
   });
@@ -372,9 +393,9 @@ describe('building a part', () => {
           }),
         );
         expect(res.built).toBe(true);
-        expect(res.own?.purse.shards.mire).toBe(2);
-        expect(res.own?.materials['bog-oak']).toEqual({ have: 1, fresh: 1 });
-        expect(res.house?.rooms.map((r) => r.id)).toContain('cellar:cellar');
+        expect(res.purse.shards.mire).toBe(2);
+        expect(res.materials['bog-oak']).toEqual({ have: 1, fresh: 1 });
+        expect(res.grown?.rooms.map((r) => r.id)).toContain('cellar:cellar');
       },
       { dev: true },
     );
@@ -423,13 +444,15 @@ describe('the workbench', () => {
       const key = newKey();
       const made = parsed(CraftAnswerSchema, await craft(p, 'rocking-chair', key));
       expect(made.count).toBe(1);
-      expect(made.own.items.pieces['rocking-chair']).toBe(1);
-      expect(made.own.free['rocking-chair']).toBe(1);
-      expect(made.own.purse.bait).toBe(10);
-      expect(made.own.purse.scrap).toBe(5);
+      expect(made.itemId).toBe('rocking-chair');
+      expect(made.kind).toBe('piece');
+      expect(made.purse.bait).toBe(10);
+      expect(made.purse.scrap).toBe(5);
+      // The materials were stocked to the price, so every one the craft took is gone.
+      for (const id of Object.keys(h.materials)) expect(made.materials[id]?.have).toBe(0);
       const again = parsed(CraftAnswerSchema, await craft(p, 'rocking-chair', key));
       expect(again.count).toBe(1);
-      expect(again.own.purse.bait).toBe(10);
+      expect(again).toEqual(made);
       // A second copy with a new key (the price is held for one more).
       stock(ctx, p.id, { bait: h.bait, scrap: h.scrap, materials: h.materials });
       const second = parsed(CraftAnswerSchema, await craft(p, 'rocking-chair'));
@@ -461,8 +484,8 @@ describe('the workbench', () => {
       // The "any stone" primary came from the held stone; the gold accent twice (tier 2).
       const price = piecePrice(content, 'ancient-stool');
       expect(price.some((l) => l.kind === 'family' && l.family === 'stone')).toBe(true);
-      expect(made.own.materials['old-gold']?.have).toBe(5 - 2);
-      expect(made.own.materials['sea-glass']?.have).toBe(20 - 1);
+      expect(made.materials['old-gold']?.have).toBe(5 - 2);
+      expect(made.materials['sea-glass']?.have).toBe(20 - 1);
     });
   });
 
@@ -478,7 +501,7 @@ describe('the workbench', () => {
         });
         await p.tool('housing-build', { parts: ['cottage'] });
         const made = parsed(CraftAnswerSchema, await craft(p, 'slate'));
-        expect(made.own.items.skins).toContain('slate');
+        expect(made).toMatchObject({ itemId: 'slate', kind: 'skin', count: 1 });
         expect(await craft(p, 'slate')).toMatchObject({
           status: 409,
           body: { error: 'already_owned' },
@@ -488,7 +511,7 @@ describe('the workbench', () => {
           status: 409,
           body: { error: 'already_owned' },
         });
-        expect(made.own.purse.bait).toBe(h.bait);
+        expect(made.purse.bait).toBe(h.bait);
       },
       { dev: true },
     );

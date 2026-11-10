@@ -111,6 +111,15 @@ const ShardPurse = v.strictObject(
   Object.fromEntries(ELEMENTS.map((e) => [e, Count])) as Record<Element, typeof Count>,
 );
 
+/** The Acorns, scrap and shards a player holds. */
+export const PurseSchema = v.strictObject({ bait: Count, scrap: Count, shards: ShardPurse });
+export type PurseView = v.InferOutput<typeof PurseSchema>;
+
+/** What the player holds of one material, and how much of it is new since they last looked. */
+export const MaterialHoldingSchema = v.strictObject({ have: Count, fresh: Count });
+/** Materials by id: in a build or craft answer only the ones that changed. */
+export const MaterialHoldingsSchema = record(MaterialHoldingSchema, 64);
+
 export const OwnHouseViewSchema = v.strictObject({
   /** Parts started but not built. */
   progress: v.pipe(v.array(PartProgressViewSchema), v.maxLength(32)),
@@ -124,8 +133,8 @@ export const OwnHouseViewSchema = v.strictObject({
   }),
   /** Piece copies not placed. */
   free: record(Count, 400),
-  materials: record(v.strictObject({ have: Count, fresh: Count }), 64),
-  purse: v.strictObject({ bait: Count, scrap: Count, shards: ShardPurse }),
+  materials: MaterialHoldingsSchema,
+  purse: PurseSchema,
   /** Unclaimed gifts. */
   mailbox: v.strictObject({
     gifts: Count,
@@ -208,22 +217,51 @@ export const HouseAnswerSchema = v.strictObject({
   own: OwnHouseViewSchema,
 });
 export const VisitAnswerSchema = v.strictObject({ house: HouseViewSchema });
+/** What a part's finishing added to the house: the client folds it in, no second request. */
+export const BuildGrownSchema = v.strictObject({
+  /** Every built part id (content order). */
+  parts: ids(32),
+  /** The parts that can be paid into now. */
+  buildable: ids(32),
+  /** Blueprints the part taught (the client adds them to the learned ones). */
+  learned: ids(64),
+  /** The rooms the part made (bare, or as they already stood). */
+  rooms: v.pipe(v.array(RoomViewSchema), v.maxLength(8)),
+  /** The display spots of those rooms. */
+  displays: v.pipe(v.array(DisplayViewSchema), v.maxLength(8)),
+});
+export type BuildGrown = v.InferOutput<typeof BuildGrownSchema>;
+/** A payment: the part's progress (a finished part's has nothing remaining), the purse, the materials that changed, and `grown` when built. */
 export const BuildAnswerSchema = v.strictObject({
   part: PartProgressViewSchema,
   built: v.boolean(),
-  house: v.optional(HouseViewSchema),
-  own: v.optional(OwnHouseViewSchema),
+  purse: PurseSchema,
+  materials: MaterialHoldingsSchema,
+  grown: v.optional(BuildGrownSchema),
 });
+/** A craft: the item's new count (a skin is 1), the purse and the materials that changed. */
 export const CraftAnswerSchema = v.strictObject({
   itemId: Id,
+  kind: v.picklist(['piece', 'skin']),
   count: Count,
-  own: OwnHouseViewSchema,
+  purse: PurseSchema,
+  materials: MaterialHoldingsSchema,
 });
+export type BuildAnswer = v.InferOutput<typeof BuildAnswerSchema>;
+export type CraftAnswer = v.InferOutput<typeof CraftAnswerSchema>;
 export const PlaceAnswerSchema = v.strictObject({
   room: RoomViewSchema,
   own: v.strictObject({ free: record(Count, 400) }),
 });
-export const SkinAnswerSchema = v.strictObject({ house: HouseViewSchema });
+/** A skin change: the room (a wallpaper or floor) or the exterior (roof and walls) as it now stands. */
+export const SkinAnswerSchema = v.variant('target', [
+  v.strictObject({ target: v.literal('room'), room: RoomViewSchema }),
+  v.strictObject({
+    target: v.literal('exterior'),
+    exterior: v.strictObject({ roof: Id, walls: Id }),
+  }),
+]);
+export type SkinAnswer = v.InferOutput<typeof SkinAnswerSchema>;
 export const HousemateAnswerSchema = v.strictObject({
   housemates: v.pipe(v.array(HousemateViewSchema), v.maxLength(8)),
 });

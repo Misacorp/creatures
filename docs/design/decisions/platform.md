@@ -4,6 +4,14 @@ Hosting, Durable Objects, scheduling, CI and deploys, staging, dependencies, sec
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-10: Housing build, craft and skin answer with what changed
+
+ID: `2026-11-10-housing-build-craft-and-skin-answer` · Status: current
+
+**Decision.** `POST /api/house/build`, `POST /api/house/craft` and `PUT /api/house/skin` answer with only what changed (progress, purse, the materials touched; a finished part adds its rooms, displays, learned blueprints and lists; a skin answers the room or the exterior), and the client folds them in without a second request. Shapes: `docs/design/housing.md` 3.4.
+
+**Reasoning.** A housing day read about 3,700 rows; a partial payment made the client re-read the whole house (about 540 rows), a craft returned a full own view (420) and a skin the whole house (465). Now they read about 50, 55 and 30 rows, and the day about 2,700.
+
 ## 2026-11-10: Migrations: applied by recorded version, reserved gaps, never revert the runner
 
 ID: `2026-11-10-migrations-applied-by-recorded-version-reserved` · Status: current

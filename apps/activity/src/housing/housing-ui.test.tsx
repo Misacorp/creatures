@@ -11,9 +11,11 @@ import { displayText, spotLabel } from './house-text';
 import {
   afterBuild,
   afterCollect,
+  afterCraft,
   afterHousemate,
   afterPlace,
   afterSeen,
+  afterSkin,
   hasFresh,
   stableJson,
   HouseActionIds,
@@ -278,13 +280,93 @@ describe('answers folded into the page', () => {
   const own = sceneOwn(house);
   const state = { house, own };
 
-  it('a payment that is not the last updates the progress; the last one brings the new house', () => {
+  const purse = { ...own.purse, bait: 7 };
+
+  it('a payment that is not the last updates the progress, the purse and the paid materials, and asks for nothing more', () => {
     const part = { partId: 'house', paid: [], remaining: [] };
-    const half = afterBuild(state, { part, built: false });
+    const half = afterBuild(state, {
+      part,
+      built: false,
+      purse,
+      materials: { oak: { have: 1, fresh: 0 }, gone: { have: 0, fresh: 0 } },
+    });
     expect(half.own.progress.find((p) => p.partId === 'house')).toBeDefined();
+    expect(half.own.purse).toEqual(purse);
+    expect(half.own.materials['oak']).toEqual({ have: 1, fresh: 0 });
+    expect(half.own.materials['gone']).toBeUndefined();
+    expect(half.house).toBe(state.house);
+  });
+
+  it('the last payment brings the rooms, displays, blueprints and buildable list of the grown house', () => {
+    const part = { partId: 'house', paid: [], remaining: [] };
     const bigger = sceneHouse({ parts: ['hut', 'cottage', 'house'] });
-    const done = afterBuild(state, { part, built: true, house: bigger, own: sceneOwn(bigger) });
-    expect(done.house.built).toContain('house');
+    const fresh = bigger.rooms.filter((r) => !house.rooms.some((o) => o.id === r.id));
+    expect(fresh.length).toBeGreaterThan(0);
+    const done = afterBuild(
+      { house, own: { ...own, progress: [part] } },
+      {
+        part,
+        built: true,
+        purse,
+        materials: {},
+        grown: {
+          parts: bigger.built,
+          buildable: ['cellar'],
+          learned: ['slate'],
+          rooms: fresh,
+          displays: bigger.displays,
+        },
+      },
+    );
+    expect(done.house.built).toEqual(bigger.built);
+    expect(done.house.rooms.map((r) => r.id).sort()).toEqual(bigger.rooms.map((r) => r.id).sort());
+    expect(done.own.progress).toEqual([]);
+    expect(done.own.buildable).toEqual(['cellar']);
+    expect(done.own.items.blueprints).toContain('slate');
+    expect(done.own.purse).toEqual(purse);
+  });
+
+  it('a craft raises the count, the free copies and the purse; a skin joins the owned skins', () => {
+    const fromScratch = { ...own, items: { ...own.items, pieces: {} }, free: {} };
+    const piece = afterCraft(
+      { house, own: fromScratch },
+      { itemId: 'cosy-rug', kind: 'piece', count: 1, purse, materials: {} },
+    );
+    expect(piece.own.items.pieces['cosy-rug']).toBe(1);
+    expect(piece.own.free['cosy-rug']).toBe(1);
+    const second = afterCraft(piece, {
+      itemId: 'cosy-rug',
+      kind: 'piece',
+      count: 2,
+      purse,
+      materials: {},
+    });
+    expect(second.own.items.pieces['cosy-rug']).toBe(2);
+    expect(second.own.free['cosy-rug']).toBe(2);
+    const skin = afterCraft(second, {
+      itemId: 'slate',
+      kind: 'skin',
+      count: 1,
+      purse,
+      materials: {},
+    });
+    expect(skin.own.items.skins).toContain('slate');
+    expect(skin.own.purse).toEqual(purse);
+  });
+
+  it('a skin answer replaces the one room, or the exterior, and nothing else', () => {
+    const first = house.rooms[0];
+    if (first === undefined) throw new Error('no room');
+    const room = { ...first, wall: 'tidepool-wall' };
+    const painted = afterSkin(state, { target: 'room', room });
+    expect(painted.house.rooms[0]).toEqual(room);
+    expect(painted.house.exterior).toEqual(house.exterior);
+    const roofed = afterSkin(state, {
+      target: 'exterior',
+      exterior: { roof: 'slate', walls: 'timber' },
+    });
+    expect(roofed.house.exterior).toEqual({ roof: 'slate', walls: 'timber' });
+    expect(roofed.house.rooms).toEqual(house.rooms);
   });
 
   it('placing replaces the room and the free copies', () => {

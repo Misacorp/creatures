@@ -2,6 +2,7 @@ import * as v from 'valibot';
 import { describe, expect, it } from 'vitest';
 import {
   BuildAnswerSchema,
+  SkinAnswerSchema,
   CatalogueViewSchema,
   CollectAnswerSchema,
   CraftAnswerSchema,
@@ -102,6 +103,8 @@ const own = {
   mailbox: { gifts: 1, acorns: 5, from: [owner] },
   recent: [{ at: 1, materials: { oak: 1 }, blueprint: null, stamp: 'paw' }],
 };
+const purse = own.purse;
+const materials = { oak: { have: 2, fresh: 0 } };
 const list = {
   houses: [
     {
@@ -137,9 +140,39 @@ describe('housing view schemas', () => {
     ['HouseListView', HouseListViewSchema, list],
     ['CatalogueView', CatalogueViewSchema, catalogue],
     ['house answer', HouseAnswerSchema, { house, own }],
-    ['build answer (not built)', BuildAnswerSchema, { part: progress, built: false }],
-    ['build answer (built)', BuildAnswerSchema, { part: progress, built: true, house, own }],
-    ['craft answer', CraftAnswerSchema, { itemId: 'reef-bed', count: 1, own }],
+    [
+      'build answer (not built)',
+      BuildAnswerSchema,
+      { part: progress, built: false, purse, materials },
+    ],
+    [
+      'build answer (built)',
+      BuildAnswerSchema,
+      {
+        part: progress,
+        built: true,
+        purse,
+        materials,
+        grown: {
+          parts: ['hut', 'cottage'],
+          buildable: ['cellar'],
+          learned: ['slate'],
+          rooms: [room],
+          displays: [],
+        },
+      },
+    ],
+    [
+      'craft answer',
+      CraftAnswerSchema,
+      { itemId: 'reef-bed', kind: 'piece', count: 1, purse, materials },
+    ],
+    ['skin answer (room)', SkinAnswerSchema, { target: 'room', room }],
+    [
+      'skin answer (exterior)',
+      SkinAnswerSchema,
+      { target: 'exterior', exterior: { roof: 'slate', walls: 'timber' } },
+    ],
     ['place answer', PlaceAnswerSchema, { room, own: { free: { 'cosy-bed': 0 } } }],
     ['housemate answer', HousemateAnswerSchema, { housemates: [housemate] }],
     [
