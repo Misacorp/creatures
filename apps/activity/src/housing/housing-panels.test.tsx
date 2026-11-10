@@ -80,7 +80,7 @@ describe('BuildPanel', () => {
     );
     const rows = byClass(p.root, 'vy-row');
     expect(rows.length).toBeGreaterThan(2);
-    const cellar = first(byName(p.root, 'button', /^Cellar, \d of \d lines paid into$/));
+    const cellar = first(byName(p.root, 'button', /^Cellar, \d \/ \d lines paid into$/));
     expect(byClass(cellar, 'pips')).toHaveLength(1);
     // No Pay in on the list, and no fold: the part's page has them.
     expect(byName(p.root, 'button', 'Pay in')).toHaveLength(0);

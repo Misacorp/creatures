@@ -32,7 +32,7 @@ function PartPips({ total, paid, name }: { total: number; paid: number; name: st
     <PipRow
       count={total}
       lit={paid}
-      label={`${name}: ${String(paid)} of ${String(total)} lines paid into`}
+      label={`${name}: ${String(paid)} / ${String(total)} lines paid into`}
     />
   );
 }
@@ -155,7 +155,7 @@ export function BuildPanel({
                 aside={
                   <PartPips total={part.lines.total} paid={part.lines.paid} name={part.name} />
                 }
-                label={`${part.name}, ${String(part.lines.paid)} of ${String(part.lines.total)} lines paid into`}
+                label={`${part.name}, ${String(part.lines.paid)} / ${String(part.lines.total)} lines paid into`}
                 onClick={() => {
                   pick(part.id);
                 }}

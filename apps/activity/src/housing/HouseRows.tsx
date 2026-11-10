@@ -105,7 +105,7 @@ export function HouseRows({
                 <PipRow
                   count={lines.buildPips.total}
                   lit={lines.buildPips.paid}
-                  label={`${String(lines.buildPips.paid)} of ${String(lines.buildPips.total)} lines paid into`}
+                  label={`${String(lines.buildPips.paid)} / ${String(lines.buildPips.total)} lines paid into`}
                 />
               ),
             })}
