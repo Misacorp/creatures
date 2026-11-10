@@ -15,7 +15,14 @@ import { PanHint } from '../ui/PanHint';
 import { useDragScroll } from '../ui/use-drag-scroll';
 import { keepsakeArt } from './house-art';
 import { paintPlacements } from './house-paint';
-import { composeHouse, type DisplayDrawing, type Placement, type SceneModel } from './house-scene';
+import {
+  composeHouse,
+  coreBox,
+  overviewScale,
+  type DisplayDrawing,
+  type Placement,
+  type SceneModel,
+} from './house-scene';
 import { useEffect } from 'preact/hooks';
 
 /** The width assumed until the box has been measured. */
@@ -74,7 +81,10 @@ export interface HouseSceneProps {
   onFixture?: (kind: 'mailbox' | 'workbench') => void;
   /** The mailbox's spoken name ("Mailbox, 2 gifts waiting"). */
   mailboxLabel?: string;
-  /** The integer scale for a box this wide (CSS px). Default: 2 on a phone, 3 from 700 px. */
+  /**
+   * The integer scale for a box this wide (CSS px). Default (`overviewScale`): 2 on a phone; on a wide window 3, or 2 when the
+   * whole house fits at 2 and not at 3.
+   */
   scaleFor?: (width: number) => number;
   /** Where the box's scroll is kept while a room is open. */
   memory?: ScrollMemory;
@@ -87,13 +97,24 @@ export function HouseScene({
   onRoom,
   onFixture,
   mailboxLabel = 'Mailbox',
-  scaleFor = defaultHouseScale,
+  scaleFor,
   memory,
 }: HouseSceneProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<HTMLDivElement>(null);
   const boxWidth = useElementWidth(rootRef, FALLBACK_WIDTH);
-  const scale = Math.max(1, Math.floor(scaleFor(boxWidth)));
+  // How wide the house is by itself: a wide window shows all of it when it fits at scale 2 or more.
+  const natural = useMemo(
+    () =>
+      composeHouse(house, { content: housing, creatures: 'skip', drawing: HOUSE_DRAWING }).width,
+    [house],
+  );
+  const scale = Math.max(
+    1,
+    Math.floor(
+      scaleFor === undefined ? overviewScale(boxWidth, natural).scale : scaleFor(boxWidth),
+    ),
+  );
   const model: SceneModel = useMemo(
     () =>
       composeHouse(house, {
@@ -105,7 +126,8 @@ export function HouseScene({
     [house, boxWidth, scale],
   );
   useDragScroll(viewRef);
-  // Start on the Hearth, at the ground; come back to where it was after a visit to a room.
+  // Start where the house is: all of it in view when it fits, else centred on the core (the hut, cottage and house column);
+  // come back to where it was after a visit to a room.
   const placedFor = useRef('');
   useLayoutEffect(() => {
     const view = viewRef.current;
@@ -118,8 +140,11 @@ export function HouseScene({
       view.scrollTop = memory.current.top;
       return;
     }
-    view.scrollLeft = Math.max(0, model.start.x * scale - view.clientWidth / 2);
-    view.scrollTop = Math.max(0, view.scrollHeight);
+    const core = coreBox(model.rooms);
+    const cx = core === null ? model.start.x : core.x + core.w / 2;
+    const cy = core === null ? model.start.y : core.y + core.h / 2;
+    view.scrollLeft = Math.max(0, Math.round(cx * scale - (view.clientWidth || 0) / 2));
+    view.scrollTop = Math.max(0, Math.round(cy * scale - (view.clientHeight || 0) / 2));
   }, [scale, model.width, model.height]);
   useEffect(() => {
     const view = viewRef.current;

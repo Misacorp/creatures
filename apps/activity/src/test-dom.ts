@@ -248,6 +248,13 @@ export class FakeElement extends FakeNode {
   setPointerCapture(id: number): void {
     this.captured.push(id);
   }
+  hasPointerCapture(id: number): boolean {
+    return this.captured.includes(id);
+  }
+  releasePointerCapture(id: number): void {
+    const at = this.captured.indexOf(id);
+    if (at !== -1) this.captured.splice(at, 1);
+  }
 
   focus(): void {
     this.focused += 1;

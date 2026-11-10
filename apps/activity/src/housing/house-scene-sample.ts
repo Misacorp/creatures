@@ -1,8 +1,8 @@
 /**
  * Sample houses for the scene's tests and the workbench: a `HouseView` of any set of built parts, with every room
  * dressed from the content (one set per room, so neighbours differ), the displays filled, and housemates asleep in
- * some beds. Pure and deterministic; every sample passes `HouseViewSchema` (the tests check). Not the server's data: C2's
- * `house-sample.ts` holds the panels' samples.
+ * some beds. Pure and deterministic; every sample passes `HouseViewSchema` (the tests check). `sceneHouse` and `sceneOwn` build a
+ * house of any parts for the scene; `house-sample.ts` (`sampleHouse`, `sampleOwn`, ...) holds the fixed samples of the panels.
  */
 import {
   houseGrid,
@@ -86,7 +86,7 @@ function pieceId(content: HousingContent, set: string, form: string): string | n
 }
 
 /** A house with `parts` built and its rooms dressed. */
-export function sampleHouse(options: SampleOptions = {}): HouseView {
+export function sceneHouse(options: SampleOptions = {}): HouseView {
   const content = options.content ?? housing;
   const parts = options.parts ?? HUT;
   const grid = houseGrid(content, new Set(parts));
@@ -238,7 +238,7 @@ export function sampleHouse(options: SampleOptions = {}): HouseView {
 }
 
 /** An own view for the rows and the workbench: a part half paid, some pieces and skins held, two gifts in the mailbox. */
-export function sampleOwn(house: HouseView, content: HousingContent = housing): OwnHouseView {
+export function sceneOwn(house: HouseView, content: HousingContent = housing): OwnHouseView {
   const built = new Set(house.built);
   const buildable = content.parts
     .filter((p) => !built.has(p.id) && p.requires.every((r) => built.has(r)))

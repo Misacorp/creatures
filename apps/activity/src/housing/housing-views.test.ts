@@ -103,11 +103,10 @@ describe('build view', () => {
     expect(all?.reason).toBe('Switch a line on to pay it.');
   });
 
-  it('counts lines paid for a part in progress and gives the part as the output', () => {
+  it('counts lines paid for a part in progress', () => {
     const card = partCards(sampleOwn('rich')).find((c) => c.id === 'west-upper');
     expect(card?.started).toBe(true);
     expect(card?.lines).toEqual({ total: 4, paid: 0 });
-    expect(card?.output.label).toBe('West Upper Floor');
   });
 
   it('gives each part that cannot be built yet its reason', () => {

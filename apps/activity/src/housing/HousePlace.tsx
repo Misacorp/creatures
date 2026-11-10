@@ -11,7 +11,7 @@
  */
 import type { ComponentChildren } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
-import { housing, resourceName, type HousePay } from '@creatures/game';
+import { housing, resourceName, type HousePay, type HouseView } from '@creatures/game';
 import type { Creature } from '../api';
 import { useLoaded } from '../use-loaded';
 import { Alert } from '../ui/Alert';
@@ -38,6 +38,7 @@ import { fetchCatalogue, fetchHouses } from './housing-api';
 import { HouseRows, type HouseDrill } from './HouseRows';
 import { HouseScene, type ScrollMemory } from './HouseScene';
 import { itemName, SPOT_NAMES } from './house-text';
+import { PartPreview } from './PartPreview';
 import { RoomFocus } from './RoomFocus';
 import { hasFresh, useHouse, type OwnHouse } from './use-house';
 import { VisitHouse } from './VisitHouse';
@@ -60,6 +61,31 @@ const DRILL_TITLES: Readonly<Record<HouseDrill, string>> = {
   mailbox: 'Mailbox',
   visits: 'Visit',
 };
+
+/** A spot a piece stands in (the first found), or null when it stands nowhere. */
+export function standsAt(
+  house: Pick<HouseView, 'rooms'>,
+  pieceId: string,
+): { roomId: string; spotId: string } | null {
+  for (const room of house.rooms) {
+    for (const [spotId, id] of Object.entries(room.spots)) {
+      if (id === pieceId) return { roomId: room.id, spotId };
+    }
+  }
+  return null;
+}
+
+/** The name of the room each placed piece stands in, by piece id: "From the Loft" on a piece that moves. */
+export function placedNames(house: Pick<HouseView, 'rooms'>): Record<string, string> {
+  const names: Record<string, string> = {};
+  for (const room of house.rooms) {
+    const name = housing.rooms.find((k) => k.id === room.kind)?.name ?? 'another room';
+    for (const id of Object.values(room.spots)) {
+      if (id !== null && names[id] === undefined) names[id] = name;
+    }
+  }
+  return names;
+}
 
 export interface HousePlaceProps {
   /** The player's creatures (a bed's housemate is chosen from them). */
@@ -113,6 +139,16 @@ export function HousePlace({ creatures, now, onSpent }: HousePlaceProps) {
   }
   const { house: view_, own } = state;
 
+  // The part whose page is open in Build (a part that has just been built has no page: the list shows).
+  const buildOpen =
+    view.kind === 'drill' && view.drill === 'build' && own.buildable.includes(view.focus ?? '')
+      ? view.focus
+      : undefined;
+  const drillTitle = (drill: HouseDrill): string =>
+    drill === 'build' && buildOpen !== undefined
+      ? (housing.parts.find((p) => p.id === buildOpen)?.name ?? DRILL_TITLES.build)
+      : DRILL_TITLES[drill];
+
   const home = (): void => {
     setView({ kind: 'home' });
     setPicker(null);
@@ -122,7 +158,9 @@ export function HousePlace({ creatures, now, onSpent }: HousePlaceProps) {
       setPicker(null);
       return;
     }
-    if (view.kind === 'drill') setView(view.from);
+    if (view.kind === 'drill' && view.drill === 'build' && buildOpen !== undefined) {
+      setView({ kind: 'drill', drill: 'build', from: view.from });
+    } else if (view.kind === 'drill') setView(view.from);
     else if (view.kind === 'visit') {
       list.reload();
       setView({ kind: 'drill', drill: 'visits', from: { kind: 'home' } });
@@ -150,7 +188,25 @@ export function HousePlace({ creatures, now, onSpent }: HousePlaceProps) {
     switch (drill) {
       case 'build':
         return (
-          <BuildPanel house={view_} own={own} busy={house.busy} error={house.error} onPay={pay} />
+          <BuildPanel
+            house={view_}
+            own={own}
+            busy={house.busy}
+            error={house.error}
+            onPay={pay}
+            open={buildOpen ?? null}
+            onOpen={(partId) => {
+              if (view.kind !== 'drill' || view.drill !== 'build') return;
+              setView(
+                partId === null
+                  ? { kind: 'drill', drill: 'build', from: view.from }
+                  : { kind: 'drill', drill: 'build', focus: partId, from: view.from },
+              );
+            }}
+            renderPreview={(partId, size) => (
+              <PartPreview house={view_} partId={partId} size={size} />
+            )}
+          />
         );
       case 'workbench':
         return (
@@ -207,9 +263,17 @@ export function HousePlace({ creatures, now, onSpent }: HousePlaceProps) {
             own={own}
             housemates={view_.housemates}
             creatures={creatures}
+            placedIn={placedNames(view_)}
             busy={house.busy}
             onPlace={(pieceId) => {
-              void house.actions.place(p.roomId, p.spotId, pieceId).then((ok) => {
+              // A piece with no free copy is taken from the spot it stands in, then placed here: one action.
+              const from =
+                pieceId === null || (own.free[pieceId] ?? 0) > 0 ? null : standsAt(view_, pieceId);
+              const done =
+                pieceId !== null && from !== null
+                  ? house.actions.move(from, { roomId: p.roomId, spotId: p.spotId }, pieceId)
+                  : house.actions.place(p.roomId, p.spotId, pieceId);
+              void done.then((ok) => {
                 if (ok) setPicker(null);
               });
             }}
@@ -310,6 +374,7 @@ export function HousePlace({ creatures, now, onSpent }: HousePlaceProps) {
       <div class="house-chips">
         <Tag
           kind="chip"
+          icon={{ kind: 'house', id: view_.exterior.roof }}
           label={`Roof: ${itemName(view_.exterior.roof)}`}
           onClick={() => {
             setPicker({ kind: 'skin', skin: 'roof', roomId: null });
@@ -319,6 +384,7 @@ export function HousePlace({ creatures, now, onSpent }: HousePlaceProps) {
         </Tag>
         <Tag
           kind="chip"
+          icon={{ kind: 'house', id: view_.exterior.walls }}
           label={`Walls: ${itemName(view_.exterior.walls)}`}
           onClick={() => {
             setPicker({ kind: 'skin', skin: 'walls', roomId: null });
@@ -396,13 +462,7 @@ export function HousePlace({ creatures, now, onSpent }: HousePlaceProps) {
           {pickerPage.body}
         </SidePanel>
       ) : drillView !== null ? (
-        <SidePanel
-          title={DRILL_TITLES[drillView.drill]}
-          titleId="house-panel-title"
-          onClose={() => {
-            setView(drillView.from);
-          }}
-        >
+        <SidePanel title={drillTitle(drillView.drill)} titleId="house-panel-title" onClose={back}>
           {drillBody(drillView.drill, drillView.focus)}
         </SidePanel>
       ) : null;
@@ -433,8 +493,8 @@ export function HousePlace({ creatures, now, onSpent }: HousePlaceProps) {
       {drillView !== null ? (
         <>
           <DrillHead
-            title={DRILL_TITLES[drillView.drill]}
-            backLabel="to your house"
+            title={drillTitle(drillView.drill)}
+            backLabel={buildOpen === undefined ? 'to your house' : 'to the parts'}
             onBack={back}
             scroll
             focus

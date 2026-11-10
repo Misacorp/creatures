@@ -9,8 +9,8 @@ import {
   HUT,
   MANSION,
   THREE_FLOORS,
-  sampleHouse,
-  sampleOwn,
+  sceneHouse,
+  sceneOwn,
 } from '../../housing/house-scene-sample';
 import { num, str } from '../props';
 import type { Entry, Props } from '../types';
@@ -26,7 +26,7 @@ const ROOFS = housing.skins.filter((s) => s.kind === 'roof').map((s) => s.id);
 const WALLS = housing.skins.filter((s) => s.kind === 'walls').map((s) => s.id);
 
 function houseOf(p: Props) {
-  return sampleHouse({
+  return sceneHouse({
     parts: HOUSES[str(p, 'house')] ?? HUT,
     housemates: num(p, 'housemates'),
     roof: str(p, 'roof'),
@@ -74,7 +74,7 @@ const houseScene: Entry = {
 const ROOM_OPTIONS = [...new Set(houseGrid(housing, new Set(MANSION)).map((r) => r.kind))];
 
 function RoomDemo({ p }: { p: Props }) {
-  const house = sampleHouse({
+  const house = sceneHouse({
     parts: MANSION,
     housemates: num(p, 'housemates'),
     roof: str(p, 'roof'),
@@ -138,8 +138,8 @@ const houseRows: Entry = {
   ],
   covers: ['YourHouseRow'],
   render: (p) => {
-    const house = sampleHouse({ parts: HOUSES[str(p, 'house')] ?? HUT });
-    return <HouseRows house={house} own={sampleOwn(house)} houses={7} onOpen={() => undefined} />;
+    const house = sceneHouse({ parts: HOUSES[str(p, 'house')] ?? HUT });
+    return <HouseRows house={house} own={sceneOwn(house)} houses={7} onOpen={() => undefined} />;
   },
 };
 
@@ -159,7 +159,7 @@ const visitHouse: Entry = {
     <VisitHouse
       userId="111111111111111111"
       name="Aino"
-      house={sampleHouse({
+      house={sceneHouse({
         parts: HOUSES[str(p, 'house')] ?? HUT,
         housemates: num(p, 'housemates'),
       })}

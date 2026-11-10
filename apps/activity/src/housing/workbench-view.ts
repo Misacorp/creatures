@@ -98,7 +98,16 @@ function recipe(
     name,
     kind,
     inputs: recipeInputs(lines, own),
-    output: { key: id, icon: { kind: 'house', id }, label: name, name },
+    // How many the player has shows beside the piece, so a craft is seen to count (1 becomes 2).
+    output: {
+      key: id,
+      icon: { kind: 'house', id },
+      label: name,
+      name,
+      ...(kind === 'piece' && owned > 0
+        ? { amount: owned, spokenAmount: `${String(owned)} owned` }
+        : {}),
+    },
     owned,
     done,
     affordable,

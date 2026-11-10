@@ -45,6 +45,7 @@
 
 /* A room alone: centred when it fits, panning sideways when it does not. */
 .house-focus-view {
+  margin-inline: calc(var(--focus-bleed, 12px) / -2);
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: none;

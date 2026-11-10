@@ -100,7 +100,7 @@ export function spotView(room: RoomView, spotId: string, own: OwnHouseView): Spo
         ? `${piece.name}, in this spot now`
         : spare > 0
           ? `${piece.name}, ${String(spare)} free`
-          : `${piece.name}, every copy is placed`,
+          : `${piece.name}, placed elsewhere, moves here`,
     };
     (choice.kind === 'free' ? free : placed).push(choice);
   }

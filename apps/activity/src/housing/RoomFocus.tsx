@@ -31,6 +31,8 @@ const FALLBACK_WIDTH = 390;
 /** The focus view's biggest scale; a room is drawn at the largest integer up to it that fits (never less than 2). */
 export const FOCUS_MAX_SCALE = 4;
 export const FOCUS_MIN_SCALE = 2;
+/** The focused room's picture may reach this far past the page's padding on both sides together (CSS px): a one-cell room is scale 3 on a 390 px phone. */
+export const FOCUS_BLEED = 12;
 
 /** The integer scale of a focused room `roomWidth` scene px wide in a box `boxWidth` CSS px wide. */
 export function focusScale(boxWidth: number, roomWidth: number): number {
@@ -38,6 +40,14 @@ export function focusScale(boxWidth: number, roomWidth: number): number {
     FOCUS_MAX_SCALE,
     Math.max(FOCUS_MIN_SCALE, Math.floor(boxWidth / Math.max(1, roomWidth))),
   );
+}
+
+/** Each spot's stacking layer: the biggest box lowest, so what is small (and what hangs in front of something big) is the one that is tapped. */
+export function spotLayers(
+  spots: readonly { spotId: string; w: number; h: number }[],
+): Map<string, number> {
+  const bySize = [...spots].sort((a, b) => b.w * b.h - a.w * a.h);
+  return new Map(bySize.map((s, i) => [s.spotId, i]));
 }
 
 /** The popover info of a housemate; the owner's name is shown only on someone else's. */
@@ -58,6 +68,7 @@ export function housemateInfo(mate: HousemateView, owner: string | null): Creatu
 function SpotButton({
   spot,
   scale,
+  layer,
   label,
   selected,
   onPick,
@@ -65,6 +76,8 @@ function SpotButton({
 }: {
   spot: SceneSpot;
   scale: number;
+  /** Stacking above the other spots: the smaller a spot's box, the higher, so a lamp over a shelf cannot hide the shelf. */
+  layer: number;
   label: string;
   selected: boolean;
   /** Own house: the tap asks for the spot's picker. Absent: the tap opens a popover (`peek`). */
@@ -78,6 +91,7 @@ function SpotButton({
       ref={(el) => {
         ref.current = el;
         boxVars(spot, scale)(el);
+        el?.style.setProperty('z-index', String(3 + layer));
       }}
       type="button"
       class="house-spot"
@@ -192,7 +206,8 @@ export function RoomFocus({
     [house, roomId],
   );
   if (model === null) return <p class="muted">That room is gone.</p>;
-  const scale = focusScale(boxWidth, model.width);
+  const scale = focusScale(boxWidth + FOCUS_BLEED, model.width);
+  const layers = spotLayers(model.spots);
   const view = house.rooms.find((r) => r.id === roomId);
   const own = mode === 'own';
   const owner = own ? null : house.owner.name;
@@ -231,6 +246,7 @@ export function RoomFocus({
                   key={spot.spotId}
                   spot={spot}
                   scale={scale}
+                  layer={layers.get(spot.spotId) ?? 0}
                   label={`${text.title}: ${text.lines[0] ?? 'nothing yet'}`}
                   selected={false}
                   onPick={undefined}
@@ -246,6 +262,7 @@ export function RoomFocus({
                 key={spot.spotId}
                 spot={spot}
                 scale={scale}
+                layer={layers.get(spot.spotId) ?? 0}
                 label={spotLabel(spot.type, spot.pieceId)}
                 selected={selectedSpot === spot.spotId}
                 onPick={
@@ -275,6 +292,7 @@ export function RoomFocus({
         <div class="house-chips">
           <Tag
             kind="chip"
+            icon={{ kind: 'house', id: view.wall }}
             label={`Wallpaper: ${itemName(view.wall)}`}
             onClick={() => {
               onSkin('wall');
@@ -284,6 +302,7 @@ export function RoomFocus({
           </Tag>
           <Tag
             kind="chip"
+            icon={{ kind: 'house', id: view.floor }}
             label={`Floor: ${itemName(view.floor)}`}
             onClick={() => {
               onSkin('floor');

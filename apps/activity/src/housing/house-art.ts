@@ -118,7 +118,7 @@ export function hasStampArt(id: string): boolean {
   return find((p) => own(p.stamps, id)) !== undefined;
 }
 
-/** A finished set's 12x12 keepsake; undefined when it has not been drawn (the Cosy set's, for now). */
+/** A finished set's 12x12 keepsake; undefined for a set with none drawn. */
 export function keepsakeArt(setId: string): SpriteDef | undefined {
   return find((p) => own(p.keepsakes, setId));
 }

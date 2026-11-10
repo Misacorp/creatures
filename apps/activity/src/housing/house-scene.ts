@@ -26,7 +26,7 @@ import {
 } from '@creatures/game';
 import { shinyPalette } from '../art';
 import { creatureSpriteOrFallback } from '../sprites/creature-sprites';
-import { spriteSize, swapPalette, type SpriteDef } from '../sprites/sprite-data';
+import { expandRows, spriteSize, swapPalette, type SpriteDef } from '../sprites/sprite-data';
 import { skySprite } from '../valley/place-scene';
 import { displayArt, pieceArt, shellArt, skinArt, type SkinArt } from './house-art';
 
@@ -463,6 +463,35 @@ function plaque(
   void bossId;
 }
 
+/** The board colours of a boss not beaten yet: a lit edge round a body only a shade lighter than the board. */
+const OUTLINE_EDGE = '#c9c2ec';
+const OUTLINE_BODY = '#3d3670';
+
+/**
+ * A boss as an outline: the same shape in two colours, a bright edge (every pixel that touches the picture's border or a
+ * clear pixel) round a body a shade lighter than the dark plaque board, so the shape reads at a glance on it. Pure.
+ */
+export function bossOutline(sprite: SpriteDef): SpriteDef {
+  const rows = expandRows(sprite);
+  const solidAt = (x: number, y: number): boolean => {
+    const c = rows[y]?.[x];
+    return c !== undefined && c !== '.';
+  };
+  return {
+    palette: { e: OUTLINE_EDGE, b: OUTLINE_BODY },
+    rows: rows.map((row, y) =>
+      [...row]
+        .map((c, x) => {
+          if (c === '.') return '.';
+          const edge =
+            !solidAt(x - 1, y) || !solidAt(x + 1, y) || !solidAt(x, y - 1) || !solidAt(x, y + 1);
+          return edge ? 'e' : 'b';
+        })
+        .join(''),
+    ),
+  };
+}
+
 /** Tiny marks in a row: `n` squares (at most `max`) of one colour, `gap` apart, starting at (x, y). */
 function marks(
   layers: Layers,
@@ -524,7 +553,13 @@ function drawDisplay(
           );
         }
       } else {
-        layers.back.push({ sprite: displayArt('plaque-empty'), x: centred(28), y: hang });
+        const board = centred(28);
+        layers.back.push({ sprite: displayArt('plaque-empty'), x: board, y: hang });
+        // This week's boss, outlined on the empty board: the one to beat.
+        const next = d?.current === null || d === null ? null : drawing.bossSprite(d.current);
+        if (next !== null) {
+          layers.back.push({ sprite: bossOutline(next), x: board + 2, y: hang + 1 });
+        }
       }
       return;
     }
@@ -1198,4 +1233,72 @@ export function housePreview(
     extraBuilt: [partId],
   });
   return { placements: [...model.back, ...model.front], width: model.width, height: model.height };
+}
+
+/** The size of a part's preview: its new rooms plus the roof over them and a few pixels of margin. */
+const PREVIEW_MARGIN = { side: 8, top: 56, bottom: 8 };
+
+/**
+ * Just the new part, for the build list's rows: the house with `partId` built on top, cropped to the rooms the part adds
+ * (its roof and a little margin included), every placement moved so the crop's top left is (0, 0). A part that adds no room
+ * shows the whole house. Housemates are left out.
+ */
+export function partPreview(
+  house: HouseView,
+  partId: string,
+  options: { content?: HousingContent; drawing?: DisplayDrawing } = {},
+): { placements: Placement[]; width: number; height: number } {
+  const shared = {
+    ...(options.content === undefined ? {} : { content: options.content }),
+    ...(options.drawing === undefined ? {} : { drawing: options.drawing }),
+    creatures: 'skip' as const,
+  };
+  const before = new Set(composeHouse(house, shared).rooms.map((r) => r.roomId));
+  const model = composeHouse(house, { ...shared, extraBuilt: [partId] });
+  const fresh = model.rooms.filter((r) => !before.has(r.roomId));
+  const all = [...model.back, ...model.front];
+  if (fresh.length === 0) return { placements: all, width: model.width, height: model.height };
+  const x0 = Math.max(0, Math.min(...fresh.map((r) => r.x)) - PREVIEW_MARGIN.side);
+  const x1 = Math.min(model.width, Math.max(...fresh.map((r) => r.x + r.w)) + PREVIEW_MARGIN.side);
+  const y0 = Math.max(0, Math.min(...fresh.map((r) => r.y)) - PREVIEW_MARGIN.top);
+  const y1 = Math.min(
+    model.height,
+    Math.max(...fresh.map((r) => r.y + r.h)) + PREVIEW_MARGIN.bottom,
+  );
+  return {
+    placements: all.map((p) => ({ ...p, x: p.x - x0, y: p.y - y0 })),
+    width: x1 - x0,
+    height: y1 - y0,
+  };
+}
+
+/** The parts of the core: where the overview starts. */
+const CORE_PARTS: ReadonlySet<string> = new Set(['hut', 'cottage', 'house']);
+
+/** The box of the core (the hut, cottage and house rooms, one above the other), or null when the model has none. */
+export function coreBox(
+  rooms: readonly SceneRoom[],
+): { x: number; y: number; w: number; h: number } | null {
+  const core = rooms.filter((r) => CORE_PARTS.has(r.roomId.split(':')[0] ?? ''));
+  if (core.length === 0) return null;
+  const x0 = Math.min(...core.map((r) => r.x));
+  const y0 = Math.min(...core.map((r) => r.y));
+  const x1 = Math.max(...core.map((r) => r.x + r.w));
+  const y1 = Math.max(...core.map((r) => r.y + r.h));
+  return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+}
+
+/**
+ * The scale of the overview for a box `boxWidth` CSS px wide, and whether the whole house is on show. A phone (under 700 px)
+ * draws at 2. A wide window draws at 3, or at 2 when the whole house fits at 2 but not at 3; a house that fits at neither
+ * stays at 3 and starts centred on the core (`coreBox`).
+ */
+export function overviewScale(
+  boxWidth: number,
+  houseWidth: number,
+): { scale: number; fits: boolean } {
+  if (boxWidth < 700) return { scale: 2, fits: houseWidth * 2 <= boxWidth };
+  if (houseWidth * 3 <= boxWidth) return { scale: 3, fits: true };
+  if (houseWidth * 2 <= boxWidth) return { scale: 2, fits: true };
+  return { scale: 3, fits: false };
 }

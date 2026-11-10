@@ -709,6 +709,15 @@ main.card:has(.vy-frame) > .hud {
   grid-template-columns: auto auto 1fr auto;
 }
 
+/* A row that closes with progress pips (the House's parts): the pips sit at the right edge. */
+.vy-row-aside {
+  justify-self: end;
+}
+
+.vy-row:has(.vy-row-aside):not(:has(.vy-row-line)) {
+  grid-template-columns: auto 1fr auto;
+}
+
 .vy-row-pip {
   width: 0.5rem;
   height: 0.5rem;

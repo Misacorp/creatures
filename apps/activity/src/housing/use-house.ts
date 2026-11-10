@@ -132,6 +132,15 @@ export interface HouseActions {
   build: (partId: string, pay: HousePay) => Promise<boolean>;
   craft: (itemId: string) => Promise<boolean>;
   place: (roomId: string, spotId: string, pieceId: string | null) => Promise<boolean>;
+  /**
+   * A piece with every copy placed goes to another spot: the server refuses to place a piece with no free copy, so the spot it
+   * stands in is emptied first and the piece placed in the new one, as one action for the player.
+   */
+  move: (
+    from: { roomId: string; spotId: string },
+    to: { roomId: string; spotId: string },
+    pieceId: string,
+  ) => Promise<boolean>;
   skin: (body: SkinBody) => Promise<boolean>;
   housemate: (roomId: string, spotId: string, creatureId: string | null) => Promise<boolean>;
   collect: () => Promise<boolean>;
@@ -186,6 +195,8 @@ export function useHouse(enabled: boolean, onSpent?: () => void): UseHouse {
   /** Folds an answer in; an action's answer outranks a load still running. */
   const take = (next: OwnHouse, purse = false): void => {
     seq.current += 1;
+    // At once, not at the next render: an action that follows straight on (a move) must start from this answer.
+    latest.current = next;
     setState(next);
     if (purse) spent.current?.();
   };
@@ -200,6 +211,12 @@ export function useHouse(enabled: boolean, onSpent?: () => void): UseHouse {
       );
       if (answer === undefined) return false;
       take(afterBuild(latest.current ?? at, answer), true);
+      // A payment that did not finish the part answers with its progress only (the purse and materials changed too): read the
+      // house's own view again so the holdings on screen are what the server holds.
+      if (answer.own === undefined) {
+        const fresh = await fetchOwnHouse().catch(() => null);
+        if (fresh !== null) take(fresh);
+      }
       return true;
     },
     craft: async (itemId) => {
@@ -220,6 +237,11 @@ export function useHouse(enabled: boolean, onSpent?: () => void): UseHouse {
       if (answer === undefined) return false;
       take(afterPlace(latest.current ?? at, answer));
       return true;
+    },
+    move: async (from, to, pieceId) => {
+      if (!(await actions.place(from.roomId, from.spotId, null))) return false;
+      // A refusal leaves the piece unplaced (in the bag) and says why; the screen has reloaded the house by then.
+      return actions.place(to.roomId, to.spotId, pieceId);
     },
     skin: async (body) => {
       const at = current();

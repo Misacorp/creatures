@@ -1,0 +1,143 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { OwnHouseView, RoomView } from '@creatures/game';
+import { SAMPLE_STATE } from '../creature-card-sample';
+import { byClass, byName, createPage, visibleText, type FakeElement, type Page } from '../test-dom';
+import { SAMPLE_NOW, sampleHouse, sampleList, sampleOwn } from './house-sample';
+
+/** The House place on the panels' sample data: the network is a stand-in, everything else is the real page. */
+
+const placeCalls: [string, string, string | null][] = [];
+let own: OwnHouseView = sampleOwn('rich');
+
+vi.mock('./housing-api', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./housing-api')>()),
+  fetchOwnHouse: () => Promise.resolve({ house: sampleHouse(), own }),
+  fetchHouses: () => Promise.resolve(sampleList()),
+  fetchCatalogue: () => Promise.reject(new Error('not needed here')),
+  markSeen: () => Promise.resolve(),
+  placePiece: (roomId: string, spotId: string, pieceId: string | null) => {
+    placeCalls.push([roomId, spotId, pieceId]);
+    const room: RoomView = {
+      ...(sampleHouse().rooms.find((r) => r.id === roomId) as RoomView),
+    };
+    room.spots = { ...room.spots, [spotId]: pieceId };
+    return Promise.resolve({ room, own: { free: own.free } });
+  },
+}));
+
+const { HousePlace } = await import('./HousePlace');
+
+let page: Page | null = null;
+
+beforeEach(() => {
+  placeCalls.length = 0;
+  own = sampleOwn('rich');
+  Reflect.set(globalThis, 'window', {
+    innerHeight: 800,
+    innerWidth: 390,
+    addEventListener: () => undefined,
+    removeEventListener: () => undefined,
+    scrollTo: () => undefined,
+  });
+});
+
+afterEach(() => {
+  page?.unmount();
+  page = null;
+  Reflect.deleteProperty(globalThis, 'window');
+});
+
+async function settle(p: Page): Promise<void> {
+  for (let i = 0; i < 8; i++) await Promise.resolve();
+  p.update(() => undefined);
+}
+
+async function open(): Promise<Page> {
+  page = createPage();
+  page.draw(<HousePlace creatures={SAMPLE_STATE.creatures} now={SAMPLE_NOW} />);
+  await settle(page);
+  return page;
+}
+
+function first(list: FakeElement[]): FakeElement {
+  const [el] = list;
+  if (el === undefined) throw new Error('not found');
+  return el;
+}
+
+describe('the House place on sample data', () => {
+  it('shows the scene, the two skin chips, the five rows and the guestbook', async () => {
+    const p = await open();
+    expect(byClass(p.root, 'house-room').length).toBeGreaterThanOrEqual(4);
+    expect(byName(p.root, 'button', /^Roof: /)).toHaveLength(1);
+    expect(byName(p.root, 'button', /^Walls: /)).toHaveLength(1);
+    const rows = byClass(p.root, 'vy-row');
+    expect(
+      rows
+        .map((r) => r.getAttribute('aria-label') ?? '')
+        .filter((l) => /^(Build|Workbench|Catalogue|Mailbox|Visit)/.test(l)),
+    ).toHaveLength(5);
+    expect(visibleText(p.root)).toContain('Juno');
+    // The place has no Back of its own.
+    expect(byName(p.root, 'button', /Back/)).toHaveLength(0);
+  });
+
+  it('opens Build as a list of parts and a part as its own page, with Back to the list and then the house', async () => {
+    const p = await open();
+    p.click(first(byName(p.root, 'button', /^Build, /)));
+    await settle(p);
+    expect(visibleText(p.root)).toContain('Build');
+    expect(byName(p.root, 'button', 'Pay in')).toHaveLength(0);
+    const part = first(byName(p.root, 'button', /^Cellar, /));
+    p.click(part);
+    await settle(p);
+    // The part's page: its name is the title, "Pay in" is there, Back goes to the parts.
+    expect(byName(p.root, 'button', 'Pay in')).toHaveLength(1);
+    expect(first(byName(p.root, 'button', /Back/)).getAttribute('class')).toContain('drill-back');
+    expect(visibleText(first(byClass(p.root, 'drill-head')))).toContain('Cellar');
+    p.click(first(byName(p.root, 'button', /Back/)));
+    await settle(p);
+    expect(byName(p.root, 'button', 'Pay in')).toHaveLength(0);
+    expect(visibleText(first(byClass(p.root, 'drill-head')))).toContain('Build');
+    p.click(first(byName(p.root, 'button', /Back/)));
+    await settle(p);
+    expect(byClass(p.root, 'house-room').length).toBeGreaterThan(0);
+  });
+
+  it('focuses a room, opens a spot in a drawer, and moves a piece with no free copy: the old spot is emptied, then it is placed', async () => {
+    const p = await open();
+    p.click(first(byName(p.root, 'button', 'Hearth')));
+    await settle(p);
+    const spots = byClass(p.root, 'house-spot');
+    expect(spots.length).toBeGreaterThanOrEqual(8);
+    // Every copy of the cosy plant stands in its spot; the chair's spot asks for it.
+    const chair = first(byName(p.root, 'button', /^Small floor: Cosy Chair/));
+    p.click(chair);
+    await settle(p);
+    const plant = first(byName(p.root, 'button', /^Cosy Plant, placed elsewhere/));
+    p.click(plant);
+    await settle(p);
+    expect(visibleText(p.root)).toContain('From the Hearth');
+    p.click(first(byName(p.root, 'button', /^Move here/)));
+    await settle(p);
+    const plantSpot = placeCalls[0];
+    expect(plantSpot?.[2]).toBeNull();
+    expect(placeCalls[1]?.[2]).toBe('cosy-plant');
+    expect(placeCalls).toHaveLength(2);
+    expect(placeCalls[1]?.[1]).not.toBe(plantSpot?.[1]);
+  });
+
+  it('places a piece that has a free copy with one request', async () => {
+    const p = await open();
+    p.click(first(byName(p.root, 'button', 'Hearth')));
+    await settle(p);
+    p.click(first(byName(p.root, 'button', /^Small floor: Cosy Chair/)));
+    await settle(p);
+    p.click(first(byName(p.root, 'button', /^Empty/)));
+    await settle(p);
+    p.click(first(byName(p.root, 'button', /^Empty the spot/)));
+    await settle(p);
+    expect(placeCalls).toHaveLength(1);
+    expect(placeCalls[0]?.[2]).toBeNull();
+  });
+});
