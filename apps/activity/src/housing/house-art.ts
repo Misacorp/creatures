@@ -143,9 +143,7 @@ const DISPLAY_FALLBACK: Readonly<Record<DisplayName, { w: number; h: number }>> 
   cabinet: { w: 26, h: 32 },
 };
 
-const SHELL_FALLBACK: Readonly<
-  Record<Exclude<ShellName, 'mailbox-empty'>, { w: number; h: number }>
-> = {
+const SHELL_FALLBACK: Readonly<Record<ShellName, { w: number; h: number }>> = {
   slab: { w: 16, h: 4 },
   earth: { w: 16, h: 16 },
   chimney: { w: 14, h: 28 },
