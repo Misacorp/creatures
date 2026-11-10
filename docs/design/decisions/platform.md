@@ -4,6 +4,14 @@ Hosting, Durable Objects, scheduling, CI and deploys, staging, dependencies, sec
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-10: Migrations: applied by recorded version, reserved gaps, never revert the runner
+
+ID: `2026-11-10-migrations-applied-by-recorded-version-reserved` · Status: current
+
+**Decision.** The migration runner applies every real migration whose version is not yet recorded (set-based), not "everything above the highest recorded version". Versions 64 to 66 are reserved for the valley session's branch: that branch must take `applyMigrations` from the housing branch when it merges and number any new migration from 68. The set-based runner must never be reverted, even if housing itself is.
+
+**Reasoning.** Housing took 67 while the valley's 64 to 66 are still unmerged, so production will hold a recorded 67 with 64 to 66 unrecorded. A highest-version runner would skip them forever when the valley lands; a set-based one applies them. Reverting the runner (say, along with housing) would bring that skip back, so it stays whatever happens to housing.
+
 ## 2026-11-06: Dev tools: server managers only, roster presets, creatures-per-player override [Misa]
 
 ID: `2026-11-06-dev-tools-server-managers-only-roster` · Status: current

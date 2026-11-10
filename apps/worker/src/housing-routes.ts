@@ -27,7 +27,8 @@ export interface HousingRouteContext {
   user: { id: string };
   /** Path parameters of a template route, raw: validated here before use. */
   params: Record<string, string>;
-  core: { housing: Housing | null };
+  /** `dev` is the dev tools: set only where they are on (staging and local), absent or null in production. */
+  core: { housing: Housing | null; dev?: object | null };
 }
 
 /** True for the paths of the housing routes (`/api/house...` and `/api/houses...`). With the flag off they answer like a missing route. */
@@ -38,6 +39,17 @@ export function isHousingPath(pathname: string): boolean {
     pathname.startsWith('/api/house/') ||
     pathname.startsWith('/api/houses/')
   );
+}
+
+const HOUSING_NO_SPEND_RE =
+  /^\/api\/(?:house\/(?:place|skin|housemate|seen)|houses\/[^/]+\/stamp)$/;
+
+/**
+ * True for the housing writes that spend or credit nothing the valley's lazy settle could owe (decorating, a housemate, the "seen"
+ * mark, a guestbook stamp). The rest (build, craft, gift, collect) move Acorns, so the valley settles first like any other spend.
+ */
+export function isHousingNoSpendPath(pathname: string): boolean {
+  return HOUSING_NO_SPEND_RE.test(pathname);
 }
 
 /** The housing module, or the answer of a missing route when the flag is off. */
@@ -57,10 +69,16 @@ function withHousing(
 /** The staging dev tools' simulated players (`dev-guest-<n>`): they have houses, so they can be visited. */
 const DEV_GUEST_RE = /^dev-guest-\d{1,3}$/;
 
-/** The `:id` of a visited house: a Discord snowflake (or a dev guest), else it names no house. */
+/**
+ * The `:id` of a visited house: a Discord snowflake, or a dev guest where the dev tools are on (staging and local), else it names no
+ * house. In production a `dev-guest-N` id is refused like any other bad id.
+ */
 function ownerId(ctx: HousingRouteContext): string | undefined {
   const id = ctx.params['id'];
-  return id !== undefined && (SNOWFLAKE_RE.test(id) || DEV_GUEST_RE.test(id)) ? id : undefined;
+  if (id === undefined) return undefined;
+  if (SNOWFLAKE_RE.test(id)) return id;
+  const devTools = ctx.core.dev !== null && ctx.core.dev !== undefined;
+  return devTools && DEV_GUEST_RE.test(id) ? id : undefined;
 }
 
 /**

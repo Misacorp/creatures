@@ -371,7 +371,8 @@ describe('housemates', () => {
           p.id,
           today,
           ctx.clock.t,
-          JSON.stringify({ row: [{ id: b }] }),
+          // An id that only appears in some other field of the state (`note`) is not in the row.
+          JSON.stringify({ v: 1, everyone: [b], note: c }),
         );
         const away = await homes();
         expect(away[a]).toBe(false);

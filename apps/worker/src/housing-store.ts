@@ -456,12 +456,6 @@ export function stampedHousesToday(sql: SqlStorage, visitorId: string, day: stri
 
 // --- Mail ---
 
-export type MailRow = {
-  id: number;
-  from_id: string;
-  amount: number;
-};
-
 /** The house the giver's gift today went to, or null. */
 export function giftGivenToday(sql: SqlStorage, fromId: string, day: string): string | null {
   return (
@@ -502,14 +496,35 @@ export function addGift(
   );
 }
 
-/** Unclaimed mail of an owner, newest first. */
-export function openMail(sql: SqlStorage, ownerId: string): MailRow[] {
-  return sql
-    .exec<MailRow>(
-      'SELECT id, from_id, amount FROM house_mail WHERE owner_id = ? AND claimed_at IS NULL ORDER BY id DESC',
+/** How many gifts wait unclaimed in an owner's mailbox and their Acorns in all (one indexed aggregate). */
+export function openMailTotals(
+  sql: SqlStorage,
+  ownerId: string,
+): { count: number; acorns: number } {
+  const row = sql
+    .exec<{
+      n: number;
+      total: number;
+    }>(
+      'SELECT COUNT(*) AS n, COALESCE(SUM(amount), 0) AS total FROM house_mail WHERE owner_id = ? AND claimed_at IS NULL',
       ownerId,
     )
+    .one();
+  return { count: row.n, acorns: row.total };
+}
+
+/** The givers of the newest unclaimed mail of an owner (at most `limit` rows read), newest first, each once. */
+export function openMailGivers(sql: SqlStorage, ownerId: string, limit: number): string[] {
+  const rows = sql
+    .exec<{
+      from_id: string;
+    }>(
+      'SELECT from_id FROM house_mail WHERE owner_id = ? AND claimed_at IS NULL ORDER BY id DESC LIMIT ?',
+      ownerId,
+      limit,
+    )
     .toArray();
+  return [...new Set(rows.map((r) => r.from_id))];
 }
 
 export function claimMail(sql: SqlStorage, ownerId: string, now: number): void {

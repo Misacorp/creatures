@@ -20,6 +20,7 @@ import {
   knownBlueprints,
   partPaidLines,
   partRemaining,
+  freeHut,
   piecePrice,
   skinPrice,
   type CatalogueView,
@@ -42,6 +43,7 @@ import {
   type RoomKindDef,
   type RoomView,
 } from '@creatures/game';
+import { parseState } from './dungeon-state';
 import { busyReason } from './gear-access';
 import { debitParts, getParts } from './gear-store';
 import { DISPLAY_PROVIDERS } from './housing-displays';
@@ -66,7 +68,8 @@ import {
   listItemsOf,
   listParts,
   listRooms,
-  openMail,
+  openMailGivers,
+  openMailTotals,
   parsePaid,
   parseSpots,
   playerNames,
@@ -186,7 +189,7 @@ export class Housing {
     const { content, sql } = this;
     const now = this.deps.now();
     insertHouse(sql, userId, content.starter.roof, content.starter.walls, now);
-    const hut = content.parts.find((p) => p.price.length === 0 && p.requires.length === 0);
+    const hut = freeHut(content);
     if (hut !== undefined) {
       upsertPart(sql, userId, hut.id, {}, now);
       for (const room of hut.rooms) {
@@ -225,13 +228,33 @@ export class Housing {
 
   // --- Loading and views ---
 
+  /**
+   * A spot (or a whole room) that content no longer has releases its piece, so it never counts as placed. Removes them from `spots`;
+   * true when any went.
+   */
+  private dropStaleSpots(roomId: string, spots: Spots): boolean {
+    const valid = new Set(this.roomKind(roomId)?.spots.map((s) => s.id));
+    let stale = false;
+    for (const spotId of Object.keys(spots)) {
+      if (!valid.has(spotId)) {
+        delete spots[spotId];
+        stale = true;
+      }
+    }
+    return stale;
+  }
+
   /** Loads a house: the caller's own with every item row, a visited one with its pieces only. */
-  private load(userId: string, house: HouseRow, all: boolean): Loaded {
+  private load(userId: string, house: HouseRow, all: boolean, persist = true): Loaded {
     const parts = listParts(this.sql, userId);
     const built = new Set(parts.filter((p) => p.built_at !== null).map((p) => p.part_id));
     const rooms = new Map<string, { row: RoomRow; spots: Spots }>();
     for (const row of listRooms(this.sql, userId)) {
-      rooms.set(row.room_id, { row, spots: parseSpots(row.spots_json) });
+      const spots = parseSpots(row.spots_json);
+      if (this.dropStaleSpots(row.room_id, spots) && persist) {
+        setRoomSpots(this.sql, userId, row.room_id, spots);
+      }
+      rooms.set(row.room_id, { row, spots });
     }
     const items = all ? listItems(this.sql, userId) : listItemsOf(this.sql, userId, 'piece');
     const owned = new Map(
@@ -299,7 +322,8 @@ export class Housing {
   private housemateViews(userId: string, loaded: Loaded, clean: boolean): HousemateView[] {
     const out: HousemateView[] = [];
     const today = this.day();
-    let run: { day: string; active: boolean; state: string } | null | undefined;
+    // The creatures of today's open run (every one that stood in its row), parsed once; null when there is none.
+    let run: ReadonlySet<string> | null | undefined;
     const inOpenRun = (creatureId: string): boolean => {
       if (run === undefined) {
         const row = this.sql
@@ -308,12 +332,13 @@ export class Housing {
             userId,
           )
           .toArray()[0];
-        run =
-          row === undefined
-            ? null
-            : { day: row.day, active: row.status === 'active', state: row.state_json ?? '' };
+        const state =
+          row !== undefined && row.status === 'active' && row.day === today
+            ? parseState(row.state_json)
+            : null;
+        run = state === null ? null : new Set(state.everyone);
       }
-      return run !== null && run.active && run.day === today && run.state.includes(creatureId);
+      return run !== null && run.has(creatureId);
     };
     for (const [roomId, entry] of [...loaded.rooms].sort(([a], [b]) => a.localeCompare(b))) {
       for (const [spotId, spot] of Object.entries(entry.spots).sort(([a], [b]) =>
@@ -464,17 +489,10 @@ export class Housing {
     const held = getParts(sql, userId);
     const shards = emptyShards();
     for (const element of ELEMENTS) shards[element] = held[shardKind(element)];
-    const mail = openMail(sql, userId);
-    const givers = playerNames(
-      this.sql,
-      mail.slice(0, 64).map((m) => m.from_id),
-    );
-    const from: { userId: string; name: string }[] = [];
-    for (const m of mail) {
-      if (from.length >= 32) break;
-      if (from.some((f) => f.userId === m.from_id)) continue;
-      from.push({ userId: m.from_id, name: givers.get(m.from_id) ?? 'Someone' });
-    }
+    const mail = openMailTotals(sql, userId);
+    const giverIds = openMailGivers(sql, userId, HOUSING_RULES.gift.giversShown);
+    const givers = playerNames(this.sql, giverIds);
+    const from = giverIds.map((id) => ({ userId: id, name: givers.get(id) ?? 'Someone' }));
     const recent: OwnHouseView['recent'] = [];
     for (const row of recentDrops(sql, userId, HOUSING_RULES.recentShown * 2)) {
       if (recent.length >= HOUSING_RULES.recentShown) break;
@@ -494,7 +512,7 @@ export class Housing {
       free: this.freeCounts(loaded),
       materials,
       purse: { bait: getBalance(sql, userId, 'bait'), scrap: held.scrap, shards },
-      mailbox: { gifts: mail.length, acorns: mail.reduce((n, m) => n + m.amount, 0), from },
+      mailbox: { gifts: mail.count, acorns: mail.acorns, from },
       recent,
     };
   }
@@ -509,8 +527,32 @@ export class Housing {
     return atomically(this.deps.storage, () => this.ownAnswer(userId));
   }
 
+  /**
+   * Finishes the parts that are paid in full but not built (a price was lowered since), in build order, each only once it is buildable.
+   * True when any was finished.
+   */
+  private finishPaidParts(userId: string, loaded: Loaded): boolean {
+    const now = this.deps.now();
+    const rows = new Map(loaded.parts.map((r) => [r.part_id, r]));
+    let any = false;
+    for (const part of this.content.parts) {
+      const row = rows.get(part.id);
+      if (row === undefined || row.built_at !== null) continue;
+      const paid = parsePaid(row.paid_json);
+      if (partRemaining(part, paid).length > 0) continue;
+      if (!buildable(this.content, loaded.built).includes(part.id)) continue;
+      upsertPart(this.sql, userId, part.id, paid, now);
+      this.finishPart(userId, part, now);
+      loaded.built.add(part.id);
+      any = true;
+    }
+    if (any) touchHouse(this.sql, userId, now);
+    return any;
+  }
+
   private ownAnswer(userId: string): { house: HouseView; own: OwnHouseView } {
-    const loaded = this.reload(userId);
+    let loaded = this.reload(userId);
+    if (this.finishPaidParts(userId, loaded)) loaded = this.reload(userId);
     const reads = houseReads(this.sql, userId);
     // The starter set is whole from the first minute: only the sets beyond it count as finished.
     const starterSets = new Set(this.content.sets.filter((x) => x.tier === 0).map((x) => x.id));
@@ -539,7 +581,7 @@ export class Housing {
       if (ownerId === viewerId) return { house: this.ownAnswer(viewerId).house };
       const house = getHouse(this.sql, ownerId);
       if (house === null) throw new GameError(404, 'no_house');
-      const loaded = this.load(ownerId, house, false);
+      const loaded = this.load(ownerId, house, false, false);
       return { house: this.houseView(ownerId, loaded, houseReads(this.sql, ownerId), false) };
     });
   }
@@ -577,7 +619,9 @@ export class Housing {
       const built = new Set(parts.filter((p) => p.built_at !== null).map((p) => p.part_id));
       const rooms = new Map<string, { row: RoomRow; spots: Spots }>();
       for (const row of listRooms(this.sql, userId)) {
-        rooms.set(row.room_id, { row, spots: parseSpots(row.spots_json) });
+        const spots = parseSpots(row.spots_json);
+        this.dropStaleSpots(row.room_id, spots);
+        rooms.set(row.room_id, { row, spots });
       }
       const placed = this.placedCounts(rooms);
       const of = (kind: ItemRow['kind']): Map<string, ItemRow> =>
@@ -661,6 +705,13 @@ export class Housing {
     const built = new Set(rows.filter((r) => r.built_at !== null).map((r) => r.part_id));
     if (!buildable(content, built).includes(part.id)) throw new GameError(409, 'part_locked');
     const paid = parsePaid(row?.paid_json ?? '{}');
+    if (partRemaining(part, paid).length === 0) {
+      // Paid in full already (a price was lowered since): finish it and take nothing.
+      upsertPart(sql, userId, part.id, paid, now);
+      this.finishPart(userId, part, now);
+      touchHouse(sql, userId, now);
+      return { part: this.partProgress(part, paid), built: true };
+    }
     const parts = getParts(sql, userId);
     const shards: Partial<Record<Element, number>> = {};
     for (const element of ELEMENTS) shards[element] = parts[shardKind(element)];
@@ -942,10 +993,12 @@ export class Housing {
         }
         if (current?.p !== body.pieceId) {
           if (form.bed === true) {
-            const other = Object.entries(spots).some(
+            const others = Object.entries(spots).filter(
               ([spotId, s]) => spotId !== body.spotId && this.formOfPiece.get(s.p)?.bed === true,
-            );
-            if (other) throw new GameError(409, 'spot_mismatch');
+            ).length;
+            if (others >= HOUSING_RULES.housemates.bedsPerRoom) {
+              throw new GameError(409, 'spot_mismatch');
+            }
           }
           const placed = this.placedCounts(loaded.rooms).get(body.pieceId) ?? 0;
           if ((loaded.owned.get(body.pieceId) ?? 0) - placed <= 0) {
@@ -1090,7 +1143,10 @@ export class Housing {
           if (giftGivenToday(this.sql, userId, day) !== null) {
             throw new GameError(409, 'gift_used_today');
           }
-          if (giftsReceivedToday(this.sql, ownerId, day) >= rules.perReceiverPerDay) {
+          if (
+            giftsReceivedToday(this.sql, ownerId, day) >= rules.perReceiverPerDay ||
+            openMailTotals(this.sql, ownerId).count >= rules.mailCap
+          ) {
             throw new GameError(409, 'gift_cap_reached');
           }
           addGift(this.sql, ownerId, userId, rules.acorns, day, this.deps.now());
@@ -1137,9 +1193,9 @@ export class Housing {
         this.deps.now,
         { userId, key, kind: 'house_collect', fingerprint: '' },
         () => {
-          const mail = openMail(this.sql, userId);
-          if (mail.length === 0) throw new GameError(409, 'nothing_to_collect');
-          const total = mail.reduce((n, m) => n + m.amount, 0);
+          const mail = openMailTotals(this.sql, userId);
+          if (mail.count === 0) throw new GameError(409, 'nothing_to_collect');
+          const total = mail.acorns;
           credit(
             this.deps.storage,
             {

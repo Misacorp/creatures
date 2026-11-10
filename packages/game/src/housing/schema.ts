@@ -7,6 +7,7 @@ import * as v from 'valibot';
 import { ElementSchema, IdSchema } from '../content/schema';
 import type { ResourceDef } from '../content/resources-schema';
 import { HOUSING_RULES } from './rules';
+import { lineKey, piecePrice } from './price';
 
 export const MATERIAL_FAMILIES = ['wood', 'stone', 'metal', 'cloth'] as const;
 export const MaterialFamilySchema = v.picklist(MATERIAL_FAMILIES);
@@ -376,10 +377,14 @@ function checkPrice(
   price: readonly PriceLine[] | undefined,
   materialIds: ReadonlySet<string>,
 ): void {
+  const keys = new Set<string>();
   for (const line of price ?? []) {
     if (line.kind === 'material' && !materialIds.has(line.id)) {
       fail(`${what} price names unknown material "${line.id}"`);
     }
+    const key = lineKey(line);
+    if (keys.has(key)) fail(`${what} price has the line "${key}" twice`);
+    keys.add(key);
   }
 }
 
@@ -422,6 +427,7 @@ function checkItems(content: HousingContent, ctx: HousingLoadContext): void {
     }
     unlockOk(`piece "${piece.id}"`, piece.unlock);
     checkPrice(`piece "${piece.id}"`, piece.price, materialIds);
+    if (piecePrice(content, piece.id).length === 0) fail(`piece "${piece.id}" has an empty price`);
     if (piece.sources !== undefined) checkSources(`piece "${piece.id}"`, piece.sources, ctx);
   }
   for (const skin of content.skins) {
@@ -432,8 +438,10 @@ function checkItems(content: HousingContent, ctx: HousingLoadContext): void {
     checkPrice(`skin "${skin.id}"`, skin.price, materialIds);
   }
   const itemIds = new Set([...content.pieces.map((p) => p.id), ...content.skins.map((s) => s.id)]);
+  const hut = freeHut(content);
   for (const part of content.parts) {
     checkPrice(`part "${part.id}"`, part.price, materialIds);
+    if (part.price.length === 0 && part !== hut) fail(`part "${part.id}" has an empty price`);
     for (const u of part.unlocks) {
       if (!itemIds.has(u)) fail(`part "${part.id}" unlocks unknown item "${u}"`);
     }
@@ -470,6 +478,13 @@ function checkMaterials(
   }
 }
 
+/** The hut: the core part that is free and needs nothing (the house's first part). */
+export function freeHut(content: HousingContent): PartDef | undefined {
+  return content.parts.find(
+    (p) => p.kind === 'core' && p.price.length === 0 && p.requires.length === 0,
+  );
+}
+
 function checkStarter(content: HousingContent): void {
   const skin = (id: string) => content.skins.find((s) => s.id === id);
   if (skin(content.starter.roof)?.kind !== 'roof') {
@@ -478,9 +493,7 @@ function checkStarter(content: HousingContent): void {
   if (skin(content.starter.walls)?.kind !== 'walls') {
     fail(`starter walls "${content.starter.walls}" is not a walls skin`);
   }
-  const hut = content.parts.find(
-    (p) => p.kind === 'core' && p.price.length === 0 && p.requires.length === 0,
-  );
+  const hut = freeHut(content);
   const hearth = hut?.rooms[0];
   if (hearth === undefined) fail('there is no free core part with a first room (the hut)');
   for (const [spotId, pieceId] of Object.entries(content.starter.layout)) {

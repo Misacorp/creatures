@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   createSeededRng,
   rollHouseDrops,
+  rollHouseDropsLazy,
+  type Rng,
   type HouseDrop,
   type HousingContent,
   type HousingMoment,
@@ -225,5 +227,36 @@ describe('rollHouseDrops: blueprints and stamps', () => {
   it('a dungeon blueprint and stamp need a clear', () => {
     const lost = many(2000, { kind: 'dungeon', key: 'k', depth: 5, cleared: false });
     expect(lost.every((d) => d.blueprint === null && d.stamp === null)).toBe(true);
+  });
+});
+
+describe('rollHouseDropsLazy: the known set is read only when a keepsake roll hits', () => {
+  it('loads it only on a hit, and matches the eager roll', () => {
+    const moment = trip(9);
+    let loads = 0;
+    let withLoad = 0;
+    const eager = createSeededRng('lazy');
+    const lazy = createSeededRng('lazy');
+    for (let i = 0; i < 300; i++) {
+      const before = loads;
+      const a = rollHouseDropsLazy(lazy, content, moment, () => {
+        loads++;
+        return none;
+      });
+      expect(a).toEqual(rollHouseDrops(eager, content, moment, none));
+      if (loads > before) withLoad++;
+    }
+    expect(loads).toBe(withLoad);
+    expect(loads).toBeLessThan(60);
+  });
+
+  it('loads it at most once when both keepsake rolls hit', () => {
+    const always: Rng = { nextU32: () => 0 };
+    let loads = 0;
+    rollHouseDropsLazy(always, content, trip(3), () => {
+      loads++;
+      return none;
+    });
+    expect(loads).toBe(1);
   });
 });

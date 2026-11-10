@@ -22,7 +22,7 @@ function part(
     kind,
     requires,
     rooms: rooms.map(([key, roomKind, col, floor]) => ({ key, kind: roomKind, col, floor })),
-    price: [],
+    price: requires.length === 0 && kind === 'core' ? [] : [{ kind: 'bait', amount: 1 }],
     ...(side === undefined ? {} : { side }),
     unlocks: [],
     line: 'x',

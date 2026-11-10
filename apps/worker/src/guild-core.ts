@@ -11,7 +11,7 @@ import { Gear } from './gear';
 import { Games } from './games';
 import { Housing } from './housing';
 import { HousingDrops } from './housing-drops';
-import { housingRoutes, isHousingPath } from './housing-routes';
+import { housingRoutes, isHousingNoSpendPath, isHousingPath } from './housing-routes';
 import { gamesRoutes } from './games-routes';
 import { weekIdFor } from './raid-schedule';
 import { convertPendingGear } from './gear-convert';
@@ -241,7 +241,8 @@ function isIntent(method: string, pathname: string): boolean {
   return (
     pathname !== '/api/room' &&
     pathname !== '/api/valley/gazette/close' &&
-    !isHousingPath(pathname) &&
+    // Housing build, craft, gift and collect move Acorns the settle may owe; only its decorating writes skip it.
+    !isHousingNoSpendPath(pathname) &&
     !isDevPath(pathname)
   );
 }

@@ -129,7 +129,26 @@ export function rollHouseDrops(
   rng: Rng,
   content: HousingContent,
   moment: HousingMoment,
-  known: { blueprints: ReadonlySet<string>; stamps: ReadonlySet<string> },
+  known: KnownKeepsakes,
+): HouseDrop {
+  return rollHouseDropsLazy(rng, content, moment, () => known);
+}
+
+/** What a player already holds of the keepsakes a roll must not repeat. */
+export interface KnownKeepsakes {
+  blueprints: ReadonlySet<string>;
+  stamps: ReadonlySet<string>;
+}
+
+/**
+ * The same roll in two steps: every chance is rolled first, and `loadKnown` is called (at most once) only when a blueprint or a
+ * stamp roll hits, so a caller that reads the player's holdings from storage reads them only then.
+ */
+export function rollHouseDropsLazy(
+  rng: Rng,
+  content: HousingContent,
+  moment: HousingMoment,
+  loadKnown: () => KnownKeepsakes,
 ): HouseDrop {
   const plan = planFor(moment);
   const materials: Record<string, number> = {};
@@ -155,24 +174,21 @@ export function rollHouseDrops(
       add(D.raid.festivalMaterial, D.raid.festivalAmount);
     }
   }
+  let known: KnownKeepsakes | undefined;
+  const holdings = (): KnownKeepsakes => (known ??= loadKnown());
   let blueprint: string | null = null;
-  if (plan.blueprintPct > 0) {
-    const candidates = blueprintPool(content, moment, known.blueprints);
-    if (candidates.length > 0 && chance(rng, plan.blueprintPct, 100)) {
-      blueprint = candidates[int(rng, candidates.length)] ?? null;
-    }
+  if (plan.blueprintPct > 0 && chance(rng, plan.blueprintPct, 100)) {
+    const candidates = blueprintPool(content, moment, holdings().blueprints);
+    if (candidates.length > 0) blueprint = candidates[int(rng, candidates.length)] ?? null;
   }
   let stamp: string | null = null;
-  if (plan.stampPct > 0) {
+  if (plan.stampPct > 0 && chance(rng, plan.stampPct, 100)) {
+    const stamps = holdings().stamps;
     const candidates = content.stamps.filter(
       (s) =>
-        s.unlock.kind === 'drop' &&
-        s.unlock.moments.includes(moment.kind) &&
-        !known.stamps.has(s.id),
+        s.unlock.kind === 'drop' && s.unlock.moments.includes(moment.kind) && !stamps.has(s.id),
     );
-    if (candidates.length > 0 && chance(rng, plan.stampPct, 100)) {
-      stamp = candidates[int(rng, candidates.length)]?.id ?? null;
-    }
+    if (candidates.length > 0) stamp = candidates[int(rng, candidates.length)]?.id ?? null;
   }
   return { materials, blueprint, stamp };
 }

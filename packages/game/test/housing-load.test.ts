@@ -97,6 +97,21 @@ describe('housing content loader', () => {
       /unknown material "nope"/,
     ],
     [
+      'a part price with the same line twice',
+      (r) => r.parts[1]?.price.push({ kind: 'bait', amount: 1 }),
+      /price has the line "bait" twice/,
+    ],
+    [
+      'a part other than the hut with an empty price',
+      (r) => ((r.parts[1] ?? { price: [] as unknown[] }).price = []),
+      /part "cottage" has an empty price/,
+    ],
+    [
+      'a piece with an empty price',
+      (r) => Object.assign(r.pieces[0] ?? {}, { price: [] }),
+      /has an empty price/,
+    ],
+    [
       'a stamp naming an unknown journal set',
       (r) => {
         r.stamps.push({

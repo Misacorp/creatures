@@ -7,8 +7,11 @@ export const HOUSING_RULES = {
   cell: { w: 112, h: 64, wall: 4, interiorH: 52, floorStrip: 8, slab: 4 },
   /** Housemates per house and beds per room. */
   housemates: { max: 3, bedsPerRoom: 1 },
-  /** A visitor's gift: Acorns the server makes; one a day in all per giver, a few a day per receiver; never expires. */
-  gift: { acorns: 5, perGiverPerDay: 1, perReceiverPerDay: 6 },
+  /**
+   * A visitor's gift: Acorns the server makes; one a day in all per giver (the mail table's unique index), a few a day per receiver, and
+   * at most `mailCap` waiting in one mailbox (a gift is refused past it); never expires. The view names at most `giversShown` givers.
+   */
+  gift: { acorns: 5, perReceiverPerDay: 6, mailCap: 30, giversShown: 32 },
   /** One stamp per visitor per house per day; the guestbook keeps the latest rows. */
   stamps: { perVisitorPerHousePerDay: 1 },
   guestbookKeep: 30,

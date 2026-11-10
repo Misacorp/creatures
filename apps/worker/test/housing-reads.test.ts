@@ -23,7 +23,7 @@ const BUDGET = {
   place: { reads: 250, writes: 10 }, // measured 167, 4 written
   skin: { reads: 700, writes: 10 }, // measured 465, 6 written (answers with the house view)
   housemate: { reads: 260, writes: 10 }, // measured 172, 4 written
-  gift: { reads: 40, writes: 15 }, // measured 27, 9 written
+  gift: { reads: 75, writes: 15 }, // measured 48, 3 written: was 27 before the mailbox cap; the cap check counts the receiver's open mail (20 here, at most 30)
   stamp: { reads: 160, writes: 15 }, // measured 105, 7 written (14 visitor names of the guestbook)
   collect: { reads: 160, writes: 75 }, // measured 107, 49 written (20 gifts claimed, the credit and its ledger rows)
   seen: { reads: 60, writes: 25 }, // measured 39, 16 written (the "+N" of 16 materials)
