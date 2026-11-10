@@ -718,6 +718,11 @@ main.card:has(.vy-frame) > .hud {
   grid-template-columns: auto 1fr auto;
 }
 
+/* A line and pips both: the name, the line (cut with an ellipsis), then the pips at the right edge. */
+.vy-row:has(.vy-row-aside):has(.vy-row-line) {
+  grid-template-columns: auto auto 1fr auto;
+}
+
 .vy-row-pip {
   width: 0.5rem;
   height: 0.5rem;

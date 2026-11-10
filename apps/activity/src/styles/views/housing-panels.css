@@ -161,18 +161,16 @@
   font-size: var(--fs-heading);
 }
 
-.hp-sleeper-section {
+/* A set's run of tiles in the spot picker, with the set's name as a small label above it. */
+.hp-set-group {
   display: grid;
   gap: 0.25rem;
 }
 
-.hp-sleeper-title {
+.hp-set-label {
   margin: 0;
-  font-size: var(--fs-heading);
-}
-
-.hp-sleeper {
-  grid-template-columns: auto 1fr auto;
+  color: var(--haze);
+  font-size: var(--fs-small, 0.75rem);
 }
 
 /* --- Catalogue --- */
@@ -276,6 +274,25 @@
   width: var(--pw);
   max-width: 100%;
   height: var(--ph);
+}
+
+/* In a row: as wide as the row's picture box, the picture's own shape. */
+.hp-postcard.fit {
+  width: 100%;
+  height: auto;
+  aspect-ratio: var(--aw) / var(--ah);
+}
+
+.hp-postcard-row {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 5.5rem;
+  height: 3.5rem;
+}
+
+.vy-row-muted .hp-preview {
+  opacity: 0.6;
 }
 
 .hp-postcard canvas {

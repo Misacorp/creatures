@@ -18,10 +18,13 @@ export function HousePostcard({
   house,
   maxWidth,
   label,
+  fit = false,
 }: {
   house: PostcardHouse;
   maxWidth: number;
   label?: string;
+  /** Fill the width of its place (a row's small picture) instead of a whole scale: the aspect is kept, the edges stay hard. */
+  fit?: boolean;
 }) {
   const model = useMemo(() => composePostcard(house), [house]);
   const ref = useRef<HTMLCanvasElement>(null);
@@ -42,12 +45,14 @@ export function HousePostcard({
   }, [house, label]);
   return (
     <span
-      class="hp-postcard"
+      class={fit ? 'hp-postcard fit' : 'hp-postcard'}
       role="img"
       aria-label={name}
       ref={cssVars({
         '--pw': `${String(model.width * scale)}px`,
         '--ph': `${String(model.height * scale)}px`,
+        '--aw': String(model.width),
+        '--ah': String(model.height),
       })}
     >
       <canvas ref={ref} width={model.width} height={model.height} aria-hidden="true" />

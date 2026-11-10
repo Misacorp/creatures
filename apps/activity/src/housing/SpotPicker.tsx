@@ -6,6 +6,7 @@ import { Sprite } from '../sprites/Sprite';
 import { creatureSpriteOrFallback } from '../sprites/creature-sprites';
 import { CreatureList } from '../ui/CreatureList';
 import { DrillHead } from '../ui/DrillHead';
+import { Slot } from '../ui/Slot';
 import { onDrillKey } from '../ui/drill-keys';
 import { SupplyGrid, type SupplyCell } from '../ui/SupplyGrid';
 import { HouseThumb } from './HouseThumb';
@@ -183,48 +184,50 @@ export function SpotPicker({
     }
   })();
 
+  const sleeperSlot = view.bed && (
+    <Slot
+      kind="talent"
+      state={sleeper === undefined ? 'empty' : 'filled'}
+      label={`Who sleeps here: ${sleeper === undefined ? 'nobody' : creatureName(sleeper.creature)}. Change`}
+      name="Who sleeps here"
+      onClick={() => {
+        setDrill('sleeper');
+      }}
+    >
+      {sleeper !== undefined && (
+        <>
+          <Sprite sprite={creatureSpriteOrFallback(sleeper.creature.species)} scale={2} />
+          <span class="pix">{creatureName(sleeper.creature)}</span>
+        </>
+      )}
+    </Slot>
+  );
+
   return (
     <div class="hp-spot">
-      <SupplyGrid
-        flat
-        label={`${view.name}: what goes here`}
-        cells={view.choices.map(cellOf)}
-        selected={choice.id}
-        onSelect={(id) => {
-          setPicked({ key, id });
-        }}
-      />
+      {view.groups.map((group, i) => (
+        <div key={group.choices[0]?.id ?? i} class="hp-set-group">
+          {group.label !== null && <p class="hp-set-label pix">{group.label}</p>}
+          <SupplyGrid
+            flat
+            label={`${view.name}: ${group.label ?? 'pieces'}`}
+            cells={group.choices.map(cellOf)}
+            selected={choice.id}
+            onSelect={(id) => {
+              setPicked({ key, id });
+            }}
+          />
+        </div>
+      ))}
       <PickCard
         picture={<Picture choice={choice} />}
         name={choice.name}
         set={choice.set}
         free={choice.kind === 'free' || choice.kind === 'placed' ? choice.free : undefined}
         iconId={choice.id}
+        between={sleeperSlot === false ? undefined : sleeperSlot}
         action={action}
       />
-      {view.bed && (
-        <section class="hp-sleeper-section" aria-label="Who sleeps here">
-          <h4 class="hp-sleeper-title pix">Who sleeps here</h4>
-          <button
-            type="button"
-            class="vy-row hp-sleeper"
-            aria-label={`Who sleeps here: ${sleeper === undefined ? 'nobody' : creatureName(sleeper.creature)}`}
-            onClick={() => {
-              setDrill('sleeper');
-            }}
-          >
-            {sleeper === undefined ? (
-              <span class="hp-empty-mark" aria-hidden="true" />
-            ) : (
-              <Sprite sprite={creatureSpriteOrFallback(sleeper.creature.species)} scale={2} />
-            )}
-            <span class="vy-row-name pix">
-              {sleeper === undefined ? 'Nobody' : creatureName(sleeper.creature)}
-            </span>
-            <span class="vy-row-line">{sleeper === undefined ? 'Choose' : 'Change'}</span>
-          </button>
-        </section>
-      )}
     </div>
   );
 }

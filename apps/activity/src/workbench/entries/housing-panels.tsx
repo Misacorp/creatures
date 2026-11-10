@@ -235,16 +235,17 @@ const stampPicker: Entry = {
   file: `${FILE}StampPicker.tsx`,
   group: GROUP,
   description:
-    'A visitor’s stamp: a dropdown of the stamps they hold; choosing one leaves it at once. Off for the rest of the day once used.',
-  controls: { used: { kind: 'toggle' } },
-  defaults: { used: false },
+    'A visitor’s stamp, pinned like a place’s one action: “Leave a stamp” opens a dropdown of the stamps they hold; choosing one leaves it at once. Once used, or with no stamp held, it is a calm line, never a disabled button.',
+  controls: { used: { kind: 'toggle' }, none: { kind: 'toggle' } },
+  defaults: { used: false, none: false },
   presets: [
     { name: 'Not used today', props: {} },
     { name: 'Used today', props: { used: true } },
+    { name: 'No stamps yet', props: { none: true } },
   ],
   render: (p) => (
     <StampPicker
-      owned={sampleOwn('rich').items.stamps}
+      owned={p['none'] === true ? [] : sampleOwn('rich').items.stamps}
       used={p['used'] === true}
       busy={false}
       onStamp={none}
@@ -257,7 +258,7 @@ const giftButton: Entry = {
   file: `${FILE}GiftButton.tsx`,
   group: GROUP,
   description:
-    'A visitor’s gift: one tap gives Acorns the server makes. Off with the reason when this house already had its gift from them or the visitor has given today.',
+    'A visitor’s gift, pinned like a place’s one action: the gold Gift button says what it gives (“+5 for Anna”). When the day’s gift is used it gives way to a calm line, never a disabled button.',
   controls: { state: { kind: 'select', options: ['open', 'given here', 'given today elsewhere'] } },
   defaults: { state: 'open' },
   presets: [
@@ -270,6 +271,7 @@ const giftButton: Entry = {
       today={{ gifted: str(p, 'state') === 'given here', stamped: false }}
       giftLeft={str(p, 'state') === 'open'}
       busy={false}
+      owner="Anna"
       onGift={none}
     />
   ),

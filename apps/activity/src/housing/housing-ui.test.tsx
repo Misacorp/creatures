@@ -230,7 +230,8 @@ describe('the rows', () => {
 
   it('say what is next at each place', () => {
     const lines = houseRowLines(house, own, 7);
-    expect(lines.build).toMatch(/^House: \d+ \/ \d+ lines paid$/);
+    expect(lines.build).toBe('next: House');
+    expect(lines.buildPips?.total).toBeGreaterThan(0);
     expect(lines.mailbox).toBe('2 gifts waiting');
     expect(lines.pip).toBe(true);
     expect(lines.visits).toBe('7 houses');

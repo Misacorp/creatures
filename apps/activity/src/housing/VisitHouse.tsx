@@ -17,7 +17,8 @@ import { useWide } from '../ui/wide-layout';
 import { WideLayout } from '../ui/WideLayout';
 import { fetchHouse, giftHouse, HOUSE_ERRORS, stampHouse } from './housing-api';
 import { HouseActionIds } from './use-house';
-import { GiftButton, Guestbook, StampPicker } from './house-panels';
+import { PinnedAct } from '../valley/PinnedAct';
+import { giftReason, GiftButton, Guestbook, ownedStamps, StampPicker } from './house-panels';
 import { HouseScene, type ScrollMemory } from './HouseScene';
 import { RoomFocus } from './RoomFocus';
 
@@ -42,13 +43,28 @@ export interface VisitHouseProps {
   house?: HouseView;
 }
 
+/**
+ * The calm line when neither the gift nor the stamp can be given: what was done today. The check is for a line that says
+ * something was finished (a gift or a stamp given), not for "come back tomorrow".
+ */
+export function visitDoneLine(
+  today: VisitToday,
+  hasStamps: boolean,
+): { line: string; mark: boolean } {
+  if (today.gifted && today.stamped) return { line: 'Gift and stamp given today', mark: true };
+  if (today.gifted)
+    return { line: hasStamps ? 'Gift given today' : 'Gift given · no stamps yet', mark: true };
+  if (today.stamped) return { line: 'Stamped today', mark: true };
+  return { line: 'Come back tomorrow', mark: false };
+}
+
 /** A visited house: see the file comment. */
 export function VisitHouse({
   userId,
   name,
   today: initialToday,
   giftLeft,
-  ownedStamps,
+  ownedStamps: ownedStampIds,
   now,
   onBack,
   onToday,
@@ -94,24 +110,34 @@ export function VisitHouse({
     onToday?.(answer.today, false);
   };
 
+  const giftOpen = giftReason(today, giftLeft && !gifted) === null;
+  const stampOpen = !today.stamped && ownedStamps(ownedStampIds).length > 0;
+  // One action at a time, pinned: the gift first, then the stamp, then a calm line (never a disabled button).
+  const done = visitDoneLine(today, ownedStampIds.length > 0);
   const actions = (
-    <div class="house-visit-act">
-      <GiftButton
-        today={today}
-        giftLeft={giftLeft && !gifted}
-        busy={busy}
-        onGift={() => {
-          void gift();
-        }}
-      />
-      <StampPicker
-        owned={ownedStamps}
-        used={today.stamped}
-        busy={busy}
-        onStamp={(id) => {
-          void stamp(id);
-        }}
-      />
+    <div class="vy-act">
+      {giftOpen ? (
+        <GiftButton
+          today={today}
+          giftLeft={giftLeft && !gifted}
+          busy={busy}
+          owner={house?.owner.name ?? name}
+          onGift={() => {
+            void gift();
+          }}
+        />
+      ) : stampOpen ? (
+        <StampPicker
+          owned={ownedStampIds}
+          used={today.stamped}
+          busy={busy}
+          onStamp={(id) => {
+            void stamp(id);
+          }}
+        />
+      ) : (
+        <PinnedAct calm={done.line} mark={done.mark} />
+      )}
     </div>
   );
   const book = <Guestbook entries={guestbook ?? house?.guestbook ?? []} now={now} />;

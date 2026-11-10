@@ -36,7 +36,7 @@ export type DisplayName =
   | 'cabinet';
 
 export type ShellName =
-  'slab' | 'earth' | 'chimney' | 'door' | 'mailbox' | 'workbench' | 'vent' | 'z';
+  'slab' | 'earth' | 'chimney' | 'door' | 'mailbox' | 'mailbox-empty' | 'workbench' | 'vent' | 'z';
 
 export interface HouseArtPack {
   /** By piece id. */
@@ -143,7 +143,9 @@ const DISPLAY_FALLBACK: Readonly<Record<DisplayName, { w: number; h: number }>> 
   cabinet: { w: 26, h: 32 },
 };
 
-const SHELL_FALLBACK: Readonly<Record<ShellName, { w: number; h: number }>> = {
+const SHELL_FALLBACK: Readonly<
+  Record<Exclude<ShellName, 'mailbox-empty'>, { w: number; h: number }>
+> = {
   slab: { w: 16, h: 4 },
   earth: { w: 16, h: 16 },
   chimney: { w: 14, h: 28 },
@@ -156,6 +158,8 @@ const SHELL_FALLBACK: Readonly<Record<ShellName, { w: number; h: number }>> = {
 
 /** A part of the building (slab, earth, chimney, door ...), or a grey box. */
 export function shellArt(name: ShellName): SpriteDef {
+  // The flag-down mailbox is drawn after the first one: until it is in a pack, the flag-up one stands for both.
+  if (name === 'mailbox-empty') return find((p) => p.shell?.[name]) ?? shellArt('mailbox');
   return (
     find((p) => p.shell?.[name]) ??
     placeholderSprite(SHELL_FALLBACK[name].w, SHELL_FALLBACK[name].h)

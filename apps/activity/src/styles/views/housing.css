@@ -75,6 +75,13 @@
   z-index: 2;
 }
 
+/* The whole house as a small picture above a cutaway that cannot show all of it. */
+.house-postcard-band {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 0.5rem;
+}
+
 /* The things in the picture are buttons laid over it: the art is the button, so no raised panel. */
 .house-scene :is(.house-room, .house-fixture),
 .house-focus :is(.house-spot, .house-fixture),
@@ -96,6 +103,32 @@
   filter: none;
   transform: none;
   color: var(--bone);
+}
+
+/* The new rooms of a part just built: a night curtain lifts off them in steps (not at all with reduced motion). */
+.house-reveal {
+  position: absolute;
+  z-index: 3;
+  left: var(--x);
+  top: var(--y);
+  width: var(--w);
+  height: var(--h);
+  background: var(--night);
+  pointer-events: none;
+  transform-origin: top;
+  animation: house-reveal 0.7s steps(5, end) forwards;
+}
+
+@keyframes house-reveal {
+  to {
+    transform: scaleY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .house-reveal {
+    display: none;
+  }
 }
 
 /* A room is the biggest target and sits under the fixtures. */
@@ -120,8 +153,38 @@
   box-shadow: var(--ring);
 }
 
-/* An empty spot of your own room: a dashed outline. A filled one shows only its piece. */
-.house-focus .house-spot[data-empty='true'] {
+/*
+  An empty spot of your own room: one small pixel "+" at its base (bone with an ink edge). The dashed outline shows only on
+  the spot that is hovered or focused; the spot whose picker is open has the gold one below. A filled spot shows its piece only.
+*/
+.house-focus .house-spot[data-empty='true']::before,
+.house-focus .house-spot[data-empty='true']::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--px) * 2);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.house-focus .house-spot[data-empty='true']::before {
+  width: calc(var(--px) * 7);
+  height: calc(var(--px) * 7);
+  background:
+    linear-gradient(#0d0a1a, #0d0a1a) center / 100% calc(var(--px) * 3) no-repeat,
+    linear-gradient(#0d0a1a, #0d0a1a) center / calc(var(--px) * 3) 100% no-repeat;
+}
+
+.house-focus .house-spot[data-empty='true']::after {
+  bottom: calc(var(--px) * 3);
+  width: calc(var(--px) * 5);
+  height: calc(var(--px) * 5);
+  background:
+    linear-gradient(var(--bone), var(--bone)) center / 100% var(--px) no-repeat,
+    linear-gradient(var(--bone), var(--bone)) center / var(--px) 100% no-repeat;
+}
+
+.house-focus .house-spot[data-empty='true']:is(:hover, :focus-visible) {
   outline: calc(var(--px) * 2) dashed rgb(244 238 220 / 0.75);
   outline-offset: calc(var(--px) * -2);
 }
@@ -166,18 +229,8 @@
   margin-top: 0.5rem;
 }
 
-.chip.chip-button {
-  min-height: 2.75rem;
-  padding-inline: 0.75rem;
-  border: 0;
-  border-radius: 0;
-  box-shadow: none;
-  cursor: pointer;
-}
-
-.chip.chip-button:focus-visible {
-  outline: none;
-  box-shadow: var(--ring);
+.house-chips .hp-skin-trigger {
+  flex: 1 1 9rem;
 }
 
 /* --- The page and a visit --- */
@@ -189,21 +242,14 @@
   margin-top: 0.75rem;
 }
 
-/* A visitor's two actions, pinned like a place's one action (valley/PinnedAct). */
-.house-visit-act {
-  display: grid;
-  gap: 0.375rem;
-  width: 100%;
-  max-width: 30rem;
-  margin: 0 auto;
-}
-
-.house-visit .house-visit-act {
+/* A visitor's one action at a time, pinned at the bottom of the page like a place's (`valley/PinnedAct` in `.vy-act`). */
+.house-visit .vy-act {
   position: sticky;
+  left: auto;
+  right: auto;
   bottom: max(0.5rem, var(--discord-safe-area-inset-bottom, 0px));
-  z-index: 5;
 }
 
-.side-panel-foot .house-visit-act {
+.side-panel-foot .vy-act {
   position: static;
 }

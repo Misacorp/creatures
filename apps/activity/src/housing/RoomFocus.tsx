@@ -5,7 +5,7 @@
  * empty spot draws a dashed outline, a filled one nothing extra, and a tap asks for the spot's picker (`onSpot`). Displays are
  * buttons that open a popover listing what they show. In a visit (`mode: 'visit'`) nothing can be changed: the pieces and
  * displays are tappable pictures that open a popover with the name, the set and a line. The wallpaper and the floor are two
- * small chips under the room (own house) that ask for the skin picker (`onSkin`).
+ * small dropdown triggers under the room (own house) that ask for the skin picker (`onSkin`).
  */
 import { useMemo, useRef } from 'preact/hooks';
 import { housing, type HousemateView, type HouseView } from '@creatures/game';
@@ -26,6 +26,7 @@ import { pieceArt } from './house-art';
 import { composeRoom, type SceneCreature, type SceneSpot } from './house-scene';
 import { displayText, itemName, spotLabel } from './house-text';
 import { boxVars, HOUSE_DRAWING, SceneLayer } from './HouseScene';
+import { SkinTrigger } from './SkinTrigger';
 
 const FALLBACK_WIDTH = 390;
 /** The focus view's biggest scale; a room is drawn at the largest integer up to it that fits (never less than 2). */
@@ -290,26 +291,20 @@ export function RoomFocus({
       <PanHint target={viewRef} id="house-room" />
       {own && view !== undefined && onSkin !== undefined && !(model.rooms[0]?.outdoor ?? false) && (
         <div class="house-chips">
-          <Tag
-            kind="chip"
-            icon={{ kind: 'house', id: view.wall }}
-            label={`Wallpaper: ${itemName(view.wall)}`}
-            onClick={() => {
+          <SkinTrigger
+            kind="wall"
+            id={view.wall}
+            onOpen={() => {
               onSkin('wall');
             }}
-          >
-            {itemName(view.wall)}
-          </Tag>
-          <Tag
-            kind="chip"
-            icon={{ kind: 'house', id: view.floor }}
-            label={`Floor: ${itemName(view.floor)}`}
-            onClick={() => {
+          />
+          <SkinTrigger
+            kind="floor"
+            id={view.floor}
+            onOpen={() => {
               onSkin('floor');
             }}
-          >
-            {itemName(view.floor)}
-          </Tag>
+          />
         </div>
       )}
     </div>
