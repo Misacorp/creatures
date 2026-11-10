@@ -137,8 +137,8 @@
       }
     ],
     "fixtures": [],
-    "wall": "cosy-wall",
-    "floor": "cosy-floor"
+    "wall": "kitchen-wall",
+    "floor": "kitchen-floor"
   },
   {
     "id": "loft",
@@ -349,8 +349,8 @@
       }
     ],
     "fixtures": [],
-    "wall": "cosy-wall",
-    "floor": "cosy-floor"
+    "wall": "attic-wall",
+    "floor": "attic-floor"
   },
   {
     "id": "cellar",
@@ -428,8 +428,8 @@
       }
     ],
     "fixtures": [],
-    "wall": "cosy-wall",
-    "floor": "cosy-floor"
+    "wall": "cellar-wall",
+    "floor": "cellar-floor"
   },
   {
     "id": "hall",
@@ -534,8 +534,8 @@
       }
     ],
     "fixtures": [],
-    "wall": "cosy-wall",
-    "floor": "cosy-floor"
+    "wall": "hall-wall",
+    "floor": "hall-floor"
   },
   {
     "id": "gallery",
@@ -615,8 +615,8 @@
       }
     ],
     "fixtures": [],
-    "wall": "cosy-wall",
-    "floor": "cosy-floor"
+    "wall": "gallery-wall",
+    "floor": "gallery-floor"
   },
   {
     "id": "conservatory",
@@ -700,8 +700,8 @@
       }
     ],
     "fixtures": [],
-    "wall": "cosy-wall",
-    "floor": "cosy-floor"
+    "wall": "conservatory-wall",
+    "floor": "conservatory-floor"
   },
   {
     "id": "bath",
@@ -759,8 +759,8 @@
       }
     ],
     "fixtures": [],
-    "wall": "cosy-wall",
-    "floor": "cosy-floor"
+    "wall": "bath-wall",
+    "floor": "bath-floor"
   },
   {
     "id": "guest",
@@ -819,8 +819,8 @@
       }
     ],
     "fixtures": [],
-    "wall": "cosy-wall",
-    "floor": "cosy-floor"
+    "wall": "guest-wall",
+    "floor": "guest-floor"
   },
   {
     "id": "terrace",

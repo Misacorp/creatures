@@ -180,6 +180,182 @@
     "hint": "A blueprint from the Festival Grounds, a Festival finale or a Games gold."
   },
   {
+    "id": "kitchen-wall",
+    "name": "Kitchen Wallpaper",
+    "kind": "wall",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "cottage"
+    },
+    "hint": "Comes with the Cottage."
+  },
+  {
+    "id": "kitchen-floor",
+    "name": "Kitchen Floor",
+    "kind": "floor",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "cottage"
+    },
+    "hint": "Comes with the Cottage."
+  },
+  {
+    "id": "attic-wall",
+    "name": "Attic Wallpaper",
+    "kind": "wall",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "house"
+    },
+    "hint": "Comes with the House."
+  },
+  {
+    "id": "attic-floor",
+    "name": "Attic Floor",
+    "kind": "floor",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "house"
+    },
+    "hint": "Comes with the House."
+  },
+  {
+    "id": "cellar-wall",
+    "name": "Cellar Wallpaper",
+    "kind": "wall",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "cellar"
+    },
+    "hint": "Comes with the Cellar."
+  },
+  {
+    "id": "cellar-floor",
+    "name": "Cellar Floor",
+    "kind": "floor",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "cellar"
+    },
+    "hint": "Comes with the Cellar."
+  },
+  {
+    "id": "hall-wall",
+    "name": "Trophy Hall Wallpaper",
+    "kind": "wall",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "west-wing"
+    },
+    "hint": "Comes with the West Wing."
+  },
+  {
+    "id": "hall-floor",
+    "name": "Trophy Hall Floor",
+    "kind": "floor",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "west-wing"
+    },
+    "hint": "Comes with the West Wing."
+  },
+  {
+    "id": "gallery-wall",
+    "name": "Gallery Wallpaper",
+    "kind": "wall",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "west-upper"
+    },
+    "hint": "Comes with the West Upper Floor."
+  },
+  {
+    "id": "gallery-floor",
+    "name": "Gallery Floor",
+    "kind": "floor",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "west-upper"
+    },
+    "hint": "Comes with the West Upper Floor."
+  },
+  {
+    "id": "conservatory-wall",
+    "name": "Conservatory Wallpaper",
+    "kind": "wall",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "east-wing"
+    },
+    "hint": "Comes with the East Wing."
+  },
+  {
+    "id": "conservatory-floor",
+    "name": "Conservatory Floor",
+    "kind": "floor",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "east-wing"
+    },
+    "hint": "Comes with the East Wing."
+  },
+  {
+    "id": "bath-wall",
+    "name": "Bath Wallpaper",
+    "kind": "wall",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "east-upper"
+    },
+    "hint": "Comes with the East Upper Floor."
+  },
+  {
+    "id": "bath-floor",
+    "name": "Bath Floor",
+    "kind": "floor",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "east-upper"
+    },
+    "hint": "Comes with the East Upper Floor."
+  },
+  {
+    "id": "guest-wall",
+    "name": "Guest Room Wallpaper",
+    "kind": "wall",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "east-upper"
+    },
+    "hint": "Comes with the East Upper Floor."
+  },
+  {
+    "id": "guest-floor",
+    "name": "Guest Room Floor",
+    "kind": "floor",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "east-upper"
+    },
+    "hint": "Comes with the East Upper Floor."
+  },
+  {
     "id": "thatch",
     "name": "Thatch",
     "kind": "roof",

@@ -51,22 +51,22 @@ const GLOW_PALETTE: Readonly<Record<string, string>> = {
 };
 
 const LANTERN_GLOW: readonly string[] = [
-  '..........a.a.a.a.a.........',
-  '.......a.a.a.a.a.a.a.a......',
-  '....a.a.a.a.a.a.a.a.a.a.....',
-  '...a.a.a.bababababaa.a.a.a..',
-  '..a.a.aababababababab.a.a.a.',
-  '.a.a.aabababababababab.a.a..',
-  'a.a.aababababababababab.a.a.',
-  '.a.a.bababababababababaa.a.a',
-  'a.a.aababababababababab.a.a.',
-  '.a.a.bababababababababaa.a.a',
-  '..a.a.babababababababaa.a.a.',
-  '.a.a.a.bababababababaa.a.a..',
-  '..a.a.a.aababababab.a.a.a...',
-  '.....a.a.a.a.a.a.a.a.a.a....',
-  '......a.a.a.a.a.a.a.a.......',
-  '.........a.a.a.a.a..........',
+  '.........aaaaaaaaaa.........',
+  '......aaa..........aaa......',
+  '....aa................aa....',
+  '..aa....................aa..',
+  '.aa......bbbbbbbbbb......aa.',
+  '.a....bbb..........bbb....a.',
+  'a....b................b....a',
+  'a...b..................b...a',
+  'a...b..................b...a',
+  'a....b................b....a',
+  '.a....bbb..........bbb....a.',
+  '.aa......bbbbbbbbbb......aa.',
+  '..aa....................aa..',
+  '....aa................aa....',
+  '......aaa..........aaa......',
+  '.........aaaaaaaaaa.........',
 ];
 
 const STONE_FOUNTAIN: readonly string[] = [

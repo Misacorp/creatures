@@ -36,7 +36,7 @@ export type DisplayName =
   | 'cabinet';
 
 export type ShellName =
-  'slab' | 'earth' | 'chimney' | 'door' | 'mailbox' | 'workbench' | 'vent' | 'z';
+  'slab' | 'earth' | 'chimney' | 'door' | 'mailbox' | 'mailbox-empty' | 'workbench' | 'vent' | 'z';
 
 export interface HouseArtPack {
   /** By piece id. */
@@ -149,6 +149,7 @@ const SHELL_FALLBACK: Readonly<Record<ShellName, { w: number; h: number }>> = {
   chimney: { w: 14, h: 28 },
   door: { w: 16, h: 30 },
   mailbox: { w: 14, h: 21 },
+  'mailbox-empty': { w: 14, h: 21 },
   workbench: { w: 32, h: 22 },
   vent: { w: 12, h: 9 },
   z: { w: 7, h: 7 },
