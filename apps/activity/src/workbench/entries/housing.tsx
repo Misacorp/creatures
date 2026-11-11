@@ -9,6 +9,7 @@ import { RoomFocus } from '../../housing/RoomFocus';
 import { VisitHouse } from '../../housing/VisitHouse';
 import {
   COTTAGE,
+  ESTATE,
   HUT,
   MANSION,
   THREE_FLOORS,
@@ -23,6 +24,11 @@ const HOUSES: Readonly<Record<string, readonly string[]>> = {
   cottage: COTTAGE,
   'three floors': THREE_FLOORS,
   mansion: MANSION,
+  estate: ESTATE,
+  'house and tower': [...THREE_FLOORS, 'tower'],
+  'house and balcony': [...THREE_FLOORS, 'balcony'],
+  'house, garden and orchard': [...THREE_FLOORS, 'garden', 'orchard'],
+  'house, terrace and pond': [...THREE_FLOORS, 'terrace', 'pond'],
 };
 const HOUSE_OPTIONS = Object.keys(HOUSES);
 const ROOFS = housing.skins.filter((s) => s.kind === 'roof').map((s) => s.id);
@@ -81,6 +87,12 @@ const houseScene: Entry = {
       props: { house: 'three floors', housemates: 3, phase: 'night' },
     },
     { name: 'The mansion at night', props: { house: 'mansion', housemates: 3, phase: 'night' } },
+    { name: 'The estate (all fifteen parts)', props: { house: 'estate', housemates: 3 } },
+    { name: 'The estate at night', props: { house: 'estate', housemates: 3, phase: 'night' } },
+    { name: 'The house and its tower', props: { house: 'house and tower', housemates: 1 } },
+    { name: 'The house and its balcony', props: { house: 'house and balcony' } },
+    { name: 'The garden and its orchard', props: { house: 'house, garden and orchard' } },
+    { name: 'The terrace and its pond', props: { house: 'house, terrace and pond' } },
     {
       name: 'The mansion with a slate roof and brick walls',
       props: { house: 'mansion', roof: 'slate', walls: 'brick' },
@@ -99,11 +111,11 @@ const houseScene: Entry = {
   ),
 };
 
-const ROOM_OPTIONS = [...new Set(houseGrid(housing, new Set(MANSION)).map((r) => r.kind))];
+const ROOM_OPTIONS = [...new Set(houseGrid(housing, new Set(ESTATE)).map((r) => r.kind))];
 
 function RoomDemo({ p }: { p: Props }) {
   const house = sceneHouse({
-    parts: MANSION,
+    parts: ESTATE,
     housemates: num(p, 'housemates'),
     roof: str(p, 'roof'),
     walls: str(p, 'walls'),
@@ -159,6 +171,15 @@ const roomFocus: Entry = {
     { name: 'A bedroom at night', props: { room: 'kitchen', housemates: 3, phase: 'night' } },
     { name: 'The Hearth at twilight', props: { phase: 'twilight' } },
     { name: 'The garden at night', props: { room: 'garden', phase: 'night' } },
+    { name: 'The landing', props: { room: 'landing' } },
+    { name: 'The observatory', props: { room: 'observatory' } },
+    { name: 'The observatory at night', props: { room: 'observatory', phase: 'night' } },
+    { name: 'The balcony', props: { room: 'balcony' } },
+    { name: 'The balcony at night', props: { room: 'balcony', phase: 'night' } },
+    { name: 'The orchard', props: { room: 'orchard' } },
+    { name: 'The orchard at night', props: { room: 'orchard', phase: 'night' } },
+    { name: 'The pond', props: { room: 'pond' } },
+    { name: 'The pond at night', props: { room: 'pond', phase: 'night' } },
   ],
   render: (p) => (
     <HousePhaseContext.Provider value={phaseOf(p)}>

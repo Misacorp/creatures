@@ -33,6 +33,9 @@ export const MANSION: readonly string[] = [
   'pool',
 ];
 
+/** The mansion and the four parts built after it: all fifteen. */
+export const ESTATE: readonly string[] = [...MANSION, 'tower', 'balcony', 'orchard', 'pond'];
+
 const SETS = [
   'cosy',
   'tidepool',
@@ -47,11 +50,22 @@ const SETS = [
 
 /** The piece a form's spot takes in a room dressed in `set`; garden pieces by spot type outdoors. */
 const OUTDOOR: Readonly<Record<string, readonly string[]>> = {
-  'yard-large': ['stone-fountain', 'mossback-topiary', 'rose-arbor'],
-  'yard-small': ['flowerbed', 'birdbath', 'lantern-post', 'garden-bench', 'sundial'],
+  'yard-large': ['stone-fountain', 'mossback-topiary', 'rose-arbor', 'garden-swing', 'scarecrow'],
+  'yard-small': [
+    'flowerbed',
+    'birdbath',
+    'lantern-post',
+    'garden-bench',
+    'sundial',
+    'beehive',
+    'fruit-crate',
+    'bistro-table',
+    'gazing-ball',
+    'cone-topiary',
+  ],
   fence: ['hedge', 'picket-fence'],
-  poolside: ['lounger'],
-  water: ['swim-ring'],
+  poolside: ['lounger', 'fishing-stool', 'stepping-stones', 'sun-umbrella'],
+  water: ['swim-ring', 'duck', 'lily-cluster', 'lantern-boat'],
 };
 
 const INDOOR_FORM: Readonly<Record<string, readonly string[]>> = {

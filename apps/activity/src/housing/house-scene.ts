@@ -63,6 +63,8 @@ export const FEET = 58;
 export const RUG_FEET = 59;
 /** Outdoors: pieces stand this far below the ground line (a little into the lawn). */
 export const OUT_FEET = 3;
+/** A balcony's deck: where its floor strip starts (the room's wall height), and the line its pieces' feet are measured from. */
+const DECK_GROUND = WALL_H + 3;
 const INK = '#0d0a1a';
 
 /** A sprite at a place; `w` and `h` crop the sprite to its top left corner (tiles at an edge). */
@@ -256,33 +258,43 @@ export interface RoofShape {
   height: number;
   /** Width of the flat top row. */
   top: number;
+  /** Pixels each side gives up for every row up (2 for a gable, 1.5 for a spire). */
+  slope: number;
 }
 
 /** Rows of the eave that overhang the walls at the bottom of a roof (full width). */
 const EAVE_ROWS = 4;
+
+/** A gable (the core), a hip (a wing) or a spire (the tower). */
+export type RoofKind = 'gable' | 'hip' | 'spire';
 
 /**
  * A roof of two sloping sides (2 px across for every row down) over `base` px, with the eave's four rows at full width under
  * the slopes. `gable` rises to a short ridge, `hip` is a low trapezoid (20 rows). Pure arithmetic: the base is kept, so the
  * top width is whatever is left.
  */
-export function roofShape(base: number, kind: 'gable' | 'hip'): RoofShape {
+export function roofShape(base: number, kind: RoofKind): RoofShape {
+  if (kind === 'spire') {
+    // A tower's roof: steeper (three pixels in every two rows) and left to end in a point a few pixels wide.
+    const rows = Math.max(8, Math.floor((base - 14) / 3)) + EAVE_ROWS;
+    return {
+      width: base,
+      height: rows,
+      top: base - 2 * Math.floor(1.5 * (rows - EAVE_ROWS)),
+      slope: 1.5,
+    };
+  }
   const rows = kind === 'gable' ? Math.max(8, Math.floor((base - 16) / 4) + EAVE_ROWS) : 20;
-  return { width: base, height: rows, top: base - 4 * (rows - EAVE_ROWS) };
+  return { width: base, height: rows, top: base - 4 * (rows - EAVE_ROWS), slope: 2 };
 }
 
 /** Pixels the slope has left to cover at the left of row `r` (a roof's rows above the eave). */
 function slopeInset(shape: RoofShape, r: number): number {
-  return Math.max(0, 2 * (shape.height - EAVE_ROWS - r));
+  return Math.max(0, Math.floor(shape.slope * (shape.height - EAVE_ROWS - r)));
 }
 
 /** One roof as a sprite: the skin's tile in the slope's shape, the ridge on top, the eave along the bottom, ink on the slopes. */
-export function roofSprite(
-  skin: SkinArt,
-  base: number,
-  kind: 'gable' | 'hip',
-  glass = false,
-): SpriteDef {
+export function roofSprite(skin: SkinArt, base: number, kind: RoofKind, glass = false): SpriteDef {
   const key = `${String(base)}|${kind}|${glass ? 'glass' : ''}|${skin.tile.rows[0] ?? ''}${Object.values(skin.tile.palette).join('')}`;
   const hit = roofCache.get(key);
   if (hit !== undefined) return hit;
@@ -805,6 +817,26 @@ function drawRoom(
       { sprite: vent, x: x + width - 12 - w, y: y + 6 },
     );
   }
+  if (room.kind === 'observatory') {
+    // The round window of the study, and a telescope by it: scenery under the pieces (a pair of curtains may cover the window).
+    const window = kind.spots.find((spot) => spot.type === 'window');
+    const round = shellArt('tower-window');
+    const { width: rw } = spriteSize(round);
+    if (window !== undefined) {
+      back.push({
+        sprite: round,
+        x: x + window.x + Math.floor((window.w - rw) / 2),
+        y: y + (window.y ?? 6),
+        mat: 'window',
+      });
+    }
+    const scope = shellArt('telescope');
+    back.push({
+      sprite: scope,
+      x: x + width - 4 - spriteSize(scope).width,
+      y: floorY - spriteSize(scope).height,
+    });
+  }
   // rug first, under everything that stands
   const ordered = [...kind.spots].sort((a, b) => order(a.type) - order(b.type));
   for (const spot of ordered) {
@@ -945,20 +977,23 @@ interface Run {
   to: number;
   top: number;
   wing: boolean;
+  /** The tower: its roof is a spire. */
+  tower: boolean;
   glass: boolean;
 }
 
 /** The runs of columns that share a top floor and a kind of part, left to right. */
 function runsOf(frame: Frame, rooms: readonly GridRoom[]): Run[] {
-  const tops = new Map<number, { top: number; wing: boolean; glass: boolean }>();
+  const tops = new Map<number, { top: number; wing: boolean; tower: boolean; glass: boolean }>();
   for (const room of rooms) {
     if (room.outdoor || room.floor < 0) continue;
     const part = frame.parts.get(room.part);
     const wing = part !== undefined && part.kind === 'wing';
+    const tower = part !== undefined && part.kind === 'tower';
     for (let c = room.col; c < room.col + room.w; c++) {
       const at = tops.get(c);
       if (at === undefined || room.floor > at.top) {
-        tops.set(c, { top: room.floor, wing, glass: room.kind === 'conservatory' });
+        tops.set(c, { top: room.floor, wing, tower, glass: room.kind === 'conservatory' });
       }
     }
   }
@@ -968,10 +1003,25 @@ function runsOf(frame: Frame, rooms: readonly GridRoom[]): Run[] {
     const at = tops.get(col);
     if (at === undefined) continue;
     const last = runs[runs.length - 1];
-    if (last !== undefined && last.to === col - 1 && last.top === at.top && last.wing === at.wing) {
+    if (
+      last !== undefined &&
+      last.to === col - 1 &&
+      last.top === at.top &&
+      last.wing === at.wing &&
+      last.tower === at.tower
+    ) {
       last.to = col;
       last.glass = last.glass && at.glass;
-    } else runs.push({ from: col, to: col, top: at.top, wing: at.wing, glass: at.glass });
+    } else {
+      runs.push({
+        from: col,
+        to: col,
+        top: at.top,
+        wing: at.wing,
+        tower: at.tower,
+        glass: at.glass,
+      });
+    }
   }
   return runs;
 }
@@ -998,12 +1048,17 @@ export function composeHouse(
   // Roof geometry first: it decides the height.
   const roofs = runs.map((run) => {
     const cells = run.to - run.from + 1;
-    const kind: 'gable' | 'hip' = run.wing ? 'hip' : 'gable';
+    const kind: RoofKind = run.wing ? 'hip' : run.tower ? 'spire' : 'gable';
     return { run, cells, kind, shape: roofShape(roofBase(cells), kind) };
   });
+  const finial = shellArt('finial');
+  const { width: finialW, height: finialH } = spriteSize(finial);
   let aboveGround = 0;
   for (const roof of roofs)
-    aboveGround = Math.max(aboveGround, (roof.run.top + 1) * CELL_H + roof.shape.height);
+    aboveGround = Math.max(
+      aboveGround,
+      (roof.run.top + 1) * CELL_H + roof.shape.height + (roof.kind === 'spire' ? finialH - 2 : 0),
+    );
   const chimneyRun = roofs.find((r) => r.run.from <= 0 && r.run.to >= 0 && !r.run.wing);
   const chimney = shellArt('chimney');
   const { height: chH } = spriteSize(chimney);
@@ -1045,11 +1100,33 @@ export function composeHouse(
     if (kind === undefined) continue;
     const x = originX + room.col * CELL_W;
     const y = groundY - (room.floor + 1) * CELL_H;
-    if (room.outdoor) {
+    if (room.outdoor && room.floor > 0) {
+      // A balcony: a deck on a floor above the ground, its box the room's own cell.
+      drawBalconyDeck(frame, back, x, y, room.w * CELL_W);
+      rooms.push({
+        roomId: room.roomId,
+        kind: room.kind,
+        name: kind.name,
+        outdoor: true,
+        floor: room.floor,
+        col: room.col,
+        x,
+        y,
+        w: room.w * CELL_W,
+        h: CELL_H,
+      });
+    } else if (room.outdoor) {
       const w = room.w * CELL_W;
-      if (kind.floor === 'deck')
-        tileFill(back, tilesOf(content, 'deck', 'ground').tile, x, groundY, w, FLOOR_H);
-      if (kind.floor === 'pool-tile') drawPool(content, back, x, groundY, w);
+      groundScenery(
+        frame,
+        back,
+        room,
+        kind,
+        frame.rooms.get(room.roomId) ?? emptyRoom(room, kind),
+        x,
+        groundY,
+        w,
+      );
       rooms.push({
         roomId: room.roomId,
         kind: room.kind,
@@ -1095,6 +1172,14 @@ export function composeHouse(
       y,
       mat: glass ? 'window' : 'roof',
     });
+    // the spire's tip: a ball and a pennant, its foot sunk two rows into the point
+    if (roof.kind === 'spire') {
+      back.push({
+        sprite: finial,
+        x: x + Math.floor((roof.shape.width - finialW) / 2),
+        y: y - finialH + 2,
+      });
+    }
   }
   // A wall with no room beside it on its floor is the building's cut edge: it gets the thick band of the walls skin.
   const indoorAt = new Set(indoor.map((r) => `${String(r.floor)}:${String(r.col)}`));
@@ -1114,7 +1199,7 @@ export function composeHouse(
       view,
       originX + room.col * CELL_W,
       groundY - (room.floor + 1) * CELL_H,
-      groundY,
+      room.outdoor && room.floor > 0 ? groundY - (room.floor + 1) * CELL_H + DECK_GROUND : groundY,
       drawing,
       room.outdoor ? undefined : outerOf(room),
     );
@@ -1194,6 +1279,87 @@ export function composeHouse(
   };
 }
 
+/**
+ * What an outdoor room's ground is made of, under its pieces: the deck of a terrace, the pool's basin, the orchard's trees
+ * (the variety is the room's ground skin) and the pond's bank, water, bridge, reeds and lily pads. All of it is scenery:
+ * it is drawn before the pieces, and the pieces stand in front of it on their spots.
+ */
+function groundScenery(
+  frame: Frame,
+  back: Placement[],
+  room: GridRoom,
+  kind: RoomKindDef,
+  view: HouseView['rooms'][number],
+  x: number,
+  groundY: number,
+  w: number,
+): void {
+  const { content } = frame;
+  if (kind.floor === 'deck')
+    tileFill(back, tilesOf(content, 'deck', 'ground').tile, x, groundY, w, FLOOR_H);
+  if (kind.floor === 'pool-tile') drawPool(content, back, x, groundY, w);
+  if (room.kind === 'orchard') drawOrchard(content, back, view.floor, x, groundY, w);
+  if (room.kind === 'pond') drawPond(back, x, groundY);
+}
+
+/** The orchard: the lawn with windfalls, then the variety's trees, ladder and basket with their feet on the lawn. */
+function drawOrchard(
+  content: HousingContent,
+  back: Placement[],
+  skin: string,
+  x: number,
+  groundY: number,
+  w: number,
+): void {
+  const art = tilesOf(content, skin, 'ground');
+  if (art.scenery === undefined) return;
+  tileFill(back, art.tile, x, groundY, w, FLOOR_H, 'ground');
+  for (const item of art.scenery) {
+    const { height } = spriteSize(item.sprite);
+    back.push({
+      sprite: item.sprite,
+      x: x + item.x,
+      y: groundY + OUT_FEET - height,
+      mat: 'ground',
+    });
+  }
+}
+
+/** The pond's left bank starts this far into its room, and the bridge's footings stand either side of the basin. */
+const POND_AT = 34;
+const BRIDGE_AT = 28;
+
+/** The pond: a bank and water sunk under the ground line, a bridge over it, reeds at both banks and lily pads on the water. */
+function drawPond(back: Placement[], x: number, groundY: number): void {
+  const bx = x + POND_AT;
+  back.push({ sprite: shellArt('pond-rim'), x: bx, y: groundY, mat: 'earth' });
+  back.push({ sprite: shellArt('pond-water'), x: bx, y: groundY, mat: 'water' });
+  back.push({ sprite: shellArt('lily-pads'), x: bx + 66, y: groundY + 1 });
+  const bridge = shellArt('bridge');
+  const { height: bh } = spriteSize(bridge);
+  back.push({ sprite: bridge, x: x + BRIDGE_AT, y: groundY + OUT_FEET - bh });
+  const reeds = shellArt('reeds');
+  const { width: rw, height: rh } = spriteSize(reeds);
+  back.push({ sprite: reeds, x: bx - rw + 4, y: groundY + OUT_FEET - rh });
+  back.push({ sprite: reeds, x: bx + 156 - 4, y: groundY + OUT_FEET - rh });
+}
+
+/** A balcony's floor: the deck strip, the slab under it and the bracket that holds it to the wall. (x, y) is the room's top left. */
+function drawBalconyDeck(frame: Frame, back: Placement[], x: number, y: number, w: number): void {
+  tileFill(back, tilesOf(frame.content, 'deck', 'ground').tile, x, y + WALL_H, w, FLOOR_H);
+  tileFill(back, shellArt('slab'), x, y + WALL_H + FLOOR_H, w, SLAB_H, 'exterior');
+  back.push({ sprite: shellArt('corbel'), x: x + 2, y: y + CELL_H, mat: 'exterior' });
+  // the railing is the far side of the balcony: the pieces stand in front of it
+  back.push(balconyRail(x, y));
+}
+
+/** The railing along the back of a balcony, standing on the deck. */
+function balconyRail(x: number, y: number): Placement {
+  const rail = shellArt('balcony-rail');
+  const { height } = spriteSize(rail);
+  return { sprite: rail, x, y: y + WALL_H + 2 - height };
+}
+
 /** A pool: the coping along the ground line with a water-filled basin sunk under the three water spots. */
 function drawPool(
   content: HousingContent,
@@ -1239,6 +1405,35 @@ export function composeRoom(
   const back: Placement[] = [];
   const front: Placement[] = [];
   const layers: Layers = { back, front, spots: [], creatures: [], fixtures: [], lights: [] };
+  if (room.outdoor && room.floor > 0) {
+    // A balcony alone: the sky behind its deck, its railing in front.
+    drawSky(back, w, CELL_H, options.phase ?? 'day');
+    drawBalconyDeck(frame, back, 0, 0, w);
+    drawRoom(frame, layers, room, kind, view, 0, 0, DECK_GROUND, drawing);
+    return finish(
+      w,
+      CELL_H,
+      CELL_H,
+      layers,
+      [
+        {
+          roomId,
+          kind: room.kind,
+          name: kind.name,
+          outdoor: true,
+          floor: room.floor,
+          col: room.col,
+          x: 0,
+          y: 0,
+          w,
+          h: CELL_H,
+        },
+      ],
+      0,
+      0,
+      options.phase ?? 'day',
+    );
+  }
   if (room.outdoor) {
     const groundY = CELL_H;
     const width = w;
@@ -1246,9 +1441,7 @@ export function composeRoom(
     drawSky(back, width, groundY, options.phase ?? 'day');
     tileFill(back, shellArt('earth'), 0, groundY + FLOOR_H, width, 16, 'earth');
     tileFill(back, tilesOf(content, 'lawn', 'ground').tile, 0, groundY, width, FLOOR_H, 'ground');
-    if (kind.floor === 'deck')
-      tileFill(back, tilesOf(content, 'deck', 'ground').tile, 0, groundY, w, FLOOR_H);
-    if (kind.floor === 'pool-tile') drawPool(content, back, 0, groundY, w);
+    groundScenery(frame, back, room, kind, view, 0, groundY, w);
     drawRoom(frame, layers, room, kind, view, 0, 0, groundY, drawing);
     return finish(
       width,

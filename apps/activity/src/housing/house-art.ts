@@ -29,7 +29,10 @@ export interface PieceArt {
   light?: LightFlag;
 }
 
-export type SkinArt = { tile: SpriteDef; ridge?: SpriteDef; eave?: SpriteDef };
+/** What stands on a ground skin, left to right with its feet on the ground line (the orchard's trees, its ladder and basket): `x` is in room pixels. */
+export type Scenery = { sprite: SpriteDef; x: number }[];
+
+export type SkinArt = { tile: SpriteDef; ridge?: SpriteDef; eave?: SpriteDef; scenery?: Scenery };
 
 export type DisplayName =
   | 'plaque'
@@ -43,7 +46,26 @@ export type DisplayName =
   | 'cabinet';
 
 export type ShellName =
-  'slab' | 'earth' | 'chimney' | 'door' | 'mailbox' | 'mailbox-empty' | 'workbench' | 'vent' | 'z';
+  | 'slab'
+  | 'earth'
+  | 'chimney'
+  | 'door'
+  | 'mailbox'
+  | 'mailbox-empty'
+  | 'workbench'
+  | 'vent'
+  | 'z'
+  // the tower, the balcony and the pond (`new-parts.ts`)
+  | 'finial'
+  | 'balcony-rail'
+  | 'corbel'
+  | 'tower-window'
+  | 'telescope'
+  | 'bridge'
+  | 'reeds'
+  | 'lily-pads'
+  | 'pond-rim'
+  | 'pond-water';
 
 export interface HouseArtPack {
   /** By piece id. */
@@ -160,6 +182,16 @@ const SHELL_FALLBACK: Readonly<Record<ShellName, { w: number; h: number }>> = {
   workbench: { w: 32, h: 22 },
   vent: { w: 12, h: 9 },
   z: { w: 7, h: 7 },
+  finial: { w: 9, h: 15 },
+  'balcony-rail': { w: 112, h: 14 },
+  corbel: { w: 12, h: 12 },
+  'tower-window': { w: 26, h: 26 },
+  telescope: { w: 26, h: 34 },
+  bridge: { w: 168, h: 30 },
+  reeds: { w: 14, h: 22 },
+  'lily-pads': { w: 34, h: 5 },
+  'pond-rim': { w: 156, h: 26 },
+  'pond-water': { w: 156, h: 26 },
 };
 
 /** A part of the building (slab, earth, chimney, door ...), or a grey box. */

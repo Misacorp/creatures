@@ -24,14 +24,19 @@ import {
   BOARD,
   CHIMNEY,
   DOOR,
+  FINIAL,
   FLOWERS,
+  FRUIT_SWAP,
+  FRUIT_TREE,
   LADDER,
   LANTERN_POST,
   LIT_PANES,
   PARASOL,
   PORCH_LAMP,
+  REED,
   SMOKE_FAR,
   SMOKE_NEAR,
+  TOWER_WINDOW,
   TREE,
   VENT,
   WINDOW,
@@ -110,7 +115,8 @@ export interface PostcardModel {
 // ---------------------------------------------------------------------------------------------
 // A pixel grid
 
-const CHARS = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+// More than sixty colours once a house has its orchard, pond and tower: the keys go on through the punctuation.
+const CHARS = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!#$%&*+=?@^_~;:<>-';
 
 class Raster {
   clipped = 0;
@@ -228,8 +234,12 @@ interface Run {
   to: number;
   top: number;
   wing: boolean;
+  /** The tower: a spire. */
+  tower: boolean;
   glass: boolean;
 }
+
+type RoofKind = 'gable' | 'hip' | 'spire';
 
 /** The runs of columns that share a top floor and a kind of part, left to right (the cutaway's rule). */
 function runsOf(
@@ -243,14 +253,15 @@ function runsOf(
   }[],
   parts: ReadonlyMap<string, PartDef>,
 ): Run[] {
-  const tops = new Map<number, { top: number; wing: boolean; glass: boolean }>();
+  const tops = new Map<number, { top: number; wing: boolean; tower: boolean; glass: boolean }>();
   for (const room of rooms) {
     if (room.outdoor || room.floor < 0) continue;
     const wing = parts.get(room.part)?.kind === 'wing';
+    const tower = parts.get(room.part)?.kind === 'tower';
     for (let c = room.col; c < room.col + room.w; c++) {
       const at = tops.get(c);
       if (at === undefined || room.floor > at.top) {
-        tops.set(c, { top: room.floor, wing, glass: room.kind === 'conservatory' });
+        tops.set(c, { top: room.floor, wing, tower, glass: room.kind === 'conservatory' });
       }
     }
   }
@@ -259,17 +270,34 @@ function runsOf(
     const at = tops.get(col);
     if (at === undefined) continue;
     const last = runs[runs.length - 1];
-    if (last !== undefined && last.to === col - 1 && last.top === at.top && last.wing === at.wing) {
+    if (
+      last !== undefined &&
+      last.to === col - 1 &&
+      last.top === at.top &&
+      last.wing === at.wing &&
+      last.tower === at.tower
+    ) {
       last.to = col;
       last.glass = last.glass && at.glass;
-    } else runs.push({ from: col, to: col, top: at.top, wing: at.wing, glass: at.glass });
+    } else {
+      runs.push({
+        from: col,
+        to: col,
+        top: at.top,
+        wing: at.wing,
+        tower: at.tower,
+        glass: at.glass,
+      });
+    }
   }
   return runs;
 }
 
 /** Rows of slope under the ridge: a gable rises with its width (two pixels in for every row up), a hip is low. */
-export function postcardSlope(base: number, kind: 'gable' | 'hip'): number {
+export function postcardSlope(base: number, kind: RoofKind): number {
   if (kind === 'hip') return 3;
+  // a spire gives up one pixel a side for every row: a tower's roof is steeper than a gable
+  if (kind === 'spire') return Math.floor((base - 4) / 2);
   return Math.min(12, Math.max(4, Math.floor((base - 10) / 4)));
 }
 
@@ -289,20 +317,21 @@ function drawRoof(
   x: number,
   top: number,
   base: number,
-  kind: 'gable' | 'hip',
+  kind: RoofKind,
   skin: { tile: SpriteDef; ridge?: SpriteDef; eave?: SpriteDef },
   glass: boolean,
 ): number {
   const n = postcardSlope(base, kind);
+  const step = kind === 'spire' ? 1 : 2;
   r.mat = glass ? 'auto' : 'roof';
   const tile = sampler(skin.tile);
   const ridge = skin.ridge === undefined ? null : sampler(skin.ridge);
   const eave = skin.eave === undefined ? null : sampler(skin.eave);
   const pal = coloursOf(skin.tile);
   for (let i = 0; i < n; i++) {
-    const inset = 2 * (n - i);
+    const inset = step * (n - i);
     for (let px = inset; px < base - inset; px++) {
-      const atEdge = px < inset + 2 || px >= base - inset - 2;
+      const atEdge = px < inset + step || px >= base - inset - step;
       let colour: string;
       if (i === 0 || atEdge) colour = INK;
       else if (glass) colour = px % 8 === 0 ? GLASS.B : (px + i) % 7 === 0 ? GLASS.L : GLASS.M;
@@ -471,13 +500,19 @@ export function composePostcard(
   const runs = runsOf(grid, partDefs);
   const roofs = runs.map((run) => {
     const cells = run.to - run.from + 1;
-    const kind: 'gable' | 'hip' = run.wing ? 'hip' : 'gable';
+    const kind: RoofKind = run.wing ? 'hip' : run.tower ? 'spire' : 'gable';
     const base = postcardRoofBase(cells);
     return { run, base, kind, height: postcardSlope(base, kind) + EAVE };
   });
+  const finialH = spriteSize(FINIAL).height;
   let above = 0;
   for (const roof of roofs)
-    above = Math.max(above, (roof.run.top + 1) * POSTCARD_CELL_H + roof.height);
+    above = Math.max(
+      above,
+      (roof.run.top + 1) * POSTCARD_CELL_H +
+        roof.height +
+        (roof.kind === 'spire' ? finialH - 1 : 0),
+    );
 
   // The chimney stands on the core's roof, on the left slope, its foot sunk into the roof.
   const chimneyRoof = roofs.find((q) => q.run.from <= 0 && q.run.to >= 0 && !q.run.wing);
@@ -529,6 +564,11 @@ export function composePostcard(
     const x = originX + roof.run.from * POSTCARD_CELL_W - OVER;
     const y = groundY - (roof.run.top + 1) * POSTCARD_CELL_H - roof.height;
     drawRoof(r, x, y, roof.base, roof.kind, roofSkin, roof.run.glass && roof.run.top === 0);
+    if (roof.kind === 'spire') {
+      // the pennant on the tip, its foot in the point
+      r.mat = 'auto';
+      r.blit(FINIAL, x + Math.floor((roof.base - spriteSize(FINIAL).width) / 2), y - finialH + 1);
+    }
   }
 
   // facades
@@ -580,6 +620,13 @@ export function composePostcard(
   const dark = phase !== 'day';
   const lit = litRooms(house, content);
   const litWindow = swapPalette(window, LIT_PANES);
+  const round = swapPalette(TOWER_WINDOW, {
+    S: roofPal.M,
+    T: roofPal.D,
+    L: wallPal.L,
+    D: wallPal.D,
+  });
+  const litRound = swapPalette(round, LIT_PANES);
   const lights: SceneLight[] = [];
   for (const u of units) {
     if (u.kind === 'conservatory') continue;
@@ -602,19 +649,41 @@ export function composePostcard(
       (phase === 'night' || pixelHash(u.col, u.floor) % 5 < 4)
     ) {
       r.mat = 'light';
-      r.blit(litWindow, x + 8, y + 3);
-      lights.push({ kind: 'window', x: x + 13, y: y + 7, clip: cell, size: 0.85 });
+      if (u.part === 'tower') r.blit(litRound, x + 10, y + 3);
+      else r.blit(litWindow, x + 8, y + 3);
+      lights.push({ kind: 'window', x: x + 14, y: y + 7, clip: cell, size: 0.85 });
     } else {
       r.mat = 'window';
-      r.blit(window, x + 8, y + 3);
+      if (u.part === 'tower') r.blit(round, x + 10, y + 3);
+      else r.blit(window, x + 8, y + 3);
     }
   }
 
   // grounds
+  const orchardSkin =
+    'rooms' in house ? house.rooms.find((v) => v.kind === 'orchard')?.floor : undefined;
   for (const g of grid.filter((q) => q.outdoor)) {
     const x = originX + g.col * POSTCARD_CELL_W;
     const w = g.w * POSTCARD_CELL_W;
-    drawGrounds(r, g.kind, x, groundY, w);
+    if (g.floor > 0) {
+      // a balcony hangs on the wall at its floor
+      const bottom = groundY - g.floor * POSTCARD_CELL_H;
+      drawBalcony(r, x, bottom, w);
+      boxes.push({ kind: 'grounds', roomId: g.roomId, x, y: bottom - 12, w, h: 12 });
+      if (dark && lit.post) {
+        r.mat = 'light';
+        r.blit(PORCH_LAMP, x + w - 8, bottom - 8);
+        lights.push({
+          kind: 'lantern',
+          x: x + w - 7,
+          y: bottom - 7,
+          size: 0.3,
+          clip: { x: x - 6, y: bottom - 20, w: w + 12, h: 22 },
+        });
+      }
+      continue;
+    }
+    drawGrounds(r, g.kind, x, groundY, w, orchardSkin);
     boxes.push({ kind: 'grounds', roomId: g.roomId, x, y: groundY - 12, w, h: 12 + GRASS_ROWS });
     if (dark && g.kind === 'garden' && lit.post) {
       // the lantern post on the lawn between the hedge and the tree
@@ -659,7 +728,58 @@ export function composePostcard(
 }
 
 /** A terrace, a garden or a pool: `w` px wide from `x`, on the ground line `groundY`. */
-function drawGrounds(r: Raster, kind: string, x: number, groundY: number, w: number): void {
+function drawGrounds(
+  r: Raster,
+  kind: string,
+  x: number,
+  groundY: number,
+  w: number,
+  orchardSkin?: string,
+): void {
+  if (kind === 'orchard') {
+    const fruit = (orchardSkin ?? 'orchard-apple').replace('orchard-', '');
+    const tree = swapPalette(FRUIT_TREE, FRUIT_SWAP[fruit] ?? {});
+    const th = spriteSize(tree).height;
+    r.mat = 'ground';
+    for (let i = 0; i < w; i++) if (i % 5 === 2) r.set(x + i, groundY, '#9ccc6c');
+    // foliage: the lighting pass takes it through the lawn's ramp, so the trees go dark with the grass
+    r.mat = 'ground';
+    for (const dx of [3, 22, 41]) r.blit(tree, x + dx, groundY - th + 1);
+    return;
+  }
+  if (kind === 'pond') {
+    const water = coloursOf(skinArt('pond-water', 'ground').tile);
+    // the pond: a bank and water sunk under the ground line, a small arched bridge over it, reeds at both banks
+    for (let j = 1; j <= 4; j++) {
+      const inset = j === 4 ? 6 : j === 3 ? 5 : 4;
+      r.mat = 'earth';
+      r.set(x + inset - 1, groundY + j, INK);
+      r.set(x + w - inset, groundY + j, INK);
+      r.mat = 'water';
+      for (let i = inset; i < w - inset; i++) {
+        let colour = water.M;
+        if (j === 1 && i % 7 < 2) colour = water.L;
+        else if (j === 4) colour = water.D;
+        r.set(x + i, groundY + j, colour);
+      }
+    }
+    r.mat = 'earth';
+    for (let i = 5; i < w - 5; i++) r.set(x + i, groundY + 5, INK);
+    r.mat = 'auto';
+    for (let i = 0; i < 40; i++) {
+      const t = (i - 19.5) / 20;
+      const lift = Math.round(5 * (1 - t * t));
+      const bx = x + 8 + i;
+      r.set(bx, groundY - lift - 3, INK);
+      r.set(bx, groundY - lift - 2, i % 8 === 3 ? '#915d42' : '#e4b27a');
+      r.set(bx, groundY - lift - 1, '#bc8050');
+      r.set(bx, groundY - lift, INK);
+      if (i % 9 === 1) r.set(bx, groundY - lift - 4, '#915d42');
+    }
+    r.blit(REED, x + 2, groundY - 6);
+    r.blit(REED, x + w - 4, groundY - 6);
+    return;
+  }
   if (kind === 'terrace') {
     const deck = coloursOf(skinArt('deck', 'ground').tile);
     r.mat = 'floor';
@@ -725,6 +845,24 @@ function drawGrounds(r: Raster, kind: string, x: number, groundY: number, w: num
     r.blit(LADDER, x + 7, groundY - 5);
     r.blit(BOARD, x + w - 16, groundY - 4);
   }
+}
+
+/** A balcony: `w` px wide, its deck on the bottom row `bottom - 1`: three rows of planks and a rail with posts. */
+function drawBalcony(r: Raster, x: number, bottom: number, w: number): void {
+  const deck = coloursOf(skinArt('deck', 'ground').tile);
+  r.mat = 'floor';
+  for (let i = 0; i < w; i++) {
+    r.set(x + i, bottom - 3, deck.L);
+    r.set(x + i, bottom - 2, i % 7 === 6 ? deck.D : deck.M);
+    r.set(x + i, bottom - 1, INK);
+  }
+  for (let i = 1; i < w - 1; i += 6) r.rect(x + i, bottom - 8, 1, 5, deck.A);
+  r.rect(x + 1, bottom - 8, w - 2, 1, deck.L);
+  // a pot of flowers on the deck
+  r.mat = 'auto';
+  r.rect(x + 13, bottom - 6, 3, 3, '#b45c42');
+  r.set(x + 14, bottom - 7, '#ff8fab');
+  r.set(x + 13, bottom - 8, '#5a9a58');
 }
 
 // ---------------------------------------------------------------------------------------------

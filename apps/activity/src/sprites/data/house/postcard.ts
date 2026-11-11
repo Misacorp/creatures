@@ -181,6 +181,70 @@ export const LANTERN_POST = make(
   { f: '#fff0a8', y: '#ffcf6a', p: '#6a6478' },
 );
 
+/** The tower's round window with a sill: 9 x 10. `S`/`T` the frame (the roof skin's), `L`/`D` the sill (the wall skin's). */
+export const TOWER_WINDOW = make(
+  [
+    '..kkkkk..',
+    '.kSSSSSk.',
+    'kSggwyySk',
+    'kSggwyySk',
+    'kSwwwwwSk',
+    'kSyywddSk',
+    'kSyywddSk',
+    '.kSSSSSk.',
+    '.LLLLLLL.',
+    '.DDDDDDD.',
+  ],
+  {
+    S: '#c8684a',
+    T: '#9a4a3a',
+    L: '#f2e8d2',
+    D: '#c9b8a2',
+    g: '#e8f4fa',
+    y: '#9cc8e0',
+    w: '#f6f0e0',
+    d: '#6fb2d6',
+  },
+);
+
+/** The spire's pennant and ball: 3 x 6. */
+export const FINIAL = make(['.RR', '.k.', '.k.', 'kmk', 'kmk', '.k.'], {
+  R: '#d83a4a',
+  m: '#ffd25a',
+});
+
+/** A fruit tree on the orchard's lawn: 11 x 12. `L M D` the leaves, `f` the fruit, `w` the trunk; the composer swaps by variety. */
+export const FRUIT_TREE = make(
+  [
+    '...kkkkk...',
+    '..kLLMMMk..',
+    '.kLLMMMMMk.',
+    '.kLMMMfMMk.',
+    'kLMfMMMMMDk',
+    'kMMMMMMfMDk',
+    'kMMfMMMMDDk',
+    '.kMMMMMDDk.',
+    '..kDDDDDk..',
+    '...kkwkk...',
+    '....kwk....',
+    '....kwk....',
+  ],
+  { L: '#9ccc6c', M: '#5a9a58', D: '#467a4c', w: '#85603f', f: '#d83a4a' },
+);
+
+/** What a variety of tree changes in `FRUIT_TREE`'s palette. */
+export const FRUIT_SWAP: Readonly<Record<string, Readonly<Record<string, string>>>> = {
+  apple: {},
+  plum: { L: '#8ee0a8', M: '#388a62', D: '#27604f', f: '#8a5cad' },
+  pear: { L: '#c8f08a', M: '#5aa850', D: '#3a7a3c', f: '#d6d04a' },
+};
+
+/** A reed with a brown head on the pond's bank: 2 x 7. */
+export const REED = {
+  rows: ['.t', 'tt', 'jt', 'j.', 'j.', 'j.', 'j.'],
+  palette: { t: '#7a5a34', j: '#43924f' },
+} satisfies SpriteDef;
+
 /** Every hand-drawn piece by name (the concept wrapper and the tests list them). */
 export const POSTCARD_ART: Readonly<Record<string, SpriteDef>> = {
   'porch-lamp': PORCH_LAMP,
@@ -199,4 +263,8 @@ export const POSTCARD_ART: Readonly<Record<string, SpriteDef>> = {
   ladder: LADDER,
   'diving-board': BOARD,
   parasol: PARASOL,
+  'tower-window': TOWER_WINDOW,
+  finial: FINIAL,
+  'fruit-tree': FRUIT_TREE,
+  reed: REED,
 };
