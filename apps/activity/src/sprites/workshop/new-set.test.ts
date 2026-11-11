@@ -1,5 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { loadHousingContent, resources } from '@creatures/game';
 import { housing } from '@creatures/game/housing-content';
@@ -26,14 +25,22 @@ import { SET_FORMS } from './style';
 
 /** `pnpm housing new-set` and `remove-set` as pure plans, run on the real files in memory (nothing is written). */
 
-const ROOT = fileURLToPath(new URL('../../../../../', import.meta.url));
+const ROOT = new URL('../../../../../', import.meta.url);
+
+function disk(path: string): string | undefined {
+  try {
+    return readFileSync(new URL(path, ROOT), 'utf8');
+  } catch {
+    return undefined;
+  }
+}
 
 /** The files as they are on disk, with a plan's changes laid over them. */
 function files(): { read: (path: string) => string | undefined; apply: (c: Changes) => void } {
   const over = new Map<string, string | null>();
   const read = (path: string): string | undefined => {
     if (over.has(path)) return over.get(path) ?? undefined;
-    return existsSync(ROOT + path) ? readFileSync(ROOT + path, 'utf8') : undefined;
+    return disk(path);
   };
   return {
     read,
@@ -248,7 +255,7 @@ describe('remove-set, as a plan', () => {
       else expect(read(path), path).toBe(text);
     }
     expect(read(PATHS.compendium)).not.toContain('Unit Oak');
-    expect(read(PATHS.compendium)).toBe(readFileSync(ROOT + PATHS.compendium, 'utf8'));
+    expect(read(PATHS.compendium)).toBe(disk(PATHS.compendium));
     expect(planRemoveSet('unit-oak', read).size).toBe(0);
   });
 

@@ -530,7 +530,8 @@ export function planRemoveSet(id: string, read: Read): Changes {
   if (bad !== undefined) throw new Error(bad);
   const changes: Changes = new Map();
   const sets = parseList(PATHS.sets, read(PATHS.sets));
-  const name = String(sets.find((s) => s['id'] === id)?.['name'] ?? titleOf(id));
+  const found = sets.find((s) => s['id'] === id)?.['name'];
+  const name = typeof found === 'string' ? found : titleOf(id);
   for (const path of [PATHS.sets, PATHS.pieces, PATHS.skins]) {
     const rows = path === PATHS.sets ? sets : parseList(path, read(path));
     const kept = rows.filter((r) => r['set'] !== id && r['id'] !== id);
