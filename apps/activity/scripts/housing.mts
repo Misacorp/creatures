@@ -3,6 +3,7 @@
 //   pnpm housing sheet <style> [--out dir]        the nine pieces of a style, generated, at 1x and 4x
 //   pnpm housing compare [--set id,id] [--out dir]   shipped against generated, every piece of every set
 //   pnpm housing lock [--check]                   writes (or checks) src/sprites/workshop/shipped-art.json
+//   pnpm housing new-set <id> | remove-set <id> | check   add, undo and cross-check a set (housing-new-set.mts)
 //
 // `sheet` and `compare` write PNGs to apps/activity/scratch/housing/ (git ignores it) unless --out is given.
 // `compare` prints, per piece, how it is made (generated or the override's kind) and how many pixels the generated
@@ -256,9 +257,11 @@ if (command === 'sheet') {
     writeFileSync(LOCK, text);
     console.log(`Wrote ${LOCK}`);
   }
+} else if (command === 'new-set' || command === 'remove-set' || command === 'check') {
+  (await import('./housing-new-set.mts')).main(args);
 } else {
   console.log(
-    'Usage: pnpm housing sheet <style> | compare [--set id,id] | lock [--check]   [--out dir]',
+    'Usage: pnpm housing sheet <style> | compare [--set id,id] | lock [--check] | new-set <id> | remove-set <id> | check   [--out dir]',
   );
   process.exit(command === undefined ? 0 : 1);
 }
