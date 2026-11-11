@@ -7,8 +7,12 @@ import {
   LEVEL_WEIGHT,
   LIGHT_SHAPE,
   STEPS,
+  duskSky,
+  flameCentre,
   levelMap,
+  lightCentre,
   lightKindOf,
+  lightOf,
   luma,
   pixelHash,
   shade,
@@ -358,5 +362,102 @@ describe('a house at night', () => {
     const n = mean('night');
     expect(d - t).toBeGreaterThan(0.08);
     expect(t - n).toBeGreaterThan(0.05);
+  });
+});
+
+describe("a light in a piece's art", () => {
+  const flame: SpriteDef = {
+    rows: ['....', '.ff.', '.ff.', 'kkkk'],
+    palette: { f: '#ffcf6a', k: '#0d0a1a' },
+  };
+  const size = { width: 4, height: 4 };
+
+  it('is a bare kind or a spec with where it burns and how wide its pool is', () => {
+    expect(lightOf({ light: 'fire' }, 'bed')).toEqual({ kind: 'fire' });
+    const spec = { kind: 'lamp', at: { x: 3, y: 2 }, size: 0.5 } as const;
+    expect(lightOf({ light: spec }, 'bed')).toEqual(spec);
+    expect(lightOf({}, 'lamp')).toEqual({ kind: 'lamp' });
+    expect(lightOf({ glow: {} }, 'yard-bit')).toEqual({ kind: 'lantern' });
+    expect(lightOf({}, 'bed')).toBeUndefined();
+  });
+
+  it('burns where the art says, else in the middle of its flame-coloured pixels, else by kind', () => {
+    expect(flameCentre(flame)).toEqual({ x: 2, y: 2 });
+    expect(lightCentre({ kind: 'lamp', at: { x: 0, y: 1 } }, flame, size)).toEqual({ x: 0, y: 1 });
+    expect(lightCentre({ kind: 'lamp' }, flame, size)).toEqual({ x: 2, y: 2 });
+    const plain: SpriteDef = { rows: ['kk', 'kk'], palette: { k: '#0d0a1a' } };
+    expect(flameCentre(plain)).toBeNull();
+    expect(lightCentre({ kind: 'lamp' }, plain, { width: 20, height: 10 })).toEqual({
+      x: 10,
+      y: 8,
+    });
+  });
+
+  it('makes a smaller pool with a smaller size', () => {
+    const clip = { x: 0, y: 0, w: 112, h: 64 };
+    const count = (scale?: number): number =>
+      levelMap(
+        [{ kind: 'lamp', x: 56, y: 32, clip, ...(scale === undefined ? {} : { size: scale }) }],
+        112,
+        64,
+      ).filter((v) => v > 0).length;
+    expect(count(0.5)).toBeLessThan(count());
+    expect(count(0.5)).toBeGreaterThan(0);
+  });
+
+  it('flags the shelves that hold lanterns, the tank and the post, with the centre inside the piece', () => {
+    const flagged = housing.pieces
+      .filter((p) => lightOf(pieceArt(p.id), p.form) !== undefined)
+      .map((p) => p.id);
+    for (const id of ['lantern-post', 'reef-tank', 'emberhold-shelf', 'lantern-night-shelf'])
+      expect(flagged, id).toContain(id);
+    for (const id of flagged) {
+      const piece = housing.pieces.find((p) => p.id === id);
+      const art = pieceArt(id);
+      const spec = lightOf(art, piece?.form) ?? { kind: 'lamp' as const };
+      const rows = expandRows(art.sprite);
+      const at = lightCentre(spec, art.sprite, {
+        width: rows[0]?.length ?? 0,
+        height: rows.length,
+      });
+      expect(at.x, id).toBeGreaterThanOrEqual(0);
+      expect(at.x, id).toBeLessThan(rows[0]?.length ?? 0);
+      expect(at.y, id).toBeGreaterThanOrEqual(0);
+      expect(at.y, id).toBeLessThan(rows.length);
+    }
+  });
+});
+
+function rgbOf(hex: string): Rgb {
+  const n = Number.parseInt(hex.slice(1), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
+describe('the dusk sky', () => {
+  const strip = skyForPhase('night');
+  const dusk = skyForPhase('twilight');
+
+  it("keeps the strip's size and its hills, and is a gradient from violet to amber", () => {
+    expect(dusk.rows).toHaveLength(strip.rows.length);
+    expect(dusk.rows[0]).toHaveLength(strip.rows[0]?.length ?? 0);
+    expect(dusk.palette[dusk.rows[0]?.[0] ?? '']).toBe('#3b2f6e');
+    for (const [y, row] of strip.rows.entries())
+      for (const [x, c] of [...row].entries())
+        if ('hmijng'.includes(c)) expect(dusk.rows[y]?.[x]).toBe(c);
+    const mean = (y: number): number => {
+      const row = dusk.rows[y] ?? '';
+      let sum = 0;
+      for (const c of row) sum += luma(rgbOf(dusk.palette[c] ?? '#000000'));
+      return sum / row.length;
+    };
+    expect(mean(20)).toBeGreaterThan(mean(2));
+  });
+
+  it('melts each step into the next with a dither, and names every colour it uses', () => {
+    for (const k of new Set(dusk.rows.flatMap((r) => [...r])))
+      expect(dusk.palette[k], k).toBeDefined();
+    // somewhere two neighbouring ramp keys alternate in a row
+    expect(dusk.rows.some((r) => /(\d)(\d)\1\2\1/.test(r))).toBe(true);
+    expect(duskSky(strip)).toEqual(dusk);
   });
 });

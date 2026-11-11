@@ -1,13 +1,15 @@
 /**
  * Paints placements of the house scene onto a canvas at one pixel per scene pixel; the canvas is then shown at an integer
  * scale with `image-rendering: pixelated` (CSS), so a 1,500 px wide house is a 1,500 px wide canvas, not a 4,500 px one.
- * Each sprite is rendered to a small canvas once (a roof is one sprite of up to 240 x 55) and stamped with `drawImage`.
- * Where there is no canvas (the tests' fake DOM) nothing is painted. Colours are `#rgb` or `#rrggbb`.
+ * By day the sprites are stamped by the shared scene painter (`../scene-paint.ts`, which the living room uses too: bitmaps
+ * cached per sprite, no size limit); this file adds the lighting pass on top. Where there is no canvas (the tests' fake DOM)
+ * nothing is painted.
  *
  * Day is painted with `drawImage` as always. Twilight and night go through `rasterize`, a pure pixel pass (`house-light.ts`:
  * the material ramps and the stepped light shapes) whose result is put on the canvas with `putImageData`; it runs when the
  * scene changes (a phase change, a rebuilt house), never per frame.
  */
+import { hexRgb, stamp } from '../scene-paint';
 import { expandRows, type SpriteDef } from '../sprites/sprite-data';
 import {
   levelMap,
@@ -23,52 +25,6 @@ import {
   type Rgb,
 } from './house-light';
 import type { Placement } from './house-scene';
-
-const bitmaps = new WeakMap<SpriteDef, HTMLCanvasElement | null>();
-
-/** `#rgb` / `#rrggbb` to bytes. */
-function rgb(hex: string): Rgb {
-  const h = hex.slice(1);
-  const full = h.length === 3 ? [...h].map((c) => c + c).join('') : h;
-  const n = Number.parseInt(full, 16);
-  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
-}
-
-/** A sprite as a canvas of its own size, or null where canvases cannot be made. */
-function bitmapOf(sprite: SpriteDef): HTMLCanvasElement | null {
-  const cached = bitmaps.get(sprite);
-  if (cached !== undefined) return cached;
-  let result: HTMLCanvasElement | null = null;
-  if (typeof document !== 'undefined') {
-    const rows = expandRows(sprite);
-    const width = rows[0]?.length ?? 0;
-    const height = rows.length;
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = width > 0 && height > 0 ? canvas.getContext('2d') : null;
-    if (ctx !== null && typeof ctx.createImageData === 'function') {
-      const image = ctx.createImageData(width, height);
-      const colours = new Map<string, Rgb>();
-      for (const [key, colour] of Object.entries(sprite.palette)) colours.set(key, rgb(colour));
-      for (const [y, row] of rows.entries()) {
-        for (let x = 0; x < width; x++) {
-          const c = colours.get(row[x] ?? '.');
-          if (c === undefined) continue;
-          const at = (y * width + x) * 4;
-          image.data[at] = c[0];
-          image.data[at + 1] = c[1];
-          image.data[at + 2] = c[2];
-          image.data[at + 3] = 255;
-        }
-      }
-      ctx.putImageData(image, 0, 0);
-      result = canvas;
-    }
-  }
-  bitmaps.set(sprite, result);
-  return result;
-}
 
 /** A sprite's pixels as palette indexes (1 based, 0 transparent) and the palette's colours. */
 interface Pixels {
@@ -87,7 +43,7 @@ function pixelsOf(sprite: SpriteDef): Pixels {
   const width = rows[0]?.length ?? 0;
   const height = rows.length;
   const keys = Object.keys(sprite.palette);
-  const colours = keys.map((k) => rgb(sprite.palette[k] ?? '#000'));
+  const colours = keys.map((k) => hexRgb(sprite.palette[k] ?? '#000'));
   const index = new Uint8Array(width * height);
   for (const [y, row] of rows.entries()) {
     for (let x = 0; x < width; x++) {
@@ -102,9 +58,15 @@ function pixelsOf(sprite: SpriteDef): Pixels {
 
 type Bytes = [number, number, number];
 
+/** An opaque colour as one little-endian RGBA word (what `Uint8ClampedArray` holds, read four bytes at a time). */
+const pack = (r: number, g: number, b: number): number =>
+  ((255 << 24) | (b << 16) | (g << 8) | r) >>> 0;
+
 /** What one palette entry becomes at each light level, and whether it is a window's sky. */
 interface Table {
   levels: Bytes[][];
+  /** The same colours packed as little-endian RGBA words (opaque), by level then palette entry. */
+  packed: Uint32Array[];
   sky: boolean[];
   /** Flame-coloured entries (a window's drawn sun is one of them: see `sunMask`). */
   flame: boolean[];
@@ -135,7 +97,13 @@ function tableOf(sprite: SpriteDef, material: Material, phase: NightPhase): Tabl
     ];
   });
   const flame = colours.map((c) => toneOf(c) === 'flame');
-  const table = { levels, sky, flame };
+  const packed = [0, 1, 2, 3].map((level) =>
+    Uint32Array.from(levels, (l) => {
+      const c = l[level] ?? l[0] ?? [0, 0, 0];
+      return pack(c[0], c[1], c[2]);
+    }),
+  );
+  const table = { levels, packed, sky, flame };
   byKey.set(key, table);
   return table;
 }
@@ -182,6 +150,7 @@ export function rasterize(
   lighting?: Lighting,
 ): Uint8ClampedArray<ArrayBuffer> {
   const out = new Uint8ClampedArray(new ArrayBuffer(width * height * 4));
+  const words = new Uint32Array(out.buffer);
   const phase = lighting?.phase ?? 'day';
   const levels =
     phase === 'day' || lighting === undefined ? null : levelMap(lighting.lights, width, height);
@@ -189,32 +158,41 @@ export function rasterize(
     const sprite = pixelsOf(p.sprite);
     const w = Math.min(p.w ?? sprite.width, sprite.width);
     const h = Math.min(p.h ?? sprite.height, sprite.height);
-    const table = phase === 'day' ? null : tableOf(p.sprite, p.mat ?? 'auto', phase);
-    const sun = phase !== 'day' && p.mat === 'window' ? sunMask(p.sprite) : null;
-    for (let y = 0; y < h; y++) {
-      const sy = p.y + y;
-      if (sy < 0 || sy >= height) continue;
-      for (let x = 0; x < w; x++) {
-        const sx = p.x + x;
-        if (sx < 0 || sx >= width) continue;
-        const i = sprite.index[y * sprite.width + x] ?? 0;
+    const x0 = Math.max(0, -p.x);
+    const x1 = Math.min(w, width - p.x);
+    const index = sprite.index;
+    if (phase === 'day' || levels === null) {
+      const packedDay = Uint32Array.from(sprite.colours, (c) => pack(c[0], c[1], c[2]));
+      for (let y = Math.max(0, -p.y); y < h && p.y + y < height; y++) {
+        const row = y * sprite.width;
+        const base = (p.y + y) * width + p.x;
+        for (let x = x0; x < x1; x++) {
+          const i = index[row + x] ?? 0;
+          if (i !== 0) words[base + x] = packedDay[i - 1] ?? 0;
+        }
+      }
+      continue;
+    }
+    const table = tableOf(p.sprite, p.mat ?? 'auto', phase);
+    const sun = p.mat === 'window' ? sunMask(p.sprite) : null;
+    const moon = pack(...moonColour(phase));
+    const star = pack(STAR[0], STAR[1], STAR[2]);
+    const { packed, sky } = table;
+    const lit0 = packed[0];
+    for (let y = Math.max(0, -p.y); y < h && p.y + y < height; y++) {
+      const row = y * sprite.width;
+      const base = (p.y + y) * width + p.x;
+      for (let x = x0; x < x1; x++) {
+        const i = index[row + x] ?? 0;
         if (i === 0) continue;
-        const at = sy * width + sx;
-        let c: readonly number[] | undefined;
-        if (table === null) c = sprite.colours[i - 1];
-        else if (sun !== null && phase !== 'day' && sun[y * sprite.width + x] === 1)
-          c = moonColour(phase);
-        else if (table.sky[i - 1] === true) {
-          c =
-            phase === 'night' && pixelHash(sx, sy) % STAR_ONE_IN === 0
-              ? STAR
-              : table.levels[i - 1]?.[0];
-        } else c = table.levels[i - 1]?.[levels?.[at] ?? 0];
-        if (c === undefined) continue;
-        out[at * 4] = c[0] ?? 0;
-        out[at * 4 + 1] = c[1] ?? 0;
-        out[at * 4 + 2] = c[2] ?? 0;
-        out[at * 4 + 3] = 255;
+        const at = base + x;
+        if (sun !== null && sun[row + x] === 1) words[at] = moon;
+        else if (sky[i - 1] === true) {
+          words[at] =
+            phase === 'night' && pixelHash(p.x + x, p.y + y) % STAR_ONE_IN === 0
+              ? star
+              : (lit0?.[i - 1] ?? 0);
+        } else words[at] = packed[levels[at] ?? 0]?.[i - 1] ?? 0;
       }
     }
   }
@@ -241,12 +219,5 @@ export function paintPlacements(
     }
     return;
   }
-  ctx.imageSmoothingEnabled = false;
-  for (const p of placements) {
-    const bitmap = bitmapOf(p.sprite);
-    if (bitmap === null) continue;
-    const w = p.w ?? bitmap.width;
-    const h = p.h ?? bitmap.height;
-    ctx.drawImage(bitmap, 0, 0, w, h, p.x, p.y, w, h);
-  }
+  stamp(ctx, placements);
 }

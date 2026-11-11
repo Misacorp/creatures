@@ -32,11 +32,11 @@ import { skySprite } from '../valley/place-scene';
 import { displayArt, pieceArt, shellArt, skinArt, type SkinArt } from './house-art';
 import {
   DAY_LIGHTING,
-  lightKindOf,
+  lightCentre,
+  lightOf,
   moonSprite,
   skyForPhase,
   type Lighting,
-  type LightKind,
   type Material,
   type SceneLight,
 } from './house-light';
@@ -722,16 +722,19 @@ const DEFAULT_DRAWING: DisplayDrawing = {
  * The sky behind a scene: the valley's strip along the ground line, its top row carried up. At night it is the valley's own
  * night (violet bands, stars) with its moon; at twilight the same pixels in a dusk. Tagged `fixed`: the lighting pass leaves it.
  */
-function drawSky(
+export function drawSky(
   back: Placement[],
   width: number,
   groundY: number,
   phase: RoomPhase,
   moonX?: number,
+  /** The strip's foot always meets the ground line, its top cut off when the picture is shorter than the strip (the postcard). */
+  fromBottom = false,
 ): void {
   const sky = phase === 'day' ? skySprite() : skyForPhase(phase);
   const { width: skyW, height: skyH } = spriteSize(sky);
   const skyTop = groundY - skyH;
+  const stripY = fromBottom ? skyTop : Math.max(0, skyTop);
   if (skyTop > 0) {
     back.push({
       sprite: solid(width, skyTop, sky.palette[sky.rows[0]?.[0] ?? ''] ?? '#6fb2d6'),
@@ -744,8 +747,8 @@ function drawSky(
     const cw = Math.min(skyW, width - sx);
     back.push(
       cw === skyW
-        ? { sprite: sky, x: sx, y: Math.max(0, skyTop), mat: 'fixed' }
-        : { sprite: sky, x: sx, y: Math.max(0, skyTop), w: cw, h: skyH, mat: 'fixed' },
+        ? { sprite: sky, x: sx, y: stripY, mat: 'fixed' }
+        : { sprite: sky, x: sx, y: stripY, w: cw, h: skyH, mat: 'fixed' },
     );
   }
   const moon = phase === 'night' ? moonSprite() : undefined;
@@ -837,15 +840,17 @@ function drawRoom(
     else py = y + (spot.y ?? 0);
     const piece = content.pieces.find((p) => p.id === pieceId);
     const form = piece === undefined ? undefined : content.forms.find((f) => f.id === piece.form);
-    // Lights come from data (`lightKindOf`: the art's flag, the form, a night glow), never from a list of ids.
-    const lightKind = lightKindOf(art, form?.id);
+    // Lights come from data (`lightOf`: the art's flag, the form, a night glow), never from a list of ids.
+    const light = lightOf(art, form?.id);
     const mat: Material =
-      lightKind !== undefined ? 'light' : spot.type === 'window' ? 'window' : 'auto';
-    if (lightKind !== undefined) {
+      light !== undefined ? 'light' : spot.type === 'window' ? 'window' : 'auto';
+    if (light !== undefined) {
+      const at = lightCentre(light, art.sprite, { width: pw, height: ph });
       layers.lights.push({
-        kind: lightKind,
-        x: px + Math.floor(pw / 2),
-        y: py + Math.floor(ph * LIGHT_AT[lightKind]),
+        kind: light.kind,
+        x: px + at.x,
+        y: py + at.y,
+        ...(light.size === undefined ? {} : { size: light.size }),
         clip: room.outdoor
           ? { x, y: groundY - CELL_H, w: width, h: CELL_H + FLOOR_H }
           : { x, y, w: width, h: WALL_H + FLOOR_H },
@@ -882,14 +887,6 @@ function drawRoom(
     drawWalls(frame, layers, x, y, width, outer);
   }
 }
-
-/** Where a light burns in its piece, as a share of the piece's height from its top (a lamp's bulb hangs low, a hearth's fire is mid). */
-const LIGHT_AT: Readonly<Record<LightKind, number>> = {
-  lamp: 0.8,
-  fire: 0.62,
-  lantern: 0.25,
-  porch: 0.2,
-};
 
 /** Draw order of spot types inside a room: the rug, wall and ceiling things, large floor pieces, small floor pieces. */
 function order(type: SpotType): number {

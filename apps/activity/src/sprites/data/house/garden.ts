@@ -389,6 +389,7 @@ export const HOUSE_ART: HouseArtPack = {
     'lantern-post': {
       sprite: drawn(LANTERN_POST, PALETTE),
       glow: drawn(LANTERN_GLOW, GLOW_PALETTE),
+      light: { kind: 'lantern', at: { x: 10, y: 4 } },
     },
     birdbath: { sprite: drawn(BIRDBATH, PALETTE) },
     'garden-bench': { sprite: drawn(GARDEN_BENCH, PALETTE) },

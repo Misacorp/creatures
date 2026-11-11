@@ -10,7 +10,7 @@ import { type HousingContent } from '@creatures/game';
 import { housing } from '@creatures/game/housing-content';
 import type { SpriteDef } from '../sprites/sprite-data';
 import { registerHouseIcons } from './house-icon';
-import type { LightKind } from './house-light';
+import type { LightFlag } from './house-light';
 import { placeholderSprite, placeholderTile } from './house-placeholder';
 
 /** One piece of furniture: its picture and the layers that go with it. All layers share the picture's size and origin, except `glow`. */
@@ -22,8 +22,11 @@ export interface PieceArt {
   sleep?: { x: number; y: number };
   /** A night glow (a lamp, the hearth, the lantern post). Centred on the piece, its top 4 px below the piece's top. */
   glow?: SpriteDef;
-  /** The piece is a light source of this kind (`house-light.ts`). Unset: its form decides (lamp, hearth), else a `glow` makes it a lantern. */
-  light?: LightKind;
+  /**
+   * The piece is a light source (`house-light.ts`): a kind, or `{ kind, at, size }` for where it burns and how wide its pool
+   * is. Unset: its form decides (lamp, hearth), else a `glow` makes it a lantern. A flag changes no pixel of the art.
+   */
+  light?: LightFlag;
 }
 
 export type SkinArt = { tile: SpriteDef; ridge?: SpriteDef; eave?: SpriteDef };

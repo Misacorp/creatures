@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { houseGrid } from '@creatures/game';
+import { houseGrid, type HouseView } from '@creatures/game';
 import { housing } from '@creatures/game/housing-content';
 import { byRole, createPage, type Page } from '../test-dom';
 import { expandRows } from '../sprites/sprite-data';
@@ -12,6 +12,9 @@ import {
   postcardName,
   type PostcardBox,
 } from './house-postcard';
+import { DAY_LIGHTING, moonSprite, skyForPhase } from './house-light';
+import { HousePhaseContext } from './house-phase';
+import { rasterize } from './house-paint';
 import { COTTAGE, HUT, MANSION, THREE_FLOORS, sceneHouse } from './house-scene-sample';
 
 let page: Page | null = null;
@@ -215,6 +218,186 @@ describe('HousePostcard', () => {
     );
     const [img] = byRole(page.root, 'img');
     expect(img?.getAttribute('aria-label')).toBe('Your house: hut');
+  });
+});
+
+/** The picture as bytes, through the same painter the game uses. */
+function bytesOf(model: ReturnType<typeof composePostcard>): Uint8ClampedArray {
+  return rasterize(model.placements, model.width, model.height, model.lighting);
+}
+
+const WARM_PANE = '#ffcf6a';
+
+/** How many lit windows a model has (its window lights). */
+const windowLights = (model: ReturnType<typeof composePostcard>): number =>
+  model.lighting.lights.filter((l) => l.kind === 'window').length;
+
+describe('the postcard in a phase', () => {
+  it.each(STAGES)('%s: by day it is exactly the picture it always was', (_n, parts) => {
+    const house = { parts, ...skins() };
+    const day = composePostcard(house, undefined, 'day');
+    const plain = composePostcard(house);
+    expect(day.lighting).toEqual(DAY_LIGHTING);
+    expect(day.placements.some((p) => p.mat === 'fixed')).toBe(false); // no sky: transparent round the house
+    const old = rasterize([{ sprite: day.sprite, x: 0, y: 0 }], day.width, day.height);
+    expect(bytesOf(day)).toEqual(old);
+    expect(bytesOf(plain)).toEqual(old);
+  });
+
+  it('is the same drawing at night: the same size, the grounds and the cells where they were', () => {
+    const house = { parts: MANSION, ...skins() };
+    const day = composePostcard(house);
+    for (const phase of ['twilight', 'night'] as const) {
+      const dark = composePostcard(house, undefined, phase);
+      expect(dark.width).toBe(day.width);
+      expect(dark.height).toBe(day.height);
+      expect(dark.groundY).toBe(day.groundY);
+      expect(dark.boxes).toEqual(day.boxes);
+      expect(dark.clipped).toBe(0);
+      expect(dark.phase).toBe(phase);
+      expect(dark.lighting.phase).toBe(phase);
+    }
+  });
+
+  it('paints the valley sky behind it at twilight and night, and the night moon only at night', () => {
+    const house = { parts: MANSION, ...skins() };
+    const night = composePostcard(house, undefined, 'night');
+    const dusk = composePostcard(house, undefined, 'twilight');
+    expect(night.placements.some((p) => p.sprite === skyForPhase('night'))).toBe(true);
+    expect(dusk.placements.some((p) => p.sprite === skyForPhase('twilight'))).toBe(true);
+    expect(night.placements.some((p) => p.sprite === moonSprite())).toBe(true);
+    expect(dusk.placements.some((p) => p.sprite === moonSprite())).toBe(false);
+    // the sky fills the picture above the ground, so no pixel there is clear
+    const bytes = bytesOf(night);
+    for (let y = 0; y < night.groundY; y++)
+      for (let x = 0; x < night.width; x++)
+        expect(bytes[(y * night.width + x) * 4 + 3], `${String(x)},${String(y)}`).toBe(255);
+  });
+
+  it('makes the walls and the lawn darker at night and keeps the outline dark', () => {
+    const house = { parts: THREE_FLOORS, ...skins() };
+    const day = bytesOf(composePostcard(house));
+    const night = bytesOf(composePostcard(house, undefined, 'night'));
+    const m = composePostcard(house);
+    const at = (a: Uint8ClampedArray, x: number, y: number): number =>
+      (a[(y * m.width + x) * 4] ?? 0) +
+      (a[(y * m.width + x) * 4 + 1] ?? 0) +
+      (a[(y * m.width + x) * 4 + 2] ?? 0);
+    const wall = m.boxes.find((b) => b.kind === 'room');
+    expect(wall).toBeDefined();
+    expect(at(night, (wall?.x ?? 0) + 2, (wall?.y ?? 0) + 4)).toBeLessThan(
+      at(day, (wall?.x ?? 0) + 2, (wall?.y ?? 0) + 4),
+    );
+    expect(at(night, 10, m.groundY + 1)).toBeLessThan(at(day, 10, m.groundY + 1));
+    // the outline (the left edge of the leftmost wall) is still darker than the wall beside it at night
+    const rooms = m.boxes.filter((b) => b.kind === 'room');
+    const edge = rooms.reduce((a, b) => (b.x < a.x ? b : a), rooms[0] ?? { x: 0, y: 0 });
+    expect(at(night, edge.x, edge.y + 6)).toBeLessThan(at(night, edge.x + 1, edge.y + 6) - 40);
+  });
+
+  it('lights windows warm at night, from a stable pattern, with a glow on the wall round each', () => {
+    const house = { parts: MANSION, ...skins() };
+    const night = composePostcard(house, undefined, 'night');
+    const again = composePostcard(house, undefined, 'night');
+    expect(night.lighting.lights).toEqual(again.lighting.lights);
+    const lit = windowLights(night);
+    const rooms = night.boxes.filter((b) => b.kind === 'room').length;
+    expect(lit).toBeGreaterThan(0);
+    expect(lit).toBeLessThan(rooms);
+    expect(night.sprite.palette).toBeDefined();
+    expect(Object.values(night.sprite.palette)).toContain(WARM_PANE);
+    expect(Object.values(composePostcard(house).sprite.palette)).not.toContain(WARM_PANE);
+    // each glow stays in its own cell
+    for (const l of night.lighting.lights.filter((q) => q.kind === 'window')) {
+      expect(night.boxes.some((b) => b.x === l.clip.x && b.y === l.clip.y)).toBe(true);
+    }
+    // a lit window's pane is bright in the picture
+    const bytes = bytesOf(night);
+    const first = night.lighting.lights.find((l) => l.kind === 'window');
+    const px = ((first?.y ?? 0) * night.width + (first?.x ?? 0)) * 4;
+    expect(bytes[px]).toBeGreaterThan(200);
+  });
+
+  it('has fewer lit windows at twilight than at night, and none by day', () => {
+    const house = { parts: MANSION, ...skins() };
+    expect(windowLights(composePostcard(house))).toBe(0);
+    expect(windowLights(composePostcard(house, undefined, 'twilight'))).toBeLessThanOrEqual(
+      windowLights(composePostcard(house, undefined, 'night')),
+    );
+  });
+
+  it('puts a porch lamp by the Hearth door from dusk, and a lantern post in a garden', () => {
+    const withGarden = { parts: [...THREE_FLOORS, 'garden'], ...skins() };
+    const night = composePostcard(withGarden, undefined, 'night');
+    const kinds = night.lighting.lights.map((l) => l.kind);
+    expect(kinds).toContain('porch');
+    expect(kinds).toContain('lantern');
+    expect(
+      composePostcard({ parts: THREE_FLOORS, ...skins() }, undefined, 'night').lighting.lights.map(
+        (l) => l.kind,
+      ),
+    ).not.toContain('lantern');
+    for (const l of night.lighting.lights) {
+      expect(l.clip.x + l.clip.w).toBeLessThanOrEqual(night.width);
+      expect(l.clip.y + l.clip.h).toBeLessThanOrEqual(night.height);
+    }
+  });
+
+  it('lights the rooms of a house view that hold a light or a housemate, and only those', () => {
+    const parts = [...THREE_FLOORS];
+    const base = sceneHouse({ parts });
+    const dark: HouseView = {
+      ...base,
+      housemates: [],
+      rooms: base.rooms.map((r) => ({
+        ...r,
+        spots: Object.fromEntries(Object.keys(r.spots).map((k) => [k, null])),
+      })),
+    };
+    const count = (house: HouseView): number =>
+      windowLights(composePostcard(house, undefined, 'night'));
+    expect(count(dark)).toBe(0);
+    // a lamp in one non-hearth room
+    const target = dark.rooms.find((r) => r.kind !== 'hearth');
+    const lampSpot = housing.rooms
+      .find((k) => k.id === target?.kind)
+      ?.spots.find((s) => s.type === 'floor-small' || s.type === 'ceiling');
+    expect(target).toBeDefined();
+    const withLamp = {
+      ...dark,
+      rooms: dark.rooms.map((r) =>
+        r === target ? { ...r, spots: { ...r.spots, [lampSpot?.id ?? 'x']: 'cosy-lamp' } } : r,
+      ),
+    };
+    const cells = composePostcard(withLamp).boxes.filter((b) => b.roomId === target?.id).length;
+    expect(count(withLamp)).toBe(cells);
+    // a housemate at home lights their room; one away does not
+    const mate = (home: boolean) => ({
+      ...dark,
+      housemates: [
+        {
+          roomId: target?.id ?? '',
+          spotId: 'bed',
+          home,
+          creature: { id: 'c1', species: 'moss-hopper', shiny: false, nickname: null, level: 3 },
+        },
+      ],
+    });
+    expect(count(mate(true))).toBeGreaterThan(0);
+    expect(count(mate(false))).toBe(0);
+  });
+});
+
+describe('HousePostcard in a phase', () => {
+  it('takes the house phase of its provider', () => {
+    page = createPage();
+    page.draw(
+      <HousePhaseContext.Provider value="night">
+        <HousePostcard house={{ parts: HUT, roof: 'thatch', walls: 'plaster' }} maxWidth={390} />
+      </HousePhaseContext.Provider>,
+    );
+    const [img] = byRole(page.root, 'img');
+    expect(img?.getAttribute('aria-label')).toBe('House: hut');
   });
 });
 

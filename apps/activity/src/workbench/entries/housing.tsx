@@ -40,9 +40,9 @@ function houseOf(p: Props) {
 const PHASES: readonly RoomPhase[] = ['day', 'twilight', 'night'];
 
 /** The phase control of the house entries: the house is drawn in this light (in the game it is the living room's phase). */
-const phaseControl = { phase: { kind: 'select', options: PHASES } } as const;
+export const phaseControl = { phase: { kind: 'select', options: PHASES } } as const;
 
-function phaseOf(p: Props): RoomPhase {
+export function phaseOf(p: Props): RoomPhase {
   const v = str(p, 'phase');
   return PHASES.find((x) => x === v) ?? 'day';
 }
