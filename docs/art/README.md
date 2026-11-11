@@ -13,7 +13,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | [House: garden and pool pieces](#house-garden) | draft | 13 | 2026-11-09: player housing, art batch E4: twelve garden and pool pieces that sit on grass and by water and read from a distance. |
 | [House: the wild pieces](#house-wild) | draft | 13 | 2026-11-09: player housing, art batch E4: twelve one-off pieces that belong to no set, each with character. |
 | [House: stamps, displays, materials and glyphs](#house-marks) | draft | 33 | 2026-11-09: housing art batch E5 (docs/design/housing.md, section 5): 24 stamps, the hall displays, 16 luxury materials, the House glyphs. |
-| [House postcard (outside view)](#house-postcard) | draft | 16 | 2026-11-10: a house that visibly grows into a mansion with wings, a pool and gardens, seen whole on a phone. |
+| [House postcard (outside view)](#house-postcard) | draft | 20 | 2026-11-10: a house that visibly grows into a mansion with wings, a pool and gardens, seen whole on a phone. |
 | [House: Quiet Verge set](#house-quiet-verge) | draft | 14 | 2026-11-11: player housing furniture, a set made in the workshop (pnpm housing new-set). |
 | [House: room skins](#house-rooms) | draft | 16 | 2026-11-10: player housing art pass 2, a default wallpaper and floor for every room kind (art director review: every room looked the same). |
 | [House set: Emberhold](#house-emberhold) | draft | 14 | 2026-11-09: player housing, furniture set art (batch E2). |
@@ -235,7 +235,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 - **Status:** draft
 - **Requested:** 2026-11-10: a house that visibly grows into a mansion with wings, a pool and gardens, seen whole on a phone.
 - **Source:** `apps/activity/src/sprites/concepts/house-postcard.ts` (draw it with `pnpm art house-postcard`)
-- **Sheet of:** `df7972ba1d67`
+- **Sheet of:** `a477f89ba7bf`
 - Pack: `src/sprites/data/house/postcard.ts` (`POSTCARD_ART`). The picture is composed by `src/housing/house-postcard.ts` at 28 x 16 px a room cell; see it in the workbench page HousePostcard.
 
 | Code | Kind | Role | Status | Idea |
@@ -256,6 +256,10 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | `postcard-ladder` | free |  | draft | The pool ladder over the coping. |
 | `postcard-diving-board` | free |  | draft | The pool diving board on its foot. |
 | `postcard-parasol` | free |  | draft | The terrace parasol, red and cream stripes on a pole. |
+| `postcard-tower-window` | free |  | draft | tower-window |
+| `postcard-finial` | free |  | draft | finial |
+| `postcard-fruit-tree` | free |  | draft | fruit-tree |
+| `postcard-reed` | free |  | draft | reed |
 
 <a id="house-quiet-verge"></a>
 
