@@ -27,21 +27,24 @@ function hasNamedEntry(text: string, name: string): boolean {
   ].some((re) => re.test(text));
 }
 
+/** Sets made since the first night's nine (by `pnpm housing new-set`): each adds nine pieces and two skins. */
+const MADE = housing.sets.length - 9;
+
 describe('housing content: counts', () => {
   it('has the first content of the spec', () => {
+    expect(MADE).toBeGreaterThanOrEqual(0);
     expect(housing.forms).toHaveLength(22);
     expect(housing.rooms).toHaveLength(14);
     expect(housing.parts).toHaveLength(11);
     expect(housing.materials).toHaveLength(16);
-    expect(housing.sets).toHaveLength(9);
-    expect(housing.pieces).toHaveLength(114);
-    expect(housing.skins).toHaveLength(47);
+    expect(housing.pieces).toHaveLength(114 + 9 * MADE);
+    expect(housing.skins).toHaveLength(47 + 2 * MADE);
     expect(housing.stamps).toHaveLength(24);
   });
 
   it('has 72 set pieces, 18 Cosy pieces, 12 wild pieces and 12 garden and pool pieces', () => {
     const bySet = (id: string) => housing.pieces.filter((p) => p.set === id);
-    expect(housing.sets.filter((s) => s.id !== 'cosy')).toHaveLength(8);
+    expect(housing.sets.filter((s) => s.id !== 'cosy')).toHaveLength(8 + MADE);
     for (const s of housing.sets.filter((x) => x.id !== 'cosy')) {
       expect(bySet(s.id).map((p) => p.form)).toEqual(NINE);
       expect(bySet(s.id).map((p) => p.id)).toEqual(NINE.map((f) => `${s.id}-${f}`));
