@@ -29,8 +29,8 @@ import {
 } from './bonfire-cast';
 import { commonsOf, daysLeft, hearthLine, percentFilled, placeOf } from './commons-view';
 import { placeArtBox, placeScale, placeSceneDraw } from './place-scene';
-import { scaffoldSteps, scaffoldUp } from './scaffold';
-import { GRAND_LEVEL, bonfireName, glowSprite } from './valley-places';
+import { scaffoldFor, scaffoldSteps } from './scaffold';
+import { GRAND_LEVEL, bonfireName } from './valley-places';
 
 /** One creature's line in the list of everyone resting: its XP this visit, and that it is warming up while it catches up. */
 function restingNote(gained: number, warm: boolean): string {
@@ -89,10 +89,9 @@ export function BonfireScene({
   const draw = useMemo(() => {
     const base = placeSceneDraw(art);
     if (steps === 0) return base;
-    const sprite = glowSprite(art);
     return (g: Parameters<typeof base>[0]) => {
       const box = placeArtBox(g, art);
-      return [...base(g), { sprite: scaffoldUp(sprite, steps), x: box.x, y: box.y }];
+      return [...base(g), { sprite: scaffoldFor(art, steps), x: box.x, y: box.y }];
     };
   }, [art, steps]);
   const helperId = block?.communal.find((c) => c.place === 'bonfire')?.creatureId ?? null;
