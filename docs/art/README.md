@@ -17,6 +17,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | [House postcard (outside view)](#house-postcard) | draft | 16 | 2026-11-10: a house that visibly grows into a mansion with wings, a pool and gardens, seen whole on a phone. |
 | [House: Quiet Verge set](#house-quiet-verge) | draft | 14 | 2026-11-11: player housing furniture, a set made in the workshop (pnpm housing new-set). |
 | [House: room skins](#house-rooms) | draft | 16 | 2026-11-10: player housing art pass 2, a default wallpaper and floor for every room kind (art director review: every room looked the same). |
+| [House: Schoolhouse set](#house-schoolhouse) | draft | 14 | 2026-11-11: player housing furniture, a set made in the workshop (pnpm housing new-set). |
 | [House set: Emberhold](#house-emberhold) | draft | 14 | 2026-11-09: player housing, furniture set art (batch E2). |
 | [House set: Moonlit](#house-moonlit) | draft | 14 | 2026-11-09: player housing, furniture set art (batch E2). |
 | [House set: Rootwood](#house-rootwood) | draft | 14 | 2026-11-09: player housing, furniture set art (batch E2). |
@@ -349,6 +350,36 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | `bath-floor` | free |  | draft | Floor 16x8, repeats across. Small white tiles with a teal band and a teal dado; blue and white mosaic floor. |
 | `guest-wall` | free |  | draft | Wallpaper 16x52, repeats across. Calm: sage pinstripes over cream beadboard; whitewashed planks. |
 | `guest-floor` | free |  | draft | Floor 16x8, repeats across. Calm: sage pinstripes over cream beadboard; whitewashed planks. |
+
+<a id="house-schoolhouse"></a>
+
+## House: Schoolhouse set
+
+![House: Schoolhouse set](house-schoolhouse.png)
+
+- **Status:** draft
+- **Requested:** 2026-11-11: player housing furniture, a set made in the workshop (pnpm housing new-set).
+- **Source:** `apps/activity/src/sprites/concepts/house-schoolhouse.ts` (draw it with `pnpm art house-schoolhouse`)
+- **Sheet of:** `686da6d57eb0`
+- Oak desks, a slate-green board, brass and chalk white, one red apple; slate green, warm oak, brass, chalk, apple red. Drawn from its style (apps/activity/src/sprites/workshop/styles/schoolhouse.ts); the pack is data/house/schoolhouse.ts.
+- Needs the housing content (piece, skin and set ids as drawn).
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `schoolhouse-bed` | free |  | draft | bed, 48x26, floor-large: headboard, mattress, pillow; the blanket is the front layer over the sleeper |
+| `schoolhouse-bed-front` | free |  | draft | bed: the layer drawn over the sleeper |
+| `schoolhouse-cupboard` | free |  | draft | cupboard, 30x36, floor-large: two doors, a plinth |
+| `schoolhouse-table` | free |  | draft | table, 44x18, floor-large: a top on legs |
+| `schoolhouse-shelf` | free |  | draft | wall shelf, 40x20, wall-large: a board on brackets with a few things on it |
+| `schoolhouse-stool` | free |  | draft | stool, 16x12, floor-small |
+| `schoolhouse-lamp` | free |  | draft | hanging lamp, 20x16, ceiling: hangs from the top row; the glow sprite is drawn over it at night |
+| `schoolhouse-lamp-glow` | free |  | draft | lamp: night glow, drawn over the lamp |
+| `schoolhouse-rug` | free |  | draft | rug, 56x10, rug spot: flat, seen from the front |
+| `schoolhouse-frame` | free |  | draft | picture frame, 24x16, wall-small |
+| `schoolhouse-curtains` | free |  | draft | window with its dressing, 36x26, window spot |
+| `schoolhouse-wall` | free |  | draft | wallpaper tile 16x52, repeats across, no outline |
+| `schoolhouse-floor` | free |  | draft | floor tile 16x8, repeats across, no outline |
+| `schoolhouse-keepsake` | free |  | draft | keepsake 12x12, shown in the trophy hall cabinet when the set is complete |
 
 <a id="house-emberhold"></a>
 

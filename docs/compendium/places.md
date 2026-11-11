@@ -269,6 +269,8 @@ From `glossary.json`, entry `destination-verdant-hollow`:
 > - Sproutle and Mossback live here.
 > - Something huge sleeps in the deeper area.
 
+The **Schoolhouse** furniture set (`housing.md`, "Schoolhouse set") is made of the Hollow's oak and the valley School's classroom; its blueprints turn up here `(compendium detail, not shipped)`.
+
 ---
 
 ## Storm Ridge

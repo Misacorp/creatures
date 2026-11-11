@@ -247,5 +247,28 @@
     },
     "theme": "Striped awnings, bunting and prize ribbons on painted wood; red, cream, sky blue, sunny yellow.",
     "line": "Stripes, bunting and a prize for everyone, from the meadow."
+  },
+  {
+    "id": "schoolhouse",
+    "name": "Schoolhouse",
+    "element": null,
+    "tier": 1,
+    "primary": {
+      "family": "wood"
+    },
+    "accent": {
+      "family": "metal"
+    },
+    "sources": {
+      "moments": ["trip", "scout", "raid"],
+      "places": ["verdant-hollow"],
+      "bosses": []
+    },
+    "keepsake": {
+      "name": "Teacher's Apple",
+      "line": "A polished red apple. Nobody has seen it eaten."
+    },
+    "theme": "Oak desks, a slate-green board, brass and chalk white, one red apple; slate green, warm oak, brass, chalk, apple red.",
+    "line": "Oak desks, a chalk-dusted board and one very red apple."
   }
 ]

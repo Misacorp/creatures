@@ -358,5 +358,41 @@
   "fairground-curtains": {
     "made": "generated",
     "hash": "1dcab823"
+  },
+  "schoolhouse-bed": {
+    "made": "generated",
+    "hash": "0b7a3475"
+  },
+  "schoolhouse-cupboard": {
+    "made": "generated",
+    "hash": "849319ca"
+  },
+  "schoolhouse-table": {
+    "made": "generated",
+    "hash": "08037ecc"
+  },
+  "schoolhouse-shelf": {
+    "made": "generated",
+    "hash": "0218598f"
+  },
+  "schoolhouse-stool": {
+    "made": "generated",
+    "hash": "b9dfcfb7"
+  },
+  "schoolhouse-lamp": {
+    "made": "generated",
+    "hash": "c8c92355"
+  },
+  "schoolhouse-rug": {
+    "made": "generated",
+    "hash": "4aecb463"
+  },
+  "schoolhouse-frame": {
+    "made": "generated",
+    "hash": "b765310c"
+  },
+  "schoolhouse-curtains": {
+    "made": "generated",
+    "hash": "8bddbb82"
   }
 }

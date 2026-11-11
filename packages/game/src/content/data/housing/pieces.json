@@ -1188,6 +1188,105 @@
     "hint": "A blueprint from the Old Crossroads."
   },
   {
+    "id": "schoolhouse-bed",
+    "name": "Schoolhouse Bed",
+    "form": "bed",
+    "set": "schoolhouse",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A tall oak bed with a ladder at its head and a red apple on the quilt.",
+    "hint": "A blueprint from the Verdant Hollow."
+  },
+  {
+    "id": "schoolhouse-cupboard",
+    "name": "Schoolhouse Cupboard",
+    "form": "cupboard",
+    "set": "schoolhouse",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A cupboard with a schoolhouse roof and slatted doors, for books and lunches.",
+    "hint": "A blueprint from the Verdant Hollow."
+  },
+  {
+    "id": "schoolhouse-table",
+    "name": "Schoolhouse Table",
+    "form": "table",
+    "set": "schoolhouse",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A plain oak desk with one drawer and a worn spot for an elbow.",
+    "hint": "A blueprint from the Verdant Hollow."
+  },
+  {
+    "id": "schoolhouse-shelf",
+    "name": "Schoolhouse Shelf",
+    "form": "shelf",
+    "set": "schoolhouse",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A thick oak shelf with books, an ink bottle and a rolled map.",
+    "hint": "A blueprint from the Verdant Hollow."
+  },
+  {
+    "id": "schoolhouse-stool",
+    "name": "Schoolhouse Stool",
+    "form": "stool",
+    "set": "schoolhouse",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A little oak stool with a green seat and a red apple on it.",
+    "hint": "A blueprint from the Verdant Hollow."
+  },
+  {
+    "id": "schoolhouse-lamp",
+    "name": "Schoolhouse Lamp",
+    "form": "lamp",
+    "set": "schoolhouse",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A white milk-glass lamp that hangs low over the desks.",
+    "hint": "A blueprint from the Verdant Hollow."
+  },
+  {
+    "id": "schoolhouse-rug",
+    "name": "Schoolhouse Rug",
+    "form": "rug",
+    "set": "schoolhouse",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A checked reading rug in green and red, with a fringe. Sit anywhere.",
+    "hint": "A blueprint from the Verdant Hollow."
+  },
+  {
+    "id": "schoolhouse-frame",
+    "name": "Schoolhouse Frame",
+    "form": "frame",
+    "set": "schoolhouse",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A small blackboard with chalk sums and an apple on the ledge.",
+    "hint": "A blueprint from the Verdant Hollow."
+  },
+  {
+    "id": "schoolhouse-curtains",
+    "name": "Schoolhouse Curtains",
+    "form": "curtains",
+    "set": "schoolhouse",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "Green curtains on a small-paned window, for watching the yard.",
+    "hint": "A blueprint from the Verdant Hollow."
+  },
+  {
     "id": "rocking-chair",
     "name": "Rocking Chair",
     "form": "chair",
