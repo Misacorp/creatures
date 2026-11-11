@@ -21,7 +21,8 @@ main.card:has(.vy-frame) {
   margin: 0;
   padding: 0;
   box-shadow: none;
-  overflow: hidden;
+  /* Clipped, not hidden: a hidden box still scrolls when something inside takes the focus or is scrolled into view, which slid the HUD (and its way back) off the top on the Forge. */
+  overflow: clip;
 }
 
 main.card:has(.vy-frame) > .hud {

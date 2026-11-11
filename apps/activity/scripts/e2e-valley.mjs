@@ -1206,6 +1206,12 @@ try {
       await page.waitForTimeout(600);
       const alerts = await page.locator('.vy-page [role="alert"]').allInnerTexts();
       if (alerts.length > 0) throw new Error(`the page shows an error: ${alerts.join(' | ')}`);
+      // Scrolled to the very end (and every card brought to the middle) the way back is still there and nothing slid the HUD up (Misa, 2026-11-11).
+      await page.evaluate(() => {
+        for (const el of document.querySelectorAll('.vy-page, .vy-page *')) el.scrollTop = el.scrollHeight;
+        document.querySelector('.vy-page *:last-child')?.scrollIntoView({ block: 'center' });
+      });
+      await expectTopmost(hudBack(), `the way back from ${id}`);
       await backToValley();
     });
   }
@@ -1904,6 +1910,9 @@ try {
         });
         await expectTopmost(loc, 'a Forge card');
       }
+      // The way back is never hidden or dead on the Forge, however far the page was scrolled or whatever drawer was opened (Misa, 2026-11-11).
+      await expectTopmost(hudBack(), 'the way back from the Forge');
+      await backToValley();
       forgeState.anvils = [];
     },
   );
