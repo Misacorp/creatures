@@ -86,35 +86,37 @@ A form is a kind of furniture and the spot it fits. Every piece of a form shares
 
 ## Sets
 
-Nine sets: the starter set and eight to collect, each with its own palette and one motif that appears on every piece. Finishing a set puts its keepsake in the trophy hall's cabinet. A set is never a bonus. `(content: sets.json)`
+Ten sets: the starter set and nine to collect, each with its own palette and one motif that appears on every piece. Finishing a set puts its keepsake in the trophy hall's cabinet. A set is never a bonus. `(content: sets.json)`
 
-| Set           | Element | Keepsake `(content)`                                               | Motif and palette `(design)`                                                                                  |
-| ------------- | ------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
-| Cosy          | None    | Hearth Bell: A small brass bell. It rings when someone comes home. | The living room as it is: warm wood, cream cushions. Shipped sprites; only the missing forms are new.         |
-| Tidepool      | Tide    | Pearl Shell: A shell with a pearl still inside.                    | Driftwood with scalloped shell edges; sea blue, sand, pearl white.                                            |
-| Moonlit       | Tide    | Moon Pebble: A smooth stone, cool at noon and warm at midnight.    | Night-reef blue lacquer, coral pink inlay, a soft moonstone knob; silver highlights.                          |
-| Emberhold     | Ember   | Forge Ember: A coal that has never gone out.                       | Forge-folk work: black charwood, riveted iron bands, amber glow; rust, coal, ember orange.                    |
-| Rootwood      | Grove   | Acorn Seedling: A seedling in a thimble, and growing.              | Woodfolk of the Hollow: living-wood curves, leaf carving, moss cushions; bark brown, moss and leaf greens.    |
-| Stormglass    | Spark   | Spark Bead: A glass bead with a small storm inside.                | Pale ash with a lightning scar, copper coils and glass beads; slate, copper, storm violet.                    |
-| Fenkeeper     | Mire    | Opal Drop: A drop of opal on a reed string.                        | The bog keeps things: dark oak with reed bindings, an oil-sheen opal; peat brown, murky teal, a violet glint. |
-| Ancient       | None    | Gold Spiral: A small spiral of gold leaf, worn thin by hands.      | Carved standing-stone slabs, spiral carvings, worn gold leaf; sandstone, faded gold, patina teal.             |
-| Lantern Night | None    | Paper Tassel: A red tassel that still smells of festival evenings. | Paper lanterns and bunting on painted wood; festival red, gold, cream.                                        |
+| Set           | Element | Keepsake `(content)`                                                        | Motif and palette `(design)`                                                                                                         |
+| ------------- | ------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Cosy          | None    | Hearth Bell: A small brass bell. It rings when someone comes home.          | The living room as it is: warm wood, cream cushions. Shipped sprites; only the missing forms are new.                                |
+| Tidepool      | Tide    | Pearl Shell: A shell with a pearl still inside.                             | Driftwood with scalloped shell edges; sea blue, sand, pearl white.                                                                   |
+| Moonlit       | Tide    | Moon Pebble: A smooth stone, cool at noon and warm at midnight.             | Night-reef blue lacquer, coral pink inlay, a soft moonstone knob; silver highlights.                                                 |
+| Emberhold     | Ember   | Forge Ember: A coal that has never gone out.                                | Forge-folk work: black charwood, riveted iron bands, amber glow; rust, coal, ember orange.                                           |
+| Rootwood      | Grove   | Acorn Seedling: A seedling in a thimble, and growing.                       | Woodfolk of the Hollow: living-wood curves, leaf carving, moss cushions; bark brown, moss and leaf greens.                           |
+| Stormglass    | Spark   | Spark Bead: A glass bead with a small storm inside.                         | Pale ash with a lightning scar, copper coils and glass beads; slate, copper, storm violet.                                           |
+| Fenkeeper     | Mire    | Opal Drop: A drop of opal on a reed string.                                 | The bog keeps things: dark oak with reed bindings, an oil-sheen opal; peat brown, murky teal, a violet glint.                        |
+| Ancient       | None    | Gold Spiral: A small spiral of gold leaf, worn thin by hands.               | Carved standing-stone slabs, spiral carvings, worn gold leaf; sandstone, faded gold, patina teal.                                    |
+| Lantern Night | None    | Paper Tassel: A red tassel that still smells of festival evenings.          | Paper lanterns and bunting on painted wood; festival red, gold, cream.                                                               |
+| Quiet Verge   | None    | Pocket Window: A small stone window. Look in, and one warm star looks back. | Dusk-violet stone edged in pale rim light, arches with a warm star inside, chips of stone that float; window dark, lilac, star gold. |
 
 ### Keepsakes
 
 Shown in the cabinet when the set is complete. `(content: sets.json)`
 
-| Keepsake       | Set           | Line `(content)`                                      |
-| -------------- | ------------- | ----------------------------------------------------- |
-| Hearth Bell    | Cosy          | A small brass bell. It rings when someone comes home. |
-| Pearl Shell    | Tidepool      | A shell with a pearl still inside.                    |
-| Moon Pebble    | Moonlit       | A smooth stone, cool at noon and warm at midnight.    |
-| Forge Ember    | Emberhold     | A coal that has never gone out.                       |
-| Acorn Seedling | Rootwood      | A seedling in a thimble, and growing.                 |
-| Spark Bead     | Stormglass    | A glass bead with a small storm inside.               |
-| Opal Drop      | Fenkeeper     | A drop of opal on a reed string.                      |
-| Gold Spiral    | Ancient       | A small spiral of gold leaf, worn thin by hands.      |
-| Paper Tassel   | Lantern Night | A red tassel that still smells of festival evenings.  |
+| Keepsake       | Set           | Line `(content)`                                             |
+| -------------- | ------------- | ------------------------------------------------------------ |
+| Hearth Bell    | Cosy          | A small brass bell. It rings when someone comes home.        |
+| Pearl Shell    | Tidepool      | A shell with a pearl still inside.                           |
+| Moon Pebble    | Moonlit       | A smooth stone, cool at noon and warm at midnight.           |
+| Forge Ember    | Emberhold     | A coal that has never gone out.                              |
+| Acorn Seedling | Rootwood      | A seedling in a thimble, and growing.                        |
+| Spark Bead     | Stormglass    | A glass bead with a small storm inside.                      |
+| Opal Drop      | Fenkeeper     | A drop of opal on a reed string.                             |
+| Gold Spiral    | Ancient       | A small spiral of gold leaf, worn thin by hands.             |
+| Paper Tassel   | Lantern Night | A red tassel that still smells of festival evenings.         |
+| Pocket Window  | Quiet Verge   | A small stone window. Look in, and one warm star looks back. |
 
 ### Cosy set
 
@@ -269,6 +271,24 @@ Paper lanterns and bunting, for the longest evening of the year. `(content)`
 | Lantern Night Frame    | Frame    | A red frame with a tiny tassel at the corner.                  |
 | Lantern Night Curtains | Curtains | Lantern silk curtains, red and gold, that glow in the evening. |
 
+### Quiet Verge set
+
+Still stone and starlight, from the edge of the map. `(content)`
+
+**Compendium detail, not shipped.** Made from the stone of the Quiet Verge, the Void place at the edge of the map (`places.md`, concept): the leaning standing stones, the arch with one warm star inside, the still pool, the dark moon with a bright rim and the chips of stone that float just above the dust. Its blueprints turn up at the Old Crossroads, where the fifth shadow points, and at the Moonlit Reef, the other night place. Nothing in the set quite touches the floor.
+
+| Piece                | Form     | Line `(content)`                                                     |
+| -------------------- | -------- | -------------------------------------------------------------------- |
+| Quiet Verge Bed      | Bed      | Two standing stones at its head. It floats a finger above the floor. |
+| Quiet Verge Cupboard | Cupboard | An arched stone door with the night behind it, and one warm star.    |
+| Quiet Verge Table    | Table    | A stone top that hovers over its pillar and never wobbles.           |
+| Quiet Verge Shelf    | Shelf    | A shelf with no brackets. It stays up anyway.                        |
+| Quiet Verge Stool    | Stool    | A small stone seat, hovering over a chip of stone.                   |
+| Quiet Verge Lamp     | Lamp     | A little gold planet in a ring of its own light.                     |
+| Quiet Verge Rug      | Rug      | A still pool that holds the stars. Your feet stay dry.               |
+| Quiet Verge Frame    | Frame    | A dark moon with a bright rim, darker than the wall it hangs on.     |
+| Quiet Verge Curtains | Curtains | Plum curtains on a window where it is always dusk.                   |
+
 ## Wild pieces
 
 Twelve pieces in no set. Each has its own source. `(content: pieces.json)`
@@ -354,6 +374,8 @@ Wallpapers and floors for the rooms, roofs and walls for the outside of the hous
 | Ancient Floor           | floor       | A blueprint from the Old Crossroads or any cleared finale.                |
 | Lantern Night Wallpaper | wall        | A blueprint from the Festival Grounds, a Festival finale or a Games gold. |
 | Lantern Night Floor     | floor       | A blueprint from the Festival Grounds, a Festival finale or a Games gold. |
+| Quiet Verge Wallpaper   | wall        | A blueprint from the Old Crossroads or the Moonlit Reef.                  |
+| Quiet Verge Floor       | floor       | A blueprint from the Old Crossroads or the Moonlit Reef.                  |
 | Kitchen Wallpaper       | wall        | Comes with the Cottage.                                                   |
 | Kitchen Floor           | floor       | Comes with the Cottage.                                                   |
 | Attic Wallpaper         | wall        | Comes with the House.                                                     |

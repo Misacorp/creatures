@@ -150,7 +150,8 @@ Every override has a reason (a test checks). A new set made from a style alone h
 - `pnpm housing lock [--check]`: writes or checks `shipped-art.json`, a hash of what every shipped piece looks like (colours, not key names). The Vitest suite checks it too, so a library change that changes shipped art fails until someone has looked at `compare` and run `lock`. That is the rule that keeps a shipped set from getting worse by accident.
 
 - `pnpm housing variants <style> [--form id] [--out dir]`: every variant of every form drawn in the style (see Variants).
-- `pnpm housing sheet <style or set> --room [--out dir]`: the room sheet and the report (below).
+- `pnpm housing sheet <style or set> --room [--night] [--out dir]`: the room sheet and the report (below). `--night` adds the rooms at night at phone scale, every pixel through the lighting pass of `house-light.ts` (`shade`, `levelMap`, `windowPixel`) and lit by each room's lamp; the window's stars are not drawn.
+- The step-by-step for a new set is the `furniture-set` skill (`.claude/skills/furniture-set/SKILL.md`).
 
 ## The room sheet and the report (A4)
 
@@ -175,7 +176,7 @@ Each shipped set has its style (`workshop/styles/`), and its pack draws through 
 pnpm housing new-set <id> [--name "Quiet Verge"] [--theme "..."] [--from <style>] [--dry-run]
     [--element tide|none|...] [--tier 1|2] [--primary <material>|family:wood] [--accent ...]
     [--moments trip,scout,raid] [--places id,id] [--bosses id,id] [--no-checks]
-pnpm housing remove-set <id> [--dry-run]     undoes new-set; refuses the nine shipped ids (Cosy and the eight sets)
+pnpm housing remove-set <id> [--dry-run]     undoes new-set; refuses the shipped ids (`SHIPPED_SET_IDS`: Cosy, the first eight sets, and each finished new set)
 pnpm housing check                           the lock, the art catalogue and every set's tests in one go
 ```
 

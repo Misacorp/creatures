@@ -800,6 +800,10 @@ A late place, like the Moonlit Reef, but with its own door. The Old Crossroads s
 - Something sings across the water at the Reef `(T01)`. Here, at the great ring, something answers.
 - The payoff lynx and the support planet share one window each: where did the first window come from? No one here will say.
 
+### In the house
+
+The **Quiet Verge** furniture set is the first piece of this place to ship (`housing.md`, "Quiet Verge set"): its standing stones, its arch with the warm star, the still pool and the dark moon, made into furniture. Its blueprints come from the Old Crossroads and the Moonlit Reef until the place itself opens. `(content: sets.json)`
+
 ### Items and content needed to ship
 
 Void element (chart, marks), four named creatures with stats and lore, a destination entry (flags for access and night), the two banners moved into `data/`, journal pages, push-on text, a glossary entry, and an entry in the weekly rotation. Listed in the set's `notes`.

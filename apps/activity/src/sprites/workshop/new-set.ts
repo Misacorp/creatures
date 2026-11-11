@@ -30,7 +30,10 @@ export const PATHS = {
   sheet: (id: string): string => `docs/art/house-${id}.png`,
 } as const;
 
-/** The sets of the first night: never removed by `remove-set` (and `cosy`, the starter set, which has no style). */
+/**
+ * The shipped sets: never removed by `remove-set`, and `new-set` refuses their ids (`cosy`, the starter set, has no
+ * style). The first night's nine, then each set made with `new-set` once it is finished (the `furniture-set` skill).
+ */
 export const SHIPPED_SET_IDS: readonly string[] = [
   'cosy',
   'tidepool',
@@ -41,6 +44,7 @@ export const SHIPPED_SET_IDS: readonly string[] = [
   'fenkeeper',
   'ancient',
   'lantern-night',
+  'quiet-verge',
 ];
 
 /** The style `new-set` copies when `--from` is not given. */

@@ -990,6 +990,105 @@
     "hint": "A blueprint from the Festival Grounds, a Festival finale or a Games gold."
   },
   {
+    "id": "quiet-verge-bed",
+    "name": "Quiet Verge Bed",
+    "form": "bed",
+    "set": "quiet-verge",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "Two standing stones at its head. It floats a finger above the floor.",
+    "hint": "A blueprint from the Old Crossroads or the Moonlit Reef."
+  },
+  {
+    "id": "quiet-verge-cupboard",
+    "name": "Quiet Verge Cupboard",
+    "form": "cupboard",
+    "set": "quiet-verge",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "An arched stone door with the night behind it, and one warm star.",
+    "hint": "A blueprint from the Old Crossroads or the Moonlit Reef."
+  },
+  {
+    "id": "quiet-verge-table",
+    "name": "Quiet Verge Table",
+    "form": "table",
+    "set": "quiet-verge",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A stone top that hovers over its pillar and never wobbles.",
+    "hint": "A blueprint from the Old Crossroads or the Moonlit Reef."
+  },
+  {
+    "id": "quiet-verge-shelf",
+    "name": "Quiet Verge Shelf",
+    "form": "shelf",
+    "set": "quiet-verge",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A shelf with no brackets. It stays up anyway.",
+    "hint": "A blueprint from the Old Crossroads or the Moonlit Reef."
+  },
+  {
+    "id": "quiet-verge-stool",
+    "name": "Quiet Verge Stool",
+    "form": "stool",
+    "set": "quiet-verge",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A small stone seat, hovering over a chip of stone.",
+    "hint": "A blueprint from the Old Crossroads or the Moonlit Reef."
+  },
+  {
+    "id": "quiet-verge-lamp",
+    "name": "Quiet Verge Lamp",
+    "form": "lamp",
+    "set": "quiet-verge",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A little gold planet in a ring of its own light.",
+    "hint": "A blueprint from the Old Crossroads or the Moonlit Reef."
+  },
+  {
+    "id": "quiet-verge-rug",
+    "name": "Quiet Verge Rug",
+    "form": "rug",
+    "set": "quiet-verge",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A still pool that holds the stars. Your feet stay dry.",
+    "hint": "A blueprint from the Old Crossroads or the Moonlit Reef."
+  },
+  {
+    "id": "quiet-verge-frame",
+    "name": "Quiet Verge Frame",
+    "form": "frame",
+    "set": "quiet-verge",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A dark moon with a bright rim, darker than the wall it hangs on.",
+    "hint": "A blueprint from the Old Crossroads or the Moonlit Reef."
+  },
+  {
+    "id": "quiet-verge-curtains",
+    "name": "Quiet Verge Curtains",
+    "form": "curtains",
+    "set": "quiet-verge",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "Plum curtains on a window where it is always dusk.",
+    "hint": "A blueprint from the Old Crossroads or the Moonlit Reef."
+  },
+  {
     "id": "rocking-chair",
     "name": "Rocking Chair",
     "form": "chair",

@@ -14,6 +14,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | [House: the wild pieces](#house-wild) | draft | 13 | 2026-11-09: player housing, art batch E4: twelve one-off pieces that belong to no set, each with character. |
 | [House: stamps, displays, materials and glyphs](#house-marks) | draft | 33 | 2026-11-09: housing art batch E5 (docs/design/housing.md, section 5): 24 stamps, the hall displays, 16 luxury materials, the House glyphs. |
 | [House postcard (outside view)](#house-postcard) | draft | 16 | 2026-11-10: a house that visibly grows into a mansion with wings, a pool and gardens, seen whole on a phone. |
+| [House: Quiet Verge set](#house-quiet-verge) | draft | 14 | 2026-11-11: player housing furniture, a set made in the workshop (pnpm housing new-set). |
 | [House: room skins](#house-rooms) | draft | 16 | 2026-11-10: player housing art pass 2, a default wallpaper and floor for every room kind (art director review: every room looked the same). |
 | [House set: Emberhold](#house-emberhold) | draft | 14 | 2026-11-09: player housing, furniture set art (batch E2). |
 | [House set: Moonlit](#house-moonlit) | draft | 14 | 2026-11-09: player housing, furniture set art (batch E2). |
@@ -255,6 +256,36 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | `postcard-ladder` | free |  | draft | The pool ladder over the coping. |
 | `postcard-diving-board` | free |  | draft | The pool diving board on its foot. |
 | `postcard-parasol` | free |  | draft | The terrace parasol, red and cream stripes on a pole. |
+
+<a id="house-quiet-verge"></a>
+
+## House: Quiet Verge set
+
+![House: Quiet Verge set](house-quiet-verge.png)
+
+- **Status:** draft
+- **Requested:** 2026-11-11: player housing furniture, a set made in the workshop (pnpm housing new-set).
+- **Source:** `apps/activity/src/sprites/concepts/house-quiet-verge.ts` (draw it with `pnpm art house-quiet-verge`)
+- **Sheet of:** `1958ecc8c6b4`
+- Dusk-violet stone edged in pale rim light, arches with a warm star inside, chips of stone that float; window dark, lilac, star gold. Drawn from its style (apps/activity/src/sprites/workshop/styles/quiet-verge.ts); the pack is data/house/quiet-verge.ts.
+- Needs the housing content (piece, skin and set ids as drawn).
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `quiet-verge-bed` | free |  | draft | bed, 48x26, floor-large: headboard, mattress, pillow; the blanket is the front layer over the sleeper |
+| `quiet-verge-bed-front` | free |  | draft | bed: the layer drawn over the sleeper |
+| `quiet-verge-cupboard` | free |  | draft | cupboard, 30x36, floor-large: two doors, a plinth |
+| `quiet-verge-table` | free |  | draft | table, 44x18, floor-large: a top on legs |
+| `quiet-verge-shelf` | free |  | draft | wall shelf, 40x20, wall-large: a board on brackets with a few things on it |
+| `quiet-verge-stool` | free |  | draft | stool, 16x12, floor-small |
+| `quiet-verge-lamp` | free |  | draft | hanging lamp, 20x16, ceiling: hangs from the top row; the glow sprite is drawn over it at night |
+| `quiet-verge-lamp-glow` | free |  | draft | lamp: night glow, drawn over the lamp |
+| `quiet-verge-rug` | free |  | draft | rug, 56x10, rug spot: flat, seen from the front |
+| `quiet-verge-frame` | free |  | draft | picture frame, 24x16, wall-small |
+| `quiet-verge-curtains` | free |  | draft | window with its dressing, 36x26, window spot |
+| `quiet-verge-wall` | free |  | draft | wallpaper tile 16x52, repeats across, no outline |
+| `quiet-verge-floor` | free |  | draft | floor tile 16x8, repeats across, no outline |
+| `quiet-verge-keepsake` | free |  | draft | keepsake 12x12, shown in the trophy hall cabinet when the set is complete |
 
 <a id="house-rooms"></a>
 

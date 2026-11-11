@@ -4,6 +4,14 @@ The living room and lounging, the lounge message, Discord DMs and other social f
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-12: Quiet Verge furniture set: tier 2, no element, stone and moonstone, from the Crossroads and the Reef
+
+ID: `2026-11-12-quiet-verge-furniture-set-tier-2` · Status: current
+
+**Decision.** The Quiet Verge set (the first made with the `furniture-set` skill, `docs/design/housing-next.md` C2) is tier 2 with no element, primary "any stone" and accent Moonstone, and its blueprints drop on trips, scouts and raids at the Old Crossroads and the Moonlit Reef (no boss). Every piece is generated from its style with part hooks; there is no hand override. The workshop's room sheet gained `--night`, which paints the rooms through the lighting pass.
+
+**Reasoning.** The Void is not a shipped element and the Quiet Verge is not a shipped destination, so the set takes no element and drops from the two shipped places the compendium ties to it: the Crossroads (the fifth shadow that leads there) and the Reef (the other night place). It is a late place, like the Reef, so tier 2 like Moonlit, Ancient and Lantern Night. Its furniture is the Verge's stone, and Moonstone ("glows a little when the reef is dark") is the closest shipped material to its pale rims and warm star; a new Void material would need a resource, an icon and a glossary entry, which is for when the place ships. Each is one edit in `sets.json` if Misa wants it otherwise. The night view uses the pure functions of `house-light.ts` so a set is checked at night before it reaches the scene.
+
 ## 2026-11-09: Housing server: how the rules of the first build read
 
 ID: `2026-11-09-housing-server-how-the-rules-of` · Status: current
