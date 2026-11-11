@@ -1007,5 +1007,271 @@
     "fixtures": [],
     "wall": "pool-tile",
     "floor": "pool-tile"
+  },
+  {
+    "id": "landing",
+    "name": "Landing",
+    "outdoor": false,
+    "cells": {
+      "w": 1,
+      "h": 1
+    },
+    "spots": [
+      {
+        "id": "window-a",
+        "type": "window",
+        "x": 2,
+        "w": 36,
+        "y": 8
+      },
+      {
+        "id": "wall-large-a",
+        "type": "wall-large",
+        "x": 42,
+        "w": 40,
+        "y": 6
+      },
+      {
+        "id": "wall-small-a",
+        "type": "wall-small",
+        "x": 86,
+        "w": 24,
+        "y": 10
+      },
+      {
+        "id": "ceiling-a",
+        "type": "ceiling",
+        "x": 46,
+        "w": 20,
+        "y": 0
+      },
+      {
+        "id": "floor-large-a",
+        "type": "floor-large",
+        "x": 24,
+        "w": 64
+      },
+      {
+        "id": "floor-small-a",
+        "type": "floor-small",
+        "x": 3,
+        "w": 20
+      },
+      {
+        "id": "floor-small-b",
+        "type": "floor-small",
+        "x": 90,
+        "w": 20
+      },
+      {
+        "id": "rug-a",
+        "type": "rug",
+        "x": 28,
+        "w": 56
+      }
+    ],
+    "fixtures": [],
+    "wall": "landing-wall",
+    "floor": "landing-floor"
+  },
+  {
+    "id": "observatory",
+    "name": "Observatory",
+    "outdoor": false,
+    "cells": {
+      "w": 1,
+      "h": 1
+    },
+    "spots": [
+      {
+        "id": "window-a",
+        "type": "window",
+        "x": 38,
+        "w": 36,
+        "y": 6
+      },
+      {
+        "id": "wall-small-a",
+        "type": "wall-small",
+        "x": 84,
+        "w": 24,
+        "y": 10
+      },
+      {
+        "id": "books",
+        "type": "display",
+        "x": 4,
+        "w": 28,
+        "y": 18,
+        "display": "journal",
+        "layout": "one"
+      },
+      {
+        "id": "ceiling-a",
+        "type": "ceiling",
+        "x": 46,
+        "w": 20,
+        "y": 0
+      },
+      {
+        "id": "floor-large-a",
+        "type": "floor-large",
+        "x": 24,
+        "w": 64
+      },
+      {
+        "id": "floor-small-a",
+        "type": "floor-small",
+        "x": 3,
+        "w": 20
+      },
+      {
+        "id": "floor-small-b",
+        "type": "floor-small",
+        "x": 90,
+        "w": 20
+      },
+      {
+        "id": "rug-a",
+        "type": "rug",
+        "x": 28,
+        "w": 56
+      }
+    ],
+    "fixtures": [],
+    "wall": "observatory-wall",
+    "floor": "observatory-floor"
+  },
+  {
+    "id": "balcony",
+    "name": "Balcony",
+    "outdoor": true,
+    "cells": {
+      "w": 1,
+      "h": 1
+    },
+    "spots": [
+      {
+        "id": "fence-a",
+        "type": "fence",
+        "x": 2,
+        "w": 16
+      },
+      {
+        "id": "yard-small-a",
+        "type": "yard-small",
+        "x": 22,
+        "w": 20
+      },
+      {
+        "id": "yard-large-a",
+        "type": "yard-large",
+        "x": 46,
+        "w": 40
+      },
+      {
+        "id": "yard-small-b",
+        "type": "yard-small",
+        "x": 90,
+        "w": 20
+      }
+    ],
+    "fixtures": [],
+    "wall": "deck",
+    "floor": "deck"
+  },
+  {
+    "id": "orchard",
+    "name": "Orchard",
+    "outdoor": true,
+    "cells": {
+      "w": 2,
+      "h": 1
+    },
+    "spots": [
+      {
+        "id": "fence-a",
+        "type": "fence",
+        "x": 2,
+        "w": 16
+      },
+      {
+        "id": "yard-small-a",
+        "type": "yard-small",
+        "x": 58,
+        "w": 20
+      },
+      {
+        "id": "yard-large-a",
+        "type": "yard-large",
+        "x": 92,
+        "w": 40
+      },
+      {
+        "id": "yard-small-b",
+        "type": "yard-small",
+        "x": 140,
+        "w": 20
+      },
+      {
+        "id": "yard-small-c",
+        "type": "yard-small",
+        "x": 168,
+        "w": 20
+      },
+      {
+        "id": "fence-b",
+        "type": "fence",
+        "x": 206,
+        "w": 16
+      }
+    ],
+    "fixtures": [],
+    "wall": "orchard-apple",
+    "floor": "orchard-apple"
+  },
+  {
+    "id": "pond",
+    "name": "Pond",
+    "outdoor": true,
+    "cells": {
+      "w": 2,
+      "h": 1
+    },
+    "spots": [
+      {
+        "id": "poolside-a",
+        "type": "poolside",
+        "x": 2,
+        "w": 32
+      },
+      {
+        "id": "water-a",
+        "type": "water",
+        "x": 44,
+        "w": 28
+      },
+      {
+        "id": "water-b",
+        "type": "water",
+        "x": 98,
+        "w": 28
+      },
+      {
+        "id": "water-c",
+        "type": "water",
+        "x": 152,
+        "w": 28
+      },
+      {
+        "id": "poolside-b",
+        "type": "poolside",
+        "x": 190,
+        "w": 32
+      }
+    ],
+    "fixtures": [],
+    "wall": "lawn",
+    "floor": "lawn"
   }
 ]

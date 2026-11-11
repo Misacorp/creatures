@@ -18,6 +18,15 @@ export interface GridRoom {
   part: string;
 }
 
+/** The east edge (the first free column) of the indoor rooms on the floor a balcony hangs at; the core's edge when there are none. */
+function eastEdge(rooms: readonly GridRoom[], balcony: PartDef, coreW: number): number {
+  const floors = new Set(balcony.rooms.map((r) => r.floor));
+  const edges = rooms
+    .filter((r) => !r.outdoor && floors.has(r.floor))
+    .map((r) => r.col + r.w);
+  return Math.max(coreW, ...edges);
+}
+
 /** Parts not built whose `requires` are all built, in build-list order. */
 export function buildable(content: HousingContent, built: ReadonlySet<string>): string[] {
   return content.parts
@@ -69,12 +78,18 @@ export function houseGrid(content: HousingContent, built: ReadonlySet<string>): 
       emit(part, side === 'west' ? (col) => col - wingW : (col) => coreW + col);
     }
     let used = side === 'west' ? wingW : coreW + wingW;
-    for (const part of onSide.filter((p) => p.kind !== 'wing')) {
+    for (const part of onSide.filter((p) => p.kind !== 'wing' && p.kind !== 'balcony')) {
       const w = blockWidth([part]);
       const start = side === 'west' ? -(used + w) : used;
       emit(part, (col) => start + col);
       used += w;
     }
+  }
+  // A balcony hangs on the building's east face at its own floor: its block starts at the east edge of the rooms on that floor
+  // (the core's, or the east wing's upper floor), so it is beside a wall and never inside a room. Over a wing that stops a floor
+  // lower it stands on that wing's roof.
+  for (const part of parts.filter((p) => p.kind === 'balcony')) {
+    emit(part, (col) => col + eastEdge(out, part, coreW));
   }
   return out.sort((a, b) => b.floor - a.floor || a.col - b.col || a.roomId.localeCompare(b.roomId));
 }

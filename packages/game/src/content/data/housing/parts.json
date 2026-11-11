@@ -436,5 +436,197 @@
     "unlocks": ["shingle"],
     "line": "A tiled pool, deep enough to float in.",
     "order": 10
+  },
+  {
+    "id": "tower",
+    "name": "Tower",
+    "kind": "tower",
+    "requires": ["house"],
+    "rooms": [
+      {
+        "key": "landing",
+        "kind": "landing",
+        "col": 1,
+        "floor": 3
+      },
+      {
+        "key": "observatory",
+        "kind": "observatory",
+        "col": 1,
+        "floor": 4
+      }
+    ],
+    "price": [
+      {
+        "kind": "bait",
+        "amount": 300
+      },
+      {
+        "kind": "scrap",
+        "amount": 2000
+      },
+      {
+        "kind": "family",
+        "family": "stone",
+        "amount": 12
+      },
+      {
+        "kind": "family",
+        "family": "wood",
+        "amount": 8
+      },
+      {
+        "kind": "material",
+        "id": "bright-copper",
+        "amount": 4
+      },
+      {
+        "kind": "material",
+        "id": "moonstone",
+        "amount": 2
+      }
+    ],
+    "unlocks": [],
+    "line": "A narrow stair up to a round window and the stars.",
+    "order": 11
+  },
+  {
+    "id": "balcony",
+    "name": "Balcony",
+    "kind": "balcony",
+    "requires": ["house"],
+    "rooms": [
+      {
+        "key": "balcony",
+        "kind": "balcony",
+        "col": 0,
+        "floor": 1
+      }
+    ],
+    "price": [
+      {
+        "kind": "bait",
+        "amount": 150
+      },
+      {
+        "kind": "scrap",
+        "amount": 1000
+      },
+      {
+        "kind": "family",
+        "family": "wood",
+        "amount": 8
+      },
+      {
+        "kind": "family",
+        "family": "metal",
+        "amount": 4
+      },
+      {
+        "kind": "material",
+        "id": "lantern-silk",
+        "amount": 3
+      }
+    ],
+    "side": "east",
+    "unlocks": [],
+    "line": "A rail, a lantern and the whole garden below.",
+    "order": 12
+  },
+  {
+    "id": "orchard",
+    "name": "Orchard",
+    "kind": "grounds",
+    "requires": ["garden"],
+    "rooms": [
+      {
+        "key": "orchard",
+        "kind": "orchard",
+        "col": 0,
+        "floor": 0
+      }
+    ],
+    "price": [
+      {
+        "kind": "bait",
+        "amount": 200
+      },
+      {
+        "kind": "scrap",
+        "amount": 1500
+      },
+      {
+        "kind": "shard",
+        "element": "grove",
+        "amount": 12
+      },
+      {
+        "kind": "family",
+        "family": "wood",
+        "amount": 8
+      },
+      {
+        "kind": "material",
+        "id": "heartbark",
+        "amount": 6
+      },
+      {
+        "kind": "material",
+        "id": "moss-velvet",
+        "amount": 4
+      }
+    ],
+    "side": "east",
+    "unlocks": [],
+    "line": "Fruit trees past the garden, and a ladder for later.",
+    "order": 13
+  },
+  {
+    "id": "pond",
+    "name": "Pond",
+    "kind": "grounds",
+    "requires": ["terrace"],
+    "rooms": [
+      {
+        "key": "pond",
+        "kind": "pond",
+        "col": 0,
+        "floor": 0
+      }
+    ],
+    "price": [
+      {
+        "kind": "bait",
+        "amount": 250
+      },
+      {
+        "kind": "scrap",
+        "amount": 1500
+      },
+      {
+        "kind": "shard",
+        "element": "tide",
+        "amount": 14
+      },
+      {
+        "kind": "family",
+        "family": "stone",
+        "amount": 8
+      },
+      {
+        "kind": "material",
+        "id": "driftwood",
+        "amount": 6
+      },
+      {
+        "kind": "material",
+        "id": "sea-glass",
+        "amount": 4
+      }
+    ],
+    "side": "west",
+    "unlocks": [],
+    "line": "A still pond, reeds, and a small wooden bridge.",
+    "order": 14
   }
 ]

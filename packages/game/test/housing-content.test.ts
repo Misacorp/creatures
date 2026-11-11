@@ -34,15 +34,15 @@ describe('housing content: counts', () => {
   it('has the first content of the spec', () => {
     expect(MADE).toBeGreaterThanOrEqual(0);
     expect(housing.forms).toHaveLength(22);
-    expect(housing.rooms).toHaveLength(14);
-    expect(housing.parts).toHaveLength(11);
+    expect(housing.rooms).toHaveLength(19);
+    expect(housing.parts).toHaveLength(15);
     expect(housing.materials).toHaveLength(16);
-    expect(housing.pieces).toHaveLength(114 + 9 * MADE);
-    expect(housing.skins).toHaveLength(47 + 2 * MADE);
+    expect(housing.pieces).toHaveLength(127 + 9 * MADE);
+    expect(housing.skins).toHaveLength(54 + 2 * MADE);
     expect(housing.stamps).toHaveLength(24);
   });
 
-  it('has 72 set pieces, 18 Cosy pieces, 12 wild pieces and 12 garden and pool pieces', () => {
+  it('has 72 set pieces, 18 Cosy pieces, 12 wild pieces and 25 garden, orchard and pond pieces', () => {
     const bySet = (id: string) => housing.pieces.filter((p) => p.set === id);
     expect(housing.sets.filter((s) => s.id !== 'cosy')).toHaveLength(8 + MADE);
     for (const s of housing.sets.filter((x) => x.id !== 'cosy')) {
@@ -54,8 +54,8 @@ describe('housing content: counts', () => {
     const garden = free.filter((p) =>
       ['yard-big', 'yard-bit', 'fence', 'poolside', 'float'].includes(p.form),
     );
-    expect(garden).toHaveLength(12);
-    expect(free).toHaveLength(24);
+    expect(garden).toHaveLength(25);
+    expect(free).toHaveLength(37);
   });
 
   it('gives every set a wallpaper, a floor and a keepsake', () => {
@@ -85,14 +85,30 @@ describe('housing content: counts', () => {
 });
 
 describe('housing content: parts and the economy', () => {
-  it('prices all parts at 2,000 Acorns and 13,000 scrap', () => {
-    const total = (kind: 'bait' | 'scrap') =>
+  it('prices the first eleven parts at 2,000 Acorns and 13,000 scrap, the tower, balcony, orchard and pond at 900 and 6,000 more', () => {
+    const total = (ids: readonly string[], kind: 'bait' | 'scrap') =>
       housing.parts
+        .filter((p) => ids.includes(p.id) === ids.length > 0)
         .flatMap((p) => p.price)
         .filter((l) => l.kind === kind)
         .reduce((n, l) => n + l.amount, 0);
-    expect(total('bait')).toBe(2000);
-    expect(total('scrap')).toBe(13000);
+    const next = ['tower', 'balcony', 'orchard', 'pond'];
+    const first = housing.parts.map((p) => p.id).filter((id) => !next.includes(id));
+    expect(total(first, 'bait')).toBe(2000);
+    expect(total(first, 'scrap')).toBe(13000);
+    expect(total(next, 'bait')).toBe(900);
+    expect(total(next, 'scrap')).toBe(6000);
+  });
+
+  it('puts the tower on the house, the balcony on the house, the orchard past the garden and the pond past the terrace', () => {
+    const part = (id: string) => housing.parts.find((p) => p.id === id);
+    expect(part('tower')?.requires).toEqual(['house']);
+    expect(part('balcony')?.requires).toEqual(['house']);
+    expect(part('orchard')?.requires).toEqual(['garden']);
+    expect(part('pond')?.requires).toEqual(['terrace']);
+    expect(part('balcony')?.side).toBe('east');
+    expect(part('orchard')?.side).toBe('east');
+    expect(part('pond')?.side).toBe('west');
   });
 
   it('has a free hut and the pool needs the garden and the house', () => {
@@ -266,6 +282,25 @@ describe('housing content: the full house layout (housing.md 2.4)', () => {
     expect(at('east-upper:guest')).toEqual({ col: 3, floor: 1, w: 1 });
     expect(at('garden:garden')).toEqual({ col: 4, floor: 0, w: 2 });
     expect(at('pool:pool')).toEqual({ col: 6, floor: 0, w: 2 });
+  });
+
+  it('stacks the tower on the right half of the attic and hangs the balcony off the east edge of the first floor', () => {
+    expect(at('tower:landing')).toEqual({ col: 1, floor: 3, w: 1 });
+    expect(at('tower:observatory')).toEqual({ col: 1, floor: 4, w: 1 });
+    // The east upper floor is built in the full house: the balcony is beside the guest room, over the garden.
+    expect(at('balcony:balcony')).toEqual({ col: 4, floor: 1, w: 1 });
+    expect(at('orchard:orchard')).toEqual({ col: 8, floor: 0, w: 2 });
+    expect(at('pond:pond')).toEqual({ col: -6, floor: 0, w: 2 });
+  });
+
+  it('puts the balcony on the core wall, on a wing roof, or past the wing, by what stands on the east side', () => {
+    const base = ['hut', 'cottage', 'house', 'balcony'];
+    const col = (extra: string[]) =>
+      houseGrid(housing, new Set([...base, ...extra])).find((r) => r.roomId === 'balcony:balcony')
+        ?.col;
+    expect(col([])).toBe(2);
+    expect(col(['east-wing'])).toBe(2);
+    expect(col(['east-wing', 'east-upper'])).toBe(4);
   });
 
   it('has no overlapping cells and no negative relative columns in the data', () => {

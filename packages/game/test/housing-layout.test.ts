@@ -84,6 +84,19 @@ function fullHouse(): HousingContent {
     part('terrace', 'grounds', ['cottage'], [['terrace', 'yard', 0, 0]], 8, 'west'),
     part('garden', 'grounds', ['cottage'], [['garden', 'yard', 0, 0]], 9, 'east'),
     part('pool', 'grounds', ['garden', 'house'], [['pool', 'yard', 0, 0]], 10, 'east'),
+    part(
+      'tower',
+      'tower',
+      ['house'],
+      [
+        ['landing', 'r1', 1, 3],
+        ['observatory', 'r1', 1, 4],
+      ],
+      11,
+    ),
+    part('balcony', 'balcony', ['house'], [['balcony', 'r1', 0, 1]], 12, 'east'),
+    part('orchard', 'grounds', ['garden'], [['orchard', 'yard', 0, 0]], 13, 'east'),
+    part('pond', 'grounds', ['terrace'], [['pond', 'yard', 0, 0]], 14, 'west'),
   ] as never;
   return loadHousingContent(raw, fixtureResources(), FIXTURE_CTX);
 }
@@ -100,6 +113,10 @@ const ALL = [
   'terrace',
   'garden',
   'pool',
+  'tower',
+  'balcony',
+  'orchard',
+  'pond',
 ];
 
 function at(grid: GridRoom[], roomId: string): GridRoom {
@@ -137,7 +154,7 @@ describe('houseGrid', () => {
     const grid = houseGrid(content, new Set(ALL));
     const all = cells(grid);
     expect(new Set(all).size).toBe(all.length);
-    expect(grid).toHaveLength(14);
+    expect(grid).toHaveLength(19);
     // The core is columns 0..1; the west wing 2 cells left of it, the terrace left of the wing.
     expect(at(grid, 'west-wing:hall')).toMatchObject({ col: -2, floor: 0 });
     expect(at(grid, 'west-upper:gallery')).toMatchObject({ col: -2, floor: 1 });
@@ -148,8 +165,44 @@ describe('houseGrid', () => {
     expect(at(grid, 'east-upper:guest')).toMatchObject({ col: 3, floor: 1 });
     expect(at(grid, 'garden:garden')).toMatchObject({ col: 4, floor: 0 });
     expect(at(grid, 'pool:pool')).toMatchObject({ col: 6, floor: 0 });
-    expect(Math.min(...grid.map((r) => r.col))).toBe(-4);
-    expect(Math.max(...grid.map((r) => r.col + r.w))).toBe(8);
+    expect(at(grid, 'tower:landing')).toMatchObject({ col: 1, floor: 3 });
+    expect(at(grid, 'tower:observatory')).toMatchObject({ col: 1, floor: 4 });
+    expect(at(grid, 'balcony:balcony')).toMatchObject({ col: 4, floor: 1, outdoor: false });
+    expect(at(grid, 'orchard:orchard')).toMatchObject({ col: 8, floor: 0, outdoor: true });
+    expect(at(grid, 'pond:pond')).toMatchObject({ col: -6, floor: 0, outdoor: true });
+    expect(Math.min(...grid.map((r) => r.col))).toBe(-6);
+    expect(Math.max(...grid.map((r) => r.col + r.w))).toBe(10);
+  });
+
+  it('never overlaps two cells, whatever subset of the parts is built', () => {
+    const optional = ALL.filter((id) => !['hut', 'cottage', 'house'].includes(id));
+    const core = new Set(['hut', 'cottage', 'house']);
+    const needs = new Map(content.parts.map((p) => [p.id, p.requires]));
+    const legal = (set: Set<string>): boolean =>
+      [...set].every((id) => (needs.get(id) ?? []).every((r) => set.has(r)));
+    let tried = 0;
+    // Every combination of the other twelve parts: 4,096 houses.
+    for (let mask = 0; mask < 1 << optional.length; mask++) {
+      const set = new Set(core);
+      optional.forEach((id, i) => {
+        if ((mask & (1 << i)) !== 0) set.add(id);
+      });
+      if (!legal(set)) continue;
+      tried++;
+      const all = cells(houseGrid(content, set));
+      expect(new Set(all).size, [...set].join(',')).toBe(all.length);
+    }
+    expect(tried).toBeGreaterThan(300);
+  });
+
+  it('hangs a balcony on the core wall, on a wing roof, or beside the upper floor of the east wing', () => {
+    const base = ['hut', 'cottage', 'house', 'balcony'];
+    const col = (extra: string[]) =>
+      at(houseGrid(content, new Set([...base, ...extra])), 'balcony:balcony');
+    expect(col([])).toMatchObject({ col: 2, floor: 1 });
+    expect(col(['east-wing'])).toMatchObject({ col: 2, floor: 1 });
+    expect(col(['east-wing', 'east-upper'])).toMatchObject({ col: 4, floor: 1 });
+    expect(col(['west-wing', 'west-upper', 'garden'])).toMatchObject({ col: 2, floor: 1 });
   });
 
   it('puts grounds on the core edge when there are no wings', () => {
@@ -202,6 +255,9 @@ describe('buildable', () => {
       'east-wing',
       'terrace',
       'pool',
+      'tower',
+      'balcony',
+      'orchard',
     ]);
   });
 
