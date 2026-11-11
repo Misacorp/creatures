@@ -203,7 +203,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 - **Status:** draft
 - **Requested:** 2026-11-09 (Misa): "The campfire could also get better, not just more decorative. Think from a humble campfire to a fire pit with cool stone benches and the sort. Each building can absolutely change building material as it upgrades in levels, and I'm thinking we might even want to tweak the earlier levels to be less elaborate... If you change materials, there needs to be a common motif between buildings of the same level... Think of how Clash of Clans brings a new look with each new town hall level."
 - **Source:** `apps/activity/src/sprites/concepts/valley-levels-bonfire.ts` (draw it with `pnpm art valley-levels-bonfire`)
-- **Sheet of:** `f668f92c1e96`
+- **Sheet of:** `e02943151de8`
 - All five levels are 64x56 with the hearth at the same spot (fire centred on x 32) and the art on one base row; smaller levels leave the top and sides empty. Night is the main palette with the firelight in stepped rings on the ground; alts.day keeps the fire lit.
 - Level 1 Humble: a small fire in a loose ring of fieldstones on packed earth, one log to sit on (rope lashing, pale cut ends) and two sticks. Seat: (47, 52).
 - Level 2 Settled: a neater fire ring, two sawn plank benches and a front bench, a plank sign, and a wood store with the red-brown shingle roof. Seats: (13, 48), (51, 48), (32, 54).
@@ -228,7 +228,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 - **Status:** draft
 - **Requested:** 2026-11-09 (Misa): "Each building can absolutely change building material as it upgrades in levels ... Naturally a forge can't be made of wood, but it can have wooden elements on it ... Think of how Clash of Clans brings a new look with each new town hall level."
 - **Source:** `apps/activity/src/sprites/concepts/valley-levels-forge.ts` (draw it with `pnpm art valley-levels-forge`)
-- **Sheet of:** `d75c1105b5dd`
+- **Sheet of:** `f081557e8e16`
 - Five levels on one 56x60 canvas, all standing on row 51, centred; smaller levels leave the top and sides empty. Colours from valley-tiers, 16 or fewer per sprite.
 - Night is the main palette with the ember glow lying on the ground in stepped rings in front of the fire; alts.day is the same pixels with the fire still lit and a soot-dark yard.
 - Level 1 Humble: an open-air smithy: a fieldstone hearth mound with a small fire, a stump with a small anvil, a crooked rope-lashed log frame under a straw roof.
@@ -254,12 +254,12 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 - **Status:** draft
 - **Requested:** 2026-11-09 (Misa): "Each building can absolutely change building material as it upgrades in levels, and I'm thinking we might even want to tweak the earlier levels to be less elaborate... If you change materials, there needs to be a common motif between buildings of the same level... Think of how Clash of Clans brings a new look with each new town hall level." The Paddock gets a taller canvas (64x64) so its barn can grow.
 - **Source:** `apps/activity/src/sprites/concepts/valley-levels-paddock.ts` (draw it with `pnpm art valley-levels-paddock`)
-- **Sheet of:** `05f8affd8ba0`
+- **Sheet of:** `b90a58423565`
 - The Paddock at the five valley levels of `docs/design/art-levels.md`. All five are 64x64 on one footprint: side fences at x 3..7 and 56..60, back fence at rows 20..23, front fence at rows 42..50 with the gate gap at x 28..37 (the open gate leaf, from level 2, stands at x 28..30); the fence changes material, not place. The pen stands on the same base row (bottom of the front fence, row 50).
 - ROAM RECTANGLE for creatures, one for all levels: x 15..48, y 24..40 of the sprite (34x17, exported as PADDOCK_ROAM). It is open grass (transparent, or the lantern's light on the ground) at every level; a test checks it.
 - Level 1 Humble: stakes of raw logs lashed with rope, a hay heap, a bucket on a rope handle, loose fieldstones, a tin lantern on a branch. No building.
 - Level 2 Settled: sawn plank rails with nails and a swung-open plank gate, a small shelter with a red-brown shingle roof and a plank sign at the back, a stave bucket with an iron band.
-- Level 3 Stone: a dressed-stone wall under the rails and along the sides, a stone trough, a small stone-and-timber barn with a slate roof and black iron straps and hinges.
+- Level 3 Stone: a dressed sandstone wall under the rails and along the sides, a sandstone trough, a small stone-and-timber barn with a terracotta barrel-tile roof and black iron straps and hinges.
 - Level 4 Valley: the barn painted cream with teal trim, teal-and-cream bunting from its eaves to the corner posts and a pennant on its ridge, brass lamps, flower boxes on the fence. The hay moved into the barn.
 - Level 5 Crystal: a teal crystal finial on the ridge and an inlay in the door, gold trim on the roof, posts and rim, a crystal-lit trough with a shard. Crystal glows by day too.
 
@@ -267,7 +267,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | --- | --- | --- | --- | --- |
 | `paddock-1` | free |  | draft | Level 1 Humble: rough stakes and rope, a hay heap, a bucket, no building. |
 | `paddock-2` | free |  | draft | Level 2 Settled: plank fence with an open gate, a small shingle-roofed shelter and a plank sign. |
-| `paddock-3` | free |  | draft | Level 3 Stone: stone wall base, stone trough, a stone-and-timber barn with a slate roof and iron fittings. |
+| `paddock-3` | free |  | draft | Level 3 Stone: stone wall base, stone trough, a sandstone-and-timber barn with a terracotta roof and iron fittings. |
 | `paddock-4` | free |  | draft | Level 4 Valley: the barn painted cream and teal, bunting and pennant, brass lamps, flower boxes. |
 | `paddock-5` | free |  | draft | Level 5 Crystal: a crystal finial on the ridge, gold trim, a crystal-lit trough. |
 
@@ -280,11 +280,11 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 - **Status:** draft
 - **Requested:** 2026-11-09 (Misa): "Each building can absolutely change building material as it upgrades in levels, and I'm thinking we might even want to tweak the earlier levels to be less elaborate. Think the school for example. Its bell could be just on the side of the building until a bell tower replaces it in later levels. If you change materials, there needs to be a common motif between buildings of the same level... Think of how Clash of Clans brings a new look with each new town hall level."
 - **Source:** `apps/activity/src/sprites/concepts/valley-levels-school.ts` (draw it with `pnpm art valley-levels-school`)
-- **Sheet of:** `35f8d97debaa`
+- **Sheet of:** `a7cfa8ad2dc9`
 - Canvas 64x64 at every level, the art centred on the door axis (between x 31 and 32) and standing on the same base row: the last wall row is y 57, the ink edge y 58.
 - What the game relies on: the door is the two columns x 31-32, rows 51-57 (bottom row 57, key d), the same at every level, so the visiting teacher's yard (80x24, drawn with x 31 and 32 under the door) fits all five. A test checks it.
 - The bell is drawn at rest in a 6x6 box (4 wide with an ink rim; the old `school-bell` overlay frames need redrawing for it). Bell box top-left (x, y): level 1 (53, 37) on the post arm; level 2 (52, 38) in the timber frame; levels 3, 4 and 5 (29, 18) in the tower opening. The same numbers are `SCHOOL_BELL_BOXES` in the set file.
-- Level 1 Humble (log hut, thatch, one window, bell on a rope-lashed post beside it); 2 Settled (planks, shingles, two windows, plank sign, bell on a timber frame); 3 Stone (stone walls, slate roof, bell tower over the door, black iron bands); 4 Valley (cream trim, teal shutters, a teal-and-cream pennant on the tower, brass lamps by the door, glass windows); 5 Crystal (a crystal on the tower spire and an inlay on its face, gold eaves, a wider hall with four windows).
+- Level 1 Humble (log hut, thatch, one window, bell on a rope-lashed post beside it); 2 Settled (planks, shingles, two windows, plank sign, bell on a timber frame); 3 Stone (sandstone walls, terracotta roof, bell tower over the door, black iron bands); 4 Valley (cream trim, teal shutters, a teal-and-cream pennant on the tower, brass lamps by the door, glass windows); 5 Crystal (a crystal on the tower spire and an inlay on its face, gold eaves, a wider hall with four windows).
 - Window light spills on the grass at night; by day the windows are plain glass (the lamps too). Crystal stays teal by day.
 - Needs the School building levels (V-COM-1) before this art is used.
 
@@ -292,7 +292,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | --- | --- | --- | --- | --- |
 | `school-1` | free |  | draft | Level 1, Humble: a small log hut with a thatch roof, one window and a door on packed earth; the bell hangs from a rope-lashed post beside it. Bell box (53, 37). |
 | `school-2` | free |  | draft | Level 2, Settled: a plank schoolhouse with a red-brown shingle roof, two windows and a plank sign over the door; the bell on a little timber frame at the side. Bell box (52, 38). |
-| `school-3` | free |  | draft | Level 3, Stone: cut stone walls, a slate roof, black iron bands and window bars; a stone bell tower over the door replaces the side bell. Bell box (29, 18). |
+| `school-3` | free |  | draft | Level 3, Stone: cut stone walls, a terracotta barrel-tile roof, black iron bands and window bars; a stone bell tower over the door replaces the side bell. Bell box (29, 18). |
 | `school-4` | free |  | draft | Level 4, Valley: cream trim and teal shutters, brass lamps by the door, glass windows, a teal-and-cream pennant on the tower. Bell box (29, 18). |
 | `school-5` | free |  | draft | Level 5, Crystal: a glowing crystal on the tower spire and an inlay on its face, gold trim on the eaves and door, a wider hall with four windows. Bell box (29, 18). |
 
@@ -305,7 +305,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 - **Status:** draft
 - **Requested:** 2026-11-09 (Misa): "Each building can absolutely change building material as it upgrades in levels, and I'm thinking we might even want to tweak the earlier levels to be less elaborate... If you change materials, there needs to be a common motif between buildings of the same level... Think of how Clash of Clans brings a new look with each new town hall level." Earlier (2026-11-05): the road is short and heads right from the post, and every sign has its full ink outline.
 - **Source:** `apps/activity/src/sprites/concepts/valley-levels-signpost.ts` (draw it with `pnpm art valley-levels-signpost`)
-- **Sheet of:** `9b60a500c6c8`
+- **Sheet of:** `70e196bc73bc`
 - V-COM-1: the Signpost shows its level by its material (docs/design/art-levels.md): Humble, Settled, Stone, Valley, Crystal. `pnpm art levels` draws them side by side (`docs/art/levels/signpost.png`, `market.png`).
 - Signpost, all levels: one 64x56 canvas, the post's foot on row 50, the road short and heading right from the foot (it never reaches the top edge), every sign with its full ink outline, no text on any sign. Night has the lantern's light lying on the ground (the crystal's teal light at level 5); by day the lanterns are unlit and the crystal keeps glowing. Colours from `valley-tiers.ts` (Humble, Settled, Stone, Valley, Crystal).
 - Market: built once. Level 1 is the plot staked out and begun (the shard post with its big sign already stands, a bare counter frame with a few planks laid, a rolled-up awning on the beam, crates, planks, a sack, stakes and string); level 2 is `valley-glow/market`. The shard keeps glowing by day.
@@ -425,22 +425,23 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 - **Status:** draft
 - **Requested:** 2026-11-09 (Misa): buildings get better level by level and may change material; the same level shares a motif across buildings, like a new town hall look.
 - **Source:** `apps/activity/src/sprites/concepts/valley-tiers.ts` (draw it with `pnpm art valley-tiers`)
-- **Sheet of:** `d1d1161bacdf`
+- **Sheet of:** `b3a09ddd0f79`
 - The material board is `TIERS` in `valley-tiers.ts` (night and day colour per material); `tierPalette(level, { key: "material" })` builds a sprite palette and its day alt. Spec: docs/design/art-levels.md.
 - Level 1, Humble: raw logs, rope lashings, straw, packed earth and loose fieldstones; small, home-made, a little crooked.
-- Level 2, Settled: sawn planks with nails, the red-brown shingle roof and a plank sign.
-- Level 3, Stone: grey cut stone with lighter corner stones, a slate edge and black iron bands and brackets.
-- Level 4, Valley: cream plaster and teal trim, the valley's teal-and-cream pennant and a brass lamp with lit glass (plain glass by day).
+- Level 2, Settled: sawn planks with nails and the red-brown shingle roof (one light from the upper left: lit shingles on the left, shaded on the right, like the walls).
+- Level 3, Stone (redone 2026-11-11): warm sandstone blocks with a light edge, terracotta barrel-tile roof and black iron bands and brackets. The material names stay `stone` and `slate` (aliases `sandstone`, `terracotta`).
+- Level 4, Valley (redone 2026-11-11): cream plaster and brass; a teal banner with a cream diamond hanging from a crossbar, and a brass lamp hanging from an ornate wrought-iron arm (curl, S-scroll brace, brass boss); lit glass at night, plain glass by day.
 - Level 5, Crystal: the Market's teal shard as a glowing finial (it glows by day too) and gold trim, on a stone cap.
+- 2026-11-11 (Misa): level 1 Humble liked, level 5 Crystal liked. Level 2: "The shade on the building's body changes as if to indicate it's 3D whereas the roof doesn't do the same. Is this intentional?" (redone: one light for walls and roof). Level 3: "The gray stone is quite boring. Can we use brick, terracotta or sandstone for inspiration?" (redone: sandstone and terracotta). Level 4: "I'm not sure what the teal and cream thing is supposed to be. A flag? The arm holding the lamp could be more elaborate." (redone: hanging banner, wrought-iron arm).
 - The samples are 40x24 motif references on the valley-glow ground: night is the main palette, `alts.day` recolours the same pixels. Buildings copy their level's materials and signature from them.
 
 | Code | Kind | Role | Status | Idea |
 | --- | --- | --- | --- | --- |
-| `tier-1` | free |  | draft | Level 1, Humble: a rope-lashed log post with a crooked cross branch, a straw tuft and fieldstones on packed earth. |
+| `tier-1` | free |  | liked | Level 1, Humble: a rope-lashed log post with a crooked cross branch, a straw tuft and fieldstones on packed earth. |
 | `tier-2` | free |  | draft | Level 2, Settled: a plank wall corner with nailed boards and a plank sign under a red-brown shingle eave. |
-| `tier-3` | free |  | draft | Level 3, Stone: a cut-stone corner with lighter corner stones, a black iron bracket and a slate edge. |
-| `tier-4` | free |  | draft | Level 4, Valley: a cream post with a teal-and-cream pennant and a brass lamp; the lamp glows at night, plain glass by day. |
-| `tier-5` | free |  | draft | Level 5, Crystal: a glowing teal crystal finial in a gold collar on a stone cap with gold trim; the crystal glows by day too. |
+| `tier-3` | free |  | draft | Level 3, Stone: a sandstone corner with light edge stones, a black iron bracket and a terracotta barrel-tile roof. |
+| `tier-4` | free |  | draft | Level 4, Valley: a cream post with a hanging teal banner (cream diamond, swallowtail) and a brass lamp on an ornate wrought-iron arm; the lamp glows at night, plain glass by day. |
+| `tier-5` | free |  | liked | Level 5, Crystal: a glowing teal crystal finial in a gold collar on a stone cap with gold trim; the crystal glows by day too. |
 
 <a id="void-foes"></a>
 

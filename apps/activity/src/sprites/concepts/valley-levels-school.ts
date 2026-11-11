@@ -6,7 +6,7 @@
  *
  * 1 Humble: a one-room log hut, thatch roof, one window, the bell on a rope-lashed post beside it.
  * 2 Settled: a plank schoolhouse, shingle roof, two windows, a plank sign, the bell on a small timber frame.
- * 3 Stone: stone walls, slate roof, a stone bell tower over the door replaces the side bell, black iron.
+ * 3 Stone: sandstone walls, terracotta roof, a stone bell tower over the door replaces the side bell, black iron.
  * 4 Valley: cream trim, teal shutters and pennant on the tower, brass lamps by the door, glass windows.
  * 5 Crystal: a crystal on the tower spire, gold eave trim, a wider hall, a crystal inlay on the tower.
  *
@@ -127,10 +127,19 @@ function drawer(c: Canvas) {
 
 const stoneTex = (x: number, y: number): string =>
   y % 4 === 0 ? 'T' : (x + (Math.floor(y / 4) % 2) * 3) % 6 === 0 ? 'T' : 't';
-const slateTex = (x: number, y: number): string =>
-  y % 3 === 0 ? 'A' : (x + (y % 2) * 2) % 4 === 0 ? 'A' : 'a';
+/** Terracotta barrel tiles (the level 3 to 5 roofs, `a` body, `r` light rib, `A` shade): ribs in courses of three rows, offset by two. */
+const slateTex = (x: number, y: number): string => {
+  const i = (x + Math.floor(y / 3) * 2) % 4;
+  if (y % 3 === 0) return i < 2 ? 'A' : 'a';
+  return ['r', 'a', 'a', 'A'][i] ?? 'a';
+};
 const shingleTex = (x: number, y: number): string =>
   y % 3 === 0 ? 'S' : (x + (y % 2) * 2) % 4 === 0 ? 'S' : 's';
+/** Shingles lit from the upper left like the walls: the left of the door axis is the lit plane (`h`), the right is shaded. */
+const litShingleTex = (x: number, y: number): string => {
+  const t = shingleTex(x, y);
+  return x >= 32 ? t : t === 's' ? 'h' : 's';
+};
 const plankTex = (x: number, y: number): string =>
   x % 4 === 0 ? 'P' : x % 4 === 2 && y % 7 === 3 ? 'n' : 'p';
 const logTex = (_x: number, y: number): string => (y % 3 === 2 ? 'L' : 'l');
@@ -199,9 +208,9 @@ function level2(c: Canvas): void {
   // the school
   d.rect(16, 41, 47, BASE, plankTex);
   d.rect(16, 41, 47, 41, 'P');
-  d.hip(27, 39, 12, 36, shingleTex);
-  d.rect(14, 40, 49, 40, 'S');
-  d.rect(26, 27, 37, 27, 'S');
+  d.hip(27, 39, 12, 36, litShingleTex);
+  d.rect(14, 40, 49, 40, (x) => (x < 32 ? 's' : 'S'));
+  d.rect(26, 27, 37, 27, (x) => (x < 32 ? 'h' : 'S'));
   d.window(20, 46, 5, 6, 'P');
   d.window(39, 46, 5, 6, 'P');
   d.door('P');
@@ -353,10 +362,25 @@ const L1 = build(
 );
 const L2 = build(
   2,
-  [tierPalette(2, { p: 'plank', P: 'plankShade', s: 'shingle', S: 'shingleShade', n: 'nail' })],
+  [
+    tierPalette(2, {
+      p: 'plank',
+      P: 'plankShade',
+      h: 'shingleLight',
+      s: 'shingle',
+      S: 'shingleShade',
+      n: 'nail',
+    }),
+  ],
   level2,
 );
-const STONE = tierPalette(3, { t: 'stone', T: 'stoneShade', a: 'slate', A: 'slateShade' });
+const STONE = tierPalette(3, {
+  t: 'stone',
+  T: 'stoneShade',
+  a: 'slate',
+  A: 'slateShade',
+  r: 'slateLight',
+});
 const L3 = build(3, [STONE], (c) => hall(c, 3));
 const L4 = build(4, [STONE, tierPalette(4, { e: 'teal', m: 'cream', g: 'brass' })], (c) =>
   hall(c, 4),
@@ -377,7 +401,7 @@ export const VALLEY_LEVELS_SCHOOL_CONCEPTS: ConceptSet = {
     'Canvas 64x64 at every level, the art centred on the door axis (between x 31 and 32) and standing on the same base row: the last wall row is y 57, the ink edge y 58.',
     `What the game relies on: the door is the two columns x 31-32, rows ${String(SCHOOL_DOOR.top)}-${String(SCHOOL_DOOR.bottom)} (bottom row 57, key d), the same at every level, so the visiting teacher's yard (80x24, drawn with x 31 and 32 under the door) fits all five. A test checks it.`,
     'The bell is drawn at rest in a 6x6 box (4 wide with an ink rim; the old `school-bell` overlay frames need redrawing for it). Bell box top-left (x, y): level 1 (53, 37) on the post arm; level 2 (52, 38) in the timber frame; levels 3, 4 and 5 (29, 18) in the tower opening. The same numbers are `SCHOOL_BELL_BOXES` in the set file.',
-    'Level 1 Humble (log hut, thatch, one window, bell on a rope-lashed post beside it); 2 Settled (planks, shingles, two windows, plank sign, bell on a timber frame); 3 Stone (stone walls, slate roof, bell tower over the door, black iron bands); 4 Valley (cream trim, teal shutters, a teal-and-cream pennant on the tower, brass lamps by the door, glass windows); 5 Crystal (a crystal on the tower spire and an inlay on its face, gold eaves, a wider hall with four windows).',
+    'Level 1 Humble (log hut, thatch, one window, bell on a rope-lashed post beside it); 2 Settled (planks, shingles, two windows, plank sign, bell on a timber frame); 3 Stone (sandstone walls, terracotta roof, bell tower over the door, black iron bands); 4 Valley (cream trim, teal shutters, a teal-and-cream pennant on the tower, brass lamps by the door, glass windows); 5 Crystal (a crystal on the tower spire and an inlay on its face, gold eaves, a wider hall with four windows).',
     'Window light spills on the grass at night; by day the windows are plain glass (the lamps too). Crystal stays teal by day.',
     'Needs the School building levels (V-COM-1) before this art is used.',
   ],
@@ -408,7 +432,7 @@ export const VALLEY_LEVELS_SCHOOL_CONCEPTS: ConceptSet = {
     },
     'school-3': {
       kind: 'free',
-      note: 'Level 3, Stone: cut stone walls, a slate roof, black iron bands and window bars; a stone bell tower over the door replaces the side bell. Bell box (29, 18).',
+      note: 'Level 3, Stone: cut stone walls, a terracotta barrel-tile roof, black iron bands and window bars; a stone bell tower over the door replaces the side bell. Bell box (29, 18).',
       sprite: L3.sprite,
       alts: { day: L3.day },
     },
