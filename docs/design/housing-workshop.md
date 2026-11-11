@@ -113,3 +113,37 @@ PNGs go to `apps/activity/scratch/housing/` unless `--out` says otherwise.
 ## The eight shipped sets after the first pass
 
 Each shipped set has its style (`workshop/styles/`), and its pack draws through `setPack`. The pixels that ship are exactly the first pass's (checked by the lock and by a before-and-after dump of every pack). Side by side, the generated pieces are sound but plainer re-skins: the hand pieces carry each set's motif in their silhouette (Moonlit's oval mirror, Rootwood's round window and stump stool, Emberhold's anvil shelf), so every hand sprite stays an override for now, each with its reason in the pack file. The four ring-glow lamps (Tidepool, Moonlit, Emberhold, Rootwood) take their glow layer from the library, pixel-identical. The way to move a piece from hand to generated: improve the form or give the style a part hook, compare, and drop the override when the generated piece is at least as good at 1x and 4x.
+
+## Adding a set: `pnpm housing new-set` (work package A3)
+
+```
+pnpm housing new-set <id> [--name "Quiet Verge"] [--theme "..."] [--from <style>] [--dry-run]
+    [--element tide|none|...] [--tier 1|2] [--primary <material>|family:wood] [--accent ...]
+    [--moments trip,scout,raid] [--places id,id] [--bosses id,id] [--no-checks]
+pnpm housing remove-set <id> [--dry-run]     undoes new-set; refuses the nine shipped ids (Cosy and the eight sets)
+pnpm housing check                           the lock, the art catalogue and every set's tests in one go
+```
+
+`new-set` does everything a set needs in one run and can be re-run (it adds only what is missing; `--dry-run` lists the files it would create or change). The plans are pure (`apps/activity/src/sprites/workshop/new-set.ts`, tested in memory against the real files); `apps/activity/scripts/housing-new-set.mts` writes the files, runs prettier on them, then runs `housing lock`, `art library`, the cross-check tests and `housing sheet <id>`, and prints what is left.
+
+**Defaults** (the plainest set that validates): tier 1, no element, primary material "any wood", accent "any stone" (so no new luxury material), any place and boss, from trips, scouts and raids; the style is a copy of Plain Pine (`--from tidepool` copies a shipped one). Prices need nothing per piece: they come from the form's size, the set's tier and its materials (`housing/price.ts`), and drops from the set's `sources`.
+
+**The files a set touches**
+
+| File                                                               | By                                                                                              |
+| ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
+| `packages/game/src/content/data/housing/sets.json`                 | `new-set`: the set and its keepsake                                                             |
+| `packages/game/src/content/data/housing/pieces.json`               | `new-set`: nine pieces, `<id>-<form>`, after the last set's                                     |
+| `packages/game/src/content/data/housing/skins.json`                | `new-set`: `<id>-wall` and `<id>-floor`                                                         |
+| `apps/activity/src/sprites/workshop/styles/<id>.ts`                | `new-set`: the style, with `TODO(artist)` notes                                                 |
+| `apps/activity/src/sprites/data/house/<id>.ts`                     | `new-set`: `setPack` with no overrides, and placeholder wallpaper, floor and keepsake           |
+| `apps/activity/src/sprites/concepts/house-<id>.ts`                 | `new-set`: the art library's wrapper (three lines, `workshop/set-concept.ts` does the work)     |
+| `apps/activity/src/sprites/workshop/sets.ts`                       | `new-set`: an import and an entry in `SHIPPED_SETS` (the lock and `housing sheet <id>` read it) |
+| `apps/activity/src/sprites/workshop/shipped-art.json`, `docs/art/` | generated (`housing lock`, `art library`)                                                       |
+| `docs/compendium/housing.md`                                       | `new-set`: the set, keepsake, nine piece and two skin rows, marked draft                        |
+
+Nothing else names a set: piece and skin names come from the content (`house-text.ts`), and the glossary has no per-set entry. Wallpaper and floor art lives in the set's own pack file, not in `rooms.ts` (that holds the room kinds' defaults).
+
+**Left to the people.** `new-set` writes every text as `TODO: ...` (the set's line, keepsake line, nine piece lines; the theme unless `--theme` is given) and the style as a copy, so the artist edits the style (palette, variants, motif), re-runs `pnpm housing sheet <id>`, draws the wallpaper, floor and keepsake, and the writer fills the lines from the compendium. The command prints that list. `pnpm housing lock` and `pnpm art library` follow every art change.
+
+**What checks a set.** `sets-agree.test.ts` (new) holds each content set to its style, pack, concept wrapper, workshop entry, lock rows and form boxes; the content tests (`housing-content.test.ts`) hold its pieces, skins, keepsake and compendium names; `house-content-art.test.ts` its art; `workshop.test.ts` the lock. The tests that counted the nine sets (114 pieces, 47 skins, 212 catalogue things) now count the nine plus whatever `new-set` added.

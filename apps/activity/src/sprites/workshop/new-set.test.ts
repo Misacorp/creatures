@@ -123,6 +123,11 @@ describe('new-set, as a plan', () => {
         PATHS.compendium,
       ].sort(),
     );
+    const lastOf = (path: string): string => {
+      const rows = JSON.parse(read(path) ?? '[]') as { id: string; set: string | null }[];
+      return rows.filter((r) => r.set !== null).at(-1)?.id ?? '';
+    };
+    const [lastPiece, lastSkin] = [lastOf(PATHS.pieces), lastOf(PATHS.skins)];
     apply(changes);
     const parse = (path: string): { id: string; form?: string; kind?: string; set?: string }[] =>
       JSON.parse(read(path) ?? '[]') as never;
@@ -155,9 +160,9 @@ describe('new-set, as a plan', () => {
     expect(loaded.sets.map((s) => s.id)).toContain('unit-oak');
     // the new rows follow the last set's rows, not the wild pieces or the room skins
     const ids = parse(PATHS.pieces).map((p) => p.id);
-    expect(ids.indexOf('unit-oak-bed')).toBe(ids.indexOf('lantern-night-curtains') + 1);
+    expect(ids.indexOf('unit-oak-bed')).toBe(ids.indexOf(lastPiece) + 1);
     const skinIds = parse(PATHS.skins).map((p) => p.id);
-    expect(skinIds.indexOf('unit-oak-wall')).toBe(skinIds.indexOf('lantern-night-floor') + 1);
+    expect(skinIds.indexOf('unit-oak-wall')).toBe(skinIds.indexOf(lastSkin) + 1);
   });
 
   it('writes a style, a pack and a concept wrapper that name the set', () => {

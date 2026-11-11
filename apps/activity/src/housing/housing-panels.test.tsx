@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { housing } from '@creatures/game/housing-content';
 import { SAMPLE_STATE } from '../creature-card-sample';
 import {
   badgesIn,
@@ -333,7 +334,9 @@ describe('WorkbenchPanel', () => {
 describe('CataloguePanel', () => {
   it('shows the found count and the kinds, and switches kind', () => {
     const p = draw(<CataloguePanel catalogue={sampleCatalogue()} failed={false} onRetry={noop} />);
-    expect(visibleText(p.root)).toMatch(/\d+ \/ 212 found/);
+    // 212 things in the first night's nine sets; each set made since adds nine pieces and two skins
+    const total = 212 + 11 * (housing.sets.length - 9);
+    expect(visibleText(p.root)).toMatch(new RegExp(`\\d+ / ${String(total)} found`));
     p.click(first(byName(p.root, 'button', 'Stamps')));
     const tiles = byName(p.root, 'button', /^Unknown\./);
     expect(tiles.length).toBeGreaterThan(0);
