@@ -488,20 +488,17 @@ export function drape(
 ): void {
   const side = options.side ?? 'left';
   const fold = Math.max(2, options.fold ?? 3);
+  // how far the drape gathers in, rows from the tie: a smooth waist, never thinner than 3
+  const waist: Readonly<Record<number, number>> = { [-2]: 1, [-1]: 2, 0: 3, 1: 2, 2: 2, 3: 1 };
   for (let r = 0; r < h; r++) {
-    let rw = w;
-    if (options.tie !== undefined) {
-      const t = options.tie;
-      const pinch = Math.max(3, w - 3);
-      if (r === t) rw = pinch;
-      else if (r > t) rw = Math.min(w, pinch + Math.floor((r - t) / 2));
-      else if (r > t - 3) rw = Math.max(pinch, w - (r - (t - 3)));
-    }
+    const pull = options.tie === undefined ? 0 : (waist[r - options.tie] ?? 0);
+    const rw = Math.max(3, w - pull);
     const rx = side === 'left' ? x : x + w - rw;
     put(c, rx, y + r, INK);
     put(c, rx + rw - 1, y + r, INK);
     for (let i = 1; i < rw - 1; i++) {
-      const p = (i - 1) % fold;
+      // folds keep to the drape's own columns, so they hang straight past the waist
+      const p = (rx + i - x - 1 + fold * w) % fold;
       const k = r === h - 1 ? INK : p === 0 ? ramp.light : p === fold - 1 ? ramp.dark : ramp.mid;
       put(c, rx + i, y + r, k);
     }

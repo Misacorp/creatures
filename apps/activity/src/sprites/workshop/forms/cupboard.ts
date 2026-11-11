@@ -14,7 +14,7 @@ export const CUPBOARD: FormDef = {
   id: 'cupboard',
   box: { w: W, h: H },
   parts: ['feet', 'carcass', 'doors', 'drawer', 'plinth', 'crown'],
-  note: 'Crown from row 4 (crest above), carcass x1-28, doors rows 9-24, drawer rows 25-28, plinth rows 29-31, feet 32-35.',
+  note: 'Crown from row 4 (lower under a tall crest), carcass x1-28, doors rows 9-24, drawer rows 25-28, plinth rows 29-31, feet 32-35.',
   draw(style) {
     const c = canvas(W, H);
     const top = Math.max(4, crestHeight(style.top, W) + 1);

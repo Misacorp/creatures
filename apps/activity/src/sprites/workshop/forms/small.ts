@@ -35,7 +35,7 @@ export const LAMP: FormDef = {
   id: 'lamp',
   box: { w: 20, h: 16 },
   parts: ['lamp', 'glow'],
-  note: 'Hangs from the top row: a cord, the shade, the light under it; the glow layer is the same size.',
+  note: 'Hangs from the top row: a cord, the shade, the light under it; the glow is 20x10 (ring) or 20x16 (dither).',
   draw(style) {
     const c = canvas(20, 16);
     part(c, style, 'lamp', 'lamp', { x: 0, y: 0, w: 20, h: 16 }, ({ c, style, at }) => {

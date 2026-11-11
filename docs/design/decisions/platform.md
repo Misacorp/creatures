@@ -4,6 +4,14 @@ Hosting, Durable Objects, scheduling, CI and deploys, staging, dependencies, sec
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-11: Furniture workshop: sets are styles drawn at load, shipped pixels kept as reasoned overrides and locked
+
+ID: `2026-11-11-furniture-workshop-sets-are-styles-drawn` · Status: current
+
+**Decision.** Furniture sets are made in the workshop (`docs/design/housing-workshop.md`): a drawing library (`apps/activity/src/sprites/draw/`), one form per piece kind with named parts and a `Style` per set (`apps/activity/src/sprites/workshop/`). A set's pack file calls `setPack({ style, hand, pieces })` when the module loads; a form not listed in `pieces` is drawn from the style, a listed one keeps hand pixels (whole or by layer), takes given art or post-processes the generated piece, always with a written reason. `workshop/shipped-art.json` locks a hash of every shipped piece; a test fails when the library changes shipped art until `pnpm housing compare` has been looked at and `pnpm housing lock` run. In this first pass the eight shipped sets keep every piece's hand sprite (72 of 72); only the four ring-glow lamps' glow layers are generated, pixel-identical. Plain Pine (`workshop/sample/`) is a set drawn from a style alone and is not content.
+
+**Reasoning.** Drawing at load keeps one copy of the pixels (no checked-in generated output next to the hand art it would duplicate) and costs well under a millisecond a piece. The lock gives what a checked-in output would: no change to shipped art goes unseen. Misa's rule is that shipped sets never get worse; side by side, the generated pieces read as plainer re-skins of the hand ones, which carry each set's motif in the silhouette, so they stay overrides until a form or a style hook draws them as well.
+
 ## 2026-11-10: Housing: a bed moves with its sleeper, and the housing content is its own package entry
 
 ID: `2026-11-10-housing-a-bed-moves-with-its` · Status: current
