@@ -270,6 +270,8 @@
   const SETS = '__ART_REVIEW_DATA__';
   const reviews = {}; // sprite id -> { verdict, note }
   let filter = 'open';
+  // Pieces answered on this visit stay in "To review" until the filter changes, so a note can follow.
+  const answeredNow = new Set();
   const ITEMS = new Map(SETS.flatMap((s) => s.items.map((i) => [i.id, { item: i, set: s }])));
 
   /** Waiting for a verdict: a draft with no answer given since its set last changed. */
@@ -351,15 +353,20 @@
 
   function applyFilter() {
     for (const card of document.querySelectorAll('.card')) {
-      card.hidden = !(filter === 'all' || filter === card.dataset.verdict);
+      const shown =
+        filter === 'all' ||
+        filter === card.dataset.verdict ||
+        (filter === 'open' && answeredNow.has(card.dataset.id));
+      card.hidden = !shown;
     }
     for (const set of document.querySelectorAll('.set'))
       set.hidden = !set.querySelector('.card:not([hidden])');
   }
 
   async function save(id, patch) {
+    // A verdict on an earlier drawing does not carry over: a note on a redrawn piece leaves it waiting.
     const next = {
-      verdict: reviews[id]?.verdict ?? null,
+      verdict: isOpen(id) ? null : (reviews[id]?.verdict ?? null),
       note: reviews[id]?.note ?? '',
       ...patch,
       updatedAt: new Date().toISOString(),
@@ -367,6 +374,7 @@
     };
     // Leaving a note alone keeps a piece in "To review"; a verdict answers it.
     reviews[id] = next;
+    if (filter === 'open') answeredNow.add(id);
     paintCard(id);
     renderTally();
     applyFilter();
@@ -441,7 +449,9 @@
           b.setAttribute('aria-pressed', 'false');
           b.setAttribute('aria-label', `${text} ${item.code}`);
           b.addEventListener('click', () =>
-            save(item.id, { verdict: reviews[item.id]?.verdict === v ? null : v }),
+            save(item.id, {
+              verdict: !isOpen(item.id) && reviews[item.id]?.verdict === v ? null : v,
+            }),
           );
           actions.append(b);
         }
@@ -466,10 +476,13 @@
   document.querySelectorAll('[data-filter]').forEach((b) =>
     b.addEventListener('click', () => {
       filter = b.dataset.filter;
+      answeredNow.clear();
       document
         .querySelectorAll('[data-filter]')
         .forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
       applyFilter();
+      // The links point at sets with pieces waiting, which only "To review" shows for sure.
+      document.getElementById('jump').hidden = filter !== 'open';
     }),
   );
 

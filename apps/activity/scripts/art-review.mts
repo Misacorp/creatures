@@ -29,7 +29,9 @@ function setChangedAt(setId: string): string {
   const git = (...a: string[]): string =>
     execFileSync('git', a, { cwd: dir, encoding: 'utf8' }).trim();
   if (git('status', '--porcelain', '--', path) !== '') return new Date().toISOString();
-  return git('log', '-1', '--format=%cI', '--', path) || new Date(0).toISOString();
+  // In UTC like the page's verdict times, so the two compare as strings.
+  const at = git('log', '-1', '--format=%cI', '--', path);
+  return at === '' ? new Date(0).toISOString() : new Date(at).toISOString();
 }
 
 /** Writes the review page to `out` and returns how many sets it holds. */
