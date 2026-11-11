@@ -1089,6 +1089,204 @@
     "hint": "A blueprint from the Old Crossroads or the Moonlit Reef."
   },
   {
+    "id": "fairground-bed",
+    "name": "Fairground Bed",
+    "form": "bed",
+    "set": "fairground",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A bed under a striped awning, with a gold star on the quilt.",
+    "hint": "A blueprint from the Old Crossroads."
+  },
+  {
+    "id": "fairground-cupboard",
+    "name": "Fairground Cupboard",
+    "form": "cupboard",
+    "set": "fairground",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A tent-roofed cupboard with a pennant on top and two round windows.",
+    "hint": "A blueprint from the Old Crossroads."
+  },
+  {
+    "id": "fairground-table",
+    "name": "Fairground Table",
+    "form": "table",
+    "set": "fairground",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A stall table under a red and cream cloth. Prizes go here.",
+    "hint": "A blueprint from the Old Crossroads."
+  },
+  {
+    "id": "fairground-shelf",
+    "name": "Fairground Shelf",
+    "form": "shelf",
+    "set": "fairground",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A shelf hung on chains, with a trophy and a bottle to knock down.",
+    "hint": "A blueprint from the Old Crossroads."
+  },
+  {
+    "id": "fairground-stool",
+    "name": "Fairground Stool",
+    "form": "stool",
+    "set": "fairground",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A three-legged stool with a striped cushion and a star.",
+    "hint": "A blueprint from the Old Crossroads."
+  },
+  {
+    "id": "fairground-lamp",
+    "name": "Fairground Lamp",
+    "form": "lamp",
+    "set": "fairground",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "Three bulbs on one bar, lit all evening, like the stalls.",
+    "hint": "A blueprint from the Old Crossroads."
+  },
+  {
+    "id": "fairground-rug",
+    "name": "Fairground Rug",
+    "form": "rug",
+    "set": "fairground",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A red runner with a gold edge and stars, for the walk to the prize stall.",
+    "hint": "A blueprint from the Old Crossroads."
+  },
+  {
+    "id": "fairground-frame",
+    "name": "Fairground Frame",
+    "form": "frame",
+    "set": "fairground",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A string of three small pennants. Hang it where a party is needed.",
+    "hint": "A blueprint from the Old Crossroads."
+  },
+  {
+    "id": "fairground-curtains",
+    "name": "Fairground Curtains",
+    "form": "curtains",
+    "set": "fairground",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A striped awning over blue shutters, as if the window sold lemonade.",
+    "hint": "A blueprint from the Old Crossroads."
+  },
+  {
+    "id": "schoolhouse-bed",
+    "name": "Schoolhouse Bed",
+    "form": "bed",
+    "set": "schoolhouse",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A tall oak bed with a ladder at its head and a red apple on the quilt.",
+    "hint": "A blueprint from the Verdant Hollow."
+  },
+  {
+    "id": "schoolhouse-cupboard",
+    "name": "Schoolhouse Cupboard",
+    "form": "cupboard",
+    "set": "schoolhouse",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A cupboard with a schoolhouse roof and slatted doors, for books and lunches.",
+    "hint": "A blueprint from the Verdant Hollow."
+  },
+  {
+    "id": "schoolhouse-table",
+    "name": "Schoolhouse Table",
+    "form": "table",
+    "set": "schoolhouse",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A plain oak desk with one drawer and a worn spot for an elbow.",
+    "hint": "A blueprint from the Verdant Hollow."
+  },
+  {
+    "id": "schoolhouse-shelf",
+    "name": "Schoolhouse Shelf",
+    "form": "shelf",
+    "set": "schoolhouse",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A thick oak shelf with books, an ink bottle and a rolled map.",
+    "hint": "A blueprint from the Verdant Hollow."
+  },
+  {
+    "id": "schoolhouse-stool",
+    "name": "Schoolhouse Stool",
+    "form": "stool",
+    "set": "schoolhouse",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A little oak stool with a green seat and a red apple on it.",
+    "hint": "A blueprint from the Verdant Hollow."
+  },
+  {
+    "id": "schoolhouse-lamp",
+    "name": "Schoolhouse Lamp",
+    "form": "lamp",
+    "set": "schoolhouse",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A white milk-glass lamp that hangs low over the desks.",
+    "hint": "A blueprint from the Verdant Hollow."
+  },
+  {
+    "id": "schoolhouse-rug",
+    "name": "Schoolhouse Rug",
+    "form": "rug",
+    "set": "schoolhouse",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A checked reading rug in green and red, with a fringe. Sit anywhere.",
+    "hint": "A blueprint from the Verdant Hollow."
+  },
+  {
+    "id": "schoolhouse-frame",
+    "name": "Schoolhouse Frame",
+    "form": "frame",
+    "set": "schoolhouse",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "A small blackboard with chalk sums and an apple on the ledge.",
+    "hint": "A blueprint from the Verdant Hollow."
+  },
+  {
+    "id": "schoolhouse-curtains",
+    "name": "Schoolhouse Curtains",
+    "form": "curtains",
+    "set": "schoolhouse",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "Green curtains on a small-paned window, for watching the yard.",
+    "hint": "A blueprint from the Verdant Hollow."
+  },
+  {
     "id": "rocking-chair",
     "name": "Rocking Chair",
     "form": "chair",

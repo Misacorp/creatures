@@ -269,6 +269,8 @@ From `glossary.json`, entry `destination-verdant-hollow`:
 > - Sproutle and Mossback live here.
 > - Something huge sleeps in the deeper area.
 
+The **Schoolhouse** furniture set (`housing.md`, "Schoolhouse set") is made of the Hollow's oak and the valley School's classroom; its blueprints turn up here `(compendium detail, not shipped)`.
+
 ---
 
 ## Storm Ridge
@@ -426,6 +428,8 @@ From `glossary.json`, entry `destination-old-crossroads`:
 > - Needs explorer rank 2.
 > - Splashet, Cindle, Sproutle, Zipmouse and Stormray pass through.
 > - Trips that were out when expeditions changed come home from here.
+
+The **Fairground** furniture set (`housing.md`, "Fairground set") comes from the Games Meadow just off this crossing: its blueprints turn up here, and a Games gold earns one `(compendium detail, not shipped)`.
 
 ---
 

@@ -11,6 +11,8 @@ import { SOURCE as FENKEEPER } from '../data/house/fenkeeper';
 import { SOURCE as ANCIENT } from '../data/house/ancient';
 import { SOURCE as LANTERN_NIGHT } from '../data/house/lantern-night';
 import { SOURCE as QUIET_VERGE } from '../data/house/quiet-verge';
+import { SOURCE as FAIRGROUND } from '../data/house/fairground';
+import { SOURCE as SCHOOLHOUSE } from '../data/house/schoolhouse';
 import { pieceHash } from './compare';
 import { makePiece, pieceId, setReport, type SetSource } from './pack';
 import { BLACKTHORN } from './sample/blackthorn';
@@ -28,6 +30,8 @@ export const SHIPPED_SETS: Readonly<Record<string, SetSource>> = {
   ancient: ANCIENT,
   'lantern-night': LANTERN_NIGHT,
   'quiet-verge': QUIET_VERGE,
+  fairground: FAIRGROUND,
+  schoolhouse: SCHOOLHOUSE,
 };
 
 export const SAMPLE_STYLES: Readonly<Record<string, Style>> = {

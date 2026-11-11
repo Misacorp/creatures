@@ -86,37 +86,41 @@ A form is a kind of furniture and the spot it fits. Every piece of a form shares
 
 ## Sets
 
-Ten sets: the starter set and nine to collect, each with its own palette and one motif that appears on every piece. Finishing a set puts its keepsake in the trophy hall's cabinet. A set is never a bonus. `(content: sets.json)`
+Twelve sets: the starter set and eleven to collect, each with its own palette and one motif that appears on every piece. Finishing a set puts its keepsake in the trophy hall's cabinet. A set is never a bonus. `(content: sets.json)`
 
-| Set           | Element | Keepsake `(content)`                                                        | Motif and palette `(design)`                                                                                                         |
-| ------------- | ------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| Cosy          | None    | Hearth Bell: A small brass bell. It rings when someone comes home.          | The living room as it is: warm wood, cream cushions. Shipped sprites; only the missing forms are new.                                |
-| Tidepool      | Tide    | Pearl Shell: A shell with a pearl still inside.                             | Driftwood with scalloped shell edges; sea blue, sand, pearl white.                                                                   |
-| Moonlit       | Tide    | Moon Pebble: A smooth stone, cool at noon and warm at midnight.             | Night-reef blue lacquer, coral pink inlay, a soft moonstone knob; silver highlights.                                                 |
-| Emberhold     | Ember   | Forge Ember: A coal that has never gone out.                                | Forge-folk work: black charwood, riveted iron bands, amber glow; rust, coal, ember orange.                                           |
-| Rootwood      | Grove   | Acorn Seedling: A seedling in a thimble, and growing.                       | Woodfolk of the Hollow: living-wood curves, leaf carving, moss cushions; bark brown, moss and leaf greens.                           |
-| Stormglass    | Spark   | Spark Bead: A glass bead with a small storm inside.                         | Pale ash with a lightning scar, copper coils and glass beads; slate, copper, storm violet.                                           |
-| Fenkeeper     | Mire    | Opal Drop: A drop of opal on a reed string.                                 | The bog keeps things: dark oak with reed bindings, an oil-sheen opal; peat brown, murky teal, a violet glint.                        |
-| Ancient       | None    | Gold Spiral: A small spiral of gold leaf, worn thin by hands.               | Carved standing-stone slabs, spiral carvings, worn gold leaf; sandstone, faded gold, patina teal.                                    |
-| Lantern Night | None    | Paper Tassel: A red tassel that still smells of festival evenings.          | Paper lanterns and bunting on painted wood; festival red, gold, cream.                                                               |
-| Quiet Verge   | None    | Pocket Window: A small stone window. Look in, and one warm star looks back. | Dusk-violet stone edged in pale rim light, arches with a warm star inside, chips of stone that float; window dark, lilac, star gold. |
+| Set           | Element | Keepsake `(content)`                                                         | Motif and palette `(design)`                                                                                                         |
+| ------------- | ------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Cosy          | None    | Hearth Bell: A small brass bell. It rings when someone comes home.           | The living room as it is: warm wood, cream cushions. Shipped sprites; only the missing forms are new.                                |
+| Tidepool      | Tide    | Pearl Shell: A shell with a pearl still inside.                              | Driftwood with scalloped shell edges; sea blue, sand, pearl white.                                                                   |
+| Moonlit       | Tide    | Moon Pebble: A smooth stone, cool at noon and warm at midnight.              | Night-reef blue lacquer, coral pink inlay, a soft moonstone knob; silver highlights.                                                 |
+| Emberhold     | Ember   | Forge Ember: A coal that has never gone out.                                 | Forge-folk work: black charwood, riveted iron bands, amber glow; rust, coal, ember orange.                                           |
+| Rootwood      | Grove   | Acorn Seedling: A seedling in a thimble, and growing.                        | Woodfolk of the Hollow: living-wood curves, leaf carving, moss cushions; bark brown, moss and leaf greens.                           |
+| Stormglass    | Spark   | Spark Bead: A glass bead with a small storm inside.                          | Pale ash with a lightning scar, copper coils and glass beads; slate, copper, storm violet.                                           |
+| Fenkeeper     | Mire    | Opal Drop: A drop of opal on a reed string.                                  | The bog keeps things: dark oak with reed bindings, an oil-sheen opal; peat brown, murky teal, a violet glint.                        |
+| Ancient       | None    | Gold Spiral: A small spiral of gold leaf, worn thin by hands.                | Carved standing-stone slabs, spiral carvings, worn gold leaf; sandstone, faded gold, patina teal.                                    |
+| Lantern Night | None    | Paper Tassel: A red tassel that still smells of festival evenings.           | Paper lanterns and bunting on painted wood; festival red, gold, cream.                                                               |
+| Quiet Verge   | None    | Pocket Window: A small stone window. Look in, and one warm star looks back.  | Dusk-violet stone edged in pale rim light, arches with a warm star inside, chips of stone that float; window dark, lilac, star gold. |
+| Fairground    | None    | Prize Rosette: A pleated rosette with two ribbon tails. It says first prize. | Striped awnings, bunting and prize ribbons on painted wood; red, cream, sky blue, sunny yellow.                                      |
+| Schoolhouse   | None    | Teacher's Apple: A polished red apple. Nobody has seen it eaten.             | Oak desks, a slate-green board, brass and chalk white, one red apple; slate green, warm oak, brass, chalk, apple red.                |
 
 ### Keepsakes
 
 Shown in the cabinet when the set is complete. `(content: sets.json)`
 
-| Keepsake       | Set           | Line `(content)`                                             |
-| -------------- | ------------- | ------------------------------------------------------------ |
-| Hearth Bell    | Cosy          | A small brass bell. It rings when someone comes home.        |
-| Pearl Shell    | Tidepool      | A shell with a pearl still inside.                           |
-| Moon Pebble    | Moonlit       | A smooth stone, cool at noon and warm at midnight.           |
-| Forge Ember    | Emberhold     | A coal that has never gone out.                              |
-| Acorn Seedling | Rootwood      | A seedling in a thimble, and growing.                        |
-| Spark Bead     | Stormglass    | A glass bead with a small storm inside.                      |
-| Opal Drop      | Fenkeeper     | A drop of opal on a reed string.                             |
-| Gold Spiral    | Ancient       | A small spiral of gold leaf, worn thin by hands.             |
-| Paper Tassel   | Lantern Night | A red tassel that still smells of festival evenings.         |
-| Pocket Window  | Quiet Verge   | A small stone window. Look in, and one warm star looks back. |
+| Keepsake        | Set           | Line `(content)`                                              |
+| --------------- | ------------- | ------------------------------------------------------------- |
+| Hearth Bell     | Cosy          | A small brass bell. It rings when someone comes home.         |
+| Pearl Shell     | Tidepool      | A shell with a pearl still inside.                            |
+| Moon Pebble     | Moonlit       | A smooth stone, cool at noon and warm at midnight.            |
+| Forge Ember     | Emberhold     | A coal that has never gone out.                               |
+| Acorn Seedling  | Rootwood      | A seedling in a thimble, and growing.                         |
+| Spark Bead      | Stormglass    | A glass bead with a small storm inside.                       |
+| Opal Drop       | Fenkeeper     | A drop of opal on a reed string.                              |
+| Gold Spiral     | Ancient       | A small spiral of gold leaf, worn thin by hands.              |
+| Paper Tassel    | Lantern Night | A red tassel that still smells of festival evenings.          |
+| Pocket Window   | Quiet Verge   | A small stone window. Look in, and one warm star looks back.  |
+| Prize Rosette   | Fairground    | A pleated rosette with two ribbon tails. It says first prize. |
+| Teacher's Apple | Schoolhouse   | A polished red apple. Nobody has seen it eaten.               |
 
 ### Cosy set
 
@@ -289,6 +293,42 @@ Still stone and starlight, from the edge of the map. `(content)`
 | Quiet Verge Frame    | Frame    | A dark moon with a bright rim, darker than the wall it hangs on.     |
 | Quiet Verge Curtains | Curtains | Plum curtains on a window where it is always dusk.                   |
 
+### Fairground set
+
+Stripes, bunting and a prize for everyone, from the meadow. `(content)`
+
+**Compendium detail, not shipped.** Made the way the Meadow Committee makes everything: from what the Games left over. Booth-blue paint, awning cloth cut from the same red and cream stripes as the Prize Stall, bunting from the kite pile and brass bulbs from the loudspeaker pole. The Games Meadow lies just off the Old Crossroads, so that is where its blueprints turn up, and a Games gold earns one too. Nothing in the set is quiet.
+
+| Piece               | Form     | Line `(content)`                                                          |
+| ------------------- | -------- | ------------------------------------------------------------------------- |
+| Fairground Bed      | Bed      | A bed under a striped awning, with a gold star on the quilt.              |
+| Fairground Cupboard | Cupboard | A tent-roofed cupboard with a pennant on top and two round windows.       |
+| Fairground Table    | Table    | A stall table under a red and cream cloth. Prizes go here.                |
+| Fairground Shelf    | Shelf    | A shelf hung on chains, with a trophy and a bottle to knock down.         |
+| Fairground Stool    | Stool    | A three-legged stool with a striped cushion and a star.                   |
+| Fairground Lamp     | Lamp     | Three bulbs on one bar, lit all evening, like the stalls.                 |
+| Fairground Rug      | Rug      | A red runner with a gold edge and stars, for the walk to the prize stall. |
+| Fairground Frame    | Frame    | A string of three small pennants. Hang it where a party is needed.        |
+| Fairground Curtains | Curtains | A striped awning over blue shutters, as if the window sold lemonade.      |
+
+### Schoolhouse set
+
+Oak desks, a chalk-dusted board and one very red apple. `(content)`
+
+**Compendium detail, not shipped.** Made from the valley's School, a planned building (`docs/design/valley/systems/school.md`, art in `docs/art/README.md`): a small schoolhouse with a bell cupola and lit windows, a bench in the yard, a visiting teacher in a cap with a gold tassel. The set is what one classroom holds: oak from the Verdant Hollow, a slate-green board that is always a little dusty, brass fittings and the red apple a student leaves on the desk. The School is not a place a creature travels to, so its blueprints turn up where the oak grows. Nobody has ever seen the apple eaten.
+
+| Piece                | Form     | Line `(content)`                                                             |
+| -------------------- | -------- | ---------------------------------------------------------------------------- |
+| Schoolhouse Bed      | Bed      | A tall oak bed with a ladder at its head and a red apple on the quilt.       |
+| Schoolhouse Cupboard | Cupboard | A cupboard with a schoolhouse roof and slatted doors, for books and lunches. |
+| Schoolhouse Table    | Table    | A plain oak desk with one drawer and a worn spot for an elbow.               |
+| Schoolhouse Shelf    | Shelf    | A thick oak shelf with books, an ink bottle and a rolled map.                |
+| Schoolhouse Stool    | Stool    | A little oak stool with a green seat and a red apple on it.                  |
+| Schoolhouse Lamp     | Lamp     | A white milk-glass lamp that hangs low over the desks.                       |
+| Schoolhouse Rug      | Rug      | A checked reading rug in green and red, with a fringe. Sit anywhere.         |
+| Schoolhouse Frame    | Frame    | A small blackboard with chalk sums and an apple on the ledge.                |
+| Schoolhouse Curtains | Curtains | Green curtains on a small-paned window, for watching the yard.               |
+
 ## Wild pieces
 
 Twelve pieces in no set. Each has its own source. `(content: pieces.json)`
@@ -376,6 +416,10 @@ Wallpapers and floors for the rooms, roofs and walls for the outside of the hous
 | Lantern Night Floor     | floor       | A blueprint from the Festival Grounds, a Festival finale or a Games gold. |
 | Quiet Verge Wallpaper   | wall        | A blueprint from the Old Crossroads or the Moonlit Reef.                  |
 | Quiet Verge Floor       | floor       | A blueprint from the Old Crossroads or the Moonlit Reef.                  |
+| Fairground Wallpaper    | wall        | A blueprint from the Old Crossroads or a Games gold.                      |
+| Fairground Floor        | floor       | A blueprint from the Old Crossroads or a Games gold.                      |
+| Schoolhouse Wallpaper   | wall        | A blueprint from the Verdant Hollow.                                      |
+| Schoolhouse Floor       | floor       | A blueprint from the Verdant Hollow.                                      |
 | Kitchen Wallpaper       | wall        | Comes with the Cottage.                                                   |
 | Kitchen Floor           | floor       | Comes with the Cottage.                                                   |
 | Attic Wallpaper         | wall        | Comes with the House.                                                     |

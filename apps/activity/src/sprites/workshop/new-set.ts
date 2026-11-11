@@ -45,6 +45,8 @@ export const SHIPPED_SET_IDS: readonly string[] = [
   'ancient',
   'lantern-night',
   'quiet-verge',
+  'fairground',
+  'schoolhouse',
 ];
 
 /** The style `new-set` copies when `--from` is not given. */

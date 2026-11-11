@@ -322,5 +322,77 @@
   "quiet-verge-curtains": {
     "made": "generated",
     "hash": "3a6d2372"
+  },
+  "fairground-bed": {
+    "made": "generated",
+    "hash": "10a4d936"
+  },
+  "fairground-cupboard": {
+    "made": "generated",
+    "hash": "2b0ae3a5"
+  },
+  "fairground-table": {
+    "made": "generated",
+    "hash": "abddaf02"
+  },
+  "fairground-shelf": {
+    "made": "generated",
+    "hash": "5ce06218"
+  },
+  "fairground-stool": {
+    "made": "generated",
+    "hash": "19755955"
+  },
+  "fairground-lamp": {
+    "made": "generated",
+    "hash": "db64d189"
+  },
+  "fairground-rug": {
+    "made": "generated",
+    "hash": "ec82dedd"
+  },
+  "fairground-frame": {
+    "made": "generated",
+    "hash": "38ea3e77"
+  },
+  "fairground-curtains": {
+    "made": "generated",
+    "hash": "1dcab823"
+  },
+  "schoolhouse-bed": {
+    "made": "generated",
+    "hash": "0b7a3475"
+  },
+  "schoolhouse-cupboard": {
+    "made": "generated",
+    "hash": "849319ca"
+  },
+  "schoolhouse-table": {
+    "made": "generated",
+    "hash": "08037ecc"
+  },
+  "schoolhouse-shelf": {
+    "made": "generated",
+    "hash": "0218598f"
+  },
+  "schoolhouse-stool": {
+    "made": "generated",
+    "hash": "b9dfcfb7"
+  },
+  "schoolhouse-lamp": {
+    "made": "generated",
+    "hash": "c8c92355"
+  },
+  "schoolhouse-rug": {
+    "made": "generated",
+    "hash": "4aecb463"
+  },
+  "schoolhouse-frame": {
+    "made": "generated",
+    "hash": "b765310c"
+  },
+  "schoolhouse-curtains": {
+    "made": "generated",
+    "hash": "8bddbb82"
   }
 }
