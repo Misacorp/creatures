@@ -62,7 +62,7 @@ export function ambientSpots(others: number, spots: number): number[] {
 }
 
 /** A plate under a thing in the scene, centred on `x`. */
-function Plate({
+function FeetPlate({
   g,
   x,
   y,
@@ -153,9 +153,9 @@ export function ForgeOutside({
           count={bubble.count}
         />
       )}
-      <Plate g={g} x={doorX} y={art.y + art.height + 1}>
+      <FeetPlate g={g} x={doorX} y={art.y + art.height + 1}>
         Inside
-      </Plate>
+      </FeetPlate>
       <CanvasTarget
         g={g}
         x={art.x}
@@ -232,9 +232,9 @@ export function ForgeInside({
   const bs = Math.max(1, g.s - 1);
   const benchSprite = interiorSprite('workbench', night);
   const feetPlate = (x: number, y: number, text: string): ComponentChildren => (
-    <Plate g={g} x={x} y={y}>
+    <FeetPlate g={g} x={x} y={y}>
       {text}
-    </Plate>
+    </FeetPlate>
   );
   // The far smiths: small, behind the benches (the benches come after them, so they stand over their feet).
   const backTop = (spot: { y: number }): number => g.Y(spot.y) - 16 * bs;
