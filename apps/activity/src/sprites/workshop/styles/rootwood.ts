@@ -43,7 +43,14 @@ export const ROOTWOOD: Style = {
   lamp: 'bell',
   lampMaterial: 'wood',
   glow: { kind: 'ring', inner: 'y', outer: 'z' },
-  rug: { shape: 'fringe', weave: 'dots' },
+  rug: { shape: 'scalloped', weave: 'dots' },
   picture: 'hills',
   shelf: ['plant', 'jar', 'books'],
+  shapes: {
+    cupboard: { top: 'rounded' },
+    table: { kind: 'log', skirt: 'none' },
+    shelf: { board: 'log' },
+    stool: { kind: 'stump' },
+    curtains: { pane: 'round' },
+  },
 };

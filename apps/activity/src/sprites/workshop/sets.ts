@@ -12,7 +12,9 @@ import { SOURCE as ANCIENT } from '../data/house/ancient';
 import { SOURCE as LANTERN_NIGHT } from '../data/house/lantern-night';
 import { pieceHash } from './compare';
 import { makePiece, pieceId, setReport, type SetSource } from './pack';
+import { BLACKTHORN } from './sample/blackthorn';
 import { PLAIN_PINE } from './sample/plain-pine';
+import { SUGARPLUM } from './sample/sugarplum';
 import { SET_FORMS, type Style } from './style';
 
 export const SHIPPED_SETS: Readonly<Record<string, SetSource>> = {
@@ -28,6 +30,8 @@ export const SHIPPED_SETS: Readonly<Record<string, SetSource>> = {
 
 export const SAMPLE_STYLES: Readonly<Record<string, Style>> = {
   'plain-pine': PLAIN_PINE,
+  blackthorn: BLACKTHORN,
+  sugarplum: SUGARPLUM,
 };
 
 /** Per shipped piece: how it is made and the hash of what ships. */

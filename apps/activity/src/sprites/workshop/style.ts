@@ -14,12 +14,14 @@ import type {
   Materials,
   MotifKind,
   PictureKind,
+  RugBorder,
   RugShape,
   ShadeKind,
   ShelfItem,
   TrimKind,
 } from '../draw/parts';
 import type { Ramp } from '../draw/shapes';
+import type { FormShapes } from './variants';
 
 /** The nine indoor forms every set has (`packages/game/src/content/data/housing/forms.json`). */
 export const SET_FORMS = [
@@ -75,10 +77,19 @@ export interface Style extends Materials {
   lampMaterial: 'wood' | 'cloth' | 'linen' | 'metal';
   /** The lamp's night glow: its kind and the two keys (`inner` the brighter). */
   glow: { kind: GlowKind; inner: string; outer: string };
-  rug: { shape: RugShape; weave: ClothPattern };
+  rug: {
+    shape: RugShape;
+    weave: ClothPattern;
+    /** The band round the field (default `band`). */
+    border?: RugBorder;
+    /** The style's motif on the field: once in the middle or in a row (default none). */
+    motifs?: 'none' | 'centre' | 'row';
+  };
   picture: PictureKind;
   /** What stands on the wall shelf, left to right. */
   shelf: readonly ShelfItem[];
+  /** The silhouette variant of each form (`variants.ts`); a form left out is drawn plain. */
+  shapes?: FormShapes;
   /** Named parts drawn the set's own way, by form. */
   parts?: Partial<Record<FormId, Readonly<Record<string, PartDraw>>>>;
 }

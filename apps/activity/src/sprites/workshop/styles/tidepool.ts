@@ -43,4 +43,10 @@ export const TIDEPOOL: Style = {
   rug: { shape: 'rounded', weave: 'waves' },
   picture: 'sea',
   shelf: ['shell', 'jar', 'crystal'],
+  shapes: {
+    bed: { head: 'shell', foot: 'board' },
+    cupboard: { doors: 'glass' },
+    stool: { kind: 'pouf' },
+    curtains: { kind: 'straight' },
+  },
 };

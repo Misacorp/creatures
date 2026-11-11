@@ -8,6 +8,7 @@
  * front. Every part is deterministic.
  */
 import { type Canvas, CLEAR, canvas, get, put } from './canvas';
+import { type Shape, inEllipse, inRect, solid, union } from './solid';
 import {
   INK,
   type Ramp,
@@ -540,7 +541,36 @@ export function windowPane(
 // Things on a shelf
 
 export type ShelfItem =
-  'books' | 'jar' | 'plant' | 'shell' | 'candle' | 'bottle' | 'bowl' | 'crystal';
+  | 'books'
+  | 'jar'
+  | 'plant'
+  | 'shell'
+  | 'candle'
+  | 'bottle'
+  | 'bowl'
+  | 'crystal'
+  | 'trophy'
+  | 'toy'
+  | 'tools'
+  | 'scroll'
+  | 'vase';
+
+/** Every shelf thing, for the tests and the sheets. */
+export const SHELF_ITEMS: readonly ShelfItem[] = [
+  'books',
+  'jar',
+  'plant',
+  'shell',
+  'candle',
+  'bottle',
+  'bowl',
+  'crystal',
+  'trophy',
+  'toy',
+  'tools',
+  'scroll',
+  'vase',
+];
 
 /**
  * Draws a small stencil: `k` ink, `0` to `3` the first ramp's hi, light, mid and dark, `4` to `6` the second ramp's
@@ -666,6 +696,41 @@ const SHELF_THINGS: Readonly<
     ],
     ramps: (m) => [m.accent, m.wood],
   },
+  trophy: {
+    // a cup on a stem, on a wooden foot
+    rows: ['kkkkkkk', 'k01223k', '.k123k.', '..k2k..', '..k3k..', '.kk2kk.', '.k456k.', '.kkkkk.'],
+    ramps: (m) => [m.metal, m.wood],
+  },
+  toy: {
+    // a striped ball
+    rows: ['.kkkk.', 'k0112k', 'k4455k', 'k1223k', '.kkkk.'],
+    ramps: (m) => [m.linen, m.accent],
+  },
+  tools: {
+    // a hammer standing on its head's shadow
+    rows: ['kkkkkk', 'k0122k', 'kkk3kk', '..k5k.', '..k5k.', '..k5k.', '..k6k.', '..kkk.'],
+    ramps: (m) => [m.metal, m.wood],
+  },
+  scroll: {
+    // a rolled paper lying down, tied with a ribbon
+    rows: ['.kkkkkkk.', 'k0114112k', 'k2225223k', '.kkkkkkk.'],
+    ramps: (m) => [m.linen, m.accent],
+  },
+  vase: {
+    // a tall-necked vase with a band
+    rows: [
+      '.kkkkkk.',
+      '..k12k..',
+      '..k12k..',
+      '.k0122k.',
+      'k012223k',
+      'k455556k',
+      'k122223k',
+      '.k1223k.',
+      '..kkkk..',
+    ],
+    ramps: (m) => [m.cloth, m.accent],
+  },
 };
 
 /** How wide a shelf thing is. */
@@ -690,7 +755,149 @@ export function shelfItem(
 // ---------------------------------------------------------------------------------------------------------------
 // Lamps and light
 
-export type ShadeKind = 'dome' | 'cone' | 'lantern' | 'bell' | 'cage';
+export type ShadeKind =
+  'dome' | 'cone' | 'lantern' | 'bell' | 'cage' | 'globe' | 'paper' | 'chandelier' | 'bowl';
+
+/** Every lamp kind, for the tests and the sheets. */
+export const SHADE_KINDS: readonly ShadeKind[] = [
+  'dome',
+  'cone',
+  'lantern',
+  'bell',
+  'cage',
+  'globe',
+  'paper',
+  'chandelier',
+  'bowl',
+];
+
+/** The lamps that are not a shade over a bulb: they draw their own light and return their bottom row. */
+function ownLight(
+  c: Canvas,
+  cx: number,
+  w: number,
+  kind: 'globe' | 'paper' | 'chandelier' | 'bowl',
+  shade: Ramp,
+  metal: Ramp,
+  light: Ramp,
+  y: number,
+): number {
+  const mx = Math.round(cx);
+  const bright = light.hi ?? light.light;
+  if (kind === 'globe') {
+    // a cap, then a ball of glass that is the light itself
+    box(c, mx - 2, y, 4, 2, metal, { shade: 'rows' });
+    const d = Math.min(10, w - 4);
+    solid(
+      c,
+      { x: mx - Math.floor(d / 2), y: y + 1, w: d, h: d },
+      inEllipse(mx - Math.floor(d / 2), y + 1, d, d),
+      light,
+      {
+        shade: 'tl',
+      },
+    );
+    put(c, mx - 2, y + 3, bright);
+    put(c, mx - 3, y + 4, bright);
+    return y + d;
+  }
+  if (kind === 'paper') {
+    // a round paper lantern: a cap, a ribbed body, a cap and a tassel
+    const bw = Math.min(14, w - 2);
+    box(c, mx - 3, y, 6, 2, metal, { shade: 'rows' });
+    const top = y + 1;
+    solid(
+      c,
+      { x: mx - Math.floor(bw / 2), y: top, w: bw, h: 9 },
+      inEllipse(mx - Math.floor(bw / 2), top, bw, 9),
+      shade,
+      {
+        shade: 'cols',
+      },
+    );
+    for (let r = top + 2; r < top + 8; r += 2) {
+      for (let x = mx - Math.floor(bw / 2) + 1; x < mx + Math.floor(bw / 2) - 1; x++) {
+        if (get(c, x, r) !== INK && get(c, x, r) !== CLEAR) put(c, x, r, shade.dark);
+      }
+    }
+    // the light inside shows through the middle
+    for (let r = top + 3; r < top + 6; r++) {
+      put(c, mx - 1, r, light.light);
+      put(c, mx, r, r === top + 3 ? bright : light.light);
+    }
+    box(c, mx - 3, top + 8, 6, 2, metal, { shade: 'rows' });
+    put(c, mx - 1, top + 10, light.mid);
+    put(c, mx, top + 10, light.mid);
+    put(c, mx - 1, top + 11, light.dark);
+    put(c, mx, top + 11, light.dark);
+    return top + 11;
+  }
+  if (kind === 'bowl') {
+    // two ink chains to a hanging dish with the flame in it
+    for (let r = 0; r < 4; r++) {
+      put(c, mx - 1 - r * 2, y + r, INK);
+      put(c, mx + r * 2, y + r, INK);
+      put(c, mx - 2 - r * 2, y + r, INK);
+      put(c, mx + 1 + r * 2, y + r, INK);
+    }
+    const bw = Math.min(16, w);
+    const top = y + 4;
+    // the flame over the rim, in its ink
+    put(c, mx - 1, top - 1, bright);
+    put(c, mx, top - 1, light.light);
+    put(c, mx - 1, top - 2, light.light);
+    for (const [ix, iy] of [
+      [mx - 2, top - 1],
+      [mx + 1, top - 1],
+      [mx - 2, top - 2],
+      [mx, top - 2],
+      [mx - 1, top - 3],
+    ] as const)
+      if (get(c, ix, iy) === CLEAR) put(c, ix, iy, INK);
+    const dish = inEllipse(mx - Math.floor(bw / 2), top - 4, bw, 10);
+    solid(
+      c,
+      { x: mx - Math.floor(bw / 2), y: top, w: bw, h: 5 },
+      (x, yy) => dish(x, yy) && yy >= top,
+      shade,
+      { shade: 'rows' },
+    );
+    hline(c, mx - Math.floor(bw / 2) + 1, top + 1, bw - 2, light.mid);
+    return top + 4;
+  }
+  // chandelier: a chain to a hub, a curved arm and three candles with flames
+  const arm = y + 7;
+  box(c, mx - 2, y, 4, 3, metal, { shade: 'tl' });
+  vline(c, mx - 1, y + 3, 4, metal.dark);
+  vline(c, mx, y + 3, 4, metal.light);
+  put(c, mx - 2, y + 3, INK);
+  put(c, mx + 1, y + 3, INK);
+  const span = Math.min(18, w + 2);
+  const left = mx - Math.floor(span / 2);
+  hline(c, left + 1, arm, span - 2, INK);
+  hline(c, left + 1, arm + 1, span - 2, metal.light);
+  hline(c, left + 2, arm + 2, span - 4, INK);
+  put(c, left, arm + 1, INK);
+  put(c, left + span - 1, arm + 1, INK);
+  for (const x of [left + 1, mx - 1, left + span - 3]) {
+    // a candle of the shade ramp, two wide, with its flame
+    const top = x === mx - 1 ? arm - 5 : arm - 3;
+    box(c, x - 1, top, 4, arm - top + 1, shade, { shade: 'cols' });
+    put(c, x, top - 1, bright);
+    put(c, x + 1, top - 1, light.mid);
+    put(c, x, top - 2, light.light);
+    // the flame's ink edge
+    for (const [ix, iy] of [
+      [x - 1, top - 1],
+      [x + 2, top - 1],
+      [x - 1, top - 2],
+      [x + 1, top - 2],
+      [x, top - 3],
+    ] as const)
+      if (get(c, ix, iy) === CLEAR) put(c, ix, iy, INK);
+  }
+  return arm + 2;
+}
 
 /**
  * A ceiling lamp's shade hanging from a cord or chain that starts at the top row: centred on `cx` (the middle
@@ -712,6 +919,9 @@ export function lamp(
     put(c, Math.floor(cx) - 1, y, y % 2 === 0 ? metal.light : metal.dark);
     put(c, Math.floor(cx), y, y % 2 === 0 ? metal.dark : metal.light);
     put(c, Math.floor(cx) + 1, y, INK);
+  }
+  if (kind === 'globe' || kind === 'paper' || kind === 'chandelier' || kind === 'bowl') {
+    return ownLight(c, cx, w, kind, shade, metal, light, drop);
   }
   let y = drop;
   if (kind === 'dome' || kind === 'bell') {
@@ -773,7 +983,7 @@ export function lamp(
   return y;
 }
 
-export type GlowKind = 'ring' | 'dither';
+export type GlowKind = 'ring' | 'dither' | 'stipple';
 
 /** The two-ring halo of the first lamps (20x10): `o` the outer ring, `i` the inner one. */
 const RING_HALO: readonly string[] = [
@@ -810,6 +1020,17 @@ export function glow(w: number, h: number, kind: GlowKind, inner: string, outer:
     return c;
   }
   const c = canvas(w, h);
+  if (kind === 'stipple') {
+    // two dotted rings a pixel apart, the outer one of the outer key (the candle-lit halo of the hand-drawn lamps)
+    const outerRing = ellipsePixels(0, 1, w, h - 1, 'ring', true);
+    const innerRing = ellipsePixels(2, 2, w - 4, h - 3, 'ring');
+    for (const p of outerRing) if ((p.x + p.y) % 2 === 0) put(c, p.x, p.y, outer);
+    for (const p of innerRing)
+      if ((p.x + p.y) % 2 === 1 && get(c, p.x, p.y) === CLEAR) put(c, p.x, p.y, inner);
+    // the top under the lamp stays clear
+    for (let y = 0; y < 2; y++) for (let x = 6; x < w - 6; x++) put(c, x, y, CLEAR);
+    return c;
+  }
   const rings = [
     { inset: 0, key: outer },
     { inset: 2, key: inner },
@@ -831,7 +1052,151 @@ export function glow(w: number, h: number, kind: GlowKind, inner: string, outer:
 // ---------------------------------------------------------------------------------------------------------------
 // Rugs, motifs and pictures
 
-export type RugShape = 'rounded' | 'oval' | 'square' | 'fringe';
+export type RugShape =
+  'rounded' | 'oval' | 'square' | 'fringe' | 'pointed' | 'capsule' | 'runner' | 'scalloped';
+
+/** Every rug shape, for the tests and the sheets. */
+export const RUG_SHAPES: readonly RugShape[] = [
+  'rounded',
+  'oval',
+  'square',
+  'fringe',
+  'pointed',
+  'capsule',
+  'runner',
+  'scalloped',
+];
+
+/** The band round a rug's field: the plain band, a stripe of the accent in it, dots of the accent, or none. */
+export type RugBorder = 'band' | 'stripe' | 'dots' | 'none';
+
+export interface RugOptions {
+  border?: RugBorder;
+  /** The set's motif on the field: once in the middle, or in a row along it. */
+  motif?: MotifKind;
+  motifs?: 'none' | 'centre' | 'row';
+}
+
+/** The outline of the newer rug shapes, in a box. */
+function rugOutline(shape: RugShape, x: number, y: number, w: number, h: number): Shape {
+  const cy = y + (h - 1) / 2;
+  switch (shape) {
+    case 'pointed':
+      // a long hexagon: the short ends come to a point
+      return (px, py) => {
+        const i = Math.min(px - x, x + w - 1 - px);
+        return px >= x && px < x + w && py >= y && py < y + h && Math.abs(py - cy) <= i + 0.5;
+      };
+    case 'capsule':
+      return union(
+        inRect(x + Math.floor(h / 2), y, w - 2 * Math.floor(h / 2), h),
+        inEllipse(x, y, h + 2, h),
+        inEllipse(x + w - h - 2, y, h + 2, h),
+      );
+    case 'runner':
+      return inRect(x + 2, y + 2, w - 4, h - 2);
+    case 'scalloped':
+      // round bumps along the long edges, every six pixels
+      return (px, py) => {
+        if (px < x || px >= x + w || py < y || py >= y + h) return false;
+        const p = (px - x) % 6;
+        const bump = p >= 1 && p <= 4;
+        if (py === y || py === y + h - 1) return bump && px > x && px < x + w - 1;
+        return px > x || (py > y + 1 && py < y + h - 2);
+      };
+    default:
+      return inRect(x, y, w, h);
+  }
+}
+
+/** The newer rug shapes: the outline in ink, a border band, a dark line inside it, the field and its motifs. */
+function shapedRug(
+  c: Canvas,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  shape: RugShape,
+  border: Ramp,
+  field: Ramp,
+  accent: Ramp,
+  kind: ClothPattern,
+  options: RugOptions,
+): void {
+  const outer = rugOutline(shape, x, y, w, h);
+  const area = { x, y, w, h };
+  solid(c, area, outer, border, { shade: 'rows' });
+  // the field: the outline shrunk by the band (three columns at the ends, two rows on the long sides)
+  const band = options.border === 'none' ? 1 : 2;
+  const fieldShape: Shape = (px, py) => {
+    for (let dy = -band; dy <= band; dy++) {
+      for (let dx = -(band + 1); dx <= band + 1; dx++) if (!outer(px + dx, py + dy)) return false;
+    }
+    return true;
+  };
+  const tmp = canvas(c.w, c.h);
+  pattern(tmp, x, y, w, h, kind, field, accent);
+  for (let py = y; py < y + h; py++) {
+    for (let px = x; px < x + w; px++) {
+      if (!fieldShape(px, py)) continue;
+      const edge =
+        !fieldShape(px - 1, py) ||
+        !fieldShape(px + 1, py) ||
+        !fieldShape(px, py - 1) ||
+        !fieldShape(px, py + 1);
+      put(c, px, py, edge ? border.dark : get(tmp, px, py));
+    }
+  }
+  if (options.border === 'stripe' || options.border === 'dots') {
+    // along the band's middle row, above and below the field
+    for (const py of [y + 1, y + h - 2]) {
+      for (let px = x; px < x + w; px++) {
+        if (!outer(px, py) || fieldShape(px, py)) continue;
+        const k = get(c, px, py);
+        if (k === INK || k === CLEAR) continue;
+        if (options.border === 'stripe' || (px - x) % 3 === 1) put(c, px, py, accent.light);
+      }
+    }
+  }
+  if (shape === 'runner') {
+    for (let r = y + 3; r < y + h - 1; r += 2) {
+      put(c, x, r, accent.light);
+      put(c, x + 1, r, accent.dark);
+      put(c, x + w - 1, r, accent.light);
+      put(c, x + w - 2, r, accent.dark);
+    }
+  }
+  rugMotifs(c, x, y, w, h, accent, options, fieldShape);
+}
+
+/** The set's motif on a rug's field: once in the middle, or every dozen pixels along it. */
+function rugMotifs(
+  c: Canvas,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  accent: Ramp,
+  options: RugOptions,
+  field: Shape,
+): void {
+  const kind = options.motif ?? 'none';
+  const where = options.motifs ?? 'none';
+  if (kind === 'none' || where === 'none') return;
+  const s = motifSize(kind);
+  const my = y + Math.floor((h - s.h) / 2);
+  const xs =
+    where === 'centre'
+      ? [x + Math.floor((w - s.w) / 2)]
+      : Array.from({ length: 5 }, (_, i) => x + Math.floor(((i + 1) * w) / 6 - s.w / 2));
+  for (const mx of xs) {
+    // only where the whole motif lies on the field
+    let fits = true;
+    for (let dy = 0; dy < s.h && fits; dy++)
+      for (let dx = 0; dx < s.w && fits; dx++) if (!field(mx + dx, my + dy)) fits = false;
+    if (fits) motif(c, mx, my, kind, accent);
+  }
+}
 
 /**
  * A rug lying on the floor line: the shape's ink edge, a border band of `border`, a dark inner line and a field in a
@@ -848,7 +1213,18 @@ export function rug(
   field: Ramp,
   accent: Ramp,
   kind: ClothPattern,
+  options: RugOptions = {},
 ): void {
+  if (
+    shape === 'pointed' ||
+    shape === 'capsule' ||
+    shape === 'runner' ||
+    shape === 'scalloped' ||
+    (options.border !== undefined && options.border !== 'band')
+  ) {
+    shapedRug(c, x, y, w, h, shape, border, field, accent, kind, options);
+    return;
+  }
   const fx = shape === 'fringe' ? x + 2 : x;
   const fw = shape === 'fringe' ? w - 4 : w;
   if (shape === 'oval') {
@@ -858,6 +1234,7 @@ export function rug(
     for (const p of ellipsePixels(fx + 3, y + 2, fw - 6, h - 4, 'ring'))
       put(c, p.x, p.y, border.dark);
     for (const p of ellipsePixels(fx, y, fw, h, 'ring', true)) put(c, p.x, p.y, INK);
+    rugMotifs(c, fx, y, fw, h, accent, options, inRect(fx + 6, y + 3, fw - 12, h - 6));
     return;
   }
   box(c, fx, y, fw, h, border, { round: shape === 'rounded' ? 2 : 0, shade: 'rows' });
@@ -871,6 +1248,7 @@ export function rug(
       put(c, x + w - 2, y + r, accent.dark);
     }
   }
+  rugMotifs(c, fx, y, fw, h, accent, options, inRect(fx + 4, y + 3, fw - 8, h - 6));
 }
 
 export type MotifKind =
@@ -884,7 +1262,12 @@ export type MotifKind =
   | 'spiral'
   | 'tassel'
   | 'knot'
-  | 'star';
+  | 'star'
+  | 'heart'
+  | 'flower'
+  | 'diamond'
+  | 'fleur'
+  | 'drop';
 
 /** The tiny ornaments, as rows: `a` the accent's light, `b` its mid, `c` its dark, `k` ink. */
 const MOTIFS: Readonly<Record<Exclude<MotifKind, 'none'>, readonly string[]>> = {
@@ -898,6 +1281,11 @@ const MOTIFS: Readonly<Record<Exclude<MotifKind, 'none'>, readonly string[]>> = 
   tassel: ['.k.', '.a.', 'kbk', 'bcb'],
   knot: ['ab', 'ba'],
   star: ['.a.', 'aba', '.a.'],
+  heart: ['aa.ab', 'abbbc', '.bbc.', '..c..'],
+  flower: ['.a.a.', 'aacaa', '.a.a.'],
+  diamond: ['..a..', '.aab.', 'aabbc', '.bbc.', '..c..'],
+  fleur: ['..a..', 'a.a.a', 'abbbc', '..b..', '.bcb.'],
+  drop: ['.a.', 'aab', 'abc', '.c.'],
 };
 
 /** The size of a motif. */

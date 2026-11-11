@@ -6,6 +6,7 @@ import { canvas, put, toSprite } from '../../draw/canvas';
 import { shelfItem, shelfItemWidth } from '../../draw/parts';
 import { INK, box, hline } from '../../draw/shapes';
 import { type FormDef, part } from './kit';
+import { shapedShelf } from './table-shapes';
 
 const W = 40;
 const H = 20;
@@ -16,6 +17,8 @@ export const SHELF: FormDef = {
   parts: ['brackets', 'board', 'things'],
   note: 'Board rows 11-14, brackets x3-7 and x32-36 under it, things on the board from x2.',
   draw(style) {
+    const shape = style.shapes?.shelf;
+    if (shape !== undefined && Object.keys(shape).length > 0) return shapedShelf(style, shape);
     const c = canvas(W, H);
     part(c, style, 'shelf', 'brackets', { x: 3, y: 15, w: W - 6, h: 5 }, ({ c, style, at }) => {
       for (const bx of [at.x, at.x + at.w - 5]) {

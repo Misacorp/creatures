@@ -30,10 +30,15 @@ export const ANCIENT: Style = {
   top: 'stepped',
   motif: 'spiral',
   weave: 'diamonds',
-  lamp: 'cone',
+  lamp: 'bowl',
   lampMaterial: 'wood',
-  glow: { kind: 'dither', inner: 'e', outer: 'a' },
+  glow: { kind: 'stipple', inner: 'e', outer: 'a' },
   rug: { shape: 'square', weave: 'diamonds' },
   picture: 'sun',
   shelf: ['bowl', 'crystal', 'jar'],
+  shapes: {
+    table: { kind: 'slab', skirt: 'none' },
+    stool: { kind: 'spool' },
+    curtains: { kind: 'bare', valance: 'none' },
+  },
 };

@@ -1,6 +1,7 @@
 /**
  * Plain Pine: the workshop's demo style (not content, nothing in the game imports it). Pale pine with straight
- * legs, sage cloth and a red gingham accent: a set made from a style alone, with no hand overrides, to show what the
+ * legs, sage cloth and a red gingham accent, farmhouse outlines (a ladder-back bed, a trestle table, a milking stool):
+ * a set made from a style alone, with no hand overrides, to show what the
  * forms draw. Render it with `pnpm housing sheet plain-pine`.
  */
 import type { Style } from '../style';
@@ -50,4 +51,11 @@ export const PLAIN_PINE: Style = {
   rug: { shape: 'rounded', weave: 'stripes' },
   picture: 'hills',
   shelf: ['books', 'plant', 'jar', 'candle'],
+  shapes: {
+    bed: { head: 'ladder', blanket: 'quilt' },
+    cupboard: { top: 'cornice' },
+    table: { kind: 'trestle', skirt: 'none' },
+    shelf: { bracket: 'block' },
+    stool: { kind: 'three-leg' },
+  },
 };
