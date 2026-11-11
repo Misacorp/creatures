@@ -1,6 +1,7 @@
 // The workshop's review sheets (docs/design/housing-workshop.md, "The room sheet" and "Variants"):
 //
 //   pnpm housing sheet <style> --room [--out dir]   the set in a room at 1x and phone scale, the catalogue tiles, the report
+//        [--night]                                   adds the rooms at night, lit by their lamps (house-light.ts)
 //   pnpm housing variants <style> [--out dir]       every silhouette variant of every form, drawn in the style
 //
 // Loaded by housing.mts (which registers the `.ts` resolver first); the pure work is in src/sprites/workshop/.
@@ -20,6 +21,7 @@ const { SHIPPED_SETS, SAMPLE_STYLES } = await import('../src/sprites/workshop/se
 const { VARIANTS } = await import('../src/sprites/workshop/variants.ts');
 const { SHADE_KINDS, RUG_SHAPES } = await import('../src/sprites/draw/parts.ts');
 const room = await import('../src/sprites/workshop/room.ts');
+const light = await import('../src/housing/house-light.ts');
 const report = await import('../src/sprites/workshop/report.ts');
 const { SPECIES_SPRITE_DATA } = await import('../src/sprites/data/species-sprites.ts');
 const COSY_ART = (await import('../src/sprites/data/house/cosy.ts')).HOUSE_ART;
@@ -193,6 +195,65 @@ function paint(img: Image, model: SetRoom, x: number, y: number, s: number): voi
     img.sprite(p.sprite, rowsOf(p.sprite), x + p.x * s, y + p.y * s, s);
 }
 
+const rgbOf = (c: string): [number, number, number] => {
+  const n = Number.parseInt(c.slice(1), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+};
+const hexOf = (c: readonly number[]): string =>
+  `#${c.map((v) => Math.round(v).toString(16).padStart(2, '0')).join('')}`;
+
+/**
+ * The rooms at night as the house paints them (`house-light.ts`): every pixel through its material's ramp, the lamps'
+ * stepped light on top. The material of a placement is told by what it is (the paper, the floor, a housemate, the
+ * lamp, the window); the scene does the same from its spots. Stars in the window's night sky are not drawn.
+ */
+function paintNight(
+  img: Image,
+  model: SetRoom,
+  set: SetArt,
+  creature: SpriteDef,
+  x: number,
+  y: number,
+  s: number,
+): void {
+  const g = room.ROOM_GEOMETRY;
+  const roomW = g.cellW;
+  const lights = model.pieces
+    .filter((p) => p.form === 'lamp')
+    .map((p) => ({
+      kind: 'lamp' as const,
+      x: p.x + Math.floor(p.w / 2),
+      y: p.y + Math.floor(p.h * 0.8),
+      clip: { x: g.wallT / 2 + p.room * roomW, y: 0, w: roomW, h: g.wallH + g.floorH },
+    }));
+  const levels = light.levelMap(lights, model.width, model.height);
+  const materialOf = (def: SpriteDef): Parameters<typeof light.shade>[1] => {
+    if (def.palette === set.wall.palette) return 'wall';
+    if (def.palette === set.floor.palette) return 'floor';
+    if (def === creature) return 'creature';
+    if (def === set.pieces.lamp.sprite) return 'light';
+    if (def === set.pieces.curtains.sprite) return 'window';
+    return 'auto';
+  };
+  for (const p of model.placements) {
+    const mat = materialOf(p.sprite);
+    for (const [r, row] of rowsOf(p.sprite).entries()) {
+      for (const [i, key] of [...row].entries()) {
+        const colour = p.sprite.palette[key];
+        if (key === '.' || colour === undefined) continue;
+        const px = p.x + i;
+        const py = p.y + r;
+        if (px < 0 || py < 0 || px >= model.width || py >= model.height) continue;
+        const c = rgbOf(colour);
+        const sky = mat === 'window' ? light.windowPixel(c, 'night') : null;
+        const level = (levels[py * model.width + px] ?? 0) as 0 | 1 | 2 | 3;
+        const out = sky?.colour ?? light.shade(c, mat, 'night', level);
+        img.rect(x + px * s, y + py * s, s, s, hexOf(out));
+      }
+    }
+  }
+}
+
 async function roomSheet(args: readonly string[]): Promise<void> {
   const id = args[1] ?? '';
   const set = setArt(id);
@@ -271,8 +332,17 @@ async function roomSheet(args: readonly string[]): Promise<void> {
   );
 
   // the sheet: 1x, phone scale, catalogue tiles (red label: flagged)
+  const night = args.includes('--night');
   const W = Math.max(model.width * phone + 32, 760);
-  const H = 40 + model.height + 24 + model.height * phone + 26 + 60 + 16;
+  const H =
+    40 +
+    model.height +
+    24 +
+    model.height * phone +
+    26 +
+    60 +
+    16 +
+    (night ? model.height * phone + 26 : 0);
   const img = new Image(W, H, glyph);
   img.text(`${set.style.name} in a room`, 16, 10, 3);
   let y = 40;
@@ -283,6 +353,12 @@ async function roomSheet(args: readonly string[]): Promise<void> {
   y += 12;
   paint(img, model, 16, y, phone);
   y += model.height * phone + 14;
+  if (night) {
+    img.text(`night ${String(phone)}x, lit by the lamps`, 16, y, 1, MUTED);
+    y += 12;
+    paintNight(img, model, set, creature, 16, y, phone);
+    y += model.height * phone + 14;
+  }
   img.text('catalogue tiles', 16, y, 1, MUTED);
   y += 12;
   for (const [i, form] of SET_FORMS.entries()) {
