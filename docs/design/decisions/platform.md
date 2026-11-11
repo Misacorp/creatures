@@ -12,6 +12,14 @@ ID: `2026-11-11-furniture-workshop-silhouette-variants-per-form` · Status: curr
 
 **Reasoning.** The first pass showed a style alone draws a coherent but plain set, because identity lives in the outline; variants put the outline in the style without hand pixels, and three demo styles (Plain Pine, Blackthorn, Sugarplum) come out as three different sets. The room repeats the house scene's geometry instead of importing it, because the scene loads the art packs through Vite's glob and the workshop runs under plain Node; a test keeps the two equal. The thresholds were calibrated on the shipped sets so the report lists little there (one close pair, the tone-on-tone sets); they are prompts to look, not gates. Shipped pieces stay hand because the variants now match their outlines but not their details (crescent doors, leaf curls, the anvil shelf, the hand halos), and the rule is that a shipped set never gets worse.
 
+## 2026-11-11: Housing content is validated on first use in the worker, not at isolate start
+
+ID: `2026-11-11-housing-content-is-validated-on-first` · Status: current
+
+**Decision.** The worker takes the housing content through `shippedHousing()` (`@creatures/game/housing-lazy`), which validates on its first call and memoises the result per isolate, and `Housing` builds its content lookups on first use. The client keeps the eager `@creatures/game/housing-content` entry.
+
+**Reasoning.** Measured in Node (20 runs): parsing and validating the content takes about 4 to 6 ms median and 10 to 12 ms cold, with no database rows involved. It used to run when the worker module was evaluated, in every isolate, with housing off too. A module-level memo of static content holds no state that must last between requests, so it fits the object's sleep model. Workers CPU is only roughly comparable to Node. Numbers and the test: `docs/design/housing.md`, "Server cost of the content".
+
 ## 2026-11-11: Furniture workshop: sets are styles drawn at load, shipped pixels kept as reasoned overrides and locked
 
 ID: `2026-11-11-furniture-workshop-sets-are-styles-drawn` · Status: current

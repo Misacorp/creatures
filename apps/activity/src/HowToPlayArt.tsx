@@ -649,6 +649,22 @@ function V2RankArt() {
   );
 }
 
+/** The house section's picture: the Home glyph and the words of the house as chips that open their help. */
+function HousingArt() {
+  return (
+    <div class="workshop-art">
+      <p class="tags art-tags">
+        <Sprite sprite={glyphOrUnknown('home')} scale={2} />
+        {['house-part', 'luxury-material', 'furniture-set', 'housemate', 'guestbook'].map((id) => (
+          <Tag key={id} entry={id}>
+            {titleOf(id)}
+          </Tag>
+        ))}
+      </p>
+    </div>
+  );
+}
+
 /** The picture of one section. */
 export function SectionArt({ id }: { id: GlossarySection }) {
   switch (id) {
@@ -688,5 +704,7 @@ export function SectionArt({ id }: { id: GlossarySection }) {
       return <WorkshopArt />;
     case 'games':
       return <GamesArt />;
+    case 'housing':
+      return <HousingArt />;
   }
 }

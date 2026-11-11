@@ -16,7 +16,7 @@ import {
   type HousingMoment,
   type Rng,
 } from '@creatures/game';
-import { housing as shippedHousing } from '@creatures/game/housing-content';
+import { shippedHousing } from '@creatures/game/housing-lazy';
 import {
   addItem,
   addTrophy,
@@ -59,7 +59,7 @@ export class HousingDrops implements HousingHook {
       const sql = storage.sql;
       if (dropSeen(sql, userId, moment.key)) return;
       const now = this.deps.now();
-      const content = this.deps.content ?? shippedHousing;
+      const content = this.deps.content ?? shippedHousing();
       // The chances are rolled first; what the player holds is read only when a blueprint or a stamp roll hits.
       const drop: HouseDrop = rollHouseDropsLazy(this.deps.rng, content, moment, () => ({
         blueprints: new Set(listItemsOf(sql, userId, 'blueprint').map((r) => r.item_id)),

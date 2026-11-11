@@ -239,6 +239,20 @@ export const FIXED_GLOSSARY_IDS = [
   'boon',
   'omen',
   'forecast',
+  // Housing (behind the `housing` flag, like the rest of it): its words and the words of its buttons.
+  'house',
+  'house-part',
+  'luxury-material',
+  'furniture-blueprint',
+  'furniture-set',
+  'housemate',
+  'stamp',
+  'guestbook',
+  'mailbox',
+  'workbench',
+  'furniture-catalogue',
+  'gift',
+  'house-skin',
 ] as const;
 
 /** What a popover shows. An entry is one; an ability is built from its content (`abilityView`). */

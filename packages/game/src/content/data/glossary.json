@@ -2456,7 +2456,7 @@
       "Furnish it, add rooms and wings, and invite the valley to look around.",
       "It never makes anything stronger. It is only for you, and for fun."
     ],
-    "section": "workshop"
+    "section": "housing"
   },
   {
     "id": "house-part",
@@ -2466,7 +2466,7 @@
       "Pay into it whenever you like, a little at a time. There is no deadline.",
       "It is built the moment the last piece is paid."
     ],
-    "section": "workshop"
+    "section": "housing"
   },
   {
     "id": "luxury-material",
@@ -2476,7 +2476,7 @@
       "Trips, scouts, the dungeon, raids and the Games bring them home.",
       "They are used for building and furniture, and for nothing else."
     ],
-    "section": "workshop"
+    "section": "housing"
   },
   {
     "id": "furniture-blueprint",
@@ -2486,7 +2486,7 @@
       "Blueprints are found on trips, in fights and as feats. Learn each one once.",
       "Make the piece at the workbench from its materials, Bait and scrap."
     ],
-    "section": "workshop"
+    "section": "housing"
   },
   {
     "id": "furniture-set",
@@ -2496,7 +2496,7 @@
       "Each set belongs to a place and its element.",
       "Finish a set and its keepsake goes into the trophy hall."
     ],
-    "section": "workshop"
+    "section": "housing"
   },
   {
     "id": "housemate",
@@ -2506,7 +2506,7 @@
       "It is drawn asleep when it is home, and the bed is just made when it is away.",
       "It is a picture, not a post. It earns nothing different from resting."
     ],
-    "section": "workshop"
+    "section": "housing"
   },
   {
     "id": "stamp",
@@ -2516,14 +2516,14 @@
       "You hold one from the start. Feats and rare finds bring the rest.",
       "Visitors can only leave stamps they own."
     ],
-    "section": "workshop"
+    "section": "housing"
   },
   {
     "id": "guestbook",
     "title": "Guestbook",
     "short": "The latest stamps left at your house, and by whom.",
     "lines": ["Stamps only, never words. Old ones make room for new ones."],
-    "section": "workshop"
+    "section": "housing"
   },
   {
     "id": "mailbox",
@@ -2533,6 +2533,46 @@
       "Visitors can leave a small gift. It waits here until you collect it.",
       "It never goes stale."
     ],
-    "section": "workshop"
+    "section": "housing"
+  },
+  {
+    "id": "workbench",
+    "title": "Workbench",
+    "short": "Where furniture is made, by the hearth.",
+    "lines": [
+      "Pick a blueprint you know and pay its materials, Bait and scrap.",
+      "Each piece is made once; the finished piece waits in your bag."
+    ],
+    "section": "housing"
+  },
+  {
+    "id": "furniture-catalogue",
+    "title": "Catalogue",
+    "short": "Every piece, set and skin the valley has, found or not.",
+    "lines": [
+      "Pieces you have not found yet show as shapes.",
+      "Open a set to see which of its nine you have."
+    ],
+    "section": "housing"
+  },
+  {
+    "id": "gift",
+    "title": "Gift",
+    "short": "One small present for a friend, once a day.",
+    "lines": [
+      "Visit a house and leave a gift. It waits in the owner's mailbox.",
+      "Gifting is free and gives you no advantage."
+    ],
+    "section": "housing"
+  },
+  {
+    "id": "house-skin",
+    "title": "Skin",
+    "short": "A wallpaper, floor, roof or wall style.",
+    "lines": [
+      "Skins change how a room or the outside looks, and nothing else.",
+      "Each set brings its own wallpaper and floor."
+    ],
+    "section": "housing"
   }
 ]

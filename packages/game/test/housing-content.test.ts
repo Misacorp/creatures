@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -278,5 +278,36 @@ describe('housing content: room skins (art pass 2)', () => {
         expect(skin?.unlock, id).toEqual({ kind: 'part', part: part?.id });
       }
     }
+  });
+});
+
+/** Every string in a parsed JSON value, with the path it sits at. */
+function strings(value: unknown, path: string): [string, string][] {
+  if (typeof value === 'string') return [[path, value]];
+  if (Array.isArray(value)) return value.flatMap((v, i) => strings(v, `${path}[${String(i)}]`));
+  if (typeof value === 'object' && value !== null)
+    return Object.entries(value).flatMap(([k, v]) => strings(v, `${path}.${k}`));
+  return [];
+}
+
+describe('no draft text ships', () => {
+  const dir = resolve(dirname(fileURLToPath(import.meta.url)), '../src/content/data/housing');
+  const files = readdirSync(dir).filter((f) => f.endsWith('.json'));
+
+  it('reads the housing data files', () => {
+    expect(files.length).toBeGreaterThanOrEqual(9);
+  });
+
+  // `pnpm housing new-set` writes "TODO: ..." lines for the author to replace; an unfinished set must not pass CI.
+  it('has no TODO in any housing content string', () => {
+    for (const file of files) {
+      const parsed: unknown = JSON.parse(readFileSync(resolve(dir, file), 'utf8'));
+      const drafts = strings(parsed, file).filter(([, text]) => /\bTODO\b/.test(text));
+      expect(drafts, `${file} has draft text`).toEqual([]);
+    }
+  });
+
+  it('has no TODO in the housing compendium either', () => {
+    expect(compendium()).not.toMatch(/\bTODO\b/);
   });
 });

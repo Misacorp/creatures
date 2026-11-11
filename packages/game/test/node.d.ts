@@ -4,11 +4,17 @@ declare module 'node:fs' {
   export function readFileSync(path: string, encoding: 'utf8'): string;
   /** Paths relative to `path`, all levels down. */
   export function readdirSync(path: string, options: { recursive: true }): string[];
+  /** The names in one directory. */
+  export function readdirSync(path: string): string[];
 }
 
 declare module 'node:path' {
   export function resolve(...paths: string[]): string;
   export function dirname(path: string): string;
+}
+
+declare module 'node:perf_hooks' {
+  export const performance: { now(): number };
 }
 
 declare module 'node:url' {

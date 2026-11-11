@@ -159,6 +159,7 @@ export function App() {
           nonce={howTo.nonce}
           onClose={close}
           v2={loadedBoot?.config.combatV2 === true}
+          housing={loadedBoot?.config.housing === true}
         />
       )}
     </PopoverHost>
