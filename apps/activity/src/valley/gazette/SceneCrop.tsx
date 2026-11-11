@@ -4,7 +4,7 @@
  * keeps them a sprite's width apart; lower feet are drawn in front). The player is never in it. A creature in it
  * is a `SmallCreature`: a tap (or Enter) opens its popover, for the curious.
  */
-import { useEffect, useMemo, useRef } from 'preact/hooks';
+import { useLayoutEffect, useMemo, useRef } from 'preact/hooks';
 import { getSpecies } from '../../game';
 import { SmallCreature } from '../../SmallCreature';
 import type { CreatureInfo } from '../../creature-info';
@@ -148,7 +148,7 @@ export function SceneCrop({ scene, class: extra }: { scene: Scene; class?: strin
   const cx = Math.round(size.width / 2);
   const cy = Math.round(size.height * DOOR_AT);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
     if (!canvas || !ctx) return;

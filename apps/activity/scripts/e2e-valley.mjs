@@ -1553,6 +1553,71 @@ try {
     },
   );
 
+  // --- No flashing: a pixel scene is never seen empty, not on a re-render, not on the way in or back ---------
+  // A watcher samples every frame (before the browser paints it): a visible scene canvas or sprite canvas with no
+  // opaque pixel at all is a frame where the art is gone (a fresh or resized canvas waiting for its paint).
+  const flashWatch = {
+    start: () =>
+      page.evaluate(() => {
+        const w = window;
+        w.__flash = { frames: 0, blank: 0, last: '' };
+        w.__flashOn = true;
+        const blankOf = (c) => {
+          const r = c.getBoundingClientRect();
+          if (r.width === 0 || r.height === 0 || c.width === 0 || c.height === 0) return false;
+          const ctx = c.getContext('2d');
+          if (ctx === null) return false;
+          const data = ctx.getImageData(0, 0, c.width, c.height).data;
+          for (let i = 3; i < data.length; i += 4) if (data[i] !== 0) return false;
+          return true;
+        };
+        const tick = () => {
+          if (!w.__flashOn) return;
+          w.__flash.frames += 1;
+          for (const c of document.querySelectorAll('canvas.vy-canvas, canvas.sprite')) {
+            if (blankOf(c)) {
+              w.__flash.blank += 1;
+              w.__flash.last = `${c.className} ${String(c.width)}x${String(c.height)}`;
+            }
+          }
+          requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      }),
+    stop: () =>
+      page.evaluate(() => {
+        window.__flashOn = false;
+        return window.__flash;
+      }),
+  };
+  await step(
+    'no pixel scene flashes: not on a re-render, not on the way into a place or back to the map',
+    async () => {
+      await waitFor(page.locator(VALLEY), 'attached');
+      await flashWatch.start();
+      for (const id of ['paddock', 'school', 'forge', 'signpost']) {
+        await place(id).evaluate((el) => el.click());
+        await waitFor(hudBack());
+        await page.waitForTimeout(500);
+        await backToValley();
+        await page.waitForTimeout(400);
+      }
+      // A window resize re-renders the map under the player's eyes.
+      await page.setViewportSize({ width: width + 20, height: 800 });
+      await page.waitForTimeout(500);
+      await page.setViewportSize({ width, height: 844 });
+      await page.waitForTimeout(500);
+      const result = await flashWatch.stop();
+      console.log(
+        `     flash watch: ${String(result.blank)} blank frames in ${String(result.frames)} (${result.last})`,
+      );
+      if (result.blank > 0)
+        throw new Error(
+          `${String(result.blank)} frames showed an empty scene or sprite (${result.last})`,
+        );
+    },
+  );
+
   // --- Scenarios: the same game in other states. Each reloads the page with test-only answers ---------------
 
   /** Runs `run` on a fresh load of the valley with `change` applied to the server's answers; the answers are put back after. */

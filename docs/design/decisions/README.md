@@ -469,6 +469,7 @@ Superseded: 1 entry (see the topic file).
 
 [ui.md](ui.md): Navigation and the frame, Home and the notice board, type scale, shared components, look and feel rules that apply across screens.
 
+- 2026-11-11 Pixel canvases paint in a layout effect, never after the frame
 - 2026-11-11 The Signpost is a canvas: a click on the signpost opens the expedition map, a click on a place opens its scout wizard \[Misa\]
 - 2026-11-11 \[Misa\] A place is a canvas: the scene never scrolls, every action is a click in it, content opens in a left or right drawer holding a wizard
 - 2026-11-11 A valley frame clips instead of scrolling: the HUD's way back never slides off

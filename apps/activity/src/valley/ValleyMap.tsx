@@ -84,11 +84,12 @@ export function ValleyMap({
     [fit.margin.left, fit.margin.top, visitorHere, bonfireLevel],
   );
   const lakeFrame = moving ? Math.floor(tick / 8) % 2 : 0;
-  useEffect(() => {
+  // Layout effects: a new or resized canvas is blank until painted, and no frame may show it so.
+  useLayoutEffect(() => {
     const ctx = canvasRef.current?.getContext('2d');
     if (ctx) paint(ctx, drawing.placements, s);
   }, [drawing, s]);
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (lakeFrame === 0 && tick === 0) return;
     const ctx = canvasRef.current?.getContext('2d');
     if (!ctx) return;

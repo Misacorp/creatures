@@ -4,6 +4,14 @@ Navigation and the frame, Home and the notice board, type scale, shared componen
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-11: Pixel canvases paint in a layout effect, never after the frame
+
+ID: `2026-11-11-pixel-canvases-paint-in-a-layout` · Status: current
+
+**Decision.** Every canvas that draws pixel art (`Sprite`, the valley's `SceneFrame` and `ValleyMap`, the Gazette's `SceneCrop`) paints in `useLayoutEffect`, not `useEffect`. The valley e2e has a flash watch: every frame it looks for a visible scene or sprite canvas with no opaque pixel and fails on one.
+
+**Reasoning.** A canvas that is new (a place opening, the map coming back) or resized (its width attribute changed) is blank. Preact runs `useEffect` after the browser has painted, so one frame showed the blank canvas before the effect drew into it: the flash Misa saw on re-renders and on the way back to the map, and the blank creature pictures in the Signpost's "Who scouts here?" step (the same `CreatureList`, caught in that frame). A layout effect runs before the frame. Measured on the e2e at 390 px: 91 blank frames of 315 before, 0 after (0 of 312 at 1100 px after). No sprite cache or keep-mounted map was needed.
+
 ## 2026-11-11: The Signpost is a canvas: a click on the signpost opens the expedition map, a click on a place opens its scout wizard **[Misa]**
 
 ID: `2026-11-11-the-signpost-is-a-canvas-a` · Status: current

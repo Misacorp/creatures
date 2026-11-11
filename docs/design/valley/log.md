@@ -544,3 +544,9 @@ Misa added: nameplates sit under the creature on an ink background, level first 
 **Art:** the Art session's set `valley-forge-interior` is wired in by name (`forge-interior-art.ts`), laid out as its preview (`ROOM_AT` in `forge-interior.ts`); the room is 128 x 96 plus a front strip (to y 124) for the doormat (the game's stand-in way out) and the plans, bag and floor props, because the preview leaves no floor for them beside the anvils. Not moved into `sprites/data/`: the set is a draft and has day alts, as the valley's sky.
 
 **Pick up here:** a real door piece for the doormat; the flame overlay (`WARMING_FLAME`, `FLAME_AT` in `ForgeScenes.tsx`) flickers over the art's fire; the Signpost rebuild may reuse the outside/inside split.
+
+## 2026-11-11: no flashing pixel scenes
+
+**Done.** Misa saw the valley art flash on re-renders and on going back to the map. Cause: canvases painted in `useEffect`, which Preact runs after the browser's paint, so a new or resized canvas showed one blank frame. `Sprite`, `SceneFrame`, `ValleyMap` and the Gazette's `SceneCrop` now paint in `useLayoutEffect`. The Signpost's blank creature pictures in the "Who scouts here?" step were the same gap (screenshot taken inside it); they show now. The valley e2e got a flash watch (a frame with an empty scene or sprite canvas fails): 91 of 315 frames blank before, 0 after. Decision in `decisions/ui.md`.
+
+**Next.** Nothing open; if a flash shows again, look for a canvas painted outside a layout effect.

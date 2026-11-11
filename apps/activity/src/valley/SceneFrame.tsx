@@ -8,7 +8,7 @@
  * (phase 4, step 3) are drawn in it too. Today's pages open in place of it, not inside it.
  */
 import type { ComponentChildren } from 'preact';
-import { useEffect, useMemo, useRef } from 'preact/hooks';
+import { useEffect, useLayoutEffect, useMemo, useRef } from 'preact/hooks';
 import { cssVars } from '../css-vars';
 import { paint } from './paint';
 import { useSize } from './parts';
@@ -90,7 +90,8 @@ export function SceneFrame({
   const pxW = g.W * g.s;
   const pxH = g.H * g.s;
 
-  useEffect(() => {
+  // A layout effect: a canvas that is new or resized is blank until painted, and no frame may show it so.
+  useLayoutEffect(() => {
     const ctx = canvasRef.current?.getContext('2d');
     if (ctx) paint(ctx, placements, g.s);
   }, [placements, g.s]);
