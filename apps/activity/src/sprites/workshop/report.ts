@@ -18,7 +18,7 @@ import { expandRows, type SpriteDef } from '../sprite-data';
 const INK = '#0d0a1a';
 
 export const CLOSE = { overlap: 0.85, colour: 0.065 } as const;
-export const READABLE = { tones: 3, contrast: 1.35, specks: 0.12, fill: 0.22 } as const;
+export const READABLE = { tones: 3, contrast: 1.25, specks: 0.12, fill: 0.22 } as const;
 
 /** The colour of every pixel, row by row (`''` transparent), in lower case. */
 function grid(def: SpriteDef): string[][] {

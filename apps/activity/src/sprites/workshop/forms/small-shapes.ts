@@ -5,7 +5,7 @@
  * shutters, bead strings, a café curtain, bare), its pane (cross, round, arched, grid, plain) and its valance. Drawn
  * through the same named parts as the plain forms.
  */
-import { type Canvas, canvas, get, put, toSprite } from '../../draw/canvas';
+import { type Canvas, canvas, get, put, toSprite, under } from '../../draw/canvas';
 import {
   crest,
   cushion,
@@ -310,6 +310,8 @@ export function shapedCurtains(style: Style, shape: CurtainShape): PieceArt {
   part(c, style, 'curtains', 'rod', { x: 0, y: 1, w: 36, h: 2 }, ({ c, style, at }) => {
     hline(c, at.x + 2, at.y, at.w - 4, INK);
     hline(c, at.x + 2, at.y + 1, at.w - 4, style.metal.light);
+    // the rod's ink underside where nothing hangs from it
+    for (let x = at.x + 2; x < at.x + at.w - 2; x++) under(c, x, at.y + 2, INK);
     for (const fx of [at.x, at.x + at.w - 3])
       box(c, fx, at.y - 1, 3, 4, style.metal, { shade: 'tl' });
     if (style.top === 'scallop')

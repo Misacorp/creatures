@@ -833,17 +833,27 @@ function ownLight(
     return top + 11;
   }
   if (kind === 'bowl') {
-    // three chains to a hanging dish with the flame in it
+    // two ink chains to a hanging dish with the flame in it
     for (let r = 0; r < 4; r++) {
-      put(c, mx - 1 - r * 2, y + r, metal.dark);
-      put(c, mx + r * 2, y + r, metal.dark);
+      put(c, mx - 1 - r * 2, y + r, INK);
+      put(c, mx + r * 2, y + r, INK);
+      put(c, mx - 2 - r * 2, y + r, INK);
+      put(c, mx + 1 + r * 2, y + r, INK);
     }
     const bw = Math.min(16, w);
     const top = y + 4;
-    // the flame over the rim
+    // the flame over the rim, in its ink
     put(c, mx - 1, top - 1, bright);
     put(c, mx, top - 1, light.light);
     put(c, mx - 1, top - 2, light.light);
+    for (const [ix, iy] of [
+      [mx - 2, top - 1],
+      [mx + 1, top - 1],
+      [mx - 2, top - 2],
+      [mx, top - 2],
+      [mx - 1, top - 3],
+    ] as const)
+      if (get(c, ix, iy) === CLEAR) put(c, ix, iy, INK);
     const dish = inEllipse(mx - Math.floor(bw / 2), top - 4, bw, 10);
     solid(
       c,
@@ -876,6 +886,15 @@ function ownLight(
     put(c, x, top - 1, bright);
     put(c, x + 1, top - 1, light.mid);
     put(c, x, top - 2, light.light);
+    // the flame's ink edge
+    for (const [ix, iy] of [
+      [x - 1, top - 1],
+      [x + 2, top - 1],
+      [x - 1, top - 2],
+      [x + 1, top - 2],
+      [x, top - 3],
+    ] as const)
+      if (get(c, ix, iy) === CLEAR) put(c, ix, iy, INK);
   }
   return arm + 2;
 }

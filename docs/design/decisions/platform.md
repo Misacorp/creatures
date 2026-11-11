@@ -4,6 +4,14 @@ Hosting, Durable Objects, scheduling, CI and deploys, staging, dependencies, sec
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-11: Furniture workshop: silhouette variants per form, chosen by the style
+
+ID: `2026-11-11-furniture-workshop-silhouette-variants-per-form` · Status: current
+
+**Decision.** Each furniture form gets a small menu of named silhouette variants (`workshop/variants.ts`: headboards, cupboard tops and doors, table supports and skirts, brackets, stool kinds, lamp kinds, rug shapes and borders, frame kinds, window dressings and panes), picked per form by the style's `shapes`; a form a style leaves out draws exactly as before. The review sheet gains a room view at real size and a report (`room.ts`, `report.ts`) with fixed thresholds: a "too close" pair is outline overlap at least 0.85 and colour distance at most 0.065; a piece is "hard to read" with under 3 tones, inside contrast under 1.25 on its background, over 12% lone specks or under 22% fill. After the variant pass no shipped piece switched from hand to generated.
+
+**Reasoning.** The first pass showed a style alone draws a coherent but plain set, because identity lives in the outline; variants put the outline in the style without hand pixels, and three demo styles (Plain Pine, Blackthorn, Sugarplum) come out as three different sets. The room repeats the house scene's geometry instead of importing it, because the scene loads the art packs through Vite's glob and the workshop runs under plain Node; a test keeps the two equal. The thresholds were calibrated on the shipped sets so the report lists little there (one close pair, the tone-on-tone sets); they are prompts to look, not gates. Shipped pieces stay hand because the variants now match their outlines but not their details (crescent doors, leaf curls, the anvil shelf, the hand halos), and the rule is that a shipped set never gets worse.
+
 ## 2026-11-11: Furniture workshop: sets are styles drawn at load, shipped pixels kept as reasoned overrides and locked
 
 ID: `2026-11-11-furniture-workshop-sets-are-styles-drawn` · Status: current

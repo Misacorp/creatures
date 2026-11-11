@@ -51,6 +51,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [platform.md](platform.md): Hosting, Durable Objects, scheduling, CI and deploys, staging, dependencies, security, database reads, data cleanup, analytics, dev tools, the workbench, player feedback, sockets.
 
+- 2026-11-11 Furniture workshop: silhouette variants per form, chosen by the style
 - 2026-11-11 Furniture workshop: sets are styles drawn at load, shipped pixels kept as reasoned overrides and locked
 - 2026-11-10 Housing: a bed moves with its sleeper, and the housing content is its own package entry
 - 2026-11-10 Housing build, craft and skin answer with what changed

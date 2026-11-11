@@ -44,7 +44,7 @@ export interface RoomSpot {
   type: string;
   x: number;
   w: number;
-  y?: number;
+  y?: number | undefined;
 }
 
 /** A room kind's layout (`rooms.json`): its width in cells and its spots. */
