@@ -13,6 +13,8 @@ import {
   FIRE_BOX,
   fireSpots,
   moreSpot,
+  moreSpotWithin,
+  MORE_CSS,
   firesideOf,
   moreCount,
   restingOf,
@@ -189,6 +191,18 @@ describe('the ring round the fire', () => {
     const front = fireSpots(many, art, { W: 130, H: 200, s: 3, top: 6 })[0];
     expect(at.x).toBe((front?.x ?? 0) + 8);
     expect(at.y).toBeGreaterThan((front?.y ?? 0) + 16);
+  });
+
+  it('the "+N more" button never falls below the room above the pinned action', () => {
+    const art = { x: 40, y: 26 };
+    const s = 3;
+    // Room to spare: it stays where it was; a short scene lifts it so its whole height fits.
+    expect(moreSpotWithin(art, s, 400)).toEqual(moreSpot(art, s));
+    for (const height of [60, 90, 120, 160]) {
+      const at = moreSpotWithin(art, s, height);
+      expect(at.y + Math.ceil(MORE_CSS / s)).toBeLessThanOrEqual(height);
+      expect(at.x).toBe(moreSpot(art, s).x);
+    }
   });
 });
 

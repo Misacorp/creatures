@@ -38,6 +38,8 @@ import {
   readingOrder,
   scrollToPlace,
   startScroll,
+  startScrollY,
+  maxScrollY,
   stepWalker,
 } from './valley-logic';
 import { placePlacements, DEFAULT_LOOK } from './valley-places';
@@ -155,6 +157,19 @@ describe('the map', () => {
         expect(right, `${id} at ${String(width)}`).toBeLessThanOrEqual(width);
       }
     }
+  });
+
+  it('a window shorter than the valley scrolls up and down from one sky row in; a tall one does not', () => {
+    const short = fitValley(1100, 600);
+    expect(short.panY).toBe(true);
+    expect(short.top).toBe(0);
+    expect(startScrollY(600)).toBe(TILE * short.scale);
+    expect(startScrollY(600)).toBeLessThanOrEqual(maxScrollY(600));
+    expect(maxScrollY(2000)).toBe(0);
+    expect(startScrollY(2000)).toBe(0);
+    expect(fitValley(1100, 2000).panY).toBe(false);
+    // The phone's map, with its tray under it, is shorter than the valley too.
+    expect(fitValley(390, 700).panY).toBe(true);
   });
 
   it('a phone and a narrow window still pan', () => {

@@ -1136,6 +1136,71 @@ try {
     if (back !== 'cave') throw new Error(`Left went to ${String(back)}`);
   });
 
+  // A laptop's window is shorter than the valley: a mouse drags the map up and down (as a finger swipes it), a drag that starts on a place
+  // never opens it, and a press without a drag still does (Misa, 2026-11-11).
+  await step(
+    'a mouse drags the map up and down on a short window, and a drag never opens a place',
+    async () => {
+      const size = page.viewportSize();
+      await page.setViewportSize({ width: Math.max(width, 1280), height: 600 });
+      try {
+        await page.waitForTimeout(300);
+        const scroller = page.locator('.vy-valley.pans-y .vy-scroller');
+        await waitFor(scroller, 'attached');
+        const top = () => scroller.evaluate((el) => el.scrollTop);
+        const before = await top();
+        // Start on a place's button, so the drag-click guard is what keeps it closed.
+        let at = null;
+        for (const id of ['house', 'paddock', 'forge', 'cave', 'fair', 'arena']) {
+          const box = await place(id).boundingBox();
+          if (
+            box !== null &&
+            box.y > 120 &&
+            box.y + box.height < 440 &&
+            box.x > 20 &&
+            box.x + box.width < 1200
+          )
+            at = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+          if (at !== null) break;
+        }
+        if (at === null) throw new Error('no place is in view to start the drag on');
+        const { x, y } = at;
+        await page.mouse.move(x, y);
+        await page.mouse.down();
+        await page.mouse.move(x, y - 60, { steps: 6 });
+        await page.mouse.up();
+        const after = await top();
+        if (after <= before)
+          throw new Error(`the map did not move up: ${String(before)} to ${String(after)}`);
+        if ((await page.locator(VALLEY).count()) === 0) throw new Error('a drag opened a place');
+        // The way back: drag down again.
+        await page.mouse.move(x, y - 100);
+        await page.mouse.down();
+        await page.mouse.move(x, y + 20, { steps: 6 });
+        await page.mouse.up();
+        if ((await top()) >= after) throw new Error('the map did not move down again');
+        if ((await page.locator(VALLEY).count()) === 0) throw new Error('a drag opened a place');
+        // The purse and the cog float over the map: the bar has no row of its own.
+        const hud = await page.evaluate(() => {
+          const bar = document.querySelector('header.hud');
+          const frame = document.querySelector('.vy-frame');
+          return {
+            float: bar?.classList.contains('hud-float') === true,
+            barBottom: bar?.getBoundingClientRect().bottom ?? 0,
+            frameTop: frame?.getBoundingClientRect().top ?? 1,
+          };
+        });
+        if (!hud.float || hud.frameTop > 1)
+          throw new Error(`the bar still takes a row: ${JSON.stringify(hud)}`);
+        await expectTopmost(page.locator('header.hud button.hud-gear'), 'the cog over the map');
+        await shot('map-short-window');
+      } finally {
+        if (size !== null) await page.setViewportSize(size);
+        await page.waitForTimeout(300);
+      }
+    },
+  );
+
   await step(
     'Tab walks the valley in reading order and every stop shows a focus ring',
     async () => {
@@ -1222,6 +1287,13 @@ try {
       await page.waitForTimeout(600);
       const alerts = await page.locator('.vy-page [role="alert"]').allInnerTexts();
       if (alerts.length > 0) throw new Error(`the page shows an error: ${alerts.join(' | ')}`);
+      // Scrolled to the very end (and every card brought to the middle) the way back is still there and nothing slid the HUD up (Misa, 2026-11-11).
+      await page.evaluate(() => {
+        for (const el of document.querySelectorAll('.vy-page, .vy-page *'))
+          el.scrollTop = el.scrollHeight;
+        document.querySelector('.vy-page *:last-child')?.scrollIntoView({ block: 'center' });
+      });
+      await expectTopmost(hudBack(), `the way back from ${id}`);
       await backToValley();
     });
   }
@@ -1939,6 +2011,9 @@ try {
       await expectNoScroll();
       await drawer.getByRole('button', { name: /Close|^Back/ }).first().click();
       await drawer.waitFor({ state: 'detached', timeout: 10000 });
+      await expectTopmost(hudBack(), 'the way back from the Forge');
+      await backToValley();
+
       forgeState.anvils = [];
     },
   );

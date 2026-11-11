@@ -4,6 +4,14 @@ Navigation and the frame, Home and the notice board, type scale, shared componen
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-11: A valley frame clips instead of scrolling: the HUD's way back never slides off
+
+ID: `2026-11-11-a-valley-frame-clips-instead-of` · Status: current
+
+**Decision.** With the valley on, `main.card` clips its overflow (`overflow: clip`) instead of hiding it. A hidden box still scrolls when something inside takes the focus or is scrolled into view, and nobody can scroll it back.
+
+**Reasoning.** On the Forge a card scrolled into view moved the whole card up by 22 px, which slid the HUD (and its way back to the valley) off the top; Misa had no way back. The e2e now scrolls each place's page to its end and checks the way back is still the topmost control, and the Forge scenario with the valley's systems does the same before going back.
+
 ## 2026-11-06: The School's page and a creature's trial reuse the seat cards, the creature list and the rule card
 
 ID: `2026-11-06-the-school-s-page-and-a` · Status: current

@@ -27,9 +27,9 @@ import { frontProps, propDepth } from './place-props';
 import { useRoamers } from './use-roamers';
 import { depthOf } from './valley-logic';
 import { WARMING_FLAME, placeOf, type Rect } from './valley-art';
-import { scaffoldUp } from './scaffold';
+import { scaffoldFor } from './scaffold';
 import { HonourRibbon, useHonour } from './HonourRibbon';
-import { glowSprite, type MapName } from './valley-places';
+import type { MapName } from './valley-places';
 import {
   BELL_AT,
   YARD_ASIDE,
@@ -326,9 +326,7 @@ export function PlaceScene({ cast, onAct }: { cast: Cast; onAct: () => void }) {
                   : [{ sprite, x: box.x + teacherTopLeft().x, y: box.y + teacherTopLeft().y }];
               })()),
           // The scaffolding rises in front of the place as its project fills (V-COM-6).
-          ...(steps === 0
-            ? []
-            : [{ sprite: scaffoldUp(glowSprite(art), steps), x: box.x, y: box.y }]),
+          ...(steps === 0 ? [] : [{ sprite: scaffoldFor(art, steps), x: box.x, y: box.y }]),
           ...(bossId === null
             ? []
             : [

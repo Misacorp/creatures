@@ -20,7 +20,8 @@ import {
   bonfireCalm,
   fireSpots,
   lamplighterSpot,
-  moreSpot,
+  moreSpotWithin,
+  MORE_CSS,
   moreCount,
   moreLabel,
   restingOf,
@@ -28,8 +29,8 @@ import {
 } from './bonfire-cast';
 import { commonsOf, daysLeft, hearthLine, percentFilled, placeOf } from './commons-view';
 import { placeArtBox, placeScale, placeSceneDraw } from './place-scene';
-import { scaffoldSteps, scaffoldUp } from './scaffold';
-import { GRAND_LEVEL, bonfireName, glowSprite } from './valley-places';
+import { scaffoldFor, scaffoldSteps } from './scaffold';
+import { GRAND_LEVEL, bonfireName } from './valley-places';
 
 /** One creature's line in the list of everyone resting: its XP this visit, and that it is warming up while it catches up. */
 function restingNote(gained: number, warm: boolean): string {
@@ -88,10 +89,9 @@ export function BonfireScene({
   const draw = useMemo(() => {
     const base = placeSceneDraw(art);
     if (steps === 0) return base;
-    const sprite = glowSprite(art);
     return (g: Parameters<typeof base>[0]) => {
       const box = placeArtBox(g, art);
-      return [...base(g), { sprite: scaffoldUp(sprite, steps), x: box.x, y: box.y }];
+      return [...base(g), { sprite: scaffoldFor(art, steps), x: box.x, y: box.y }];
     };
   }, [art, steps]);
   const helperId = block?.communal.find((c) => c.place === 'bonfire')?.creatureId ?? null;
@@ -137,13 +137,24 @@ export function BonfireScene({
             (calm !== '' ? 1 : 0) + (act === null ? 0 : 1) === 2 ? ACT_CSS_TWO : ACT_CSS;
           const scene = { W: g.W, H: g.H - Math.ceil(actCss / g.s), s: g.s, top: g.top };
           const grand = level >= GRAND_LEVEL;
-          const spots = fireSpots(fireside, box, scene, {
-            grand,
-            lamplighter: helper !== undefined,
-          });
+          const options = { grand, lamplighter: helper !== undefined };
+          let spots = fireSpots(fireside, box, scene, options);
           const lamp = lamplighterSpot(box, grand);
           // "+N more" counts the player's own resting creatures that did not get a seat (a visitor's seat is not one of them).
-          const more = moreCount(resting.length, spots.filter((s) => s.owner === undefined).length);
+          const countMore = (): number =>
+            moreCount(resting.length, spots.filter((s) => s.owner === undefined).length);
+          let more = countMore();
+          // With the button showing, the seats leave room for it above the pinned action (it is never cut off at the bottom).
+          if (more > 0) {
+            spots = fireSpots(
+              fireside,
+              box,
+              { ...scene, H: scene.H - Math.ceil(MORE_CSS / g.s) },
+              options,
+            );
+            more = countMore();
+          }
+          const moreAt = moreSpotWithin(box, g.s, scene.H, grand);
           return (
             <>
               {spots.map((spot) => (
@@ -172,8 +183,8 @@ export function BonfireScene({
               )}
               {more > 0 && (
                 <At
-                  x={g.X(moreSpot(box, g.s, grand).x)}
-                  y={g.Y(moreSpot(box, g.s, grand).y)}
+                  x={g.X(moreAt.x)}
+                  y={g.Y(moreAt.y)}
                   class="vy-more-at vy-stand vy-over"
                   hidden={false}
                 >

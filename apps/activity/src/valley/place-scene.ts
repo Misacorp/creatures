@@ -110,17 +110,31 @@ export function grassTo(g: SceneGeometry): Placement[] {
   return out;
 }
 
-/** The trees, a bush and flowers round a place's art at (`x`, `y`) in scene pixels. */
-export function treesAround(x: number, y: number, art: { width: number; height: number }): Placement[] {
+/** A sprite standing with its feet (its lowest row) on scene row `base`. */
+function standing(sprite: SpriteDef, x: number, base: number): Placement {
+  return { sprite, x, y: base - sprite.rows.length };
+}
+
+/**
+ * The trees, a bush and flowers round a place's art at (`x`, `y`) in scene pixels. Every tree stands on the grass: its
+ * base on the grass line (where the hills end, `SKY_BELOW_ART_TOP` under the art's top) or in front of it, never on
+ * the hills band, where it would hang in the air (Misa, 2026-11-11).
+ */
+export function treesAround(
+  x: number,
+  y: number,
+  art: { width: number; height: number },
+): Placement[] {
   const wm = WORLD_MAP_SPRITE_DATA;
   const below = y + art.height;
+  const grass = y + SKY_BELOW_ART_TOP;
   return [
-    { sprite: wm.smallPine, x: x - 30, y: y - 6 },
+    standing(wm.smallPine, x - 30, grass + 4),
     { sprite: wm.bush, x: x - 18, y: below - 14 },
-    { sprite: wm.smallTree, x: x + art.width + 14, y: y - 2 },
+    standing(wm.smallTree, x + art.width + 14, grass + 8),
     { sprite: wm.flowers, x: x + art.width + 4, y: below - 10 },
-    { sprite: wm.smallTree, x: x - 70, y: y + 20 },
-    { sprite: wm.smallPine, x: x + art.width + 52, y: y + 26 },
+    standing(wm.smallTree, x - 70, grass + 22),
+    standing(wm.smallPine, x + art.width + 52, grass + 29),
   ];
 }
 

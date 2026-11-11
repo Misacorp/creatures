@@ -247,6 +247,24 @@ export function moreSpot(
   };
 }
 
+/** CSS px the "+N more" button takes (its 32 px and a little air): the seats leave this much room above the pinned action when it shows. */
+export const MORE_CSS = 40;
+
+/**
+ * Where the "+N more" button's top edge stands when the scene's usable height (above the pinned action) is `height`
+ * scene pixels: under the front seat's plate as `moreSpot` says, but never lower than the button fits above that height,
+ * so it is never cut off or hidden under the action (Misa, 2026-11-11: it fell off the bottom of a laptop).
+ */
+export function moreSpotWithin(
+  art: { x: number; y: number },
+  s: number,
+  height: number,
+  grand = false,
+): { x: number; y: number } {
+  const at = moreSpot(art, s, grand);
+  return { x: at.x, y: Math.min(at.y, height - Math.ceil(MORE_CSS / s)) };
+}
+
 /** How many resting creatures are not drawn round the fire. */
 export function moreCount(total: number, drawn: number): number {
   return Math.max(0, total - drawn);

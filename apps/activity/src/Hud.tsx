@@ -89,6 +89,7 @@ export function Hud({
   onHelp,
   onSettings,
   back,
+  float = false,
 }: {
   title: string;
   balances: Balances;
@@ -102,11 +103,13 @@ export function Hud({
   onSettings?: () => void;
   /** The valley's way back: its spoken name ("Back to the valley") and what it does. The focus moves to it when `title` changes. */
   back?: { label: string; onBack: () => void };
+  /** The bar gives up its row and floats over the screen (the valley's map fills the window): the purse and the cog sit in the top-right corner, the title is still the page's `h1` but unseen. */
+  float?: boolean;
 }) {
   return (
-    <header class="hud">
+    <header class={float ? 'hud hud-float' : 'hud'}>
       {back !== undefined && <BackButton label={back.label} onBack={back.onBack} token={title} />}
-      <h1 class="hud-title pix">{title}</h1>
+      <h1 class={float ? 'hud-title pix visually-hidden' : 'hud-title pix'}>{title}</h1>
       <div class="hud-tools">
         <CurrencyPile
           balances={balances}

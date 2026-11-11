@@ -739,6 +739,8 @@ export function Game({
         onSettings={() => {
           setSettingsOpen(true);
         }}
+        // The valley's map takes the whole window: the bar floats over it (purse and cog in a corner).
+        float={valleyOn && view.kind === 'valley' && !settingsOpen}
         {...(valleyOn && view.kind !== 'valley' && !settingsOpen
           ? {
               // The valley's way back lives in the HUD: from a book to the House, from a place to the map.

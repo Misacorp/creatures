@@ -31,10 +31,15 @@ import {
   edgeArrows,
   fitValley,
   freeTabs,
+  maxScrollY,
+  startScrollY,
   readingOrder,
   scrollToPlace,
   startScroll,
 } from './valley-logic';
+
+/** CSS px at the top of the map that the floating purse and cog cover (an edge chip stays below them). */
+const FLOAT_HUD = 52;
 
 /** Walkers step 8 times a second. */
 const TICK_MS = 125;
@@ -101,8 +106,14 @@ export function ValleyMap({
       el.scrollLeft = at === 'start' ? startScroll(size.width) : scrollToPlace(at, size.width);
     }
   }, [at, fit.pans, size.width]);
+  // A window shorter than the valley starts one sky row down and drags (or wheels) to the rest.
+  useLayoutEffect(() => {
+    const el = scrollerRef.current;
+    if (el !== null && fit.panY) el.scrollTop = startScrollY(size.height);
+  }, [fit.panY]);
 
-  const [scrollLeft, setScrollLeft] = useScrollLeft(scrollerRef);
+  const [scroll, setScroll] = useScroll(scrollerRef);
+  const scrollLeft = scroll.left;
   const order = readingOrder();
 
   // Back from a place's page the focus rests on the map itself, never on the place's button: a ring on the House
@@ -118,8 +129,17 @@ export function ValleyMap({
     const el = scrollerRef.current;
     const button = wrapRef.current?.querySelector<HTMLElement>(`[data-place="${id}"]`);
     button?.focus({ preventScroll: true });
-    if (el !== null && fit.pans) {
-      el.scrollTo({ left: scrollToPlace(id, size.width), behavior: scrollBehavior() });
+    if (el !== null && (fit.pans || fit.panY)) {
+      const r = placeOf(id).rect;
+      const middle = (r.y + r.height / 2) * s;
+      el.scrollTo({
+        left: fit.pans ? scrollToPlace(id, size.width) : 0,
+        // Up and down only as far as the place needs to be in view (a window that shows it already stays put).
+        top: !fit.panY
+          ? 0
+          : Math.round(Math.min(maxScrollY(size.height), Math.max(0, middle - size.height / 2))),
+        behavior: scrollBehavior(),
+      });
     }
   };
 
@@ -141,8 +161,9 @@ export function ValleyMap({
   const arrows = fit.pans ? edgeArrows(order, scrollLeft, size.width) : [];
   const needy = new Set<PlaceId>(bubbles.map((b) => b.place));
   const tabY = freeTabs(arrows, scrollLeft, size.width, undefined, undefined, needy, {
-    from: -fit.top / s,
-    to: (size.height - fit.top) / s,
+    // The rows in view: scrolled down by `scroll.top`, and below the purse and the cog that float in the top corners.
+    from: (scroll.top - fit.top + FLOAT_HUD) / s,
+    to: (scroll.top + size.height - fit.top) / s,
   });
 
   const bob = moving ? Math.floor(tick / 5) % 2 : 0;
@@ -154,14 +175,21 @@ export function ValleyMap({
   });
 
   return (
-    <div ref={wrapRef} class={`vy-valley${fit.pans ? ' pans' : ''}`} tabIndex={-1}>
+    <div
+      ref={wrapRef}
+      class={`vy-valley${fit.pans ? ' pans' : ''}${fit.panY ? ' pans-y' : ''}`}
+      tabIndex={-1}
+    >
       <div
         class="vy-scroller"
         ref={(el) => {
           scrollerRef.current = el;
         }}
         onScroll={(e) => {
-          setScrollLeft((e.currentTarget as HTMLElement).scrollLeft);
+          const el = e.currentTarget as HTMLElement;
+          // A window that shows every place across never slides sideways (the grass beyond is cropped, not reachable).
+          if (!fit.pans && el.scrollLeft !== 0) el.scrollLeft = 0;
+          setScroll({ left: el.scrollLeft, top: el.scrollTop });
         }}
       >
         <div class="vy-stage" ref={stageVars}>
@@ -235,7 +263,9 @@ export function ValleyMap({
               type="button"
               class={`vy-edge vy-edge-${a.side}${bubble === undefined ? '' : ' needs'}`}
               aria-label={`${placeSpoken(a.place, bubble)}. Off screen, to the ${a.side === 'left' ? 'west' : 'east'}`}
-              ref={cssVars({ '--ey': `${String(Y(tabY.get(a.place) ?? a.y) + fit.top)}px` })}
+              ref={cssVars({
+                '--ey': `${String(Y(tabY.get(a.place) ?? a.y) + fit.top - scroll.top)}px`,
+              })}
               onClick={() => {
                 goTo(a.place);
               }}
@@ -255,12 +285,16 @@ export function ValleyMap({
   );
 }
 
-/** The scroller's left edge, kept in state for the edge chips. */
-function useScrollLeft(ref: { current: HTMLElement | null }): [number, (n: number) => void] {
-  const [left, setLeft] = useState(0);
+/** The scroller's offsets, kept in state for the edge chips. */
+function useScroll(ref: {
+  current: HTMLElement | null;
+}): [{ left: number; top: number }, (v: { left: number; top: number }) => void] {
+  const [at, setAt] = useState({ left: 0, top: 0 });
   useEffect(() => {
     const el = ref.current;
-    if (el !== null) setLeft(el.scrollLeft);
+    if (el !== null && (el.scrollLeft !== at.left || el.scrollTop !== at.top)) {
+      setAt({ left: el.scrollLeft, top: el.scrollTop });
+    }
   });
-  return [left, setLeft];
+  return [at, setAt];
 }
