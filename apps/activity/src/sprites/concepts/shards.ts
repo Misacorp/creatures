@@ -35,7 +35,7 @@ const withStatus = (sprites: Readonly<Record<string, Concept>>): Record<string, 
   Object.fromEntries(
     Object.entries(sprites).map(([id, c]) => [
       id,
-      { ...c, status: LIKED.has(id) ? 'liked' : 'draft' },
+      { ...c, status: LIKED.has(id) ? 'liked' : 'archived' },
     ]),
   );
 

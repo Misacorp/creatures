@@ -4,7 +4,7 @@
 
 Art drawn ahead of its content: creatures, bosses, items and banners that have no name or stats yet. **Before adding content, look here** for art that was made for it, and use it (move the sprite into `apps/activity/src/sprites/data/` under the content id and delete the concept in the same PR). To add art, see `docs/design/art-studio.md`.
 
-Status: **liked** means Misa approved the look; **draft** means he has not said yet; **redo** means he wants changes first (see the notes).
+Status: **liked** means Misa approved the look; **draft** means he has not said yet; **redo** means he wants changes first (see the notes); **archived** is kept for reference only (a direction not picked, or replaced by newer art).
 
 | Set | Status | Pieces | Requested |
 | --- | --- | --- | --- |
@@ -13,14 +13,14 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | [The camp's other places, glow style](#valley-glow-camp) | draft | 6 | 2026-11-03: the valley prototype's remaining places (arena, fairground, road, chest, lectern, paddock) in the liked glow style, day and night. |
 | [Valley places: glow, day and night](#valley-glow) | liked | 9 | 2026-10-31: night glow redone to stand on the valley ground, with a daytime version of the same assets. |
 | [The honour ribbon](#valley-honours) | liked | 1 | 2026-11-06 (valley phase 5 step 9b, trials.md V-TRIAL-1): a ribbon worn on a graduate's sprite, one for each honour (Bronze, Silver, Gold). |
-| [Valley places: map landmarks](#valley-landmarks) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
+| [Valley places: map landmarks](#valley-landmarks) | archived | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
 | [The Bonfire, level by level](#valley-levels-bonfire) | draft | 5 | 2026-11-09 (Misa): "The campfire could also get better, not just more decorative. Think from a humble campfire to a fire pit with cool stone benches and the sort. Each building can absolutely change building material as it upgrades in levels, and I'm thinking we might even want to tweak the earlier levels to be less elaborate... If you change materials, there needs to be a common motif between buildings of the same level... Think of how Clash of Clans brings a new look with each new town hall level." |
 | [The Forge, level by level](#valley-levels-forge) | draft | 5 | 2026-11-09 (Misa): "Each building can absolutely change building material as it upgrades in levels ... Naturally a forge can't be made of wood, but it can have wooden elements on it ... Think of how Clash of Clans brings a new look with each new town hall level." |
 | [The Paddock, level by level](#valley-levels-paddock) | draft | 5 | 2026-11-09 (Misa): "Each building can absolutely change building material as it upgrades in levels, and I'm thinking we might even want to tweak the earlier levels to be less elaborate... If you change materials, there needs to be a common motif between buildings of the same level... Think of how Clash of Clans brings a new look with each new town hall level." The Paddock gets a taller canvas (64x64) so its barn can grow. |
 | [The School, level by level](#valley-levels-school) | draft | 5 | 2026-11-09 (Misa): "Each building can absolutely change building material as it upgrades in levels, and I'm thinking we might even want to tweak the earlier levels to be less elaborate. Think the school for example. Its bell could be just on the side of the building until a bell tower replaces it in later levels. If you change materials, there needs to be a common motif between buildings of the same level... Think of how Clash of Clans brings a new look with each new town hall level." |
 | [The Signpost at the five valley levels, and the Market](#valley-levels-signpost) | draft | 6 | 2026-11-09 (Misa): "Each building can absolutely change building material as it upgrades in levels, and I'm thinking we might even want to tweak the earlier levels to be less elaborate... If you change materials, there needs to be a common motif between buildings of the same level... Think of how Clash of Clans brings a new look with each new town hall level." Earlier (2026-11-05): the road is short and heads right from the post, and every sign has its full ink outline. |
-| [Valley places: night glow](#valley-night) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
-| [Valley places: posters](#valley-posters) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
+| [Valley places: night glow](#valley-night) | archived | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
+| [Valley places: posters](#valley-posters) | archived | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
 | [The School's visiting teacher](#valley-school) | draft | 4 | 2026-11-03 (via the valley session, Misa's round 22 decision): show the visiting teacher with no banner: the bell swings, a lectern at the door, a bench of students, a teacher prop. |
 | [Valley sky, day and night](#valley-sky) | draft | 2 | 2026-11-03 (Q50, via the valley session): place screens drop the poster; Misa likes "the added depth of having a sky in the background ... We'd just need the proper sky images. Eventually the sky backdrop could vary based on location." |
 | [Valley building levels: the shared materials](#valley-tiers) | draft | 5 | 2026-11-09 (Misa): buildings get better level by level and may change material; the same level shares a motif across buildings, like a new town hall look. |
@@ -70,7 +70,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 - **Status:** liked
 - **Requested:** 2026-11-03: the element shard icons must differ by shape, not only colour (accessibility review from the valley session; Misa asked to provide what the valley needs).
 - **Source:** `apps/activity/src/sprites/concepts/shards.ts` (draw it with `pnpm art shards`)
-- **Sheet of:** `29260c21c2ac`
+- **Sheet of:** `effcee065520`
 - Misa picked Tide A (rounded), Ember A, Grove A, Spark A, Mire B on 2026-11-03; now in gear-sprites.ts.
 - Why: Ember (#ef6a3a) and Grove (#5cbf5a) are a classic deuteranope confusion pair and the shipped shards differ only in the top two rows. The Forge and Market loop is about which shard you need, so each element is a different outline. Colours are unchanged.
 - Every sprite has a `deuteranope` alt (Machado 2009, severity 1.0). Its row in the set sheet is the test: five different shapes per variant column.
@@ -79,20 +79,20 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 
 | Code | Kind | Role | Status | Idea |
 | --- | --- | --- | --- | --- |
-| `tide-now` | part |  | draft | The shipped tide shard, unchanged, for comparison. |
+| `tide-now` | part |  | archived | The shipped tide shard, unchanged, for comparison. |
 | `tide-a` | part |  | liked | A drop: pointed top, round bottom with no square corners. |
-| `tide-b` | part |  | draft | A wave crystal: a crest curling over to the right. |
-| `ember-now` | part |  | draft | The shipped ember shard, unchanged, for comparison. |
+| `tide-b` | part |  | archived | A wave crystal: a crest curling over to the right. |
+| `ember-now` | part |  | archived | The shipped ember shard, unchanged, for comparison. |
 | `ember-a` | part |  | liked | A tall flame: a main tongue with a smaller one at its side. |
-| `ember-b` | part |  | draft | A crown of three flames on a short crystal. |
-| `grove-now` | part |  | draft | The shipped grove shard, unchanged, for comparison. |
+| `ember-b` | part |  | archived | A crown of three flames on a short crystal. |
+| `grove-now` | part |  | archived | The shipped grove shard, unchanged, for comparison. |
 | `grove-a` | part |  | liked | A leaf, tilted, with a vein and a stem at its foot. |
-| `grove-b` | part |  | draft | A sprout: two leaves on a stem, in a crystal base. |
-| `spark-now` | part |  | draft | The shipped spark shard, unchanged, for comparison. |
+| `grove-b` | part |  | archived | A sprout: two leaves on a stem, in a crystal base. |
+| `spark-now` | part |  | archived | The shipped spark shard, unchanged, for comparison. |
 | `spark-a` | part |  | liked | A fat bolt: a broad head stepping down to a thin tail. |
-| `spark-b` | part |  | draft | A thin zigzag bolt, two sharp turns. |
-| `mire-now` | part |  | draft | The shipped mire shard, unchanged, for comparison. |
-| `mire-a` | part |  | draft | A lump with a single drip hanging from its belly. |
+| `spark-b` | part |  | archived | A thin zigzag bolt, two sharp turns. |
+| `mire-now` | part |  | archived | The shipped mire shard, unchanged, for comparison. |
+| `mire-a` | part |  | archived | A lump with a single drip hanging from its belly. |
 | `mire-b` | part |  | liked | A slumped blob with two drips, one longer. |
 
 <a id="valley-glow-camp"></a>
@@ -104,7 +104,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 - **Status:** draft
 - **Requested:** 2026-11-03: the valley prototype's remaining places (arena, fairground, road, chest, lectern, paddock) in the liked glow style, day and night.
 - **Source:** `apps/activity/src/sprites/concepts/valley-glow-camp.ts` (draw it with `pnpm art valley-glow-camp`)
-- **Sheet of:** `8a865da8a9b2`
+- **Sheet of:** `97544fae4823`
 - Extends the liked `valley-glow` set (same palette keys, ink, light rings and cast shadow) with the places the valley prototype draws in the camp clearing: `apps/activity/src/proto/party/` and `proto/valley/` on branch `origin/ccr-93a1de17-yutb1a`.
 - The backdrop is the same as `valley-glow`: the world map grass tile in its night recolour, `alts.day` is the normal grass.
 - By day the light rings become ground: worn dirt, trodden grass, pebbles and flowers. Fire (arena braziers) stays lit by day; lanterns and candles are unlit glass or plain wax. No text on any sign or page, only marks.
@@ -113,10 +113,10 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | --- | --- | --- | --- | --- |
 | `arena` | free |  | draft | A small sparring ring: a sand oval edged with grey stones, two posts at the back with a bunting between them and a brazier on each, whose warm light lies on the sand (brighter near the posts) and in stepped rings on the grass. The middle is left empty. By day the braziers stay lit, the sand is pale and the ground by the posts is worn dirt. |
 | `fairground` | free |  | draft | A festive striped tent with a pennant on its pole, two strings of pennants running to side posts, four lanterns and a lit doorway with tied-back flaps. The lantern light lies on the grass in front. By day the lanterns are unlit glass and the ground in front is trodden straw and flowers. |
-| `road` | free |  | draft | Where the road leaves the camp: a short worn dirt path that leaves the foot of the post and bends up to the right, fraying out into the grass (Misa, 2026-11-05: shorter, more to the right), and a wooden signpost with three plank arrows (marks, no words, each fully outlined) and a lantern on a hook. Warm light lies on the ground round the foot of the post. By day the lantern is unlit and the ground is a dirt patch with pebbles. |
+| `road` | free |  | archived | Where the road leaves the camp: a short worn dirt path that leaves the foot of the post and bends up to the right, fraying out into the grass (Misa, 2026-11-05: shorter, more to the right), and a wooden signpost with three plank arrows (marks, no words, each fully outlined) and a lantern on a hook. Warm light lies on the ground round the foot of the post. By day the lantern is unlit and the ground is a dirt patch with pebbles. |
 | `chest` | free |  | draft | The shared camp chest: a banded wooden chest, lid closed (a lighter lid top and a dark seam), with a gold lock plate and a small glint, and a candle on the ground beside it. The candle light lies on the grass in stepped rings. By day the candle is unlit and the ground is trodden dirt. |
 | `lectern` | free |  | draft | A reading stand: a slanted desk with an open journal (marks, no words) and a lit candle, on a single carved wooden post with a flared foot and two brackets under the desk. The candle lights the right-hand page and lays stepped rings on the grass. By day the candle is unlit and the ground is worn dirt. |
-| `paddock` | free |  | draft | A fenced pen seen from the front-top: a straight back rail, short side rails, front rails with an open gate gap, a hay pile and a water trough at the back and a lantern on a front post. The inside is open grass for creatures. The lantern on the gate post lays stepped rings on the gate ground; by day it is unlit and the ground is trodden dirt. |
+| `paddock` | free |  | archived | A fenced pen seen from the front-top: a straight back rail, short side rails, front rails with an open gate gap, a hay pile and a water trough at the back and a lantern on a front post. The inside is open grass for creatures. The lantern on the gate post lays stepped rings on the gate ground; by day it is unlit and the ground is trodden dirt. |
 
 <a id="valley-glow"></a>
 
@@ -127,7 +127,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 - **Status:** liked
 - **Requested:** 2026-10-31: night glow redone to stand on the valley ground, with a daytime version of the same assets.
 - **Source:** `apps/activity/src/sprites/concepts/valley-glow.ts` (draw it with `pnpm art valley-glow`)
-- **Sheet of:** `1729e227b84b`
+- **Sheet of:** `f6fc2cb219ee`
 - Misa picked this direction for the valley places (2026-10-31); posters stay for each place's own screen.
 - Direction "valley glow": the night-glow look (the light sources are the stars, lit edges, cool shadow) redone as standalone places on transparent ground, like the map landmarks, so they stand on the valley tiles. No sky, no vignette, no stars or moon.
 - One drawing, two palettes: the main palette is night, `alts.day` recolours the same pixels. Keys `1 2 3` are the light spill on the ground (rings follow each light: a circle under a lamp or fire, a trapezoid in front of a window; only the outermost ring is a regular checker) in night colours; in the day palette they map to the grass greens, so the spill disappears. `x` is the cast shadow (cool blue at night, warm green by day).
@@ -148,7 +148,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | `visitor-away` | free |  | liked | The stall shuttered: a closed front, a folded awning, a board with a moon and a calendar mark, an unlit lamp with one last ember and a faint warm glow on the grass. |
 | `market` | free |  | liked | A stall where shards are traded: four element shards glow on the counter, a big shard on a post is the sign, with a crate and a sack beside it. The teal glow lies on the grass. |
 | `house` | free |  | draft | A cosy cottage where your creatures live: a shingled roof with a chimney, two lit windows that spill warm light on the grass, a door with a path to it. By day the windows are plain glass and the spill is flower beds. |
-| `forge` | free |  | draft | The Workshop: a stone smithy with an open fire mouth, an anvil on the ground and sparks; the ember glow spills out of the opening onto the ground. By day the fire stays alight, with sparks above the chimney and around the mouth; the yard is soot-dark. |
+| `forge` | free |  | archived | The Workshop: a stone smithy with an open fire mouth, an anvil on the ground and sparks; the ember glow spills out of the opening onto the ground. By day the fire stays alight, with sparks above the chimney and around the mouth; the yard is soot-dark. |
 | `cave` | free |  | draft | The way to the daily dungeon: a rocky mouth into the hill with glowing crystals inside, whose cool light spills onto the ground. By day the crystals keep glowing and the ground is scree and pebbles. |
 
 <a id="valley-honours"></a>
@@ -176,22 +176,23 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 
 ![Valley places: map landmarks](valley-landmarks.png)
 
-- **Status:** draft
+- **Status:** archived
 - **Requested:** 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations.
 - **Source:** `apps/activity/src/sprites/concepts/valley-landmarks.ts` (draw it with `pnpm art valley-landmarks`)
 - **Sheet of:** `7de1609620d1`
+- 2026-11-11: archived; Misa picked the glow direction (valley-glow).
 - One of several directions for the four valley places; this one draws each as a map marker. Compare it with the other sets before picking.
 - To use: the valley screen composes places from sprites; these are free sprites up to 64 px and would be shown at their drawn size on grass.
 - The visitor and visitor-away drawings share a stall; the away sign is a calendar page and a moon, not words.
 
 | Code | Kind | Role | Status | Idea |
 | --- | --- | --- | --- | --- |
-| `bonfire` | free |  | draft | A crackling fire in a stone ring on a patch of grass, with four straw beds around it: 'room for four resting creatures'. |
-| `bonfire-grand` | free |  | draft | The later level: a wider flagstone ring, a taller fire, log benches on three sides and two lantern posts. |
-| `school` | free |  | draft | A little blue-roofed schoolhouse with a bell cupola and a graduation rosette on the gable; a slate stands by the door. |
-| `visitor` | free |  | draft | A hooded stranger with glowing eyes behind a purple-awninged stall, a crescent moon on the awning and a lit lantern. |
-| `visitor-away` | free |  | draft | The same stall shuttered, lantern out, a sign with a calendar page and a moon: 'back Thursday'. |
-| `market` | free |  | draft | A red and cream striped tent stall where a tiny creature in a cap trades shards from two crates; sign shows shard and coin. |
+| `bonfire` | free |  | archived | A crackling fire in a stone ring on a patch of grass, with four straw beds around it: 'room for four resting creatures'. |
+| `bonfire-grand` | free |  | archived | The later level: a wider flagstone ring, a taller fire, log benches on three sides and two lantern posts. |
+| `school` | free |  | archived | A little blue-roofed schoolhouse with a bell cupola and a graduation rosette on the gable; a slate stands by the door. |
+| `visitor` | free |  | archived | A hooded stranger with glowing eyes behind a purple-awninged stall, a crescent moon on the awning and a lit lantern. |
+| `visitor-away` | free |  | archived | The same stall shuttered, lantern out, a sign with a calendar page and a moon: 'back Thursday'. |
+| `market` | free |  | archived | A red and cream striped tent stall where a tiny creature in a cap trades shards from two crates; sign shows shard and coin. |
 
 <a id="valley-levels-bonfire"></a>
 
@@ -325,10 +326,11 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 
 ![Valley places: night glow](valley-night.png)
 
-- **Status:** draft
+- **Status:** archived
 - **Requested:** 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations.
 - **Source:** `apps/activity/src/sprites/concepts/valley-night.ts` (draw it with `pnpm art valley-night`)
 - **Sheet of:** `56eb7da8b49a`
+- 2026-11-11: archived; Misa picked the glow direction (valley-glow).
 - Direction "night glow": each place at dusk or night, lit by its own light (fire orange, window yellow, violet lamp, teal shard glow), warm stepped rings on the ground and cool blue-purple shadow.
 - Each sprite is a 64x64 island vignette (kind free, 16 colours) in a 3/4 top-down view, made to sit in a valley map; the island rim keeps it readable on the dark panels.
 - The creatures in these are small stand-ins (10x7), not species; the game would draw the player's own creatures there.
@@ -336,12 +338,12 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 
 | Code | Kind | Role | Status | Idea |
 | --- | --- | --- | --- | --- |
-| `bonfire` | free |  | draft | A fire in the middle of the valley with four resting creatures around it, each lit orange on the fire side and cool on the back: the warm heart, room for a rotating few. |
-| `bonfire-grand` | free |  | draft | The communal hearth at a later level: a taller fire in a paved stone ring, log benches with three creatures, and two lantern posts that throw their own small light. |
-| `school` | free |  | draft | A small schoolhouse with lit windows and a bell cupola; a creature outside wears the graduation ribbon, and a rosette hangs on the sign. |
-| `visitor` | free |  | draft | The weekly visitor: a hooded stranger with violet lamp-light on one edge and two teal-white eyes, beside a small stall whose wares glow. |
-| `visitor-away` | free |  | draft | The same stall shuttered: a "back Thursday" board with a moon and a calendar mark, an unlit lamp with one last spark, a pale moon above. |
-| `market` | free |  | draft | A stall where a creature trades shards: four element shards glow on the counter, a big shard is the sign, and a customer waits with one. |
+| `bonfire` | free |  | archived | A fire in the middle of the valley with four resting creatures around it, each lit orange on the fire side and cool on the back: the warm heart, room for a rotating few. |
+| `bonfire-grand` | free |  | archived | The communal hearth at a later level: a taller fire in a paved stone ring, log benches with three creatures, and two lantern posts that throw their own small light. |
+| `school` | free |  | archived | A small schoolhouse with lit windows and a bell cupola; a creature outside wears the graduation ribbon, and a rosette hangs on the sign. |
+| `visitor` | free |  | archived | The weekly visitor: a hooded stranger with violet lamp-light on one edge and two teal-white eyes, beside a small stall whose wares glow. |
+| `visitor-away` | free |  | archived | The same stall shuttered: a "back Thursday" board with a moon and a calendar mark, an unlit lamp with one last spark, a pale moon above. |
+| `market` | free |  | archived | A stall where a creature trades shards: four element shards glow on the counter, a big shard is the sign, and a customer waits with one. |
 
 <a id="valley-posters"></a>
 
@@ -349,10 +351,11 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 
 ![Valley places: posters](valley-posters.png)
 
-- **Status:** draft
+- **Status:** archived
 - **Requested:** 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations.
 - **Source:** `apps/activity/src/sprites/concepts/valley-posters.ts` (draw it with `pnpm art valley-posters`)
 - **Sheet of:** `e7a08c426a3f`
+- 2026-11-11: archived; place screens dropped the poster for a sky (Q50).
 - Direction "poster": six 64x24 banners, one per place state, each with its own time of day (dusk, night, morning, twilight, grey dawn, afternoon).
 - Places: the bonfire (and a grander later level), the School, the weekly visitor (here and away), the Market (the shard broker). Designs are on the ccr-93a1de17-yutb1a branch, docs/design/valley/systems/.
 - Needs before use: the valley places in the content, each place screen head using its banner; the visitor-away banner shows between Sunday and Thursday.
@@ -361,12 +364,12 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 
 | Code | Kind | Role | Status | Idea |
 | --- | --- | --- | --- | --- |
-| `bonfire` | banner |  | draft | A warm dusk: a fire in a ring of stones in the middle of the valley, four resting creatures as silhouettes with a firelight rim, sparks rising into a plum sky. |
-| `bonfire-grand` | banner |  | draft | The grand hearth at night: a wider stone ring and a taller fire, a log bench each side with creatures on it, lantern posts with a string of lanterns, fireflies. |
-| `school` | banner |  | draft | A bright morning: the schoolhouse with a bell tower at the end of a path, bunting from the tree, and a little graduate in front wearing a pink ribbon. |
-| `visitor` | banner |  | draft | A blue-green twilight under a crescent moon: the hooded stranger with glowing eyes and a lantern staff beside his striped stall of glowing jars. |
-| `visitor-away` | banner |  | draft | The same stall on a grey-lilac morning: awning furled, lantern dark, a leaf on the counter and a sign with a moon and a calendar page, one day marked. |
-| `market` | banner |  | draft | A golden afternoon: a teal and cream stall where a round orange shopkeeper sells shards (red, yellow, cyan, violet), crates of them in front and a customer with a coin. |
+| `bonfire` | banner |  | archived | A warm dusk: a fire in a ring of stones in the middle of the valley, four resting creatures as silhouettes with a firelight rim, sparks rising into a plum sky. |
+| `bonfire-grand` | banner |  | archived | The grand hearth at night: a wider stone ring and a taller fire, a log bench each side with creatures on it, lantern posts with a string of lanterns, fireflies. |
+| `school` | banner |  | archived | A bright morning: the schoolhouse with a bell tower at the end of a path, bunting from the tree, and a little graduate in front wearing a pink ribbon. |
+| `visitor` | banner |  | archived | A blue-green twilight under a crescent moon: the hooded stranger with glowing eyes and a lantern staff beside his striped stall of glowing jars. |
+| `visitor-away` | banner |  | archived | The same stall on a grey-lilac morning: awning furled, lantern dark, a leaf on the counter and a sign with a moon and a calendar page, one day marked. |
+| `market` | banner |  | archived | A golden afternoon: a teal and cream stall where a round orange shopkeeper sells shards (red, yellow, cyan, violet), crates of them in front and a customer with a coin. |
 
 <a id="valley-school"></a>
 

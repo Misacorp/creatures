@@ -896,7 +896,8 @@ export const VALLEY_GLOW_CONCEPTS: ConceptSet = {
     },
     forge: {
       kind: 'free',
-      status: 'draft',
+      // Replaced by the Forge's five levels (valley-levels-forge).
+      status: 'archived',
       note: 'The Workshop: a stone smithy with an open fire mouth, an anvil on the ground and sparks; the ember glow spills out of the opening onto the ground. By day the fire stays alight, with sparks above the chimney and around the mouth; the yard is soot-dark.',
       sprite: FORGE,
       alts: { day: FORGE_DAY },
