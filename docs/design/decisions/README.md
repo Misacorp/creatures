@@ -455,6 +455,7 @@ Superseded: 1 entry (see the topic file).
 
 [social.md](social.md): The living room and lounging, the lounge message, Discord DMs and other social features.
 
+- 2026-11-12 Quiet Verge furniture set: tier 2, no element, stone and moonstone, from the Crossroads and the Reef
 - 2026-11-09 Housing server: how the rules of the first build read
 - 2026-11-09 Player housing: what is built and its standing rules \[Misa\]
 - 2026-10-25 Opt-in Discord DMs, derived from the game's tables
