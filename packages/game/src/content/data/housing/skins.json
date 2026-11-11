@@ -200,6 +200,26 @@
     "hint": "A blueprint from the Old Crossroads or the Moonlit Reef."
   },
   {
+    "id": "fairground-wall",
+    "name": "Fairground Wallpaper",
+    "kind": "wall",
+    "set": "fairground",
+    "unlock": {
+      "kind": "drop"
+    },
+    "hint": "A blueprint from the Old Crossroads."
+  },
+  {
+    "id": "fairground-floor",
+    "name": "Fairground Floor",
+    "kind": "floor",
+    "set": "fairground",
+    "unlock": {
+      "kind": "drop"
+    },
+    "hint": "A blueprint from the Old Crossroads."
+  },
+  {
     "id": "kitchen-wall",
     "name": "Kitchen Wallpaper",
     "kind": "wall",

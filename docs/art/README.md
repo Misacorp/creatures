@@ -9,6 +9,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | Set | Status | Pieces | Requested |
 | --- | --- | --- | --- |
 | [Combat v2 icons: attack shapes, board states, store meters](#combat-icons) | draft | 11 | 2026-10-31, Misa: "icons for keywords and attack shapes" (roadmap phase 3, combat v2). |
+| [House: Fairground set](#house-fairground) | draft | 14 | 2026-11-11: player housing furniture, a set made in the workshop (pnpm housing new-set). |
 | [House: the Cosy starter set](#house-cosy) | draft | 27 | 2026-11-09: player housing, art batch E4: the starter set mapped from the living room and its three new pieces. |
 | [House: garden and pool pieces](#house-garden) | draft | 13 | 2026-11-09: player housing, art batch E4: twelve garden and pool pieces that sit on grass and by water and read from a distance. |
 | [House: the wild pieces](#house-wild) | draft | 13 | 2026-11-09: player housing, art batch E4: twelve one-off pieces that belong to no set, each with character. |
@@ -69,6 +70,36 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | `store-heat` | glyph | Heat | liked | The Heat store (Boiling Point): the shared box with heat rising from it in waves. The count is text beside it ("x3"). Misa, 2026-11-01: "nice". |
 | `store-calm` | glyph | Calm | liked | The Calm store (Eye of the Storm): the shared box with a lotus in it. The count is text beside it ("x2"). Misa, 2026-11-01: "nice". |
 | `store-static` | glyph | Static | liked | The Static store (a dodge fills it): the shared box with a small crackle in it. The count is text beside it ("x1"). Misa, 2026-11-01: "nice". |
+
+<a id="house-fairground"></a>
+
+## House: Fairground set
+
+![House: Fairground set](house-fairground.png)
+
+- **Status:** draft
+- **Requested:** 2026-11-11: player housing furniture, a set made in the workshop (pnpm housing new-set).
+- **Source:** `apps/activity/src/sprites/concepts/house-fairground.ts` (draw it with `pnpm art house-fairground`)
+- **Sheet of:** `1ab1bbb7012b`
+- Striped awnings, bunting and prize ribbons on painted wood; red, cream, sky blue, sunny yellow. Drawn from its style (apps/activity/src/sprites/workshop/styles/fairground.ts); the pack is data/house/fairground.ts.
+- Needs the housing content (piece, skin and set ids as drawn).
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `fairground-bed` | free |  | draft | bed, 48x26, floor-large: headboard, mattress, pillow; the blanket is the front layer over the sleeper |
+| `fairground-bed-front` | free |  | draft | bed: the layer drawn over the sleeper |
+| `fairground-cupboard` | free |  | draft | cupboard, 30x36, floor-large: two doors, a plinth |
+| `fairground-table` | free |  | draft | table, 44x18, floor-large: a top on legs |
+| `fairground-shelf` | free |  | draft | wall shelf, 40x20, wall-large: a board on brackets with a few things on it |
+| `fairground-stool` | free |  | draft | stool, 16x12, floor-small |
+| `fairground-lamp` | free |  | draft | hanging lamp, 20x16, ceiling: hangs from the top row; the glow sprite is drawn over it at night |
+| `fairground-lamp-glow` | free |  | draft | lamp: night glow, drawn over the lamp |
+| `fairground-rug` | free |  | draft | rug, 56x10, rug spot: flat, seen from the front |
+| `fairground-frame` | free |  | draft | picture frame, 24x16, wall-small |
+| `fairground-curtains` | free |  | draft | window with its dressing, 36x26, window spot |
+| `fairground-wall` | free |  | draft | wallpaper tile 16x52, repeats across, no outline |
+| `fairground-floor` | free |  | draft | floor tile 16x8, repeats across, no outline |
+| `fairground-keepsake` | free |  | draft | keepsake 12x12, shown in the trophy hall cabinet when the set is complete |
 
 <a id="house-cosy"></a>
 

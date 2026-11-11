@@ -322,5 +322,41 @@
   "quiet-verge-curtains": {
     "made": "generated",
     "hash": "3a6d2372"
+  },
+  "fairground-bed": {
+    "made": "generated",
+    "hash": "f2b4d108"
+  },
+  "fairground-cupboard": {
+    "made": "generated",
+    "hash": "30e42486"
+  },
+  "fairground-table": {
+    "made": "generated",
+    "hash": "7037964d"
+  },
+  "fairground-shelf": {
+    "made": "generated",
+    "hash": "ab8aeb72"
+  },
+  "fairground-stool": {
+    "made": "generated",
+    "hash": "d8a6fa88"
+  },
+  "fairground-lamp": {
+    "made": "generated",
+    "hash": "d8a4e946"
+  },
+  "fairground-rug": {
+    "made": "generated",
+    "hash": "0887f38e"
+  },
+  "fairground-frame": {
+    "made": "generated",
+    "hash": "cc29a7bb"
+  },
+  "fairground-curtains": {
+    "made": "generated",
+    "hash": "208aefa2"
   }
 }

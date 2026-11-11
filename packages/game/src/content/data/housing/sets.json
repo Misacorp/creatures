@@ -224,5 +224,28 @@
     },
     "theme": "Dusk-violet stone edged in pale rim light, arches with a warm star inside, chips of stone that float; window dark, lilac, star gold.",
     "line": "Still stone and starlight, from the edge of the map."
+  },
+  {
+    "id": "fairground",
+    "name": "Fairground",
+    "element": null,
+    "tier": 1,
+    "primary": {
+      "family": "wood"
+    },
+    "accent": {
+      "family": "cloth"
+    },
+    "sources": {
+      "moments": ["trip", "scout", "raid", "games"],
+      "places": ["old-crossroads"],
+      "bosses": []
+    },
+    "keepsake": {
+      "name": "Fairground Keepsake",
+      "line": "TODO: one line about the Fairground keepsake."
+    },
+    "theme": "Striped awnings, bunting and prize ribbons on painted wood; red, cream, sky blue, sunny yellow.",
+    "line": "TODO: one line about the Fairground set."
   }
 ]

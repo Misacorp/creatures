@@ -1089,6 +1089,105 @@
     "hint": "A blueprint from the Old Crossroads or the Moonlit Reef."
   },
   {
+    "id": "fairground-bed",
+    "name": "Fairground Bed",
+    "form": "bed",
+    "set": "fairground",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "TODO: one line about the Fairground bed.",
+    "hint": "A blueprint from the Old Crossroads."
+  },
+  {
+    "id": "fairground-cupboard",
+    "name": "Fairground Cupboard",
+    "form": "cupboard",
+    "set": "fairground",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "TODO: one line about the Fairground cupboard.",
+    "hint": "A blueprint from the Old Crossroads."
+  },
+  {
+    "id": "fairground-table",
+    "name": "Fairground Table",
+    "form": "table",
+    "set": "fairground",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "TODO: one line about the Fairground table.",
+    "hint": "A blueprint from the Old Crossroads."
+  },
+  {
+    "id": "fairground-shelf",
+    "name": "Fairground Shelf",
+    "form": "shelf",
+    "set": "fairground",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "TODO: one line about the Fairground shelf.",
+    "hint": "A blueprint from the Old Crossroads."
+  },
+  {
+    "id": "fairground-stool",
+    "name": "Fairground Stool",
+    "form": "stool",
+    "set": "fairground",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "TODO: one line about the Fairground stool.",
+    "hint": "A blueprint from the Old Crossroads."
+  },
+  {
+    "id": "fairground-lamp",
+    "name": "Fairground Lamp",
+    "form": "lamp",
+    "set": "fairground",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "TODO: one line about the Fairground lamp.",
+    "hint": "A blueprint from the Old Crossroads."
+  },
+  {
+    "id": "fairground-rug",
+    "name": "Fairground Rug",
+    "form": "rug",
+    "set": "fairground",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "TODO: one line about the Fairground rug.",
+    "hint": "A blueprint from the Old Crossroads."
+  },
+  {
+    "id": "fairground-frame",
+    "name": "Fairground Frame",
+    "form": "frame",
+    "set": "fairground",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "TODO: one line about the Fairground frame.",
+    "hint": "A blueprint from the Old Crossroads."
+  },
+  {
+    "id": "fairground-curtains",
+    "name": "Fairground Curtains",
+    "form": "curtains",
+    "set": "fairground",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "TODO: one line about the Fairground curtains.",
+    "hint": "A blueprint from the Old Crossroads."
+  },
+  {
     "id": "rocking-chair",
     "name": "Rocking Chair",
     "form": "chair",
