@@ -286,5 +286,41 @@
   "lantern-night-curtains": {
     "made": "hand",
     "hash": "7ea4b47f"
+  },
+  "quiet-verge-bed": {
+    "made": "generated",
+    "hash": "59d96842"
+  },
+  "quiet-verge-cupboard": {
+    "made": "generated",
+    "hash": "19f3e8f9"
+  },
+  "quiet-verge-table": {
+    "made": "generated",
+    "hash": "8aa98ced"
+  },
+  "quiet-verge-shelf": {
+    "made": "generated",
+    "hash": "cb1706e5"
+  },
+  "quiet-verge-stool": {
+    "made": "generated",
+    "hash": "4a7bfcaf"
+  },
+  "quiet-verge-lamp": {
+    "made": "generated",
+    "hash": "befa8834"
+  },
+  "quiet-verge-rug": {
+    "made": "generated",
+    "hash": "96e86333"
+  },
+  "quiet-verge-frame": {
+    "made": "generated",
+    "hash": "2eaa398a"
+  },
+  "quiet-verge-curtains": {
+    "made": "generated",
+    "hash": "187401a5"
   }
 }

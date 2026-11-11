@@ -201,5 +201,28 @@
     },
     "theme": "Paper lanterns and bunting on painted wood; festival red, gold, cream.",
     "line": "Paper lanterns and bunting, for the longest evening of the year."
+  },
+  {
+    "id": "quiet-verge",
+    "name": "Quiet Verge",
+    "element": null,
+    "tier": 2,
+    "primary": {
+      "family": "stone"
+    },
+    "accent": {
+      "material": "moonstone"
+    },
+    "sources": {
+      "moments": ["trip", "scout", "raid"],
+      "places": ["old-crossroads", "moonlit-reef"],
+      "bosses": []
+    },
+    "keepsake": {
+      "name": "Quiet Verge Keepsake",
+      "line": "TODO: one line about the Quiet Verge keepsake."
+    },
+    "theme": "Dusk-violet stone edged in pale rim light, arches with a warm star inside, chips of stone that float; window dark, lilac, star gold.",
+    "line": "TODO: one line about the Quiet Verge set."
   }
 ]

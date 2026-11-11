@@ -180,6 +180,26 @@
     "hint": "A blueprint from the Festival Grounds, a Festival finale or a Games gold."
   },
   {
+    "id": "quiet-verge-wall",
+    "name": "Quiet Verge Wallpaper",
+    "kind": "wall",
+    "set": "quiet-verge",
+    "unlock": {
+      "kind": "drop"
+    },
+    "hint": "A blueprint from the Old Crossroads or the Moonlit Reef."
+  },
+  {
+    "id": "quiet-verge-floor",
+    "name": "Quiet Verge Floor",
+    "kind": "floor",
+    "set": "quiet-verge",
+    "unlock": {
+      "kind": "drop"
+    },
+    "hint": "A blueprint from the Old Crossroads or the Moonlit Reef."
+  },
+  {
     "id": "kitchen-wall",
     "name": "Kitchen Wallpaper",
     "kind": "wall",

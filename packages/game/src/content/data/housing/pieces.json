@@ -990,6 +990,105 @@
     "hint": "A blueprint from the Festival Grounds, a Festival finale or a Games gold."
   },
   {
+    "id": "quiet-verge-bed",
+    "name": "Quiet Verge Bed",
+    "form": "bed",
+    "set": "quiet-verge",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "TODO: one line about the Quiet Verge bed.",
+    "hint": "A blueprint from the Old Crossroads or the Moonlit Reef."
+  },
+  {
+    "id": "quiet-verge-cupboard",
+    "name": "Quiet Verge Cupboard",
+    "form": "cupboard",
+    "set": "quiet-verge",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "TODO: one line about the Quiet Verge cupboard.",
+    "hint": "A blueprint from the Old Crossroads or the Moonlit Reef."
+  },
+  {
+    "id": "quiet-verge-table",
+    "name": "Quiet Verge Table",
+    "form": "table",
+    "set": "quiet-verge",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "TODO: one line about the Quiet Verge table.",
+    "hint": "A blueprint from the Old Crossroads or the Moonlit Reef."
+  },
+  {
+    "id": "quiet-verge-shelf",
+    "name": "Quiet Verge Shelf",
+    "form": "shelf",
+    "set": "quiet-verge",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "TODO: one line about the Quiet Verge shelf.",
+    "hint": "A blueprint from the Old Crossroads or the Moonlit Reef."
+  },
+  {
+    "id": "quiet-verge-stool",
+    "name": "Quiet Verge Stool",
+    "form": "stool",
+    "set": "quiet-verge",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "TODO: one line about the Quiet Verge stool.",
+    "hint": "A blueprint from the Old Crossroads or the Moonlit Reef."
+  },
+  {
+    "id": "quiet-verge-lamp",
+    "name": "Quiet Verge Lamp",
+    "form": "lamp",
+    "set": "quiet-verge",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "TODO: one line about the Quiet Verge lamp.",
+    "hint": "A blueprint from the Old Crossroads or the Moonlit Reef."
+  },
+  {
+    "id": "quiet-verge-rug",
+    "name": "Quiet Verge Rug",
+    "form": "rug",
+    "set": "quiet-verge",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "TODO: one line about the Quiet Verge rug.",
+    "hint": "A blueprint from the Old Crossroads or the Moonlit Reef."
+  },
+  {
+    "id": "quiet-verge-frame",
+    "name": "Quiet Verge Frame",
+    "form": "frame",
+    "set": "quiet-verge",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "TODO: one line about the Quiet Verge frame.",
+    "hint": "A blueprint from the Old Crossroads or the Moonlit Reef."
+  },
+  {
+    "id": "quiet-verge-curtains",
+    "name": "Quiet Verge Curtains",
+    "form": "curtains",
+    "set": "quiet-verge",
+    "unlock": {
+      "kind": "drop"
+    },
+    "line": "TODO: one line about the Quiet Verge curtains.",
+    "hint": "A blueprint from the Old Crossroads or the Moonlit Reef."
+  },
+  {
     "id": "rocking-chair",
     "name": "Rocking Chair",
     "form": "chair",
