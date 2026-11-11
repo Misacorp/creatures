@@ -21,9 +21,7 @@ export interface GridRoom {
 /** The east edge (the first free column) of the indoor rooms on the floor a balcony hangs at; the core's edge when there are none. */
 function eastEdge(rooms: readonly GridRoom[], balcony: PartDef, coreW: number): number {
   const floors = new Set(balcony.rooms.map((r) => r.floor));
-  const edges = rooms
-    .filter((r) => !r.outdoor && floors.has(r.floor))
-    .map((r) => r.col + r.w);
+  const edges = rooms.filter((r) => !r.outdoor && floors.has(r.floor)).map((r) => r.col + r.w);
   return Math.max(coreW, ...edges);
 }
 
