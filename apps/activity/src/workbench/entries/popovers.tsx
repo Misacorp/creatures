@@ -174,12 +174,14 @@ const howToPlay: Entry = {
       options: [ALL_SECTIONS, ...GLOSSARY_SECTIONS, ...GLOSSARY_SECTIONS_V2],
     },
     v2: { kind: 'toggle' },
+    housing: { kind: 'toggle' },
   },
-  defaults: { section: ALL_SECTIONS, v2: false },
+  defaults: { section: ALL_SECTIONS, v2: false, housing: false },
   presets: [
     { name: 'From the top', props: {} },
     { name: 'Gear', props: { section: 'gear' } },
     { name: 'Creatures', props: { section: 'creatures' } },
+    { name: 'Your House', props: { housing: true, section: 'housing' } },
     { name: 'Combat v2, from the top', props: { v2: true } },
     { name: 'Combat v2: marks', props: { v2: true, section: 'v2-marks' } },
     { name: 'Combat v2: Knacks', props: { v2: true, section: 'v2-knacks' } },
@@ -191,7 +193,15 @@ const howToPlay: Entry = {
   render: (p) => {
     const section =
       [...GLOSSARY_SECTIONS, ...GLOSSARY_SECTIONS_V2].find((s) => s === str(p, 'section')) ?? null;
-    return <HowToPlay section={section} nonce={0} onClose={() => undefined} v2={bool(p, 'v2')} />;
+    return (
+      <HowToPlay
+        section={section}
+        nonce={0}
+        onClose={() => undefined}
+        v2={bool(p, 'v2')}
+        housing={bool(p, 'housing')}
+      />
+    );
   },
 };
 

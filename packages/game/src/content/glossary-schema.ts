@@ -21,6 +21,7 @@ export const GLOSSARY_SECTIONS = [
   'games',
   'gear',
   'workshop',
+  'housing',
 ] as const;
 const V1SectionSchema = v.picklist(GLOSSARY_SECTIONS);
 

@@ -42,15 +42,29 @@ function first(list: FakeElement[]): FakeElement {
 }
 
 describe('which sections the page shows', () => {
-  it('shows the shipped twelve while combat v2 is off', () => {
-    expect(pageSections(false).map((s) => s.id)).toEqual([...GLOSSARY_SECTIONS]);
+  it('shows the shipped twelve while combat v2 and housing are off', () => {
+    expect(pageSections(false).map((s) => s.id)).toEqual(
+      GLOSSARY_SECTIONS.filter((s) => s !== 'housing'),
+    );
+  });
+
+  it('shows the Your House section last only while housing is on, with or without combat v2', () => {
+    expect(pageSections(false, true).map((s) => s.id)).toEqual([...GLOSSARY_SECTIONS]);
+    expect(pageSections(true).map((s) => s.id)).not.toContain('housing');
+    expect(
+      pageSections(true, true)
+        .map((s) => s.id)
+        .at(-1),
+    ).toBe('housing');
   });
 
   it('shows the six combat v2 sections first, then the shipped ones it keeps, once combat v2 is on', () => {
     const ids = pageSections(true).map((s) => s.id);
     expect(ids.slice(0, 6)).toEqual([...GLOSSARY_SECTIONS_V2]);
     expect(ids.slice(6)).toEqual(
-      GLOSSARY_SECTIONS.filter((s) => (V2_KEPT_SECTIONS as readonly string[]).includes(s)),
+      GLOSSARY_SECTIONS.filter((s) => s !== 'housing').filter((s) =>
+        (V2_KEPT_SECTIONS as readonly string[]).includes(s),
+      ),
     );
     for (const gone of ['first-week', 'creatures', 'combos', 'raid-week', 'finale', 'ranks']) {
       expect(ids, gone).not.toContain(gone);
