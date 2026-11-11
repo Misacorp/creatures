@@ -1,6 +1,6 @@
 # Housing: the next round (content, polish and how we make it)
 
-Status: **proposed** (2026-11-11). Misa chose the scope: night for the house, a repeatable way to make furniture, more to build, then porch visitors as a design round. The lead's picks are marked; Misa has not confirmed them yet. Work continues on PR #133 (branch `ccr-fd78f187-exje5j`), with housing still off in production. The feature itself is described in [`housing.md`](housing.md).
+Status: **accepted by Misa** (2026-11-11: "Your four picks are good"), with the room-interior work (C5) added at his request ("wallpapers and other sorts of things that can change the base house interior"); C5's list is the lead's proposal. Misa chose the scope: night for the house, a repeatable way to make furniture, more to build, then porch visitors as a design round. The four picks under "Open for Misa" are confirmed. Work continues on PR #133 (branch `ccr-fd78f187-exje5j`), with housing still off in production. The feature itself is described in [`housing.md`](housing.md).
 
 ## What Misa asked for
 
@@ -51,9 +51,17 @@ Aim: **more ways for two players' houses to differ.**
 - **C1. New parts** (lead's pick, to confirm): a **tower** on the core, a **balcony**, an **orchard** and a **pond with a bridge**. Each brings its own room or grounds spots, default look, price and a place in the outside view.
 - **C2. New sets**, made with workshop A (lead's pick, to confirm): **Quiet Verge** (the Void place, whose art Misa liked), **Fairground** (bright, striped, from the Valley Games) and **Schoolhouse** (desks, chalk, a bell).
 - **C3. Grounds.** More garden, orchard, pond and pool pieces, so grounds are not the same arbour and lounger.
+- **C5. The room itself** (Misa, 2026-11-11). Today a room has one wallpaper and one floor. The base interior becomes something the player shapes, in layers that are each a small choice:
+  - **Wallpaper as pattern plus colour.** A library of patterns (plain, stripes, damask, panels, tiles, brick, planks, starry, floral) in a range of colours, drawn by the workshop from a pattern and a palette, so there are dozens without dozens of drawings. Set wallpapers stay as they are.
+  - **Floors the same way** (planks, parquet, tiles, stone, carpet, in colours).
+  - **Trim.** The skirting, the wainscot and the cornice of a room become a choice of their own (none, painted wood, dark panelling, stone).
+  - **The frame of the house.** The posts and floor slabs between rooms take a material for the whole house (timber beams, stone, painted), like the roof and walls do outside.
+  - **Ways through.** Doorways between rooms on a floor and a staircase between floors, drawn as part of the base (look only), so the cutaway reads as a house people move through. A few styles to choose from.
+  - **Ceilings.** Plain, beamed or vaulted where the room is under the roof.
+  - Each is a skin kind in the content, picked from the room like wallpaper is today, earned the same ways (starter, part, set, drop, feat) and shown in the catalogue. The lead brings Misa a sheet of each layer before the full library is drawn.
 - **C4. Loose ends from the first night:** wall material as trim on the gable ends; a how-to-play entry and glossary check for housing; measure what loading the housing content costs the server when its object starts.
 
-Done when: content tests and the art cross-check pass, the catalogue shows the new things, and the dev tools can build and furnish them.
+Done when: content tests and the art cross-check pass, the catalogue shows the new things, the dev tools can build and furnish them, and a room can be made to look unlike any default with base choices alone.
 
 ## D. How the crew works (the process, part two)
 
@@ -79,13 +87,14 @@ Misa's idea: porch items draw rare, mysterious visitors who offer a choice with 
 
 The lead orchestrates; implementers (Sonnet) build in their own worktrees; Opus is used for the workshop's design (A2) and the reviews; nothing is deployed unless Misa asks.
 
-## Open for Misa (each with the lead's pick)
+## Decided, and what is still open
 
-1. **New parts:** tower, balcony, orchard, pond with a bridge. Pick: these four.
-2. **New sets:** Quiet Verge, Fairground, Schoolhouse. Pick: these three.
-3. **Night at home:** follows the server's clock, like the living room. Pick: yes, with no setting.
-4. **Generated or hand-drawn:** pieces come from forms and styles, with hand overrides where a set needs them. Pick: yes; the shipped sets must not get worse.
-5. **Still open from the first night:** the seven questions in the PR summary (gift reward, housemates at the bonfire, raiders at home, one gift a day, the trophy hall behind the west wing, the valley House as your own, when to turn housing on). The lead's picks are built in.
+1. **New parts:** tower, balcony, orchard, pond with a bridge. **Confirmed.**
+2. **New sets:** Quiet Verge, Fairground, Schoolhouse. **Confirmed.**
+3. **Night at home:** follows the server's clock, like the living room. **Confirmed:** yes, with no setting.
+4. **Generated or hand-drawn:** pieces come from forms and styles, with hand overrides where a set needs them. **Confirmed:** yes; the shipped sets must not get worse.
+5. **Open, C5:** which interior layers to keep after Misa sees the sheets (the lead's pick: all six).
+6. **Still open from the first night:** the seven questions in the PR summary (gift reward, housemates at the bonfire, raiders at home, one gift a day, the trophy hall behind the west wing, the valley House as your own, when to turn housing on). The lead's picks are built in.
 
 ## Left for later
 
