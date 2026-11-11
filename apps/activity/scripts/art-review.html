@@ -233,23 +233,33 @@
       transition: border-color 120ms steps(2);
     }
   }
+  .jump {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .jump a {
+    text-decoration: none;
+  }
 </style>
 
 <main>
   <section class="intro">
     <h1>Art Review</h1>
     <p>
-      Every piece in the art library, plus the gear sprites now in the game. Tap Like or Redo on
-      each one and leave a note if you want changes. I read your answers and act on them in the next
-      session.
+      The pieces waiting for your verdict come first, newest at the top. Tap Like or Redo and leave
+      a note if you want changes. A piece comes back here when it is redrawn after your answer.
+      "All" shows the whole library and the gear in the game.
     </p>
     <div class="tally" id="tally" aria-live="polite"></div>
     <div class="filters" role="group" aria-label="Show">
-      <button class="chip" data-filter="all" aria-pressed="true">All</button>
-      <button class="chip" data-filter="open" aria-pressed="false">Not reviewed</button>
+      <button class="chip" data-filter="open" aria-pressed="true">To review</button>
+      <button class="chip" data-filter="all" aria-pressed="false">All</button>
       <button class="chip" data-filter="liked" aria-pressed="false">Liked</button>
       <button class="chip" data-filter="redo" aria-pressed="false">Redo</button>
     </div>
+    <nav class="jump" id="jump" aria-label="Sets to review"></nav>
     <p class="status" id="status">Loading your earlier answers…</p>
   </section>
   <div id="sets" style="display: grid; gap: 40px"></div>
@@ -259,7 +269,26 @@
   // `pnpm art review` puts the data in place of this string (with its quotes); Prettier leaves strings alone.
   const SETS = '__ART_REVIEW_DATA__';
   const reviews = {}; // sprite id -> { verdict, note }
-  let filter = 'all';
+  let filter = 'open';
+  // Pieces answered on this visit stay in "To review" until the filter changes, so a note can follow.
+  const answeredNow = new Set();
+  const ITEMS = new Map(SETS.flatMap((s) => s.items.map((i) => [i.id, { item: i, set: s }])));
+
+  /** Waiting for a verdict: a draft with no answer given since its set last changed. */
+  function isOpen(id) {
+    const found = ITEMS.get(id);
+    if (!found || found.item.status !== 'draft') return false;
+    const r = reviews[id];
+    return !(r?.verdict && r.updatedAt && r.updatedAt >= found.set.changedAt);
+  }
+  /** What a card shows: waiting, the latest answer, or the library's own status. */
+  function stateOf(id) {
+    if (isOpen(id)) return 'open';
+    const r = reviews[id];
+    if (r?.verdict) return r.verdict;
+    const st = ITEMS.get(id)?.item.status;
+    return st === 'liked' || st === 'redo' ? st : 'other';
+  }
   let db = null;
 
   function draw(def, scale) {
@@ -295,8 +324,9 @@
 
   function renderTally() {
     const all = SETS.flatMap((s) => s.items);
-    const liked = all.filter((i) => reviews[i.id]?.verdict === 'liked').length;
-    const redo = all.filter((i) => reviews[i.id]?.verdict === 'redo').length;
+    const open = all.filter((i) => isOpen(i.id)).length;
+    const liked = all.filter((i) => stateOf(i.id) === 'liked').length;
+    const redo = all.filter((i) => stateOf(i.id) === 'redo').length;
     const t = document.getElementById('tally');
     const count = (n, label) => {
       const s = el('span', 'count');
@@ -304,31 +334,47 @@
       return s;
     };
     t.replaceChildren(
-      count(all.length, 'pieces'),
+      count(open, 'to review'),
       count(liked, 'liked'),
       count(redo, 'to redo'),
-      count(all.length - liked - redo, 'not reviewed'),
+      count(all.length, 'in all'),
     );
+    // A link to each set with pieces waiting, newest first.
+    const jump = document.getElementById('jump');
+    jump.replaceChildren();
+    for (const set of SETS) {
+      const n = set.items.filter((i) => isOpen(i.id)).length;
+      if (n === 0) continue;
+      const a = el('a', 'chip', `${set.title} (${n})`);
+      a.href = `#set-${docId(set.id)}`;
+      jump.append(a);
+    }
   }
 
   function applyFilter() {
     for (const card of document.querySelectorAll('.card')) {
-      const v = card.dataset.verdict || 'open';
-      card.hidden = !(filter === 'all' || filter === v);
+      const shown =
+        filter === 'all' ||
+        filter === card.dataset.verdict ||
+        (filter === 'open' && answeredNow.has(card.dataset.id));
+      card.hidden = !shown;
     }
     for (const set of document.querySelectorAll('.set'))
       set.hidden = !set.querySelector('.card:not([hidden])');
   }
 
   async function save(id, patch) {
+    // A verdict on an earlier drawing does not carry over: a note on a redrawn piece leaves it waiting.
     const next = {
-      verdict: reviews[id]?.verdict ?? null,
+      verdict: isOpen(id) ? null : (reviews[id]?.verdict ?? null),
       note: reviews[id]?.note ?? '',
       ...patch,
       updatedAt: new Date().toISOString(),
       piece: id,
     };
+    // Leaving a note alone keeps a piece in "To review"; a verdict answers it.
     reviews[id] = next;
+    if (filter === 'open') answeredNow.add(id);
     paintCard(id);
     renderTally();
     applyFilter();
@@ -345,9 +391,10 @@
     const card = document.querySelector(`.card[data-id="${CSS.escape(id)}"]`);
     if (!card) return;
     const r = reviews[id];
-    card.dataset.verdict = r?.verdict ?? '';
+    card.dataset.verdict = stateOf(id);
+    // A verdict on an earlier drawing is not shown as pressed, so the piece reads as unanswered.
     for (const b of card.querySelectorAll('.actions button'))
-      b.setAttribute('aria-pressed', String(r?.verdict === b.dataset.v));
+      b.setAttribute('aria-pressed', String(!isOpen(id) && r?.verdict === b.dataset.v));
     const ta = card.querySelector('textarea');
     if (document.activeElement !== ta) ta.value = r?.note ?? '';
   }
@@ -356,6 +403,7 @@
     const root = document.getElementById('sets');
     for (const set of SETS) {
       const sec = el('section', 'set');
+      sec.id = `set-${docId(set.id)}`;
       const head = el('div', 'set-head');
       head.append(
         el('h2', '', set.title),
@@ -401,7 +449,9 @@
           b.setAttribute('aria-pressed', 'false');
           b.setAttribute('aria-label', `${text} ${item.code}`);
           b.addEventListener('click', () =>
-            save(item.id, { verdict: reviews[item.id]?.verdict === v ? null : v }),
+            save(item.id, {
+              verdict: !isOpen(item.id) && reviews[item.id]?.verdict === v ? null : v,
+            }),
           );
           actions.append(b);
         }
@@ -426,15 +476,20 @@
   document.querySelectorAll('[data-filter]').forEach((b) =>
     b.addEventListener('click', () => {
       filter = b.dataset.filter;
+      answeredNow.clear();
       document
         .querySelectorAll('[data-filter]')
         .forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
       applyFilter();
+      // The links point at sets with pieces waiting, which only "To review" shows for sure.
+      document.getElementById('jump').hidden = filter !== 'open';
     }),
   );
 
   render();
+  for (const id of ITEMS.keys()) paintCard(id);
   renderTally();
+  applyFilter();
 
   (async () => {
     const status = document.getElementById('status');
@@ -460,6 +515,7 @@
             reviews[data.piece] = {
               verdict: data.verdict ?? null,
               note: typeof data.note === 'string' ? data.note : '',
+              updatedAt: typeof data.updatedAt === 'string' ? data.updatedAt : '',
             };
             paintCard(data.piece);
           }

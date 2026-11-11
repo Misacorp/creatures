@@ -511,7 +511,7 @@ function catalogue(): string {
     '',
     'Art drawn ahead of its content: creatures, bosses, items and banners that have no name or stats yet. **Before adding content, look here** for art that was made for it, and use it (move the sprite into `apps/activity/src/sprites/data/` under the content id and delete the concept in the same PR). To add art, see `docs/design/art-studio.md`.',
     '',
-    'Status: **liked** means Misa approved the look; **draft** means he has not said yet; **redo** means he wants changes first (see the notes).',
+    'Status: **liked** means Misa approved the look; **draft** means he has not said yet; **redo** means he wants changes first (see the notes); **archived** is kept for reference only (a direction not picked, or replaced by newer art).',
     '',
     '| Set | Status | Pieces | Requested |',
     '| --- | --- | --- | --- |',

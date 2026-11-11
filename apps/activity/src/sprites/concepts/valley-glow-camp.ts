@@ -585,6 +585,8 @@ export const VALLEY_GLOW_CAMP_CONCEPTS: ConceptSet = {
     },
     road: {
       kind: 'free',
+      // Replaced by the Signpost's five levels (valley-levels-signpost).
+      status: 'archived',
       note: 'Where the road leaves the camp: a short worn dirt path that leaves the foot of the post and bends up to the right, fraying out into the grass (Misa, 2026-11-05: shorter, more to the right), and a wooden signpost with three plank arrows (marks, no words, each fully outlined) and a lantern on a hook. Warm light lies on the ground round the foot of the post. By day the lantern is unlit and the ground is a dirt patch with pebbles.',
       sprite: ROAD,
       alts: { day: ROAD_DAY },
@@ -603,6 +605,8 @@ export const VALLEY_GLOW_CAMP_CONCEPTS: ConceptSet = {
     },
     paddock: {
       kind: 'free',
+      // Replaced by the Paddock's five levels (valley-levels-paddock).
+      status: 'archived',
       note: 'A fenced pen seen from the front-top: a straight back rail, short side rails, front rails with an open gate gap, a hay pile and a water trough at the back and a lantern on a front post. The inside is open grass for creatures. The lantern on the gate post lays stepped rings on the gate ground; by day it is unlit and the ground is trodden dirt.',
       sprite: PADDOCK,
       alts: { day: PADDOCK_DAY },

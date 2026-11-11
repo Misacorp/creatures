@@ -36,31 +36,43 @@ export const TIERS = {
   },
   2: {
     name: 'Settled',
-    // sawn planks, wooden shingles (the school's roof), iron nails
+    // sawn planks, wooden shingles (the school's roof; lit, body and shaded), iron nails
     plank: m('#b0764a', '#d4a266'),
     plankShade: m('#6e4636', '#9c6a3c'),
+    // lit side, body, shaded side: one light from the upper left, like the walls
+    shingleLight: m('#a05a8c', '#e08a66'),
     shingle: m('#7a4070', '#c8684a'),
     shingleShade: m('#3a2650', '#a04a3a'),
     nail: m('#2a2e52', '#4a4a58'),
   },
   3: {
     name: 'Stone',
-    // cut grey stone (the bonfire's stones, lightened), slate roof, black iron
-    stone: m('#7e86aa', '#a5a2ae'),
-    stoneShade: m('#566088', '#7a7684'),
-    stoneLight: m('#aeb6d6', '#d4d0d8'),
-    slate: m('#5a5690', '#6a7084'),
-    slateShade: m('#3c3a6c', '#4a5064'),
+    // Misa 2026-11-11: warm sandstone blocks (ochre-cream, warm shade, light edge) and terracotta barrel
+    // tiles (an orange-red unlike level 2's shingles), black iron. The names stay `stone` and `slate` so every
+    // building picks the new colours up; `sandstone` and `terracotta` are aliases of the same colours.
+    stone: m('#a8845c', '#dcb97c'),
+    stoneShade: m('#7a5a50', '#b08a56'),
+    stoneLight: m('#d8bc8c', '#f2e0ae'),
+    slate: m('#c0623a', '#e4743a'),
+    slateShade: m('#7c3a3c', '#b04a22'),
+    slateLight: m('#e08a58', '#f89c58'),
+    sandstone: m('#a8845c', '#dcb97c'),
+    sandstoneShade: m('#7a5a50', '#b08a56'),
+    sandstoneLight: m('#d8bc8c', '#f2e0ae'),
+    terracotta: m('#c0623a', '#e4743a'),
+    terracottaShade: m('#7c3a3c', '#b04a22'),
+    terracottaLight: m('#e08a58', '#f89c58'),
     iron: m('#1c1a2c', '#2e2c3a'),
   },
   4: {
     name: 'Valley',
-    // the valley's teal and cream (the market's awning), brass
+    // the valley's teal and cream (the market's awning), brass, wrought iron
     teal: m('#2f8a78', '#2a8a8a'),
     tealShade: m('#1f5a5a', '#1f6a6a'),
     cream: m('#e8d8b0', '#f4ecd0'),
     brass: m('#d0a040', '#f0b830'),
     brassShade: m('#8a6a28', '#b08820'),
+    wrought: m('#8a88b8', '#6a6878'),
   },
   5: {
     name: 'Crystal',
@@ -152,34 +164,59 @@ const TIER_1 = sample(
   { S: m('#a07428', '#c8a040'), F: m('#7a82b0', '#c8c4d0') },
 );
 
+/** Roof of one light: left of `split` is the lit plane (light shingle, body accents), right the shaded plane. */
+function lightRoof(rows: string[], from: number, to: number, split: number): string[] {
+  return rows.map((row, y) =>
+    y < from || y > to
+      ? row
+      : [...row]
+          .map((ch, x) => (x < split ? (ch === 's' ? 'h' : ch === 'S' ? 's' : ch) : ch))
+          .join(''),
+  );
+}
+
 const TIER_2 = sample(
+  lightRoof(
+    [
+      '........................................',
+      '........................................',
+      '..........kkkkkkkkkkkkkkkkkkkkk.........',
+      '.........ksssssssssssssssssssssk........',
+      '........ksSSssSSssSSssSSssSSssSSk.......',
+      '.......kSSssSSssSSssSSssSSssSSssSk......',
+      '......kSssSSssSSssSSssSSssSSssSSssk.....',
+      '.....kssSSssSSssSSssSSssSSssSSssSSsk....',
+      '....ksSSssSSssSSssSSssSSssSSssSSssSSk...',
+      '...kSSssSSssSSssSSssSSssSSssSSssSSssSk..',
+      '..kSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSk.',
+      '...kkkkkkpppPppPppPppPpPPPSPPSPPkkkkkk..',
+      '....kk..kpppPppPppPppPpPPPSPPSPPk.......',
+      '..kkPPkkkpppPppPppPppPpPPPSPPSPPk.......',
+      '.kppppppkpnpPnpPnpPnpPpPPPSPPSPPk.......',
+      '.kpnppnpkpppPppPppPppPpPPPSPPSPPk.......',
+      '.kppppppkpppPppPppPppPpPPPSPPSPPk.......',
+      '.kPPPPPPkpppPppPppPppPpPPPSPPSPPk.......',
+      '..kkkkkkkpppPppPppPppPpPPPSPPSPPk.......',
+      '........kpnpPnpPnpPnpPpPPPSPPSPPk.......',
+      '........kpppPppPppPppPpPPPSPPSPPk.......',
+      '........kpppPppPppPppPpPPPSPPSPPk.......',
+      '...xxxxxxkkkkkkkkkkkkkkkkkkkkkkkxxxxxx..',
+      '......xxxxxxxxxxxxxxxxxxxxxxxxxxxxx.....',
+    ],
+    2,
+    10,
+    21,
+  ),
   [
-    '........................................',
-    '........................................',
-    '..........kkkkkkkkkkkkkkkkkkkkk.........',
-    '.........ksssssssssssssssssssssk........',
-    '........ksSSssSSssSSssSSssSSssSSk.......',
-    '.......kSSssSSssSSssSSssSSssSSssSk......',
-    '......kSssSSssSSssSSssSSssSSssSSssk.....',
-    '.....kssSSssSSssSSssSSssSSssSSssSSsk....',
-    '....ksSSssSSssSSssSSssSSssSSssSSssSSk...',
-    '...kSSssSSssSSssSSssSSssSSssSSssSSssSk..',
-    '..kSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSk.',
-    '...kkkkkkpppPppPppPppPpPPPSPPSPPkkkkkk..',
-    '....kk..kpppPppPppPppPpPPPSPPSPPk.......',
-    '..kkPPkkkpppPppPppPppPpPPPSPPSPPk.......',
-    '.kppppppkpnpPnpPnpPnpPpPPPSPPSPPk.......',
-    '.kpnppnpkpppPppPppPppPpPPPSPPSPPk.......',
-    '.kppppppkpppPppPppPppPpPPPSPPSPPk.......',
-    '.kPPPPPPkpppPppPppPppPpPPPSPPSPPk.......',
-    '..kkkkkkkpppPppPppPppPpPPPSPPSPPk.......',
-    '........kpnpPnpPnpPnpPpPPPSPPSPPk.......',
-    '........kpppPppPppPppPpPPPSPPSPPk.......',
-    '........kpppPppPppPppPpPPPSPPSPPk.......',
-    '...xxxxxxkkkkkkkkkkkkkkkkkkkkkkkxxxxxx..',
-    '......xxxxxxxxxxxxxxxxxxxxxxxxxxxxx.....',
+    tierPalette(2, {
+      p: 'plank',
+      P: 'plankShade',
+      h: 'shingleLight',
+      s: 'shingle',
+      S: 'shingleShade',
+      n: 'nail',
+    }),
   ],
-  [tierPalette(2, { p: 'plank', P: 'plankShade', s: 'shingle', S: 'shingleShade', n: 'nail' })],
 );
 
 const STONE = {
@@ -188,39 +225,67 @@ const STONE = {
   L: 'stoneLight',
 } as const;
 
+/**
+ * Terracotta barrel tiles on a roof drawn with `a` (fill) and `A` (eave shade): rounded ribs, each course
+ * three rows (a light rib, a body, a shaded gap; the rib's rounded end is the dark row), courses offset by
+ * two pixels. The lit edge is the top row.
+ */
+function barrelTiles(rows: string[], from: number, to: number): string[] {
+  const rib = ['r', 'a', 'a', 'A'];
+  return rows.map((row, y) =>
+    y < from || y > to
+      ? row
+      : [...row]
+          .map((ch, x) => {
+            if (ch !== 'a') return ch;
+            if (y === from) return 'r';
+            const course = Math.floor((y - from - 1) / 3);
+            const inCourse = (y - from - 1) % 3;
+            if (inCourse === 2) return (x + course * 2) % 4 < 2 ? 'A' : 'a';
+            return rib[(x + course * 2) % 4];
+          })
+          .join(''),
+  );
+}
+
 const TIER_3 = sample(
-  [
-    '........................................',
-    '........................................',
-    '.....kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk....',
-    '....kaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaak...',
-    '....kAaaaAAAaaaAAAaaaAAAaaaAAAaaaAAAk...',
-    '....kaAAAaaaAAAaaaAAAaaaAAAaaaAAAaaak...',
-    '....kAaaaAAAaaaAAAaaaAAAaaaAAAaaaAAAk...',
-    '....kaAAAaaaAAAaaaAAAaaaAAAaaaAAAaaak...',
-    '....kAaaaAAAaaaAAAaaaAAAaaaAAAaaaAAAk...',
-    '...kAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAk..',
-    '....kkkkttttttttTTLLLLLLuuuuuuUuukkkk...',
-    '.......kttttttttTTLLLLLLuuuuuuUuuk......',
-    '.......kTTTiiTTTTTTTTTTTUUUUUUUUUk......',
-    '.......ktttibiiiiiiiiiiiiiiibiuuuk......',
-    '.......ktttiitttttttTLLLuiuUuuuuuk......',
-    '.......kTTTiiiTTTTTTTTTTUbUUUUUUUk......',
-    '.......ktttiititTTLLLLLLuiuuuuUuuk......',
-    '.......ktttttttiTTLLLLLLiiiuuuUuuk......',
-    '.......kTTTTTTTTiTTTTTTTUUUUUUUUUk......',
-    '.......kttttTttttTLLLLLLuuuUUuuuuk......',
-    '.......kttttTttttTLLLLLLuuuUUuuuuk......',
-    '.......kTTTTTTTTTTTTTTTTUUUUUUUUUk......',
-    '...xxxxxkkkkkkkkkkkkkkkkkkkkkkkkkxxxxx..',
-    '......xxxxxxxxxxxxxxxxxxxxxxxxxxxxx.....',
-  ],
+  barrelTiles(
+    [
+      '........................................',
+      '........................................',
+      '.....kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk....',
+      '....kaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaak...',
+      '....kAaaaAAAaaaAAAaaaAAAaaaAAAaaaAAAk...',
+      '....kaAAAaaaAAAaaaAAAaaaAAAaaaAAAaaak...',
+      '....kAaaaAAAaaaAAAaaaAAAaaaAAAaaaAAAk...',
+      '....kaAAAaaaAAAaaaAAAaaaAAAaaaAAAaaak...',
+      '....kAaaaAAAaaaAAAaaaAAAaaaAAAaaaAAAk...',
+      '...kAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAk..',
+      '....kkkkttttttttTTLLLLLLuuuuuuUuukkkk...',
+      '.......kttttttttTTLLLLLLuuuuuuUuuk......',
+      '.......kTTTiiTTTTTTTTTTTUUUUUUUUUk......',
+      '.......ktttibiiiiiiiiiiiiiiibiuuuk......',
+      '.......ktttiitttttttTLLLuiuUuuuuuk......',
+      '.......kTTTiiiTTTTTTTTTTUbUUUUUUUk......',
+      '.......ktttiititTTLLLLLLuiuuuuUuuk......',
+      '.......ktttttttiTTLLLLLLiiiuuuUuuk......',
+      '.......kTTTTTTTTiTTTTTTTUUUUUUUUUk......',
+      '.......kttttTttttTLLLLLLuuuUUuuuuk......',
+      '.......kttttTttttTLLLLLLuuuUUuuuuk......',
+      '.......kTTTTTTTTTTTTTTTTUUUUUUUUUk......',
+      '...xxxxxkkkkkkkkkkkkkkkkkkkkkkkkkxxxxx..',
+      '......xxxxxxxxxxxxxxxxxxxxxxxxxxxxx.....',
+    ],
+    3,
+    8,
+  ),
   [
     tierPalette(3, {
       ...STONE,
       u: 'stone',
       U: 'stoneShade',
       a: 'slate',
+      r: 'slateLight',
       A: 'slateShade',
       i: 'iron',
       b: 'stoneLight',
@@ -228,34 +293,95 @@ const TIER_3 = sample(
   ],
 );
 
+/** A grid of 40x24 painted with runs: `put(x, y, 'text')` writes a run, `.` leaves what is there. */
+function paint(
+  size: { w: number; h: number },
+  runs: readonly [number, number, string][],
+): string[] {
+  const grid = Array.from({ length: size.h }, () => Array.from({ length: size.w }, () => '.'));
+  for (const [x, y, text] of runs) {
+    [...text].forEach((ch, i) => {
+      if (ch !== '.') grid[y]![x + i] = ch;
+    });
+  }
+  return grid.map((row) => row.join(''));
+}
+
+// Level 4: a cream post with a teal banner hanging from a brass crossbar (swallowtail bottom, cream diamond,
+// cream band; lit on the left, shaded on the right like the walls) and a brass lamp hanging from an ornate
+// wrought-iron arm (W): a curl at the end, an S-scroll brace and a brass boss on the post.
 const TIER_4 = sample(
+  paint({ w: 40, h: 24 }, [
+    // post, finial and collar
+    [18, 3, 'kk'],
+    [17, 4, 'kbbk'],
+    [17, 5, 'kBBk'],
+    [16, 6, 'kbbbbk'],
+    ...Array.from({ length: 11 }, (_, i): [number, number, string] => [16, 7 + i, 'kccCCk']),
+    [13, 18, 'kkkkccCCkkkk'],
+    [12, 19, 'kbbbbbbbbbbbbk'],
+    [12, 20, 'kcccccccccccck'],
+    [12, 21, 'kCCCCCCCCCCCCk'],
+    [13, 22, 'kkkkkkkkkkkk'],
+    // crossbar and banner
+    [22, 7, 'kkkkkkkkkkkkkkkk'],
+    [22, 8, 'bbbbbbbbbbbbbbbb'],
+    [22, 9, 'BBBBBBBBBBBBBBBB'],
+    [26, 10, 'kkkkkkkkkkkk'],
+    ...Array.from({ length: 7 }, (_, i): [number, number, string] => [26, 11 + i, 'ktttttttTTTk']),
+    [26, 16, 'kcccccccCCCk'],
+    [31, 11, 'cc'],
+    [30, 12, 'cccc'],
+    [29, 13, 'ccccc' + 'C'],
+    [30, 14, 'ccc' + 'C'],
+    [31, 15, 'cc'],
+    [26, 17, 'ktttttttTTTk'],
+    [26, 18, 'kttttkkTTTTk'],
+    [26, 19, 'ktttk..kTTTk'],
+    [26, 20, 'kttk....kTTk'],
+    [27, 21, 'kk'],
+    [35, 21, 'kk'],
+    // wrought-iron arm: end curl, arm, brass boss, S-scroll brace, chain
+    [7, 6, 'WW'],
+    [6, 7, 'W..W'],
+    [6, 8, 'WWWWWWWWWW'],
+    [16 - 2, 8, 'WW'],
+    [15, 8, 'b'],
+    [15, 7, 'B'],
+    [15, 9, 'B'],
+    [13, 9, 'W'],
+    [14, 10, 'W'],
+    [15, 11, 'W'],
+    [15, 12, 'W'],
+    [14, 13, 'W'],
+    [14, 14, 'W'],
+    [15, 14, 'W'],
+    [9, 9, 'W'],
+    // lamp
+    [8, 10, 'kbk'],
+    [6, 11, 'kBBBBBk'],
+    [6, 12, 'kbgggbk'],
+    [6, 13, 'kbghgbk'],
+    [6, 14, 'kbghgbk'],
+    [6, 15, 'kbgggbk'],
+    [6, 16, 'kBBBBBk'],
+    [7, 17, 'kkkkk'],
+    // light on the ground and the cast shadow
+    [7, 21, '1.2.1'],
+    [4, 22, 'x1xx212xx'],
+    [25, 22, 'xxxxxxxxxxxx'],
+    [8, 23, 'xxxxxxxxxxxxxxxxxxxxxxxxx'],
+  ]),
   [
-    '........................................',
-    '........................................',
-    '........................................',
-    '..................kk....................',
-    '.................kbbk...................',
-    '................kbbbbkkkk...............',
-    '................kBbbBttttkkkk...........',
-    '.........kkkkkkkkccCCttttttttkkkk.......',
-    '........kbbbbbbbbccCCttttttttttttk......',
-    '.......kkbkkkkkkkccCCTTTTTTTTTTTTk......',
-    '......kBBBBBk...kccCCcccccccccccck......',
-    '......kbgggbk...kccCCcccccccccccck......',
-    '......kbghgbk...kccCCcccccccckkkk.......',
-    '......kbghgbk...kbbbbcccckkkk...........',
-    '......kbgggbk...kccCCkkkk...............',
-    '......kBBBBBk...kccCCk..................',
-    '.......kkkkk....kccCCk..................',
-    '................kccCCk..................',
-    '.............kkkkccCCkkkk...............',
-    '............kbbbbbbbbbbbbk..............',
-    '............kcccccccccccck..............',
-    '.......1.2.1kCCCCCCCCCCCCk..............',
-    '....x1xx212xxkkkkkkkkkkkkxxxxxxxxxxxx...',
-    '........xxxxxxxxxxxxxxxxxxxxxxxxx.......',
+    tierPalette(4, {
+      c: 'cream',
+      t: 'teal',
+      T: 'tealShade',
+      b: 'brass',
+      B: 'brassShade',
+      W: 'wrought',
+    }),
   ],
-  [tierPalette(4, { c: 'cream', t: 'teal', T: 'tealShade', b: 'brass', B: 'brassShade' })],
   {
     C: m('#b8a888', '#d8ccae'),
     g: m('#ffd966', '#c4d6e0'),
@@ -315,10 +441,11 @@ export const VALLEY_TIERS_CONCEPTS: ConceptSet = {
   notes: [
     'The material board is `TIERS` in `valley-tiers.ts` (night and day colour per material); `tierPalette(level, { key: "material" })` builds a sprite palette and its day alt. Spec: docs/design/art-levels.md.',
     'Level 1, Humble: raw logs, rope lashings, straw, packed earth and loose fieldstones; small, home-made, a little crooked.',
-    'Level 2, Settled: sawn planks with nails, the red-brown shingle roof and a plank sign.',
-    'Level 3, Stone: grey cut stone with lighter corner stones, a slate edge and black iron bands and brackets.',
-    "Level 4, Valley: cream plaster and teal trim, the valley's teal-and-cream pennant and a brass lamp with lit glass (plain glass by day).",
+    'Level 2, Settled: sawn planks with nails and the red-brown shingle roof (one light from the upper left: lit shingles on the left, shaded on the right, like the walls).',
+    'Level 3, Stone (redone 2026-11-11): warm sandstone blocks with a light edge, terracotta barrel-tile roof and black iron bands and brackets. The material names stay `stone` and `slate` (aliases `sandstone`, `terracotta`).',
+    'Level 4, Valley (redone 2026-11-11): cream plaster and brass; a teal banner with a cream diamond hanging from a crossbar, and a brass lamp hanging from an ornate wrought-iron arm (curl, S-scroll brace, brass boss); lit glass at night, plain glass by day.',
     "Level 5, Crystal: the Market's teal shard as a glowing finial (it glows by day too) and gold trim, on a stone cap.",
+    '2026-11-11 (Misa): level 1 Humble liked, level 5 Crystal liked. Level 2: "The shade on the building\'s body changes as if to indicate it\'s 3D whereas the roof doesn\'t do the same. Is this intentional?" (redone: one light for walls and roof). Level 3: "The gray stone is quite boring. Can we use brick, terracotta or sandstone for inspiration?" (redone: sandstone and terracotta). Level 4: "I\'m not sure what the teal and cream thing is supposed to be. A flag? The arm holding the lamp could be more elaborate." (redone: hanging banner, wrought-iron arm).',
     "The samples are 40x24 motif references on the valley-glow ground: night is the main palette, `alts.day` recolours the same pixels. Buildings copy their level's materials and signature from them.",
   ],
   ...(VALLEY_GLOW_CONCEPTS.backdrop === undefined
@@ -327,30 +454,35 @@ export const VALLEY_TIERS_CONCEPTS: ConceptSet = {
   sprites: {
     'tier-1': {
       kind: 'free',
+      status: 'liked',
       note: 'Level 1, Humble: a rope-lashed log post with a crooked cross branch, a straw tuft and fieldstones on packed earth.',
       sprite: TIER_1.sprite,
       alts: { day: TIER_1.day },
     },
     'tier-2': {
       kind: 'free',
+      status: 'draft',
       note: 'Level 2, Settled: a plank wall corner with nailed boards and a plank sign under a red-brown shingle eave.',
       sprite: TIER_2.sprite,
       alts: { day: TIER_2.day },
     },
     'tier-3': {
       kind: 'free',
-      note: 'Level 3, Stone: a cut-stone corner with lighter corner stones, a black iron bracket and a slate edge.',
+      status: 'draft',
+      note: 'Level 3, Stone: a sandstone corner with light edge stones, a black iron bracket and a terracotta barrel-tile roof.',
       sprite: TIER_3.sprite,
       alts: { day: TIER_3.day },
     },
     'tier-4': {
       kind: 'free',
-      note: 'Level 4, Valley: a cream post with a teal-and-cream pennant and a brass lamp; the lamp glows at night, plain glass by day.',
+      status: 'draft',
+      note: 'Level 4, Valley: a cream post with a hanging teal banner (cream diamond, swallowtail) and a brass lamp on an ornate wrought-iron arm; the lamp glows at night, plain glass by day.',
       sprite: TIER_4.sprite,
       alts: { day: TIER_4.day },
     },
     'tier-5': {
       kind: 'free',
+      status: 'liked',
       note: 'Level 5, Crystal: a glowing teal crystal finial in a gold collar on a stone cap with gold trim; the crystal glows by day too.',
       sprite: TIER_5.sprite,
       alts: { day: TIER_5.day },

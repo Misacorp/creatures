@@ -4,7 +4,8 @@
 // (docs/progress.md). Answers land in the page's database, collection `reviews`, one document per piece
 // (`piece`, `verdict`, `note`); read them with the ArtifactData tool. The page itself is `art-review.html`, with
 // the data put in place of its `'__ART_REVIEW_DATA__'` marker (the quotes included). Loads the game through Vite, as `art.mts items` does.
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import type { SpriteDef } from '../src/sprites/sprite-data.ts';
 import type { ConceptSet } from '../src/sprites/concepts/index.ts';
@@ -12,6 +13,25 @@ import type { ConceptSet } from '../src/sprites/concepts/index.ts';
 interface Flat {
   rows: string[];
   palette: Record<string, string>;
+}
+
+/**
+ * When a set last changed: the last commit of the concept file that defines it (now, if the file has
+ * uncommitted changes). A verdict older than this is on an earlier drawing, so the page asks again.
+ */
+function setChangedAt(setId: string): string {
+  const dir = resolve(import.meta.dirname, '..', 'src', 'sprites', 'concepts');
+  const file = readdirSync(dir)
+    .filter((f) => f.endsWith('.ts'))
+    .find((f) => readFileSync(join(dir, f), 'utf8').includes(`id: '${setId}'`));
+  if (file === undefined) return new Date(0).toISOString();
+  const path = join(dir, file);
+  const git = (...a: string[]): string =>
+    execFileSync('git', a, { cwd: dir, encoding: 'utf8' }).trim();
+  if (git('status', '--porcelain', '--', path) !== '') return new Date().toISOString();
+  // In UTC like the page's verdict times, so the two compare as strings.
+  const at = git('log', '-1', '--format=%cI', '--', path);
+  return at === '' ? new Date(0).toISOString() : new Date(at).toISOString();
 }
 
 /** Writes the review page to `out` and returns how many sets it holds. */
@@ -41,6 +61,7 @@ export async function writeReviewPage(out: string): Promise<number> {
         id: set.id,
         title: set.title,
         requested: set.requested,
+        changedAt: setChangedAt(set.id),
         status: set.status,
         notes: set.notes ?? [],
         items: Object.entries(set.sprites).map(([id, c]) => ({
@@ -58,6 +79,13 @@ export async function writeReviewPage(out: string): Promise<number> {
         })),
       });
     }
+    // Newest request first (the date that starts `requested`), so the latest asks are at the top;
+    // a set's file change time only decides whether an earlier answer still counts.
+    const asked = (set: { requested?: string }): string =>
+      /^\d{4}-\d{2}-\d{2}/.exec(set.requested ?? '')?.[0] ?? '';
+    (sets as { requested?: string; changedAt: string }[]).sort(
+      (x, y) => asked(y).localeCompare(asked(x)) || y.changedAt.localeCompare(x.changedAt),
+    );
     type Base = { id: string; name: string; slot: string; flavor?: string };
     const looks = new Map<string, Base[]>();
     for (const base of gearContent.bases as Base[]) {
@@ -72,6 +100,7 @@ export async function writeReviewPage(out: string): Promise<number> {
       id: 'items',
       title: 'Gear sprites in the game',
       status: 'shipped',
+      changedAt: new Date(0).toISOString(),
       notes: [
         'Every item as the game draws it. One card per sprite; the versions show each item that wears it, in its tint and flair.',
       ],

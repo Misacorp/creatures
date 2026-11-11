@@ -97,7 +97,12 @@ function stoneWall(g: Grid, x0: number, x1: number, y0: number, y1: number, hi =
   run(g, y1, x0, x1, 'k');
 }
 
-/** A slate or shingle roof: stepped trapezoid, ink all round, a darker tick pattern. */
+/**
+ * A shingle or tile roof: stepped trapezoid, ink all round, a darker tick pattern. With `lit` the roof has
+ * one light from the upper left like the walls: left of the centre line is the lit plane (`lit` as the body,
+ * `main` as the ticks), right of it the shaded plane (`main` body, `shade` ticks). `barrel` draws terracotta
+ * barrel tiles instead: ribs of `lit`, `main` and `shade`, courses offset by two.
+ */
 function roof(
   g: Grid,
   cx: number,
@@ -108,13 +113,24 @@ function roof(
   main: string,
   shade: string,
   trim?: string,
+  lit?: string,
+  barrel = false,
 ): void {
   for (let i = 0; i < rows; i++) {
     const a = cx - half0 - step * i;
     const b = cx + half0 - 1 + step * i;
     const y = y0 + i;
-    run(g, y, a, b, main);
-    for (let x = a + 1 + ((i * 2) % 4); x < b; x += 4) put(g, x, y, shade);
+    if (lit === undefined) {
+      run(g, y, a, b, main);
+      for (let x = a + 1 + ((i * 2) % 4); x < b; x += 4) put(g, x, y, shade);
+    } else if (barrel) {
+      for (let x = a; x <= b; x++) put(g, x, y, [lit, main, main, shade][(x + i * 2) % 4]!);
+    } else {
+      for (let x = a; x <= b; x++) {
+        const tick = (x - a - 1 - ((i * 2) % 4)) % 4 === 0 && x > a;
+        put(g, x, y, x < cx ? (tick ? main : lit) : tick ? shade : main);
+      }
+    }
     put(g, a, y, 'k');
     put(g, b, y, 'k');
     if (i === 0) run(g, y, a, b, 'k');
@@ -293,7 +309,7 @@ function level2(): LevelOut {
     put(g, x, 18, x % 3 === 0 ? 'k' : 'P');
     put(g, x, 19, 'k');
   }
-  roof(g, 32, 10, 4, 6, 2, 's', 'S');
+  roof(g, 32, 10, 4, 6, 2, 's', 'S', undefined, 'q');
   post(g, 20, 14, 19, P);
   post(g, 40, 14, 19, P);
   // the plank sign (marks, no words) on the shelter front
@@ -333,6 +349,7 @@ function level2(): LevelOut {
   const t2 = tierPalette(2, {
     p: 'plank',
     P: 'plankShade',
+    q: 'shingleLight',
     s: 'shingle',
     S: 'shingleShade',
     n: 'nail',
@@ -347,12 +364,13 @@ interface Barn {
   readonly beam: Kit;
   readonly door: Kit;
   readonly trim: string | undefined; // eave trim
+  readonly roofLit?: string; // the light rib of the barrel tiles (`r`; a level out of colours uses `a`)
   readonly stoneHi?: string;
 }
 
 /** The barn: a slate roof (rows 5..13) over a wall (14..19), door in the middle. */
 function barn(g: Grid, b: Barn, stoneBase: boolean): void {
-  roof(g, 32, 5, 6, 4, 2, 'a', 'A', b.trim);
+  roof(g, 32, 5, 6, 4, 2, 'a', 'A', b.trim, b.roofLit ?? 'r', true);
   // wall
   for (let y = 12; y <= 19; y++) {
     for (let x = 18; x <= 45; x++) {
@@ -430,6 +448,7 @@ function level3(): LevelOut {
     L: 'stoneLight',
     a: 'slate',
     A: 'slateShade',
+    r: 'slateLight',
   });
   return build([t1, t2, t3], ['k', 'x', '1', '2', '3', 'z', 'G'], g);
 }
@@ -467,7 +486,11 @@ function level4(): LevelOut {
   const g = blank();
   const C = { hi: 'c', lo: 'c' };
   const T = { hi: 'e', lo: 'E' };
-  barn(g, { wall: 'c', wallShade: 'c', beam: T, door: T, trim: 'e', stoneHi: 't' }, true);
+  barn(
+    g,
+    { wall: 'c', wallShade: 'c', beam: T, door: T, trim: 'e', stoneHi: 't', roofLit: 'a' },
+    true,
+  );
   // brass door hinges
   put(g, 28, 16, 'b');
   put(g, 28, 18, 'b');
@@ -521,7 +544,13 @@ function level4(): LevelOut {
     [38, 60],
   ]);
   groundLight(g, 47, 54, 1.25);
-  const t3 = tierPalette(3, { t: 'stone', T: 'stoneShade', a: 'slate', A: 'slateShade' });
+  const t3 = tierPalette(3, {
+    t: 'stone',
+    T: 'stoneShade',
+    a: 'slate',
+    A: 'slateShade',
+    r: 'slateLight',
+  });
   const t4 = tierPalette(4, { c: 'cream', e: 'teal', E: 'tealShade', b: 'brass' });
   return build([t3, t4], ['k', 'x', '1', '2', '3', 'z', 'G', 'f'], g);
 }
@@ -539,6 +568,7 @@ function level5(): LevelOut {
       beam: { hi: 'e', lo: 'E' },
       door: { hi: 'e', lo: 'E' },
       trim: 'g',
+      roofLit: 'a',
       stoneHi: 't',
     },
     true,
@@ -591,7 +621,13 @@ function level5(): LevelOut {
     [38, 60],
   ]);
   groundLight(g, 47, 54, 1.4);
-  const t3 = tierPalette(3, { t: 'stone', T: 'stoneShade', a: 'slate', A: 'slateShade' });
+  const t3 = tierPalette(3, {
+    t: 'stone',
+    T: 'stoneShade',
+    a: 'slate',
+    A: 'slateShade',
+    r: 'slateLight',
+  });
   const t4 = tierPalette(4, { c: 'cream', e: 'teal', E: 'tealShade' });
   const t5 = tierPalette(5, { g: 'gold', C: 'crystal', D: 'crystalLight' });
   return build([t3, t4, t5], ['k', 'x', '1', '2', '3', 'f'], g);
@@ -616,7 +652,7 @@ export const VALLEY_LEVELS_PADDOCK_CONCEPTS: ConceptSet = {
     `ROAM RECTANGLE for creatures, one for all levels: x ${PADDOCK_ROAM.x}..${PADDOCK_ROAM.x + PADDOCK_ROAM.width - 1}, y ${PADDOCK_ROAM.y}..${PADDOCK_ROAM.y + PADDOCK_ROAM.height - 1} of the sprite (${PADDOCK_ROAM.width}x${PADDOCK_ROAM.height}, exported as PADDOCK_ROAM). It is open grass (transparent, or the lantern's light on the ground) at every level; a test checks it.`,
     'Level 1 Humble: stakes of raw logs lashed with rope, a hay heap, a bucket on a rope handle, loose fieldstones, a tin lantern on a branch. No building.',
     'Level 2 Settled: sawn plank rails with nails and a swung-open plank gate, a small shelter with a red-brown shingle roof and a plank sign at the back, a stave bucket with an iron band.',
-    'Level 3 Stone: a dressed-stone wall under the rails and along the sides, a stone trough, a small stone-and-timber barn with a slate roof and black iron straps and hinges.',
+    'Level 3 Stone: a dressed sandstone wall under the rails and along the sides, a sandstone trough, a small stone-and-timber barn with a terracotta barrel-tile roof and black iron straps and hinges.',
     'Level 4 Valley: the barn painted cream with teal trim, teal-and-cream bunting from its eaves to the corner posts and a pennant on its ridge, brass lamps, flower boxes on the fence. The hay moved into the barn.',
     'Level 5 Crystal: a teal crystal finial on the ridge and an inlay in the door, gold trim on the roof, posts and rim, a crystal-lit trough with a shard. Crystal glows by day too.',
   ],
@@ -645,7 +681,7 @@ export const VALLEY_LEVELS_PADDOCK_CONCEPTS: ConceptSet = {
     },
     'paddock-3': {
       kind: 'free',
-      note: 'Level 3 Stone: stone wall base, stone trough, a stone-and-timber barn with a slate roof and iron fittings.',
+      note: 'Level 3 Stone: stone wall base, stone trough, a sandstone-and-timber barn with a terracotta roof and iron fittings.',
       ...L3,
     },
     'paddock-4': {

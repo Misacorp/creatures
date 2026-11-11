@@ -29,9 +29,10 @@ export interface Concept {
 
 /**
  * `draft`: drawn, Misa has not said yet. `liked`: Misa approved the look; use it when the content
- * comes. `redo`: Misa wants it changed before use (say what in `notes`).
+ * comes. `redo`: Misa wants it changed before use (say what in `notes`). `archived`: kept for
+ * reference only (a direction not picked, or replaced by newer art); the review page never asks about it.
  */
-export type ConceptStatus = 'draft' | 'liked' | 'redo';
+export type ConceptStatus = 'draft' | 'liked' | 'redo' | 'archived';
 
 export interface ConceptSet {
   /** The set's code, also the studio's argument (`art.mts void`). */

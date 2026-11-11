@@ -294,8 +294,9 @@ export const VALLEY_POSTERS_CONCEPTS: ConceptSet = {
   title: 'Valley places: posters',
   requested:
     '2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations.',
-  status: 'draft',
+  status: 'archived',
   notes: [
+    '2026-11-11: archived; place screens dropped the poster for a sky (Q50).',
     'Direction "poster": six 64x24 banners, one per place state, each with its own time of day (dusk, night, morning, twilight, grey dawn, afternoon).',
     'Places: the bonfire (and a grander later level), the School, the weekly visitor (here and away), the Market (the shard broker). Designs are on the ccr-93a1de17-yutb1a branch, docs/design/valley/systems/.',
     'Needs before use: the valley places in the content, each place screen head using its banner; the visitor-away banner shows between Sunday and Thursday.',
