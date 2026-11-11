@@ -1,4 +1,7 @@
 import { readFileSync } from 'node:fs';
+import { performance } from 'node:perf_hooks';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { loadHousingContent } from '../src/housing';
 import { shippedHousing } from '../src/content/housing-lazy';
@@ -26,9 +29,9 @@ const FILES = [
   'starter',
 ] as const;
 
-const DIR = new URL('../src/content/data/housing/', import.meta.url);
+const DIR = resolve(dirname(fileURLToPath(import.meta.url)), '../src/content/data/housing');
 const TEXTS = Object.fromEntries(
-  FILES.map((name) => [name, readFileSync(new URL(`${name}.json`, DIR), 'utf8')]),
+  FILES.map((name) => [name, readFileSync(resolve(DIR, `${name}.json`), 'utf8')]),
 ) as Record<(typeof FILES)[number], string>;
 
 function ms(from: number): number {
@@ -40,7 +43,9 @@ function percentile(sorted: readonly number[], p: number): number {
 }
 
 describe('the cost of loading the housing content', () => {
-  it('parses and validates in a few milliseconds, with no storage involved', () => {
+  it('parses and validates in a few milliseconds, with no storage involved', async ({
+    annotate,
+  }) => {
     const parse: number[] = [];
     const validate: number[] = [];
     for (let i = 0; i < 20; i++) {
@@ -62,7 +67,7 @@ describe('the cost of loading the housing content', () => {
       const sorted = [...xs].sort((a, b) => a - b);
       return `median ${percentile(sorted, 0.5).toFixed(2)} ms, p95 ${percentile(sorted, 0.95).toFixed(2)} ms`;
     };
-    console.log(
+    await annotate(
       `housing content load x20: parse ${stat(parse)}; validate ${stat(validate)}; total ${stat(total)}`,
     );
     expect(percentile(total, 0.5)).toBeLessThan(250);
