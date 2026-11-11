@@ -148,7 +148,8 @@ Every override has a reason (a test checks). A new set made from a style alone h
 - `pnpm housing lock [--check]`: writes or checks `shipped-art.json`, a hash of what every shipped piece looks like (colours, not key names). The Vitest suite checks it too, so a library change that changes shipped art fails until someone has looked at `compare` and run `lock`. That is the rule that keeps a shipped set from getting worse by accident.
 
 - `pnpm housing variants <style> [--form id] [--out dir]`: every variant of every form drawn in the style (see Variants).
-- `pnpm housing sheet <style or set> --room [--out dir]`: the room sheet and the report (below).
+- `pnpm housing sheet <style or set> --room [--night] [--out dir]`: the room sheet and the report (below). `--night` adds the rooms at night at phone scale, every pixel through the lighting pass of `house-light.ts` (`shade`, `levelMap`, `windowPixel`) and lit by each room's lamp; the window's stars are not drawn.
+- The step-by-step for a new set is the `furniture-set` skill (`.claude/skills/furniture-set/SKILL.md`).
 
 ## The room sheet and the report (A4)
 
