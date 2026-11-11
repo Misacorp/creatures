@@ -10,6 +10,8 @@ import { SkinPicker } from '../../housing/SkinPicker';
 import { SpotPicker } from '../../housing/SpotPicker';
 import { StampPicker } from '../../housing/StampPicker';
 import { VisitList } from '../../housing/VisitList';
+import { HousePhaseContext } from '../../housing/house-phase';
+import { phaseControl, phaseOf } from './housing';
 import { WorkbenchPanel } from '../../housing/WorkbenchPanel';
 import {
   SAMPLE_NOW,
@@ -197,20 +199,26 @@ const visitList: Entry = {
   group: GROUP,
   description:
     'The server’s houses as rows (the visitor’s own is not in it); a tap opens the house. Each row says what the visitor did there today.',
-  controls: { state: { kind: 'select', options: ['loaded', 'loading', 'failed'] } },
-  defaults: { state: 'loaded' },
+  controls: {
+    state: { kind: 'select', options: ['loaded', 'loading', 'failed'] },
+    ...phaseControl,
+  },
+  defaults: { state: 'loaded', phase: 'day' },
   presets: [
     { name: 'Loaded', props: {} },
+    { name: 'Loaded at night', props: { phase: 'night' } },
     { name: 'Loading', props: { state: 'loading' } },
     { name: 'Could not load', props: { state: 'failed' } },
   ],
   render: (p) => (
-    <VisitList
-      list={str(p, 'state') === 'loaded' ? sampleList() : null}
-      failed={str(p, 'state') === 'failed'}
-      onRetry={none}
-      onOpen={none}
-    />
+    <HousePhaseContext.Provider value={phaseOf(p)}>
+      <VisitList
+        list={str(p, 'state') === 'loaded' ? sampleList() : null}
+        failed={str(p, 'state') === 'failed'}
+        onRetry={none}
+        onOpen={none}
+      />
+    </HousePhaseContext.Provider>
   ),
 };
 
