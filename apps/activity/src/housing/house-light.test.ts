@@ -8,6 +8,7 @@ import {
   LIGHT_SHAPE,
   STEPS,
   duskSky,
+  duskWindowPixel,
   flameCentre,
   levelMap,
   lightCentre,
@@ -88,6 +89,62 @@ describe('day', () => {
   });
 });
 
+describe('the indoor grades (the living room as the model)', () => {
+  const sofa: Rgb = [0xc3, 0x65, 0x5f];
+  const chair: Rgb = [0xb3, 0x70, 0x3f];
+
+  it('keep furniture close to its day colour: at most one step darker, still colourful', () => {
+    for (const phase of ['twilight', 'night'] as const) {
+      for (const c of [sofa, chair, [0x5a, 0xa3, 0xe6] as Rgb, [0x8a, 0xb0, 0x58] as Rgb]) {
+        const out = shade(c, 'auto', phase, 0);
+        expect(luma(out)).toBeGreaterThan(luma(c) * 0.78);
+        expect(Math.max(...out) - Math.min(...out)).toBeGreaterThan(
+          (Math.max(...c) - Math.min(...c)) * 0.6,
+        );
+      }
+    }
+    // the sofa stays red at night, a little cooler than by day
+    const night = shade(sofa, 'auto', 'night', 0);
+    expect(night[0]).toBeGreaterThan(night[1] * 1.4);
+    expect(night[2] / night[0]).toBeGreaterThan(sofa[2] / sofa[0]);
+  });
+
+  it('keep creatures readable and colourful', () => {
+    const out = shade(sofa, 'creature', 'night', 0);
+    expect(luma(out)).toBeGreaterThan(luma(sofa) * 0.85);
+    expect(shade([0x0d, 0x0a, 0x1a], 'creature', 'night', 0)).toEqual([0x0d, 0x0a, 0x1a]);
+  });
+
+  it('take the wall and floor of the Cosy room to the living room: indigo wall, plum floor at night', () => {
+    // the living room's own tile: wall #8b80bd and floor #ad7650 by day
+    const wall = shade([0x8b, 0x80, 0xbd], 'wall', 'night', 0);
+    const want = [0x35, 0x2e, 0x66];
+    for (const [i, w] of want.entries()) expect(Math.abs((wall[i] ?? 0) - w)).toBeLessThan(0x20);
+    const floor = shade([0xad, 0x76, 0x50], 'floor', 'night', 0);
+    const wantFloor = [0x6a, 0x44, 0x53];
+    for (const [i, w] of wantFloor.entries())
+      expect(Math.abs((floor[i] ?? 0) - w)).toBeLessThan(0x20);
+    const dusk = shade([0x8b, 0x80, 0xbd], 'wall', 'twilight', 0);
+    expect(dusk[0]).toBeGreaterThan(dusk[2] * 0.85); // rosier than the day's lavender
+  });
+
+  it('keep a loud wallpaper from glaring: an orange wall is quieter at night than by day and darker than a lit lamp', () => {
+    const orange: Rgb = [0xe0, 0x8a, 0x4a];
+    const night = shade(orange, 'wall', 'night', 0);
+    expect(luma(night)).toBeLessThan(luma(orange) * 0.6);
+    expect(Math.max(...night) - Math.min(...night)).toBeLessThan(
+      Math.max(...orange) - Math.min(...orange),
+    );
+  });
+
+  it('turn a window at dusk into a stepped sky, violet at the top and amber at the bottom', () => {
+    expect(duskWindowPixel(0, 0, 0, false)[2]).toBeGreaterThan(duskWindowPixel(0, 0, 0, false)[0]);
+    const low = duskWindowPixel(1, 1, 1, false);
+    expect(low[0]).toBeGreaterThan(low[2]);
+    expect(duskWindowPixel(0.5, 3, 4, true)).not.toEqual(duskWindowPixel(0.5, 3, 4, false));
+  });
+});
+
 describe('the ramps', () => {
   const wood: Rgb = [0x91, 0x5d, 0x42];
   const cloth: Rgb = [0xc3, 0x65, 0x5f];
@@ -129,14 +186,24 @@ describe('the ramps', () => {
   });
 
   it('are brighter in each step of a light, and the brightest step is the warmed day colour', () => {
-    const lum = ([0, 1, 2, 3] as const).map((l) => luma(shade(cloth, 'wall', 'night', l)));
+    const lum = ([0, 1, 2, 3] as const).map((l) => luma(shade(cloth, 'auto', 'night', l)));
     expect(lum[1]).toBeGreaterThan(lum[0] ?? 0);
     expect(lum[2]).toBeGreaterThan(lum[1] ?? 0);
     expect(lum[3]).toBeGreaterThan(lum[2] ?? 0);
     expect(LEVEL_WEIGHT[3]).toBe(1);
-    const lit = shade(cloth, 'wall', 'night', 3);
+    const lit = shade(cloth, 'auto', 'night', 3);
     expect(lit[0]).toBeGreaterThanOrEqual(cloth[0]);
     expect(lit[2]).toBeLessThan(cloth[2]);
+  });
+
+  it('only dapple a wall or floor with warm under a light (a pool, never the flood of day)', () => {
+    const wall: Rgb = [0x7b, 0x70, 0xaf];
+    const lum = ([0, 1, 2, 3] as const).map((l) => luma(shade(wall, 'wall', 'night', l)));
+    for (let i = 1; i < 4; i++) expect(lum[i]).toBeGreaterThan(lum[i - 1] ?? 0);
+    expect(lum[3] ?? 1).toBeLessThan(luma(wall) - 0.1);
+    const [r0, , b0] = shade(wall, 'wall', 'night', 0);
+    const [r3, , b3] = shade(wall, 'wall', 'night', 3);
+    expect(r3 / b3).toBeGreaterThan(r0 / b0);
   });
 
   it('leave the sky and the moon as drawn, and lay a warm halo on the sky near a light', () => {

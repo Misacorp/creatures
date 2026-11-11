@@ -39,19 +39,32 @@ export type Material =
 
 export type Tone = 'ink' | 'flame' | 'glass' | 'foliage' | 'wood' | 'metal' | 'cloth';
 
-export type RampName =
-  | 'wood'
-  | 'cloth'
-  | 'glass'
-  | 'metal'
-  | 'foliage'
-  | 'plaster'
-  | 'stone'
-  | 'roof'
-  | 'earth'
-  | 'water'
-  | 'creature'
-  | 'sky';
+/** The outdoor materials and the sky: recoloured through a three-anchor ramp (see `GRADES` for what is indoors). */
+export type RampName = 'foliage' | 'stone' | 'roof' | 'earth' | 'water' | 'sky';
+
+/** What is graded, not ramped: the wallpaper and floor, the furniture's tones and the creatures. They keep the day's colours. */
+export type GradeName =
+  'wall' | 'floor' | 'wood' | 'cloth' | 'glass' | 'metal' | 'plant' | 'creature';
+
+/** A piecewise-linear curve through (in, out) points, read off at `x`. */
+type Curve = readonly (readonly [number, number])[];
+
+/**
+ * How a day colour becomes its night, kept close to the day: its lightness goes through `light` (HSL lightness in, out), its
+ * saturation is scaled, and its hue is pulled towards `hue` (a degree, or a curve of the day lightness) by `pull` of the
+ * way, never more than `reach` degrees; then `tint` is laid over it by `tintAmount`.
+ */
+export interface Grade {
+  light: Curve;
+  sat: number;
+  hue?: number | Curve;
+  pull?: number;
+  reach?: number;
+  /** How much saturation goes (0 to 1) when the day hue is far (120 degrees or more) from `hue`: a loud wallpaper goes quiet. */
+  mute?: number;
+  tint?: Rgb;
+  tintAmount?: number;
+}
 
 /** Three anchors (dark, middle, light) of a material's colours in a phase; `keep` is how much of the sprite's own hue stays. */
 export interface Ramp {
@@ -75,40 +88,216 @@ const ramp = (shadow: string, mid: string, light: string, keep: number): Ramp =>
 
 export type NightPhase = Exclude<RoomPhase, 'day'>;
 
-/** The ramps of each phase by material. Tuned by eye on the hut, the three-floor house and the mansion. */
+/** The ramps of each phase by outdoor material. Tuned by eye on the hut, the three-floor house and the mansion. */
 export const RAMPS: Readonly<Record<NightPhase, Readonly<Record<RampName, Ramp>>>> = {
   twilight: {
-    wood: ramp('#3a2438', '#8a5a5a', '#d9a07a', 0.55),
-    cloth: ramp('#3a2848', '#8a5f86', '#e0a8b0', 0.55),
-    plaster: ramp('#46344f', '#a07a84', '#e8c4a8', 0.45),
-    glass: ramp('#4a3a6a', '#b0709a', '#f0b890', 0.2),
-    metal: ramp('#342c46', '#7a6a88', '#d0b4b8', 0.4),
     foliage: ramp('#1c3a30', '#3f7a58', '#86b070', 0.5),
     stone: ramp('#3e3250', '#8a6e84', '#d4b4a8', 0.45),
     roof: ramp('#2c2440', '#644a66', '#a8808a', 0.65),
     earth: ramp('#2a1e2c', '#4e3a44', '#7e6058', 0.5),
     water: ramp('#2c3a6a', '#5a70b0', '#d0a0b8', 0.35),
-    creature: ramp('#3a2c4c', '#9a7898', '#e8c4c0', 0.65),
     sky: ramp('#3b2f6e', '#c0607a', '#f2a76c', 0),
   },
   night: {
-    wood: ramp('#1c1830', '#4a3a58', '#8a7088', 0.35),
-    cloth: ramp('#1c1732', '#50416e', '#9486b8', 0.4),
-    plaster: ramp('#1f1d3a', '#46456e', '#7f7fa8', 0.25),
-    glass: ramp('#1d2a52', '#3a5c94', '#8fb4e0', 0.2),
-    metal: ramp('#1a1c30', '#4a5272', '#a2aac6', 0.25),
     foliage: ramp('#10261f', '#1f4a3c', '#3f7d5e', 0.35),
     stone: ramp('#1c1c34', '#403f64', '#77789c', 0.25),
     roof: ramp('#17152c', '#34305a', '#5d5a88', 0.55),
     earth: ramp('#15111f', '#2a2236', '#4a3d4c', 0.3),
     water: ramp('#14234a', '#26498a', '#5f9fd8', 0.25),
-    creature: ramp('#2a2148', '#6a5a92', '#cfc4e8', 0.65),
-    sky: ramp('#15122f', '#2e2862', '#443c7c', 0),
+    // the living room's window night: three blues, darker at the top
+    sky: ramp('#141a44', '#1f2c66', '#3c5eaa', 0),
+  },
+};
+
+/**
+ * The indoor grades of each phase, read off the living room's own three lights (`sprites/data/room-sprites.ts`): its wall and
+ * floor tile keep their hue family and go darker and rosier at twilight, deeper indigo and plum at night, while its furniture
+ * keeps nearly all of its day colour. A wallpaper of any colour is pulled the same way (by lightness, a hue shift towards the
+ * phase, capped), so it is not painted a fixed colour.
+ */
+export const GRADES: Readonly<Record<NightPhase, Readonly<Record<GradeName, Grade>>>> = {
+  twilight: {
+    wall: {
+      light: [
+        [0.2, 0.16],
+        [0.5, 0.32],
+        [0.75, 0.52],
+        [1, 0.74],
+      ],
+      sat: 0.8,
+      hue: [
+        [0.2, 258],
+        [0.45, 272],
+        [0.6, 300],
+        [0.72, 313],
+        [0.8, 335],
+        [0.9, 358],
+        [1, 364],
+      ],
+      pull: 0.85,
+      reach: 75,
+      mute: 0.75,
+      tint: [120, 70, 140],
+      tintAmount: 0.1,
+    },
+    floor: {
+      light: [
+        [0, 0],
+        [1, 0.86],
+      ],
+      sat: 0.68,
+      hue: [
+        [0.35, 346],
+        [0.5, 355],
+        [0.65, 371],
+      ],
+      pull: 1,
+      reach: 40,
+      mute: 0.4,
+    },
+    wood: {
+      light: [
+        [0, 0],
+        [1, 0.94],
+      ],
+      sat: 0.97,
+      tint: [226, 150, 130],
+      tintAmount: 0.06,
+    },
+    cloth: {
+      light: [
+        [0, 0],
+        [1, 0.94],
+      ],
+      sat: 0.97,
+      tint: [226, 150, 130],
+      tintAmount: 0.06,
+    },
+    glass: {
+      light: [
+        [0, 0],
+        [1, 0.94],
+      ],
+      sat: 0.9,
+      tint: [226, 150, 150],
+      tintAmount: 0.08,
+    },
+    metal: {
+      light: [
+        [0, 0],
+        [1, 0.92],
+      ],
+      sat: 1,
+      tint: [214, 150, 150],
+      tintAmount: 0.1,
+    },
+    plant: {
+      light: [
+        [0, 0],
+        [1, 0.92],
+      ],
+      sat: 0.95,
+      tint: [200, 130, 130],
+      tintAmount: 0.05,
+    },
+    creature: {
+      light: [
+        [0, 0],
+        [1, 0.97],
+      ],
+      sat: 1,
+      tint: [226, 150, 130],
+      tintAmount: 0.04,
+    },
+  },
+  night: {
+    wall: {
+      light: [
+        [0.2, 0.17],
+        [0.5, 0.3],
+        [0.75, 0.4],
+        [1, 0.5],
+      ],
+      sat: 0.92,
+      hue: 249,
+      pull: 1,
+      reach: 30,
+      mute: 0.85,
+      tint: [60, 56, 130],
+      tintAmount: 0.28,
+    },
+    floor: {
+      light: [
+        [0, 0],
+        [1, 0.72],
+      ],
+      sat: 0.52,
+      hue: 338,
+      pull: 1,
+      reach: 50,
+      mute: 0.35,
+    },
+    wood: {
+      light: [
+        [0, 0],
+        [1, 0.9],
+      ],
+      sat: 0.95,
+      tint: [70, 70, 170],
+      tintAmount: 0.1,
+    },
+    cloth: {
+      light: [
+        [0, 0],
+        [1, 0.9],
+      ],
+      sat: 0.98,
+      tint: [70, 70, 170],
+      tintAmount: 0.1,
+    },
+    glass: {
+      light: [
+        [0, 0],
+        [1, 0.88],
+      ],
+      sat: 0.95,
+      tint: [60, 70, 170],
+      tintAmount: 0.12,
+    },
+    metal: {
+      light: [
+        [0, 0],
+        [1, 0.84],
+      ],
+      sat: 1,
+      tint: [70, 80, 170],
+      tintAmount: 0.16,
+    },
+    plant: {
+      light: [
+        [0, 0],
+        [1, 0.86],
+      ],
+      sat: 0.95,
+      tint: [50, 80, 150],
+      tintAmount: 0.1,
+    },
+    creature: {
+      light: [
+        [0, 0],
+        [1, 0.94],
+      ],
+      sat: 1,
+      tint: [70, 70, 170],
+      tintAmount: 0.06,
+    },
   },
 };
 
 /** How much of the day colour a lit step restores (index 0 is outside every light), and the warm cast of a lamp's light. */
 export const LEVEL_WEIGHT: readonly number[] = [0, 0.35, 0.68, 1];
+/** The same for a wall or floor, which a light only dapples with warm (the living room's patches): a pool, not a flood. */
+export const SURFACE_WEIGHT: readonly number[] = [0, 0.16, 0.3, 0.46];
 const WARM: Rgb = [1.04, 0.97, 0.84];
 /** The warm of a light's halo over the sky, and how much of it each step lays. */
 const HALO: Rgb = [255, 207, 122];
@@ -161,28 +350,31 @@ export function isSkyColour(c: Rgb): boolean {
   return toneOf(c) === 'glass' || (s < 0.25 && l > 0.88);
 }
 
-function rampOf(material: Material, tone: Tone): RampName | null {
+type Look = { grade: GradeName } | { ramp: RampName } | null;
+
+function lookOf(material: Material, tone: Tone): Look {
   switch (material) {
     case 'fixed':
       return null;
     case 'wall':
-      return 'plaster';
+      return { grade: 'wall' };
     case 'floor':
-      return 'wood';
+      return { grade: 'floor' };
     case 'roof':
-      return 'roof';
+      return { ramp: 'roof' };
     case 'exterior':
-      return 'stone';
+      return { ramp: 'stone' };
     case 'ground':
-      return 'foliage';
+      return { ramp: 'foliage' };
     case 'earth':
-      return 'earth';
+      return { ramp: 'earth' };
     case 'water':
-      return 'water';
+      return { ramp: 'water' };
     case 'creature':
-      return tone === 'ink' ? null : 'creature';
+      return tone === 'ink' ? null : { grade: 'creature' };
     default:
-      return tone === 'ink' ? null : tone === 'flame' ? 'cloth' : tone;
+      if (tone === 'ink') return null;
+      return { grade: tone === 'flame' ? 'cloth' : tone === 'foliage' ? 'plant' : tone };
   }
 }
 
@@ -203,6 +395,66 @@ export function throughRamp(c: Rgb, r: Ramp): Rgb {
   return mix(onRamp, own, r.keep);
 }
 
+const at = (curve: Curve, x: number): number => {
+  const first = curve[0];
+  const last = curve[curve.length - 1];
+  if (first === undefined || last === undefined) return x;
+  if (x <= first[0]) return first[1];
+  for (let i = 1; i < curve.length; i++) {
+    const a = curve[i - 1];
+    const b = curve[i];
+    if (a === undefined || b === undefined || x > b[0]) continue;
+    return a[1] + ((b[1] - a[1]) * (x - a[0])) / (b[0] - a[0]);
+  }
+  return last[1];
+};
+
+function fromHsl(h: number, s: number, l: number): Rgb {
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const hp = (((h % 360) + 360) % 360) / 60;
+  const x = c * (1 - Math.abs((hp % 2) - 1));
+  const [r, g, b] =
+    hp < 1
+      ? [c, x, 0]
+      : hp < 2
+        ? [x, c, 0]
+        : hp < 3
+          ? [0, c, x]
+          : hp < 4
+            ? [0, x, c]
+            : hp < 5
+              ? [x, 0, c]
+              : [c, 0, x];
+  const m = l - c / 2;
+  return [(r + m) * 255, (g + m) * 255, (b + m) * 255];
+}
+
+/** A day colour through a grade (see `Grade`): the same colour always gives the same colour. */
+export function throughGrade(c: Rgb, g: Grade): Rgb {
+  const { h, s, l } = hsl(c);
+  const lightness = Math.min(1, Math.max(0, at(g.light, l)));
+  let hue = h;
+  let sat = s * g.sat;
+  if (g.hue !== undefined && s > 0.02) {
+    const target = typeof g.hue === 'number' ? g.hue : at(g.hue, l);
+    const diff = ((((target - h) % 360) + 540) % 360) - 180;
+    const reach = g.reach ?? 180;
+    hue = h + Math.max(-reach, Math.min(reach, diff * (g.pull ?? 1)));
+    sat *= 1 - (g.mute ?? 0) * Math.min(1, Math.abs(diff) / 120);
+  }
+  const out = fromHsl(hue, Math.min(1, sat), lightness);
+  return g.tint === undefined ? out : mix(out, g.tint, g.tintAmount ?? 0);
+}
+
+/** The glow a lamp or the fire lays on a dark wall or floor: lighter and warmer, the way the living room's patches are. */
+function glowOf(c: Rgb): Rgb {
+  return [
+    Math.min(255, c[0] * 1.55 + 34),
+    Math.min(255, c[1] * 1.3 + 12),
+    Math.min(255, c[2] * 1.05),
+  ];
+}
+
 const clampByte = (v: number): number => Math.max(0, Math.min(255, Math.round(v)));
 
 /** The colour a day colour has in `phase` at a light `level` (0 outside every light, 3 in the brightest step). */
@@ -219,13 +471,24 @@ export function shade(
     return [clampByte(halo[0]), clampByte(halo[1]), clampByte(halo[2])];
   }
   const tone = toneOf(c);
-  const name = rampOf(material, tone);
-  if (name === null) return [c[0], c[1], c[2]];
-  const dark = throughRamp(c, RAMPS[phase][name]);
-  const lit: Rgb = [c[0] * WARM[0], c[1] * WARM[1], c[2] * WARM[2]];
-  let w = LEVEL_WEIGHT[level] ?? 0;
-  if (material === 'light' && tone === 'flame') w = Math.max(w, EMISSIVE[phase]);
-  const out = mix(dark, lit, w);
+  const look = lookOf(material, tone);
+  if (look === null) return [c[0], c[1], c[2]];
+  let out: Rgb;
+  if ('grade' in look) {
+    const dark = throughGrade(c, GRADES[phase][look.grade]);
+    if (look.grade === 'wall' || look.grade === 'floor') {
+      out = mix(dark, glowOf(dark), SURFACE_WEIGHT[level] ?? 0);
+    } else {
+      const lit: Rgb = [c[0] * WARM[0], c[1] * WARM[1], c[2] * WARM[2]];
+      let w = LEVEL_WEIGHT[level] ?? 0;
+      if (material === 'light' && tone === 'flame') w = Math.max(w, EMISSIVE[phase]);
+      out = mix(dark, lit, w);
+    }
+  } else {
+    const dark = throughRamp(c, RAMPS[phase][look.ramp]);
+    const lit: Rgb = [c[0] * WARM[0], c[1] * WARM[1], c[2] * WARM[2]];
+    out = mix(dark, lit, LEVEL_WEIGHT[level] ?? 0);
+  }
   return [clampByte(out[0]), clampByte(out[1]), clampByte(out[2])];
 }
 
@@ -339,6 +602,24 @@ export function duskSky(strip: SpriteDef): SpriteDef {
   );
   palette['s'] = '#d8c4e6';
   return { rows: out, palette };
+}
+
+/**
+ * A window's dusk: the sky pixel at (`x`, `y`) of the scene, `t` of the way down the glass (0 top, 1 bottom), as the stepped,
+ * dithered gradient of the valley's dusk (violet to amber); a cloud (`cloud`) is the sky two steps brighter, lit by the low sun.
+ */
+export function duskWindowPixel(
+  t: number,
+  x: number,
+  y: number,
+  cloud: boolean,
+): [number, number, number] {
+  const at = Math.min(1, Math.max(0, t)) * (DUSK_SKY_STEPS - 1);
+  const base = Math.floor(at);
+  const bayer = BAYER[(y % 2) * 2 + (x % 2)] ?? 0.5;
+  const level = Math.min(DUSK_SKY_STEPS - 1, base + (at - base > bayer ? 1 : 0));
+  const c = hex(DUSK_RAMP[Math.min(DUSK_RAMP.length - 1, cloud ? level + 2 : level)] ?? '#000000');
+  return [c[0], c[1], c[2]];
 }
 
 const skies = new Map<RoomPhase, SpriteDef>();
