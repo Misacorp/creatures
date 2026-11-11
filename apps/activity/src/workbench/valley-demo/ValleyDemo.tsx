@@ -264,6 +264,7 @@ function restingVisit(creatures: readonly Creature[], brought: number): ValleyVi
       seatId: null,
     })),
     online: [],
+    smiths: [],
     allowance: { store: 0, cap: 480, brought },
     seats: [],
     anvils: [],

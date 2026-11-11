@@ -20,6 +20,7 @@ import { homeInput } from '../workbench/home-sample';
 import type { ForgeActions } from './ForgeAnvils';
 import { ForgeCanvas } from './ForgeCanvas';
 import { fullFloor, sampleAnvil, sampleOrder, shardWait, withAnvils } from './forge-sample';
+import { withCommons } from './commons-sample';
 import { sampleValley } from './signpost-sample';
 import { trayStates } from './tray-state';
 
@@ -62,6 +63,7 @@ function draw(
   visit: ReturnType<typeof withAnvils>,
   acorns = 500,
   calls: Calls = { actions: [], orders: [], market: [], posts: [] },
+  inside = true,
 ): Page {
   const ok = (name: string) => () => {
     calls.actions.push(name);
@@ -108,6 +110,7 @@ function draw(
         )}
         bagFull={false}
         bagAttention={false}
+        inside={inside}
       />
     </PopoverHost>,
   );
@@ -122,6 +125,96 @@ const target = (p: Page, name: RegExp): FakeElement => {
   if (found === undefined) throw new Error(`no target ${String(name)}`);
   return found;
 };
+
+describe('the Forge canvas: outside and inside', () => {
+  const withFire = (visit: ReturnType<typeof withAnvils>): ReturnType<typeof withAnvils> =>
+    withCommons(visit);
+  const outside = (visit: ReturnType<typeof withAnvils>, calls?: Calls): Page =>
+    draw(visit, 500, calls, false);
+
+  it('opens on the outside: the building (the way in), the project board, and no anvils, props or door', () => {
+    const p = outside(
+      withFire(withAnvils(plain, [sampleAnvil('a1', a.id, [sampleOrder('o1', BP, 3)])])),
+    );
+    const names = targets(p).map((el) => el.getAttribute('aria-label') ?? '');
+    expect(names.some((n) => /^The forge\. Go inside/.test(n))).toBe(true);
+    expect(names.some((n) => /^The project board/.test(n))).toBe(true);
+    expect(names.some((n) => /^Anvil \d/.test(n))).toBe(false);
+    expect(names.some((n) => /^The bag|^The plans|^The floor|^A new anvil/.test(n))).toBe(false);
+    expect(names.some((n) => /^The door/.test(n))).toBe(false);
+  });
+
+  it('a click on the building goes inside; the door goes back out', () => {
+    const p = outside(withAnvils(plain, [sampleAnvil('a1', a.id, [sampleOrder('o1', BP, 3)])]));
+    p.click(target(p, /^The forge\. Go inside/));
+    const inner = targets(p).map((el) => el.getAttribute('aria-label') ?? '');
+    expect(inner.some((n) => /^Anvil 1/.test(n))).toBe(true);
+    expect(inner.some((n) => /^The forge\. Go inside/.test(n))).toBe(false);
+    p.click(target(p, /^The door\. Go back outside/));
+    const out = targets(p).map((el) => el.getAttribute('aria-label') ?? '');
+    expect(out.some((n) => /^The forge\. Go inside/.test(n))).toBe(true);
+    expect(out.some((n) => /^Anvil 1/.test(n))).toBe(false);
+  });
+
+  it('the project board opens from the board outside and from the furnace inside', () => {
+    const p = outside(withFire(withAnvils(plain, [])));
+    p.click(target(p, /^The project board/));
+    expect(visibleText(p.root)).toMatch(/Project board/);
+    p.unmount();
+    page = null;
+    const q = draw(withAnvils(plain, []));
+    q.click(target(q, /^The furnace/));
+    expect(visibleText(q.root)).toMatch(/Project board/);
+  });
+
+  it("going out closes an anvil's drawer with the room", () => {
+    const p = draw(withAnvils(plain, [sampleAnvil('a1', a.id, [sampleOrder('o1', BP, 3)])]));
+    p.click(target(p, /^Anvil 1/));
+    expect(visibleText(p.root)).toMatch(/Orders|Add an order/);
+    p.click(target(p, /^The door/));
+    expect(visibleText(p.root)).not.toMatch(/Add an order/);
+  });
+
+  it("puts the player's smiths in the room with other players' smiths at the back, tapped for their owner; ambient workers when there are none", () => {
+    const none = withAnvils(plain, []);
+    const lone = draw(none);
+    // Nobody else's: two ambient workers, decoration (no button for them).
+    expect(byClass(lone.root, 'fi-hammer').length + byClass(lone.root, 'fi-carry').length).toBe(2);
+    expect(
+      targets(lone).some((el) =>
+        /'s .*at work|at the bench/.test(el.getAttribute('aria-label') ?? ''),
+      ),
+    ).toBe(false);
+    lone.unmount();
+    page = null;
+    const crowd = {
+      ...none,
+      smiths: [
+        {
+          owner: 'Bea',
+          creature: { id: 'x1', species: 'splashet', shiny: false, level: 4, name: 'Dot' },
+          working: true,
+        },
+        {
+          owner: 'Cy',
+          creature: { id: 'x2', species: 'cindle', shiny: false, level: 2, name: null },
+          working: false,
+        },
+      ],
+    };
+    const p = draw(crowd);
+    // Others' smiths replace the ambient ones.
+    expect(byClass(p.root, 'fi-carry')).toHaveLength(0);
+    const bea = target(p, /^Bea's Dot, at work/);
+    expect(bea.getAttribute('aria-expanded')).toBe('false');
+    p.click(bea);
+    const plate = byClass(p.root, 'nameplate-owner');
+    expect(plate.map((el) => visibleText(el))).toEqual(['Bea']);
+    p.click(target(p, /^Bea's Dot, at work/));
+    expect(byClass(p.root, 'nameplate-owner')).toHaveLength(0);
+    expect(target(p, /^Cy's .*at the bench/)).toBeDefined();
+  });
+});
 
 describe('the Forge canvas: the scene', () => {
   it('has a button for each anvil, one dashed outline for the next, the forge and the three props, all named', () => {

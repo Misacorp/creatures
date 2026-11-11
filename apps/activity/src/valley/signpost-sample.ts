@@ -97,6 +97,7 @@ export function sampleValley(
       seatId: seated.get(c.id) ?? null,
     })),
     online: [],
+    smiths: [],
     allowance: { store: 0, cap: 480, brought: 0 },
     anvils: [],
     anvilPrices: {

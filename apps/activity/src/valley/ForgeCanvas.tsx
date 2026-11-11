@@ -19,14 +19,11 @@ import type { Creature, ValleyVisit } from '../api';
 import type { BlueprintView } from '../gear-view';
 import { busyReason } from '../gear-view';
 import { creatureName } from '../game';
-import { cssVars } from '../css-vars';
 import { dropOutcome } from '../slot-outcome';
 import { TOUCH_HOLD_MS } from '../dnd-core';
 import { useDragDrop } from '../use-drag-drop';
 import { Bar } from '../ui/Bar';
-import { PriceLine } from '../ui/CountBadge';
 import { DragGhost } from '../ui/DragGhost';
-import { Nameplate } from '../ui/Nameplate';
 import { CommonsBoard, type CommonsActions } from './CommonsBoard';
 import { CommonsFire } from './CommonsFire';
 import {
@@ -39,33 +36,17 @@ import {
 import { ForgeAnvilPanel, type AnvilStep } from './ForgeAnvilPanel';
 import { ForgeBuyPanel } from './ForgeBuyPanel';
 import { OrderEditor, type OrderShell } from './OrderEditor';
-import {
-  CanvasTarget,
-  PanelBody,
-  PlaceCanvas,
-  openerOf,
-  type CanvasPanel,
-  type Opener,
-} from './PlaceCanvas';
+import { PanelBody, PlaceCanvas, openerOf, type CanvasPanel, type Opener } from './PlaceCanvas';
 import { SceneFrame, sceneGeometry } from './SceneFrame';
-import { At, CreatureSprite, Pic, SpeechBubble } from './parts';
 import { Tray } from './Tray';
 import { trayFor, type TrayInput } from './tray-state';
 import { seatAt } from './seat-parts';
 import { commonsOf, percentFilled, placeOf } from './commons-view';
 import { scaffoldSteps } from './scaffold';
-import { ANVIL_PROP } from './forge-props';
-import {
-  PROP,
-  PROP_HIT,
-  anvilGlyph,
-  anvilLabel,
-  floorTotal,
-  forgeScale,
-  forgeSceneDraw,
-  yardLayout,
-} from './forge-canvas';
-import { anvilName, anvilPrice, floorLine } from './forge-view';
+import { floorTotal, forgeScale, outsideSceneDraw } from './forge-canvas';
+import { interiorScale, interiorSceneDraw } from './forge-interior';
+import { ForgeInside, ForgeOutside, type InsideOpen } from './ForgeScenes';
+import { anvilName, floorLine } from './forge-view';
 
 /** The right drawer: the one thing that was clicked. */
 type Right =
@@ -107,6 +88,8 @@ export interface ForgeCanvasProps {
   bagFull: boolean;
   /** Something in the bag needs a look (a dismantle result, a gear notice): the bag opens, and its chest says so. */
   bagAttention: boolean;
+  /** Start inside the workshop (the workbench and the tests); else it opens outside unless something that lives inside is asked for. */
+  inside?: boolean | undefined;
 }
 
 /** The anvil whose queue holds this order. */
@@ -153,6 +136,10 @@ export function ForgeCanvas(props: ForgeCanvasProps) {
   const { visit, creatures, trayInput, acorns, busy, error, actions, commons, start } = props;
   const [right, setRight] = useState<Right | null>(() => startRight(props));
   const [left, setLeft] = useState<Left | null>(() => startLeft(props));
+  // The Forge opens on its outside; a click on the building goes in. What is asked for at the start (an anvil's wizard, the bag) lives inside.
+  const [inside, setInside] = useState<boolean>(
+    () => props.inside ?? (startRight(props) !== null || startLeft(props)?.kind === 'bag'),
+  );
   const rootRef = useRef<HTMLDivElement | null>(null);
 
   // A result waiting in the bag (a dismantle's pieces, a notice of changed gear): the bag opens on it.
@@ -194,15 +181,27 @@ export function ForgeCanvas(props: ForgeCanvasProps) {
   const forgePlace = placeOf(commonsView, 'forge');
   const scaffold =
     forgePlace?.state === 'open' ? scaffoldSteps(percentFilled(forgePlace) / 100) : 0;
-  const draw = useMemo(() => forgeSceneDraw(owned, scaffold, slots), [owned, scaffold, slots]);
+  const drawOutside = useMemo(() => outsideSceneDraw(scaffold), [scaffold]);
+  const drawInside = useMemo(
+    () => interiorSceneDraw(owned, slots, visit.night),
+    [owned, slots, visit.night],
+  );
   const marketBuilt = visit.market?.open === true;
   const helperId = commonsView?.communal.find((c) => c.place === 'forge')?.creatureId ?? null;
   const helper = creatureOf(helperId);
   const waiting = floorTotal(visit.anvils);
 
+  /** The door: back outside. What was open for an anvil closes with the room; the project board is outside too and stays. */
+  const goOutside = (): void => {
+    setRight(null);
+    setLeft((now) => (now?.kind === 'board' ? now : null));
+    setInside(false);
+  };
+
   const closeTop = (): void => {
     if (right !== null) setRight(null);
     else if (left !== null) setLeft(null);
+    else if (inside) goOutside();
   };
 
   // --- The drawers' panels ---
@@ -402,192 +401,93 @@ export function ForgeCanvas(props: ForgeCanvasProps) {
 
   // --- The scene ---
 
-  const scene = (
+  const open: InsideOpen = {
+    anvilId:
+      right?.kind === 'anvil'
+        ? right.anvilId
+        : right?.kind === 'order'
+          ? right.open.kind === 'add'
+            ? right.open.anvilId
+            : anvilOfOrder(visit, right.open.orderId)
+          : null,
+    buy: right?.kind === 'buy',
+    left: left?.kind ?? null,
+  };
+
+  const scene = inside ? (
     <SceneFrame
+      key="inside"
       id="forge"
-      label="Forge, Workshop"
-      draw={draw}
+      label="Forge, inside"
+      draw={drawInside}
       onLeave={closeTop}
-      scaleFor={forgeScale}
+      scaleFor={interiorScale}
     >
       {(measured) => {
         // A scene not measured yet (no size) is laid out as a phone's, so the targets are there from the first draw.
         const g =
           measured.W > 0 && measured.H > 0
             ? measured
-            : sceneGeometry(390, 640, forgeScale(390, 640));
-        const lay = yardLayout(g, slots);
-        const plate = (x: number, y: number, text: string): ComponentChildren => (
-          <At x={g.X(x)} y={g.Y(y)} class="vy-feet-plate">
-            <Nameplate size="sm">{text}</Nameplate>
-          </At>
-        );
-        const propBox = (p: { x: number; y: number }): { x: number; y: number } => ({
-          x: p.x - (PROP_HIT - PROP) / 2,
-          y: p.y - (PROP_HIT - PROP) / 2,
-        });
+            : sceneGeometry(390, 640, interiorScale(390, 640));
         return (
-          <>
-            {helper !== undefined && (
-              <At
-                x={g.X(lay.art.x + Math.floor(lay.art.width / 2) - 26)}
-                y={g.Y(lay.art.y + lay.art.height - 20)}
-                class="vy-stand"
-              >
-                <CreatureSprite creature={helper} scale={g.s} />
-              </At>
-            )}
-            {visit.anvils.map((anvil, i) => {
-              const cell = lay.cells[i];
-              const smith = creatureOf(anvil.creatureId);
-              const glyph = anvilGlyph(anvil);
-              if (cell === undefined || smith === undefined) return null;
-              return (
-                <span key={anvil.id}>
-                  <At x={g.X(cell.smith.x)} y={g.Y(cell.smith.y)} class="vy-stand">
-                    <CreatureSprite creature={smith} scale={g.s} flip={i % 2 === 1} />
-                  </At>
-                  {glyph !== null && (
-                    <At x={g.X(cell.smith.x)} y={g.Y(cell.smith.y)} class="vy-over">
-                      <span
-                        class="vy-region-box"
-                        ref={cssVars({ '--pw': `${String(PROP * g.s)}px`, '--ph': '0px' })}
-                      />
-                      <SpeechBubble glyph={glyph} count={null} />
-                    </At>
-                  )}
-                  {plate(cell.x + cell.w / 2, cell.anvil.y + PROP, creatureName(smith))}
-                </span>
-              );
-            })}
-            {waiting > 0 && (
-              <At x={g.X(lay.crate.x)} y={g.Y(lay.crate.y)} class="vy-over">
-                <span
-                  class="vy-region-box"
-                  ref={cssVars({ '--pw': `${String(PROP * g.s)}px`, '--ph': '0px' })}
-                />
-                <SpeechBubble glyph="gift" count={waiting} />
-              </At>
-            )}
-            {(props.bagFull || props.bagAttention) && (
-              <At x={g.X(lay.chest.x)} y={g.Y(lay.chest.y)} class="vy-over">
-                <span
-                  class="vy-region-box"
-                  ref={cssVars({ '--pw': `${String(PROP * g.s)}px`, '--ph': '0px' })}
-                />
-                <SpeechBubble glyph="warning" count={null} />
-              </At>
-            )}
-            {plate(lay.plans.x + PROP / 2, lay.plans.y + PROP + 2, 'Plans')}
-            {plate(lay.chest.x + PROP / 2, lay.chest.y + PROP + 2, 'Bag')}
-            {plate(lay.crate.x + PROP / 2, lay.crate.y + PROP + 2, 'Floor')}
-
-            {/* The targets, over everything above: each a real button. */}
-            {commonsView !== null && (
-              <CanvasTarget
-                g={g}
-                x={lay.art.x}
-                y={lay.art.y}
-                w={lay.art.width}
-                h={lay.art.height - 8}
-                label="The forge: the fire and the project board. Open"
-                expanded={left?.kind === 'board'}
-                onClick={openLeft('board')}
-              />
-            )}
-            {visit.anvils.map((anvil, i) => {
-              const cell = lay.cells[i];
-              if (cell === undefined) return null;
-              const smith = creatureOf(anvil.creatureId);
-              const name = anvilName(visit, anvil);
-              return (
-                <CanvasTarget
-                  key={anvil.id}
-                  g={g}
-                  x={cell.x}
-                  y={cell.y}
-                  w={cell.w}
-                  h={cell.h}
-                  seat={anvil.id}
-                  over={drag.drag?.over === anvil.id}
-                  label={anvilLabel(
-                    name,
-                    smith === undefined
-                      ? undefined
-                      : { name: creatureName(smith), level: smith.level },
-                    anvil,
-                    marketBuilt,
-                  )}
-                  expanded={
-                    (right?.kind === 'anvil' && right.anvilId === anvil.id) ||
-                    (right?.kind === 'order' &&
-                      (right.open.kind === 'add'
-                        ? right.open.anvilId
-                        : anvilOfOrder(visit, right.open.orderId)) === anvil.id)
-                  }
-                  disabled={busy}
-                  onClick={(opener) => {
-                    setRight({
-                      kind: 'anvil',
-                      anvilId: anvil.id,
-                      start: smith === undefined ? 'smith' : 'hub',
-                      from: opener,
-                    });
-                  }}
-                />
-              );
-            })}
-            {nextPrice !== null && lay.cells[owned] !== undefined && (
-              <CanvasTarget
-                g={g}
-                x={lay.cells[owned].x}
-                y={lay.cells[owned].y}
-                w={lay.cells[owned].w}
-                h={lay.cells[owned].h}
-                slot
-                label="A new anvil. Buy it"
-                expanded={right?.kind === 'buy'}
-                disabled={busy}
-                onClick={(opener) => {
-                  setRight({ kind: 'buy', from: opener });
-                }}
-              >
-                <span class="cv-ghost" aria-hidden="true">
-                  <Pic sprite={ANVIL_PROP} scale={g.s} />
-                </span>
-                <span class="cv-price">
-                  <PriceLine price={anvilPrice(nextPrice)} />
-                </span>
-              </CanvasTarget>
-            )}
-            <CanvasTarget
-              g={g}
-              {...propBox(lay.plans)}
-              w={PROP_HIT}
-              h={PROP_HIT}
-              label="The plans: the blueprints you know. Open"
-              expanded={left?.kind === 'plans'}
-              onClick={openLeft('plans')}
-            />
-            <CanvasTarget
-              g={g}
-              {...propBox(lay.chest)}
-              w={PROP_HIT}
-              h={PROP_HIT}
-              label={`The bag${props.bagFull ? ', full' : ''}. Open`}
-              expanded={left?.kind === 'bag'}
-              onClick={openLeft('bag')}
-            />
-            <CanvasTarget
-              g={g}
-              {...propBox(lay.crate)}
-              w={PROP_HIT}
-              h={PROP_HIT}
-              label={`The floor: ${waiting === 0 ? 'nothing waiting' : `${String(waiting)} pieces waiting`}. Open`}
-              expanded={left?.kind === 'floor'}
-              onClick={openLeft('floor')}
-            />
-          </>
+          <ForgeInside
+            g={g}
+            visit={visit}
+            creatureOf={creatureOf}
+            busy={busy}
+            marketBuilt={marketBuilt}
+            slots={slots}
+            waiting={waiting}
+            bagFull={props.bagFull}
+            bagAttention={props.bagAttention}
+            open={open}
+            overSeat={drag.drag?.over ?? null}
+            onAnvil={(anvilId, hasSmith, opener) => {
+              setRight({
+                kind: 'anvil',
+                anvilId,
+                start: hasSmith ? 'hub' : 'smith',
+                from: opener,
+              });
+            }}
+            onBuy={(opener) => {
+              setRight({ kind: 'buy', from: opener });
+            }}
+            onLeft={(kind, opener) => {
+              openLeft(kind)(opener);
+            }}
+            onOut={goOutside}
+          />
+        );
+      }}
+    </SceneFrame>
+  ) : (
+    <SceneFrame
+      key="outside"
+      id="forge"
+      label="Forge, Workshop"
+      draw={drawOutside}
+      onLeave={closeTop}
+      scaleFor={forgeScale}
+    >
+      {(measured) => {
+        const g =
+          measured.W > 0 && measured.H > 0
+            ? measured
+            : sceneGeometry(390, 640, forgeScale(390, 640));
+        return (
+          <ForgeOutside
+            g={g}
+            helper={helper}
+            waiting={waiting}
+            bagAttention={props.bagFull || props.bagAttention}
+            boardOpen={left?.kind === 'board'}
+            boardKnown={commonsView !== null}
+            onEnter={() => {
+              setInside(true);
+            }}
+            onBoard={openLeft('board')}
+          />
         );
       }}
     </SceneFrame>

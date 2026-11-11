@@ -257,3 +257,63 @@ button.cv-slot:hover:not(:disabled) {
   gap: 0.5rem;
   min-width: 0;
 }
+
+/* --- The workshop's interior: small idle motions that step (pixel art), and stand still for reduced motion --- */
+.fi-fire {
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* A smith at the anvil: a hammer-fall, a dip and back, twice a second. `translate` keeps a mirrored sprite's `transform`. */
+  .fi-hammer {
+    animation: fi-hammer 600ms steps(1) infinite;
+  }
+
+  .fi-hammer.fi-d1 {
+    animation-delay: -200ms;
+  }
+
+  .fi-hammer.fi-d2 {
+    animation-delay: -400ms;
+  }
+
+  /* A worker carrying something along the bench: two steps one way and back. */
+  .fi-carry {
+    animation: fi-carry 2400ms steps(1) infinite;
+  }
+
+  /* The fire flickers in two steps. */
+  .fi-fire {
+    animation: fi-fire 500ms steps(1) infinite;
+  }
+}
+
+@keyframes fi-hammer {
+  0% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 1px;
+  }
+}
+
+@keyframes fi-carry {
+  0% {
+    translate: 0 0;
+  }
+  25% {
+    translate: 3px 0;
+  }
+  50% {
+    translate: 6px 0;
+  }
+  75% {
+    translate: 3px 0;
+  }
+}
+
+@keyframes fi-fire {
+  50% {
+    translate: 0 -2px;
+  }
+}
