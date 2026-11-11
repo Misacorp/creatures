@@ -518,3 +518,19 @@ Misa added: nameplates sit under the creature on an ink background, level first 
 **Done.** `valley/PlaceCanvas` (shell, `CanvasTarget`, `PanelBody`), `ForgeCanvas` (anvils with smiths and a state bubble, the dashed outline of the next with its price, the plans table, chest (bag) and crate (floor) as props, the forge itself for the fire and project board, shelf and tray under the scene), `ForgeAnvilPanel` (smith, kit, orders, floor as wizard steps), `ForgeBuyPanel`, and `OrderEditor` rebuilt as a wizard (`what`, `order`, `shard`) with a `shell`. The Workshop's forge mode now returns the canvas; the classic Workshop is unchanged. `hasScene('forge')` is false so the frame draws no band above it. The old `ForgeAnvils` page component is gone (its tests moved to `ForgeCanvas.test`, `OrderEditor.test`).
 
 **Next:** the Expedition (Signpost) screen on the same rule, using the expedition location map for destination picking (Misa's ask).
+
+## 2026-11-11: the Signpost as a canvas, with the expedition map (implementer, worktree of `ccr-93a1de17-yutb1a`)
+
+**Misa's ask:** "For the expedition screen can a click on the sign post open the expedition map, which the user could then drag and select a place? We already show each creature at the place they're at which fits the game-like idea." (Earlier: the expedition screen did not use the expedition location map at all.) Decision of the same date, topic `ui`.
+
+**Done (behind `VALLEY_SYSTEMS`).**
+
+- `valley/SignpostCanvas` replaces the Signpost's page of seat cards (`SignpostSeats` stays for the workbench and its tests). It opens on its scene: the road and signpost, the scouts at their seats, the dashed outline of the next seat with its price, the crate (the packs) and the plans table (the project board). `CANVAS_PLACES` lists `signpost`, so the frame draws no band above it.
+- A click on the signpost opens **the expedition map as the canvas** (`valley/SignpostMap` over `WorldMap` with a new `fill` option): never scrolls the page, pans by drag, wheel and trackpad (a drag never picks a place), a "Signpost" button over its top left goes back to the scene. Every destination the valley lists is at its map spot (all eight already had one, so none was added; a test checks it), the scouts stand at the place they are at, a gold flag says FULL or the fullest pack's percent, a closed place is dimmed with "Opens in Festival weeks" under it.
+- A click on a destination opens `valley/DestinationPanel` (right drawer, a page on a phone), a wizard: the place and its scouts, then "Send a scout here": who, which seat (skipped when the scout has one; a new seat can be bought in the step), kit (or buy one), confirm (one post with seat, creature and destination). A scout there opens its pack and pace, change scout, change kit, move to another place, back to resting. The left drawer holds the packs of every seat and the project board. The tray drag onto a seat still previews the fit.
+- Production files touched, all additive and off unless `fill`, `flag` or `locked` is passed: `WorldMap.tsx` (the `fill` prop, `flag` text, `locked` class), `map-view.ts` (two optional fields of `MapPlace`), `styles/views/expeditions/world-map.css` (rules for `.fill` and `.locked`). With the flags off the Expeditions screen draws exactly as before.
+- Tests: `SignpostCanvas.test.tsx`, `signpost-map.test.ts`, `signpost-canvas.test.ts`; the valley e2e's Signpost scenarios (buy, map, drag, pick, send, move, tray drag, rest; the full-pack, raid-pause and project-board scenarios) rewritten for the canvas.
+
+**Not done / to look at.** A creature cannot be dropped onto a map marker (the tray's drag lands on a seat in the scene only). The Journal and keystones were never on the Signpost page, so they are not here either.
+
+**Pick up here:** the other places (Paddock, School, Market, visitor, Cave, Arena, Fairground, House) still use the band scene over a page.

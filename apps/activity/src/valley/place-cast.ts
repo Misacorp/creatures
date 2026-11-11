@@ -51,7 +51,7 @@ export type CastPlace = (typeof CAST_PLACES)[number];
  * The places that are a canvas (`valley/PlaceCanvas.tsx`): their scene fills the page and is drawn by the place itself (the Forge's
  * is `ForgeCanvas`), so the frame draws no band scene above their page. Their cast is still the same data (`castFor`).
  */
-export const CANVAS_PLACES: readonly string[] = ['forge'];
+export const CANVAS_PLACES: readonly string[] = ['forge', 'signpost'];
 
 /** Whether the frame draws a band scene above this place's page: the places with a cast that are not a canvas. */
 export function hasScene(id: PlaceId): id is CastPlace {
