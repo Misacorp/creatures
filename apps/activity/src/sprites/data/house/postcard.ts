@@ -149,8 +149,42 @@ export const PARASOL = make(
   { r: '#e8502a', c: '#fbf8ec', p: '#6a4630' },
 );
 
+/**
+ * The panes of a window with its light on (twilight and night only): the key swap that turns `WINDOW`'s sky-blue glass warm. The
+ * four are flame colours, so the lighting pass keeps them glowing.
+ */
+export const LIT_PANES: Readonly<Record<string, string>> = {
+  g: '#fff0a8',
+  y: '#ffcf6a',
+  w: '#ffe9a0',
+  d: '#f0a848',
+};
+
+/** The porch lamp by the front door, lit (night only): 3 x 4. */
+export const PORCH_LAMP = make(['kkk', 'kfk', 'kyk', '.k.'], { f: '#fff0a8', y: '#ffcf6a' });
+
+/** A lantern post on the lawn, lit (night only): 5 x 11, its foot on the ground line. */
+export const LANTERN_POST = make(
+  [
+    '.kkk.',
+    'kfyfk',
+    'kyyyk',
+    '.kkk.',
+    '..p..',
+    '..p..',
+    '..p..',
+    '..p..',
+    '..p..',
+    '.kpk.',
+    'kkkkk',
+  ],
+  { f: '#fff0a8', y: '#ffcf6a', p: '#6a6478' },
+);
+
 /** Every hand-drawn piece by name (the concept wrapper and the tests list them). */
 export const POSTCARD_ART: Readonly<Record<string, SpriteDef>> = {
+  'porch-lamp': PORCH_LAMP,
+  'lantern-post': LANTERN_POST,
   window: WINDOW,
   door: DOOR,
   chimney: CHIMNEY,

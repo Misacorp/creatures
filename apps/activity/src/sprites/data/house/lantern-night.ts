@@ -165,6 +165,8 @@ const HAND: HouseArtPack = {
         '.kek................................kek.',
         '..k..................................k..',
       ]),
+      // the two paper lanterns on the shelf
+      light: { kind: 'lamp', at: { x: 15, y: 7 }, size: 0.7 },
     },
     'lantern-night-stool': {
       sprite: sprite([

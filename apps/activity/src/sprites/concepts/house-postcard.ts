@@ -23,6 +23,8 @@ const NOTES: Readonly<Record<string, string>> = {
   ladder: 'The pool ladder over the coping.',
   'diving-board': 'The pool diving board on its foot.',
   parasol: 'The terrace parasol, red and cream stripes on a pole.',
+  'porch-lamp': 'The porch lamp beside the front door, lit: drawn at twilight and night only.',
+  'lantern-post': 'A lantern post on the garden lawn, lit: drawn at twilight and night only.',
 };
 
 const sprites: Record<string, Concept> = {};

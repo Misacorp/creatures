@@ -15,7 +15,7 @@
  */
 import type { RoomPhase } from '@creatures/game';
 import { VALLEY_SKY_CONCEPTS } from '../sprites/concepts/valley-sky';
-import { swapPalette, type SpriteDef } from '../sprites/sprite-data';
+import { expandRows, type SpriteDef } from '../sprites/sprite-data';
 
 export type Rgb = readonly [number, number, number];
 
@@ -278,16 +278,8 @@ export function skyThrough(c: Rgb, phase: NightPhase): [number, number, number] 
 // ---------------------------------------------------------------------------------------------
 // The sky behind the house
 
-const DUSK: Readonly<Record<string, string>> = {
-  A: '#3b2f6e',
-  B: '#6a3f86',
-  C: '#b0587c',
-  D: '#f2a76c',
-  s: '#c9b0d8',
-  t: '#6a3f86',
-  q: '#c0607a',
-  r: '#f2b88a',
-  p: '#8a4a86',
+/** The dusk's hills, treeline and grass (the valley strip's own pixels, recoloured). */
+const DUSK_LAND: Readonly<Record<string, string>> = {
   n: '#3f5a5a',
   m: '#5a6a7a',
   h: '#46586a',
@@ -295,6 +287,59 @@ const DUSK: Readonly<Record<string, string>> = {
   j: '#2a3b42',
   g: '#2f5a44',
 };
+
+/** The dusk sky from the top of the strip to the horizon, violet to amber; the last two are the sunlit clouds'. */
+const DUSK_RAMP: readonly string[] = [
+  '#3b2f6e',
+  '#4d367a',
+  '#6a3f86',
+  '#8c4a84',
+  '#b0587c',
+  '#d2706f',
+  '#f2a76c',
+  '#f7bd86',
+  '#fbd2a0',
+];
+/** How many of the ramp's first colours the sky itself uses (the rest are for clouds). */
+const DUSK_SKY_STEPS = 7;
+
+/** An ordered (2 x 2) dither threshold by pixel, so each step melts into the next over a few rows, never blurred. */
+const BAYER = [0.125, 0.625, 0.875, 0.375] as const;
+
+/**
+ * The valley strip at dusk: the same hills, clouds and stars, with the four flat bands replaced by a stepped, dithered gradient
+ * (violet at the top, amber on the horizon). The clouds are the sky's colour a little brighter (the low sun lights them), the
+ * high stars stay and the low ones go. Keys `0` to `8` are the ramp's colours.
+ */
+export function duskSky(strip: SpriteDef): SpriteDef {
+  const rows = expandRows(strip);
+  const horizon = Math.max(
+    1,
+    rows.findIndex((row) => [...row].some((c) => 'hmijn'.includes(c))),
+  );
+  const palette: Record<string, string> = { ...DUSK_LAND };
+  DUSK_RAMP.forEach((colour, i) => {
+    palette[String(i)] = colour;
+  });
+  const out = rows.map((row, y) =>
+    [...row]
+      .map((c, x) => {
+        if (!'ABCDpqrst'.includes(c)) return c;
+        const t = Math.min(1, y / horizon) * (DUSK_SKY_STEPS - 1);
+        const base = Math.floor(t);
+        const frac = t - base;
+        const bayer = BAYER[(y % 2) * 2 + (x % 2)] ?? 0.5;
+        const level = Math.min(DUSK_SKY_STEPS - 1, base + (frac > bayer ? 1 : 0));
+        if (c === 's') return y < horizon / 3 ? 's' : String(level);
+        if (c === 't') return String(Math.min(DUSK_SKY_STEPS - 1, level + 1));
+        if ('pqr'.includes(c)) return String(Math.min(DUSK_RAMP.length - 1, level + 2));
+        return String(level);
+      })
+      .join(''),
+  );
+  palette['s'] = '#d8c4e6';
+  return { rows: out, palette };
+}
 
 const skies = new Map<RoomPhase, SpriteDef>();
 
@@ -304,7 +349,7 @@ export function skyForPhase(phase: Exclude<RoomPhase, 'day'>): SpriteDef {
   if (sky === undefined) {
     const concept = VALLEY_SKY_CONCEPTS.sprites['valley'];
     if (concept === undefined) throw new Error('valley-sky has no valley sprite');
-    sky = phase === 'night' ? concept.sprite : swapPalette(concept.sprite, DUSK);
+    sky = phase === 'night' ? concept.sprite : duskSky(concept.sprite);
     skies.set(phase, sky);
   }
   return sky;
@@ -318,7 +363,22 @@ export function moonSprite(): SpriteDef | undefined {
 // ---------------------------------------------------------------------------------------------
 // Light sources
 
-export type LightKind = 'lamp' | 'fire' | 'lantern' | 'porch';
+/** `window` is the glow of a lit window on the postcard (`house-postcard.ts`); the others are a room's and a yard's lights. */
+export type LightKind = 'lamp' | 'fire' | 'lantern' | 'porch' | 'window';
+
+/**
+ * A light source in a piece's art: its kind, and optionally where it burns (`at`, in the piece's own pixels from its top left;
+ * default the middle of the sprite's flame-coloured pixels, else a spot by kind) and how big its pool is (`size`, a multiple
+ * of the kind's shape, default 1: a candle is 0.5).
+ */
+export interface LightSpec {
+  kind: LightKind;
+  at?: { x: number; y: number };
+  size?: number;
+}
+
+/** What a piece's art says: a bare kind, or the full spec. */
+export type LightFlag = LightKind | LightSpec;
 
 export interface Rect {
   x: number;
@@ -333,6 +393,8 @@ export interface SceneLight {
   x: number;
   y: number;
   clip: Rect;
+  /** A multiple of the kind's shape (default 1). */
+  size?: number;
 }
 
 /** What a scene is lit by: the phase, and the lights (none in the day). */
@@ -349,25 +411,95 @@ export const LIGHT_SHAPE: Readonly<Record<LightKind, { rx: number; ry: number }>
   fire: { rx: 46, ry: 34 },
   lantern: { rx: 42, ry: 32 },
   porch: { rx: 26, ry: 22 },
+  window: { rx: 11, ry: 8 },
 };
 
 /** The share of the outer axes where level 3 and level 2 end (level 1 ends at 1). */
 export const STEPS: readonly [number, number] = [0.42, 0.72];
 
 /** The light a form gives, unless the piece's art says otherwise: every lamp, every hearth. */
-export const FORM_LIGHT: Readonly<Record<string, LightKind>> = { lamp: 'lamp', hearth: 'fire' };
+export const FORM_LIGHT: Readonly<Record<string, LightFlag>> = { lamp: 'lamp', hearth: 'fire' };
+
+const asSpec = (flag: LightFlag): LightSpec => (typeof flag === 'string' ? { kind: flag } : flag);
 
 /**
- * Whether a placed piece is a light, from data: its art's `light` flag, else its form (`FORM_LIGHT`), else a night `glow`
- * (the art says it shines: the lantern post).
+ * The light a placed piece gives, from data: its art's `light` flag, else its form (`FORM_LIGHT`), else a night `glow` (the art
+ * says it shines: a lantern post). Undefined for a piece that is no light.
  */
+export function lightOf(
+  art: { light?: LightFlag; glow?: unknown },
+  formId: string | undefined,
+): LightSpec | undefined {
+  if (art.light !== undefined) return asSpec(art.light);
+  if (formId !== undefined && Object.hasOwn(FORM_LIGHT, formId)) {
+    const flag = FORM_LIGHT[formId];
+    return flag === undefined ? undefined : asSpec(flag);
+  }
+  return art.glow === undefined ? undefined : { kind: 'lantern' };
+}
+
+/** The kind of the light a placed piece gives (`lightOf`). */
 export function lightKindOf(
-  art: { light?: LightKind; glow?: unknown },
+  art: { light?: LightFlag; glow?: unknown },
   formId: string | undefined,
 ): LightKind | undefined {
-  if (art.light !== undefined) return art.light;
-  if (formId !== undefined && Object.hasOwn(FORM_LIGHT, formId)) return FORM_LIGHT[formId];
-  return art.glow === undefined ? undefined : 'lantern';
+  return lightOf(art, formId)?.kind;
+}
+
+const flameCentres = new WeakMap<SpriteDef, { x: number; y: number } | null>();
+
+/** The middle of a sprite's flame-coloured pixels (a bulb, a candle, a fire), or null when it has none. */
+export function flameCentre(sprite: SpriteDef): { x: number; y: number } | null {
+  const hit = flameCentres.get(sprite);
+  if (hit !== undefined) return hit;
+  const flame = new Set<string>();
+  for (const [key, colour] of Object.entries(sprite.palette)) {
+    const h = colour.slice(1);
+    const full = h.length === 3 ? [...h].map((c) => c + c).join('') : h;
+    const n = Number.parseInt(full, 16);
+    if (toneOf([(n >> 16) & 255, (n >> 8) & 255, n & 255]) === 'flame') flame.add(key);
+  }
+  let sx = 0;
+  let sy = 0;
+  let count = 0;
+  for (const [y, row] of expandRows(sprite).entries()) {
+    for (let x = 0; x < row.length; x++) {
+      if (!flame.has(row[x] ?? '.')) continue;
+      sx += x;
+      sy += y;
+      count++;
+    }
+  }
+  const out = count === 0 ? null : { x: Math.round(sx / count), y: Math.round(sy / count) };
+  flameCentres.set(sprite, out);
+  return out;
+}
+
+/** Where a light burns when the art does not say, as a share of the piece's height from its top (a lamp's bulb hangs low, a hearth's fire is mid). */
+const LIGHT_AT: Readonly<Record<LightKind, number>> = {
+  lamp: 0.8,
+  fire: 0.62,
+  lantern: 0.25,
+  porch: 0.2,
+  window: 0.5,
+};
+
+/**
+ * Where a piece's light burns, in the piece's own pixels: the art's `at`, else the middle of its flame-coloured pixels, else a
+ * share of its height by kind.
+ */
+export function lightCentre(
+  spec: LightSpec,
+  sprite: SpriteDef,
+  size: { width: number; height: number },
+): { x: number; y: number } {
+  if (spec.at !== undefined) return spec.at;
+  return (
+    flameCentre(sprite) ?? {
+      x: Math.floor(size.width / 2),
+      y: Math.floor(size.height * LIGHT_AT[spec.kind]),
+    }
+  );
 }
 
 /** A hash of a scene pixel, for stars and the dither (stable: the same pixel always gets the same number). */
@@ -384,7 +516,9 @@ export function pixelHash(x: number, y: number): number {
 export function levelMap(lights: readonly SceneLight[], width: number, height: number): Uint8Array {
   const map = new Uint8Array(width * height);
   for (const light of lights) {
-    const { rx, ry } = LIGHT_SHAPE[light.kind];
+    const shape = LIGHT_SHAPE[light.kind];
+    const rx = shape.rx * (light.size ?? 1);
+    const ry = shape.ry * (light.size ?? 1);
     const x0 = Math.max(0, light.clip.x, Math.floor(light.x - rx));
     const x1 = Math.min(width, light.clip.x + light.clip.w, Math.ceil(light.x + rx) + 1);
     const y0 = Math.max(0, light.clip.y, Math.floor(light.y - ry));

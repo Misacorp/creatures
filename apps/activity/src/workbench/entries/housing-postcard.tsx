@@ -1,8 +1,10 @@
 import { housing } from '@creatures/game/housing-content';
+import { HousePhaseContext } from '../../housing/house-phase';
 import { HousePostcard } from '../../housing/HousePostcard';
 import { COTTAGE, HUT, MANSION, THREE_FLOORS } from '../../housing/house-scene-sample';
 import { num, str } from '../props';
 import type { Entry, Props } from '../types';
+import { phaseControl, phaseOf } from './housing';
 
 const HOUSES: Readonly<Record<string, readonly string[]>> = {
   hut: HUT,
@@ -24,6 +26,14 @@ const WALLS = housing.skins.filter((s) => s.kind === 'walls').map((s) => s.id);
 const Caption = ({ text }: { text: string }) => <p class="muted">{text}</p>;
 
 function Gallery({ p }: { p: Props }) {
+  return (
+    <HousePhaseContext.Provider value={phaseOf(p)}>
+      <Pictures p={p} />
+    </HousePhaseContext.Provider>
+  );
+}
+
+function Pictures({ p }: { p: Props }) {
   const width = num(p, 'width');
   const roof = str(p, 'roof');
   const walls = str(p, 'walls');
@@ -72,15 +82,23 @@ const housePostcard: Entry = {
   file: 'apps/activity/src/housing/HousePostcard.tsx',
   group: 'Creatures & game pieces',
   description:
-    'A whole house seen from outside, small enough for a phone: one facade piece with a window for every room, the door on the Hearth, a roof over each run of rooms, a stone course for the cellar, and the terrace, garden and pool beside it, all in the player’s own roof and wall skins. Drawn at the largest whole scale that fits the width, crisp. The page can show one house, every stage and extension, or the mansion in every skin.',
+    'A whole house seen from outside, small enough for a phone: one facade piece with a window for every room, the door on the Hearth, a roof over each run of rooms, a stone course for the cellar, and the terrace, garden and pool beside it, all in the player’s own roof and wall skins. Drawn at the largest whole scale that fits the width, crisp. At twilight and night (the phase control; in the game it is the living room’s phase) it is drawn in that light: the valley’s sky behind, dark walls and roof, warm lit windows, the porch lamp and a lantern post. The page can show one house, every stage and extension, or the mansion in every skin.',
   controls: {
     view: { kind: 'select', options: ['one', 'stages', 'skins'] },
     house: { kind: 'select', options: Object.keys(HOUSES) },
     roof: { kind: 'select', options: ROOFS },
     walls: { kind: 'select', options: WALLS },
     width: { kind: 'number', min: 56, max: 1100, step: 1 },
+    ...phaseControl,
   },
-  defaults: { view: 'one', house: 'mansion', roof: 'thatch', walls: 'plaster', width: 390 },
+  defaults: {
+    view: 'one',
+    house: 'mansion',
+    roof: 'thatch',
+    walls: 'plaster',
+    width: 390,
+    phase: 'day',
+  },
   presets: [
     { name: 'The mansion on a phone (390)', props: {} },
     { name: 'The mansion on a desktop (1100)', props: { width: 1100 } },
@@ -89,6 +107,10 @@ const housePostcard: Entry = {
     { name: 'The mansion in every skin, phone', props: { view: 'skins' } },
     { name: 'The mansion in every skin, desktop', props: { view: 'skins', width: 1100 } },
     { name: 'The hut', props: { house: 'hut' } },
+    { name: 'The mansion at twilight', props: { phase: 'twilight' } },
+    { name: 'The mansion at night', props: { phase: 'night' } },
+    { name: 'The hut at night', props: { house: 'hut', phase: 'night' } },
+    { name: 'Every stage and extension at night', props: { view: 'stages', phase: 'night' } },
     {
       name: 'The cottage, slate and timber',
       props: { house: 'cottage', roof: 'slate', walls: 'timber' },

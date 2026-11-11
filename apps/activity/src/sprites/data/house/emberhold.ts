@@ -169,6 +169,8 @@ const HAND: HouseArtPack = {
         '.....kkk........................kkk.....',
         '........................................',
       ]),
+      // the lantern and the brazier burn on the shelf: one small pool between them
+      light: { kind: 'lamp', at: { x: 26, y: 6 }, size: 0.7 },
     },
     'emberhold-stool': {
       sprite: art([

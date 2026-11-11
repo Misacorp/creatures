@@ -11,7 +11,13 @@
  * the facade, so thatch reads as thatch and slate as slate. The picture is one sprite on a transparent ground (no sky), so
  * it sits on any backdrop; `placements` has it for `paintPlacements`.
  */
-import { houseGrid, type HouseView, type HousingContent, type PartDef } from '@creatures/game';
+import {
+  houseGrid,
+  type HouseView,
+  type HousingContent,
+  type PartDef,
+  type RoomPhase,
+} from '@creatures/game';
 import { housing } from '@creatures/game/housing-content';
 import { expandRows, spriteSize, swapPalette, type SpriteDef } from '../sprites/sprite-data';
 import {
@@ -20,15 +26,26 @@ import {
   DOOR,
   FLOWERS,
   LADDER,
+  LANTERN_POST,
+  LIT_PANES,
   PARASOL,
+  PORCH_LAMP,
   SMOKE_FAR,
   SMOKE_NEAR,
   TREE,
   VENT,
   WINDOW,
 } from '../sprites/data/house/postcard';
-import { shellArt, skinArt } from './house-art';
-import type { Placement } from './house-scene';
+import { pieceArt, shellArt, skinArt } from './house-art';
+import {
+  DAY_LIGHTING,
+  lightOf,
+  pixelHash,
+  type Lighting,
+  type Material,
+  type SceneLight,
+} from './house-light';
+import { drawSky, type Placement } from './house-scene';
 
 /** One room cell on the postcard. */
 export const POSTCARD_CELL_W = 28;
@@ -69,10 +86,17 @@ export interface PostcardModel {
   height: number;
   /** The row of the first grass pixel: every floor 0 wall ends on the row above. */
   groundY: number;
-  /** The picture: one sprite on a transparent ground. */
+  /** The picture, flattened: one sprite on a transparent ground (the house and its grounds; no sky). */
   sprite: SpriteDef;
-  /** The same as placements for `paintPlacements` (one, at 0,0). */
+  /**
+   * The same picture as placements for `paintPlacements`, one sprite per material (all at 0,0, never overlapping), tagged for
+   * the lighting pass; with the phase's sky (twilight, night) behind them. By day it paints exactly `sprite`.
+   */
   placements: Placement[];
+  /** What the picture is lit by: the phase and the glow of its lit windows, porch lamp and lantern post (none by day). */
+  lighting: Lighting;
+  /** The phase the model was composed for. */
+  phase: RoomPhase;
   /** The rooms' cells (indoor floors 0 and up), the cellar's strip and the grounds' strips. They never overlap. */
   boxes: PostcardBox[];
   /** Pixels a drawing call tried to set outside the picture (always 0; the tests check). */
@@ -86,13 +110,16 @@ const CHARS = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 
 class Raster {
   clipped = 0;
+  /** What the pixels set from now on are made of (the lighting pass maps them by it). */
+  mat: Material = 'auto';
   private readonly cells: (string | null)[];
-  private readonly chars = new Map<string, string>();
+  private readonly mats: Material[];
   constructor(
     readonly w: number,
     readonly h: number,
   ) {
     this.cells = Array.from({ length: w * h }, () => null);
+    this.mats = Array.from({ length: w * h }, () => 'auto');
   }
   set(x: number, y: number, colour: string): void {
     if (x < 0 || y < 0 || x >= this.w || y >= this.h) {
@@ -100,6 +127,7 @@ class Raster {
       return;
     }
     this.cells[y * this.w + x] = colour;
+    this.mats[y * this.w + x] = this.mat;
   }
   get(x: number, y: number): string | null {
     return this.cells[y * this.w + x] ?? null;
@@ -118,22 +146,28 @@ class Raster {
       }
     }
   }
-  sprite(): SpriteDef {
+  /** The picture as a sprite; `only` keeps the pixels of one material. */
+  sprite(only?: Material): SpriteDef {
     const palette: Record<string, string> = {};
+    const chars = new Map<string, string>();
     const rows: string[] = [];
     for (let y = 0; y < this.h; y++) {
       let row = '';
       for (let x = 0; x < this.w; x++) {
         const colour = this.cells[y * this.w + x];
-        if (colour === null || colour === undefined) {
+        if (
+          colour === null ||
+          colour === undefined ||
+          (only !== undefined && this.mats[y * this.w + x] !== only)
+        ) {
           row += '.';
           continue;
         }
-        let ch = this.chars.get(colour);
+        let ch = chars.get(colour);
         if (ch === undefined) {
-          ch = CHARS[this.chars.size];
+          ch = CHARS[chars.size];
           if (ch === undefined) throw new Error('The postcard uses more colours than it has keys.');
-          this.chars.set(colour, ch);
+          chars.set(colour, ch);
           palette[ch] = colour;
         }
         row += ch;
@@ -141,6 +175,11 @@ class Raster {
       rows.push(row);
     }
     return { rows, palette };
+  }
+  /** One sprite for each material that has pixels, in the order they first appear. */
+  layers(): { mat: Material; sprite: SpriteDef }[] {
+    const present = [...new Set(this.mats.filter((_m, i) => this.cells[i] != null))];
+    return present.map((mat) => ({ mat, sprite: this.sprite(mat) }));
   }
 }
 
@@ -251,6 +290,7 @@ function drawRoof(
   glass: boolean,
 ): number {
   const n = postcardSlope(base, kind);
+  r.mat = glass ? 'auto' : 'roof';
   const tile = sampler(skin.tile);
   const ridge = skin.ridge === undefined ? null : sampler(skin.ridge);
   const eave = skin.eave === undefined ? null : sampler(skin.eave);
@@ -293,6 +333,7 @@ interface Unit {
 
 /** The glass wall of a conservatory cell: panes with white bars and a plant behind one. */
 function drawGlassCell(r: Raster, x: number, y: number): void {
+  r.mat = 'auto';
   for (let j = 0; j < POSTCARD_CELL_H; j++) {
     for (let i = 0; i < POSTCARD_CELL_W; i++) {
       let colour: string = GLASS.M;
@@ -330,11 +371,13 @@ function drawCellar(r: Raster, x: number, y: number, cells: number): void {
   const stone = coloursOf(skinArt('fieldstone', 'walls').tile);
   const look = sampler(skinArt('fieldstone', 'walls').tile);
   const w = cells * POSTCARD_CELL_W;
+  r.mat = 'exterior';
   for (let j = 0; j < CELLAR_H; j++) {
     for (let i = 0; i < w; i++) {
       r.set(x + i, y + j, j === 0 ? INK : j === 1 ? stone.L : (look(i, j + 1) ?? stone.M));
     }
   }
+  r.mat = 'auto';
   for (let c = 0; c < cells; c++) r.blit(VENT, x + c * POSTCARD_CELL_W + 19, y + 1);
 }
 
@@ -346,10 +389,50 @@ function windowFor(roof: SkinColours, walls: SkinColours): SpriteDef {
   return swapPalette(WINDOW, { S: roof.M, T: roof.D, L: walls.L, D: walls.D });
 }
 
-/** Composes the postcard of a house (a `HouseView`, or `{ parts, roof, walls }`). */
+/**
+ * Which windows are lit at twilight or night. A house view says it by its rooms: a room's window is lit when the room holds a
+ * light (a lamp, the hearth, anything the art flags: `lightOf`) or a housemate who is home; the Hearth always has its fire. A bare
+ * list of parts (a row of the visit list) knows no rooms, so a stable pattern lights about three windows in five (two in five at
+ * twilight) and the Hearth's door always has its lamp. Never random: the same house looks the same on every screen.
+ */
+function litRooms(
+  house: PostcardHouse,
+  content: HousingContent,
+): { lit(roomId: string, floor: number, col: number): boolean; post: boolean } {
+  if (!('rooms' in house)) {
+    const garden = 'parts' in house && house.parts.includes('garden');
+    return {
+      lit: (_roomId, floor, col) => pixelHash(col * 13 + 7, floor * 17 + 3) % 5 < 3,
+      post: garden,
+    };
+  }
+  const forms = new Map(content.pieces.map((p) => [p.id, p.form]));
+  const lit = new Set<string>();
+  let post = false;
+  for (const view of house.rooms) {
+    for (const pieceId of Object.values(view.spots)) {
+      if (pieceId === null) continue;
+      const kind = lightOf(pieceArt(pieceId, content), forms.get(pieceId))?.kind;
+      if (kind === undefined) continue;
+      if (kind === 'lantern') post = true;
+      else lit.add(view.id);
+    }
+    if (view.kind === 'hearth') lit.add(view.id);
+  }
+  for (const mate of house.housemates) if (mate.home) lit.add(mate.roomId);
+  return { lit: (roomId) => lit.has(roomId), post };
+}
+
+/**
+ * Composes the postcard of a house (a `HouseView`, or `{ parts, roof, walls }`) in a phase (default day, which is exactly the
+ * picture on a transparent ground). At twilight and night it is the same pixels tagged by material for the lighting pass
+ * (`house-light.ts`: dark walls and roof, the lawn, the pool and the earth in night tones), with the valley's sky behind it, windows
+ * lit warm, a porch lamp by the door and a lantern post in the garden, and `lighting` says where their glow falls.
+ */
 export function composePostcard(
   house: PostcardHouse,
   content: HousingContent = housing,
+  phase: RoomPhase = 'day',
 ): PostcardModel {
   const built = new Set('built' in house ? house.built : house.parts);
   const roofId = 'exterior' in house ? house.exterior.roof : house.roof;
@@ -421,14 +504,18 @@ export function composePostcard(
   const earth = sampler(shellArt('earth'));
   const lawnPal = coloursOf(skinArt('lawn', 'ground').tile);
   for (let x = 0; x < width; x++) {
+    r.mat = 'ground';
     for (let j = 0; j < GRASS_ROWS; j++) r.set(x, groundY + j, lawn(x, j) ?? lawnPal.M);
+    r.mat = 'earth';
     for (let j = 0; j < EARTH_ROWS; j++) r.set(x, groundY + GRASS_ROWS + j, earth(x, j) ?? WOOD);
   }
 
   // chimney and its smoke, before the roofs so the roof covers the foot
   if (chimney !== null) {
     const cy = groundY - chimney.y - spriteSize(CHIMNEY).height;
+    r.mat = 'exterior';
     r.blit(CHIMNEY, chimney.x, cy);
+    r.mat = 'auto';
     r.blit(SMOKE_NEAR, chimney.x + 2, cy - 4);
     r.blit(SMOKE_FAR, chimney.x + 5, cy - 7);
   }
@@ -447,6 +534,7 @@ export function composePostcard(
     const y = groundY - (u.floor + 1) * POSTCARD_CELL_H;
     if (u.kind === 'conservatory') drawGlassCell(r, x, y);
     else {
+      r.mat = 'wall';
       for (let j = 0; j < POSTCARD_CELL_H; j++)
         for (let i = 0; i < POSTCARD_CELL_W; i++)
           r.set(x + i, y + j, j === 0 ? wallPal.D : (wallLook(x + i, y + j) ?? wallPal.M));
@@ -454,6 +542,7 @@ export function composePostcard(
     // the silhouette: ink where there is no wall beside it, a shade line between two parts
     const left = unitAt(u.floor, u.col - 1);
     const right = unitAt(u.floor, u.col + 1);
+    r.mat = u.kind === 'conservatory' ? 'auto' : 'wall';
     for (let j = 0; j < POSTCARD_CELL_H; j++) {
       if (left === undefined) r.set(x, y + j, INK);
       else if (left.part !== u.part) r.set(x, y + j, wallPal.A);
@@ -483,13 +572,38 @@ export function composePostcard(
     });
   }
 
-  // windows, and the door on the Hearth
+  // windows, and the door on the Hearth; from twilight on a lit window is warm and glows on the wall round it
+  const dark = phase !== 'day';
+  const lit = litRooms(house, content);
+  const litWindow = swapPalette(window, LIT_PANES);
+  const lights: SceneLight[] = [];
   for (const u of units) {
     if (u.kind === 'conservatory') continue;
     const x = originX + u.col * POSTCARD_CELL_W;
     const y = groundY - (u.floor + 1) * POSTCARD_CELL_H;
-    if (u.kind === 'hearth') r.blit(DOOR, x + 10, y + POSTCARD_CELL_H - spriteSize(DOOR).height);
-    else r.blit(window, x + 8, y + 3);
+    const cell = { x, y, w: POSTCARD_CELL_W, h: POSTCARD_CELL_H };
+    if (u.kind === 'hearth') {
+      r.mat = 'auto';
+      r.blit(DOOR, x + 10, y + POSTCARD_CELL_H - spriteSize(DOOR).height);
+      if (dark) {
+        // the porch lamp by the door: always on from dusk
+        r.mat = 'light';
+        r.blit(PORCH_LAMP, x + 20, y + 5);
+        lights.push({ kind: 'porch', x: x + 21, y: y + 6, clip: cell, size: 0.5 });
+      }
+    } else if (
+      dark &&
+      lit.lit(u.roomId, u.floor, u.col) &&
+      // at twilight most of the rooms that will be lit have lit up already
+      (phase === 'night' || pixelHash(u.col, u.floor) % 5 < 4)
+    ) {
+      r.mat = 'light';
+      r.blit(litWindow, x + 8, y + 3);
+      lights.push({ kind: 'window', x: x + 13, y: y + 7, clip: cell, size: 0.85 });
+    } else {
+      r.mat = 'window';
+      r.blit(window, x + 8, y + 3);
+    }
   }
 
   // grounds
@@ -498,15 +612,35 @@ export function composePostcard(
     const w = g.w * POSTCARD_CELL_W;
     drawGrounds(r, g.kind, x, groundY, w);
     boxes.push({ kind: 'grounds', roomId: g.roomId, x, y: groundY - 12, w, h: 12 + GRASS_ROWS });
+    if (dark && g.kind === 'garden' && lit.post) {
+      // the lantern post on the lawn between the hedge and the tree
+      const px = x + 38;
+      const py = groundY - spriteSize(LANTERN_POST).height + 1;
+      r.mat = 'light';
+      r.blit(LANTERN_POST, px, py);
+      lights.push({
+        kind: 'lantern',
+        x: px + 2,
+        y: py + 2,
+        size: 0.45,
+        clip: { x: 0, y: 0, w: width, h: groundY + GRASS_ROWS },
+      });
+    }
   }
 
   const sprite = r.sprite();
+  const placements: Placement[] = [];
+  if (dark) drawSky(placements, width, groundY, phase, undefined, true);
+  for (const layer of r.layers())
+    placements.push({ sprite: layer.sprite, x: 0, y: 0, mat: layer.mat });
   return {
     width,
     height,
     groundY,
     sprite,
-    placements: [{ sprite, x: 0, y: 0 }],
+    placements,
+    lighting: dark ? { phase, lights } : DAY_LIGHTING,
+    phase,
     boxes,
     clipped: r.clipped,
   };
@@ -516,6 +650,7 @@ export function composePostcard(
 function drawGrounds(r: Raster, kind: string, x: number, groundY: number, w: number): void {
   if (kind === 'terrace') {
     const deck = coloursOf(skinArt('deck', 'ground').tile);
+    r.mat = 'floor';
     // the deck: three rows raised over the grass, planks
     for (let i = 0; i < w; i++) {
       r.set(x + i, groundY - 2, deck.L);
@@ -526,6 +661,7 @@ function drawGrounds(r: Raster, kind: string, x: number, groundY: number, w: num
     for (let i = 1; i < w - 1; i += 7) r.rect(x + i, groundY - 8, 1, 6, deck.A);
     r.rect(x + 1, groundY - 8, w - 2, 1, deck.L);
     r.rect(x + 1, groundY - 5, w - 2, 1, deck.D);
+    r.mat = 'auto';
     r.blit(PARASOL, x + Math.floor(w / 2) - 5, groundY - 11);
     return;
   }
@@ -534,6 +670,7 @@ function drawGrounds(r: Raster, kind: string, x: number, groundY: number, w: num
     // a hedge with a scalloped top and a light edge
     const hx = x + 3;
     const hw = 33;
+    r.mat = 'ground';
     for (let i = 0; i < hw; i++) {
       const top = groundY - 6 + (i % 6 < 3 ? 0 : 1);
       for (let j = top; j < groundY; j++) {
@@ -545,6 +682,7 @@ function drawGrounds(r: Raster, kind: string, x: number, groundY: number, w: num
         );
       }
     }
+    r.mat = 'auto';
     r.blit(TREE, x + w - 15, groundY - 9);
     // flowers in the grass in front
     FLOWERS.forEach((flower, k) => r.blit(flower, x + 6 + k * 8, groundY - 1));
@@ -554,10 +692,13 @@ function drawGrounds(r: Raster, kind: string, x: number, groundY: number, w: num
     const tile = coloursOf(skinArt('pool-tile', 'ground').tile);
     const water = coloursOf(skinArt('pool-water', 'ground').tile);
     // the coping along the ground line and the basin sunk under it
+    r.mat = 'exterior';
     for (let i = 2; i < w - 2; i++) r.set(x + i, groundY, i % 4 === 3 ? tile.D : tile.L);
     for (let j = 1; j <= 4; j++) {
+      r.mat = 'exterior';
       r.set(x + 3, groundY + j, INK);
       r.set(x + w - 4, groundY + j, INK);
+      r.mat = 'water';
       for (let i = 4; i < w - 4; i++) {
         let colour = water.M;
         if (j === 1 && (i % 9 === 2 || i % 9 === 3)) colour = water.L;
@@ -566,7 +707,9 @@ function drawGrounds(r: Raster, kind: string, x: number, groundY: number, w: num
         r.set(x + i, groundY + j, colour);
       }
     }
+    r.mat = 'exterior';
     for (let i = 3; i < w - 3; i++) r.set(x + i, groundY + 5, INK);
+    r.mat = 'auto';
     r.blit(LADDER, x + 7, groundY - 5);
     r.blit(BOARD, x + w - 16, groundY - 4);
   }

@@ -375,7 +375,11 @@ export const HOUSE_ART: HouseArtPack = {
       front: drawn(HAMMOCK_FRONT, PALETTE),
       sleep: { x: 16, y: 6 },
     },
-    'reef-tank': { sprite: drawn(REEF_TANK, PALETTE) },
+    // the tank is lit from inside: a small pool round the water
+    'reef-tank': {
+      sprite: drawn(REEF_TANK, PALETTE),
+      light: { kind: 'lamp', at: { x: 10, y: 11 }, size: 0.7 },
+    },
     'tall-clock': { sprite: drawn(TALL_CLOCK, PALETTE) },
     'cuckoo-clock': { sprite: drawn(CUCKOO_CLOCK, PALETTE) },
     'wayfarer-globe': { sprite: drawn(WAYFARER_GLOBE, PALETTE) },
