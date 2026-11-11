@@ -5,7 +5,7 @@ description: Add a new furniture set to Leet Creatures player housing in one ses
 
 # Furniture set
 
-A set is a **style** (palette, a ramp per material, a few choices) applied to nine forms (bed, cupboard, table, shelf, stool, lamp, rug, frame, curtains), plus a hand-drawn wallpaper, floor and keepsake, and its words. The workshop is described in `docs/design/housing-workshop.md`; read it once. The worked example is **Quiet Verge** (`apps/activity/src/sprites/workshop/styles/quiet-verge.ts`, `apps/activity/src/sprites/data/house/quiet-verge.ts`): copy its patterns. It took about 40 minutes of work from `new-set` to green checks.
+A set is a **style** (palette, a ramp per material, a few choices) applied to nine forms (bed, cupboard, table, shelf, stool, lamp, rug, frame, curtains), plus a hand-drawn wallpaper, floor and keepsake, and its words. The workshop is described in `docs/design/housing-workshop.md`; read it once. The worked example is **Quiet Verge** (`apps/activity/src/sprites/workshop/styles/quiet-verge.ts`, `apps/activity/src/sprites/data/house/quiet-verge.ts`): copy its patterns. It took about 40 minutes of work from `new-set` to green checks (Fairground took about 16 and Schoolhouse about 7 minutes of work up to the full check, by copying its patterns: 2026-11-11 test run).
 
 Run every command from the worktree root. Use your own log names (`/tmp/<set>-check.log`). Commit after each step that works.
 
@@ -14,6 +14,7 @@ Run every command from the worktree root. Use your own log names (`/tmp/<set>-ch
 - Read `docs/compendium/README.md` (tone, naming rules), then the page of the set's place, faction or event (`places.md`, `games.md`, `world.md` ...) and `docs/compendium/housing.md` (the other sets' lines: match their length and tone).
 - Check `docs/art/README.md` for art of that place (a banner, a concept) and open its PNG and source (`apps/activity/src/sprites/concepts/*.ts`). Take the palette from it: the set should look like the place players already know.
 - Write down: mood in three words; **three motifs** (one becomes `motif`, the others go into the silhouettes); the materials (what the furniture is made of); the one accent colour that means "this set".
+- A place or faction that is not shipped yet (the valley's School is only designed, with art in the library) is still a fine theme: take its look from `docs/art/README.md` and `docs/design/valley/`, keep the words generic, and give `--places` a shipped place that fits the material (oak: the Verdant Hollow; the Games meadow: the Old Crossroads).
 - Pick a palette that does not sit on an existing set: look at `pnpm housing sheet <other> --room` for the two nearest sets (Quiet Verge was checked against Moonlit and Stormglass, the other night and violet sets). The report's "too close" check only catches the same outline in the same paint; you still judge by eye.
 
 ## 2. Scaffold: `pnpm housing new-set`
@@ -38,7 +39,7 @@ Always `--dry-run` first: it lists the files.
 | `--moments`             | `trip,scout,raid`             | add `dungeon` for underground places, `games` for the Valley Games                                                                                                                                                                                                                  |
 | `--places`, `--bosses`  | none                          | destination and boss ids (`destinations.json`, `bosses.json`). An unshipped place uses the shipped places that lead to it                                                                                                                                                           |
 
-It writes `sets.json`, `pieces.json`, `skins.json`, the style, the pack, the concept wrapper, `workshop/sets.ts` and the compendium rows (marked `draft`/`TODO`), then runs the lock, the art library, the tests and a first sheet. Commit.
+It writes `sets.json`, `pieces.json`, `skins.json`, the style, the pack, the concept wrapper, `workshop/sets.ts` and the compendium rows (marked `draft`/`TODO`), then runs the lock, the art library (so `docs/art/README.md` and `docs/art/house-<id>.png` change too), the tests and a first sheet. **It exits with an error on its first run: the content tests refuse the `TODO` words. That is expected;** the files are written. Omit `--bosses` when the set has none (an empty `--bosses ""` also works). `pnpm housing` with no arguments prints a usage line that leaves out `variants`; it exists. Commit.
 
 ## 3. The style
 
@@ -46,7 +47,8 @@ Edit `apps/activity/src/sprites/workshop/styles/<id>.ts`.
 
 - **Palette:** 12 to 16 keys plus `k` (`#0d0a1a`). A piece is linted at 16 colours: the shelf draws from every ramp, so share keys between ramps rather than adding more. Ramps: `wood` (the main body, whatever it is made of; give it `hi` and `deep`), `cloth` (blanket, drapes, seat), `linen` (sheets, pillow), `metal` (rims, knobs, rod), `glass` (window, cupboard glass, picture sky), `accent` (motif, inlay). The style palette may hold keys no ramp uses (the wallpaper's sky): the pack's `art()` keeps only the keys a sprite uses.
 - **Variants:** `pnpm housing variants <id> --out <dir>` draws every value of every axis in your style. Pick one per form in `shapes`; choose `leg`, `foot`, `trim`, `top`, `motif`, `weave`, `lamp`, `lampMaterial`, `glow`, `rug`, `picture`, `shelf`.
-- **Part hooks for identity.** Aim for **at least three pieces whose outline no other set has**. `parts: { <form>: { <part>: ({ c, style, at }) => ... } }` replaces one named part (names and areas: `FORMS[form].parts`, the form files in `workshop/forms/`; a shaped variant is drawn in `*-shapes.ts`, read the part's `at` there). Draw with `box`, `solid` + `inArch`/`inEllipse`/`shrink`, `motif`, `put` from `sprites/draw/`. Keep helpers (a chip, a star field) at the top of the style file. Quiet Verge hooks: bed `headboard` (two standing stones) and `legs` (floating chips), cupboard `doors` (an arch of window dark with the warm star), table `legs` (a top hovering over a pillar), shelf `brackets` (chips, no brackets), stool `legs` + `seat`, frame `frame` + `picture` (a dark moon), rug `rug` (a pool of stars), curtains `window` (the place at dusk).
+- **Part hooks for identity.** Aim for **at least three pieces whose outline no other set has**. `parts: { <form>: { <part>: ({ c, style, at }) => ... } }` replaces one named part (names and areas: `FORMS[form].parts`, the form files in `workshop/forms/`; a shaped variant is drawn in `*-shapes.ts`, read the part's `at` there). Draw with `box`, `solid` + `inArch`/`inEllipse`/`shrink`, `motif`, `put` from `sprites/draw/`. Keep helpers (a chip, a star field, a stripe or a `stamp` of small rows) at the top of the style file; `canvas.ts` already has `fromRows` and `blit` for a small drawing given as rows. **Every hook must hold up in every variant**: `variants.test.ts` draws every value of every axis of every style with your hooks (this fails `pnpm housing check`, not the sheet): keep an ink edge on every outer pixel inside the canvas (a striped cloth drawn from x 0 puts its end ink at -1, clipped: start at x 1), keep a floor piece's last row drawn, and do not hook a part that a variant uses as the whole body (the pouf stool's `seat`). Quiet Verge hooks: bed `headboard` (two standing stones) and `legs` (floating chips), cupboard `doors` (an arch of window dark with the warm star), table `legs` (a top hovering over a pillar), shelf `brackets` (chips, no brackets), stool `legs` + `seat`, frame `frame` + `picture` (a dark moon), rug `rug` (a pool of stars), curtains `window` (the place at dusk).
+- **Variants that no shipped set uses** give an own outline for free: bed `canopy` and `ladder`, cupboard `domed`, `round` and `slatted` doors, trestle table, chain and block brackets, three-leg and two-leg stools, banner, clock and picture frames, cafe and shutter curtains, `cone` and `cage` lamps, runner and fringe rugs (check `shapes` in `styles/*.ts`). A cupboard with `top: 'crest'` and the style's `top: 'peaked'` is a gable. A `canopy` bed's cloth is not a named part: hook `headboard` and draw the cloth there too. Paint (stripes, a scalloped hem) goes best in a hook of its own.
 - **Hand overrides** (`SOURCE.pieces` in the pack: `hand`, `layers`, `art`, `post`, each with a `why`) only when a hook cannot say it. A new set should need none; Quiet Verge has none.
 - **Lights:** the lamp form is a light by default (`FORM_LIGHT`). Set `light` on a piece's art (`house-art.ts`) only for another piece that should light the room. A lamp whose shade is bright saturated yellow or orange keeps glowing at night (`toneOf` "flame" in `house-light.ts`).
 
@@ -56,6 +58,7 @@ Render after every change: `pnpm housing sheet <id> --out <dir>` (pieces at 1x a
 
 Replace `placeholderHand` in `apps/activity/src/sprites/data/house/<id>.ts` with a `HAND` pack (see `quiet-verge.ts`): `skins['<id>-wall'].tile` 16x52, `skins['<id>-floor'].tile` 16x8, `keepsakes['<id>']` 12x12. Delete the `placeholder` import and the `TODO(artist)` header.
 
+- Pick the floor against the oak or wood too: a floor in the furniture's own colour hides the legs (Schoolhouse: grey-cream squares under oak; Fairground: tan under blue). A runner in the cream border colour vanished on a tan floor until a hook made it red.
 - Tiles have no ink outline and repeat sideways every 16 px: put stars, dots or seams so the join does not show. Rows 46 to 51 of the wall sit behind the floor pieces' feet (a skirting).
 - **Contrast rule:** the furniture must read on the set's own wallpaper. The paper should be clearly darker or lighter than the `wood` ramp's mid (Quiet Verge: dusk sky `#262050`/`#352d68` behind lilac stone `#6f62b8`). The report measures it.
 - The keepsake must read at icon size: one shape, one bright accent, an ink edge. Draw it with the library (Quiet Verge's is a 6-line function) or as rows.
@@ -69,7 +72,7 @@ pnpm housing sheet <id> --out /tmp/<scratch>/sets/<id>/
 
 - Open `<id>-room.png`: three rooms at 1x, at phone scale (3x), at night lit by the lamps (`--night`, the lighting pass of `house-light.ts`; stars in the night window are not drawn), and the catalogue tiles. A red tile label is a flagged piece.
 - The PNG viewer shrinks wide sheets: crop and enlarge what you check (a small PIL script in the scratchpad: `Image.crop(...).resize(..., Image.NEAREST)`; run it with `python3 -I`).
-- The report (`<id>-report.txt`): **fix every flag or write down why it stays.** Low "inside contrast" means the piece is the paper's colour: change the paper first, then the ramp. "Lone specks" over 12% means dithering that vanishes on a phone. "Too close" means the same outline in the same paint as another set: change the variant or add a hook.
+- The report (`<id>-report.txt`): **fix every flag or write down why it stays.** Low "inside contrast" means the piece is the paper's colour: change the paper first, then the ramp. "Lone specks" over 12% means dithering that vanishes on a phone (a brass `cone` lamp over a pale paper gave 18%; the `dome` in the linen ramp gave 9%: try another lamp kind or material before drawing a hook). "Too close" means the same outline in the same paint as another set: change the variant or add a hook.
 
 ## 6. Art-director pass (`docs/design/review-brief.md`)
 
@@ -91,7 +94,9 @@ Fill every `TODO` from the compendium's tone (short, plain, concrete, one image;
 - `sets.json`: `line` (the set in a few words), `keepsake.name` (a thing, not "<Set> Keepsake") and `keepsake.line`.
 - `pieces.json`: nine `line`s. Players may not know an unshipped place: do not name it in a line.
 - `docs/compendium/housing.md`: the Sets row (replace `draft: ` with the theme), the Keepsakes row (the new keepsake name), the set's section (its line, then a short **Compendium detail, not shipped** paragraph), the nine piece rows. Add a short note to the place's own page (`places.md` ...) that the set exists.
-- Update every sentence that counts the sets: the compendium's "N sets: the starter set and N-1 to collect", `docs/design/housing.md` (section 1 "Sets.", the section 2.5 Sets table gets a row).
+- Find what is left with `grep -n "TODO\|draft" docs/compendium/housing.md`: the Sets row has a `draft: ` prefix, the Keepsakes row a `(draft)` suffix, the skins' hints in `skins.json` and the Wallpaper/Floor rows hold the generic "blueprint from ..." line (set them to the set's real sources, for example "or a Games gold" when `games` is a moment).
+- Update every sentence that counts the sets: the compendium's "N sets: the starter set and N-1 to collect", `docs/design/housing.md` (section 1 "Sets.", the section 2.5 Sets table gets a row; its "N set pieces and N wallpapers and floors" is nine times the sets with forms and twice the sets).
+- Writing the words with a small Python script (`python3 -I`, a JSON of lines, the scratchpad) is quicker than twenty edits.
 
 ## 8. Checks
 
@@ -120,7 +125,7 @@ Fill every `TODO` from the compendium's tone (short, plain, concrete, one image;
 - **A part hook replaces the part in every variant,** and some variants draw extra parts after it (the drum stool's seat ellipse covered the hooked body): hook the seat too, or pick a variant that draws less.
 - **Ceiling lamps hang from row 0,** floor pieces stand on their last row; a hovering piece still needs something (a chip) on its last row.
 - **The window glass is the `glass` ramp,** which is also the cupboard glass and the frame's sky: a dark glass makes the curtains vanish on a dark paper. Quiet Verge hooks the curtains' `window` and paints the place at dusk.
-- **Shell or chained commands** (`cd x && a | b`) are refused in an isolated worktree: run plain commands with absolute paths, put scripts in the scratchpad and run them with `python3 -I`.
+- **Shell or chained commands** (`cd x && a | b`) are refused in an isolated worktree: run plain commands with absolute paths, put scripts in the scratchpad and run them with `python3 -I`. A refused command runs nothing. In the same way `git ... | head`, a `cat > file <<EOF` and a `cd` outside the worktree were refused or risky: write files with the Write tool, run git on its own (`git log --oneline -3`), and start each command with `cd <worktree> &&` or none.
 - **Unused imports** left from trying hooks fail lint, which `pnpm housing` never runs: lint the activity before the full check.
 - **`SHIPPED_SET_IDS` too early:** once the id is in it, `new-set` cannot be re-run to add a missing file.
 
