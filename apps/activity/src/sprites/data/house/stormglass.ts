@@ -381,15 +381,39 @@ export const SOURCE: SetSource = {
   style: STORMGLASS,
   hand: HAND,
   pieces: {
-    bed: { use: 'hand', why: 'a copper-coiled headboard with a glass bead; the generated bed is a plainer re-skin' },
-    cupboard: { use: 'hand', why: 'a lightning scar across pale ash doors; the generated doors are plain' },
-    table: { use: 'hand', why: 'splayed legs and a zigzag copper apron; close, but the hand one reads cleaner' },
-    shelf: { use: 'hand', why: 'coils, a bottle and a crystal that read at 1x; the generated things are smaller' },
+    bed: {
+      use: 'hand',
+      why: 'a copper-coiled headboard with a glass bead; the generated bed is a plainer re-skin',
+    },
+    cupboard: {
+      use: 'hand',
+      why: 'a lightning scar across pale ash doors; the generated doors are plain',
+    },
+    table: {
+      use: 'hand',
+      why: 'splayed legs and a zigzag copper apron; close, but the hand one reads cleaner',
+    },
+    shelf: {
+      use: 'hand',
+      why: 'coils, a bottle and a crystal that read at 1x; the generated things are smaller',
+    },
     stool: { use: 'hand', why: 'splayed legs braced with copper; the generated legs read stiffer' },
-    lamp: { use: 'hand', why: 'a glass orb lamp with its own dithered halo; the generated cage reads busier' },
-    rug: { use: 'hand', why: 'a violet zigzag with a lightning streak; the generated zigzag is busier' },
-    frame: { use: 'hand', why: 'a storm picture with a bolt in a chamfered frame; close, the hand one reads cleaner' },
-    curtains: { use: 'hand', why: 'a pale window with copper rods; the generated violet drapes on violet glass read poorly' },
+    lamp: {
+      use: 'hand',
+      why: 'a glass orb lamp with its own dithered halo; the generated cage reads busier',
+    },
+    rug: {
+      use: 'hand',
+      why: 'a violet zigzag with a lightning streak; the generated zigzag is busier',
+    },
+    frame: {
+      use: 'hand',
+      why: 'a storm picture with a bolt in a chamfered frame; close, the hand one reads cleaner',
+    },
+    curtains: {
+      use: 'hand',
+      why: 'a pale window with copper rods; the generated violet drapes on violet glass read poorly',
+    },
   },
 };
 

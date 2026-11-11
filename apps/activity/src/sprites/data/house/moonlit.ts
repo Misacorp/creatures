@@ -379,15 +379,37 @@ export const SOURCE: SetSource = {
   style: MOONLIT,
   hand: HAND,
   pieces: {
-    bed: { use: 'hand', why: 'a crescent inlay and an arched headboard; the generated bed is a plainer re-skin' },
-    cupboard: { use: 'hand', why: 'an arched cabinet with crescent doors; the generated one is boxier' },
-    table: { use: 'hand', why: 'splayed legs with a curved stretcher and a moonstone; the generated stretcher is straight' },
-    shelf: { use: 'hand', why: 'a moon jar and a stack that read at 1x; the generated things are smaller' },
+    bed: {
+      use: 'hand',
+      why: 'a crescent inlay and an arched headboard; the generated bed is a plainer re-skin',
+    },
+    cupboard: {
+      use: 'hand',
+      why: 'an arched cabinet with crescent doors; the generated one is boxier',
+    },
+    table: {
+      use: 'hand',
+      why: 'splayed legs with a curved stretcher and a moonstone; the generated stretcher is straight',
+    },
+    shelf: {
+      use: 'hand',
+      why: 'a moon jar and a stack that read at 1x; the generated things are smaller',
+    },
     stool: { use: 'hand', why: 'a round cushion with a crescent; the generated stool is square' },
-    lamp: { use: 'layers', layers: ['sprite'], why: 'the shade is hand-drawn; the two-ring glow is generated (pixel-identical to the first pass)' },
+    lamp: {
+      use: 'layers',
+      layers: ['sprite'],
+      why: 'the shade is hand-drawn; the two-ring glow is generated (pixel-identical to the first pass)',
+    },
     rug: { use: 'hand', why: 'an oval rug with coral ends; the generated oval is plainer' },
-    frame: { use: 'hand', why: 'an oval moon mirror, a silhouette of its own; the generated frame is a box' },
-    curtains: { use: 'hand', why: 'violet drapes over a night window with silver rims; the generated window is a day sky' },
+    frame: {
+      use: 'hand',
+      why: 'an oval moon mirror, a silhouette of its own; the generated frame is a box',
+    },
+    curtains: {
+      use: 'hand',
+      why: 'violet drapes over a night window with silver rims; the generated window is a day sky',
+    },
   },
 };
 

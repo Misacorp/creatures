@@ -35,7 +35,10 @@ export const SHELF: FormDef = {
     part(c, style, 'shelf', 'things', { x: 2, y: 0, w: W - 4, h: 11 }, ({ c, style, at }) => {
       const widths = style.shelf.map(shelfItemWidth);
       const used = widths.reduce((a, b) => a + b, 0);
-      const gap = style.shelf.length > 1 ? Math.max(1, Math.floor((at.w - used) / (style.shelf.length + 1))) : 0;
+      const gap =
+        style.shelf.length > 1
+          ? Math.max(1, Math.floor((at.w - used) / (style.shelf.length + 1)))
+          : 0;
       let x = at.x + gap;
       for (const item of style.shelf) {
         const w = shelfItem(c, x, at.y + at.h, item, style);

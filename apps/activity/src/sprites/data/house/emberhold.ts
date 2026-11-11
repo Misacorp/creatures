@@ -379,15 +379,34 @@ export const SOURCE: SetSource = {
   style: EMBERHOLD,
   hand: HAND,
   pieces: {
-    bed: { use: 'hand', why: 'iron-banded boards with rivets; the generated bed is a plainer re-skin' },
-    cupboard: { use: 'hand', why: 'iron bands across the doors and an amber lock; the generated doors are plain panels' },
-    table: { use: 'hand', why: 'riveted iron bands and iron feet; the generated table has fewer rivets' },
-    shelf: { use: 'hand', why: 'an anvil, a lantern and a brazier: smithy things the generic shelf does not have' },
+    bed: {
+      use: 'hand',
+      why: 'iron-banded boards with rivets; the generated bed is a plainer re-skin',
+    },
+    cupboard: {
+      use: 'hand',
+      why: 'iron bands across the doors and an amber lock; the generated doors are plain panels',
+    },
+    table: {
+      use: 'hand',
+      why: 'riveted iron bands and iron feet; the generated table has fewer rivets',
+    },
+    shelf: {
+      use: 'hand',
+      why: 'an anvil, a lantern and a brazier: smithy things the generic shelf does not have',
+    },
     stool: { use: 'hand', why: 'an iron-banded seat; the generated stool is plainer' },
-    lamp: { use: 'layers', layers: ['sprite'], why: 'the shade is hand-drawn; the two-ring glow is generated (pixel-identical to the first pass)' },
+    lamp: {
+      use: 'layers',
+      layers: ['sprite'],
+      why: 'the shade is hand-drawn; the two-ring glow is generated (pixel-identical to the first pass)',
+    },
     rug: { use: 'hand', why: 'a rust rug with amber diamonds; the generated stripes read weaker' },
     frame: { use: 'hand', why: 'an iron frame round a forge fire; the generated fire is flatter' },
-    curtains: { use: 'hand', why: 'heavy rust drapes and an iron rod; the generated drapes pinch and read busier' },
+    curtains: {
+      use: 'hand',
+      why: 'heavy rust drapes and an iron rod; the generated drapes pinch and read busier',
+    },
   },
 };
 

@@ -381,15 +381,33 @@ export const SOURCE: SetSource = {
   style: ANCIENT,
   hand: HAND,
   pieces: {
-    bed: { use: 'hand', why: 'standing-stone boards with spiral carvings; the generated bed is a plainer re-skin' },
-    cupboard: { use: 'hand', why: 'a stepped crown and spiral door carvings; the generated crown is smaller' },
+    bed: {
+      use: 'hand',
+      why: 'standing-stone boards with spiral carvings; the generated bed is a plainer re-skin',
+    },
+    cupboard: {
+      use: 'hand',
+      why: 'a stepped crown and spiral door carvings; the generated crown is smaller',
+    },
     table: { use: 'hand', why: 'slab legs carved with spirals; the generated legs are posts' },
-    shelf: { use: 'hand', why: 'carved gold things that read at 1x; the generated things are smaller' },
+    shelf: {
+      use: 'hand',
+      why: 'carved gold things that read at 1x; the generated things are smaller',
+    },
     stool: { use: 'hand', why: 'a stepped stone seat; the generated stool is generic' },
-    lamp: { use: 'hand', why: 'a gold bowl lamp with its own dithered halo; the generated cone is plainer' },
+    lamp: {
+      use: 'hand',
+      why: 'a gold bowl lamp with its own dithered halo; the generated cone is plainer',
+    },
     rug: { use: 'hand', why: 'a teal and gold meander; the generated diamonds read weaker' },
-    frame: { use: 'hand', why: 'a spiral carving in a stone frame; the generated sun picture is plainer' },
-    curtains: { use: 'hand', why: 'a stone window with a gold lintel; the generated drapes are a different idea' },
+    frame: {
+      use: 'hand',
+      why: 'a spiral carving in a stone frame; the generated sun picture is plainer',
+    },
+    curtains: {
+      use: 'hand',
+      why: 'a stone window with a gold lintel; the generated drapes are a different idea',
+    },
   },
 };
 

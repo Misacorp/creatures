@@ -56,7 +56,8 @@ function legRow(c: Canvas, x: number, y: number, w: number, ramp: Ramp, hi = fal
   put(c, x, y, INK);
   put(c, x + w - 1, y, INK);
   for (let i = 1; i < w - 1; i++) {
-    const key = i === 1 ? (hi ? (ramp.hi ?? ramp.light) : ramp.light) : i === w - 2 ? ramp.dark : ramp.mid;
+    const key =
+      i === 1 ? (hi ? (ramp.hi ?? ramp.light) : ramp.light) : i === w - 2 ? ramp.dark : ramp.mid;
     put(c, x + i, y, key);
   }
 }
@@ -105,7 +106,14 @@ export function leg(
 export type FootKind = 'none' | 'block' | 'ball' | 'paw';
 
 /** A foot under a leg: `w` outer pixels wide, top at y. Returns the rows it used. */
-export function foot(c: Canvas, x: number, y: number, w: number, kind: FootKind, ramp: Ramp): number {
+export function foot(
+  c: Canvas,
+  x: number,
+  y: number,
+  w: number,
+  kind: FootKind,
+  ramp: Ramp,
+): number {
   if (kind === 'none') return 0;
   if (kind === 'block') {
     legRow(c, x, y, w, { light: ramp.light, mid: ramp.light, dark: ramp.light });
@@ -301,10 +309,13 @@ export function crest(
     for (const p of cells) {
       if (p.y >= top) continue;
       const edge =
-        get(c, p.x, p.y - 1) === CLEAR || get(c, p.x - 1, p.y) === CLEAR || get(c, p.x + 1, p.y) === CLEAR;
+        get(c, p.x, p.y - 1) === CLEAR ||
+        get(c, p.x - 1, p.y) === CLEAR ||
+        get(c, p.x + 1, p.y) === CLEAR;
       if (edge) put(c, p.x, p.y, INK);
     }
-    for (const p of cells) if (p.y === top - 1 && get(c, p.x, p.y) !== INK) put(c, p.x, p.y, ramp.mid);
+    for (const p of cells)
+      if (p.y === top - 1 && get(c, p.x, p.y) !== INK) put(c, p.x, p.y, ramp.mid);
     hline(c, x + 1, top, w - 2, l);
   } else if (kind === 'stepped') {
     for (let s = 0; s < 2; s++) {
@@ -372,7 +383,8 @@ export function mattress(c: Canvas, x: number, y: number, w: number, h: number, 
   box(c, x, y, w, h, ramp, { shade: 'rows' });
 }
 
-export type ClothPattern = 'plain' | 'stripes' | 'checks' | 'dots' | 'waves' | 'diamonds' | 'zigzag';
+export type ClothPattern =
+  'plain' | 'stripes' | 'checks' | 'dots' | 'waves' | 'diamonds' | 'zigzag';
 
 /** Fills a box with a cloth pattern of the ramp's mid and the accent (no ink). */
 export function pattern(
@@ -395,16 +407,43 @@ export function pattern(
       tile(c, x, y, w, h, [`${m}${m}${a}${m}${m}${m}`]);
       break;
     case 'checks':
-      tile(c, x, y, w, h, [`${a}${a}${m}${m}`, `${a}${a}${m}${m}`, `${m}${m}${a}${a}`, `${m}${m}${a}${a}`]);
+      tile(c, x, y, w, h, [
+        `${a}${a}${m}${m}`,
+        `${a}${a}${m}${m}`,
+        `${m}${m}${a}${a}`,
+        `${m}${m}${a}${a}`,
+      ]);
       break;
     case 'dots':
-      tile(c, x, y, w, h, [`${m}${m}${m}${m}`, `${m}${a}${m}${m}`, `${m}${m}${m}${m}`, `${m}${m}${m}${a}`], 0, 1);
+      tile(
+        c,
+        x,
+        y,
+        w,
+        h,
+        [`${m}${m}${m}${m}`, `${m}${a}${m}${m}`, `${m}${m}${m}${m}`, `${m}${m}${m}${a}`],
+        0,
+        1,
+      );
       break;
     case 'waves':
-      tile(c, x, y, w, h, [`${m}${a}${a}${m}${m}${m}`, `${a}${m}${m}${a}${m}${m}`, `${m}${m}${m}${m}${m}${m}`]);
+      tile(c, x, y, w, h, [
+        `${m}${a}${a}${m}${m}${m}`,
+        `${a}${m}${m}${a}${m}${m}`,
+        `${m}${m}${m}${m}${m}${m}`,
+      ]);
       break;
     case 'diamonds':
-      tile(c, x, y, w, h, [`${m}${m}${a}${m}${m}${m}`, `${m}${a}${m}${a}${m}${m}`, `${m}${m}${a}${m}${m}${m}`], 0, 0);
+      tile(
+        c,
+        x,
+        y,
+        w,
+        h,
+        [`${m}${m}${a}${m}${m}${m}`, `${m}${a}${m}${a}${m}${m}`, `${m}${m}${a}${m}${m}${m}`],
+        0,
+        0,
+      );
       break;
     case 'zigzag':
       tile(c, x, y, w, h, [`${a}${m}${m}${m}`, `${m}${a}${m}${a}`, `${m}${m}${a}${m}`]);
@@ -467,7 +506,8 @@ export function drape(
       put(c, rx + i, y + r, k);
     }
     if (options.tie !== undefined && r === options.tie && options.band !== undefined) {
-      for (let i = 1; i < rw - 1; i++) put(c, rx + i, y + r, i === 1 ? options.band.light : options.band.mid);
+      for (let i = 1; i < rw - 1; i++)
+        put(c, rx + i, y + r, i === 1 ? options.band.light : options.band.mid);
     }
   }
 }
@@ -502,7 +542,8 @@ export function windowPane(
 // ---------------------------------------------------------------------------------------------------------------
 // Things on a shelf
 
-export type ShelfItem = 'books' | 'jar' | 'plant' | 'shell' | 'candle' | 'bottle' | 'bowl' | 'crystal';
+export type ShelfItem =
+  'books' | 'jar' | 'plant' | 'shell' | 'candle' | 'bottle' | 'bowl' | 'crystal';
 
 /**
  * Draws a small stencil: `k` ink, `0` to `3` the first ramp's hi, light, mid and dark, `4` to `6` the second ramp's
@@ -573,7 +614,15 @@ const SHELF_THINGS: Readonly<
     ramps: (m) => [m.wood, m.accent],
   },
   shell: {
-    rows: ['...kkk...', '..k121k..', '.k12121k.', 'k1212121k', 'k1212123k', '.k22223k.', '..kkkkk..'],
+    rows: [
+      '...kkk...',
+      '..k121k..',
+      '.k12121k.',
+      'k1212121k',
+      'k1212123k',
+      '.k22223k.',
+      '..kkkkk..',
+    ],
     ramps: (m) => [m.linen, m.accent],
   },
   candle: {
@@ -581,17 +630,43 @@ const SHELF_THINGS: Readonly<
     ramps: (m) => [m.linen, m.accent],
   },
   bottle: {
-    rows: ['.k4k.', '.k5k.', '.k2k.', 'kk12kk', 'k1022k', 'k1222k', 'k1222k', 'k1223k', '.kkkk.'].map((r) =>
-      r.padEnd(6, '.'),
-    ),
+    rows: [
+      '.k4k.',
+      '.k5k.',
+      '.k2k.',
+      'kk12kk',
+      'k1022k',
+      'k1222k',
+      'k1222k',
+      'k1223k',
+      '.kkkk.',
+    ].map((r) => r.padEnd(6, '.')),
     ramps: (m) => [m.glass, m.wood],
   },
   bowl: {
-    rows: ['..k.kk...', '.k4k45k..', 'k44k455k.', 'kkkkkkkkk', 'k1122223k', '.k12223k.', '..kkkkk..'],
+    rows: [
+      '..k.kk...',
+      '.k4k45k..',
+      'k44k455k.',
+      'kkkkkkkkk',
+      'k1122223k',
+      '.k12223k.',
+      '..kkkkk..',
+    ],
     ramps: (m) => [m.wood, m.accent],
   },
   crystal: {
-    rows: ['...k...', '..k1k..', '.k112k.', 'k11223k', '.k123k.', '..k3k..', '.kkkkk.', 'k12223k', 'kkkkkkk'],
+    rows: [
+      '...k...',
+      '..k1k..',
+      '.k112k.',
+      'k11223k',
+      '.k123k.',
+      '..k3k..',
+      '.kkkkk.',
+      'k12223k',
+      'kkkkkkk',
+    ],
     ramps: (m) => [m.accent, m.wood],
   },
 };
@@ -634,7 +709,6 @@ export function lamp(
   light: Ramp,
   drop = 4,
 ): number {
-  const x0 = Math.round(cx - w / 2);
   // the cord: two pixels of metal with ink sides
   for (let y = 0; y < drop; y++) {
     put(c, Math.floor(cx) - 2, y, INK);
@@ -644,11 +718,11 @@ export function lamp(
   }
   let y = drop;
   if (kind === 'dome' || kind === 'bell') {
-    const h = kind === 'dome' ? 7 : 8;
+    // half widths row by row, for a 16 wide shade, scaled to `w`
+    const profile = kind === 'dome' ? [3, 5, 6, 7, 7, 8, 8] : [2, 3, 3, 3, 4, 5, 7, 8];
+    const h = profile.length;
     for (let r = 0; r < h; r++) {
-      const t = (r + 1) / h;
-      const half = kind === 'dome' ? Math.round((w / 2) * Math.sqrt(1 - (1 - t) * (1 - t))) : Math.round(w / 2 * (r < h - 2 ? 0.45 + 0.08 * r : 1));
-      const hw = Math.max(2, Math.min(Math.floor(w / 2), half));
+      const hw = Math.max(2, Math.min(Math.floor(w / 2), Math.round(((profile[r] ?? 8) * w) / 16)));
       const rx = Math.round(cx) - hw;
       const rw = hw * 2;
       hline(c, rx, y + r, rw, r === 0 ? shade.light : shade.mid);
@@ -722,13 +796,7 @@ const RING_HALO: readonly string[] = [
  * A night glow layer, hard pixels and no alpha. `ring`: two soft rings, 10 rows high (the lamps' halo at 20 wide,
  * an ellipse pair at other widths). `dither`: a dithered halo of two rings over the whole `w` x `h`.
  */
-export function glow(
-  w: number,
-  h: number,
-  kind: GlowKind,
-  inner: string,
-  outer: string,
-): Canvas {
+export function glow(w: number, h: number, kind: GlowKind, inner: string, outer: string): Canvas {
   if (kind === 'ring') {
     const c = canvas(w, Math.min(h, 10));
     if (w === 20 && h >= 10) {
@@ -740,7 +808,8 @@ export function glow(
       return c;
     }
     for (const p of ellipsePixels(0, 0, w, c.h, 'ring')) put(c, p.x, p.y, outer);
-    for (const p of ellipsePixels(3, 3, w - 6, Math.max(1, c.h - 6), 'ring')) put(c, p.x, p.y, inner);
+    for (const p of ellipsePixels(3, 3, w - 6, Math.max(1, c.h - 6), 'ring'))
+      put(c, p.x, p.y, inner);
     return c;
   }
   const c = canvas(w, h);
@@ -749,7 +818,14 @@ export function glow(
     { inset: 2, key: inner },
   ];
   for (const ring of rings) {
-    const cells = ellipsePixels(ring.inset, ring.inset, w - 2 * ring.inset, h - 2 * ring.inset, 'ring', true);
+    const cells = ellipsePixels(
+      ring.inset,
+      ring.inset,
+      w - 2 * ring.inset,
+      h - 2 * ring.inset,
+      'ring',
+      true,
+    );
     for (const p of cells) if ((p.x + p.y) % 2 === 0) put(c, p.x, p.y, ring.key);
   }
   return c;
@@ -782,7 +858,8 @@ export function rug(
     for (const p of ellipsePixels(fx, y, fw, h)) put(c, p.x, p.y, border.mid);
     for (const p of ellipsePixels(fx + 3, y + 2, fw - 6, h - 4)) put(c, p.x, p.y, field.mid);
     pattern(c, fx + 6, y + 3, fw - 12, h - 6, kind, field, accent);
-    for (const p of ellipsePixels(fx + 3, y + 2, fw - 6, h - 4, 'ring')) put(c, p.x, p.y, border.dark);
+    for (const p of ellipsePixels(fx + 3, y + 2, fw - 6, h - 4, 'ring'))
+      put(c, p.x, p.y, border.dark);
     for (const p of ellipsePixels(fx, y, fw, h, 'ring', true)) put(c, p.x, p.y, INK);
     return;
   }
@@ -800,7 +877,17 @@ export function rug(
 }
 
 export type MotifKind =
-  'none' | 'shell' | 'crescent' | 'rivet' | 'leaf' | 'bolt' | 'opal' | 'spiral' | 'tassel' | 'knot' | 'star';
+  | 'none'
+  | 'shell'
+  | 'crescent'
+  | 'rivet'
+  | 'leaf'
+  | 'bolt'
+  | 'opal'
+  | 'spiral'
+  | 'tassel'
+  | 'knot'
+  | 'star';
 
 /** The tiny ornaments, as rows: `a` the accent's light, `b` its mid, `c` its dark, `k` ink. */
 const MOTIFS: Readonly<Record<Exclude<MotifKind, 'none'>, readonly string[]>> = {
@@ -829,14 +916,30 @@ export function motif(c: Canvas, x: number, y: number, kind: MotifKind, accent: 
   for (const [r, row] of MOTIFS[kind].entries()) {
     for (const [i, ch] of [...row].entries()) {
       const key =
-        ch === 'k' ? INK : ch === 'a' ? (accent.hi ?? accent.light) : ch === 'b' ? accent.mid : ch === 'c' ? accent.dark : CLEAR;
+        ch === 'k'
+          ? INK
+          : ch === 'a'
+            ? (accent.hi ?? accent.light)
+            : ch === 'b'
+              ? accent.mid
+              : ch === 'c'
+                ? accent.dark
+                : CLEAR;
       if (key !== CLEAR) put(c, x + i, y + r, key);
     }
   }
 }
 
 /** Centres a motif in a box. */
-export function motifAt(c: Canvas, x: number, y: number, w: number, h: number, kind: MotifKind, accent: Ramp): void {
+export function motifAt(
+  c: Canvas,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  kind: MotifKind,
+  accent: Ramp,
+): void {
   const s = motifSize(kind);
   motif(c, x + Math.floor((w - s.w) / 2), y + Math.floor((h - s.h) / 2), kind, accent);
 }
@@ -884,7 +987,14 @@ export function picture(
     case 'flame':
       fill(c, x, y, w, h, g.dark);
       dither(c, x, y + h - 3, w, 3, m.accent.dark, m.accent.mid, 'checker');
-      for (let r = 0; r < 4; r++) hline(c, x + Math.floor(w / 2) - 2 + Math.floor(r / 2), y + h - 2 - r, 4 - r, m.accent.light);
+      for (let r = 0; r < 4; r++)
+        hline(
+          c,
+          x + Math.floor(w / 2) - 2 + Math.floor(r / 2),
+          y + h - 2 - r,
+          4 - r,
+          m.accent.light,
+        );
       break;
     case 'storm':
       fill(c, x, y, w, h, g.dark);

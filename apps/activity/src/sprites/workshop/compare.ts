@@ -41,7 +41,11 @@ function fnv(text: string): string {
 /** A hash of what a piece looks like: every layer's colours and the sleep anchor (not the key names). */
 export function pieceHash(art: PieceArt): string {
   const layer = (def: SpriteDef | undefined): string =>
-    def === undefined ? '-' : colours(def).map((row) => row.join(',')).join('/');
+    def === undefined
+      ? '-'
+      : colours(def)
+          .map((row) => row.join(','))
+          .join('/');
   return fnv(
     [
       layer(art.sprite),

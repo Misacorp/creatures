@@ -25,7 +25,8 @@ register(
 const { expandRows } = await import('../src/sprites/sprite-data.ts');
 const { glyph } = await import('../src/sprites/world-map-font.ts');
 const { SET_FORMS } = await import('../src/sprites/workshop/style.ts');
-const { generatePiece, makePiece, pieceId, setReport } = await import('../src/sprites/workshop/pack.ts');
+const { generatePiece, makePiece, pieceId, setReport } =
+  await import('../src/sprites/workshop/pack.ts');
 const { pixelDiff } = await import('../src/sprites/workshop/compare.ts');
 const { SHIPPED_SETS, SAMPLE_STYLES, lockOf } = await import('../src/sprites/workshop/sets.ts');
 
@@ -77,7 +78,8 @@ class Image {
     for (const ch of t.toUpperCase()) {
       const rows = /[A-Z]/.test(ch) ? glyph(ch) : DIGITS[ch];
       for (const [j, row] of (rows ?? []).entries()) {
-        for (const [i, c] of [...row].entries()) if (c === '#') this.rect(cx + i * s, y + j * s, s, s, colour);
+        for (const [i, c] of [...row].entries())
+          if (c === '#') this.rect(cx + i * s, y + j * s, s, s, colour);
       }
       cx += 6 * s;
     }
@@ -104,7 +106,14 @@ const DIGITS: Record<string, readonly string[]> = {
 };
 
 /** A piece as the room shows it: the glow behind (offset as the scene puts it), the sprite, the front. */
-function drawPiece(img: Image, art: PieceArt, x: number, y: number, s: number, withGlow: boolean): void {
+function drawPiece(
+  img: Image,
+  art: PieceArt,
+  x: number,
+  y: number,
+  s: number,
+  withGlow: boolean,
+): void {
   if (withGlow && art.glow !== undefined) {
     const gw = expandRows(art.glow)[0]?.length ?? 0;
     const pw = expandRows(art.sprite)[0]?.length ?? 0;
@@ -149,7 +158,9 @@ if (command === 'sheet') {
   const id = args[1] ?? '';
   const style = SAMPLE_STYLES[id] ?? SHIPPED_SETS[id]?.style;
   if (style === undefined) {
-    console.error(`No style "${id}". Styles: ${[...Object.keys(SAMPLE_STYLES), ...Object.keys(SHIPPED_SETS)].join(', ')}`);
+    console.error(
+      `No style "${id}". Styles: ${[...Object.keys(SAMPLE_STYLES), ...Object.keys(SHIPPED_SETS)].join(', ')}`,
+    );
     process.exit(1);
   }
   const S = 4;
@@ -204,7 +215,8 @@ if (command === 'sheet') {
       img.text(`${form} ${made}`, 16, y, 2, MUTED);
       if (shipped !== undefined) drawPiece(img, shipped, 16, y + 18, S, true);
       drawPiece(img, generated, 16 + colW, y + 18, S, true);
-      if (shipped !== undefined) drawDiff(img, shipped.sprite, generated.sprite, 16 + 2 * colW, y + 18, S);
+      if (shipped !== undefined)
+        drawDiff(img, shipped.sprite, generated.sprite, 16 + 2 * colW, y + 18, S);
       // 1x: shipped, generated, and what ships now
       const x1 = 16 + 3 * colW;
       if (shipped !== undefined) drawPiece(img, shipped, x1, y + 18, 1, false);
@@ -214,8 +226,16 @@ if (command === 'sheet') {
         `${pieceId(source.style, form).padEnd(26)} ${made.padEnd(10)} ${shipped === undefined ? 'no shipped art' : `differ: ${layers.join(', ')}`}`,
       );
     }
-    const counts = report.reduce<Record<string, number>>((n, r) => ({ ...n, [r.made]: (n[r.made] ?? 0) + 1 }), {});
-    lines.push(`${id}: ${Object.entries(counts).map(([k, v]) => `${String(v)} ${k}`).join(', ')}`, '');
+    const counts = report.reduce<Record<string, number>>(
+      (n, r) => ({ ...n, [r.made]: (n[r.made] ?? 0) + 1 }),
+      {},
+    );
+    lines.push(
+      `${id}: ${Object.entries(counts)
+        .map(([k, v]) => `${String(v)} ${k}`)
+        .join(', ')}`,
+      '',
+    );
     img.save(join(dir, `${id}.png`));
   }
   console.log(lines.join('\n'));
@@ -226,7 +246,9 @@ if (command === 'sheet') {
   if (args.includes('--check')) {
     const old = readFileSync(LOCK, 'utf8');
     if (old !== text) {
-      console.error('shipped-art.json is out of date: a shipped piece changed. Look at `pnpm housing compare`, then run `pnpm housing lock`.');
+      console.error(
+        'shipped-art.json is out of date: a shipped piece changed. Look at `pnpm housing compare`, then run `pnpm housing lock`.',
+      );
       process.exit(1);
     }
     console.log('shipped-art.json is up to date.');
@@ -235,6 +257,8 @@ if (command === 'sheet') {
     console.log(`Wrote ${LOCK}`);
   }
 } else {
-  console.log('Usage: pnpm housing sheet <style> | compare [--set id,id] | lock [--check]   [--out dir]');
+  console.log(
+    'Usage: pnpm housing sheet <style> | compare [--set id,id] | lock [--check]   [--out dir]',
+  );
   process.exit(command === undefined ? 0 : 1);
 }

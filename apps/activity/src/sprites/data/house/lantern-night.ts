@@ -381,15 +381,39 @@ export const SOURCE: SetSource = {
   style: LANTERN_NIGHT,
   hand: HAND,
   pieces: {
-    bed: { use: 'hand', why: 'red lacquer with lantern posts and a cream quilt; the generated bed is a plainer re-skin' },
-    cupboard: { use: 'hand', why: 'paper-screen doors in red lacquer; the generated doors are plain panels' },
-    table: { use: 'hand', why: 'a gold-banded top over bunting; close, the hand one reads cleaner' },
-    shelf: { use: 'hand', why: 'small lanterns and pots that read at 1x; the generated things are generic' },
+    bed: {
+      use: 'hand',
+      why: 'red lacquer with lantern posts and a cream quilt; the generated bed is a plainer re-skin',
+    },
+    cupboard: {
+      use: 'hand',
+      why: 'paper-screen doors in red lacquer; the generated doors are plain panels',
+    },
+    table: {
+      use: 'hand',
+      why: 'a gold-banded top over bunting; close, the hand one reads cleaner',
+    },
+    shelf: {
+      use: 'hand',
+      why: 'small lanterns and pots that read at 1x; the generated things are generic',
+    },
     stool: { use: 'hand', why: 'a lacquered drum stool; the generated stool is generic' },
-    lamp: { use: 'hand', why: 'a red paper lantern with a tassel and its own halo; close, the hand one reads cleaner' },
-    rug: { use: 'hand', why: 'a red rug with gold lantern motifs; the generated checks read busier' },
-    frame: { use: 'hand', why: 'a paper lantern picture with a gold frame; the generated peak frame is heavier' },
-    curtains: { use: 'hand', why: 'red drapes and bunting over the window; the generated drapes pinch and read busier' },
+    lamp: {
+      use: 'hand',
+      why: 'a red paper lantern with a tassel and its own halo; close, the hand one reads cleaner',
+    },
+    rug: {
+      use: 'hand',
+      why: 'a red rug with gold lantern motifs; the generated checks read busier',
+    },
+    frame: {
+      use: 'hand',
+      why: 'a paper lantern picture with a gold frame; the generated peak frame is heavier',
+    },
+    curtains: {
+      use: 'hand',
+      why: 'red drapes and bunting over the window; the generated drapes pinch and read busier',
+    },
   },
 };
 

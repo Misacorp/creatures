@@ -76,7 +76,8 @@ export function blit(dst: Canvas, src: Canvas | readonly string[], x: number, y:
 /** The canvas flipped left to right. */
 export function flipX(c: Canvas): Canvas {
   const out = canvas(c.w, c.h);
-  for (let y = 0; y < c.h; y++) for (let x = 0; x < c.w; x++) put(out, c.w - 1 - x, y, get(c, x, y));
+  for (let y = 0; y < c.h; y++)
+    for (let x = 0; x < c.w; x++) put(out, c.w - 1 - x, y, get(c, x, y));
   return out;
 }
 

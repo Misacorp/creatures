@@ -18,20 +18,31 @@ export const TABLE: FormDef = {
   draw(style) {
     const c = canvas(W, H);
     const feet = style.foot === 'none' ? 0 : style.foot === 'block' ? 3 : 2;
-    part(c, style, 'table', 'legs', { x: 3, y: 5, w: W - 6, h: H - 5 - feet }, ({ c, style, at }) => {
-      const lw = 6;
-      leg(c, at.x, at.y, at.h + (feet === 0 ? 0 : 1), style.leg, style.wood, { w: lw, side: 'left', cap: feet === 0 });
-      leg(c, at.x + at.w - lw, at.y, at.h + (feet === 0 ? 0 : 1), style.leg, style.wood, {
-        w: lw,
-        side: 'right',
-        cap: feet === 0,
-      });
-      if (feet > 0) {
-        const fy = at.y + at.h;
-        foot(c, at.x - 1, fy, lw + 2, style.foot, style.wood);
-        foot(c, at.x + at.w - lw - 1, fy, lw + 2, style.foot, style.wood);
-      }
-    });
+    part(
+      c,
+      style,
+      'table',
+      'legs',
+      { x: 3, y: 5, w: W - 6, h: H - 5 - feet },
+      ({ c, style, at }) => {
+        const lw = 6;
+        leg(c, at.x, at.y, at.h + (feet === 0 ? 0 : 1), style.leg, style.wood, {
+          w: lw,
+          side: 'left',
+          cap: feet === 0,
+        });
+        leg(c, at.x + at.w - lw, at.y, at.h + (feet === 0 ? 0 : 1), style.leg, style.wood, {
+          w: lw,
+          side: 'right',
+          cap: feet === 0,
+        });
+        if (feet > 0) {
+          const fy = at.y + at.h;
+          foot(c, at.x - 1, fy, lw + 2, style.foot, style.wood);
+          foot(c, at.x + at.w - lw - 1, fy, lw + 2, style.foot, style.wood);
+        }
+      },
+    );
     part(c, style, 'table', 'stretcher', { x: 8, y: 11, w: W - 16, h: 3 }, ({ c, style, at }) => {
       box(c, at.x, at.y, at.w, at.h, style.wood, { shade: 'rows', ink: INK });
       motifAt(c, at.x, at.y, at.w, at.h, style.motif === 'rivet' ? 'rivet' : 'none', style.accent);
@@ -46,7 +57,6 @@ export const TABLE: FormDef = {
     });
     part(c, style, 'table', 'top', { x: 0, y: 0, w: W, h: 5 }, ({ c, style, at }) => {
       box(c, at.x, at.y, at.w, at.h, style.wood, { round: 1, shade: 'rows' });
-      if (style.motif !== 'none') motifAt(c, at.x, at.y + 1, at.w, 3, style.motif === 'shell' ? 'rivet' : 'none', style.accent);
     });
     return { sprite: toSprite(c, style.palette) };
   },

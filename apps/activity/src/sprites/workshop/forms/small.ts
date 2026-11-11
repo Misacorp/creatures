@@ -24,7 +24,8 @@ export const STOOL: FormDef = {
     });
     part(c, style, 'stool', 'seat', { x: 0, y: 0, w: 16, h: 5 }, ({ c, style, at }) => {
       cushion(c, at.x, at.y, at.w, at.h, style.cloth);
-      if (style.weave !== 'plain') pattern(c, at.x + 2, at.y + 2, at.w - 4, 1, style.weave, style.cloth, style.accent);
+      if (style.weave !== 'plain')
+        pattern(c, at.x + 2, at.y + 2, at.w - 4, 1, style.weave, style.cloth, style.accent);
     });
     return { sprite: toSprite(c, style.palette) };
   },
@@ -44,9 +45,16 @@ export const LAMP: FormDef = {
     });
     // the ring halo is 10 rows high, the dithered one the piece's size
     const light = canvas(20, style.glow.kind === 'ring' ? 10 : 16);
-    part(light, style, 'lamp', 'glow', { x: 0, y: 0, w: light.w, h: light.h }, ({ c, style, at }) => {
-      blit(c, glow(at.w, at.h, style.glow.kind, style.glow.inner, style.glow.outer), at.x, at.y);
-    });
+    part(
+      light,
+      style,
+      'lamp',
+      'glow',
+      { x: 0, y: 0, w: light.w, h: light.h },
+      ({ c, style, at }) => {
+        blit(c, glow(at.w, at.h, style.glow.kind, style.glow.inner, style.glow.outer), at.x, at.y);
+      },
+    );
     return { sprite: toSprite(c, style.palette), glow: toSprite(light, style.palette) };
   },
 };
@@ -59,7 +67,18 @@ export const RUG: FormDef = {
   draw(style) {
     const c = canvas(56, 10);
     part(c, style, 'rug', 'rug', { x: 0, y: 0, w: 56, h: 10 }, ({ c, style, at }) => {
-      rug(c, at.x, at.y, at.w, at.h, style.rug.shape, style.linen, style.cloth, style.accent, style.rug.weave);
+      rug(
+        c,
+        at.x,
+        at.y,
+        at.w,
+        at.h,
+        style.rug.shape,
+        style.linen,
+        style.cloth,
+        style.accent,
+        style.rug.weave,
+      );
     });
     return { sprite: toSprite(c, style.palette) };
   },

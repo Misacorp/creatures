@@ -96,12 +96,14 @@ export function styleProblems(style: Style): string[] {
   const problems: string[] = [];
   if (style.palette.k !== '#0d0a1a') problems.push('the ink `k` must be #0d0a1a');
   for (const [key, colour] of Object.entries(style.palette)) {
-    if ([...key].length !== 1 || key === '.') problems.push(`palette key "${key}" is not one character`);
+    if ([...key].length !== 1 || key === '.')
+      problems.push(`palette key "${key}" is not one character`);
     if (!/^#[0-9a-f]{6}$/i.test(colour)) problems.push(`palette "${key}" is not #rrggbb`);
   }
   for (const name of RAMPS) {
     for (const key of rampKeys(style[name])) {
-      if (!Object.hasOwn(style.palette, key)) problems.push(`${name} uses "${key}", not in the palette`);
+      if (!Object.hasOwn(style.palette, key))
+        problems.push(`${name} uses "${key}", not in the palette`);
     }
   }
   for (const key of [style.glow.inner, style.glow.outer]) {

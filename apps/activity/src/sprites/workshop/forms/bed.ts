@@ -4,7 +4,16 @@
  * box has its top left at 10, 0, so it lies on the mattress (top at row 14) with the pillow under its head.
  */
 import { canvas, toSprite } from '../../draw/canvas';
-import { blanket, crest, crestHeight, leg, mattress, motifAt, panel, pillow } from '../../draw/parts';
+import {
+  blanket,
+  crest,
+  crestHeight,
+  leg,
+  mattress,
+  motifAt,
+  panel,
+  pillow,
+} from '../../draw/parts';
 import { INK, box, hline } from '../../draw/shapes';
 import { type FormDef, part } from './kit';
 
@@ -23,14 +32,28 @@ export const BED: FormDef = {
       leg(c, at.x + at.w - 6, at.y, at.h, style.leg, style.wood, { side: 'right' });
     });
     const head = Math.max(crestHeight(style.top, 10), 2);
-    part(c, style, 'bed', 'headboard', { x: 0, y: head, w: 10, h: 22 - head }, ({ c, style, at }) => {
-      box(c, at.x, at.y, at.w, at.h, style.wood, { shade: 'cols', round: style.top === 'rounded' ? 2 : 0 });
-      panel(c, at.x + 2, at.y + 3, at.w - 4, at.h - 7, style.wood, { inset: 1 });
-      motifAt(c, at.x + 2, at.y + 3, at.w - 4, 6, style.motif, style.accent);
-      if (style.top !== 'rounded') crest(c, at.x, at.y, at.w, style.top, style.wood, style.accent);
-    });
+    part(
+      c,
+      style,
+      'bed',
+      'headboard',
+      { x: 0, y: head, w: 10, h: 22 - head },
+      ({ c, style, at }) => {
+        box(c, at.x, at.y, at.w, at.h, style.wood, {
+          shade: 'cols',
+          round: style.top === 'rounded' ? 2 : 0,
+        });
+        panel(c, at.x + 2, at.y + 3, at.w - 4, at.h - 7, style.wood, { inset: 1 });
+        motifAt(c, at.x + 2, at.y + 3, at.w - 4, 6, style.motif, style.accent);
+        if (style.top !== 'rounded')
+          crest(c, at.x, at.y, at.w, style.top, style.wood, style.accent);
+      },
+    );
     part(c, style, 'bed', 'footboard', { x: 41, y: 8, w: 7, h: 14 }, ({ c, style, at }) => {
-      box(c, at.x, at.y, at.w, at.h, style.wood, { shade: 'cols', round: style.top === 'rounded' ? 1 : 0 });
+      box(c, at.x, at.y, at.w, at.h, style.wood, {
+        shade: 'cols',
+        round: style.top === 'rounded' ? 1 : 0,
+      });
       motifAt(c, at.x + 1, at.y + 2, at.w - 2, 5, style.motif, style.accent);
     });
     part(c, style, 'bed', 'rail', { x: 9, y: 18, w: 33, h: 4 }, ({ c, style, at }) => {

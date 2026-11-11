@@ -379,15 +379,34 @@ export const SOURCE: SetSource = {
   style: ROOTWOOD,
   hand: HAND,
   pieces: {
-    bed: { use: 'hand', why: 'living-wood boards with leaf curls and moss bedding; the generated bed is a plainer re-skin' },
-    cupboard: { use: 'hand', why: 'a rounded trunk-like carcass with leaf curls; the generated one is a box' },
-    table: { use: 'hand', why: 'root legs that splay into the floor; the generated tapered legs are stiffer' },
+    bed: {
+      use: 'hand',
+      why: 'living-wood boards with leaf curls and moss bedding; the generated bed is a plainer re-skin',
+    },
+    cupboard: {
+      use: 'hand',
+      why: 'a rounded trunk-like carcass with leaf curls; the generated one is a box',
+    },
+    table: {
+      use: 'hand',
+      why: 'root legs that splay into the floor; the generated tapered legs are stiffer',
+    },
     shelf: { use: 'hand', why: 'a branch shelf with a sprout; the generated board is plainer' },
-    stool: { use: 'hand', why: 'a tree-stump stool, a silhouette of its own; the generated stool is generic' },
-    lamp: { use: 'layers', layers: ['sprite'], why: 'the shade is hand-drawn; the two-ring glow is generated (pixel-identical to the first pass)' },
+    stool: {
+      use: 'hand',
+      why: 'a tree-stump stool, a silhouette of its own; the generated stool is generic',
+    },
+    lamp: {
+      use: 'layers',
+      layers: ['sprite'],
+      why: 'the shade is hand-drawn; the two-ring glow is generated (pixel-identical to the first pass)',
+    },
     rug: { use: 'hand', why: 'a moss rug with a leafy edge; the generated fringe is plainer' },
     frame: { use: 'hand', why: 'a branch frame with leaf corners; the generated frame is plain' },
-    curtains: { use: 'hand', why: 'a round window in leafy dressing, a silhouette of its own; the generated window is square' },
+    curtains: {
+      use: 'hand',
+      why: 'a round window in leafy dressing, a silhouette of its own; the generated window is square',
+    },
   },
 };
 

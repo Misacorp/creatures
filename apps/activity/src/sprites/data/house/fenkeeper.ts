@@ -381,15 +381,33 @@ export const SOURCE: SetSource = {
   style: FENKEEPER,
   hand: HAND,
   pieces: {
-    bed: { use: 'hand', why: 'reed-bound bog oak with a rounded footboard; the generated bed is a plainer re-skin' },
-    cupboard: { use: 'hand', why: 'a rounded carcass bound with reeds; the generated one is a box' },
-    table: { use: 'hand', why: 'bulbous turned legs with an opal drop; the generated turned legs are thinner' },
+    bed: {
+      use: 'hand',
+      why: 'reed-bound bog oak with a rounded footboard; the generated bed is a plainer re-skin',
+    },
+    cupboard: {
+      use: 'hand',
+      why: 'a rounded carcass bound with reeds; the generated one is a box',
+    },
+    table: {
+      use: 'hand',
+      why: 'bulbous turned legs with an opal drop; the generated turned legs are thinner',
+    },
     shelf: { use: 'hand', why: 'reed bundles, jars and an opal; the generated things are smaller' },
     stool: { use: 'hand', why: 'a reed-bound seat with an opal; the generated stool is generic' },
-    lamp: { use: 'hand', why: 'an opal lamp in reed binding with its own dithered halo; the generated bell is plainer' },
+    lamp: {
+      use: 'hand',
+      why: 'an opal lamp in reed binding with its own dithered halo; the generated bell is plainer',
+    },
     rug: { use: 'hand', why: 'a woven rug with a pool of teal; the generated stripes are plainer' },
-    frame: { use: 'hand', why: 'a slanted bog-oak frame, a silhouette of its own; the generated frame is a box' },
-    curtains: { use: 'hand', why: 'a reed-bound window with no drapes; the generated drapes are a different idea' },
+    frame: {
+      use: 'hand',
+      why: 'a slanted bog-oak frame, a silhouette of its own; the generated frame is a box',
+    },
+    curtains: {
+      use: 'hand',
+      why: 'a reed-bound window with no drapes; the generated drapes are a different idea',
+    },
   },
 };
 

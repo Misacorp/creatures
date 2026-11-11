@@ -41,7 +41,8 @@ export function pieceId(style: Style, form: FormId): string {
 function handPiece(source: SetSource, form: FormId): PieceArt {
   const id = pieceId(source.style, form);
   const art = source.hand?.pieces?.[id];
-  if (art === undefined) throw new Error(`${id}: the override uses hand art, but the hand pack has none.`);
+  if (art === undefined)
+    throw new Error(`${id}: the override uses hand art, but the hand pack has none.`);
   return art;
 }
 

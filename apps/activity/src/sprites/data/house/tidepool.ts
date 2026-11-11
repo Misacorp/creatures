@@ -379,15 +379,31 @@ export const SOURCE: SetSource = {
   style: TIDEPOOL,
   hand: HAND,
   pieces: {
-    bed: { use: 'hand', why: 'shell-scalloped headboard and footboard; the generated bed is a plainer re-skin' },
-    cupboard: { use: 'hand', why: 'sea-glass doors under a scalloped crown; the generated wood doors read plainer' },
+    bed: {
+      use: 'hand',
+      why: 'shell-scalloped headboard and footboard; the generated bed is a plainer re-skin',
+    },
+    cupboard: {
+      use: 'hand',
+      why: 'sea-glass doors under a scalloped crown; the generated wood doors read plainer',
+    },
     table: { use: 'hand', why: 'a sea-blue inlaid top; the generated top is a plain plank' },
-    shelf: { use: 'hand', why: 'a pearl shell, a jar and a starfish that read at 1x; the generated things are smaller' },
+    shelf: {
+      use: 'hand',
+      why: 'a pearl shell, a jar and a starfish that read at 1x; the generated things are smaller',
+    },
     stool: { use: 'hand', why: 'a rounder blue seat; the generated stool reads stiffer' },
-    lamp: { use: 'layers', layers: ['sprite'], why: 'the shade is hand-drawn; the two-ring glow is generated (pixel-identical to the first pass)' },
+    lamp: {
+      use: 'layers',
+      layers: ['sprite'],
+      why: 'the shade is hand-drawn; the two-ring glow is generated (pixel-identical to the first pass)',
+    },
     rug: { use: 'hand', why: 'a calm pearl-and-wave band; the generated field is busier' },
     frame: { use: 'hand', why: 'a scalloped frame round a seascape; the generated frame is plain' },
-    curtains: { use: 'hand', why: 'full drapes under a sand valance; the generated drapes pinch and read busier' },
+    curtains: {
+      use: 'hand',
+      why: 'full drapes under a sand valance; the generated drapes pinch and read busier',
+    },
   },
 };
 
