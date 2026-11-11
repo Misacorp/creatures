@@ -26,6 +26,8 @@ export interface Fit {
   top: number;
   /** True when the valley is wider than the window and a phone must pan it sideways (a desktop crops the grass instead). */
   pans: boolean;
+  /** True when the valley is taller than the window: the map scrolls (and a mouse drags it) up and down, from `startScrollY`. */
+  panY: boolean;
 }
 
 /** From this width (CSS px, 60 rem) the game is the whole window and the valley does not pan if its places fit. */
@@ -71,14 +73,27 @@ export function fitValley(width: number, height: number, scale = VALLEY_SCALE): 
   const left = pans ? 0 : vw > width ? cropped : Math.floor((width - vw) / 2) - side * tile;
   // A window shorter than the valley (a phone, with the tray under it) loses the top sky row and the
   // south's grass, never a building: the valley starts one sky row up and is cut at the bottom.
-  const top = height < vh ? -tile : Math.floor((height - vh) / 2) - updown * tile;
+  // (It scrolls now: the drawing starts at the top and `startScrollY` brings the first sky row out of view, so the rest is a drag away.)
+  const panY = height < vh;
+  const top = panY ? 0 : Math.floor((height - vh) / 2) - updown * tile;
   return {
     scale,
     margin: { left: side, top: updown, right: side, bottom: updown },
     left,
     top,
     pans,
+    panY,
   };
+}
+
+/** The furthest the map scrolls down (CSS px) in a window `height` high. */
+export function maxScrollY(height: number, scale = VALLEY_SCALE): number {
+  return Math.max(0, VALLEY_SIZE.height * scale - height);
+}
+
+/** Where a window shorter than the valley starts: one sky row scrolled off, so the places are in view and the rest of the grass is below. */
+export function startScrollY(height: number, scale = VALLEY_SCALE): number {
+  return Math.min(maxScrollY(height, scale), TILE * scale);
 }
 
 /** The furthest a panning valley scrolls (CSS px). */

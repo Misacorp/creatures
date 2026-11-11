@@ -32,6 +32,31 @@ main.card:has(.vy-frame) > .hud {
     max(0.75rem, var(--discord-safe-area-inset-right, 0px));
 }
 
+/*
+  The map takes the whole window (Misa, 2026-11-11): the HUD gives up its row and floats in the top-right corner (the
+  purse and the cog; the Places flag is in the other corner). Only its buttons take touches, so the map is draggable under it.
+*/
+main.card:has(.hud-float) {
+  position: relative;
+}
+
+main.card:has(.vy-frame) > .hud.hud-float {
+  position: absolute;
+  z-index: 35;
+  top: 0;
+  right: 0;
+  left: auto;
+  min-height: 0;
+  padding: 0.375rem max(0.375rem, var(--discord-safe-area-inset-right, 0px)) 0 0;
+  background: transparent;
+  box-shadow: none;
+  pointer-events: none;
+}
+
+.hud.hud-float .hud-tools {
+  pointer-events: auto;
+}
+
 .vy-frame {
   position: relative;
   flex: 1;
@@ -174,13 +199,27 @@ main.card:has(.vy-frame) > .hud {
   display: none;
 }
 
+/* A map larger than the window in either direction scrolls: a finger swipes, a wheel or trackpad scrolls, a mouse drags (`useDragScroll`). */
 .vy-valley.pans .vy-scroller {
   overflow-x: auto;
   overflow-y: hidden;
-  cursor: grab;
 }
 
-.vy-valley.pans .vy-scroller.dragging {
+.vy-valley.pans-y .vy-scroller {
+  overflow-y: auto;
+}
+
+/* Only the up-and-down scrolls: the sideways one is kept at the start by the map itself. */
+.vy-valley.pans-y:not(.pans) .vy-scroller {
+  overflow-x: hidden;
+}
+
+.vy-valley:is(.pans, .pans-y) .vy-scroller {
+  cursor: grab;
+  overscroll-behavior: contain;
+}
+
+.vy-valley:is(.pans, .pans-y) .vy-scroller.dragging {
   cursor: grabbing;
 }
 
