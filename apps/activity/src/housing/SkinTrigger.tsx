@@ -2,7 +2,13 @@ import { DropChevron } from '../ui/DropChevron';
 import { GameIcon } from '../ui/GameIcon';
 import { itemName } from './house-names';
 
-const KIND_NAMES = { wall: 'Wallpaper', floor: 'Floor', roof: 'Roof', walls: 'Walls' } as const;
+const KIND_NAMES = {
+  wall: 'Wallpaper',
+  floor: 'Floor',
+  roof: 'Roof',
+  walls: 'Walls',
+  ground: 'Ground',
+} as const;
 
 /**
  * The roof, walls, wallpaper or floor in use, as a trigger that opens the list of them: it looks like a dropdown (the skin's

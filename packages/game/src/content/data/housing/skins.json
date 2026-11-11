@@ -552,5 +552,81 @@
       "kind": "starter"
     },
     "hint": "Yours from the start."
+  },
+  {
+    "id": "landing-wall",
+    "name": "Landing Wallpaper",
+    "kind": "wall",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "tower"
+    },
+    "hint": "Comes with the Tower."
+  },
+  {
+    "id": "landing-floor",
+    "name": "Landing Floor",
+    "kind": "floor",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "tower"
+    },
+    "hint": "Comes with the Tower."
+  },
+  {
+    "id": "observatory-wall",
+    "name": "Observatory Wallpaper",
+    "kind": "wall",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "tower"
+    },
+    "hint": "Comes with the Tower."
+  },
+  {
+    "id": "observatory-floor",
+    "name": "Observatory Floor",
+    "kind": "floor",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "tower"
+    },
+    "hint": "Comes with the Tower."
+  },
+  {
+    "id": "orchard-apple",
+    "name": "Apple Orchard",
+    "kind": "ground",
+    "set": null,
+    "unlock": {
+      "kind": "starter"
+    },
+    "hint": "Yours from the start."
+  },
+  {
+    "id": "orchard-plum",
+    "name": "Plum Orchard",
+    "kind": "ground",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "orchard"
+    },
+    "hint": "Comes with the Orchard."
+  },
+  {
+    "id": "orchard-pear",
+    "name": "Pear Orchard",
+    "kind": "ground",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "orchard"
+    },
+    "hint": "Comes with the Orchard."
   }
 ]

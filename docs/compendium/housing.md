@@ -18,25 +18,31 @@ Motifs that run through the house: the hearth that is always lit, the door that 
 
 ## Parts
 
-Eleven parts. The hut is the start; the rest are built in an order the prerequisites allow. Prices are in `parts.json`. Each part also teaches the blueprint of one roof or wall style, noted below. `(content: parts.json)`
+Fifteen parts. The hut is the start; the rest are built in an order the prerequisites allow. Prices are in `parts.json`. Each part also teaches the blueprint of one roof or wall style, noted below. `(content: parts.json)`
 
-| Part             | Needs         | Teaches      | Line `(content)`                         |
-| ---------------- | ------------- | ------------ | ---------------------------------------- |
-| Hut              | Nothing       | Nothing      | One room and a good fire.                |
-| Cottage          | Hut           | Slate        | A kitchen, and a bed upstairs.           |
-| House            | Cottage       | Timber       | Three storeys and a roof over all of it. |
-| Cellar           | Cottage       | Fieldstone   | Cool and quiet, under the floor.         |
-| Terrace          | Cottage       | Brick        | A stone deck for sunny mornings.         |
-| Garden           | Cottage       | Moss         | A lawn, a hedge and room for flowers.    |
-| West Wing        | House         | Red Tile     | A long hall for everything you have won. |
-| West Upper Floor | West Wing     | Nothing      | A gallery above the hall.                |
-| East Wing        | House         | Copper Green | A glass room full of light.              |
-| East Upper Floor | East Wing     | Nothing      | A bath, and a room for guests.           |
-| Pool             | Garden, House | Shingle      | A tiled pool, deep enough to float in.   |
+| Part             | Needs         | Teaches      | Line `(content)`                                     |
+| ---------------- | ------------- | ------------ | ---------------------------------------------------- |
+| Hut              | Nothing       | Nothing      | One room and a good fire.                            |
+| Cottage          | Hut           | Slate        | A kitchen, and a bed upstairs.                       |
+| House            | Cottage       | Timber       | Three storeys and a roof over all of it.             |
+| Cellar           | Cottage       | Fieldstone   | Cool and quiet, under the floor.                     |
+| Terrace          | Cottage       | Brick        | A stone deck for sunny mornings.                     |
+| Garden           | Cottage       | Moss         | A lawn, a hedge and room for flowers.                |
+| West Wing        | House         | Red Tile     | A long hall for everything you have won.             |
+| West Upper Floor | West Wing     | Nothing      | A gallery above the hall.                            |
+| East Wing        | House         | Copper Green | A glass room full of light.                          |
+| East Upper Floor | East Wing     | Nothing      | A bath, and a room for guests.                       |
+| Pool             | Garden, House | Shingle      | A tiled pool, deep enough to float in.               |
+| Tower            | House         | Nothing      | A narrow stair up to a round window and the stars.   |
+| Balcony          | House         | Nothing      | A rail, a lantern and the whole garden below.        |
+| Orchard          | Garden        | Nothing      | Fruit trees past the garden, and a ladder for later. |
+| Pond             | Terrace       | Nothing      | A still pond, reeds, and a small wooden bridge.      |
+
+**Compendium detail, not shipped.** The Tower stands on the right half of the attic and goes up two rooms past the roof: a landing with a reading nook, and a round-windowed study with a telescope. It is the one part that changes the shape of the house, and the one a visitor sees from the road. The Balcony hangs on the east face at the first floor: against the core wall when nothing is built there, on the glass roof of the east wing (a roof terrace) when only the ground floor of the wing stands, and beside the guest room, over the garden, when the east upper floor is built. The Orchard is the next lawn past the pool and the Pond is the next water past the terrace; the pond's bridge is wide enough for a creature to stand and look at the ducks, though nobody has seen one do it yet. Prices: 300 Acorns and 2,000 scrap for the Tower, 150 and 1,000 for the Balcony, 200 and 1,500 for the Orchard, 250 and 1,500 for the Pond, with luxury materials and shards on top (all picks).
 
 ## Rooms
 
-Fourteen kinds of room. Each has fixed spots for a window, a wall, the ceiling, the floor and a rug, and no free placement. The trophy hall is all displays: it fills itself from what the player has done. `(content: rooms.json)`
+Nineteen kinds of room. Each has fixed spots for a window, a wall, the ceiling, the floor and a rug, and no free placement. The trophy hall is all displays: it fills itself from what the player has done. `(content: rooms.json)`
 
 | Room         | Built with       | Note `(compendium detail, not shipped)`                                                                         |
 | ------------ | ---------------- | --------------------------------------------------------------------------------------------------------------- |
@@ -54,6 +60,11 @@ Fourteen kinds of room. Each has fixed spots for a window, a wall, the ceiling, 
 | Terrace      | Terrace          | A stone deck on the west edge. Outdoors.                                                                        |
 | Garden       | Garden           | A lawn with a hedge line. Outdoors.                                                                             |
 | Pool         | Pool             | A tiled basin with water. Outdoors.                                                                             |
+| Landing      | Tower            | The stair landing, with a reading nook. A small room in the middle of the tower.                                |
+| Observatory  | Tower            | A round window for the telescope, a shelf of books, and a wallpaper of stars. The tower's top room.             |
+| Balcony      | Balcony          | A deck on the first floor with a rail around it, one big place and two small ones. Outdoors.                    |
+| Orchard      | Orchard          | Three fruit trees (apple, plum or pear, by its ground), a ladder and a basket. Outdoors.                        |
+| Pond         | Pond             | A pond with reeds, lily pads and a small arched bridge over it; three places on the water. Outdoors.            |
 
 ## Forms
 
@@ -350,7 +361,7 @@ Twelve pieces in no set. Each has its own source. `(content: pieces.json)`
 
 ## Garden and pool pieces
 
-Twelve pieces for the terrace, the garden and the pool. `(content: pieces.json)`
+Twenty-five pieces for the terrace, the garden, the pool, the balcony, the orchard and the pond. `(content: pieces.json)`
 
 | Piece            | Form               | Where from                              | Line `(content)`                                                  |
 | ---------------- | ------------------ | --------------------------------------- | ----------------------------------------------------------------- |
@@ -366,6 +377,21 @@ Twelve pieces for the terrace, the garden and the pool. `(content: pieces.json)`
 | Picket Fence     | Fence              | Found on trips to the Old Crossroads.   | White pickets, a little crooked, all the nicer for it.            |
 | Lounger          | Poolside Piece     | Found on trips to the Moonlit Reef.     | A long chair for doing nothing beside the water.                  |
 | Swim Ring        | Pool Float         | Found on trips to the Tidepools.        | A ring that floats, and a creature that does not want to get out. |
+| Beehive          | Small Garden Piece | Found on trips to the Verdant Hollow.   | A striped straw dome. Somebody inside is very busy.               |
+| Fruit Crate      | Small Garden Piece | Found on trips to the Old Crossroads.   | Apples, mostly. A few have been tasted.                           |
+| Garden Swing     | Large Garden Piece | Found on trips to the Festival Grounds. | A plank on two ropes, hung from the nicest branch.                |
+| Scarecrow        | Large Garden Piece | Found on trips to the Sunken Fen.       | It guards the fruit. The crows have agreed to let it.             |
+| Duck             | Pool Float         | Found on trips to the Tidepools.        | It floats, and has opinions about the bread.                      |
+| Lily Cluster     | Pool Float         | Found on trips to the Sunken Fen.       | Round pads and one pink flower, drifting together.                |
+| Lantern Boat     | Pool Float         | Found on trips to the Moonlit Reef.     | A paper boat with a candle. It never quite sinks.                 |
+| Fishing Stool    | Poolside Piece     | Found on trips to the Tidepools.        | A stool, a rod and a great deal of patience.                      |
+| Stepping Stones  | Poolside Piece     | Found on trips to the Ember Caves.      | Flat stones to cross a puddle with dry feet.                      |
+| Sun Umbrella     | Poolside Piece     | Found on trips to the Moonlit Reef.     | Striped, tilted and just big enough for one nap.                  |
+| Gazing Ball      | Small Garden Piece | Found on trips to the Storm Ridge.      | A silver ball on a stone. The garden looks round in it.           |
+| Cone Topiary     | Small Garden Piece | Found on trips to the Verdant Hollow.   | A hedge that was told to be a cone, and obeyed.                   |
+| Bistro Table     | Small Garden Piece | Found on trips to the Old Crossroads.   | A small round table for two cups and a long talk.                 |
+
+The Lantern Boat's candle is a light (it glows at night, like the Lantern Post). The Duck, the Lily Cluster and the Lantern Boat float on the pond's three places on the water (or the pool's); the Fishing Stool and the Stepping Stones stand on its banks.
 
 ## Luxury materials
 
@@ -449,6 +475,13 @@ Wallpapers and floors for the rooms, roofs and walls for the outside of the hous
 | Lawn                    | ground      | Yours from the start.                                                     |
 | Deck                    | ground      | Yours from the start.                                                     |
 | Pool Tile               | ground      | Yours from the start.                                                     |
+| Landing Wallpaper       | wall        | Comes with the Tower.                                                     |
+| Landing Floor           | floor       | Comes with the Tower.                                                     |
+| Observatory Wallpaper   | wall        | Comes with the Tower.                                                     |
+| Observatory Floor       | floor       | Comes with the Tower.                                                     |
+| Apple Orchard           | ground      | Yours from the start.                                                     |
+| Plum Orchard            | ground      | Comes with the Orchard.                                                   |
+| Pear Orchard            | ground      | Comes with the Orchard.                                                   |
 
 Room skins (art pass 2): every indoor room except the Hearth, Loft and Study starts in its own wallpaper and floor, so the parts of a big house read as different rooms. They are free, come with the part that has the room (and so also show up as choices for other rooms once that part is built), and belong to no set.
 
@@ -459,6 +492,8 @@ Room skins (art pass 2): every indoor room except the Hearth, Loft and Study sta
 - **Gallery** (`gallery-wall`, `gallery-floor`): Pale plaster under a gold picture rail, and pale oak laid in chevrons.
 - **Conservatory** (`conservatory-wall`, `conservatory-floor`): Panes of sky and cloud in thin frames over a whitewashed low wall, and diamond tiles that hold the sun.
 - **Bath** (`bath-wall`, `bath-floor`): Small white tiles with a teal stripe, and a mosaic floor of blue and white.
+- **Landing** (`landing-wall`, `landing-floor`): Limewash over a dark timber dado, and flagstones worn by a great many stair-climbers.
+- **Observatory** (`observatory-wall`, `observatory-floor`): Night-blue paper sown with small gold stars over a plum panelling, and a floor of the same plum with a brass compass line.
 - **Guest Room** (`guest-wall`, `guest-floor`): Soft sage stripes over cream beadboard, and whitewashed planks that are quiet to walk on.
 
 ## Stamps

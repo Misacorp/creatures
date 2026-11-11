@@ -54,7 +54,7 @@ type View =
 /** The choice a spot or a skin chip is offering (a drawer, or the side panel). */
 type Picker =
   | { kind: 'spot'; roomId: string; spotId: string }
-  | { kind: 'skin'; skin: 'wall' | 'floor' | 'roof' | 'walls'; roomId: string | null };
+  | { kind: 'skin'; skin: 'wall' | 'floor' | 'ground' | 'roof' | 'walls'; roomId: string | null };
 
 const DRILL_TITLES: Readonly<Record<HouseDrill, string>> = {
   build: 'Build',
@@ -304,13 +304,19 @@ export function HousePlace({ creatures, now, onSpent }: HousePlaceProps) {
     const current =
       p.skin === 'wall'
         ? room?.wall
-        : p.skin === 'floor'
+        : p.skin === 'floor' || p.skin === 'ground'
           ? room?.floor
           : p.skin === 'roof'
             ? view_.exterior.roof
             : view_.exterior.walls;
     if (current === undefined) return null;
-    const titles = { wall: 'Wallpaper', floor: 'Floor', roof: 'Roof', walls: 'Walls' } as const;
+    const titles = {
+      wall: 'Wallpaper',
+      floor: 'Floor',
+      ground: 'Ground',
+      roof: 'Roof',
+      walls: 'Walls',
+    } as const;
     return {
       title: titles[p.skin],
       hidden: false,
@@ -328,7 +334,11 @@ export function HousePlace({ creatures, now, onSpent }: HousePlaceProps) {
                   ? ({ target: 'exterior', walls: skinId } as const)
                   : p.roomId === null
                     ? null
-                    : ({ target: 'room', roomId: p.roomId, [p.skin]: skinId } as const);
+                    : ({
+                        target: 'room',
+                        roomId: p.roomId,
+                        [p.skin === 'ground' ? 'floor' : p.skin]: skinId,
+                      } as const);
             if (body === null) return;
             void house.actions.skin(body).then((ok) => {
               if (ok) setPicker(null);

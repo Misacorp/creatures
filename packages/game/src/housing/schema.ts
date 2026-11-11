@@ -109,7 +109,7 @@ export type RoomKindDef = v.InferOutput<typeof RoomKindDefSchema>;
 export const PartDefSchema = v.strictObject({
   id: IdSchema,
   name: Name,
-  kind: v.picklist(['core', 'wing', 'cellar', 'grounds', 'porch']),
+  kind: v.picklist(['core', 'wing', 'cellar', 'grounds', 'porch', 'tower', 'balcony']),
   requires: Ids,
   rooms: v.pipe(
     v.array(
@@ -311,7 +311,10 @@ function checkParts(content: HousingContent): void {
     for (const req of part.requires) {
       if (!partIds.has(req)) fail(`part "${part.id}" requires unknown part "${req}"`);
     }
-    if ((part.kind === 'wing' || part.kind === 'grounds') && part.side === undefined) {
+    if (
+      (part.kind === 'wing' || part.kind === 'grounds' || part.kind === 'balcony') &&
+      part.side === undefined
+    ) {
       fail(`part "${part.id}" needs a side`);
     }
     const keys = new Set<string>();

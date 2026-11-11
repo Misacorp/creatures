@@ -1650,5 +1650,213 @@
     },
     "line": "A ring that floats, and a creature that does not want to get out.",
     "hint": "Found on trips to the Tidepools."
+  },
+  {
+    "id": "beehive",
+    "name": "Beehive",
+    "form": "yard-bit",
+    "set": null,
+    "unlock": {
+      "kind": "drop"
+    },
+    "sources": {
+      "moments": ["trip", "scout"],
+      "places": ["verdant-hollow"],
+      "bosses": []
+    },
+    "line": "A striped straw dome. Somebody inside is very busy.",
+    "hint": "Found on trips to the Verdant Hollow."
+  },
+  {
+    "id": "fruit-crate",
+    "name": "Fruit Crate",
+    "form": "yard-bit",
+    "set": null,
+    "unlock": {
+      "kind": "drop"
+    },
+    "sources": {
+      "moments": ["trip", "scout"],
+      "places": ["old-crossroads"],
+      "bosses": []
+    },
+    "line": "Apples, mostly. A few have been tasted.",
+    "hint": "Found on trips to the Old Crossroads."
+  },
+  {
+    "id": "garden-swing",
+    "name": "Garden Swing",
+    "form": "yard-big",
+    "set": null,
+    "unlock": {
+      "kind": "drop"
+    },
+    "sources": {
+      "moments": ["trip", "scout"],
+      "places": ["festival-grounds"],
+      "bosses": []
+    },
+    "line": "A plank on two ropes, hung from the nicest branch.",
+    "hint": "Found on trips to the Festival Grounds."
+  },
+  {
+    "id": "scarecrow",
+    "name": "Scarecrow",
+    "form": "yard-big",
+    "set": null,
+    "unlock": {
+      "kind": "drop"
+    },
+    "sources": {
+      "moments": ["trip", "scout"],
+      "places": ["sunken-fen"],
+      "bosses": []
+    },
+    "line": "It guards the fruit. The crows have agreed to let it.",
+    "hint": "Found on trips to the Sunken Fen."
+  },
+  {
+    "id": "duck",
+    "name": "Duck",
+    "form": "float",
+    "set": null,
+    "unlock": {
+      "kind": "drop"
+    },
+    "sources": {
+      "moments": ["trip", "scout"],
+      "places": ["tidepools"],
+      "bosses": []
+    },
+    "line": "It floats, and has opinions about the bread.",
+    "hint": "Found on trips to the Tidepools."
+  },
+  {
+    "id": "lily-cluster",
+    "name": "Lily Cluster",
+    "form": "float",
+    "set": null,
+    "unlock": {
+      "kind": "drop"
+    },
+    "sources": {
+      "moments": ["trip", "scout"],
+      "places": ["sunken-fen"],
+      "bosses": []
+    },
+    "line": "Round pads and one pink flower, drifting together.",
+    "hint": "Found on trips to the Sunken Fen."
+  },
+  {
+    "id": "lantern-boat",
+    "name": "Lantern Boat",
+    "form": "float",
+    "set": null,
+    "unlock": {
+      "kind": "drop"
+    },
+    "sources": {
+      "moments": ["trip", "scout"],
+      "places": ["moonlit-reef"],
+      "bosses": []
+    },
+    "line": "A paper boat with a candle. It never quite sinks.",
+    "hint": "Found on trips to the Moonlit Reef."
+  },
+  {
+    "id": "fishing-stool",
+    "name": "Fishing Stool",
+    "form": "poolside",
+    "set": null,
+    "unlock": {
+      "kind": "drop"
+    },
+    "sources": {
+      "moments": ["trip", "scout"],
+      "places": ["tidepools"],
+      "bosses": []
+    },
+    "line": "A stool, a rod and a great deal of patience.",
+    "hint": "Found on trips to the Tidepools."
+  },
+  {
+    "id": "stepping-stones",
+    "name": "Stepping Stones",
+    "form": "poolside",
+    "set": null,
+    "unlock": {
+      "kind": "drop"
+    },
+    "sources": {
+      "moments": ["trip", "scout"],
+      "places": ["ember-caves"],
+      "bosses": []
+    },
+    "line": "Flat stones to cross a puddle with dry feet.",
+    "hint": "Found on trips to the Ember Caves."
+  },
+  {
+    "id": "sun-umbrella",
+    "name": "Sun Umbrella",
+    "form": "poolside",
+    "set": null,
+    "unlock": {
+      "kind": "drop"
+    },
+    "sources": {
+      "moments": ["trip", "scout"],
+      "places": ["moonlit-reef"],
+      "bosses": []
+    },
+    "line": "Striped, tilted and just big enough for one nap.",
+    "hint": "Found on trips to the Moonlit Reef."
+  },
+  {
+    "id": "gazing-ball",
+    "name": "Gazing Ball",
+    "form": "yard-bit",
+    "set": null,
+    "unlock": {
+      "kind": "drop"
+    },
+    "sources": {
+      "moments": ["trip", "scout"],
+      "places": ["storm-ridge"],
+      "bosses": []
+    },
+    "line": "A silver ball on a stone. The garden looks round in it.",
+    "hint": "Found on trips to the Storm Ridge."
+  },
+  {
+    "id": "cone-topiary",
+    "name": "Cone Topiary",
+    "form": "yard-bit",
+    "set": null,
+    "unlock": {
+      "kind": "drop"
+    },
+    "sources": {
+      "moments": ["trip", "scout"],
+      "places": ["verdant-hollow"],
+      "bosses": []
+    },
+    "line": "A hedge that was told to be a cone, and obeyed.",
+    "hint": "Found on trips to the Verdant Hollow."
+  },
+  {
+    "id": "bistro-table",
+    "name": "Bistro Table",
+    "form": "yard-bit",
+    "set": null,
+    "unlock": {
+      "kind": "drop"
+    },
+    "sources": {
+      "moments": ["trip", "scout"],
+      "places": ["old-crossroads"],
+      "bosses": []
+    },
+    "line": "A small round table for two cups and a long talk.",
+    "hint": "Found on trips to the Old Crossroads."
   }
 ]

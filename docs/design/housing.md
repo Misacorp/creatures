@@ -275,22 +275,28 @@ A blueprint drop picks, among blueprints the player does not know whose sources 
 
 The cutaway is a grid of **room cells**, each 112×64 scene px (interior wall 112×52, a floor strip of 8, a 4 px slab; outer walls and the walls between rooms are 4 px). Columns count from the core's left (0); floors from the ground (0), the cellar is floor −1. `houseGrid` places rooms from the parts' data; grounds and wings attach to the outer edge on their `side`, so a terrace sits left of a west wing when there is one and left of the core when there is not.
 
-| Part       | Rooms (kind, col, floor)                    | Drawn as                                                      |
-| ---------- | ------------------------------------------- | ------------------------------------------------------------- |
-| hut        | hearth (0, 0)                               | one room under a small gable roof, chimney, door, mailbox     |
-| cottage    | kitchen (1, 0), loft (0, 1)                 | two rooms wide, a second storey on the left with a dormer     |
-| house      | study (1, 1), attic (0..1, 2; 2 cells)      | three storeys, a full gable over both columns                 |
-| cellar     | cellar (0..1, −1; 2 cells)                  | under the ground line, earth around it, a small vent window   |
-| west wing  | hall (2 cells, floor 0), the trophy hall    | a lower wing on the west with its own hip roof                |
-| west upper | gallery (2 cells, floor 1)                  | the wing rises a storey                                       |
-| east wing  | conservatory (2 cells, floor 0)             | a glass-roofed wing on the east                               |
-| east upper | bath (1 cell), guest (1 cell), floor 1      | the wing rises a storey                                       |
-| terrace    | terrace (2 cells, outdoor, west edge)       | a stone deck with a rail                                      |
-| garden     | garden (2 cells, outdoor, east edge)        | a lawn with a hedge line                                      |
-| pool       | pool (2 cells, outdoor, east of the garden) | a tiled basin with water                                      |
-| porch      | (seam: not in the content yet)              | a 1-cell outdoor part on the door side, spots of type `porch` |
+| Part       | Rooms (kind, col, floor)                     | Drawn as                                                      |
+| ---------- | -------------------------------------------- | ------------------------------------------------------------- |
+| hut        | hearth (0, 0)                                | one room under a small gable roof, chimney, door, mailbox     |
+| cottage    | kitchen (1, 0), loft (0, 1)                  | two rooms wide, a second storey on the left with a dormer     |
+| house      | study (1, 1), attic (0..1, 2; 2 cells)       | three storeys, a full gable over both columns                 |
+| cellar     | cellar (0..1, −1; 2 cells)                   | under the ground line, earth around it, a small vent window   |
+| west wing  | hall (2 cells, floor 0), the trophy hall     | a lower wing on the west with its own hip roof                |
+| west upper | gallery (2 cells, floor 1)                   | the wing rises a storey                                       |
+| east wing  | conservatory (2 cells, floor 0)              | a glass-roofed wing on the east                               |
+| east upper | bath (1 cell), guest (1 cell), floor 1       | the wing rises a storey                                       |
+| terrace    | terrace (2 cells, outdoor, west edge)        | a stone deck with a rail                                      |
+| garden     | garden (2 cells, outdoor, east edge)         | a lawn with a hedge line                                      |
+| pool       | pool (2 cells, outdoor, east of the garden)  | a tiled basin with water                                      |
+| tower      | landing (1, 3), observatory (1, 4)           | stacked on the right half of the attic, a spire over both     |
+| balcony    | balcony (1 cell, outdoor, floor 1, east)     | a deck and rail on the east face of the first floor           |
+| orchard    | orchard (2 cells, outdoor, east of the pool) | a lawn with three fruit trees, a ladder and a basket          |
+| pond       | pond (2 cells, outdoor, west of the terrace) | a bank and water sunk under the lawn, a small arched bridge   |
+| porch      | (seam: not in the content yet)               | a 1-cell outdoor part on the door side, spots of type `porch` |
 
-A full house is 13 cells wide (about 1,460 scene px) and four storeys plus a cellar tall (about 330 scene px with roof and sky): it pans (section 5).
+The **tower** (kind `tower`, core column 1, floors 3 and 4) needs the House; its roof is a spire (three pixels in for every two rows, a pennant at the tip) and it is the one part that rises above the roofline. The **balcony** (kind `balcony`, side east) hangs at its own floor on the east edge of the rooms on that floor, found when the grid is made: against the core wall (column 2) when nothing is built beside it, on the glass roof of the east wing when only the ground floor of the wing stands (a roof terrace: the same column), and beside the guest room over the garden (column 4) when the east upper floor is built. It is the one outdoor room above the ground: its deck stands where an indoor floor strip does, its rail is the back of the deck. The **orchard** takes the block after the pool on the east and requires the garden; the **pond** takes the block after the terrace on the west and requires the terrace. The orchard's fruit (apple, plum, pear) is its ground skin (`orchard-apple` ...), chosen from a Ground chip under the room like wallpaper is; a ground skin may carry `scenery` (the trees, ladder and basket).
+
+A full house of the first eleven parts is 13 cells wide (about 1,460 scene px) and four storeys plus a cellar tall (about 330 scene px with roof and sky): it pans (section 5).
 
 ### 2.5 First content (package D enters it; names follow `docs/compendium/`)
 
@@ -339,24 +345,33 @@ A full house is 13 cells wide (about 1,460 scene px) and four storeys plus a cel
 | terrace      | 2     | yard-large, yard-small ×4, fence ×2, poolside (8)                                                                                                                                                       |
 | garden       | 2     | yard-large ×2, yard-small ×4, fence ×2 (8)                                                                                                                                                              |
 | pool         | 2     | water ×3, poolside ×3, yard-small, fence (8)                                                                                                                                                            |
+| landing      | 1     | window, wall-large, wall-small, ceiling, floor-large, floor-small ×2, rug (8)                                                                                                                           |
+| observatory  | 1     | window (round, with a telescope by it), wall-small, display `books` (journal, one), ceiling, floor-large, floor-small ×2, rug (8)                                                                       |
+| balcony      | 1     | fence, yard-small ×2, yard-large (4; an outdoor room on floor 1 with a rail)                                                                                                                            |
+| orchard      | 2     | fence ×2, yard-small ×3, yard-large (6; three trees stand behind them)                                                                                                                                  |
+| pond         | 2     | poolside ×2, water ×3 (5; reeds, lily pads and a bridge stand behind them)                                                                                                                              |
 
 **Parts** (prices in `parts.json`; all picks; Acorns are the `bait` currency):
 
-| Part       | Requires      | Acorns | Scrap | Shards   | Luxury                                 |
-| ---------- | ------------- | ------ | ----- | -------- | -------------------------------------- |
-| hut        |               | 0      | 0     |          |                                        |
-| cottage    | hut           | 75     | 400   |          | 6 any wood                             |
-| house      | cottage       | 200    | 1,200 |          | 12 any wood, 6 any stone               |
-| cellar     | cottage       | 125    | 800   | 10 Mire  | 6 any stone, 4 Bog Oak                 |
-| terrace    | cottage       | 100    | 600   |          | 8 any stone, 4 any metal               |
-| garden     | cottage       | 100    | 500   | 10 Grove | 6 any wood, 4 Moss Velvet              |
-| west wing  | house         | 300    | 2,000 |          | 16 any wood, 8 any metal, 2 Old Gold   |
-| west upper | west wing     | 225    | 1,500 |          | 10 any wood, 6 any cloth               |
-| east wing  | house         | 300    | 2,000 |          | 16 any wood, 8 any stone, 6 Sea Glass  |
-| east upper | east wing     | 225    | 1,500 |          | 10 any wood, 6 any cloth               |
-| pool       | garden, house | 350    | 2,500 | 20 Tide  | 12 any stone, 6 Sea Glass, 2 Moonstone |
+| Part       | Requires      | Acorns | Scrap | Shards   | Luxury                                                 |
+| ---------- | ------------- | ------ | ----- | -------- | ------------------------------------------------------ |
+| hut        |               | 0      | 0     |          |                                                        |
+| cottage    | hut           | 75     | 400   |          | 6 any wood                                             |
+| house      | cottage       | 200    | 1,200 |          | 12 any wood, 6 any stone                               |
+| cellar     | cottage       | 125    | 800   | 10 Mire  | 6 any stone, 4 Bog Oak                                 |
+| terrace    | cottage       | 100    | 600   |          | 8 any stone, 4 any metal                               |
+| garden     | cottage       | 100    | 500   | 10 Grove | 6 any wood, 4 Moss Velvet                              |
+| west wing  | house         | 300    | 2,000 |          | 16 any wood, 8 any metal, 2 Old Gold                   |
+| west upper | west wing     | 225    | 1,500 |          | 10 any wood, 6 any cloth                               |
+| east wing  | house         | 300    | 2,000 |          | 16 any wood, 8 any stone, 6 Sea Glass                  |
+| east upper | east wing     | 225    | 1,500 |          | 10 any wood, 6 any cloth                               |
+| pool       | garden, house | 350    | 2,500 | 20 Tide  | 12 any stone, 6 Sea Glass, 2 Moonstone                 |
+| tower      | house         | 300    | 2,000 |          | 12 any stone, 8 any wood, 4 Bright Copper, 2 Moonstone |
+| balcony    | house         | 150    | 1,000 |          | 8 any wood, 4 any metal, 3 Lantern Silk                |
+| orchard    | garden        | 200    | 1,500 | 12 Grove | 8 any wood, 6 Heartbark, 4 Moss Velvet                 |
+| pond       | terrace       | 250    | 1,500 | 14 Tide  | 8 any stone, 6 Driftwood, 4 Sea Glass                  |
 
-All parts: 2,000 Acorns and 13,000 scrap, about five weeks of a late-game daily player's spare scrap (`valley/economy/report.md`, T-7b) and the Acorn sink the valley's lab says it lacks after the first weeks.
+The first eleven parts: 2,000 Acorns and 13,000 scrap; the four built after the first night (tower, balcony, orchard, pond) add 900 Acorns and 6,000 scrap. The first eleven together are 2,000 Acorns and 13,000 scrap, about five weeks of a late-game daily player's spare scrap (`valley/economy/report.md`, T-7b) and the Acorn sink the valley's lab says it lacks after the first weeks.
 
 **Luxury materials** (16; `materials.json`, and `resources.json` for name, plural and icon):
 

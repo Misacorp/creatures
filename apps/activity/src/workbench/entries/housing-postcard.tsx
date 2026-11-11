@@ -1,7 +1,7 @@
 import { housing } from '@creatures/game/housing-content';
 import { HousePhaseContext } from '../../housing/house-phase';
 import { HousePostcard } from '../../housing/HousePostcard';
-import { COTTAGE, HUT, MANSION, THREE_FLOORS } from '../../housing/house-scene-sample';
+import { COTTAGE, ESTATE, HUT, MANSION, THREE_FLOORS } from '../../housing/house-scene-sample';
 import { num, str } from '../props';
 import type { Entry, Props } from '../types';
 import { phaseControl, phaseOf } from './housing';
@@ -19,6 +19,11 @@ const HOUSES: Readonly<Record<string, readonly string[]>> = {
   'west wing, upper floor': [...THREE_FLOORS, 'west-wing', 'west-upper'],
   'east wing, upper floor': [...THREE_FLOORS, 'east-wing', 'east-upper'],
   mansion: MANSION,
+  'house and tower': [...THREE_FLOORS, 'tower'],
+  'house and balcony': [...THREE_FLOORS, 'balcony'],
+  'house, garden and orchard': [...THREE_FLOORS, 'garden', 'orchard'],
+  'house, terrace and pond': [...THREE_FLOORS, 'terrace', 'pond'],
+  estate: ESTATE,
 };
 const ROOFS = housing.skins.filter((s) => s.kind === 'roof').map((s) => s.id);
 const WALLS = housing.skins.filter((s) => s.kind === 'walls').map((s) => s.id);
@@ -109,6 +114,10 @@ const housePostcard: Entry = {
     { name: 'The hut', props: { house: 'hut' } },
     { name: 'The mansion at twilight', props: { phase: 'twilight' } },
     { name: 'The mansion at night', props: { phase: 'night' } },
+    { name: 'The estate (all fifteen parts)', props: { house: 'estate' } },
+    { name: 'The estate at night', props: { house: 'estate', phase: 'night' } },
+    { name: 'The estate at twilight', props: { house: 'estate', phase: 'twilight' } },
+    { name: 'The estate on a desktop', props: { house: 'estate', width: 1100 } },
     { name: 'The hut at night', props: { house: 'hut', phase: 'night' } },
     { name: 'Every stage and extension at night', props: { view: 'stages', phase: 'night' } },
     {
