@@ -247,12 +247,12 @@ export async function runHousingPaths(
   );
   const bed = metered.sql
     .exec<{ room_id: string; spots_json: string }>(
-      "SELECT room_id, spots_json FROM house_rooms WHERE user_id = ? AND spots_json LIKE '%bed%' LIMIT 1",
+      "SELECT room_id, spots_json FROM house_rooms WHERE user_id = ? AND (spots_json LIKE '%-bed%' OR spots_json LIKE '%hammock%') LIMIT 1",
       userId(1),
     )
     .one();
   const spots = JSON.parse(bed.spots_json) as Spots;
-  const bedSpot = Object.entries(spots).find(([, s]) => /bed|hammock/.test(s.p))?.[0] ?? '';
+  const bedSpot = Object.entries(spots).find(([, s]) => /-bed$|hammock/.test(s.p))?.[0] ?? '';
   const creature = (world.creatures[userId(1)] ?? [])[5] ?? '';
   await around('housemate', () =>
     call(1, '/api/house/housemate', 'PUT', {

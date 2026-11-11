@@ -1552,7 +1552,7 @@ export function housePreview(
 }
 
 /** The size of a part's preview: its new rooms plus the roof over them and a few pixels of margin. */
-const PREVIEW_MARGIN = { side: 8, top: 56, bottom: 8 };
+const PREVIEW_MARGIN = { side: 8, top: 56, outdoorTop: 14, bottom: 8 };
 
 /**
  * Just the new part, for the build list's rows: the house with `partId` built on top, cropped to the rooms the part adds
@@ -1591,7 +1591,9 @@ export function partPreview(
     return { placements: all, width: model.width, height: model.height, lighting: model.lighting };
   const x0 = Math.max(0, Math.min(...fresh.map((r) => r.x)) - PREVIEW_MARGIN.side);
   const x1 = Math.min(model.width, Math.max(...fresh.map((r) => r.x + r.w)) + PREVIEW_MARGIN.side);
-  const y0 = Math.max(0, Math.min(...fresh.map((r) => r.y)) - PREVIEW_MARGIN.top);
+  // Outdoor parts have no roof to show: a little sky is enough (a balcony, an orchard, a pond).
+  const top = fresh.every((r) => r.outdoor) ? PREVIEW_MARGIN.outdoorTop : PREVIEW_MARGIN.top;
+  const y0 = Math.max(0, Math.min(...fresh.map((r) => r.y)) - top);
   const y1 = Math.min(
     model.height,
     Math.max(...fresh.map((r) => r.y + r.h)) + PREVIEW_MARGIN.bottom,
