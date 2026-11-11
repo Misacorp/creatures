@@ -102,7 +102,7 @@ export const RAMPS: Readonly<Record<NightPhase, Readonly<Record<RampName, Ramp>>
     roof: ramp('#17152c', '#34305a', '#5d5a88', 0.55),
     earth: ramp('#15111f', '#2a2236', '#4a3d4c', 0.3),
     water: ramp('#14234a', '#26498a', '#5f9fd8', 0.25),
-    creature: ramp('#20193a', '#5c4c80', '#bdb0d8', 0.5),
+    creature: ramp('#2a2148', '#6a5a92', '#cfc4e8', 0.65),
     sky: ramp('#15122f', '#2e2862', '#443c7c', 0),
   },
 };

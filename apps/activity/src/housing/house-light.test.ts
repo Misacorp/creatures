@@ -24,8 +24,12 @@ import { composeHouse, composeRoom, type Placement } from './house-scene';
 import { HUT, MANSION, THREE_FLOORS, sceneHouse } from './house-scene-sample';
 
 /** A plain painter: the placements in order, each sprite's own colours, no lighting. */
-function reference(placements: readonly Placement[], width: number, height: number): Uint8Array {
-  const out = new Uint8Array(width * height * 4);
+function reference(
+  placements: readonly Placement[],
+  width: number,
+  height: number,
+): Uint8ClampedArray {
+  const out = new Uint8ClampedArray(width * height * 4);
   for (const p of placements) {
     const rows = expandRows(p.sprite);
     const w = p.w ?? rows[0]?.length ?? 0;
@@ -60,13 +64,9 @@ describe('day', () => {
     expect(model.lighting.lights).toHaveLength(0);
     const all = [...model.back, ...model.front];
     const want = reference(all, model.width, model.height);
-    expect(Buffer.from(rasterize(all, model.width, model.height))).toEqual(Buffer.from(want));
-    expect(Buffer.from(rasterize(all, model.width, model.height, model.lighting))).toEqual(
-      Buffer.from(want),
-    );
-    expect(Buffer.from(rasterize(all, model.width, model.height, DAY_LIGHTING))).toEqual(
-      Buffer.from(want),
-    );
+    expect(rasterize(all, model.width, model.height)).toEqual(want);
+    expect(rasterize(all, model.width, model.height, model.lighting)).toEqual(want);
+    expect(rasterize(all, model.width, model.height, DAY_LIGHTING)).toEqual(want);
   });
 
   it('draws the same placements whether or not the phase is named', () => {
@@ -207,7 +207,7 @@ describe('the light shapes', () => {
     const a = levelMap([light], 112, 64);
     const b = levelMap([other], 112, 64);
     for (let i = 0; i < both.length; i++) expect(both[i]).toBe(Math.max(a[i] ?? 0, b[i] ?? 0));
-    expect(Buffer.from(levelMap([light, other], 112, 64))).toEqual(Buffer.from(both));
+    expect(levelMap([light, other], 112, 64)).toEqual(both);
     expect(STEPS[0]).toBeLessThan(STEPS[1]);
   });
 
