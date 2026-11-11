@@ -10,12 +10,13 @@
  */
 import { expandRows, type SpriteDef } from '../sprites/sprite-data';
 import {
-  isSkyColour,
   levelMap,
   pixelHash,
   shade,
-  skyThrough,
   STAR,
+  moonColour,
+  toneOf,
+  windowPixel,
   type Lighting,
   type Material,
   type NightPhase,
@@ -105,6 +106,8 @@ type Bytes = [number, number, number];
 interface Table {
   levels: Bytes[][];
   sky: boolean[];
+  /** Flame-coloured entries (a window's drawn sun is one of them: see `sunMask`). */
+  flame: boolean[];
 }
 
 const tables = new WeakMap<SpriteDef, Map<string, Table>>();
@@ -119,12 +122,11 @@ function tableOf(sprite: SpriteDef, material: Material, phase: NightPhase): Tabl
   const hit = byKey.get(key);
   if (hit !== undefined) return hit;
   const { colours } = pixelsOf(sprite);
-  const sky = colours.map((c) => material === 'window' && isSkyColour(c));
+  const windows = colours.map((c) => (material === 'window' ? windowPixel(c, phase) : null));
+  const sky = windows.map((w) => w?.star === true);
   const levels = colours.map((c, i): Bytes[] => {
-    if (sky[i] === true) {
-      const night = skyThrough(c, phase);
-      return [night, night, night, night];
-    }
+    const w = windows[i];
+    if (w !== undefined && w !== null) return [w.colour, w.colour, w.colour, w.colour];
     return [
       shade(c, material, phase, 0),
       shade(c, material, phase, 1),
@@ -132,9 +134,37 @@ function tableOf(sprite: SpriteDef, material: Material, phase: NightPhase): Tabl
       shade(c, material, phase, 3),
     ];
   });
-  const table = { levels, sky };
+  const flame = colours.map((c) => toneOf(c) === 'flame');
+  const table = { levels, sky, flame };
   byKey.set(key, table);
   return table;
+}
+
+const sunMasks = new WeakMap<SpriteDef, Uint8Array>();
+
+/**
+ * The pixels of a window's drawn sun: flame-coloured pixels with a sky-coloured pixel beside them (the curtain's gold tie-back
+ * touches cloth only). At night they become the moon.
+ */
+function sunMask(sprite: SpriteDef): Uint8Array {
+  const hit = sunMasks.get(sprite);
+  if (hit !== undefined) return hit;
+  const px = pixelsOf(sprite);
+  const flame = px.colours.map((c) => toneOf(c) === 'flame');
+  const sky = px.colours.map((c) => windowPixel(c, 'night') !== null);
+  const mask = new Uint8Array(px.width * px.height);
+  const at = (x: number, y: number): number =>
+    x < 0 || y < 0 || x >= px.width || y >= px.height ? 0 : (px.index[y * px.width + x] ?? 0);
+  for (let y = 0; y < px.height; y++) {
+    for (let x = 0; x < px.width; x++) {
+      const i = at(x, y);
+      if (i === 0 || flame[i - 1] !== true) continue;
+      const near = [at(x - 1, y), at(x + 1, y), at(x, y - 1), at(x, y + 1)];
+      if (near.some((n) => n !== 0 && sky[n - 1] === true)) mask[y * px.width + x] = 1;
+    }
+  }
+  sunMasks.set(sprite, mask);
+  return mask;
 }
 
 /** One star in this many sky pixels of a window at night. */
@@ -160,6 +190,7 @@ export function rasterize(
     const w = Math.min(p.w ?? sprite.width, sprite.width);
     const h = Math.min(p.h ?? sprite.height, sprite.height);
     const table = phase === 'day' ? null : tableOf(p.sprite, p.mat ?? 'auto', phase);
+    const sun = phase !== 'day' && p.mat === 'window' ? sunMask(p.sprite) : null;
     for (let y = 0; y < h; y++) {
       const sy = p.y + y;
       if (sy < 0 || sy >= height) continue;
@@ -171,6 +202,8 @@ export function rasterize(
         const at = sy * width + sx;
         let c: readonly number[] | undefined;
         if (table === null) c = sprite.colours[i - 1];
+        else if (sun !== null && phase !== 'day' && sun[y * sprite.width + x] === 1)
+          c = moonColour(phase);
         else if (table.sky[i - 1] === true) {
           c =
             phase === 'night' && pixelHash(sx, sy) % STAR_ONE_IN === 0

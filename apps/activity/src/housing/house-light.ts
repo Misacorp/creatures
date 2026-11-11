@@ -85,7 +85,7 @@ export const RAMPS: Readonly<Record<NightPhase, Readonly<Record<RampName, Ramp>>
     metal: ramp('#342c46', '#7a6a88', '#d0b4b8', 0.4),
     foliage: ramp('#1c3a30', '#3f7a58', '#86b070', 0.5),
     stone: ramp('#3e3250', '#8a6e84', '#d4b4a8', 0.45),
-    roof: ramp('#2c2440', '#644a66', '#a8808a', 0.5),
+    roof: ramp('#2c2440', '#644a66', '#a8808a', 0.65),
     earth: ramp('#2a1e2c', '#4e3a44', '#7e6058', 0.5),
     water: ramp('#2c3a6a', '#5a70b0', '#d0a0b8', 0.35),
     creature: ramp('#3a2c4c', '#9a7898', '#e8c4c0', 0.65),
@@ -99,7 +99,7 @@ export const RAMPS: Readonly<Record<NightPhase, Readonly<Record<RampName, Ramp>>
     metal: ramp('#1a1c30', '#4a5272', '#a2aac6', 0.25),
     foliage: ramp('#10261f', '#1f4a3c', '#3f7d5e', 0.35),
     stone: ramp('#1c1c34', '#403f64', '#77789c', 0.25),
-    roof: ramp('#17152c', '#34305a', '#5d5a88', 0.3),
+    roof: ramp('#17152c', '#34305a', '#5d5a88', 0.55),
     earth: ramp('#15111f', '#2a2236', '#4a3d4c', 0.3),
     water: ramp('#14234a', '#26498a', '#5f9fd8', 0.25),
     creature: ramp('#20193a', '#5c4c80', '#bdb0d8', 0.5),
@@ -108,8 +108,11 @@ export const RAMPS: Readonly<Record<NightPhase, Readonly<Record<RampName, Ramp>>
 };
 
 /** How much of the day colour a lit step restores (index 0 is outside every light), and the warm cast of a lamp's light. */
-export const LEVEL_WEIGHT: readonly number[] = [0, 0.4, 0.72, 1];
+export const LEVEL_WEIGHT: readonly number[] = [0, 0.35, 0.68, 1];
 const WARM: Rgb = [1.04, 0.97, 0.84];
+/** The warm of a light's halo over the sky, and how much of it each step lays. */
+const HALO: Rgb = [255, 207, 122];
+const HALO_WEIGHT: readonly number[] = [0, 0.1, 0.2, 0.3];
 /** Flame colours never go darker than this share of the day colour (a candle in the dark is still bright). */
 const EMISSIVE: Readonly<Record<NightPhase, number>> = { twilight: 0.85, night: 0.9 };
 
@@ -177,7 +180,7 @@ function rampOf(material: Material, tone: Tone): RampName | null {
     case 'water':
       return 'water';
     case 'creature':
-      return 'creature';
+      return tone === 'ink' ? null : 'creature';
     default:
       return tone === 'ink' ? null : tone === 'flame' ? 'cloth' : tone;
   }
@@ -210,6 +213,11 @@ export function shade(
   level: 0 | 1 | 2 | 3,
 ): [number, number, number] {
   if (phase === 'day') return [c[0], c[1], c[2]];
+  if (material === 'fixed') {
+    // The sky is drawn for its phase; a light near it only lays a stepped, dithered halo of warm over it.
+    const halo = mix(c, HALO, HALO_WEIGHT[level] ?? 0);
+    return [clampByte(halo[0]), clampByte(halo[1]), clampByte(halo[2])];
+  }
   const tone = toneOf(c);
   const name = rampOf(material, tone);
   if (name === null) return [c[0], c[1], c[2]];
@@ -241,6 +249,24 @@ export function tintSprite(
     palette[key] = toHex(shade([(n >> 16) & 255, (n >> 8) & 255, n & 255], material, phase, level));
   }
   return { ...sprite, palette };
+}
+
+/** The moon, or the dusk's last sun, that a window's drawn sun becomes. */
+const MOON: Readonly<Record<NightPhase, Rgb>> = { twilight: hex('#ffd9a8'), night: hex('#dfe6ff') };
+
+export function moonColour(phase: NightPhase): [number, number, number] {
+  const m = MOON[phase];
+  return [m[0], m[1], m[2]];
+}
+
+/** What a window's pixel becomes: the sky (`star` says it may hold a star), or null (cloth: the curtain, the frame; or the sun, see `sunPixels`). */
+export function windowPixel(
+  c: Rgb,
+  phase: NightPhase,
+): { colour: [number, number, number]; star: boolean } | null {
+  return isSkyColour(c) && toneOf(c) !== 'flame'
+    ? { colour: skyThrough(c, phase), star: true }
+    : null;
 }
 
 /** The colour of a window's glass in `phase`: the night sky (or the dusk) by the glass's lightness. */
@@ -319,9 +345,9 @@ export const DAY_LIGHTING: Lighting = { phase: 'day', lights: [] };
 
 /** Outer half axes of each light's shape; the three steps are at `STEPS` of them. */
 export const LIGHT_SHAPE: Readonly<Record<LightKind, { rx: number; ry: number }>> = {
-  lamp: { rx: 56, ry: 42 },
+  lamp: { rx: 50, ry: 40 },
   fire: { rx: 46, ry: 34 },
-  lantern: { rx: 34, ry: 26 },
+  lantern: { rx: 42, ry: 32 },
   porch: { rx: 26, ry: 22 },
 };
 
