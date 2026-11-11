@@ -1132,10 +1132,15 @@ try {
       const top = () => scroller.evaluate((el) => el.scrollTop);
       const before = await top();
       // Start on a place's button, so the drag-click guard is what keeps it closed.
-      const box = await place('paddock').boundingBox();
-      if (box === null) throw new Error('the Paddock has no box');
-      const x = box.x + box.width / 2;
-      const y = box.y + box.height / 2;
+      let at = null;
+      for (const id of ['house', 'paddock', 'forge', 'cave', 'fair', 'arena']) {
+        const box = await place(id).boundingBox();
+        if (box !== null && box.y > 120 && box.y + box.height < 440 && box.x > 20 && box.x + box.width < 1200)
+          at = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+        if (at !== null) break;
+      }
+      if (at === null) throw new Error('no place is in view to start the drag on');
+      const { x, y } = at;
       await page.mouse.move(x, y);
       await page.mouse.down();
       await page.mouse.move(x, y - 60, { steps: 6 });
