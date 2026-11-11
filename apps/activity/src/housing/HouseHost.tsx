@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import { Alert } from '../ui/Alert';
+import type { RoomPhase } from '@creatures/game';
+import { HousePhaseContext } from './house-phase';
 import type { HousePlaceProps } from './HousePlace';
 
 type PlaceModule = typeof import('./HousePlace');
@@ -11,8 +13,13 @@ type PlaceModule = typeof import('./HousePlace');
  */
 export function HouseHost({
   load = () => import('./HousePlace'),
+  phase = 'day',
   ...props
-}: HousePlaceProps & { load?: () => Promise<PlaceModule> }) {
+}: HousePlaceProps & {
+  load?: () => Promise<PlaceModule>;
+  /** The living room's phase (`useRoomPhase`): the house is drawn in the same light. */
+  phase?: RoomPhase;
+}) {
   const [place, setPlace] = useState<PlaceModule | null>(null);
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
@@ -49,5 +56,9 @@ export function HouseHost({
     );
   }
   const Place = place.HousePlace;
-  return <Place {...props} />;
+  return (
+    <HousePhaseContext.Provider value={phase}>
+      <Place {...props} />
+    </HousePhaseContext.Provider>
+  );
 }

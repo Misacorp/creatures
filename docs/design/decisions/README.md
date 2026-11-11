@@ -472,6 +472,7 @@ Superseded: 1 entry (see the topic file).
 
 [ui.md](ui.md): Navigation and the frame, Home and the notice board, type scale, shared components, look and feel rules that apply across screens.
 
+- 2026-11-11 The house is lit by one painter pass, from the living room's phase
 - 2026-11-10 Housing screen pass: the whole house, build moment, one pinned action
 - 2026-11-10 Housing client: the build list is rows of parts, a piece moves by emptying then placing, the overview starts on the core
 - 2026-11-10 House scene: canvases at 1x scaled by CSS, yard fixtures, one light

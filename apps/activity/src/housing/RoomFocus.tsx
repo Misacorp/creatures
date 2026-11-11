@@ -8,7 +8,7 @@
  * small dropdown triggers under the room (own house) that ask for the skin picker (`onSkin`).
  */
 import { useMemo, useRef } from 'preact/hooks';
-import { type HousemateView, type HouseView } from '@creatures/game';
+import { type HousemateView, type HouseView, type RoomPhase } from '@creatures/game';
 import { housing } from '@creatures/game/housing-content';
 import { cssVars } from '../css-vars';
 import { creatureName, getSpecies } from '../game';
@@ -25,6 +25,9 @@ import { Tag } from '../ui/Tag';
 import { useDragScroll } from '../ui/use-drag-scroll';
 import { pieceArt, shellArt } from './house-art';
 import { composeRoom, type SceneCreature, type SceneSpot } from './house-scene';
+import { levelMap, tintSprite } from './house-light';
+import { useHousePhase } from './house-phase';
+import { swapPalette } from '../sprites/sprite-data';
 import { displayText, itemName, spotLabel } from './house-text';
 import { boxVars, HOUSE_DRAWING, SceneLayer } from './HouseScene';
 import { SkinTrigger } from './SkinTrigger';
@@ -140,17 +143,27 @@ function setNameOf(pieceId: string): string | null {
   return set?.name ?? null;
 }
 
+/** The light level (0 to 3) under a scene pixel. */
+function levelAt(levels: Uint8Array | null, width: number, x: number, y: number): 0 | 1 | 2 | 3 {
+  const v = levels?.[Math.floor(y) * width + Math.floor(x)] ?? 0;
+  return v >= 3 ? 3 : v === 2 ? 2 : v === 1 ? 1 : 0;
+}
+
 /** A housemate asleep in its bed: the creature as a button, breathing. */
 function Sleeper({
   mate,
   at,
   scale,
   owner,
+  phase,
+  level,
 }: {
   mate: SceneCreature;
   at: { x: number; y: number };
   scale: number;
   owner: string | null;
+  phase: RoomPhase;
+  level: 0 | 1 | 2 | 3;
 }) {
   const info = housemateInfo(mate.housemate, owner);
   const palette = mate.housemate.creature.shiny
@@ -167,12 +180,27 @@ function Sleeper({
         label={`${info.name}, level ${String(info.level)}, asleep`}
         class="house-creature"
       >
-        <Sprite
-          sprite={creatureSpriteOrFallback(mate.housemate.creature.species)}
-          scale={scale}
-          bob
-          {...(palette === undefined ? {} : { palette })}
-        />
+        {phase === 'day' ? (
+          <Sprite
+            sprite={creatureSpriteOrFallback(mate.housemate.creature.species)}
+            scale={scale}
+            bob
+            {...(palette === undefined ? {} : { palette })}
+          />
+        ) : (
+          <Sprite
+            sprite={tintSprite(
+              palette === undefined
+                ? creatureSpriteOrFallback(mate.housemate.creature.species)
+                : swapPalette(creatureSpriteOrFallback(mate.housemate.creature.species), palette),
+              'creature',
+              phase,
+              level,
+            )}
+            scale={scale}
+            bob
+          />
+        )}
       </SmallCreature>
       {/* The "z" over the sleeper, as the house view draws it. */}
       <span
@@ -210,10 +238,21 @@ export function RoomFocus({
   const viewRef = useRef<HTMLDivElement>(null);
   useDragScroll(viewRef);
   const boxWidth = useElementWidth(rootRef, FALLBACK_WIDTH);
+  const phase = useHousePhase();
   const model = useMemo(
     () =>
-      composeRoom(house, roomId, { content: housing, creatures: 'skip', drawing: HOUSE_DRAWING }),
-    [house, roomId],
+      composeRoom(house, roomId, {
+        content: housing,
+        creatures: 'skip',
+        drawing: HOUSE_DRAWING,
+        phase,
+      }),
+    [house, roomId, phase],
+  );
+  // How lit each sleeper's bed is, so the creature is tinted like the room around it.
+  const levels = useMemo(
+    () => (model === null ? null : levelMap(model.lighting.lights, model.width, model.height)),
+    [model],
   );
   if (model === null) return <p class="muted">That room is gone.</p>;
   const scale = focusScale(boxWidth + FOCUS_BLEED, model.width);
@@ -238,15 +277,25 @@ export function RoomFocus({
             width={model.width}
             height={model.height}
             layer="back"
+            lighting={model.lighting}
           />
           {model.creatures.map((c) => (
-            <Sleeper key={c.spotId} mate={c} at={c} scale={scale} owner={owner} />
+            <Sleeper
+              key={c.spotId}
+              mate={c}
+              at={c}
+              scale={scale}
+              owner={owner}
+              phase={phase}
+              level={levelAt(levels, model.width, c.x + 8, c.y + 8)}
+            />
           ))}
           <SceneLayer
             placements={model.front}
             width={model.width}
             height={model.height}
             layer="front"
+            lighting={model.lighting}
           />
           {model.spots.map((spot) => {
             if (spot.type === 'display') {

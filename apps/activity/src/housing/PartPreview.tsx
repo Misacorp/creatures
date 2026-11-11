@@ -3,6 +3,7 @@ import { type HouseView } from '@creatures/game';
 import { housing } from '@creatures/game/housing-content';
 import { cssVars } from '../css-vars';
 import { HOUSE_DRAWING } from './HouseScene';
+import { useHousePhase } from './house-phase';
 import { paintPlacements } from './house-paint';
 import { partPreview } from './house-scene';
 
@@ -23,9 +24,10 @@ export function PartPreview({
   partId: string;
   size: 'row' | 'page';
 }) {
+  const phase = useHousePhase();
   const model = useMemo(
-    () => partPreview(house, partId, { content: housing, drawing: HOUSE_DRAWING }),
-    [house, partId],
+    () => partPreview(house, partId, { content: housing, drawing: HOUSE_DRAWING, phase }),
+    [house, partId, phase],
   );
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
@@ -34,6 +36,7 @@ export function PartPreview({
       model.placements,
       model.width,
       model.height,
+      model.lighting,
     );
   }, [model]);
   // The page shows it at the largest whole scale (up to 3) that keeps it inside a phone's width.

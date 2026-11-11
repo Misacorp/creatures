@@ -1,6 +1,7 @@
 import { useState } from 'preact/hooks';
-import { houseGrid } from '@creatures/game';
+import { houseGrid, type RoomPhase } from '@creatures/game';
 import { housing } from '@creatures/game/housing-content';
+import { HousePhaseContext } from '../../housing/house-phase';
 import { HouseRows } from '../../housing/HouseRows';
 import { YourHouseRow } from '../../valley/YourHouseRow';
 import { HouseScene } from '../../housing/HouseScene';
@@ -36,6 +37,16 @@ function houseOf(p: Props) {
   });
 }
 
+const PHASES: readonly RoomPhase[] = ['day', 'twilight', 'night'];
+
+/** The phase control of the house entries: the house is drawn in this light (in the game it is the living room's phase). */
+const phaseControl = { phase: { kind: 'select', options: PHASES } } as const;
+
+function phaseOf(p: Props): RoomPhase {
+  const v = str(p, 'phase');
+  return PHASES.find((x) => x === v) ?? 'day';
+}
+
 const common = {
   house: { kind: 'select', options: HOUSE_OPTIONS },
   housemates: { kind: 'number', min: 0, max: 3 },
@@ -54,27 +65,37 @@ const houseScene: Entry = {
     ...common,
     mode: { kind: 'select', options: ['own', 'visit'] },
     mail: { kind: 'toggle' },
+    ...phaseControl,
   },
-  defaults: { ...commonDefaults, mode: 'own', mail: false },
+  defaults: { ...commonDefaults, mode: 'own', mail: false, phase: 'day' },
   presets: [
     { name: 'The hut', props: {} },
     { name: 'The cottage, a housemate', props: { house: 'cottage', housemates: 1 } },
     { name: 'Three floors, three housemates', props: { house: 'three floors', housemates: 3 } },
     { name: 'The mansion', props: { house: 'mansion', housemates: 3 } },
     { name: 'The mansion, visited', props: { house: 'mansion', housemates: 2, mode: 'visit' } },
+    { name: 'The hut at twilight', props: { phase: 'twilight' } },
+    { name: 'The hut at night', props: { phase: 'night', housemates: 1 } },
+    {
+      name: 'Three floors at night',
+      props: { house: 'three floors', housemates: 3, phase: 'night' },
+    },
+    { name: 'The mansion at night', props: { house: 'mansion', housemates: 3, phase: 'night' } },
     {
       name: 'The mansion with a slate roof and brick walls',
       props: { house: 'mansion', roof: 'slate', walls: 'brick' },
     },
   ],
   render: (p) => (
-    <HouseScene
-      house={houseOf(p)}
-      mode={str(p, 'mode') === 'visit' ? 'visit' : 'own'}
-      mailWaiting={p['mail'] === true}
-      onRoom={() => undefined}
-      {...(str(p, 'mode') === 'visit' ? {} : { onFixture: () => undefined })}
-    />
+    <HousePhaseContext.Provider value={phaseOf(p)}>
+      <HouseScene
+        house={houseOf(p)}
+        mode={str(p, 'mode') === 'visit' ? 'visit' : 'own'}
+        mailWaiting={p['mail'] === true}
+        onRoom={() => undefined}
+        {...(str(p, 'mode') === 'visit' ? {} : { onFixture: () => undefined })}
+      />
+    </HousePhaseContext.Provider>
   ),
 };
 
@@ -115,8 +136,16 @@ const roomFocus: Entry = {
     roof: common.roof,
     walls: common.walls,
     mode: { kind: 'select', options: ['own', 'visit'] },
+    ...phaseControl,
   },
-  defaults: { room: 'hearth', housemates: 1, roof: 'thatch', walls: 'plaster', mode: 'own' },
+  defaults: {
+    room: 'hearth',
+    housemates: 1,
+    roof: 'thatch',
+    walls: 'plaster',
+    mode: 'own',
+    phase: 'day',
+  },
   presets: [
     { name: 'The Hearth', props: {} },
     { name: 'A bedroom with a housemate', props: { room: 'kitchen', housemates: 3 } },
@@ -126,8 +155,16 @@ const roomFocus: Entry = {
     { name: 'The garden', props: { room: 'garden' } },
     { name: 'The pool', props: { room: 'pool' } },
     { name: 'The hall, visited', props: { room: 'hall', mode: 'visit' } },
+    { name: 'The Hearth at night', props: { phase: 'night' } },
+    { name: 'A bedroom at night', props: { room: 'kitchen', housemates: 3, phase: 'night' } },
+    { name: 'The Hearth at twilight', props: { phase: 'twilight' } },
+    { name: 'The garden at night', props: { room: 'garden', phase: 'night' } },
   ],
-  render: (p) => <RoomDemo p={p} />,
+  render: (p) => (
+    <HousePhaseContext.Provider value={phaseOf(p)}>
+      <RoomDemo p={p} />
+    </HousePhaseContext.Provider>
+  ),
 };
 
 const houseRows: Entry = {
@@ -167,26 +204,29 @@ const visitHouse: Entry = {
   group: 'Creatures & game pieces',
   description:
     'Someone else’s house, read-only: the same scene, rooms that open read-only, the guestbook and, pinned at the bottom, the visitor’s gift and stamp (the panels come from the housing panels file). Back leaves a room, then the house.',
-  controls: { house: common.house, housemates: common.housemates },
-  defaults: { house: 'three floors', housemates: 2 },
+  controls: { house: common.house, housemates: common.housemates, ...phaseControl },
+  defaults: { house: 'three floors', housemates: 2, phase: 'day' },
   presets: [
     { name: 'A three-floor house', props: {} },
     { name: 'The mansion', props: { house: 'mansion', housemates: 3 } },
+    { name: 'A three-floor house at night', props: { phase: 'night' } },
   ],
   render: (p) => (
-    <VisitHouse
-      userId="111111111111111111"
-      name="Aino"
-      house={sceneHouse({
-        parts: HOUSES[str(p, 'house')] ?? HUT,
-        housemates: num(p, 'housemates'),
-      })}
-      today={{ gifted: false, stamped: false }}
-      giftLeft
-      ownedStamps={['paw-print']}
-      now={Date.now()}
-      onBack={() => undefined}
-    />
+    <HousePhaseContext.Provider value={phaseOf(p)}>
+      <VisitHouse
+        userId="111111111111111111"
+        name="Aino"
+        house={sceneHouse({
+          parts: HOUSES[str(p, 'house')] ?? HUT,
+          housemates: num(p, 'housemates'),
+        })}
+        today={{ gifted: false, stamped: false }}
+        giftLeft
+        ownedStamps={['paw-print']}
+        now={Date.now()}
+        onBack={() => undefined}
+      />
+    </HousePhaseContext.Provider>
   ),
 };
 

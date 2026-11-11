@@ -811,6 +811,7 @@ export function Game({
       )}
       {tab === 'house' && housing && (
         <HouseHost
+          phase={phase}
           creatures={game.creatures}
           now={Date.now() + offset}
           onSpent={() => {

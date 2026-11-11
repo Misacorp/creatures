@@ -4,6 +4,14 @@ Navigation and the frame, Home and the notice board, type scale, shared componen
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-11: The house is lit by one painter pass, from the living room's phase
+
+ID: `2026-11-11-the-house-is-lit-by-one` · Status: current
+
+**Decision.** The player's house follows the server's clock with no setting: the phase is the living room's (`useRoomPhase`), given to the house through one context (`house-phase.ts`). The sprites stay in day colours; the painter (`house-light.ts`, `house-paint.ts`) maps each colour through its material's ramp at twilight and night (a palette swap, hard edges) and lifts the pixels inside stepped, dithered light shapes back towards day. Material comes from a tag on the scene's placements (wall, floor, roof, exterior, ground, earth, creature, window) and, for furniture, from the colour's hue (wood, cloth, glass, metal, foliage, flame); art packs are untouched. Lights are found from data: a piece art's `light` flag, else its form (`lamp`, `hearth`), else a `glow`; plus a porch light at the door. Day is painted exactly as before (tested). The sky at night is the valley's own night strip and moon. `?phase=day|twilight|night` forces the phase in dev builds.
+
+**Reasoning.** One pass with no per-phase sprites keeps night from costing about 200 redrawn sprites per phase, and the same maths can later serve the postcard (B3) and a shared layered painter (B2). Tagging by scene role plus colour-hue sorting survives the art packs being redrawn. The pass runs once per scene change (a phase swap or a rebuilt house), never per frame.
+
 ## 2026-11-10: Housing screen pass: the whole house, build moment, one pinned action
 
 ID: `2026-11-10-housing-screen-pass-the-whole-house` · Status: current
