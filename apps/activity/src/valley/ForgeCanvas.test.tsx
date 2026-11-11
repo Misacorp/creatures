@@ -100,7 +100,7 @@ function draw(
           <button
             type="button"
             onClick={(event) => {
-              onOrder(BP, event.currentTarget as unknown as HTMLElement);
+              onOrder(BP, event.currentTarget);
             }}
           >
             Order a kelp cap
