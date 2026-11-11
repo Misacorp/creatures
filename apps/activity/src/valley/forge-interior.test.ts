@@ -9,7 +9,7 @@ import {
   interiorSceneDraw,
 } from './forge-interior';
 import { INTERIOR_PIECES, PIECE_SIZE, interiorSprite } from './forge-interior-art';
-import { AMBIENT, ambientCount } from './ForgeScenes';
+import { AMBIENT, ambientCount, ambientSpots } from './ForgeScenes';
 import { sceneGeometry } from './SceneFrame';
 import { parseSprite } from '../sprites/sprite-data';
 
@@ -79,7 +79,7 @@ describe('the Forge interior layout', () => {
         for (const c of lay.cells) {
           expect(c.x).toBeGreaterThanOrEqual(lay.ox);
           expect(c.x + c.w).toBeLessThanOrEqual(lay.ox + 106);
-          expect(c.y + CELL_H).toBeLessThanOrEqual(lay.oy + ROOM.h);
+          expect(c.y + CELL_H).toBeLessThanOrEqual(Math.max(lay.oy + ROOM.h, g.H));
         }
         for (let i = 1; i < lay.cells.length; i += 1) {
           const prev = lay.cells[i - 1];
@@ -90,13 +90,14 @@ describe('the Forge interior layout', () => {
         for (const p of props) {
           expect(p.x).toBeGreaterThanOrEqual(lay.ox + 106);
           expect(p.x + PROP).toBeLessThanOrEqual(lay.ox + ROOM.w);
-          expect(p.y + PROP).toBeLessThanOrEqual(lay.oy + ROOM.h);
+          expect(p.y + PROP).toBeLessThanOrEqual(Math.max(lay.oy + ROOM.h, g.H));
         }
         // The props stand one above the next without touching the cells.
         expect(lay.chest.y).toBeGreaterThanOrEqual(lay.plans.y + PROP);
         expect(lay.crate.y).toBeGreaterThanOrEqual(lay.chest.y + PROP);
         // The door is on the wall above the props, the furnace on the left, and neither is over a cell.
         expect(lay.door.y + lay.door.h).toBeLessThanOrEqual(lay.plans.y);
+        expect(lay.crate.y + PROP).toBeLessThanOrEqual(g.H);
         expect(lay.furnace.y + lay.furnace.h).toBeLessThanOrEqual(lay.cells[0]?.y ?? 0);
         // The background smiths stand behind the benches, four spots.
         expect(lay.backSpots).toHaveLength(BACK_SPOTS);
@@ -153,5 +154,14 @@ describe('the background workers', () => {
     expect(ambientCount(2)).toBe(0);
     expect(ambientCount(4)).toBe(0);
     expect(AMBIENT).toHaveLength(2);
+  });
+
+  it("never stands an ambient worker where another player's smith is", () => {
+    expect(ambientSpots(0, 4)).toEqual([3, 0]);
+    expect(ambientSpots(1, 4)).toEqual([3]);
+    expect(ambientSpots(2, 4)).toEqual([]);
+    for (let others = 0; others <= 4; others += 1) {
+      for (const spot of ambientSpots(others, 4)) expect(spot).toBeGreaterThanOrEqual(others);
+    }
   });
 });

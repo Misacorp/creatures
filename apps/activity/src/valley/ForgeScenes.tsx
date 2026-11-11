@@ -34,15 +34,28 @@ import { interiorSprite } from './forge-interior-art';
 import { WARMING_FLAME } from './valley-art';
 import { anvilName, anvilPrice } from './forge-view';
 
-/** The two ambient workers (decoration when no one else's smith is at work): species, and which back spot each stands at. */
+/** The two ambient workers (decoration when no one else's smith is at work): species and motion. */
 export const AMBIENT = [
-  { species: 'splashet', spot: 0, motion: 'fi-hammer' },
-  { species: 'cindle', spot: 3, motion: 'fi-carry' },
+  { species: 'cindle', motion: 'fi-carry' },
+  { species: 'splashet', motion: 'fi-hammer' },
 ] as const;
 
 /** How many ambient workers a room with `others` of other players' smiths shows: enough for two workers in all. */
 export function ambientCount(others: number): number {
   return Math.max(0, Math.min(AMBIENT.length, 2 - others));
+}
+
+/**
+ * The back spot of each ambient worker: other players' smiths stand at the first spots, so the ambient ones take the spots left,
+ * the first from the far end and the second from the near end of what is free.
+ */
+export function ambientSpots(others: number, spots: number): number[] {
+  const free = Array.from({ length: Math.max(0, spots - others) }, (_, i) => others + i);
+  const out: number[] = [];
+  const count = Math.min(ambientCount(others), free.length);
+  if (count >= 1) out.push(free[free.length - 1] as number);
+  if (count >= 2) out.push(free[0] as number);
+  return out;
 }
 
 /** A plate under a thing in the scene, centred on `x`. */
@@ -223,22 +236,22 @@ export function ForgeInside({
   // The far smiths: small, behind the benches (the benches come after them, so they stand over their feet).
   const backTop = (spot: { y: number }): number => g.Y(spot.y) - 16 * bs;
   const backLeft = (spot: { x: number }): number => g.X(spot.x) - 8 * bs;
-  const ambient = AMBIENT.slice(0, ambientCount(others.length));
   return (
     <>
       <At x={g.X(lay.flame.x)} y={g.Y(lay.flame.y)} class="fi-fire">
         <Pic sprite={WARMING_FLAME} scale={g.s} />
       </At>
-      {ambient.map((a) => {
-        const spot = lay.backSpots[a.spot];
-        if (spot === undefined) return null;
+      {ambientSpots(others.length, lay.backSpots.length).map((at, i) => {
+        const spot = lay.backSpots[at];
+        const worker = AMBIENT[i];
+        if (spot === undefined || worker === undefined) return null;
         return (
-          <At key={a.species} x={backLeft(spot)} y={backTop(spot)}>
+          <At key={worker.species} x={backLeft(spot)} y={backTop(spot)}>
             <CreatureSprite
-              creature={{ species: a.species, shiny: false }}
+              creature={{ species: worker.species, shiny: false }}
               scale={bs}
-              flip={a.spot % 2 === 1}
-              class={a.motion}
+              flip={at % 2 === 1}
+              class={worker.motion}
             />
           </At>
         );

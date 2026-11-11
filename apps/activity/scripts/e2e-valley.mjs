@@ -244,6 +244,8 @@ const forgeState = {
   anvils: [],
   shelf: { scrap: 120, essence: 30, shards: { tide: 4, ember: 7, grove: 0, spark: 2, mire: 3 } },
   nextOrder: 1,
+  /** Other players' smiths at work, for the workshop's background (the valley block's `smiths`). */
+  crowd: [],
   /** An element every smith with an order waits for (Q64's wait line); null: nobody waits for a shard. */
   waitShard: null,
 };
@@ -347,6 +349,7 @@ const valleyBlock = () => ({
     };
   }),
   online: bonfire.online,
+  smiths: forgeState.crowd,
   allowance: { store: 0, cap: 480, brought: 0 },
   anvils: forgeState.anvils.map(anvilView),
   anvilPrices: {
@@ -1062,6 +1065,12 @@ const expectNoScroll = async () => {
       ),
   );
   if (over.length > 0) throw new Error(`the canvas scrolls: ${over.join(' | ')}`);
+};
+/** The Forge opens on its outside: a click on the building goes into the workshop (its own canvas, with a door back out). */
+const goInside = async () => {
+  await waitFor(sceneTarget('The forge. Go inside'));
+  await sceneTarget('The forge. Go inside').click();
+  await waitFor(sceneTarget('The door. Go back outside'));
 };
 const backToValley = async () => {
   await hudBack().click();
@@ -1864,6 +1873,14 @@ try {
       forgeState.anvils = [];
       forgeState.nextOrder = 1;
       forgeCalls.length = 0;
+      // Another player's smith at work, for the workshop's background.
+      forgeState.crowd = [
+        {
+          owner: 'Bea',
+          creature: { id: 'far-1', species: 'splashet', shiny: false, level: 5, name: 'Dot' },
+          working: true,
+        },
+      ];
       // Acorns for the second anvil (123).
       stateOverride = {
         creatures,
@@ -1900,9 +1917,26 @@ try {
             }),
           ),
         );
+      // The Forge opens on its outside: the building (the way in) and the project board; no anvils out here, and nothing scrolls.
+      await waitFor(sceneTarget('The forge. Go inside'));
+      await expectNoScroll();
+      await expectTopmost(sceneTarget('The forge. Go inside'), 'the building');
+      if ((await sceneTarget('A new anvil').count()) > 0) throw new Error('an anvil is outside');
+      await shot('forge-outside');
+      await goInside();
       await waitFor(sceneTarget('A new anvil'));
       await expectNoScroll();
       await expectTopmost(sceneTarget('A new anvil'), 'the dashed outline of the next anvil');
+      await expectTopmost(sceneTarget('The door. Go back outside'), 'the door');
+      await expectTopmost(sceneTarget('The furnace'), 'the furnace');
+      // Another player's smith works at a bench behind: a tap shows its owner on a plate; a second tap closes it.
+      await waitFor(sceneTarget("Bea's Dot"));
+      await expectTopmost(sceneTarget("Bea's Dot"), "Bea's smith");
+      await sceneTarget("Bea's Dot").click();
+      await waitFor(page.locator('.nameplate-owner', { hasText: 'Bea' }));
+      await shot('forge-inside-background-smith');
+      await sceneTarget("Bea's Dot").click();
+      await page.locator('.nameplate-owner').waitFor({ state: 'detached', timeout: 10000 });
       await shot('forge-canvas-no-anvils');
       // Buy the first anvil from its outline: the buy step opens beside the canvas (a page on a phone).
       await sceneTarget('A new anvil').click();
@@ -2041,9 +2075,14 @@ try {
         .click();
       await drawer.waitFor({ state: 'detached', timeout: 10000 });
       await expectTopmost(hudBack(), 'the way back from the Forge');
+      // The door goes back outside (the building is there again), the place's back goes to the valley.
+      await sceneTarget('The door. Go back outside').click();
+      await waitFor(sceneTarget('The forge. Go inside'));
+      await shot('forge-outside-after');
       await backToValley();
 
       forgeState.anvils = [];
+      forgeState.crowd = [];
     },
   );
 
@@ -2083,8 +2122,9 @@ try {
       await waitFor(page.locator(VALLEY), 'attached');
       await place('forge').evaluate((el) => el.click());
       await waitFor(heading('Forge'));
+      await goInside();
       await waitFor(sceneTarget('Anvil 1: '));
-      // The plans table in the yard opens the Blueprints list, with the three patchwork blueprints and their price as icons (no words, no quality).
+      // The plans table in the workshop opens the Blueprints list, with the three patchwork blueprints and their price as icons (no words, no quality).
       await sceneTarget('The plans').click();
       const rows = page.locator('li.blueprint').filter({ hasText: /Patchwork/ });
       await waitFor(rows);
@@ -2380,6 +2420,7 @@ try {
         await waitFor(page.locator(VALLEY), 'attached');
         await place('forge').evaluate((el) => el.click());
         await waitFor(heading('Forge'));
+        await goInside();
         // The anvil in the scene says it is paused; its page (the drawer) says why.
         await waitFor(sceneTarget('Anvil 1: '));
         if (
@@ -2553,10 +2594,10 @@ try {
         await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
         await place('forge').evaluate((el) => el.click());
         await waitFor(heading('Forge'));
-        // The forge in the scene is the way to its fire and project board (the left drawer; a page on a phone); the scaffolding is on its art.
-        await waitFor(sceneTarget('The forge'));
+        // The notice board beside the forge is the way to its fire and project board (the left drawer; a page on a phone); the scaffolding is on the building's art.
+        await waitFor(sceneTarget('The project board'));
         await shot('commons-forge-canvas');
-        await sceneTarget('The forge').click();
+        await sceneTarget('The project board').click();
         const fire = drawer.getByRole('button', { name: /^The fire\./ });
         await waitFor(fire);
         await expectTopmost(fire, 'the fire');
@@ -2954,6 +2995,7 @@ try {
         await waitFor(page.locator(VALLEY), 'attached');
         await place('forge').evaluate((el) => el.click());
         await waitFor(heading('Forge'));
+        await goInside();
         // The anvil in the scene says it waits for a shard; a click opens its page, whose wait line is below.
         await waitFor(sceneTarget('Anvil 1: '));
         await sceneTarget('Anvil 1: ').click();
@@ -2993,6 +3035,7 @@ try {
         await waitFor(page.locator(VALLEY), 'attached');
         await place('forge').evaluate((el) => el.click());
         await waitFor(heading('Forge'));
+        await goInside();
         await waitFor(sceneTarget('Anvil 1: '));
         await sceneTarget('Anvil 1: ').click();
         const after = page.getByText(/Waiting for\s+for 3 h/);

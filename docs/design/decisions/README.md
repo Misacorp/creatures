@@ -551,6 +551,7 @@ Superseded: 1 entry (see the topic file).
 
 [valley.md](valley.md): The valley and peaceful systems overhaul planned in docs/design/valley/: job posts, the bonfire, the commons, the Forge loop, gear, trials, the School, the visitor, the economy lab, and Misa's question rounds.
 
+- 2026-11-11 The Forge opens on its outside and goes inside to a workshop of its own \[Misa\]
 - 2026-11-11 Scene trees stand on the grass, and the Bonfire's +N more stays above the pinned action
 - 2026-11-11 A flat place is built on the ground (stakes, rope, planks, tools), a tall one in poles \[Misa\]
 - 2026-11-11 The valley map takes the whole window: the HUD floats over it, and a short window scrolls the map up and down \[Misa\]

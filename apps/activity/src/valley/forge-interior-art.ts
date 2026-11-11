@@ -73,8 +73,6 @@ const DAY: Readonly<Record<string, string>> = {
   x: '#ffffff',
 };
 
-type Key = keyof typeof NIGHT;
-
 function grid(piece: InteriorPiece): PixelGrid {
   const { w, h } = PIECE_SIZE[piece];
   return new PixelGrid(w, h);

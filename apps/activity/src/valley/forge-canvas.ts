@@ -31,7 +31,7 @@ const ART_TOP = 12;
 /** Scene pixels the yard takes under the art. */
 const BELOW_ART = 24;
 /** The most the building may be pushed down to centre it. */
-const MAX_LIFT = 32;
+const MAX_LIFT = 90;
 
 export interface Pt {
   x: number;

@@ -9,9 +9,10 @@
  * - furnace 48x56 at (2, 4), the fire in its mouth (flame flicker over (22, 36)); a click opens the project board.
  * - on the wall: hanging-tools 24x16 at (74, 0), shelf 32x16 at (50, 20), tool-rack 32x24 at (82, 16).
  * - two workbenches 32x20 at (50, 36) and (82, 36), feet on the wall's foot (y 56): other players' smiths stand behind them, two to a
- *   bench, at x 58, 74 (bench one) and 90, 106 (bench two), their feet at y 46.
+ *   bench, at x 58, 74 (bench one) and 90, 106 (bench two), their feet at y 42.
  * - the door 14x24 at (114, 24): the way back outside.
  * - on the floor, behind the anvils: coal-heap 16x10 at (30, 50), quench-trough 24x12 at (52, 57), barrel 12x16 at (98, 50).
+ * - (in a scene taller than 96 the anvils and props below stand up to 40 lower, half the spare height; the wall stays)
  * - the player's anvils: a row of cells (28 wide at most, 34 tall) from y 60 over x 4 to 106, then the dashed outline of the next; each
  *   cell has the smith (16x16) at its top, the anvil (16x16) 12 below it and the smith's plate under that.
  * - three props down the right edge, 16x16 each at x 110: the plans table (y 48), the chest, the bag (y 64), the crate, the floor (y 80).
@@ -45,13 +46,15 @@ export const ROOM_AT: Readonly<Record<Exclude<InteriorPiece, 'back-wall' | 'floo
 const BENCH_B: Pt = { x: 82, y: 36 };
 /** The flame's top-left over the furnace's mouth, and where the smiths' feet stand behind the benches. */
 const FLAME_AT: Pt = { x: 24, y: 38 };
-const BACK_FEET_Y = 46;
+const BACK_FEET_Y = 42;
 const BACK_CENTRES = [58, 74, 90, 106] as const;
 /** The anvils' row: its top, and the span of x it uses. */
 const ROW_Y = 60;
 const ROW_FROM = 4;
 const ROW_TO = 106;
 const PROPS_X = 110;
+/** The most the floor part may be pushed down in a scene taller than the room. */
+const MAX_DROP = 40;
 
 export interface Box {
   x: number;
@@ -95,6 +98,8 @@ export function interiorLayout(
 ): InteriorLayout {
   const ox = g.cx - ROOM.w / 2;
   const oy = 0;
+  // A scene taller than the room lets the floor grow: the anvils and the props stand lower, the wall stays at the top.
+  const drop = Math.max(0, Math.min(MAX_DROP, Math.floor((g.H - ROOM.h) / 2)));
   const at = (p: Pt): Pt => ({ x: ox + p.x, y: oy + p.y });
   const avail = ROW_TO - ROW_FROM;
   const step = Math.min(CELL_W, Math.max(PROP, Math.floor(avail / Math.max(1, slots))));
@@ -102,7 +107,7 @@ export function interiorLayout(
   const cells: Cell[] = Array.from({ length: slots }, (_, i) => {
     const x = x0 + i * step;
     const ax = x + Math.floor((step - PROP) / 2);
-    const y = oy + ROW_Y;
+    const y = oy + ROW_Y + drop;
     return { x, y, w: step, h: CELL_H, anvil: { x: ax, y: y + 12 }, smith: { x: ax, y } };
   });
   const furnace = at(ROOM_AT.furnace);
@@ -116,9 +121,9 @@ export function interiorLayout(
     benches: [at(ROOM_AT.workbench), at(BENCH_B)],
     backSpots: BACK_CENTRES.map((x) => ({ x: ox + x, y: oy + BACK_FEET_Y })),
     cells,
-    plans: at({ x: PROPS_X, y: 48 }),
-    chest: at({ x: PROPS_X, y: 64 }),
-    crate: at({ x: PROPS_X, y: 80 }),
+    plans: at({ x: PROPS_X, y: 48 + drop }),
+    chest: at({ x: PROPS_X, y: 64 + drop }),
+    crate: at({ x: PROPS_X, y: 80 + drop }),
   };
 }
 
