@@ -173,7 +173,7 @@ Each shipped set has its style (`workshop/styles/`), and its pack draws through 
 pnpm housing new-set <id> [--name "Quiet Verge"] [--theme "..."] [--from <style>] [--dry-run]
     [--element tide|none|...] [--tier 1|2] [--primary <material>|family:wood] [--accent ...]
     [--moments trip,scout,raid] [--places id,id] [--bosses id,id] [--no-checks]
-pnpm housing remove-set <id> [--dry-run]     undoes new-set; refuses the nine shipped ids (Cosy and the eight sets)
+pnpm housing remove-set <id> [--dry-run]     undoes new-set; refuses the shipped ids (`SHIPPED_SET_IDS`: Cosy, the first eight sets, and each finished new set)
 pnpm housing check                           the lock, the art catalogue and every set's tests in one go
 ```
 

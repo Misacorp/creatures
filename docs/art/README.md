@@ -264,7 +264,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 - **Status:** draft
 - **Requested:** 2026-11-11: player housing furniture, a set made in the workshop (pnpm housing new-set).
 - **Source:** `apps/activity/src/sprites/concepts/house-quiet-verge.ts` (draw it with `pnpm art house-quiet-verge`)
-- **Sheet of:** `16e0d3b4b901`
+- **Sheet of:** `1958ecc8c6b4`
 - Dusk-violet stone edged in pale rim light, arches with a warm star inside, chips of stone that float; window dark, lilac, star gold. Drawn from its style (apps/activity/src/sprites/workshop/styles/quiet-verge.ts); the pack is data/house/quiet-verge.ts.
 - Needs the housing content (piece, skin and set ids as drawn).
 

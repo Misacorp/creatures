@@ -218,6 +218,26 @@ describe('housing content: text', () => {
       expect(p.hint.length, p.id).toBeLessThanOrEqual(90);
     }
   });
+
+  it('leaves no TODO from `pnpm housing new-set` in the content or the compendium', () => {
+    const left = [
+      ...housing.sets.flatMap((s) => [
+        [s.id, s.theme],
+        [s.id, s.line],
+        [s.id, s.keepsake.name],
+        [s.id, s.keepsake.line],
+      ]),
+      ...housing.pieces.map((p) => [p.id, `${p.name} ${p.line} ${p.hint}`]),
+      ...housing.skins.map((s) => [s.id, `${s.name} ${s.hint ?? ''}`]),
+    ]
+      .filter(([, text]) => /TODO/.test(text ?? ''))
+      .map(([id]) => id);
+    expect(left).toEqual([]);
+    const draft = compendium()
+      .split('\n')
+      .filter((l) => /TODO|\| draft: /.test(l));
+    expect(draft).toEqual([]);
+  });
 });
 
 describe('housing content: the full house layout (housing.md 2.4)', () => {
