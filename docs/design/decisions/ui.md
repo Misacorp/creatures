@@ -4,6 +4,14 @@ Navigation and the frame, Home and the notice board, type scale, shared componen
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-12: The house's night indoors follows the living room's look: graded, not ramped
+
+ID: `2026-11-12-the-house-s-night-indoors-follows` · Status: current · Amends: `2026-11-11-the-house-is-lit-by-one`
+
+**Decision.** Indoors, the lighting pass no longer sends furniture, props and creatures through dark three-anchor ramps. Each material has a grade (`GRADES` in `house-light.ts`): furniture keeps most of its day colour (at most one step darker, a slight cool tint at night, warm at twilight); wallpaper and floor follow the living room's own wall and floor tile by lightness, with a hue pull towards the phase (capped, and a loud wallpaper is muted). A light lays a warm, dithered pool on wall and floor (`SURFACE_WEIGHT`) and lifts furniture back towards day. A window at twilight shows the stepped dusk gradient. Outdoor materials (roof, exterior, ground, earth, water) keep their ramps, so the postcard is unchanged. Day stays pixel-identical.
+
+**Reasoning.** The first pass turned sofas grey-mauve and washed walls pale at night, so the house did not look like the same game as the living room, which keeps furniture colourful and recolours only wall and floor. Fitting the living room's own palettes gave a mean error of about 20 RGB units on the Cosy wall and 8 on the floor.
+
 ## 2026-11-11: The postcard follows the phase, lights are data per piece, and one painter stamps every scene
 
 ID: `2026-11-11-the-postcard-follows-the-phase-lights` · Status: current
@@ -14,7 +22,7 @@ ID: `2026-11-11-the-postcard-follows-the-phase-lights` · Status: current
 
 ## 2026-11-11: The house is lit by one painter pass, from the living room's phase
 
-ID: `2026-11-11-the-house-is-lit-by-one` · Status: current
+ID: `2026-11-11-the-house-is-lit-by-one` · Status: current, amended by `2026-11-12-the-house-s-night-indoors-follows`
 
 **Decision.** The player's house follows the server's clock with no setting: the phase is the living room's (`useRoomPhase`), given to the house through one context (`house-phase.ts`). The sprites stay in day colours; the painter (`house-light.ts`, `house-paint.ts`) maps each colour through its material's ramp at twilight and night (a palette swap, hard edges) and lifts the pixels inside stepped, dithered light shapes back towards day. Material comes from a tag on the scene's placements (wall, floor, roof, exterior, ground, earth, creature, window) and, for furniture, from the colour's hue (wood, cloth, glass, metal, foliage, flame); art packs are untouched. Lights are found from data: a piece art's `light` flag, else its form (`lamp`, `hearth`), else a `glow`; plus a porch light at the door. Day is painted exactly as before (tested). The sky at night is the valley's own night strip and moon. `?phase=day|twilight|night` forces the phase in dev builds.
 

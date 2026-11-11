@@ -12,6 +12,8 @@
 import { hexRgb, stamp } from '../scene-paint';
 import { expandRows, type SpriteDef } from '../sprites/sprite-data';
 import {
+  duskWindowPixel,
+  isSkyColour,
   levelMap,
   pixelHash,
   shade,
@@ -68,6 +70,8 @@ interface Table {
   /** The same colours packed as little-endian RGBA words (opaque), by level then palette entry. */
   packed: Uint32Array[];
   sky: boolean[];
+  /** Sky entries that are a cloud (near white): the dusk lights them from below. */
+  cloud: boolean[];
   /** Flame-coloured entries (a window's drawn sun is one of them: see `sunMask`). */
   flame: boolean[];
 }
@@ -86,6 +90,7 @@ function tableOf(sprite: SpriteDef, material: Material, phase: NightPhase): Tabl
   const { colours } = pixelsOf(sprite);
   const windows = colours.map((c) => (material === 'window' ? windowPixel(c, phase) : null));
   const sky = windows.map((w) => w?.star === true);
+  const cloud = colours.map((c, i) => sky[i] === true && toneOf(c) !== 'glass' && isSkyColour(c));
   const levels = colours.map((c, i): Bytes[] => {
     const w = windows[i];
     if (w !== undefined && w !== null) return [w.colour, w.colour, w.colour, w.colour];
@@ -103,9 +108,32 @@ function tableOf(sprite: SpriteDef, material: Material, phase: NightPhase): Tabl
       return pack(c[0], c[1], c[2]);
     }),
   );
-  const table = { levels, packed, sky, flame };
+  const table = { levels, packed, sky, cloud, flame };
   byKey.set(key, table);
   return table;
+}
+
+const skyExtents = new WeakMap<SpriteDef, { top: number; bottom: number }>();
+
+/** The first and last rows of a window's sky pixels (the dusk's gradient runs between them). */
+function skyExtent(sprite: SpriteDef): { top: number; bottom: number } {
+  const hit = skyExtents.get(sprite);
+  if (hit !== undefined) return hit;
+  const px = pixelsOf(sprite);
+  const sky = px.colours.map((c) => windowPixel(c, 'night') !== null);
+  let top = px.height;
+  let bottom = 0;
+  for (let y = 0; y < px.height; y++) {
+    for (let x = 0; x < px.width; x++) {
+      const i = px.index[y * px.width + x] ?? 0;
+      if (i === 0 || sky[i - 1] !== true) continue;
+      top = Math.min(top, y);
+      bottom = Math.max(bottom, y);
+    }
+  }
+  const out = { top, bottom: Math.max(top + 1, bottom) };
+  skyExtents.set(sprite, out);
+  return out;
 }
 
 const sunMasks = new WeakMap<SpriteDef, Uint8Array>();
@@ -177,7 +205,8 @@ export function rasterize(
     const sun = p.mat === 'window' ? sunMask(p.sprite) : null;
     const moon = pack(...moonColour(phase));
     const star = pack(STAR[0], STAR[1], STAR[2]);
-    const { packed, sky } = table;
+    const { packed, sky, cloud } = table;
+    const dusk = p.mat === 'window' && phase === 'twilight' ? skyExtent(p.sprite) : null;
     const lit0 = packed[0];
     for (let y = Math.max(0, -p.y); y < h && p.y + y < height; y++) {
       const row = y * sprite.width;
@@ -187,7 +216,10 @@ export function rasterize(
         if (i === 0) continue;
         const at = base + x;
         if (sun !== null && sun[row + x] === 1) words[at] = moon;
-        else if (sky[i - 1] === true) {
+        else if (sky[i - 1] === true && dusk !== null) {
+          const t = (y - dusk.top) / (dusk.bottom - dusk.top);
+          words[at] = pack(...duskWindowPixel(t, p.x + x, p.y + y, cloud[i - 1] === true));
+        } else if (sky[i - 1] === true) {
           words[at] =
             phase === 'night' && pixelHash(p.x + x, p.y + y) % STAR_ONE_IN === 0
               ? star
