@@ -10,6 +10,37 @@ import {
 } from './forge-canvas';
 import { sceneGeometry } from './SceneFrame';
 
+describe('the Forge outside: tall scenes', () => {
+  it('never paints a sprite taller than 64 rows, whatever the scene height, and carries the sky to the top edge', () => {
+    for (const [w, h] of [
+      [390, 640],
+      [390, 1100],
+      [1100, 1400],
+      [1100, 300],
+    ] as const) {
+      const g = sceneGeometry(w, h, forgeScale(w, h));
+      const placed = outsideSceneDraw(2)(g);
+      for (const p of placed) expect(p.sprite.rows.length).toBeLessThanOrEqual(64);
+      const lay = outsideLayout(g);
+      // The sky strip stands at the same row everywhere; the rows above it are covered from row 0 without a gap.
+      const sky = placed.filter(
+        (p) => p.sprite.rows.length === 40 && p.sprite.rows[0]?.length === 128,
+      );
+      const stripY = Math.min(...sky.map((p) => p.y));
+      const above = placed
+        .filter((p) => p.y < stripY && p.sprite.rows[0]?.length === 128)
+        .sort((a, b) => a.y - b.y);
+      let next = 0;
+      for (const p of above.filter((a) => a.x === above[0]?.x)) {
+        expect(p.y).toBe(next);
+        next += p.sprite.rows.length;
+      }
+      expect(next).toBe(stripY);
+      expect(lay.art.y).toBeGreaterThanOrEqual(g.top);
+    }
+  });
+});
+
 describe('the Forge outside', () => {
   it('stands the building and the board inside the scene, at a phone and at a wide window', () => {
     for (const [w, h] of [

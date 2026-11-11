@@ -16,6 +16,8 @@ import { glowSprite, type MapName } from './valley-places';
 /** The `valley-sky` strip's size in its own pixels: it tiles sideways every `SKY_WIDTH`. */
 export const SKY_WIDTH = 128;
 export const SKY_ROWS = 40;
+/** The most rows of one sprite (`MAX_HEIGHT` of `sprite-data`): taller layers are painted in bands. */
+const BAND = 64;
 /** Scene pixels from the top of the place's art to the sky strip's bottom row (the grass): the hills end behind the place. */
 const SKY_BELOW_ART_TOP = 14;
 /** Scene pixels from the top of the scene's clear zone to the top of the place's art. */
@@ -71,10 +73,12 @@ export function skyTopRow(g: SceneGeometry, artTop: number = ART_TOP): number {
 export function skyBackdrop(g: SceneGeometry, artTop: number = ART_TOP): Placement[] {
   const strip = skySprite();
   const y = skyTopRow(g, artTop);
-  const above = skyTop(strip, Math.max(1, y));
   const out: Placement[] = [];
   for (const x of skyColumns(g.W, g.cx)) {
-    if (y > 0) out.push({ sprite: above, x, y: 0 });
+    // The carried-up rows go in bands of at most `BAND` rows (a sprite is at most 64 tall, a tall scene has more sky than that).
+    for (let top = 0; top < y; top += BAND) {
+      out.push({ sprite: skyTop(strip, Math.min(BAND, y - top)), x, y: top });
+    }
     out.push({ sprite: strip, x, y });
   }
   return out;
