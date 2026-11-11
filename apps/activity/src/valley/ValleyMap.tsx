@@ -175,7 +175,11 @@ export function ValleyMap({
   });
 
   return (
-    <div ref={wrapRef} class={`vy-valley${fit.pans ? ' pans' : ''}${fit.panY ? ' pans-y' : ''}`} tabIndex={-1}>
+    <div
+      ref={wrapRef}
+      class={`vy-valley${fit.pans ? ' pans' : ''}${fit.panY ? ' pans-y' : ''}`}
+      tabIndex={-1}
+    >
       <div
         class="vy-scroller"
         ref={(el) => {
@@ -259,7 +263,9 @@ export function ValleyMap({
               type="button"
               class={`vy-edge vy-edge-${a.side}${bubble === undefined ? '' : ' needs'}`}
               aria-label={`${placeSpoken(a.place, bubble)}. Off screen, to the ${a.side === 'left' ? 'west' : 'east'}`}
-              ref={cssVars({ '--ey': `${String(Y(tabY.get(a.place) ?? a.y) + fit.top - scroll.top)}px` })}
+              ref={cssVars({
+                '--ey': `${String(Y(tabY.get(a.place) ?? a.y) + fit.top - scroll.top)}px`,
+              })}
               onClick={() => {
                 goTo(a.place);
               }}
@@ -280,9 +286,9 @@ export function ValleyMap({
 }
 
 /** The scroller's offsets, kept in state for the edge chips. */
-function useScroll(
-  ref: { current: HTMLElement | null },
-): [{ left: number; top: number }, (v: { left: number; top: number }) => void] {
+function useScroll(ref: {
+  current: HTMLElement | null;
+}): [{ left: number; top: number }, (v: { left: number; top: number }) => void] {
   const [at, setAt] = useState({ left: 0, top: 0 });
   useEffect(() => {
     const el = ref.current;

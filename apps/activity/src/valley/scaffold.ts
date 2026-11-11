@@ -148,14 +148,7 @@ const SHOVEL = [
 /** A pail, 7 wide and 7 tall. */
 const BUCKET = ['kkkkkkk', 'kgcgggk', '.kgggk.', '.kgggk.', '.kgggk.', '.kgggk.', '..kkk..'];
 /** A mallet lying down, 10 wide and 6 tall. */
-const MALLET = [
-  'kkkk......',
-  'kqqk......',
-  'kqqkkkkkkk',
-  'kqqkwwwwwk',
-  'kqqkkkkkkk',
-  'kkkk......',
-];
+const MALLET = ['kkkk......', 'kqqk......', 'kqqkkkkkkk', 'kqqkwwwwwk', 'kqqkkkkkkk', 'kkkk......'];
 
 /** A stake driven into the ground: 3 wide, `h` tall, ink edges with a pale face and a darker cap; its foot is on row `base`. */
 function stake(grid: PixelGrid, x: number, base: number, h = 8): void {

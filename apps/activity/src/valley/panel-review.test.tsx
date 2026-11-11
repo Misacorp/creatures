@@ -180,7 +180,9 @@ describe('every scene scales by a whole number (row 17 check)', () => {
     for (const y of [20, 28, 8 + 6]) {
       const grass = y + 14;
       const trees = treesAround(100, y, art).filter(
-        (p) => p.sprite === WORLD_MAP_SPRITE_DATA.smallTree || p.sprite === WORLD_MAP_SPRITE_DATA.smallPine,
+        (p) =>
+          p.sprite === WORLD_MAP_SPRITE_DATA.smallTree ||
+          p.sprite === WORLD_MAP_SPRITE_DATA.smallPine,
       );
       expect(trees).toHaveLength(4);
       for (const t of trees) expect(t.y + t.sprite.rows.length).toBeGreaterThanOrEqual(grass);

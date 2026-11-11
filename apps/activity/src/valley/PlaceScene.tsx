@@ -326,9 +326,7 @@ export function PlaceScene({ cast, onAct }: { cast: Cast; onAct: () => void }) {
                   : [{ sprite, x: box.x + teacherTopLeft().x, y: box.y + teacherTopLeft().y }];
               })()),
           // The scaffolding rises in front of the place as its project fills (V-COM-6).
-          ...(steps === 0
-            ? []
-            : [{ sprite: scaffoldFor(art, steps), x: box.x, y: box.y }]),
+          ...(steps === 0 ? [] : [{ sprite: scaffoldFor(art, steps), x: box.x, y: box.y }]),
           ...(bossId === null
             ? []
             : [
