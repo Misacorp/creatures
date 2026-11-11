@@ -510,3 +510,11 @@ Misa added: nameplates sit under the creature on an ink background, level first 
 **Not touched:** `ForgeAnvils.tsx`, `OrderEditor.tsx`, `forge-view.ts` (another agent is rebuilding the Forge page).
 
 **Pick up here:** the Forge rebuild should keep the frame's clip and its own scroll inside `.vy-page`.
+
+## 2026-11-11: the Forge as a canvas, the rule for every place (implementer, worktree of `ccr-93a1de17-yutb1a`)
+
+**Misa's ask:** "no scrolling on the page itself ... click on stuff in the image, like an anvil ... a dashed outline of an anvil to buy ... drawers, wizard flow, a separate page on mobile". Prototyped for real on the Forge (behind `VALLEY_SYSTEMS`), decision and `ux-patterns.md` rule "A place is a canvas" (right drawer = the one thing clicked, left = collections; 60 rem; phone = full page).
+
+**Done.** `valley/PlaceCanvas` (shell, `CanvasTarget`, `PanelBody`), `ForgeCanvas` (anvils with smiths and a state bubble, the dashed outline of the next with its price, the plans table, chest (bag) and crate (floor) as props, the forge itself for the fire and project board, shelf and tray under the scene), `ForgeAnvilPanel` (smith, kit, orders, floor as wizard steps), `ForgeBuyPanel`, and `OrderEditor` rebuilt as a wizard (`what`, `order`, `shard`) with a `shell`. The Workshop's forge mode now returns the canvas; the classic Workshop is unchanged. `hasScene('forge')` is false so the frame draws no band above it. The old `ForgeAnvils` page component is gone (its tests moved to `ForgeCanvas.test`, `OrderEditor.test`).
+
+**Next:** the Expedition (Signpost) screen on the same rule, using the expedition location map for destination picking (Misa's ask).

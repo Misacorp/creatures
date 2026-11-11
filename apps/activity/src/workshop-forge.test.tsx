@@ -88,23 +88,26 @@ function forgeMode(anvils: ReturnType<typeof sampleAnvil>[], sent: unknown[] = [
 }
 
 describe('the Workshop with the Forge on', () => {
-  it('shows the anvils instead of the job slots and the supply crafts, and blueprints are ordered', () => {
+  it('is the Forge canvas: anvils in the scene, no job slots or supply crafts, the bag and plans behind the chest and the table', () => {
     const p = draw(forgeMode([sampleAnvil('a1', smith.id, [sampleOrder('o1', blueprint, 2)])]));
     const text = visibleText(p.root);
-    expect(text).toMatch(/Anvil 1/);
     expect(text).not.toMatch(/Craft supplies/);
-    expect(byName(p.root, 'button', /^Order$/).length).toBeGreaterThan(0);
-    expect(byName(p.root, 'button', /^Craft$/).length).toBe(0);
-    expect(text).toMatch(/Filter and sort/);
+    expect(byName(p.root, 'button', /^Anvil 1/).length).toBe(1);
+    // The bag and the plans are not on the page: they open from the scene.
+    expect(byName(p.root, 'button', /^Order$/).length).toBe(0);
+    expect(text).not.toMatch(/Filter and sort/);
+    p.click(byName(p.root, 'button', /^The bag/)[0] as never);
+    expect(visibleText(p.root)).toMatch(/Filter and sort/);
   });
 
-  it('a blueprint’s Order opens the order editor with that blueprint picked', () => {
+  it('a blueprint’s Order (from the plans) opens the order wizard with that blueprint picked', () => {
     const sent: unknown[] = [];
     const p = draw(forgeMode([sampleAnvil('a1', smith.id, [])], sent), sent);
+    p.click(byName(p.root, 'button', /^The plans/)[0] as never);
     const order = byName(p.root, 'button', /^Order$/)[0];
     if (order === undefined) throw new Error('no order button');
     p.click(order);
-    expect(visibleText(p.root)).toMatch(/Add an order/);
+    expect(visibleText(p.root)).toMatch(/The order/);
     p.click(byName(p.root, 'button', /Add to the queue/)[0] ?? order);
     expect(sent).toEqual([
       expect.objectContaining({ action: 'add', seatId: 'a1', blueprintId: blueprint, count: 1 }),
@@ -113,6 +116,7 @@ describe('the Workshop with the Forge on', () => {
 
   it('with no anvil yet a blueprint cannot be ordered, and says so', () => {
     const p = draw(forgeMode([]));
+    p.click(byName(p.root, 'button', /^The plans/)[0] as never);
     const order = byName(p.root, 'button', /^Order$/)[0];
     expect(order?.getAttribute('disabled')).not.toBeNull();
     expect(visibleText(p.root)).toMatch(/Buy an anvil to order pieces/);

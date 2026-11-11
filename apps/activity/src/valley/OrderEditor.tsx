@@ -188,7 +188,13 @@ export function OrderEditor({
           ]
         : [
             { id: 'what', title: 'What to make', backLabel: 'to the Forge' },
-            { id: 'order', title: 'The order', backLabel: 'to what to make', back: 'what', final: true },
+            {
+              id: 'order',
+              title: 'The order',
+              backLabel: 'to what to make',
+              back: 'what',
+              final: true,
+            },
             { id: 'shard', title: 'Which shards', backLabel: 'to the order', back: 'order' },
           ];
   const wizard = useWizard(steps, { onExit: onClose });

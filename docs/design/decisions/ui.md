@@ -4,6 +4,14 @@ Navigation and the frame, Home and the notice board, type scale, shared componen
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-11: [Misa] A place is a canvas: the scene never scrolls, every action is a click in it, content opens in a left or right drawer holding a wizard
+
+ID: `2026-11-11-a-place-is-a-canvas-the` · Status: current
+
+**Decision.** Place pages are a canvas: the scene fills the view and never scrolls, every interaction is a click on something in it (a real, named button over the art), empty or buyable slots are dashed outlines with their price as icons, and content opens beside the canvas in a drawer that holds a wizard (`ui/Wizard`, one small step per page). **Right drawer: the one thing that was clicked** (an anvil, a seat: its wizard, its buy step, its order). **Left drawer: the place's collections and overviews that belong to no one spot** (the bag, the floor, the plans, the project board, a log). From 60 rem (`WIDE_QUERY`) the drawers sit beside the scene (24 rem each); below it there are no drawers: an open panel is its own full page (same wizard, other shell) with the scene hidden behind it, and the right panel wins when both are open. No drawer on a drawer; a single-choice picker inside a step may use a bottom sheet. Focus moves into the panel and, for a keyboard user, back to the target on close. Built first for the Forge (`ForgeCanvas`, `PlaceCanvas`, `CanvasTarget`, the anvil wizard and the order wizard); the Signpost is next, using the expedition location map for destinations; every other place follows.
+
+**Reasoning.** Misa (2026-11-11) disliked art that opens up over a page that scrolls into forms: the interactions should start in the image, with a ban on scrolling and wizard-type drawers. The side rule keeps the thing you act on beside its gold button on the right, and lets a collection stay open on the left while an anvil is worked (a click in a left list may open a right wizard, never the reverse), so the same rule works in every view. A phone cannot hold drawers over drawers, so the same wizard is a page there. The old page's parts were kept reachable: the shelf and tray stay in view under the scene, the floor, bag, plans and board are the left drawer, the anvil's smith, kit, orders and floor numbers its wizard. Built behind `VALLEY_SYSTEMS` only; the classic Workshop is unchanged.
+
 ## 2026-11-11: A valley frame clips instead of scrolling: the HUD's way back never slides off
 
 ID: `2026-11-11-a-valley-frame-clips-instead-of` · Status: current

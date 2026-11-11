@@ -27,9 +27,12 @@ export function ForgeBuyPanel({
   /** Back from the step, and after the anvil is bought. */
   onClose: () => void;
 }) {
-  const wizard = useWizard<'buy'>([{ id: 'buy', title: 'A new anvil', backLabel: 'to the forge' }], {
-    onExit: onClose,
-  });
+  const wizard = useWizard<'buy'>(
+    [{ id: 'buy', title: 'A new anvil', backLabel: 'to the forge' }],
+    {
+      onExit: onClose,
+    },
+  );
   return (
     <PanelBody>
       <WizardView wizard={wizard}>

@@ -1051,9 +1051,15 @@ const leftPanel = page.locator('.pc-side.pc-left, .pc-page[data-side="left"]');
 /** A canvas never scrolls: the page, the frame and the document all fit their box (a drawer's own body may scroll). */
 const expectNoScroll = async () => {
   const over = await page.evaluate(() =>
-    [document.scrollingElement, ...document.querySelectorAll('main.card, .vy-page, .pc-root, .pc-view')]
+    [
+      document.scrollingElement,
+      ...document.querySelectorAll('main.card, .vy-page, .pc-root, .pc-view'),
+    ]
       .filter((el) => el !== null && el.scrollHeight > el.clientHeight + 1)
-      .map((el) => `${el.tagName}.${String(el.className)} ${String(el.scrollHeight)}>${String(el.clientHeight)}`),
+      .map(
+        (el) =>
+          `${el.tagName}.${String(el.className)} ${String(el.scrollHeight)}>${String(el.clientHeight)}`,
+      ),
   );
   if (over.length > 0) throw new Error(`the canvas scrolls: ${over.join(' | ')}`);
 };
@@ -1875,9 +1881,22 @@ try {
       if (process.env.DEBUG_CANVAS)
         console.log(
           await page.evaluate(() =>
-            ['.vy-body', '.vy-page', '.fc-root', '.pc-root', '.pc-view', '.pc-stage', '.pc-main', '.vy-interior', '.vy-scene-box', '.pc-below'].map((q) => {
+            [
+              '.vy-body',
+              '.vy-page',
+              '.fc-root',
+              '.pc-root',
+              '.pc-view',
+              '.pc-stage',
+              '.pc-main',
+              '.vy-interior',
+              '.vy-scene-box',
+              '.pc-below',
+            ].map((q) => {
               const el = document.querySelector(q);
-              return el === null ? `${q}: none` : `${q}: ${String(el.clientWidth)}x${String(el.clientHeight)} ${getComputedStyle(el).display}`;
+              return el === null
+                ? `${q}: none`
+                : `${q}: ${String(el.clientWidth)}x${String(el.clientHeight)} ${getComputedStyle(el).display}`;
             }),
           ),
         );
@@ -1890,7 +1909,9 @@ try {
       await waitFor(drawer.getByRole('heading', { name: 'A new anvil' }));
       await shot('forge-step-buy');
       await drawer.getByRole('button', { name: /^Buy the anvil/ }).click();
-      await drawer.getByRole('heading', { name: 'A new anvil' }).waitFor({ state: 'detached', timeout: 10000 });
+      await drawer
+        .getByRole('heading', { name: 'A new anvil' })
+        .waitFor({ state: 'detached', timeout: 10000 });
       await waitFor(sceneTarget('Anvil 1: nobody posted'));
       if (!forgeCalls.some(([k, b]) => k === 'anvil/buy' && typeof b.idempotencyKey === 'string'))
         throw new Error('the anvil was bought without an idempotency key');
@@ -1957,9 +1978,13 @@ try {
       await page.keyboard.press('Enter');
       await waitFor(rightPanel);
       await page
-        .waitForFunction(() => document.activeElement?.closest('.pc-side, .pc-page') != null, null, {
-          timeout: 3000,
-        })
+        .waitForFunction(
+          () => document.activeElement?.closest('.pc-side, .pc-page') != null,
+          null,
+          {
+            timeout: 3000,
+          },
+        )
         .catch(() => {
           throw new Error('the focus did not move into the anvil drawer');
         });
@@ -1973,7 +1998,8 @@ try {
         )
         .catch(async () => {
           const now = await page.evaluate(
-            () => document.activeElement?.getAttribute('aria-label') ?? document.activeElement?.tagName,
+            () =>
+              document.activeElement?.getAttribute('aria-label') ?? document.activeElement?.tagName,
           );
           throw new Error(`the focus went to "${String(now)}", not back to the anvil`);
         });
@@ -2009,7 +2035,10 @@ try {
       await expectTopmost(tools, 'the bag tools header');
       await shot('forge-step-bag');
       await expectNoScroll();
-      await drawer.getByRole('button', { name: /Close|^Back/ }).first().click();
+      await drawer
+        .getByRole('button', { name: /Close|^Back/ })
+        .first()
+        .click();
       await drawer.waitFor({ state: 'detached', timeout: 10000 });
       await expectTopmost(hudBack(), 'the way back from the Forge');
       await backToValley();
@@ -2097,7 +2126,10 @@ try {
       )
         throw new Error(`the "most held" order was ${JSON.stringify(most)}`);
       // Close the plans, open the anvil: the order is in its queue.
-      await leftPanel.getByRole('button', { name: /Close|^Back/ }).first().click();
+      await leftPanel
+        .getByRole('button', { name: /Close|^Back/ })
+        .first()
+        .click();
       await leftPanel.waitFor({ state: 'detached', timeout: 10000 });
       await sceneTarget('Anvil 1: ').click();
       await waitFor(drawer.locator('button.fg-order'));
@@ -2132,7 +2164,10 @@ try {
         throw new Error(`the named order was ${JSON.stringify(named)}`);
       await shot('patch-queue');
       // The finished piece in the bag is an Ember hat like any other: its element badge and tint are the element's.
-      await drawer.getByRole('button', { name: /Close|^Back/ }).first().click();
+      await drawer
+        .getByRole('button', { name: /Close|^Back/ })
+        .first()
+        .click();
       await drawer.waitFor({ state: 'detached', timeout: 10000 });
       await sceneTarget('The bag').click();
       const piece = page.getByRole('option', { name: /Coal-Warm Cap/ }).first();
@@ -2347,7 +2382,11 @@ try {
         await waitFor(heading('Forge'));
         // The anvil in the scene says it is paused; its page (the drawer) says why.
         await waitFor(sceneTarget('Anvil 1: '));
-        if (!/paused for the raid/.test((await sceneTarget('Anvil 1: ').getAttribute('aria-label')) ?? ''))
+        if (
+          !/paused for the raid/.test(
+            (await sceneTarget('Anvil 1: ').getAttribute('aria-label')) ?? '',
+          )
+        )
           throw new Error('the anvil in the scene does not say it is paused');
         await sceneTarget('Anvil 1: ').click();
         await waitFor(drawer.getByText('In the raid until Sunday'));

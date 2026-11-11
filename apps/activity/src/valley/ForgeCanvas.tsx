@@ -192,7 +192,8 @@ export function ForgeCanvas(props: ForgeCanvasProps) {
   const slots = owned + (nextPrice === null ? 0 : 1);
   const commonsView = commonsOf(visit);
   const forgePlace = placeOf(commonsView, 'forge');
-  const scaffold = forgePlace?.state === 'open' ? scaffoldSteps(percentFilled(forgePlace) / 100) : 0;
+  const scaffold =
+    forgePlace?.state === 'open' ? scaffoldSteps(percentFilled(forgePlace) / 100) : 0;
   const draw = useMemo(() => forgeSceneDraw(owned, scaffold, slots), [owned, scaffold, slots]);
   const marketBuilt = visit.market?.open === true;
   const helperId = commonsView?.communal.find((c) => c.place === 'forge')?.creatureId ?? null;
@@ -271,9 +272,7 @@ export function ForgeCanvas(props: ForgeCanvasProps) {
       const anvil = visit.anvils.find((a) => a.id === anvilId);
       const back = right.back;
       const leave = (): void => {
-        setRight(
-          back === null ? null : { kind: 'anvil', anvilId: back, start: 'hub', from },
-        );
+        setRight(back === null ? null : { kind: 'anvil', anvilId: back, start: 'hub', from });
       };
       rightPanel = {
         title: anvil === undefined ? 'Order' : anvilName(visit, anvil),
@@ -315,8 +314,7 @@ export function ForgeCanvas(props: ForgeCanvasProps) {
           <PanelBody>
             {props.plans((baseId, opener) => {
               const room =
-                visit.anvils.find((a) => a.orders.length < visit.forge.queueMax) ??
-                visit.anvils[0];
+                visit.anvils.find((a) => a.orders.length < visit.forge.queueMax) ?? visit.anvils[0];
               if (room === undefined) return;
               setRight({
                 kind: 'order',
@@ -415,7 +413,9 @@ export function ForgeCanvas(props: ForgeCanvasProps) {
       {(measured) => {
         // A scene not measured yet (no size) is laid out as a phone's, so the targets are there from the first draw.
         const g =
-          measured.W > 0 && measured.H > 0 ? measured : sceneGeometry(390, 640, forgeScale(390, 640));
+          measured.W > 0 && measured.H > 0
+            ? measured
+            : sceneGeometry(390, 640, forgeScale(390, 640));
         const lay = yardLayout(g, slots);
         const plate = (x: number, y: number, text: string): ComponentChildren => (
           <At x={g.X(x)} y={g.Y(y)} class="vy-feet-plate">

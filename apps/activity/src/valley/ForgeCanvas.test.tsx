@@ -34,8 +34,13 @@ beforeEach(() => {
   );
 });
 afterEach(() => {
-  vi.unstubAllGlobals();
+  // The scene listens for Escape on the document and lets go of it on unmount; the fake DOM has none.
+  vi.stubGlobal('document', {
+    addEventListener: () => undefined,
+    removeEventListener: () => undefined,
+  });
   page?.unmount();
+  vi.unstubAllGlobals();
   page = null;
 });
 
@@ -120,14 +125,11 @@ const target = (p: Page, name: RegExp): FakeElement => {
 
 describe('the Forge canvas: the scene', () => {
   it('has a button for each anvil, one dashed outline for the next, the forge and the three props, all named', () => {
-    const visit = withAnvils(plain, [
-      sampleAnvil('a1', a.id, [sampleOrder('o1', BP, 3)]),
-      sampleAnvil('a2', null, []),
-    ]);
+    const visit = withAnvils(plain, [sampleAnvil('a1', a.id, [sampleOrder('o1', BP, 3)])]);
     const p = draw(visit);
     const names = targets(p).map((el) => el.getAttribute('aria-label') ?? '');
     expect(names.every((n) => n !== '')).toBe(true);
-    expect(names.filter((n) => /^Anvil \d/.test(n))).toHaveLength(2);
+    expect(names.filter((n) => /^Anvil \d/.test(n))).toHaveLength(1);
     expect(names.filter((n) => /^A new anvil/.test(n))).toHaveLength(1);
     expect(names.some((n) => /^The plans/.test(n))).toBe(true);
     expect(names.some((n) => /^The bag/.test(n))).toBe(true);
@@ -167,7 +169,7 @@ describe('the Forge canvas: the scene', () => {
   it('keeps the shelf and the creature tray under the scene, in view', () => {
     const p = draw(withAnvils(plain, [sampleAnvil('a1', a.id, [])]));
     expect(byClass(p.root, 'fc-shelf')).toHaveLength(1);
-    expect(byName(p.root, 'button', /Lv/).length).toBeGreaterThan(0);
+    expect(byClass(p.root, 'vy-tray').length).toBeGreaterThan(0);
   });
 });
 
@@ -261,15 +263,17 @@ describe('the Forge canvas: the right drawer is for the one thing clicked', () =
     const visit = withAnvils(plain, [sampleAnvil('a1', a.id, [sampleOrder('o1', BP, 3)])]);
     const p = draw(visit);
     p.click(target(p, /^Anvil 1/));
-    p.click(byName(p.root, 'button', /Kelp Cap, 0 \/ 3/)[0] as FakeElement);
+    p.click(byName(p.root, 'button', /^Kelp Cap, 0 \/ 3/)[0] as FakeElement);
     expect(visibleText(p.root)).toMatch(/Change the order/);
+  });
 
+  it('an anvil with a full queue has no "Add an order" and says so', () => {
     const orders = [1, 2, 3].map((n) => sampleOrder(`o${String(n)}`, BP, n));
     const full = draw(withAnvils(plain, [sampleAnvil('a1', a.id, orders)]));
-    p.unmount();
-    page = full;
     full.click(target(full, /^Anvil 1/));
-    expect(byName(full.root, 'button', /^Add an order/)[0]?.getAttribute('disabled')).not.toBeNull();
+    expect(
+      byName(full.root, 'button', /^Add an order/)[0]?.getAttribute('disabled'),
+    ).not.toBeNull();
     expect(visibleText(full.root)).toMatch(/queue is full/);
   });
 
@@ -325,9 +329,14 @@ describe('the Forge canvas: the left drawer is for the collections', () => {
     p.click(target(p, /^The bag/));
     expect(visibleText(p.root)).toMatch(/The bag's gear/);
     expect(byClass(p.root, 'pc-page')[0]?.getAttribute('data-side')).toBe('left');
-    p.unmount();
+  });
+
+  it('the crate opens every anvil’s floor, and a tap leads to that anvil’s numbers', () => {
+    const visit = withAnvils(plain, [
+      sampleAnvil('a1', a.id, [sampleOrder('o1', BP, 3)]),
+      sampleAnvil('a2', b.id, []),
+    ]);
     const q = draw(visit);
-    page = q;
     q.click(target(q, /^The floor/));
     const rows = byName(q.root, 'button', /Show the floor and what this anvil brings/);
     expect(rows).toHaveLength(2);

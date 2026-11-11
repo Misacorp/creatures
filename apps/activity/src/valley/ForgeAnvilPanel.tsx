@@ -321,9 +321,7 @@ export function ForgeAnvilPanel({
           <WizardFooter
             label="Add an order"
             blocked={
-              room
-                ? null
-                : `This anvil's queue is full (${String(visit.forge.queueMax)} orders).`
+              room ? null : `This anvil's queue is full (${String(visit.forge.queueMax)} orders).`
             }
             busy={busy}
             onFinish={() => {

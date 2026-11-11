@@ -34,7 +34,7 @@ export interface Opener {
 
 /** Records an opener at the moment of its click or key press, while it still has the focus. */
 export function openerOf(el: HTMLElement): Opener {
-  return { el, byKeyboard: keyboardHasFocus() };
+  return { el, byKeyboard: typeof document !== 'undefined' && keyboardHasFocus() };
 }
 
 /**
@@ -92,7 +92,12 @@ function usePanelFocus(panel: CanvasPanel) {
     return () => {
       const opener = latest.current.returnFocusTo;
       const back = opener?.el ?? before;
-      if ((opener?.byKeyboard ?? byKeyboard) && back !== null && back !== undefined && back.isConnected) {
+      if (
+        (opener?.byKeyboard ?? byKeyboard) &&
+        back !== null &&
+        back !== undefined &&
+        back.isConnected
+      ) {
         back.focus({ preventScroll: true });
       }
     };
@@ -124,12 +129,7 @@ function Drawer({ panel, side }: { panel: CanvasPanel; side: CanvasSide }) {
       data-side={side}
       onKeyDown={closeOnEscape(panel)}
     >
-      <SidePanel
-        title={panel.title}
-        titleId={titleId}
-        onClose={panel.onClose}
-        class="pc-panel"
-      >
+      <SidePanel title={panel.title} titleId={titleId} onClose={panel.onClose} class="pc-panel">
         {panel.children}
       </SidePanel>
     </div>
