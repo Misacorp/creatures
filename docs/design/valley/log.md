@@ -495,3 +495,18 @@ Misa added: nameplates sit under the creature on an ink background, level first 
 **Lab Acorns out, day 28** (lab median before → after; the live column is the median of five local months, not changed by this): daily 956 → 842 (live 744), active 1287 → 1174 (784), every-other-day 928 → 762 (697), weekend-off 867 → 778 (729), weekly 514 → 452 (413), returner 966 → 844 (744). Compare agreements per profile at day 28: weekly agrees in five of five months, every-other-day in four, weekend-off in three, returner in two, daily in one, active in none (the bots drive no rerolls, tempering or idol, which the lab's players do pay for; not measured separately).
 
 **Report targets** (regenerated): none fails except what is below. T-2a went from FAIL (112%) to PASS (102%); T-1, T-3, T-8 moved by a point or a level; T-4 weekly shard loss 6 to 13% (info); T-9 2 → 3 creatures waiting for Essence (limit 3, passes at the limit). The tempering section now lists T-4 failing with tempering on (0.27; the switch is off by default). The test "empties the late scrap pile of a daily player" now reads 0.601 of the pile without tempering against its bound of 0.6 (before: 0.476): with more Acorns left, other sinks drain the pile without tempering, too. Left red on purpose, not loosened: it needs a decision.
+
+## 2026-11-11: playtest feedback, the frame, the map and the scenes (implementer, worktree of `ccr-93a1de17-yutb1a`)
+
+**Misa's six asks, all done** (decisions of the same date, topics `valley` and `ui`):
+
+1. **Flat places** (hearth in both looks, Paddock, Signpost road) are built on the ground: stakes, a rope line and chalk first, then planks, a spade, a sawhorse, a pail, a mallet as the project fills. Buildings keep the poles. One set, `FLAT_PLACES` in `valley/scaffold.ts`; drawn in code, no art-studio sprite.
+2. **Scene trees** stand on the grass line or in front of it, in every scene and band (`treesAround`, one line of the grass).
+3. **"+N more"** of the Bonfire stays above the pinned action: the seats leave room for it when it shows, and its top is clamped (`moreSpotWithin`).
+4. **Map drag.** The map only scrolled sideways, and only when the window was narrower than the places; a laptop shorter than the valley had no way to see the south. It now also scrolls up and down (`Fit.panY`, `startScrollY`); the mouse drag, wheel and trackpad use the same scroller; a drag still never opens a place. A window that shows every place across crops the grass evenly and is not slid sideways (the scroller resets a stray sideways scroll). Edge chips follow the scroll and stay under the floating purse.
+5. **The map is the whole window** under the tray: the HUD floats (`Hud`'s `float`: purse and cog top right, title unseen but still the `h1`). Place pages and full-screen scenes keep the bar (their back and title live there).
+6. **No way back from the Forge.** Cause: `main.card` was `overflow: hidden`; scrolling a Forge card into view scrolled the whole card 22 px, which slid the HUD with its back button off the top and nothing could scroll it back. Now `overflow: clip`. The e2e scrolls every place's page to its end and checks the way back is topmost, and the Forge scenario with the valley's systems goes back at its end. Other places had the same exposure; all are covered by the loop.
+
+**Not touched:** `ForgeAnvils.tsx`, `OrderEditor.tsx`, `forge-view.ts` (another agent is rebuilding the Forge page).
+
+**Pick up here:** the Forge rebuild should keep the frame's clip and its own scroll inside `.vy-page`.

@@ -4,6 +4,30 @@ The valley and peaceful systems overhaul planned in docs/design/valley/: job pos
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-11: Scene trees stand on the grass, and the Bonfire's +N more stays above the pinned action
+
+ID: `2026-11-11-scene-trees-stand-on-the-grass` · Status: current
+
+**Decision.** In every place scene (full screen and band) the trees' bases stand on the grass line, where the hills end, or in front of it; none sits on the hills band. The Bonfire's "+N more" button is kept above the pinned action: when it shows, the seats leave room for it (one more creature may go into "+N more"), and its top is never lower than it fits above the action.
+
+**Reasoning.** The trees were placed from the art's top and ended above the grass line, so they floated; the button was placed under the front seat's plate and fell behind the yellow action on a laptop. Both now follow from one line each (the grass line, the room above the action), so every place and width gets the same fix.
+
+## 2026-11-11: A flat place is built on the ground (stakes, rope, planks, tools), a tall one in poles **[Misa]**
+
+ID: `2026-11-11-a-flat-place-is-built-on` · Status: current
+
+**Decision.** A place that lies flat on the ground (the hearth in both its looks, the Paddock, the Signpost's road) is not scaffolded in poles while its project fills. It gets ground-level work round its outline: front stakes and a rope line first, chalk marks, the back stakes and the rope round the outline, then a plank stack, a spade, a sawhorse, a pail, a mallet, a taller stack and the middle stakes as it nears done. Buildings (Forge, Market, School, the rest) keep the tall scaffold. Which places are flat is one set, `FLAT_PLACES` in `valley/scaffold.ts`.
+
+**Reasoning.** Tall poles over a fire or a field read as a mistake (Misa's playtest of the hearth at 98 percent). The new look is drawn in code the same way as the poles, in the same sprite size, so progress still shows by more appearing, and no art-studio sprite was needed.
+
+## 2026-11-11: The valley map takes the whole window: the HUD floats over it, and a short window scrolls the map up and down **[Misa]**
+
+ID: `2026-11-11-the-valley-map-takes-the-whole` · Status: current
+
+**Decision.** The valley map fills the whole window under the creature tray. The HUD bar gives up its row on the map: the purse and the cog float in the top-right corner (the Places flag is in the other), the title stays the page's `h1` but unseen. Place pages and the full-screen scenes keep the bar (it carries their way back and title). A window shorter than the valley (a laptop, a phone) scrolls the map up and down as well as sideways: a finger swipes, the wheel or trackpad scrolls, a mouse drags; a drag never opens a place. A window that shows every place across still crops the grass evenly and does not slide sideways.
+
+**Reasoning.** Misa asked for the map to be almost the whole screen and could not drag it with a mouse on a laptop. The map was clipped: only a phone-width window scrolled, and only sideways, so a laptop shorter than the valley lost the south of the map with no way to reach it. The floating bar gives the map the 44 px it took. Scene pages keep the bar because the back button and the title live there and they scroll under it; floating it there would cover the sky art and the pinned buttons for no gain.
+
 ## 2026-11-09: The visitor's weekly blueprint may be any existing piece [Misa]
 
 ID: `2026-11-09-the-visitor-s-weekly-blueprint-may` · Status: current

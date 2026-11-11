@@ -469,6 +469,7 @@ Superseded: 1 entry (see the topic file).
 
 [ui.md](ui.md): Navigation and the frame, Home and the notice board, type scale, shared components, look and feel rules that apply across screens.
 
+- 2026-11-11 A valley frame clips instead of scrolling: the HUD's way back never slides off
 - 2026-11-06 The School's page and a creature's trial reuse the seat cards, the creature list and the rule card
 - 2026-11-06 The visitor's page reuses the Workshop's grid, card and drawer
 - 2026-11-06 Costs show the resource's icon and a number, never its name \[Misa\]
@@ -549,6 +550,9 @@ Superseded: 1 entry (see the topic file).
 
 [valley.md](valley.md): The valley and peaceful systems overhaul planned in docs/design/valley/: job posts, the bonfire, the commons, the Forge loop, gear, trials, the School, the visitor, the economy lab, and Misa's question rounds.
 
+- 2026-11-11 Scene trees stand on the grass, and the Bonfire's +N more stays above the pinned action
+- 2026-11-11 A flat place is built on the ground (stakes, rope, planks, tools), a tall one in poles \[Misa\]
+- 2026-11-11 The valley map takes the whole window: the HUD floats over it, and a short window scrolls the map up and down \[Misa\]
 - 2026-11-09 The visitor's weekly blueprint may be any existing piece \[Misa\]
 - 2026-11-09 A creature's born talent is free \[Misa\]
 - 2026-11-07 Step 10c: the month compares against the lab's mixed8-market, the Market the server builds
