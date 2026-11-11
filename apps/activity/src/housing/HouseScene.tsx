@@ -16,7 +16,9 @@ import { useElementWidth } from '../hooks';
 import { PanHint } from '../ui/PanHint';
 import { useDragScroll } from '../ui/use-drag-scroll';
 import { keepsakeArt } from './house-art';
+import { useHousePhase } from './house-phase';
 import { paintPlacements } from './house-paint';
+import type { Lighting } from './house-light';
 import { HousePostcard } from './HousePostcard';
 import {
   composeHouse,
@@ -54,16 +56,19 @@ export function SceneLayer({
   width,
   height,
   layer,
+  lighting,
 }: {
   placements: readonly Placement[];
   width: number;
   height: number;
   layer: 'back' | 'front';
+  /** The scene's phase and lights (`model.lighting`); absent: day. */
+  lighting?: Lighting;
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
-    paintPlacements(ref.current?.getContext('2d') ?? null, placements, width, height);
-  }, [placements, width, height]);
+    paintPlacements(ref.current?.getContext('2d') ?? null, placements, width, height, lighting);
+  }, [placements, width, height, lighting]);
   return (
     <canvas
       ref={ref}
@@ -124,6 +129,7 @@ export function HouseScene({
   const rootRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<HTMLDivElement>(null);
   const boxWidth = useElementWidth(rootRef, FALLBACK_WIDTH);
+  const phase = useHousePhase();
   // How big the house is by itself: the scale is the largest that shows all of it, if any does.
   const natural = useMemo(
     () => composeHouse(house, { content: housing, creatures: 'skip', drawing: HOUSE_DRAWING }),
@@ -147,8 +153,9 @@ export function HouseScene({
         creatures: 'draw',
         drawing: HOUSE_DRAWING,
         mailWaiting,
+        phase,
       }),
-    [house, boxWidth, scale, mailWaiting],
+    [house, boxWidth, scale, mailWaiting, phase],
   );
   useDragScroll(viewRef);
   // Start where the whole house is: all of it in view when it fits, else centred on the building with the grass line near the
@@ -212,12 +219,14 @@ export function HouseScene({
             width={model.width}
             height={model.height}
             layer="back"
+            lighting={model.lighting}
           />
           <SceneLayer
             placements={model.front}
             width={model.width}
             height={model.height}
             layer="front"
+            lighting={model.lighting}
           />
           {model.rooms.map((room) => (
             <button

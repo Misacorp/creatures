@@ -13,6 +13,7 @@
  */
 import {
   houseGrid,
+  type RoomPhase,
   type DisplayView,
   type GridRoom,
   type HousemateView,
@@ -29,6 +30,16 @@ import { creatureSpriteOrFallback } from '../sprites/creature-sprites';
 import { expandRows, spriteSize, swapPalette, type SpriteDef } from '../sprites/sprite-data';
 import { skySprite } from '../valley/place-scene';
 import { displayArt, pieceArt, shellArt, skinArt, type SkinArt } from './house-art';
+import {
+  DAY_LIGHTING,
+  lightKindOf,
+  moonSprite,
+  skyForPhase,
+  type Lighting,
+  type LightKind,
+  type Material,
+  type SceneLight,
+} from './house-light';
 
 export const CELL_W = 112;
 export const CELL_H = 64;
@@ -61,6 +72,8 @@ export interface Placement {
   y: number;
   w?: number;
   h?: number;
+  /** What the sprite is made of, for the lighting pass (`house-light.ts`); untagged: sorted by colour. */
+  mat?: Material;
 }
 
 /** A room's box in scene pixels (walls included for indoor rooms). */
@@ -132,6 +145,8 @@ export interface SceneModel {
   fixtures: SceneFixture[];
   /** The Hearth's floor, in scene pixels: where the overview starts. */
   start: { x: number; y: number };
+  /** The phase the scene is drawn for and its light sources (none by day); `paintPlacements` takes it. */
+  lighting: Lighting;
 }
 
 export interface ComposeOptions {
@@ -144,6 +159,8 @@ export interface ComposeOptions {
   extraBuilt?: readonly string[];
   /** Gifts wait in the mailbox: its flag is up. Otherwise (and in every visit) the flag is down. */
   mailWaiting?: boolean;
+  /** The light the scene is drawn in (the living room's phase). Default `day`, which draws exactly as before. */
+  phase?: RoomPhase;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -170,17 +187,19 @@ export function tileFill(
   y: number,
   w: number,
   h: number,
+  mat?: Material,
 ): void {
   const { width: tw, height: th } = spriteSize(tile);
   for (let dy = 0; dy < h; dy += th) {
     for (let dx = 0; dx < w; dx += tw) {
       const cw = Math.min(tw, w - dx);
       const ch = Math.min(th, h - dy);
-      out.push(
+      const at: Placement =
         cw === tw && ch === th
           ? { sprite: tile, x: x + dx, y: y + dy }
-          : { sprite: tile, x: x + dx, y: y + dy, w: cw, h: ch },
-      );
+          : { sprite: tile, x: x + dx, y: y + dy, w: cw, h: ch };
+      if (mat !== undefined) at.mat = mat;
+      out.push(at);
     }
   }
 }
@@ -446,6 +465,7 @@ interface Layers {
   spots: SceneSpot[];
   creatures: SceneCreature[];
   fixtures: SceneFixture[];
+  lights: SceneLight[];
 }
 
 /** Draws the digits of `n` in the plaque's rank plate. */
@@ -698,6 +718,48 @@ const DEFAULT_DRAWING: DisplayDrawing = {
   keepsake: () => undefined,
 };
 
+/**
+ * The sky behind a scene: the valley's strip along the ground line, its top row carried up. At night it is the valley's own
+ * night (violet bands, stars) with its moon; at twilight the same pixels in a dusk. Tagged `fixed`: the lighting pass leaves it.
+ */
+function drawSky(
+  back: Placement[],
+  width: number,
+  groundY: number,
+  phase: RoomPhase,
+  moonX?: number,
+): void {
+  const sky = phase === 'day' ? skySprite() : skyForPhase(phase);
+  const { width: skyW, height: skyH } = spriteSize(sky);
+  const skyTop = groundY - skyH;
+  if (skyTop > 0) {
+    back.push({
+      sprite: solid(width, skyTop, sky.palette[sky.rows[0]?.[0] ?? ''] ?? '#6fb2d6'),
+      x: 0,
+      y: 0,
+      mat: 'fixed',
+    });
+  }
+  for (let sx = 0; sx < width; sx += skyW) {
+    const cw = Math.min(skyW, width - sx);
+    back.push(
+      cw === skyW
+        ? { sprite: sky, x: sx, y: Math.max(0, skyTop), mat: 'fixed' }
+        : { sprite: sky, x: sx, y: Math.max(0, skyTop), w: cw, h: skyH, mat: 'fixed' },
+    );
+  }
+  const moon = phase === 'night' ? moonSprite() : undefined;
+  if (moon !== undefined) {
+    const { width: mw } = spriteSize(moon);
+    back.push({
+      sprite: moon,
+      x: Math.min(Math.max(4, moonX ?? width - mw - 14), width - mw - 2),
+      y: 8,
+      mat: 'fixed',
+    });
+  }
+}
+
 /** One room: paper, floor, walls, slab and everything on its spots. (x, y) is the top left of the cell box (walls straddle it). */
 function drawRoom(
   frame: Frame,
@@ -717,9 +779,17 @@ function drawRoom(
   const spotsOf = view.spots;
   if (!room.outdoor) {
     // paper, floor, slab
-    tileFill(back, tilesOf(content, view.wall, 'wall').tile, x, y, width, WALL_H);
-    tileFill(back, tilesOf(content, view.floor, 'floor').tile, x, y + WALL_H, width, FLOOR_H);
-    tileFill(back, shellArt('slab'), x, y + WALL_H + FLOOR_H, width, SLAB_H);
+    tileFill(back, tilesOf(content, view.wall, 'wall').tile, x, y, width, WALL_H, 'wall');
+    tileFill(
+      back,
+      tilesOf(content, view.floor, 'floor').tile,
+      x,
+      y + WALL_H,
+      width,
+      FLOOR_H,
+      'floor',
+    );
+    tileFill(back, shellArt('slab'), x, y + WALL_H + FLOOR_H, width, SLAB_H, 'exterior');
   }
   const floorY = y + FEET;
   // (The workbench and the mailbox are not in a room: they stand in the yard, see `composeHouse`.)
@@ -765,10 +835,24 @@ function drawRoom(
     else if (FLOOR_TYPES.has(spot.type)) py = floorY - ph;
     else if (YARD_TYPES.has(spot.type)) py = groundY + (spot.type === 'water' ? 9 : OUT_FEET) - ph;
     else py = y + (spot.y ?? 0);
-    // small floor pieces stand in front of a housemate: they go on the front layer
-    (spot.type === 'floor-small' ? front : back).push({ sprite: art.sprite, x: px, y: py });
     const piece = content.pieces.find((p) => p.id === pieceId);
     const form = piece === undefined ? undefined : content.forms.find((f) => f.id === piece.form);
+    // Lights come from data (`lightKindOf`: the art's flag, the form, a night glow), never from a list of ids.
+    const lightKind = lightKindOf(art, form?.id);
+    const mat: Material =
+      lightKind !== undefined ? 'light' : spot.type === 'window' ? 'window' : 'auto';
+    if (lightKind !== undefined) {
+      layers.lights.push({
+        kind: lightKind,
+        x: px + Math.floor(pw / 2),
+        y: py + Math.floor(ph * LIGHT_AT[lightKind]),
+        clip: room.outdoor
+          ? { x, y: groundY - CELL_H, w: width, h: CELL_H + FLOOR_H }
+          : { x, y, w: width, h: WALL_H + FLOOR_H },
+      });
+    }
+    // small floor pieces stand in front of a housemate: they go on the front layer
+    (spot.type === 'floor-small' ? front : back).push({ sprite: art.sprite, x: px, y: py, mat });
     if (form?.bed === true) {
       const mate = frame.house.housemates.find(
         (h) => h.roomId === room.roomId && h.spotId === spot.id,
@@ -787,17 +871,25 @@ function drawRoom(
           sprite,
         });
         if (frame.drawCreatures) {
-          back.push({ sprite, x: cx, y: cy });
-          back.push({ sprite: shellArt('z'), x: cx + 12, y: cy - 8 });
+          back.push({ sprite, x: cx, y: cy, mat: 'creature' });
+          back.push({ sprite: shellArt('z'), x: cx + 12, y: cy - 8, mat: 'fixed' });
         }
       }
     }
-    if (art.front !== undefined) front.push({ sprite: art.front, x: px, y: py });
+    if (art.front !== undefined) front.push({ sprite: art.front, x: px, y: py, mat });
   }
   if (!room.outdoor) {
     drawWalls(frame, layers, x, y, width, outer);
   }
 }
+
+/** Where a light burns in its piece, as a share of the piece's height from its top (a lamp's bulb hangs low, a hearth's fire is mid). */
+const LIGHT_AT: Readonly<Record<LightKind, number>> = {
+  lamp: 0.8,
+  fire: 0.62,
+  lantern: 0.25,
+  porch: 0.2,
+};
 
 /** Draw order of spot types inside a room: the rug, wall and ceiling things, large floor pieces, small floor pieces. */
 function order(type: SpotType): number {
@@ -842,7 +934,7 @@ function drawWalls(
     const from = side === 'left' ? (thick ? wx + 1 + 2 - skin : wx + 1) : wx + 1;
     const inkAt = side === 'left' ? [from - 1, wx + 3] : [wx, wx + 1 + skin];
     layers.front.push({ sprite: solid(1, CELL_H, INK), x: inkAt[0] ?? wx, y });
-    tileFill(layers.front, walls, from, y, skin, CELL_H);
+    tileFill(layers.front, walls, from, y, skin, CELL_H, 'exterior');
     layers.front.push({ sprite: solid(1, CELL_H, INK), x: inkAt[1] ?? wx + 3, y });
   }
 }
@@ -937,32 +1029,16 @@ export function composeHouse(
 
   const back: Placement[] = [];
   const front: Placement[] = [];
-  const layers: Layers = { back, front, spots: [], creatures: [], fixtures: [] };
+  const layers: Layers = { back, front, spots: [], creatures: [], fixtures: [], lights: [] };
 
   // sky: the valley's strip along the ground line, its top row carried up
-  const sky = skySprite();
-  const { width: skyW, height: skyH } = spriteSize(sky);
-  const skyTop = groundY - skyH;
-  if (skyTop > 0) {
-    back.push({
-      sprite: solid(width, skyTop, sky.palette[sky.rows[0]?.[0] ?? ''] ?? '#6fb2d6'),
-      x: 0,
-      y: 0,
-    });
-  }
-  for (let sx = 0; sx < width; sx += skyW) {
-    const cw = Math.min(skyW, width - sx);
-    back.push(
-      cw === skyW
-        ? { sprite: sky, x: sx, y: Math.max(0, skyTop) }
-        : { sprite: sky, x: sx, y: Math.max(0, skyTop), w: cw, h: skyH },
-    );
-  }
+  const phase = options.phase ?? 'day';
+  drawSky(back, width, groundY, phase, originX + maxCol * CELL_W + 20);
   // ground: earth, then the lawn's single bright row over the whole width
   const earth = shellArt('earth');
-  tileFill(back, earth, 0, groundY + FLOOR_H, width, belowGround - FLOOR_H);
+  tileFill(back, earth, 0, groundY + FLOOR_H, width, belowGround - FLOOR_H, 'earth');
   const lawn = tilesOf(content, 'lawn', 'ground').tile;
-  tileFill(back, lawn, 0, groundY, width, FLOOR_H);
+  tileFill(back, lawn, 0, groundY, width, FLOOR_H, 'ground');
 
   // outdoor ground that is not lawn
   const rooms: SceneRoom[] = [];
@@ -1010,13 +1086,18 @@ export function composeHouse(
   const roofSkin = skinArt(house.exterior.roof, 'roof');
   const indoor = grid.filter((r) => !r.outdoor);
   if (chimneyAt !== null) {
-    back.push({ sprite: chimney, x: chimneyAt.x, y: groundY + chimneyAt.y - chH });
+    back.push({ sprite: chimney, x: chimneyAt.x, y: groundY + chimneyAt.y - chH, mat: 'exterior' });
   }
   for (const roof of [...roofs].sort((a, b) => a.run.top - b.run.top)) {
     const x = originX + roof.run.from * CELL_W - 2 - OVERHANG;
     const y = groundY - (roof.run.top + 1) * CELL_H - roof.shape.height;
     const glass = roof.run.glass && roof.run.top === 0;
-    back.push({ sprite: roofSprite(roofSkin, roof.shape.width, roof.kind, glass), x, y });
+    back.push({
+      sprite: roofSprite(roofSkin, roof.shape.width, roof.kind, glass),
+      x,
+      y,
+      mat: glass ? 'window' : 'roof',
+    });
   }
   // A wall with no room beside it on its floor is the building's cut edge: it gets the thick band of the walls skin.
   const indoorAt = new Set(indoor.map((r) => `${String(r.floor)}:${String(r.col)}`));
@@ -1052,7 +1133,7 @@ export function composeHouse(
     const top = groundY - PLINTH_ABOVE;
     const h = PLINTH_ABOVE + PLINTH_BELOW;
     front.push({ sprite: solid(right - left, 1, INK), x: left, y: top });
-    tileFill(front, wallsTile, left, top + 1, right - left, h - 2);
+    tileFill(front, wallsTile, left, top + 1, right - left, h - 2, 'exterior');
     front.push({ sprite: solid(right - left, 1, INK), x: left, y: top + h - 1 });
   }
 
@@ -1065,7 +1146,14 @@ export function composeHouse(
     const { width: dw, height: dh } = spriteSize(door);
     const dx = originX + leftIndoor.col * CELL_W - 2 - (dw - WALL_T);
     const dy = groundY + 2 - dh;
-    front.push({ sprite: door, x: dx, y: dy });
+    front.push({ sprite: door, x: dx, y: dy, mat: 'exterior' });
+    // The porch light: a small light by the front door, over the lawn and the door's wall, never inside the house.
+    layers.lights.push({
+      kind: 'porch',
+      x: dx + Math.floor(dw / 2),
+      y: dy + 4,
+      clip: { x: dx - 40, y: dy - 12, w: 40 + dw - WALL_T, h: dh + 16 },
+    });
     fixtures.push({ kind: 'door', roomId: leftIndoor.roomId, x: dx, y: dy, w: dw, h: dh });
   }
   // The yard's end, right of the building (and of the grounds): the workbench, then the mailbox.
@@ -1105,6 +1193,7 @@ export function composeHouse(
       x: hearth === undefined ? Math.floor(width / 2) : hearth.x + Math.floor(hearth.w / 2),
       y: groundY,
     },
+    lighting: lightingOf(phase, layers.lights),
   };
 }
 
@@ -1123,7 +1212,7 @@ function drawPool(
   const rim = tilesOf(content, 'pool-tile', 'ground').tile;
   const water = tilesOf(content, 'pool-water', 'ground').tile;
   tileFill(out, rim, bx, groundY + FLOOR_H, bw, depth - FLOOR_H);
-  tileFill(out, water, bx + 3, groundY, bw - 6, depth - 3);
+  tileFill(out, water, bx + 3, groundY, bw - 6, depth - 3, 'water');
   for (const wx of [bx, bx + bw - 1]) out.push({ sprite: solid(1, depth, INK), x: wx, y: groundY });
   out.push({ sprite: solid(bw, 1, INK), x: bx, y: groundY + depth - 1 });
   out.push({ sprite: solid(1, depth - 3, INK), x: bx + 2, y: groundY });
@@ -1152,30 +1241,14 @@ export function composeRoom(
   const w = room.w * CELL_W;
   const back: Placement[] = [];
   const front: Placement[] = [];
-  const layers: Layers = { back, front, spots: [], creatures: [], fixtures: [] };
+  const layers: Layers = { back, front, spots: [], creatures: [], fixtures: [], lights: [] };
   if (room.outdoor) {
     const groundY = CELL_H;
     const width = w;
     const height = CELL_H + FLOOR_H + 16;
-    const sky = skySprite();
-    const { width: skyW, height: skyH } = spriteSize(sky);
-    const skyTop = groundY - skyH;
-    if (skyTop > 0)
-      back.push({
-        sprite: solid(width, skyTop, sky.palette[sky.rows[0]?.[0] ?? ''] ?? '#6fb2d6'),
-        x: 0,
-        y: 0,
-      });
-    for (let sx = 0; sx < width; sx += skyW) {
-      const cw = Math.min(skyW, width - sx);
-      back.push(
-        cw === skyW
-          ? { sprite: sky, x: sx, y: Math.max(0, skyTop) }
-          : { sprite: sky, x: sx, y: Math.max(0, skyTop), w: cw, h: skyH },
-      );
-    }
-    tileFill(back, shellArt('earth'), 0, groundY + FLOOR_H, width, 16);
-    tileFill(back, tilesOf(content, 'lawn', 'ground').tile, 0, groundY, width, FLOOR_H);
+    drawSky(back, width, groundY, options.phase ?? 'day');
+    tileFill(back, shellArt('earth'), 0, groundY + FLOOR_H, width, 16, 'earth');
+    tileFill(back, tilesOf(content, 'lawn', 'ground').tile, 0, groundY, width, FLOOR_H, 'ground');
     if (kind.floor === 'deck')
       tileFill(back, tilesOf(content, 'deck', 'ground').tile, 0, groundY, w, FLOOR_H);
     if (kind.floor === 'pool-tile') drawPool(content, back, 0, groundY, w);
@@ -1201,6 +1274,7 @@ export function composeRoom(
       ],
       0,
       0,
+      options.phase ?? 'day',
     );
   }
   const width = w + WALL_T;
@@ -1228,7 +1302,13 @@ export function composeRoom(
     ],
     ox,
     0,
+    options.phase ?? 'day',
   );
+}
+
+/** The scene's lighting: the phase and, from twilight on, its light sources (the day has none). */
+function lightingOf(phase: RoomPhase, lights: readonly SceneLight[]): Lighting {
+  return phase === 'day' ? DAY_LIGHTING : { phase, lights };
 }
 
 function finish(
@@ -1239,6 +1319,7 @@ function finish(
   rooms: SceneRoom[],
   startX: number,
   startY: number,
+  phase: RoomPhase,
 ): SceneModel {
   return {
     width,
@@ -1252,6 +1333,7 @@ function finish(
     creatures: layers.creatures,
     fixtures: layers.fixtures,
     start: { x: startX, y: startY },
+    lighting: lightingOf(phase, layers.lights),
   };
 }
 
@@ -1262,15 +1344,21 @@ function finish(
 export function housePreview(
   house: HouseView,
   partId: string,
-  options: { content?: HousingContent; drawing?: DisplayDrawing } = {},
-): { placements: Placement[]; width: number; height: number } {
+  options: { content?: HousingContent; drawing?: DisplayDrawing; phase?: RoomPhase } = {},
+): { placements: Placement[]; width: number; height: number; lighting: Lighting } {
   const model = composeHouse(house, {
+    ...(options.phase === undefined ? {} : { phase: options.phase }),
     ...(options.content === undefined ? {} : { content: options.content }),
     ...(options.drawing === undefined ? {} : { drawing: options.drawing }),
     creatures: 'skip',
     extraBuilt: [partId],
   });
-  return { placements: [...model.back, ...model.front], width: model.width, height: model.height };
+  return {
+    placements: [...model.back, ...model.front],
+    width: model.width,
+    height: model.height,
+    lighting: model.lighting,
+  };
 }
 
 /** The size of a part's preview: its new rooms plus the roof over them and a few pixels of margin. */
@@ -1284,9 +1372,10 @@ const PREVIEW_MARGIN = { side: 8, top: 56, bottom: 8 };
 export function partPreview(
   house: HouseView,
   partId: string,
-  options: { content?: HousingContent; drawing?: DisplayDrawing } = {},
-): { placements: Placement[]; width: number; height: number } {
+  options: { content?: HousingContent; drawing?: DisplayDrawing; phase?: RoomPhase } = {},
+): { placements: Placement[]; width: number; height: number; lighting: Lighting } {
   const shared = {
+    ...(options.phase === undefined ? {} : { phase: options.phase }),
     ...(options.content === undefined ? {} : { content: options.content }),
     ...(options.drawing === undefined ? {} : { drawing: options.drawing }),
     creatures: 'skip' as const,
@@ -1308,7 +1397,8 @@ export function partPreview(
   const model = composeHouse(house, { ...shared, extraBuilt: [...needs, partId] });
   const fresh = model.rooms.filter((r) => !before.has(r.roomId));
   const all = [...model.back, ...model.front];
-  if (fresh.length === 0) return { placements: all, width: model.width, height: model.height };
+  if (fresh.length === 0)
+    return { placements: all, width: model.width, height: model.height, lighting: model.lighting };
   const x0 = Math.max(0, Math.min(...fresh.map((r) => r.x)) - PREVIEW_MARGIN.side);
   const x1 = Math.min(model.width, Math.max(...fresh.map((r) => r.x + r.w)) + PREVIEW_MARGIN.side);
   const y0 = Math.max(0, Math.min(...fresh.map((r) => r.y)) - PREVIEW_MARGIN.top);
@@ -1320,6 +1410,15 @@ export function partPreview(
     placements: all.map((p) => ({ ...p, x: p.x - x0, y: p.y - y0 })),
     width: x1 - x0,
     height: y1 - y0,
+    lighting: {
+      phase: model.lighting.phase,
+      lights: model.lighting.lights.map((l) => ({
+        ...l,
+        x: l.x - x0,
+        y: l.y - y0,
+        clip: { ...l.clip, x: l.clip.x - x0, y: l.clip.y - y0 },
+      })),
+    },
   };
 }
 
