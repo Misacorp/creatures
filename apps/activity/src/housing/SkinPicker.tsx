@@ -27,6 +27,7 @@ const KIND_NAMES: Readonly<Record<SkinKind, string>> = {
   floor: 'Floor',
   roof: 'Roof',
   walls: 'Walls',
+  ground: 'Ground',
 };
 
 function cellOf(choice: SkinChoice): SupplyCell {

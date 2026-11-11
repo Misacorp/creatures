@@ -210,7 +210,7 @@ export function sleeperOptions(
   return [nobody, ...rows];
 }
 
-export type SkinKind = 'wall' | 'floor' | 'roof' | 'walls';
+export type SkinKind = 'wall' | 'floor' | 'roof' | 'walls' | 'ground';
 
 export interface SkinChoice {
   id: string;
@@ -227,7 +227,11 @@ export function skinChoices(kind: SkinKind, current: string, own: OwnHouseView):
   const known = knownIds(own);
   const have = (s: (typeof housing.skins)[number]) =>
     s.unlock.kind === 'starter' || own.items.skins.includes(s.id) || s.id === current;
-  const ofKind = housing.skins.filter((s) => s.kind === kind);
+  // Ground skins: the varieties of one outdoor room (`orchard-apple`, `orchard-plum`), told by the id they share before the dash.
+  const family = `${current.split('-')[0] ?? ''}-`;
+  const ofKind = housing.skins.filter(
+    (s) => s.kind === kind && (kind !== 'ground' || s.id.startsWith(family)),
+  );
   const owned = ofKind.filter(have).map((s): SkinChoice => ({
     id: s.id,
     kind: 'owned',

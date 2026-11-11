@@ -214,6 +214,12 @@ function Sleeper({
   );
 }
 
+/** An outdoor room whose ground comes in varieties to choose from (the orchard's trees): its ground skin has siblings. */
+function hasVarieties(ground: string): boolean {
+  const family = `${ground.split('-')[0] ?? ''}-`;
+  return housing.skins.filter((s) => s.kind === 'ground' && s.id.startsWith(family)).length > 1;
+}
+
 export interface RoomFocusProps {
   house: HouseView;
   roomId: string;
@@ -221,7 +227,7 @@ export interface RoomFocusProps {
   /** Own house: a spot was tapped (its picker opens). */
   onSpot?: (spotId: string) => void;
   /** Own house: the wallpaper or the floor chip was tapped. */
-  onSkin?: (kind: 'wall' | 'floor') => void;
+  onSkin?: (kind: 'wall' | 'floor' | 'ground') => void;
   /** The spot whose picker is open (it keeps a ring). */
   selectedSpot?: string | null;
 }
@@ -347,6 +353,21 @@ export function RoomFocus({
         </div>
       </div>
       <PanHint target={viewRef} id="house-room" />
+      {own &&
+        view !== undefined &&
+        onSkin !== undefined &&
+        (model.rooms[0]?.outdoor ?? false) &&
+        hasVarieties(view.floor) && (
+          <div class="house-chips">
+            <SkinTrigger
+              kind="ground"
+              id={view.floor}
+              onOpen={() => {
+                onSkin('ground');
+              }}
+            />
+          </div>
+        )}
       {own && view !== undefined && onSkin !== undefined && !(model.rooms[0]?.outdoor ?? false) && (
         <div class="house-chips">
           <SkinTrigger
