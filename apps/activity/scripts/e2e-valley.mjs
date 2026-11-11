@@ -1045,7 +1045,8 @@ const expectTopmost = async (locator, what) => {
   if (hits.length > 0) throw new Error(`${what} is covered by ${hits.join(' | ')}`);
 };
 /** A place as a canvas (`PlaceCanvas`): a thing in the scene you click, by the start of its name. */
-const sceneTarget = (name) => page.locator(`button.cv-target[aria-label^="${name}"]`);
+const sceneTarget = (name) =>
+  page.locator(`button.cv-target[aria-label^="${name}"]`).locator('visible=true');
 /** What a click opens: the drawer beside the scene on a wide window, a page of its own on a phone. */
 const drawer = page.locator('.pc-side, .pc-page');
 /** The right drawer (the thing clicked) and the left one (a collection): each a page on a phone, where only one shows at a time. */
@@ -1069,6 +1070,20 @@ const expectNoScroll = async () => {
 /** The Forge opens on its outside: a click on the building goes into the workshop (its own canvas, with a door back out). */
 const goInside = async () => {
   await waitFor(sceneTarget('The forge. Go inside'));
+  const n = await page.locator('button[aria-label="The forge. Go inside"]').count();
+  if (n !== 1) {
+    const where = await page.evaluate(() =>
+      [...document.querySelectorAll('button[aria-label="The forge. Go inside"]')].map((b) => {
+        const chain = [];
+        for (let el = b; el !== null && chain.length < 9; el = el.parentElement)
+          chain.push(
+            `${el.tagName}.${String(el.className).split(' ')[0]}${el.hidden ? '[hidden]' : ''}`,
+          );
+        return chain.join(' < ');
+      }),
+    );
+    throw new Error(`${String(n)} building buttons: ${where.join(' || ')}`);
+  }
   await sceneTarget('The forge. Go inside').click();
   await waitFor(sceneTarget('The door. Go back outside'));
 };

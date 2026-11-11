@@ -1,60 +1,67 @@
 /**
- * The Forge seen from inside (`ForgeInterior` in `ForgeCanvas.tsx`; Misa, 2026-11-11): a workshop room laid out on a 128 x 96 logical
- * canvas (`ROOM`), scaled to the window like the other scenes (a whole pixel scale, at most 4) and centred sideways; the wall and the
- * floor go on to every edge of the scene, so a wider window shows more room, never a different one. Pure: the scene's size goes in,
- * boxes and placements come out. The pieces are `forge-interior-art.ts` (by name; the Art session's set swaps in there).
+ * The Forge seen from inside (`ForgeInside` in `ForgeScenes.tsx`; Misa, 2026-11-11): a workshop room laid out on a 128 x 96 logical
+ * canvas (`ROOM`; the Art session's preview of the set `valley-forge-interior` has the same layout) with a front strip under it for
+ * the player's things (`ROOM_H` in all), scaled to the window like the other scenes (a whole pixel scale, at most 4) and centred
+ * sideways; the wall and the floor go on to every edge, so a wider window shows more room, never a different one. Pure: the scene's
+ * size goes in, boxes and placements come out. The pieces are `forge-interior-art.ts` (by name).
  *
- * The room, in room pixels from its top-left (the anchor of each piece is its top-left unless said):
- * - back wall 128x56 at (0, 0), tiled sideways; floor tiles from y 56 down, to every edge.
- * - furnace 48x56 at (2, 4), the fire in its mouth (flame flicker over (22, 36)); a click opens the project board.
- * - on the wall: hanging-tools 24x16 at (74, 0), shelf 32x16 at (50, 20), tool-rack 32x24 at (82, 16).
- * - two workbenches 32x20 at (50, 36) and (82, 36), feet on the wall's foot (y 56): other players' smiths stand behind them, two to a
- *   bench, at x 58, 74 (bench one) and 90, 106 (bench two), their feet at y 42.
- * - the door 14x24 at (114, 24): the way back outside.
- * - on the floor, behind the anvils: coal-heap 16x10 at (30, 50), quench-trough 24x12 at (52, 57), barrel 12x16 at (98, 50).
- * - (in a scene taller than 96 the anvils and props below stand up to 40 lower, half the spare height; the wall stays)
- * - the player's anvils: a row of cells (28 wide at most, 34 tall) from y 60 over x 4 to 106, then the dashed outline of the next; each
- *   cell has the smith (16x16) at its top, the anvil (16x16) 12 below it and the smith's plate under that.
- * - three props down the right edge, 16x16 each at x 110: the plans table (y 48), the chest, the bag (y 64), the crate, the floor (y 80).
+ * The room, in room pixels from its top-left (the anchor of each piece is its top-left):
+ * - back wall 128x56, tiled sideways, moved 40 to the right (the art's own placement: the furnace hides one window, the other
+ *   stays in view); floor tiles from y 56 down, to every edge; furnace-glow 128x40 at (0, 56) over the floor tiles, under the props.
+ * - furnace 48x52 at (2, 11): base at y 62, the mouth's centre at x 25. A click opens the project board.
+ * - on the wall: hanging-tools 24x16 at (52, 6), tool-rack 32x24 at (92, 6), shelf 32x16 at (92, 30).
+ * - two workbenches 32x20 at (60, 52) and (96, 52): other players' smiths stand behind them, two to a bench, smaller than the
+ *   player's, at x 69, 83 (bench one) and 105, 119 (bench two), their feet two rows under the bench top (y 58).
+ * - on the floor: barrel 12x16 at (116, 60), coal-heap 16x10 at (6, 66), quench-trough 24x12 at (100, 78).
+ * - the player's anvils: a row of cells (26 wide at most) from y 66 over x 22 to 126, then the dashed outline of the next; each cell
+ *   has the smith (16x16) at its top, the anvil (16x16) 12 below it and the smith's plate under that.
+ * - the front strip, y 104 down: the doormat (24x8) at x 6, the way out, and the plans table, the chest (the bag) and the crate (the
+ *   floor), 16x16 each, at x 44, 68 and 92.
+ * In a scene taller than `ROOM_H` the cells and the front strip stand lower, up to `MAX_DROP`, half the spare height; the wall stays.
  */
 import type { Placement } from '../games/art/pixel';
 import { sceneScale } from './scale';
 import { ANVIL_PROP, CHEST_PROP, CRATE_PROP, PLANS_PROP } from './forge-props';
-import { CELL_H, CELL_W, PROP, type Cell, type Pt } from './forge-canvas';
+import { CELL_H, PROP, type Cell, type Pt } from './forge-canvas';
 import { PIECE_SIZE, interiorSprite, type InteriorPiece } from './forge-interior-art';
 import type { SceneGeometry } from './SceneFrame';
 
-/** The room's size in scene pixels. */
+/** The art's room in scene pixels, and the whole interior's height with the front strip. */
 export const ROOM = { w: 128, h: 96 } as const;
+export const ROOM_H = 124;
 
 /** The most background smiths (two to a bench, two benches). */
 export const BACK_SPOTS = 4;
 
 /** Where each piece of the room stands, in room pixels. */
-export const ROOM_AT: Readonly<Record<Exclude<InteriorPiece, 'back-wall' | 'floor'>, Pt>> = {
-  furnace: { x: 2, y: 4 },
-  'hanging-tools': { x: 74, y: 0 },
-  shelf: { x: 50, y: 20 },
-  'tool-rack': { x: 82, y: 16 },
-  workbench: { x: 50, y: 36 },
-  barrel: { x: 98, y: 50 },
-  'quench-trough': { x: 52, y: 57 },
-  'coal-heap': { x: 30, y: 50 },
-  door: { x: 114, y: 24 },
-};
-/** The second bench, at the first's right. */
-const BENCH_B: Pt = { x: 82, y: 36 };
-/** The flame's top-left over the furnace's mouth, and where the smiths' feet stand behind the benches. */
-const FLAME_AT: Pt = { x: 24, y: 38 };
-const BACK_FEET_Y = 42;
-const BACK_CENTRES = [58, 74, 90, 106] as const;
+export const ROOM_AT = {
+  furnace: { x: 2, y: 11 },
+  'hanging-tools': { x: 52, y: 6 },
+  'tool-rack': { x: 92, y: 6 },
+  shelf: { x: 92, y: 30 },
+  workbench: { x: 60, y: 52 },
+  barrel: { x: 116, y: 60 },
+  'coal-heap': { x: 6, y: 66 },
+  'quench-trough': { x: 100, y: 78 },
+  'furnace-glow': { x: 0, y: 56 },
+  doormat: { x: 6, y: 106 },
+} as const satisfies Partial<Record<InteriorPiece, Pt>>;
+/** The second bench, and how far the wall is moved to the right. */
+const BENCH_B: Pt = { x: 96, y: 52 };
+const WALL_SHIFT = 40;
+/** Where the smiths' feet stand behind the benches, and the centres of the four spots, in room pixels. */
+const BACK_FEET_Y = 58;
+const BACK_CENTRES = [69, 83, 105, 119] as const;
 /** The anvils' row: its top, and the span of x it uses. */
-const ROW_Y = 60;
-const ROW_FROM = 4;
-const ROW_TO = 106;
-const PROPS_X = 110;
+const ROW_Y = 66;
+const ROW_FROM = 22;
+const ROW_TO = 126;
+const CELL_MAX = 26;
+/** The front strip: the props' top, and their x. */
+const STRIP_Y = 104;
+const PROPS_X = [44, 68, 92] as const;
 /** The most the floor part may be pushed down in a scene taller than the room. */
-const MAX_DROP = 40;
+const MAX_DROP = 24;
 
 export interface Box {
   x: number;
@@ -68,9 +75,8 @@ export interface InteriorLayout {
   ox: number;
   oy: number;
   furnace: Box;
+  /** The doormat, the way out. */
   door: Box;
-  /** Where the flame flickers (top-left). */
-  flame: Pt;
   /** The two benches' top-lefts. */
   benches: [Pt, Pt];
   /** Where a background smith stands: the centre x and the feet's y, scene pixels. */
@@ -83,11 +89,11 @@ export interface InteriorLayout {
 
 /**
  * The interior's pixel scale: as everywhere (3 on a phone, 4 on a wide window), but never wider than the room fits (`ROOM.w` times the
- * scale at most the width) nor taller than the window (`ROOM.h` times the scale at most the height), never under 1.
+ * scale at most the width) nor taller than the window (`ROOM_H` times the scale at most the height), never under 1.
  */
 export function interiorScale(width: number, height: number): number {
   let s = Math.min(sceneScale(width), Math.floor(width / ROOM.w));
-  while (s > 1 && ROOM.h * s > height) s -= 1;
+  while (s > 1 && ROOM_H * s > height) s -= 1;
   return Math.max(1, s);
 }
 
@@ -98,11 +104,10 @@ export function interiorLayout(
 ): InteriorLayout {
   const ox = g.cx - ROOM.w / 2;
   const oy = 0;
-  // A scene taller than the room lets the floor grow: the anvils and the props stand lower, the wall stays at the top.
-  const drop = Math.max(0, Math.min(MAX_DROP, Math.floor((g.H - ROOM.h) / 2)));
+  const drop = Math.max(0, Math.min(MAX_DROP, Math.floor((g.H - ROOM_H) / 2)));
   const at = (p: Pt): Pt => ({ x: ox + p.x, y: oy + p.y });
   const avail = ROW_TO - ROW_FROM;
-  const step = Math.min(CELL_W, Math.max(PROP, Math.floor(avail / Math.max(1, slots))));
+  const step = Math.min(CELL_MAX, Math.max(PROP, Math.floor(avail / Math.max(1, slots))));
   const x0 = ox + ROW_FROM + Math.floor((avail - step * slots) / 2);
   const cells: Cell[] = Array.from({ length: slots }, (_, i) => {
     const x = x0 + i * step;
@@ -111,19 +116,19 @@ export function interiorLayout(
     return { x, y, w: step, h: CELL_H, anvil: { x: ax, y: y + 12 }, smith: { x: ax, y } };
   });
   const furnace = at(ROOM_AT.furnace);
-  const door = at(ROOM_AT.door);
+  const mat = at({ x: ROOM_AT.doormat.x, y: ROOM_AT.doormat.y + drop });
+  const prop = (i: number): Pt => at({ x: PROPS_X[i] ?? 0, y: STRIP_Y + drop });
   return {
     ox,
     oy,
     furnace: { ...furnace, w: PIECE_SIZE.furnace.w, h: PIECE_SIZE.furnace.h },
-    door: { ...door, w: PIECE_SIZE.door.w, h: PIECE_SIZE.door.h },
-    flame: at(FLAME_AT),
+    door: { ...mat, w: PIECE_SIZE.doormat.w, h: PIECE_SIZE.doormat.h },
     benches: [at(ROOM_AT.workbench), at(BENCH_B)],
     backSpots: BACK_CENTRES.map((x) => ({ x: ox + x, y: oy + BACK_FEET_Y })),
     cells,
-    plans: at({ x: PROPS_X, y: 48 + drop }),
-    chest: at({ x: PROPS_X, y: 64 + drop }),
-    crate: at({ x: PROPS_X, y: 80 + drop }),
+    plans: prop(0),
+    chest: prop(1),
+    crate: prop(2),
   };
 }
 
@@ -145,9 +150,9 @@ function across(
 }
 
 /**
- * The room as sprites on the canvas: the wall and the floor to every edge, the furnace, what hangs and stands on the wall, the
- * decorations on the floor, the door, and an anvil for each cell owned and the three props. The benches are not here: they stand in
- * front of the smiths behind them, so they are drawn over those (`ForgeInterior`). `night` picks the palette.
+ * The room as sprites on the canvas: the wall and the floor to every edge, the firelight on the floor, the furnace, what hangs on the
+ * wall, the props on the floor, the doormat, and an anvil for each cell owned and the three props. The benches are not here: they
+ * stand in front of the smiths behind them, so they are drawn over those (`ForgeInside`). `night` picks the palette.
  */
 export function interiorSceneDraw(owned: number, slots: number, night: boolean) {
   return (g: SceneGeometry): Placement[] => {
@@ -155,23 +160,21 @@ export function interiorSceneDraw(owned: number, slots: number, night: boolean) 
     const sprite = (piece: InteriorPiece): ReturnType<typeof interiorSprite> =>
       interiorSprite(piece, night);
     const out: Placement[] = [];
-    out.push(...across(sprite('back-wall'), PIECE_SIZE['back-wall'].w, lay.ox, g.W, 0));
+    out.push(
+      ...across(sprite('back-wall'), PIECE_SIZE['back-wall'].w, lay.ox + WALL_SHIFT, g.W, lay.oy),
+    );
     const tile = PIECE_SIZE.floor;
-    for (let y = PIECE_SIZE['back-wall'].h; y < g.H; y += tile.h) {
+    for (let y = lay.oy + PIECE_SIZE['back-wall'].h; y < g.H; y += tile.h) {
       out.push(...across(sprite('floor'), tile.w, lay.ox, g.W, y));
     }
-    const put = (piece: Exclude<InteriorPiece, 'back-wall' | 'floor' | 'workbench'>): void => {
+    const at = (piece: keyof typeof ROOM_AT): Placement => {
       const p = ROOM_AT[piece];
-      out.push({ sprite: sprite(piece), x: lay.ox + p.x, y: lay.oy + p.y });
+      return { sprite: sprite(piece), x: lay.ox + p.x, y: lay.oy + p.y };
     };
-    put('hanging-tools');
-    put('shelf');
-    put('tool-rack');
-    put('door');
-    put('furnace');
-    put('quench-trough');
-    put('coal-heap');
-    put('barrel');
+    out.push(at('furnace-glow'));
+    out.push(at('hanging-tools'), at('tool-rack'), at('shelf'), at('furnace'));
+    out.push(at('barrel'), at('coal-heap'), at('quench-trough'));
+    out.push({ sprite: sprite('doormat'), x: lay.door.x, y: lay.door.y });
     out.push(
       ...lay.cells.slice(0, owned).map((c) => ({ sprite: ANVIL_PROP, x: c.anvil.x, y: c.anvil.y })),
       { sprite: PLANS_PROP, x: lay.plans.x, y: lay.plans.y },

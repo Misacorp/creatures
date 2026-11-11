@@ -32,6 +32,9 @@ import {
 import { interiorLayout } from './forge-interior';
 import { interiorSprite } from './forge-interior-art';
 import { WARMING_FLAME } from './valley-art';
+
+/** The flame's top-left over the furnace's mouth, from the furnace's top-left (the art's fire is at x 14 to 33). */
+const FLAME_AT = { x: 22, y: 36 } as const;
 import { anvilName, anvilPrice } from './forge-view';
 
 /** The two ambient workers (decoration when no one else's smith is at work): species and motion. */
@@ -238,7 +241,7 @@ export function ForgeInside({
   const backLeft = (spot: { x: number }): number => g.X(spot.x) - 8 * bs;
   return (
     <>
-      <At x={g.X(lay.flame.x)} y={g.Y(lay.flame.y)} class="fi-fire">
+      <At x={g.X(lay.furnace.x + FLAME_AT.x)} y={g.Y(lay.furnace.y + FLAME_AT.y)} class="fi-fire">
         <Pic sprite={WARMING_FLAME} scale={g.s} />
       </At>
       {ambientSpots(others.length, lay.backSpots.length).map((at, i) => {
@@ -301,7 +304,7 @@ export function ForgeInside({
       {(bagFull || bagAttention) && (
         <Bubble g={g} x={lay.chest.x} y={lay.chest.y} glyph="warning" count={null} />
       )}
-      {feetPlate(lay.door.x + lay.door.w / 2, lay.door.y - 7, 'Outside')}
+      {feetPlate(lay.door.x + lay.door.w / 2, lay.door.y + lay.door.h + 1, 'Outside')}
 
       {/* The targets, over everything above: each a real button. */}
       {others.map((other, i) => {
