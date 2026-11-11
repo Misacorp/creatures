@@ -1045,6 +1045,9 @@ const expectTopmost = async (locator, what) => {
 const sceneTarget = (name) => page.locator(`button.cv-target[aria-label^="${name}"]`);
 /** What a click opens: the drawer beside the scene on a wide window, a page of its own on a phone. */
 const drawer = page.locator('.pc-side, .pc-page');
+/** The right drawer (the thing clicked) and the left one (a collection): each a page on a phone, where only one shows at a time. */
+const rightPanel = page.locator('.pc-side.pc-right, .pc-page[data-side="right"]');
+const leftPanel = page.locator('.pc-side.pc-left, .pc-page[data-side="left"]');
 /** A canvas never scrolls: the page, the frame and the document all fit their box (a drawer's own body may scroll). */
 const expectNoScroll = async () => {
   const over = await page.evaluate(() =>
@@ -1876,6 +1879,32 @@ try {
         await drawer.getByRole('button', { name: /^Back/ }).first().click();
       }
       await drawer.waitFor({ state: 'detached', timeout: 10000 });
+      // The keyboard: Enter on an anvil opens its drawer with the focus inside it; Escape closes it and the focus is back on that anvil.
+      await page.keyboard.press('Tab');
+      await sceneTarget('Anvil 1:').focus();
+      await page.keyboard.press('Enter');
+      await waitFor(rightPanel);
+      await page
+        .waitForFunction(() => document.activeElement?.closest('.pc-side, .pc-page') != null, null, {
+          timeout: 3000,
+        })
+        .catch(() => {
+          throw new Error('the focus did not move into the anvil drawer');
+        });
+      await page.keyboard.press('Escape');
+      await rightPanel.waitFor({ state: 'detached', timeout: 10000 });
+      await page
+        .waitForFunction(
+          () => document.activeElement?.getAttribute('aria-label')?.startsWith('Anvil 1:') === true,
+          null,
+          { timeout: 3000 },
+        )
+        .catch(async () => {
+          const now = await page.evaluate(
+            () => document.activeElement?.getAttribute('aria-label') ?? document.activeElement?.tagName,
+          );
+          throw new Error(`the focus went to "${String(now)}", not back to the anvil`);
+        });
       // A second anvil from its outline, then a smith carried onto it from the tray (the canvas never scrolls, so a drop is always in reach).
       await sceneTarget('A new anvil').click();
       await drawer.getByRole('button', { name: /^Buy the anvil/ }).click();
@@ -1950,8 +1979,9 @@ try {
       await waitFor(page.locator(VALLEY), 'attached');
       await place('forge').evaluate((el) => el.click());
       await waitFor(heading('Forge'));
-      await waitFor(page.getByRole('heading', { name: 'Anvil 1' }));
-      // The Blueprints list has the three patchwork blueprints with their price as icons (no words, no quality).
+      await waitFor(sceneTarget('Anvil 1: '));
+      // The plans table in the yard opens the Blueprints list, with the three patchwork blueprints and their price as icons (no words, no quality).
+      await sceneTarget('The plans').click();
       const rows = page.locator('li.blueprint').filter({ hasText: /Patchwork/ });
       await waitFor(rows);
       if ((await rows.count()) !== 3)
@@ -1972,17 +2002,17 @@ try {
       await shot('patch-blueprints');
       // Order it from its row: the editor opens with the blueprint picked and "Most held" (Ember holds most: 7).
       await row.getByRole('button', { name: /^Order/ }).click();
-      await waitFor(page.getByRole('dialog', { name: /Add an order/ }));
+      await waitFor(rightPanel.getByRole('heading', { name: 'The order' }));
       const shards = page.getByRole('button', { name: /^Shards: most held, now Ember/ });
       await waitFor(shards);
       if ((await page.locator('ul[aria-label="Reach"]').count()) > 0)
         throw new Error('a patchwork order offers a Reach');
       await page.waitForTimeout(400);
-      await expectTopmost(page.getByRole('dialog').first(), 'the patchwork order editor');
+      await expectTopmost(rightPanel.first(), 'the patchwork order wizard');
       await expectTopmost(shards, 'the shard slot');
       await shot('patch-order-editor');
-      await page.getByRole('button', { name: /^Add to the queue/ }).click();
-      await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+      await rightPanel.getByRole('button', { name: /^Add to the queue/ }).click();
+      await rightPanel.waitFor({ state: 'detached', timeout: 10000 });
       const most = forgeCalls.at(-1)?.[1];
       if (
         most?.action !== 'add' ||
@@ -1991,11 +2021,14 @@ try {
         most.reach !== 'none'
       )
         throw new Error(`the "most held" order was ${JSON.stringify(most)}`);
-      await waitFor(page.locator('button.fg-order'));
+      // Close the plans, open the anvil: the order is in its queue.
+      await leftPanel.getByRole('button', { name: /Close|^Back/ }).first().click();
+      await leftPanel.waitFor({ state: 'detached', timeout: 10000 });
+      await sceneTarget('Anvil 1: ').click();
+      await waitFor(drawer.locator('button.fg-order'));
       // A second one with a named element: the shard choice lists Most held and the five elements.
-      await page.getByRole('button', { name: /^Add an order/ }).click();
-      await waitFor(page.getByRole('dialog', { name: /Add an order/ }));
-      await page.getByRole('button', { name: /What to make: nothing chosen/ }).click();
+      await drawer.getByRole('button', { name: /^Add an order/ }).click();
+      await waitFor(drawer.getByRole('heading', { name: 'What to make' }));
       const pick = page.locator('ul[aria-label="Blueprints"] button').filter({
         hasText: /Patchwork Charm/,
       });
@@ -2008,12 +2041,12 @@ try {
       if ((await page.locator('ul[aria-label="Shards"] button').count()) !== 6)
         throw new Error('the shard choice does not list Most held and the five elements');
       await page.waitForTimeout(300);
-      await expectTopmost(page.getByRole('dialog').first(), 'the shard choice');
+      await expectTopmost(drawer.first(), 'the shard choice');
       await shot('patch-shard-choice');
       await page.locator('ul[aria-label="Shards"] button').filter({ hasText: /Grove/ }).click();
       await waitFor(page.getByRole('button', { name: /^Shards: Grove/ }));
-      await page.getByRole('button', { name: /^Add to the queue/ }).click();
-      await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+      await drawer.getByRole('button', { name: /^Add to the queue/ }).click();
+      await waitFor(drawer.locator('button.fg-order').nth(1));
       const named = forgeCalls.at(-1)?.[1];
       if (
         named?.action !== 'add' ||
@@ -2024,6 +2057,9 @@ try {
         throw new Error(`the named order was ${JSON.stringify(named)}`);
       await shot('patch-queue');
       // The finished piece in the bag is an Ember hat like any other: its element badge and tint are the element's.
+      await drawer.getByRole('button', { name: /Close|^Back/ }).first().click();
+      await drawer.waitFor({ state: 'detached', timeout: 10000 });
+      await sceneTarget('The bag').click();
       const piece = page.getByRole('option', { name: /Coal-Warm Cap/ }).first();
       await piece.scrollIntoViewIfNeeded();
       await piece.click();
@@ -2234,8 +2270,12 @@ try {
         await waitFor(page.locator(VALLEY), 'attached');
         await place('forge').evaluate((el) => el.click());
         await waitFor(heading('Forge'));
-        await waitFor(page.getByText('In the raid until Sunday'));
-        await page.getByText('In the raid until Sunday').first().scrollIntoViewIfNeeded();
+        // The anvil in the scene says it is paused; its page (the drawer) says why.
+        await waitFor(sceneTarget('Anvil 1: '));
+        if (!/paused for the raid/.test((await sceneTarget('Anvil 1: ').getAttribute('aria-label')) ?? ''))
+          throw new Error('the anvil in the scene does not say it is paused');
+        await sceneTarget('Anvil 1: ').click();
+        await waitFor(drawer.getByText('In the raid until Sunday'));
         await shot('bonfire5-forge-paused');
         await hudBack().click();
         await waitFor(page.locator(VALLEY), 'attached');
@@ -2399,11 +2439,15 @@ try {
         await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
         await place('forge').evaluate((el) => el.click());
         await waitFor(heading('Forge'));
-        const fire = page.getByRole('button', { name: /^The fire\./ });
+        // The forge in the scene is the way to its fire and project board (the left drawer; a page on a phone); the scaffolding is on its art.
+        await waitFor(sceneTarget('The forge'));
+        await shot('commons-forge-canvas');
+        await sceneTarget('The forge').click();
+        const fire = drawer.getByRole('button', { name: /^The fire\./ });
         await waitFor(fire);
         await expectTopmost(fire, 'the fire');
         await shot('commons-forge-fire');
-        const board = page.locator('section[aria-label="Forge project"]');
+        const board = drawer.locator('section[aria-label="Forge project"]');
         await board.scrollIntoViewIfNeeded();
         await waitFor(board.getByText(/being built, 2 days left/));
         await expectTopmost(board, 'the Forge board');
@@ -2796,6 +2840,9 @@ try {
         await waitFor(page.locator(VALLEY), 'attached');
         await place('forge').evaluate((el) => el.click());
         await waitFor(heading('Forge'));
+        // The anvil in the scene says it waits for a shard; a click opens its page, whose wait line is below.
+        await waitFor(sceneTarget('Anvil 1: '));
+        await sceneTarget('Anvil 1: ').click();
         // Before: the wait line says the Market will trade once the valley builds it; there is no exchange tap at the Forge.
         const before = page.getByText(
           /Waiting for\s+for 3 h\. The Market will trade for them once the valley builds it\./,
@@ -2832,6 +2879,8 @@ try {
         await waitFor(page.locator(VALLEY), 'attached');
         await place('forge').evaluate((el) => el.click());
         await waitFor(heading('Forge'));
+        await waitFor(sceneTarget('Anvil 1: '));
+        await sceneTarget('Anvil 1: ').click();
         const after = page.getByText(/Waiting for\s+for 3 h/);
         await waitFor(after);
         await after.first().scrollIntoViewIfNeeded();

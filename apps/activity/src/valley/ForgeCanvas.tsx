@@ -39,8 +39,15 @@ import {
 import { ForgeAnvilPanel, type AnvilStep } from './ForgeAnvilPanel';
 import { ForgeBuyPanel } from './ForgeBuyPanel';
 import { OrderEditor, type OrderShell } from './OrderEditor';
-import { CanvasTarget, PanelBody, PlaceCanvas, type CanvasPanel } from './PlaceCanvas';
-import { SceneFrame } from './SceneFrame';
+import {
+  CanvasTarget,
+  PanelBody,
+  PlaceCanvas,
+  openerOf,
+  type CanvasPanel,
+  type Opener,
+} from './PlaceCanvas';
+import { SceneFrame, sceneGeometry } from './SceneFrame';
 import { At, CreatureSprite, Pic, SpeechBubble } from './parts';
 import { Tray } from './Tray';
 import { trayFor, type TrayInput } from './tray-state';
@@ -62,18 +69,18 @@ import { anvilName, anvilPrice, floorLine } from './forge-view';
 
 /** The right drawer: the one thing that was clicked. */
 type Right =
-  | { kind: 'anvil'; anvilId: string; start: AnvilStep; from: HTMLElement | null }
-  | { kind: 'buy'; from: HTMLElement | null }
+  | { kind: 'anvil'; anvilId: string; start: AnvilStep; from: Opener | null }
+  | { kind: 'buy'; from: Opener | null }
   | {
       kind: 'order';
       open: OrderOpen & { baseId?: string };
       /** The anvil whose wizard the order was opened from; Back leaves for it (null: the order leaves for the scene). */
       back: string | null;
-      from: HTMLElement | null;
+      from: Opener | null;
     };
 
 /** The left drawer: a collection or an overview. */
-type Left = { kind: 'bag' | 'floor' | 'plans' | 'board'; from: HTMLElement | null };
+type Left = { kind: 'bag' | 'floor' | 'plans' | 'board'; from: Opener | null };
 
 /** The player's anvils and what they pass in. */
 export interface ForgeCanvasProps {
@@ -315,7 +322,7 @@ export function ForgeCanvas(props: ForgeCanvasProps) {
                 kind: 'order',
                 open: { kind: 'add', anvilId: room.id, baseId, opener },
                 back: null,
-                from: opener,
+                from: openerOf(opener),
               });
             })}
           </PanelBody>
@@ -342,7 +349,7 @@ export function ForgeCanvas(props: ForgeCanvasProps) {
                           kind: 'anvil',
                           anvilId: anvil.id,
                           start: 'floor',
-                          from: event.currentTarget,
+                          from: openerOf(event.currentTarget),
                         });
                       }}
                     >
@@ -391,7 +398,7 @@ export function ForgeCanvas(props: ForgeCanvasProps) {
     }
   }
 
-  const openLeft = (kind: Left['kind']) => (opener: HTMLElement) => {
+  const openLeft = (kind: Left['kind']) => (opener: Opener) => {
     setLeft({ kind, from: opener });
   };
 
@@ -405,9 +412,10 @@ export function ForgeCanvas(props: ForgeCanvasProps) {
       onLeave={closeTop}
       scaleFor={forgeScale}
     >
-      {(g) => {
-        // A scene not measured yet (width 0) draws nothing to click.
-        if (g.W <= 0 || g.H <= 0) return null;
+      {(measured) => {
+        // A scene not measured yet (no size) is laid out as a phone's, so the targets are there from the first draw.
+        const g =
+          measured.W > 0 && measured.H > 0 ? measured : sceneGeometry(390, 640, forgeScale(390, 640));
         const lay = yardLayout(g, slots);
         const plate = (x: number, y: number, text: string): ComponentChildren => (
           <At x={g.X(x)} y={g.Y(y)} class="vy-feet-plate">

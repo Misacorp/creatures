@@ -26,6 +26,17 @@ import { At } from './parts';
 
 export type CanvasSide = 'left' | 'right';
 
+/** The button a panel was opened from, and whether the keyboard had the focus on it (only then does the focus go back there). */
+export interface Opener {
+  el: HTMLElement;
+  byKeyboard: boolean;
+}
+
+/** Records an opener at the moment of its click or key press, while it still has the focus. */
+export function openerOf(el: HTMLElement): Opener {
+  return { el, byKeyboard: keyboardHasFocus() };
+}
+
 /**
  * The body of a panel: the step above and, pinned under it, the footer (a wizard's reason and gold button) that stays in view while
  * the step scrolls. Every panel's content is one of these.
@@ -59,7 +70,7 @@ export interface CanvasPanel {
    */
   wizard?: boolean;
   /** The scene's button that opened it: a keyboard user gets the focus back there when the panel goes. */
-  returnFocusTo?: HTMLElement | null;
+  returnFocusTo?: Opener | null;
   /** What a phone's Back says it goes back to, said only to screen readers ("to the Forge"). */
   backLabel?: string;
 }
@@ -73,12 +84,15 @@ function usePanelFocus(panel: CanvasPanel) {
   const latest = useRef(panel);
   latest.current = panel;
   useEffect(() => {
+    // A phone's page hides the scene the moment it opens, which takes the focus off the button before this runs: the opener
+    // recorded at the click (`openerOf`) is the one to trust; the focus now is only the fallback.
     const before = document.activeElement as HTMLElement | null;
     const byKeyboard = keyboardHasFocus();
     root.current?.focus({ preventScroll: true });
     return () => {
-      const back = latest.current.returnFocusTo ?? before;
-      if (byKeyboard && back !== null && back !== undefined && back.isConnected) {
+      const opener = latest.current.returnFocusTo;
+      const back = opener?.el ?? before;
+      if ((opener?.byKeyboard ?? byKeyboard) && back !== null && back !== undefined && back.isConnected) {
         back.focus({ preventScroll: true });
       }
     };
@@ -226,7 +240,7 @@ export function CanvasTarget({
   w: number;
   h: number;
   label: string;
-  onClick: (opener: HTMLElement) => void;
+  onClick: (opener: Opener) => void;
   expanded?: boolean;
   disabled?: boolean;
   slot?: boolean;
@@ -249,7 +263,7 @@ export function CanvasTarget({
         data-seat={seat}
         ref={cssVars({ '--pw': `${String(w * g.s)}px`, '--ph': `${String(h * g.s)}px` })}
         onClick={(event) => {
-          onClick(event.currentTarget);
+          onClick(openerOf(event.currentTarget));
         }}
       >
         {children}
