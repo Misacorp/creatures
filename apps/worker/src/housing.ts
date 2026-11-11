@@ -47,7 +47,7 @@ import {
   type RoomKindDef,
   type RoomView,
 } from '@creatures/game';
-import { housing as shippedHousing } from '@creatures/game/housing-content';
+import { shippedHousing } from '@creatures/game/housing-lazy';
 import { parseState } from './dungeon-state';
 import { busyReason } from './gear-access';
 import { debitParts, getParts } from './gear-store';
@@ -149,30 +149,68 @@ function payFingerprint(partId: string, pay: HousePay): string {
   return JSON.stringify([partId, pay.bait ?? 0, pay.scrap ?? 0, shards, materials]);
 }
 
-export class Housing {
-  private readonly content: HousingContent;
-  private readonly partById: Map<string, PartDef>;
-  private readonly kindById: Map<string, RoomKindDef>;
-  private readonly formOfPiece: Map<string, FormDef>;
-  private readonly skinById: Map<string, HousingContent['skins'][number]>;
-  private readonly materialById: Map<string, HousingContent['materials'][number]>;
-  private readonly stampIds: ReadonlySet<string>;
+/** The lookups a house needs from the content, built once on first use (not when the object starts). */
+interface ContentIndex {
+  readonly content: HousingContent;
+  readonly partById: Map<string, PartDef>;
+  readonly kindById: Map<string, RoomKindDef>;
+  readonly formOfPiece: Map<string, FormDef>;
+  readonly skinById: Map<string, HousingContent['skins'][number]>;
+  readonly materialById: Map<string, HousingContent['materials'][number]>;
+  readonly stampIds: ReadonlySet<string>;
+}
 
-  constructor(private readonly deps: HousingDeps) {
-    const content = deps.content ?? shippedHousing;
-    this.content = content;
-    this.partById = new Map(content.parts.map((p) => [p.id, p]));
-    this.kindById = new Map(content.rooms.map((r) => [r.id, r]));
-    const forms = new Map(content.forms.map((f) => [f.id, f]));
-    this.formOfPiece = new Map(
+function indexContent(content: HousingContent): ContentIndex {
+  const forms = new Map(content.forms.map((f) => [f.id, f]));
+  return {
+    content,
+    partById: new Map(content.parts.map((p) => [p.id, p])),
+    kindById: new Map(content.rooms.map((r) => [r.id, r])),
+    formOfPiece: new Map(
       content.pieces.flatMap((p) => {
         const form = forms.get(p.form);
         return form === undefined ? [] : [[p.id, form] as const];
       }),
-    );
-    this.skinById = new Map(content.skins.map((s) => [s.id, s]));
-    this.materialById = new Map(content.materials.map((m) => [m.id, m]));
-    this.stampIds = new Set(content.stamps.map((s) => s.id));
+    ),
+    skinById: new Map(content.skins.map((s) => [s.id, s])),
+    materialById: new Map(content.materials.map((m) => [m.id, m])),
+    stampIds: new Set(content.stamps.map((s) => s.id)),
+  };
+}
+
+export class Housing {
+  private built: ContentIndex | null = null;
+
+  constructor(private readonly deps: HousingDeps) {}
+
+  /**
+   * The content and its lookups, made when a house route first needs them: the object builds a `Housing` on every start with
+   * housing on, and a request that never touches a house (state, the alarm) must not validate or index the content.
+   */
+  private get index(): ContentIndex {
+    this.built ??= indexContent(this.deps.content ?? shippedHousing());
+    return this.built;
+  }
+  private get content(): HousingContent {
+    return this.index.content;
+  }
+  private get partById(): Map<string, PartDef> {
+    return this.index.partById;
+  }
+  private get kindById(): Map<string, RoomKindDef> {
+    return this.index.kindById;
+  }
+  private get formOfPiece(): Map<string, FormDef> {
+    return this.index.formOfPiece;
+  }
+  private get skinById(): Map<string, HousingContent['skins'][number]> {
+    return this.index.skinById;
+  }
+  private get materialById(): Map<string, HousingContent['materials'][number]> {
+    return this.index.materialById;
+  }
+  private get stampIds(): ReadonlySet<string> {
+    return this.index.stampIds;
   }
 
   private get sql(): SqlStorage {

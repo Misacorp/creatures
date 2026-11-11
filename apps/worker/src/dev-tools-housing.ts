@@ -16,7 +16,7 @@ import {
   int,
   type HousingContent,
 } from '@creatures/game';
-import { housing as content } from '@creatures/game/housing-content';
+import { shippedHousing } from '@creatures/game/housing-lazy';
 import type * as v from 'valibot';
 import { DevError, type ToolCtx } from './dev-context';
 import type {
@@ -55,6 +55,7 @@ function housingOf(ctx: ToolCtx) {
 
 export function housingGrant(ctx: ToolCtx, body: Body<typeof HousingGrantBodySchema>) {
   housingOf(ctx);
+  const content = shippedHousing();
   const { sql, userId, now } = ctx;
   if (body.materials !== undefined) {
     for (const m of content.materials)
@@ -98,6 +99,7 @@ export function housingBuild(ctx: ToolCtx, body: Body<typeof HousingBuildBodySch
       .filter((p) => p.built_at !== null)
       .map((p) => p.part_id),
   );
+  const content = shippedHousing();
   const wanted = body.parts === 'all' ? content.parts.map((p) => p.id) : body.parts;
   for (const id of wanted) {
     if (!content.parts.some((p) => p.id === id)) throw new DevError(400, 'invalid_body');
@@ -200,7 +202,7 @@ export function housingGuests(ctx: ToolCtx, body: Body<typeof HousingGuestsBodyS
   for (let n = 1; n <= count; n++) {
     createGuest(ctx, n, level);
     const id = guestId(n);
-    furnishGuest(ctx, id, content);
+    furnishGuest(ctx, id, shippedHousing());
     ids.push(id);
   }
   // The caller's own house exists, so the guests have somewhere to have stamped.

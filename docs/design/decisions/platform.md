@@ -4,6 +4,14 @@ Hosting, Durable Objects, scheduling, CI and deploys, staging, dependencies, sec
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-11: Housing content is validated on first use in the worker, not at isolate start
+
+ID: `2026-11-11-housing-content-is-validated-on-first` · Status: current
+
+**Decision.** The worker takes the housing content through `shippedHousing()` (`@creatures/game/housing-lazy`), which validates on its first call and memoises the result per isolate, and `Housing` builds its content lookups on first use. The client keeps the eager `@creatures/game/housing-content` entry.
+
+**Reasoning.** Measured in Node (20 runs): parsing and validating the content takes about 4 to 6 ms median and 10 to 12 ms cold, with no database rows involved. It used to run when the worker module was evaluated, in every isolate, with housing off too. A module-level memo of static content holds no state that must last between requests, so it fits the object's sleep model. Workers CPU is only roughly comparable to Node. Numbers and the test: `docs/design/housing.md`, "Server cost of the content".
+
 ## 2026-11-11: Furniture workshop: sets are styles drawn at load, shipped pixels kept as reasoned overrides and locked
 
 ID: `2026-11-11-furniture-workshop-sets-are-styles-drawn` · Status: current
