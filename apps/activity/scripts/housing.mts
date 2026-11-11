@@ -259,9 +259,11 @@ if (command === 'sheet') {
   }
 } else if (command === 'new-set' || command === 'remove-set' || command === 'check') {
   (await import('./housing-new-set.mts')).main(args);
+} else if (command === 'interior-sheets') {
+  (await import('./housing-interior.mts')).main(args);
 } else {
   console.log(
-    'Usage: pnpm housing sheet <style> | compare [--set id,id] | lock [--check] | new-set <id> | remove-set <id> | check   [--out dir]',
+    'Usage: pnpm housing sheet <style> | compare [--set id,id] | lock [--check] | new-set <id> | remove-set <id> | check | interior-sheets   [--out dir]',
   );
   process.exit(command === undefined ? 0 : 1);
 }
