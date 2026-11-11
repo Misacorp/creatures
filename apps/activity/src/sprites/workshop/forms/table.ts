@@ -6,6 +6,7 @@ import { canvas, toSprite } from '../../draw/canvas';
 import { foot, leg, motifAt, trim, trimHeight } from '../../draw/parts';
 import { INK, box, hline } from '../../draw/shapes';
 import { type FormDef, part } from './kit';
+import { shapedTable } from './table-shapes';
 
 const W = 44;
 const H = 18;
@@ -16,6 +17,8 @@ export const TABLE: FormDef = {
   parts: ['legs', 'stretcher', 'apron', 'top'],
   note: 'Top rows 0-4, apron under it, legs x3-8 and x35-40 down to the feet (rows 15-17), stretcher rows 11-13.',
   draw(style) {
+    const shape = style.shapes?.table;
+    if (shape !== undefined && Object.keys(shape).length > 0) return shapedTable(style, shape);
     const c = canvas(W, H);
     const feet = style.foot === 'none' ? 0 : style.foot === 'block' ? 3 : 2;
     part(

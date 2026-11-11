@@ -154,7 +154,9 @@ function outDir(name: string): string {
   return dir;
 }
 
-if (command === 'sheet') {
+if (command === 'variants' || (command === 'sheet' && args.includes('--room'))) {
+  await (await import('./housing-review.mts')).run(args);
+} else if (command === 'sheet') {
   const id = args[1] ?? '';
   const style = SAMPLE_STYLES[id] ?? SHIPPED_SETS[id]?.style;
   if (style === undefined) {

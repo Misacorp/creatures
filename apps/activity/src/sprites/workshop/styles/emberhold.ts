@@ -44,7 +44,12 @@ export const EMBERHOLD: Style = {
   lamp: 'lantern',
   lampMaterial: 'metal',
   glow: { kind: 'ring', inner: 'y', outer: 'z' },
-  rug: { shape: 'square', weave: 'stripes' },
+  rug: { shape: 'square', weave: 'stripes', motifs: 'row' },
   picture: 'flame',
   shelf: ['candle', 'bottle', 'books'],
+  shapes: {
+    cupboard: { bands: true, base: 'plinth' },
+    stool: { kind: 'drum' },
+    curtains: { kind: 'straight' },
+  },
 };

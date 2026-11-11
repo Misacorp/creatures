@@ -1,10 +1,12 @@
 /**
  * Cupboard, 30x36: the crown (with the style's crest above it and its trim), the carcass, two doors that meet in
- * the middle with their handles, a drawer, the plinth and the feet. Stands on its bottom row.
+ * the middle with their handles, a drawer, the plinth and the feet. Stands on its bottom row. The variants
+ * (`Style.shapes.cupboard`) are drawn by `cupboard-shapes.ts`.
  */
 import { canvas, toSprite } from '../../draw/canvas';
 import { crest, crestHeight, leg, motifAt, panel, trim } from '../../draw/parts';
 import { INK, box, vline } from '../../draw/shapes';
+import { shapedCupboard } from './cupboard-shapes';
 import { type FormDef, part } from './kit';
 
 const W = 30;
@@ -16,6 +18,8 @@ export const CUPBOARD: FormDef = {
   parts: ['feet', 'carcass', 'doors', 'drawer', 'plinth', 'crown'],
   note: 'Crown from row 4 (lower under a tall crest), carcass x1-28, doors rows 9-24, drawer rows 25-28, plinth rows 29-31, feet 32-35.',
   draw(style) {
+    const shape = style.shapes?.cupboard;
+    if (shape !== undefined && Object.keys(shape).length > 0) return shapedCupboard(style, shape);
     const c = canvas(W, H);
     const top = Math.max(4, crestHeight(style.top, W) + 1);
     part(c, style, 'cupboard', 'feet', { x: 0, y: 31, w: W, h: 5 }, ({ c, style, at }) => {

@@ -45,4 +45,12 @@ export const MOONLIT: Style = {
   rug: { shape: 'oval', weave: 'dots' },
   picture: 'moon',
   shelf: ['crystal', 'books', 'jar'],
+  shapes: {
+    bed: { head: 'arched' },
+    cupboard: { top: 'arched' },
+    table: { skirt: 'swag' },
+    stool: { kind: 'pouf', mark: true },
+    frame: { kind: 'mirror' },
+    curtains: { kind: 'straight' },
+  },
 };

@@ -31,10 +31,14 @@ export const STORMGLASS: Style = {
   top: 'rounded',
   motif: 'bolt',
   weave: 'zigzag',
-  lamp: 'cage',
+  lamp: 'globe',
   lampMaterial: 'metal',
-  glow: { kind: 'dither', inner: 'h', outer: 'g' },
+  glow: { kind: 'stipple', inner: 'h', outer: 'g' },
   rug: { shape: 'square', weave: 'zigzag' },
   picture: 'storm',
   shelf: ['crystal', 'bottle', 'jar'],
+  shapes: {
+    table: { kind: 'four-leg', skirt: 'apron' },
+    curtains: { kind: 'straight' },
+  },
 };

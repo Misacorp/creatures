@@ -6,6 +6,7 @@ import { blit, canvas, toSprite } from '../../draw/canvas';
 import { cushion, glow, lamp, leg, motifAt, pattern, rug } from '../../draw/parts';
 import { box } from '../../draw/shapes';
 import { type FormDef, part } from './kit';
+import { shapedStool } from './small-shapes';
 
 export const STOOL: FormDef = {
   id: 'stool',
@@ -13,6 +14,8 @@ export const STOOL: FormDef = {
   parts: ['legs', 'frame', 'seat'],
   note: 'Seat rows 0-4, frame rows 4-6, legs x2-5 and x10-13 to the bottom row.',
   draw(style) {
+    const shape = style.shapes?.stool;
+    if (shape !== undefined && Object.keys(shape).length > 0) return shapedStool(style, shape);
     const c = canvas(16, 12);
     part(c, style, 'stool', 'legs', { x: 1, y: 6, w: 14, h: 6 }, ({ c, style, at }) => {
       leg(c, at.x + 1, at.y, at.h, style.leg, style.wood, { w: 4, side: 'left' });

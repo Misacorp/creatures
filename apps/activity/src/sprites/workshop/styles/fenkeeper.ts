@@ -31,10 +31,15 @@ export const FENKEEPER: Style = {
   top: 'rounded',
   motif: 'opal',
   weave: 'stripes',
-  lamp: 'bell',
+  lamp: 'paper',
   lampMaterial: 'linen',
-  glow: { kind: 'dither', inner: 'h', outer: 'g' },
+  glow: { kind: 'stipple', inner: 'h', outer: 'g' },
   rug: { shape: 'rounded', weave: 'stripes' },
   picture: 'reeds',
   shelf: ['jar', 'plant', 'bottle'],
+  shapes: {
+    cupboard: { top: 'rounded' },
+    stool: { kind: 'drum' },
+    curtains: { kind: 'bare', valance: 'none' },
+  },
 };

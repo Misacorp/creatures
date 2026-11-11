@@ -15,6 +15,7 @@ import {
 } from '../../draw/parts';
 import { INK, box, hline } from '../../draw/shapes';
 import { type FormDef, part } from './kit';
+import { shapedCurtains, shapedFrame } from './small-shapes';
 
 export const FRAME: FormDef = {
   id: 'frame',
@@ -22,6 +23,8 @@ export const FRAME: FormDef = {
   parts: ['frame', 'picture'],
   note: 'The frame fills the box under its crest; the picture sits 3 px inside.',
   draw(style) {
+    const shape = style.shapes?.frame;
+    if (shape !== undefined && Object.keys(shape).length > 0) return shapedFrame(style, shape);
     const c = canvas(24, 16);
     const top = Math.min(4, crestHeight(style.top, 24));
     part(c, style, 'frame', 'frame', { x: 0, y: top, w: 24, h: 16 - top }, ({ c, style, at }) => {
@@ -57,6 +60,8 @@ export const CURTAINS: FormDef = {
   parts: ['window', 'sill', 'drapes', 'valance', 'rod'],
   note: 'Rod rows 1-2 (crest above), glass x7-28 rows 4-21, drapes x1-10 and x25-34 tied at row 13, sill rows 22-25.',
   draw(style) {
+    const shape = style.shapes?.curtains;
+    if (shape !== undefined && Object.keys(shape).length > 0) return shapedCurtains(style, shape);
     const c = canvas(36, 26);
     const up = Math.min(2, crestHeight(style.top, 36));
     part(c, style, 'curtains', 'window', { x: 6, y: 3, w: 24, h: 20 }, ({ c, style, at }) => {

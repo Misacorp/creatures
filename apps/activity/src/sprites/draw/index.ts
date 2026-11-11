@@ -5,3 +5,4 @@
 export * from './canvas';
 export * from './shapes';
 export * from './parts';
+export * from './solid';
