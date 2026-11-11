@@ -290,15 +290,12 @@ function forge2(): Built {
     px(g, 11 + i, 36 + i, 'q');
     px(g, 35 - i, 36 + i, 'q');
   }
-  // the shingle roof
-  roof(g, 23, 20, 31, 6, 18, 's', 'h');
-  rect(g, 4, 31, 39, 1, 'p');
-  px(g, 5, 30, 'p');
-  px(g, 41, 30, 'p');
-  // a stone chimney
-  rect(g, 30, 8, 7, 14, 'F');
+  // a stone chimney: drawn first and carried down behind the roof, so the shingles cut it and run into its foot
+  rect(g, 30, 8, 7, 20, 'F');
   rect(g, 29, 8, 9, 1, 'k');
-  for (const y of [11, 14, 17, 20]) rect(g, 30, y, 7, 1, 'k');
+  rect(g, 29, 9, 1, 19, 'k');
+  rect(g, 37, 9, 1, 19, 'k');
+  for (const y of [11, 14, 17, 20, 23, 26]) rect(g, 30, y, 7, 1, 'k');
   for (const [x, y] of [
     [33, 9],
     [31, 12],
@@ -306,6 +303,8 @@ function forge2(): Built {
     [33, 15],
     [31, 18],
     [35, 18],
+    [33, 21],
+    [35, 24],
   ] as const)
     px(g, x, y, 'k');
   dots(g, [
@@ -314,6 +313,11 @@ function forge2(): Built {
     [31, 2, 'o'],
     [34, 0, 'y'],
   ]);
+  // the shingle roof
+  roof(g, 23, 20, 31, 6, 18, 's', 'h');
+  rect(g, 4, 31, 39, 1, 'p');
+  px(g, 5, 30, 'p');
+  px(g, 41, 30, 'p');
   // the hearth mouth and fire
   rect(g, FX - 6, 41, 13, 11, 'k');
   rect(g, FX - 5, 40, 11, 1, 'k');
@@ -375,16 +379,18 @@ function stoneSmithy(g: Grid, FX: number, slateShade = 'V', iron = 'i'): void {
     rect(g, 6, y, 3, 3, 'w');
     rect(g, 45, y, 3, 3, 'w');
   }
+  // chimney: drawn first and carried down behind the roof, so the slates cut it and run into its foot
+  rect(g, 37, 4, 9, 25, 'g');
+  rect(g, 44, 4, 2, 25, 'G');
+  rect(g, 37, 4, 1, 25, 'w');
+  for (let y = 8; y < 29; y += 4) rect(g, 37, y, 9, 1, 'G');
+  rect(g, 36, 6, 1, 23, 'k');
+  rect(g, 46, 6, 1, 23, 'k');
+  rect(g, 36, 3, 11, 2, 'k');
+  rect(g, 36, 5, 11, 1, iron);
   roof(g, 27, top, 29, 8, 22, 'v', slateShade);
   rect(g, 4, 29, 46, 2, iron);
   rect(g, 4, 31, 46, 1, 'k');
-  // chimney
-  rect(g, 37, 4, 9, top - 1, 'g');
-  rect(g, 44, 4, 2, top - 1, 'G');
-  rect(g, 37, 4, 1, top - 1, 'w');
-  for (let y = 8; y < top; y += 4) rect(g, 37, y, 9, 1, 'G');
-  rect(g, 36, 3, 11, 2, 'k');
-  rect(g, 36, 5, 11, 1, iron);
   // the arch with an iron lintel
   rect(g, FX - 8, 37, 17, 1, iron);
   rect(g, FX - 8, 36, 17, 1, 'k');
@@ -586,6 +592,7 @@ export const VALLEY_LEVELS_FORGE_CONCEPTS: ConceptSet = {
     'Level 3 Stone: a cut-stone smithy with a slate roof, black iron eave band and lintel, a tall stone chimney, a plank door with iron hinges and a big iron anvil.',
     'Level 4 Valley: the stone forge with a teal-and-cream awning over the fire, a teal pennant, brass lamps, a glass window and a quench trough.',
     'Level 5 Crystal: the master forge: a glowing crystal finial on the chimney, crystal inlays and pane, gold trim on eaves and lintel, gold lamps, sparks. The crystal glows by day too.',
+    '2026-11-11 (Misa), redo of levels 2 to 5: "Chimneys are floating in all of these." Each chimney now rises out of the roof: drawn first and carried down behind the roof, so the shingles or slates cut its foot, its outline closes on the roof line, and no gap is left. Level 1 has no chimney.',
   ],
   ...(VALLEY_GLOW_CONCEPTS.backdrop === undefined
     ? {}
@@ -595,13 +602,22 @@ export const VALLEY_LEVELS_FORGE_CONCEPTS: ConceptSet = {
       'Level 1: open-air smithy, stone hearth, stump anvil, rope-lashed frame.',
       forge1(),
     ),
-    'forge-2': make('Level 2: fieldstone forge, timber frame, shingles, bellows, sign.', forge2()),
-    'forge-3': make('Level 3: cut stone, slate, black iron, tall chimney, big anvil.', forge3()),
+    'forge-2': make(
+      'Level 2: fieldstone forge, timber frame, shingles, bellows, sign. 2026-11-11: the chimney now rises out of the shingle roof, shingles running into its foot.',
+      forge2(),
+    ),
+    'forge-3': make(
+      'Level 3: cut stone, slate, black iron, tall chimney, big anvil. 2026-11-11: the chimney now rises out of the slate roof, slates running into its foot.',
+      forge3(),
+    ),
     'forge-4': make(
-      'Level 4: teal-and-cream awning, pennant, brass lamps, glass, trough.',
+      'Level 4: teal-and-cream awning, pennant, brass lamps, glass, trough. 2026-11-11: the chimney now rises out of the slate roof, slates running into its foot.',
       forge4(),
     ),
-    'forge-5': make('Level 5: crystal finial and inlays, gold trim, sparks.', forge5()),
+    'forge-5': make(
+      'Level 5: crystal finial and inlays, gold trim, sparks. 2026-11-11: the chimney now rises out of the slate roof, slates running into its foot.',
+      forge5(),
+    ),
   },
   levels: {
     forge: [

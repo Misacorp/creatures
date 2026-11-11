@@ -228,7 +228,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 - **Status:** draft
 - **Requested:** 2026-11-09 (Misa): "Each building can absolutely change building material as it upgrades in levels ... Naturally a forge can't be made of wood, but it can have wooden elements on it ... Think of how Clash of Clans brings a new look with each new town hall level."
 - **Source:** `apps/activity/src/sprites/concepts/valley-levels-forge.ts` (draw it with `pnpm art valley-levels-forge`)
-- **Sheet of:** `d75c1105b5dd`
+- **Sheet of:** `d5821d2494de`
 - Five levels on one 56x60 canvas, all standing on row 51, centred; smaller levels leave the top and sides empty. Colours from valley-tiers, 16 or fewer per sprite.
 - Night is the main palette with the ember glow lying on the ground in stepped rings in front of the fire; alts.day is the same pixels with the fire still lit and a soot-dark yard.
 - Level 1 Humble: an open-air smithy: a fieldstone hearth mound with a small fire, a stump with a small anvil, a crooked rope-lashed log frame under a straw roof.
@@ -236,14 +236,15 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 - Level 3 Stone: a cut-stone smithy with a slate roof, black iron eave band and lintel, a tall stone chimney, a plank door with iron hinges and a big iron anvil.
 - Level 4 Valley: the stone forge with a teal-and-cream awning over the fire, a teal pennant, brass lamps, a glass window and a quench trough.
 - Level 5 Crystal: the master forge: a glowing crystal finial on the chimney, crystal inlays and pane, gold trim on eaves and lintel, gold lamps, sparks. The crystal glows by day too.
+- 2026-11-11 (Misa), redo of levels 2 to 5: "Chimneys are floating in all of these." Each chimney now rises out of the roof: drawn first and carried down behind the roof, so the shingles or slates cut its foot, its outline closes on the roof line, and no gap is left. Level 1 has no chimney.
 
 | Code | Kind | Role | Status | Idea |
 | --- | --- | --- | --- | --- |
 | `forge-1` | free |  | draft | Level 1: open-air smithy, stone hearth, stump anvil, rope-lashed frame. |
-| `forge-2` | free |  | draft | Level 2: fieldstone forge, timber frame, shingles, bellows, sign. |
-| `forge-3` | free |  | draft | Level 3: cut stone, slate, black iron, tall chimney, big anvil. |
-| `forge-4` | free |  | draft | Level 4: teal-and-cream awning, pennant, brass lamps, glass, trough. |
-| `forge-5` | free |  | draft | Level 5: crystal finial and inlays, gold trim, sparks. |
+| `forge-2` | free |  | draft | Level 2: fieldstone forge, timber frame, shingles, bellows, sign. 2026-11-11: the chimney now rises out of the shingle roof, shingles running into its foot. |
+| `forge-3` | free |  | draft | Level 3: cut stone, slate, black iron, tall chimney, big anvil. 2026-11-11: the chimney now rises out of the slate roof, slates running into its foot. |
+| `forge-4` | free |  | draft | Level 4: teal-and-cream awning, pennant, brass lamps, glass, trough. 2026-11-11: the chimney now rises out of the slate roof, slates running into its foot. |
+| `forge-5` | free |  | draft | Level 5: crystal finial and inlays, gold trim, sparks. 2026-11-11: the chimney now rises out of the slate roof, slates running into its foot. |
 
 <a id="valley-levels-paddock"></a>
 
