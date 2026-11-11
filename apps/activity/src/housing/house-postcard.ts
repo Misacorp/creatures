@@ -40,6 +40,7 @@ import { pieceArt, shellArt, skinArt } from './house-art';
 import {
   DAY_LIGHTING,
   lightOf,
+  moonSprite,
   pixelHash,
   type Lighting,
   type Material,
@@ -63,6 +64,9 @@ const EAVE = 3;
 const TOP_MARGIN = 1;
 /** The cellar's stone course at the foot of the walls. */
 const CELLAR_H = 5;
+
+/** A postcard narrower than this has no moon at night. */
+const MOON_MIN_WIDTH = 100;
 
 const INK = '#0d0a1a';
 const WOOD = '#85603f';
@@ -630,7 +634,15 @@ export function composePostcard(
 
   const sprite = r.sprite();
   const placements: Placement[] = [];
-  if (dark) drawSky(placements, width, groundY, phase, undefined, true);
+  if (dark) {
+    drawSky(placements, width, groundY, phase, undefined, true);
+    // a small picture (the hut) has no room for the moon: it would sit on the chimney
+    if (width < MOON_MIN_WIDTH) {
+      const moon = moonSprite();
+      for (let i = placements.length - 1; i >= 0; i--)
+        if (placements[i]?.sprite === moon) placements.splice(i, 1);
+    }
+  }
   for (const layer of r.layers())
     placements.push({ sprite: layer.sprite, x: 0, y: 0, mat: layer.mat });
   return {

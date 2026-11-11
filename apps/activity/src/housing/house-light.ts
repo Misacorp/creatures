@@ -407,7 +407,7 @@ export const DAY_LIGHTING: Lighting = { phase: 'day', lights: [] };
 
 /** Outer half axes of each light's shape; the three steps are at `STEPS` of them. */
 export const LIGHT_SHAPE: Readonly<Record<LightKind, { rx: number; ry: number }>> = {
-  lamp: { rx: 50, ry: 40 },
+  lamp: { rx: 42, ry: 32 },
   fire: { rx: 46, ry: 34 },
   lantern: { rx: 42, ry: 32 },
   porch: { rx: 26, ry: 22 },

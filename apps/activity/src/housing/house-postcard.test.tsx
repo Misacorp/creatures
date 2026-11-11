@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { houseGrid } from '@creatures/game';
+import { houseGrid, type HouseView } from '@creatures/game';
 import { housing } from '@creatures/game/housing-content';
 import { byRole, createPage, type Page } from '../test-dom';
 import { expandRows } from '../sprites/sprite-data';
@@ -346,7 +346,7 @@ describe('the postcard in a phase', () => {
   it('lights the rooms of a house view that hold a light or a housemate, and only those', () => {
     const parts = [...THREE_FLOORS];
     const base = sceneHouse({ parts });
-    const dark = {
+    const dark: HouseView = {
       ...base,
       housemates: [],
       rooms: base.rooms.map((r) => ({
@@ -354,7 +354,7 @@ describe('the postcard in a phase', () => {
         spots: Object.fromEntries(Object.keys(r.spots).map((k) => [k, null])),
       })),
     };
-    const count = (house: typeof dark): number =>
+    const count = (house: HouseView): number =>
       windowLights(composePostcard(house, undefined, 'night'));
     expect(count(dark)).toBe(0);
     // a lamp in one non-hearth room
