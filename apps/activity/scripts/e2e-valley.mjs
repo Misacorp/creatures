@@ -1703,10 +1703,11 @@ try {
     },
   );
 
-  // The Signpost with the valley's systems on (phase 5 step 2): take a seat, post a scout, move it, drag one on with the fit
-  // previewed, remove it; a full pack. Nothing may overlap (`expectTopmost`) at any width.
+  // The Signpost with the valley's systems on, as a canvas (Misa, 2026-11-11): the scene, a click on the signpost opens the expedition map,
+  // which is dragged and where a destination is picked; its drawer sends a scout (who, seat, kit, confirm) and the scout stands on the map.
+  // Nothing may overlap (`expectTopmost`) and nothing scrolls (`expectNoScroll`) at any width.
   await scenario(
-    'valley systems on: the Signpost is its scouts: take a seat, post, move, drag with a preview, remove',
+    'valley systems on: the Signpost is a canvas: buy a seat, open the map, drag it, pick a place, send a scout, move it, drag one on, rest it',
     () => {
       const config = ROUTES.get('/api/config');
       answerOverride.set('/api/config', () => ({ ...config(), valleySystems: true }));
@@ -1721,94 +1722,173 @@ try {
       await waitFor(page.locator(VALLEY), 'attached');
       await place('signpost').evaluate((el) => el.click());
       await waitFor(heading('Signpost'));
-      // Today's Expeditions page is gone: no trips, no explorer to send.
+      // Today's Expeditions page is gone: no trips, no explorer to send, no page of seat cards.
       if ((await page.getByText(/Send an explorer|Send on a trip/i).count()) > 0)
         throw new Error('the Expeditions page is still drawn');
-      await shot('signpost-no-seats');
-      // The scene's one step, then the seat to buy (the first is free).
-      const take = page.getByRole('button', { name: /^Take your first seat/ });
-      await waitFor(take);
-      await expectTopmost(take.first(), 'the "Take your first seat" button');
-      await page.getByRole('button', { name: /A new seat/ }).click();
-      await waitFor(page.getByRole('dialog'));
-      await page.getByRole('button', { name: /^Buy the seat/ }).click();
-      await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
-      await waitFor(page.getByRole('heading', { name: 'Seat 1' }));
+      if ((await page.locator('li.sp-seat').count()) > 0)
+        throw new Error('the old page of seat cards is still drawn');
+      // The scene opens first: the signpost, and the dashed outline of the first seat (free).
+      await waitFor(sceneTarget('The signpost'));
+      await waitFor(sceneTarget('A new seat'));
+      await expectNoScroll();
+      await expectTopmost(sceneTarget('A new seat'), 'the dashed outline of the next seat');
+      await expectTopmost(sceneTarget('The signpost'), 'the signpost');
+      await shot('signpost-canvas-no-seats');
+      // Buy the first seat from its outline: the buy step opens beside the canvas (a page on a phone).
+      await sceneTarget('A new seat').click();
+      await waitFor(drawer.getByRole('heading', { name: 'A new scout seat' }));
+      await shot('signpost-step-buy');
+      await drawer.getByRole('button', { name: /^Buy the seat/ }).click();
+      await drawer
+        .getByRole('heading', { name: 'A new scout seat' })
+        .waitFor({ state: 'detached', timeout: 10000 });
+      await waitFor(sceneTarget('Seat 1: nobody posted'));
       if (
         !scoutCalls.some(
           ([kind, body]) => kind === 'buy' && typeof body.idempotencyKey === 'string',
         )
       )
         throw new Error('the seat was bought without an idempotency key');
-      // Post a scout from the picker.
-      const slot = page.getByRole('button', { name: /^Seat 1: nobody posted/ });
-      await expectTopmost(slot, 'the empty scout slot');
-      await slot.click();
-      await waitFor(page.getByRole('dialog', { name: /Who scouts/ }));
-      await shot('signpost-picker');
-      const [first, second] = baseState.creatures;
-      await page
+      await expectNoScroll();
+      await shot('signpost-canvas-one-seat');
+      // A click on the signpost opens the expedition map as the canvas.
+      await sceneTarget('The signpost').click();
+      const map = page.locator('.world-map.fill');
+      await waitFor(map);
+      await waitFor(place('ember-caves'));
+      await expectNoScroll();
+      await shot('signpost-map');
+      // The map pans by drag (when the view is smaller than the map), and a drag that starts on a place never opens it.
+      const before = await map.evaluate((el) => [el.scrollLeft, el.scrollTop]);
+      const room = await map.evaluate((el) => [
+        el.scrollWidth - el.clientWidth,
+        el.scrollHeight - el.clientHeight,
+      ]);
+      const pin = place('tidepools').locator('.wm-pin');
+      const at = await pin.boundingBox();
+      if (at === null) throw new Error('no box for the Tidepools pin');
+      await page.mouse.move(at.x + at.width / 2, at.y + at.height / 2);
+      await page.mouse.down();
+      // The content follows the hand: drag toward the side of the map that has room to scroll.
+      const dx = before[0] < room[0] / 2 ? -40 : 40;
+      const dy = before[1] < room[1] / 2 ? -30 : 30;
+      await page.mouse.move(at.x + at.width / 2 + dx, at.y + at.height / 2 + dy, { steps: 6 });
+      await page.mouse.up();
+      if ((await drawer.count()) > 0) throw new Error('a drag on a place opened it');
+      const after = await map.evaluate((el) => [el.scrollLeft, el.scrollTop]);
+      if ((room[0] > 0 || room[1] > 0) && after[0] === before[0] && after[1] === before[1])
+        throw new Error('the map did not pan by drag');
+      await shot('signpost-map-dragged');
+      // A place is picked: its drawer, with what it is and the one gold button.
+      await place('ember-caves').locator('.wm-pin').click();
+      await waitFor(drawer.getByRole('heading', { name: 'Ember Caves' }));
+      await waitFor(drawer.getByRole('button', { name: /^Send a scout here/ }));
+      await shot('signpost-step-place');
+      await drawer.getByRole('button', { name: /^Send a scout here/ }).click();
+      await waitFor(drawer.getByRole('heading', { name: 'Who scouts here?' }));
+      await shot('signpost-step-who');
+      await drawer
         .getByRole('option')
         .filter({ hasText: /Sproutle/ })
         .first()
         .click();
-      await waitFor(page.getByRole('button', { name: /^Seat 1: Sproutle/ }));
-      if (scoutCalls.at(-1)?.[1].creatureId !== second.id)
-        throw new Error('the post named another creature');
-      // The pack's line, and the tray calls the scout Scouting (no z on it).
-      await waitFor(page.getByRole('button', { name: /^Full in / }));
+      // Sproutle has no seat yet: which seat (the free one), then the kit, then the confirm.
+      await waitFor(drawer.getByRole('heading', { name: 'Which seat?' }));
+      await shot('signpost-step-seat');
+      await drawer.getByRole('button', { name: /^Seat 1/ }).click();
+      await waitFor(drawer.getByRole('heading', { name: 'Kit' }));
+      await shot('signpost-step-kit');
+      await drawer.getByRole('button', { name: /^No kit/ }).click();
+      await waitFor(drawer.getByRole('heading', { name: /Send a scout to Ember Caves/ }));
+      await shot('signpost-step-ready');
+      const [first, second] = baseState.creatures;
+      if (scoutCalls.some(([kind]) => kind === 'seat')) throw new Error('sent before the confirm');
+      await drawer.getByRole('button', { name: /^Send Sproutle to Ember Caves/ }).click();
+      await drawer.waitFor({ state: 'detached', timeout: 10000 });
+      const sent = scoutCalls.filter(([k]) => k === 'seat').at(-1)?.[1];
+      if (
+        sent?.seatId !== 'seat-1' ||
+        sent.creatureId !== second.id ||
+        sent.destination !== 'ember-caves'
+      )
+        throw new Error(`the post was ${JSON.stringify(sent)}`);
+      // The scout stands at the place on the map, with the pack's state on a small flag.
+      await waitFor(place('ember-caves').locator('.wm-chip'));
+      if (!/1 scout there/.test((await place('ember-caves').getAttribute('aria-label')) ?? ''))
+        throw new Error('the map does not say a scout is at Ember Caves');
+      await waitFor(place('ember-caves').locator('.wm-flag'));
+      await expectNoScroll();
+      await shot('signpost-map-scout');
+      // The tray calls the scout Scouting (no z on it).
       const tray = page.locator(
         `section[aria-label="Creatures to post"] button[data-creature="${second.id}"]`,
       );
       if (!/Scouting/.test((await tray.getAttribute('aria-label')) ?? ''))
         throw new Error('the tray does not say Scouting');
       if ((await tray.locator('.vy-zz').count()) > 0) throw new Error('a scout carries the z');
-      // Move it: another destination, from the drawer.
-      await page.getByRole('button', { name: /^Seat 1: scouting Tidepools/ }).click();
-      await waitFor(page.getByRole('dialog'));
-      await shot('signpost-where');
-      await page.getByRole('button', { name: /^Ember Caves/ }).click();
-      await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
-      await waitFor(page.getByRole('button', { name: /^Seat 1: scouting Ember Caves/ }));
-      // Drag a resting creature from the tray onto the seat: the seat previews the change before the drop.
+      // The scout's own step: its pack and pace; move it to another place.
+      await place('ember-caves').locator('.wm-pin').click();
+      await waitFor(drawer.getByRole('button', { name: /^Seat 1: Sproutle/ }));
+      await drawer.getByRole('button', { name: /^Seat 1: Sproutle/ }).click();
+      await waitFor(drawer.getByText('In the pack'));
+      await shot('signpost-step-scout');
+      await drawer.getByRole('button', { name: /^Move to another place/ }).click();
+      await waitFor(drawer.getByRole('heading', { name: 'Move the scout' }));
+      await shot('signpost-step-move');
+      await drawer.getByRole('button', { name: /^Tidepools/ }).click();
+      await drawer.waitFor({ state: 'detached', timeout: 10000 });
+      await waitFor(place('tidepools').locator('.wm-chip'));
+      if ((await place('ember-caves').locator('.wm-chip').count()) > 0)
+        throw new Error('the scout is still drawn at Ember Caves');
+      // A closed place is dimmed and says what opens it; it cannot be sent to.
+      if (!/locked/.test((await place('festival-grounds').getAttribute('class')) ?? ''))
+        throw new Error('the closed place is not dimmed');
+      await place('festival-grounds').locator('.wm-pin').click();
+      await waitFor(drawer.getByText(/Closed until a Festival week/));
+      if (await drawer.getByRole('button', { name: /^Send a scout here/ }).isEnabled())
+        throw new Error('a closed place can be sent to');
+      await shot('signpost-step-closed');
+      await page.keyboard.press('Escape');
+      await drawer.waitFor({ state: 'detached', timeout: 10000 });
+      // Back to the signpost scene: the scout stands at its seat; drag a resting creature from the tray onto the seat, which previews the fit.
+      await page.getByRole('button', { name: /^Back to the signpost/ }).click();
+      await waitFor(sceneTarget('Seat 1: Sproutle'));
       const mover = page.locator(
         `section[aria-label="Creatures to post"] button[data-creature="${first.id}"]`,
       );
-      const card = page.locator('li.sp-seat').first();
-      await mover.scrollIntoViewIfNeeded();
-      const at = await mover.boundingBox();
-      const over = await card.boundingBox();
-      if (at === null || over === null) throw new Error('no boxes to drag between');
-      await page.mouse.move(at.x + at.width / 2, at.y + at.height / 2);
+      const start = await mover.boundingBox();
+      const over = await sceneTarget('Seat 1: Sproutle').boundingBox();
+      if (start === null || over === null) throw new Error('no boxes to drag between');
+      await page.mouse.move(start.x + start.width / 2, start.y + start.height / 2);
       await page.mouse.down();
-      await page.mouse.move(at.x + at.width / 2 + 12, at.y + at.height / 2 + 12, { steps: 4 });
+      await page.mouse.move(start.x + start.width / 2 + 12, start.y + start.height / 2 + 12, {
+        steps: 4,
+      });
       await page.mouse.move(over.x + over.width / 2, over.y + over.height / 2, { steps: 10 });
+      // A slow machine may not have settled the hand over the seat yet: nudge it until the preview shows.
+      await page.mouse.move(over.x + over.width / 2 + 2, over.y + over.height / 2 + 2, {
+        steps: 3,
+      });
+      await page.waitForTimeout(150);
+      await page.mouse.move(over.x + over.width / 2, over.y + over.height / 2, { steps: 3 });
       await waitFor(page.locator('.sp-preview'));
       await expectTopmost(page.locator('.sp-preview').first(), 'the fit preview');
       await shot('signpost-drag-preview');
       await page.mouse.up();
-      await waitFor(page.getByRole('button', { name: /^Seat 1: Cindle/ }));
-      if (scoutCalls.at(-1)?.[1].creatureId !== first.id)
+      await waitFor(sceneTarget('Seat 1: Cindle'));
+      if (scoutCalls.filter(([k]) => k === 'seat').at(-1)?.[1].creatureId !== first.id)
         throw new Error('the drop posted another creature');
-      // Remove it: back to resting.
-      await page.getByRole('button', { name: /^Seat 1: Cindle/ }).click();
-      await waitFor(page.getByRole('dialog', { name: /Who scouts/ }));
-      await page
-        .getByRole('option')
-        .filter({ hasText: /Back to resting/ })
-        .first()
-        .click();
-      await waitFor(page.getByRole('button', { name: /^Seat 1: nobody posted/ }));
-      if (scoutCalls.at(-1)?.[1].creatureId !== null) throw new Error('remove did not send null');
-      // No two things overlap: every seat card and the tray is the topmost thing at its box.
-      for (const loc of [
-        page.locator('li.sp-seat').first(),
-        page.locator('.sp-page .vy-tray').first(),
-      ]) {
-        await loc.scrollIntoViewIfNeeded();
-        await expectTopmost(loc, 'a Signpost card');
-      }
-      await shot('signpost-one-seat');
+      // Rest it: the seat's own step, back to resting.
+      await sceneTarget('Seat 1: Cindle').click();
+      await waitFor(drawer.getByRole('button', { name: /^Back to resting/ }));
+      await drawer.getByRole('button', { name: /^Back to resting/ }).click();
+      await waitFor(sceneTarget('Seat 1: nobody posted'));
+      if (scoutCalls.filter(([k]) => k === 'seat').at(-1)?.[1].creatureId !== null)
+        throw new Error('rest did not send null');
+      await expectNoScroll();
+      await shot('signpost-canvas-rested');
+      await expectTopmost(hudBack(), 'the way back from the Signpost');
+      await backToValley();
     },
   );
 
@@ -1835,19 +1915,46 @@ try {
         throw new Error('the Signpost has no full-pack bubble');
       await bubble.evaluate((el) => el.click());
       await waitFor(heading('Signpost'));
-      await waitFor(page.getByText('Pack full').first());
-      await waitFor(page.getByRole('heading', { name: 'Seat 2' }));
-      await page
-        .getByRole('button', { name: /^Pack full/ })
+      // The scene says it on the seat (the scout's bubble and name), the crate counts the full packs.
+      await waitFor(sceneTarget('Seat 1'));
+      if (!/Pack full/.test((await sceneTarget('Seat 1').getAttribute('aria-label')) ?? ''))
+        throw new Error('the seat in the scene does not say its pack is full');
+      if (
+        !/Pack filling|Full in/.test((await sceneTarget('Seat 2').getAttribute('aria-label')) ?? '')
+      )
+        throw new Error('the second seat does not say its pack is filling');
+      if (!/1 full/.test((await sceneTarget('The packs').getAttribute('aria-label')) ?? ''))
+        throw new Error('the crate does not count the full pack');
+      await expectNoScroll();
+      await shot('signpost-two-seats');
+      // The crate opens the packs of every seat in the left drawer; a tap on one leads to its scout on the map.
+      await sceneTarget('The packs').click();
+      await waitFor(leftPanel.getByRole('button', { name: /^Seat 1.*Pack full/ }));
+      await page.waitForTimeout(400);
+      await expectTopmost(leftPanel.first(), 'the packs drawer');
+      await shot('signpost-packs');
+      await leftPanel.getByRole('button', { name: /^Seat 1.*Pack full/ }).click();
+      await waitFor(drawer.getByText('In the pack'));
+      await page.waitForTimeout(600);
+      await expectTopmost(rightPanel.first(), 'the pack drawer');
+      await shot('signpost-pack');
+      // The map flags the full pack and the fill of the other, each at its place.
+      // Escape closes the top panel while the focus is inside it.
+      await rightPanel.first().focus();
+      await page.keyboard.press('Escape');
+      await rightPanel.waitFor({ state: 'detached', timeout: 10000 });
+      // The packs list is still open (a page of its own on a phone, under the pack): close it.
+      await leftPanel
+        .getByRole('button', { name: /Close|^Back/ })
         .first()
         .click();
-      await waitFor(page.getByRole('dialog', { name: /Pack and pace/ }));
-      await page.waitForTimeout(600);
-      await expectTopmost(page.getByRole('dialog').first(), 'the pack drawer');
-      await shot('signpost-pack');
-      await page.keyboard.press('Escape');
-      await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
-      await shot('signpost-two-seats');
+      await leftPanel.waitFor({ state: 'detached', timeout: 10000 });
+      await waitFor(place('ember-caves'));
+      if ((await place('ember-caves').locator('.wm-flag').innerText()) !== 'FULL')
+        throw new Error('the map does not flag the full pack at Ember Caves');
+      if ((await place('tidepools').locator('.wm-flag').innerText()) !== '41%')
+        throw new Error('the map does not show the second pack at Tidepools');
+      await shot('signpost-map-packs');
     },
   );
 
@@ -2374,7 +2481,14 @@ try {
         await waitFor(page.locator(VALLEY), 'attached');
         await place('signpost').evaluate((el) => el.click());
         await waitFor(heading('Signpost'));
-        await waitFor(page.getByText('In the raid until Sunday'));
+        // The seat in the scene says its scout is in the raid (its pack waits for the finale).
+        await waitFor(sceneTarget('Seat 1'));
+        if (
+          !/In the raid until Sunday/.test(
+            (await sceneTarget('Seat 1').getAttribute('aria-label')) ?? '',
+          )
+        )
+          throw new Error('the seat in the scene does not say its scout is in the raid');
         await shot('bonfire5-signpost-paused');
         await hudBack().click();
         await waitFor(page.locator(VALLEY), 'attached');
@@ -2437,11 +2551,14 @@ try {
         await waitFor(page.locator(VALLEY), 'attached');
         await place('signpost').evaluate((el) => el.click());
         await waitFor(heading('Signpost'));
-        const board = page.locator('section[aria-label="Signpost project"]');
-        await waitFor(board);
+        // The plans table in the scene is the way to the project board (the left drawer; a page on a phone).
+        await waitFor(sceneTarget('The project board'));
         // The scaffolding stands round the road as the project fills.
         await page.waitForTimeout(300);
         await shot('commons-signpost-scaffolding');
+        await sceneTarget('The project board').click();
+        const board = page.locator('section[aria-label="Signpost project"]');
+        await waitFor(board);
         await board.scrollIntoViewIfNeeded();
         await expectTopmost(board, 'the Signpost board');
         await shot('commons-signpost-board');

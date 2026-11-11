@@ -109,7 +109,8 @@ import { readerZone, studentIds, withoutStudents } from './valley/school-view';
 import { HonoursContext, honoursOf } from './valley/HonourRibbon';
 import { shardsHeld } from './valley/visitor-view';
 import type { MarketActions, MarketStart } from './valley/MarketPage';
-import { SignpostSeats, type SignpostActions } from './valley/SignpostSeats';
+import { SignpostCanvas } from './valley/SignpostCanvas';
+import type { SignpostActions } from './valley/SignpostSeats';
 import type { CommonsActions } from './valley/CommonsBoard';
 import { COMMONS_NAMES } from './valley/commons-view';
 import { ANVIL_KIT_INFO } from './valley/forge-view';
@@ -912,7 +913,7 @@ export function Game({
       )}
       {tab === 'expeditions' && valleyOn && valleySystems && systems !== null && (
         // With the valley's systems on the Signpost is its scouts, not trips (`/api/expeditions` answers 404).
-        <SignpostSeats
+        <SignpostCanvas
           visit={systems}
           creatures={game.creatures}
           trayInput={{
@@ -923,6 +924,7 @@ export function Game({
           }}
           acorns={game.balances.bait}
           busy={busy}
+          error={error}
           actions={signpostActions}
           commons={commonsActions}
           onOpenPaddock={() => {

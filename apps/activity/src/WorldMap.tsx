@@ -40,6 +40,11 @@ export interface WorldMapProps {
    * markers' buttons (the valley prototype stands creatures on it). Decoration unless it holds a button.
    */
   overlay?: (scale: number) => ComponentChildren;
+  /**
+   * The map fills the box it is in instead of being as tall as its art (the valley's Signpost canvas): it pans both ways by drag,
+   * wheel and trackpad, and a window larger than the art shows grass round it. Off (default): the Expeditions screen's look.
+   */
+  fill?: boolean;
 }
 
 /**
@@ -57,6 +62,7 @@ export function WorldMap({
   width,
   scale: fixed,
   overlay,
+  fill = false,
 }: WorldMapProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<HTMLDivElement | null>(null);
@@ -114,10 +120,11 @@ export function WorldMap({
   });
   const classes = ['world-map'];
   if (night) classes.push('night');
-  // The 6 px are the map's side padding (world-map.css).
-  if (pixelWidth + 6 > available) classes.push('pans');
+  if (fill) classes.push('fill');
+  // The 6 px are the map's side padding (world-map.css). A map that fills its box also pans up and down.
+  if (pixelWidth + 6 > available || fill) classes.push('pans');
   return (
-    <div ref={rootRef} class="world-map-wrap">
+    <div ref={rootRef} class={fill ? 'world-map-wrap fill' : 'world-map-wrap'}>
       <div
         class={classes.join(' ')}
         ref={(el) => {
@@ -186,6 +193,7 @@ function Marker({
   if (selected) classes.push('selected');
   if (place.home) classes.push('home');
   if (place.pushOn) classes.push('choosing');
+  if (place.locked === true) classes.push('locked');
   return (
     <button
       type="button"
@@ -228,7 +236,7 @@ function Marker({
               <CreatureIcon key={face.creatureId} creature={face} />
             ))}
             {place.more > 0 && <span class="wm-more">+{place.more}</span>}
-            {place.home && <span class="wm-flag">HOME</span>}
+            {place.home && <span class="wm-flag">{place.flag ?? 'HOME'}</span>}
             {place.pushOn && <span class="wm-choice">!</span>}
           </span>
         </span>

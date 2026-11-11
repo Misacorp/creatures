@@ -1,0 +1,79 @@
+/*
+  The Signpost as a canvas (`valley/SignpostCanvas.tsx`): the shell, drawers and targets are `canvas.css`'s (`pc-`, `cv-`). Only what the
+  Signpost adds is here: its root (the same column as the Forge's `fc-root`), the expedition map filling the view with its way back to
+  the scene, and the lists of its two drawers.
+*/
+.sg-root {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* The game's page wrapper (`Game.tsx`, `pages`) is a plain div between the frame's page and the canvas: it passes the height on. */
+.vy-page > div:not([hidden]):has(> .sg-root) {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* The map is the scene: it takes the room the scene would, and its own box pans (never the page). */
+.sg-map {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.sg-map .world-map-wrap {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  height: auto;
+}
+
+/* The way back to the signpost scene, over the map's top left. */
+button.sg-map-back {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 3;
+  min-height: 0;
+  padding: 0.25rem 0.625rem;
+  font-size: var(--fs-row);
+}
+
+/* The lists of the drawers: the scouts at a place, and the packs of every seat. */
+.sg-scouts,
+.sg-packs {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  min-width: 0;
+}
+
+.sg-scouts:empty {
+  display: none;
+}
+
+/* The fit a carried creature would have at the seat under the hand: over the top of the scene, never taking a touch. */
+.sg-preview {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  right: 0.5rem;
+  z-index: 5;
+  margin: 0;
+  pointer-events: none;
+}
+
+/* A phone's page hides the map under it (`visibility: hidden` on the view); the selected pin's gold ring sets its own visibility and would show through. */
+.pc-root[data-page] .wm-marker.selected .wm-ring {
+  visibility: hidden;
+}
