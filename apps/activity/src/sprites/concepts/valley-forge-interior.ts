@@ -22,6 +22,40 @@ import type { ConceptSet } from './index';
 
 type Pal = Readonly<Record<string, string>>;
 
+/**
+ * The furnace's light on the flagstones, four rings from dim (1) to bright (4): `1 2 3 4` lit stone, `5 6 7 8` lit
+ * mortar, `9 ! @ #` lit stone edge. By day the two outer rings are the plain floor colours (only the inner two
+ * stay warm: a small patch at the mouth). `N M P R` are the outer rings under the window's daylight patch.
+ */
+const RING_NIGHT: Record<string, string> = {
+  '1': '#4a3c58',
+  '2': '#6a4658',
+  '3': '#9a5a48',
+  '4': '#c8743c',
+  '5': '#34283e',
+  '6': '#4a3040',
+  '7': '#6e3c38',
+  '8': '#8e4c30',
+  '9': '#5e4868',
+  '!': '#86546a',
+  '@': '#b8704e',
+  '#': '#e89048',
+};
+const RING_DAY: Record<string, string> = {
+  '1': '#a8926e',
+  '2': '#a8926e',
+  '3': '#c89c60',
+  '4': '#e0a450',
+  '5': '#86724f',
+  '6': '#86724f',
+  '7': '#a8784a',
+  '8': '#c08a3c',
+  '9': '#bca680',
+  '!': '#bca680',
+  '@': '#d8b070',
+  '#': '#f0c060',
+};
+
 const NIGHT: Pal = {
   k: '#0d0a1a',
   s: '#a8845c',
@@ -47,10 +81,13 @@ const NIGHT: Pal = {
   F: '#2a2640',
   h: '#4e4670',
   z: '#1c182e',
-  '1': '#4e3f58',
-  '2': '#7a4d52',
-  '3': '#b4653c',
-  '4': '#e08a3a',
+  ...RING_NIGHT,
+  O: '#ffb05a',
+  D: '#2a2640',
+  N: '#4a3c58',
+  M: '#6a4658',
+  P: '#34283e',
+  R: '#4a3040',
   q: '#2c2848',
   Q: '#6a6490',
   r: '#d86a6a',
@@ -84,10 +121,13 @@ const DAY: Pal = {
   F: '#86724f',
   h: '#bca680',
   z: '#5a4c3c',
-  '1': '#b09a74',
-  '2': '#c0986c',
-  '3': '#d49a5c',
-  '4': '#e8a24c',
+  ...RING_DAY,
+  O: '#ffb05a',
+  D: '#c8b07c',
+  N: '#ecd49a',
+  M: '#ecd49a',
+  P: '#c8b07c',
+  R: '#c8b07c',
   q: '#3a3448',
   Q: '#7a7498',
   r: '#d86a6a',
@@ -145,21 +185,6 @@ function build(g: Grid | string[]): { sprite: SpriteDef; day: Pal } {
     day[key] = DAY[key] ?? '#ff00ff';
   }
   return { sprite: { palette, rows }, day };
-}
-
-/** The fire's light on the floor: stepped, dithered rings (4 brightest) around (cx, cy) on rows from y0. */
-function spill(g: Grid, cx: number, cy: number, rx: number, ry: number, y0: number): void {
-  for (let y = y0; y < g.h; y++)
-    for (let x = 0; x < g.w; x++) {
-      const d = ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2;
-      const odd = (x + y) % 2 === 1;
-      let c = '.';
-      if (d < 0.1 || (d < 0.15 && !odd)) c = '4';
-      else if (d < 0.28 || (d < 0.36 && !odd)) c = '3';
-      else if (d < 0.58 || (d < 0.68 && !odd)) c = '2';
-      else if (d < 0.9 || (d < 1 && !odd)) c = '1';
-      if (c !== '.') g.px(x, y, c);
-    }
 }
 
 const BIG_FLAME = [
@@ -293,8 +318,7 @@ function windowAt(g: Grid, wx: number): void {
 
 // ------------------------------------------------------------------ furnace 48 x 56
 function furnace(): Grid {
-  const g = new Grid(48, 56);
-  spill(g, 23.5, 50, 23.5, 7, 52);
+  const g = new Grid(48, 52);
   // the chimney stack (drawn first; the hood covers its foot)
   g.rect(16, 3, 16, 12, 'k');
   g.rect(17, 3, 14, 12, 's');
@@ -540,6 +564,39 @@ function floor(): Grid {
   return g;
 }
 
+// ------------------------------------------------------------------ furnace-glow 128 x 40 (a floor overlay)
+/**
+ * The furnace's light lying on the flagstones: stepped, dithered rings, brightest at the mouth, reaching across
+ * the front third of the floor and fading to the right. The overlay carries the floor's own flagstone pattern in
+ * lit colours, so it sits on the floor tiles' grid (its origin on a tile corner). By day the two outer rings are
+ * the plain floor colours, so only a smaller warm patch at the mouth shows.
+ */
+function furnaceGlow(): Grid {
+  const g = new Grid(128, 40);
+  const tile = floor().rows();
+  const cx = 25;
+  const cy = 6;
+  for (let y = 0; y < 40; y++)
+    for (let x = 0; x < 128; x++) {
+      const rx = x < cx ? 26 : 104;
+      const d = ((x - cx) / rx) ** 2 + ((y - cy) / 38) ** 2;
+      const odd = (x + y) % 2 === 1;
+      let ring = 0;
+      if (d < 0.045 || (d < 0.075 && !odd)) ring = 4;
+      else if (d < 0.16 || (d < 0.22 && !odd)) ring = 3;
+      else if (d < 0.45 || (d < 0.53 && !odd)) ring = 2;
+      else if (d < 0.82 || (d < 0.92 && !odd)) ring = 1;
+      if (ring === 0) continue;
+      const t = (tile[y % 16] as string)[x % 16] as string;
+      if (t === 'z') g.px(x, y, 'z');
+      else {
+        const set = t === 'F' ? '5678' : t === 'h' ? '9!@#' : '1234';
+        g.px(x, y, set[ring - 1] as string);
+      }
+    }
+  return g;
+}
+
 // ------------------------------------------------------------------ props
 function barrel(): Grid {
   const g = new Grid(12, 16);
@@ -688,7 +745,7 @@ const ANVIL_PROP: SpriteDef = (() => {
 
 // ------------------------------------------------------------------ preview 128 x 96, composed from the pieces
 /** Characters the borrowed creature palettes are renamed to, so they never clash with the room's keys. */
-const BORROWED = '5678!@#$%^&*+=?<>~;:/|[]{}()_9';
+const BORROWED = 'delnpvxCEHJKUXYZ$%^&*+=?<>~;:/|[]{}()_';
 
 interface Borrowed {
   rows: string[];
@@ -747,6 +804,17 @@ interface Composed {
   day: Record<string, string>;
 }
 
+/** Firelight on the fire side (left) of a prop: its leftmost body pixel on each row from `y0` to `y1` turns warm. */
+function warmLeft(room: Grid, x0: number, y0: number, y1: number, w: number): void {
+  for (let y = y0; y < y1; y++)
+    for (let x = x0; x < x0 + w; x++) {
+      const c = room.at(x, y);
+      if (c === '.' || c === 'k') continue;
+      if (room.at(x - 1, y) === 'k' || room.at(x - 1, y) === '.') room.px(x, y, 'O');
+      break;
+    }
+}
+
 function composePreview(): Composed {
   const room = new Grid(128, 96);
   // the back wall, moved 40 right so the furnace hides one window and the other stays in view
@@ -758,11 +826,23 @@ function composePreview(): Composed {
   const tile = floor().rows();
   for (let y = 56; y < 96; y++)
     for (let x = 0; x < 128; x++) room.px(x, y, (tile[(y - 56) % 16] as string)[x % 16] as string);
+  room.stamp(0, 56, furnaceGlow().rows());
+  const PATCH: Record<string, string> = {
+    f: 'B',
+    h: 'B',
+    F: 'D',
+    '1': 'N',
+    '2': 'M',
+    '5': 'P',
+    '6': 'R',
+    '9': 'N',
+    '!': 'M',
+  };
   for (let y = 57; y < 95; y++) {
-    const sx = 64 - Math.floor((y - 57) * 0.9);
+    const sx = 64 - Math.floor((y - 57) / 2);
     for (let x = sx; x < sx + 24; x++) {
-      const c = room.at(x, y);
-      if (c === 'f' || c === 'h') room.px(x, y, 'B');
+      const to = PATCH[room.at(x, y)];
+      if (to !== undefined) room.px(x, y, to);
     }
   }
   const at = (p: readonly [number, number]): [number, number] => [p[0], p[1]];
@@ -802,6 +882,10 @@ function composePreview(): Composed {
     Object.assign(night, b.night);
     put(room, a[0] + 14, a[1] + 1, b.rows);
   });
+  // the fire side of what stands in the light: the first anvil, its creature and the coal heap
+  warmLeft(room, LAYOUT.anvilA[0], LAYOUT.anvilA[1] + 5, LAYOUT.anvilA[1] + 15, 16);
+  warmLeft(room, LAYOUT.anvilA[0] + 14, LAYOUT.anvilA[1] + 5, LAYOUT.anvilA[1] + 15, 16);
+  warmLeft(room, LAYOUT.coal[0], LAYOUT.coal[1] + 2, LAYOUT.coal[1] + 9, 16);
   place(quenchTrough(), LAYOUT.trough);
   const rows = room.rows();
   const used = new Set(rows.join(''));
@@ -846,11 +930,12 @@ export const VALLEY_FORGE_INTERIOR_CONCEPTS: ConceptSet = {
   notes: [
     'Pieces the game lays out behind its existing props (`valley/forge-props.ts`: anvil, chest, crate, plans table; creatures stand in front at the anvils). Level 3 look: sandstone, timber, black iron, terracotta. Same ink and woods as the props. Night is the main palette (fire is the light, windows dark blue with a moon glint); `alts.day` recolours the same pixels (windows bright, daylight patches `b` on the wall and `B` on the floor).',
     '`back-wall` 128 x 56 tiles sideways (column 0 continues column 127; a timber post crosses the seam; see `seam` and `seam-day`). Beam on rows 0-5, terracotta frieze 6-8, windows at x 20 and x 84 (opening 13-34, sill 35-39), plinth 48-55. Stand it on the floor line: its bottom row is the base.',
-    '`furnace` 48 x 56: body base on row 51, its warm stepped light on the floor is rows 52-55 (the sprite is 48 wide, light spans all of it). Mouth fire at x 14-33. Place it so the base row sits a few rows below the wall bottom.',
+    '`furnace` 48 x 52: body base on row 51, mouth fire at x 14-33 (mouth centre x 24). Place it so the base row sits a few rows below the wall bottom.',
+    "`furnace-glow` 128 x 40, a floor overlay the game draws over the floor tiles and under the props. It carries the flagstone pattern in lit colours, so its origin (0, 0) must sit on a floor tile corner (x and y multiples of 16 from the floor's own origin). Anchor: the pool centre is at x 25, y 6 in the overlay, which is the furnace mouth centre (furnace x + 23) and the furnace base line (furnace y + 51) when the overlay's top row is the floor's top row. In the preview: furnace (2, 11), overlay (0, 56). Night: four warm tones, brightest at the mouth, reaching right to about x 128 and fading. By day the two outer rings are the plain floor colours, so only a small warm patch (about 40 px wide) shows at the mouth.",
     '`shelf` 32 x 16 and `tool-rack` 32 x 24 hang on the wall; `hanging-tools` 24 x 16 hangs from the beam (its top row touches the beam bottom, row 5 of the wall).',
     '`workbench` 32 x 20: the top surface starts at row 4; rows 0-3 are clear except a vise at x 1-5 and ingots at x 26-31, so a creature (drawn smaller, behind) stands at x 8-24 and its lower rows hide behind the bench.',
     '`floor` 16 x 16 tiles both ways. `barrel` 12 x 16, `quench-trough` 24 x 12, `coal-heap` 16 x 10 stand on the floor (bottom row = base).',
-    'The 128 x 96 preview is taller than the studio allows (64), so it is two sprites that stack: `preview-top` (rows 0-63) and `preview-bottom` (rows 64-95). The room also has more than 16 colours (borrowed creature colours). Layout (x, y of the top-left): back wall (0, 0) moved 40 to the right so the furnace hides one window; floor tiles from y 56; furnace (2, 11); hanging-tools (52, 6); tool-rack (92, 6); shelf (92, 30); creatures behind the benches at (68, 44) and (104, 44) (1x, lower rows hidden); workbench A (60, 52), workbench B (96, 52); barrel (116, 60); coal-heap (6, 66); ANVIL_PROP at (24, 74) and (66, 74) with a creature at (anvil x + 14, anvil y + 1); quench-trough (100, 78). Drawn in that order.',
+    'The 128 x 96 preview is taller than the studio allows (64), so it is two sprites that stack: `preview-top` (rows 0-63) and `preview-bottom` (rows 64-95). The room also has more than 16 colours (borrowed creature colours). Layout (x, y of the top-left): back wall (0, 0) moved 40 to the right so the furnace hides one window; floor tiles from y 56; furnace (2, 11); furnace-glow (0, 56), drawn over the floor and under the props; hanging-tools (52, 6); tool-rack (92, 6); shelf (92, 30); creatures behind the benches at (68, 44) and (104, 44) (1x, lower rows hidden); workbench A (60, 52), workbench B (96, 52); barrel (116, 60); coal-heap (6, 66); ANVIL_PROP at (24, 74) and (66, 74) with a creature at (anvil x + 14, anvil y + 1); quench-trough (100, 78). Drawn in that order. The first anvil, its creature and the coal heap get a warm pixel along their fire (left) side.',
   ],
   sprites: {
     'back-wall': {
@@ -862,6 +947,12 @@ export const VALLEY_FORGE_INTERIOR_CONCEPTS: ConceptSet = {
         seam: { palette: wall.sprite.palette, rows: SEAM_ROWS },
         'seam-day': { palette: { ...wall.sprite.palette, ...wall.day }, rows: SEAM_ROWS },
       },
+    },
+    'furnace-glow': {
+      ...free(
+        'Firelight on the flagstones: a wide pool of stepped warm rings, brightest at the mouth, fading to the right. A floor overlay. By day only the inner rings stay warm.',
+        build(furnaceGlow()),
+      ),
     },
     furnace: free(
       'A big sandstone furnace with a terracotta hood and a stack, the fire going; warm light on the floor in front.',
