@@ -207,7 +207,7 @@
     "unlock": {
       "kind": "drop"
     },
-    "hint": "A blueprint from the Old Crossroads."
+    "hint": "A blueprint from the Old Crossroads or a Games gold."
   },
   {
     "id": "fairground-floor",
@@ -217,7 +217,7 @@
     "unlock": {
       "kind": "drop"
     },
-    "hint": "A blueprint from the Old Crossroads."
+    "hint": "A blueprint from the Old Crossroads or a Games gold."
   },
   {
     "id": "kitchen-wall",

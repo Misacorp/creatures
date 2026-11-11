@@ -427,6 +427,8 @@ From `glossary.json`, entry `destination-old-crossroads`:
 > - Splashet, Cindle, Sproutle, Zipmouse and Stormray pass through.
 > - Trips that were out when expeditions changed come home from here.
 
+The **Fairground** furniture set (`housing.md`, "Fairground set") comes from the Games Meadow just off this crossing: its blueprints turn up here, and a Games gold earns one `(compendium detail, not shipped)`.
+
 ---
 
 ## Moonlit Reef

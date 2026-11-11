@@ -80,7 +80,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 - **Status:** draft
 - **Requested:** 2026-11-11: player housing furniture, a set made in the workshop (pnpm housing new-set).
 - **Source:** `apps/activity/src/sprites/concepts/house-fairground.ts` (draw it with `pnpm art house-fairground`)
-- **Sheet of:** `1ab1bbb7012b`
+- **Sheet of:** `b002dfe920b7`
 - Striped awnings, bunting and prize ribbons on painted wood; red, cream, sky blue, sunny yellow. Drawn from its style (apps/activity/src/sprites/workshop/styles/fairground.ts); the pack is data/house/fairground.ts.
 - Needs the housing content (piece, skin and set ids as drawn).
 

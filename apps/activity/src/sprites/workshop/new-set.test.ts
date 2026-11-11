@@ -261,7 +261,7 @@ describe('remove-set, as a plan', () => {
 
   it('never touches a shipped set', () => {
     const { read } = files();
-    for (const id of ['cosy', 'tidepool', 'lantern-night', 'quiet-verge']) {
+    for (const id of ['cosy', 'tidepool', 'lantern-night', 'quiet-verge', 'fairground']) {
       expect(() => planRemoveSet(id, read)).toThrow(/shipped/);
       expect(() => planNewSet(parseSpec(id, {}), read, ctx(read))).toThrow(/shipped/);
     }

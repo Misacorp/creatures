@@ -91,9 +91,9 @@ const tent: PartDraw = ({ c, style, at }) => {
 
 /** The stall table's cloth: stripes over the whole top, a scalloped hem. */
 const stallCloth: PartDraw = ({ c, style, at }) => {
-  stripes(c, style, 0, 0, 44, at.y + 3);
+  stripes(c, style, 1, 1, 42, at.y + 2);
   hline(c, 1, at.y + 2, 42, style.accent.light);
-  scallops(c, style, 0, at.y + 3, 44);
+  scallops(c, style, 1, at.y + 3, 42);
 };
 
 /** A string of three pennants for the frame. */
@@ -105,7 +105,9 @@ const bunting: PartDraw = ({ c, style }) => {
   ];
   for (let x = 0; x < 24; x++) {
     const sag = Math.round(2 * Math.sin((Math.PI * x) / 23));
+    put(c, x, sag, INK);
     put(c, x, 1 + sag, style.linen.mid);
+    put(c, x, 2 + sag, INK);
   }
   for (const f of flags) {
     const sag = Math.round(2 * Math.sin((Math.PI * (f.x + 2.5)) / 23));
@@ -116,10 +118,11 @@ const bunting: PartDraw = ({ c, style }) => {
   }
 };
 
-/** A string of three bulbs on a brass bar, hanging from the ceiling. */
+/** A string of three bulbs on a blue bar, hanging from the ceiling. */
 const bulbs: PartDraw = ({ c, style }) => {
   for (let y = 0; y < 3; y++) put(c, 10, y, INK);
-  box(c, 2, 3, 16, 4, style.metal, { shade: 'rows' });
+  box(c, 2, 3, 16, 4, style.wood, { shade: 'rows' });
+  hline(c, 3, 4, 14, style.cloth.mid);
   for (const x of [2, 8, 14]) {
     stamp(c, x, 7, ['kkkk', 'kyyk', 'kyyk', 'kygk', '.kk.'], {
       y: style.accent.hi ?? style.accent.light,
@@ -128,17 +131,30 @@ const bulbs: PartDraw = ({ c, style }) => {
   }
 };
 
-/** The stool's seat: a flat striped cushion with the star. */
-const seat: PartDraw = ({ c, style }) => {
-  stripes(c, style, 1, 1, 14, 3);
-  put(c, 7, 2, style.accent.hi ?? style.accent.light);
-  put(c, 8, 2, style.accent.light);
-};
-
 /** The curtains' valance: the stall awning over the window. */
 const awningValance: PartDraw = ({ c, style }) => {
   stripes(c, style, 1, 3, 34, 3);
   scallops(c, style, 1, 6, 34);
+};
+
+/** A red runner with a yellow stripe along each side, a row of stars and a yellow fringe at both ends. */
+const runner: PartDraw = ({ c, style, at }) => {
+  box(c, at.x + 2, at.y, at.w - 4, at.h, style.cloth, { shade: 'rows', round: 1 });
+  for (const y of [at.y + 2, at.y + at.h - 3]) {
+    hline(c, at.x + 4, y, at.w - 8, style.accent.light);
+  }
+  for (let x = at.x + 8; x < at.x + at.w - 10; x += 8) {
+    stamp(c, x, at.y + 3, ['.y.', 'ygy', '.y.'], {
+      y: style.accent.hi ?? style.accent.light,
+      g: style.accent.light,
+    });
+  }
+  for (const x of [at.x, at.x + at.w - 2]) {
+    for (let y = at.y + 1; y < at.y + at.h - 1; y += 2) {
+      put(c, x, y, INK);
+      put(c, x + 1, y, style.accent.light);
+    }
+  }
 };
 
 export const FAIRGROUND: Style = {
@@ -195,7 +211,7 @@ export const FAIRGROUND: Style = {
     table: { apron: stallCloth },
     frame: { frame: bunting, picture: () => undefined },
     lamp: { lamp: bulbs },
-    stool: { seat },
+    rug: { rug: runner },
     curtains: { valance: awningValance },
   },
 };
