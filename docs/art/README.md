@@ -10,6 +10,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | --- | --- | --- | --- |
 | [Combat v2 icons: attack shapes, board states, store meters](#combat-icons) | draft | 11 | 2026-10-31, Misa: "icons for keywords and attack shapes" (roadmap phase 3, combat v2). |
 | [Element shards, told apart by shape](#shards) | liked | 15 | 2026-11-03: the element shard icons must differ by shape, not only colour (accessibility review from the valley session; Misa asked to provide what the valley needs). |
+| [The Forge, inside](#valley-forge-interior) | draft | 13 | 2026-11-11 (via the valley session): clicking the Forge goes inside, into a workshop interior. "It would be cool to have the same stuff there (my creatures working at the anvils) but also see some other creatures working in the background, a fire going, etc. Basically make it look like the interior of a workshop." |
 | [The camp's other places, glow style](#valley-glow-camp) | draft | 6 | 2026-11-03: the valley prototype's remaining places (arena, fairground, road, chest, lectern, paddock) in the liked glow style, day and night. |
 | [Valley places: glow, day and night](#valley-glow) | liked | 9 | 2026-10-31: night glow redone to stand on the valley ground, with a daytime version of the same assets. |
 | [The honour ribbon](#valley-honours) | liked | 1 | 2026-11-06 (valley phase 5 step 9b, trials.md V-TRIAL-1): a ribbon worn on a graduate's sprite, one for each honour (Bronze, Silver, Gold). |
@@ -94,6 +95,41 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | `mire-now` | part |  | archived | The shipped mire shard, unchanged, for comparison. |
 | `mire-a` | part |  | archived | A lump with a single drip hanging from its belly. |
 | `mire-b` | part |  | liked | A slumped blob with two drips, one longer. |
+
+<a id="valley-forge-interior"></a>
+
+## The Forge, inside
+
+![The Forge, inside](valley-forge-interior.png)
+
+- **Status:** draft
+- **Requested:** 2026-11-11 (via the valley session): clicking the Forge goes inside, into a workshop interior. "It would be cool to have the same stuff there (my creatures working at the anvils) but also see some other creatures working in the background, a fire going, etc. Basically make it look like the interior of a workshop."
+- **Source:** `apps/activity/src/sprites/concepts/valley-forge-interior.ts` (draw it with `pnpm art valley-forge-interior`)
+- **Sheet of:** `2dfb6c43bb91`
+- Pieces the game lays out behind its existing props (`valley/forge-props.ts`: anvil, chest, crate, plans table; creatures stand in front at the anvils). Level 3 look: sandstone, timber, black iron, terracotta. Same ink and woods as the props. Night is the main palette (fire is the light, windows dark blue with a moon glint); `alts.day` recolours the same pixels (windows bright, daylight patches `b` on the wall and `B` on the floor).
+- `back-wall` 128 x 56 tiles sideways (column 0 continues column 127; a timber post crosses the seam; see `seam` and `seam-day`). Beam on rows 0-5, terracotta frieze 6-8, windows at x 20 and x 84 (opening 13-34, sill 35-39), plinth 48-55. Stand it on the floor line: its bottom row is the base.
+- `furnace` 48 x 52: body base on row 51, mouth fire at x 14-33 (mouth centre x 24). Place it so the base row sits a few rows below the wall bottom.
+- `furnace-glow` 128 x 40, a floor overlay the game draws over the floor tiles and under the props. It carries the flagstone pattern in lit colours, so its origin (0, 0) must sit on a floor tile corner (x and y multiples of 16 from the floor's own origin). Anchor: the pool centre is at x 25, y 6 in the overlay, which is the furnace mouth centre (furnace x + 23) and the furnace base line (furnace y + 51) when the overlay's top row is the floor's top row. In the preview: furnace (2, 11), overlay (0, 56). Night: four warm tones, brightest at the mouth, reaching right to about x 128 and fading. By day the two outer rings are the plain floor colours, so only a small warm patch (about 40 px wide) shows at the mouth.
+- `shelf` 32 x 16 and `tool-rack` 32 x 24 hang on the wall; `hanging-tools` 24 x 16 hangs from the beam (its top row touches the beam bottom, row 5 of the wall).
+- `workbench` 32 x 20: the top surface starts at row 4; rows 0-3 are clear except a vise at x 1-5 and ingots at x 26-31, so a creature (drawn smaller, behind) stands at x 8-24 and its lower rows hide behind the bench.
+- `floor` 16 x 16 tiles both ways. `barrel` 12 x 16, `quench-trough` 24 x 12, `coal-heap` 16 x 10 stand on the floor (bottom row = base).
+- The 128 x 96 preview is taller than the studio allows (64), so it is two sprites that stack: `preview-top` (rows 0-63) and `preview-bottom` (rows 64-95). The room also has more than 16 colours (borrowed creature colours). Layout (x, y of the top-left): back wall (0, 0) moved 40 to the right so the furnace hides one window; floor tiles from y 56; furnace (2, 11); furnace-glow (0, 56), drawn over the floor and under the props; hanging-tools (52, 6); tool-rack (92, 6); shelf (92, 30); creatures behind the benches at (68, 44) and (104, 44) (1x, lower rows hidden); workbench A (60, 52), workbench B (96, 52); barrel (116, 60); coal-heap (6, 66); ANVIL_PROP at (24, 74) and (66, 74) with a creature at (anvil x + 14, anvil y + 1); quench-trough (100, 78). Drawn in that order. The first anvil, its creature and the coal heap get a warm pixel along their fire (left) side.
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `back-wall` | free |  | draft | A sandstone wall with a terracotta frieze, timber posts, a beam and two windows. Tiles sideways. |
+| `furnace-glow` | free |  | draft | Firelight on the flagstones: a wide pool of stepped warm rings, brightest at the mouth, fading to the right. A floor overlay. By day only the inner rings stay warm. |
+| `furnace` | free |  | draft | A big sandstone furnace with a terracotta hood and a stack, the fire going; warm light on the floor in front. |
+| `shelf` | free |  | draft | A plank shelf with a red and a blue jar and stacked ingots. |
+| `tool-rack` | free |  | draft | A timber rack with a hammer, tongs, a file and a small hammer. |
+| `workbench` | free |  | draft | A background bench; the top edge is clear for a creature to stand behind it. |
+| `floor` | free |  | draft | Flagstones with soot, tiles both ways. |
+| `barrel` | free |  | draft | A hooped barrel. |
+| `quench-trough` | free |  | draft | A trough of water for quenching. |
+| `hanging-tools` | free |  | draft | Tongs, a hammer and a ladle hung from the beam. |
+| `coal-heap` | free |  | draft | A heap of coal with two embers. |
+| `preview-top` | free |  | draft | The whole room, top 64 rows (see the notes for the layout). |
+| `preview-bottom` | free |  | draft | The whole room, bottom 32 rows. |
 
 <a id="valley-glow-camp"></a>
 
