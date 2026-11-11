@@ -30,7 +30,7 @@ export function placeholderWall(style: Style): SpriteDef {
       rows.push((y === 46 ? '1' : y === 47 ? '2' : '3').repeat(16));
       continue;
     }
-    const cells = Array.from({ length: 16 }, (_, x) => (x % 8 === 0 ? '2' : '1'));
+    const cells: string[] = Array.from({ length: 16 }, (_, x) => (x % 8 === 0 ? '2' : '1'));
     const row = y % 12;
     if (row === 4 || row === 6) cells[4] = '4';
     if (row === 5) cells.splice(3, 3, '4', '5', '4');
