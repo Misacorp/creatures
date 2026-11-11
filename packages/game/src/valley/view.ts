@@ -230,6 +230,19 @@ export const ValleyOnlineSchema = v.strictObject({
   creatures: v.pipe(v.array(ValleyVisitorCreatureSchema), v.maxLength(3)),
 });
 
+/**
+ * One of the other players' smiths at work in the Forge's workshop, drawn small at a background bench (Misa, 2026-11-11): the owner's
+ * name for its plate, the creature as the nameplate needs it, and whether it is hammering a piece now. No id of the owner goes out.
+ */
+export const ValleyBackSmithSchema = v.strictObject({
+  owner: v.pipe(v.string(), v.minLength(1), v.maxLength(40)),
+  creature: ValleyVisitorCreatureSchema,
+  working: v.boolean(),
+});
+
+/** The most other players' smiths the workshop draws behind the player's own. */
+export const MAX_BACK_SMITHS = 4;
+
 /** The most online players the valley draws (the fire has seats for a few). */
 export const MAX_ONLINE = 4;
 
@@ -264,6 +277,8 @@ export const ValleyViewSchema = v.strictObject({
     ladder: v.pipe(v.array(v.strictObject({ acorns: int, scrap: int })), v.maxLength(16)),
   }),
   forge: ValleyForgeViewSchema,
+  /** Other players' smiths at their anvils, for the workshop's background (at most `MAX_BACK_SMITHS`, never the caller's). */
+  smiths: v.pipe(v.array(ValleyBackSmithSchema), v.maxLength(MAX_BACK_SMITHS)),
   /** The player's kit (V-SCOUT-5, V-FORGE-8, V-POST-11): the kit bought, and what a new one costs in Acorns. */
   kit: v.strictObject({
     owned: v.pipe(v.array(v.picklist(KIT_NAMES)), v.maxLength(8)),
@@ -286,6 +301,7 @@ export const ValleyViewSchema = v.strictObject({
 });
 
 export type ValleyCreatureView = v.InferOutput<typeof ValleyCreatureViewSchema>;
+export type ValleyBackSmith = v.InferOutput<typeof ValleyBackSmithSchema>;
 export type ValleyOnline = v.InferOutput<typeof ValleyOnlineSchema>;
 export type ValleyVisitorCreature = v.InferOutput<typeof ValleyVisitorCreatureSchema>;
 export type ValleySeatView = v.InferOutput<typeof ValleySeatViewSchema>;

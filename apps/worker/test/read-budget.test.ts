@@ -7,6 +7,7 @@
 // `read-day.test.ts` adds them up over a day.
 import { describe, expect, it } from 'vitest';
 import { eventTimes, weekIdFor } from '../src/raid-schedule';
+import { ValleyForgePass } from '../src/valley-forge';
 import { ReadMeter, readSourceOfPath } from '../src/read-meter';
 import { addDays, gameDay } from '../src/time';
 import { USER_ID, runCore } from './helpers';
@@ -712,6 +713,48 @@ describe('read budget with the bonfire', () => {
   it('the daily middle writes one row', () => {
     expect(middleWrites).toBeLessThanOrEqual(BONFIRE_BUDGET.middle.writes);
   });
+});
+
+/**
+ * The Forge's background smiths (`ValleyForgePass.backSmiths`, the workshop's interior): one indexed read of at most twelve anvil seats
+ * of other players, then for each of up to four a creature by key and the owner's name by key. Part of every valley look.
+ */
+describe('read budget: the workshop background smiths', () => {
+  it('reads a handful of rows through the index and shows at most four, two to an owner', async () => {
+    await inGuild(
+      async (env) => {
+        const { metered } = env;
+        const world = await seedWorld(env, { valleySystems: true });
+        for (let p = 2; p <= 7; p++) {
+          const mine = world.creatures[userId(p)] ?? [];
+          for (let i = 0; i < 3; i++) {
+            metered.sql.exec(
+              `INSERT INTO valley_seats (seat_id, user_id, place, kind, position, destination_id, creature_id, passed_at)
+               VALUES (?, ?, 'forge', 'anvil', ?, 'forge', ?, 0)`,
+              crypto.randomUUID(),
+              userId(p),
+              i + 1,
+              mine[i] ?? null,
+            );
+          }
+        }
+        const pass = new ValleyForgePass({
+          storage: { sql: metered.sql, transactionSync: (f) => f() },
+          now: () => 0,
+          rng: undefined as never,
+        });
+        const seen = await metered.measure(() => pass.backSmiths(userId(1)));
+        expect(seen.result).toHaveLength(4);
+        const owners = seen.result.map((x) => x.owner);
+        for (const o of owners) expect(owners.filter((n) => n === o).length).toBeLessThanOrEqual(2);
+        expect(seen.reads.total, `${String(seen.reads.total)} rows read`).toBeLessThanOrEqual(40);
+        const again = await metered.measure(() => pass.backSmiths(userId(2)));
+        expect(again.result.every((x) => x.owner !== 'Player 2')).toBe(true);
+        console.info(`background smiths: ${String(seen.reads.total)} rows read`);
+      },
+      { fresh: true },
+    );
+  }, 60_000);
 });
 
 /**

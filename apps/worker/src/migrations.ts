@@ -50,6 +50,7 @@ import { valleyCommonsMigration } from './valley-commons-migration';
 import { valleyMarketMigration } from './valley-market-migration';
 import { valleyMarketOpenMigration } from './valley-market-open-migration';
 import { valleySchoolMigration } from './valley-school-migration';
+import { valleyForgeCrowdMigration } from './valley-forge-crowd-migration';
 import { valleyTrialsMigration } from './valley-trials-migration';
 import { valleyVisitorMigration } from './valley-visitor-migration';
 import { valleyGazetteMigration } from './valley-gazette-migration';
@@ -375,6 +376,8 @@ export const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
   valleySchoolMigration,
   // Version 66: the trials' state per creature (see valley-trials-migration.ts).
   valleyTrialsMigration,
+  // Version 67: the index behind the workshop's background smiths (see valley-forge-crowd-migration.ts).
+  valleyForgeCrowdMigration,
 ];
 
 /** The schema version of a fresh database. */
