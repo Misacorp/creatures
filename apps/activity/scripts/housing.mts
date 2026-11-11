@@ -26,7 +26,7 @@ const { expandRows } = await import('../src/sprites/sprite-data.ts');
 const { glyph } = await import('../src/sprites/world-map-font.ts');
 const { SET_FORMS } = await import('../src/sprites/workshop/style.ts');
 const { generatePiece, makePiece, pieceId, setReport } = await import('../src/sprites/workshop/pack.ts');
-const { pixelDiff, pieceHash } = await import('../src/sprites/workshop/compare.ts');
+const { pixelDiff } = await import('../src/sprites/workshop/compare.ts');
 const { SHIPPED_SETS, SAMPLE_STYLES, lockOf } = await import('../src/sprites/workshop/sets.ts');
 
 const ROOT = join(import.meta.dirname, '..');
@@ -184,7 +184,7 @@ if (command === 'sheet') {
     if (only !== undefined && !only.includes(id)) continue;
     const report = setReport(source);
     const colW = 56 * S + 24;
-    const rowH = 36 * S + 28;
+    const rowH = 36 * S + 44;
     const img = new Image(3 * colW + 260, SET_FORMS.length * rowH + 60);
     img.text(`${source.style.name}: shipped / generated / difference`, 16, 12, 3);
     for (const [r, form] of SET_FORMS.entries()) {
@@ -193,7 +193,14 @@ if (command === 'sheet') {
       const ships = makePiece(source, form);
       const y = 50 + r * rowH;
       const made = report[r]?.made ?? '?';
-      const diff = shipped === undefined ? undefined : pixelDiff(shipped.sprite, generated.sprite);
+      const layers = (['sprite', 'front', 'glow'] as const).flatMap((layer) => {
+        const a = shipped?.[layer];
+        const b = generated[layer];
+        if (a === undefined && b === undefined) return [];
+        if (a === undefined || b === undefined) return [`${layer} only one side`];
+        const d = pixelDiff(a, b);
+        return [`${layer} ${String(d.differ)}/${String(d.area)}`];
+      });
       img.text(`${form} ${made}`, 16, y, 2, MUTED);
       if (shipped !== undefined) drawPiece(img, shipped, 16, y + 18, S, true);
       drawPiece(img, generated, 16 + colW, y + 18, S, true);
@@ -204,9 +211,11 @@ if (command === 'sheet') {
       drawPiece(img, generated, x1 + 60, y + 18, 1, false);
       drawPiece(img, ships, x1 + 120, y + 18, 2, false);
       lines.push(
-        `${pieceId(source.style, form).padEnd(26)} ${made.padEnd(10)} ${diff === undefined ? 'no shipped art' : `${String(diff.differ)} / ${String(diff.area)} px differ`}`,
+        `${pieceId(source.style, form).padEnd(26)} ${made.padEnd(10)} ${shipped === undefined ? 'no shipped art' : `differ: ${layers.join(', ')}`}`,
       );
     }
+    const counts = report.reduce<Record<string, number>>((n, r) => ({ ...n, [r.made]: (n[r.made] ?? 0) + 1 }), {});
+    lines.push(`${id}: ${Object.entries(counts).map(([k, v]) => `${String(v)} ${k}`).join(', ')}`, '');
     img.save(join(dir, `${id}.png`));
   }
   console.log(lines.join('\n'));
@@ -227,6 +236,5 @@ if (command === 'sheet') {
   }
 } else {
   console.log('Usage: pnpm housing sheet <style> | compare [--set id,id] | lock [--check]   [--out dir]');
-  void pieceHash;
   process.exit(command === undefined ? 0 : 1);
 }

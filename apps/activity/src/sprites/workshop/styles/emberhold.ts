@@ -1,0 +1,50 @@
+/**
+ * The Emberhold style (`docs/design/housing-workshop.md`): Square black charwood with riveted iron bands and an amber glow.
+ * The palette is the set's own (its pack file draws the hand pieces with it); the ramps name its keys by material.
+ */
+import type { Style } from '../style';
+
+export const EMBERHOLD: Style = {
+  id: 'emberhold',
+  name: 'Emberhold',
+  palette: {
+  k: '#0d0a1a',
+  a: '#9b8a7c',
+  b: '#7b6c61',
+  c: '#54483f',
+  d: '#b3b8c6',
+  e: '#737889',
+  f: '#4a4e5e',
+  g: '#e8dcc0',
+  r: '#bd5a30',
+  q: '#7e3a26',
+  p: '#dd8450',
+  m: '#f6ad3c',
+  n: '#ea6a2a',
+  w: '#40353a',
+  u: '#54464a',
+  v: '#2a2226',
+  s: '#8ccaf2',
+  t: '#e2f2fb',
+  y: '#ffd868',
+  z: '#ff9a3a',
+  },
+  wood: { light: 'a', mid: 'b', dark: 'c' },
+  cloth: { hi: 'p', light: 'p', mid: 'r', dark: 'q' },
+  linen: { light: 'g', mid: 'g', dark: 'a' },
+  metal: { hi: 'd', light: 'd', mid: 'e', dark: 'f' },
+  glass: { hi: 't', light: 't', mid: 's', dark: 'e' },
+  accent: { hi: 'm', light: 'm', mid: 'n', dark: 'q' },
+  leg: 'straight',
+  foot: 'block',
+  trim: 'rivets',
+  top: 'square',
+  motif: 'rivet',
+  weave: 'stripes',
+  lamp: 'lantern',
+  lampMaterial: 'metal',
+  glow: { kind: 'ring', inner: 'y', outer: 'z' },
+  rug: { shape: 'square', weave: 'stripes' },
+  picture: 'flame',
+  shelf: ['candle', 'bottle', 'books'],
+};

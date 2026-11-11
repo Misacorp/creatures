@@ -8,29 +8,10 @@
  */
 import type { SpriteDef } from '../../sprite-data';
 import type { HouseArtPack } from '../../../housing/house-art';
+import { setPack, type SetSource } from '../../workshop/pack';
+import { EMBERHOLD } from '../../workshop/styles/emberhold';
 
-const PALETTE: Readonly<Record<string, string>> = {
-  k: '#0d0a1a',
-  a: '#9b8a7c',
-  b: '#7b6c61',
-  c: '#54483f',
-  d: '#b3b8c6',
-  e: '#737889',
-  f: '#4a4e5e',
-  g: '#e8dcc0',
-  r: '#bd5a30',
-  q: '#7e3a26',
-  p: '#dd8450',
-  m: '#f6ad3c',
-  n: '#ea6a2a',
-  w: '#40353a',
-  u: '#54464a',
-  v: '#2a2226',
-  s: '#8ccaf2',
-  t: '#e2f2fb',
-  y: '#ffd868',
-  z: '#ff9a3a',
-};
+const PALETTE: Readonly<Record<string, string>> = EMBERHOLD.palette;
 
 /** A sprite with only the palette keys its rows use. */
 function art(rows: readonly string[]): SpriteDef {
@@ -41,7 +22,8 @@ function art(rows: readonly string[]): SpriteDef {
   };
 }
 
-export const HOUSE_ART: HouseArtPack = {
+/** The hand-drawn pieces, wallpaper, floor and keepsake of the first art pass. */
+const HAND: HouseArtPack = {
   pieces: {
     'emberhold-bed': {
       sprite: art([
@@ -388,3 +370,25 @@ export const HOUSE_ART: HouseArtPack = {
     ]),
   },
 };
+
+/**
+ * How each piece is made (`docs/design/housing-workshop.md`): drawn from the style, or the hand pixels above kept as
+ * an override, with the reason. `pnpm housing compare --set emberhold` shows the shipped and generated pieces side by side.
+ */
+export const SOURCE: SetSource = {
+  style: EMBERHOLD,
+  hand: HAND,
+  pieces: {
+    bed: { use: 'hand', why: 'iron-banded boards with rivets; the generated bed is a plainer re-skin' },
+    cupboard: { use: 'hand', why: 'iron bands across the doors and an amber lock; the generated doors are plain panels' },
+    table: { use: 'hand', why: 'riveted iron bands and iron feet; the generated table has fewer rivets' },
+    shelf: { use: 'hand', why: 'an anvil, a lantern and a brazier: smithy things the generic shelf does not have' },
+    stool: { use: 'hand', why: 'an iron-banded seat; the generated stool is plainer' },
+    lamp: { use: 'layers', layers: ['sprite'], why: 'the shade is hand-drawn; the two-ring glow is generated (pixel-identical to the first pass)' },
+    rug: { use: 'hand', why: 'a rust rug with amber diamonds; the generated stripes read weaker' },
+    frame: { use: 'hand', why: 'an iron frame round a forge fire; the generated fire is flatter' },
+    curtains: { use: 'hand', why: 'heavy rust drapes and an iron rod; the generated drapes pinch and read busier' },
+  },
+};
+
+export const HOUSE_ART: HouseArtPack = setPack(SOURCE);

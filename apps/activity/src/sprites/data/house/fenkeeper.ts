@@ -5,19 +5,10 @@
  */
 import type { SpriteDef } from '../../sprite-data';
 import type { HouseArtPack } from '../../../housing/house-art';
+import { setPack, type SetSource } from '../../workshop/pack';
+import { FENKEEPER } from '../../workshop/styles/fenkeeper';
 
-const PALETTE: Readonly<Record<string, string>> = {
-  k: '#0d0a1a',
-  a: '#9a7752',
-  b: '#c4a176',
-  c: '#6e523a',
-  d: '#cdb978',
-  e: '#8d7b45',
-  f: '#3f7f7a',
-  g: '#8bc4b2',
-  h: '#b794f0',
-  i: '#f1e9ff',
-};
+const PALETTE: Readonly<Record<string, string>> = FENKEEPER.palette;
 
 /** A sprite with only the palette keys its rows use. */
 const sprite = (rows: readonly string[]): SpriteDef => ({
@@ -27,7 +18,8 @@ const sprite = (rows: readonly string[]): SpriteDef => ({
   ),
 });
 
-export const HOUSE_ART: HouseArtPack = {
+/** The hand-drawn pieces, wallpaper, floor and keepsake of the first art pass. */
+const HAND: HouseArtPack = {
   pieces: {
     'fenkeeper-bed': {
       sprite: sprite([
@@ -380,3 +372,25 @@ export const HOUSE_ART: HouseArtPack = {
     ]),
   },
 };
+
+/**
+ * How each piece is made (`docs/design/housing-workshop.md`): drawn from the style, or the hand pixels above kept as
+ * an override, with the reason. `pnpm housing compare --set fenkeeper` shows the shipped and generated pieces side by side.
+ */
+export const SOURCE: SetSource = {
+  style: FENKEEPER,
+  hand: HAND,
+  pieces: {
+    bed: { use: 'hand', why: 'reed-bound bog oak with a rounded footboard; the generated bed is a plainer re-skin' },
+    cupboard: { use: 'hand', why: 'a rounded carcass bound with reeds; the generated one is a box' },
+    table: { use: 'hand', why: 'bulbous turned legs with an opal drop; the generated turned legs are thinner' },
+    shelf: { use: 'hand', why: 'reed bundles, jars and an opal; the generated things are smaller' },
+    stool: { use: 'hand', why: 'a reed-bound seat with an opal; the generated stool is generic' },
+    lamp: { use: 'hand', why: 'an opal lamp in reed binding with its own dithered halo; the generated bell is plainer' },
+    rug: { use: 'hand', why: 'a woven rug with a pool of teal; the generated stripes are plainer' },
+    frame: { use: 'hand', why: 'a slanted bog-oak frame, a silhouette of its own; the generated frame is a box' },
+    curtains: { use: 'hand', why: 'a reed-bound window with no drapes; the generated drapes are a different idea' },
+  },
+};
+
+export const HOUSE_ART: HouseArtPack = setPack(SOURCE);

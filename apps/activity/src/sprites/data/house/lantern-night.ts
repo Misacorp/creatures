@@ -5,19 +5,10 @@
  */
 import type { SpriteDef } from '../../sprite-data';
 import type { HouseArtPack } from '../../../housing/house-art';
+import { setPack, type SetSource } from '../../workshop/pack';
+import { LANTERN_NIGHT } from '../../workshop/styles/lantern-night';
 
-const PALETTE: Readonly<Record<string, string>> = {
-  k: '#0d0a1a',
-  a: '#cf3a3a',
-  b: '#f06a58',
-  c: '#8e2437',
-  d: '#f4c24a',
-  e: '#b9852a',
-  f: '#f7edd2',
-  g: '#d6c49a',
-  h: '#5c2b3a',
-  i: '#6a9fd8',
-};
+const PALETTE: Readonly<Record<string, string>> = LANTERN_NIGHT.palette;
 
 /** A sprite with only the palette keys its rows use. */
 const sprite = (rows: readonly string[]): SpriteDef => ({
@@ -27,7 +18,8 @@ const sprite = (rows: readonly string[]): SpriteDef => ({
   ),
 });
 
-export const HOUSE_ART: HouseArtPack = {
+/** The hand-drawn pieces, wallpaper, floor and keepsake of the first art pass. */
+const HAND: HouseArtPack = {
   pieces: {
     'lantern-night-bed': {
       sprite: sprite([
@@ -380,3 +372,25 @@ export const HOUSE_ART: HouseArtPack = {
     ]),
   },
 };
+
+/**
+ * How each piece is made (`docs/design/housing-workshop.md`): drawn from the style, or the hand pixels above kept as
+ * an override, with the reason. `pnpm housing compare --set lantern-night` shows the shipped and generated pieces side by side.
+ */
+export const SOURCE: SetSource = {
+  style: LANTERN_NIGHT,
+  hand: HAND,
+  pieces: {
+    bed: { use: 'hand', why: 'red lacquer with lantern posts and a cream quilt; the generated bed is a plainer re-skin' },
+    cupboard: { use: 'hand', why: 'paper-screen doors in red lacquer; the generated doors are plain panels' },
+    table: { use: 'hand', why: 'a gold-banded top over bunting; close, the hand one reads cleaner' },
+    shelf: { use: 'hand', why: 'small lanterns and pots that read at 1x; the generated things are generic' },
+    stool: { use: 'hand', why: 'a lacquered drum stool; the generated stool is generic' },
+    lamp: { use: 'hand', why: 'a red paper lantern with a tassel and its own halo; close, the hand one reads cleaner' },
+    rug: { use: 'hand', why: 'a red rug with gold lantern motifs; the generated checks read busier' },
+    frame: { use: 'hand', why: 'a paper lantern picture with a gold frame; the generated peak frame is heavier' },
+    curtains: { use: 'hand', why: 'red drapes and bunting over the window; the generated drapes pinch and read busier' },
+  },
+};
+
+export const HOUSE_ART: HouseArtPack = setPack(SOURCE);

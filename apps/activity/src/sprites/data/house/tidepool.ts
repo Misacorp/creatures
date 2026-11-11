@@ -8,25 +8,10 @@
  */
 import type { SpriteDef } from '../../sprite-data';
 import type { HouseArtPack } from '../../../housing/house-art';
+import { setPack, type SetSource } from '../../workshop/pack';
+import { TIDEPOOL } from '../../workshop/styles/tidepool';
 
-const PALETTE: Readonly<Record<string, string>> = {
-  k: '#0d0a1a',
-  a: '#cdb994',
-  b: '#a58f6c',
-  c: '#8a7656',
-  d: '#86d4e2',
-  e: '#3f9cc0',
-  f: '#276d92',
-  g: '#efe0b4',
-  h: '#fbf8ee',
-  m: '#f2a3a8',
-  n: '#8fe3cc',
-  w: '#c2e8ee',
-  s: '#8ccaf2',
-  t: '#e2f2fb',
-  y: '#fff2b8',
-  z: '#ffd98a',
-};
+const PALETTE: Readonly<Record<string, string>> = TIDEPOOL.palette;
 
 /** A sprite with only the palette keys its rows use. */
 function art(rows: readonly string[]): SpriteDef {
@@ -37,7 +22,8 @@ function art(rows: readonly string[]): SpriteDef {
   };
 }
 
-export const HOUSE_ART: HouseArtPack = {
+/** The hand-drawn pieces, wallpaper, floor and keepsake of the first art pass. */
+const HAND: HouseArtPack = {
   pieces: {
     'tidepool-bed': {
       sprite: art([
@@ -384,3 +370,25 @@ export const HOUSE_ART: HouseArtPack = {
     ]),
   },
 };
+
+/**
+ * How each piece is made (`docs/design/housing-workshop.md`): drawn from the style, or the hand pixels above kept as
+ * an override, with the reason. `pnpm housing compare --set tidepool` shows the shipped and generated pieces side by side.
+ */
+export const SOURCE: SetSource = {
+  style: TIDEPOOL,
+  hand: HAND,
+  pieces: {
+    bed: { use: 'hand', why: 'shell-scalloped headboard and footboard; the generated bed is a plainer re-skin' },
+    cupboard: { use: 'hand', why: 'sea-glass doors under a scalloped crown; the generated wood doors read plainer' },
+    table: { use: 'hand', why: 'a sea-blue inlaid top; the generated top is a plain plank' },
+    shelf: { use: 'hand', why: 'a pearl shell, a jar and a starfish that read at 1x; the generated things are smaller' },
+    stool: { use: 'hand', why: 'a rounder blue seat; the generated stool reads stiffer' },
+    lamp: { use: 'layers', layers: ['sprite'], why: 'the shade is hand-drawn; the two-ring glow is generated (pixel-identical to the first pass)' },
+    rug: { use: 'hand', why: 'a calm pearl-and-wave band; the generated field is busier' },
+    frame: { use: 'hand', why: 'a scalloped frame round a seascape; the generated frame is plain' },
+    curtains: { use: 'hand', why: 'full drapes under a sand valance; the generated drapes pinch and read busier' },
+  },
+};
+
+export const HOUSE_ART: HouseArtPack = setPack(SOURCE);

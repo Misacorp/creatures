@@ -1,0 +1,49 @@
+/**
+ * The Rootwood style (`docs/design/housing-workshop.md`): Living-wood curves with a leaf curl at the top corners and moss cushions.
+ * The palette is the set's own (its pack file draws the hand pieces with it); the ramps name its keys by material.
+ */
+import type { Style } from '../style';
+
+export const ROOTWOOD: Style = {
+  id: 'rootwood',
+  name: 'Rootwood',
+  palette: {
+  k: '#0d0a1a',
+  a: '#d2a36c',
+  b: '#a67146',
+  c: '#72502f',
+  d: '#a2de74',
+  e: '#5cb252',
+  f: '#337a41',
+  g: '#c2dc6e',
+  i: '#92b64c',
+  h: '#eef6c0',
+  m: '#f2c85c',
+  n: '#f19ab4',
+  w: '#3f6a47',
+  v: '#345d3d',
+  u: '#547f51',
+  s: '#8ccaf2',
+  t: '#e2f2fb',
+  y: '#f8ffbc',
+  z: '#c6ee82',
+  },
+  wood: { light: 'a', mid: 'b', dark: 'c' },
+  cloth: { hi: 'g', light: 'd', mid: 'e', dark: 'f' },
+  linen: { hi: 'h', light: 'h', mid: 'g', dark: 'i' },
+  metal: { light: 'a', mid: 'b', dark: 'c' },
+  glass: { hi: 't', light: 't', mid: 's', dark: 'f' },
+  accent: { hi: 'g', light: 'd', mid: 'e', dark: 'f' },
+  leg: 'tapered',
+  foot: 'none',
+  trim: 'leaf',
+  top: 'curl',
+  motif: 'leaf',
+  weave: 'plain',
+  lamp: 'bell',
+  lampMaterial: 'wood',
+  glow: { kind: 'ring', inner: 'y', outer: 'z' },
+  rug: { shape: 'fringe', weave: 'dots' },
+  picture: 'hills',
+  shelf: ['plant', 'jar', 'books'],
+};

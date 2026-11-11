@@ -5,19 +5,10 @@
  */
 import type { SpriteDef } from '../../sprite-data';
 import type { HouseArtPack } from '../../../housing/house-art';
+import { setPack, type SetSource } from '../../workshop/pack';
+import { STORMGLASS } from '../../workshop/styles/stormglass';
 
-const PALETTE: Readonly<Record<string, string>> = {
-  k: '#0d0a1a',
-  a: '#e6e1d8',
-  b: '#c4beb6',
-  c: '#8d889a',
-  d: '#54546c',
-  e: '#e28c3c',
-  f: '#a05a26',
-  g: '#8a68ee',
-  h: '#d6caff',
-  i: '#fff08c',
-};
+const PALETTE: Readonly<Record<string, string>> = STORMGLASS.palette;
 
 /** A sprite with only the palette keys its rows use. */
 const sprite = (rows: readonly string[]): SpriteDef => ({
@@ -27,7 +18,8 @@ const sprite = (rows: readonly string[]): SpriteDef => ({
   ),
 });
 
-export const HOUSE_ART: HouseArtPack = {
+/** The hand-drawn pieces, wallpaper, floor and keepsake of the first art pass. */
+const HAND: HouseArtPack = {
   pieces: {
     'stormglass-bed': {
       sprite: sprite([
@@ -380,3 +372,25 @@ export const HOUSE_ART: HouseArtPack = {
     ]),
   },
 };
+
+/**
+ * How each piece is made (`docs/design/housing-workshop.md`): drawn from the style, or the hand pixels above kept as
+ * an override, with the reason. `pnpm housing compare --set stormglass` shows the shipped and generated pieces side by side.
+ */
+export const SOURCE: SetSource = {
+  style: STORMGLASS,
+  hand: HAND,
+  pieces: {
+    bed: { use: 'hand', why: 'a copper-coiled headboard with a glass bead; the generated bed is a plainer re-skin' },
+    cupboard: { use: 'hand', why: 'a lightning scar across pale ash doors; the generated doors are plain' },
+    table: { use: 'hand', why: 'splayed legs and a zigzag copper apron; close, but the hand one reads cleaner' },
+    shelf: { use: 'hand', why: 'coils, a bottle and a crystal that read at 1x; the generated things are smaller' },
+    stool: { use: 'hand', why: 'splayed legs braced with copper; the generated legs read stiffer' },
+    lamp: { use: 'hand', why: 'a glass orb lamp with its own dithered halo; the generated cage reads busier' },
+    rug: { use: 'hand', why: 'a violet zigzag with a lightning streak; the generated zigzag is busier' },
+    frame: { use: 'hand', why: 'a storm picture with a bolt in a chamfered frame; close, the hand one reads cleaner' },
+    curtains: { use: 'hand', why: 'a pale window with copper rods; the generated violet drapes on violet glass read poorly' },
+  },
+};
+
+export const HOUSE_ART: HouseArtPack = setPack(SOURCE);

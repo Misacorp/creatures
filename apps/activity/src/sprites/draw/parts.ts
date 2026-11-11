@@ -7,7 +7,7 @@
  * Coordinates are the part's outer box, ink included. Parts draw over what is under them, so a recipe draws back to
  * front. Every part is deterministic.
  */
-import { type Canvas, CLEAR, get, put } from './canvas';
+import { type Canvas, CLEAR, canvas, get, put } from './canvas';
 import {
   INK,
   type Ramp,
@@ -504,81 +504,115 @@ export function windowPane(
 
 export type ShelfItem = 'books' | 'jar' | 'plant' | 'shell' | 'candle' | 'bottle' | 'bowl' | 'crystal';
 
+/**
+ * Draws a small stencil: `k` ink, `0` to `3` the first ramp's hi, light, mid and dark, `4` to `6` the second ramp's
+ * light, mid and dark, `.` nothing.
+ */
+export function stencil(
+  c: Canvas,
+  x: number,
+  y: number,
+  rows: readonly string[],
+  first: Ramp,
+  second: Ramp = first,
+): void {
+  const keys: Readonly<Record<string, string>> = {
+    k: INK,
+    '0': first.hi ?? first.light,
+    '1': first.light,
+    '2': first.mid,
+    '3': first.dark,
+    '4': second.light,
+    '5': second.mid,
+    '6': second.dark,
+  };
+  for (const [r, row] of rows.entries()) {
+    for (const [i, ch] of [...row].entries()) {
+      const key = keys[ch];
+      if (key !== undefined) put(c, x + i, y + r, key);
+    }
+  }
+}
+
+/** The things a shelf can hold, as stencils standing on their bottom row (first ramp, second ramp). */
+const SHELF_THINGS: Readonly<
+  Record<ShelfItem, { rows: readonly string[]; ramps: (m: Materials) => [Ramp, Ramp] }>
+> = {
+  books: {
+    // three books of 9, 7 and 8 rows, a band near the top of each (the middle one in the second ramp)
+    rows: [
+      '.kkk.........',
+      'k123k....kkk.',
+      'k000k...k123k',
+      'k123kkkkk000k',
+      'k123k456k123k',
+      'k123k444k123k',
+      'k123k456k123k',
+      'k123k456k123k',
+      'k123k456k123k',
+      'kkkkkkkkkkkkk',
+    ],
+    ramps: (m) => [m.cloth, m.accent],
+  },
+  jar: {
+    rows: ['.kkkkk.', '.k555k.', 'kkkkkkk', 'k10222k', 'k12222k', 'k12222k', 'k12223k', '.kkkkk.'],
+    ramps: (m) => [m.glass, m.wood],
+  },
+  plant: {
+    rows: [
+      '..k..k..',
+      '.k4kk4k.',
+      'k445k54k',
+      '.k4554k.',
+      '..k55k..',
+      '.kkkkkk.',
+      '.k1223k.',
+      '.k1223k.',
+      '..kkkk..',
+    ],
+    ramps: (m) => [m.wood, m.accent],
+  },
+  shell: {
+    rows: ['...kkk...', '..k121k..', '.k12121k.', 'k1212121k', 'k1212123k', '.k22223k.', '..kkkkk..'],
+    ramps: (m) => [m.linen, m.accent],
+  },
+  candle: {
+    rows: ['..4..', '.k5k.', '.k0k.', 'k112k', 'k112k', 'k112k', 'k123k', 'kkkkk'],
+    ramps: (m) => [m.linen, m.accent],
+  },
+  bottle: {
+    rows: ['.k4k.', '.k5k.', '.k2k.', 'kk12kk', 'k1022k', 'k1222k', 'k1222k', 'k1223k', '.kkkk.'].map((r) =>
+      r.padEnd(6, '.'),
+    ),
+    ramps: (m) => [m.glass, m.wood],
+  },
+  bowl: {
+    rows: ['..k.kk...', '.k4k45k..', 'k44k455k.', 'kkkkkkkkk', 'k1122223k', '.k12223k.', '..kkkkk..'],
+    ramps: (m) => [m.wood, m.accent],
+  },
+  crystal: {
+    rows: ['...k...', '..k1k..', '.k112k.', 'k11223k', '.k123k.', '..k3k..', '.kkkkk.', 'k12223k', 'kkkkkkk'],
+    ramps: (m) => [m.accent, m.wood],
+  },
+};
+
 /** How wide a shelf thing is. */
 export function shelfItemWidth(kind: ShelfItem): number {
-  return { books: 7, jar: 5, plant: 6, shell: 6, candle: 3, bottle: 4, bowl: 7, crystal: 5 }[kind];
+  return SHELF_THINGS[kind].rows[0]?.length ?? 0;
 }
 
 /** A thing standing on a shelf: its bottom row is `base - 1`. Returns its width. */
-export function shelfItem(c: Canvas, x: number, base: number, kind: ShelfItem, m: Materials): number {
-  const w = shelfItemWidth(kind);
-  const b = base - 1;
-  switch (kind) {
-    case 'books': {
-      const heights = [6, 7, 5];
-      const ramps = [m.cloth, m.accent, m.linen];
-      for (const [i, bh] of heights.entries()) {
-        const bx = x + i * 2;
-        const ramp = ramps[i] ?? m.cloth;
-        vline(c, bx, b - bh + 1, bh, INK);
-        vline(c, bx + 1, b - bh + 2, bh - 1, ramp.mid);
-        put(c, bx + 1, b - bh + 1, INK);
-        put(c, bx + 1, b - bh + 3, ramp.light);
-      }
-      vline(c, x + 6, b - 4, 5, INK);
-      return w;
-    }
-    case 'jar':
-      box(c, x, b - 5, 5, 6, m.glass, { round: 1 });
-      hline(c, x + 1, b - 6, 3, INK);
-      hline(c, x + 1, b - 5, 3, m.wood.mid);
-      put(c, x + 1, b - 3, m.glass.hi ?? m.glass.light);
-      return w;
-    case 'plant': {
-      box(c, x + 1, b - 2, 4, 3, m.wood, { shade: 'cols' });
-      const leaves = ['.kk..k', 'kaakka', '.kaaak', '..kak.'];
-      for (const [r, row] of leaves.entries()) {
-        for (const [i, ch] of [...row].entries()) {
-          if (ch === 'k') put(c, x + i, b - 6 + r, INK);
-          if (ch === 'a') put(c, x + i, b - 6 + r, (i + r) % 3 === 0 ? m.accent.dark : m.accent.light);
-        }
-      }
-      return w;
-    }
-    case 'shell':
-      for (const p of ellipsePixels(x, b - 3, 6, 8)) {
-        if (p.y > b) continue;
-        put(c, p.x, p.y, (p.x - x) % 2 === 0 ? m.linen.light : m.linen.mid);
-      }
-      for (const p of ellipsePixels(x, b - 3, 6, 8, 'ring')) if (p.y <= b - 0) put(c, p.x, p.y, INK);
-      hline(c, x, b, 6, INK);
-      return w;
-    case 'candle':
-      box(c, x, b - 4, 3, 5, m.linen, { shade: 'cols' });
-      put(c, x + 1, b - 5, m.glass.hi ?? m.glass.light);
-      put(c, x + 1, b - 6, m.accent.light);
-      return w;
-    case 'bottle':
-      box(c, x, b - 4, 4, 5, m.glass, { round: 1 });
-      vline(c, x + 1, b - 6, 2, INK);
-      vline(c, x + 2, b - 6, 2, INK);
-      put(c, x + 1, b - 3, m.glass.hi ?? m.glass.light);
-      return w;
-    case 'bowl':
-      hline(c, x, b - 2, 7, INK);
-      hline(c, x + 1, b - 3, 5, m.accent.light);
-      put(c, x + 2, b - 4, m.accent.light);
-      put(c, x + 4, b - 4, m.accent.dark);
-      box(c, x, b - 2, 7, 3, m.wood, { round: 1, shade: 'rows' });
-      return w;
-    case 'crystal':
-      for (let r = 0; r < 5; r++) {
-        const half = r < 2 ? r : 4 - r;
-        for (let i = -half; i <= half; i++) put(c, x + 2 + i, b - 4 + r, i === -half || i === half ? INK : i < 0 ? m.accent.light : m.accent.mid);
-      }
-      put(c, x + 2, b - 5, INK);
-      return w;
-  }
+export function shelfItem(
+  c: Canvas,
+  x: number,
+  base: number,
+  kind: ShelfItem,
+  m: Materials,
+): number {
+  const thing = SHELF_THINGS[kind];
+  const [first, second] = thing.ramps(m);
+  stencil(c, x, base - thing.rows.length, thing.rows, first, second);
+  return shelfItemWidth(kind);
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -670,9 +704,23 @@ export function lamp(
 
 export type GlowKind = 'ring' | 'dither';
 
+/** The two-ring halo of the first lamps (20x10): `o` the outer ring, `i` the inner one. */
+const RING_HALO: readonly string[] = [
+  '......oooooooo......',
+  '...ooo........ooo...',
+  '.oo..............oo.',
+  'oo...iiiiiiiiii...oo',
+  'o..ii..........ii..o',
+  'o..ii..........ii..o',
+  'oo...iiiiiiiiii...oo',
+  '.oo..............oo.',
+  '...ooo........ooo...',
+  '......oooooooo......',
+];
+
 /**
- * A night glow layer of `w` x `h`: two soft rings of light (`ring`: an outer ring of `outer`, an inner one of
- * `inner`), or a dithered halo that thins out from the middle (`dither`). Hard pixels, no alpha.
+ * A night glow layer, hard pixels and no alpha. `ring`: two soft rings, 10 rows high (the lamps' halo at 20 wide,
+ * an ellipse pair at other widths). `dither`: a dithered halo of two rings over the whole `w` x `h`.
  */
 export function glow(
   w: number,
@@ -681,20 +729,28 @@ export function glow(
   inner: string,
   outer: string,
 ): Canvas {
-  const c: Canvas = { w, h, px: new Array<string>(w * h).fill(CLEAR) };
   if (kind === 'ring') {
-    for (const p of ellipsePixels(0, 0, w, Math.min(h, 10), 'ring', false)) put(c, p.x, p.y, outer);
-    for (const p of ellipsePixels(3, 3, w - 6, Math.min(h, 10) - 6, 'ring', false)) put(c, p.x, p.y, inner);
+    const c = canvas(w, Math.min(h, 10));
+    if (w === 20 && h >= 10) {
+      for (const [y, row] of RING_HALO.entries()) {
+        for (const [x, ch] of [...row].entries()) {
+          if (ch !== '.') put(c, x, y, ch === 'o' ? outer : inner);
+        }
+      }
+      return c;
+    }
+    for (const p of ellipsePixels(0, 0, w, c.h, 'ring')) put(c, p.x, p.y, outer);
+    for (const p of ellipsePixels(3, 3, w - 6, Math.max(1, c.h - 6), 'ring')) put(c, p.x, p.y, inner);
     return c;
   }
+  const c = canvas(w, h);
   const rings = [
     { inset: 0, key: outer },
     { inset: 2, key: inner },
   ];
   for (const ring of rings) {
-    for (const p of ellipsePixels(ring.inset, ring.inset, w - 2 * ring.inset, h - 2 * ring.inset, 'ring', true)) {
-      if ((p.x + p.y) % 2 === 0) put(c, p.x, p.y, ring.key);
-    }
+    const cells = ellipsePixels(ring.inset, ring.inset, w - 2 * ring.inset, h - 2 * ring.inset, 'ring', true);
+    for (const p of cells) if ((p.x + p.y) % 2 === 0) put(c, p.x, p.y, ring.key);
   }
   return c;
 }

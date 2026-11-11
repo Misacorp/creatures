@@ -2,7 +2,7 @@
  * The small forms: the stool (16x12, a cushion on a frame on two legs), the ceiling lamp (20x16, a cord, the
  * style's shade, a light under it and the night glow) and the rug (56x10, lying on the floor line).
  */
-import { canvas, toSprite } from '../../draw/canvas';
+import { blit, canvas, toSprite } from '../../draw/canvas';
 import { cushion, glow, lamp, leg, motifAt, pattern, rug } from '../../draw/parts';
 import { box } from '../../draw/shapes';
 import { type FormDef, part } from './kit';
@@ -38,12 +38,14 @@ export const LAMP: FormDef = {
   draw(style) {
     const c = canvas(20, 16);
     part(c, style, 'lamp', 'lamp', { x: 0, y: 0, w: 20, h: 16 }, ({ c, style, at }) => {
-      lamp(c, at.x + 10, 16, style.lamp, style[style.lampMaterial], style.metal, style.glass, 3);
+      const g = style.glow;
+      const light = { hi: g.inner, light: g.inner, mid: g.outer, dark: g.outer };
+      lamp(c, at.x + 10, 16, style.lamp, style[style.lampMaterial], style.metal, light, 3);
     });
-    const light = canvas(20, 16);
-    part(light, style, 'lamp', 'glow', { x: 0, y: 0, w: 20, h: 16 }, ({ c, style }) => {
-      const g = glow(20, 16, style.glow.kind, style.glow.inner, style.glow.outer);
-      c.px.splice(0, c.px.length, ...g.px);
+    // the ring halo is 10 rows high, the dithered one the piece's size
+    const light = canvas(20, style.glow.kind === 'ring' ? 10 : 16);
+    part(light, style, 'lamp', 'glow', { x: 0, y: 0, w: light.w, h: light.h }, ({ c, style, at }) => {
+      blit(c, glow(at.w, at.h, style.glow.kind, style.glow.inner, style.glow.outer), at.x, at.y);
     });
     return { sprite: toSprite(c, style.palette), glow: toSprite(light, style.palette) };
   },

@@ -8,28 +8,10 @@
  */
 import type { SpriteDef } from '../../sprite-data';
 import type { HouseArtPack } from '../../../housing/house-art';
+import { setPack, type SetSource } from '../../workshop/pack';
+import { ROOTWOOD } from '../../workshop/styles/rootwood';
 
-const PALETTE: Readonly<Record<string, string>> = {
-  k: '#0d0a1a',
-  a: '#d2a36c',
-  b: '#a67146',
-  c: '#72502f',
-  d: '#a2de74',
-  e: '#5cb252',
-  f: '#337a41',
-  g: '#c2dc6e',
-  i: '#92b64c',
-  h: '#eef6c0',
-  m: '#f2c85c',
-  n: '#f19ab4',
-  w: '#3f6a47',
-  v: '#345d3d',
-  u: '#547f51',
-  s: '#8ccaf2',
-  t: '#e2f2fb',
-  y: '#f8ffbc',
-  z: '#c6ee82',
-};
+const PALETTE: Readonly<Record<string, string>> = ROOTWOOD.palette;
 
 /** A sprite with only the palette keys its rows use. */
 function art(rows: readonly string[]): SpriteDef {
@@ -40,7 +22,8 @@ function art(rows: readonly string[]): SpriteDef {
   };
 }
 
-export const HOUSE_ART: HouseArtPack = {
+/** The hand-drawn pieces, wallpaper, floor and keepsake of the first art pass. */
+const HAND: HouseArtPack = {
   pieces: {
     'rootwood-bed': {
       sprite: art([
@@ -387,3 +370,25 @@ export const HOUSE_ART: HouseArtPack = {
     ]),
   },
 };
+
+/**
+ * How each piece is made (`docs/design/housing-workshop.md`): drawn from the style, or the hand pixels above kept as
+ * an override, with the reason. `pnpm housing compare --set rootwood` shows the shipped and generated pieces side by side.
+ */
+export const SOURCE: SetSource = {
+  style: ROOTWOOD,
+  hand: HAND,
+  pieces: {
+    bed: { use: 'hand', why: 'living-wood boards with leaf curls and moss bedding; the generated bed is a plainer re-skin' },
+    cupboard: { use: 'hand', why: 'a rounded trunk-like carcass with leaf curls; the generated one is a box' },
+    table: { use: 'hand', why: 'root legs that splay into the floor; the generated tapered legs are stiffer' },
+    shelf: { use: 'hand', why: 'a branch shelf with a sprout; the generated board is plainer' },
+    stool: { use: 'hand', why: 'a tree-stump stool, a silhouette of its own; the generated stool is generic' },
+    lamp: { use: 'layers', layers: ['sprite'], why: 'the shade is hand-drawn; the two-ring glow is generated (pixel-identical to the first pass)' },
+    rug: { use: 'hand', why: 'a moss rug with a leafy edge; the generated fringe is plainer' },
+    frame: { use: 'hand', why: 'a branch frame with leaf corners; the generated frame is plain' },
+    curtains: { use: 'hand', why: 'a round window in leafy dressing, a silhouette of its own; the generated window is square' },
+  },
+};
+
+export const HOUSE_ART: HouseArtPack = setPack(SOURCE);

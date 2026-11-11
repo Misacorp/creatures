@@ -8,27 +8,10 @@
  */
 import type { SpriteDef } from '../../sprite-data';
 import type { HouseArtPack } from '../../../housing/house-art';
+import { setPack, type SetSource } from '../../workshop/pack';
+import { MOONLIT } from '../../workshop/styles/moonlit';
 
-const PALETTE: Readonly<Record<string, string>> = {
-  k: '#0d0a1a',
-  a: '#98acf0',
-  b: '#6c84d4',
-  c: '#4a5eac',
-  d: '#f59bb0',
-  e: '#c8607f',
-  g: '#cfd6f0',
-  h: '#f7f9ff',
-  i: '#a493e6',
-  j: '#7061bb',
-  m: '#c8eefa',
-  n: '#84bfdc',
-  w: '#2c3a80',
-  v: '#3a4c98',
-  s: '#8ccaf2',
-  t: '#e2f2fb',
-  y: '#eaf5ff',
-  z: '#a9c9f2',
-};
+const PALETTE: Readonly<Record<string, string>> = MOONLIT.palette;
 
 /** A sprite with only the palette keys its rows use. */
 function art(rows: readonly string[]): SpriteDef {
@@ -39,7 +22,8 @@ function art(rows: readonly string[]): SpriteDef {
   };
 }
 
-export const HOUSE_ART: HouseArtPack = {
+/** The hand-drawn pieces, wallpaper, floor and keepsake of the first art pass. */
+const HAND: HouseArtPack = {
   pieces: {
     'moonlit-bed': {
       sprite: art([
@@ -386,3 +370,25 @@ export const HOUSE_ART: HouseArtPack = {
     ]),
   },
 };
+
+/**
+ * How each piece is made (`docs/design/housing-workshop.md`): drawn from the style, or the hand pixels above kept as
+ * an override, with the reason. `pnpm housing compare --set moonlit` shows the shipped and generated pieces side by side.
+ */
+export const SOURCE: SetSource = {
+  style: MOONLIT,
+  hand: HAND,
+  pieces: {
+    bed: { use: 'hand', why: 'a crescent inlay and an arched headboard; the generated bed is a plainer re-skin' },
+    cupboard: { use: 'hand', why: 'an arched cabinet with crescent doors; the generated one is boxier' },
+    table: { use: 'hand', why: 'splayed legs with a curved stretcher and a moonstone; the generated stretcher is straight' },
+    shelf: { use: 'hand', why: 'a moon jar and a stack that read at 1x; the generated things are smaller' },
+    stool: { use: 'hand', why: 'a round cushion with a crescent; the generated stool is square' },
+    lamp: { use: 'layers', layers: ['sprite'], why: 'the shade is hand-drawn; the two-ring glow is generated (pixel-identical to the first pass)' },
+    rug: { use: 'hand', why: 'an oval rug with coral ends; the generated oval is plainer' },
+    frame: { use: 'hand', why: 'an oval moon mirror, a silhouette of its own; the generated frame is a box' },
+    curtains: { use: 'hand', why: 'violet drapes over a night window with silver rims; the generated window is a day sky' },
+  },
+};
+
+export const HOUSE_ART: HouseArtPack = setPack(SOURCE);

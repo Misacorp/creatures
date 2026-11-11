@@ -5,18 +5,10 @@
  */
 import type { SpriteDef } from '../../sprite-data';
 import type { HouseArtPack } from '../../../housing/house-art';
+import { setPack, type SetSource } from '../../workshop/pack';
+import { ANCIENT } from '../../workshop/styles/ancient';
 
-const PALETTE: Readonly<Record<string, string>> = {
-  k: '#0d0a1a',
-  a: '#ecd9a8',
-  b: '#d0b07a',
-  c: '#a28558',
-  d: '#6d583e',
-  e: '#e8c04c',
-  f: '#a8822a',
-  g: '#55a392',
-  h: '#2f6e68',
-};
+const PALETTE: Readonly<Record<string, string>> = ANCIENT.palette;
 
 /** A sprite with only the palette keys its rows use. */
 const sprite = (rows: readonly string[]): SpriteDef => ({
@@ -26,7 +18,8 @@ const sprite = (rows: readonly string[]): SpriteDef => ({
   ),
 });
 
-export const HOUSE_ART: HouseArtPack = {
+/** The hand-drawn pieces, wallpaper, floor and keepsake of the first art pass. */
+const HAND: HouseArtPack = {
   pieces: {
     'ancient-bed': {
       sprite: sprite([
@@ -379,3 +372,25 @@ export const HOUSE_ART: HouseArtPack = {
     ]),
   },
 };
+
+/**
+ * How each piece is made (`docs/design/housing-workshop.md`): drawn from the style, or the hand pixels above kept as
+ * an override, with the reason. `pnpm housing compare --set ancient` shows the shipped and generated pieces side by side.
+ */
+export const SOURCE: SetSource = {
+  style: ANCIENT,
+  hand: HAND,
+  pieces: {
+    bed: { use: 'hand', why: 'standing-stone boards with spiral carvings; the generated bed is a plainer re-skin' },
+    cupboard: { use: 'hand', why: 'a stepped crown and spiral door carvings; the generated crown is smaller' },
+    table: { use: 'hand', why: 'slab legs carved with spirals; the generated legs are posts' },
+    shelf: { use: 'hand', why: 'carved gold things that read at 1x; the generated things are smaller' },
+    stool: { use: 'hand', why: 'a stepped stone seat; the generated stool is generic' },
+    lamp: { use: 'hand', why: 'a gold bowl lamp with its own dithered halo; the generated cone is plainer' },
+    rug: { use: 'hand', why: 'a teal and gold meander; the generated diamonds read weaker' },
+    frame: { use: 'hand', why: 'a spiral carving in a stone frame; the generated sun picture is plainer' },
+    curtains: { use: 'hand', why: 'a stone window with a gold lintel; the generated drapes are a different idea' },
+  },
+};
+
+export const HOUSE_ART: HouseArtPack = setPack(SOURCE);
