@@ -10,7 +10,18 @@ const { collisionTable } = await import('../src/sprites/workshop/interior/report
 type Raster = ReturnType<typeof sheets.mixSheet>;
 
 const ROOT = join(import.meta.dirname, '..');
-const ROOMS = join(ROOT, '..', '..', 'packages', 'game', 'src', 'content', 'data', 'housing', 'rooms.json');
+const ROOMS = join(
+  ROOT,
+  '..',
+  '..',
+  'packages',
+  'game',
+  'src',
+  'content',
+  'data',
+  'housing',
+  'rooms.json',
+);
 
 function write(dir: string, name: string, r: Raster, scale = 3): string[] {
   const one = join(dir, `${name}-1x.png`);

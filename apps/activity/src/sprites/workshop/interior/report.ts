@@ -26,7 +26,13 @@ export function collisionTable(rooms: readonly RoomData[]): string {
   ];
   for (const r of rooms) {
     const like: RoomLike = { id: r.id, cells: r.cells.w, spots: r.spots };
-    if (r.spots.every((s) => !['window', 'wall-large', 'wall-small', 'floor-large', 'floor-small'].includes(s.type))) continue;
+    if (
+      r.spots.every(
+        (s) =>
+          !['window', 'wall-large', 'wall-small', 'floor-large', 'floor-small'].includes(s.type),
+      )
+    )
+      continue;
     const [l0, l1] = edgeZone(like, 'left', DOOR_REACH.straddle);
     const [r0, r1] = edgeZone(like, 'right', DOOR_REACH.straddle);
     const [b0, b1] = edgeZone(like, 'right', DOOR_REACH.leftRoom);

@@ -21,7 +21,8 @@ export const MARGIN = 2;
 export function shippedFrame(): FrameMaterial {
   const wall = HOUSE_ART.skins?.timber?.tile;
   const slab = HOUSE_ART.shell?.slab;
-  if (wall === undefined || slab === undefined) throw new Error('The shipped shell art is missing.');
+  if (wall === undefined || slab === undefined)
+    throw new Error('The shipped shell art is missing.');
   const rows = expandRows(wall);
   return {
     id: 'shipped-timber',
@@ -85,7 +86,13 @@ export const roomRaster = (cells = 1): Raster => new Raster(cells * CELL_W + 2 *
  * Draws a room into `r` with its cell's top left at (ox, oy). Returns the lights it holds (for the night).
  * Walls (posts) are drawn at the cell's edges, 2 px each side.
  */
-export function drawRoom(r: Raster, ox: number, oy: number, look: RoomLook, opts: RoomOpts = {}): LightAt[] {
+export function drawRoom(
+  r: Raster,
+  ox: number,
+  oy: number,
+  look: RoomLook,
+  opts: RoomOpts = {},
+): LightAt[] {
   const cells = opts.cells ?? 1;
   const furnish = opts.furnish ?? 'full';
   const width = cells * CELL_W;
@@ -94,7 +101,8 @@ export function drawRoom(r: Raster, ox: number, oy: number, look: RoomLook, opts
   const clip = { x: ox, y: oy, w: width, h: WALL_H + FLOOR_H };
 
   r.tileFill(look.wall, ox, oy, width, WALL_H, 'wall');
-  if (look.ceiling !== undefined) r.tileFill(look.ceiling, ox, oy, width, sizeOf(look.ceiling).h, 'wall');
+  if (look.ceiling !== undefined)
+    r.tileFill(look.ceiling, ox, oy, width, sizeOf(look.ceiling).h, 'wall');
   if (look.trim !== undefined) r.tileFill(look.trim, ox, oy, width, WALL_H, 'wall');
   r.tileFill(look.floor, ox, oy + WALL_H, width, FLOOR_H, 'floor');
   r.tileFill(frame.slab, ox, oy + WALL_H + FLOOR_H, width, SLAB_H, 'exterior');
@@ -103,10 +111,20 @@ export function drawRoom(r: Raster, ox: number, oy: number, look: RoomLook, opts
     r.rect(ox + look.hole.x, oy + WALL_H, look.hole.w, 1, '#0d0a1a', 'exterior');
   }
   if (look.stair !== undefined) {
-    r.sprite(look.stair.stair.sprite, ox + look.stair.x, oy + FEET + 1 - look.stair.stair.h + 0, 'auto');
+    r.sprite(
+      look.stair.stair.sprite,
+      ox + look.stair.x,
+      oy + FEET + 1 - look.stair.stair.h + 0,
+      'auto',
+    );
   }
 
-  const put = (art: PieceArt, x: number, y: number, mat: 'auto' | 'light' | 'window' = 'auto'): void => {
+  const put = (
+    art: PieceArt,
+    x: number,
+    y: number,
+    mat: 'auto' | 'light' | 'window' = 'auto',
+  ): void => {
     r.sprite(art.sprite, x, y, mat);
   };
   const spotX = (sx: number, sw: number, pw: number): number => ox + sx + Math.floor((sw - pw) / 2);
@@ -119,7 +137,10 @@ export function drawRoom(r: Raster, ox: number, oy: number, look: RoomLook, opts
     const frm = piece('cosy-frame');
     put(frm, spotX(40, 40, sizeOf(frm.sprite).w), oy + 4);
     const sofa = piece('cosy-sofa');
-    const sofaAt = [spotX(24, 64, sizeOf(sofa.sprite).w), oy + FEET - sizeOf(sofa.sprite).h] as const;
+    const sofaAt = [
+      spotX(24, 64, sizeOf(sofa.sprite).w),
+      oy + FEET - sizeOf(sofa.sprite).h,
+    ] as const;
     put(sofa, sofaAt[0], sofaAt[1]);
     if (sofa.front !== undefined) {
       const f = sofa.front;
@@ -134,12 +155,18 @@ export function drawRoom(r: Raster, ox: number, oy: number, look: RoomLook, opts
     front.push(() => put(plant, spotX(3, 20, pp.w), oy + FEET - pp.h));
     const lx = spotX(width - 22, 20, lp.w);
     front.push(() => put(lamp, lx, oy + FEET - lp.h, 'light'));
-    lights.push({ kind: 'lamp', x: lx + Math.floor(lp.w / 2), y: oy + FEET - lp.h + Math.floor(lp.h * 0.8), clip });
+    lights.push({
+      kind: 'lamp',
+      x: lx + Math.floor(lp.w / 2),
+      y: oy + FEET - lp.h + Math.floor(lp.h * 0.8),
+      clip,
+    });
   }
   const species = opts.creature === undefined ? 'sproutle' : opts.creature;
   if (species !== null) {
     const sprite = SPECIES_SPRITE_DATA[species];
-    if (sprite !== undefined) r.sprite(sprite, ox + Math.floor(width / 2) - 6, oy + FEET - 15, 'creature');
+    if (sprite !== undefined)
+      r.sprite(sprite, ox + Math.floor(width / 2) - 6, oy + FEET - 15, 'creature');
   }
   for (const f of front) f();
 
@@ -161,19 +188,31 @@ export function drawRoom(r: Raster, ox: number, oy: number, look: RoomLook, opts
 }
 
 /** A single room in its own raster, cell at the margin. */
-export function renderRoom(look: RoomLook, opts: RoomOpts = {}): { raster: Raster; lights: LightAt[]; ox: number } {
+export function renderRoom(
+  look: RoomLook,
+  opts: RoomOpts = {},
+): { raster: Raster; lights: LightAt[]; ox: number } {
   const cells = opts.cells ?? 1;
   // a doorway straddles the post: show a stub of the neighbouring room so it reads as a way through
   const margin = look.doorLeft !== undefined || look.doorRight !== undefined ? 12 : MARGIN;
   const raster = new Raster(cells * CELL_W + 2 * margin, CELL_H, '#5a4a7a');
-  const frame = look.frame ?? shippedFrame();
-  for (const [from, w] of [
-    [0, margin],
-    [margin + cells * CELL_W, margin],
-  ] as const) {
-    raster.tileFill(look.wall, from, 0, w, WALL_H, 'wall');
-    raster.tileFill(look.floor, from, WALL_H, w, FLOOR_H, 'floor');
-    raster.tileFill(frame.slab, from, WALL_H + FLOOR_H, w, SLAB_H, 'exterior');
+  // the neighbours: the same room, bare, so the doorway and the posts read in place
+  if (margin > MARGIN) {
+    const bare: RoomOpts = { cells, furnish: 'none', creature: null };
+    drawRoom(
+      raster,
+      margin - cells * CELL_W,
+      0,
+      { ...look, doorLeft: undefined, doorRight: undefined, stair: undefined },
+      bare,
+    );
+    drawRoom(
+      raster,
+      margin + cells * CELL_W,
+      0,
+      { ...look, doorLeft: undefined, doorRight: undefined, stair: undefined },
+      bare,
+    );
   }
   const lights = drawRoom(raster, margin, 0, look, opts);
   return { raster, lights, ox: margin };
@@ -183,9 +222,22 @@ export function renderRoom(look: RoomLook, opts: RoomOpts = {}): { raster: Raste
 export function nightRaster(src: Raster, phase: NightPhase, lights: readonly LightAt[]): Raster {
   const out = new Raster(src.w, src.h);
   const levels = levelMap(lights, src.w, src.h);
-  const mats = ['auto', 'wall', 'floor', 'exterior', 'light', 'creature', 'fixed', 'window'] as const;
+  const mats = [
+    'auto',
+    'wall',
+    'floor',
+    'exterior',
+    'light',
+    'creature',
+    'fixed',
+    'window',
+  ] as const;
   for (let i = 0; i < src.w * src.h; i++) {
-    const c: [number, number, number] = [src.px[i * 3] ?? 0, src.px[i * 3 + 1] ?? 0, src.px[i * 3 + 2] ?? 0];
+    const c: [number, number, number] = [
+      src.px[i * 3] ?? 0,
+      src.px[i * 3 + 1] ?? 0,
+      src.px[i * 3 + 2] ?? 0,
+    ];
     const level = Math.min(3, levels[i] ?? 0) as 0 | 1 | 2 | 3;
     const [r, g, b] = shade(c, mats[src.mat[i] ?? 0] ?? 'auto', phase, level);
     const hex = rgbToHex([r, g, b]);

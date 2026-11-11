@@ -77,7 +77,8 @@ export function doorway(style: DoorStyle, frame: Tones, cloth: Tones): Doorway {
       const left = x < DOOR_W / 2;
       if (r < 0) continue;
       if (r === 0) g.set(x, y, 'k');
-      else if (r <= 3) g.set(x, y, left ? ['c', 'a', 'a'][r - 1] ?? 'a' : ['a', 'b', 'd'][r - 1] ?? 'a');
+      else if (r <= 3)
+        g.set(x, y, left ? (['c', 'a', 'a'][r - 1] ?? 'a') : (['a', 'b', 'd'][r - 1] ?? 'a'));
       else g.set(x, y, y > DOOR_H - 8 ? 'q' : 'p');
     }
   }
@@ -175,9 +176,8 @@ export function stair(style: StairStyle, wood: Tones): Stair {
       g.set(x, t - 1, 'k');
       g.set(x, t, 'c');
       g.set(x, t + 1, 'a');
-      g.set(x, t + 2, 'a');
-      g.set(x, t + 3, 'b');
-      g.set(x, t + 4, 'k');
+      for (let y = t + 2; y < t + 8; y++) g.set(x, y, y > t + 5 ? 'b' : 'a');
+      g.set(x, t + 8, 'k');
       // the riser: the first column of a step, from its tread down to the tread below
       if (x % run === 0 && prev > t) {
         for (let y = t; y < prev; y++) g.set(x, y, y === t ? 'c' : 'd');

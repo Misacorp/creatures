@@ -52,7 +52,8 @@ export function makeTile(
       const key = at(x, y);
       if (key.length !== 1) throw new RangeError(`A palette key is one character, not "${key}".`);
       if (key !== '.') {
-        if (!Object.hasOwn(palette, key)) throw new RangeError(`Key "${key}" is not in the palette.`);
+        if (!Object.hasOwn(palette, key))
+          throw new RangeError(`Key "${key}" is not in the palette.`);
         used.add(key);
       }
       row += key;
@@ -157,7 +158,14 @@ export class Raster {
     this.rect(0, 0, w, h, background);
   }
 
-  rect(x: number, y: number, w: number, h: number, colour: string, mat: MaterialName = 'auto'): void {
+  rect(
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    colour: string,
+    mat: MaterialName = 'auto',
+  ): void {
     const [r, g, b] = hexToRgb(colour);
     const m = MATERIALS.indexOf(mat);
     for (let j = Math.max(0, y); j < Math.min(this.h, y + h); j++) {
@@ -185,7 +193,10 @@ export class Raster {
         if (ch === '.' || colour === undefined) continue;
         const px = x + i;
         const py = y + j;
-        if (clip !== undefined && (px < clip.x || py < clip.y || px >= clip.x + clip.w || py >= clip.y + clip.h))
+        if (
+          clip !== undefined &&
+          (px < clip.x || py < clip.y || px >= clip.x + clip.w || py >= clip.y + clip.h)
+        )
           continue;
         this.rect(px, py, 1, 1, colour, mat);
       }
@@ -193,7 +204,14 @@ export class Raster {
   }
 
   /** A sprite repeated over a box, its top left at the box's top left. */
-  tileFill(def: SpriteDef, x: number, y: number, w: number, h: number, mat: MaterialName = 'auto'): void {
+  tileFill(
+    def: SpriteDef,
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    mat: MaterialName = 'auto',
+  ): void {
     const rows = expandRows(def);
     const th = rows.length;
     const tw = rows[0]?.length ?? 0;
@@ -240,7 +258,8 @@ export class Raster {
     for (const ch of t.toUpperCase()) {
       const rows = /[A-Z]/.test(ch) ? glyph(ch) : DIGITS[ch];
       for (const [j, row] of (rows ?? []).entries()) {
-        for (const [i, c] of [...row].entries()) if (c === '#') this.rect(cx + i * s, y + j * s, s, s, colour);
+        for (const [i, c] of [...row].entries())
+          if (c === '#') this.rect(cx + i * s, y + j * s, s, s, colour);
       }
       cx += 6 * s;
     }

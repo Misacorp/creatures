@@ -87,15 +87,60 @@ const T = (id: string, name: string, a: string, b: string, c: string, d: string)
 
 /** The material colourways: timber in two woods, stone, painted in four colours, brick and dark iron. */
 export const FRAMES: readonly FrameMaterial[] = [
-  make(kindOf('timber'), T('oak', 'Oak', '#b07a4c', '#82553a', '#d29c68', '#5e3a28'), 'timber-oak', 'Oak beams'),
-  make(kindOf('timber'), T('dark', 'Dark', '#5e3f2e', '#4a3024', '#7c5640', '#2e1d16'), 'timber-dark', 'Dark beams'),
-  make(kindOf('stone'), T('grey', 'Grey', '#9a9484', '#706b60', '#c0b9a8', '#4e4a42'), 'stone-grey', 'Grey stone'),
-  make(kindOf('painted'), T('white', 'White', '#ece4d2', '#c9bfaa', '#fbf6ea', '#9a8f7a'), 'painted-white', 'White paint'),
-  make(kindOf('painted'), T('sage', 'Sage', '#9fbb92', '#7a9a70', '#c2d8b4', '#58765a'), 'painted-sage', 'Sage paint'),
-  make(kindOf('painted'), T('blue', 'Blue', '#7fa8c8', '#5b84a6', '#a9cbe0', '#3f6384'), 'painted-blue', 'Blue paint'),
-  make(kindOf('painted'), T('rose', 'Rose', '#d99a98', '#b87580', '#f0bdb8', '#8a5260'), 'painted-rose', 'Rose paint'),
-  make(kindOf('brick'), T('red', 'Red', '#b45c42', '#8c4232', '#d27e5c', '#dccdb4'), 'brick-red', 'Red brick'),
-  make(kindOf('iron'), T('iron', 'Iron', '#5a5e72', '#43465a', '#7c8198', '#2d2f3e'), 'iron-dark', 'Dark iron'),
+  make(
+    kindOf('timber'),
+    T('oak', 'Oak', '#b07a4c', '#82553a', '#d29c68', '#5e3a28'),
+    'timber-oak',
+    'Oak beams',
+  ),
+  make(
+    kindOf('timber'),
+    T('dark', 'Dark', '#5e3f2e', '#4a3024', '#7c5640', '#2e1d16'),
+    'timber-dark',
+    'Dark beams',
+  ),
+  make(
+    kindOf('stone'),
+    T('grey', 'Grey', '#9a9484', '#706b60', '#c0b9a8', '#4e4a42'),
+    'stone-grey',
+    'Grey stone',
+  ),
+  make(
+    kindOf('painted'),
+    T('white', 'White', '#ece4d2', '#c9bfaa', '#fbf6ea', '#9a8f7a'),
+    'painted-white',
+    'White paint',
+  ),
+  make(
+    kindOf('painted'),
+    T('sage', 'Sage', '#9fbb92', '#7a9a70', '#c2d8b4', '#58765a'),
+    'painted-sage',
+    'Sage paint',
+  ),
+  make(
+    kindOf('painted'),
+    T('blue', 'Blue', '#7fa8c8', '#5b84a6', '#a9cbe0', '#3f6384'),
+    'painted-blue',
+    'Blue paint',
+  ),
+  make(
+    kindOf('painted'),
+    T('rose', 'Rose', '#d99a98', '#b87580', '#f0bdb8', '#8a5260'),
+    'painted-rose',
+    'Rose paint',
+  ),
+  make(
+    kindOf('brick'),
+    T('red', 'Red', '#b45c42', '#8c4232', '#d27e5c', '#dccdb4'),
+    'brick-red',
+    'Red brick',
+  ),
+  make(
+    kindOf('iron'),
+    T('iron', 'Iron', '#5a5e72', '#43465a', '#7c8198', '#2d2f3e'),
+    'iron-dark',
+    'Dark iron',
+  ),
 ];
 
 export function frameById(id: string): FrameMaterial {

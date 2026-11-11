@@ -9,7 +9,12 @@ import { CELL_W, INK, makeTile, mod, type Tones } from './kit';
 
 export type CeilingKind = 'plain' | 'beamed' | 'coffered' | 'rafters';
 
-export const CEILING_KINDS: readonly { id: CeilingKind; name: string; height: number; note: string }[] = [
+export const CEILING_KINDS: readonly {
+  id: CeilingKind;
+  name: string;
+  height: number;
+  note: string;
+}[] = [
   { id: 'plain', name: 'Plain', height: 4, note: 'a flat ceiling line' },
   { id: 'beamed', name: 'Beamed', height: 11, note: 'a tie beam on corbels' },
   { id: 'coffered', name: 'Coffered', height: 12, note: 'recessed panels between beams' },
@@ -34,8 +39,22 @@ const T = (id: string, name: string, a: string, b: string, c: string, d: string)
   d,
 });
 
-const PLASTER_WHITE = T('plaster-white', 'White plaster', '#f1ece0', '#e0d8c6', '#fbf7ee', '#b9af9a');
-const PLASTER_CREAM = T('plaster-cream', 'Cream plaster', '#eedfb8', '#dcc89a', '#f8edcf', '#b39c70');
+const PLASTER_WHITE = T(
+  'plaster-white',
+  'White plaster',
+  '#f1ece0',
+  '#e0d8c6',
+  '#fbf7ee',
+  '#b9af9a',
+);
+const PLASTER_CREAM = T(
+  'plaster-cream',
+  'Cream plaster',
+  '#eedfb8',
+  '#dcc89a',
+  '#f8edcf',
+  '#b39c70',
+);
 const BOARDS_DARK = T('boards-dark', 'Dark boards', '#5a3c2c', '#4a3024', '#74503c', '#2e1d16');
 const STONE_VAULT = T('stone-vault', 'Stone', '#9a9faa', '#868c98', '#b6bbc4', '#646a78');
 const OAK = T('oak', 'Oak', '#b07a4c', '#82553a', '#d29c68', '#5e3a28');
@@ -88,8 +107,11 @@ function at(kind: CeilingKind, x: number, y: number): string {
         const row = ['g', 'e', 'e', 'f', 'h'][y - 3] ?? 'e';
         return row;
       }
-      const corbel = (m <= 5 && y - 8 <= 2 - Math.floor(m / 2)) || (m >= CELL_W - 6 && y - 8 <= 2 - Math.floor((CELL_W - 1 - m) / 2));
-      const mid = Math.abs(m - 55.5) <= 4 && y - 8 <= 2 - Math.floor((Math.abs(m - 55.5) - 0.5) / 2) + 0;
+      const corbel =
+        (m <= 5 && y - 8 <= 2 - Math.floor(m / 2)) ||
+        (m >= CELL_W - 6 && y - 8 <= 2 - Math.floor((CELL_W - 1 - m) / 2));
+      const mid =
+        Math.abs(m - 55.5) <= 4 && y - 8 <= 2 - Math.floor((Math.abs(m - 55.5) - 0.5) / 2) + 0;
       if (corbel || mid) return y === 10 ? 'h' : 'f';
       if (y === 8) return 'd';
       return '.';
@@ -126,8 +148,17 @@ function at(kind: CeilingKind, x: number, y: number): string {
 }
 
 /** The overlay of a kind in a colourway for a room `roomW` wide (a multiple of 112). */
-export function ceilingOverlay(kind: CeilingKind, colours: CeilingColours, roomW: number): SpriteDef {
-  return makeTile(roomW, kind === 'rafters' ? 15 : heightOf(kind), (x, y) => at(kind, x, y), palette(colours));
+export function ceilingOverlay(
+  kind: CeilingKind,
+  colours: CeilingColours,
+  roomW: number,
+): SpriteDef {
+  return makeTile(
+    roomW,
+    kind === 'rafters' ? 15 : heightOf(kind),
+    (x, y) => at(kind, x, y),
+    palette(colours),
+  );
 }
 
 export const ceilingHeight = heightOf;

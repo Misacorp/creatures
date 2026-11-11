@@ -17,7 +17,15 @@ export interface WallPattern {
 }
 
 /** A motif given as rows (`.` leaves the ground), stamped at a centre. */
-function stamp(rows: readonly string[], cx: number, cy: number, w: number, h: number, x: number, y: number): string | null {
+function stamp(
+  rows: readonly string[],
+  cx: number,
+  cy: number,
+  w: number,
+  h: number,
+  x: number,
+  y: number,
+): string | null {
   const rw = rows[0]?.length ?? 0;
   const x0 = cx - Math.floor(rw / 2);
   // test the pixel against the motif repeated across the tile edges (wraps both ways)
@@ -80,8 +88,7 @@ export const WALL_PATTERNS: readonly WallPattern[] = [
     name: 'Damask',
     w: 16,
     // two motifs a half drop apart; the repeat is 16 x 26, so the 52 rows hold two
-    at: (x, y) =>
-      stamp(DAMASK, 3, 0, 16, 26, x, y) ?? stamp(DAMASK, 11, 13, 16, 26, x, y) ?? 'a',
+    at: (x, y) => stamp(DAMASK, 3, 0, 16, 26, x, y) ?? stamp(DAMASK, 11, 13, 16, 26, x, y) ?? 'a',
   },
   {
     id: 'panels',
