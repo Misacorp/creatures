@@ -58,9 +58,15 @@ function pixelsOf(sprite: SpriteDef): Pixels {
 
 type Bytes = [number, number, number];
 
+/** An opaque colour as one little-endian RGBA word (what `Uint8ClampedArray` holds, read four bytes at a time). */
+const pack = (r: number, g: number, b: number): number =>
+  ((255 << 24) | (b << 16) | (g << 8) | r) >>> 0;
+
 /** What one palette entry becomes at each light level, and whether it is a window's sky. */
 interface Table {
   levels: Bytes[][];
+  /** The same colours packed as little-endian RGBA words (opaque), by level then palette entry. */
+  packed: Uint32Array[];
   sky: boolean[];
   /** Flame-coloured entries (a window's drawn sun is one of them: see `sunMask`). */
   flame: boolean[];
@@ -91,7 +97,13 @@ function tableOf(sprite: SpriteDef, material: Material, phase: NightPhase): Tabl
     ];
   });
   const flame = colours.map((c) => toneOf(c) === 'flame');
-  const table = { levels, sky, flame };
+  const packed = [0, 1, 2, 3].map((level) =>
+    Uint32Array.from(levels, (l) => {
+      const c = l[level] ?? l[0] ?? [0, 0, 0];
+      return pack(c[0], c[1], c[2]);
+    }),
+  );
+  const table = { levels, packed, sky, flame };
   byKey.set(key, table);
   return table;
 }
@@ -138,6 +150,7 @@ export function rasterize(
   lighting?: Lighting,
 ): Uint8ClampedArray<ArrayBuffer> {
   const out = new Uint8ClampedArray(new ArrayBuffer(width * height * 4));
+  const words = new Uint32Array(out.buffer);
   const phase = lighting?.phase ?? 'day';
   const levels =
     phase === 'day' || lighting === undefined ? null : levelMap(lighting.lights, width, height);
@@ -145,32 +158,41 @@ export function rasterize(
     const sprite = pixelsOf(p.sprite);
     const w = Math.min(p.w ?? sprite.width, sprite.width);
     const h = Math.min(p.h ?? sprite.height, sprite.height);
-    const table = phase === 'day' ? null : tableOf(p.sprite, p.mat ?? 'auto', phase);
-    const sun = phase !== 'day' && p.mat === 'window' ? sunMask(p.sprite) : null;
-    for (let y = 0; y < h; y++) {
-      const sy = p.y + y;
-      if (sy < 0 || sy >= height) continue;
-      for (let x = 0; x < w; x++) {
-        const sx = p.x + x;
-        if (sx < 0 || sx >= width) continue;
-        const i = sprite.index[y * sprite.width + x] ?? 0;
+    const x0 = Math.max(0, -p.x);
+    const x1 = Math.min(w, width - p.x);
+    const index = sprite.index;
+    if (phase === 'day' || levels === null) {
+      const packedDay = Uint32Array.from(sprite.colours, (c) => pack(c[0], c[1], c[2]));
+      for (let y = Math.max(0, -p.y); y < h && p.y + y < height; y++) {
+        const row = y * sprite.width;
+        const base = (p.y + y) * width + p.x;
+        for (let x = x0; x < x1; x++) {
+          const i = index[row + x] ?? 0;
+          if (i !== 0) words[base + x] = packedDay[i - 1] ?? 0;
+        }
+      }
+      continue;
+    }
+    const table = tableOf(p.sprite, p.mat ?? 'auto', phase);
+    const sun = p.mat === 'window' ? sunMask(p.sprite) : null;
+    const moon = pack(...moonColour(phase));
+    const star = pack(STAR[0], STAR[1], STAR[2]);
+    const { packed, sky } = table;
+    const lit0 = packed[0];
+    for (let y = Math.max(0, -p.y); y < h && p.y + y < height; y++) {
+      const row = y * sprite.width;
+      const base = (p.y + y) * width + p.x;
+      for (let x = x0; x < x1; x++) {
+        const i = index[row + x] ?? 0;
         if (i === 0) continue;
-        const at = sy * width + sx;
-        let c: readonly number[] | undefined;
-        if (table === null) c = sprite.colours[i - 1];
-        else if (sun !== null && phase !== 'day' && sun[y * sprite.width + x] === 1)
-          c = moonColour(phase);
-        else if (table.sky[i - 1] === true) {
-          c =
-            phase === 'night' && pixelHash(sx, sy) % STAR_ONE_IN === 0
-              ? STAR
-              : table.levels[i - 1]?.[0];
-        } else c = table.levels[i - 1]?.[levels?.[at] ?? 0];
-        if (c === undefined) continue;
-        out[at * 4] = c[0] ?? 0;
-        out[at * 4 + 1] = c[1] ?? 0;
-        out[at * 4 + 2] = c[2] ?? 0;
-        out[at * 4 + 3] = 255;
+        const at = base + x;
+        if (sun !== null && sun[row + x] === 1) words[at] = moon;
+        else if (sky[i - 1] === true) {
+          words[at] =
+            phase === 'night' && pixelHash(p.x + x, p.y + y) % STAR_ONE_IN === 0
+              ? star
+              : (lit0?.[i - 1] ?? 0);
+        } else words[at] = packed[levels[at] ?? 0]?.[i - 1] ?? 0;
       }
     }
   }

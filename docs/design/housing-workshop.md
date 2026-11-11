@@ -100,6 +100,8 @@ A form not in `pieces` is generated from the style. An override is one of:
 - `{ use: 'art', art, why }`: a piece given right there.
 - `{ use: 'post', post: (art, style) => art, why }`: the generated piece, changed (a pixel moved, a detail added).
 
+**Lights.** Every `lamp` and `hearth` form is a light with no flag, burning in the middle of the piece's flame-coloured pixels, so a new set's lamp is lit the day it is drawn. A piece that is a light for another reason (a candle on a shelf, a lantern, a lit tank) carries `light: 'lamp'` or `light: { kind, at: { x, y }, size }` in its art (`at` in the piece's pixels, `size` the pool as a multiple, 0.5 for a candle): put it in the hand piece, or return it from a `post` override. A `light` changes no pixel, so the lock stays green.
+
 Every override has a reason (a test checks). A new set made from a style alone has no `hand` and no `pieces`.
 
 ## Render, compare, lock
