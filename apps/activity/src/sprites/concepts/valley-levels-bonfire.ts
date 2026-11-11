@@ -255,9 +255,11 @@ function plankBench(g: Grid, x: number, y: number, w: number): void {
 function shingleRoof(g: Grid, x: number, y: number, w: number, rows: number): void {
   for (let r = 0; r < rows; r++) {
     const inset = rows - 1 - r;
-    paint(g, rectPts(x + inset, y + r, w - 2 * inset, 1), (px) =>
-      (px + r * 2) % 4 === 0 ? 'S' : 's',
-    );
+    // one light from the upper left, like the posts: the left half of the roof is the lit plane
+    paint(g, rectPts(x + inset, y + r, w - 2 * inset, 1), (px) => {
+      const tick = (px + r * 2) % 4 === 0;
+      return px < x + w / 2 ? (tick ? 's' : 'h') : tick ? 'S' : 's';
+    });
   }
 }
 
@@ -291,7 +293,13 @@ const L2 = build(
   },
   [
     tierPalette(1, { v: 'log', w: 'logShade', e: 'earth', t: 'fieldstone', q: 'rope' }),
-    tierPalette(2, { p: 'plank', P: 'plankShade', s: 'shingle', S: 'shingleShade' }),
+    tierPalette(2, {
+      p: 'plank',
+      P: 'plankShade',
+      h: 'shingleLight',
+      s: 'shingle',
+      S: 'shingleShade',
+    }),
   ],
   none,
 );
