@@ -1,3 +1,4 @@
+import type { ComponentChildren } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { GameState } from './api';
 import { Blueprints } from './Blueprints';
@@ -25,14 +26,9 @@ import { ItemDetail } from './ItemDetail';
 import { JobReveal } from './JobReveal';
 import { JobSlots } from './JobSlots';
 import { SupplyCrafting } from './SupplyCrafting';
-import {
-  ForgeAnvils,
-  type ForgeActions,
-  type ForgeStart,
-  type OrderOpen,
-} from './valley/ForgeAnvils';
+import type { ForgeActions, ForgeStart } from './valley/ForgeAnvils';
+import { ForgeCanvas } from './valley/ForgeCanvas';
 import type { CommonsActions } from './valley/CommonsBoard';
-import { OrderEditor } from './valley/OrderEditor';
 import type { TrayInput } from './valley/tray-state';
 import type { ValleyVisit } from './api';
 import { Accordion } from './ui/Accordion';
@@ -45,7 +41,7 @@ import { Column, Columns } from './ui/Columns';
 import { useMultiSelect } from './ui/multi-select';
 import { retireSelectHint, selectHintRetired, selectHintText } from './ui/select-hint';
 
-/** The valley's Forge in place of the job slots (`VALLEY_SYSTEMS` on): what the anvils' page and the order editor need. */
+/** The valley's Forge in place of the job slots (`VALLEY_SYSTEMS` on): what the Forge's canvas needs. */
 export interface ForgeMode {
   visit: ValleyVisit;
   /** What the creature tray reads. */
@@ -57,7 +53,7 @@ export interface ForgeMode {
   onOpenPaddock: () => void;
   /** The Market (Q64: shards are traded there); `to` is the element an anvil waits for. */
   onOpenMarket: (to: string | null) => void;
-  /** What the page and the editor have open at the start (the workbench shows each). */
+  /** What the canvas and the order wizard have open at the start (the workbench shows each). */
   start?: ForgeStart;
   orderStart?: { anvilId: string; baseId?: string; orderId?: string };
 }
@@ -124,19 +120,6 @@ export function Workshop({
       ? sortItems(gear?.items ?? [])
       : shownItems(gear?.items ?? [], filter, ELEMENT_IDS);
   const selection = useMultiSelect(shown.map((i) => i.id));
-  // The order editor, drawn here so an anvil's "Add an order" and a blueprint's "Order" open the same one.
-  const [orderOpen, setOrderOpen] = useState<(OrderOpen & { baseId?: string }) | null>(
-    forge?.orderStart === undefined
-      ? null
-      : forge.orderStart.orderId === undefined
-        ? {
-            kind: 'add',
-            anvilId: forge.orderStart.anvilId,
-            opener: null,
-            ...(forge.orderStart.baseId === undefined ? {} : { baseId: forge.orderStart.baseId }),
-          }
-        : { kind: 'edit', orderId: forge.orderStart.orderId, opener: null },
-  );
   const [pile, setPile] = useState<GearItem[] | null>(null);
   const dismantleButton = useRef<HTMLButtonElement | null>(null);
   // The item card's red Dismantle: the same `DismantleDrawer` as the bulk bar's, for this one item, taking the place
@@ -184,337 +167,335 @@ export function Workshop({
     },
   });
   const flip = drilling && itemFlip !== undefined ? { ...itemFlip, paused: true } : itemFlip;
-  return (
-    <Columns from="60rem" ratio={forge === undefined ? '1-3' : '2-3'} class="workshop">
-      {gear.notice !== null && (
-        <section class="ws-section card-item notice-card" aria-labelledby="ws-notice">
-          <h3 id="ws-notice">Gear has changed</h3>
+
+  const noticeCard = gear.notice !== null && (
+    <section class="ws-section card-item notice-card" aria-labelledby="ws-notice">
+      <h3 id="ws-notice">Gear has changed</h3>
+      <ul>
+        {noticeLines(gear.notice).map((line) => (
+          <li key={line}>{line}</li>
+        ))}
+      </ul>
+      {gear.notice.unequipped.length > 0 && (
+        <Accordion title="Why some items are in the bag" variant="compact">
           <ul>
-            {noticeLines(gear.notice).map((line) => (
-              <li key={line}>{line}</li>
+            {gear.notice.unequipped.map((note) => (
+              <li key={note.id}>
+                {gearName(note.baseId)} came off: {unequippedReason(note)}.
+              </li>
             ))}
           </ul>
-          {gear.notice.unequipped.length > 0 && (
-            <Accordion title="Why some items are in the bag" variant="compact">
-              <ul>
-                {gear.notice.unequipped.map((note) => (
-                  <li key={note.id}>
-                    {gearName(note.baseId)} came off: {unequippedReason(note)}.
-                  </li>
-                ))}
-              </ul>
-            </Accordion>
-          )}
-          <p class="actions">
-            <button
-              type="button"
-              class="primary"
-              disabled={busy}
-              onClick={() => {
-                void actions.dismissNotice();
-              }}
-            >
-              Got it
-            </button>
-          </p>
-        </section>
+        </Accordion>
       )}
-      {reveal !== null && (
-        <JobReveal
-          result={reveal}
-          items={gear.items}
-          rarity={jobResultRarity(reveal)}
-          creatures={state.creatures}
-          onDismiss={onDismissReveal}
+      <p class="actions">
+        <button
+          type="button"
+          class="primary"
+          disabled={busy}
+          onClick={() => {
+            void actions.dismissNotice();
+          }}
+        >
+          Got it
+        </button>
+      </p>
+    </section>
+  );
+  const revealCard = reveal !== null && (
+    <JobReveal
+      result={reveal}
+      items={gear.items}
+      rarity={jobResultRarity(reveal)}
+      creatures={state.creatures}
+      onDismiss={onDismissReveal}
+    />
+  );
+
+  /** The bag: its count, hint, grid, bulk bar and the item card and dismantle drawers. */
+  const gearSection = (
+    <section class="ws-section" aria-labelledby="ws-gear">
+      <div class="ws-head">
+        <h3 id="ws-gear">
+          Gear <GlossaryTag entry="gear" look="help" />
+        </h3>
+        <span class={bagFull(bag) ? 'bag-count over' : 'bag-count muted'}>Bag: {bagText(bag)}</span>
+      </div>
+      {hintOpen && gear.items.length > 0 && (
+        <Alert
+          level="info"
+          class="bag-hint"
+          onDismiss={() => {
+            retireSelectHint(BAG_HINT);
+            setHintOpen(false);
+          }}
+        >
+          {selectHintText(BAG_HINT)}
+        </Alert>
+      )}
+      {bagFull(bag) && (
+        <Alert level="warning">
+          {forge === undefined
+            ? 'Gear you find becomes parts until the bag has room.'
+            : 'Finished pieces wait on the anvils’ floors until the bag has room.'}
+        </Alert>
+      )}
+      {forge !== undefined && gear.items.length > 0 && (
+        <BagTools
+          filter={filter}
+          onChange={setFilter}
+          shown={shown.length}
+          total={gear.items.length}
+          selectable={selectableIds(shown).length}
+          open={forge.start?.bag === true}
+          onSelectAll={() => {
+            selection.setAll(selectableIds(shown));
+          }}
         />
       )}
-      {forge !== undefined && (
-        <Column stack="tight">
-          <ForgeAnvils
-            visit={forge.visit}
-            creatures={state.creatures}
-            trayInput={forge.trayInput}
-            acorns={forge.acorns}
-            busy={busy}
-            error={error}
-            actions={forge.actions}
-            onOrder={(open) => {
-              setOrderOpen(open);
-            }}
-            onOpenPaddock={forge.onOpenPaddock}
-            onOpenMarket={forge.onOpenMarket}
-            {...(forge.commons === undefined ? {} : { commons: forge.commons })}
-            {...(forge.start === undefined ? {} : { start: forge.start })}
-          />
-        </Column>
+      {gear.items.length === 0 ? (
+        <p class="empty muted">Your bag is empty.</p>
+      ) : shown.length === 0 ? (
+        <p class="empty muted">Nothing in the bag matches the filter.</p>
+      ) : (
+        <InventoryGrid
+          items={shown}
+          inOrder={forge !== undefined}
+          creatures={state.creatures}
+          openId={selected?.id ?? null}
+          selection={selection}
+          onOpen={(id) => {
+            setFlipped(false);
+            setBackFromFlow(false);
+            setSelectedId(id === selectedId ? null : id);
+          }}
+        />
       )}
-      {forge === undefined && (
-        <Column sticky stack="tight">
-          <section class="ws-section" aria-labelledby="ws-parts">
-            <h3 id="ws-parts">Parts</h3>
-            <PartsRow parts={gear.parts} />
-            <p>
-              <button
-                type="button"
-                onClick={() => {
-                  document.getElementById('ws-supplies')?.scrollIntoView({ block: 'start' });
-                }}
-              >
-                Craft supplies
-              </button>
-            </p>
-          </section>
-          <JobSlots
-            gear={gear}
-            creatures={state.creatures}
-            offset={offset}
-            busy={busy}
-            onClaim={(job) => {
-              void actions.claimJob(job.id).then((result) => {
-                if (result !== undefined) onClaimed(result);
-              });
-            }}
-          />
-        </Column>
-      )}
-      <Column stack="tight">
-        <section class="ws-section" aria-labelledby="ws-gear">
-          <div class="ws-head">
-            <h3 id="ws-gear">
-              Gear <GlossaryTag entry="gear" look="help" />
-            </h3>
-            <span class={bagFull(bag) ? 'bag-count over' : 'bag-count muted'}>
-              Bag: {bagText(bag)}
-            </span>
-          </div>
-          {hintOpen && gear.items.length > 0 && (
-            <Alert
-              level="info"
-              class="bag-hint"
-              onDismiss={() => {
-                retireSelectHint(BAG_HINT);
-                setHintOpen(false);
-              }}
-            >
-              {selectHintText(BAG_HINT)}
-            </Alert>
-          )}
-          {bagFull(bag) && (
-            <Alert level="warning">
-              {forge === undefined
-                ? 'Gear you find becomes parts until the bag has room.'
-                : 'Finished pieces wait on the anvils\u2019 floors until the bag has room.'}
-            </Alert>
-          )}
-          {forge !== undefined && gear.items.length > 0 && (
-            <BagTools
-              filter={filter}
-              onChange={setFilter}
-              shown={shown.length}
-              total={gear.items.length}
-              selectable={selectableIds(shown).length}
-              open={forge.start?.bag === true}
-              onSelectAll={() => {
-                selection.setAll(selectableIds(shown));
-              }}
-            />
-          )}
-          {gear.items.length === 0 ? (
-            <p class="empty muted">Your bag is empty.</p>
-          ) : shown.length === 0 ? (
-            <p class="empty muted">Nothing in the bag matches the filter.</p>
-          ) : (
-            <InventoryGrid
-              items={shown}
-              inOrder={forge !== undefined}
-              creatures={state.creatures}
-              openId={selected?.id ?? null}
-              selection={selection}
-              onOpen={(id) => {
-                setFlipped(false);
-                setBackFromFlow(false);
-                setSelectedId(id === selectedId ? null : id);
-              }}
-            />
-          )}
-          {selection.active && (
-            <BulkBar count={picked.length} onClear={selection.clear}>
-              <button
-                ref={dismantleButton}
-                type="button"
-                class="primary"
-                disabled={busy}
-                onClick={() => {
-                  setPile(picked);
-                }}
-              >
-                Dismantle
-              </button>
-            </BulkBar>
-          )}
-          {pile !== null && (
-            <DismantleDrawer
-              items={pile}
-              gear={gear}
-              creatures={state.creatures}
-              busy={busy}
-              error={error}
-              returnFocusTo={dismantleButton.current}
-              loadPreview={actions.previewDismantle}
-              checkLocks={actions.checkDismantle}
-              onConfirm={async (creatureId) => {
-                const result = await actions.dismantlePile(
-                  creatureId,
-                  pile.map((i) => i.id),
-                );
-                if (result === undefined) return false;
-                setPile(null);
-                selection.clear();
-                onClaimed(result);
-                return true;
-              }}
-              onClose={() => {
-                setPile(null);
-              }}
-            />
-          )}
-          {selected !== null && cardFlow && (
-            <DismantleDrawer
-              items={[selected]}
-              gear={gear}
-              creatures={state.creatures}
-              busy={busy}
-              error={error}
-              exitLabel="to the item"
-              swap
-              {...(initialCardDismantle === undefined ? {} : { start: initialCardDismantle })}
-              loadPreview={actions.previewDismantle}
-              checkLocks={actions.checkDismantle}
-              onConfirm={async (creatureId) => {
-                const result = await actions.dismantlePile(creatureId, [selected.id]);
-                if (result === undefined) return false;
-                setCardFlow(false);
-                setSelectedId(null);
-                selection.clear();
-                onClaimed(result);
-                return true;
-              }}
-              onClose={() => {
-                setCardFlow(false);
-                setBackFromFlow(true);
-              }}
-              onDismiss={() => {
-                setCardFlow(false);
-                setSelectedId(null);
-                setBackFromFlow(false);
-              }}
-            />
-          )}
-          <Drawer
-            open={selected !== null && !cardFlow}
-            title={selected === null ? 'Item' : gearName(selected.baseId)}
-            titleHidden
-            class={backFromFlow ? 'item-drawer drawer-swap' : 'item-drawer'}
-            flip={flip}
-            onClose={() => {
-              setSelectedId(null);
-              setBackFromFlow(false);
+      {selection.active && (
+        <BulkBar count={picked.length} onClear={selection.clear}>
+          <button
+            ref={dismantleButton}
+            type="button"
+            class="primary"
+            disabled={busy}
+            onClick={() => {
+              setPile(picked);
             }}
           >
-            {selected !== null && (
-              <FlipArea flip={flip}>
-                <ItemDetail
-                  key={selected.id}
-                  item={selected}
-                  creatures={state.creatures}
-                  busy={busy}
-                  actions={actions}
-                  focusName={!flipped && !backFromFlow}
-                  focusDismantle={backFromFlow}
-                  onDrill={setDrilling}
-                  onDismantle={() => {
-                    setBackFromFlow(false);
-                    setCardFlow(true);
-                  }}
-                />
-              </FlipArea>
-            )}
-          </Drawer>
-        </section>
-        <Blueprints
+            Dismantle
+          </button>
+        </BulkBar>
+      )}
+      {pile !== null && (
+        <DismantleDrawer
+          items={pile}
           gear={gear}
           creatures={state.creatures}
           busy={busy}
           error={error}
-          loadPreview={actions.previewCraft}
-          {...(forge === undefined
-            ? {}
-            : {
-                order: {
-                  reason: forge.visit.anvils.length === 0 ? 'Buy an anvil to order pieces.' : null,
-                  shards: forge.visit.forge.shelf.shards,
-                  onOrder: (baseId: string, opener: HTMLElement) => {
-                    const room = forge.visit.anvils.find(
-                      (a) => a.orders.length < forge.visit.forge.queueMax,
-                    );
-                    setOrderOpen({
-                      kind: 'add',
-                      anvilId: (room ?? forge.visit.anvils[0])?.id ?? '',
-                      baseId,
-                      opener,
-                    });
-                  },
-                },
-              })}
-          onCraft={async (baseId, creatureId, reach, treat) =>
-            (await actions.startJob({
-              kind: 'craft',
+          returnFocusTo={dismantleButton.current}
+          loadPreview={actions.previewDismantle}
+          checkLocks={actions.checkDismantle}
+          onConfirm={async (creatureId) => {
+            const result = await actions.dismantlePile(
               creatureId,
-              blueprintId: baseId,
-              reach,
+              pile.map((i) => i.id),
+            );
+            if (result === undefined) return false;
+            setPile(null);
+            selection.clear();
+            onClaimed(result);
+            return true;
+          }}
+          onClose={() => {
+            setPile(null);
+          }}
+        />
+      )}
+      {selected !== null && cardFlow && (
+        <DismantleDrawer
+          items={[selected]}
+          gear={gear}
+          creatures={state.creatures}
+          busy={busy}
+          error={error}
+          exitLabel="to the item"
+          swap
+          {...(initialCardDismantle === undefined ? {} : { start: initialCardDismantle })}
+          loadPreview={actions.previewDismantle}
+          checkLocks={actions.checkDismantle}
+          onConfirm={async (creatureId) => {
+            const result = await actions.dismantlePile(creatureId, [selected.id]);
+            if (result === undefined) return false;
+            setCardFlow(false);
+            setSelectedId(null);
+            selection.clear();
+            onClaimed(result);
+            return true;
+          }}
+          onClose={() => {
+            setCardFlow(false);
+            setBackFromFlow(true);
+          }}
+          onDismiss={() => {
+            setCardFlow(false);
+            setSelectedId(null);
+            setBackFromFlow(false);
+          }}
+        />
+      )}
+      <Drawer
+        open={selected !== null && !cardFlow}
+        title={selected === null ? 'Item' : gearName(selected.baseId)}
+        titleHidden
+        class={backFromFlow ? 'item-drawer drawer-swap' : 'item-drawer'}
+        flip={flip}
+        onClose={() => {
+          setSelectedId(null);
+          setBackFromFlow(false);
+        }}
+      >
+        {selected !== null && (
+          <FlipArea flip={flip}>
+            <ItemDetail
+              key={selected.id}
+              item={selected}
+              creatures={state.creatures}
+              busy={busy}
+              actions={actions}
+              focusName={!flipped && !backFromFlow}
+              focusDismantle={backFromFlow}
+              onDrill={setDrilling}
+              onDismantle={() => {
+                setBackFromFlow(false);
+                setCardFlow(true);
+              }}
+            />
+          </FlipArea>
+        )}
+      </Drawer>
+    </section>
+  );
+
+  /** The blueprints you can craft from (with the valley's Forge, order from): `order` makes each one's button an order. */
+  const blueprintList = (
+    order?: (baseId: string, opener: HTMLElement) => void,
+  ): ComponentChildren => (
+    <Blueprints
+      gear={gear}
+      creatures={state.creatures}
+      busy={busy}
+      error={error}
+      loadPreview={actions.previewCraft}
+      {...(forge === undefined || order === undefined
+        ? {}
+        : {
+            order: {
+              reason: forge.visit.anvils.length === 0 ? 'Buy an anvil to order pieces.' : null,
+              shards: forge.visit.forge.shelf.shards,
+              onOrder: order,
+            },
+          })}
+      onCraft={async (baseId, creatureId, reach, treat) =>
+        (await actions.startJob({
+          kind: 'craft',
+          creatureId,
+          blueprintId: baseId,
+          reach,
+          ...(treat ? { treat: true } : {}),
+        })) !== undefined
+      }
+    />
+  );
+
+  // With the valley's Forge the page is a canvas (`ForgeCanvas`): the bag, the plans and the rest open in its drawers.
+  if (forge !== undefined) {
+    return (
+      <ForgeCanvas
+        visit={forge.visit}
+        creatures={state.creatures}
+        trayInput={forge.trayInput}
+        acorns={forge.acorns}
+        busy={busy}
+        error={error}
+        actions={forge.actions}
+        commons={forge.commons}
+        onOpenPaddock={forge.onOpenPaddock}
+        onOpenMarket={forge.onOpenMarket}
+        start={forge.start}
+        orderStart={forge.orderStart}
+        blueprints={blueprintViews(gear.blueprints, gear.skills, true)}
+        bag={
+          <>
+            {noticeCard}
+            {revealCard}
+            {gearSection}
+          </>
+        }
+        plans={blueprintList}
+        bagFull={bagFull(bag)}
+        bagAttention={reveal !== null || gear.notice !== null}
+      />
+    );
+  }
+
+  return (
+    <Columns from="60rem" ratio="1-3" class="workshop">
+      {noticeCard}
+      {revealCard}
+      <Column sticky stack="tight">
+        <section class="ws-section" aria-labelledby="ws-parts">
+          <h3 id="ws-parts">Parts</h3>
+          <PartsRow parts={gear.parts} />
+          <p>
+            <button
+              type="button"
+              onClick={() => {
+                document.getElementById('ws-supplies')?.scrollIntoView({ block: 'start' });
+              }}
+            >
+              Craft supplies
+            </button>
+          </p>
+        </section>
+        <JobSlots
+          gear={gear}
+          creatures={state.creatures}
+          offset={offset}
+          busy={busy}
+          onClaim={(job) => {
+            void actions.claimJob(job.id).then((result) => {
+              if (result !== undefined) onClaimed(result);
+            });
+          }}
+        />
+      </Column>
+      <Column stack="tight">
+        {gearSection}
+        {blueprintList()}
+        <SupplyCrafting
+          gear={gear}
+          creatures={state.creatures}
+          stock={state.supplies}
+          busy={busy}
+          error={error}
+          onCraft={async (supplyId, creatureId, treat) =>
+            (await actions.startJob({
+              kind: 'supply',
+              creatureId,
+              supplyId,
+              ...(treat ? { treat: true } : {}),
+            })) !== undefined
+          }
+          onConvert={async (recipeId, creatureId, treat) =>
+            (await actions.startJob({
+              kind: 'convert',
+              creatureId,
+              recipeId,
               ...(treat ? { treat: true } : {}),
             })) !== undefined
           }
         />
-        {forge === undefined && (
-          <SupplyCrafting
-            gear={gear}
-            creatures={state.creatures}
-            stock={state.supplies}
-            busy={busy}
-            error={error}
-            onCraft={async (supplyId, creatureId, treat) =>
-              (await actions.startJob({
-                kind: 'supply',
-                creatureId,
-                supplyId,
-                ...(treat ? { treat: true } : {}),
-              })) !== undefined
-            }
-            onConvert={async (recipeId, creatureId, treat) =>
-              (await actions.startJob({
-                kind: 'convert',
-                creatureId,
-                recipeId,
-                ...(treat ? { treat: true } : {}),
-              })) !== undefined
-            }
-          />
-        )}
       </Column>
-      {forge !== undefined && orderOpen !== null && (
-        <OrderEditor
-          open={orderOpen}
-          visit={forge.visit}
-          blueprints={blueprintViews(gear.blueprints, gear.skills, true)}
-          busy={busy}
-          error={error}
-          onOrder={forge.actions.order}
-          onClose={() => {
-            setOrderOpen(null);
-          }}
-        />
-      )}
     </Columns>
   );
 }

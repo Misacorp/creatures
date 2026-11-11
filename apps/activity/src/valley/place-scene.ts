@@ -101,7 +101,7 @@ export function placeScale(width: number, height: number, name: MapName): number
 }
 
 /** The grass of a scene (the valley map's day grass) to every edge. */
-function grassTo(g: SceneGeometry): Placement[] {
+export function grassTo(g: SceneGeometry): Placement[] {
   const grass = tileFrame('grass');
   const out: Placement[] = [];
   for (let row = 0; row < g.H; row += TILE) {
@@ -111,7 +111,7 @@ function grassTo(g: SceneGeometry): Placement[] {
 }
 
 /** The trees, a bush and flowers round a place's art at (`x`, `y`) in scene pixels. */
-function treesAround(x: number, y: number, art: { width: number; height: number }): Placement[] {
+export function treesAround(x: number, y: number, art: { width: number; height: number }): Placement[] {
   const wm = WORLD_MAP_SPRITE_DATA;
   const below = y + art.height;
   return [

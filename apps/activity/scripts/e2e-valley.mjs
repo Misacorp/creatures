@@ -1041,6 +1041,19 @@ const expectTopmost = async (locator, what) => {
   });
   if (hits.length > 0) throw new Error(`${what} is covered by ${hits.join(' | ')}`);
 };
+/** A place as a canvas (`PlaceCanvas`): a thing in the scene you click, by the start of its name. */
+const sceneTarget = (name) => page.locator(`button.cv-target[aria-label^="${name}"]`);
+/** What a click opens: the drawer beside the scene on a wide window, a page of its own on a phone. */
+const drawer = page.locator('.pc-side, .pc-page');
+/** A canvas never scrolls: the page, the frame and the document all fit their box (a drawer's own body may scroll). */
+const expectNoScroll = async () => {
+  const over = await page.evaluate(() =>
+    [document.scrollingElement, ...document.querySelectorAll('main.card, .vy-page, .pc-root, .pc-view')]
+      .filter((el) => el !== null && el.scrollHeight > el.clientHeight + 1)
+      .map((el) => `${el.tagName}.${String(el.className)} ${String(el.scrollHeight)}>${String(el.clientHeight)}`),
+  );
+  if (over.length > 0) throw new Error(`the canvas scrolls: ${over.join(' | ')}`);
+};
 const backToValley = async () => {
   await hudBack().click();
   await waitFor(page.locator(VALLEY), 'attached');
@@ -1781,33 +1794,44 @@ try {
       await waitFor(page.locator(VALLEY), 'attached');
       await place('forge').evaluate((el) => el.click());
       await waitFor(heading('Forge'));
-      // Today's job slots are gone.
+      // Today's job slots are gone, and the page is a canvas: nothing scrolls, everything starts from a click in the scene.
       if ((await page.getByText(/Craft supplies/).count()) > 0)
         throw new Error('the Workshop still draws supply crafts');
-      await waitFor(page.getByRole('button', { name: /A new anvil/ }));
-      const take = page.getByRole('button', { name: /^Take your first anvil/ });
-      await waitFor(take);
-      await expectTopmost(take.first(), 'the "Take your first anvil" button');
-      await shot('forge-no-anvils');
-      await page.getByRole('button', { name: /A new anvil/ }).click();
-      await waitFor(page.getByRole('dialog'));
-      await page.getByRole('button', { name: /^Buy the anvil/ }).click();
-      await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
-      await waitFor(page.getByRole('heading', { name: 'Anvil 1' }));
+      if (process.env.DEBUG_CANVAS)
+        console.log(
+          await page.evaluate(() =>
+            ['.vy-body', '.vy-page', '.fc-root', '.pc-root', '.pc-view', '.pc-stage', '.pc-main', '.vy-interior', '.vy-scene-box', '.pc-below'].map((q) => {
+              const el = document.querySelector(q);
+              return el === null ? `${q}: none` : `${q}: ${String(el.clientWidth)}x${String(el.clientHeight)} ${getComputedStyle(el).display}`;
+            }),
+          ),
+        );
+      await waitFor(sceneTarget('A new anvil'));
+      await expectNoScroll();
+      await expectTopmost(sceneTarget('A new anvil'), 'the dashed outline of the next anvil');
+      await shot('forge-canvas-no-anvils');
+      // Buy the first anvil from its outline: the buy step opens beside the canvas (a page on a phone).
+      await sceneTarget('A new anvil').click();
+      await waitFor(drawer.getByRole('heading', { name: 'A new anvil' }));
+      await shot('forge-step-buy');
+      await drawer.getByRole('button', { name: /^Buy the anvil/ }).click();
+      await drawer.getByRole('heading', { name: 'A new anvil' }).waitFor({ state: 'detached', timeout: 10000 });
+      await waitFor(sceneTarget('Anvil 1: nobody posted'));
       if (!forgeCalls.some(([k, b]) => k === 'anvil/buy' && typeof b.idempotencyKey === 'string'))
         throw new Error('the anvil was bought without an idempotency key');
-      // Post a smith from the picker.
-      const slot = page.getByRole('button', { name: /^Anvil 1: nobody posted/ });
-      await slot.scrollIntoViewIfNeeded();
-      await expectTopmost(slot, 'the empty smith slot');
-      await slot.click();
-      await waitFor(page.getByRole('dialog', { name: /Who smiths/ }));
-      await page
+      // Click the anvil: an anvil nobody smiths at opens on who smiths. Post a smith from the list.
+      await expectTopmost(sceneTarget('Anvil 1: nobody posted'), 'the empty anvil');
+      await sceneTarget('Anvil 1: nobody posted').click();
+      await waitFor(drawer.getByRole('heading', { name: 'Who smiths here?' }));
+      await shot('forge-step-smith');
+      await drawer
         .getByRole('option')
         .filter({ hasText: /Sproutle/ })
         .first()
         .click();
-      await waitFor(page.getByRole('button', { name: /^Anvil 1: Sproutle/ }));
+      await waitFor(drawer.getByRole('button', { name: /^Anvil 1: Sproutle/ }));
+      await waitFor(drawer.getByText(/Tinkering/));
+      await shot('forge-step-anvil');
       const [first, second] = baseState.creatures;
       const tray = page.locator(
         `section[aria-label="Creatures to post"] button[data-creature="${second.id}"]`,
@@ -1815,95 +1839,77 @@ try {
       if (!/Smithing/.test((await tray.getAttribute('aria-label')) ?? ''))
         throw new Error('the tray does not say Smithing');
       if ((await tray.locator('.vy-zz').count()) > 0) throw new Error('a smith carries the z');
-      await waitFor(page.getByText(/Tinkering/));
-      await shot('forge-one-smith-tinkering');
-      // Add an order: a blueprint, one more, Reach for Rare.
-      await page.getByRole('button', { name: /^Add an order/ }).click();
-      await waitFor(page.getByRole('dialog', { name: /Add an order/ }));
-      await page.getByRole('button', { name: /What to make: nothing chosen/ }).click();
-      await page.locator('ul[aria-label="Blueprints"] button').nth(1).click();
-      await page.getByRole('button', { name: /One more piece/ }).click();
-      await page.getByRole('button', { name: /Reach for Rare/ }).click();
-      await page.waitForTimeout(400);
-      await expectTopmost(page.getByRole('dialog').first(), 'the order editor');
-      await shot('forge-order-editor');
-      await page.getByRole('button', { name: /^Add to the queue/ }).click();
-      await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+      // Add an order from the anvil's page: what to make, then the order (a blueprint, one more, Reach for Rare).
+      await drawer.getByRole('button', { name: /^Add an order/ }).click();
+      await waitFor(drawer.getByRole('heading', { name: 'What to make' }));
+      await shot('forge-step-what');
+      await drawer.locator('ul[aria-label="Blueprints"] button').nth(1).click();
+      await waitFor(drawer.getByRole('heading', { name: 'The order' }));
+      await drawer.getByRole('button', { name: /One more piece/ }).click();
+      await drawer.getByRole('button', { name: /Reach for Rare/ }).click();
+      await page.waitForTimeout(300);
+      await shot('forge-step-order');
+      await drawer.getByRole('button', { name: /^Add to the queue/ }).click();
       const added = forgeCalls.at(-1)?.[1];
       if (added?.action !== 'add' || added.count !== 2 || added.reach !== 'rare')
         throw new Error(`the order was ${JSON.stringify(added)}`);
-      await waitFor(page.locator('button.fg-order'));
-      await shot('forge-one-smith-at-work');
+      // Back on the anvil's page with the order in its queue.
+      await waitFor(drawer.locator('button.fg-order'));
+      await shot('forge-step-anvil-at-work');
       // Edit it, then take it off.
-      await page.locator('button.fg-order').first().click();
-      await waitFor(page.getByRole('dialog', { name: /Change the order/ }));
-      await page.getByRole('button', { name: /One more piece/ }).click();
-      await page.getByRole('button', { name: /^Save/ }).click();
-      await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+      await drawer.locator('button.fg-order').first().click();
+      await waitFor(drawer.getByRole('heading', { name: 'Change the order' }));
+      await drawer.getByRole('button', { name: /One more piece/ }).click();
+      await drawer.getByRole('button', { name: /^Save/ }).click();
+      await waitFor(drawer.locator('button.fg-order'));
       if (forgeCalls.at(-1)?.[1].count !== 3) throw new Error('the edit did not send count 3');
-      await page.locator('button.fg-order').first().click();
-      await waitFor(page.getByRole('dialog', { name: /Change the order/ }));
-      await page.getByRole('button', { name: /Take it off the queue/ }).click();
-      await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+      await drawer.locator('button.fg-order').first().click();
+      await waitFor(drawer.getByRole('heading', { name: 'Change the order' }));
+      await drawer.getByRole('button', { name: /Take it off the queue/ }).click();
+      await waitFor(drawer.getByText(/No orders yet/));
       if (forgeCalls.at(-1)?.[1].action !== 'remove') throw new Error('remove was not sent');
-      // A second anvil, a smith dragged on from the tray.
-      await page.getByRole('button', { name: /A new anvil/ }).click();
-      await waitFor(page.getByRole('dialog'));
-      await page.getByRole('button', { name: /^Buy the anvil/ }).click();
-      await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
-      await waitFor(page.getByRole('heading', { name: 'Anvil 2' }));
+      // The focus goes back to the anvil that was clicked when the keyboard closes its drawer.
+      await page.keyboard.press('Tab');
+      await page.keyboard.press('Escape');
+      await drawer.waitFor({ state: 'detached', timeout: 10000 }).catch(() => undefined);
+      if ((await drawer.count()) > 0) {
+        await drawer.getByRole('button', { name: /^Back/ }).first().click();
+      }
+      await drawer.waitFor({ state: 'detached', timeout: 10000 });
+      // A second anvil from its outline, then a smith carried onto it from the tray (the canvas never scrolls, so a drop is always in reach).
+      await sceneTarget('A new anvil').click();
+      await drawer.getByRole('button', { name: /^Buy the anvil/ }).click();
+      await waitFor(sceneTarget('Anvil 2: nobody posted'));
       const mover = page.locator(
         `section[aria-label="Creatures to post"] button[data-creature="${first.id}"]`,
       );
-      const card = page.locator('li.sp-seat').nth(1);
-      await mover.scrollIntoViewIfNeeded();
       const start = await mover.boundingBox();
-      const target = await card.boundingBox();
-      const view = page.viewportSize();
-      if (start === null || target === null || view === null) throw new Error('no boxes to drag');
-      // A drop needs the card on screen with the tray (there is no scroll while carrying): wide pages
-      // drag it; a phone, where the card is screens below the tray, posts the smith from the picker.
-      const reachable = target.y + target.height / 2 < view.height && target.y > 0;
-      if (reachable) {
-        await page.mouse.move(start.x + start.width / 2, start.y + start.height / 2);
-        await page.mouse.down();
-        await page.mouse.move(start.x + start.width / 2 + 12, start.y + start.height / 2 + 12, {
-          steps: 4,
-        });
-        await page.mouse.move(target.x + target.width / 2, target.y + target.height / 2, {
-          steps: 10,
-        });
-        await page.mouse.up();
-      } else {
-        await page.getByRole('button', { name: /^Anvil 2: nobody posted/ }).click();
-        await waitFor(page.getByRole('dialog', { name: /Who smiths/ }));
-        await page
-          .getByRole('option')
-          .filter({ hasText: /Cindle/ })
-          .first()
-          .click();
-      }
-      await waitFor(page.getByRole('button', { name: /^Anvil 2: Cindle/ }));
-      await shot('forge-two-anvils');
-      // The bag's filter and sort, with the count against the cap.
-      await waitFor(page.getByText(/Bag: \d+ \/ \d+/));
-      const tools = page.getByRole('button', { name: /Filter and sort/ });
-      await tools.scrollIntoViewIfNeeded();
+      const target = await sceneTarget('Anvil 2: nobody posted').boundingBox();
+      if (start === null || target === null) throw new Error('no boxes to drag');
+      await page.mouse.move(start.x + start.width / 2, start.y + start.height / 2);
+      await page.mouse.down();
+      await page.mouse.move(start.x + start.width / 2 + 12, start.y + start.height / 2 + 12, {
+        steps: 4,
+      });
+      await page.mouse.move(target.x + target.width / 2, target.y + target.height / 2, {
+        steps: 10,
+      });
+      await page.mouse.up();
+      await waitFor(sceneTarget('Anvil 2: Cindle'));
+      await expectNoScroll();
+      await shot('forge-canvas-two-anvils');
+      // The bag is the chest in the yard: it opens in the left drawer (a page on a phone), with its count against the cap and its filter.
+      await sceneTarget('The bag').click();
+      await waitFor(drawer.getByText(/Bag: \d+ \/ \d+/));
+      const tools = drawer.getByRole('button', { name: /Filter and sort/ });
       await tools.click();
-      await page.getByRole('button', { name: 'Rare', exact: true }).first().click();
+      await drawer.getByRole('button', { name: 'Rare', exact: true }).first().click();
       await page.waitForTimeout(300);
       await expectTopmost(tools, 'the bag tools header');
-      await shot('forge-bag-filter');
-      // The trade's notice floats at the top of the screen: bring each card to the middle.
-      for (const loc of [
-        page.locator('li.sp-seat').first(),
-        page.locator('.fg-page .vy-tray').first(),
-      ]) {
-        await loc.evaluate((el) => {
-          el.scrollIntoView({ block: 'center' });
-        });
-        await expectTopmost(loc, 'a Forge card');
-      }
+      await shot('forge-step-bag');
+      await expectNoScroll();
+      await drawer.getByRole('button', { name: /Close|^Back/ }).first().click();
+      await drawer.waitFor({ state: 'detached', timeout: 10000 });
       forgeState.anvils = [];
     },
   );

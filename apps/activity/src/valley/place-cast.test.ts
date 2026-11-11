@@ -46,7 +46,8 @@ describe('which places have a scene', () => {
     expect(hasScene('signpost')).toBe(true);
     expect(hasScene('market')).toBe(true);
     expect(hasScene('visitor')).toBe(true);
-    expect(hasScene('forge')).toBe(true);
+    // The Forge is a canvas: its scene is the page, so the frame draws no band above it.
+    expect(hasScene('forge')).toBe(false);
     expect(hasScene('school')).toBe(true);
     expect(hasScene('bonfire')).toBe(false);
   });
