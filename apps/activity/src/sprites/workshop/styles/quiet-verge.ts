@@ -5,7 +5,7 @@
  */
 import { type Canvas, put } from '../../draw/canvas';
 import { motif } from '../../draw/parts';
-import { INK, box, hline, type Ramp } from '../../draw/shapes';
+import { INK, box, type Ramp } from '../../draw/shapes';
 import { type Shape, inArch, inEllipse, shrink, solid } from '../../draw/solid';
 import type { Area, PartDraw, Style } from '../style';
 

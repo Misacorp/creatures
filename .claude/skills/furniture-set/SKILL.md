@@ -98,7 +98,7 @@ Fill every `TODO` from the compendium's tone (short, plain, concrete, one image;
 1. Add the id to `SHIPPED_SET_IDS` in `apps/activity/src/sprites/workshop/new-set.ts` (and to the id list of the "never touches a shipped set" test in `new-set.test.ts`). After that, `new-set` and `remove-set` refuse it: do this last.
 2. `pnpm housing lock` after the art is final (only your set's rows may change: `git diff apps/activity/src/sprites/workshop/shipped-art.json`), and `pnpm art library`.
 3. `pnpm housing check` (lock, art catalogue, every set's tests; about 20 s).
-4. `pnpm format:check`.
+4. `pnpm format:check`, then `pnpm --filter @creatures/activity lint` and `pnpm --filter @creatures/activity typecheck` (seconds; `housing check` runs neither, and an unused import in the style file failed Quiet Verge's first full check after 12 minutes).
 5. `pnpm check:changed > /tmp/<id>-check.log 2>&1; echo "exit $?" >> /tmp/<id>-check.log` as a **background** job (about 12 minutes; a foreground call times out). Wait on the log.
 6. `pnpm fixtures:capture --check`. If content growth changes a fixture, run `pnpm fixtures:capture` and say which and why; never hand-edit.
 
@@ -121,6 +121,7 @@ Fill every `TODO` from the compendium's tone (short, plain, concrete, one image;
 - **Ceiling lamps hang from row 0,** floor pieces stand on their last row; a hovering piece still needs something (a chip) on its last row.
 - **The window glass is the `glass` ramp,** which is also the cupboard glass and the frame's sky: a dark glass makes the curtains vanish on a dark paper. Quiet Verge hooks the curtains' `window` and paints the place at dusk.
 - **Shell or chained commands** (`cd x && a | b`) are refused in an isolated worktree: run plain commands with absolute paths, put scripts in the scratchpad and run them with `python3 -I`.
+- **Unused imports** left from trying hooks fail lint, which `pnpm housing` never runs: lint the activity before the full check.
 - **`SHIPPED_SET_IDS` too early:** once the id is in it, `new-set` cannot be re-run to add a missing file.
 
 ## Rules
