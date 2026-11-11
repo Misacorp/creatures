@@ -381,6 +381,60 @@ describe('anvils: the price ladder and the keyed buy (V-POST-2, V-FORGE-6)', () 
   });
 });
 
+describe("the workshop's background smiths (migration 67, `smiths` in the valley view)", () => {
+  it("shows other players' seated smiths, never the caller's, never more than four or two to an owner, with no id of an owner", async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const me = await newPlayer(ctx, 1);
+        expect((await view(me)).smiths).toEqual([]);
+        await buyAnvil(me);
+        await post(me, { seatId: (await view(me)).anvils[0]?.id, creatureId: me.creatureIds[0] });
+        const others: P[] = [];
+        for (const n of [2, 3, 4]) {
+          const p = await newPlayer(ctx, n);
+          give(ctx, p.id, { bait: 500 });
+          creditParts(ctx.sql, p.id, { scrap: 100 });
+          await buyAnvil(p);
+          await buyAnvil(p);
+          const anvils = (await view(p)).anvils;
+          await post(p, { seatId: anvils[0]?.id, creatureId: p.creatureIds[0] });
+          await post(p, { seatId: anvils[1]?.id, creatureId: p.creatureIds[1] });
+          others.push(p);
+        }
+        const mine = await view(me);
+        // Six other smiths are seated; at most four are shown, two to an owner.
+        expect(mine.smiths).toHaveLength(4);
+        const owners = mine.smiths.map((s) => s.owner);
+        for (const o of new Set(owners))
+          expect(owners.filter((n) => n === o).length).toBeLessThanOrEqual(2);
+        expect(mine.smiths.some((s) => s.creature.id === me.creatureIds[0])).toBe(false);
+        for (const s of mine.smiths) {
+          expect(s.owner).not.toBe('');
+          expect(Object.keys(s).sort()).toEqual(['creature', 'owner', 'working']);
+          expect(JSON.stringify(s)).not.toContain(others[0]?.id ?? 'x');
+        }
+        // Another player sees mine among theirs.
+        const theirs = await view(others[2] as P);
+        expect(theirs.smiths.length).toBeGreaterThan(0);
+        expect(theirs.smiths.length).toBeLessThanOrEqual(4);
+      },
+      SYSTEMS,
+    );
+  });
+
+  it('is empty with the flag off (the valley view is not there at all)', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await newPlayer(ctx, 1);
+        expect((await p.state()).body.valley).toBeUndefined();
+      },
+      FLAG_OFF,
+    );
+  });
+});
+
 describe('orders: the queue (V-FORGE-1)', () => {
   it('adds, edits and removes orders, at most the queue size, for known blueprints only', async () => {
     await runCore(

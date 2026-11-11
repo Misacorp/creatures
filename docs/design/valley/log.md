@@ -534,3 +534,13 @@ Misa added: nameplates sit under the creature on an ink background, level first 
 **Not done / to look at.** A creature cannot be dropped onto a map marker (the tray's drag lands on a seat in the scene only). The Journal and keystones were never on the Signpost page, so they are not here either.
 
 **Pick up here:** the other places (Paddock, School, Market, visitor, Cave, Arena, Fairground, House) still use the band scene over a page.
+
+## 2026-11-11: the Forge from the inside (implementer, worktree of `ccr-93a1de17-yutb1a`)
+
+**Misa's ask:** "a click on the forge open up into a view that's from inside the building ... my creatures working at the anvils, also some other creatures working in the background, a fire going, the interior of a workshop". Decision of the same date (topic `valley`).
+
+**Done** (behind `VALLEY_SYSTEMS`). The Forge opens on its **outside**: the building (a click goes in, "Inside" plate), the notice board (project board), scaffolding, helper, a bubble over the door when something waits. Going **inside** shows a workshop canvas of its own on a 128 x 96 logical room (`forge-interior.ts`): the player's anvils and the dashed outline, the furnace with a flickering fire (opens the board), the plans table, chest and crate down the right edge, a door out (and Escape). Other players' smiths work at two background benches (a tap shows their `Nameplate` with the owner); two ambient workers when fewer than two. `ForgeScenes.tsx` holds both scenes' targets, `ForgeCanvas` the state and drawers. The server's `smiths` in the valley view: one indexed query (migration 67, index `valley_seats (place, kind, user_id)`), at most 12 seats read, priced in `read-budget.test.ts`.
+
+**Art:** the Art session's set `valley-forge-interior` is wired in by name (`forge-interior-art.ts`), laid out as its preview (`ROOM_AT` in `forge-interior.ts`); the room is 128 x 96 plus a front strip (to y 124) for the doormat (the game's stand-in way out) and the plans, bag and floor props, because the preview leaves no floor for them beside the anvils. Not moved into `sprites/data/`: the set is a draft and has day alts, as the valley's sky.
+
+**Pick up here:** a real door piece for the doormat; the flame overlay (`WARMING_FLAME`, `FLAME_AT` in `ForgeScenes.tsx`) flickers over the art's fire; the Signpost rebuild may reuse the outside/inside split.

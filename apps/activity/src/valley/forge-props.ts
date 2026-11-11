@@ -104,3 +104,26 @@ export const PLANS_PROP: SpriteDef = (() => {
     k: INK,
   });
 })();
+
+/** A notice board on a post with a pinned sheet: the project board, outside the forge. */
+export const BOARD_PROP: SpriteDef = (() => {
+  const g = new PixelGrid(16, 16);
+  g.rect(7, 9, 2, 7, 'k');
+  g.rect(7, 10, 1, 6, 'c');
+  g.rect(1, 1, 14, 9, 'k');
+  g.rect(2, 2, 12, 7, 'b');
+  g.rect(2, 2, 12, 1, 'a');
+  g.rect(4, 3, 5, 5, 'w');
+  g.rect(5, 4, 3, 1, 'u');
+  g.rect(5, 6, 3, 1, 'u');
+  g.rect(10, 4, 3, 3, 'y');
+  return g.toSprite({
+    a: WOOD.light,
+    b: WOOD.mid,
+    c: WOOD.dark,
+    w: '#f4ead0',
+    u: '#4a74b8',
+    y: '#ffd25a',
+    k: INK,
+  });
+})();

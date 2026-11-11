@@ -96,7 +96,7 @@ export function CreatureSprite({
   creature: Pick<Creature, 'species' | 'shiny'>;
   scale: number;
   flip?: boolean;
-  class?: string;
+  class?: string | undefined;
 }) {
   const palette = creature.shiny ? shinyPalette(creature.species) : undefined;
   const classes = ['vy-creature'];

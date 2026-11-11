@@ -1397,7 +1397,7 @@ export class ValleySettle {
       commons: CommonsSnapshot;
     },
     rowOf: ReadonlyMap<string, CreatureRow>,
-  ): Pick<ValleyView, 'anvils' | 'anvilPrices' | 'forge'> {
+  ): Pick<ValleyView, 'anvils' | 'anvilPrices' | 'forge' | 'smiths'> {
     const rules = VALLEY_RULES;
     const shelf = this.deps.forge.shelf(input.userId);
     const orders = input.anvils.length === 0 ? [] : this.deps.forge.orders(input.userId);
@@ -1509,6 +1509,7 @@ export class ValleySettle {
     for (const [e, element] of VALLEY_ELEMENTS.entries()) shards[element] = shelf.shards[e] ?? 0;
     return {
       anvils,
+      smiths: this.deps.forge.backSmiths(input.userId),
       anvilPrices: {
         owned: input.anvils.length,
         max: anvilLimit(rules, forgeLevel),

@@ -4,6 +4,19 @@ The valley and peaceful systems overhaul planned in docs/design/valley/: job pos
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-11: The Forge opens on its outside and goes inside to a workshop of its own **[Misa]**
+
+ID: `2026-11-11-the-forge-opens-on-its-outside` · Status: current
+
+**Decision.** Misa (2026-11-11, after the canvas-first Forge on a phone): a click on the Forge should open a view from inside the building, with the player's smiths at their anvils, other creatures at work in the background, a fire going, "the interior of a workshop". Built behind `VALLEY_SYSTEMS` on the Forge canvas (amends the Forge's scene in "A place is a canvas"):
+
+- **Outside** (the place's first view): the building (the whole of it is the way in, with an "Inside" plate), the notice board beside it (the project board and the fire's numbers), the scaffolding while the project is built, the project's helper at the door, a bubble over the door when pieces wait on a floor or the bag needs a look. No anvils out here.
+- **Inside** (its own canvas, never scrolls): a workshop room laid out on a 128 x 96 logical canvas at the scene's whole pixel scale (3 on a phone, 4 on a wide window, down while it does not fit), centred sideways, wall and floor to every edge. The player's anvils with their smiths (the dashed outline of the next with its price), the furnace with a flickering fire (opens the project board), the plans table, the chest (bag) and the crate (floor) down the right edge, and a door back outside (also Escape when nothing is open). Same right-drawer, left-drawer and phone-page rules as before; everything the Forge did stays reachable (the plans, bag and floor props moved inside because they are the workshop's things, the board stays reachable from both views).
+- **Other players' smiths** at two background benches, small, behind the player's own, each a tap that shows the creature's `Nameplate` with the owner's name (no list of everyone, at most four, two to an owner). The server sends them as `smiths` in the valley view: one indexed query of the other players' seated anvils (`valley_seats (place, kind, user_id)`, migration 67), at most twelve seats read, then a creature and a name by key for each of at most four; priced in `read-budget.test.ts`. With fewer than two such smiths, ambient workers (not owned by anyone, no plate, not tappable) make up two.
+- **Art:** the Art session's concept set `valley-forge-interior` is wired in by name (`forge-interior-art.ts`, night main palette and `alts.day`; approved for this interior by the lead) and stays in the art library as a draft, as the valley's sky does; the room is laid out as in the set's preview (`forge-interior.ts`, `ROOM_AT`). The doormat (the way out) is the game's own stand-in until the set has a door. Small idle motions step (hammering for a smith with a piece in hand, carrying for one ambient worker, the fire's flicker) and stop for reduced motion.
+
+**Reasoning.** The outside showed a building and a yard of props; Misa wants the place to feel like a workshop with life in it. Splitting the view keeps both: the outside is the valley's landmark and its project; the inside is the work. The room is built on a fixed logical size so the art can be drawn once and tiles to any window. Other players' smiths make the server's co-op idea visible without a list; reading them is one indexed query, so a look stays cheap. Ambient workers keep a quiet server's workshop alive without pretending someone is there (no plate, no tap).
+
 ## 2026-11-11: Scene trees stand on the grass, and the Bonfire's +N more stays above the pinned action
 
 ID: `2026-11-11-scene-trees-stand-on-the-grass` · Status: current
