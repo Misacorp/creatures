@@ -245,14 +245,22 @@ export async function runHousingPaths(
   await around('skin', () =>
     call(1, '/api/house/skin', 'PUT', { target: 'exterior', roof: 'slate' }),
   );
+  // The beds are the pieces whose form is a bed form, by the content's ids.
+  const bedPieces = new Set(
+    content.pieces
+      .filter((p) => content.forms.find((f) => f.id === p.form)?.bed === true)
+      .map((p) => p.id),
+  );
+  const likes = [...bedPieces].map(() => 'spots_json LIKE ?').join(' OR ');
   const bed = metered.sql
     .exec<{ room_id: string; spots_json: string }>(
-      "SELECT room_id, spots_json FROM house_rooms WHERE user_id = ? AND (spots_json LIKE '%-bed%' OR spots_json LIKE '%hammock%') LIMIT 1",
+      `SELECT room_id, spots_json FROM house_rooms WHERE user_id = ? AND (${likes}) LIMIT 1`,
       userId(1),
+      ...[...bedPieces].map((id) => `%"${id}"%`),
     )
     .one();
   const spots = JSON.parse(bed.spots_json) as Spots;
-  const bedSpot = Object.entries(spots).find(([, s]) => /-bed$|hammock/.test(s.p))?.[0] ?? '';
+  const bedSpot = Object.entries(spots).find(([, s]) => bedPieces.has(s.p))?.[0] ?? '';
   const creature = (world.creatures[userId(1)] ?? [])[5] ?? '';
   await around('housemate', () =>
     call(1, '/api/house/housemate', 'PUT', {

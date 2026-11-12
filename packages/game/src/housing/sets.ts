@@ -16,7 +16,6 @@ export function knownBlueprints(
     if (item.unlock.kind === 'starter') known.add(item.id);
     if (item.unlock.kind === 'part' && built.has(item.unlock.part)) known.add(item.id);
   }
-  for (const skin of content.skins) if (skin.kind === 'ground') known.add(skin.id);
   for (const part of content.parts) {
     if (built.has(part.id)) for (const id of part.unlocks) known.add(id);
   }
