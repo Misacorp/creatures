@@ -456,6 +456,7 @@ Superseded: 1 entry (see the topic file).
 
 [social.md](social.md): The living room and lounging, the lounge message, Discord DMs and other social features.
 
+- 2026-11-12 Room layers: generated patterns owned by pattern, colour free, stored in the existing columns
 - 2026-11-12 Quiet Verge furniture set: tier 2, no element, stone and moonstone, from the Crossroads and the Reef
 - 2026-11-11 Housing: tower, balcony, orchard and pond (prices, prerequisites, where they stand)
 - 2026-11-09 Housing server: how the rules of the first build read

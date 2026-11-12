@@ -1205,7 +1205,8 @@ export class Housing {
         const skinId = parseLook(value)?.skin ?? value;
         const skin = this.skinById.get(skinId);
         if (skin === undefined) throw new GameError(404, 'not_found');
-        const held = !ownsSkin(skin, false) && (getItem(this.sql, userId, 'skin', skinId)?.count ?? 0) > 0;
+        const held =
+          !ownsSkin(skin, false) && (getItem(this.sql, userId, 'skin', skinId)?.count ?? 0) > 0;
         if (!ownsSkin(skin, held)) throw new GameError(409, 'not_owned');
       };
       const bare = (value: string | null | undefined, kind: SkinKind): void => {

@@ -4,6 +4,14 @@ The living room and lounging, the lounge message, Discord DMs and other social f
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-12: Room layers: generated patterns owned by pattern, colour free, stored in the existing columns
+
+ID: `2026-11-12-room-layers-generated-patterns-owned-by` · Status: current
+
+**Decision.** Housing C5 is wired for wallpaper and floor patterns, trim, ceilings and the house frame (ways through stay unwired). Each is a skin with a `gen` field (`pattern`, `colours`, `tier`, `family`): owning the skin owns the pattern in every listed colour, and a layer stores `<skin id>:<colour>` (`paper-damask:rose`; `looks.ts` in the game package reads and checks it). Rooms get `trim` and `ceiling`, the exterior gets `frame`, all nullable: null is "as built", so a house that chose nothing paints exactly as before (pinned by day-picture digests taken before the change). No migration: the trim and ceiling ride in the room's `wall` column (`<wall>;ceiling=…;trim=…`) and the frame in the house's `walls` column (`<walls>;frame=…`), read and written only by `housing-store.ts`; a plain column is unchanged. Starters are owned by rule (`ownsSkin`), not by row, so old houses have them. Earning reuses the skin machinery: workbench patterns are `part: hut` unlocks priced by tier (`HOUSING_RULES.price.pattern`), fancy ones are drop blueprints with their own `sources` (skins can now carry `sources`) or feat unlocks. The frame replaces the inner posts and the slabs; the cut edges keep the walls skin. The client generates tiles at runtime from the workshop's pure generators, cached per pattern, colour and size, in the housing chunk only. Cobble and harlequin are left out; starry comes in four dark colours.
+
+**Reasoning.** Owning by pattern keeps the content at 30 entries instead of hundreds and makes colour a free, playful choice. Nullable layers are the only way to keep every existing house pixel-identical (the shipped wallpapers bake their own trim and ceiling line). Packing two extra values into existing text columns avoids a migration on a branch where the next numbers belong to others; the codec is one small function with tests, and housing is still off in production. Starters by rule avoid writing rows to existing houses. Putting the workbench patterns behind the hut uses the existing "a built part teaches it" rule rather than a new unlock kind.
+
 ## 2026-11-12: Quiet Verge furniture set: tier 2, no element, stone and moonstone, from the Crossroads and the Reef
 
 ID: `2026-11-12-quiet-verge-furniture-set-tier-2` · Status: current

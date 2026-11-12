@@ -37,7 +37,10 @@ export function lookValue(skin: string, colour: string | null): string {
 }
 
 /** The skin a look value names, or undefined. */
-export function lookSkin(content: Pick<HousingContent, 'skins'>, value: string): SkinDef | undefined {
+export function lookSkin(
+  content: Pick<HousingContent, 'skins'>,
+  value: string,
+): SkinDef | undefined {
   const look = parseLook(value);
   return look === null ? undefined : content.skins.find((s) => s.id === look.skin);
 }

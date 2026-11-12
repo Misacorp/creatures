@@ -79,9 +79,7 @@ function colourCell(kind: SkinKind, colour: string, worn: boolean): SupplyCell {
 export function SkinPicker({ kind, current, own, busy, onPick, onMake }: SkinPickerProps) {
   const choices = skinChoices(kind, current, own);
   const [picked, setPicked] = useState<string | null>(null);
-  const [colourPicked, setColourPicked] = useState<{ skin: string; colour: string } | null>(
-    null,
-  );
+  const [colourPicked, setColourPicked] = useState<{ skin: string; colour: string } | null>(null);
   const [making, setMaking] = useState(false);
   const choice = choices.find((c) => c.id === picked) ?? choices.find((c) => c.here) ?? choices[0];
   if (choice === undefined) {
@@ -133,7 +131,9 @@ export function SkinPicker({ kind, current, own, busy, onPick, onMake }: SkinPic
           <SupplyGrid
             flat
             label="Colours"
-            cells={choice.colours.map((c) => colourCell(kind, c, choice.here && c === choice.colour))}
+            cells={choice.colours.map((c) =>
+              colourCell(kind, c, choice.here && c === choice.colour),
+            )}
             selected={colour}
             onSelect={(id) => {
               setColourPicked({ skin: choice.id, colour: id });
@@ -142,9 +142,7 @@ export function SkinPicker({ kind, current, own, busy, onPick, onMake }: SkinPic
         </div>
       )}
       <PickCard
-        picture={
-          value === null ? <Picture choice={choice} /> : <HouseThumb id={value} />
-        }
+        picture={value === null ? <Picture choice={choice} /> : <HouseThumb id={value} />}
         name={value === null ? choice.name : itemName(value)}
         set={choice.set}
         action={

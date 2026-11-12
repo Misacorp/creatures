@@ -1,6 +1,6 @@
 # The room itself: interior layers (housing C5)
 
-Status: **first pass, sheets only** (2026-11-11). Nothing is wired into the game. The generators are code, tested and committed (`apps/activity/src/sprites/workshop/interior/`). `pnpm housing interior-sheets [--out dir]` renders eight sheets, each at 1x (`<name>-1x.png`) and enlarged 3x (`<name>.png`; the night strip 4x), plus `8-house-phone.png` (the house at 2 image pixels a pixel, as a 390 px phone at device pixel ratio 2 shows it). Part of [`housing-next.md`](housing-next.md) C5; the drawing tools are the workshop's ([`housing-workshop.md`](housing-workshop.md)).
+Status: **wired** (2026-11-12) for wallpaper, floors, trim, ceilings and the frame; ways through are still sheets only. First pass, sheets only (2026-11-11). The generators are code, tested and committed (`apps/activity/src/sprites/workshop/interior/`). `pnpm housing interior-sheets [--out dir]` renders eight sheets, each at 1x (`<name>-1x.png`) and enlarged 3x (`<name>.png`; the night strip 4x), plus `8-house-phone.png` (the house at 2 image pixels a pixel, as a 390 px phone at device pixel ratio 2 shows it). Part of [`housing-next.md`](housing-next.md) C5; the drawing tools are the workshop's ([`housing-workshop.md`](housing-workshop.md)).
 
 ## The idea
 
@@ -112,3 +112,13 @@ What would change:
 2. How many of the 156 wallpapers and 72 floors are earnable, and by which routes (colours by part, patterns by set)?
 3. Is the trim its own per-room choice, or part of the wallpaper's skin (one choice instead of two)?
 4. The frame: house wide only (as proposed), or also per floor?
+
+## What is built (2026-11-12)
+
+Wallpaper, floor, trim, ceiling and frame are in the game; ways through (doorways, stairs) are not wired, and their generators and the analysis above stand as they were.
+
+- **Content.** Each pattern or kind is one skin with `gen: { pattern, colours, tier, family }` (`skins.json`, 30 entries): 12 wallpapers (no harlequin; starry in midnight, charcoal, forest and slate only), 7 floors (no cobble, no tatami), 4 trims, 4 ceilings (plain included, as a starter), 3 frames (timber in oak and dark, painted in four colours, stone in grey). Owned once, worn in any listed colour.
+- **Stored.** A layer's look is `<skin id>:<colour>`. The room's `wall` column carries `;ceiling=…;trim=…` after the wallpaper and the house's `walls` column `;frame=…` after the walls skin, so no migration; a layer never chosen is absent and the view says null ("as built"). The server checks the skin, its kind, the colour and ownership (a starter is owned by rule).
+- **Drawn.** `housing/interior-art.ts` runs the generators at runtime (cached per pattern, colour and size) in the housing chunk. The scene draws paper, ceiling, trim (cornice under the chosen ceiling; none under rafters), floor, then the slab and inner posts from the frame (the cut edges keep the walls skin). Paper, ceiling and trim are `wall`, the floor `floor`, the frame `exterior` for the night pass. A house that chose nothing paints the same pixels as before (`house-layers.test.ts`).
+- **Picked.** A room has four chips (wallpaper, floor, trim, ceiling; two rows of two on a phone), the house a third chip (frame) beside roof and walls. The picker lists a pattern once and shows a row of its colours under it; trim, ceiling and frame start with "As built".
+- **Not done.** Rafters are allowed in any room (the server does not know which rooms are under the roof without a new read); a generated wallpaper with no ceiling chosen has no ceiling line of its own.

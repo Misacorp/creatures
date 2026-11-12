@@ -215,7 +215,8 @@ export function sleeperOptions(
   return [nobody, ...rows];
 }
 
-export type SkinKind = 'wall' | 'floor' | 'trim' | 'ceiling' | 'roof' | 'walls' | 'frame' | 'ground';
+export type SkinKind =
+  'wall' | 'floor' | 'trim' | 'ceiling' | 'roof' | 'walls' | 'frame' | 'ground';
 
 /** The id of the "As built" choice: a trim, ceiling or frame taken off. */
 export const BARE_CHOICE = '__bare';

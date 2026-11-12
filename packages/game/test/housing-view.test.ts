@@ -173,7 +173,10 @@ describe('housing view schemas', () => {
     [
       'skin answer (exterior)',
       SkinAnswerSchema,
-      { target: 'exterior', exterior: { roof: 'slate', walls: 'timber', frame: 'frame-stone:grey' } },
+      {
+        target: 'exterior',
+        exterior: { roof: 'slate', walls: 'timber', frame: 'frame-stone:grey' },
+      },
     ],
     [
       'place answer',
@@ -213,7 +216,10 @@ describe('housing view schemas', () => {
 
   it('rejects nested unknown keys and bad values', () => {
     expect(
-      v.safeParse(HouseViewSchema, { ...house, exterior: { roof: 'a', walls: 'b', frame: null, x: 1 } }).success,
+      v.safeParse(HouseViewSchema, {
+        ...house,
+        exterior: { roof: 'a', walls: 'b', frame: null, x: 1 },
+      }).success,
     ).toBe(false);
     expect(v.safeParse(HouseViewSchema, { ...house, owner: { ...owner, extra: 1 } }).success).toBe(
       false,
