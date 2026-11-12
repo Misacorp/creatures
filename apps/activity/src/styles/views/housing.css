@@ -355,6 +355,11 @@
   bottom: max(0.5rem, var(--discord-safe-area-inset-bottom, 0px));
 }
 
+/* On a phone the dock covers the bottom of the page: the pinned action stops above it, as the bulk bar does. */
+main.card:has(.main-nav.dock) .house-visit .vy-act {
+  bottom: calc(var(--dock-h) + var(--dock-safe) + 0.5rem);
+}
+
 .side-panel-foot .vy-act {
   position: static;
 }
