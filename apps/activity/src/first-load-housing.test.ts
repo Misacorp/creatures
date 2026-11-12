@@ -23,6 +23,7 @@ const FORBIDDEN_FILES = [
   './housing/house-art.ts',
   './housing/house-names.ts',
   './housing/HouseRows.tsx',
+  './housing/interior-art.ts',
 ];
 
 /** The static (value) imports of a file: `import x from 'y'`, `import 'y'`, `export * from 'y'`. */

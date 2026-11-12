@@ -117,7 +117,7 @@ function recipe(
   };
 }
 
-/** Every known blueprint as a recipe, in groups: each set, the wild pieces, the garden pieces, the exterior skins. */
+/** Every known blueprint as a recipe, in groups: each set, the wild pieces, the garden pieces, the exterior skins, the room patterns. */
 export function workbenchGroups(own: OwnHouseView): RecipeGroup[] {
   const known = knownIds(own);
   const pieceRecipe = (id: string) => recipe(id, 'piece', piecePrice(housing, id), own);
@@ -168,7 +168,16 @@ export function workbenchGroups(own: OwnHouseView): RecipeGroup[] {
     id: 'exterior',
     title: 'Roofs and walls',
     recipes: housing.skins
-      .filter((s) => s.set === null && makeable(s.id))
+      .filter((s) => s.set === null && s.gen === undefined && makeable(s.id))
+      .map((s) => skinRecipe(s.id)),
+    held: null,
+  });
+  // The room patterns, trims, ceilings and frames (housing C5): one make gives every colour; the starters are never made.
+  groups.push({
+    id: 'rooms',
+    title: 'Rooms',
+    recipes: housing.skins
+      .filter((s) => s.gen !== undefined && s.unlock.kind !== 'starter' && makeable(s.id))
       .map((s) => skinRecipe(s.id)),
     held: null,
   });

@@ -155,7 +155,7 @@ function skinGroups(c: CatalogueView): CatalogueGroup[] {
       unknown,
       picture: { kind: 'house', id: def.id },
       hint: def.hint,
-      line: null,
+      line: entry.owned ? (def.line ?? null) : null,
       set: setName(def.set),
       owned: entry.owned ? 1 : 0,
       placed: null,
@@ -170,8 +170,13 @@ function skinGroups(c: CatalogueView): CatalogueGroup[] {
     const tiles = bySet.get(set.id);
     if (tiles !== undefined) out.push(group(set.id, setName(set.id) ?? set.id, tiles));
   }
-  const exterior = bySet.get(null);
-  if (exterior !== undefined) out.push(group('exterior', 'Roofs, walls and ground', exterior));
+  const loose = bySet.get(null) ?? [];
+  const generated = new Set(housing.skins.filter((s) => s.gen !== undefined).map((s) => s.id));
+  const exterior = loose.filter((t) => !generated.has(t.id));
+  if (exterior.length > 0) out.push(group('exterior', 'Roofs, walls and ground', exterior));
+  // The room patterns, trims, ceilings and frames (housing C5): one tile per pattern, not per colour.
+  const rooms = loose.filter((t) => generated.has(t.id));
+  if (rooms.length > 0) out.push(group('rooms', 'Rooms', rooms));
   return out;
 }
 

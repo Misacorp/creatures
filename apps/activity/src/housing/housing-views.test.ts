@@ -165,6 +165,17 @@ describe('workbench view', () => {
     expect(wall).toMatchObject({ done: true, reason: 'You have it already.' });
   });
 
+  it('lists the room patterns a player can make in a Rooms group, never the starters', () => {
+    const rooms = workbenchGroups(sampleOwn('empty')).find((g) => g.id === 'rooms');
+    const ids = rooms?.recipes.map((r) => r.id) ?? [];
+    expect(ids).toContain('paper-stripes');
+    expect(ids).toContain('frame-painted');
+    expect(ids).not.toContain('paper-plain');
+    expect(ids).not.toContain('paper-damask');
+    const exterior = workbenchGroups(sampleOwn('rich')).find((g) => g.id === 'exterior');
+    expect(exterior?.recipes.some((r) => r.id.startsWith('paper-'))).toBe(false);
+  });
+
   it('shows only the starters to a player with nothing', () => {
     const groups = workbenchGroups(sampleOwn('empty'));
     expect(groups.map((g) => g.id)).toContain('cosy');
@@ -215,6 +226,20 @@ describe('catalogue view', () => {
     const cosy = workbenchGroups(own).find((g) => g.id === 'cosy');
     expect(cosy?.held?.owned).toBe(
       housing.pieces.filter((p) => p.set === 'cosy' && (own.items.pieces[p.id] ?? 0) > 0).length,
+    );
+  });
+
+  it('shows the room patterns in a Rooms group of the skins, one tile per pattern', () => {
+    const groups = catalogueGroups(sampleCatalogue(), 'skins');
+    const rooms = groups.find((g) => g.id === 'rooms');
+    expect(rooms?.title).toBe('Rooms');
+    expect(rooms?.tiles).toHaveLength(housing.skins.filter((s) => s.gen !== undefined).length);
+    const plain = rooms?.tiles.find((t) => t.id === 'paper-plain');
+    expect(plain).toMatchObject({ unknown: false, owned: 1, name: 'Plain Plaster' });
+    expect(plain?.line).toContain('plaster');
+    expect(rooms?.tiles.find((t) => t.id === 'paper-damask')).toMatchObject({ unknown: true });
+    expect(groups.find((g) => g.id === 'exterior')?.tiles.some((t) => t.id === 'paper-plain')).toBe(
+      false,
     );
   });
 
