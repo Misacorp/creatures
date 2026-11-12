@@ -36,6 +36,94 @@ export const MANSION: readonly string[] = [
 /** The mansion and the four parts built after it: all fifteen. */
 export const ESTATE: readonly string[] = [...MANSION, 'tower', 'balcony', 'orchard', 'pond'];
 
+/**
+ * Every indoor room of the estate in its own generated layers (housing C5), for the sheets and the workbench: no two rooms alike and
+ * none like a default, from base choices alone. Use with `DRESSED_FRAME`.
+ */
+export const DRESSED_LOOKS: Readonly<
+  Record<string, { wall: string; floor: string; trim: string | null; ceiling: string | null }>
+> = {
+  'hut:hearth': {
+    wall: 'paper-damask:rose',
+    floor: 'floor-parquet:walnut',
+    trim: 'trim-wainscot:dark-walnut',
+    ceiling: 'ceiling-beamed:cream-walnut',
+  },
+  'cottage:kitchen': {
+    wall: 'paper-tiles:white',
+    floor: 'floor-checker:slate',
+    trim: 'trim-skirting:paint-blue',
+    ceiling: 'ceiling-plain:white-oak',
+  },
+  'cottage:loft': {
+    wall: 'paper-pinstripe:sky',
+    floor: 'floor-boards:ash',
+    trim: 'trim-classic:paint-white',
+    ceiling: 'ceiling-beamed:white-oak',
+  },
+  'house:study': {
+    wall: 'paper-stripes:ochre',
+    floor: 'floor-bordered-carpet:burgundy',
+    trim: 'trim-panelled:dark-walnut',
+    ceiling: 'ceiling-coffered:cream-walnut',
+  },
+  'house:attic': {
+    wall: 'paper-planks:cream',
+    floor: 'floor-short-boards:oak',
+    trim: 'trim-skirting:dark-walnut',
+    ceiling: 'ceiling-rafters:dark',
+  },
+  'cellar:cellar': {
+    wall: 'paper-brick:terracotta',
+    floor: 'floor-flags:slate',
+    trim: null,
+    ceiling: 'ceiling-beamed:stone',
+  },
+  'west-wing:hall': {
+    wall: 'paper-panels:charcoal',
+    floor: 'floor-parquet:oak',
+    trim: 'trim-classic:stone-sand',
+    ceiling: 'ceiling-coffered:dark',
+  },
+  'west-upper:gallery': {
+    wall: 'paper-split:lavender',
+    floor: 'floor-boards:whitewash',
+    trim: 'trim-classic:paint-rose',
+    ceiling: 'ceiling-plain:cream-walnut',
+  },
+  'east-wing:conservatory': {
+    wall: 'paper-floral:sage',
+    floor: 'floor-flags:terracotta',
+    trim: 'trim-skirting:stone-grey',
+    ceiling: null,
+  },
+  'east-upper:bath': {
+    wall: 'paper-tiles:sky',
+    floor: 'floor-checker:whitewash',
+    trim: 'trim-wainscot:paint-white',
+    ceiling: 'ceiling-plain:white-oak',
+  },
+  'east-upper:guest': {
+    wall: 'paper-polka:lavender',
+    floor: 'floor-carpet:moss',
+    trim: 'trim-skirting:paint-sage',
+    ceiling: 'ceiling-beamed:white-oak',
+  },
+  'tower:landing': {
+    wall: 'paper-stripes:slate',
+    floor: 'floor-short-boards:walnut',
+    trim: 'trim-wainscot:paint-sage',
+    ceiling: 'ceiling-plain:stone',
+  },
+  'tower:observatory': {
+    wall: 'paper-starry:midnight',
+    floor: 'floor-bordered-carpet:burgundy',
+    trim: 'trim-classic:dark-ebony',
+    ceiling: 'ceiling-rafters:dark',
+  },
+};
+export const DRESSED_FRAME = 'frame-painted:white';
+
 const SETS = [
   'cosy',
   'tidepool',

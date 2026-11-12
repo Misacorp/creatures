@@ -9,6 +9,8 @@ import { RoomFocus } from '../../housing/RoomFocus';
 import { VisitHouse } from '../../housing/VisitHouse';
 import {
   COTTAGE,
+  DRESSED_FRAME,
+  DRESSED_LOOKS,
   ESTATE,
   HUT,
   MANSION,
@@ -34,12 +36,18 @@ const HOUSE_OPTIONS = Object.keys(HOUSES);
 const ROOFS = housing.skins.filter((s) => s.kind === 'roof').map((s) => s.id);
 const WALLS = housing.skins.filter((s) => s.kind === 'walls').map((s) => s.id);
 
+/** The room layers (housing C5): as built, or every room in its own generated wallpaper, floor, trim and ceiling and a frame. */
+const LAYERS = ['as built', 'dressed'] as const;
+const dressed = (p: Props) =>
+  str(p, 'layers') === 'dressed' ? { looks: DRESSED_LOOKS, frame: DRESSED_FRAME } : {};
+
 function houseOf(p: Props) {
   return sceneHouse({
     parts: HOUSES[str(p, 'house')] ?? HUT,
     housemates: num(p, 'housemates'),
     roof: str(p, 'roof'),
     walls: str(p, 'walls'),
+    ...dressed(p),
   });
 }
 
@@ -58,8 +66,15 @@ const common = {
   housemates: { kind: 'number', min: 0, max: 3 },
   roof: { kind: 'select', options: ROOFS },
   walls: { kind: 'select', options: WALLS },
+  layers: { kind: 'select', options: LAYERS },
 } as const;
-const commonDefaults = { house: 'hut', housemates: 0, roof: 'thatch', walls: 'plaster' } as const;
+const commonDefaults = {
+  house: 'hut',
+  housemates: 0,
+  roof: 'thatch',
+  walls: 'plaster',
+  layers: 'as built',
+} as const;
 
 const houseScene: Entry = {
   name: 'HouseScene',
@@ -97,6 +112,18 @@ const houseScene: Entry = {
       name: 'The mansion with a slate roof and brick walls',
       props: { house: 'mansion', roof: 'slate', walls: 'brick' },
     },
+    {
+      name: 'The estate, every room in its own layers',
+      props: { house: 'estate', housemates: 3, layers: 'dressed' },
+    },
+    {
+      name: 'The estate in its own layers at twilight',
+      props: { house: 'estate', housemates: 3, layers: 'dressed', phase: 'twilight' },
+    },
+    {
+      name: 'The estate in its own layers at night',
+      props: { house: 'estate', housemates: 3, layers: 'dressed', phase: 'night' },
+    },
   ],
   render: (p) => (
     <HousePhaseContext.Provider value={phaseOf(p)}>
@@ -119,6 +146,7 @@ function RoomDemo({ p }: { p: Props }) {
     housemates: num(p, 'housemates'),
     roof: str(p, 'roof'),
     walls: str(p, 'walls'),
+    ...dressed(p),
   });
   const kind = str(p, 'room');
   const room = house.rooms.find((r) => r.kind === kind) ?? house.rooms[0];
@@ -141,12 +169,13 @@ const roomFocus: Entry = {
   file: 'apps/activity/src/housing/RoomFocus.tsx',
   group: 'Creatures & game pieces',
   description:
-    'One room of the house at a larger scale (up to 4). In your own house every spot is a button over the picture (an empty one shows a small pixel plus, and a dashed outline only while hovered or focused) and the wallpaper and floor are two dropdown triggers under it; in a visit pieces and displays are tappable pictures that open a popover. The housemate sleeps in its bed.',
+    'One room of the house at a larger scale (up to 4). In your own house every spot is a button over the picture (an empty one shows a small pixel plus, and a dashed outline only while hovered or focused) and the wallpaper, floor, trim and ceiling are four dropdown triggers under it (two rows of two on a phone); in a visit pieces and displays are tappable pictures that open a popover. The housemate sleeps in its bed.',
   controls: {
     room: { kind: 'select', options: ROOM_OPTIONS },
     housemates: common.housemates,
     roof: common.roof,
     walls: common.walls,
+    layers: common.layers,
     mode: { kind: 'select', options: ['own', 'visit'] },
     ...phaseControl,
   },
@@ -155,6 +184,7 @@ const roomFocus: Entry = {
     housemates: 1,
     roof: 'thatch',
     walls: 'plaster',
+    layers: 'as built',
     mode: 'own',
     phase: 'day',
   },
@@ -180,6 +210,12 @@ const roomFocus: Entry = {
     { name: 'The orchard at night', props: { room: 'orchard', phase: 'night' } },
     { name: 'The pond', props: { room: 'pond' } },
     { name: 'The pond at night', props: { room: 'pond', phase: 'night' } },
+    { name: 'The Hearth in its own layers', props: { layers: 'dressed' } },
+    { name: 'The study in its own layers', props: { room: 'study', layers: 'dressed' } },
+    {
+      name: 'The study in its own layers at night',
+      props: { room: 'study', layers: 'dressed', phase: 'night' },
+    },
   ],
   render: (p) => (
     <HousePhaseContext.Provider value={phaseOf(p)}>

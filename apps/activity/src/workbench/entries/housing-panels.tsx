@@ -146,24 +146,50 @@ const skinPicker: Entry = {
   file: `${FILE}SkinPicker.tsx`,
   group: GROUP,
   description:
-    'The wallpaper, floor, roof or walls to choose from: the ones the player has as pictures, then the ones known but not made yet; the chosen one as a card with Use it or Make.',
-  controls: { kind: { kind: 'select', options: ['wall', 'floor', 'roof', 'walls'] } },
-  defaults: { kind: 'wall' },
+    'The wallpaper, floor, trim, ceiling, roof, walls or frame to choose from: As built first for a layer that can be bare, the ones the player has as pictures, then the ones known but not made yet; under a room pattern a row of its colours; the chosen one as a card with Use it or Make.',
+  controls: {
+    kind: {
+      kind: 'select',
+      options: ['wall', 'floor', 'trim', 'ceiling', 'roof', 'walls', 'frame'],
+    },
+    holds: HOLDS,
+  },
+  defaults: { kind: 'wall', holds: 'rich' },
   presets: [
     { name: 'Wallpaper', props: {} },
     { name: 'Floor', props: { kind: 'floor' } },
+    { name: 'Trim', props: { kind: 'trim' } },
+    { name: 'Ceiling', props: { kind: 'ceiling' } },
     { name: 'Roof', props: { kind: 'roof' } },
     { name: 'Walls', props: { kind: 'walls' } },
+    { name: 'Frame', props: { kind: 'frame' } },
+    { name: 'Wallpaper, a new player', props: { holds: 'empty' } },
   ],
   render: (p) => {
     const kind = str(p, 'kind');
-    const current = { wall: 'cosy-wall', floor: 'cosy-floor', roof: 'thatch', walls: 'plaster' };
-    const k = kind === 'floor' || kind === 'roof' || kind === 'walls' ? kind : 'wall';
+    const current = {
+      wall: 'paper-pinstripe:sage',
+      floor: 'floor-boards:walnut',
+      trim: 'trim-skirting:paint-white',
+      ceiling: null,
+      roof: 'thatch',
+      walls: 'plaster',
+      frame: null,
+    } as const;
+    const k =
+      kind === 'floor' ||
+      kind === 'trim' ||
+      kind === 'ceiling' ||
+      kind === 'roof' ||
+      kind === 'walls' ||
+      kind === 'frame'
+        ? kind
+        : 'wall';
     return (
       <SkinPicker
         kind={k}
         current={current[k]}
-        own={sampleOwn('rich')}
+        own={holds(p)}
         busy={false}
         onPick={none}
         onMake={none}
