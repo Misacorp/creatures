@@ -330,6 +330,19 @@ describe('the postcard in a phase', () => {
     );
   });
 
+  it('lights about four in five of the night windows at twilight; the rest are dark glass, not panes of the dusk', () => {
+    const house = { parts: [...MANSION, 'tower'], ...skins() };
+    const dusk = windowLights(composePostcard(house, undefined, 'twilight'));
+    const night = windowLights(composePostcard(house, undefined, 'night'));
+    expect(dusk).toBeGreaterThanOrEqual(Math.floor(night * 0.6));
+    expect(dusk).toBeLessThan(night);
+    const mats = (phase: 'twilight' | 'night') =>
+      new Set(composePostcard(house, undefined, phase).placements.map((p) => p.mat));
+    expect(mats('twilight').has('window')).toBe(false);
+    expect(mats('twilight').has('outdoor')).toBe(true);
+    expect(mats('night').has('window')).toBe(true);
+  });
+
   it('puts a porch lamp by the Hearth door from dusk, and a lantern post in a garden', () => {
     const withGarden = { parts: [...THREE_FLOORS, 'garden'], ...skins() };
     const night = composePostcard(withGarden, undefined, 'night');

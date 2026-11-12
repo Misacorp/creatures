@@ -679,7 +679,9 @@ export function composePostcard(
       else r.blit(litWindow, x + 8, y + 3);
       lights.push({ kind: 'window', x: x + 14, y: y + 7, clip: cell, size: 0.85 });
     } else {
-      r.mat = 'window';
+      // an unlit window at twilight is dark glass (graded like the house's own glass), not a pane of the dusk; at night it shows
+      // the night sky with its stars
+      r.mat = phase === 'twilight' ? 'outdoor' : 'window';
       if (u.part === 'tower') r.blit(round, x + 10, y + 3);
       else r.blit(window, x + 8, y + 3);
     }
