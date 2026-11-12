@@ -3,6 +3,7 @@ import { resources } from '@creatures/game';
 import { housing } from '@creatures/game/housing-content';
 import { spriteSize, type SpriteDef } from '../../sprite-data';
 import { HOUSING_GLYPHS } from '../../../housing/housing-glyphs';
+import { canDrawPattern } from '../../../housing/interior-art';
 
 /** The game's housing content against the art packs: every id the content names has art that fits (housing.md 5). */
 
@@ -48,8 +49,10 @@ describe('housing content has art', () => {
     expect(problems).toEqual([]);
   });
 
-  it('every skin has art', () => {
-    const missing = housing.skins.filter((s) => find((p) => p.skins, s.id) === undefined);
+  it('every skin has art: drawn in a pack, or a room pattern the workshop draws in every colour it lists', () => {
+    const missing = housing.skins.filter((s) =>
+      s.gen === undefined ? find((p) => p.skins, s.id) === undefined : !canDrawPattern(s),
+    );
     expect(missing.map((s) => s.id)).toEqual([]);
   });
 
