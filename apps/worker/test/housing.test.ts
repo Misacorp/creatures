@@ -142,6 +142,7 @@ describe('the first visit', () => {
       expect(first.house.exterior).toEqual({
         roof: content.starter.roof,
         walls: content.starter.walls,
+        frame: null,
       });
       expect(first.house.rooms).toHaveLength(1);
       const hearth = first.house.rooms[0];
