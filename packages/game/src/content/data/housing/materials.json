@@ -1,0 +1,162 @@
+[
+  {
+    "id": "driftwood",
+    "family": "wood",
+    "element": "tide",
+    "rare": false,
+    "places": ["tidepools", "old-crossroads"],
+    "fights": ["raid"],
+    "line": "Grey wood the tide sanded smooth. It still smells of salt.",
+    "hint": "Found at Tidepools and Old Crossroads, and from raid finales."
+  },
+  {
+    "id": "charwood",
+    "family": "wood",
+    "element": "ember",
+    "rare": false,
+    "places": ["ember-caves", "old-crossroads"],
+    "fights": ["dungeon", "raid"],
+    "line": "Wood that came out of the fire black and hard, and kept its warmth.",
+    "hint": "Found at Ember Caves and Old Crossroads, and from the dungeon and raid finales."
+  },
+  {
+    "id": "heartbark",
+    "family": "wood",
+    "element": "grove",
+    "rare": false,
+    "places": ["verdant-hollow", "old-crossroads"],
+    "fights": ["raid"],
+    "line": "Bark from the oldest trees of the Hollow, soft as cork.",
+    "hint": "Found at Verdant Hollow and Old Crossroads, and from raid finales."
+  },
+  {
+    "id": "lightning-ash",
+    "family": "wood",
+    "element": "spark",
+    "rare": false,
+    "places": ["storm-ridge", "old-crossroads"],
+    "fights": ["raid"],
+    "line": "Pale ash from a tree the storm struck and did not finish.",
+    "hint": "Found at Storm Ridge and Old Crossroads, and from raid finales."
+  },
+  {
+    "id": "bog-oak",
+    "family": "wood",
+    "element": "mire",
+    "rare": false,
+    "places": ["sunken-fen"],
+    "fights": ["dungeon", "raid"],
+    "line": "Black oak the bog kept for a hundred years, and gave back.",
+    "hint": "Found at Sunken Fen, and from the dungeon and raid finales."
+  },
+  {
+    "id": "sea-glass",
+    "family": "stone",
+    "element": "tide",
+    "rare": false,
+    "places": ["tidepools"],
+    "fights": ["raid"],
+    "line": "Green glass the sea rolled until it forgot it was a bottle.",
+    "hint": "Found at Tidepools, and from raid finales."
+  },
+  {
+    "id": "moonstone",
+    "family": "stone",
+    "element": "tide",
+    "rare": true,
+    "places": ["moonlit-reef"],
+    "fights": [],
+    "line": "A pale stone that glows a little when the reef is dark.",
+    "hint": "Found at Moonlit Reef."
+  },
+  {
+    "id": "cinder-garnet",
+    "family": "stone",
+    "element": "ember",
+    "rare": false,
+    "places": ["ember-caves"],
+    "fights": ["raid"],
+    "line": "A red stone from the caves where the embers sleep.",
+    "hint": "Found at Ember Caves, and from raid finales."
+  },
+  {
+    "id": "storm-quartz",
+    "family": "stone",
+    "element": "spark",
+    "rare": false,
+    "places": ["storm-ridge"],
+    "fights": ["raid"],
+    "line": "Clear quartz with a crackle in it, from the high ridge.",
+    "hint": "Found at Storm Ridge, and from raid finales."
+  },
+  {
+    "id": "fen-opal",
+    "family": "stone",
+    "element": "mire",
+    "rare": true,
+    "places": ["sunken-fen"],
+    "fights": ["raid"],
+    "line": "A dull stone with an oil sheen. Only the fen finds it.",
+    "hint": "Found at Sunken Fen, and from raid finales."
+  },
+  {
+    "id": "cinder-iron",
+    "family": "metal",
+    "element": "ember",
+    "rare": false,
+    "places": ["ember-caves"],
+    "fights": ["dungeon"],
+    "line": "Dark iron from the caves. It takes a hammer well.",
+    "hint": "Found at Ember Caves, and from the dungeon."
+  },
+  {
+    "id": "bright-copper",
+    "family": "metal",
+    "element": "spark",
+    "rare": false,
+    "places": ["storm-ridge"],
+    "fights": ["dungeon"],
+    "line": "Copper from the ridge, bright as a new coin and faintly humming.",
+    "hint": "Found at Storm Ridge, and from the dungeon."
+  },
+  {
+    "id": "old-gold",
+    "family": "metal",
+    "element": null,
+    "rare": true,
+    "places": ["old-crossroads"],
+    "fights": ["raid"],
+    "line": "Gold from before the roads were roads. Thin, soft and very old.",
+    "hint": "Found at Old Crossroads, and from raid finales."
+  },
+  {
+    "id": "sea-silk",
+    "family": "cloth",
+    "element": "tide",
+    "rare": false,
+    "places": ["moonlit-reef"],
+    "fights": ["games"],
+    "line": "Fine thread spun from the reef at night.",
+    "hint": "Found at Moonlit Reef, and from the Valley Games."
+  },
+  {
+    "id": "moss-velvet",
+    "family": "cloth",
+    "element": "grove",
+    "rare": false,
+    "places": ["verdant-hollow"],
+    "fights": ["games"],
+    "line": "Moss, pressed and dried until it feels like velvet.",
+    "hint": "Found at Verdant Hollow, and from the Valley Games."
+  },
+  {
+    "id": "lantern-silk",
+    "family": "cloth",
+    "element": null,
+    "rare": false,
+    "places": ["festival-grounds"],
+    "fights": ["festival", "games"],
+    "line": "Red and gold silk from the Festival lanterns.",
+    "hint": "Found at Festival Grounds, and from the Festival finale and the Valley Games."
+  }
+]

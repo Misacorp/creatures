@@ -51,6 +51,12 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [platform.md](platform.md): Hosting, Durable Objects, scheduling, CI and deploys, staging, dependencies, security, database reads, data cleanup, analytics, dev tools, the workbench, player feedback, sockets.
 
+- 2026-11-11 Furniture workshop: silhouette variants per form, chosen by the style
+- 2026-11-11 Housing content is validated on first use in the worker, not at isolate start
+- 2026-11-11 Furniture workshop: sets are styles drawn at load, shipped pixels kept as reasoned overrides and locked
+- 2026-11-10 Housing: a bed moves with its sleeper, and the housing content is its own package entry
+- 2026-11-10 Housing build, craft and skin answer with what changed
+- 2026-11-10 Migrations: applied by recorded version, reserved gaps, never revert the runner
 - 2026-11-06 Dev tools: server managers only, roster presets, creatures-per-player override \[Misa\]
 - 2026-11-05 The lab's tests share modules between files, and boss rule measurements live in the report
 - 2026-11-03 Raid test bench: the staging raid dev tools become four steps \[Misa\]
@@ -450,6 +456,13 @@ Superseded: 1 entry (see the topic file).
 
 [social.md](social.md): The living room and lounging, the lounge message, Discord DMs and other social features.
 
+- 2026-11-12 Housing: a ceiling and frame left as built are their starters; only a trim can be None
+- 2026-11-12 Ground skins fit room kinds and are owned by rule
+- 2026-11-12 Room layers: generated patterns owned by pattern, colour free, stored in the existing columns
+- 2026-11-12 Quiet Verge furniture set: tier 2, no element, stone and moonstone, from the Crossroads and the Reef
+- 2026-11-11 Housing: tower, balcony, orchard and pond (prices, prerequisites, where they stand)
+- 2026-11-09 Housing server: how the rules of the first build read
+- 2026-11-09 Player housing: what is built and its standing rules \[Misa\]
 - 2026-10-25 Opt-in Discord DMs, derived from the game's tables
 - 2026-10-22 Lounging time is stored at every check
 - 2026-10-20 Lounging XP, the evening check (amended)
@@ -466,6 +479,12 @@ Superseded: 1 entry (see the topic file).
 
 [ui.md](ui.md): Navigation and the frame, Home and the notice board, type scale, shared components, look and feel rules that apply across screens.
 
+- 2026-11-12 The house's night indoors follows the living room's look: graded, not ramped
+- 2026-11-11 The postcard follows the phase, lights are data per piece, and one painter stamps every scene
+- 2026-11-11 The house is lit by one painter pass, from the living room's phase (amended)
+- 2026-11-10 Housing screen pass: the whole house, build moment, one pinned action
+- 2026-11-10 Housing client: the build list is rows of parts, a piece moves by emptying then placing, the overview starts on the core
+- 2026-11-10 House scene: canvases at 1x scaled by CSS, yard fixtures, one light
 - 2026-11-06 Costs show the resource's icon and a number, never its name \[Misa\]
 - 2026-11-06 \[Misa\] One pan hint, the same on every sideways-scrolling map; a popover never opens after a drag
 - 2026-11-06 Closing a drawer or popover gives the focus back only to a keyboard user

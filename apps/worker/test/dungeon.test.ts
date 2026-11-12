@@ -1,4 +1,4 @@
-import { SCHEMA_VERSION } from '../src/migrations';
+import { MIGRATION_ROWS, MIGRATIONS, SCHEMA_VERSION } from '../src/migrations';
 import {
   PART_KINDS,
   RULES,
@@ -226,7 +226,7 @@ describe('migration 18', () => {
       ).toBe(16);
       ctx.core.migrate();
       ctx.core.migrate();
-      expect(count(ctx.sql, 'schema_version')).toBe(SCHEMA_VERSION);
+      expect(count(ctx.sql, 'schema_version')).toBe(MIGRATION_ROWS);
       expect(count(ctx.sql, 'creatures')).toBe(3);
       expect(count(ctx.sql, 'dungeon_runs')).toBe(0);
       expect((await p.today()).depth).toBe(1);
@@ -244,7 +244,7 @@ describe('migration 18', () => {
         ).map((r) => r.version);
       expect(Math.max(...versions())).toBe(16);
       ctx.core.migrate();
-      expect(versions()).toEqual(Array.from({ length: SCHEMA_VERSION }, (_, i) => i + 1));
+      expect(versions()).toEqual(MIGRATIONS.flatMap((m, i) => (m === null ? [] : [i + 1])));
 
       // Staging already ran the daily dungeon's migration 18; only 19 is left to apply.
       ctx.sql.exec(

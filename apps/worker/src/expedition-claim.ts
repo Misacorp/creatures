@@ -331,6 +331,14 @@ export function payTrip(
   );
 
   const result: ExpeditionResult = { recalled: !finished, catches, loot };
+  if (finished)
+    env.deps.housing?.drop(userId, {
+      kind: 'trip',
+      key: `trip:${expedition.id}`,
+      place: dest.id,
+      element: dest.element ?? null,
+      ticks,
+    });
   if (settled.length > 0) result.autoSettled = settled;
   if (push !== null) result.pushOn = pushView(expedition, push.goal, push.outcome);
 

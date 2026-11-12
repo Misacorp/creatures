@@ -9,6 +9,24 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | Set | Status | Pieces | Requested |
 | --- | --- | --- | --- |
 | [Combat v2 icons: attack shapes, board states, store meters](#combat-icons) | draft | 11 | 2026-10-31, Misa: "icons for keywords and attack shapes" (roadmap phase 3, combat v2). |
+| [House: Fairground set](#house-fairground) | draft | 14 | 2026-11-11: player housing furniture, a set made in the workshop (pnpm housing new-set). |
+| [House: the Cosy starter set](#house-cosy) | draft | 27 | 2026-11-09: player housing, art batch E4: the starter set mapped from the living room and its three new pieces. |
+| [House: garden and pool pieces](#house-garden) | draft | 13 | 2026-11-09: player housing, art batch E4: twelve garden and pool pieces that sit on grass and by water and read from a distance. |
+| [House: the wild pieces](#house-wild) | draft | 13 | 2026-11-09: player housing, art batch E4: twelve one-off pieces that belong to no set, each with character. |
+| [House: stamps, displays, materials and glyphs](#house-marks) | draft | 33 | 2026-11-09: housing art batch E5 (docs/design/housing.md, section 5): 24 stamps, the hall displays, 16 luxury materials, the House glyphs. |
+| [House postcard (outside view)](#house-postcard) | draft | 20 | 2026-11-10: a house that visibly grows into a mansion with wings, a pool and gardens, seen whole on a phone. |
+| [House: Quiet Verge set](#house-quiet-verge) | draft | 14 | 2026-11-11: player housing furniture, a set made in the workshop (pnpm housing new-set). |
+| [House: room skins](#house-rooms) | draft | 16 | 2026-11-10: player housing art pass 2, a default wallpaper and floor for every room kind (art director review: every room looked the same). |
+| [House: Schoolhouse set](#house-schoolhouse) | draft | 14 | 2026-11-11: player housing furniture, a set made in the workshop (pnpm housing new-set). |
+| [House set: Emberhold](#house-emberhold) | draft | 14 | 2026-11-09: player housing, furniture set art (batch E2). |
+| [House set: Moonlit](#house-moonlit) | draft | 14 | 2026-11-09: player housing, furniture set art (batch E2). |
+| [House set: Rootwood](#house-rootwood) | draft | 14 | 2026-11-09: player housing, furniture set art (batch E2). |
+| [House set: Tidepool](#house-tidepool) | draft | 14 | 2026-11-09: player housing, furniture set art (batch E2). |
+| [House: Ancient set](#house-ancient) | draft | 14 | 2026-11-09: player housing furniture, batch E3 (Stormglass, Fenkeeper, Ancient, Lantern Night), see docs/design/housing.md section 5. |
+| [House: Fenkeeper set](#house-fenkeeper) | draft | 14 | 2026-11-09: player housing furniture, batch E3 (Stormglass, Fenkeeper, Ancient, Lantern Night), see docs/design/housing.md section 5. |
+| [House: Lantern Night set](#house-lantern-night) | draft | 14 | 2026-11-09: player housing furniture, batch E3 (Stormglass, Fenkeeper, Ancient, Lantern Night), see docs/design/housing.md section 5. |
+| [House: Stormglass set](#house-stormglass) | draft | 14 | 2026-11-09: player housing furniture, batch E3 (Stormglass, Fenkeeper, Ancient, Lantern Night), see docs/design/housing.md section 5. |
+| [House shell (housing E1)](#house-shell) | draft | 33 | 2026-11-09: housing art batch E1, the building, roofs, walls and ground skins. |
 | [Element shards, told apart by shape](#shards) | liked | 15 | 2026-11-03: the element shard icons must differ by shape, not only colour (accessibility review from the valley session; Misa asked to provide what the valley needs). |
 | [The camp's other places, glow style](#valley-glow-camp) | draft | 6 | 2026-11-03: the valley prototype's remaining places (arena, fairground, road, chest, lectern, paddock) in the liked glow style, day and night. |
 | [Valley places: glow, day and night](#valley-glow) | liked | 9 | 2026-10-31: night glow redone to stand on the valley ground, with a daytime version of the same assets. |
@@ -53,6 +71,608 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | `store-heat` | glyph | Heat | liked | The Heat store (Boiling Point): the shared box with heat rising from it in waves. The count is text beside it ("x3"). Misa, 2026-11-01: "nice". |
 | `store-calm` | glyph | Calm | liked | The Calm store (Eye of the Storm): the shared box with a lotus in it. The count is text beside it ("x2"). Misa, 2026-11-01: "nice". |
 | `store-static` | glyph | Static | liked | The Static store (a dodge fills it): the shared box with a small crackle in it. The count is text beside it ("x1"). Misa, 2026-11-01: "nice". |
+
+<a id="house-fairground"></a>
+
+## House: Fairground set
+
+![House: Fairground set](house-fairground.png)
+
+- **Status:** draft
+- **Requested:** 2026-11-11: player housing furniture, a set made in the workshop (pnpm housing new-set).
+- **Source:** `apps/activity/src/sprites/concepts/house-fairground.ts` (draw it with `pnpm art house-fairground`)
+- **Sheet of:** `b002dfe920b7`
+- Striped awnings, bunting and prize ribbons on painted wood; red, cream, sky blue, sunny yellow. Drawn from its style (apps/activity/src/sprites/workshop/styles/fairground.ts); the pack is data/house/fairground.ts.
+- Needs the housing content (piece, skin and set ids as drawn).
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `fairground-bed` | free |  | draft | bed, 48x26, floor-large: headboard, mattress, pillow; the blanket is the front layer over the sleeper |
+| `fairground-bed-front` | free |  | draft | bed: the layer drawn over the sleeper |
+| `fairground-cupboard` | free |  | draft | cupboard, 30x36, floor-large: two doors, a plinth |
+| `fairground-table` | free |  | draft | table, 44x18, floor-large: a top on legs |
+| `fairground-shelf` | free |  | draft | wall shelf, 40x20, wall-large: a board on brackets with a few things on it |
+| `fairground-stool` | free |  | draft | stool, 16x12, floor-small |
+| `fairground-lamp` | free |  | draft | hanging lamp, 20x16, ceiling: hangs from the top row; the glow sprite is drawn over it at night |
+| `fairground-lamp-glow` | free |  | draft | lamp: night glow, drawn over the lamp |
+| `fairground-rug` | free |  | draft | rug, 56x10, rug spot: flat, seen from the front |
+| `fairground-frame` | free |  | draft | picture frame, 24x16, wall-small |
+| `fairground-curtains` | free |  | draft | window with its dressing, 36x26, window spot |
+| `fairground-wall` | free |  | draft | wallpaper tile 16x52, repeats across, no outline |
+| `fairground-floor` | free |  | draft | floor tile 16x8, repeats across, no outline |
+| `fairground-keepsake` | free |  | draft | keepsake 12x12, shown in the trophy hall cabinet when the set is complete |
+
+<a id="house-cosy"></a>
+
+## House: the Cosy starter set
+
+![House: the Cosy starter set](house-cosy.png)
+
+- **Status:** draft
+- **Requested:** 2026-11-09: player housing, art batch E4: the starter set mapped from the living room and its three new pieces.
+- **Source:** `apps/activity/src/sprites/concepts/house-cosy.ts` (draw it with `pnpm art house-cosy`)
+- **Sheet of:** `a9bfef315abd`
+- Fifteen of the eighteen pieces are the living room props (`data/room-sprites.ts`) shared, not copied; the sofa, pouf and beanbag stack their back and front prop into one piece plus a front layer.
+- New: bed, cupboard, wall shelf, and the cut-apart wallpaper and floor.
+- The backdrop is the starter wallpaper; the night row of each piece is the room at night.
+- A front layer has the same size and origin as its piece. The content (package D) and the scene (C1) need the housing content before this art is used.
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `cosy-sofa` | free |  | draft | The living room couch: coral with cream cushions and gold buttons, two room props stacked (back and seat front); the front layer is the arms and seat front. |
+| `cosy-sofa-front` | free |  | draft | The front layer of cosy-sofa: drawn over the creature that sits or sleeps on it, same size and origin as the piece. |
+| `cosy-table` | free |  | draft | The room table with a teal cloth and a cream runner; the living room prop with its legs given feet. |
+| `cosy-chair` | free |  | draft | The room chair: a wicker back in warm wood. |
+| `cosy-stool` | free |  | draft | The room stool: a coral cushion on a wooden frame. |
+| `cosy-lamp` | free |  | draft | The hanging lamp: a cream shade on a cord, it glows at night. |
+| `cosy-lamp-glow` | free |  | draft | The glow of cosy-lamp at night, drawn behind it. |
+| `cosy-plant` | free |  | draft | The room plant: leaves in a clay pot. |
+| `cosy-hearth` | free |  | draft | The fireplace: a stone chimney breast with the fire lit, its night glow behind. |
+| `cosy-hearth-glow` | free |  | draft | The glow of cosy-hearth at night, drawn behind it. |
+| `cosy-rug` | free |  | draft | The room rug: teal with a cream border. |
+| `cosy-seat` | free |  | draft | The teal pouf; the front layer is the rim in front of whoever sits on it. |
+| `cosy-seat-front` | free |  | draft | The front layer of cosy-seat: drawn over the creature that sits or sleeps on it, same size and origin as the piece. |
+| `cosy-beanbag` | free |  | draft | The violet beanbag with gold stitching; the front layer is the slumped front. |
+| `cosy-beanbag-front` | free |  | draft | The front layer of cosy-beanbag: drawn over the creature that sits or sleeps on it, same size and origin as the piece. |
+| `cosy-cushion` | free |  | draft | The floor cushion with a gold tassel. |
+| `cosy-shelf` | free |  | draft | The room bookshelf, form cupboard: three shelves of coloured books. |
+| `cosy-clock` | free |  | draft | The wall clock. |
+| `cosy-frame` | free |  | draft | The picture frame: a green hill under a blue sky. |
+| `cosy-curtains` | free |  | draft | The window with its drapes and sill; the night row is the room window at night (its own rows). |
+| `cosy-bed` | free |  | draft | NEW. A wooden bed with a coral quilt: a tall headboard, a low footboard, a pillow. The front layer is the quilt, over a creature asleep at the pillow (sleep anchor x 10, y 1). |
+| `cosy-bed-front` | free |  | draft | The front layer of cosy-bed: drawn over the creature that sits or sleeps on it, same size and origin as the piece. |
+| `cosy-cupboard` | free |  | draft | NEW. A wooden cupboard with two panelled doors, a hanging pair of gold knobs, a coral heart on each door and a drawer. |
+| `cosy-shelf-wall` | free |  | draft | NEW. A wall shelf on two brackets with leaning books, a cream mug and a small plant. |
+| `cosy-wall` | free |  | draft | The starter wallpaper, 16x52, repeats across: the living room wall cut down to its trim, stripes and wainscot. |
+| `cosy-floor` | free |  | draft | The starter floor, 16x8: two rows of the living room planks. |
+| `cosy-keepsake` | free |  | draft | The Hearth Bell, 12x12: the keepsake in the trophy hall cabinet when the Cosy set is complete. |
+
+<a id="house-garden"></a>
+
+## House: garden and pool pieces
+
+![House: garden and pool pieces](house-garden.png)
+
+- **Status:** draft
+- **Requested:** 2026-11-09: player housing, art batch E4: twelve garden and pool pieces that sit on grass and by water and read from a distance.
+- **Source:** `apps/activity/src/sprites/concepts/house-garden.ts` (draw it with `pnpm art house-garden`)
+- **Sheet of:** `7dd08b701606`
+- Drawn for the valley grass (the sheet stands them on the world map grass tile, night on the night tile). Stone is pale and the leaves are lighter than the grass so they read against it.
+- The hedge and picket fence are repeating segments; their side edges are open so neighbours join.
+- The lantern post has a glow sprite for night. The night row keeps the lantern lit.
+- The content (package D) needs the housing content before this art is used; the ids are the names in kebab case.
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `stone-fountain` | free |  | draft | A two-tier stone fountain: a wide basin, a pedestal, an upper bowl and a finial, with water falling in thin lines. |
+| `mossback-topiary` | free |  | draft | A hedge clipped into a Mossback: a leafy shell with scutes cut in, a head, four stubby legs, three flowers growing on its back, in a stone tub. Blueprint from Verdant Hollow. |
+| `rose-arbor` | free |  | draft | A white trellis arch on two posts, pink and red roses climbing it; open in the middle so a path runs under. |
+| `flowerbed` | free |  | draft | A log-edged bed with five flowers (pink, gold, violet, orange, cream). Starter blueprint. |
+| `lantern-post` | free |  | draft | An iron post with a lit lantern and a scroll bracket; its glow is a pool of light on the ground. Blueprint from the Festival Grounds. |
+| `lantern-post-glow` | free |  | draft | The glow of lantern-post at night, drawn behind it. |
+| `birdbath` | free |  | draft | A pedestal bird bath with water in the bowl and a small blue bird on the rim. |
+| `garden-bench` | free |  | draft | A wooden slat bench with iron legs and arms. |
+| `sundial` | free |  | draft | A round stone plinth with a pale dial plate, hour ticks and a brass gnomon. |
+| `hedge` | free |  | draft | A hedge segment, 16x12, with a lumpy top; the left and right edges are open so segments join. Starter blueprint. |
+| `picket-fence` | free |  | draft | A white picket fence segment, 16x12: two pointed pickets on two rails, open at both edges so segments join. |
+| `lounger` | free |  | draft | A pool lounger: a raised back and seat in blue and white stripes on a wooden frame, a coral towel folded on it. |
+| `swim-ring` | free |  | draft | A red and white swim ring floating on a ripple, seen from slightly above. Blueprint from Tidepools. |
+
+<a id="house-wild"></a>
+
+## House: the wild pieces
+
+![House: the wild pieces](house-wild.png)
+
+- **Status:** draft
+- **Requested:** 2026-11-09: player housing, art batch E4: twelve one-off pieces that belong to no set, each with character.
+- **Source:** `apps/activity/src/sprites/concepts/house-wild.ts` (draw it with `pnpm art house-wild`)
+- **Sheet of:** `0a721658207d`
+- Twelve pieces, one palette for the pack. Each is a different form (chair, bed, tall, clock, stool, plant, shelf, hanging) so it fits its spot box (`docs/design/housing.md`, 2.5).
+- The hammock is a bed: it has a sleep anchor and a front layer.
+- The night row is a plain dusk recolour (the house colours its pieces by phase itself).
+- The content (package D) needs the housing content before this art is used; the ids are the names in kebab case.
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `rocking-chair` | free |  | draft | A spindle-backed rocking chair with long curved runners, a coral cushion and a cream blanket over the back. Starter blueprint. |
+| `hammock` | free |  | draft | A sea-blue striped hammock slung between two posts with brass hooks; the near side of the cloth is the front layer, so a creature lies inside it (sleep anchor x 16, y 6). Blueprint from the Tidepools. |
+| `hammock-front` | free |  | draft | The front layer of hammock: drawn over the creature that sits or sleeps on it, same size and origin as the piece. |
+| `reef-tank` | free |  | draft | A tall aquarium on a wooden cabinet: a light bar, coral, weed, an orange fish and bubbles in teal water. Blueprint from Moonlit Reef. |
+| `tall-clock` | free |  | draft | A grandfather clock: pediment and finial, a round cream face, a glass door with a brass pendulum. Blueprint from a cleared raid finale. |
+| `cuckoo-clock` | free |  | draft | A chalet clock with shingled roof, a round face, a small bird calling from its door, and two pinecone weights on chains. Blueprint from the dungeon. |
+| `wayfarer-globe` | free |  | draft | A blue globe with green lands in a brass meridian on a tripod. Feat: the Wayfarer stamp. |
+| `music-box` | free |  | draft | A wooden music box with a gold inlay band, its lid open on a dancer in a pink tutu, and a brass crank. Blueprint from a Games gold. |
+| `moss-terrarium` | free |  | draft | A glass dome on a wooden base holding moss, a fern and a red mushroom. Blueprint from Verdant Hollow. |
+| `star-chart` | free |  | draft | A framed night sky: navy ground, a gold constellation joined by lines, a crescent moon, brass corners. Blueprint from Storm Ridge. |
+| `old-map` | free |  | draft | A parchment map between two rolled ends, with green islands, a dashed route and a red cross. Blueprint from the Old Crossroads. |
+| `wind-chime` | free |  | draft | Four teal tubes hang from a wooden ring on a brass hook, with a cream sail below the striker. Blueprint from Storm Ridge. |
+| `paper-mobile` | free |  | draft | A bar with three strings: a coral paper crane, a gold star and a teal lantern. Blueprint from the Festival Grounds. |
+
+<a id="house-marks"></a>
+
+## House: stamps, displays, materials and glyphs
+
+![House: stamps, displays, materials and glyphs](house-marks.png)
+
+- **Status:** draft
+- **Requested:** 2026-11-09: housing art batch E5 (docs/design/housing.md, section 5): 24 stamps, the hall displays, 16 luxury materials, the House glyphs.
+- **Source:** `apps/activity/src/sprites/concepts/house-marks.ts` (draw it with `pnpm art house-marks`)
+- **Sheet of:** `89e4aa5ce8a3`
+- Stamps are 16x16 with the ink outline; displays follow the plan (plaque 28x32). Materials differ by shape: woods are timber, stones gems, metals ingots and ore, cloth folded or rolled.
+- Used by the House (housing flag); nothing ships until the pack is imported by house-art.ts.
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `stamp-paw-print` | free |  | draft | The starter stamp: a pink paw, four toes and a pad. |
+| `stamp-ledger-shell` | free |  | draft | The Tide Ledger: a scallop shell with blue ridges. |
+| `stamp-ash-feather` | free |  | draft | The Ash Records: a grey quill dipped in ember. |
+| `stamp-root-knot` | free |  | draft | Rootwork Notes: a root tied in a loop, a bud on top. |
+| `stamp-static-spark` | free |  | draft | Static Letters: a lightning bolt. |
+| `stamp-signpost` | free |  | draft | The Signpost Series: a post with two boards. |
+| `stamp-crescent` | free |  | draft | Moonlit Verses: a crescent moon and a star. |
+| `stamp-peat-bubble` | free |  | draft | The Peat Notes: three bubbles rising from the bog. |
+| `stamp-torn-page` | free |  | draft | Lost Pages: a page with a ragged edge. |
+| `stamp-colossus-wave` | free |  | draft | Tidal Colossus beaten: a wave curling over. |
+| `stamp-wyrm-coil` | free |  | draft | Cinder Wyrm beaten: a coiled serpent with horns. |
+| `stamp-thorn-crown` | free |  | draft | Thornmother beaten: a wreath of thorned vine. |
+| `stamp-storm-crown` | free |  | draft | Storm Sovereign beaten: a gold crown with a storm gem. |
+| `stamp-bogback-moss` | free |  | draft | Old Bogback beaten: a mossy shell. |
+| `stamp-deep-door` | free |  | draft | Dungeon depth 10: an arched door on the dark. |
+| `stamp-gold-medal` | free |  | draft | A Games gold: a medal on its ribbon. |
+| `stamp-wayfarer` | free |  | draft | Seven places visited: a walking boot. |
+| `stamp-glimmer-star` | free |  | draft | A shiny found: a four point sparkle. |
+| `stamp-housewarming` | free |  | draft | The cottage built: a house with a heart of smoke. |
+| `stamp-matched-set` | free |  | draft | One set finished: two matching cups. |
+| `stamp-old-coin` | free |  | draft | Rare raid drop: a worn coin with a square hole. |
+| `stamp-lantern-key` | free |  | draft | Rare dungeon drop: a key with a lantern for a bow. |
+| `stamp-pressed-flower` | free |  | draft | Rare trip drop: a flower pressed flat. |
+| `stamp-rosette` | free |  | draft | Rare Games drop: a pleated rosette with ribbon tails. |
+| `display-plaque` | free |  | draft | Raid plaque, 28x32: a wooden board with a dark window for the 24x24 boss sprite (drawn at x 2, y 1) and a cream plate for the 3-digit rank (x 6..21, y 26..30). |
+| `display-plaque-empty` | free |  | draft | The same board, empty: a dashed outline where the boss would hang, three dashes for the rank. |
+| `display-bench` | free |  | draft | Games medals: a cushioned bench the medals lie on. |
+| `display-badge-slot` | free |  | draft | Games badges: a small framed velvet square with a pin hole. |
+| `display-case` | free |  | draft | Festival trophies: a glass case with a shelf. |
+| `display-shelf` | free |  | draft | Keepsakes: a wall shelf on two brackets; the 12x12 keepsakes stand on it. |
+| `display-books` | free |  | draft | Journal: a row of spines. |
+| `display-marker` | free |  | draft | Dungeon depth: a standing stone with tally marks and a small light. |
+| `display-cabinet` | free |  | draft | Set keepsakes: a glass-fronted cabinet with three shelves. |
+
+<a id="house-postcard"></a>
+
+## House postcard (outside view)
+
+![House postcard (outside view)](house-postcard.png)
+
+- **Status:** draft
+- **Requested:** 2026-11-10: a house that visibly grows into a mansion with wings, a pool and gardens, seen whole on a phone.
+- **Source:** `apps/activity/src/sprites/concepts/house-postcard.ts` (draw it with `pnpm art house-postcard`)
+- **Sheet of:** `a477f89ba7bf`
+- Pack: `src/sprites/data/house/postcard.ts` (`POSTCARD_ART`). The picture is composed by `src/housing/house-postcard.ts` at 28 x 16 px a room cell; see it in the workbench page HousePostcard.
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `postcard-porch-lamp` | free |  | draft | The porch lamp beside the front door, lit: drawn at twilight and night only. |
+| `postcard-lantern-post` | free |  | draft | A lantern post on the garden lawn, lit: drawn at twilight and night only. |
+| `postcard-window` | free |  | draft | A window with shutters and a sill: the shutters take the roof skin, the sill the wall skin (shown in thatch and plaster). |
+| `postcard-door` | free |  | draft | The front door on the Hearth, arched, planks and a brass knob. |
+| `postcard-chimney` | free |  | draft | The brick chimney with a stone cap; the composer sinks its foot into the roof. |
+| `postcard-smoke-near` | free |  | draft | The near puff of smoke over the chimney. |
+| `postcard-smoke-far` | free |  | draft | The far, smaller puff of smoke. |
+| `postcard-vent` | free |  | draft | The cellar window in the stone course, barred. |
+| `postcard-flower-red` | free |  | draft | A flower in the garden grass, red petals. |
+| `postcard-flower-pink` | free |  | draft | A flower in the garden grass, pink petals. |
+| `postcard-flower-white` | free |  | draft | A flower in the garden grass, white petals. |
+| `postcard-flower-violet` | free |  | draft | A flower in the garden grass, violet petals. |
+| `postcard-tree` | free |  | draft | A round garden tree beside the hedge. |
+| `postcard-ladder` | free |  | draft | The pool ladder over the coping. |
+| `postcard-diving-board` | free |  | draft | The pool diving board on its foot. |
+| `postcard-parasol` | free |  | draft | The terrace parasol, red and cream stripes on a pole. |
+| `postcard-tower-window` | free |  | draft | tower-window |
+| `postcard-finial` | free |  | draft | finial |
+| `postcard-fruit-tree` | free |  | draft | fruit-tree |
+| `postcard-reed` | free |  | draft | reed |
+
+<a id="house-quiet-verge"></a>
+
+## House: Quiet Verge set
+
+![House: Quiet Verge set](house-quiet-verge.png)
+
+- **Status:** draft
+- **Requested:** 2026-11-11: player housing furniture, a set made in the workshop (pnpm housing new-set).
+- **Source:** `apps/activity/src/sprites/concepts/house-quiet-verge.ts` (draw it with `pnpm art house-quiet-verge`)
+- **Sheet of:** `1958ecc8c6b4`
+- Dusk-violet stone edged in pale rim light, arches with a warm star inside, chips of stone that float; window dark, lilac, star gold. Drawn from its style (apps/activity/src/sprites/workshop/styles/quiet-verge.ts); the pack is data/house/quiet-verge.ts.
+- Needs the housing content (piece, skin and set ids as drawn).
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `quiet-verge-bed` | free |  | draft | bed, 48x26, floor-large: headboard, mattress, pillow; the blanket is the front layer over the sleeper |
+| `quiet-verge-bed-front` | free |  | draft | bed: the layer drawn over the sleeper |
+| `quiet-verge-cupboard` | free |  | draft | cupboard, 30x36, floor-large: two doors, a plinth |
+| `quiet-verge-table` | free |  | draft | table, 44x18, floor-large: a top on legs |
+| `quiet-verge-shelf` | free |  | draft | wall shelf, 40x20, wall-large: a board on brackets with a few things on it |
+| `quiet-verge-stool` | free |  | draft | stool, 16x12, floor-small |
+| `quiet-verge-lamp` | free |  | draft | hanging lamp, 20x16, ceiling: hangs from the top row; the glow sprite is drawn over it at night |
+| `quiet-verge-lamp-glow` | free |  | draft | lamp: night glow, drawn over the lamp |
+| `quiet-verge-rug` | free |  | draft | rug, 56x10, rug spot: flat, seen from the front |
+| `quiet-verge-frame` | free |  | draft | picture frame, 24x16, wall-small |
+| `quiet-verge-curtains` | free |  | draft | window with its dressing, 36x26, window spot |
+| `quiet-verge-wall` | free |  | draft | wallpaper tile 16x52, repeats across, no outline |
+| `quiet-verge-floor` | free |  | draft | floor tile 16x8, repeats across, no outline |
+| `quiet-verge-keepsake` | free |  | draft | keepsake 12x12, shown in the trophy hall cabinet when the set is complete |
+
+<a id="house-rooms"></a>
+
+## House: room skins
+
+![House: room skins](house-rooms.png)
+
+- **Status:** draft
+- **Requested:** 2026-11-10: player housing art pass 2, a default wallpaper and floor for every room kind (art director review: every room looked the same).
+- **Source:** `apps/activity/src/sprites/concepts/house-rooms.ts` (draw it with `pnpm art house-rooms`)
+- **Sheet of:** `8295b366b58a`
+- Free skins that come with the part that has the room (unlock kind part); also choices for other rooms once built. The Hearth, Loft and Study stay on Cosy.
+- The pack is data/house/rooms.ts, read by house-art.ts.
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `kitchen-wall` | free |  | draft | Wallpaper 16x52, repeats across. Warm: cream plaster over a terracotta backsplash; terracotta and cream floor squares. |
+| `kitchen-floor` | free |  | draft | Floor 16x8, repeats across. Warm: cream plaster over a terracotta backsplash; terracotta and cream floor squares. |
+| `attic-wall` | free |  | draft | Wallpaper 16x52, repeats across. Bare boards between a rafter, a tie beam on top; dusty bare floorboards. |
+| `attic-floor` | free |  | draft | Floor 16x8, repeats across. Bare boards between a rafter, a tie beam on top; dusty bare floorboards. |
+| `cellar-wall` | free |  | draft | Wallpaper 16x52, repeats across. Cool: damp stone blocks with a mossy foot; flagstones. |
+| `cellar-floor` | free |  | draft | Floor 16x8, repeats across. Cool: damp stone blocks with a mossy foot; flagstones. |
+| `hall-wall` | free |  | draft | Wallpaper 16x52, repeats across. Dark mahogany panelling with brass studs and a chair rail; basket-weave parquet. |
+| `hall-floor` | free |  | draft | Floor 16x8, repeats across. Dark mahogany panelling with brass studs and a chair rail; basket-weave parquet. |
+| `gallery-wall` | free |  | draft | Wallpaper 16x52, repeats across. Pale plaster with a gold picture rail over a sage dado; chevron oak. |
+| `gallery-floor` | free |  | draft | Floor 16x8, repeats across. Pale plaster with a gold picture rail over a sage dado; chevron oak. |
+| `conservatory-wall` | free |  | draft | Wallpaper 16x52, repeats across. Panes of sky and cloud in thin frames over a whitewashed low wall; diamond tiles. |
+| `conservatory-floor` | free |  | draft | Floor 16x8, repeats across. Panes of sky and cloud in thin frames over a whitewashed low wall; diamond tiles. |
+| `bath-wall` | free |  | draft | Wallpaper 16x52, repeats across. Small white tiles with a teal band and a teal dado; blue and white mosaic floor. |
+| `bath-floor` | free |  | draft | Floor 16x8, repeats across. Small white tiles with a teal band and a teal dado; blue and white mosaic floor. |
+| `guest-wall` | free |  | draft | Wallpaper 16x52, repeats across. Calm: sage pinstripes over cream beadboard; whitewashed planks. |
+| `guest-floor` | free |  | draft | Floor 16x8, repeats across. Calm: sage pinstripes over cream beadboard; whitewashed planks. |
+
+<a id="house-schoolhouse"></a>
+
+## House: Schoolhouse set
+
+![House: Schoolhouse set](house-schoolhouse.png)
+
+- **Status:** draft
+- **Requested:** 2026-11-11: player housing furniture, a set made in the workshop (pnpm housing new-set).
+- **Source:** `apps/activity/src/sprites/concepts/house-schoolhouse.ts` (draw it with `pnpm art house-schoolhouse`)
+- **Sheet of:** `686da6d57eb0`
+- Oak desks, a slate-green board, brass and chalk white, one red apple; slate green, warm oak, brass, chalk, apple red. Drawn from its style (apps/activity/src/sprites/workshop/styles/schoolhouse.ts); the pack is data/house/schoolhouse.ts.
+- Needs the housing content (piece, skin and set ids as drawn).
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `schoolhouse-bed` | free |  | draft | bed, 48x26, floor-large: headboard, mattress, pillow; the blanket is the front layer over the sleeper |
+| `schoolhouse-bed-front` | free |  | draft | bed: the layer drawn over the sleeper |
+| `schoolhouse-cupboard` | free |  | draft | cupboard, 30x36, floor-large: two doors, a plinth |
+| `schoolhouse-table` | free |  | draft | table, 44x18, floor-large: a top on legs |
+| `schoolhouse-shelf` | free |  | draft | wall shelf, 40x20, wall-large: a board on brackets with a few things on it |
+| `schoolhouse-stool` | free |  | draft | stool, 16x12, floor-small |
+| `schoolhouse-lamp` | free |  | draft | hanging lamp, 20x16, ceiling: hangs from the top row; the glow sprite is drawn over it at night |
+| `schoolhouse-lamp-glow` | free |  | draft | lamp: night glow, drawn over the lamp |
+| `schoolhouse-rug` | free |  | draft | rug, 56x10, rug spot: flat, seen from the front |
+| `schoolhouse-frame` | free |  | draft | picture frame, 24x16, wall-small |
+| `schoolhouse-curtains` | free |  | draft | window with its dressing, 36x26, window spot |
+| `schoolhouse-wall` | free |  | draft | wallpaper tile 16x52, repeats across, no outline |
+| `schoolhouse-floor` | free |  | draft | floor tile 16x8, repeats across, no outline |
+| `schoolhouse-keepsake` | free |  | draft | keepsake 12x12, shown in the trophy hall cabinet when the set is complete |
+
+<a id="house-emberhold"></a>
+
+## House set: Emberhold
+
+![House set: Emberhold](house-emberhold.png)
+
+- **Status:** draft
+- **Requested:** 2026-11-09: player housing, furniture set art (batch E2).
+- **Source:** `apps/activity/src/sprites/concepts/house-emberhold.ts` (draw it with `pnpm art house-emberhold`)
+- **Sheet of:** `0015e08163b2`
+- Used by the housing feature (docs/design/housing.md): piece ids are <set>-<form>, skin ids <set>-wall and <set>-floor.
+- Square black charwood with riveted iron bands and an amber glow.
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `bed` | free |  | draft | Bed, 48x26: a sleep anchor; the blanket is its own front layer. Square black charwood with riveted iron bands and an amber glow. |
+| `bed-front` | free |  | draft | The bed’s blanket, drawn over the sleeping housemate. |
+| `cupboard` | free |  | draft | Cupboard, 30x36, floor-large. Square black charwood with riveted iron bands and an amber glow. |
+| `table` | free |  | draft | Table, 44x18, floor-large. Square black charwood with riveted iron bands and an amber glow. |
+| `shelf` | free |  | draft | Wall shelf, 40x20, wall-large, with a few things on it. Square black charwood with riveted iron bands and an amber glow. |
+| `stool` | free |  | draft | Stool, 16x12, floor-small. Square black charwood with riveted iron bands and an amber glow. |
+| `lamp` | free |  | draft | Ceiling lamp, 20x16, hangs from the top row; it has a night glow. Square black charwood with riveted iron bands and an amber glow. |
+| `lamp-glow` | free |  | draft | The lamp’s glow at night, drawn under the lamp. |
+| `rug` | free |  | draft | Rug, 56x10, lies on the floor line. Square black charwood with riveted iron bands and an amber glow. |
+| `frame` | free |  | draft | Picture frame, 24x16, wall-small. Square black charwood with riveted iron bands and an amber glow. |
+| `curtains` | free |  | draft | Window with its dressing, 36x26, window spot. Square black charwood with riveted iron bands and an amber glow. |
+| `wall` | free |  | draft | Wallpaper tile 16x52, repeats across the room. |
+| `floor` | free |  | draft | Floor tile 16x8, repeats across the room. |
+| `keepsake` | free |  | draft | The keepsake in the cabinet when the set is complete, 12x12. |
+
+<a id="house-moonlit"></a>
+
+## House set: Moonlit
+
+![House set: Moonlit](house-moonlit.png)
+
+- **Status:** draft
+- **Requested:** 2026-11-09: player housing, furniture set art (batch E2).
+- **Source:** `apps/activity/src/sprites/concepts/house-moonlit.ts` (draw it with `pnpm art house-moonlit`)
+- **Sheet of:** `194b18e2bf97`
+- Used by the housing feature (docs/design/housing.md): piece ids are <set>-<form>, skin ids <set>-wall and <set>-floor.
+- Slim night-reef lacquer with a crescent inlay, coral pink trim, a moonstone knob and silver rims.
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `bed` | free |  | draft | Bed, 48x26: a sleep anchor; the blanket is its own front layer. Slim night-reef lacquer with a crescent inlay, coral pink trim, a moonstone knob and silver rims. |
+| `bed-front` | free |  | draft | The bed’s blanket, drawn over the sleeping housemate. |
+| `cupboard` | free |  | draft | Cupboard, 30x36, floor-large. Slim night-reef lacquer with a crescent inlay, coral pink trim, a moonstone knob and silver rims. |
+| `table` | free |  | draft | Table, 44x18, floor-large. Slim night-reef lacquer with a crescent inlay, coral pink trim, a moonstone knob and silver rims. |
+| `shelf` | free |  | draft | Wall shelf, 40x20, wall-large, with a few things on it. Slim night-reef lacquer with a crescent inlay, coral pink trim, a moonstone knob and silver rims. |
+| `stool` | free |  | draft | Stool, 16x12, floor-small. Slim night-reef lacquer with a crescent inlay, coral pink trim, a moonstone knob and silver rims. |
+| `lamp` | free |  | draft | Ceiling lamp, 20x16, hangs from the top row; it has a night glow. Slim night-reef lacquer with a crescent inlay, coral pink trim, a moonstone knob and silver rims. |
+| `lamp-glow` | free |  | draft | The lamp’s glow at night, drawn under the lamp. |
+| `rug` | free |  | draft | Rug, 56x10, lies on the floor line. Slim night-reef lacquer with a crescent inlay, coral pink trim, a moonstone knob and silver rims. |
+| `frame` | free |  | draft | Picture frame, 24x16, wall-small. Slim night-reef lacquer with a crescent inlay, coral pink trim, a moonstone knob and silver rims. |
+| `curtains` | free |  | draft | Window with its dressing, 36x26, window spot. Slim night-reef lacquer with a crescent inlay, coral pink trim, a moonstone knob and silver rims. |
+| `wall` | free |  | draft | Wallpaper tile 16x52, repeats across the room. |
+| `floor` | free |  | draft | Floor tile 16x8, repeats across the room. |
+| `keepsake` | free |  | draft | The keepsake in the cabinet when the set is complete, 12x12. |
+
+<a id="house-rootwood"></a>
+
+## House set: Rootwood
+
+![House set: Rootwood](house-rootwood.png)
+
+- **Status:** draft
+- **Requested:** 2026-11-09: player housing, furniture set art (batch E2).
+- **Source:** `apps/activity/src/sprites/concepts/house-rootwood.ts` (draw it with `pnpm art house-rootwood`)
+- **Sheet of:** `c645dff8372b`
+- Used by the housing feature (docs/design/housing.md): piece ids are <set>-<form>, skin ids <set>-wall and <set>-floor.
+- Living-wood curves with a leaf curl at the top corners and moss cushions.
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `bed` | free |  | draft | Bed, 48x26: a sleep anchor; the blanket is its own front layer. Living-wood curves with a leaf curl at the top corners and moss cushions. |
+| `bed-front` | free |  | draft | The bed’s blanket, drawn over the sleeping housemate. |
+| `cupboard` | free |  | draft | Cupboard, 30x36, floor-large. Living-wood curves with a leaf curl at the top corners and moss cushions. |
+| `table` | free |  | draft | Table, 44x18, floor-large. Living-wood curves with a leaf curl at the top corners and moss cushions. |
+| `shelf` | free |  | draft | Wall shelf, 40x20, wall-large, with a few things on it. Living-wood curves with a leaf curl at the top corners and moss cushions. |
+| `stool` | free |  | draft | Stool, 16x12, floor-small. Living-wood curves with a leaf curl at the top corners and moss cushions. |
+| `lamp` | free |  | draft | Ceiling lamp, 20x16, hangs from the top row; it has a night glow. Living-wood curves with a leaf curl at the top corners and moss cushions. |
+| `lamp-glow` | free |  | draft | The lamp’s glow at night, drawn under the lamp. |
+| `rug` | free |  | draft | Rug, 56x10, lies on the floor line. Living-wood curves with a leaf curl at the top corners and moss cushions. |
+| `frame` | free |  | draft | Picture frame, 24x16, wall-small. Living-wood curves with a leaf curl at the top corners and moss cushions. |
+| `curtains` | free |  | draft | Window with its dressing, 36x26, window spot. Living-wood curves with a leaf curl at the top corners and moss cushions. |
+| `wall` | free |  | draft | Wallpaper tile 16x52, repeats across the room. |
+| `floor` | free |  | draft | Floor tile 16x8, repeats across the room. |
+| `keepsake` | free |  | draft | The keepsake in the cabinet when the set is complete, 12x12. |
+
+<a id="house-tidepool"></a>
+
+## House set: Tidepool
+
+![House set: Tidepool](house-tidepool.png)
+
+- **Status:** draft
+- **Requested:** 2026-11-09: player housing, furniture set art (batch E2).
+- **Source:** `apps/activity/src/sprites/concepts/house-tidepool.ts` (draw it with `pnpm art house-tidepool`)
+- **Sheet of:** `cdb41fa9912b`
+- Used by the housing feature (docs/design/housing.md): piece ids are <set>-<form>, skin ids <set>-wall and <set>-floor.
+- Driftwood with scalloped shell edges; sea blue, sand, pearl white.
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `bed` | free |  | draft | Bed, 48x26: a sleep anchor; the blanket is its own front layer. Driftwood with scalloped shell edges; sea blue, sand, pearl white. |
+| `bed-front` | free |  | draft | The bed’s blanket, drawn over the sleeping housemate. |
+| `cupboard` | free |  | draft | Cupboard, 30x36, floor-large. Driftwood with scalloped shell edges; sea blue, sand, pearl white. |
+| `table` | free |  | draft | Table, 44x18, floor-large. Driftwood with scalloped shell edges; sea blue, sand, pearl white. |
+| `shelf` | free |  | draft | Wall shelf, 40x20, wall-large, with a few things on it. Driftwood with scalloped shell edges; sea blue, sand, pearl white. |
+| `stool` | free |  | draft | Stool, 16x12, floor-small. Driftwood with scalloped shell edges; sea blue, sand, pearl white. |
+| `lamp` | free |  | draft | Ceiling lamp, 20x16, hangs from the top row; it has a night glow. Driftwood with scalloped shell edges; sea blue, sand, pearl white. |
+| `lamp-glow` | free |  | draft | The lamp’s glow at night, drawn under the lamp. |
+| `rug` | free |  | draft | Rug, 56x10, lies on the floor line. Driftwood with scalloped shell edges; sea blue, sand, pearl white. |
+| `frame` | free |  | draft | Picture frame, 24x16, wall-small. Driftwood with scalloped shell edges; sea blue, sand, pearl white. |
+| `curtains` | free |  | draft | Window with its dressing, 36x26, window spot. Driftwood with scalloped shell edges; sea blue, sand, pearl white. |
+| `wall` | free |  | draft | Wallpaper tile 16x52, repeats across the room. |
+| `floor` | free |  | draft | Floor tile 16x8, repeats across the room. |
+| `keepsake` | free |  | draft | The keepsake in the cabinet when the set is complete, 12x12. |
+
+<a id="house-ancient"></a>
+
+## House: Ancient set
+
+![House: Ancient set](house-ancient.png)
+
+- **Status:** draft
+- **Requested:** 2026-11-09: player housing furniture, batch E3 (Stormglass, Fenkeeper, Ancient, Lantern Night), see docs/design/housing.md section 5.
+- **Source:** `apps/activity/src/sprites/concepts/house-ancient.ts` (draw it with `pnpm art house-ancient`)
+- **Sheet of:** `87baeec22504`
+- Neutral set: sandstone, faded gold, patina teal; stepped ziggurat tops, thick square legs, spirals carved in every piece.
+- Needs the housing content (piece, skin and set ids as drawn); the pack goes to data/house/ancient.ts and is read by house-art.ts.
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `ancient-bed` | free |  | draft | bed, 48x26, floor-large: headboard, mattress, pillow; the blanket is the front layer over the sleeper |
+| `ancient-bed-front` | free |  | draft | bed: the layer drawn over the sleeper |
+| `ancient-cupboard` | free |  | draft | cupboard, 30x36, floor-large: two doors, a plinth |
+| `ancient-table` | free |  | draft | table, 44x18, floor-large: a top on legs |
+| `ancient-shelf` | free |  | draft | wall shelf, 40x20, wall-large: a board on brackets with a few things on it |
+| `ancient-stool` | free |  | draft | stool, 16x12, floor-small |
+| `ancient-lamp` | free |  | draft | hanging lamp, 20x16, ceiling: hangs from the top row; the glow sprite is drawn over it at night |
+| `ancient-lamp-glow` | free |  | draft | lamp: night glow, drawn over the lamp |
+| `ancient-rug` | free |  | draft | rug, 56x10, rug spot: flat, seen from the front |
+| `ancient-frame` | free |  | draft | picture frame, 24x16, wall-small |
+| `ancient-curtains` | free |  | draft | window with its dressing, 36x26, window spot |
+| `ancient-wall` | free |  | draft | wallpaper tile 16x52, repeats across, no outline |
+| `ancient-floor` | free |  | draft | floor tile 16x8, repeats across, no outline |
+| `ancient-keepsake` | free |  | draft | keepsake 12x12, shown in the trophy hall cabinet when the set is complete |
+
+<a id="house-fenkeeper"></a>
+
+## House: Fenkeeper set
+
+![House: Fenkeeper set](house-fenkeeper.png)
+
+- **Status:** draft
+- **Requested:** 2026-11-09: player housing furniture, batch E3 (Stormglass, Fenkeeper, Ancient, Lantern Night), see docs/design/housing.md section 5.
+- **Source:** `apps/activity/src/sprites/concepts/house-fenkeeper.ts` (draw it with `pnpm art house-fenkeeper`)
+- **Sheet of:** `a3c6125e8d56`
+- Mire set: dark bog oak, reed binding, murky teal and an opal drop; squat, round, bulb legs, uneven drips.
+- Needs the housing content (piece, skin and set ids as drawn); the pack goes to data/house/fenkeeper.ts and is read by house-art.ts.
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `fenkeeper-bed` | free |  | draft | bed, 48x26, floor-large: headboard, mattress, pillow; the blanket is the front layer over the sleeper |
+| `fenkeeper-bed-front` | free |  | draft | bed: the layer drawn over the sleeper |
+| `fenkeeper-cupboard` | free |  | draft | cupboard, 30x36, floor-large: two doors, a plinth |
+| `fenkeeper-table` | free |  | draft | table, 44x18, floor-large: a top on legs |
+| `fenkeeper-shelf` | free |  | draft | wall shelf, 40x20, wall-large: a board on brackets with a few things on it |
+| `fenkeeper-stool` | free |  | draft | stool, 16x12, floor-small |
+| `fenkeeper-lamp` | free |  | draft | hanging lamp, 20x16, ceiling: hangs from the top row; the glow sprite is drawn over it at night |
+| `fenkeeper-lamp-glow` | free |  | draft | lamp: night glow, drawn over the lamp |
+| `fenkeeper-rug` | free |  | draft | rug, 56x10, rug spot: flat, seen from the front |
+| `fenkeeper-frame` | free |  | draft | picture frame, 24x16, wall-small |
+| `fenkeeper-curtains` | free |  | draft | window with its dressing, 36x26, window spot |
+| `fenkeeper-wall` | free |  | draft | wallpaper tile 16x52, repeats across, no outline |
+| `fenkeeper-floor` | free |  | draft | floor tile 16x8, repeats across, no outline |
+| `fenkeeper-keepsake` | free |  | draft | keepsake 12x12, shown in the trophy hall cabinet when the set is complete |
+
+<a id="house-lantern-night"></a>
+
+## House: Lantern Night set
+
+![House: Lantern Night set](house-lantern-night.png)
+
+- **Status:** draft
+- **Requested:** 2026-11-09: player housing furniture, batch E3 (Stormglass, Fenkeeper, Ancient, Lantern Night), see docs/design/housing.md section 5.
+- **Source:** `apps/activity/src/sprites/concepts/house-lantern-night.ts` (draw it with `pnpm art house-lantern-night`)
+- **Sheet of:** `e1ffb3f81605`
+- Neutral set: festival red, gold, cream; round lantern shapes, bunting and tassels hanging from every piece.
+- Needs the housing content (piece, skin and set ids as drawn); the pack goes to data/house/lantern-night.ts and is read by house-art.ts.
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `lantern-night-bed` | free |  | draft | bed, 48x26, floor-large: headboard, mattress, pillow; the blanket is the front layer over the sleeper |
+| `lantern-night-bed-front` | free |  | draft | bed: the layer drawn over the sleeper |
+| `lantern-night-cupboard` | free |  | draft | cupboard, 30x36, floor-large: two doors, a plinth |
+| `lantern-night-table` | free |  | draft | table, 44x18, floor-large: a top on legs |
+| `lantern-night-shelf` | free |  | draft | wall shelf, 40x20, wall-large: a board on brackets with a few things on it |
+| `lantern-night-stool` | free |  | draft | stool, 16x12, floor-small |
+| `lantern-night-lamp` | free |  | draft | hanging lamp, 20x16, ceiling: hangs from the top row; the glow sprite is drawn over it at night |
+| `lantern-night-lamp-glow` | free |  | draft | lamp: night glow, drawn over the lamp |
+| `lantern-night-rug` | free |  | draft | rug, 56x10, rug spot: flat, seen from the front |
+| `lantern-night-frame` | free |  | draft | picture frame, 24x16, wall-small |
+| `lantern-night-curtains` | free |  | draft | window with its dressing, 36x26, window spot |
+| `lantern-night-wall` | free |  | draft | wallpaper tile 16x52, repeats across, no outline |
+| `lantern-night-floor` | free |  | draft | floor tile 16x8, repeats across, no outline |
+| `lantern-night-keepsake` | free |  | draft | keepsake 12x12, shown in the trophy hall cabinet when the set is complete |
+
+<a id="house-stormglass"></a>
+
+## House: Stormglass set
+
+![House: Stormglass set](house-stormglass.png)
+
+- **Status:** draft
+- **Requested:** 2026-11-09: player housing furniture, batch E3 (Stormglass, Fenkeeper, Ancient, Lantern Night), see docs/design/housing.md section 5.
+- **Source:** `apps/activity/src/sprites/concepts/house-stormglass.ts` (draw it with `pnpm art house-stormglass`)
+- **Sheet of:** `ec4755589efa`
+- Spark set: pale ash wood, slate, copper zigzag trim, storm-violet glass beads; angular, chamfered, splayed legs.
+- Needs the housing content (piece, skin and set ids as drawn); the pack goes to data/house/stormglass.ts and is read by house-art.ts.
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `stormglass-bed` | free |  | draft | bed, 48x26, floor-large: headboard, mattress, pillow; the blanket is the front layer over the sleeper |
+| `stormglass-bed-front` | free |  | draft | bed: the layer drawn over the sleeper |
+| `stormglass-cupboard` | free |  | draft | cupboard, 30x36, floor-large: two doors, a plinth |
+| `stormglass-table` | free |  | draft | table, 44x18, floor-large: a top on legs |
+| `stormglass-shelf` | free |  | draft | wall shelf, 40x20, wall-large: a board on brackets with a few things on it |
+| `stormglass-stool` | free |  | draft | stool, 16x12, floor-small |
+| `stormglass-lamp` | free |  | draft | hanging lamp, 20x16, ceiling: hangs from the top row; the glow sprite is drawn over it at night |
+| `stormglass-lamp-glow` | free |  | draft | lamp: night glow, drawn over the lamp |
+| `stormglass-rug` | free |  | draft | rug, 56x10, rug spot: flat, seen from the front |
+| `stormglass-frame` | free |  | draft | picture frame, 24x16, wall-small |
+| `stormglass-curtains` | free |  | draft | window with its dressing, 36x26, window spot |
+| `stormglass-wall` | free |  | draft | wallpaper tile 16x52, repeats across, no outline |
+| `stormglass-floor` | free |  | draft | floor tile 16x8, repeats across, no outline |
+| `stormglass-keepsake` | free |  | draft | keepsake 12x12, shown in the trophy hall cabinet when the set is complete |
+
+<a id="house-shell"></a>
+
+## House shell (housing E1)
+
+![House shell (housing E1)](house-shell.png)
+
+- **Status:** draft
+- **Requested:** 2026-11-09: housing art batch E1, the building, roofs, walls and ground skins.
+- **Source:** `apps/activity/src/sprites/concepts/house-shell.ts` (draw it with `pnpm art house-shell`)
+- **Sheet of:** `d9ede3590862`
+- Pack: `src/sprites/data/house/shell.ts` (`HOUSE_ART`). Roof skins thatch, slate, red-tile, copper-green, moss; wall skins plaster, timber, fieldstone, brick, shingle; ground skins lawn, deck, pool-tile, pool-water.
+- Skin colour keys are always L M D A B (light, mid, shade, accents); fixtures have their own keys.
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `roof-thatch` | free |  | draft | Thatch (starter): straw strands slanting down, a twine band, a bundled ridge. Tile 16 x 8. |
+| `roof-thatch-ridge` | free |  | draft | Thatch (starter): straw strands slanting down, a twine band, a bundled ridge. The ridge cap, 16 x 4. |
+| `roof-thatch-eave` | free |  | draft | Thatch (starter): straw strands slanting down, a twine band, a bundled ridge. The eave hem, 16 x 4. |
+| `roof-slate` | free |  | draft | Slate: square plates, cool blue-grey. Tile 16 x 8. |
+| `roof-slate-ridge` | free |  | draft | Slate: square plates, cool blue-grey. The ridge cap, 16 x 4. |
+| `roof-slate-eave` | free |  | draft | Slate: square plates, cool blue-grey. The eave hem, 16 x 4. |
+| `roof-red-tile` | free |  | draft | Red Tile: barrel tiles with scalloped bottoms, the valley house roof. Tile 16 x 8. |
+| `roof-red-tile-ridge` | free |  | draft | Red Tile: barrel tiles with scalloped bottoms, the valley house roof. The ridge cap, 16 x 4. |
+| `roof-red-tile-eave` | free |  | draft | Red Tile: barrel tiles with scalloped bottoms, the valley house roof. The eave hem, 16 x 4. |
+| `roof-copper-green` | free |  | draft | Copper Green: standing seams with copper rivets. Tile 16 x 8. |
+| `roof-copper-green-ridge` | free |  | draft | Copper Green: standing seams with copper rivets. The ridge cap, 16 x 4. |
+| `roof-copper-green-eave` | free |  | draft | Copper Green: standing seams with copper rivets. The eave hem, 16 x 4. |
+| `roof-moss` | free |  | draft | Moss: brown shingles with moss creeping along the seams. Tile 16 x 8. |
+| `roof-moss-ridge` | free |  | draft | Moss: brown shingles with moss creeping along the seams. The ridge cap, 16 x 4. |
+| `roof-moss-eave` | free |  | draft | Moss: brown shingles with moss creeping along the seams. The eave hem, 16 x 4. |
+| `walls-plaster` | free |  | draft | Plaster (starter): cream, speckled. Tile 8 x 8. |
+| `walls-timber` | free |  | draft | Timber: upright boards, 4 px wide so a 4 px wall shows a whole board. Tile 8 x 8. |
+| `walls-fieldstone` | free |  | draft | Fieldstone: uneven stones in dark mortar. Tile 8 x 8. |
+| `walls-brick` | free |  | draft | Brick: running bond with light mortar. Tile 8 x 8. |
+| `walls-shingle` | free |  | draft | Shingle: sea-blue wall shingles. Tile 8 x 8. |
+| `ground-lawn` | free |  | draft | Lawn (garden default): grass, the lit top row is the ground line. Tile 16 x 8. |
+| `ground-deck` | free |  | draft | Deck (terrace default): planks, top row lit. Tile 16 x 8. |
+| `ground-pool-tile` | free |  | draft | Pool Tile: white tiles with grout, the basin wall and floor. Tile 16 x 8. |
+| `ground-pool-water` | free |  | draft | Pool water: wraps sideways without a seam; the scene lays it inside the basin. Tile 16 x 8. |
+| `slab` | free |  | draft | The floor slab between storeys, 16 x 4 (tiles sideways). |
+| `earth` | free |  | draft | Earth around the cellar, 16 x 16 (tiles both ways). |
+| `chimney` | free |  | draft | A brick chimney with a stone cap, 12 x 22; the scene sinks its foot into the roof. |
+| `door` | free |  | draft | The front door with its step, 16 x 30, standing on the ground line. |
+| `mailbox` | free |  | draft | The mailbox on its post, flag up (gifts wait), 14 x 21. |
+| `mailbox-empty` | free |  | draft | The same mailbox with the flag down (nothing waits), 14 x 21. |
+| `workbench` | free |  | draft | The Hearth's workbench: a vise, a saw and a hammer. |
+| `vent` | free |  | draft | The cellar vent window. |
+| `z` | free |  | draft | The sleeping "z" over a housemate. |
 
 <a id="shards"></a>
 

@@ -1,5 +1,5 @@
 /**
- * Which sections the How to play page shows: the shipped twelve, or while the server plays combat v2 the six
+ * Which sections the How to play page shows: the shipped sections, or while the server plays combat v2 the six
  * combat v2 sections followed by the shipped sections about everything combat v2 does not change. Pure, so the
  * choice is tested; `HowToPlay.tsx` draws the page.
  */
@@ -29,16 +29,20 @@ export const V2_KEPT_SECTIONS: readonly GlossarySection[] = [
   'games',
   'gear',
   'workshop',
+  'housing',
 ];
 
 /** The sections of the page, in order. */
 export function pageSections(
   v2: boolean,
+  housing: boolean = false,
   shipped: readonly HowToPlaySection[] = howToPlay.sections,
   combat: HowToPlayV2 = howToPlayV2,
 ): PageSection[] {
-  if (!v2) return [...shipped];
-  return [...combat.sections, ...shipped.filter((s) => V2_KEPT_SECTIONS.includes(s.id))];
+  // The housing section shows only while the server offers housing (`/api/config`'s `housing`).
+  const offered = shipped.filter((s) => s.id !== 'housing' || housing);
+  if (!v2) return [...offered];
+  return [...combat.sections, ...offered.filter((s) => V2_KEPT_SECTIONS.includes(s.id))];
 }
 
 /**

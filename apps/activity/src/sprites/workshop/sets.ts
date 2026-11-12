@@ -1,0 +1,60 @@
+/**
+ * The sets made in the workshop: the shipped ones (each pack file in `sprites/data/house/` exports its `SOURCE`) and
+ * the sample styles that are not content. `lockOf` is what `shipped-art.json` records.
+ */
+import { SOURCE as TIDEPOOL } from '../data/house/tidepool';
+import { SOURCE as MOONLIT } from '../data/house/moonlit';
+import { SOURCE as EMBERHOLD } from '../data/house/emberhold';
+import { SOURCE as ROOTWOOD } from '../data/house/rootwood';
+import { SOURCE as STORMGLASS } from '../data/house/stormglass';
+import { SOURCE as FENKEEPER } from '../data/house/fenkeeper';
+import { SOURCE as ANCIENT } from '../data/house/ancient';
+import { SOURCE as LANTERN_NIGHT } from '../data/house/lantern-night';
+import { SOURCE as QUIET_VERGE } from '../data/house/quiet-verge';
+import { SOURCE as FAIRGROUND } from '../data/house/fairground';
+import { SOURCE as SCHOOLHOUSE } from '../data/house/schoolhouse';
+import { pieceHash } from './compare';
+import { pieceId, setPack, setReport, type SetSource } from './pack';
+import { BLACKTHORN } from './sample/blackthorn';
+import { PLAIN_PINE } from './sample/plain-pine';
+import { SUGARPLUM } from './sample/sugarplum';
+import { SET_FORMS, type Style } from './style';
+
+export const SHIPPED_SETS: Readonly<Record<string, SetSource>> = {
+  tidepool: TIDEPOOL,
+  moonlit: MOONLIT,
+  emberhold: EMBERHOLD,
+  rootwood: ROOTWOOD,
+  stormglass: STORMGLASS,
+  fenkeeper: FENKEEPER,
+  ancient: ANCIENT,
+  'lantern-night': LANTERN_NIGHT,
+  'quiet-verge': QUIET_VERGE,
+  fairground: FAIRGROUND,
+  schoolhouse: SCHOOLHOUSE,
+};
+
+export const SAMPLE_STYLES: Readonly<Record<string, Style>> = {
+  'plain-pine': PLAIN_PINE,
+  blackthorn: BLACKTHORN,
+  sugarplum: SUGARPLUM,
+};
+
+/**
+ * Per shipped piece: how it is made and the hash of what ships, read from the pack as the game loads it (`setPack`, which is
+ * each pack file's `HOUSE_ART`), light flag included.
+ */
+export function lockOf(): Record<string, { made: string; hash: string }> {
+  const lock: Record<string, { made: string; hash: string }> = {};
+  for (const source of Object.values(SHIPPED_SETS)) {
+    const report = setReport(source);
+    const pack = setPack(source);
+    for (const [i, form] of SET_FORMS.entries()) {
+      const id = pieceId(source.style, form);
+      const art = pack.pieces?.[id];
+      if (art === undefined) throw new Error(`${id} is not in its pack`);
+      lock[id] = { made: report[i]?.made ?? 'generated', hash: pieceHash(art) };
+    }
+  }
+  return lock;
+}

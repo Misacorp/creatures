@@ -1,0 +1,274 @@
+[
+  {
+    "id": "cosy",
+    "name": "Cosy",
+    "element": null,
+    "tier": 0,
+    "primary": null,
+    "accent": null,
+    "sources": {
+      "moments": [],
+      "places": [],
+      "bosses": []
+    },
+    "keepsake": {
+      "name": "Hearth Bell",
+      "line": "A small brass bell. It rings when someone comes home."
+    },
+    "theme": "The living room as it is: warm wood, cream cushions. Shipped sprites; only the missing forms are new.",
+    "line": "Warm wood and cream cushions. The room you started in."
+  },
+  {
+    "id": "tidepool",
+    "name": "Tidepool",
+    "element": "tide",
+    "tier": 1,
+    "primary": {
+      "material": "driftwood"
+    },
+    "accent": {
+      "material": "sea-glass"
+    },
+    "sources": {
+      "moments": ["trip", "scout", "raid"],
+      "places": ["tidepools"],
+      "bosses": ["tidal-colossus"]
+    },
+    "keepsake": {
+      "name": "Pearl Shell",
+      "line": "A shell with a pearl still inside."
+    },
+    "theme": "Driftwood with scalloped shell edges; sea blue, sand, pearl white.",
+    "line": "Driftwood and shell, from where the tide leaves things."
+  },
+  {
+    "id": "moonlit",
+    "name": "Moonlit",
+    "element": "tide",
+    "tier": 2,
+    "primary": {
+      "material": "sea-silk"
+    },
+    "accent": {
+      "material": "moonstone"
+    },
+    "sources": {
+      "moments": ["trip", "scout", "raid"],
+      "places": ["moonlit-reef"],
+      "bosses": ["tidal-colossus"]
+    },
+    "keepsake": {
+      "name": "Moon Pebble",
+      "line": "A smooth stone, cool at noon and warm at midnight."
+    },
+    "theme": "Night-reef blue lacquer, coral pink inlay, a soft moonstone knob; silver highlights.",
+    "line": "Blue lacquer and coral, made for the reef at night."
+  },
+  {
+    "id": "emberhold",
+    "name": "Emberhold",
+    "element": "ember",
+    "tier": 1,
+    "primary": {
+      "material": "charwood"
+    },
+    "accent": {
+      "material": "cinder-iron"
+    },
+    "sources": {
+      "moments": ["trip", "scout", "dungeon", "raid"],
+      "places": ["ember-caves"],
+      "bosses": ["cinder-wyrm"]
+    },
+    "keepsake": {
+      "name": "Forge Ember",
+      "line": "A coal that has never gone out."
+    },
+    "theme": "Forge-folk work: black charwood, riveted iron bands, amber glow; rust, coal, ember orange.",
+    "line": "Black wood and riveted iron, made by the forge-folk."
+  },
+  {
+    "id": "rootwood",
+    "name": "Rootwood",
+    "element": "grove",
+    "tier": 1,
+    "primary": {
+      "material": "heartbark"
+    },
+    "accent": {
+      "material": "moss-velvet"
+    },
+    "sources": {
+      "moments": ["trip", "scout", "raid"],
+      "places": ["verdant-hollow"],
+      "bosses": ["thornmother"]
+    },
+    "keepsake": {
+      "name": "Acorn Seedling",
+      "line": "A seedling in a thimble, and growing."
+    },
+    "theme": "Woodfolk of the Hollow: living-wood curves, leaf carving, moss cushions; bark brown, moss and leaf greens.",
+    "line": "Living wood and moss, shaped by the woodfolk of the Hollow."
+  },
+  {
+    "id": "stormglass",
+    "name": "Stormglass",
+    "element": "spark",
+    "tier": 1,
+    "primary": {
+      "material": "lightning-ash"
+    },
+    "accent": {
+      "material": "bright-copper"
+    },
+    "sources": {
+      "moments": ["trip", "scout", "raid"],
+      "places": ["storm-ridge"],
+      "bosses": ["storm-sovereign"]
+    },
+    "keepsake": {
+      "name": "Spark Bead",
+      "line": "A glass bead with a small storm inside."
+    },
+    "theme": "Pale ash with a lightning scar, copper coils and glass beads; slate, copper, storm violet.",
+    "line": "Pale ash, copper wire and glass beads, from the high ridge."
+  },
+  {
+    "id": "fenkeeper",
+    "name": "Fenkeeper",
+    "element": "mire",
+    "tier": 1,
+    "primary": {
+      "material": "bog-oak"
+    },
+    "accent": {
+      "material": "fen-opal"
+    },
+    "sources": {
+      "moments": ["trip", "scout", "dungeon", "raid"],
+      "places": ["sunken-fen"],
+      "bosses": ["old-bogback"]
+    },
+    "keepsake": {
+      "name": "Opal Drop",
+      "line": "A drop of opal on a reed string."
+    },
+    "theme": "The bog keeps things: dark oak with reed bindings, an oil-sheen opal; peat brown, murky teal, a violet glint.",
+    "line": "Dark oak and tied reeds. The bog keeps things."
+  },
+  {
+    "id": "ancient",
+    "name": "Ancient",
+    "element": null,
+    "tier": 2,
+    "primary": {
+      "family": "stone"
+    },
+    "accent": {
+      "material": "old-gold"
+    },
+    "sources": {
+      "moments": ["trip", "scout", "raid"],
+      "places": ["old-crossroads"],
+      "bosses": ["tidal-colossus", "cinder-wyrm", "thornmother", "storm-sovereign", "old-bogback"]
+    },
+    "keepsake": {
+      "name": "Gold Spiral",
+      "line": "A small spiral of gold leaf, worn thin by hands."
+    },
+    "theme": "Carved standing-stone slabs, spiral carvings, worn gold leaf; sandstone, faded gold, patina teal.",
+    "line": "Carved stone and worn gold, older than the roads."
+  },
+  {
+    "id": "lantern-night",
+    "name": "Lantern Night",
+    "element": null,
+    "tier": 2,
+    "primary": {
+      "material": "lantern-silk"
+    },
+    "accent": {
+      "family": "wood"
+    },
+    "sources": {
+      "moments": ["trip", "scout", "raid", "games"],
+      "places": ["festival-grounds"],
+      "bosses": []
+    },
+    "keepsake": {
+      "name": "Paper Tassel",
+      "line": "A red tassel that still smells of festival evenings."
+    },
+    "theme": "Paper lanterns and bunting on painted wood; festival red, gold, cream.",
+    "line": "Paper lanterns and bunting, for the longest evening of the year."
+  },
+  {
+    "id": "quiet-verge",
+    "name": "Quiet Verge",
+    "element": null,
+    "tier": 2,
+    "primary": {
+      "family": "stone"
+    },
+    "accent": {
+      "material": "moonstone"
+    },
+    "sources": {
+      "moments": ["trip", "scout", "raid"],
+      "places": ["old-crossroads", "moonlit-reef"],
+      "bosses": []
+    },
+    "keepsake": {
+      "name": "Pocket Window",
+      "line": "A small stone window. Look in, and one warm star looks back."
+    },
+    "theme": "Dusk-violet stone edged in pale rim light, arches with a warm star inside, chips of stone that float; window dark, lilac, star gold.",
+    "line": "Still stone and starlight, from the edge of the map."
+  },
+  {
+    "id": "fairground",
+    "name": "Fairground",
+    "element": null,
+    "tier": 1,
+    "primary": {
+      "family": "wood"
+    },
+    "accent": {
+      "family": "cloth"
+    },
+    "sources": {
+      "moments": ["trip", "scout", "raid", "games"],
+      "places": ["old-crossroads"],
+      "bosses": []
+    },
+    "keepsake": {
+      "name": "Prize Rosette",
+      "line": "A pleated rosette with two ribbon tails. It says first prize."
+    },
+    "theme": "Striped awnings, bunting and prize ribbons on painted wood; red, cream, sky blue, sunny yellow.",
+    "line": "Stripes, bunting and a prize for everyone, from the meadow."
+  },
+  {
+    "id": "schoolhouse",
+    "name": "Schoolhouse",
+    "element": null,
+    "tier": 1,
+    "primary": {
+      "family": "wood"
+    },
+    "accent": {
+      "family": "metal"
+    },
+    "sources": {
+      "moments": ["trip", "scout", "raid"],
+      "places": ["verdant-hollow"],
+      "bosses": []
+    },
+    "keepsake": {
+      "name": "Teacher's Apple",
+      "line": "A polished red apple. Nobody has seen it eaten."
+    },
+    "theme": "Oak desks, a slate-green board, brass and chalk white, one red apple; slate green, warm oak, brass, chalk, apple red.",
+    "line": "Oak desks, a chalk-dusted board and one very red apple."
+  }
+]

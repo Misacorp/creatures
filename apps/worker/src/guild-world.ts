@@ -47,6 +47,7 @@ export class GuildWorld extends DurableObject<Env> {
       devTools: env.DEV_TOOLS === 'on',
       combatV2: env.COMBAT_V2 === 'on',
       valleySystems: valleySystemsOn(env),
+      housing: env.HOUSING === 'on',
       // CI sets VERSION to the commit; "dev" (local) keeps the start-up passes on every start.
       ...(env.VERSION !== 'dev' && env.VERSION !== '' ? { build: env.VERSION } : {}),
       live: this.live,

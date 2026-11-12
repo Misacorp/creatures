@@ -33,6 +33,7 @@ import {
   type BossDef,
   type RaidStage,
   type Rng,
+  type HousingHook,
 } from '@creatures/game';
 import {
   skyFightFields,
@@ -96,6 +97,8 @@ export interface ResolveDeps {
   gearRng?: Rng;
   /** The analytics event log. Optional: without it nothing is logged. */
   analytics?: Analytics;
+  /** Player housing's reward hook (`HOUSING` on): a drop at the reward moment. Absent: nothing happens. */
+  housing?: HousingHook | undefined;
 }
 
 /** What the API shows about a resolved phase. Contains user ids: map to names before sending. */
@@ -738,6 +741,25 @@ export function payStage(
     phase === 'finale'
       ? rollJackpots(deps, week.weekId, party, memberIds, facts.cleared, payout)
       : [];
+
+  // --- Player housing: one drop for each member at the paid finale (a trophy too when cleared). No hook, no reads. ---
+  if (phase === 'finale' && deps.housing !== undefined) {
+    const progression = facts.cleared ? readWeekProgression(sql, week.weekId) : null;
+    const festival = progression?.festival === true ? progression.festivalSpecies : null;
+    const element = content.bosses.find((b) => b.id === facts.bossId)?.element ?? null;
+    for (const userId of memberIds) {
+      deps.housing.drop(userId, {
+        kind: 'raid',
+        key: `raid:${week.weekId}:${String(party)}`,
+        weekId: week.weekId,
+        bossId: facts.bossId,
+        rank: payout.rank,
+        cleared: facts.cleared,
+        festival,
+        element,
+      });
+    }
+  }
 
   // --- The Festival creature, for every member of a party that won a Festival finale ---
   if (phase === 'finale' && facts.cleared) {

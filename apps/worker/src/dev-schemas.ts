@@ -47,6 +47,10 @@ export const DEV_ACTION_TOOLS = [
   'games-bots',
   'games-run-now',
   'games-reset',
+  'housing-grant',
+  'housing-build',
+  'housing-guests',
+  'housing-fresh',
   'analytics-rollup',
   'raid-clear',
   'raid-fill',
@@ -279,6 +283,40 @@ export const RaidPlayBodySchema = v.pipe(
 /** Bots for the Games: the raid's guests (`dev-guest-<n>`), each with `GAMES_BOT_CREATURES` creatures, entered in every event of the next show day. */
 export const MAX_GAMES_BOTS = 12;
 export const GamesBotsBodySchema = v.strictObject({ count: v.optional(int(1, MAX_GAMES_BOTS)) });
+
+// --- Player housing (staging with `HOUSING` on) ---
+
+/** Fills the caller's holdings for a try-out: `materials` of each luxury material, Acorns, scrap, every blueprint and stamp. */
+export const MAX_HOUSING_GUESTS = 12;
+export const HousingGrantBodySchema = v.pipe(
+  v.strictObject({
+    materials: v.optional(int(1, 999)),
+    acorns: v.optional(int(1, MAX_AMOUNT)),
+    scrap: v.optional(int(1, MAX_AMOUNT)),
+    blueprints: v.optional(v.literal('all')),
+    /** Every skin owned at once (the room patterns and frames too), with no making. */
+    skins: v.optional(v.literal('all')),
+    stamps: v.optional(v.literal('all')),
+  }),
+  v.check((o) => Object.values(o).some((x) => x !== undefined), NEED_ONE),
+);
+
+/** Builds parts without paying: all of them, or the named ones (their prerequisites must be built or named). */
+export const HousingBuildBodySchema = v.strictObject({
+  parts: v.union([
+    v.literal('all'),
+    v.pipe(
+      v.array(v.pipe(v.string(), v.maxLength(32), v.regex(/^[a-z][a-z0-9-]*$/))),
+      v.minLength(1),
+      v.maxLength(16),
+    ),
+  ]),
+});
+
+/** Gives the raid's dev guests (`dev-guest-<n>`) houses, furniture, housemates and a stamp in the caller's guestbook. */
+export const HousingGuestsBodySchema = v.strictObject({
+  count: v.optional(int(1, MAX_HOUSING_GUESTS)),
+});
 
 /** Lock the next show day now and start its show in a few seconds (default 15). */
 export const GamesRunNowBodySchema = v.strictObject({

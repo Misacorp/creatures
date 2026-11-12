@@ -1,5 +1,4 @@
 import type { ComponentChildren } from 'preact';
-import { useEffect, useRef, useState } from 'preact/hooks';
 import { EFFECT_PREFIX, RECOMMENDED_TAG, type PickerOption, type WornItem } from '../roster-picker';
 import { ElementChip } from '../sprites/ElementChip';
 import { Sprite } from '../sprites/Sprite';
@@ -9,6 +8,7 @@ import { getSpecies } from '../game';
 import { ItemThumb } from '../GearArt';
 import { wornSprite } from '../worn-gear';
 import { FoldRow } from './FoldRow';
+import { useRovingList } from './use-roving-list';
 import { Tag } from './Tag';
 import { XpTrack } from './XpTrack';
 
@@ -295,38 +295,14 @@ function ShowList<T extends PickerOption>(props: CreatureListProps<T> & { select
 
 function PickList<T extends PickerOption>(props: CreatureListProps<T> & { selection: Picking }) {
   const { options, selection } = props;
-  const listRef = useRef<HTMLUListElement>(null);
-  const [active, setActive] = useState(() => firstEnabled(options));
-
-  function focusOption(index: number): void {
-    setActive(index);
-    listRef.current?.querySelectorAll<HTMLElement>('[role="option"]')[index]?.focus();
-  }
-
-  useEffect(() => {
-    focusOption(active);
-  }, []);
-
-  function onListKey(event: KeyboardEvent): void {
-    const last = options.length - 1;
-    const keys: Record<string, number> = {
-      ArrowDown: Math.min(last, active + 1),
-      ArrowUp: Math.max(0, active - 1),
-      Home: 0,
-      End: last,
-    };
-    const to = keys[event.key];
-    if (to !== undefined) {
-      event.preventDefault();
-      focusOption(to);
-      return;
-    }
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      const option = options[active];
+  const { listRef, active, onKeyDown, focusRow } = useRovingList({
+    count: options.length,
+    initial: firstEnabled(options),
+    onChoose: (index) => {
+      const option = options[index];
       if (option !== undefined && option.disabled === null) selection.onPick(option.id);
-    }
-  }
+    },
+  });
 
   return (
     <ul
@@ -334,7 +310,7 @@ function PickList<T extends PickerOption>(props: CreatureListProps<T> & { select
       class={listClass(props)}
       role="listbox"
       aria-label={selection.label ?? 'Your creatures'}
-      onKeyDown={onListKey}
+      onKeyDown={onKeyDown}
     >
       {options.map((o, index) => (
         <li
@@ -346,7 +322,7 @@ function PickList<T extends PickerOption>(props: CreatureListProps<T> & { select
           class={rowClass(o)}
           onClick={() => {
             if (o.disabled === null) selection.onPick(o.id);
-            else focusOption(index);
+            else focusRow(index);
           }}
         >
           <RowContent o={o} props={props} />

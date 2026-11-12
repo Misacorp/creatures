@@ -1,0 +1,1361 @@
+[
+  {
+    "id": "cosy-wall",
+    "name": "Cosy Wallpaper",
+    "kind": "wall",
+    "set": "cosy",
+    "unlock": {
+      "kind": "starter"
+    },
+    "hint": "Yours from the start."
+  },
+  {
+    "id": "cosy-floor",
+    "name": "Cosy Floor",
+    "kind": "floor",
+    "set": "cosy",
+    "unlock": {
+      "kind": "starter"
+    },
+    "hint": "Yours from the start."
+  },
+  {
+    "id": "tidepool-wall",
+    "name": "Tidepool Wallpaper",
+    "kind": "wall",
+    "set": "tidepool",
+    "unlock": {
+      "kind": "drop"
+    },
+    "hint": "A blueprint from the Tidepools or the Tidal Colossus."
+  },
+  {
+    "id": "tidepool-floor",
+    "name": "Tidepool Floor",
+    "kind": "floor",
+    "set": "tidepool",
+    "unlock": {
+      "kind": "drop"
+    },
+    "hint": "A blueprint from the Tidepools or the Tidal Colossus."
+  },
+  {
+    "id": "moonlit-wall",
+    "name": "Moonlit Wallpaper",
+    "kind": "wall",
+    "set": "moonlit",
+    "unlock": {
+      "kind": "drop"
+    },
+    "hint": "A blueprint from the Moonlit Reef or a Tide boss."
+  },
+  {
+    "id": "moonlit-floor",
+    "name": "Moonlit Floor",
+    "kind": "floor",
+    "set": "moonlit",
+    "unlock": {
+      "kind": "drop"
+    },
+    "hint": "A blueprint from the Moonlit Reef or a Tide boss."
+  },
+  {
+    "id": "emberhold-wall",
+    "name": "Emberhold Wallpaper",
+    "kind": "wall",
+    "set": "emberhold",
+    "unlock": {
+      "kind": "drop"
+    },
+    "hint": "A blueprint from the Ember Caves, the dungeon or the Cinder Wyrm."
+  },
+  {
+    "id": "emberhold-floor",
+    "name": "Emberhold Floor",
+    "kind": "floor",
+    "set": "emberhold",
+    "unlock": {
+      "kind": "drop"
+    },
+    "hint": "A blueprint from the Ember Caves, the dungeon or the Cinder Wyrm."
+  },
+  {
+    "id": "rootwood-wall",
+    "name": "Rootwood Wallpaper",
+    "kind": "wall",
+    "set": "rootwood",
+    "unlock": {
+      "kind": "drop"
+    },
+    "hint": "A blueprint from the Verdant Hollow or the Thornmother."
+  },
+  {
+    "id": "rootwood-floor",
+    "name": "Rootwood Floor",
+    "kind": "floor",
+    "set": "rootwood",
+    "unlock": {
+      "kind": "drop"
+    },
+    "hint": "A blueprint from the Verdant Hollow or the Thornmother."
+  },
+  {
+    "id": "stormglass-wall",
+    "name": "Stormglass Wallpaper",
+    "kind": "wall",
+    "set": "stormglass",
+    "unlock": {
+      "kind": "drop"
+    },
+    "hint": "A blueprint from Storm Ridge or the Storm Sovereign."
+  },
+  {
+    "id": "stormglass-floor",
+    "name": "Stormglass Floor",
+    "kind": "floor",
+    "set": "stormglass",
+    "unlock": {
+      "kind": "drop"
+    },
+    "hint": "A blueprint from Storm Ridge or the Storm Sovereign."
+  },
+  {
+    "id": "fenkeeper-wall",
+    "name": "Fenkeeper Wallpaper",
+    "kind": "wall",
+    "set": "fenkeeper",
+    "unlock": {
+      "kind": "drop"
+    },
+    "hint": "A blueprint from the Sunken Fen, the dungeon or Old Bogback."
+  },
+  {
+    "id": "fenkeeper-floor",
+    "name": "Fenkeeper Floor",
+    "kind": "floor",
+    "set": "fenkeeper",
+    "unlock": {
+      "kind": "drop"
+    },
+    "hint": "A blueprint from the Sunken Fen, the dungeon or Old Bogback."
+  },
+  {
+    "id": "ancient-wall",
+    "name": "Ancient Wallpaper",
+    "kind": "wall",
+    "set": "ancient",
+    "unlock": {
+      "kind": "drop"
+    },
+    "hint": "A blueprint from the Old Crossroads or any cleared finale."
+  },
+  {
+    "id": "ancient-floor",
+    "name": "Ancient Floor",
+    "kind": "floor",
+    "set": "ancient",
+    "unlock": {
+      "kind": "drop"
+    },
+    "hint": "A blueprint from the Old Crossroads or any cleared finale."
+  },
+  {
+    "id": "lantern-night-wall",
+    "name": "Lantern Night Wallpaper",
+    "kind": "wall",
+    "set": "lantern-night",
+    "unlock": {
+      "kind": "drop"
+    },
+    "hint": "A blueprint from the Festival Grounds, a Festival finale or a Games gold."
+  },
+  {
+    "id": "lantern-night-floor",
+    "name": "Lantern Night Floor",
+    "kind": "floor",
+    "set": "lantern-night",
+    "unlock": {
+      "kind": "drop"
+    },
+    "hint": "A blueprint from the Festival Grounds, a Festival finale or a Games gold."
+  },
+  {
+    "id": "quiet-verge-wall",
+    "name": "Quiet Verge Wallpaper",
+    "kind": "wall",
+    "set": "quiet-verge",
+    "unlock": {
+      "kind": "drop"
+    },
+    "hint": "A blueprint from the Old Crossroads or the Moonlit Reef."
+  },
+  {
+    "id": "quiet-verge-floor",
+    "name": "Quiet Verge Floor",
+    "kind": "floor",
+    "set": "quiet-verge",
+    "unlock": {
+      "kind": "drop"
+    },
+    "hint": "A blueprint from the Old Crossroads or the Moonlit Reef."
+  },
+  {
+    "id": "fairground-wall",
+    "name": "Fairground Wallpaper",
+    "kind": "wall",
+    "set": "fairground",
+    "unlock": {
+      "kind": "drop"
+    },
+    "hint": "A blueprint from the Old Crossroads or a Games gold."
+  },
+  {
+    "id": "fairground-floor",
+    "name": "Fairground Floor",
+    "kind": "floor",
+    "set": "fairground",
+    "unlock": {
+      "kind": "drop"
+    },
+    "hint": "A blueprint from the Old Crossroads or a Games gold."
+  },
+  {
+    "id": "schoolhouse-wall",
+    "name": "Schoolhouse Wallpaper",
+    "kind": "wall",
+    "set": "schoolhouse",
+    "unlock": {
+      "kind": "drop"
+    },
+    "hint": "A blueprint from the Verdant Hollow."
+  },
+  {
+    "id": "schoolhouse-floor",
+    "name": "Schoolhouse Floor",
+    "kind": "floor",
+    "set": "schoolhouse",
+    "unlock": {
+      "kind": "drop"
+    },
+    "hint": "A blueprint from the Verdant Hollow."
+  },
+  {
+    "id": "kitchen-wall",
+    "name": "Kitchen Wallpaper",
+    "kind": "wall",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "cottage"
+    },
+    "hint": "Comes with the Cottage."
+  },
+  {
+    "id": "kitchen-floor",
+    "name": "Kitchen Floor",
+    "kind": "floor",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "cottage"
+    },
+    "hint": "Comes with the Cottage."
+  },
+  {
+    "id": "attic-wall",
+    "name": "Attic Wallpaper",
+    "kind": "wall",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "house"
+    },
+    "hint": "Comes with the House."
+  },
+  {
+    "id": "attic-floor",
+    "name": "Attic Floor",
+    "kind": "floor",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "house"
+    },
+    "hint": "Comes with the House."
+  },
+  {
+    "id": "cellar-wall",
+    "name": "Cellar Wallpaper",
+    "kind": "wall",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "cellar"
+    },
+    "hint": "Comes with the Cellar."
+  },
+  {
+    "id": "cellar-floor",
+    "name": "Cellar Floor",
+    "kind": "floor",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "cellar"
+    },
+    "hint": "Comes with the Cellar."
+  },
+  {
+    "id": "hall-wall",
+    "name": "Trophy Hall Wallpaper",
+    "kind": "wall",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "west-wing"
+    },
+    "hint": "Comes with the West Wing."
+  },
+  {
+    "id": "hall-floor",
+    "name": "Trophy Hall Floor",
+    "kind": "floor",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "west-wing"
+    },
+    "hint": "Comes with the West Wing."
+  },
+  {
+    "id": "gallery-wall",
+    "name": "Gallery Wallpaper",
+    "kind": "wall",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "west-upper"
+    },
+    "hint": "Comes with the West Upper Floor."
+  },
+  {
+    "id": "gallery-floor",
+    "name": "Gallery Floor",
+    "kind": "floor",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "west-upper"
+    },
+    "hint": "Comes with the West Upper Floor."
+  },
+  {
+    "id": "conservatory-wall",
+    "name": "Conservatory Wallpaper",
+    "kind": "wall",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "east-wing"
+    },
+    "hint": "Comes with the East Wing."
+  },
+  {
+    "id": "conservatory-floor",
+    "name": "Conservatory Floor",
+    "kind": "floor",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "east-wing"
+    },
+    "hint": "Comes with the East Wing."
+  },
+  {
+    "id": "bath-wall",
+    "name": "Bath Wallpaper",
+    "kind": "wall",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "east-upper"
+    },
+    "hint": "Comes with the East Upper Floor."
+  },
+  {
+    "id": "bath-floor",
+    "name": "Bath Floor",
+    "kind": "floor",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "east-upper"
+    },
+    "hint": "Comes with the East Upper Floor."
+  },
+  {
+    "id": "guest-wall",
+    "name": "Guest Room Wallpaper",
+    "kind": "wall",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "east-upper"
+    },
+    "hint": "Comes with the East Upper Floor."
+  },
+  {
+    "id": "guest-floor",
+    "name": "Guest Room Floor",
+    "kind": "floor",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "east-upper"
+    },
+    "hint": "Comes with the East Upper Floor."
+  },
+  {
+    "id": "thatch",
+    "name": "Thatch",
+    "kind": "roof",
+    "set": null,
+    "unlock": {
+      "kind": "starter"
+    },
+    "hint": "Yours from the start."
+  },
+  {
+    "id": "slate",
+    "name": "Slate",
+    "kind": "roof",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "cottage"
+    },
+    "hint": "Learned by building the Cottage."
+  },
+  {
+    "id": "red-tile",
+    "name": "Red Tile",
+    "kind": "roof",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "west-wing"
+    },
+    "hint": "Learned by building the West Wing."
+  },
+  {
+    "id": "copper-green",
+    "name": "Copper Green",
+    "kind": "roof",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "east-wing"
+    },
+    "hint": "Learned by building the East Wing."
+  },
+  {
+    "id": "moss",
+    "name": "Moss",
+    "kind": "roof",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "garden"
+    },
+    "hint": "Learned by building the Garden."
+  },
+  {
+    "id": "plaster",
+    "name": "Plaster",
+    "kind": "walls",
+    "set": null,
+    "unlock": {
+      "kind": "starter"
+    },
+    "hint": "Yours from the start."
+  },
+  {
+    "id": "timber",
+    "name": "Timber",
+    "kind": "walls",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "house"
+    },
+    "hint": "Learned by building the House."
+  },
+  {
+    "id": "fieldstone",
+    "name": "Fieldstone",
+    "kind": "walls",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "cellar"
+    },
+    "hint": "Learned by building the Cellar."
+  },
+  {
+    "id": "brick",
+    "name": "Brick",
+    "kind": "walls",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "terrace"
+    },
+    "hint": "Learned by building the Terrace."
+  },
+  {
+    "id": "shingle",
+    "name": "Shingle",
+    "kind": "walls",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "pool"
+    },
+    "hint": "Learned by building the Pool."
+  },
+  {
+    "id": "lawn",
+    "name": "Lawn",
+    "kind": "ground",
+    "fits": ["garden", "pond"],
+    "set": null,
+    "unlock": {
+      "kind": "starter"
+    },
+    "hint": "Yours from the start."
+  },
+  {
+    "id": "deck",
+    "name": "Deck",
+    "kind": "ground",
+    "fits": ["terrace", "balcony"],
+    "set": null,
+    "unlock": {
+      "kind": "starter"
+    },
+    "hint": "Yours from the start."
+  },
+  {
+    "id": "pool-tile",
+    "name": "Pool Tile",
+    "kind": "ground",
+    "fits": ["pool"],
+    "set": null,
+    "unlock": {
+      "kind": "starter"
+    },
+    "hint": "Yours from the start."
+  },
+  {
+    "id": "landing-wall",
+    "name": "Landing Wallpaper",
+    "kind": "wall",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "tower"
+    },
+    "hint": "Comes with the Tower."
+  },
+  {
+    "id": "landing-floor",
+    "name": "Landing Floor",
+    "kind": "floor",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "tower"
+    },
+    "hint": "Comes with the Tower."
+  },
+  {
+    "id": "observatory-wall",
+    "name": "Observatory Wallpaper",
+    "kind": "wall",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "tower"
+    },
+    "hint": "Comes with the Tower."
+  },
+  {
+    "id": "observatory-floor",
+    "name": "Observatory Floor",
+    "kind": "floor",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "tower"
+    },
+    "hint": "Comes with the Tower."
+  },
+  {
+    "id": "orchard-apple",
+    "name": "Apple Orchard",
+    "kind": "ground",
+    "fits": ["orchard"],
+    "set": null,
+    "unlock": {
+      "kind": "starter"
+    },
+    "hint": "Yours from the start."
+  },
+  {
+    "id": "orchard-plum",
+    "name": "Plum Orchard",
+    "kind": "ground",
+    "fits": ["orchard"],
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "orchard"
+    },
+    "hint": "Comes with the Orchard."
+  },
+  {
+    "id": "orchard-pear",
+    "name": "Pear Orchard",
+    "kind": "ground",
+    "fits": ["orchard"],
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "orchard"
+    },
+    "hint": "Comes with the Orchard."
+  },
+  {
+    "id": "paper-plain",
+    "name": "Plain Plaster",
+    "kind": "wall",
+    "set": null,
+    "unlock": {
+      "kind": "starter"
+    },
+    "gen": {
+      "pattern": "plain",
+      "colours": [
+        "cream",
+        "rose",
+        "sage",
+        "sky",
+        "lavender",
+        "slate",
+        "ochre",
+        "terracotta",
+        "forest",
+        "midnight",
+        "charcoal",
+        "white"
+      ],
+      "tier": 1
+    },
+    "line": "Smooth plaster with a fleck here and there. It lets the furniture talk.",
+    "hint": "Yours from the start, in every colour."
+  },
+  {
+    "id": "paper-pinstripe",
+    "name": "Pinstripe Paper",
+    "kind": "wall",
+    "set": null,
+    "unlock": {
+      "kind": "starter"
+    },
+    "gen": {
+      "pattern": "pinstripe",
+      "colours": [
+        "cream",
+        "rose",
+        "sage",
+        "sky",
+        "lavender",
+        "slate",
+        "ochre",
+        "terracotta",
+        "forest",
+        "midnight",
+        "charcoal",
+        "white"
+      ],
+      "tier": 1
+    },
+    "line": "Thin lines close together. Tidy, without making a fuss of it.",
+    "hint": "Yours from the start, in every colour."
+  },
+  {
+    "id": "paper-stripes",
+    "name": "Wide Stripe Paper",
+    "kind": "wall",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "hut"
+    },
+    "gen": {
+      "pattern": "stripes",
+      "colours": [
+        "cream",
+        "rose",
+        "sage",
+        "sky",
+        "lavender",
+        "slate",
+        "ochre",
+        "terracotta",
+        "forest",
+        "midnight",
+        "charcoal",
+        "white"
+      ],
+      "tier": 1
+    },
+    "line": "Broad bands in two shades, like a deckchair having a rest.",
+    "hint": "Made at the workbench. One make gives every colour."
+  },
+  {
+    "id": "paper-polka",
+    "name": "Polka Paper",
+    "kind": "wall",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "hut"
+    },
+    "gen": {
+      "pattern": "polka",
+      "colours": [
+        "cream",
+        "rose",
+        "sage",
+        "sky",
+        "lavender",
+        "slate",
+        "ochre",
+        "terracotta",
+        "forest",
+        "midnight",
+        "charcoal",
+        "white"
+      ],
+      "tier": 1
+    },
+    "line": "Small dots in patient rows. Somebody in here is cheerful.",
+    "hint": "Made at the workbench. One make gives every colour."
+  },
+  {
+    "id": "paper-split",
+    "name": "Two-Tone Paper",
+    "kind": "wall",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "hut"
+    },
+    "gen": {
+      "pattern": "split",
+      "colours": [
+        "cream",
+        "rose",
+        "sage",
+        "sky",
+        "lavender",
+        "slate",
+        "ochre",
+        "terracotta",
+        "forest",
+        "midnight",
+        "charcoal",
+        "white"
+      ],
+      "tier": 1
+    },
+    "line": "One shade above, a deeper one below, and a bright rail between.",
+    "hint": "Made at the workbench. One make gives every colour."
+  },
+  {
+    "id": "paper-tiles",
+    "name": "Glazed Tiles",
+    "kind": "wall",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "hut"
+    },
+    "gen": {
+      "pattern": "tiles",
+      "colours": [
+        "cream",
+        "rose",
+        "sage",
+        "sky",
+        "lavender",
+        "slate",
+        "ochre",
+        "terracotta",
+        "forest",
+        "midnight",
+        "charcoal",
+        "white"
+      ],
+      "tier": 1
+    },
+    "line": "Square tiles that wipe clean. Splashes are welcome.",
+    "hint": "Made at the workbench. One make gives every colour."
+  },
+  {
+    "id": "paper-planks",
+    "name": "Upright Boards",
+    "kind": "wall",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "hut"
+    },
+    "gen": {
+      "pattern": "planks",
+      "colours": [
+        "cream",
+        "rose",
+        "sage",
+        "sky",
+        "lavender",
+        "slate",
+        "ochre",
+        "terracotta",
+        "forest",
+        "midnight",
+        "charcoal",
+        "white"
+      ],
+      "tier": 1
+    },
+    "line": "Boards stood on end and nailed close. Still smells a little of sawdust.",
+    "hint": "Made at the workbench. One make gives every colour."
+  },
+  {
+    "id": "paper-brick",
+    "name": "Bare Brick",
+    "kind": "wall",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "hut"
+    },
+    "gen": {
+      "pattern": "brick",
+      "colours": [
+        "cream",
+        "rose",
+        "sage",
+        "sky",
+        "lavender",
+        "slate",
+        "ochre",
+        "terracotta",
+        "forest",
+        "midnight",
+        "charcoal",
+        "white"
+      ],
+      "tier": 2,
+      "family": "stone"
+    },
+    "line": "Bare brick with the odd smudge of mortar. Holds the warmth in.",
+    "hint": "Made at the workbench. One make gives every colour."
+  },
+  {
+    "id": "paper-panels",
+    "name": "Moulded Panels",
+    "kind": "wall",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "hut"
+    },
+    "gen": {
+      "pattern": "panels",
+      "colours": [
+        "cream",
+        "rose",
+        "sage",
+        "sky",
+        "lavender",
+        "slate",
+        "ochre",
+        "terracotta",
+        "forest",
+        "midnight",
+        "charcoal",
+        "white"
+      ],
+      "tier": 2,
+      "family": "wood"
+    },
+    "line": "Moulded panels in a row from the ceiling to the floor.",
+    "hint": "Made at the workbench. One make gives every colour."
+  },
+  {
+    "id": "paper-floral",
+    "name": "Floral Paper",
+    "kind": "wall",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "hut"
+    },
+    "gen": {
+      "pattern": "floral",
+      "colours": [
+        "cream",
+        "rose",
+        "sage",
+        "sky",
+        "lavender",
+        "slate",
+        "ochre",
+        "terracotta",
+        "forest",
+        "midnight",
+        "charcoal",
+        "white"
+      ],
+      "tier": 2,
+      "family": "cloth"
+    },
+    "line": "Little flowers on a quiet ground, a leaf on either side of each.",
+    "hint": "Made at the workbench. One make gives every colour."
+  },
+  {
+    "id": "paper-damask",
+    "name": "Damask Paper",
+    "kind": "wall",
+    "set": null,
+    "unlock": {
+      "kind": "drop"
+    },
+    "sources": {
+      "moments": ["raid"],
+      "places": [],
+      "bosses": []
+    },
+    "gen": {
+      "pattern": "damask",
+      "colours": [
+        "cream",
+        "rose",
+        "sage",
+        "sky",
+        "lavender",
+        "slate",
+        "ochre",
+        "terracotta",
+        "forest",
+        "midnight",
+        "charcoal",
+        "white"
+      ],
+      "tier": 3,
+      "family": "cloth"
+    },
+    "line": "A stately old pattern, the kind a palace forgets it ever owned.",
+    "hint": "A blueprint from a cleared raid finale."
+  },
+  {
+    "id": "paper-starry",
+    "name": "Starry Paper",
+    "kind": "wall",
+    "set": null,
+    "unlock": {
+      "kind": "feat",
+      "stamp": "glimmer-star"
+    },
+    "gen": {
+      "pattern": "starry",
+      "colours": ["midnight", "charcoal", "forest", "slate"],
+      "tier": 3,
+      "family": "cloth"
+    },
+    "line": "The night sky, brought indoors. It only comes in dark colours.",
+    "hint": "Earned with the Glimmer Star stamp."
+  },
+  {
+    "id": "floor-boards",
+    "name": "Long Boards",
+    "kind": "floor",
+    "set": null,
+    "unlock": {
+      "kind": "starter"
+    },
+    "gen": {
+      "pattern": "planks-long",
+      "colours": ["oak", "walnut", "ash", "whitewash", "slate", "terracotta", "moss", "burgundy"],
+      "tier": 1
+    },
+    "line": "Long planks, worn smooth down the middle where everyone walks.",
+    "hint": "Yours from the start, in every colour."
+  },
+  {
+    "id": "floor-short-boards",
+    "name": "Short Boards",
+    "kind": "floor",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "hut"
+    },
+    "gen": {
+      "pattern": "planks-short",
+      "colours": ["oak", "walnut", "ash", "whitewash", "slate", "terracotta", "moss", "burgundy"],
+      "tier": 1
+    },
+    "line": "Short planks in a staggered run. Each one creaks its own note.",
+    "hint": "Made at the workbench. One make gives every colour."
+  },
+  {
+    "id": "floor-checker",
+    "name": "Checker Tiles",
+    "kind": "floor",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "hut"
+    },
+    "gen": {
+      "pattern": "checker",
+      "colours": ["oak", "walnut", "ash", "whitewash", "slate", "terracotta", "moss", "burgundy"],
+      "tier": 1
+    },
+    "line": "Two shades of tile, turn and turn about.",
+    "hint": "Made at the workbench. One make gives every colour."
+  },
+  {
+    "id": "floor-carpet",
+    "name": "Plain Carpet",
+    "kind": "floor",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "hut"
+    },
+    "gen": {
+      "pattern": "carpet",
+      "colours": ["oak", "walnut", "ash", "whitewash", "slate", "terracotta", "moss", "burgundy"],
+      "tier": 2,
+      "family": "cloth"
+    },
+    "line": "Soft underfoot and quiet. Lost buttons end up here.",
+    "hint": "Made at the workbench. One make gives every colour."
+  },
+  {
+    "id": "floor-flags",
+    "name": "Stone Flags",
+    "kind": "floor",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "hut"
+    },
+    "gen": {
+      "pattern": "flags",
+      "colours": ["oak", "walnut", "ash", "whitewash", "slate", "terracotta", "moss", "burgundy"],
+      "tier": 2,
+      "family": "stone"
+    },
+    "line": "Big flat stones, cool in summer, laid by someone patient.",
+    "hint": "Made at the workbench. One make gives every colour."
+  },
+  {
+    "id": "floor-parquet",
+    "name": "Parquet",
+    "kind": "floor",
+    "set": null,
+    "unlock": {
+      "kind": "drop"
+    },
+    "sources": {
+      "moments": ["dungeon"],
+      "places": [],
+      "bosses": []
+    },
+    "gen": {
+      "pattern": "herringbone",
+      "colours": ["oak", "walnut", "ash", "whitewash", "slate", "terracotta", "moss", "burgundy"],
+      "tier": 3,
+      "family": "wood"
+    },
+    "line": "Little blocks in a herringbone, each one fitted by hand.",
+    "hint": "A blueprint from a cleared dungeon run."
+  },
+  {
+    "id": "floor-bordered-carpet",
+    "name": "Bordered Carpet",
+    "kind": "floor",
+    "set": null,
+    "unlock": {
+      "kind": "drop"
+    },
+    "sources": {
+      "moments": ["games"],
+      "places": [],
+      "bosses": []
+    },
+    "gen": {
+      "pattern": "carpet-border",
+      "colours": ["oak", "walnut", "ash", "whitewash", "slate", "terracotta", "moss", "burgundy"],
+      "tier": 3,
+      "family": "cloth"
+    },
+    "line": "A carpet with a border and a row of small diamonds. Fit for a winner.",
+    "hint": "A blueprint from a Games gold."
+  },
+  {
+    "id": "trim-skirting",
+    "name": "Skirting Board",
+    "kind": "trim",
+    "set": null,
+    "unlock": {
+      "kind": "starter"
+    },
+    "gen": {
+      "pattern": "skirting",
+      "colours": [
+        "paint-white",
+        "paint-sage",
+        "paint-blue",
+        "paint-rose",
+        "dark-walnut",
+        "dark-ebony",
+        "stone-grey",
+        "stone-sand"
+      ],
+      "tier": 1
+    },
+    "line": "A plain board along the foot of the wall, to keep the mop off the paper.",
+    "hint": "Yours from the start, in every colour."
+  },
+  {
+    "id": "trim-classic",
+    "name": "Classic Trim",
+    "kind": "trim",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "hut"
+    },
+    "gen": {
+      "pattern": "classic",
+      "colours": [
+        "paint-white",
+        "paint-sage",
+        "paint-blue",
+        "paint-rose",
+        "dark-walnut",
+        "dark-ebony",
+        "stone-grey",
+        "stone-sand"
+      ],
+      "tier": 1
+    },
+    "line": "Skirting, a picture rail and a cornice: a room that knows its manners.",
+    "hint": "Made at the workbench. One make gives every colour."
+  },
+  {
+    "id": "trim-wainscot",
+    "name": "Wainscot",
+    "kind": "trim",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "hut"
+    },
+    "gen": {
+      "pattern": "wainscot",
+      "colours": [
+        "paint-white",
+        "paint-sage",
+        "paint-blue",
+        "paint-rose",
+        "dark-walnut",
+        "dark-ebony",
+        "stone-grey",
+        "stone-sand"
+      ],
+      "tier": 2,
+      "family": "wood"
+    },
+    "line": "Panelling to the middle of the wall, with a rail to lean a chair on.",
+    "hint": "Made at the workbench. One make gives every colour."
+  },
+  {
+    "id": "trim-panelled",
+    "name": "Tall Panelling",
+    "kind": "trim",
+    "set": null,
+    "unlock": {
+      "kind": "drop"
+    },
+    "sources": {
+      "moments": ["trip", "scout"],
+      "places": [],
+      "bosses": []
+    },
+    "gen": {
+      "pattern": "panelled",
+      "colours": [
+        "paint-white",
+        "paint-sage",
+        "paint-blue",
+        "paint-rose",
+        "dark-walnut",
+        "dark-ebony",
+        "stone-grey",
+        "stone-sand"
+      ],
+      "tier": 3,
+      "family": "wood"
+    },
+    "line": "Panelling nearly to the ceiling, like an old library.",
+    "hint": "A blueprint from a trip or a scout, anywhere."
+  },
+  {
+    "id": "ceiling-plain",
+    "name": "Plain Ceiling",
+    "kind": "ceiling",
+    "set": null,
+    "unlock": {
+      "kind": "starter"
+    },
+    "gen": {
+      "pattern": "plain",
+      "colours": ["white-oak", "cream-walnut", "dark", "stone"],
+      "tier": 1
+    },
+    "line": "A clean line where the wall stops and the ceiling starts.",
+    "hint": "Yours from the start, in every colour."
+  },
+  {
+    "id": "ceiling-beamed",
+    "name": "Beamed Ceiling",
+    "kind": "ceiling",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "hut"
+    },
+    "gen": {
+      "pattern": "beamed",
+      "colours": ["white-oak", "cream-walnut", "dark", "stone"],
+      "tier": 2,
+      "family": "wood"
+    },
+    "line": "A tie beam across the room on three stout corbels.",
+    "hint": "Made at the workbench. One make gives every colour."
+  },
+  {
+    "id": "ceiling-coffered",
+    "name": "Coffered Ceiling",
+    "kind": "ceiling",
+    "set": null,
+    "unlock": {
+      "kind": "feat",
+      "stamp": "matched-set"
+    },
+    "gen": {
+      "pattern": "coffered",
+      "colours": ["white-oak", "cream-walnut", "dark", "stone"],
+      "tier": 3,
+      "family": "wood"
+    },
+    "line": "Deep square panels between the beams. Very grand, a little dusty.",
+    "hint": "Earned with the Matched Set stamp."
+  },
+  {
+    "id": "ceiling-rafters",
+    "name": "Open Rafters",
+    "kind": "ceiling",
+    "set": null,
+    "unlock": {
+      "kind": "drop"
+    },
+    "sources": {
+      "moments": ["trip", "scout"],
+      "places": [],
+      "bosses": []
+    },
+    "gen": {
+      "pattern": "rafters",
+      "colours": ["white-oak", "cream-walnut", "dark", "stone"],
+      "tier": 3,
+      "family": "wood"
+    },
+    "line": "The roof itself, showing: rafters, a collar tie and a king post. Best under the roof.",
+    "hint": "A blueprint from a trip or a scout, anywhere."
+  },
+  {
+    "id": "frame-timber",
+    "name": "Timber Frame",
+    "kind": "frame",
+    "set": null,
+    "unlock": {
+      "kind": "starter"
+    },
+    "gen": {
+      "pattern": "timber",
+      "colours": ["oak", "dark"],
+      "tier": 1
+    },
+    "line": "Oak beams between the rooms, pegged the old way.",
+    "hint": "Yours from the start, in every colour."
+  },
+  {
+    "id": "frame-painted",
+    "name": "Painted Frame",
+    "kind": "frame",
+    "set": null,
+    "unlock": {
+      "kind": "part",
+      "part": "hut"
+    },
+    "gen": {
+      "pattern": "painted",
+      "colours": ["white", "sage", "blue", "rose"],
+      "tier": 2,
+      "family": "wood"
+    },
+    "line": "The posts and floors between the rooms, painted a colour you like.",
+    "hint": "Made at the workbench. One make gives every colour."
+  },
+  {
+    "id": "frame-stone",
+    "name": "Stone Frame",
+    "kind": "frame",
+    "set": null,
+    "unlock": {
+      "kind": "drop"
+    },
+    "sources": {
+      "moments": ["dungeon"],
+      "places": [],
+      "bosses": []
+    },
+    "gen": {
+      "pattern": "stone",
+      "colours": ["grey"],
+      "tier": 3,
+      "family": "stone"
+    },
+    "line": "Dressed stone between the rooms. This house is not going anywhere.",
+    "hint": "A blueprint from a cleared dungeon run."
+  }
+]

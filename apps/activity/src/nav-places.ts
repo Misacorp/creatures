@@ -32,9 +32,18 @@ export interface NavGroup {
   direct: boolean;
 }
 
-/** The places in their order (rising danger, see `tabs.ts`), each with its pip from the alerts of `tab-alerts.ts`. */
-export function navPlaces(alerts: TabAlerts): NavPlace[] {
-  return TABS.map((tab) => ({
+/** Places a server flag switches on: left out of `navPlaces` unless the flag is on. */
+const FLAGGED_PLACES: Readonly<Record<string, 'housing'>> = { house: 'housing' };
+
+/**
+ * The places in their order (rising danger, see `tabs.ts`), each with its pip from the alerts of `tab-alerts.ts`. The House
+ * is there only with `options.housing` (the server's `HOUSING` flag, `housing` of `/api/config`); other callers get no House.
+ */
+export function navPlaces(alerts: TabAlerts, options: { housing?: boolean } = {}): NavPlace[] {
+  return TABS.filter((tab) => {
+    const flag = FLAGGED_PLACES[tab.id];
+    return flag === undefined || options[flag] === true;
+  }).map((tab) => ({
     id: tab.id,
     label: tab.label,
     glyph: tab.glyph,

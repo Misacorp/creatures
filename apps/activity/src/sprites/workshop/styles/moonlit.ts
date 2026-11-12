@@ -1,0 +1,56 @@
+/**
+ * The Moonlit style (`docs/design/housing-workshop.md`): Night-reef blue lacquer with a crescent inlay, coral pink trim, a moonstone knob and silver rims.
+ * The palette is the set's own (its pack file draws the hand pieces with it); the ramps name its keys by material.
+ */
+import type { Style } from '../style';
+
+export const MOONLIT: Style = {
+  id: 'moonlit',
+  name: 'Moonlit',
+  palette: {
+    k: '#0d0a1a',
+    a: '#98acf0',
+    b: '#6c84d4',
+    c: '#4a5eac',
+    d: '#f59bb0',
+    e: '#c8607f',
+    g: '#cfd6f0',
+    h: '#f7f9ff',
+    i: '#a493e6',
+    j: '#7061bb',
+    m: '#c8eefa',
+    n: '#84bfdc',
+    w: '#2c3a80',
+    v: '#3a4c98',
+    s: '#8ccaf2',
+    t: '#e2f2fb',
+    y: '#eaf5ff',
+    z: '#a9c9f2',
+  },
+  wood: { hi: 'g', light: 'a', mid: 'b', dark: 'c' },
+  cloth: { light: 'i', mid: 'i', dark: 'j' },
+  linen: { hi: 'h', light: 'h', mid: 'g', dark: 'n' },
+  metal: { hi: 'h', light: 'g', mid: 'n', dark: 'c' },
+  glass: { hi: 't', light: 't', mid: 's', dark: 'v' },
+  accent: { hi: 'm', light: 'd', mid: 'd', dark: 'e' },
+  leg: 'splayed',
+  foot: 'none',
+  trim: 'bead',
+  top: 'arched',
+  motif: 'crescent',
+  weave: 'dots',
+  lamp: 'bell',
+  lampMaterial: 'linen',
+  glow: { kind: 'ring', inner: 'y', outer: 'z' },
+  rug: { shape: 'oval', weave: 'dots' },
+  picture: 'moon',
+  shelf: ['crystal', 'books', 'jar'],
+  shapes: {
+    bed: { head: 'arched' },
+    cupboard: { top: 'arched' },
+    table: { skirt: 'swag' },
+    stool: { kind: 'pouf', mark: true },
+    frame: { kind: 'mirror' },
+    curtains: { kind: 'straight' },
+  },
+};

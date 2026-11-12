@@ -19,6 +19,18 @@ export function phaseOrFallback(serverNow: number, timeZone: string | null): Roo
 }
 
 /**
+ * Dev builds only (`__DEV_TOOLS_BUILD__`, never in production): `?phase=day|twilight|night` in the page's address forces the
+ * light of the living room and the house, for screenshots. Null when not forced.
+ */
+export function devPhase(
+  search: string | null = typeof location === 'undefined' ? null : location.search,
+): RoomPhase | null {
+  if (!__DEV_TOOLS_BUILD__ || search === null) return null;
+  const v = new URLSearchParams(search).get('phase');
+  return v === 'day' || v === 'twilight' || v === 'night' ? v : null;
+}
+
+/**
  * `offset` is the server clock minus the local clock (kept in a ref so a new state does not re-arm
  * the timer); `timeZone` comes with `GET /api/state`.
  */
@@ -42,5 +54,5 @@ export function useRoomPhase(offset: RefObject<number>, timeZone: string | null)
       if (timer !== undefined) clearTimeout(timer);
     };
   }, [timeZone]);
-  return phase;
+  return devPhase() ?? phase;
 }

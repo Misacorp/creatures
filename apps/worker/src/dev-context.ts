@@ -5,6 +5,7 @@
 import type { Rng } from '@creatures/game';
 import type { DevState } from './dev-state';
 import type { Games } from './games';
+import type { Housing } from './housing';
 import type { LedgerStorage } from './ledger';
 import type { Raid } from './raid';
 import type { Weather } from './weather';
@@ -46,6 +47,8 @@ export interface ToolCtx {
   games: Games;
   /** The valley's weather (the `set-weather` tool). */
   weather: Weather;
+  /** Player housing (the `housing-*` tools), or null with the `HOUSING` flag off: they answer 404. */
+  housing: Housing | null;
   /** The `COMBAT_V2` flag (also on for the tools to exist: `combat-v2-convert`; new creatures roll their v2 talent). */
   combatV2: boolean;
   /** The valley's base systems are on (`VALLEY_SYSTEMS` with `VALLEY` and `COMBAT_V2`: the `valley-fresh` tool needs it). */
@@ -91,6 +94,9 @@ export function purgeUser(sql: SqlStorage, userId: string, keepPlayer: boolean):
       0;
     if (hasUser) sql.exec(`DELETE FROM "${name.replaceAll('"', '""')}" WHERE user_id = ?`, userId);
   }
+  // The housing tables keyed by their owner (`house_guestbook`, `house_mail`) have no `user_id` column; the player's own house goes with them.
+  sql.exec('DELETE FROM house_guestbook WHERE owner_id = ?', userId);
+  sql.exec('DELETE FROM house_mail WHERE owner_id = ?', userId);
   if (!keepPlayer) {
     sql.exec('DELETE FROM sessions WHERE user_id = ?', userId);
     sql.exec('DELETE FROM players WHERE user_id = ?', userId);

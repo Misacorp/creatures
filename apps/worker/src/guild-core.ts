@@ -1,4 +1,4 @@
-import { RULES, type Rng } from '@creatures/game';
+import { RULES, type HousingHook, type Rng } from '@creatures/game';
 import * as v from 'valibot';
 import { DailyAllowance } from './allowance';
 import { Analytics, RETENTION_MS } from './analytics';
@@ -9,7 +9,11 @@ import { Dungeon } from './dungeon';
 import { dungeonRoutes } from './dungeon-routes';
 import { Gear } from './gear';
 import { Games } from './games';
+import { Housing } from './housing';
+import { HousingDrops } from './housing-drops';
+import { housingRoutes, isHousingNoSpendPath, isHousingPath } from './housing-routes';
 import { gamesRoutes } from './games-routes';
+import { weekIdFor } from './raid-schedule';
 import { convertPendingGear } from './gear-convert';
 import { normaliseGearRows } from './gear-normalise';
 import { rollMissingTalents } from './talent-store';
@@ -117,7 +121,7 @@ import {
   storeSignature,
   trackedInstances,
 } from './lounge';
-import { MIGRATIONS } from './migrations';
+import { applyMigrations } from './migrations';
 import { ReadMeter, pruneReads, readSourceOfPath, type ReadSource } from './read-meter';
 import { liveRng } from './rng';
 import { ValleyBonfire } from './valley-bonfire';
@@ -235,7 +239,11 @@ function isIntent(method: string, pathname: string): boolean {
   if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS') return false;
   // Closing the Gazette's paper depends on nothing the pass reads.
   return (
-    pathname !== '/api/room' && pathname !== '/api/valley/gazette/close' && !isDevPath(pathname)
+    pathname !== '/api/room' &&
+    pathname !== '/api/valley/gazette/close' &&
+    // Housing build, craft, gift and collect move Acorns the settle may owe; only its decorating writes skip it.
+    !isHousingNoSpendPath(pathname) &&
+    !isDevPath(pathname)
   );
 }
 
@@ -248,6 +256,7 @@ const routes: Routes<RequestContext> = {
   ...raidRoutes,
   ...weatherRoutes,
   ...gamesRoutes,
+  ...housingRoutes,
   ...dmRoutes,
   ...liveRoutes,
   ...devRoutes,
@@ -388,6 +397,16 @@ export interface GuildCoreOptions {
   /** The valley's base systems (`VALLEY_SYSTEMS` on with `VALLEY` and `COMBAT_V2` on, see `valley-flag.ts`): the `valley-fresh` dev tool can run. */
   valleySystems?: boolean;
   /**
+   * Player housing (the `HOUSING` var is "on", see `docs/design/housing.md`): the `/api/house` routes exist and the drop hook is built.
+   * Off (the default): the routes answer like a missing route, there is no hook and nothing of housing is read or written.
+   */
+  housing?: boolean;
+  /**
+   * Live randomness for what the reward moments drop into the house. Defaults to crypto.getRandomValues; separate from the others, so a
+   * drop never consumes a test's scripted draws and a test can seed it.
+   */
+  housingRng?: Rng;
+  /**
    * Live randomness for what scouts find (`VALLEY_SYSTEMS`): how many creatures, gear pieces, blueprints and pages each stretch brings
    * and which species. Defaults to crypto.getRandomValues; separate from the others so a scout's draw never consumes a scripted one.
    */
@@ -462,6 +481,10 @@ export class GuildCore {
   readonly valleyGifts: ValleyGifts | null;
   /** The `VALLEY_SYSTEMS` flag as the worker resolved it (see `valley-flag.ts`). */
   readonly valleySystems: boolean;
+  /** Player housing (`HOUSING`), or null with the flag off: its routes answer like a missing route. */
+  readonly housing: Housing | null;
+  /** The reward paths' hook into the house (`HousingDrops`), or null with the flag off. Package F passes it to each reward system. */
+  readonly housingHook: HousingHook | null;
   private postsInFlight: Promise<void> | null = null;
   private dmsInFlight: Promise<void> | null = null;
   private loungeInFlight: Promise<void> | null = null;
@@ -526,6 +549,23 @@ export class GuildCore {
     this.valleySystems = options.valleySystems === true;
     const gearRng = options.gearRng ?? liveRng();
     this.gearRng = gearRng;
+    // Player housing (`HOUSING`): the house and the hook the reward paths call. Without the flag neither exists.
+    if (options.housing === true) {
+      this.housing = new Housing({
+        storage,
+        now,
+        timezone: () => this.timezone(),
+        currentBoss: () => this.raid.week(weekIdFor(now(), this.timezone()))?.bossId ?? null,
+      });
+      this.housingHook = new HousingDrops({
+        storage,
+        now,
+        rng: options.housingRng ?? liveRng(),
+      });
+    } else {
+      this.housing = null;
+      this.housingHook = null;
+    }
     this.collection = new Collection({
       storage,
       now,
@@ -539,6 +579,7 @@ export class GuildCore {
       ...(options.combatV2 === true ? { combatV2: true } : {}),
       ...(this.valleySystems ? { valleySystems: true } : {}),
       tripRng: options.tripRng ?? liveRng(),
+      ...(this.housingHook === null ? {} : { housing: this.housingHook }),
       weather: this.weather,
       // With the valley on there is no lounge XP and no daily cap to show (the bonfire's idle XP takes over).
       ...(this.valleySystems ? {} : { gameDay: () => loungeDay(this.now(), this.timezone()).day }),
@@ -555,6 +596,7 @@ export class GuildCore {
         combatV2: options.combatV2 === true,
         choices: this.collection.choices,
         analytics: this.analytics,
+        ...(this.housingHook === null ? {} : { housing: this.housingHook }),
       });
       const forge = new ValleyForgePass({ storage, now, rng: gearRng });
       const gazette = new ValleyGazette(storage, now);
@@ -616,6 +658,7 @@ export class GuildCore {
       dev: this.devState ?? undefined,
       weather: this.weather,
       ...(options.combatV2 === true ? { combatV2: true } : {}),
+      ...(this.housingHook === null ? {} : { housing: this.housingHook }),
     });
     this.raid = new Raid({
       storage,
@@ -634,6 +677,7 @@ export class GuildCore {
       quirkRng,
       talentRng,
       gearRng,
+      ...(this.housingHook === null ? {} : { housing: this.housingHook }),
       ...(options.combatV2 === true ? { combatV2: true } : {}),
       ...(options.readinessRng === undefined ? {} : { readinessRng: options.readinessRng }),
       // Staging only: the dev tools' seats-per-player override. Without the dev tools nothing is read.
@@ -644,6 +688,7 @@ export class GuildCore {
     this.games = new Games({
       storage,
       now,
+      ...(this.housingHook === null ? {} : { housing: this.housingHook }),
       rng: options.gamesRng ?? liveRng(),
       gearRng,
       timezone: () => this.timezone(),
@@ -680,6 +725,7 @@ export class GuildCore {
             raid: this.raid,
             games: this.games,
             weather: this.weather,
+            housing: this.housing,
             combatV2: options.combatV2 === true,
             valleySystems: options.valleySystems === true,
             rng: options.raidRng ?? liveRng(),
@@ -759,19 +805,7 @@ export class GuildCore {
   }
 
   private runMigrations(): void {
-    this.sql.exec('CREATE TABLE IF NOT EXISTS schema_version (version INTEGER NOT NULL)');
-    const row = this.sql
-      .exec<{ version: number | null }>('SELECT MAX(version) AS version FROM schema_version')
-      .one();
-    const current = row.version ?? 0;
-    for (let version = current + 1; version <= MIGRATIONS.length; version++) {
-      const migration = MIGRATIONS[version - 1];
-      if (migration === undefined) throw new Error(`missing migration ${String(version)}`);
-      this.storage.transactionSync(() => {
-        migration(this.sql);
-        this.sql.exec('INSERT INTO schema_version (version) VALUES (?)', version);
-      });
-    }
+    applyMigrations(this.storage, this.sql);
     // The lounge tables, even where another branch's migration 33 ran first (staging; see lounge.ts).
     this.storage.transactionSync(() => {
       loungeMigration(this.sql);
@@ -1052,6 +1086,8 @@ export class GuildCore {
         console.error('valley settle failed', err instanceof Error ? err.name : 'unknown');
       }
     }
+    // With player housing off its routes do not exist: the same answer as any missing route.
+    if (this.housing === null && isHousingPath(pathname)) return notFound();
     const template = matchTemplate(ROUTE_KEYS, pathname);
     const response = await dispatch(routes, request, template?.template ?? pathname, {
       user,

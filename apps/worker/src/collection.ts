@@ -69,7 +69,7 @@ import {
 } from './creature-v2';
 import { replaceIdleTalents, type TalentReplacement } from './talent-v2-store';
 import { creatureTalentsView, type CreatureTalentsView } from './talent-view';
-import type { HeldTalent } from '@creatures/game';
+import type { HeldTalent, HousingHook } from '@creatures/game';
 import { getBalances, lookupSpend, spend, type Currency, type LedgerStorage } from './ledger';
 import { runKeyed, settleSpend } from './keyed-action';
 import { dismissLevelReset, pendingLevelReset, type LevelResetNotice } from './level-reset';
@@ -318,6 +318,8 @@ export interface CollectionDeps {
   tripRng: Rng;
   /** The valley's weather: trips are sent under the day's Boon and Omen. Optional: without it, none. */
   weather?: Weather | undefined;
+  /** Player housing's reward hook (`HOUSING` on): a drop at the reward moment. Absent: nothing happens. */
+  housing?: HousingHook | undefined;
   /** The analytics event log. Optional: without it nothing is logged. */
   analytics?: Analytics;
   /** The dev tools' force flags (staging only); passed on to expeditions. */
@@ -390,6 +392,7 @@ export class Collection {
       analytics: deps.analytics,
       dev: deps.dev,
       weather: deps.weather,
+      housing: deps.housing,
     });
   }
 

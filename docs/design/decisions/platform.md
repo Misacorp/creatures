@@ -4,6 +4,54 @@ Hosting, Durable Objects, scheduling, CI and deploys, staging, dependencies, sec
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-11: Furniture workshop: silhouette variants per form, chosen by the style
+
+ID: `2026-11-11-furniture-workshop-silhouette-variants-per-form` · Status: current
+
+**Decision.** Each furniture form gets a small menu of named silhouette variants (`workshop/variants.ts`: headboards, cupboard tops and doors, table supports and skirts, brackets, stool kinds, lamp kinds, rug shapes and borders, frame kinds, window dressings and panes), picked per form by the style's `shapes`; a form a style leaves out draws exactly as before. The review sheet gains a room view at real size and a report (`room.ts`, `report.ts`) with fixed thresholds: a "too close" pair is outline overlap at least 0.85 and colour distance at most 0.065; a piece is "hard to read" with under 3 tones, inside contrast under 1.25 on its background, over 12% lone specks or under 22% fill. After the variant pass no shipped piece switched from hand to generated.
+
+**Reasoning.** The first pass showed a style alone draws a coherent but plain set, because identity lives in the outline; variants put the outline in the style without hand pixels, and three demo styles (Plain Pine, Blackthorn, Sugarplum) come out as three different sets. The room repeats the house scene's geometry instead of importing it, because the scene loads the art packs through Vite's glob and the workshop runs under plain Node; a test keeps the two equal. The thresholds were calibrated on the shipped sets so the report lists little there (one close pair, the tone-on-tone sets); they are prompts to look, not gates. Shipped pieces stay hand because the variants now match their outlines but not their details (crescent doors, leaf curls, the anvil shelf, the hand halos), and the rule is that a shipped set never gets worse.
+
+## 2026-11-11: Housing content is validated on first use in the worker, not at isolate start
+
+ID: `2026-11-11-housing-content-is-validated-on-first` · Status: current
+
+**Decision.** The worker takes the housing content through `shippedHousing()` (`@creatures/game/housing-lazy`), which validates on its first call and memoises the result per isolate, and `Housing` builds its content lookups on first use. The client keeps the eager `@creatures/game/housing-content` entry.
+
+**Reasoning.** Measured in Node (20 runs): parsing and validating the content takes about 4 to 6 ms median and 10 to 12 ms cold, with no database rows involved. It used to run when the worker module was evaluated, in every isolate, with housing off too. A module-level memo of static content holds no state that must last between requests, so it fits the object's sleep model. Workers CPU is only roughly comparable to Node. Numbers and the test: `docs/design/housing.md`, "Server cost of the content".
+
+## 2026-11-11: Furniture workshop: sets are styles drawn at load, shipped pixels kept as reasoned overrides and locked
+
+ID: `2026-11-11-furniture-workshop-sets-are-styles-drawn` · Status: current
+
+**Decision.** Furniture sets are made in the workshop (`docs/design/housing-workshop.md`): a drawing library (`apps/activity/src/sprites/draw/`), one form per piece kind with named parts and a `Style` per set (`apps/activity/src/sprites/workshop/`). A set's pack file calls `setPack({ style, hand, pieces })` when the module loads; a form not listed in `pieces` is drawn from the style, a listed one keeps hand pixels (whole or by layer), takes given art or post-processes the generated piece, always with a written reason. `workshop/shipped-art.json` locks a hash of every shipped piece; a test fails when the library changes shipped art until `pnpm housing compare` has been looked at and `pnpm housing lock` run. In this first pass the eight shipped sets keep every piece's hand sprite (72 of 72); only the four ring-glow lamps' glow layers are generated, pixel-identical. Plain Pine (`workshop/sample/`) is a set drawn from a style alone and is not content.
+
+**Reasoning.** Drawing at load keeps one copy of the pixels (no checked-in generated output next to the hand art it would duplicate) and costs well under a millisecond a piece. The lock gives what a checked-in output would: no change to shipped art goes unseen. Misa's rule is that shipped sets never get worse; side by side, the generated pieces read as plainer re-skins of the hand ones, which carry each set's motif in the silhouette, so they stay overrides until a form or a style hook draws them as well.
+
+## 2026-11-10: Housing: a bed moves with its sleeper, and the housing content is its own package entry
+
+ID: `2026-11-10-housing-a-bed-moves-with-its` · Status: current
+
+**Decision.** `PUT /api/house/place` takes an optional `from` spot: a move empties it and places the piece in one transaction, and a bed takes its sleeper along. The answer carries `housemates` and the room a move left (`from`), so a sleeper sent home by an emptied or replaced bed is gone on screen at once. The housing content is the package entry `@creatures/game/housing-content`, not part of the `@creatures/game` barrel; the valley's "Your house" row lives in `valley/YourHouseRow`. The worker still loads the content eagerly.
+
+**Reasoning.** The client's empty-then-place move lost the sleeper and could leave half a move after a refusal. The barrel put about 89 KB of JSON and its validation in every player's first load (main chunk 1,905 kB, now 1,840 kB); `first-load-housing.test.ts` keeps it out.
+
+## 2026-11-10: Housing build, craft and skin answer with what changed
+
+ID: `2026-11-10-housing-build-craft-and-skin-answer` · Status: current
+
+**Decision.** `POST /api/house/build`, `POST /api/house/craft` and `PUT /api/house/skin` answer with only what changed (progress, purse, the materials touched; a finished part adds its rooms, displays, learned blueprints and lists; a skin answers the room or the exterior), and the client folds them in without a second request. Shapes: `docs/design/housing.md` 3.4.
+
+**Reasoning.** A housing day read about 3,700 rows; a partial payment made the client re-read the whole house (about 540 rows), a craft returned a full own view (420) and a skin the whole house (465). Now they read about 50, 55 and 30 rows, and the day about 2,700.
+
+## 2026-11-10: Migrations: applied by recorded version, reserved gaps, never revert the runner
+
+ID: `2026-11-10-migrations-applied-by-recorded-version-reserved` · Status: current
+
+**Decision.** The migration runner applies every real migration whose version is not yet recorded (set-based), not "everything above the highest recorded version". Versions 64 to 66 are reserved for the valley session's branch: that branch must take `applyMigrations` from the housing branch when it merges and number any new migration from 68. The set-based runner must never be reverted, even if housing itself is.
+
+**Reasoning.** Housing took 67 while the valley's 64 to 66 are still unmerged, so production will hold a recorded 67 with 64 to 66 unrecorded. A highest-version runner would skip them forever when the valley lands; a set-based one applies them. Reverting the runner (say, along with housing) would bring that skip back, so it stays whatever happens to housing.
+
 ## 2026-11-06: Dev tools: server managers only, roster presets, creatures-per-player override [Misa]
 
 ID: `2026-11-06-dev-tools-server-managers-only-roster` · Status: current

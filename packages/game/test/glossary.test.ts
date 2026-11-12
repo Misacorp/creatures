@@ -469,8 +469,43 @@ describe('the glossary text matches the rules', () => {
   });
 });
 
+describe('the housing words', () => {
+  const HOUSING_IDS = [
+    'house',
+    'house-part',
+    'luxury-material',
+    'furniture-blueprint',
+    'furniture-set',
+    'housemate',
+    'stamp',
+    'guestbook',
+    'mailbox',
+    'workbench',
+    'furniture-catalogue',
+    'gift',
+    'house-skin',
+    'house-trim',
+    'house-ceiling',
+    'house-frame',
+  ];
+
+  it('has an entry for every housing term the UI uses, each leading to the Your House section', () => {
+    for (const id of HOUSING_IDS) expect(entry(id).section, id).toBe('housing');
+    expect(glossaryGaps(glossary)).toEqual([]);
+  });
+
+  it('has a Your House section as the last one, saying the house gives no power', () => {
+    const last = howToPlay.sections.at(-1);
+    expect(last?.id).toBe('housing');
+    const lines = (last?.lines ?? []).join(' ');
+    for (const word of ['workbench', 'luxury', 'catalogue', 'gift', 'stamp', 'guestbook'])
+      expect(lines, word).toContain(word);
+    expect(lines).toContain('no power');
+  });
+});
+
 describe('the How to play text', () => {
-  it('has the eleven sections in the page order, each with 3 to 5 lines', () => {
+  it('has every section in the page order, each with 3 to 5 lines', () => {
     expect(howToPlay.sections.map((s) => s.id)).toEqual([...GLOSSARY_SECTIONS]);
     for (const s of howToPlay.sections) {
       expect(s.lines.length).toBeGreaterThanOrEqual(3);
@@ -487,7 +522,7 @@ describe('the How to play text', () => {
     );
     expect(workshopIds.length).toBeGreaterThan(8);
     for (const e of workshopIds) expect(e.section, e.id).toBe('workshop');
-    expect(howToPlay.sections.slice(-2).map((s) => s.id)).toEqual(['gear', 'workshop']);
+    expect(howToPlay.sections.slice(-3).map((s) => s.id)).toEqual(['gear', 'workshop', 'housing']);
   });
 
   it('gives every glossary entry a section a page has (the shipped one or the combat v2 one)', () => {

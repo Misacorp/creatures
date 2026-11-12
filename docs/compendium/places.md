@@ -269,6 +269,8 @@ From `glossary.json`, entry `destination-verdant-hollow`:
 > - Sproutle and Mossback live here.
 > - Something huge sleeps in the deeper area.
 
+The **Schoolhouse** furniture set (`housing.md`, "Schoolhouse set") is made of the Hollow's oak and the valley School's classroom; its blueprints turn up here `(compendium detail, not shipped)`.
+
 ---
 
 ## Storm Ridge
@@ -426,6 +428,8 @@ From `glossary.json`, entry `destination-old-crossroads`:
 > - Needs explorer rank 2.
 > - Splashet, Cindle, Sproutle, Zipmouse and Stormray pass through.
 > - Trips that were out when expeditions changed come home from here.
+
+The **Fairground** furniture set (`housing.md`, "Fairground set") comes from the Games Meadow just off this crossing: its blueprints turn up here, and a Games gold earns one `(compendium detail, not shipped)`.
 
 ---
 
@@ -799,6 +803,10 @@ A late place, like the Moonlit Reef, but with its own door. The Old Crossroads s
 - Solmane is a little afraid of the dark and walks into it to light the way for others `(T04)`. A Solmane that comes back from the Far Side, unafraid, would answer that.
 - Something sings across the water at the Reef `(T01)`. Here, at the great ring, something answers.
 - The payoff lynx and the support planet share one window each: where did the first window come from? No one here will say.
+
+### In the house
+
+The **Quiet Verge** furniture set is the first piece of this place to ship (`housing.md`, "Quiet Verge set"): its standing stones, its arch with the warm star, the still pool and the dark moon, made into furniture. Its blueprints come from the Old Crossroads and the Moonlit Reef until the place itself opens. `(content: sets.json)`
 
 ### Items and content needed to ship
 

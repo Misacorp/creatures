@@ -20,6 +20,7 @@ import {
   type GamesEventDef,
   type Rng,
   type ShowTimelineInput,
+  type HousingHook,
 } from '@creatures/game';
 import {
   gamesEntrantFrom,
@@ -53,6 +54,8 @@ export interface GamesDeps {
   gearRng: Rng;
   timezone: () => string;
   analytics?: Analytics | undefined;
+  /** Player housing's reward hook (`HOUSING` on): a drop at the reward moment. Absent: nothing happens. */
+  housing?: HousingHook | undefined;
 }
 
 /** A day locked after its scheduled show time shows this long after the lock. */
