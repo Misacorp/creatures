@@ -6,6 +6,7 @@ import { RoleChip } from './sprites/ElementChip';
  * can never disagree with the game. Words that appear in a picture come from the glossary.
  */
 import { Fragment } from 'preact';
+import { useEffect, useState } from 'preact/hooks';
 import {
   GLOSSARY_IDS,
   JOB_KINDS,
@@ -649,13 +650,63 @@ function V2RankArt() {
   );
 }
 
-/** The house section's picture: the Home glyph and the words of the house as chips that open their help. */
+type PostcardModule = typeof import('./housing/HousePostcard');
+
+/** The house the section shows: a cottage and its garden, the starter roof and walls. */
+const HOWTO_HOUSE = {
+  parts: ['hut', 'cottage', 'house', 'garden'],
+  roof: 'thatch',
+  walls: 'plaster',
+};
+
+/**
+ * A house as the game draws it (`housing/HousePostcard`), loaded with a dynamic `import()` when the section is drawn: the
+ * first load of the game carries no housing art or content (`first-load-housing.test.ts`). Until it is in (or if it cannot
+ * load), the Home glyph stands in its box, which keeps its height so the page does not jump.
+ */
+export function HousePicture({
+  load = () => import('./housing/HousePostcard'),
+}: {
+  load?: () => Promise<PostcardModule>;
+}) {
+  const [loaded, setLoaded] = useState<PostcardModule | null>(null);
+  useEffect(() => {
+    let live = true;
+    load().then(
+      (m) => {
+        if (live) setLoaded(m);
+      },
+      () => undefined,
+    );
+    return () => {
+      live = false;
+    };
+  }, []);
+  return (
+    <div class="howto-house">
+      {loaded === null ? (
+        <Sprite sprite={glyphOrUnknown('home')} scale={2} />
+      ) : (
+        <loaded.HousePostcard house={HOWTO_HOUSE} maxWidth={240} label="A house" />
+      )}
+    </div>
+  );
+}
+
+/** The house section's picture: a house as the game draws it, and the words of the house as chips that open their help. */
 function HousingArt() {
   return (
     <div class="workshop-art">
+      <HousePicture />
       <p class="tags art-tags">
-        <Sprite sprite={glyphOrUnknown('home')} scale={2} />
-        {['house-part', 'luxury-material', 'furniture-set', 'housemate', 'guestbook'].map((id) => (
+        {[
+          'house-part',
+          'luxury-material',
+          'furniture-set',
+          'house-skin',
+          'housemate',
+          'guestbook',
+        ].map((id) => (
           <Tag key={id} entry={id}>
             {titleOf(id)}
           </Tag>
