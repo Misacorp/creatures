@@ -251,7 +251,11 @@ function lanternBoat(): SpriteDef {
   return sprite(c);
 }
 
-/** A three-legged stool with a rod leaning on it, the line in the water and a red bobber. 30 x 20. */
+/**
+ * A fishing stool on the bank: a three-legged stool and a tin bucket, a rod set in the stool reaching out over the water, and
+ * its line hanging fine and straight to a red and white bobber. The stool and the bucket are inked; the rod is a thin inked
+ * stick and the line is drawn after the ink, one pixel wide, so it reads as a line and not a post. 30 x 20.
+ */
 function fishingStool(): SpriteDef {
   const c = canvas(30, 20);
   // the stool
@@ -259,18 +263,23 @@ function fishingStool(): SpriteDef {
   line(c, 4, 12, 3, 19, 't');
   line(c, 11, 12, 12, 19, 't');
   vline(c, 7, 12, 8, 's');
-  // the rod, from the stool out over the water
-  line(c, 9, 10, 24, 1, 'u');
-  line(c, 9, 9, 24, 0, 's');
-  // the line and the bobber
-  vline(c, 25, 1, 14, 'c');
-  fill(c, 24, 15, 3, 2, 'R');
-  put(c, 24, 15, 'c');
-  put(c, 25, 17, 'e');
   // a bucket
   solid(c, { x: 16, y: 13, w: 6, h: 7 }, inRect(16, 13, 6, 7), IRON);
   hline(c, 17, 14, 4, 'e');
   outline(c, 'k');
+  // the rod: from its butt in the stool out over the water, dark wood under a light edge, a reel by the grip
+  line(c, 10, 9, 26, 1, 'u');
+  line(c, 11, 8, 26, 0, 'r');
+  put(c, 12, 9, 'k');
+  put(c, 13, 9, 'd');
+  // the line from the tip, one pixel, and the bobber on the water
+  vline(c, 27, 1, 13, 'b');
+  put(c, 27, 0, 'u');
+  put(c, 26, 14, 'k');
+  put(c, 27, 14, 'c');
+  put(c, 28, 14, 'k');
+  fill(c, 26, 15, 3, 1, 'R');
+  put(c, 27, 16, 'k');
   return sprite(c);
 }
 
