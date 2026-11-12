@@ -22,7 +22,15 @@ import {
 import { giftReason } from './GiftButton';
 import { giftRows } from './MailboxPanel';
 import { ownedStamps } from './StampPicker';
-import { EMPTY_CHOICE, NOBODY, skinChoices, sleeperOptions, spotView } from './spot-view';
+import {
+  EMPTY_CHOICE,
+  NOBODY,
+  currentLook,
+  skinBody,
+  skinChoices,
+  sleeperOptions,
+  spotView,
+} from './spot-view';
 import { todayLine } from './VisitList';
 import { recipeFor, workbenchGroups } from './workbench-view';
 
@@ -277,6 +285,65 @@ describe('spot view', () => {
     expect(
       skinChoices('roof', 'thatch', sampleOwn('rich')).every((c) => c.id !== 'cosy-wall'),
     ).toBe(true);
+  });
+
+  it('lists a generated pattern once with its colours, the one in use first with its colour', () => {
+    const own = { ...sampleOwn('empty'), items: { ...sampleOwn('empty').items, skins: [] } };
+    const floors = skinChoices('floor', 'floor-boards:walnut', own);
+    expect(floors[0]).toMatchObject({
+      id: 'floor-boards',
+      here: true,
+      kind: 'owned',
+      colour: 'walnut',
+    });
+    expect(floors[0]?.colours).toContain('oak');
+    expect(floors.filter((c) => c.id === 'floor-boards')).toHaveLength(1);
+    // Starters are owned by rule, with no row; the workbench ones are known, not made.
+    expect(floors.find((c) => c.id === 'floor-checker')?.kind).toBe('blueprint');
+    // Drop and feat patterns stay hidden until learned.
+    expect(floors.some((c) => c.id === 'floor-parquet')).toBe(false);
+  });
+
+  it('puts As built first for a trim, ceiling or frame, never for a wallpaper', () => {
+    const own = sampleOwn('empty');
+    expect(skinChoices('trim', null, own)[0]).toMatchObject({ kind: 'bare', here: true });
+    expect(skinChoices('frame', 'frame-timber:oak', own)[0]).toMatchObject({
+      kind: 'bare',
+      here: false,
+    });
+    expect(skinChoices('wall', 'cosy-wall', own).some((c) => c.kind === 'bare')).toBe(false);
+  });
+
+  it('reads the look a picker opens on and makes the request that sets it', () => {
+    const house = sampleHouse();
+    const base = house.rooms[0];
+    if (base === undefined) throw new Error('no room');
+    const room = { ...base, trim: 'trim-classic:paint-sage' };
+    expect(currentLook(house, room, 'trim')).toBe('trim-classic:paint-sage');
+    expect(currentLook(house, room, 'ceiling')).toBeNull();
+    expect(currentLook(house, undefined, 'wall')).toBeUndefined();
+    expect(currentLook(house, undefined, 'frame')).toBeNull();
+    expect(skinBody('trim', room.id, null)).toEqual({
+      target: 'room',
+      roomId: room.id,
+      trim: null,
+    });
+    expect(skinBody('wall', room.id, 'paper-plain:sky')).toEqual({
+      target: 'room',
+      roomId: room.id,
+      wall: 'paper-plain:sky',
+    });
+    expect(skinBody('ground', room.id, 'deck')).toEqual({
+      target: 'room',
+      roomId: room.id,
+      floor: 'deck',
+    });
+    expect(skinBody('frame', null, 'frame-stone:grey')).toEqual({
+      target: 'exterior',
+      frame: 'frame-stone:grey',
+    });
+    expect(skinBody('wall', null, 'paper-plain:sky')).toBeNull();
+    expect(skinBody('roof', null, null)).toBeNull();
   });
 });
 

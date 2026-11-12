@@ -4,14 +4,19 @@
  * creatures that can sleep in it with their reasons. Pure.
  */
 import {
+  BARE_LAYERS,
   canPlace,
   HOUSING_RULES,
+  ownsSkin,
+  parseLook,
   type HousemateView,
+  type HouseView,
   type OwnHouseView,
   type RoomView,
 } from '@creatures/game';
 import { housing } from '@creatures/game/housing-content';
 import type { Creature } from '../api';
+import type { SkinBody } from './housing-api';
 import { creatureName } from '../game';
 import { baseOption, type PickerOption } from '../roster-picker';
 import { pieceOf, setName, SPOT_NAMES } from './house-names';
@@ -210,46 +215,123 @@ export function sleeperOptions(
   return [nobody, ...rows];
 }
 
-export type SkinKind = 'wall' | 'floor' | 'roof' | 'walls' | 'ground';
+export type SkinKind = 'wall' | 'floor' | 'trim' | 'ceiling' | 'roof' | 'walls' | 'frame' | 'ground';
+
+/** The id of the "As built" choice: a trim, ceiling or frame taken off. */
+export const BARE_CHOICE = '__bare';
 
 export interface SkinChoice {
+  /** A skin id, or `BARE_CHOICE`. */
   id: string;
-  /** `owned`: it can be used now; `blueprint`: known, not made yet. */
-  kind: 'owned' | 'blueprint';
+  /** `owned`: it can be used now; `blueprint`: known, not made yet; `bare`: the layer as built (nothing chosen). */
+  kind: 'owned' | 'blueprint' | 'bare';
   name: string;
   set: string | null;
   here: boolean;
   label: string;
+  /** The colours a generated pattern comes in (housing C5); empty for a drawn skin. */
+  colours: readonly string[];
+  /** The colour worn now, when this pattern is the one in use. */
+  colour: string | null;
 }
 
-/** What the skin picker lists for a kind: the skins the player has (the one in use first), then the ones known but not made. */
-export function skinChoices(kind: SkinKind, current: string, own: OwnHouseView): SkinChoice[] {
+/**
+ * What the skin picker lists for a kind: "As built" first for a layer that can be bare (trim, ceiling, frame), then the skins the player
+ * has (the one in use first; a starter is had by rule), then the ones known but not made. A generated pattern is one choice for all
+ * its colours. `current` is the look in use (`paper-damask:rose`), or null for a bare layer.
+ */
+export function skinChoices(
+  kind: SkinKind,
+  current: string | null,
+  own: OwnHouseView,
+): SkinChoice[] {
   const known = knownIds(own);
+  const worn = current === null ? null : parseLook(current);
   const have = (s: (typeof housing.skins)[number]) =>
-    s.unlock.kind === 'starter' || own.items.skins.includes(s.id) || s.id === current;
+    ownsSkin(s, own.items.skins.includes(s.id)) || s.id === worn?.skin;
   // Ground skins: the varieties of one outdoor room (`orchard-apple`, `orchard-plum`), told by the id they share before the dash.
-  const family = `${current.split('-')[0] ?? ''}-`;
+  const family = `${(current ?? '').split('-')[0] ?? ''}-`;
   const ofKind = housing.skins.filter(
     (s) => s.kind === kind && (kind !== 'ground' || s.id.startsWith(family)),
   );
-  const owned = ofKind.filter(have).map((s): SkinChoice => ({
-    id: s.id,
-    kind: 'owned',
-    name: s.name,
-    set: setName(s.set),
-    here: s.id === current,
-    label: s.id === current ? `${s.name}, in use` : s.name,
-  }));
-  owned.sort((a, b) => Number(b.here) - Number(a.here));
-  const blueprints = ofKind
-    .filter((s) => !have(s) && known.has(s.id))
-    .map((s): SkinChoice => ({
+  const choice = (s: (typeof housing.skins)[number], owned: boolean): SkinChoice => {
+    const here = s.id === worn?.skin;
+    return {
       id: s.id,
-      kind: 'blueprint',
+      kind: owned ? 'owned' : 'blueprint',
       name: s.name,
       set: setName(s.set),
-      here: false,
-      label: `${s.name}, not made yet`,
-    }));
-  return [...owned, ...blueprints];
+      here,
+      label: owned ? (here ? `${s.name}, in use` : s.name) : `${s.name}, not made yet`,
+      colours: s.gen?.colours ?? [],
+      colour: here ? (worn?.colour ?? null) : null,
+    };
+  };
+  const owned = ofKind.filter(have).map((s) => choice(s, true));
+  owned.sort((a, b) => Number(b.here) - Number(a.here));
+  const blueprints = ofKind.filter((s) => !have(s) && known.has(s.id)).map((s) => choice(s, false));
+  const bare: SkinChoice[] = BARE_LAYERS.has(kind)
+    ? [
+        {
+          id: BARE_CHOICE,
+          kind: 'bare',
+          name: 'As built',
+          set: null,
+          here: current === null,
+          label: current === null ? 'As built, in use' : 'As built',
+          colours: [],
+          colour: null,
+        },
+      ]
+    : [];
+  return [...bare, ...owned, ...blueprints];
+}
+
+/**
+ * The look a skin picker opens on: a room's wallpaper, floor (an outdoor room's ground), trim or ceiling, or the house's roof, walls
+ * or frame. Null is a bare layer; undefined: the room is gone.
+ */
+export function currentLook(
+  house: HouseView,
+  room: RoomView | undefined,
+  kind: SkinKind,
+): string | null | undefined {
+  switch (kind) {
+    case 'roof':
+    case 'walls':
+    case 'frame':
+      return house.exterior[kind];
+    case 'ground':
+      return room?.floor;
+    case 'wall':
+    case 'floor':
+    case 'trim':
+    case 'ceiling':
+      return room === undefined ? undefined : room[kind];
+  }
+}
+
+/** The request that puts a look on a layer (null: a bare trim, ceiling or frame); null when it needs a room and has none. */
+export function skinBody(
+  kind: SkinKind,
+  roomId: string | null,
+  value: string | null,
+): SkinBody | null {
+  switch (kind) {
+    case 'roof':
+      return value === null ? null : { target: 'exterior', roof: value };
+    case 'walls':
+      return value === null ? null : { target: 'exterior', walls: value };
+    case 'frame':
+      return { target: 'exterior', frame: value };
+    case 'ground':
+    case 'floor':
+      return roomId === null || value === null ? null : { target: 'room', roomId, floor: value };
+    case 'wall':
+      return roomId === null || value === null ? null : { target: 'room', roomId, wall: value };
+    case 'trim':
+      return roomId === null ? null : { target: 'room', roomId, trim: value };
+    case 'ceiling':
+      return roomId === null ? null : { target: 'room', roomId, ceiling: value };
+  }
 }

@@ -42,10 +42,20 @@ export type GiftAnswer = Out<typeof GiftAnswerSchema>;
 export type StampAnswer = Out<typeof StampAnswerSchema>;
 export type CollectAnswer = Out<typeof CollectAnswerSchema>;
 
-/** What `PUT /api/house/skin` takes: a room's wallpaper and floor, or the exterior's roof and walls. */
+/**
+ * What `PUT /api/house/skin` takes: a room's wallpaper, floor, trim and ceiling, or the exterior's roof, walls and frame. A look is a
+ * skin id or a pattern in a colour (`paper-damask:rose`); a trim, ceiling or frame of null takes it off.
+ */
 export type SkinBody =
-  | { target: 'room'; roomId: string; wall?: string; floor?: string }
-  | { target: 'exterior'; roof?: string; walls?: string };
+  | {
+      target: 'room';
+      roomId: string;
+      wall?: string;
+      floor?: string;
+      trim?: string | null;
+      ceiling?: string | null;
+    }
+  | { target: 'exterior'; roof?: string; walls?: string; frame?: string | null };
 
 /** The answer in its schema's shape, or an error the screen shows as a failed load. */
 function parsed<S extends Schema>(schema: S, data: unknown, what: string): Out<S> {
@@ -171,6 +181,7 @@ export const HOUSE_ERRORS: Readonly<Record<string, string>> = {
   none_free: 'Every copy is already placed.',
   not_owned: 'You do not have that.',
   skin_mismatch: 'That does not fit there.',
+  bad_colour: 'That pattern does not come in that colour.',
   creature_not_found: 'That creature is not yours.',
   not_a_bed: 'Only a bed has a housemate.',
   housemate_cap: 'The house has all the housemates it can hold.',

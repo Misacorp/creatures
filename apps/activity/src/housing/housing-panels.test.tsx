@@ -459,6 +459,85 @@ describe('SkinPicker', () => {
     );
     expect(first(byName(p.root, 'button', /^Use it/)).hasAttribute('disabled')).toBe(true);
   });
+
+  it('wears a pattern in a colour picked from its colour row (one choice per pattern, a starter by rule)', () => {
+    const onPick = vi.fn();
+    const own = sampleOwn('empty');
+    const p = draw(
+      <SkinPicker
+        kind="wall"
+        current="cosy-wall"
+        own={own}
+        busy={false}
+        onPick={onPick}
+        onMake={noop}
+      />,
+    );
+    // One tile for the pattern, not one per colour; no colour row until a pattern is chosen.
+    expect(byName(p.root, 'button', /^Pinstripe Paper/)).toHaveLength(1);
+    expect(byName(p.root, 'button', /^Rose/)).toHaveLength(0);
+    p.click(first(byName(p.root, 'button', /^Pinstripe Paper/)));
+    // The first colour is picked; another is a tap away.
+    expect(visibleText(p.root)).toContain('Pinstripe Paper, Warm cream');
+    p.click(first(byName(p.root, 'button', /^Rose$/)));
+    expect(visibleText(p.root)).toContain('Pinstripe Paper, Rose');
+    p.click(first(byName(p.root, 'button', /^Use it/)));
+    expect(onPick).toHaveBeenCalledWith('paper-pinstripe:rose');
+  });
+
+  it('opens on the pattern and colour in use, with Use it off for that colour only', () => {
+    const p = draw(
+      <SkinPicker
+        kind="floor"
+        current="floor-boards:walnut"
+        own={sampleOwn('empty')}
+        busy={false}
+        onPick={noop}
+        onMake={noop}
+      />,
+    );
+    expect(first(byName(p.root, 'button', /^Walnut, in use/)).getAttribute('aria-pressed')).toBe(
+      'true',
+    );
+    expect(first(byName(p.root, 'button', /^Use it/)).hasAttribute('disabled')).toBe(true);
+    p.click(first(byName(p.root, 'button', /^Oak$/)));
+    expect(first(byName(p.root, 'button', /^Use it/)).hasAttribute('disabled')).toBe(false);
+  });
+
+  it('offers As built first for a trim, and takes the trim off with null', () => {
+    const onPick = vi.fn();
+    const p = draw(
+      <SkinPicker
+        kind="trim"
+        current="trim-skirting:paint-white"
+        own={sampleOwn('empty')}
+        busy={false}
+        onPick={onPick}
+        onMake={noop}
+      />,
+    );
+    const tiles = byName(p.root, 'button', /^(As built|Skirting Board|Classic Trim)/);
+    expect(tiles[0]?.getAttribute('aria-label')).toBe('As built');
+    p.click(first(byName(p.root, 'button', /^As built/)));
+    p.click(first(byName(p.root, 'button', /^Use it/)));
+    expect(onPick).toHaveBeenCalledWith(null);
+  });
+
+  it('shows a workbench pattern not made yet greyed, with its colours to preview and Make', () => {
+    const p = draw(
+      <SkinPicker
+        kind="ceiling"
+        current={null}
+        own={sampleOwn('empty')}
+        busy={false}
+        onPick={noop}
+        onMake={noop}
+      />,
+    );
+    p.click(first(byName(p.root, 'button', /^Beamed Ceiling, not made yet/)));
+    expect(byName(p.root, 'button', /^Dark boards/)).toHaveLength(1);
+    expect(byName(p.root, 'button', /^Make/)).toHaveLength(1);
+  });
 });
 
 describe('MailboxPanel', () => {

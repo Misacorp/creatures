@@ -228,16 +228,52 @@
   box-shadow: var(--ring);
 }
 
-/* --- Chips under the scene or the room (roof, walls, wallpaper, floor) --- */
+/*
+ * --- Chips under the scene or the room (roof, walls, frame; wallpaper, floor, trim, ceiling) ---
+ * Equal columns, never a sideways scroll: the house's three in one row, a room's four in two rows of two on a phone and one row
+ * on a wide window. A long name is cut with an ellipsis (the spoken name is whole).
+ */
 .house-chips {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(var(--chips, 2), minmax(0, 1fr));
   gap: 0.5rem;
   margin-top: 0.5rem;
 }
 
+.house-chips[data-chips='1'] {
+  --chips: 1;
+}
+
+.house-chips[data-chips='3'] {
+  --chips: 3;
+}
+
+@media (width >= 700px) {
+  .house-chips[data-chips='4'] {
+    --chips: 4;
+  }
+}
+
 .house-chips .hp-skin-trigger {
-  flex: 1 1 9rem;
+  margin-right: 0;
+  padding-inline: 0.5rem;
+}
+
+.house-chips .equip-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.house-chips .hp-empty-mark {
+  flex: none;
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+/* The colour row under a pattern in the skin picker: the same grid, a little apart from the patterns above it. */
+.hp-colours {
+  margin-top: 0.5rem;
 }
 
 /* --- The page and a visit --- */

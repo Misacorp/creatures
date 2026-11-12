@@ -8,6 +8,12 @@ import { RoomFocus, focusScale, spotLayers } from './RoomFocus';
 import { placedNames, standsAt } from './HousePlace';
 import { defaultHouseScale } from './HouseScene';
 import { sceneHouse, sceneOwn, MANSION, HUT } from './house-scene-sample';
+
+function first<T>(list: readonly T[]): T {
+  const [el] = list;
+  if (el === undefined) throw new Error('not found');
+  return el;
+}
 import { displayText, spotLabel } from './house-text';
 import {
   afterBuild,
@@ -189,6 +195,31 @@ describe('RoomFocus', () => {
     expect(onSpot).toHaveBeenCalledWith('window-a');
     expect(byName(page.root, 'button', /Wallpaper: /)).toHaveLength(1);
     expect(byName(page.root, 'button', /Floor: /)).toHaveLength(1);
+    // The room's own layers (housing C5): trim and ceiling, as built until chosen.
+    expect(first(byName(page.root, 'button', /^Trim: /)).getAttribute('aria-label')).toBe(
+      'Trim: As built',
+    );
+    expect(byName(page.root, 'button', /^Ceiling: As built/)).toHaveLength(1);
+  });
+
+  it('names a chosen pattern by its colour on the chip, and asks for the layer it shows', () => {
+    page = createPage();
+    const onSkin = vi.fn();
+    const first0 = house.rooms[0];
+    if (first0 === undefined) throw new Error('no room');
+    const dressed = {
+      ...house,
+      rooms: [
+        { ...first0, wall: 'paper-damask:rose', ceiling: 'ceiling-beamed:dark' },
+        ...house.rooms.slice(1),
+      ],
+    };
+    page.draw(<RoomFocus house={dressed} roomId={first0.id} mode="own" onSkin={onSkin} />);
+    expect(byName(page.root, 'button', 'Wallpaper: Damask Paper, Rose')).toHaveLength(1);
+    const ceiling = first(byName(page.root, 'button', 'Ceiling: Beamed Ceiling, Dark boards'));
+    page.click(ceiling);
+    expect(onSkin).toHaveBeenCalledWith('ceiling');
+    expect(byClass(page.root, 'house-chips')[0]?.getAttribute('data-chips')).toBe('4');
   });
 
   it('shows no spot buttons for empty places or chips in a visit', () => {

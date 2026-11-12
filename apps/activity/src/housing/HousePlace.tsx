@@ -41,6 +41,8 @@ import { SPOT_NAMES } from './house-text';
 import { HousePostcard } from './HousePostcard';
 import { PartPreview } from './PartPreview';
 import { RoomFocus } from './RoomFocus';
+import { SKIN_KIND_NAMES } from './SkinPicker';
+import { currentLook, skinBody, type SkinKind } from './spot-view';
 import { SkinTrigger } from './SkinTrigger';
 import { freshFinds, hasFresh, useHouse, type OwnHouse } from './use-house';
 import { VisitHouse } from './VisitHouse';
@@ -54,7 +56,7 @@ type View =
 /** The choice a spot or a skin chip is offering (a drawer, or the side panel). */
 type Picker =
   | { kind: 'spot'; roomId: string; spotId: string }
-  | { kind: 'skin'; skin: 'wall' | 'floor' | 'ground' | 'roof' | 'walls'; roomId: string | null };
+  | { kind: 'skin'; skin: SkinKind; roomId: string | null };
 
 const DRILL_TITLES: Readonly<Record<HouseDrill, string>> = {
   build: 'Build',
@@ -301,24 +303,10 @@ export function HousePlace({ creatures, now, onSpent }: HousePlaceProps) {
       };
     }
     const room = p.roomId === null ? undefined : view_.rooms.find((r) => r.id === p.roomId);
-    const current =
-      p.skin === 'wall'
-        ? room?.wall
-        : p.skin === 'floor' || p.skin === 'ground'
-          ? room?.floor
-          : p.skin === 'roof'
-            ? view_.exterior.roof
-            : view_.exterior.walls;
+    const current = currentLook(view_, room, p.skin);
     if (current === undefined) return null;
-    const titles = {
-      wall: 'Wallpaper',
-      floor: 'Floor',
-      ground: 'Ground',
-      roof: 'Roof',
-      walls: 'Walls',
-    } as const;
     return {
-      title: titles[p.skin],
+      title: SKIN_KIND_NAMES[p.skin],
       hidden: false,
       body: (
         <SkinPicker
@@ -326,19 +314,8 @@ export function HousePlace({ creatures, now, onSpent }: HousePlaceProps) {
           current={current}
           own={own}
           busy={house.busy}
-          onPick={(skinId) => {
-            const body =
-              p.skin === 'roof'
-                ? ({ target: 'exterior', roof: skinId } as const)
-                : p.skin === 'walls'
-                  ? ({ target: 'exterior', walls: skinId } as const)
-                  : p.roomId === null
-                    ? null
-                    : ({
-                        target: 'room',
-                        roomId: p.roomId,
-                        [p.skin === 'ground' ? 'floor' : p.skin]: skinId,
-                      } as const);
+          onPick={(value) => {
+            const body = skinBody(p.skin, p.roomId, value);
             if (body === null) return;
             void house.actions.skin(body).then((ok) => {
               if (ok) setPicker(null);
@@ -409,21 +386,17 @@ export function HousePlace({ creatures, now, onSpent }: HousePlaceProps) {
           open(kind === 'mailbox' ? 'mailbox' : 'workbench');
         }}
       />
-      <div class="house-chips">
-        <SkinTrigger
-          kind="roof"
-          id={view_.exterior.roof}
-          onOpen={() => {
-            setPicker({ kind: 'skin', skin: 'roof', roomId: null });
-          }}
-        />
-        <SkinTrigger
-          kind="walls"
-          id={view_.exterior.walls}
-          onOpen={() => {
-            setPicker({ kind: 'skin', skin: 'walls', roomId: null });
-          }}
-        />
+      <div class="house-chips" data-chips="3">
+        {(['roof', 'walls', 'frame'] as const).map((layer) => (
+          <SkinTrigger
+            key={layer}
+            kind={layer}
+            id={view_.exterior[layer]}
+            onOpen={() => {
+              setPicker({ kind: 'skin', skin: layer, roomId: null });
+            }}
+          />
+        ))}
       </div>
     </>
   );

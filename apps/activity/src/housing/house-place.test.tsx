@@ -115,6 +115,8 @@ describe('the House place on sample data', () => {
     const roof = first(byName(p.root, 'button', /^Roof: /));
     expect(roof.getAttribute('class')).toContain('equip-trigger');
     expect(byName(p.root, 'button', /^Walls: /)).toHaveLength(1);
+    // The house frame (housing C5) beside them, as built until chosen.
+    expect(byName(p.root, 'button', 'Frame: As built')).toHaveLength(1);
     const rows = byClass(p.root, 'vy-row');
     expect(
       rows

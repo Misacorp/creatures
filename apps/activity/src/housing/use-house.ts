@@ -177,7 +177,7 @@ export function afterPlace(state: OwnHouse, answer: PlaceAnswer): OwnHouse {
   };
 }
 
-/** A room's wallpaper and floor, or the exterior's roof and walls, changed. */
+/** A room's wallpaper, floor, trim or ceiling, or the exterior's roof, walls or frame, changed. */
 export function afterSkin(state: OwnHouse, answer: SkinAnswer): OwnHouse {
   if (answer.target === 'exterior') {
     return { house: { ...state.house, exterior: answer.exterior }, own: state.own };

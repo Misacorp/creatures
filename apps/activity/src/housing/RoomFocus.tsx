@@ -226,8 +226,8 @@ export interface RoomFocusProps {
   mode: 'own' | 'visit';
   /** Own house: a spot was tapped (its picker opens). */
   onSpot?: (spotId: string) => void;
-  /** Own house: the wallpaper or the floor chip was tapped. */
-  onSkin?: (kind: 'wall' | 'floor' | 'ground') => void;
+  /** Own house: the wallpaper, floor, trim or ceiling chip (or an outdoor room's ground) was tapped. */
+  onSkin?: (kind: 'wall' | 'floor' | 'trim' | 'ceiling' | 'ground') => void;
   /** The spot whose picker is open (it keeps a ring). */
   selectedSpot?: string | null;
 }
@@ -358,7 +358,7 @@ export function RoomFocus({
         onSkin !== undefined &&
         (model.rooms[0]?.outdoor ?? false) &&
         hasVarieties(view.floor) && (
-          <div class="house-chips">
+          <div class="house-chips" data-chips="1">
             <SkinTrigger
               kind="ground"
               id={view.floor}
@@ -369,21 +369,17 @@ export function RoomFocus({
           </div>
         )}
       {own && view !== undefined && onSkin !== undefined && !(model.rooms[0]?.outdoor ?? false) && (
-        <div class="house-chips">
-          <SkinTrigger
-            kind="wall"
-            id={view.wall}
-            onOpen={() => {
-              onSkin('wall');
-            }}
-          />
-          <SkinTrigger
-            kind="floor"
-            id={view.floor}
-            onOpen={() => {
-              onSkin('floor');
-            }}
-          />
+        <div class="house-chips" data-chips="4">
+          {(['wall', 'floor', 'trim', 'ceiling'] as const).map((layer) => (
+            <SkinTrigger
+              key={layer}
+              kind={layer}
+              id={view[layer]}
+              onOpen={() => {
+                onSkin(layer);
+              }}
+            />
+          ))}
         </div>
       )}
     </div>
