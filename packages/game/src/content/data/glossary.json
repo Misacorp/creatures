@@ -2568,9 +2568,9 @@
   {
     "id": "house-skin",
     "title": "Skin",
-    "short": "A wallpaper, floor, trim, ceiling, roof, wall or frame style.",
+    "short": "How the house looks, outside and in: roof, walls, wallpaper, floor and more.",
     "lines": [
-      "Skins change how a room or the outside looks, and nothing else.",
+      "Skins change how the outside or a room looks, and nothing else.",
       "Each set brings its own wallpaper and floor. A pattern comes in many colours: make it once and wear any of them."
     ],
     "section": "housing"
@@ -2581,7 +2581,7 @@
     "short": "The boards along a wall: a skirting, a rail, panelling.",
     "lines": [
       "Each room picks its own trim, in a paint, a wood or a stone.",
-      "As built, a room has no trim of its own."
+      "A room starts with no trim. Choose None to take one off."
     ],
     "section": "housing"
   },

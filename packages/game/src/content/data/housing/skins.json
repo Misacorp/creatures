@@ -785,7 +785,7 @@
   },
   {
     "id": "paper-tiles",
-    "name": "Tiled Wall",
+    "name": "Glazed Tiles",
     "kind": "wall",
     "set": null,
     "unlock": {
@@ -815,7 +815,7 @@
   },
   {
     "id": "paper-planks",
-    "name": "Plank Wall",
+    "name": "Upright Boards",
     "kind": "wall",
     "set": null,
     "unlock": {
@@ -845,7 +845,7 @@
   },
   {
     "id": "paper-brick",
-    "name": "Brick Wall",
+    "name": "Bare Brick",
     "kind": "wall",
     "set": null,
     "unlock": {
@@ -876,7 +876,7 @@
   },
   {
     "id": "paper-panels",
-    "name": "Panelled Wall",
+    "name": "Moulded Panels",
     "kind": "wall",
     "set": null,
     "unlock": {

@@ -305,9 +305,31 @@
   height: 16px;
 }
 
-/* The colour row under a pattern in the skin picker: the same grid, a little apart from the patterns above it. */
+/*
+ * The colour row under the patterns in the skin picker: a smaller control of its own (small swatches under a "Colour" label,
+ * a line above), its room kept (two rows of swatches) while a layer with patterns is open so the drawer does not jump.
+ */
 .hp-colours {
+  display: grid;
+  gap: 0.25rem;
+  align-content: start;
+  min-height: calc(1.25rem + 2 * 2rem + 2 * 0.25rem + 0.5rem);
   margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: var(--px) solid var(--line);
+}
+
+.hp-colours .supply-grid.supply-flat {
+  grid-template-columns: repeat(auto-fill, 2rem);
+  gap: 0.25rem;
+}
+
+.hp-colours button.supply-cell {
+  padding: 0.125rem;
+}
+
+.hp-colours-hint {
+  margin: 0;
 }
 
 /* --- The page and a visit --- */

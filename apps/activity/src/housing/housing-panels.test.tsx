@@ -504,6 +504,39 @@ describe('SkinPicker', () => {
     expect(first(byName(p.root, 'button', /^Use it/)).hasAttribute('disabled')).toBe(false);
   });
 
+  it('keeps the colour row under its label while a layer with patterns is open, with a hint for a drawn skin', () => {
+    const p = draw(
+      <SkinPicker
+        kind="wall"
+        current="cosy-wall"
+        own={sampleOwn('rich')}
+        busy={false}
+        onPick={noop}
+        onMake={noop}
+      />,
+    );
+    expect(byClass(p.root, 'hp-colours')).toHaveLength(1);
+    expect(p.root.textContent).toContain('Patterns come in colours');
+    expect(byName(p.root, 'div', 'Colours')).toHaveLength(0);
+    p.click(first(byName(p.root, 'button', /^Pinstripe Paper/)));
+    expect(byName(p.root, 'div', 'Colours')).toHaveLength(1);
+    expect(p.root.textContent).not.toContain('Patterns come in colours');
+  });
+
+  it('has no colour row for a layer without patterns', () => {
+    const p = draw(
+      <SkinPicker
+        kind="roof"
+        current="thatch"
+        own={sampleOwn('rich')}
+        busy={false}
+        onPick={noop}
+        onMake={noop}
+      />,
+    );
+    expect(byClass(p.root, 'hp-colours')).toHaveLength(0);
+  });
+
   it('offers None first for a trim, and takes the trim off with null', () => {
     const onPick = vi.fn();
     const p = draw(

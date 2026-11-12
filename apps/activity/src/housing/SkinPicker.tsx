@@ -70,8 +70,8 @@ function colourCell(kind: SkinKind, colour: string, worn: boolean): SupplyCell {
 }
 
 /**
- * The wallpaper, floor, trim, ceiling, roof, walls or frame to choose from, as the body of a drawer: "As built" first for a layer that
- * can be left bare, the skins the player has as pictures (the one in use first), then the ones known but not made yet, greyed; under
+ * The wallpaper, floor, trim, ceiling, roof, walls, frame or ground to choose from, as the body of a drawer: "None" first for a trim
+ * (the one layer that can be left bare), the skins the player has as pictures (the one in use first), then the ones known but not made yet, greyed; under
  * a generated pattern (housing C5) a row of its colours; the chosen one as a card with "Use it" (or "Make", which opens its recipe in
  * the same drawer). Data in, callbacks out: it fetches nothing.
  */
@@ -123,6 +123,7 @@ export function SkinPicker({
   const value = choice.kind === 'bare' ? null : lookValue(choice.id, colour);
   // a ceiling or frame left as built is its starter: choosing that starter changes nothing
   const inUse = value === drawnLook(kind, current);
+  const patterned = choices.some((c) => c.colours.length > 0);
   return (
     <div class="hp-spot">
       <SupplyGrid
@@ -134,19 +135,28 @@ export function SkinPicker({
           setPicked(id);
         }}
       />
-      {colour !== null && (
+      {/*
+        The colour row: a smaller control under its own label and line, apart from the patterns. Its room is kept while a layer
+        with patterns is open, so the drawer does not jump; a drawn or set skin shows a quiet hint there instead.
+      */}
+      {patterned && (
         <div class="hp-colours">
-          <SupplyGrid
-            flat
-            label="Colours"
-            cells={choice.colours.map((c) =>
-              colourCell(kind, c, choice.here && c === choice.colour),
-            )}
-            selected={colour}
-            onSelect={(id) => {
-              setColourPicked({ skin: choice.id, colour: id });
-            }}
-          />
+          <p class="hp-set-label pix">Colour</p>
+          {colour === null ? (
+            <p class="hp-colours-hint muted">Patterns come in colours</p>
+          ) : (
+            <SupplyGrid
+              flat
+              label="Colours"
+              cells={choice.colours.map((c) =>
+                colourCell(kind, c, choice.here && c === choice.colour),
+              )}
+              selected={colour}
+              onSelect={(id) => {
+                setColourPicked({ skin: choice.id, colour: id });
+              }}
+            />
+          )}
         </div>
       )}
       <PickCard
