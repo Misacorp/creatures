@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'preact/hooks';
+import { useLayoutEffect, useMemo, useRef } from 'preact/hooks';
 import { type HouseView } from '@creatures/game';
 import { housing } from '@creatures/game/housing-content';
 import { cssVars } from '../css-vars';
@@ -30,7 +30,7 @@ export function PartPreview({
     [house, partId, phase],
   );
   const ref = useRef<HTMLCanvasElement>(null);
-  useEffect(() => {
+  useLayoutEffect(() => {
     paintPlacements(
       ref.current?.getContext('2d') ?? null,
       model.placements,

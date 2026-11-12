@@ -176,9 +176,13 @@ class Raster {
         let ch = chars.get(colour);
         if (ch === undefined) {
           ch = CHARS[chars.size];
-          if (ch === undefined) throw new Error('The postcard uses more colours than it has keys.');
+          if (ch === undefined) {
+            // More colours than keys: never throw while a screen draws; the extra colour takes the nearest key's colour.
+            ch = nearestKey(colour, chars);
+          } else {
+            palette[ch] = colour;
+          }
           chars.set(colour, ch);
-          palette[ch] = colour;
         }
         row += ch;
       }
@@ -191,6 +195,28 @@ class Raster {
     const present = [...new Set(this.mats.filter((_m, i) => this.cells[i] != null))];
     return present.map((mat) => ({ mat, sprite: this.sprite(mat) }));
   }
+}
+
+const rgbOf = (hex: string): [number, number, number] => {
+  const six = hex.length === 4 ? [...hex.slice(1)].map((d) => d + d).join('') : hex.slice(1, 7);
+  const n = Number.parseInt(six, 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+};
+
+/** The key of the used colour nearest to `colour` (squared RGB distance): how a picture with too many colours degrades. */
+export function nearestKey(colour: string, used: ReadonlyMap<string, string>): string {
+  const [r, g, b] = rgbOf(colour);
+  let best = 'a';
+  let bestD = Infinity;
+  for (const [c, key] of used) {
+    const [r2, g2, b2] = rgbOf(c);
+    const d = (r - r2) ** 2 + (g - g2) ** 2 + (b - b2) ** 2;
+    if (d < bestD) {
+      bestD = d;
+      best = key;
+    }
+  }
+  return best;
 }
 
 /** A sprite as a function of the pixel: its colour, or null where it is clear. Wraps both ways (tiles repeat). */

@@ -25,6 +25,7 @@ import {
   GROUND_MARGIN,
   overviewScale,
   overviewScroll,
+  sceneMinWidth,
   type DisplayDrawing,
   type Placement,
   SIDE,
@@ -66,7 +67,8 @@ export function SceneLayer({
   lighting?: Lighting;
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
-  useEffect(() => {
+  // Painted before the browser shows the frame: a canvas whose size changed is blank until painted, so a later effect flashes.
+  useLayoutEffect(() => {
     paintPlacements(ref.current?.getContext('2d') ?? null, placements, width, height, lighting);
   }, [placements, width, height, lighting]);
   return (
@@ -145,26 +147,39 @@ export function HouseScene({
   );
   const scale = Math.max(1, Math.floor(scaleFor === undefined ? fit.scale : scaleFor(boxWidth)));
   const wholeInView = scaleFor === undefined ? fit.fits : true;
+  // Stepped, so a resize tick of a few pixels (a scrollbar, a phone's toolbar) neither re-composes the house nor resizes the canvas.
+  const minWidth = sceneMinWidth(boxWidth, scale);
   const model: SceneModel = useMemo(
     () =>
       composeHouse(house, {
         content: housing,
-        minWidth: Math.ceil(boxWidth / scale),
+        minWidth,
         creatures: 'draw',
         drawing: HOUSE_DRAWING,
         mailWaiting,
         phase,
       }),
-    [house, boxWidth, scale, mailWaiting, phase],
+    [house, minWidth, mailWaiting, phase],
   );
   useDragScroll(viewRef);
+  // The scene is composed a little wider than the box (the stepped width); the stage shows the box's width of it, centred, so a
+  // house that fits is not scrolled by the rounding. `shift` is the hidden strip left of the stage, in CSS px (whole scene px).
+  const fullW = model.width * scale;
+  const stageW = Math.min(fullW, Math.max(boxWidth, natural.width * scale));
+  const shift = Math.floor((fullW - stageW) / 2 / scale) * scale;
+  const shown = {
+    start: { x: model.start.x - shift / scale, y: model.start.y },
+    groundY: model.groundY,
+    width: stageW / scale,
+    height: model.height,
+  };
   // Start where the whole house is: all of it in view when it fits, else centred on the building with the grass line near the
   // bottom of the box; come back to where it was after a visit to a room.
   const placedFor = useRef('');
   useLayoutEffect(() => {
     const view = viewRef.current;
     if (view === null) return;
-    const key = `${String(scale)}:${String(model.width)}:${String(model.height)}`;
+    const key = `${String(scale)}:${String(stageW)}:${String(model.height)}`;
     if (placedFor.current === key) return;
     placedFor.current = key;
     if (memory?.current != null) {
@@ -172,17 +187,20 @@ export function HouseScene({
       view.scrollTop = memory.current.top;
       return;
     }
-    const at = overviewScroll(model, scale, view.clientWidth || boxWidth, view.clientHeight || 0);
+    const at = overviewScroll(shown, scale, view.clientWidth || boxWidth, view.clientHeight || 0);
     view.scrollLeft = at.left;
     view.scrollTop = at.top;
-  }, [scale, model.width, model.height]);
+  }, [scale, stageW, model.height]);
   // The room that was just built: scrolled into the middle of the view, and focused for a screen reader and the keyboard.
   const focusRoomReady = focusRoom !== null && model.rooms.some((r) => r.roomId === focusRoom);
   useLayoutEffect(() => {
     const view = viewRef.current;
     const room = model.rooms.find((r) => r.roomId === focusRoom);
     if (view === null || room === undefined) return;
-    view.scrollLeft = Math.max(0, Math.round((room.x + room.w / 2) * scale - view.clientWidth / 2));
+    view.scrollLeft = Math.max(
+      0,
+      Math.round((room.x + room.w / 2) * scale - shift - view.clientWidth / 2),
+    );
     view.scrollTop = Math.max(0, Math.round((room.y + room.h / 2) * scale - view.clientHeight / 2));
     view.querySelector<HTMLElement>(`[data-room="${room.roomId}"]`)?.focus({ preventScroll: true });
   }, [focusRoom, focusRoomReady]);
@@ -208,68 +226,76 @@ export function HouseScene({
       )}
       <div class="house-view" ref={viewRef} role="group" aria-label={label} data-audit-clip>
         <div
-          class="house-stage"
+          class="house-stage house-stage-clip"
           ref={cssVars({
-            '--hw': `${String(model.width * scale)}px`,
+            '--sw': `${String(stageW)}px`,
             '--hh': `${String(model.height * scale)}px`,
           })}
         >
-          <SceneLayer
-            placements={model.back}
-            width={model.width}
-            height={model.height}
-            layer="back"
-            lighting={model.lighting}
-          />
-          <SceneLayer
-            placements={model.front}
-            width={model.width}
-            height={model.height}
-            layer="front"
-            lighting={model.lighting}
-          />
-          {model.rooms.map((room) => (
-            <button
-              key={room.roomId}
-              type="button"
-              class="house-room"
-              data-outdoor={room.outdoor ? 'true' : undefined}
-              data-room={room.roomId}
-              aria-label={roomLabel(
-                room.name,
-                model.creatures.filter((c) => c.roomId === room.roomId),
-              )}
-              ref={boxVars(room, scale)}
-              onClick={() => {
-                onRoom(room.roomId);
-              }}
+          <div
+            class="house-plane"
+            ref={cssVars({
+              '--hw': `${String(fullW)}px`,
+              '--shift': `${String(-shift)}px`,
+            })}
+          >
+            <SceneLayer
+              placements={model.back}
+              width={model.width}
+              height={model.height}
+              layer="back"
+              lighting={model.lighting}
             />
-          ))}
-          {model.rooms
-            .filter((room) => reveal.includes(room.roomId))
-            .map((room) => (
-              <span
+            <SceneLayer
+              placements={model.front}
+              width={model.width}
+              height={model.height}
+              layer="front"
+              lighting={model.lighting}
+            />
+            {model.rooms.map((room) => (
+              <button
                 key={room.roomId}
-                class="house-reveal"
-                aria-hidden="true"
+                type="button"
+                class="house-room"
+                data-outdoor={room.outdoor ? 'true' : undefined}
+                data-room={room.roomId}
+                aria-label={roomLabel(
+                  room.name,
+                  model.creatures.filter((c) => c.roomId === room.roomId),
+                )}
                 ref={boxVars(room, scale)}
+                onClick={() => {
+                  onRoom(room.roomId);
+                }}
               />
             ))}
-          {onFixture !== undefined &&
-            model.fixtures
-              .filter((f) => f.kind === 'mailbox' || f.kind === 'workbench')
-              .map((f) => (
-                <button
-                  key={f.kind}
-                  type="button"
-                  class="house-fixture"
-                  aria-label={f.kind === 'mailbox' ? mailboxLabel : 'Workbench'}
-                  ref={boxVars(f, scale)}
-                  onClick={() => {
-                    if (f.kind === 'mailbox' || f.kind === 'workbench') onFixture(f.kind);
-                  }}
+            {model.rooms
+              .filter((room) => reveal.includes(room.roomId))
+              .map((room) => (
+                <span
+                  key={room.roomId}
+                  class="house-reveal"
+                  aria-hidden="true"
+                  ref={boxVars(room, scale)}
                 />
               ))}
+            {onFixture !== undefined &&
+              model.fixtures
+                .filter((f) => f.kind === 'mailbox' || f.kind === 'workbench')
+                .map((f) => (
+                  <button
+                    key={f.kind}
+                    type="button"
+                    class="house-fixture"
+                    aria-label={f.kind === 'mailbox' ? mailboxLabel : 'Workbench'}
+                    ref={boxVars(f, scale)}
+                    onClick={() => {
+                      if (f.kind === 'mailbox' || f.kind === 'workbench') onFixture(f.kind);
+                    }}
+                  />
+                ))}
+          </div>
         </div>
       </div>
       <PanHint target={viewRef} id="house" />

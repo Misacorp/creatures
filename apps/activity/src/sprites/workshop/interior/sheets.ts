@@ -114,7 +114,7 @@ interface Sample {
 }
 
 /** Samples in a grid with a label under each (at 1x: 5 x 7 capitals). */
-function grid(title: string, samples: readonly Sample[], cols: number, top = 0): Raster {
+function grid(samples: readonly Sample[], cols: number, top = 0): Raster {
   const cellW = Math.max(...samples.map((s) => s.raster.w)) + 8;
   const noteLines = (s: Sample): readonly string[] =>
     s.note === undefined ? [] : typeof s.note === 'string' ? [s.note] : s.note;
@@ -132,7 +132,6 @@ function grid(title: string, samples: readonly Sample[], cols: number, top = 0):
     for (const [k, line] of noteLines(s).entries())
       img.text(line, x, y + s.raster.h + 12 + 9 * k, 1, MUTED);
   }
-  void title;
   return img;
 }
 
@@ -183,9 +182,9 @@ export function wallpaperSheet(): Raster {
   return stack([
     {
       heading: `PATTERNS (${String(WALL_PATTERNS.length)}) x COLOURS (${String(WALL_COLOURS.length)}) = ${String(WALL_PATTERNS.length * WALL_COLOURS.length)}`,
-      raster: grid('', patterns, 4),
+      raster: grid(patterns, 4),
     },
-    { heading: 'ONE PATTERN IN ALL COLOURS', raster: grid('', colours, 4) },
+    { heading: 'ONE PATTERN IN ALL COLOURS', raster: grid(colours, 4) },
   ]);
 }
 
@@ -220,9 +219,9 @@ export function floorSheet(): Raster {
   return stack([
     {
       heading: `PATTERNS (${String(FLOOR_PATTERNS.length)}) x COLOURS (${String(FLOOR_COLOURS.length)}) = ${String(FLOOR_PATTERNS.length * FLOOR_COLOURS.length)}`,
-      raster: grid('', patterns, 4),
+      raster: grid(patterns, 4),
     },
-    { heading: 'ONE PATTERN IN ALL COLOURS', raster: grid('', colours, 4) },
+    { heading: 'ONE PATTERN IN ALL COLOURS', raster: grid(colours, 4) },
   ]);
 }
 
@@ -266,11 +265,11 @@ export function trimSheet(): Raster {
   return stack([
     {
       heading: `FIVE KINDS (${String(TRIM_KINDS.length)}) x EIGHT COLOURWAYS`,
-      raster: grid('', kinds, 4),
+      raster: grid(kinds, 4),
     },
-    { heading: 'WAINSCOT', raster: grid('', wainscot, 4) },
-    { heading: 'PANELLED', raster: grid('', panelled, 4) },
-    { heading: 'CLASSIC', raster: grid('', classic, 4) },
+    { heading: 'WAINSCOT', raster: grid(wainscot, 4) },
+    { heading: 'PANELLED', raster: grid(panelled, 4) },
+    { heading: 'CLASSIC', raster: grid(classic, 4) },
   ]);
 }
 
@@ -321,9 +320,9 @@ export function frameSheet(): Raster {
   return stack([
     {
       heading: `HOUSE FRAME: ${String(FRAMES.length)} MATERIALS (POSTS AND SLABS), SHIPPED FIRST`,
-      raster: grid('', samples, 3),
+      raster: grid(samples, 3),
     },
-    { heading: 'POST AND SLAB MAGNIFIED', raster: grid('', swatches, 5) },
+    { heading: 'POST AND SLAB MAGNIFIED', raster: grid(swatches, 5) },
   ]);
 }
 
@@ -452,10 +451,10 @@ export function waysSheet(rooms: readonly RoomJson[]): Raster {
     ),
   }));
   return stack([
-    { heading: 'DOORWAY STYLES (ON THE POST BETWEEN TWO ROOMS)', raster: grid('', styles, 2) },
-    { heading: 'WHERE A DOORWAY SITS: THREE OPTIONS', raster: grid('', places, 2) },
-    { heading: 'WHERE THE FURNITURE SPOTS ARE', raster: grid('', maps, 2) },
-    { heading: 'STAIRS: THREE OPTIONS, UPPER FLOOR CUT OPEN', raster: grid('', stairs, 4) },
+    { heading: 'DOORWAY STYLES (ON THE POST BETWEEN TWO ROOMS)', raster: grid(styles, 2) },
+    { heading: 'WHERE A DOORWAY SITS: THREE OPTIONS', raster: grid(places, 2) },
+    { heading: 'WHERE THE FURNITURE SPOTS ARE', raster: grid(maps, 2) },
+    { heading: 'STAIRS: THREE OPTIONS, UPPER FLOOR CUT OPEN', raster: grid(stairs, 4) },
   ]);
 }
 
@@ -479,7 +478,7 @@ export function ceilingSheet(): Raster {
   return stack([
     {
       heading: `${String(CEILING_KINDS.length)} KINDS x ${String(CEILING_COLOURS.length)} COLOURWAYS`,
-      raster: grid('', samples, 4),
+      raster: grid(samples, 4),
     },
   ]);
 }
@@ -602,7 +601,7 @@ export function mixSheet(): Raster {
     const { raster } = mixRoom(m);
     return { label: m.name, note: m.lines, raster };
   });
-  return stack([{ heading: 'EIGHT ROOMS, ALL SIX LAYERS', raster: grid('', samples, 2) }]);
+  return stack([{ heading: 'EIGHT ROOMS, ALL SIX LAYERS', raster: grid(samples, 2) }]);
 }
 
 /** One mix room by day, at twilight and at night (the house's own lighting pass, called read only). */
@@ -621,7 +620,7 @@ export function nightStrip(name = 'Parlour'): Raster {
       raster: nightRaster(raster, 'night', lights),
     },
   ];
-  return grid('', samples, 3);
+  return grid(samples, 3);
 }
 
 // ---------------------------------------------------------------------------------------------------------------

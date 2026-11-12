@@ -35,7 +35,12 @@ export type Material =
   /** The picture of a window: its sky-coloured pixels are the night sky outside (with stars), the rest is cloth. */
   | 'window'
   /** A light source piece: like `auto`, and its flame colours keep glowing in the dark. */
-  | 'light';
+  | 'light'
+  /**
+   * A piece standing outdoors (a yard, the water, a terrace, a balcony): sorted by colour like `auto`, but out of the house's
+   * lamplight it takes the night of the scene round it (darker and cooler, still readable), not the indoor grades.
+   */
+  | 'outdoor';
 
 export type Tone = 'ink' | 'flame' | 'glass' | 'foliage' | 'wood' | 'metal' | 'cloth';
 
@@ -44,7 +49,7 @@ export type RampName = 'foliage' | 'stone' | 'roof' | 'earth' | 'water' | 'sky';
 
 /** What is graded, not ramped: the wallpaper and floor, the furniture's tones and the creatures. They keep the day's colours. */
 export type GradeName =
-  'wall' | 'floor' | 'wood' | 'cloth' | 'glass' | 'metal' | 'plant' | 'creature';
+  'wall' | 'floor' | 'wood' | 'cloth' | 'glass' | 'metal' | 'plant' | 'creature' | 'outdoor';
 
 /** A piecewise-linear curve through (in, out) points, read off at `x`. */
 type Curve = readonly (readonly [number, number])[];
@@ -209,6 +214,17 @@ export const GRADES: Readonly<Record<NightPhase, Readonly<Record<GradeName, Grad
       tint: [226, 150, 130],
       tintAmount: 0.04,
     },
+    // a piece outdoors in the dusk: dimmer than indoor furniture, pulled towards the dusk's mauve
+    outdoor: {
+      light: [
+        [0, 0],
+        [0.5, 0.36],
+        [1, 0.72],
+      ],
+      sat: 0.78,
+      tint: [120, 84, 150],
+      tintAmount: 0.2,
+    },
   },
   night: {
     wall: {
@@ -291,6 +307,17 @@ export const GRADES: Readonly<Record<NightPhase, Readonly<Record<GradeName, Grad
       tint: [70, 70, 170],
       tintAmount: 0.06,
     },
+    // a piece outdoors at night: in the moonlight of the lawn and the water, darker and bluer than furniture by a lamp
+    outdoor: {
+      light: [
+        [0, 0],
+        [0.5, 0.3],
+        [1, 0.66],
+      ],
+      sat: 0.7,
+      tint: [44, 56, 128],
+      tintAmount: 0.26,
+    },
   },
 };
 
@@ -372,6 +399,8 @@ function lookOf(material: Material, tone: Tone): Look {
       return { ramp: 'water' };
     case 'creature':
       return tone === 'ink' ? null : { grade: 'creature' };
+    case 'outdoor':
+      return tone === 'ink' ? null : { grade: 'outdoor' };
     default:
       if (tone === 'ink') return null;
       return { grade: tone === 'flame' ? 'cloth' : tone === 'foliage' ? 'plant' : tone };

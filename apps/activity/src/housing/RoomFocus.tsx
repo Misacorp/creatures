@@ -166,9 +166,16 @@ function Sleeper({
   level: 0 | 1 | 2 | 3;
 }) {
   const info = housemateInfo(mate.housemate, owner);
-  const palette = mate.housemate.creature.shiny
-    ? shinyPalette(mate.housemate.creature.species)
-    : undefined;
+  const species = mate.housemate.creature.species;
+  const shiny = mate.housemate.creature.shiny;
+  const palette = shiny ? shinyPalette(species) : undefined;
+  // The sleeper in the light of the room, made once per creature, phase and light level (not on every render).
+  const night = useMemo(() => {
+    if (phase === 'day') return null;
+    const base = creatureSpriteOrFallback(species);
+    const pal = shiny ? shinyPalette(species) : undefined;
+    return tintSprite(pal === undefined ? base : swapPalette(base, pal), 'creature', phase, level);
+  }, [species, shiny, phase, level]);
   return (
     <div
       class="house-sleeper"
@@ -180,26 +187,15 @@ function Sleeper({
         label={`${info.name}, level ${String(info.level)}, asleep`}
         class="house-creature"
       >
-        {phase === 'day' ? (
+        {night === null ? (
           <Sprite
-            sprite={creatureSpriteOrFallback(mate.housemate.creature.species)}
+            sprite={creatureSpriteOrFallback(species)}
             scale={scale}
             bob
             {...(palette === undefined ? {} : { palette })}
           />
         ) : (
-          <Sprite
-            sprite={tintSprite(
-              palette === undefined
-                ? creatureSpriteOrFallback(mate.housemate.creature.species)
-                : swapPalette(creatureSpriteOrFallback(mate.housemate.creature.species), palette),
-              'creature',
-              phase,
-              level,
-            )}
-            scale={scale}
-            bob
-          />
+          <Sprite sprite={night} scale={scale} bob />
         )}
       </SmallCreature>
       {/* The "z" over the sleeper, as the house view draws it. */}

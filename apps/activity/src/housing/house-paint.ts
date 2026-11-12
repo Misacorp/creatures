@@ -163,6 +163,18 @@ function sunMask(sprite: SpriteDef): Uint8Array {
   return mask;
 }
 
+const dayWords = new WeakMap<SpriteDef, Uint32Array>();
+
+/** A sprite's day colours packed as words, once per sprite (not once per placement). */
+function dayWordsOf(sprite: SpriteDef, colours: readonly (readonly number[])[]): Uint32Array {
+  let words = dayWords.get(sprite);
+  if (words === undefined) {
+    words = Uint32Array.from(colours, (c) => pack(c[0] ?? 0, c[1] ?? 0, c[2] ?? 0));
+    dayWords.set(sprite, words);
+  }
+  return words;
+}
+
 /** One star in this many sky pixels of a window at night. */
 const STAR_ONE_IN = 19;
 
@@ -190,7 +202,7 @@ export function rasterize(
     const x1 = Math.min(w, width - p.x);
     const index = sprite.index;
     if (phase === 'day' || levels === null) {
-      const packedDay = Uint32Array.from(sprite.colours, (c) => pack(c[0], c[1], c[2]));
+      const packedDay = dayWordsOf(p.sprite, sprite.colours);
       for (let y = Math.max(0, -p.y); y < h && p.y + y < height; y++) {
         const row = y * sprite.width;
         const base = (p.y + y) * width + p.x;

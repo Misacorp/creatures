@@ -61,6 +61,23 @@
   margin-inline: auto;
 }
 
+/*
+ * The cutaway: the scene is composed a little wider than the box (its width is stepped so a resize does not redraw it); the
+ * stage is the box's width of it and the plane inside, shifted by whole scene pixels, holds the canvases and the buttons.
+ */
+.house-stage-clip {
+  width: var(--sw);
+  overflow: hidden;
+}
+
+.house-plane {
+  position: absolute;
+  top: 0;
+  left: var(--shift, 0);
+  width: var(--hw);
+  height: var(--hh);
+}
+
 .house-layer {
   position: absolute;
   left: 0;

@@ -36,6 +36,7 @@ import {
   lightCentre,
   lightOf,
   moonSprite,
+  pixelHash,
   skyForPhase,
   type Lighting,
   type Material,
@@ -170,6 +171,11 @@ export interface ComposeOptions {
 // Small drawing helpers
 
 const solids = new Map<string, SpriteDef>();
+/**
+ * How many flat blocks stay cached. Each cached sprite also pins its drawn bitmap, so the cache is a small LRU (least recently
+ * used goes first): sizes that change with the house (a run of ink along a roof) come and go, the common ones stay.
+ */
+export const SOLID_CACHE_MAX = 192;
 
 /** A flat `w` x `h` block of one colour. */
 export function solid(w: number, h: number, colour: string): SpriteDef {
@@ -177,9 +183,37 @@ export function solid(w: number, h: number, colour: string): SpriteDef {
   let s = solids.get(key);
   if (s === undefined) {
     s = { rows: Array.from({ length: h }, () => 'c'.repeat(w)), palette: { c: colour } };
-    solids.set(key, s);
+    if (solids.size >= SOLID_CACHE_MAX) {
+      const oldest = solids.keys().next().value;
+      if (oldest !== undefined) solids.delete(oldest);
+    }
+  } else {
+    solids.delete(key);
   }
+  solids.set(key, s);
   return s;
+}
+
+/** How many flat blocks are cached now (for the test that the cache stays bounded). */
+export function solidCacheSize(): number {
+  return solids.size;
+}
+
+/** The side of the flat tile a large area of one colour is filled with (cropped at its edges), so no size is cached per width. */
+const FILL_TILE = 64;
+
+/** Fills a rectangle with one colour from a fixed-size tile: any width or height costs no new sprite. */
+export function flatFill(
+  out: Placement[],
+  colour: string,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  mat?: Material,
+): void {
+  if (w <= 0 || h <= 0) return;
+  tileFill(out, solid(FILL_TILE, FILL_TILE, colour), x, y, w, h, mat);
 }
 
 /** Fills the rectangle with a tile repeated both ways (the tile's top left at the rectangle's top left). */
@@ -757,12 +791,10 @@ export function drawSky(
   const skyTop = groundY - skyH;
   const stripY = fromBottom ? skyTop : Math.max(0, skyTop);
   if (skyTop > 0) {
-    back.push({
-      sprite: solid(width, skyTop, sky.palette[sky.rows[0]?.[0] ?? ''] ?? '#6fb2d6'),
-      x: 0,
-      y: 0,
-      mat: 'fixed',
-    });
+    const top = sky.palette[sky.rows[0]?.[0] ?? ''] ?? '#6fb2d6';
+    if (phase === 'twilight') duskAbove(back, width, skyTop, top);
+    else flatFill(back, top, 0, 0, width, skyTop, 'fixed');
+    if (phase !== 'day') starsAbove(back, width, skyTop, phase);
   }
   for (let sx = 0; sx < width; sx += skyW) {
     const cw = Math.min(skyW, width - sx);
@@ -781,6 +813,84 @@ export function drawSky(
       y: 8,
       mat: 'fixed',
     });
+  }
+}
+
+/** The dusk above the valley's strip, darker going up from the strip's top colour, in bands of `DUSK_BAND` rows. */
+const DUSK_ABOVE: readonly string[] = ['#342a63', '#2d2457', '#271f4c', '#211a42'];
+const DUSK_BAND = 10;
+const checkers = new Map<string, SpriteDef>();
+
+/** A two-row checker of `a` and `b`, `FILL_TILE` wide: the dithered seam between two bands of sky. */
+function checker(a: string, b: string): SpriteDef {
+  const key = `${a}${b}`;
+  let s = checkers.get(key);
+  if (s === undefined) {
+    const row = 'ab'.repeat(FILL_TILE / 2);
+    s = { rows: [row, `${row.slice(1)}a`], palette: { a, b } };
+    checkers.set(key, s);
+  }
+  return s;
+}
+
+/** The empty sky above the strip at twilight: stepped, dithered bands that darken towards the top, never one flat slab. */
+function duskAbove(back: Placement[], width: number, skyTop: number, stripTop: string): void {
+  const colours = [stripTop, ...DUSK_ABOVE];
+  let below = skyTop;
+  for (let i = 0; i < colours.length && below > 0; i++) {
+    const colour = colours[i] ?? stripTop;
+    const last = i === colours.length - 1;
+    const top = last ? 0 : Math.max(0, below - DUSK_BAND);
+    flatFill(back, colour, 0, top, width, below - top, 'fixed');
+    const next = colours[i + 1];
+    // the seam: two rows of checker between this band and the next, inside this band's top
+    if (next !== undefined && top > 0 && below - top >= 2) {
+      tileFill(back, checker(colour, next), 0, top, width, 2, 'fixed');
+    }
+    below = top;
+  }
+}
+
+/** A star of the empty sky: one pixel, or now and then a small cross like the strip's bright ones. */
+const SKY_STARS: Readonly<Record<'dim' | 'bright' | 'cross', SpriteDef>> = {
+  dim: { rows: ['s'], palette: { s: '#8f97c8' } },
+  bright: { rows: ['s'], palette: { s: '#e9edff' } },
+  cross: { rows: ['.s.', 'sws', '.s.'], palette: { s: '#8f97c8', w: '#e9edff' } },
+};
+/** One star in a cell of `STAR_CELL` pixels, in this share of the cells (night), or in the dark top of a dusk. */
+const STAR_CELL = 10;
+const STAR_SHARE: Readonly<Record<'night' | 'twilight', number>> = { night: 0.3, twilight: 0.08 };
+
+/**
+ * Stars scattered over the empty sky above the strip, from a hash of each cell's place in the scene: the same house always
+ * has the same sky, and a wider scene only adds stars at its edges. At twilight only the darkest bands at the top get a few.
+ */
+function starsAbove(
+  back: Placement[],
+  width: number,
+  skyTop: number,
+  phase: 'night' | 'twilight',
+): void {
+  const bottom = phase === 'night' ? skyTop - 3 : skyTop - DUSK_BAND * 3;
+  for (let cy = 0; cy * STAR_CELL < bottom; cy++) {
+    for (let cx = 0; cx * STAR_CELL < width; cx++) {
+      const h = pixelHash(cx + 101, cy + 37);
+      if ((h % 1000) / 1000 >= STAR_SHARE[phase]) continue;
+      const x = cx * STAR_CELL + ((h >>> 10) % (STAR_CELL - 2)) + 1;
+      const y = cy * STAR_CELL + ((h >>> 16) % (STAR_CELL - 2)) + 1;
+      const kind =
+        phase === 'twilight'
+          ? 'dim'
+          : (h >>> 24) % 9 === 0
+            ? 'cross'
+            : (h >>> 24) % 3 === 0
+              ? 'bright'
+              : 'dim';
+      const sprite = SKY_STARS[kind];
+      const { width: sw, height: sh } = spriteSize(sprite);
+      if (x + sw > width || y + sh > bottom) continue;
+      back.push({ sprite, x, y, mat: 'fixed' });
+    }
   }
 }
 
@@ -823,7 +933,6 @@ function drawRoom(
   }
   const floorY = y + FEET;
   // (The workbench and the mailbox are not in a room: they stand in the yard, see `composeHouse`.)
-  void kind.fixtures;
   if (room.kind === 'cellar') {
     const vent = shellArt('vent');
     const { width: w } = spriteSize(vent);
@@ -889,8 +998,15 @@ function drawRoom(
     const form = piece === undefined ? undefined : content.forms.find((f) => f.id === piece.form);
     // Lights come from data (`lightOf`: the art's flag, the form, a night glow), never from a list of ids.
     const light = lightOf(art, form?.id);
+    // a piece outdoors takes the scene's night; a light stays a light wherever it stands
     const mat: Material =
-      light !== undefined ? 'light' : spot.type === 'window' ? 'window' : 'auto';
+      light !== undefined
+        ? 'light'
+        : spot.type === 'window'
+          ? 'window'
+          : room.outdoor
+            ? 'outdoor'
+            : 'auto';
     if (light !== undefined) {
       const at = lightCentre(light, art.sprite, { width: pw, height: ph });
       layers.lights.push({
@@ -1657,25 +1773,32 @@ export function overviewScale(
   return { scale: PHONE_SCALE, fits: false };
 }
 
+/** The scene's width is rounded up to a multiple of this (scene px), so a small change of the box's width draws nothing new. */
+export const WIDTH_STEP = 32;
+
+/** The scene's least width for a box `boxWidth` CSS px wide at `scale`: enough to fill the box, rounded up to `WIDTH_STEP`. */
+export function sceneMinWidth(boxWidth: number, scale: number): number {
+  return Math.ceil(Math.ceil(boxWidth / scale) / WIDTH_STEP) * WIDTH_STEP;
+}
+
 /** How much of the earth shows under the grass line when the overview is placed on the ground (scene px). */
 export const GROUND_MARGIN = 12;
 
 /**
- * Where the overview's scroll starts for a view `viewWidth` x `viewHeight` CSS px: centred on the building's whole box, and
- * placed down so the grass line sits near the bottom of the view with as much roof above it as fits. A house that fits is
- * not scrolled at all (the clamps give 0).
+ * Where the overview's scroll starts for a view `viewWidth` x `viewHeight` CSS px: centred on the Hearth (the core's ground
+ * floor, `start`), so a player on a phone always opens at home, and placed down so the grass line sits near the bottom of the
+ * view with as much roof above it as fits. A house that fits is not scrolled at all (the clamps give 0).
  */
 export function overviewScroll(
-  model: Pick<SceneModel, 'box' | 'groundY' | 'width' | 'height'>,
+  model: Pick<SceneModel, 'start' | 'groundY' | 'width' | 'height'>,
   scale: number,
   viewWidth: number,
   viewHeight: number,
 ): { left: number; top: number } {
   const clamp = (n: number, max: number): number =>
     Math.min(Math.max(0, Math.round(n)), Math.max(0, max));
-  const cx = model.box.x + model.box.w / 2;
   return {
-    left: clamp(cx * scale - viewWidth / 2, model.width * scale - viewWidth),
+    left: clamp(model.start.x * scale - viewWidth / 2, model.width * scale - viewWidth),
     top: clamp(
       (model.groundY + GROUND_MARGIN) * scale - viewHeight,
       model.height * scale - viewHeight,

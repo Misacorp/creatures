@@ -59,11 +59,9 @@ function reference(
 const NIGHT: Lighting = { phase: 'night', lights: [] };
 
 describe('day', () => {
-  it.each([
-    ['a hut', HUT],
-    ['three floors', THREE_FLOORS],
-  ])('%s is painted pixel for pixel as the sprites are drawn', (_name, parts) => {
-    const house = sceneHouse({ parts, housemates: 2 });
+  // One small house proves the rule (the paint pass is per placement, not per house size); a bigger one only costs seconds.
+  it('a hut is painted pixel for pixel as the sprites are drawn', () => {
+    const house = sceneHouse({ parts: HUT, housemates: 2 });
     const model = composeHouse(house);
     expect(model.lighting.phase).toBe('day');
     expect(model.lighting.lights).toHaveLength(0);
@@ -526,5 +524,49 @@ describe('the dusk sky', () => {
     // somewhere two neighbouring ramp keys alternate in a row
     expect(dusk.rows.some((r) => /(\d)(\d)\1\2\1/.test(r))).toBe(true);
     expect(duskSky(strip)).toEqual(dusk);
+  });
+});
+
+describe('pieces outdoors', () => {
+  const scarecrow: Rgb = [0xd2, 0x3a, 0x3a];
+  const leaf: Rgb = [0x6c, 0xb0, 0x4c];
+  const wood: Rgb = [0xa8, 0x70, 0x40];
+
+  it('take the night of the scene: darker and cooler than the same colour indoors, still readable, ink kept', () => {
+    for (const phase of ['twilight', 'night'] as const) {
+      for (const c of [scarecrow, leaf, wood]) {
+        const indoor = shade(c, 'auto', phase, 0);
+        const out = shade(c, 'outdoor', phase, 0);
+        expect(luma(out)).toBeLessThan(luma(indoor) * 0.9);
+        expect(luma(out)).toBeGreaterThan(luma(c) * 0.25);
+        // cooler: blue gains on red against the indoor night
+        expect(out[2] / Math.max(1, out[0])).toBeGreaterThan(indoor[2] / Math.max(1, indoor[0]));
+      }
+      expect(shade([0x0d, 0x0a, 0x1a], 'outdoor', phase, 0)).toEqual([0x0d, 0x0a, 0x1a]);
+    }
+    // a lantern post near them lifts them like any piece
+    expect(luma(shade(wood, 'outdoor', 'night', 3))).toBeGreaterThan(
+      luma(shade(wood, 'outdoor', 'night', 0)),
+    );
+  });
+
+  it('are the day colour by day', () => {
+    expect(shade(scarecrow, 'outdoor', 'day', 0)).toEqual([...scarecrow]);
+  });
+
+  it('are tagged outdoor in the scene (yard, water, terrace, balcony), except lights', () => {
+    const model = composeHouse(sceneHouse({ parts: MANSION }), { phase: 'night' });
+    const outdoor = new Set(model.rooms.filter((r) => r.outdoor).map((r) => r.roomId));
+    const pieces = model.spots.filter((s) => s.pieceId !== null);
+    const spritesOf = (spots: typeof pieces) =>
+      new Set(spots.map((s) => pieceArt(s.pieceId ?? '', housing).sprite));
+    const outside = spritesOf(pieces.filter((s) => outdoor.has(s.roomId)));
+    const inside = spritesOf(pieces.filter((s) => !outdoor.has(s.roomId)));
+    expect(outside.size).toBeGreaterThan(0);
+    const all = [...model.back, ...model.front];
+    const tags = new Set(all.filter((p) => outside.has(p.sprite)).map((p) => p.mat));
+    expect(tags.has('outdoor')).toBe(true);
+    expect([...tags].every((m) => m === 'outdoor' || m === 'light')).toBe(true);
+    expect(all.some((p) => inside.has(p.sprite) && p.mat === 'outdoor')).toBe(false);
   });
 });

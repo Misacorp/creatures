@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { HouseViewSchema, houseGrid, parseHouseAnswer } from '@creatures/game';
 import { housing } from '@creatures/game/housing-content';
 import { spriteSize } from '../sprites/sprite-data';
+import { skyForPhase } from './house-light';
 import { ART_PENDING, hasPieceArt, pendingArt, pieceArt } from './house-art';
 import {
   CELL_H,
@@ -11,7 +12,12 @@ import {
   composeHouse,
   composeRoom,
   digitsSprite,
+  drawSky,
   housePreview,
+  SOLID_CACHE_MAX,
+  sceneMinWidth,
+  solidCacheSize,
+  WIDTH_STEP,
   overviewScale,
   overviewScroll,
   partPreview,
@@ -270,13 +276,16 @@ describe('where the overview starts', () => {
     expect(overviewScale(924, 260, 90, 300)).toEqual({ scale: 3, fits: true });
   });
 
-  it('shows a house that fits whole, and centres one that does not on the building with the grass near the bottom', () => {
+  it('shows a house that fits whole, and centres one that does not on the Hearth with the grass near the bottom', () => {
     const small = composeHouse(sceneHouse({ parts: ['hut'] }), { minWidth: 195 });
     expect(overviewScroll(small, 2, 390, small.height * 2)).toEqual({ left: 0, top: 0 });
     const model = composeHouse(sceneHouse({ parts: MANSION }));
     const scale = 2;
     const at = overviewScroll(model, scale, 390, 400);
-    expect(at.left).toBe(Math.round((model.box.x + model.box.w / 2) * scale - 195));
+    const hearth = model.rooms.find((r) => r.roomId === 'hut:hearth');
+    expect(hearth).toBeDefined();
+    expect(model.start.x).toBe((hearth?.x ?? 0) + Math.floor((hearth?.w ?? 0) / 2));
+    expect(at.left).toBe(Math.round(model.start.x * scale - 195));
     // The grass line is in the view, near its bottom.
     const grass = model.groundY * scale - at.top;
     expect(grass).toBeLessThanOrEqual(400);
@@ -353,5 +362,67 @@ describe('the art registry', () => {
     expect(spriteSize(pieceArt('ghost-bed', fake).sprite)).toEqual({ width: 48, height: 26 });
     expect(pendingArt(fake).has('ghost-bed')).toBe(true);
     expect(spriteSize(pieceArt('nothing-at-all').sprite)).toEqual({ width: 16, height: 16 });
+  });
+});
+
+describe('the scene keeps its memory and its canvas size steady', () => {
+  it('fills the sky of any width from one fixed tile: many widths add nothing to the cache', () => {
+    for (const phase of ['day', 'twilight', 'night'] as const) drawSky([], 300, 200, phase);
+    const before = solidCacheSize();
+    for (let w = 300; w < 900; w += 7) {
+      for (const phase of ['day', 'twilight', 'night'] as const) drawSky([], w, 200, phase);
+    }
+    expect(solidCacheSize()).toBe(before);
+  });
+
+  it('never caches more flat blocks than its cap, whatever is asked for', () => {
+    for (let w = 1; w < SOLID_CACHE_MAX * 3; w++)
+      composeHouse(sceneHouse({ parts: ['hut'] }), { minWidth: 200 + w });
+    expect(solidCacheSize()).toBeLessThanOrEqual(SOLID_CACHE_MAX);
+  });
+
+  it('rounds the scene width up to a step, so a resize of a few pixels composes nothing new', () => {
+    expect(sceneMinWidth(390, 2) % WIDTH_STEP).toBe(0);
+    expect(sceneMinWidth(390, 2)).toBeGreaterThanOrEqual(195);
+    expect(sceneMinWidth(392, 2)).toBe(sceneMinWidth(400, 2));
+    expect(sceneMinWidth(1100, 3)).toBe(sceneMinWidth(1090, 3));
+  });
+});
+
+describe('the empty sky above the strip', () => {
+  const stars = (placements: readonly Placement[], below: number) =>
+    placements.filter(
+      (p) =>
+        p.mat === 'fixed' &&
+        p.y < below &&
+        Object.keys(p.sprite.palette).length <= 2 &&
+        p.sprite.rows.length <= 3,
+    );
+
+  it('has stars scattered over all of it at night, the same each time, and none by day', () => {
+    const night: Placement[] = [];
+    drawSky(night, 400, 300, 'night');
+    const again: Placement[] = [];
+    drawSky(again, 400, 300, 'night');
+    const top = 300 - 64;
+    const found = stars(night, top - 20).filter((p) => p.sprite.rows[0]?.length !== 64);
+    expect(found.length).toBeGreaterThan(40);
+    // spread over the whole height and width, not only the strip
+    expect(Math.min(...found.map((p) => p.y))).toBeLessThan(40);
+    expect(Math.max(...found.map((p) => p.x))).toBeGreaterThan(300);
+    expect(again).toEqual(night);
+    const day: Placement[] = [];
+    drawSky(day, 400, 300, 'day');
+    expect(stars(day, top).filter((p) => p.sprite.rows[0]?.length !== 64)).toEqual([]);
+  });
+
+  it('is not one flat slab at twilight: it darkens in bands towards the top', () => {
+    const dusk: Placement[] = [];
+    drawSky(dusk, 200, 400, 'twilight');
+    const skyTop = 400 - spriteSize(skyForPhase('twilight')).height;
+    const colours = new Set(
+      dusk.filter((p) => p.y < skyTop).flatMap((p) => Object.values(p.sprite.palette)),
+    );
+    expect(colours.size).toBeGreaterThanOrEqual(4);
   });
 });

@@ -174,8 +174,10 @@ function frameMaterial(id: string): FrameMaterial | undefined {
     const made = frameById(id);
     frames.set(id, made);
     return made;
-  } catch {
-    return undefined;
+  } catch (error) {
+    // only "no such material" (a look naming a colour the workshop does not have) is drawn as built; anything else is a bug
+    if (error instanceof RangeError) return undefined;
+    throw error;
   }
 }
 

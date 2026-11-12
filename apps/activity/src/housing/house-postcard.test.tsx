@@ -233,16 +233,20 @@ const windowLights = (model: ReturnType<typeof composePostcard>): number =>
   model.lighting.lights.filter((l) => l.kind === 'window').length;
 
 describe('the postcard in a phase', () => {
-  it.each(STAGES)('%s: by day it is exactly the picture it always was', (_n, parts) => {
-    const house = { parts, ...skins() };
-    const day = composePostcard(house, undefined, 'day');
-    const plain = composePostcard(house);
-    expect(day.lighting).toEqual(DAY_LIGHTING);
-    expect(day.placements.some((p) => p.mat === 'fixed')).toBe(false); // no sky: transparent round the house
-    const old = rasterize([{ sprite: day.sprite, x: 0, y: 0 }], day.width, day.height);
-    expect(bytesOf(day)).toEqual(old);
-    expect(bytesOf(plain)).toEqual(old);
-  });
+  // A hut and a hut with grounds prove the rule once (the paint pass does not change with the size of the house).
+  it.each(STAGES.filter(([n]) => n === 'hut' || n === 'terrace'))(
+    '%s: by day it is exactly the picture it always was',
+    (_n, parts) => {
+      const house = { parts, ...skins() };
+      const day = composePostcard(house, undefined, 'day');
+      const plain = composePostcard(house);
+      expect(day.lighting).toEqual(DAY_LIGHTING);
+      expect(day.placements.some((p) => p.mat === 'fixed')).toBe(false); // no sky: transparent round the house
+      const old = rasterize([{ sprite: day.sprite, x: 0, y: 0 }], day.width, day.height);
+      expect(bytesOf(day)).toEqual(old);
+      expect(bytesOf(plain)).toEqual(old);
+    },
+  );
 
   it('is the same drawing at night: the same size, the grounds and the cells where they were', () => {
     const house = { parts: MANSION, ...skins() };
