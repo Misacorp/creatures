@@ -293,7 +293,7 @@ export interface RoofShape {
   height: number;
   /** Width of the flat top row. */
   top: number;
-  /** Pixels each side gives up for every row up (2 for a gable, 1.5 for a spire). */
+  /** Pixels each side gives up for every row up (2 for a gable, 1 for a spire). */
   slope: number;
 }
 
@@ -310,14 +310,10 @@ export type RoofKind = 'gable' | 'hip' | 'spire';
  */
 export function roofShape(base: number, kind: RoofKind): RoofShape {
   if (kind === 'spire') {
-    // A tower's roof: steeper (three pixels in every two rows) and left to end in a point a few pixels wide.
-    const rows = Math.max(8, Math.floor((base - 14) / 3)) + EAVE_ROWS;
-    return {
-      width: base,
-      height: rows,
-      top: base - 2 * Math.floor(1.5 * (rows - EAVE_ROWS)),
-      slope: 1.5,
-    };
+    // A tower's roof: a spire as the postcard draws it, one pixel in each row a side (twice a gable's pitch), to a point a few
+    // pixels wide.
+    const rows = Math.max(8, Math.floor((base - 6) / 2)) + EAVE_ROWS;
+    return { width: base, height: rows, top: base - 2 * (rows - EAVE_ROWS), slope: 1 };
   }
   const rows = kind === 'gable' ? Math.max(8, Math.floor((base - 16) / 4) + EAVE_ROWS) : 20;
   return { width: base, height: rows, top: base - 4 * (rows - EAVE_ROWS), slope: 2 };
@@ -1689,7 +1685,7 @@ export function housePreview(
 }
 
 /** The size of a part's preview: its new rooms plus the roof over them and a few pixels of margin. */
-const PREVIEW_MARGIN = { side: 8, top: 56, outdoorTop: 14, bottom: 8 };
+const PREVIEW_MARGIN = { side: 8, upOutdoorSide: 20, top: 56, outdoorTop: 14, bottom: 8 };
 
 /**
  * Just the new part, for the build list's rows: the house with `partId` built on top, cropped to the rooms the part adds
@@ -1726,11 +1722,20 @@ export function partPreview(
   const all = [...model.back, ...model.front];
   if (fresh.length === 0)
     return { placements: all, width: model.width, height: model.height, lighting: model.lighting };
-  const x0 = Math.max(0, Math.min(...fresh.map((r) => r.x)) - PREVIEW_MARGIN.side);
-  const x1 = Math.min(model.width, Math.max(...fresh.map((r) => r.x + r.w)) + PREVIEW_MARGIN.side);
+  // A room outdoors up the house (the balcony) shows a strip of the house it stands out from on both sides.
+  const side = fresh.some((r) => r.outdoor && r.floor > 0)
+    ? PREVIEW_MARGIN.upOutdoorSide
+    : PREVIEW_MARGIN.side;
+  const x0 = Math.max(0, Math.min(...fresh.map((r) => r.x)) - side);
+  const x1 = Math.min(model.width, Math.max(...fresh.map((r) => r.x + r.w)) + side);
   // Outdoor parts have no roof to show: a little sky is enough (a balcony, an orchard, a pond).
   const top = fresh.every((r) => r.outdoor) ? PREVIEW_MARGIN.outdoorTop : PREVIEW_MARGIN.top;
-  const y0 = Math.max(0, Math.min(...fresh.map((r) => r.y)) - top);
+  // A tower is the top of the house: its whole spire and the pennant on it show, as on the postcard.
+  const tower = content.parts.find((p) => p.id === partId)?.kind === 'tower';
+  const y0 = Math.max(
+    0,
+    tower ? model.box.y - PREVIEW_MARGIN.bottom : Math.min(...fresh.map((r) => r.y)) - top,
+  );
   const y1 = Math.min(
     model.height,
     Math.max(...fresh.map((r) => r.y + r.h)) + PREVIEW_MARGIN.bottom,

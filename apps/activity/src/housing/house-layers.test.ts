@@ -33,14 +33,15 @@ function fnv(bytes: Uint8ClampedArray): string {
 
 /**
  * The day picture of the sample houses and every room of the estate with no layer chosen. Taken before the layers existed, and
- * taken again on 2026-11-12 when a ceiling and frame left as built started to draw as their starters (the only change).
+ * taken again on 2026-11-12 when a ceiling and frame left as built started to draw as their starters, and the estate's once more
+ * the same day when the tower's roof became the postcard's steeper spire (review 2026-11-12, B12).
  */
 const BEFORE: Readonly<Record<string, string>> = {
   hut: '3738d01b',
   cottage: 'adb771b1',
   three: '93a26fc1',
   mansion: '9b7c82f4',
-  estate: 'd71f45c1',
+  estate: '0a96fc9b',
   'tower:observatory': 'e66d2435',
   'tower:landing': '31179957',
   'house:attic': '7d4b14d7',

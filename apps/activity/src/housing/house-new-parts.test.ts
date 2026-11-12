@@ -162,6 +162,25 @@ describe('the new parts in the build panel', () => {
     expect(preview.width).toBeLessThanOrEqual(CELL_W * 2 + 40);
   });
 
+  it('previews the tower with its whole spire, and the balcony with a strip of the house beside it', () => {
+    const house = sceneHouse({ parts: THREE_FLOORS });
+    const tower = partPreview(house, 'tower');
+    const full = composeHouse(house, { extraBuilt: ['tower'], creatures: 'skip' });
+    const spire = roofShape(CELL_W + 16, 'spire');
+    // the top of the preview is the top of the house (the pennant), not a cut through the roof
+    expect(tower.height).toBeGreaterThan(spire.height + CELL_H);
+    expect(tower.height).toBeLessThanOrEqual(full.height - full.box.y + 8);
+    const balcony = partPreview(house, 'balcony');
+    const room = composeHouse(house, { extraBuilt: ['balcony'], creatures: 'skip' }).rooms.find(
+      (r) => r.kind === 'balcony',
+    );
+    expect(balcony.width).toBeGreaterThanOrEqual((room?.w ?? 0) + 40);
+  });
+
+  it('draws the spire as the postcard does: one pixel a side for each row', () => {
+    expect(roofShape(CELL_W + 16, 'spire').slope).toBe(1);
+  });
+
   it('has art for every new piece and skin', () => {
     for (const id of [
       'beehive',
