@@ -191,7 +191,8 @@ describe('the loader checks generated skins', () => {
   });
 
   it('wants a pattern on a trim, ceiling or frame skin', () => {
-    const { gen: _gen, ...bare } = base;
+    const bare: Partial<typeof base> = { ...base };
+    delete bare.gen;
     expect(load(bare)).toThrow(/without a pattern/);
   });
 
