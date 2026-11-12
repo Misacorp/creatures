@@ -247,8 +247,8 @@
 
 /*
  * --- Chips under the scene or the room (roof, walls, frame; wallpaper, floor, trim, ceiling) ---
- * Equal columns, never a sideways scroll: the house's three in one row, a room's four in two rows of two on a phone and one row
- * on a wide window. A long name is cut with an ellipsis (the spoken name is whole).
+ * Equal columns, never a sideways scroll: the house's three in two columns on a phone and one row on a wide window, a room's four
+ * in two rows of two until the row is wide enough for four. A chip shows a short name (`chipName`); the spoken name is whole.
  */
 .house-chips {
   display: grid;
@@ -261,11 +261,19 @@
   --chips: 1;
 }
 
-.house-chips[data-chips='3'] {
-  --chips: 3;
+/* The house's three: two columns on a phone (Frame on a second row), three in a row on a wide window. */
+@media (width >= 700px) {
+  .house-chips[data-chips='3'] {
+    --chips: 3;
+  }
 }
 
-@media (width >= 700px) {
+/* A room's four: one row once the row itself is wide enough for four readable chips (its width, not the window's). */
+.house-chips-box {
+  container-type: inline-size;
+}
+
+@container (min-width: 600px) {
   .house-chips[data-chips='4'] {
     --chips: 4;
   }
@@ -282,10 +290,19 @@
   white-space: nowrap;
 }
 
-.house-chips .hp-empty-mark {
+/* Every chip's picture in one fixed 16 px box (a tile is cropped to it), so the names line up and keep their room. */
+.hp-chip-pic {
+  display: grid;
   flex: none;
-  width: 1.25rem;
-  height: 1.25rem;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  overflow: hidden;
+}
+
+.hp-chip-pic .hp-empty-mark {
+  width: 16px;
+  height: 16px;
 }
 
 /* The colour row under a pattern in the skin picker: the same grid, a little apart from the patterns above it. */

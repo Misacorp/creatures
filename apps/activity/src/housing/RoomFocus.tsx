@@ -365,17 +365,19 @@ export function RoomFocus({
           </div>
         )}
       {own && view !== undefined && onSkin !== undefined && !(model.rooms[0]?.outdoor ?? false) && (
-        <div class="house-chips" data-chips="4">
-          {(['wall', 'floor', 'trim', 'ceiling'] as const).map((layer) => (
-            <SkinTrigger
-              key={layer}
-              kind={layer}
-              id={view[layer]}
-              onOpen={() => {
-                onSkin(layer);
-              }}
-            />
-          ))}
+        <div class="house-chips-box">
+          <div class="house-chips" data-chips="4">
+            {(['wall', 'floor', 'trim', 'ceiling'] as const).map((layer) => (
+              <SkinTrigger
+                key={layer}
+                kind={layer}
+                id={view[layer]}
+                onOpen={() => {
+                  onSkin(layer);
+                }}
+              />
+            ))}
+          </div>
         </div>
       )}
     </div>

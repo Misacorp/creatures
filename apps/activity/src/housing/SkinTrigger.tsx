@@ -43,7 +43,7 @@ export function SkinTrigger({
         )}
       </span>
       {drawn === null ? (
-        <span class="equip-name hp-chip-empty">{SKIN_KIND_NAMES[kind]}</span>
+        <span class="equip-name equip-empty">{SKIN_KIND_NAMES[kind]}</span>
       ) : (
         <span class="equip-name">{chipName(drawn)}</span>
       )}
