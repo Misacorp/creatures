@@ -21,11 +21,20 @@ const ids = (max: number) => v.pipe(v.array(Id), v.maxLength(max));
 
 const UserRef = v.strictObject({ userId: Id, name: Name });
 
+/**
+ * A look a layer wears: a skin id, or a generated skin in a colour (`paper-damask:rose`, `looks.ts`). Whether it names a real skin
+ * and colour is the server's check when it is set.
+ */
+const LookId = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
+
 export const RoomViewSchema = v.strictObject({
   id: RoomId,
   kind: Id,
-  wall: Id,
-  floor: Id,
+  wall: LookId,
+  floor: LookId,
+  /** The trim and the ceiling (null: as the room was built, the line in its wallpaper). */
+  trim: v.nullable(LookId),
+  ceiling: v.nullable(LookId),
   spots: record(v.nullable(Id), 32),
 });
 export type RoomView = v.InferOutput<typeof RoomViewSchema>;
@@ -83,12 +92,20 @@ export type DisplayData = DisplayView extends infer D
     : never
   : never;
 
+/** The house-wide skins: the roof, the outer walls and the frame inside (null: the posts and slabs as built). */
+export const ExteriorViewSchema = v.strictObject({
+  roof: Id,
+  walls: Id,
+  frame: v.nullable(LookId),
+});
+export type ExteriorView = v.InferOutput<typeof ExteriorViewSchema>;
+
 export const HouseViewSchema = v.strictObject({
   /** The stored, sanitised display name. */
   owner: UserRef,
   /** Built part ids. */
   built: ids(32),
-  exterior: v.strictObject({ roof: Id, walls: Id }),
+  exterior: ExteriorViewSchema,
   /** Every built room, indoor and outdoor. */
   rooms: v.pipe(v.array(RoomViewSchema), v.maxLength(32)),
   /** One per display spot of a built room. */
@@ -257,12 +274,12 @@ export const PlaceAnswerSchema = v.strictObject({
   /** The housemates as they now stand: a sleeper whose bed was emptied or replaced is gone, one on a moved bed is carried. */
   housemates: v.pipe(v.array(HousemateViewSchema), v.maxLength(8)),
 });
-/** A skin change: the room (a wallpaper or floor) or the exterior (roof and walls) as it now stands. */
+/** A skin change: the room (wallpaper, floor, trim, ceiling) or the exterior (roof, walls, frame) as it now stands. */
 export const SkinAnswerSchema = v.variant('target', [
   v.strictObject({ target: v.literal('room'), room: RoomViewSchema }),
   v.strictObject({
     target: v.literal('exterior'),
-    exterior: v.strictObject({ roof: Id, walls: Id }),
+    exterior: ExteriorViewSchema,
   }),
 ]);
 export type SkinAnswer = v.InferOutput<typeof SkinAnswerSchema>;

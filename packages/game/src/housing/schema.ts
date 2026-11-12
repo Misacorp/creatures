@@ -190,13 +190,46 @@ export const PieceDefSchema = v.strictObject({
 });
 export type PieceDef = v.InferOutput<typeof PieceDefSchema>;
 
+/** The kinds of skin: a room's wallpaper, floor, trim and ceiling; the house's roof, walls and frame; an outdoor room's ground. */
+export const SKIN_KINDS = [
+  'wall',
+  'floor',
+  'trim',
+  'ceiling',
+  'roof',
+  'walls',
+  'frame',
+  'ground',
+] as const;
+export type SkinKind = (typeof SKIN_KINDS)[number];
+/** The kinds a skin must be generated for (`gen`): they have no hand-drawn art. */
+export const GENERATED_KINDS: ReadonlySet<SkinKind> = new Set(['trim', 'ceiling', 'frame']);
+
+/**
+ * A generated skin (`docs/design/housing-interior.md`): a pattern the client's workshop draws in any of `colours`. Owning the skin owns
+ * the pattern in every one of its colours; a room stores `<skin id>:<colour>`. `tier` sets its workbench price
+ * (`HOUSING_RULES.price.pattern`), `family` the material family a tier 2 or 3 price takes.
+ */
+export const SkinGenSchema = v.strictObject({
+  pattern: IdSchema,
+  colours: v.pipe(v.array(IdSchema), v.minLength(1), v.maxLength(16)),
+  tier: v.picklist([1, 2, 3]),
+  family: v.optional(MaterialFamilySchema),
+});
+export type SkinGen = v.InferOutput<typeof SkinGenSchema>;
+
 export const SkinDefSchema = v.strictObject({
   id: IdSchema,
   name: Name,
-  kind: v.picklist(['wall', 'floor', 'roof', 'walls', 'ground']),
+  kind: v.picklist(SKIN_KINDS),
   set: v.nullable(IdSchema),
   unlock: UnlockSchema,
+  /** A wild skin's drop sources (a set's skins drop where the set does). */
+  sources: v.optional(SourcesSchema),
   price: v.optional(Price),
+  gen: v.optional(SkinGenSchema),
+  /** The flavour line, once it is owned. */
+  line: v.optional(Line),
   hint: Line,
 });
 export type SkinDef = v.InferOutput<typeof SkinDefSchema>;
@@ -439,6 +472,8 @@ function checkItems(content: HousingContent, ctx: HousingLoadContext): void {
     }
     unlockOk(`skin "${skin.id}"`, skin.unlock);
     checkPrice(`skin "${skin.id}"`, skin.price, materialIds);
+    if (skin.sources !== undefined) checkSources(`skin "${skin.id}"`, skin.sources, ctx);
+    checkGen(skin);
   }
   const itemIds = new Set([...content.pieces.map((p) => p.id), ...content.skins.map((s) => s.id)]);
   const hut = freeHut(content);
@@ -460,6 +495,28 @@ function checkItems(content: HousingContent, ctx: HousingLoadContext): void {
     if (u.kind === 'house-part' && !partIds.has(u.part)) {
       fail(`stamp "${stamp.id}" names unknown part "${u.part}"`);
     }
+  }
+}
+
+/** A generated skin: only the room layers and the frame are generated, its colours are listed once, and a tier above 1 names a family. */
+function checkGen(skin: SkinDef): void {
+  const what = `skin "${skin.id}"`;
+  if (skin.gen === undefined) {
+    if (GENERATED_KINDS.has(skin.kind)) fail(`${what} is a ${skin.kind} skin without a pattern`);
+    return;
+  }
+  if (!['wall', 'floor', 'trim', 'ceiling', 'frame'].includes(skin.kind)) {
+    fail(`${what} is a ${skin.kind} skin and cannot be generated`);
+  }
+  if (skin.set !== null) fail(`${what} is generated and cannot belong to a set`);
+  if (new Set(skin.gen.colours).size !== skin.gen.colours.length) {
+    fail(`${what} lists a colour twice`);
+  }
+  if (skin.gen.tier > 1 && skin.gen.family === undefined && skin.unlock.kind !== 'starter') {
+    fail(`${what} is tier ${String(skin.gen.tier)} and needs a material family`);
+  }
+  if (skin.unlock.kind === 'drop' && skin.sources === undefined) {
+    fail(`${what} drops but names no sources`);
   }
 }
 

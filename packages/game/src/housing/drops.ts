@@ -113,7 +113,7 @@ function blueprintPool(
     if (ok(p.id, p.set, p.sources, p.unlock.kind === 'drop')) out.push(p.id);
   }
   for (const s of content.skins) {
-    if (ok(s.id, s.set, undefined, s.unlock.kind === 'drop')) out.push(s.id);
+    if (ok(s.id, s.set, s.sources, s.unlock.kind === 'drop')) out.push(s.id);
   }
   return out;
 }

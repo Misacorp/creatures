@@ -29,6 +29,15 @@ export const HOUSING_RULES = {
     /** Wallpaper and floor skins; roof and wall skins take `first` of the unlocking part's first material. */
     skinSurface: { bait: 20, scrap: 60, primary: 2 },
     skinExterior: { bait: 60, scrap: 300, first: 6 },
+    /**
+     * Generated room patterns and frames (`docs/design/housing-interior.md`), by the skin's `gen.tier`: Acorns, scrap and that many of
+     * its `gen.family`. One price buys the pattern in every colour. Starters are free.
+     */
+    pattern: {
+      1: { bait: 10, scrap: 30, family: 0 },
+      2: { bait: 15, scrap: 50, family: 1 },
+      3: { bait: 25, scrap: 80, family: 2 },
+    },
   },
   drops: {
     /** A rare material is drawn at `rareWeight / commonWeight` of a common one (a quarter). */

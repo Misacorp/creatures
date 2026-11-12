@@ -38,7 +38,14 @@ describe('housing content: counts', () => {
     expect(housing.parts).toHaveLength(15);
     expect(housing.materials).toHaveLength(16);
     expect(housing.pieces).toHaveLength(127 + 9 * MADE);
-    expect(housing.skins).toHaveLength(54 + 2 * MADE);
+    expect(housing.skins.filter((s) => s.gen === undefined)).toHaveLength(54 + 2 * MADE);
+    // the generated room layers (housing C5): 12 wallpapers, 7 floors, 4 trims, 4 ceilings, 3 frames
+    const gen = (kind: string) => housing.skins.filter((s) => s.gen !== undefined && s.kind === kind);
+    expect(gen('wall')).toHaveLength(12);
+    expect(gen('floor')).toHaveLength(7);
+    expect(gen('trim')).toHaveLength(4);
+    expect(gen('ceiling')).toHaveLength(4);
+    expect(gen('frame')).toHaveLength(3);
     expect(housing.stamps).toHaveLength(24);
   });
 

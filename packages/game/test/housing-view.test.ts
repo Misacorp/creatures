@@ -31,6 +31,8 @@ const room = {
   kind: 'hearth',
   wall: 'cosy-wall',
   floor: 'cosy-floor',
+  trim: null,
+  ceiling: 'ceiling-beamed:white-oak',
   spots: { window: 'cosy-curtains', ceiling: null },
 };
 const displays = [
@@ -76,7 +78,7 @@ const housemate = {
 const house = {
   owner,
   built: ['hut'],
-  exterior: { roof: 'thatch', walls: 'plaster' },
+  exterior: { roof: 'thatch', walls: 'plaster', frame: null },
   rooms: [room],
   displays,
   housemates: [housemate],
@@ -171,7 +173,7 @@ describe('housing view schemas', () => {
     [
       'skin answer (exterior)',
       SkinAnswerSchema,
-      { target: 'exterior', exterior: { roof: 'slate', walls: 'timber' } },
+      { target: 'exterior', exterior: { roof: 'slate', walls: 'timber', frame: 'frame-stone:grey' } },
     ],
     [
       'place answer',
@@ -211,7 +213,7 @@ describe('housing view schemas', () => {
 
   it('rejects nested unknown keys and bad values', () => {
     expect(
-      v.safeParse(HouseViewSchema, { ...house, exterior: { roof: 'a', walls: 'b', x: 1 } }).success,
+      v.safeParse(HouseViewSchema, { ...house, exterior: { roof: 'a', walls: 'b', frame: null, x: 1 } }).success,
     ).toBe(false);
     expect(v.safeParse(HouseViewSchema, { ...house, owner: { ...owner, extra: 1 } }).success).toBe(
       false,

@@ -214,7 +214,7 @@ export function piecePrice(content: HousingContent, pieceId: string): PriceLine[
 }
 
 /**
- * A skin's price: its own override, else by kind. Wallpapers and floors take Acorns, scrap and the set's primary material;
+ * A skin's price: its own override, else by kind. A generated pattern takes its tier's price (`price.pattern`; a starter is free). Wallpapers and floors take Acorns, scrap and the set's primary material;
  * roofs and wall skins take more and `skinExterior.first` of the first material of the part that teaches them. Ground
  * skins are never made (no price). Tier 2 sets scale Acorns and scrap like their pieces. Throws on an unknown skin.
  */
@@ -223,6 +223,18 @@ export function skinPrice(content: HousingContent, skinId: string): PriceLine[] 
   if (skin === undefined) throw new Error(`skinPrice: unknown skin "${skinId}"`);
   if (skin.price !== undefined) return skin.price.map((l) => ({ ...l }));
   if (skin.kind === 'ground') return [];
+  if (skin.gen !== undefined) {
+    if (skin.unlock.kind === 'starter') return [];
+    const p = HOUSING_RULES.price.pattern[skin.gen.tier];
+    const lines: PriceLine[] = [
+      { kind: 'bait', amount: p.bait },
+      { kind: 'scrap', amount: p.scrap },
+    ];
+    if (p.family > 0 && skin.gen.family !== undefined) {
+      lines.push({ kind: 'family', family: skin.gen.family, amount: p.family });
+    }
+    return lines;
+  }
   const set = skin.set === null ? undefined : content.sets.find((s) => s.id === skin.set);
   if (skin.kind === 'wall' || skin.kind === 'floor') {
     const p = HOUSING_RULES.price.skinSurface;
