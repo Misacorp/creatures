@@ -45,32 +45,59 @@ export function lookSkin(
   return look === null ? undefined : content.skins.find((s) => s.id === look.skin);
 }
 
+/** Whether a skin may dress a room of this kind: every skin but a ground skin fits any room of its layer; a ground skin lists its room kinds. */
+export function skinFitsRoom(skin: Pick<SkinDef, 'kind' | 'fits'>, roomKind: string): boolean {
+  return skin.kind !== 'ground' || (skin.fits ?? []).includes(roomKind);
+}
+
+/** The ground skins an outdoor room kind may wear, in content order (what its picker lists). */
+export function groundChoices(content: Pick<HousingContent, 'skins'>, roomKind: string): SkinDef[] {
+  return content.skins.filter((s) => s.kind === 'ground' && skinFitsRoom(s, roomKind));
+}
+
 export type LookProblem = 'not_found' | 'skin_mismatch' | 'bad_colour';
 
 /**
  * Whether a look value may be worn as `kind`: the skin exists and is of that kind; a generated skin names one of its colours and a
- * drawn one names none. Ownership is the caller's check (`ownsSkin`).
+ * drawn one names none. With a `roomKind`, a ground skin must also fit that kind. Ownership is the caller's check (`ownsSkin`).
  */
 export function checkLook(
   content: Pick<HousingContent, 'skins'>,
   value: string,
   kind: SkinKind,
+  roomKind?: string,
 ): LookProblem | null {
   const look = parseLook(value);
   if (look === null) return 'not_found';
   const skin = content.skins.find((s) => s.id === look.skin);
   if (skin === undefined) return 'not_found';
   if (skin.kind !== kind) return 'skin_mismatch';
+  if (roomKind !== undefined && !skinFitsRoom(skin, roomKind)) return 'skin_mismatch';
   if (skin.gen === undefined) return look.colour === null ? null : 'bad_colour';
   return look.colour !== null && skin.gen.colours.includes(look.colour) ? null : 'bad_colour';
 }
 
 /**
- * Whether a player has a skin: a held row, or a starter (owned by rule, so a house made before a starter was added has it too,
- * with no row written).
+ * Whether a player has a skin: a held row, or owned by rule (so a house made before the skin was added has it, with no row written):
+ * a starter always, and a ground skin that comes with a part (`unlock: part`) once that part is built (`built` answers for a part id).
  */
-export function ownsSkin(skin: Pick<SkinDef, 'unlock'>, held: boolean): boolean {
-  return held || skin.unlock.kind === 'starter';
+export function ownsSkin(
+  skin: Pick<SkinDef, 'unlock' | 'kind'>,
+  held: boolean,
+  built?: (partId: string) => boolean,
+): boolean {
+  return held || ownedByRule(skin, built);
+}
+
+/** The rule half of `ownsSkin`: no row is needed. */
+export function ownedByRule(
+  skin: Pick<SkinDef, 'unlock' | 'kind'>,
+  built?: (partId: string) => boolean,
+): boolean {
+  if (skin.unlock.kind === 'starter') return true;
+  return (
+    skin.kind === 'ground' && skin.unlock.kind === 'part' && built?.(skin.unlock.part) === true
+  );
 }
 
 /** A generated skin's first colour: what its picture shows in a list. */

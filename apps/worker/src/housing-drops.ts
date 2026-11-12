@@ -34,6 +34,8 @@ export interface HousingDropsDeps {
   readonly rng: Rng;
   /** Test seam: the housing content (default: the shipped content). */
   readonly content?: HousingContent;
+  /** Test seam: how the content is loaded (default: the shipped content, validated on first use). */
+  readonly loadContent?: () => HousingContent;
 }
 
 const DAY_MS = 86_400_000;
@@ -59,12 +61,25 @@ export class HousingDrops implements HousingHook {
       const sql = storage.sql;
       if (dropSeen(sql, userId, moment.key)) return;
       const now = this.deps.now();
-      const content = this.deps.content ?? shippedHousing();
+      // The content loads first and may fail: the writes that do not depend on it (the trophies) still happen, with an empty drop
+      // recorded under the key so a retry neither pays nor counts the trophy twice.
+      let content: HousingContent | null = null;
+      try {
+        content = this.deps.content ?? (this.deps.loadContent ?? shippedHousing)();
+      } catch (err) {
+        console.error(
+          'housing content failed to load',
+          err instanceof Error ? err.name : 'unknown',
+        );
+      }
       // The chances are rolled first; what the player holds is read only when a blueprint or a stamp roll hits.
-      const drop: HouseDrop = rollHouseDropsLazy(this.deps.rng, content, moment, () => ({
-        blueprints: new Set(listItemsOf(sql, userId, 'blueprint').map((r) => r.item_id)),
-        stamps: new Set(listItemsOf(sql, userId, 'stamp').map((r) => r.item_id)),
-      }));
+      const drop: HouseDrop =
+        content === null
+          ? { materials: {}, blueprint: null, stamp: null }
+          : rollHouseDropsLazy(this.deps.rng, content, moment, () => ({
+              blueprints: new Set(listItemsOf(sql, userId, 'blueprint').map((r) => r.item_id)),
+              stamps: new Set(listItemsOf(sql, userId, 'stamp').map((r) => r.item_id)),
+            }));
       for (const [id, n] of Object.entries(drop.materials)) {
         if (n > 0) addItem(sql, userId, 'material', id, n, n, now);
       }

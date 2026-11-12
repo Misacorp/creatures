@@ -527,6 +527,7 @@
     "id": "lawn",
     "name": "Lawn",
     "kind": "ground",
+    "fits": ["garden", "pond"],
     "set": null,
     "unlock": {
       "kind": "starter"
@@ -537,6 +538,7 @@
     "id": "deck",
     "name": "Deck",
     "kind": "ground",
+    "fits": ["terrace", "balcony"],
     "set": null,
     "unlock": {
       "kind": "starter"
@@ -547,6 +549,7 @@
     "id": "pool-tile",
     "name": "Pool Tile",
     "kind": "ground",
+    "fits": ["pool"],
     "set": null,
     "unlock": {
       "kind": "starter"
@@ -601,6 +604,7 @@
     "id": "orchard-apple",
     "name": "Apple Orchard",
     "kind": "ground",
+    "fits": ["orchard"],
     "set": null,
     "unlock": {
       "kind": "starter"
@@ -611,6 +615,7 @@
     "id": "orchard-plum",
     "name": "Plum Orchard",
     "kind": "ground",
+    "fits": ["orchard"],
     "set": null,
     "unlock": {
       "kind": "part",
@@ -622,6 +627,7 @@
     "id": "orchard-pear",
     "name": "Pear Orchard",
     "kind": "ground",
+    "fits": ["orchard"],
     "set": null,
     "unlock": {
       "kind": "part",

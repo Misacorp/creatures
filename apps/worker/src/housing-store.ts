@@ -54,12 +54,20 @@ export interface Layered {
   extra: Readonly<Record<string, string>>;
 }
 
+/** The only keys a column carries besides its first value; anything else is ignored. */
+const LAYER_KEYS: ReadonlySet<string> = new Set(['trim', 'ceiling', 'frame']);
+
 export function readLayered(column: string): Layered {
   const [first = '', ...rest] = column.split(';');
-  const extra: Record<string, string> = {};
+  // A null-prototype object: a stored key such as `constructor` or `__proto__` can never reach a prototype.
+  const extra: Record<string, string> = Object.create(null) as Record<string, string>;
   for (const pair of rest) {
     const at = pair.indexOf('=');
-    if (at > 0) extra[pair.slice(0, at)] = pair.slice(at + 1);
+    if (at <= 0) continue;
+    const key = pair.slice(0, at);
+    const value = pair.slice(at + 1);
+    if (!LAYER_KEYS.has(key) || value === '' || value.includes('=')) continue;
+    extra[key] = value;
   }
   return { first, extra };
 }

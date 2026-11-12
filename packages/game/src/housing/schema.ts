@@ -228,6 +228,8 @@ export const SkinDefSchema = v.strictObject({
   sources: v.optional(SourcesSchema),
   price: v.optional(Price),
   gen: v.optional(SkinGenSchema),
+  /** A ground skin's room kinds: it may be worn only by an outdoor room of one of these kinds. */
+  fits: v.optional(Ids),
   /** The flavour line, once it is owned. */
   line: v.optional(Line),
   hint: Line,
@@ -382,7 +384,6 @@ function checkParts(content: HousingContent): void {
 }
 
 function checkRooms(content: HousingContent): void {
-  const skinIds = new Set(content.skins.map((s) => s.id));
   for (const room of content.rooms) {
     uniqueIds(
       `room "${room.id}" spot`,
@@ -402,8 +403,20 @@ function checkRooms(content: HousingContent): void {
         fail(`room "${room.id}" spot "${spot.id}" has a display kind but is not a display spot`);
       }
     }
-    for (const skin of [room.wall, room.floor]) {
-      if (!skinIds.has(skin)) fail(`room "${room.id}" names unknown skin "${skin}"`);
+    for (const id of [room.wall, room.floor]) {
+      const skin = content.skins.find((s) => s.id === id);
+      if (skin === undefined) fail(`room "${room.id}" names unknown skin "${id}"`);
+      const wanted = (layer: 'wall' | 'floor'): SkinKind => (room.outdoor ? 'ground' : layer);
+      const layer = id === room.wall ? 'wall' : 'floor';
+      if (skin.kind !== wanted(layer)) {
+        fail(
+          `room "${room.id}" default ${layer} "${id}" is a ${skin.kind} skin, not ${wanted(layer)}`,
+        );
+      }
+      if (skin.gen !== undefined) fail(`room "${room.id}" default ${layer} "${id}" is generated`);
+      if (skin.kind === 'ground' && !(skin.fits ?? []).includes(room.id)) {
+        fail(`room "${room.id}" default ${layer} "${id}" does not fit the room`);
+      }
     }
   }
 }
@@ -474,6 +487,7 @@ function checkItems(content: HousingContent, ctx: HousingLoadContext): void {
     checkPrice(`skin "${skin.id}"`, skin.price, materialIds);
     if (skin.sources !== undefined) checkSources(`skin "${skin.id}"`, skin.sources, ctx);
     checkGen(skin);
+    checkFits(content, skin);
   }
   const itemIds = new Set([...content.pieces.map((p) => p.id), ...content.skins.map((s) => s.id)]);
   const hut = freeHut(content);
@@ -498,6 +512,22 @@ function checkItems(content: HousingContent, ctx: HousingLoadContext): void {
   }
 }
 
+/** A ground skin lists the outdoor room kinds it fits (at least one); no other skin lists any. */
+function checkFits(content: HousingContent, skin: SkinDef): void {
+  const what = `skin "${skin.id}"`;
+  if (skin.kind !== 'ground') {
+    if (skin.fits !== undefined) fail(`${what} is a ${skin.kind} skin and cannot list room kinds`);
+    return;
+  }
+  if (skin.fits === undefined || skin.fits.length === 0)
+    fail(`${what} is a ground skin that fits no room`);
+  for (const id of skin.fits) {
+    const room = content.rooms.find((r) => r.id === id);
+    if (room === undefined) fail(`${what} fits unknown room kind "${id}"`);
+    if (!room.outdoor) fail(`${what} fits "${id}", which is not an outdoor room`);
+  }
+}
+
 /** A generated skin: only the room layers and the frame are generated, its colours are listed once, and a tier above 1 names a family. */
 function checkGen(skin: SkinDef): void {
   const what = `skin "${skin.id}"`;
@@ -511,6 +541,12 @@ function checkGen(skin: SkinDef): void {
   if (skin.set !== null) fail(`${what} is generated and cannot belong to a set`);
   if (new Set(skin.gen.colours).size !== skin.gen.colours.length) {
     fail(`${what} lists a colour twice`);
+  }
+  // A look is stored as `<skin id>:<colour>` in a column value of at most 64 characters (`parseLook`).
+  for (const colour of skin.gen.colours) {
+    if (skin.id.length + 1 + colour.length > 64) {
+      fail(`${what} in colour "${colour}" makes a look longer than 64 characters`);
+    }
   }
   if (skin.gen.tier > 1 && skin.gen.family === undefined && skin.unlock.kind !== 'starter') {
     fail(`${what} is tier ${String(skin.gen.tier)} and needs a material family`);

@@ -16,7 +16,7 @@ const BUDGET = {
   own: { reads: 820, writes: 5 }, // measured 541 read, 1 written: the whole house view (displays 9 and every item row of a hoarder: 320) and the own view (mail 20, drops 14, parts, rooms, purse)
   visit: { reads: 480, writes: 5 }, // measured 317, 2 written (another house: its pieces, rooms, displays, guestbook of 30)
   list: { reads: 330, writes: 5 }, // measured 220, 1 written (15 houses: 15 names and each house's part rows)
-  catalogue: { reads: 830, writes: 5 }, // measured 550, 1 written (2026-11-12, housing C5: was 530 at about 500; a hoarder now holds 30 more skins and 24 more blueprints, one item row each by the same statement, no new statement)
+  catalogue: { reads: 700, writes: 5 }, // measured 550, 1 written (2026-11-12, housing C5: a hoarder holds every skin and blueprint, one item row each by the same statement, no new statement; the budget was 830 while starter rows were written, now lowered with the same headroom as the other paths)
   pay: { reads: 70, writes: 25 }, // measured 48, 14 written: a partial payment into a part (the common call)
   build: { reads: 105, writes: 40 }, // measured 68, 20 written (was 582): the payment that finishes a part answers with its new rooms, displays and lists, not the house
   craft: { reads: 85, writes: 25 }, // measured 55, 14 written (was 420): one id's checks, the debit, and the new count, purse and materials

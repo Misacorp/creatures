@@ -18,6 +18,7 @@ import {
   completeSets,
   houseGrid,
   knownBlueprints,
+  ownedByRule,
   ownsSkin,
   parseLook,
   partPaidLines,
@@ -231,7 +232,8 @@ export class Housing {
 
   /**
    * Makes the caller's house if it does not exist: the hut (the core's first part, built), its Hearth with the starter layout, one of
-   * each piece of a tier 0 set, the starter and ground skins and the starter stamp. One transaction (the caller's).
+   * each piece of a tier 0 set and the starter stamp. Starter skins and ground skins that come with a part need no rows: they are owned by rule
+   * (`ownsSkin`). One transaction (the caller's).
    */
   ensure(userId: string): HouseRow {
     const existing = getHouse(this.sql, userId);
@@ -262,11 +264,6 @@ export class Housing {
     for (const piece of content.pieces) {
       if (piece.set !== null && tier0.has(piece.set))
         addItem(sql, userId, 'piece', piece.id, 1, 0, now);
-    }
-    for (const skin of content.skins) {
-      if (skin.unlock.kind === 'starter' || skin.kind === 'ground') {
-        grantOnce(sql, userId, 'skin', skin.id, now);
-      }
     }
     for (const stamp of content.stamps) {
       if (stamp.unlock.kind === 'starter') grantOnce(sql, userId, 'stamp', stamp.id, now);
@@ -360,14 +357,30 @@ export class Housing {
     const spots: Record<string, string | null> = {};
     for (const spot of kind.spots) spots[spot.id] = entry.spots[spot.id]?.p ?? null;
     const layers = roomLayers(entry.row);
+    const ground = kind.outdoor;
+    // A look that content no longer has (a skin or colour removed, a ground skin that no longer fits) shows as the room was built.
+    const valid = (value: string, as: SkinKind): boolean =>
+      checkLook(this.content, value, as, kind.id) === null;
     return {
       id: roomId,
       kind: kind.id,
-      wall: layers.wall,
-      floor: entry.row.floor,
-      trim: layers.trim,
-      ceiling: layers.ceiling,
+      wall: valid(layers.wall, ground ? 'ground' : 'wall') ? layers.wall : kind.wall,
+      floor: valid(entry.row.floor, ground ? 'ground' : 'floor') ? entry.row.floor : kind.floor,
+      trim: layers.trim !== null && valid(layers.trim, 'trim') ? layers.trim : null,
+      ceiling: layers.ceiling !== null && valid(layers.ceiling, 'ceiling') ? layers.ceiling : null,
       spots,
+    };
+  }
+
+  /** A house's roof, walls and frame as worn; a look that content no longer has shows as the starter (frame: bare). */
+  private exteriorOf(house: HouseRow): { roof: string; walls: string; frame: string | null } {
+    const layers = houseLayers(house);
+    const valid = (value: string, as: SkinKind): boolean =>
+      checkLook(this.content, value, as) === null;
+    return {
+      roof: valid(house.roof, 'roof') ? house.roof : this.content.starter.roof,
+      walls: valid(layers.walls, 'walls') ? layers.walls : this.content.starter.walls,
+      frame: layers.frame !== null && valid(layers.frame, 'frame') ? layers.frame : null,
     };
   }
 
@@ -487,7 +500,7 @@ export class Housing {
     return {
       owner: { userId, name: names.get(userId) ?? 'Someone' },
       built: this.content.parts.filter((p) => loaded.built.has(p.id)).map((p) => p.id),
-      exterior: { roof: loaded.house.roof, ...houseLayers(loaded.house) },
+      exterior: this.exteriorOf(loaded.house),
       rooms,
       displays,
       housemates: this.housemateViews(userId, loaded, clean),
@@ -561,9 +574,11 @@ export class Housing {
         stamp: drop.stamp,
       });
     }
-    // Starters are owned by rule (`ownsSkin`): a house made before a starter was added has it with no row.
+    // Skins owned by rule (`ownsSkin`: a starter, a ground skin of a built part) need no row, so a house made before they were added has them.
+    const have = new Set(skins);
     for (const skin of this.content.skins) {
-      if (skin.unlock.kind === 'starter' && !skins.includes(skin.id)) skins.push(skin.id);
+      if (!have.has(skin.id) && ownedByRule(skin, (id) => loaded.built.has(id)))
+        skins.push(skin.id);
     }
     return {
       progress,
@@ -703,7 +718,7 @@ export class Housing {
         })),
         skins: this.content.skins.map((s) => ({
           id: s.id,
-          owned: ownsSkin(s, (skinRows.get(s.id)?.count ?? 0) > 0),
+          owned: ownsSkin(s, (skinRows.get(s.id)?.count ?? 0) > 0, (id) => built.has(id)),
           known: known.has(s.id),
         })),
         stamps: this.content.stamps.map((s) => ({
@@ -954,7 +969,12 @@ export class Housing {
     if (!isPiece && !isSkin) throw new GameError(404, 'not_found');
     if (!this.isKnown(userId, id)) throw new GameError(409, 'not_known');
     const price = isPiece ? piecePrice(content, id) : skinPrice(content, id);
-    if (isSkin && (getItem(sql, userId, 'skin', id)?.count ?? 0) > 0) {
+    const skin = this.skinById.get(id);
+    if (
+      skin !== undefined &&
+      (ownedByRule(skin, (partId) => this.partBuilt(userId, partId)) ||
+        (getItem(sql, userId, 'skin', id)?.count ?? 0) > 0)
+    ) {
       throw new GameError(409, 'already_owned');
     }
     if (isSkin && price.length === 0) throw new GameError(409, 'already_owned');
@@ -1014,16 +1034,18 @@ export class Housing {
   }
 
   /**
-   * Whether the player may make this piece or skin: a starter, a ground skin, a learned blueprint, or one a built part teaches. The same
+   * Whether the player may make this piece or skin: a starter, a learned blueprint, or one a built part teaches. The same
    * rule as `knownBlueprints`, asked of one id (a few primary key reads instead of every learned blueprint).
    */
+  private partBuilt(userId: string, partId: string): boolean {
+    return getPart(this.sql, userId, partId)?.built_at != null;
+  }
+
   private isKnown(userId: string, id: string): boolean {
     const item = this.content.pieces.find((p) => p.id === id) ?? this.skinById.get(id);
     if (item === undefined) return false;
     if (item.unlock.kind === 'starter') return true;
-    if ('kind' in item && item.kind === 'ground') return true;
-    const isBuilt = (partId: string): boolean =>
-      getPart(this.sql, userId, partId)?.built_at != null;
+    const isBuilt = (partId: string): boolean => this.partBuilt(userId, partId);
     if (item.unlock.kind === 'part' && isBuilt(item.unlock.part)) return true;
     for (const part of this.content.parts) {
       if (part.unlocks.includes(id) && isBuilt(part.id)) return true;
@@ -1198,16 +1220,22 @@ export class Housing {
   skin(userId: string, body: SkinBody): AnswerOf<SkinAnswer> {
     return atomically(this.deps.storage, () => {
       const house = this.ensure(userId);
-      const check = (value: string, kind: SkinKind): void => {
-        const problem = checkLook(this.content, value, kind);
+      const check = (
+        value: string,
+        kind: SkinKind,
+        roomKind?: string,
+        built: (partId: string) => boolean = (id) => this.partBuilt(userId, id),
+      ): void => {
+        const problem = checkLook(this.content, value, kind, roomKind);
         if (problem === 'not_found') throw new GameError(404, 'not_found');
         if (problem !== null) throw new GameError(409, problem);
         const skinId = parseLook(value)?.skin ?? value;
         const skin = this.skinById.get(skinId);
         if (skin === undefined) throw new GameError(404, 'not_found');
+        // By rule first (no read); a row is read only when the rule does not already answer.
         const held =
-          !ownsSkin(skin, false) && (getItem(this.sql, userId, 'skin', skinId)?.count ?? 0) > 0;
-        if (!ownsSkin(skin, held)) throw new GameError(409, 'not_owned');
+          !ownedByRule(skin, built) && (getItem(this.sql, userId, 'skin', skinId)?.count ?? 0) > 0;
+        if (!ownsSkin(skin, held, built)) throw new GameError(409, 'not_owned');
       };
       const bare = (value: string | null | undefined, kind: SkinKind): void => {
         if (value !== undefined && value !== null) check(value, kind);
@@ -1220,8 +1248,15 @@ export class Housing {
         if (kind.outdoor && (body.trim !== undefined || body.ceiling !== undefined)) {
           throw new GameError(409, 'skin_mismatch');
         }
-        if (body.wall !== undefined) check(body.wall, kind.outdoor ? 'ground' : 'wall');
-        if (body.floor !== undefined) check(body.floor, kind.outdoor ? 'ground' : 'floor');
+        // A room's own row exists only once its part is built, so that part counts as built with no extra read.
+        const ownPart = body.roomId.split(':')[0];
+        const built = (id: string): boolean => id === ownPart || this.partBuilt(userId, id);
+        if (body.wall !== undefined) {
+          check(body.wall, kind.outdoor ? 'ground' : 'wall', kind.id, built);
+        }
+        if (body.floor !== undefined) {
+          check(body.floor, kind.outdoor ? 'ground' : 'floor', kind.id, built);
+        }
         bare(body.trim, 'trim');
         bare(body.ceiling, 'ceiling');
         const next = setRoomSkins(this.sql, userId, row, {
@@ -1250,11 +1285,11 @@ export class Housing {
         },
         now,
       );
-      const was = houseLayers(house);
+      const was = this.exteriorOf(house);
       return {
         target: 'exterior' as const,
         exterior: {
-          roof: body.roof ?? house.roof,
+          roof: body.roof ?? was.roof,
           walls: body.walls ?? was.walls,
           frame: body.frame === undefined ? was.frame : body.frame,
         },

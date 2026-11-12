@@ -4,6 +4,14 @@ The living room and lounging, the lounge message, Discord DMs and other social f
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-12: Ground skins fit room kinds and are owned by rule
+
+ID: `2026-11-12-ground-skins-fit-room-kinds-and` · Status: current
+
+**Decision.** A skin is owned by rule when it needs no row: a starter always, and a ground skin that comes with a part (`unlock: part`) once that part is built (`ownsSkin`/`ownedByRule`). No rows are written for either in `ensure()`; the own view lists them with the held skins and the catalogue's `owned` agrees. A ground skin lists the outdoor room kinds it fits (`fits`), the loader checks the list, and `skin()` refuses another room kind with 409 `skin_mismatch`. `groundChoices(content, roomKind)` lists a room's choices for the client. A stored look that no longer validates against content (shape, skin, kind, colour, fit) is shown as the room's default (trim, ceiling and frame bare), with no read.
+
+**Reasoning.** Rows written only at house creation left houses made before a content addition unable to wear or craft its ground skins; a rule needs no migration and no backfill, and a part's room only exists once the part is built, so the skin route decides with data it already read. Matching by id prefix in the client listed nothing for `lawn` and `deck`, and any ground skin could dress any outdoor room. Looks stored under old content must not reach the client as ids it cannot draw.
+
 ## 2026-11-12: Room layers: generated patterns owned by pattern, colour free, stored in the existing columns
 
 ID: `2026-11-12-room-layers-generated-patterns-owned-by` · Status: current

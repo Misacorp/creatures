@@ -98,6 +98,16 @@ export function housingFixtureRaw() {
         wall: 'plain-wall',
         floor: 'plain-floor',
       },
+      {
+        id: 'paddock',
+        name: 'Paddock',
+        outdoor: true,
+        cells: { w: 1, h: 1 },
+        spots: [{ id: 'yard-a', type: 'yard-large', x: 8, w: 48 }],
+        fixtures: [],
+        wall: 'lawn',
+        floor: 'lawn',
+      },
     ],
     parts: [
       {
@@ -199,7 +209,7 @@ export function housingFixtureRaw() {
       skin('plain-floor', 'floor', null, { kind: 'starter' }),
       skin('reef-wall', 'wall', 'reef', { kind: 'drop' }),
       skin('slate', 'roof', null, { kind: 'part', part: 'cottage' }),
-      skin('lawn', 'ground', null, { kind: 'starter' }),
+      { ...skin('lawn', 'ground', null, { kind: 'starter' }), fits: ['paddock'] },
     ],
     stamps: [
       { id: 'paw', name: 'Paw', unlock: { kind: 'starter' }, ...text },

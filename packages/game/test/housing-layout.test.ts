@@ -40,9 +40,10 @@ function fullHouse(): HousingContent {
     cells: { w, h: 1 },
     spots: [{ id: 'floor-a', type: 'floor-large', x: 10, w: 48 }],
     fixtures: [],
-    wall: 'plain-wall',
-    floor: 'plain-floor',
+    wall: outdoor ? 'lawn' : 'plain-wall',
+    floor: outdoor ? 'lawn' : 'plain-floor',
   });
+  raw.skins = raw.skins.map((s) => (s.id === 'lawn' ? { ...s, fits: ['paddock', 'yard'] } : s));
   raw.rooms.push(room('r1', 1, false), room('r2', 2, false), room('yard', 2, true));
   raw.parts = [
     part('hut', 'core', [], [['hearth', 'hearth', 0, 0]], 0),

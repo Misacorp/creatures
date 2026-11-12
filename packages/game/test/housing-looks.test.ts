@@ -3,6 +3,9 @@ import { housing } from '../src/content/housing';
 import {
   checkLook,
   defaultLook,
+  groundChoices,
+  ownedByRule,
+  skinFitsRoom,
   HOUSING_RULES,
   knownBlueprints,
   loadHousingContent,
@@ -204,5 +207,121 @@ describe('the loader checks generated skins', () => {
     expect(load({ ...base, gen: { ...base.gen, colours: ['a', 'a'] } })).toThrow(/colour twice/);
     expect(load({ ...base, gen: { ...base.gen, tier: 2 } })).toThrow(/material family/);
     expect(load({ ...base, unlock: { kind: 'drop' } })).toThrow(/no sources/);
+  });
+});
+
+describe('ground skins fit room kinds', () => {
+  it('lists only the skins that fit, by the content (what the picker shows)', () => {
+    const ids = (room: string) => groundChoices(housing, room).map((s) => s.id);
+    expect(ids('garden')).toEqual(['lawn']);
+    expect(ids('pond')).toEqual(['lawn']);
+    expect(ids('terrace')).toEqual(['deck']);
+    expect(ids('balcony')).toEqual(['deck']);
+    expect(ids('pool')).toEqual(['pool-tile']);
+    expect(ids('orchard')).toEqual(['orchard-apple', 'orchard-plum', 'orchard-pear']);
+    expect(ids('hearth')).toEqual([]);
+  });
+
+  it('refuses a ground skin on a room kind it does not fit', () => {
+    expect(checkLook(housing, 'lawn', 'ground', 'garden')).toBeNull();
+    expect(checkLook(housing, 'orchard-plum', 'ground', 'garden')).toBe('skin_mismatch');
+    expect(checkLook(housing, 'orchard-apple', 'ground', 'balcony')).toBe('skin_mismatch');
+    expect(checkLook(housing, 'lawn', 'ground', 'pool')).toBe('skin_mismatch');
+    expect(skinFitsRoom(skin('cosy-wall'), 'hearth')).toBe(true);
+  });
+
+  it('every room default is a drawn skin of the right kind that fits its room', () => {
+    for (const room of housing.rooms) {
+      for (const id of [room.wall, room.floor]) {
+        expect(
+          checkLook(
+            housing,
+            id,
+            room.outdoor ? 'ground' : id === room.wall ? 'wall' : 'floor',
+            room.id,
+          ),
+        ).toBeNull();
+      }
+    }
+  });
+
+  it('owns a starter always and a part ground skin once the part is built', () => {
+    expect(ownedByRule(skin('lawn'))).toBe(true);
+    expect(ownedByRule(skin('orchard-plum'))).toBe(false);
+    expect(ownedByRule(skin('orchard-plum'), (id) => id === 'orchard')).toBe(true);
+    expect(ownedByRule(skin('orchard-plum'), (id) => id === 'pond')).toBe(false);
+    expect(ownsSkin(skin('orchard-plum'), true)).toBe(true);
+    expect(ownedByRule(skin('slate'), () => true)).toBe(false);
+  });
+});
+
+describe('the loader checks fits, room defaults and look length', () => {
+  const load = (edit: (raw: ReturnType<typeof housingFixtureRaw>) => void) => () => {
+    const raw = housingFixtureRaw();
+    edit(raw);
+    return loadHousingContent(raw, fixtureResources(), FIXTURE_CTX);
+  };
+  const skinOf = (raw: ReturnType<typeof housingFixtureRaw>, id: string) => {
+    const found = raw.skins.find((x) => x.id === id);
+    if (found === undefined) throw new Error(id);
+    return found as Record<string, unknown>;
+  };
+
+  it('wants a ground skin to fit at least one known outdoor room, and no other skin to list rooms', () => {
+    expect(load(() => undefined)).not.toThrow();
+    const moss = (fits?: string[]) => (raw: ReturnType<typeof housingFixtureRaw>) => {
+      const extra: Record<string, unknown> = { ...skinOf(raw, 'lawn'), id: 'moss' };
+      if (fits === undefined) delete extra.fits;
+      else extra.fits = fits;
+      raw.skins.push(extra as never);
+    };
+    expect(load(moss(['paddock']))).not.toThrow();
+    expect(load(moss())).toThrow(/fits no room/);
+    expect(load(moss(['nowhere']))).toThrow(/unknown room kind/);
+    expect(load(moss(['hearth']))).toThrow(/not an outdoor room/);
+    expect(load((raw) => (skinOf(raw, 'plain-wall').fits = ['paddock']))).toThrow(
+      /cannot list room kinds/,
+    );
+  });
+
+  it('checks a room default is of the right kind, drawn, and fits', () => {
+    expect(load((raw) => (raw.rooms[0]!.wall = 'lawn'))).toThrow(
+      /default wall "lawn" is a ground skin, not wall/,
+    );
+    expect(load((raw) => (raw.rooms[0]!.floor = 'thatch'))).toThrow(/default floor "thatch"/);
+    expect(load((raw) => (raw.rooms[2]!.floor = 'plain-floor'))).toThrow(/not ground/);
+    expect(load((raw) => (skinOf(raw, 'lawn').fits = ['paddock']))).not.toThrow();
+    expect(
+      load((raw) => {
+        skinOf(raw, 'lawn').fits = ['paddock'];
+        raw.rooms[2]!.wall = 'deck';
+        raw.skins.push({ ...skinOf(raw, 'lawn'), id: 'deck', fits: ['nook'] } as never);
+      }),
+    ).toThrow();
+    const gen = { pattern: 'p', colours: ['paint-white'], tier: 1 };
+    expect(
+      load((raw) => {
+        raw.skins.push({ ...skinOf(raw, 'plain-wall'), id: 'gen-wall', gen } as never);
+        raw.rooms[0]!.wall = 'gen-wall';
+      }),
+    ).toThrow(/is generated/);
+  });
+
+  it('keeps a generated skin look within 64 characters', () => {
+    const long = 'a'.repeat(31);
+    const make = (id: string, colour: string) =>
+      load((raw) => {
+        raw.skins.push({
+          id,
+          name: 'x',
+          kind: 'trim',
+          set: null,
+          unlock: { kind: 'starter' },
+          gen: { pattern: 'p', colours: [colour], tier: 1 },
+          hint: 'x',
+        } as never);
+      });
+    expect(make(long, 'a'.repeat(32))).not.toThrow(); // 31 + 1 + 32 = 64
+    expect(make('a'.repeat(32), 'a'.repeat(32))).toThrow(/longer than 64/); // 65
   });
 });
