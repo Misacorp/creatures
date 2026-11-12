@@ -50,23 +50,44 @@ export const PlaceBodySchema = v.strictObject({
   from: v.optional(v.strictObject({ roomId: RoomIdSchema, spotId: HouseIdSchema })),
 });
 
+/** A look: a skin id, or a generated skin in one of its colours (`paper-damask:rose`, `@creatures/game` `looks.ts`). */
+export const LookSchema = v.pipe(
+  v.string(),
+  v.maxLength(64),
+  v.regex(/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*(?::[a-z][a-z0-9]*(?:-[a-z0-9]+)*)?$/),
+);
+
+/** A room's layers or the house-wide ones; a trim, ceiling or frame of `null` takes it off (as built). At least one is given. */
 export const SkinBodySchema = v.union([
   v.pipe(
     v.strictObject({
       target: v.literal('room'),
       roomId: RoomIdSchema,
-      wall: v.optional(HouseIdSchema),
-      floor: v.optional(HouseIdSchema),
+      wall: v.optional(LookSchema),
+      floor: v.optional(LookSchema),
+      trim: v.optional(v.nullable(LookSchema)),
+      ceiling: v.optional(v.nullable(LookSchema)),
     }),
-    v.check((b) => b.wall !== undefined || b.floor !== undefined, 'give a wall or a floor'),
+    v.check(
+      (b) =>
+        b.wall !== undefined ||
+        b.floor !== undefined ||
+        b.trim !== undefined ||
+        b.ceiling !== undefined,
+      'give a wall, a floor, a trim or a ceiling',
+    ),
   ),
   v.pipe(
     v.strictObject({
       target: v.literal('exterior'),
       roof: v.optional(HouseIdSchema),
       walls: v.optional(HouseIdSchema),
+      frame: v.optional(v.nullable(LookSchema)),
     }),
-    v.check((b) => b.roof !== undefined || b.walls !== undefined, 'give a roof or walls'),
+    v.check(
+      (b) => b.roof !== undefined || b.walls !== undefined || b.frame !== undefined,
+      'give a roof, walls or a frame',
+    ),
   ),
 ]);
 export type SkinBody = v.InferOutput<typeof SkinBodySchema>;

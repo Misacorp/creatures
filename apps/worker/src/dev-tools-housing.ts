@@ -2,7 +2,8 @@
  * Dev tools for player housing. Staging only (see `dev-tools.ts`), and only with `HOUSING` on (404 otherwise). Each function runs inside
  * the tool's one transaction and acts on the caller's guild. They set a state for testing, they do not play the game: nothing is paid.
  *
- * - `housing-grant`: fills the caller's holdings: `materials` of every luxury material, Acorns, scrap, every blueprint, every stamp.
+ * - `housing-grant`: fills the caller's holdings: `materials` of every luxury material, Acorns, scrap, every blueprint, every skin (the
+ *   room patterns and frames included), every stamp.
  * - `housing-build`: builds parts without paying (all, or the named ones; a part's prerequisites must be built or named too).
  * - `housing-guests`: gives the raid's dev guests (`dev-guest-<n>`) houses with random built parts, furniture, a housemate and a stamp in
  *   the caller's guestbook, so the visit list and the guestbook have something to show.
@@ -83,11 +84,15 @@ export function housingGrant(ctx: ToolCtx, body: Body<typeof HousingGrantBodySch
       }
     }
   }
+  let skins = 0;
+  if (body.skins === 'all') {
+    for (const skin of content.skins) if (grantOnce(sql, userId, 'skin', skin.id, now)) skins++;
+  }
   let stamps = 0;
   if (body.stamps === 'all') {
     for (const s of content.stamps) if (grantOnce(sql, userId, 'stamp', s.id, now)) stamps++;
   }
-  return { materials: body.materials ?? 0, blueprints, stamps };
+  return { materials: body.materials ?? 0, blueprints, skins, stamps };
 }
 
 export function housingBuild(ctx: ToolCtx, body: Body<typeof HousingBuildBodySchema>) {

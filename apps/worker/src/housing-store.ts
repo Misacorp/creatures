@@ -43,6 +43,54 @@ export type Spots = Record<string, { p: string; m?: string }>;
 const SpotsSchema = v.record(v.string(), v.object({ p: v.string(), m: v.optional(v.string()) }));
 const PaidSchema = v.record(v.string(), v.union([v.number(), v.record(v.string(), v.number())]));
 
+/**
+ * The layers a column carries besides its first value, with no migration (`docs/design/housing-interior.md`): a room's `wall` column
+ * is `<wallpaper>` or `<wallpaper>;trim=<look>;ceiling=<look>`, a house's `walls` column `<walls>` or `<walls>;frame=<look>`. A column
+ * with nothing extra is the plain value it always was, so a house that never chose a trim, a ceiling or a frame reads and writes as
+ * before. Unknown keys are ignored; a look value never holds `;` or `=`.
+ */
+export interface Layered {
+  first: string;
+  extra: Readonly<Record<string, string>>;
+}
+
+export function readLayered(column: string): Layered {
+  const [first = '', ...rest] = column.split(';');
+  const extra: Record<string, string> = {};
+  for (const pair of rest) {
+    const at = pair.indexOf('=');
+    if (at > 0) extra[pair.slice(0, at)] = pair.slice(at + 1);
+  }
+  return { first, extra };
+}
+
+/** The column for a first value and its extra layers (a null layer is left out, in a fixed key order). */
+export function packLayered(first: string, extra: Readonly<Record<string, string | null>>): string {
+  const pairs = Object.keys(extra)
+    .sort()
+    .flatMap((k) => {
+      const value = extra[k];
+      return value === null || value === undefined ? [] : [`${k}=${value}`];
+    });
+  return [first, ...pairs].join(';');
+}
+
+/** A room's wallpaper, trim and ceiling from its `wall` column. */
+export function roomLayers(row: Pick<RoomRow, 'wall'>): {
+  wall: string;
+  trim: string | null;
+  ceiling: string | null;
+} {
+  const { first, extra } = readLayered(row.wall);
+  return { wall: first, trim: extra.trim ?? null, ceiling: extra.ceiling ?? null };
+}
+
+/** A house's walls skin and frame from its `walls` column. */
+export function houseLayers(row: Pick<HouseRow, 'walls'>): { walls: string; frame: string | null } {
+  const { first, extra } = readLayered(row.walls);
+  return { walls: first, frame: extra.frame ?? null };
+}
+
 export function parseSpots(json: string): Spots {
   const parsed = v.safeParse(SpotsSchema, JSON.parse(json));
   return parsed.success ? (parsed.output as Spots) : {};
@@ -87,16 +135,23 @@ export function touchHouse(sql: SqlStorage, userId: string, now: number): void {
   sql.exec('UPDATE houses SET updated_at = ? WHERE user_id = ?', now, userId);
 }
 
+/** Sets the house-wide skins; `frame` null takes the frame off (the posts and slabs as built). `house` is the row as read. */
 export function setExterior(
   sql: SqlStorage,
-  userId: string,
-  skins: { roof?: string; walls?: string },
+  house: HouseRow,
+  skins: { roof?: string; walls?: string; frame?: string | null },
   now: number,
 ): void {
+  const userId = house.user_id;
   if (skins.roof !== undefined)
     sql.exec('UPDATE houses SET roof = ? WHERE user_id = ?', skins.roof, userId);
-  if (skins.walls !== undefined)
-    sql.exec('UPDATE houses SET walls = ? WHERE user_id = ?', skins.walls, userId);
+  if (skins.walls !== undefined || skins.frame !== undefined) {
+    const was = houseLayers(house);
+    const walls = packLayered(skins.walls ?? was.walls, {
+      frame: skins.frame === undefined ? was.frame : skins.frame,
+    });
+    sql.exec('UPDATE houses SET walls = ? WHERE user_id = ?', walls, userId);
+  }
   touchHouse(sql, userId, now);
 }
 
@@ -198,19 +253,31 @@ export function setRoomSpots(sql: SqlStorage, userId: string, roomId: string, sp
   );
 }
 
+/**
+ * Sets a room's layers; `trim` or `ceiling` null takes it off. `row` is the room as read (the trim and ceiling share the `wall`
+ * column with the wallpaper, see `readLayered`).
+ */
 export function setRoomSkins(
   sql: SqlStorage,
   userId: string,
-  roomId: string,
-  skins: { wall?: string; floor?: string },
-): void {
-  if (skins.wall !== undefined)
+  row: RoomRow,
+  skins: { wall?: string; floor?: string; trim?: string | null; ceiling?: string | null },
+): RoomRow {
+  const roomId = row.room_id;
+  let wall = row.wall;
+  if (skins.wall !== undefined || skins.trim !== undefined || skins.ceiling !== undefined) {
+    const was = roomLayers(row);
+    wall = packLayered(skins.wall ?? was.wall, {
+      trim: skins.trim === undefined ? was.trim : skins.trim,
+      ceiling: skins.ceiling === undefined ? was.ceiling : skins.ceiling,
+    });
     sql.exec(
       'UPDATE house_rooms SET wall = ? WHERE user_id = ? AND room_id = ?',
-      skins.wall,
+      wall,
       userId,
       roomId,
     );
+  }
   if (skins.floor !== undefined)
     sql.exec(
       'UPDATE house_rooms SET floor = ? WHERE user_id = ? AND room_id = ?',
@@ -218,6 +285,7 @@ export function setRoomSkins(
       userId,
       roomId,
     );
+  return { ...row, wall, floor: skins.floor ?? row.floor };
 }
 
 // --- Items ---

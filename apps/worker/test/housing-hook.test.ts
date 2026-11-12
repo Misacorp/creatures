@@ -458,9 +458,11 @@ describe('the dev tools', () => {
           acorns: 500,
           scrap: 900,
           blueprints: 'all',
+          skins: 'all',
           stamps: 'all',
         });
         const granted = await own(p);
+        expect(granted.own.items.skins).toHaveLength(content.skins.length);
         expect(Object.keys(granted.own.materials)).toHaveLength(content.materials.length);
         expect(granted.own.purse).toMatchObject({ bait: 500, scrap: 900 });
         expect(granted.own.items.stamps).toHaveLength(content.stamps.length);

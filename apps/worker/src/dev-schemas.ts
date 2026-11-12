@@ -294,6 +294,8 @@ export const HousingGrantBodySchema = v.pipe(
     acorns: v.optional(int(1, MAX_AMOUNT)),
     scrap: v.optional(int(1, MAX_AMOUNT)),
     blueprints: v.optional(v.literal('all')),
+    /** Every skin owned at once (the room patterns and frames too), with no making. */
+    skins: v.optional(v.literal('all')),
     stamps: v.optional(v.literal('all')),
   }),
   v.check((o) => Object.values(o).some((x) => x !== undefined), NEED_ONE),

@@ -186,7 +186,10 @@ describe('skins', () => {
         SkinAnswerSchema,
         await skin(p, { target: 'exterior', roof: 'slate', walls: 'timber' }),
       );
-      expect(outside).toEqual({ target: 'exterior', exterior: { roof: 'slate', walls: 'timber' } });
+      expect(outside).toEqual({
+        target: 'exterior',
+        exterior: { roof: 'slate', walls: 'timber', frame: null },
+      });
       // Only the named side changes.
       const roofOnly = parsed(
         SkinAnswerSchema,
@@ -194,7 +197,7 @@ describe('skins', () => {
       );
       expect(roofOnly).toEqual({
         target: 'exterior',
-        exterior: { roof: 'thatch', walls: 'timber' },
+        exterior: { roof: 'thatch', walls: 'timber', frame: null },
       });
     });
   });

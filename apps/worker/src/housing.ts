@@ -14,9 +14,12 @@ import {
   applyPayment,
   buildable,
   canPlace,
+  checkLook,
   completeSets,
   houseGrid,
   knownBlueprints,
+  ownsSkin,
+  parseLook,
   partPaidLines,
   partRemaining,
   freeHut,
@@ -46,6 +49,7 @@ import {
   type PriceLine,
   type RoomKindDef,
   type RoomView,
+  type SkinKind,
 } from '@creatures/game';
 import { shippedHousing } from '@creatures/game/housing-lazy';
 import { parseState } from './dungeon-state';
@@ -65,6 +69,7 @@ import {
   getPart,
   getRoom,
   giftGivenToday,
+  houseLayers,
   giftsReceivedToday,
   grantOnce,
   guestbookOf,
@@ -81,6 +86,7 @@ import {
   playerNames,
   recentDrops,
   recentHouses,
+  roomLayers,
   setExterior,
   setRoomSkins,
   setRoomSpots,
@@ -353,11 +359,14 @@ export class Housing {
     if (kind === undefined) return null;
     const spots: Record<string, string | null> = {};
     for (const spot of kind.spots) spots[spot.id] = entry.spots[spot.id]?.p ?? null;
+    const layers = roomLayers(entry.row);
     return {
       id: roomId,
       kind: kind.id,
-      wall: entry.row.wall,
+      wall: layers.wall,
       floor: entry.row.floor,
+      trim: layers.trim,
+      ceiling: layers.ceiling,
       spots,
     };
   }
@@ -478,7 +487,7 @@ export class Housing {
     return {
       owner: { userId, name: names.get(userId) ?? 'Someone' },
       built: this.content.parts.filter((p) => loaded.built.has(p.id)).map((p) => p.id),
-      exterior: { roof: loaded.house.roof, walls: loaded.house.walls },
+      exterior: { roof: loaded.house.roof, ...houseLayers(loaded.house) },
       rooms,
       displays,
       housemates: this.housemateViews(userId, loaded, clean),
@@ -551,6 +560,10 @@ export class Housing {
         blueprint: drop.blueprint,
         stamp: drop.stamp,
       });
+    }
+    // Starters are owned by rule (`ownsSkin`): a house made before a starter was added has it with no row.
+    for (const skin of this.content.skins) {
+      if (skin.unlock.kind === 'starter' && !skins.includes(skin.id)) skins.push(skin.id);
     }
     return {
       progress,
@@ -690,7 +703,7 @@ export class Housing {
         })),
         skins: this.content.skins.map((s) => ({
           id: s.id,
-          owned: (skinRows.get(s.id)?.count ?? 0) > 0,
+          owned: ownsSkin(s, (skinRows.get(s.id)?.count ?? 0) > 0),
           known: known.has(s.id),
         })),
         stamps: this.content.stamps.map((s) => ({
@@ -1177,54 +1190,73 @@ export class Housing {
     });
   }
 
-  /** Wallpaper and floor of a room, or the roof and walls of the house, from skins the caller owns. */
+  /**
+   * A room's wallpaper, floor, trim and ceiling, or the house's roof, walls and frame, from skins the caller owns (a starter is owned by
+   * rule). A generated skin is worn in one of its colours (`paper-damask:rose`); a trim, ceiling or frame of null takes it off. Setting
+   * a look is free and setting it again changes nothing, so it needs no idempotency key.
+   */
   skin(userId: string, body: SkinBody): AnswerOf<SkinAnswer> {
     return atomically(this.deps.storage, () => {
       const house = this.ensure(userId);
-      const owns = (skinId: string): boolean =>
-        (getItem(this.sql, userId, 'skin', skinId)?.count ?? 0) > 0;
-      const check = (skinId: string, kinds: readonly string[]): void => {
+      const check = (value: string, kind: SkinKind): void => {
+        const problem = checkLook(this.content, value, kind);
+        if (problem === 'not_found') throw new GameError(404, 'not_found');
+        if (problem !== null) throw new GameError(409, problem);
+        const skinId = parseLook(value)?.skin ?? value;
         const skin = this.skinById.get(skinId);
         if (skin === undefined) throw new GameError(404, 'not_found');
-        if (!owns(skinId)) throw new GameError(409, 'not_owned');
-        if (!kinds.includes(skin.kind)) throw new GameError(409, 'skin_mismatch');
+        const held = !ownsSkin(skin, false) && (getItem(this.sql, userId, 'skin', skinId)?.count ?? 0) > 0;
+        if (!ownsSkin(skin, held)) throw new GameError(409, 'not_owned');
+      };
+      const bare = (value: string | null | undefined, kind: SkinKind): void => {
+        if (value !== undefined && value !== null) check(value, kind);
       };
       const now = this.deps.now();
       if (body.target === 'room') {
         const row = getRoom(this.sql, userId, body.roomId);
         const kind = this.roomKind(body.roomId);
         if (row === null || kind === undefined) throw new GameError(404, 'not_found');
-        if (body.wall !== undefined) check(body.wall, kind.outdoor ? ['ground'] : ['wall']);
-        if (body.floor !== undefined) check(body.floor, kind.outdoor ? ['ground'] : ['floor']);
-        setRoomSkins(this.sql, userId, body.roomId, {
+        if (kind.outdoor && (body.trim !== undefined || body.ceiling !== undefined)) {
+          throw new GameError(409, 'skin_mismatch');
+        }
+        if (body.wall !== undefined) check(body.wall, kind.outdoor ? 'ground' : 'wall');
+        if (body.floor !== undefined) check(body.floor, kind.outdoor ? 'ground' : 'floor');
+        bare(body.trim, 'trim');
+        bare(body.ceiling, 'ceiling');
+        const next = setRoomSkins(this.sql, userId, row, {
           ...(body.wall === undefined ? {} : { wall: body.wall }),
           ...(body.floor === undefined ? {} : { floor: body.floor }),
+          ...(body.trim === undefined ? {} : { trim: body.trim }),
+          ...(body.ceiling === undefined ? {} : { ceiling: body.ceiling }),
         });
         touchHouse(this.sql, userId, now);
         const spots = parseSpots(row.spots_json);
         this.dropStaleSpots(body.roomId, spots);
-        const room = this.roomView(body.roomId, {
-          row: { ...row, wall: body.wall ?? row.wall, floor: body.floor ?? row.floor },
-          spots,
-        });
+        const room = this.roomView(body.roomId, { row: next, spots });
         if (room === null) throw new GameError(404, 'not_found');
         return { target: 'room' as const, room };
       }
-      if (body.roof !== undefined) check(body.roof, ['roof']);
-      if (body.walls !== undefined) check(body.walls, ['walls']);
+      if (body.roof !== undefined) check(body.roof, 'roof');
+      if (body.walls !== undefined) check(body.walls, 'walls');
+      bare(body.frame, 'frame');
       setExterior(
         this.sql,
-        userId,
+        house,
         {
           ...(body.roof === undefined ? {} : { roof: body.roof }),
           ...(body.walls === undefined ? {} : { walls: body.walls }),
+          ...(body.frame === undefined ? {} : { frame: body.frame }),
         },
         now,
       );
-      touchHouse(this.sql, userId, now);
+      const was = houseLayers(house);
       return {
         target: 'exterior' as const,
-        exterior: { roof: body.roof ?? house.roof, walls: body.walls ?? house.walls },
+        exterior: {
+          roof: body.roof ?? house.roof,
+          walls: body.walls ?? was.walls,
+          frame: body.frame === undefined ? was.frame : body.frame,
+        },
       };
     });
   }
