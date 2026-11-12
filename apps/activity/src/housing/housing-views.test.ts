@@ -27,6 +27,7 @@ import {
   NOBODY,
   currentLook,
   skinBody,
+  hasGroundChoice,
   skinChoices,
   sleeperOptions,
   spotView,
@@ -340,6 +341,41 @@ describe('spot view', () => {
     expect(skinChoices('frame', null, own)[0]).toMatchObject({ id: 'frame-timber', here: true });
     expect(skinChoices('ceiling', null, own)[0]).toMatchObject({ id: 'ceiling-plain', here: true });
     expect(skinChoices('wall', 'cosy-wall', own).some((c) => c.kind === 'bare')).toBe(false);
+  });
+
+  it('lists the grounds that fit the room kind by the content rule, and always the one worn', () => {
+    const own = sampleOwn('empty');
+    const built = ['hut', 'garden', 'orchard', 'terrace', 'balcony'];
+    const ids = (current: string, kind: string) =>
+      skinChoices('ground', current, own, { kind, built }).map((c) => c.id);
+    expect(ids('orchard-apple', 'orchard')).toEqual([
+      'orchard-apple',
+      'orchard-plum',
+      'orchard-pear',
+    ]);
+    // a ground of a kind a room does not fit is still listed while it is worn (an old look), never the other kind's grounds
+    expect(ids('lawn', 'orchard')).toEqual([
+      'lawn',
+      'orchard-apple',
+      'orchard-plum',
+      'orchard-pear',
+    ]);
+    expect(ids('deck', 'balcony')).toEqual(['deck']);
+    expect(ids('lawn', 'garden')).toEqual(['lawn']);
+    expect(
+      skinChoices('ground', 'orchard-plum', own, { kind: 'orchard', built }).find((c) => c.here)
+        ?.id,
+    ).toBe('orchard-plum');
+    // the plum and pear come with the orchard part: had (owned by rule) once it is built
+    const choices = skinChoices('ground', 'orchard-apple', own, { kind: 'orchard', built });
+    expect(choices.every((c) => c.kind === 'owned')).toBe(true);
+  });
+
+  it('shows a Ground chip only for a room kind with more than one fitting ground', () => {
+    expect(hasGroundChoice('orchard')).toBe(true);
+    for (const kind of ['garden', 'pond', 'terrace', 'balcony', 'pool']) {
+      expect(hasGroundChoice(kind), kind).toBe(false);
+    }
   });
 
   it('reads the look a picker opens on and makes the request that sets it', () => {

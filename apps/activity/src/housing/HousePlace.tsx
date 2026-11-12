@@ -312,6 +312,7 @@ export function HousePlace({ creatures, now, onSpent }: HousePlaceProps) {
         <SkinPicker
           kind={p.skin}
           current={current}
+          room={room === undefined ? null : { kind: room.kind, built: view_.built }}
           own={own}
           busy={house.busy}
           onPick={(value) => {

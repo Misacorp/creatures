@@ -6,6 +6,7 @@
 import {
   BARE_LAYERS,
   canPlace,
+  groundChoices,
   HOUSING_RULES,
   ownsSkin,
   parseLook,
@@ -240,22 +241,28 @@ export interface SkinChoice {
 /**
  * What the skin picker lists for a kind: "None" first for a trim, then the skins the player has (the one in use first; a starter is
  * had by rule), then the ones known but not made. A generated pattern is one choice for all its colours. `current` is the look in use
- * (`paper-damask:rose`), or null for a bare layer: a ceiling or frame left as built is its starter (`drawnLook`), shown as that.
+ * (`paper-damask:rose`), or null for a bare layer: a ceiling or frame left as built is its starter (`drawnLook`), shown as that. A
+ * ground lists the grounds that fit the room's kind (`room.kind`, by the content's rule `groundChoices`), and always the one worn; a
+ * ground that comes with a part is had once that part is built (`room.built`, the house's built parts: the server's rule).
  */
 export function skinChoices(
   kind: SkinKind,
   current: string | null,
   own: OwnHouseView,
+  room: { kind: string; built: readonly string[] } | null = null,
 ): SkinChoice[] {
   const known = knownIds(own);
   const drawn = drawnLook(kind, current);
   const worn = drawn === null ? null : parseLook(drawn);
   const have = (s: (typeof housing.skins)[number]) =>
-    ownsSkin(s, own.items.skins.includes(s.id)) || s.id === worn?.skin;
-  // Ground skins: the varieties of one outdoor room (`orchard-apple`, `orchard-plum`), told by the id they share before the dash.
-  const family = `${(current ?? '').split('-')[0] ?? ''}-`;
+    ownsSkin(s, own.items.skins.includes(s.id), (part) => room?.built.includes(part) === true) ||
+    s.id === worn?.skin;
+  // Ground skins: the ones the content says fit this room's kind, and the worn one even if it no longer fits.
+  const fitting = new Set(
+    kind === 'ground' && room !== null ? groundChoices(housing, room.kind).map((s) => s.id) : [],
+  );
   const ofKind = housing.skins.filter(
-    (s) => s.kind === kind && (kind !== 'ground' || s.id.startsWith(family)),
+    (s) => s.kind === kind && (kind !== 'ground' || fitting.has(s.id) || s.id === worn?.skin),
   );
   const choice = (s: (typeof housing.skins)[number], owned: boolean): SkinChoice => {
     const here = s.id === worn?.skin;
@@ -339,4 +346,9 @@ export function skinBody(
     case 'ceiling':
       return roomId === null ? null : { target: 'room', roomId, ceiling: value };
   }
+}
+
+/** Whether an outdoor room of this kind has more than one ground to choose from (the orchard's trees): its Ground chip shows. */
+export function hasGroundChoice(roomKind: string): boolean {
+  return groundChoices(housing, roomKind).length > 1;
 }

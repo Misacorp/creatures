@@ -23,6 +23,8 @@ export interface SkinPickerProps {
   onPick: (value: string | null) => void;
   /** "Make" was pressed on a blueprint's recipe. */
   onMake: (itemId: string) => void;
+  /** For a ground: the room's kind (`orchard`: which grounds fit it) and the house's built parts (which grounds it has). */
+  room?: { kind: string; built: readonly string[] } | null;
 }
 
 export const SKIN_KIND_NAMES: Readonly<Record<SkinKind, string>> = {
@@ -76,8 +78,16 @@ function colourCell(kind: SkinKind, colour: string, worn: boolean): SupplyCell {
  * a generated pattern (housing C5) a row of its colours; the chosen one as a card with "Use it" (or "Make", which opens its recipe in
  * the same drawer). Data in, callbacks out: it fetches nothing.
  */
-export function SkinPicker({ kind, current, own, busy, onPick, onMake }: SkinPickerProps) {
-  const choices = skinChoices(kind, current, own);
+export function SkinPicker({
+  kind,
+  current,
+  own,
+  busy,
+  onPick,
+  onMake,
+  room = null,
+}: SkinPickerProps) {
+  const choices = skinChoices(kind, current, own, room);
   const [picked, setPicked] = useState<string | null>(null);
   const [colourPicked, setColourPicked] = useState<{ skin: string; colour: string } | null>(null);
   const [making, setMaking] = useState(false);

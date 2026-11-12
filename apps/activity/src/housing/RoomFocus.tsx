@@ -31,6 +31,7 @@ import { swapPalette } from '../sprites/sprite-data';
 import { displayText, itemName, spotLabel } from './house-text';
 import { boxVars, HOUSE_DRAWING, SceneLayer } from './HouseScene';
 import { SkinTrigger } from './SkinTrigger';
+import { hasGroundChoice } from './spot-view';
 
 const FALLBACK_WIDTH = 390;
 /** The focus view's biggest scale; a room is drawn at the largest integer up to it that fits (never less than 2). */
@@ -210,12 +211,6 @@ function Sleeper({
   );
 }
 
-/** An outdoor room whose ground comes in varieties to choose from (the orchard's trees): its ground skin has siblings. */
-function hasVarieties(ground: string): boolean {
-  const family = `${ground.split('-')[0] ?? ''}-`;
-  return housing.skins.filter((s) => s.kind === 'ground' && s.id.startsWith(family)).length > 1;
-}
-
 export interface RoomFocusProps {
   house: HouseView;
   roomId: string;
@@ -353,7 +348,7 @@ export function RoomFocus({
         view !== undefined &&
         onSkin !== undefined &&
         (model.rooms[0]?.outdoor ?? false) &&
-        hasVarieties(view.floor) && (
+        hasGroundChoice(view.kind) && (
           <div class="house-chips" data-chips="1">
             <SkinTrigger
               kind="ground"

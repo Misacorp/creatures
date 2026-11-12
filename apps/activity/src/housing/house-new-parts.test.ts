@@ -234,13 +234,18 @@ describe('the orchard variety', () => {
   it('lists the orchard grounds to choose from, the one in use first, and no other room grounds', () => {
     const house = sceneHouse({ parts: [...THREE_FLOORS, 'garden', 'orchard'] });
     const own = sceneOwn(house);
-    const choices = skinChoices('ground', 'orchard-apple', own);
+    const where = { kind: 'orchard', built: house.built };
+    const choices = skinChoices('ground', 'orchard-apple', own, where);
     expect(choices[0]).toMatchObject({ id: 'orchard-apple', kind: 'owned', here: true });
     expect(choices.map((c) => c.id).sort()).toEqual([
       'orchard-apple',
       'orchard-pear',
       'orchard-plum',
     ]);
-    expect(skinChoices('ground', 'pool-tile', own).map((c) => c.id)).toEqual(['pool-tile']);
+    expect(
+      skinChoices('ground', 'pool-tile', own, { kind: 'pool', built: house.built }).map(
+        (c) => c.id,
+      ),
+    ).toEqual(['pool-tile']);
   });
 });
