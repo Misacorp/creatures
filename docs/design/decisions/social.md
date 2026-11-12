@@ -4,6 +4,14 @@ The living room and lounging, the lounge message, Discord DMs and other social f
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-12: Housing: a ceiling and frame left as built are their starters; only a trim can be None
+
+ID: `2026-11-12-housing-a-ceiling-and-frame-left` · Status: current
+
+**Decision.** The client draws a ceiling or a frame left as built (stored null) as its starter in its first colour (Plain Ceiling in white and oak, Timber Frame in oak; `drawnLook` in `interior-art.ts`), shows it on the chip and in the picker as that starter, in use, and offers no "As built" choice for them. Only a trim can be bare; its choice is called "None". Picking the starter stores its look; the picture is the same. The server is unchanged (null stays valid). Alongside: four wallpapers whose names collided with the outside Walls were renamed (Tiled Wall, Plank Wall, Brick Wall, Panelled Wall became Glazed Tiles, Upright Boards, Bare Brick, Moulded Panels), and the tower's spire is drawn at the postcard's pitch (one pixel a side per row).
+
+**Reasoning.** The review (2026-11-12) found "As built" and the starter side by side drawing the same picture, two choices that look identical. Making null mean the starter keeps every stored house valid with no migration and makes the picker honest; the bare day digests were re-pinned once for it. The renames and the spire are wording and art calls within the brief (scalars and small calls: best pick, listed for Misa).
+
 ## 2026-11-12: Ground skins fit room kinds and are owned by rule
 
 ID: `2026-11-12-ground-skins-fit-room-kinds-and` · Status: current
