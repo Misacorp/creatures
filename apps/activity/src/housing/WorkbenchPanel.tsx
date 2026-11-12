@@ -4,6 +4,7 @@ import { Accordion } from '../ui/Accordion';
 import { Alert } from '../ui/Alert';
 import { SupplyGrid, type SupplyCell } from '../ui/SupplyGrid';
 import { HouseThumb } from './HouseThumb';
+import { gridLook } from './interior-art';
 import { MakeCard } from './MakeCard';
 import { groupOf, workbenchGroups, type RecipeGroup, type RecipeView } from './workbench-view';
 
@@ -23,7 +24,7 @@ export interface WorkbenchPanelProps {
  * The picture of one recipe in the grid: dimmed when it cannot be made now, the owned count in the corner. A skin made already
  * shows as made furniture does (its count, not dimmed): it is had, not out of reach.
  */
-export function recipeCell(recipe: RecipeView): SupplyCell {
+export function recipeCell(recipe: RecipeView, index = 0): SupplyCell {
   const state = recipe.done
     ? 'made already'
     : recipe.affordable
@@ -36,7 +37,8 @@ export function recipeCell(recipe: RecipeView): SupplyCell {
     label: `${recipe.name}, ${recipe.owned > 0 ? `${String(recipe.owned)} owned, ` : ''}${state}`,
     owned: recipe.owned,
     muted: !recipe.done && !recipe.affordable,
-    picture: <HouseThumb id={recipe.id} />,
+    // a pattern shows one of its colours, varied along the row (`gridLook`)
+    picture: <HouseThumb id={gridLook(recipe.id, index)} />,
   };
 }
 
@@ -74,7 +76,7 @@ function GroupBody({
         <SupplyGrid
           flat
           label={`${group.title}: pieces to make`}
-          cells={group.recipes.map(recipeCell)}
+          cells={group.recipes.map((r, i) => recipeCell(r, i))}
           selected={chosen.id}
           onSelect={setPicked}
         />
@@ -86,7 +88,7 @@ function GroupBody({
             <SupplyGrid
               flat
               label={`${row.title}: to make`}
-              cells={row.recipes.map(recipeCell)}
+              cells={row.recipes.map((r, i) => recipeCell(r, i))}
               selected={chosen.id}
               onSelect={setPicked}
             />

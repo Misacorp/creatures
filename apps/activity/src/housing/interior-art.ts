@@ -59,6 +59,19 @@ export function drawnLook(kind: SkinKind, value: string | null): string | null {
   return value ?? AS_BUILT[kind] ?? null;
 }
 
+/**
+ * The look a pattern's tile shows in a grid of choices (the skin picker, the workbench): the worn colour when it is the one in
+ * use, else one of its colours picked by its place in the grid (stepping through them, so neighbours differ and the grid shows the
+ * range). Deterministic. A drawn skin is itself.
+ */
+export function gridLook(skinId: string, index: number, worn: string | null = null): string {
+  const colours = housing.skins.find((s) => s.id === skinId)?.gen?.colours ?? [];
+  if (colours.length === 0) return skinId;
+  const colour =
+    worn !== null && colours.includes(worn) ? worn : colours[(index * 5 + 1) % colours.length];
+  return colour === undefined ? skinId : `${skinId}:${colour}`;
+}
+
 /** A generated look: the skin and its colour, or undefined for a drawn skin, an unknown id or a colour it does not come in. */
 export function generatedLook(value: string): { skin: SkinDef; colour: string } | undefined {
   const look = parseLook(value);

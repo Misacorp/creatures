@@ -6,7 +6,7 @@ import { onDrillKey } from '../ui/drill-keys';
 import { SupplyGrid, type SupplyCell } from '../ui/SupplyGrid';
 import { HouseThumb } from './HouseThumb';
 import { itemName } from './house-names';
-import { colourName, colourSwatch, drawnLook } from './interior-art';
+import { colourName, colourSwatch, drawnLook, gridLook } from './interior-art';
 import { MakeCard } from './MakeCard';
 import { PickCard } from './PickCard';
 import { skinChoices, type SkinChoice, type SkinKind } from './spot-view';
@@ -38,21 +38,9 @@ export const SKIN_KIND_NAMES: Readonly<Record<SkinKind, string>> = {
   ground: 'Ground',
 };
 
-/**
- * The colour a generated pattern's tile shows in the grid: the worn one for the pattern in use, else one of its colours picked by
- * its place in the grid (stepping through the colours, so neighbours differ and the grid shows the range). Deterministic.
- */
-export function gridColour(choice: SkinChoice, index: number): string | null {
-  const n = choice.colours.length;
-  if (n === 0) return null;
-  if (choice.here && choice.colour !== null) return choice.colour;
-  return choice.colours[(index * 5 + 1) % n] ?? null;
-}
-
 function Picture({ choice, index = 0 }: { choice: SkinChoice; index?: number }) {
   if (choice.kind === 'bare') return <span class="hp-empty-mark" aria-hidden="true" />;
-  const colour = gridColour(choice, index);
-  return <HouseThumb id={colour === null ? choice.id : lookValue(choice.id, colour)} />;
+  return <HouseThumb id={gridLook(choice.id, index, choice.here ? choice.colour : null)} />;
 }
 
 function cellOf(choice: SkinChoice, index: number): SupplyCell {

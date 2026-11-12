@@ -11,6 +11,7 @@ import { SAMPLE_STATE } from '../creature-card-sample';
 import { linesPaid, lockedParts, partCards, payOf, takeFor } from './build-view';
 import { CATALOGUE_KINDS, catalogueGroups, catalogueTotals } from './catalogue-view';
 import { cut } from './house-names';
+import { gridLook } from './interior-art';
 import {
   sampleCatalogue,
   sampleGuestbook,
@@ -400,6 +401,21 @@ describe('spot view', () => {
     // the plum and pear come with the orchard part: had (owned by rule) once it is built
     const choices = skinChoices('ground', 'orchard-apple', own, { kind: 'orchard', built });
     expect(choices.every((c) => c.kind === 'owned')).toBe(true);
+  });
+
+  it('shows each pattern of a grid in a colour of its own, the worn one for the pattern in use, the same each time', () => {
+    const looks = ['paper-stripes', 'paper-polka', 'paper-floral', 'paper-damask'].map((id, i) =>
+      gridLook(id, i),
+    );
+    expect(new Set(looks.map((l) => l.split(':')[1])).size).toBe(4);
+    expect(looks).toEqual(
+      ['paper-stripes', 'paper-polka', 'paper-floral', 'paper-damask'].map((id, i) =>
+        gridLook(id, i),
+      ),
+    );
+    expect(gridLook('paper-damask', 3, 'forest')).toBe('paper-damask:forest');
+    expect(gridLook('paper-damask', 3, 'no-such')).toBe(looks[3]);
+    expect(gridLook('thatch', 2)).toBe('thatch');
   });
 
   it('shows a Ground chip only for a room kind with more than one fitting ground', () => {
