@@ -14,7 +14,7 @@ import { SOURCE as QUIET_VERGE } from '../data/house/quiet-verge';
 import { SOURCE as FAIRGROUND } from '../data/house/fairground';
 import { SOURCE as SCHOOLHOUSE } from '../data/house/schoolhouse';
 import { pieceHash } from './compare';
-import { makePiece, pieceId, setReport, type SetSource } from './pack';
+import { pieceId, setPack, setReport, type SetSource } from './pack';
 import { BLACKTHORN } from './sample/blackthorn';
 import { PLAIN_PINE } from './sample/plain-pine';
 import { SUGARPLUM } from './sample/sugarplum';
@@ -40,16 +40,20 @@ export const SAMPLE_STYLES: Readonly<Record<string, Style>> = {
   sugarplum: SUGARPLUM,
 };
 
-/** Per shipped piece: how it is made and the hash of what ships. */
+/**
+ * Per shipped piece: how it is made and the hash of what ships, read from the pack as the game loads it (`setPack`, which is
+ * each pack file's `HOUSE_ART`), light flag included.
+ */
 export function lockOf(): Record<string, { made: string; hash: string }> {
   const lock: Record<string, { made: string; hash: string }> = {};
   for (const source of Object.values(SHIPPED_SETS)) {
     const report = setReport(source);
+    const pack = setPack(source);
     for (const [i, form] of SET_FORMS.entries()) {
-      lock[pieceId(source.style, form)] = {
-        made: report[i]?.made ?? 'generated',
-        hash: pieceHash(makePiece(source, form)),
-      };
+      const id = pieceId(source.style, form);
+      const art = pack.pieces?.[id];
+      if (art === undefined) throw new Error(`${id} is not in its pack`);
+      lock[id] = { made: report[i]?.made ?? 'generated', hash: pieceHash(art) };
     }
   }
   return lock;

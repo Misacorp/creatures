@@ -29,7 +29,7 @@ export function pixelDiff(a: SpriteDef, b: SpriteDef): { differ: number; area: n
 }
 
 /** FNV-1a, 32 bits, as 8 hex digits. */
-function fnv(text: string): string {
+export function fnv(text: string): string {
   let h = 0x811c9dc5;
   for (let i = 0; i < text.length; i++) {
     h ^= text.charCodeAt(i);
@@ -38,20 +38,39 @@ function fnv(text: string): string {
   return h.toString(16).padStart(8, '0');
 }
 
-/** A hash of what a piece looks like: every layer's colours and the sleep anchor (not the key names). */
+const layer = (def: SpriteDef | undefined): string =>
+  def === undefined
+    ? '-'
+    : colours(def)
+        .map((row) => row.join(','))
+        .join('/');
+
+/** A hash of one sprite's colours (not its key names). */
+export function spriteHash(def: SpriteDef): string {
+  return fnv(layer(def));
+}
+
+/** The light flag of a piece as text: its kind, or its kind, where it burns and its size. */
+function lightText(light: PieceArt['light']): string {
+  if (light === undefined) return '-';
+  if (typeof light === 'string') return light;
+  const at = light.at === undefined ? '' : `@${String(light.at.x)},${String(light.at.y)}`;
+  const size = light.size === undefined ? '' : `x${String(light.size)}`;
+  return `${light.kind}${at}${size}`;
+}
+
+/**
+ * A hash of what a piece looks like and how it lights: every layer's colours, the sleep anchor and its `light` flag (not the key
+ * names).
+ */
 export function pieceHash(art: PieceArt): string {
-  const layer = (def: SpriteDef | undefined): string =>
-    def === undefined
-      ? '-'
-      : colours(def)
-          .map((row) => row.join(','))
-          .join('/');
   return fnv(
     [
       layer(art.sprite),
       layer(art.front),
       layer(art.glow),
       art.sleep === undefined ? '-' : `${String(art.sleep.x)},${String(art.sleep.y)}`,
+      lightText(art.light),
     ].join('|'),
   );
 }

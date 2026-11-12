@@ -7,6 +7,8 @@ import { generatePiece, makePiece, pieceId, setPack, setReport, type SetSource }
 import { PLAIN_PINE } from './sample/plain-pine';
 import { SAMPLE_STYLES, SHIPPED_SETS, lockOf } from './sets';
 import SHIPPED_LOCK from './shipped-art.json';
+import ART_DIGEST from './art-digest.json';
+import { artDigest, HAND_PACKS } from './art-lock';
 import { SET_FORMS, type Style, styleProblems } from './style';
 
 const STYLES: Style[] = [
@@ -201,6 +203,31 @@ describe('the shipped sets', () => {
 
   it('ship what shipped-art.json locks (run `pnpm housing compare`, then `pnpm housing lock`, after a deliberate change)', () => {
     expect(lockOf()).toEqual(SHIPPED_LOCK);
+  });
+
+  it('ship every other house picture as art-digest.json locks: hand packs, postcard, generated interior tiles (look, then `pnpm housing lock`)', () => {
+    expect(artDigest()).toEqual(ART_DIGEST);
+  });
+
+  it('lock every pack the game loads: each file of sprites/data/house with art is a set or a hand pack', () => {
+    const files = import.meta.glob<{ HOUSE_ART?: unknown }>(
+      ['../data/house/*.ts', '!../data/house/*.test.ts'],
+      { eager: true },
+    );
+    const named = new Set([...Object.keys(SHIPPED_SETS), ...Object.keys(HAND_PACKS)]);
+    const missing = Object.entries(files)
+      .filter(([, m]) => m.HOUSE_ART !== undefined)
+      .map(([f]) => f.replace('../data/house/', '').replace(/\.ts$/, ''))
+      .filter((name) => !named.has(name));
+    expect(missing, 'add the pack to HAND_PACKS in workshop/art-lock.ts').toEqual([]);
+  });
+
+  it('lock a light: the same pixels with another light flag hash apart', () => {
+    const sprite = { rows: ['ab'], palette: { a: '#111111', b: '#222222' } };
+    expect(pieceHash({ sprite })).not.toBe(pieceHash({ sprite, light: 'lamp' }));
+    expect(pieceHash({ sprite, light: { kind: 'lamp', at: { x: 1, y: 0 } } })).not.toBe(
+      pieceHash({ sprite, light: { kind: 'lamp', at: { x: 0, y: 0 } } }),
+    );
   });
 
   it('hash a piece by its colours, not its key names', () => {

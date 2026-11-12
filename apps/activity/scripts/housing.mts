@@ -2,7 +2,7 @@
 //
 //   pnpm housing sheet <style> [--out dir]        the nine pieces of a style, generated, at 1x and 4x
 //   pnpm housing compare [--set id,id] [--out dir]   shipped against generated, every piece of every set
-//   pnpm housing lock [--check]                   writes (or checks) src/sprites/workshop/shipped-art.json
+//   pnpm housing lock [--check]                   writes (or checks) src/sprites/workshop/shipped-art.json and art-digest.json
 //   pnpm housing new-set <id> | remove-set <id> | check   add, undo and cross-check a set (housing-new-set.mts)
 //
 // `sheet` and `compare` write PNGs to apps/activity/scratch/housing/ (git ignores it) unless --out is given.
@@ -30,9 +30,11 @@ const { generatePiece, makePiece, pieceId, setReport } =
   await import('../src/sprites/workshop/pack.ts');
 const { pixelDiff } = await import('../src/sprites/workshop/compare.ts');
 const { SHIPPED_SETS, SAMPLE_STYLES, lockOf } = await import('../src/sprites/workshop/sets.ts');
+const { artDigest } = await import('../src/sprites/workshop/art-lock.ts');
 
 const ROOT = join(import.meta.dirname, '..');
 const LOCK = join(ROOT, 'src', 'sprites', 'workshop', 'shipped-art.json');
+const DIGEST = join(ROOT, 'src', 'sprites', 'workshop', 'art-digest.json');
 const BACK = '#241e42';
 const PANEL = '#2f2857';
 const TEXT = '#f4eedc';
@@ -244,20 +246,29 @@ if (command === 'variants' || (command === 'sheet' && args.includes('--room'))) 
   console.log(lines.join('\n'));
   console.log(`\nSheets in ${dir}`);
 } else if (command === 'lock') {
-  const lock = lockOf();
-  const text = `${JSON.stringify(lock, null, 2)}\n`;
+  // Two tables: the sets' pieces (shipped-art.json) and every other picture the house is drawn from (art-digest.json).
+  const tables = [
+    { file: LOCK, text: `${JSON.stringify(lockOf(), null, 2)}\n` },
+    { file: DIGEST, text: `${JSON.stringify(artDigest(), null, 2)}\n` },
+  ];
   if (args.includes('--check')) {
-    const old = readFileSync(LOCK, 'utf8');
-    if (old !== text) {
-      console.error(
-        'shipped-art.json is out of date: a shipped piece changed. Look at `pnpm housing compare`, then run `pnpm housing lock`.',
-      );
-      process.exit(1);
+    let stale = false;
+    for (const { file, text } of tables) {
+      const old = readFileSync(file, 'utf8');
+      if (old !== text) {
+        console.error(
+          `${file.slice(ROOT.length + 1)} is out of date: shipped art changed. Look at \`pnpm housing compare\` (or the sheets), then run \`pnpm housing lock\`.`,
+        );
+        stale = true;
+      }
     }
-    console.log('shipped-art.json is up to date.');
+    if (stale) process.exit(1);
+    console.log('shipped-art.json and art-digest.json are up to date.');
   } else {
-    writeFileSync(LOCK, text);
-    console.log(`Wrote ${LOCK}`);
+    for (const { file, text } of tables) {
+      writeFileSync(file, text);
+      console.log(`Wrote ${file}`);
+    }
   }
 } else if (command === 'new-set' || command === 'remove-set' || command === 'check') {
   (await import('./housing-new-set.mts')).main(args);

@@ -9,8 +9,12 @@ import { spriteSize, validateSprite } from '../sprite-data';
 import { lintSprite } from '../sprite-lint';
 import {
   PATHS,
+  SHIPPED_SET_IDS,
   blueprintHint,
+  commentSafe,
   fromPaths,
+  packSource,
+  parseArgs,
   parseSpec,
   planNewSet,
   planRemoveSet,
@@ -101,6 +105,55 @@ describe('parseSpec', () => {
     expect(() => spec({ '--tier': '3' })).toThrow(/tier/);
     expect(() => spec({ '--accent': 'family:glass' })).toThrow(/family/);
     expect(() => spec({ '--moments': 'nap' })).toThrow(/moments/);
+    expect(() => spec({ '--from': '../../etc' })).toThrow(/--from/);
+    expect(() => spec({ '--from': 'Tide Pool' })).toThrow(/--from/);
+  });
+});
+
+describe('the command line', () => {
+  it('reads flags with values, bool flags and the rest in order', () => {
+    expect(parseArgs(['unit-oak', '--tier', '2', '--dry-run', '--force'])).toEqual({
+      flags: { '--tier': '2', '--dry-run': 'true', '--force': 'true' },
+      positional: ['unit-oak'],
+    });
+  });
+
+  it('refuses a flag left without its value at the end or before another flag', () => {
+    expect(() => parseArgs(['unit-oak', '--name'])).toThrow(/--name needs a value/);
+    expect(() => parseArgs(['unit-oak', '--tier', '--dry-run'])).toThrow(/--tier needs a value/);
+  });
+});
+
+describe('generated files stay well formed whatever the name says', () => {
+  it('copies "$" in a name as written (no replacement patterns) and never ends a comment early', () => {
+    const { read } = files();
+    const name = "Cost $& $1 $' */ Oak";
+    const odd = parseSpec('unit-oak', { '--name': name, '--theme': 'stars */ and $$' });
+    const style = styleSource(odd, read(PATHS.style('tidepool')) ?? '');
+    expect(style).toContain(`name: ${JSON.stringify(name)}`);
+    const header = style.slice(0, style.indexOf('*/') + 2);
+    expect(header).toContain(commentSafe('stars */ and $$'));
+    expect(header).toContain('Cost $& $1');
+    const pack = packSource(odd);
+    expect(pack.indexOf('*/')).toBeGreaterThan(pack.indexOf('TODO(artist)'));
+    expect(commentSafe('a */ b')).toBe('a * / b');
+  });
+});
+
+describe('the shipped sets', () => {
+  it('are exactly Cosy and the content sets whose words are written (no TODO left)', () => {
+    const finished = housing.sets
+      .filter((set) => {
+        const texts = [
+          set.line,
+          set.theme,
+          set.keepsake.line,
+          ...housing.pieces.filter((p) => p.set === set.id).map((p) => p.line),
+        ];
+        return !texts.some((t) => /TODO/.test(t ?? ''));
+      })
+      .map((set) => set.id);
+    expect([...SHIPPED_SET_IDS].sort()).toEqual([...new Set(['cosy', ...finished])].sort());
   });
 });
 
@@ -226,6 +279,17 @@ describe('new-set, as a plan', () => {
     ).toThrow(/No style to copy/);
   });
 
+  it('fails a re-run whose flags differ from the rows already written, and says what differs', () => {
+    const { read, apply } = files();
+    apply(planNewSet(spec(), read, ctx(read)));
+    expect(() => planNewSet(spec({ '--tier': '2' }), read, ctx(read))).toThrow(
+      /unit-oak is already in .*sets\.json with tier 1; this run asks for 2/,
+    );
+    expect(() => planNewSet(spec({ '--moments': 'trip' }), read, ctx(read))).toThrow(/sources/);
+    // the same flags again: nothing to do, no error
+    expect(planNewSet(spec(), read, ctx(read)).size).toBe(0);
+  });
+
   it('copies a shipped style too', () => {
     const { read } = files();
     const source = read(PATHS.style('tidepool')) ?? '';
@@ -257,6 +321,22 @@ describe('remove-set, as a plan', () => {
     expect(read(PATHS.compendium)).not.toContain('Unit Oak');
     expect(read(PATHS.compendium)).toBe(disk(PATHS.compendium));
     expect(planRemoveSet('unit-oak', read).size).toBe(0);
+  });
+
+  it('refuses a set whose pack was not made by new-set or has hand work since, unless forced', () => {
+    const { read, apply } = files();
+    apply(planNewSet(spec(), read, ctx(read)));
+    const pack = read(PATHS.pack('unit-oak')) ?? '';
+    const by = (text: string) => new Map([[PATHS.pack('unit-oak'), text]]);
+    apply(by(pack.replace('Made by `pnpm housing new-set', 'Drawn by hand')));
+    expect(() => planRemoveSet('unit-oak', read)).toThrow(/not made by .*--force/);
+    apply(
+      by(
+        pack.replace('hand: HAND };', "hand: HAND, pieces: { bed: { use: 'hand', why: 'x' } } };"),
+      ),
+    );
+    expect(() => planRemoveSet('unit-oak', read)).toThrow(/hand work.*--force/);
+    expect(planRemoveSet('unit-oak', read, true).get(PATHS.pack('unit-oak'))).toBeNull();
   });
 
   it('never touches a shipped set', () => {

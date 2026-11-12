@@ -5,13 +5,14 @@
 //   pnpm housing new-set <id> [--name "Quiet Verge"] [--theme "..."] [--from <style>] [--element tide|none ...]
 //        [--tier 1|2] [--primary <material>|family:<wood|stone|metal|cloth>] [--accent ...]
 //        [--moments trip,scout,raid] [--places id,id] [--bosses id,id] [--dry-run] [--no-checks]
-//   pnpm housing remove-set <id> [--dry-run] [--no-checks]       undoes new-set (never a shipped set)
+//   pnpm housing remove-set <id> [--dry-run] [--no-checks] [--force]   undoes new-set (never a shipped set; --force when
+//                                                                the pack has hand work since new-set)
 //   pnpm housing check                                           every set agrees across all its places
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 
-const { fromPaths, parseSpec, planNewSet, planRemoveSet, PATHS } =
+const { fromPaths, parseArgs, parseSpec, planNewSet, planRemoveSet, PATHS } =
   await import('../src/sprites/workshop/new-set.ts');
 type Changes = ReturnType<typeof planNewSet>;
 
@@ -125,15 +126,14 @@ function todos(id: string): string[] {
 
 export function main(args: string[]): void {
   const command = args[0];
-  const flags: Record<string, string | undefined> = {};
-  const positional: string[] = [];
-  const bools = new Set(['--dry-run', '--no-checks']);
-  for (let i = 1; i < args.length; i++) {
-    const a = args[i] as string;
-    if (bools.has(a)) flags[a] = 'true';
-    else if (a.startsWith('--')) flags[a] = args[++i];
-    else positional.push(a);
+  let parsed: ReturnType<typeof parseArgs>;
+  try {
+    parsed = parseArgs(args.slice(1));
+  } catch (err) {
+    console.error(err instanceof Error ? err.message : String(err));
+    process.exit(1);
   }
+  const { flags, positional } = parsed;
   const dryRun = flags['--dry-run'] !== undefined;
   const checks = flags['--no-checks'] === undefined;
 
@@ -190,7 +190,7 @@ Next:
 Left to write: ${todos(id).join('; ') || 'nothing'}.`);
       process.exit(gen && ok && sheet ? 0 : 1);
     } else if (command === 'remove-set') {
-      apply(planRemoveSet(id, read), dryRun);
+      apply(planRemoveSet(id, read, flags['--force'] !== undefined), dryRun);
       if (dryRun) return;
       const gen = generate();
       const ok = checks ? runTests() : true;

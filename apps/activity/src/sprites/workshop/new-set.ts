@@ -2,7 +2,8 @@
  * `pnpm housing new-set`, `remove-set` as pure plans (`docs/design/housing-workshop.md`, "Adding a set"). A plan reads
  * the files a set touches through `read` and returns the new text of every file that must change (`null` deletes
  * it); the command in `scripts/housing-new-set.mts` reads the real files, writes the result and runs prettier and
- * the generators. Planning twice gives the same result as planning once: every edit first looks for what it adds.
+ * the generators. Planning twice gives the same result as planning once: every edit first looks for what it adds,
+ * and a re-run whose flags differ from the rows already written fails with what differs.
  *
  * The files a set touches (paths from the repository root):
  *  - `packages/game/src/content/data/housing/{sets,pieces,skins}.json`: the set and its keepsake, nine pieces, a
@@ -49,6 +50,13 @@ export const SHIPPED_SET_IDS: readonly string[] = [
   'schoolhouse',
 ];
 
+/** The words every pack file `new-set` writes starts with (before the set's id): what `remove-set` looks for. */
+export const NEW_SET_MARK = 'Made by `pnpm housing new-set';
+
+/** The line of a pack file `new-set` wrote that names its source: still there, the pack has no hand overrides. */
+const BARE_SOURCE = (id: string): string =>
+  `export const SOURCE: SetSource = { style: ${constOf(id)}, hand: HAND };`;
+
 /** The style `new-set` copies when `--from` is not given. */
 export const DEFAULT_FROM = 'plain-pine';
 
@@ -84,6 +92,38 @@ export type Changes = Map<string, string | null>;
 
 const MATERIAL_FAMILIES = ['wood', 'stone', 'metal', 'cloth'] as const;
 const MOMENTS = ['trip', 'scout', 'dungeon', 'raid', 'games'];
+
+/** The flags that take no value. */
+export const BOOL_FLAGS: readonly string[] = ['--dry-run', '--no-checks', '--force'];
+
+/**
+ * The command's words after its name: flags (`--tier 2`, a bool flag as `'true'`) and the rest in order. Throws for a flag
+ * that needs a value and has none (the last word, or followed by another flag).
+ */
+export function parseArgs(args: readonly string[]): {
+  flags: Record<string, string | undefined>;
+  positional: string[];
+} {
+  const flags: Record<string, string | undefined> = {};
+  const positional: string[] = [];
+  for (let i = 0; i < args.length; i++) {
+    const a = args[i] ?? '';
+    if (BOOL_FLAGS.includes(a)) flags[a] = 'true';
+    else if (a.startsWith('--')) {
+      const value = args[i + 1];
+      if (value === undefined || value.startsWith('--'))
+        throw new Error(`${a} needs a value (${a} <value>).`);
+      flags[a] = value;
+      i++;
+    } else positional.push(a);
+  }
+  return { flags, positional };
+}
+
+/** Text safe inside a block comment of a generated file: a name or theme cannot end the comment. */
+export function commentSafe(text: string): string {
+  return text.replace(/\*\//g, '* /');
+}
 
 /** "trial-oak" to "Trial Oak". */
 export function titleOf(id: string): string {
@@ -137,11 +177,14 @@ export function parseSpec(
     if (!MOMENTS.includes(m))
       throw new Error(`--moments: "${m}" is not one of ${MOMENTS.join(', ')}`);
   const element = flags['--element'];
+  const from = flags['--from'] ?? DEFAULT_FROM;
+  if (!/^[a-z0-9-]+$/.test(from))
+    throw new Error(`--from: "${from}" is not a style id (lowercase letters, digits and dashes)`);
   return {
     id,
     name: flags['--name'] ?? titleOf(id),
     theme: flags['--theme'] ?? 'TODO: the motif and palette of the set, one line.',
-    from: flags['--from'] ?? DEFAULT_FROM,
+    from,
     element: element === undefined || element === 'none' ? null : element,
     tier,
     primary: parseMaterial(flags['--primary'] ?? 'family:wood', '--primary'),
@@ -263,12 +306,16 @@ export function styleSource(spec: SetSpec, fromSource: string): string {
   const decl = /export const (\w+): Style = \{/.exec(fromSource);
   if (decl === null) throw new Error(`style "${spec.from}": no "export const X: Style = {" found`);
   const body = fromSource.slice(fromSource.indexOf(decl[0]));
+  // Replacer functions, never replacement strings: a name with "$&" or "$1" in it is copied as written.
   let out = body
-    .replace(decl[0], `export const ${constOf(spec.id)}: Style = {`)
-    .replace(/(\n {2}id: )'[^']*'/, `$1'${spec.id}'`)
-    .replace(/(\n {2}name: )'[^']*'/, `$1${JSON.stringify(spec.name)}`);
+    .replace(decl[0], () => `export const ${constOf(spec.id)}: Style = {`)
+    .replace(/(\n {2}id: )'[^']*'/, (_m, lead: string) => `${lead}'${spec.id}'`)
+    .replace(/(\n {2}name: )'[^']*'/, (_m, lead: string) => `${lead}${JSON.stringify(spec.name)}`);
   const note = (key: string, text: string): void => {
-    out = out.replace(new RegExp(`\\n( {2})${key}:`), `\n$1// TODO(artist): ${text}\n$1${key}:`);
+    out = out.replace(
+      new RegExp(`\\n( {2})${key}:`),
+      (_m, indent: string) => `\n${indent}// TODO(artist): ${text}\n${indent}${key}:`,
+    );
   };
   note(
     'palette',
@@ -281,7 +328,7 @@ export function styleSource(spec: SetSpec, fromSource: string): string {
   note('motif', 'the one motif that appears on every piece (docs/design/housing.md section 5).');
   note('shelf', 'what stands on the shelf, left to right.');
   const header = `/**
- * The ${spec.name} style (\`docs/design/housing-workshop.md\`): ${spec.theme}
+ * The ${commentSafe(spec.name)} style (\`docs/design/housing-workshop.md\`): ${commentSafe(spec.theme)}
  * Made by \`pnpm housing new-set ${spec.id}\` from the ${spec.from} style: a starting point, not a design.
  * TODO(artist): palette, variants and motif below; then \`pnpm housing sheet ${spec.id}\`, look, repeat.
  */
@@ -295,7 +342,7 @@ import type { Style } from '../style';
 export function packSource(spec: SetSpec): string {
   const C = constOf(spec.id);
   return `/**
- * House furniture pack: ${spec.name}. Made by \`pnpm housing new-set ${spec.id}\`: the nine pieces are drawn from the
+ * House furniture pack: ${commentSafe(spec.name)}. Made by \`pnpm housing new-set ${spec.id}\`: the nine pieces are drawn from the
  * style (\`../../workshop/styles/${spec.id}.ts\`) with no overrides; the wallpaper, floor and keepsake are placeholders
  * in the style's palette.
  * TODO(artist): draw the wallpaper (16x52), floor (16x8) and keepsake (12x12) by hand in a \`HAND\` pack (see
@@ -309,7 +356,7 @@ import { ${C} } from '../../workshop/styles/${spec.id}';
 /** TODO(artist): placeholder wallpaper, floor and keepsake. */
 const HAND: HouseArtPack = placeholderHand(${C});
 
-export const SOURCE: SetSource = { style: ${C}, hand: HAND };
+${BARE_SOURCE(spec.id)}
 
 export const HOUSE_ART: HouseArtPack = setPack(SOURCE);
 `;
@@ -318,7 +365,7 @@ export const HOUSE_ART: HouseArtPack = setPack(SOURCE);
 /** The concept wrapper file. */
 export function conceptSource(spec: SetSpec): string {
   return `/**
- * Player housing, the ${spec.name} furniture set (concept wrapper; the art is \`../data/house/${spec.id}.ts\`). Made by
+ * Player housing, the ${commentSafe(spec.name)} furniture set (concept wrapper; the art is \`../data/house/${spec.id}.ts\`). Made by
  * \`pnpm housing new-set ${spec.id}\`; it feeds the art library (\`docs/art/\`) and the studio. Nothing in the game
  * imports this folder.
  */
@@ -483,6 +530,29 @@ export function removeFromCompendium(md: string, spec: Pick<SetSpec, 'id' | 'nam
 
 // ---- The plans ----
 
+/** The fields of a row that come from the command's flags (the names and lines are the writer's, edited by hand later). */
+const SPEC_FIELDS = ['element', 'tier', 'primary', 'accent', 'sources', 'form', 'set', 'kind'];
+
+/**
+ * Throws when a row `new-set` would add is already in the file with different values from the flags: a re-run with other
+ * flags would otherwise leave the old values silently. The texts (names, lines, hints) are the writer's and are not compared.
+ */
+function differences(path: string, rows: readonly Json[], add: readonly Json[]): void {
+  for (const want of add) {
+    const have = rows.find((r) => r['id'] === want['id']);
+    if (have === undefined) continue;
+    for (const field of SPEC_FIELDS) {
+      if (!(field in want)) continue;
+      const a = JSON.stringify(have[field]);
+      const b = JSON.stringify(want[field]);
+      if (a !== b)
+        throw new Error(
+          `${String(want['id'])} is already in ${path} with ${field} ${a}; this run asks for ${b}. Edit the file by hand, or \`pnpm housing remove-set\` and run new-set again.`,
+        );
+    }
+  }
+}
+
 function put(changes: Changes, read: Read, path: string, next: string): void {
   if (read(path) !== next) changes.set(path, next);
 }
@@ -504,7 +574,9 @@ export function planNewSet(spec: SetSpec, read: Read, ctx: PlanContext): Changes
     [PATHS.skins, skinEntries(spec, hint), true],
   ];
   for (const [path, add, afterSets] of edits) {
-    const next = addRows(parseList(path, read(path)), add, afterSets);
+    const rows = parseList(path, read(path));
+    differences(path, rows, add);
+    const next = addRows(rows, add, afterSets);
     if (next !== undefined) changes.set(path, stringify(next));
   }
 
@@ -528,8 +600,12 @@ export function planNewSet(spec: SetSpec, read: Read, ctx: PlanContext): Changes
   return changes;
 }
 
-/** Everything `remove-set` undoes. Throws for a shipped set. Needs the set's name (from `sets.json`, else the title of the id). */
-export function planRemoveSet(id: string, read: Read): Changes {
+/**
+ * Everything `remove-set` undoes. Throws for a shipped set, and (unless `force`, or nothing is left) for a set whose pack file is not the one
+ * `new-set` wrote: no "made by new-set" mark, or hand work in it (overrides, a hand pack), which removing would lose. Needs
+ * the set's name (from `sets.json`, else the title of the id).
+ */
+export function planRemoveSet(id: string, read: Read, force = false): Changes {
   if (SHIPPED_SET_IDS.includes(id))
     throw new Error(`"${id}" is a shipped set; remove-set only undoes new-set.`);
   const bad = idProblem(id);
@@ -550,5 +626,17 @@ export function planRemoveSet(id: string, read: Read): Changes {
   const md = read(PATHS.compendium);
   if (md !== undefined)
     put(changes, read, PATHS.compendium, removeFromCompendium(md, { id, name }));
+  // nothing left to undo is no risk; anything else needs the pack new-set wrote, untouched
+  if (!force && changes.size > 0) {
+    const pack = read(PATHS.pack(id));
+    if (pack === undefined || !pack.includes(`${NEW_SET_MARK} ${id}\``))
+      throw new Error(
+        `${PATHS.pack(id)} was not made by \`pnpm housing new-set ${id}\`; remove-set would delete work. Add --force to remove it anyway.`,
+      );
+    if (!pack.includes(BARE_SOURCE(id)) || !pack.includes('placeholderHand('))
+      throw new Error(
+        `${PATHS.pack(id)} has hand work (overrides or hand-drawn art) since new-set; remove-set would delete it. Add --force to remove it anyway.`,
+      );
+  }
   return changes;
 }

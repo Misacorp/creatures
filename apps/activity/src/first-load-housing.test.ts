@@ -24,7 +24,13 @@ const FORBIDDEN_FILES = [
   './housing/house-names.ts',
   './housing/HouseRows.tsx',
   './housing/interior-art.ts',
+  './housing/house-light.ts',
+  './housing/house-paint.ts',
+  './housing/house-postcard.ts',
+  './housing/house-scene.ts',
 ];
+/** Folders whose every file is housing art or its tooling: none of them may be in the first load. */
+const FORBIDDEN_PREFIXES = ['./sprites/workshop/', './sprites/draw/', './sprites/data/house/'];
 
 /** The static (value) imports of a file: `import x from 'y'`, `import 'y'`, `export * from 'y'`. */
 function staticImports(source: string): string[] {
@@ -76,6 +82,22 @@ describe('the first load of the game', () => {
     walk('./main.tsx');
     expect(seen.size).toBeGreaterThan(100);
     for (const forbidden of FORBIDDEN_FILES) expect(seen.has(forbidden), forbidden).toBe(false);
+    for (const prefix of FORBIDDEN_PREFIXES) {
+      expect(
+        [...seen].filter((f) => f.startsWith(prefix)),
+        `the first load reaches ${prefix}`,
+      ).toEqual([]);
+    }
+  });
+
+  it('forbids folders that hold files (a renamed folder would make the check pass by itself)', () => {
+    for (const prefix of FORBIDDEN_PREFIXES) {
+      expect(
+        Object.keys(SOURCES).some((f) => f.startsWith(prefix)),
+        prefix,
+      ).toBe(true);
+    }
+    for (const file of FORBIDDEN_FILES) expect(file in SOURCES, file).toBe(true);
   });
 
   it('would notice a static import of the page (the walk follows real imports)', () => {
