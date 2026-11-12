@@ -244,10 +244,10 @@ describe('skins', () => {
       async (ctx) => {
         const p = await householder(ctx);
         await p.tool('housing-build', { parts: ['cottage', 'garden'] });
-        const ok = await skin(p, { target: 'room', roomId: 'garden:garden', floor: 'deck' });
+        const ok = await skin(p, { target: 'room', roomId: 'garden:garden', floor: 'lawn' });
         expect(parsed(SkinAnswerSchema, ok)).toMatchObject({
           target: 'room',
-          room: { id: 'garden:garden', floor: 'deck' },
+          room: { id: 'garden:garden', floor: 'lawn' },
         });
         expect(
           await skin(p, { target: 'room', roomId: 'garden:garden', floor: 'cosy-floor' }),
