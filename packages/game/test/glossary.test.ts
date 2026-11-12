@@ -484,6 +484,9 @@ describe('the housing words', () => {
     'furniture-catalogue',
     'gift',
     'house-skin',
+    'house-trim',
+    'house-ceiling',
+    'house-frame',
   ];
 
   it('has an entry for every housing term the UI uses, each leading to the Your House section', () => {

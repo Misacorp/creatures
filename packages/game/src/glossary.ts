@@ -253,6 +253,9 @@ export const FIXED_GLOSSARY_IDS = [
   'furniture-catalogue',
   'gift',
   'house-skin',
+  'house-trim',
+  'house-ceiling',
+  'house-frame',
 ] as const;
 
 /** What a popover shows. An entry is one; an ability is built from its content (`abilityView`). */
