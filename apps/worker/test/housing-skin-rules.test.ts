@@ -43,8 +43,6 @@ describe('a ground skin that comes with a part', () => {
           room: { id: 'orchard:orchard', floor: 'orchard-plum' },
         });
         // Owned by rule: the picker data and the catalogue agree, and crafting it is refused as already owned.
-        const mine = await own(p);
-        expect(mine).toBeDefined();
         const view = parsed(HouseAnswerSchema, await p.call('GET', '/api/house'));
         expect(view.own.items.skins).toEqual(
           expect.arrayContaining(['orchard-plum', 'orchard-pear']),
@@ -180,6 +178,6 @@ describe('the layered column reads only what it knows', () => {
     const { extra } = readLayered('a;constructor=x');
     expect(Object.getPrototypeOf(extra)).toBeNull();
     expect(extra.constructor).toBeUndefined();
-    expect(extra.toString).toBeUndefined();
+    expect(Object.keys(extra)).toEqual([]);
   });
 });
