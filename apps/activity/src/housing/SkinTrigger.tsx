@@ -1,13 +1,21 @@
 import { DropChevron } from '../ui/DropChevron';
 import { GameIcon } from '../ui/GameIcon';
-import { itemName } from './house-names';
+import { chipName, itemName } from './house-names';
+import { drawnLook } from './interior-art';
 import { SKIN_KIND_NAMES } from './SkinPicker';
 import type { SkinKind } from './spot-view';
 
+/** A layer chip's spoken name: "Ceiling look: Plain Ceiling, White oak", so it never reads like a spot ("Ceiling: Oak Lamp"). */
+export function lookLabel(kind: SkinKind, id: string | null): string {
+  const drawn = drawnLook(kind, id);
+  return `${SKIN_KIND_NAMES[kind]} look: ${drawn === null ? 'none' : itemName(drawn)}`;
+}
+
 /**
  * The roof, walls, frame, wallpaper, floor, trim or ceiling in use, as a trigger that opens the list of them: it looks like a dropdown
- * (the skin's picture, its name and a chevron), the way the stamp trigger does. Its spoken name says which one ("Roof: Thatch"). A
- * trim, ceiling or frame left as built (`id` null) shows the dashed empty mark of the pickers and "As built".
+ * (the skin's picture in a fixed 16 px box, its short name and a chevron), the way the stamp trigger does. The short name is the
+ * pattern or skin word ("Damask", "Thatch"; `chipName`); its spoken name is whole ("Wallpaper look: Damask Paper, Rose"). A ceiling or
+ * frame left as built shows its starter; a trim left off shows the dashed empty mark and the layer's word, muted.
  */
 export function SkinTrigger({
   kind,
@@ -18,21 +26,27 @@ export function SkinTrigger({
   id: string | null;
   onOpen: () => void;
 }) {
-  const name = id === null ? 'As built' : itemName(id);
+  const drawn = drawnLook(kind, id);
   return (
     <button
       type="button"
       class="equip-trigger hp-skin-trigger"
       aria-haspopup="dialog"
-      aria-label={`${SKIN_KIND_NAMES[kind]}: ${name}`}
+      aria-label={lookLabel(kind, id)}
       onClick={onOpen}
     >
-      {id === null ? (
-        <span class="hp-empty-mark" aria-hidden="true" />
+      <span class="hp-chip-pic" aria-hidden="true">
+        {drawn === null ? (
+          <span class="hp-empty-mark" />
+        ) : (
+          <GameIcon icon={{ kind: 'house', id: drawn, box: 16 }} scale={1} />
+        )}
+      </span>
+      {drawn === null ? (
+        <span class="equip-name hp-chip-empty">{SKIN_KIND_NAMES[kind]}</span>
       ) : (
-        <GameIcon icon={{ kind: 'house', id }} scale={2} />
+        <span class="equip-name">{chipName(drawn)}</span>
       )}
-      <span class="equip-name">{name}</span>
       <DropChevron />
     </button>
   );

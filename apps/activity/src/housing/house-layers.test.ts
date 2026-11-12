@@ -1,6 +1,7 @@
 /**
- * The room layers in the scene (housing C5, `docs/design/housing-interior.md`): a house that chose nothing paints exactly as before
- * (the digests below were taken from the scene before the layers existed), and a chosen wallpaper, floor, trim, ceiling and frame draw
+ * The room layers in the scene (housing C5, `docs/design/housing-interior.md`): a house that chose nothing paints as its starters (a
+ * ceiling and frame left as built are the Plain Ceiling and the Timber Frame, review 2026-11-12; the digests below pin that picture),
+ * and a chosen wallpaper, floor, trim, ceiling and frame draw
  * from the workshop's generators with the materials the night pass shades by.
  */
 import { describe, expect, it } from 'vitest';
@@ -30,38 +31,62 @@ function fnv(bytes: Uint8ClampedArray): string {
   return h.toString(16).padStart(8, '0');
 }
 
-/** The day picture of the sample houses and every room of the estate, as painted before the room layers existed. */
+/**
+ * The day picture of the sample houses and every room of the estate with no layer chosen. Taken before the layers existed, and
+ * taken again on 2026-11-12 when a ceiling and frame left as built started to draw as their starters (the only change).
+ */
 const BEFORE: Readonly<Record<string, string>> = {
-  hut: 'c515791f',
-  cottage: 'dfdadcde',
-  three: 'a3a4bcf6',
-  mansion: '38638f22',
-  estate: 'a1167f7b',
-  'tower:observatory': '58d4f33c',
-  'tower:landing': 'e3a40875',
-  'house:attic': '735dfb18',
-  'west-upper:gallery': '046dd7ae',
-  'cottage:loft': '9ede8851',
-  'house:study': '0e15d2e7',
-  'east-upper:bath': 'c3342bb6',
-  'east-upper:guest': 'fb3c8af6',
+  hut: '3738d01b',
+  cottage: 'adb771b1',
+  three: '93a26fc1',
+  mansion: '9b7c82f4',
+  estate: 'd71f45c1',
+  'tower:observatory': 'e66d2435',
+  'tower:landing': '31179957',
+  'house:attic': '7d4b14d7',
+  'west-upper:gallery': '96d9651d',
+  'cottage:loft': '5043c25e',
+  'house:study': '1ef88e68',
+  'east-upper:bath': 'd8478d05',
+  'east-upper:guest': '01ab0ced',
   'balcony:balcony': '327457ce',
   'pond:pond': '94867156',
   'terrace:terrace': '33a9bedf',
-  'west-wing:hall': '8637ebff',
-  'hut:hearth': '2c22e712',
-  'cottage:kitchen': '110bdac8',
-  'east-wing:conservatory': '3f1f29d6',
+  'west-wing:hall': 'de8036ac',
+  'hut:hearth': '42e66311',
+  'cottage:kitchen': '3d94583b',
+  'east-wing:conservatory': '7d7458cd',
   'garden:garden': '4d3d00f8',
   'pool:pool': 'be8681ec',
   'orchard:orchard': 'fc68ea7d',
-  'cellar:cellar': '83424e71',
+  'cellar:cellar': '0a1cbd4d',
 };
 
 const HEARTH = 'hut:hearth';
 
 describe('a house that chose no layers', () => {
-  it('paints exactly as before, house and rooms, by day', () => {
+  it('paints a ceiling and frame left as built exactly as the starters it is built with', () => {
+    const looks = Object.fromEntries(
+      sceneHouse({ parts: ESTATE }).rooms.map((r) => [
+        r.id,
+        { ceiling: 'ceiling-plain:white-oak' },
+      ]),
+    );
+    const bare = sceneHouse({ parts: ESTATE, housemates: 3 });
+    const starters = sceneHouse({
+      parts: ESTATE,
+      housemates: 3,
+      frame: 'frame-timber:oak',
+      looks,
+    });
+    const paint = (h: typeof bare) => {
+      const m = composeHouse(h);
+      return fnv(rasterize([...m.back, ...m.front], m.width, m.height));
+    };
+    expect(paint(bare)).toBe(paint(starters));
+  });
+
+  it('paints as pinned, house and rooms, by day', () => {
     const seen: Record<string, string> = {};
     for (const [name, parts] of [
       ['hut', HUT],

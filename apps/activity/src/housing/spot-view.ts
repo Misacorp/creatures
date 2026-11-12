@@ -20,6 +20,7 @@ import type { SkinBody } from './housing-api';
 import { creatureName } from '../game';
 import { baseOption, type PickerOption } from '../roster-picker';
 import { pieceOf, setName, SPOT_NAMES } from './house-names';
+import { drawnLook } from './interior-art';
 import { knownIds } from './workbench-view';
 
 /** The id of the "Empty" choice. */
@@ -218,13 +219,13 @@ export function sleeperOptions(
 export type SkinKind =
   'wall' | 'floor' | 'trim' | 'ceiling' | 'roof' | 'walls' | 'frame' | 'ground';
 
-/** The id of the "As built" choice: a trim, ceiling or frame taken off. */
+/** The id of the "None" choice: a trim taken off. */
 export const BARE_CHOICE = '__bare';
 
 export interface SkinChoice {
   /** A skin id, or `BARE_CHOICE`. */
   id: string;
-  /** `owned`: it can be used now; `blueprint`: known, not made yet; `bare`: the layer as built (nothing chosen). */
+  /** `owned`: it can be used now; `blueprint`: known, not made yet; `bare`: no trim (nothing chosen). */
   kind: 'owned' | 'blueprint' | 'bare';
   name: string;
   set: string | null;
@@ -237,9 +238,9 @@ export interface SkinChoice {
 }
 
 /**
- * What the skin picker lists for a kind: "As built" first for a layer that can be bare (trim, ceiling, frame), then the skins the player
- * has (the one in use first; a starter is had by rule), then the ones known but not made. A generated pattern is one choice for all
- * its colours. `current` is the look in use (`paper-damask:rose`), or null for a bare layer.
+ * What the skin picker lists for a kind: "None" first for a trim, then the skins the player has (the one in use first; a starter is
+ * had by rule), then the ones known but not made. A generated pattern is one choice for all its colours. `current` is the look in use
+ * (`paper-damask:rose`), or null for a bare layer: a ceiling or frame left as built is its starter (`drawnLook`), shown as that.
  */
 export function skinChoices(
   kind: SkinKind,
@@ -247,7 +248,8 @@ export function skinChoices(
   own: OwnHouseView,
 ): SkinChoice[] {
   const known = knownIds(own);
-  const worn = current === null ? null : parseLook(current);
+  const drawn = drawnLook(kind, current);
+  const worn = drawn === null ? null : parseLook(drawn);
   const have = (s: (typeof housing.skins)[number]) =>
     ownsSkin(s, own.items.skins.includes(s.id)) || s.id === worn?.skin;
   // Ground skins: the varieties of one outdoor room (`orchard-apple`, `orchard-plum`), told by the id they share before the dash.
@@ -271,20 +273,22 @@ export function skinChoices(
   const owned = ofKind.filter(have).map((s) => choice(s, true));
   owned.sort((a, b) => Number(b.here) - Number(a.here));
   const blueprints = ofKind.filter((s) => !have(s) && known.has(s.id)).map((s) => choice(s, false));
-  const bare: SkinChoice[] = BARE_LAYERS.has(kind)
-    ? [
-        {
-          id: BARE_CHOICE,
-          kind: 'bare',
-          name: 'As built',
-          set: null,
-          here: current === null,
-          label: current === null ? 'As built, in use' : 'As built',
-          colours: [],
-          colour: null,
-        },
-      ]
-    : [];
+  // Only a trim can be left off: a ceiling or frame left as built is drawn as its starter, listed as that.
+  const bare: SkinChoice[] =
+    BARE_LAYERS.has(kind) && drawnLook(kind, null) === null
+      ? [
+          {
+            id: BARE_CHOICE,
+            kind: 'bare',
+            name: 'None',
+            set: null,
+            here: current === null,
+            label: current === null ? 'None, in use' : 'None',
+            colours: [],
+            colour: null,
+          },
+        ]
+      : [];
   return [...bare, ...owned, ...blueprints];
 }
 

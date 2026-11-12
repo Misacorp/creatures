@@ -30,7 +30,7 @@ import { creatureSpriteOrFallback } from '../sprites/creature-sprites';
 import { expandRows, spriteSize, swapPalette, type SpriteDef } from '../sprites/sprite-data';
 import { skySprite } from '../valley/place-scene';
 import { displayArt, pieceArt, shellArt, skinArt, type SkinArt } from './house-art';
-import { ceilingDepth, ceilingTile, frameArt, trimTile } from './interior-art';
+import { ceilingDepth, ceilingTile, drawnLook, frameArt, trimTile } from './interior-art';
 import {
   DAY_LIGHTING,
   lightCentre,
@@ -510,7 +510,7 @@ function tilesOf(content: HousingContent, id: string, kind: string): SkinArt {
 
 /** The slab under a room: the house's frame (housing C5), or the shell's as built. */
 function slabTile(frame: Frame): SpriteDef {
-  const chosen = frame.house.exterior.frame;
+  const chosen = drawnLook('frame', frame.house.exterior.frame);
   return (chosen === null ? undefined : frameArt(chosen)?.slab) ?? shellArt('slab');
 }
 
@@ -914,11 +914,13 @@ function drawRoom(
   if (!room.outdoor) {
     // paper, ceiling, trim (housing C5: both are overlays over the paper, under everything that hangs or stands), floor, slab
     tileFill(back, tilesOf(content, view.wall, 'wall').tile, x, y, width, WALL_H, 'wall');
-    const ceiling = view.ceiling === null ? undefined : ceilingTile(view.ceiling, width);
+    // a ceiling left as built is drawn as the starter it is built with (Plain Ceiling)
+    const ceilingLook = drawnLook('ceiling', view.ceiling);
+    const ceiling = ceilingLook === null ? undefined : ceilingTile(ceilingLook, width);
     if (ceiling !== undefined) {
       tileFill(back, ceiling, x, y, width, spriteSize(ceiling).height, 'wall');
     }
-    const trim = view.trim === null ? undefined : trimTile(view.trim, ceilingDepth(view.ceiling));
+    const trim = view.trim === null ? undefined : trimTile(view.trim, ceilingDepth(ceilingLook));
     if (trim !== undefined) tileFill(back, trim, x, y, width, WALL_H, 'wall');
     tileFill(
       back,
@@ -1086,8 +1088,8 @@ function drawWalls(
   outer: { left: boolean; right: boolean },
 ): void {
   const walls = skinArt(frame.house.exterior.walls, 'walls').tile;
-  // An inner wall is the house's frame when one is chosen (housing C5); the cut edge stays the walls skin outside.
-  const chosen = frame.house.exterior.frame;
+  // An inner wall is the house's frame (housing C5; as built, the Timber Frame); the cut edge stays the walls skin outside.
+  const chosen = drawnLook('frame', frame.house.exterior.frame);
   const post = chosen === null ? undefined : frameArt(chosen)?.post;
   for (const side of ['left', 'right'] as const) {
     const wx = side === 'left' ? x - 2 : x + width - 2;

@@ -52,6 +52,32 @@ export function itemName(id: string): string {
   return PIECES.get(id)?.name ?? SKINS.get(id)?.name ?? id;
 }
 
+/** The words of a skin's name that only say its layer, which a chip's place and label already say. */
+const LAYER_WORDS: Readonly<Record<SkinDef['kind'], RegExp>> = {
+  wall: / (Wallpaper|Paper)$/,
+  floor: / Floor$/,
+  trim: / (Trim|Board)$/,
+  ceiling: / Ceiling$/,
+  frame: / Frame$/,
+  roof: /$^/,
+  walls: /$^/,
+  ground: / Orchard$/,
+};
+
+/**
+ * A look's short name for a chip, where the layer is clear from the chip's place: the pattern or skin word only ("Damask",
+ * "Wainscot", "Beamed", "Thatch"); a set's skin is its set ("Tidepool"), a room kind's its room ("Kitchen"). No colour. The full
+ * name (`itemName`) stays in the spoken name and the pick card.
+ */
+export function chipName(id: string): string {
+  const look = parseLook(id);
+  const skin = SKINS.get(look?.skin ?? id);
+  if (skin === undefined) return itemName(id);
+  if (skin.set !== null) return setName(skin.set) ?? skin.name;
+  const short = skin.name.replace(LAYER_WORDS[skin.kind], '');
+  return short === '' ? skin.name : short;
+}
+
 /** The name of a set, or null for none. */
 export function setName(id: string | null): string | null {
   if (id === null) return null;

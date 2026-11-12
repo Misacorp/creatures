@@ -112,11 +112,11 @@ describe('the House place on sample data', () => {
     const p = await open();
     expect(byClass(p.root, 'house-room').length).toBeGreaterThanOrEqual(4);
     // The roof and the walls are dropdown triggers, not chips.
-    const roof = first(byName(p.root, 'button', /^Roof: /));
+    const roof = first(byName(p.root, 'button', /^Roof look: /));
     expect(roof.getAttribute('class')).toContain('equip-trigger');
-    expect(byName(p.root, 'button', /^Walls: /)).toHaveLength(1);
-    // The house frame (housing C5) beside them, as built until chosen.
-    expect(byName(p.root, 'button', 'Frame: As built')).toHaveLength(1);
+    expect(byName(p.root, 'button', /^Walls look: /)).toHaveLength(1);
+    // The house frame (housing C5) beside them, drawn as its starter until chosen.
+    expect(byName(p.root, 'button', 'Frame look: Timber Frame, Oak')).toHaveLength(1);
     const rows = byClass(p.root, 'vy-row');
     expect(
       rows

@@ -6,7 +6,7 @@ import { onDrillKey } from '../ui/drill-keys';
 import { SupplyGrid, type SupplyCell } from '../ui/SupplyGrid';
 import { HouseThumb } from './HouseThumb';
 import { itemName } from './house-names';
-import { colourName, colourSwatch } from './interior-art';
+import { colourName, colourSwatch, drawnLook } from './interior-art';
 import { MakeCard } from './MakeCard';
 import { PickCard } from './PickCard';
 import { skinChoices, type SkinChoice, type SkinKind } from './spot-view';
@@ -114,7 +114,8 @@ export function SkinPicker({ kind, current, own, busy, onPick, onMake }: SkinPic
         ? colourPicked.colour
         : (choice.colour ?? choice.colours[0] ?? null);
   const value = choice.kind === 'bare' ? null : lookValue(choice.id, colour);
-  const inUse = value === current;
+  // a ceiling or frame left as built is its starter: choosing that starter changes nothing
+  const inUse = value === drawnLook(kind, current);
   return (
     <div class="hp-spot">
       <SupplyGrid

@@ -42,6 +42,23 @@ const TONES: Readonly<Partial<Record<SkinKind, readonly Tones[]>>> = {
   trim: TRIM_COLOURS,
 };
 
+/**
+ * The look a ceiling or frame left as built (null) is drawn in: the layer's starter in its first colour (Plain Ceiling, Timber
+ * Frame). One rule, so "as built" and the starter never show as two choices that look the same. A trim left as built is none.
+ */
+export const AS_BUILT: Readonly<Partial<Record<SkinKind, string>>> = Object.fromEntries(
+  (['ceiling', 'frame'] as const).flatMap((kind) => {
+    const skin = housing.skins.find((s) => s.kind === kind && s.unlock.kind === 'starter');
+    const colour = skin?.gen?.colours[0];
+    return skin === undefined || colour === undefined ? [] : [[kind, `${skin.id}:${colour}`]];
+  }),
+);
+
+/** The look a layer is drawn in: its own, else (ceiling, frame) the starter it is built with; null for none (a bare trim). */
+export function drawnLook(kind: SkinKind, value: string | null): string | null {
+  return value ?? AS_BUILT[kind] ?? null;
+}
+
 /** A generated look: the skin and its colour, or undefined for a drawn skin, an unknown id or a colour it does not come in. */
 export function generatedLook(value: string): { skin: SkinDef; colour: string } | undefined {
   const look = parseLook(value);

@@ -329,13 +329,16 @@ describe('spot view', () => {
     expect(floors.some((c) => c.id === 'floor-parquet')).toBe(false);
   });
 
-  it('puts As built first for a trim, ceiling or frame, never for a wallpaper', () => {
+  it('puts None first for a trim only; a ceiling or frame left as built is its starter, in use', () => {
     const own = sampleOwn('empty');
-    expect(skinChoices('trim', null, own)[0]).toMatchObject({ kind: 'bare', here: true });
-    expect(skinChoices('frame', 'frame-timber:oak', own)[0]).toMatchObject({
+    expect(skinChoices('trim', null, own)[0]).toMatchObject({
       kind: 'bare',
-      here: false,
+      name: 'None',
+      here: true,
     });
+    expect(skinChoices('frame', null, own).some((c) => c.kind === 'bare')).toBe(false);
+    expect(skinChoices('frame', null, own)[0]).toMatchObject({ id: 'frame-timber', here: true });
+    expect(skinChoices('ceiling', null, own)[0]).toMatchObject({ id: 'ceiling-plain', here: true });
     expect(skinChoices('wall', 'cosy-wall', own).some((c) => c.kind === 'bare')).toBe(false);
   });
 

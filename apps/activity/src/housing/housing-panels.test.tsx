@@ -504,7 +504,7 @@ describe('SkinPicker', () => {
     expect(first(byName(p.root, 'button', /^Use it/)).hasAttribute('disabled')).toBe(false);
   });
 
-  it('offers As built first for a trim, and takes the trim off with null', () => {
+  it('offers None first for a trim, and takes the trim off with null', () => {
     const onPick = vi.fn();
     const p = draw(
       <SkinPicker
@@ -516,9 +516,9 @@ describe('SkinPicker', () => {
         onMake={noop}
       />,
     );
-    const tiles = byName(p.root, 'button', /^(As built|Skirting Board|Classic Trim)/);
-    expect(tiles[0]?.getAttribute('aria-label')).toBe('As built');
-    p.click(first(byName(p.root, 'button', /^As built/)));
+    const tiles = byName(p.root, 'button', /^(None|Skirting Board|Classic Trim)/);
+    expect(tiles[0]?.getAttribute('aria-label')).toBe('None');
+    p.click(first(byName(p.root, 'button', /^None/)));
     p.click(first(byName(p.root, 'button', /^Use it/)));
     expect(onPick).toHaveBeenCalledWith(null);
   });

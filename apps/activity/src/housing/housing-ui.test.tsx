@@ -193,13 +193,16 @@ describe('RoomFocus', () => {
     expect(window?.getAttribute('aria-label')).toBe('Window: Cosy Curtains');
     page.click(window as NonNullable<typeof window>);
     expect(onSpot).toHaveBeenCalledWith('window-a');
-    expect(byName(page.root, 'button', /Wallpaper: /)).toHaveLength(1);
-    expect(byName(page.root, 'button', /Floor: /)).toHaveLength(1);
-    // The room's own layers (housing C5): trim and ceiling, as built until chosen.
-    expect(first(byName(page.root, 'button', /^Trim: /)).getAttribute('aria-label')).toBe(
-      'Trim: As built',
+    // Layer chips say "look" so they never read like a spot ("Ceiling: Oak Lamp").
+    expect(byName(page.root, 'button', /^Wallpaper look: /)).toHaveLength(1);
+    expect(byName(page.root, 'button', /^Floor look: /)).toHaveLength(1);
+    // The room's own layers (housing C5): a trim left off is none; a ceiling left as built is its starter.
+    expect(first(byName(page.root, 'button', /^Trim look: /)).getAttribute('aria-label')).toBe(
+      'Trim look: none',
     );
-    expect(byName(page.root, 'button', /^Ceiling: As built/)).toHaveLength(1);
+    expect(byName(page.root, 'button', 'Ceiling look: Plain Ceiling, White and oak')).toHaveLength(
+      1,
+    );
   });
 
   it('names a chosen pattern by its colour on the chip, and asks for the layer it shows', () => {
@@ -215,8 +218,8 @@ describe('RoomFocus', () => {
       ],
     };
     page.draw(<RoomFocus house={dressed} roomId={first0.id} mode="own" onSkin={onSkin} />);
-    expect(byName(page.root, 'button', 'Wallpaper: Damask Paper, Rose')).toHaveLength(1);
-    const ceiling = first(byName(page.root, 'button', 'Ceiling: Beamed Ceiling, Dark boards'));
+    expect(byName(page.root, 'button', 'Wallpaper look: Damask Paper, Rose')).toHaveLength(1);
+    const ceiling = first(byName(page.root, 'button', 'Ceiling look: Beamed Ceiling, Dark boards'));
     page.click(ceiling);
     expect(onSkin).toHaveBeenCalledWith('ceiling');
     expect(byClass(page.root, 'house-chips')[0]?.getAttribute('data-chips')).toBe('4');
