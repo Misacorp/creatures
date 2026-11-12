@@ -417,9 +417,13 @@ describe('answers folded into the page', () => {
     expect(painted.house.exterior).toEqual(house.exterior);
     const roofed = afterSkin(state, {
       target: 'exterior',
-      exterior: { roof: 'slate', walls: 'timber' },
+      exterior: { roof: 'slate', walls: 'timber', frame: 'frame-timber:dark' },
     });
-    expect(roofed.house.exterior).toEqual({ roof: 'slate', walls: 'timber' });
+    expect(roofed.house.exterior).toEqual({
+      roof: 'slate',
+      walls: 'timber',
+      frame: 'frame-timber:dark',
+    });
     expect(roofed.house.rooms).toEqual(house.rooms);
   });
 

@@ -41,6 +41,8 @@ vi.mock('./housing-api', async (importOriginal) => ({
             kind: 'cellar',
             wall: kind?.wall ?? '',
             floor: kind?.floor ?? '',
+            trim: null,
+            ceiling: null,
             spots: {},
           },
         ],

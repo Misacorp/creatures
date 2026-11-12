@@ -12,6 +12,7 @@ import type { SpriteDef } from '../sprites/sprite-data';
 import { registerHouseIcons } from './house-icon';
 import type { LightFlag } from './house-light';
 import { placeholderSprite, placeholderTile } from './house-placeholder';
+import { canDrawPattern, floorTileOf, generatedLook, lookPicture, wallTile } from './interior-art';
 
 /** One piece of furniture: its picture and the layers that go with it. All layers share the picture's size and origin, except `glow`. */
 export interface PieceArt {
@@ -126,16 +127,27 @@ const TILE_SIZE: Readonly<Record<string, { w: number; h: number }>> = {
   ground: { w: 16, h: 8 },
 };
 
-/** The tiles of a skin (wallpaper, floor, roof, wall frame or ground), or a grey tile of its kind's size. */
+/**
+ * The tiles of a skin (wallpaper, floor, roof, wall frame or ground), or a grey tile of its kind's size. A generated look
+ * (`paper-damask:rose`, housing C5) is drawn by the workshop's generators (`interior-art.ts`); its trim, ceiling and frame are
+ * overlays the scene asks for itself.
+ */
 export function skinArt(id: string, kind: string): SkinArt {
   const art = find((p) => own(p.skins, id));
   if (art !== undefined) return art;
+  const generated = generatedLook(id);
+  if (generated !== undefined) {
+    const tile = generated.skin.kind === 'floor' ? floorTileOf(id) : wallTile(id);
+    if (tile !== undefined) return { tile };
+  }
   const size = TILE_SIZE[kind] ?? { w: 16, h: 8 };
   return { tile: placeholderTile(size.w, size.h) };
 }
 
 export function hasSkinArt(id: string): boolean {
-  return find((p) => own(p.skins, id)) !== undefined;
+  if (find((p) => own(p.skins, id)) !== undefined) return true;
+  const skin = housing.skins.find((s) => s.id === id);
+  return skin !== undefined && canDrawPattern(skin);
 }
 
 /** A stamp's 16x16 picture, or a grey box. */
@@ -231,5 +243,8 @@ registerHouseIcons((id) => {
   if (piece !== undefined) return piece.sprite;
   const skin = find((p) => own(p.skins, id));
   if (skin !== undefined) return skinIcon(skin.tile);
+  // a room pattern, trim, ceiling or frame (alone: its first colour)
+  const look = lookPicture(id);
+  if (look !== undefined) return look;
   return find((p) => own(p.stamps, id));
 });

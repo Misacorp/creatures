@@ -88,6 +88,12 @@ export interface SampleOptions {
   owner?: { userId: string; name: string };
   roof?: string;
   walls?: string;
+  /** The house frame (default none: the posts and slabs as built). */
+  frame?: string | null;
+  /** Room layers by room id (housing C5): any of the wallpaper, floor, trim and ceiling. */
+  looks?: Readonly<
+    Record<string, { wall?: string; floor?: string; trim?: string | null; ceiling?: string | null }>
+  >;
   content?: HousingContent;
 }
 
@@ -234,7 +240,16 @@ export function sceneHouse(options: SampleOptions = {}): HouseView {
     if (room.roomId === 'hut:hearth' && options.furnished !== false) {
       for (const [id, piece] of Object.entries(content.starter.layout)) spots[id] = piece;
     }
-    rooms.push({ id: room.roomId, kind: room.kind, wall: kind.wall, floor: kind.floor, spots });
+    const look = options.looks?.[room.roomId] ?? {};
+    rooms.push({
+      id: room.roomId,
+      kind: room.kind,
+      wall: look.wall ?? kind.wall,
+      floor: look.floor ?? kind.floor,
+      trim: look.trim ?? null,
+      ceiling: look.ceiling ?? null,
+      spots,
+    });
   }
   return {
     owner: options.owner ?? { userId: '111111111111111111', name: 'Aino' },
@@ -242,6 +257,7 @@ export function sceneHouse(options: SampleOptions = {}): HouseView {
     exterior: {
       roof: options.roof ?? content.starter.roof,
       walls: options.walls ?? content.starter.walls,
+      frame: options.frame ?? null,
     },
     rooms,
     displays,

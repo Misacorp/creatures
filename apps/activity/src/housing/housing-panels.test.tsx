@@ -323,8 +323,8 @@ describe('CataloguePanel', () => {
   it('shows the found count and the kinds, and switches kind', () => {
     const p = draw(<CataloguePanel catalogue={sampleCatalogue()} failed={false} onRetry={noop} />);
     // 212 things in the first night's nine sets, and 24 more from the tower, balcony, orchard and pond (4 parts, 13 pieces, 7 skins);
-    // each set made since adds nine pieces and two skins
-    const total = 212 + 24 + 11 * (housing.sets.length - 9);
+    // each set made since adds nine pieces and two skins; the room patterns, trims, ceilings and frames (housing C5) add 30
+    const total = 212 + 24 + 11 * (housing.sets.length - 9) + 30;
     expect(visibleText(p.root)).toMatch(new RegExp(`\\d+ / ${String(total)} found`));
     p.click(first(byName(p.root, 'button', 'Stamps')));
     const tiles = byName(p.root, 'button', /^Unknown\./);

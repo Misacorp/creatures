@@ -65,6 +65,8 @@ export function sampleHouse(): HouseView {
         kind: r.kind,
         wall: kind?.wall ?? 'cosy-wall',
         floor: kind?.floor ?? 'cosy-floor',
+        trim: null,
+        ceiling: null,
         spots,
       };
     });
@@ -72,7 +74,7 @@ export function sampleHouse(): HouseView {
   return {
     owner: { userId: '100000000000000001', name: 'Aino' },
     built,
-    exterior: { roof: housing.starter.roof, walls: housing.starter.walls },
+    exterior: { roof: housing.starter.roof, walls: housing.starter.walls, frame: null },
     rooms,
     displays: [],
     housemates: [

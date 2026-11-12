@@ -4,6 +4,7 @@
  */
 import {
   lineKey,
+  parseLook,
   type Holdings,
   type OwnHouseView,
   type PieceDef,
@@ -15,6 +16,7 @@ import { housing } from '@creatures/game/housing-content';
 import type { CountItem } from '../count-types';
 import { acornCount, resourceCount, scrapCount, shardCount } from '../resource-count';
 import type { RecipeInput } from '../ui/RecipeCard';
+import { colourName } from './interior-art';
 
 /** What a spot is called ("Small floor"), by its type. */
 export const SPOT_NAMES: Readonly<Record<SpotType, string>> = {
@@ -40,8 +42,13 @@ const SKINS = new Map<string, SkinDef>(housing.skins.map((s) => [s.id, s]));
 export const pieceOf = (id: string): PieceDef | undefined => PIECES.get(id);
 export const skinOf = (id: string): SkinDef | undefined => SKINS.get(id);
 
-/** A piece's or skin's name; the id itself for one the content does not know. */
+/** A piece's or skin's name ("Damask Paper, Rose" for a generated look); the id itself for one the content does not know. */
 export function itemName(id: string): string {
+  const look = parseLook(id);
+  if (look?.colour != null) {
+    const skin = SKINS.get(look.skin);
+    if (skin !== undefined) return `${skin.name}, ${colourName(skin.kind, look.colour)}`;
+  }
   return PIECES.get(id)?.name ?? SKINS.get(id)?.name ?? id;
 }
 

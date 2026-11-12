@@ -30,6 +30,7 @@ import { creatureSpriteOrFallback } from '../sprites/creature-sprites';
 import { expandRows, spriteSize, swapPalette, type SpriteDef } from '../sprites/sprite-data';
 import { skySprite } from '../valley/place-scene';
 import { displayArt, pieceArt, shellArt, skinArt, type SkinArt } from './house-art';
+import { ceilingDepth, ceilingTile, frameArt, trimTile } from './interior-art';
 import {
   DAY_LIGHTING,
   lightCentre,
@@ -461,14 +462,22 @@ function emptyRoom(room: GridRoom, kind: RoomKindDef): HouseView['rooms'][number
     kind: room.kind,
     wall: kind.wall,
     floor: kind.floor,
+    trim: null,
+    ceiling: null,
     spots: {},
   };
 }
 
-/** Wall and floor skin tiles of a room (with grey stand-ins when a skin has no art). */
+/** Wall and floor skin tiles of a room, drawn or generated (with grey stand-ins when a skin has no art). */
 function tilesOf(content: HousingContent, id: string, kind: string): SkinArt {
-  const def = content.skins.find((s) => s.id === id);
+  const def = content.skins.find((s) => s.id === id.split(':')[0]);
   return skinArt(id, def?.kind ?? kind);
+}
+
+/** The slab under a room: the house's frame (housing C5), or the shell's as built. */
+function slabTile(frame: Frame): SpriteDef {
+  const chosen = frame.house.exterior.frame;
+  return (chosen === null ? undefined : frameArt(chosen)?.slab) ?? shellArt('slab');
 }
 
 interface Layers {
@@ -793,8 +802,14 @@ function drawRoom(
   const { back, front } = layers;
   const spotsOf = view.spots;
   if (!room.outdoor) {
-    // paper, floor, slab
+    // paper, ceiling, trim (housing C5: both are overlays over the paper, under everything that hangs or stands), floor, slab
     tileFill(back, tilesOf(content, view.wall, 'wall').tile, x, y, width, WALL_H, 'wall');
+    const ceiling = view.ceiling === null ? undefined : ceilingTile(view.ceiling, width);
+    if (ceiling !== undefined) {
+      tileFill(back, ceiling, x, y, width, spriteSize(ceiling).height, 'wall');
+    }
+    const trim = view.trim === null ? undefined : trimTile(view.trim, ceilingDepth(view.ceiling));
+    if (trim !== undefined) tileFill(back, trim, x, y, width, WALL_H, 'wall');
     tileFill(
       back,
       tilesOf(content, view.floor, 'floor').tile,
@@ -804,7 +819,7 @@ function drawRoom(
       FLOOR_H,
       'floor',
     );
-    tileFill(back, shellArt('slab'), x, y + WALL_H + FLOOR_H, width, SLAB_H, 'exterior');
+    tileFill(back, slabTile(frame), x, y + WALL_H + FLOOR_H, width, SLAB_H, 'exterior');
   }
   const floorY = y + FEET;
   // (The workbench and the mailbox are not in a room: they stand in the yard, see `composeHouse`.)
@@ -955,15 +970,19 @@ function drawWalls(
   outer: { left: boolean; right: boolean },
 ): void {
   const walls = skinArt(frame.house.exterior.walls, 'walls').tile;
+  // An inner wall is the house's frame when one is chosen (housing C5); the cut edge stays the walls skin outside.
+  const chosen = frame.house.exterior.frame;
+  const post = chosen === null ? undefined : frameArt(chosen)?.post;
   for (const side of ['left', 'right'] as const) {
     const wx = side === 'left' ? x - 2 : x + width - 2;
     const thick = outer[side];
     const skin = thick ? OUTER_SKIN : 2;
+    const tile = thick ? walls : (post ?? walls);
     // The inner face keeps its place (a room's inside does not shrink); an outer wall grows outwards.
     const from = side === 'left' ? (thick ? wx + 1 + 2 - skin : wx + 1) : wx + 1;
     const inkAt = side === 'left' ? [from - 1, wx + 3] : [wx, wx + 1 + skin];
     layers.front.push({ sprite: solid(1, CELL_H, INK), x: inkAt[0] ?? wx, y });
-    tileFill(layers.front, walls, from, y, skin, CELL_H, 'exterior');
+    tileFill(layers.front, tile, from, y, skin, CELL_H, 'exterior');
     layers.front.push({ sprite: solid(1, CELL_H, INK), x: inkAt[1] ?? wx + 3, y });
   }
 }
