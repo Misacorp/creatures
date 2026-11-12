@@ -146,11 +146,11 @@ const skinPicker: Entry = {
   file: `${FILE}SkinPicker.tsx`,
   group: GROUP,
   description:
-    'The wallpaper, floor, trim, ceiling, roof, walls or frame to choose from: As built first for a layer that can be bare, the ones the player has as pictures, then the ones known but not made yet; under a room pattern a row of its colours; the chosen one as a card with Use it or Make.',
+    'The wallpaper, floor, trim, ceiling, roof, walls, frame or an outdoor room\'s ground to choose from: None first for a trim, the ones the player has as pictures, then the ones known but not made yet; under a room pattern a row of its colours; the chosen one as a card with Use it or Make.',
   controls: {
     kind: {
       kind: 'select',
-      options: ['wall', 'floor', 'trim', 'ceiling', 'roof', 'walls', 'frame'],
+      options: ['wall', 'floor', 'trim', 'ceiling', 'roof', 'walls', 'frame', 'ground'],
     },
     holds: HOLDS,
   },
@@ -163,6 +163,7 @@ const skinPicker: Entry = {
     { name: 'Roof', props: { kind: 'roof' } },
     { name: 'Walls', props: { kind: 'walls' } },
     { name: 'Frame', props: { kind: 'frame' } },
+    { name: 'The orchard ground', props: { kind: 'ground' } },
     { name: 'Wallpaper, a new player', props: { holds: 'empty' } },
   ],
   render: (p) => {
@@ -175,6 +176,7 @@ const skinPicker: Entry = {
       roof: 'thatch',
       walls: 'plaster',
       frame: null,
+      ground: 'orchard-plum',
     } as const;
     const k =
       kind === 'floor' ||
@@ -182,13 +184,15 @@ const skinPicker: Entry = {
       kind === 'ceiling' ||
       kind === 'roof' ||
       kind === 'walls' ||
-      kind === 'frame'
+      kind === 'frame' ||
+      kind === 'ground'
         ? kind
         : 'wall';
     return (
       <SkinPicker
         kind={k}
         current={current[k]}
+        room={k === 'ground' ? { kind: 'orchard', built: ['hut', 'garden', 'orchard'] } : null}
         own={holds(p)}
         busy={false}
         onPick={none}

@@ -5,6 +5,7 @@
 import { resourceName, type CatalogueView, type SpotType } from '@creatures/game';
 import { housing } from '@creatures/game/housing-content';
 import { setName } from './house-names';
+import { OUTSIDE_LAYERS, ROOM_LAYERS } from './workbench-view';
 
 export type CatalogueKind = 'furniture' | 'garden' | 'skins' | 'stamps' | 'materials' | 'parts';
 
@@ -54,6 +55,8 @@ export interface CatalogueGroup {
   tiles: CatalogueTile[];
   /** Found in this group, and its size. */
   found: number;
+  /** Outside and Rooms: the tiles again, one labelled row per layer (Roof, Walls, Frame, Ground; Wallpaper, Floor, Trim, Ceiling). */
+  rows?: { id: string; title: string; tiles: CatalogueTile[] }[];
 }
 
 const OUTDOOR: ReadonlySet<SpotType> = new Set([
@@ -170,13 +173,30 @@ function skinGroups(c: CatalogueView): CatalogueGroup[] {
     const tiles = bySet.get(set.id);
     if (tiles !== undefined) out.push(group(set.id, setName(set.id) ?? set.id, tiles));
   }
+  // The skins that are no set's: Outside and Rooms, in labelled rows by layer; a pattern is one tile, not one per colour.
   const loose = bySet.get(null) ?? [];
-  const generated = new Set(housing.skins.filter((s) => s.gen !== undefined).map((s) => s.id));
-  const exterior = loose.filter((t) => !generated.has(t.id));
-  if (exterior.length > 0) out.push(group('exterior', 'Roofs, walls and ground', exterior));
-  // The room patterns, trims, ceilings and frames (housing C5): one tile per pattern, not per colour.
-  const rooms = loose.filter((t) => generated.has(t.id));
-  if (rooms.length > 0) out.push(group('rooms', 'Rooms', rooms));
+  const kindOf = new Map(housing.skins.map((s) => [s.id, s.kind]));
+  for (const [id, title, layers] of [
+    ['exterior', 'Outside', OUTSIDE_LAYERS],
+    ['rooms', 'Rooms', ROOM_LAYERS],
+  ] as const) {
+    const rows = layers
+      .map((l) => ({
+        id: l.kind,
+        title: l.title,
+        tiles: loose.filter((t) => kindOf.get(t.id) === l.kind),
+      }))
+      .filter((r) => r.tiles.length > 0);
+    if (rows.length > 0)
+      out.push({
+        ...group(
+          id,
+          title,
+          rows.flatMap((r) => r.tiles),
+        ),
+        rows,
+      });
+  }
   return out;
 }
 

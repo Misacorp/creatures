@@ -232,8 +232,17 @@ export function pendingArt(content: HousingContent = housing): ReadonlySet<strin
 
 export const ART_PENDING: ReadonlySet<string> = pendingArt();
 
-/** A skin's tile as an icon: at most 16 rows, from the middle of a tall wallpaper. */
-function skinIcon(tile: SpriteDef): SpriteDef {
+/**
+ * A skin's tile as an icon: at most 16 rows, from the middle of a tall wallpaper. A ground with something standing on it (an
+ * orchard's trees) shows a 16 x 16 piece of the first of them, the crown with its fruit, so its varieties tell apart.
+ */
+function skinIcon(skin: SkinArt): SpriteDef {
+  const tree = skin.scenery?.[0]?.sprite;
+  if (tree !== undefined) {
+    const x = Math.max(0, Math.floor(((tree.rows[0]?.length ?? 16) - 16) / 2));
+    return { ...tree, rows: tree.rows.slice(6, 22).map((r) => r.slice(x, x + 16)) };
+  }
+  const { tile } = skin;
   return tile.rows.length <= 16 ? tile : { ...tile, rows: tile.rows.slice(8, 24) };
 }
 
@@ -242,7 +251,7 @@ registerHouseIcons((id) => {
   const piece = find((p) => own(p.pieces, id));
   if (piece !== undefined) return piece.sprite;
   const skin = find((p) => own(p.skins, id));
-  if (skin !== undefined) return skinIcon(skin.tile);
+  if (skin !== undefined) return skinIcon(skin);
   // a room pattern, trim, ceiling or frame (alone: its first colour)
   const look = lookPicture(id);
   if (look !== undefined) return look;

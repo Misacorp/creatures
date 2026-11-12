@@ -20,6 +20,7 @@ import {
   sampleOwn,
 } from './house-sample';
 import { giftReason } from './GiftButton';
+import { recipeCell } from './WorkbenchPanel';
 import { giftRows } from './MailboxPanel';
 import { ownedStamps } from './StampPicker';
 import {
@@ -166,15 +167,37 @@ describe('workbench view', () => {
     expect(wall).toMatchObject({ done: true, reason: 'You have it already.' });
   });
 
-  it('lists the room patterns a player can make in a Rooms group, never the starters', () => {
-    const rooms = workbenchGroups(sampleOwn('empty')).find((g) => g.id === 'rooms');
+  it('lists the room patterns a player can make in Rooms and the frames in Outside, in rows by layer, never the starters', () => {
+    const groups = workbenchGroups(sampleOwn('empty'));
+    const rooms = groups.find((g) => g.id === 'rooms');
     const ids = rooms?.recipes.map((r) => r.id) ?? [];
+    expect(rooms?.title).toBe('Rooms');
     expect(ids).toContain('paper-stripes');
-    expect(ids).toContain('frame-painted');
+    expect(ids).not.toContain('frame-painted');
     expect(ids).not.toContain('paper-plain');
     expect(ids).not.toContain('paper-damask');
-    const exterior = workbenchGroups(sampleOwn('rich')).find((g) => g.id === 'exterior');
-    expect(exterior?.recipes.some((r) => r.id.startsWith('paper-'))).toBe(false);
+    expect(rooms?.rows?.map((r) => r.title)).toEqual(['Wallpaper', 'Floor', 'Trim', 'Ceiling']);
+    const outside = groups.find((g) => g.id === 'exterior');
+    expect(outside?.title).toBe('Outside');
+    expect(outside?.recipes.map((r) => r.id)).toContain('frame-painted');
+    expect(outside?.rows?.map((r) => r.id)).toContain('frame');
+    const rich = workbenchGroups(sampleOwn('rich')).find((g) => g.id === 'exterior');
+    expect(rich?.recipes.some((r) => r.id.startsWith('paper-'))).toBe(false);
+    // the rows are the group's recipes, nothing more or less
+    for (const g of [rooms, outside]) {
+      expect(g?.rows?.flatMap((r) => r.recipes)).toEqual(g?.recipes);
+    }
+  });
+
+  it('shows a pattern made already as had, not out of reach, and its card says every colour', () => {
+    const own = sampleOwn('empty');
+    const made = { ...own, items: { ...own.items, skins: [...own.items.skins, 'paper-stripes'] } };
+    const recipe = workbenchGroups(made)
+      .find((g) => g.id === 'rooms')
+      ?.recipes.find((r) => r.id === 'paper-stripes');
+    expect(recipe?.done).toBe(true);
+    expect(recipe === undefined ? undefined : recipeCell(recipe).muted).toBe(false);
+    expect(recipe?.output.name).toBe('Wide Stripe Paper, every colour');
   });
 
   it('shows only the starters to a player with nothing', () => {
@@ -218,9 +241,10 @@ describe('catalogue view', () => {
   it('agrees with the workbench on how many pieces of a set are made', () => {
     const catalogue = catalogueGroups(sampleCatalogue(), 'furniture');
     const own = sampleOwn('rich');
+    const skins = catalogueGroups(sampleCatalogue(), 'skins');
     for (const group of workbenchGroups(own)) {
       if (group.held === null) continue;
-      const same = catalogue.find((g) => g.id === group.id);
+      const same = (group.rows === undefined ? catalogue : skins).find((g) => g.id === group.id);
       expect(same, group.id).toBeDefined();
       expect(group.held.total, group.id).toBe(same?.tiles.length);
     }
@@ -234,7 +258,14 @@ describe('catalogue view', () => {
     const groups = catalogueGroups(sampleCatalogue(), 'skins');
     const rooms = groups.find((g) => g.id === 'rooms');
     expect(rooms?.title).toBe('Rooms');
-    expect(rooms?.tiles).toHaveLength(housing.skins.filter((s) => s.gen !== undefined).length);
+    const roomKinds = ['wall', 'floor', 'trim', 'ceiling'];
+    expect(rooms?.tiles).toHaveLength(
+      housing.skins.filter((s) => s.set === null && roomKinds.includes(s.kind)).length,
+    );
+    expect(rooms?.rows?.map((r) => r.title)).toEqual(['Wallpaper', 'Floor', 'Trim', 'Ceiling']);
+    const outside = groups.find((g) => g.id === 'exterior');
+    expect(outside?.title).toBe('Outside');
+    expect(outside?.rows?.map((r) => r.title)).toEqual(['Roof', 'Walls', 'Frame', 'Ground']);
     const plain = rooms?.tiles.find((t) => t.id === 'paper-plain');
     expect(plain).toMatchObject({ unknown: false, owned: 1, name: 'Plain Plaster' });
     expect(plain?.line).toContain('plaster');

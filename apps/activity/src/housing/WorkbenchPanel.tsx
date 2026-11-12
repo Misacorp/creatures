@@ -19,7 +19,10 @@ export interface WorkbenchPanelProps {
   onCraft: (itemId: string) => void;
 }
 
-/** The picture of one recipe in the grid: dimmed when it cannot be made now, the owned count in the corner. */
+/**
+ * The picture of one recipe in the grid: dimmed when it cannot be made now, the owned count in the corner. A skin made already
+ * shows as made furniture does (its count, not dimmed): it is had, not out of reach.
+ */
 export function recipeCell(recipe: RecipeView): SupplyCell {
   const state = recipe.done
     ? 'made already'
@@ -32,7 +35,7 @@ export function recipeCell(recipe: RecipeView): SupplyCell {
     tier: 'basic',
     label: `${recipe.name}, ${recipe.owned > 0 ? `${String(recipe.owned)} owned, ` : ''}${state}`,
     owned: recipe.owned,
-    muted: recipe.done || !recipe.affordable,
+    muted: !recipe.done && !recipe.affordable,
     picture: <HouseThumb id={recipe.id} />,
   };
 }
@@ -67,13 +70,29 @@ function GroupBody({
   if (chosen === undefined) return null;
   return (
     <div class="hp-recipes">
-      <SupplyGrid
-        flat
-        label={`${group.title}: pieces to make`}
-        cells={group.recipes.map(recipeCell)}
-        selected={chosen.id}
-        onSelect={setPicked}
-      />
+      {group.rows === undefined ? (
+        <SupplyGrid
+          flat
+          label={`${group.title}: pieces to make`}
+          cells={group.recipes.map(recipeCell)}
+          selected={chosen.id}
+          onSelect={setPicked}
+        />
+      ) : (
+        // Outside and Rooms: a labelled row per layer, as the spot picker labels its sets
+        group.rows.map((row) => (
+          <div key={row.id} class="hp-set-group">
+            <p class="hp-set-label pix">{row.title}</p>
+            <SupplyGrid
+              flat
+              label={`${row.title}: to make`}
+              cells={row.recipes.map(recipeCell)}
+              selected={chosen.id}
+              onSelect={setPicked}
+            />
+          </div>
+        ))
+      )}
       <MakeCard recipe={chosen} busy={busy} onMake={onCraft} />
     </div>
   );

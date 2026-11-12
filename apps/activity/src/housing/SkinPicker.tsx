@@ -38,15 +38,24 @@ export const SKIN_KIND_NAMES: Readonly<Record<SkinKind, string>> = {
   ground: 'Ground',
 };
 
-function Picture({ choice }: { choice: SkinChoice }) {
-  return choice.kind === 'bare' ? (
-    <span class="hp-empty-mark" aria-hidden="true" />
-  ) : (
-    <HouseThumb id={choice.id} />
-  );
+/**
+ * The colour a generated pattern's tile shows in the grid: the worn one for the pattern in use, else one of its colours picked by
+ * its place in the grid (stepping through the colours, so neighbours differ and the grid shows the range). Deterministic.
+ */
+export function gridColour(choice: SkinChoice, index: number): string | null {
+  const n = choice.colours.length;
+  if (n === 0) return null;
+  if (choice.here && choice.colour !== null) return choice.colour;
+  return choice.colours[(index * 5 + 1) % n] ?? null;
 }
 
-function cellOf(choice: SkinChoice): SupplyCell {
+function Picture({ choice, index = 0 }: { choice: SkinChoice; index?: number }) {
+  if (choice.kind === 'bare') return <span class="hp-empty-mark" aria-hidden="true" />;
+  const colour = gridColour(choice, index);
+  return <HouseThumb id={colour === null ? choice.id : lookValue(choice.id, colour)} />;
+}
+
+function cellOf(choice: SkinChoice, index: number): SupplyCell {
   return {
     id: choice.id,
     kind: choice.id,
@@ -54,7 +63,7 @@ function cellOf(choice: SkinChoice): SupplyCell {
     label: choice.label,
     owned: 0,
     muted: choice.kind === 'blueprint',
-    picture: <Picture choice={choice} />,
+    picture: <Picture choice={choice} index={index} />,
   };
 }
 
@@ -131,7 +140,7 @@ export function SkinPicker({
       <SupplyGrid
         flat
         label={`${SKIN_KIND_NAMES[kind]} to choose from`}
-        cells={choices.map(cellOf)}
+        cells={choices.map((c, i) => cellOf(c, i))}
         selected={choice.id}
         onSelect={(id) => {
           setPicked(id);

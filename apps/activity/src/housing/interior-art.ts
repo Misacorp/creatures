@@ -245,6 +245,8 @@ function pixel(tile: SpriteDef, x: number, y: number): string | null {
 }
 
 const PLAIN_WALL = 'paper-plain:cream';
+/** The wall a trim's picture stands on: a mid tone, so a white or a dark trim both show against it. */
+const TRIM_WALL = 'paper-plain:slate';
 
 /** The 16 x 16 picture of a look (a pattern skin id alone shows its first colour), or undefined for one that is not generated. */
 export function lookPicture(value: string): SpriteDef | undefined {
@@ -264,8 +266,9 @@ export function lookPicture(value: string): SpriteDef | undefined {
       }
       case 'trim': {
         const t = trimTile(v, 4);
-        if (t === undefined || back === undefined) return undefined;
-        return fromPixels(16, 16, (x, y) => pixel(t, x, y + 36) ?? pixel(back, x, y + 36));
+        const wall = wallTile(TRIM_WALL);
+        if (t === undefined || wall === undefined) return undefined;
+        return fromPixels(16, 16, (x, y) => pixel(t, x, y + 36) ?? pixel(wall, x, y + 36));
       }
       case 'ceiling': {
         const t = ceilingTile(v, 112);

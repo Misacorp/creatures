@@ -87,6 +87,25 @@ function Tiles({
   open: string | null;
   onOpen: (id: string, button: HTMLButtonElement) => void;
 }) {
+  if (group.rows !== undefined) {
+    // Outside and Rooms: a labelled row per layer, as the spot picker labels its sets
+    return (
+      <>
+        {group.rows.map((row) => (
+          <div key={row.id} class="hp-set-group">
+            <p class="hp-set-label pix">{row.title}</p>
+            <SupplyGrid
+              flat
+              label={`${label}: ${row.title}`}
+              cells={row.tiles.map(cellOf)}
+              selected={open}
+              onSelect={onOpen}
+            />
+          </div>
+        ))}
+      </>
+    );
+  }
   return (
     <SupplyGrid
       flat

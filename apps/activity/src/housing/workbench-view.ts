@@ -1,9 +1,10 @@
 /**
  * The workbench as plain data (`WorkbenchPanel.tsx` draws it): every blueprint the player knows as a recipe
- * (materials, Acorns and scrap in, the piece or skin out), grouped by set, then the wild pieces, the garden pieces and
- * the exterior skins. Pure.
+ * (materials, Acorns and scrap in, the piece or skin out), grouped by set, then the wild pieces, the garden pieces, Outside
+ * (roof, walls, frame) and Rooms (wallpaper, floor, trim, ceiling), the last two in rows by layer. Pure.
  */
 import {
+  ownsSkin,
   piecePrice,
   skinPrice,
   type OwnHouseView,
@@ -38,9 +39,25 @@ export interface RecipeGroup {
   recipes: RecipeView[];
   /** Recipes that can be made right now. */
   ready: number;
-  /** The pieces of the set (or of the wild or garden pieces) the player owns, and how many there are: the catalogue's "3 / 9". Null for the skins. */
+  /** The pieces of the set (or of the wild or garden pieces, or the skins Outside or in Rooms) the player owns, and how many there are: the catalogue's "3 / 9". */
   held: { owned: number; total: number } | null;
+  /** Outside and Rooms: the recipes again, one labelled row per layer (Roof, Walls, Frame; Wallpaper, Floor, Trim, Ceiling). */
+  rows?: { id: string; title: string; recipes: RecipeView[] }[];
 }
+
+/** The layers of the house's outside and of its rooms, in the order their rows show (the Workbench and the Catalogue). */
+export const OUTSIDE_LAYERS = [
+  { kind: 'roof', title: 'Roof' },
+  { kind: 'walls', title: 'Walls' },
+  { kind: 'frame', title: 'Frame' },
+  { kind: 'ground', title: 'Ground' },
+] as const;
+export const ROOM_LAYERS = [
+  { kind: 'wall', title: 'Wallpaper' },
+  { kind: 'floor', title: 'Floor' },
+  { kind: 'trim', title: 'Trim' },
+  { kind: 'ceiling', title: 'Ceiling' },
+] as const;
 
 const OUTDOOR_SPOTS: ReadonlySet<SpotType> = new Set([
   'yard-large',
@@ -95,6 +112,9 @@ function recipe(
     kind === 'piece' ? (own.items.pieces[id] ?? 0) : own.items.skins.includes(id) ? 1 : 0;
   const done = kind === 'skin' && owned > 0;
   const affordable = canAfford(lines, own);
+  // a pattern is made once for all its colours: the card says so
+  const every = kind === 'skin' && housing.skins.some((s) => s.id === id && s.gen !== undefined);
+  const shown = every ? `${name}, every colour` : name;
   return {
     id,
     name,
@@ -104,8 +124,8 @@ function recipe(
     output: {
       key: id,
       icon: { kind: 'house', id },
-      label: name,
-      name,
+      label: shown,
+      name: shown,
       ...(kind === 'piece' && owned > 0
         ? { amount: owned, spokenAmount: `${String(owned)} owned` }
         : {}),
@@ -117,9 +137,10 @@ function recipe(
   };
 }
 
-/** Every known blueprint as a recipe, in groups: each set, the wild pieces, the garden pieces, the exterior skins, the room patterns. */
+/** Every known blueprint as a recipe, in groups: each set, the wild pieces, the garden pieces, Outside (roof, walls, frame), Rooms. */
 export function workbenchGroups(own: OwnHouseView): RecipeGroup[] {
   const known = knownIds(own);
+  const built = builtFromOwn(own);
   const pieceRecipe = (id: string) => recipe(id, 'piece', piecePrice(housing, id), own);
   const skinRecipe = (id: string) => recipe(id, 'skin', skinPrice(housing, id), own);
   const makeable = (skinId: string) => {
@@ -164,23 +185,41 @@ export function workbenchGroups(own: OwnHouseView): RecipeGroup[] {
     recipes: loose.filter((p) => outdoor(p.form)).map((p) => pieceRecipe(p.id)),
     held: heldOf(housing.pieces.filter((p) => p.set === null && outdoor(p.form))),
   });
-  groups.push({
-    id: 'exterior',
-    title: 'Roofs and walls',
-    recipes: housing.skins
-      .filter((s) => s.set === null && s.gen === undefined && makeable(s.id))
-      .map((s) => skinRecipe(s.id)),
-    held: null,
-  });
-  // The room patterns, trims, ceilings and frames (housing C5): one make gives every colour; the starters are never made.
-  groups.push({
-    id: 'rooms',
-    title: 'Rooms',
-    recipes: housing.skins
-      .filter((s) => s.gen !== undefined && s.unlock.kind !== 'starter' && makeable(s.id))
-      .map((s) => skinRecipe(s.id)),
-    held: null,
-  });
+  // The skins that are no set's: Outside (roof, walls, frame) and Rooms (wallpaper, floor, trim, ceiling), each in rows by layer.
+  // A starter is never made; a pattern is one make for every colour.
+  const layered = (
+    id: string,
+    title: string,
+    layers: readonly { kind: string; title: string }[],
+  ): void => {
+    // every skin of these layers, as the catalogue counts them (starters and grounds are had by rule)
+    const all = housing.skins.filter(
+      (s) => s.set === null && layers.some((l) => l.kind === s.kind),
+    );
+    const rows = layers
+      .map((l) => ({
+        id: l.kind,
+        title: l.title,
+        recipes: all
+          .filter((s) => s.kind === l.kind && s.unlock.kind !== 'starter' && makeable(s.id))
+          .map((s) => skinRecipe(s.id)),
+      }))
+      .filter((r) => r.recipes.length > 0);
+    groups.push({
+      id,
+      title,
+      recipes: rows.flatMap((r) => r.recipes),
+      held: {
+        owned: all.filter((s) =>
+          ownsSkin(s, own.items.skins.includes(s.id), (part) => built.has(part)),
+        ).length,
+        total: all.length,
+      },
+      rows,
+    });
+  };
+  layered('exterior', 'Outside', OUTSIDE_LAYERS);
+  layered('rooms', 'Rooms', ROOM_LAYERS);
   return groups
     .filter((g) => g.recipes.length > 0)
     .map((g) => ({ ...g, ready: g.recipes.filter((r) => !r.done && r.affordable).length }));
