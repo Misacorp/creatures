@@ -27,8 +27,8 @@ import { partyPlacements, type PlacementRow } from './raid-teams';
 import {
   V2_WORLD,
   arenaOf,
-  colsFor,
-  type Arena,
+  boardCols,
+  widened,
   determinationBpFor,
   effectivePlayers,
   gridPlace,
@@ -122,23 +122,6 @@ export function compactBoard(
   }
 }
 
-/**
- * The players a party's board is sized for at stage 1: the players who placed, and at least as many as it takes for the board to reach
- * the furthest column anyone stands in. A creature keeps the seat it was placed on (Misa, 2026-11-13): nothing moves into a free seat
- * and empty seats stay empty, so a board with a gap, or a creature in the spare column, makes the fight's board that much wider (and
- * its boss that much bigger) instead of closing the gap.
- */
-export function playersCovering(
-  placed: number,
-  slots: readonly number[],
-  arena: Pick<Arena, 'rows' | 'seats'>,
-): number {
-  const lastCol = slots.reduce((m, slot) => Math.max(m, Math.floor(slot / arena.rows)), 0);
-  let players = Math.max(1, placed);
-  while (colsFor(players, false, arena) <= lastCol) players++;
-  return players;
-}
-
 /** The placed creatures that are not among the owner's three highest-level ones (ties by the species' power, then the id). */
 function beyondTop3(sql: SqlStorage, userId: string, placedIds: readonly string[]): number {
   const owned = sql
@@ -182,15 +165,17 @@ export function buildStageV2(
     placements.some((p) => p.user_id === id),
   );
   if (fightingIds.length === 0) return null;
-  const players =
-    prior?.players ??
-    playersCovering(
-      fightingIds.length,
-      placements.filter((p) => fightingIds.includes(p.user_id)).map((p) => p.slot),
-      arena,
-    );
-  const cols = colsFor(players, false, arena);
-  const boss = weekendBoss(week.trackSlot, effectivePlayers(players, arena));
+  // The boss is sized by the players who placed; the board is as wide as the furthest seat anyone stands in (see `boardCols`).
+  const players = prior?.players ?? fightingIds.length;
+  const cols = boardCols(
+    sql,
+    week.weekId,
+    party,
+    players,
+    arena,
+    placements.filter((p) => fightingIds.includes(p.user_id)).map((p) => p.slot),
+  );
+  const boss = widened(weekendBoss(week.trackSlot, effectivePlayers(players, arena)), cols);
   const aliases = fightingIds.map((_, i) => aliasFor(i));
   const creatures = loadV2Creatures(
     sql,

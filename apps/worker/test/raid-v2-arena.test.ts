@@ -98,27 +98,63 @@ describe('the seats of a piece', () => {
     });
   }, 120_000);
 
-  it('stage 1 keeps every creature on its seat: gaps stay empty and a creature in the spare column stays there (2026-11-13)', async () => {
+  it('stage 1 keeps every creature on its seat; the boss is the size of the players who placed, the board as wide as the furthest seat (2026-11-13)', async () => {
+    type Stored = {
+      boss: { hp: number; atk: number; cols: number };
+      fighters: { uid: string; row: number; col: number }[];
+    };
+    const stored = (ctx: CoreContext, phase: string): Stored =>
+      JSON.parse(
+        rows<{ input: string }>(
+          ctx.sql,
+          `SELECT input FROM raid_results WHERE phase = '${phase}'`,
+        )[0]?.input ?? '{}',
+      ) as Stored;
+    let packedBoss: Stored['boss'] | undefined;
+    // The same two players with no gap and nobody in the spare column: slots 0 and 1.
     await run((ctx) => {
       setSlot(ctx, 3);
       const [a, b] = [1, 2].map((n) => v2Player(ctx, n, { level: 22 })) as [Player, Player];
-      // Rows are two. a stands on slot 0 with the seat beside it (slot 2) empty; b stands alone in the spare column (slot 4), with the whole
-      // second column empty. The party is two players: before, slot 4 was moved into the first free seat (slot 1), closing the gaps.
+      expect(place(ctx, a, 0, 0)).toMatchObject({ ok: true });
+      expect(place(ctx, b, 0, 1)).toMatchObject({ ok: true });
+      ctx.clock.t = V2_WEEK.stage1 + 5000;
+      ctx.core.raid.runDue(HELSINKI);
+      packedBoss = stored(ctx, 'stage1').boss;
+    });
+    await run((ctx) => {
+      setSlot(ctx, 3);
+      const [a, b] = [1, 2].map((n) => v2Player(ctx, n, { level: 22 })) as [Player, Player];
+      // Rows are two. a stands on slot 0 with the seat beside it empty; b stands alone in the spare column (slot 4).
       expect(place(ctx, a, 0, 0)).toMatchObject({ ok: true });
       expect(place(ctx, b, 0, 4)).toMatchObject({ ok: true });
       expect(v2Of(ctx, a.id)).toMatchObject({ cols: 3, spare: true, players: 2 });
       ctx.clock.t = V2_WEEK.stage1 + 5000;
       ctx.core.raid.runDue(HELSINKI);
-      // The fight's input has each creature on its own row and column.
-      const input = JSON.parse(
-        rows<{ input: string }>(ctx.sql, "SELECT input FROM raid_results WHERE phase = 'stage1'")[0]
-          ?.input ?? '{}',
-      ) as { fighters: { uid: string; row: number; col: number }[] };
+      const input = stored(ctx, 'stage1');
       const at = (id: string) => input.fighters.find((f) => f.uid === id);
       expect(at(a.creatureIds[0] as string)).toMatchObject({ row: 0, col: 0 });
       expect(at(b.creatureIds[0] as string)).toMatchObject({ row: 0, col: 2 });
-      // The board is as wide as the furthest seat: three columns, three players' worth of boss.
-      expect(rows(ctx.sql, 'SELECT v2_players FROM raid_parties')).toEqual([{ v2_players: 3 }]);
+      // Two players' boss (HP and Attack as for the packed team), on a board three columns wide.
+      expect(rows(ctx.sql, 'SELECT v2_players FROM raid_parties')).toEqual([{ v2_players: 2 }]);
+      expect(input.boss).toMatchObject({ hp: packedBoss?.hp, atk: packedBoss?.atk, cols: 3 });
+      expect(v2Of(ctx, a.id)).toMatchObject({ cols: 3, spare: false, players: 2 });
+      // Stage 2 reads the same width, and nobody moves, even though places were freed by knock-outs.
+      // The knocked-out creature's place was freed; the survivor stays where it stood, and the board keeps its three columns.
+      const left = rows<{ creature_id: string }>(
+        ctx.sql,
+        'SELECT creature_id FROM raid_placements',
+      );
+      expect(left).toHaveLength(1);
+      const id = left[0]?.creature_id as string;
+      ctx.clock.t = V2_WEEK.stage2 + 5000;
+      ctx.core.raid.runDue(HELSINKI);
+      const second = stored(ctx, 'stage2');
+      expect(second.boss.cols).toBe(3);
+      expect(second.fighters.find((f) => f.uid === id)).toMatchObject({
+        row: at(id)?.row,
+        col: at(id)?.col,
+      });
+      expect(v2Of(ctx, a.id).cols).toBe(3);
     });
   }, 120_000);
 

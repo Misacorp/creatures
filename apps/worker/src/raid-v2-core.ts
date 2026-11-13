@@ -9,7 +9,7 @@
  * **The piece (Misa, 2026-11-03).** The boss's arena piece (`piece` in raid-bosses.json) is what one player adds: today one column of the
  * boss's rows. A player brings as many creatures as the piece has seats (`seatsFor`), and until stage 1 locks the board is the piece per
  * player plus one spare piece (`colsFor(players, true)`), so a newcomer can always place a first creature. Stage 1 drops the spare piece but moves
- * nobody: every creature keeps its seat, and a board with a creature in the spare column is that column wider (`playersCovering`).
+ * nobody: every creature keeps its seat, and a board with a creature in the spare column is that column wider.
  */
 import { content } from '@creatures/game';
 import { SHIPPED } from './fighter-v2';
@@ -177,6 +177,40 @@ export const gridPlace = (slot: number, rows: number): { row: number; col: numbe
 
 /** The slot number of a place on the grid. */
 export const slotAt = (row: number, col: number, rows: number): number => col * rows + row;
+
+/**
+ * The columns a party's board has once stage 1 locked it: stage 1 stores the width it fought on (its input's `boss.cols`), and every later
+ * stage, the live finale, the replay and the view read it back, so freeing a knocked-out creature's place never shrinks the board or moves
+ * anyone. At stage 1 (nothing stored) it is the width the players need, or further when a creature stands beyond it (the spare column, or
+ * past a gap): creatures keep their seats and the boss is not made bigger for it (`widened` changes only its width, never its HP or Attack).
+ */
+export function boardCols(
+  sql: SqlStorage,
+  weekId: string,
+  party: number,
+  players: number,
+  arena: Pick<Arena, 'rows' | 'seats'>,
+  slots: readonly number[] = [],
+): number {
+  const row = sql
+    .exec<{ input: string }>(
+      "SELECT input FROM raid_results WHERE week_id = ? AND party = ? AND phase = 'stage1'",
+      weekId,
+      party,
+    )
+    .toArray()[0];
+  const stored =
+    row === undefined
+      ? undefined
+      : (JSON.parse(row.input) as { boss?: { cols?: number } }).boss?.cols;
+  const base = colsFor(players, false, arena);
+  if (typeof stored === 'number') return Math.max(stored, base);
+  return slots.reduce((m, slot) => Math.max(m, Math.floor(slot / arena.rows) + 1), base);
+}
+
+/** The boss on a board `cols` wide: its width follows the board, its numbers stay those of the players. */
+export const widened = (boss: BossDef, cols: number): BossDef =>
+  cols > boss.cols ? { ...boss, cols } : boss;
 
 /** The slot's boss for `players` players (see `effectivePlayers`), as it fights: one column per player, also under four (the HP and Attack curves continue). */
 export function weekendBoss(slot: number, players: number): BossDef {

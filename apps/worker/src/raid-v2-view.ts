@@ -28,6 +28,7 @@ import { partyPlacements } from './raid-teams';
 import { speciesOf } from './species';
 import {
   arenaOf,
+  boardCols,
   colsFor,
   effectivePlayers,
   determinationBpFor,
@@ -355,7 +356,9 @@ export function buildRaidViewV2(
     const players = stored?.players ?? Math.max(1, members.length);
     // The spare piece stays until stage 1 locks the players (the carry is stored then).
     const spare = stored === null && week.status === 'open';
-    const cols = colsFor(players, spare, arena);
+    const cols = spare
+      ? colsFor(players, true, arena)
+      : boardCols(sql, week.weekId, shownParty, players, arena);
     const length = rows * cols;
     const placements = partyPlacements(sql, week.weekId, shownParty, seats);
     // One load for the board and its move preview: the creatures with their slotted talents and gear lines, a few statements however many.
