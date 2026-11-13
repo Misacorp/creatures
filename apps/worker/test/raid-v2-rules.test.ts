@@ -591,7 +591,7 @@ describe('swap requests', () => {
 describe('shiny creatures on the board', () => {
   it("marks a shiny creature in everyone's view of the row, and no other", async () => {
     await runRaid(
-      async (ctx) => {
+      (ctx) => {
         const players = [1, 2].map((n) => v2Player(ctx, n, { level: 22 }));
         ctx.core.raid.currentWeek(HELSINKI);
         joinRaid(ctx, players);
