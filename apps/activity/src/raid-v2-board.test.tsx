@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { PopoverHost } from './PopoverHost';
 import { BossCardV2, RuleCards, boardTurnSteps, stageTicks, strengthPips } from './BossCardV2';
 import { moveGlyphId } from './combat-glyphs';
+import { moveHelp } from './move-help';
 import { parseRaidView } from './raid-api';
 import {
   boardCuesV2,
@@ -370,16 +371,30 @@ describe('the boss card', () => {
     );
   });
 
-  it('says a tapped Wind-up move is aimed when it comes', () => {
+  it('draws no "Aimed when it comes" line, and a tap opens a popover that explains the move and its keywords', () => {
     const view = sample();
-    const windUp = v2Of(view).card.moves.find((m) => m.windUp);
-    const p = draw(view, windUp?.id ?? null);
-    expect(visibleText(p.root)).toContain('Aimed when it comes');
-    const fixed = v2Of(view).card.moves.find(
-      (m) => !m.windUp && v2Of(view).preview?.moves[m.id] != null,
-    );
+    const windUp = v2Of(view).card.moves.find((m) => m.windUp)!;
+    expect(visibleText(draw(view, windUp.id).root)).not.toContain('Aimed when it comes');
     page?.unmount();
-    expect(visibleText(draw(view, fixed?.id ?? null).root)).not.toContain('Aimed when it comes');
+    vi.stubGlobal('window', {
+      innerHeight: 800,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    });
+    page = createPage();
+    page.draw(
+      <PopoverHost onOpenHowTo={() => undefined}>
+        <BossCardV2 view={view} lit={null} onLit={() => undefined} />
+      </PopoverHost>,
+    );
+    const tiles = byClass(page.root, 'move-tile');
+    const index = v2Of(view).card.moves.findIndex((m) => m.id === windUp.id);
+    page.click(tiles[index]!);
+    const text = visibleText(page.root);
+    expect(text).toContain(moveHelp(windUp).what);
+    expect(text).toContain(moveHelp(windUp).rhythm);
+    // The hourglass word is a tag that opens the game's own keyword help.
+    expect(byName(page.root, 'button', /^Wind-up/).length).toBeGreaterThan(0);
   });
 
   it('taps a move tile to select it and again to let go', () => {
@@ -546,5 +561,42 @@ describe('how your swap requests went', () => {
     page = createPage();
     page.draw(<SwapOutcomes settled={[]} grid={grid} />);
     expect(byClass(page.root, 'swap-requests')).toHaveLength(0);
+  });
+});
+
+describe('the words of a move', () => {
+  const base = {
+    id: 'x',
+    name: 'Judgement Bolt',
+    label: 'One-shot',
+    shape: 'single',
+    silences: false,
+    oneShot: true,
+    fizzles: false,
+    every: 4,
+    turn: 1,
+    windUp: false,
+    later: false,
+  };
+
+  it('reads the rhythm, the turn and the keywords the glossary already has', () => {
+    const help = moveHelp({ ...base, oneShot: false, shape: 'scatter', windUp: true });
+    expect(help.rhythm).toBe('Every 4: it comes every 4 rounds, after row 2.');
+    expect(help.keywords.map((k) => k.name)).toEqual(['Wind-up', 'Barrage']);
+    expect(moveHelp({ ...base, every: 1, oneShot: false }).rhythm).toContain('Every round');
+  });
+
+  it('explains One-shot in a line, since the glossary has no entry for it', () => {
+    const help = moveHelp(base);
+    expect(help.notes[0]).toContain('One-shot');
+    expect(help.keywords).toEqual([]);
+  });
+
+  it('puts Area hit on a move that hits several slots and Silenced on Hush', () => {
+    expect(moveHelp({ ...base, oneShot: false, shape: 'row' }).keywords.map((k) => k.name)).toEqual(
+      ['Area hit'],
+    );
+    const hush = moveHelp({ ...base, oneShot: false, shape: 'rowEnds', silences: true });
+    expect(hush.keywords.map((k) => k.name)).toEqual(['Silenced', 'Row end', 'Area hit']);
   });
 });

@@ -218,12 +218,6 @@ export function boardCuesV2(
 export const everyShort = (every: number): string =>
   every === 1 ? 'Every round' : `Every ${String(every)}`;
 
-/** The line under the board for a tapped move that has no slots yet. */
-export const AIMED_WHEN_IT_COMES = 'Aimed when it comes';
-
-/** The line under the board for a tapped Fizzle: it hits nobody; it turns reactions away. */
-export const NO_TARGETS = 'Hits nobody: reactions fail until its next turn';
-
 // --- Swap requests ---
 
 /** One creature of a request, by name (an empty slot reads as "an empty slot"). */

@@ -177,7 +177,7 @@ const bossCardV2: Entry = {
   file: 'apps/activity/src/BossCardV2.tsx',
   group: 'Creatures & game pieces',
   description:
-    "The v2 raid tab as a player meets it before and between stages: the track strip, the boss card (armour, the weekend's HP bar with a tick per stage and last week's best as a ghost, rule cards with their strength, the Escalating meter, the plain attack, a tile for each move and the turn strip) and the party board under it, with the boss's rows by the party's columns. Tap a move tile and the slots it would hit light on the board (a move aimed when it comes lights nothing and says so); the tap control does the same from the controls. Tap another player's creature, then Ask to swap.",
+    "The v2 raid tab as a player meets it before and between stages: the track strip, the boss card (armour, the weekend's HP bar with a tick per stage and last week's best as a ghost, rule cards with their strength, the Escalating meter, the plain attack, a tile for each move and the turn strip) and the party board under it, with the boss's rows by the party's columns. Tap a move tile and the slots it would hit light on the board (a move aimed when it comes lights nothing) and a popover explains the move: what it does, when it comes and a tag for each keyword on it; the tap control does the same from the controls. A creature in an open swap request carries a circling two-arrow mark; a tap opens the request (Accept and Decline for the owner, who is asked; the asker reads who they wait for). Tap another player's creature, then Ask to swap.",
   covers: ['boardTurnSteps', 'strengthPips', 'stageTicks'],
   controls: WEEK_CONTROLS,
   defaults: WEEK_DEFAULTS,
@@ -218,7 +218,7 @@ const moveTile: Entry = {
   file: 'apps/activity/src/ui/MoveTile.tsx',
   group: 'Creatures & game pieces',
   description:
-    "One boss move as a tile on the v2 boss card: a tiny arena with the slots the move would hit lit in red (or, for a move aimed when it comes, its shape's picture over a dim arena), how often it is due, an hourglass for a Wind-up, and its name over its plain label. A tap selects it; the board lights the same slots.",
+    "One boss move as a tile on the v2 boss card: a tiny arena with the slots the move would hit lit in red (or, for a move aimed when it comes, its shape's picture over a dim arena), how often it is due, an hourglass for a Wind-up, and its name over its plain label. A tap selects it (one gold border); the board lights the same slots and the card opens a popover that explains the move.",
   covers: ['everyText'],
   controls: {
     slot: { kind: 'number', min: 1, max: 5 },
