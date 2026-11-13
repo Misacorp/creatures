@@ -5,6 +5,7 @@
  * pure formula from a short table, so every scene shows the same bag. Fixture data only.
  */
 import {
+  RULES,
   gearBase,
   gearLine,
   itemLines,
@@ -153,7 +154,7 @@ export function sampleItem(
     stats,
     lines,
     needs: {
-      level: Math.max(itemLevel, 1),
+      level: Math.max(itemLevel, RULES.gear.slotUnlockLevel[rules.slot]),
       role: ['guard', 'support', 'setter', 'payoff'].includes(tag) ? tag : null,
     },
     equippedOn: null,
