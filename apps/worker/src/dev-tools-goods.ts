@@ -21,7 +21,6 @@ import {
   ribbonsForLevel,
   rollItem,
   skillLevel,
-  type GearBase,
   type GearRarity,
   type PartsBundle,
 } from '@creatures/game';
@@ -292,7 +291,8 @@ export function grantGear(ctx: ToolCtx, body: Body<typeof GrantGearBodySchema>) 
   const ids: string[] = [];
   for (let i = 0; i < (body.count ?? 1); i++) {
     if (!hasRoom(ctx.sql, ctx.userId)) throw new DevError(409, 'bag_full');
-    const base = named ?? (pool[int(ctx.gearRng, pool.length)] as GearBase);
+    const base = named ?? pool[int(ctx.gearRng, pool.length)];
+    if (base === undefined) throw new DevError(400, 'no_such_base');
     const rarity: GearRarity =
       body.rarity ?? NORMAL_RARITIES[int(ctx.gearRng, NORMAL_RARITIES.length)] ?? 'common';
     // A better base only exists from its item level; the default is the lowest level it can have.

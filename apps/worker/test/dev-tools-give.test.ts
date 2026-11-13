@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument --
+/* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment --
    These tests read parts of many different response bodies (`Json.body` is `any` on purpose). */
 // The target player of the per-player dev tools, and the tools that give what the game gives
 // (docs/design/dev-tools.md, "Give a target player anything").
@@ -254,7 +254,7 @@ describe('grant-xp', () => {
         });
         expect(one.creatures).toBe(1);
         const [a0, a1] = ann.creatureIds;
-        const level = (id: string | undefined): number =>
+        const level = (id = ''): number =>
           rows<{ level: number }>(ctx.sql, 'SELECT level FROM creatures WHERE id = ?', id)[0]
             ?.level ?? 0;
         expect(level(a0)).toBeGreaterThan(2);
@@ -435,13 +435,15 @@ describe('GET /api/dev/players', () => {
         const res = await me.call('GET', '/api/dev/players');
         expect(res.status).toBe(200);
         expect(res.body.you).toBe(me.id);
-        const hers = res.body.players.find((p: { userId: string }) => p.userId === ann.id);
-        expect(hers.roster).toHaveLength(2);
-        expect(hers.roster[0]).toMatchObject({
+        const hers = (
+          res.body.players as { userId: string; roster: unknown[]; creatures: number }[]
+        ).find((p) => p.userId === ann.id);
+        expect(hers?.roster).toHaveLength(2);
+        expect(hers?.roster[0]).toMatchObject({
           species: expect.any(String),
           level: expect.any(Number),
         });
-        expect(hers.creatures).toBe(2);
+        expect(hers?.creatures).toBe(2);
       },
       ON,
     );
