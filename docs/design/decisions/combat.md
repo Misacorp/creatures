@@ -4,6 +4,14 @@ The shared combat engine, abilities, statuses, elements, the balance simulator, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-14: Boss move animations: five phases, motion by shape, art by boss look
+
+ID: `2026-11-14-boss-move-animations-five-phases-motion` · Status: current
+
+**Decision.** A raid boss's move is animated on the client in five phases (wind-up in the boss's hand, aim with the down-pointing marker on the cells, throw off the top of the screen, strike through the cells, impact), timed in one place (`apps/activity/src/boss-anim/timeline.ts`, `BOSS_MOVE_MS`, which is also the boss beat's length). The motion belongs to the move's shape (one generic motion per engine shape); a boss look (`BOSS_LOOKS` in `looks.ts`, by boss id, per shape or per move id) only supplies the weapon and impact art, falling back to generic art per weapon form in the boss's element colours. The playback holds a boss beat back for the first four phases inside the beat's own time, so the board never runs ahead of the picture and the round's length is unchanged. Reduced motion and dungeon foes skip it. Prototype look: the Storm Sovereign. Guide: `docs/design/boss-animations.md`.
+
+**Reasoning.** Misa asked for longer, clearer boss attacks that show how each pattern works, with art that can be swapped per boss (a lance as a lightning bolt, a trident). Separating motion (by shape, fixed) from art (by boss, data) makes a new boss look one data entry plus its sprites. Running inside the existing beat time keeps the live finale's fixed round budget and the replay in step; no engine or rules change.
+
 ## 2026-11-09: Finale actions stay as they are until the playtest; Rally unchanged; six icons accepted [Misa]
 
 ID: `2026-11-09-finale-actions-stay-as-they-are` · Status: current

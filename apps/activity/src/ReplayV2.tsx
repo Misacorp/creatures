@@ -4,6 +4,7 @@
  * from the finale's result. The log is the engine's own text, closed until asked for. Names are drawn as text only.
  */
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
+import { bossAnimSetup } from './boss-anim/setup';
 import { foldSetupOf, removedPercent, stageModelOf } from './fight-v2';
 import type { FightPhaseV2, ReplayViewV2 } from './fight-v2-api';
 import { INTRO_REPLAY_MS, type SpeedV2 } from './playback-v2';
@@ -51,6 +52,10 @@ export function PlayerV2({
   );
   const model = useMemo(() => stageModelOf(setup, data.events), [setup, data.events]);
   const [speed, setSpeed] = useState<SpeedV2>(1);
+  const bossAnim = useMemo(
+    () => bossAnimSetup(data.boss, data.card, data.fighters),
+    [data.boss, data.card, data.fighters],
+  );
   const playback = usePlaybackV2({
     model,
     events: data.events,
@@ -59,6 +64,7 @@ export function PlayerV2({
     introMs: INTRO_REPLAY_MS,
     budgetMs: REPLAY_ROUND_BUDGET_MS,
     mode: 'replay',
+    bossAnim: bossAnim,
   });
   const { beat, total, finished, playing, setPlaying, move } = playback;
   const logRef = useRef<HTMLOListElement>(null);

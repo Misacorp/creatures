@@ -3,12 +3,16 @@
  * the next one lands after it. A round of many creatures (a wide raid) is squeezed to fit a budget, so the live finale's round, which has a
  * fixed length, is always played out before the next one starts, and a replay of a big raid does not drag.
  */
+import { BOSS_MOVE_MS } from './boss-anim/timeline';
 import type { BeatV2 } from './fight-v2';
 
 export type SpeedV2 = 1 | 2;
 
-/** How long each kind of beat stays at 1x, in milliseconds, before a round's budget squeezes it. */
-export const BEAT_MS = { round: 500, creature: 650, boss: 1300, end: 1800 } as const;
+/**
+ * How long each kind of beat stays at 1x, in milliseconds, before a round's budget squeezes it. A boss beat takes the length of a boss
+ * move's animation (`boss-anim/timeline.ts`, which runs inside it).
+ */
+export const BEAT_MS = { round: 500, creature: 650, boss: BOSS_MOVE_MS, end: 1800 } as const;
 
 /** A beat in which a reaction goes off stays this much longer (at 1x, before a round's budget squeezes it), so the callout lands. */
 export const REACTION_HOLD_MS = 450;
