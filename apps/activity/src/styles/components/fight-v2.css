@@ -325,6 +325,26 @@
   margin-top: 0.25rem;
 }
 
+/*
+  The team's board is centred under the boss at every width (Misa, 2026-11-13: "on the left right now"): the grid is as wide as its row names
+  and lanes (`max-content`) and sits in the middle; a board with more lanes than fit is as wide as the stage and scrolls sideways, as before.
+*/
+.stage-v2 .raid-board:not(.single) .board-grid {
+  grid-template-columns: var(--label-w) minmax(0, max-content);
+  width: fit-content;
+  max-width: 100%;
+  margin-inline: auto;
+}
+
+.stage-v2 .raid-board.large:not(.single) .board-scroller {
+  width: auto;
+}
+
+/* With room to spare (the desktop board) the lanes themselves, not the lanes and their names, sit under the boss: the names' width is mirrored. */
+.stage-v2 .raid-board.large:not(.single) .board-grid {
+  padding-right: calc(var(--label-w) + 4px);
+}
+
 /* The strip is only the order here (row, boss, row, boss, ...): small chips, so the six of a three-row boss fit one line at 390 px. */
 .stage-v2 .turn-strip {
   gap: 0.25rem;
