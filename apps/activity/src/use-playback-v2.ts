@@ -36,6 +36,8 @@ interface PlaybackArgs {
   introMs: number;
   /** What the beats of one round may take together (at 1x); `Infinity` for none. */
   budgetMs: number;
+  /** A replay holds each round to this long at 1x (the live finale's round, `STAGE_ROUND_MS`); absent: no holding (the live finale's clock does it). */
+  roundMs?: number;
   /**
    * `replay`: starts at the beginning and plays by itself. `live`: starts at what is there and plays what arrives (a round at a time), skipping
    * rounds that went by unseen.
@@ -124,8 +126,14 @@ export function usePlaybackV2(args: PlaybackArgs): PlaybackV2 {
   const reduced = usePrefersReducedMotion();
   const trail = useFxTrail();
   const durations = useMemo(
-    () => beatDurations(model.beats, { speed, budgetMs }),
-    [model.beats, speed, budgetMs],
+    () =>
+      beatDurations(model.beats, {
+        speed,
+        budgetMs,
+        introMs,
+        ...(args.roundMs === undefined ? {} : { roundMs: args.roundMs }),
+      }),
+    [model.beats, speed, budgetMs, introMs, args.roundMs],
   );
   const latest = useRef({ model, events, durations, rounds });
   latest.current = { model, events, durations, rounds };
