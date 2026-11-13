@@ -68,7 +68,10 @@ export function boardPush(sql: SqlStorage, change: BoardChange): BoardPush {
   const shiny = shinyCreatureIds(sql, ids);
   const cells: BoardCell[] = change.slots.map(({ slot, creatureId }) => {
     const fight = creatureId === null ? undefined : byId.get(creatureId);
-    return { slot, creature: fight === undefined ? null : cellCreature(fight, owner, false, shiny) };
+    return {
+      slot,
+      creature: fight === undefined ? null : cellCreature(fight, owner, false, shiny),
+    };
   });
   return {
     week: change.week,

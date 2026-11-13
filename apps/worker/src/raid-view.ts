@@ -390,7 +390,9 @@ export function buildRaidView(
     myAlias = myIndex < 0 ? null : aliasFor(myIndex);
     const shiny = shinyCreatureIds(
       sql,
-      board.cells.flatMap((cell) => (cell.slot === null || cell.origin === 'guest' ? [] : [cell.slot.id])),
+      board.cells.flatMap((cell) =>
+        cell.slot === null || cell.origin === 'guest' ? [] : [cell.slot.id],
+      ),
     );
     const row: RowSlotView[] = board.cells.map((cell, slot) => {
       const fight = cell.slot;
