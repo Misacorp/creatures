@@ -257,3 +257,20 @@ export function openSwaps(
       .toArray();
   return { incoming: pick('to_user'), outgoing: pick('from_user') };
 }
+
+/**
+ * The requests the player made that are no longer open (accepted, declined or ended), newest last, at most `MAX_OPEN_SWAPS`: the asker's
+ * view of how a request went. One indexed lookup; the client remembers which it has shown.
+ */
+export function settledSwaps(sql: SqlStorage, weekId: string, userId: string): SwapRequestRow[] {
+  return sql
+    .exec<SwapRequestRow>(
+      `SELECT ${COLUMNS} FROM raid_swap_requests WHERE week_id = ? AND from_user = ? AND status != 'open'
+       ORDER BY created_at DESC, id DESC LIMIT ?`,
+      weekId,
+      userId,
+      MAX_OPEN_SWAPS,
+    )
+    .toArray()
+    .reverse();
+}

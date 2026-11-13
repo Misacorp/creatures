@@ -1,6 +1,6 @@
 /**
  * The combat v2 raid board as plain data (docs/design/combat/integration.md, section 9): the boss's rows by the party's columns, a
- * slot's place in words, each tile's extras (role, Knack, carried HP, an "Asked" mark), the cues of the boss move tapped on the
+ * slot's place in words, each tile's extras (role, Knack, carried HP, a swap mark), the cues of the boss move tapped on the
  * card and the words of a swap request. Pure: `Placement.tsx` wires it to `ui/RaidBoard`. The grid is the server's (`rows`, `cols`,
  * a slot is `col * rows + row`); the preview is the server's too, worked out with the engine's own targeting, so nothing here is
  * fight maths: it only picks what to draw.
@@ -60,8 +60,8 @@ export interface BoardContextV2 {
   grid: GridV2;
   /** The week's board creatures by slot (their Knack and carried HP). */
   creatures: ReadonlyMap<number, BoardCreatureV2>;
-  /** Slots whose creature you have asked to swap (an "Asked" mark each). */
-  asked: ReadonlySet<number>;
+  /** Slots whose creature is in an open swap request of yours (the circling swap mark). */
+  swaps: ReadonlyMap<number, SwapMark>;
 }
 
 /** The board's creatures by slot. */
@@ -71,21 +71,54 @@ export function creaturesBySlot(
   return new Map(creatures.map((c) => [c.slot, c]));
 }
 
-/**
- * The slots to mark "Asked": the other players' creatures in your open requests. A request names two slots (yours and theirs, or
- * theirs and an empty one), so the ones that hold a creature that is not yours are marked.
- */
-export function askedSlots(
-  outgoing: readonly SwapV2[],
-  row: readonly RowSlotView[],
-): ReadonlySet<number> {
-  const theirs = new Set(
-    row.flatMap((s) => (s.creature !== null && !s.creature.mine ? [s.slot] : [])),
-  );
-  return new Set(outgoing.flatMap((r) => [r.slotA, r.slotB].filter((n) => theirs.has(n))));
+/** The open swap requests that involve a creature of the board: the ones asked of its owner (`incoming`) and the ones you made (`outgoing`). */
+export interface SwapMark {
+  incoming: readonly SwapV2[];
+  outgoing: readonly SwapV2[];
 }
 
-/** One slot of the party board as the v2 board draws it: the v1 tile plus the role, the Knack, the carried HP and "Asked". */
+/**
+ * The creatures that carry the circling swap mark: every creature named in one of your open requests, asked or asking. A request names two
+ * slots (two creatures, or one creature and an empty slot), so the slots that hold a creature are marked, each with its requests.
+ */
+export function swapMarks(
+  swaps: Pick<SwapsV2, 'incoming' | 'outgoing'>,
+  row: readonly RowSlotView[],
+): ReadonlyMap<number, SwapMark> {
+  const filled = new Set(row.flatMap((s) => (s.creature === null ? [] : [s.slot])));
+  const marks = new Map<number, { incoming: SwapV2[]; outgoing: SwapV2[] }>();
+  for (const [kind, list] of [
+    ['incoming', swaps.incoming],
+    ['outgoing', swaps.outgoing],
+  ] as const) {
+    for (const request of list) {
+      for (const slot of new Set([request.slotA, request.slotB])) {
+        if (!filled.has(slot)) continue;
+        const mark = marks.get(slot) ?? { incoming: [], outgoing: [] };
+        mark[kind].push(request);
+        marks.set(slot, mark);
+      }
+    }
+  }
+  return marks;
+}
+
+/**
+ * What a marked creature's popover says: each request in words (who asks, what, and the two seats), the asked player's requests first.
+ * Yours reads "Waiting for Mira: ...", theirs "Mira asks to swap ...".
+ */
+export function swapMarkText(mark: SwapMark, grid: GridV2): string {
+  const seats = (r: SwapV2): string =>
+    r.creatureB === null
+      ? ''
+      : ` Seats: ${placeTextV2(r.slotA, grid)} and ${placeTextV2(r.slotB, grid)}.`;
+  return [
+    ...mark.incoming.map((r) => `${incomingText(r, grid)}${seats(r)}`),
+    ...mark.outgoing.map((r) => `${outgoingText(r, grid)}${seats(r)}`),
+  ].join(' ');
+}
+
+/** One slot of the party board as the v2 board draws it: the v1 tile plus the role, the Knack, the carried HP and the swap mark. */
 export function boardSlotV2(
   s: RowSlotView,
   ctx: BoardContextV2,
@@ -103,7 +136,7 @@ export function boardSlotV2(
   const entry = ctx.creatures.get(s.slot);
   const species = getSpecies(c.species);
   const owner = c.mine ? 'you' : c.ownerName;
-  const asked = ctx.asked.has(s.slot);
+  const swapMark = ctx.swaps.get(s.slot);
   const carried =
     entry?.hp != null && entry.hpMax != null && entry.hpMax > 0
       ? { hp: entry.hp, max: entry.hpMax }
@@ -114,18 +147,21 @@ export function boardSlotV2(
     ...(species === undefined ? [] : [species.role]),
     ...(knack === null ? [] : [knack]),
     ...(carried === null ? [] : [`${String(carried.hp)} / ${String(carried.max)} HP`]),
-    ...(asked ? ['you asked to swap'] : []),
+    ...(swapMark === undefined
+      ? []
+      : [swapMark.incoming.length > 0 ? 'a swap is asked of its owner' : 'you asked to swap']),
   ].join(', ');
   return {
     ...base,
     ariaLabel: said,
-    ...(asked ? { badge: 'Asked' } : {}),
+    ...(swapMark === undefined ? {} : { swap: true }),
     occupant: {
       species: c.species,
       name: c.name,
       level: c.level,
       ownId: editable && c.mine && c.creatureId !== undefined ? c.creatureId : null,
       mine: c.mine,
+      ...(c.shiny === true ? { shiny: true } : {}),
       element: species?.element ?? 'unknown',
       owner: { colour: ownerColour(c.ownerName, rosterNames), initial: initialOf(c.ownerName) },
       v2: { role: species?.role ?? '', knack, carried },
@@ -144,6 +180,7 @@ export function boardCreatureInfoV2(c: NonNullable<RowSlotView['creature']>): Cr
     element: species.element,
     role: species.role,
     ownerName: c.ownerName,
+    ...(c.shiny === true ? { shiny: true } : {}),
   };
 }
 

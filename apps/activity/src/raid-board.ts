@@ -187,6 +187,7 @@ export function boardCreatureInfo(c: NonNullable<RowSlotView['creature']>): Crea
     element: species.element,
     role: species.role,
     ownerName: c.ownerName,
+    ...(c.shiny === true ? { shiny: true } : {}),
   };
 }
 
@@ -215,6 +216,7 @@ export function boardSlot(
       level: c.level,
       ownId: editable && isDraggable(c) && c.creatureId !== undefined ? c.creatureId : null,
       mine: c.mine,
+      ...(c.shiny === true ? { shiny: true } : {}),
       element: getSpecies(c.species)?.element ?? 'unknown',
       owner: { colour: ownerColour(c.ownerName, rosterNames), initial: initialOf(c.ownerName) },
     },

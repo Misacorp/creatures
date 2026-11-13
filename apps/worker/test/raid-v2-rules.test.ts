@@ -476,6 +476,66 @@ describe('swap requests', () => {
     );
   }, 60_000);
 
+  it('shows the asker how a request went: accepted, declined or ended, with the creatures as they were asked', async () => {
+    await runRaid(
+      async (ctx) => {
+        const { players } = await party(ctx);
+        const [a, b] = players as [(typeof players)[0], (typeof players)[0]];
+        const mine = slotsOf(ctx, a.id);
+        const theirs = slotsOf(ctx, b.id);
+        const ask = (m: number, t: number) => ctx.core.raid.askSwap(a.id, HELSINKI, m, t);
+        const idOf = () => ctx.core.raid.swaps(b.id, HELSINKI).incoming[0]?.id as string;
+        const nameAt = (slot: number): string | undefined =>
+          ctx.core.raid.swaps(a.id, HELSINKI).settled.find((r) => r.slotA === slot)?.creatureA
+            ?.name;
+
+        // Open: the asker sees it as outgoing and has nothing settled.
+        expect(ask(mine[0] as number, theirs[0] as number).ok).toBe(true);
+        expect(ctx.core.raid.swaps(a.id, HELSINKI)).toMatchObject({
+          outgoing: [{ to: b.name }],
+          settled: [],
+        });
+        const askedCreature = ctx.core.raid.swaps(a.id, HELSINKI).outgoing[0]?.creatureA?.name;
+        const theirCreature = ctx.core.raid.swaps(a.id, HELSINKI).outgoing[0]?.creatureB?.name;
+
+        // Accepted: it leaves outgoing, the asker still sees it settled, with the creatures named as they were asked (not as they stand now).
+        expect(ctx.core.raid.answerSwap(b.id, HELSINKI, idOf(), 'accept').ok).toBe(true);
+        const afterAccept = ctx.core.raid.swaps(a.id, HELSINKI);
+        expect(afterAccept.outgoing).toEqual([]);
+        expect(afterAccept.settled).toHaveLength(1);
+        expect(afterAccept.settled[0]).toMatchObject({
+          status: 'accepted',
+          from: a.name,
+          to: b.name,
+          creatureA: { name: askedCreature },
+          creatureB: { name: theirCreature },
+        });
+        // The asked player's own list does not carry it (settled is the asker's view).
+        expect(ctx.core.raid.swaps(b.id, HELSINKI).settled).toEqual([]);
+
+        // Declined: settled as declined.
+        const nowMine = slotsOf(ctx, a.id);
+        const nowTheirs = slotsOf(ctx, b.id);
+        expect(ask(nowMine[1] as number, nowTheirs[1] as number).ok).toBe(true);
+        expect(ctx.core.raid.answerSwap(b.id, HELSINKI, idOf(), 'decline').ok).toBe(true);
+        // (The test clock stands still, so requests of one millisecond come in no fixed order: compare as a set.)
+        const statusesOf = () =>
+          ctx.core.raid
+            .swaps(a.id, HELSINKI)
+            .settled.map((r) => r.status)
+            .sort();
+        expect(statusesOf()).toEqual(['accepted', 'declined']);
+        expect(nameAt(nowMine[1] as number)).toBeDefined();
+
+        // Ended: the stage lock (or the creatures moving) ends an open one; the asker sees "ended".
+        expect(ask(nowMine[2] as number, nowTheirs[2] as number).ok).toBe(true);
+        ctx.sql.exec("UPDATE raid_swap_requests SET status = 'ended' WHERE status = 'open'");
+        expect(statusesOf()).toEqual(['accepted', 'declined', 'ended']);
+      },
+      { start: V2_WEEK.open, core: V2 },
+    );
+  }, 60_000);
+
   it('validates what the routes take, and moves both creatures in one step', async () => {
     await runRaid(
       async (ctx) => {
@@ -515,12 +575,38 @@ describe('swap requests', () => {
         expect(answered.body['incoming']).toEqual([]);
         expect(slotsOf(ctx, a.id)).toContain(theirs[0]);
         expect(slotsOf(ctx, b.id)).toContain(mine[0]);
-        // The week's view carries the open requests of the caller (none now).
-        const raidBody = (await ca.call('GET', '/api/raid')).body as { v2: { swaps: unknown } };
-        expect(raidBody.v2.swaps).toEqual({
-          incoming: [],
-          outgoing: [],
-        });
+        // The week's view carries the open requests of the caller (none now), and the asker still sees how theirs went.
+        const raidBody = (await ca.call('GET', '/api/raid')).body as {
+          v2: { swaps: { incoming: unknown[]; outgoing: unknown[]; settled: unknown[] } };
+        };
+        expect(raidBody.v2.swaps.incoming).toEqual([]);
+        expect(raidBody.v2.swaps.outgoing).toEqual([]);
+        expect(raidBody.v2.swaps.settled).toMatchObject([{ status: 'accepted', to: b.name }]);
+      },
+      { start: V2_WEEK.open, core: V2 },
+    );
+  }, 60_000);
+});
+
+describe('shiny creatures on the board', () => {
+  it('marks a shiny creature in everyone\'s view of the row, and no other', async () => {
+    await runRaid(
+      async (ctx) => {
+        const players = [1, 2].map((n) => v2Player(ctx, n, { level: 22 }));
+        ctx.core.raid.currentWeek(HELSINKI);
+        joinRaid(ctx, players);
+        const [a, b] = players as [(typeof players)[0], (typeof players)[0]];
+        const first = rows<{ creature_id: string }>(
+          ctx.sql,
+          'SELECT creature_id FROM raid_placements WHERE user_id = ? ORDER BY slot',
+          a.id,
+        )[0]?.creature_id as string;
+        ctx.sql.exec('UPDATE creatures SET shiny = 1 WHERE id = ?', first);
+        for (const viewer of [a, b]) {
+          const row = ctx.core.raid.view(viewer.id, HELSINKI).party?.row ?? [];
+          const shiny = row.flatMap((s) => (s.creature?.shiny === true ? [s.creature.mine] : []));
+          expect(shiny).toEqual([viewer.id === a.id]);
+        }
       },
       { start: V2_WEEK.open, core: V2 },
     );

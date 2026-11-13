@@ -1,5 +1,5 @@
 import type { ComponentChildren } from 'preact';
-import { elementClass } from '../art';
+import { elementClass, shinyPalette } from '../art';
 import { combatGlyph, roleGlyphId } from '../combat-glyphs';
 import { glyphOrUnknown } from '../glyphs';
 import { cssVars } from '../css-vars';
@@ -30,6 +30,8 @@ export interface SlotModel {
     /** The id of one of the player's own creatures: only those can be picked up and dragged. */
     ownId: string | null;
     mine: boolean;
+    /** A shiny creature: its sprite takes the species' shiny palette, as in the roster. */
+    shiny?: boolean;
     /** Raid only: whose it is, as a colour index and the initial printed on the tile (text only). */
     owner?: { colour: number; initial: string };
     /** Raid only: the creature's element id; its colour rings the tile. */
@@ -57,6 +59,10 @@ export interface SlotModel {
    * creature's tile, which flashes as it lands; `guard` is the Guard's own tile. Motion reduced: a faint tint on the `guard` and `end` tiles.
    */
   pulse?: TilePulse;
+  /**
+   * An open swap request involves this creature (combat v2): a small two-arrow icon circles on the tile; a tap opens the request's popover.
+   */
+  swap?: boolean;
   /**
    * A short word on the tile, for a state the tile is in ("Asked": you have asked this creature's owner to swap). Text only;
    * `aria-label` says it too.
@@ -276,7 +282,13 @@ export function SlotButton(props: SlotButtonProps) {
         <span class="slot-empty">{props.emptyLabel}</span>
       ) : (
         <>
-          <Sprite sprite={creatureSpriteOrFallback(c.species)} scale={scale} />
+          <Sprite
+            sprite={creatureSpriteOrFallback(c.species)}
+            scale={scale}
+            {...(c.shiny === true && shinyPalette(c.species) !== undefined
+              ? { palette: shinyPalette(c.species) as Readonly<Record<string, string>> }
+              : {})}
+          />
           <span class="slot-species">{c.name}</span>
           {c.level !== null && <span class="slot-meta">Lv {c.level}</span>}
           {c.hp !== undefined && (
@@ -331,6 +343,11 @@ export function SlotButton(props: SlotButtonProps) {
       {c?.v2?.fight?.overlay !== undefined && (
         <span class="slot-fx" aria-hidden="true">
           {c.v2.fight.overlay}
+        </span>
+      )}
+      {slot.swap === true && (
+        <span class="slot-swap" aria-hidden="true">
+          <Sprite sprite={glyphOrUnknown('swap')} scale={2} />
         </span>
       )}
       {slot.badge !== undefined && (

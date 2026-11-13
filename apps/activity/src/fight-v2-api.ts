@@ -57,6 +57,8 @@ export interface FightCreatureV2 {
   maxHp: number;
   /** Its HP when the stage began (carried between stages). */
   startHp: number;
+  /** The creature is shiny (absent: not). */
+  shiny?: boolean;
 }
 
 /** The boss of a fight: what the stage draws of it. */
@@ -324,7 +326,8 @@ const isCreature = (value: unknown): value is FightCreatureV2 =>
   isNullableStr(value['knackName']) &&
   isArrayOf(value['talents'], isStr) &&
   isPositiveInt(value['maxHp']) &&
-  isCount(value['startHp']);
+  isCount(value['startHp']) &&
+  (value['shiny'] === undefined || typeof value['shiny'] === 'boolean');
 
 /** The boss's own numbers the stage draws (the server sends the whole definition; the rest is not read). */
 const bossOf = (value: unknown): FightBossV2 | null =>

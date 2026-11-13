@@ -276,6 +276,35 @@
   padding-bottom: 1px;
 }
 
+/* A swap request on a creature: two arrows circling on a dark disc, top centre (the role icon is left, the owner's initial right). */
+.party-slot .slot-swap {
+  position: absolute;
+  top: 2px;
+  left: 50%;
+  display: block;
+  margin-left: -0.625rem;
+  padding: 2px;
+  background: var(--ink);
+  line-height: 0;
+  pointer-events: none;
+}
+
+.board-row .party-slot .slot-swap canvas.sprite {
+  margin: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .party-slot .slot-swap canvas.sprite {
+    animation: slot-swap-turn 2.4s steps(8) infinite;
+  }
+}
+
+@keyframes slot-swap-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* A state the tile is in ("Asked"): a gold strip along the foot, like the reaction badge but never a ring. */
 .party-slot .slot-state {
   position: absolute;

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'preact/hooks';
 import { BossCardV2 } from '../../BossCardV2';
 import { Placement } from '../../Placement';
-import { SwapRequests } from '../../SwapRequests';
+import { SwapOutcomes, SwapRequests } from '../../SwapRequests';
 import { litMove } from '../../raid-board-v2';
 import type { BossMoveV2, SwapV2 } from '../../raid-v2-api';
 import { MoveTile } from '../../ui/MoveTile';
@@ -11,7 +11,7 @@ import { speciesLabel } from '../data';
 import { bool, num, str } from '../props';
 import type { Entry, Props } from '../types';
 
-const SWAP_KINDS = ['none', 'asked', 'incoming', 'both'] as const;
+const SWAP_KINDS = ['none', 'asked', 'incoming', 'both', 'settled'] as const;
 
 /** The week a page asks for. */
 function optionsOf(p: Props): V2SampleOptions {
@@ -90,6 +90,7 @@ function RaidWeekDemo({ p }: { p: Props }) {
   });
   return (
     <>
+      <SwapOutcomes settled={v2.swaps.settled} grid={{ rows: v2.rows, cols: v2.cols }} />
       <SwapRequests
         requests={v2.swaps.incoming}
         grid={{ rows: v2.rows, cols: v2.cols }}
@@ -113,6 +114,9 @@ function RaidWeekDemo({ p }: { p: Props }) {
         v2={{
           view: { ...v2, swaps: { ...v2.swaps, outgoing: [...v2.swaps.outgoing, ...asked] } },
           lit: tapped === undefined ? null : litMove(v2.preview, tapped),
+          onAnswerSwap: () => {
+            setRefused('An answer goes to the server; this page has none.');
+          },
           onAskSwap: (mySlot, theirSlot) => {
             const mine = party.row.find((s) => s.slot === mySlot)?.creature;
             const theirs = party.row.find((s) => s.slot === theirSlot)?.creature;

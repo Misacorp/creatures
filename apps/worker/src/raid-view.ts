@@ -125,9 +125,30 @@ export interface RowSlotView {
     mine: boolean;
     /** Only for the caller's own creatures. */
     creatureId?: string;
+    /** The creature is shiny (absent: it is not). */
+    shiny?: boolean;
     /** A Guard's reach (`guardReachOf`: how many creatures it protects on each side); Guards only. */
     reach?: GuardReach;
   };
+}
+
+const NO_SHINY: ReadonlySet<string> = new Set();
+
+/** Which of these creatures (any owner) are shiny: one query (chunks of 50, the object's SQL binds at most 100 values). */
+export function shinyCreatureIds(sql: SqlStorage, ids: readonly string[]): Set<string> {
+  const shiny = new Set<string>();
+  for (let i = 0; i < ids.length; i += 50) {
+    const part = ids.slice(i, i + 50);
+    for (const row of sql
+      .exec<{ id: string }>(
+        `SELECT id FROM creatures WHERE shiny = 1 AND id IN (${part.map(() => '?').join(', ')})`,
+        ...part,
+      )
+      .toArray()) {
+      shiny.add(row.id);
+    }
+  }
+  return shiny;
 }
 
 /**
@@ -139,6 +160,8 @@ export function cellCreature(
   fight: FightSlot,
   ownerName: string,
   mine: boolean,
+  /** The creature ids that are shiny (`shinyCreatureIds`). */
+  shiny: ReadonlySet<string> = NO_SHINY,
 ): NonNullable<RowSlotView['creature']> {
   return {
     ownerName,
@@ -147,6 +170,7 @@ export function cellCreature(
     level: fight.level,
     mine,
     ...(mine ? { creatureId: fight.id } : {}),
+    ...(shiny.has(fight.id) ? { shiny: true } : {}),
     ...reachField(fight.role, fight.mods),
   };
 }
@@ -364,6 +388,10 @@ export function buildRaidView(
     myAbility = myParty === null ? null : abilityFor(sql, week.weekId, board.memberIds, userId);
     const myIndex = board.memberIds.indexOf(userId);
     myAlias = myIndex < 0 ? null : aliasFor(myIndex);
+    const shiny = shinyCreatureIds(
+      sql,
+      board.cells.flatMap((cell) => (cell.slot === null || cell.origin === 'guest' ? [] : [cell.slot.id])),
+    );
     const row: RowSlotView[] = board.cells.map((cell, slot) => {
       const fight = cell.slot;
       // Guests are not drawn: their slots show as empty, as before.
@@ -375,7 +403,7 @@ export function buildRaidView(
       return {
         slot,
         zone: zoneOfIndex(slot, length),
-        creature: cellCreature(fight, names.get(ownerId) ?? 'Unknown', mine),
+        creature: cellCreature(fight, names.get(ownerId) ?? 'Unknown', mine, shiny),
       };
     });
     const pool = sql

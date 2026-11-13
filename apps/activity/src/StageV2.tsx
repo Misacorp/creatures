@@ -394,6 +394,7 @@ export function StageV2({
       level: f.level,
       ownId: null,
       mine: you !== null && f.owner === you,
+      ...(f.shiny === true ? { shiny: true } : {}),
       element: f.element,
       ...(single
         ? {}

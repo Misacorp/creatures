@@ -23,7 +23,7 @@ import { type StoredSummary } from './raid-resolve';
 import { latestReveal, totalEssenceOf } from './raid-reveal';
 import { partyMembers, partyOf, partyToJoin } from './raid-roster';
 import { addWeeks, weekIndex, isWeekId } from './raid-schedule';
-import { openSwaps, type SwapRequestRow } from './raid-swap';
+import { openSwaps, settledSwaps, type SwapRequestRow } from './raid-swap';
 import { partyPlacements } from './raid-teams';
 import { speciesOf } from './species';
 import {
@@ -58,6 +58,7 @@ import { fighterOf, knackOf, loadV2Creatures, type V2Creature } from './raid-v2-
 import {
   displayNames,
   nextPendingEvent,
+  shinyCreatureIds,
   type PhaseResultView,
   type RaidView,
   type RowSlotView,
@@ -78,10 +79,17 @@ export interface SwapView {
   createdAt: number;
 }
 
-/** The caller's open swap requests. */
+/** A request the caller made that has been answered or has ended, so the asker sees how it went. */
+export interface SettledSwapView extends SwapView {
+  /** `accepted`, `declined`, or `ended` (the board changed under it, or the stage locked). */
+  status: 'accepted' | 'declined' | 'ended';
+}
+
+/** The caller's open swap requests, and the ones they made that have settled this week (newest last, at most `MAX_OPEN_SWAPS`). */
 export interface SwapsView {
   incoming: SwapView[];
   outgoing: SwapView[];
+  settled: SettledSwapView[];
 }
 
 /** What a v2 board needs beyond the v1 shape of the week view (`RaidView.v2`). */
@@ -218,17 +226,30 @@ export function swapsView(
   names: ReadonlyMap<string, string>,
 ): SwapsView {
   const { incoming, outgoing } = openSwaps(sql, weekId, userId);
-  const view = (r: SwapRequestRow): SwapView => ({
-    id: r.id,
-    from: names.get(r.from_user) ?? 'Unknown',
-    to: names.get(r.to_user) ?? 'Unknown',
-    slotA: r.slot_a,
-    slotB: r.slot_b,
-    creatureA: creatureLine(sql, weekId, r.party, r.slot_a),
-    creatureB: creatureLine(sql, weekId, r.party, r.slot_b),
-    createdAt: r.created_at,
-  });
-  return { incoming: incoming.map(view), outgoing: outgoing.map(view) };
+  const view = (r: SwapRequestRow): SwapView => {
+    const a = creatureLine(sql, weekId, r.party, r.slot_a);
+    const b = creatureLine(sql, weekId, r.party, r.slot_b);
+    // An accepted request already moved its creatures: the creature now in one slot is the one that stood in the other when it was asked.
+    const moved = r.status === 'accepted';
+    return {
+      id: r.id,
+      from: names.get(r.from_user) ?? 'Unknown',
+      to: names.get(r.to_user) ?? 'Unknown',
+      slotA: r.slot_a,
+      slotB: r.slot_b,
+      creatureA: moved ? b : a,
+      creatureB: moved ? a : b,
+      createdAt: r.created_at,
+    };
+  };
+  return {
+    incoming: incoming.map(view),
+    outgoing: outgoing.map(view),
+    settled: settledSwaps(sql, weekId, userId).map((r) => ({
+      ...view(r),
+      status: r.status as SettledSwapView['status'],
+    })),
+  };
 }
 
 /** The result of a stored stage as the week view lists it. */
@@ -361,6 +382,10 @@ export function buildRaidViewV2(
       sql,
       placements.map((p) => p.creature_id),
     );
+    const shiny = shinyCreatureIds(
+      sql,
+      placements.map((p) => p.creature_id),
+    );
     const cells: RowSlotView[] = Array.from({ length }, (_, slotIndex) => ({
       slot: slotIndex,
       zone: zoneOfRow(gridPlace(slotIndex, rows).row, rows),
@@ -382,6 +407,7 @@ export function buildRaidViewV2(
         level: c.level,
         mine: isMine,
         ...(isMine ? { creatureId: c.id } : {}),
+        ...(shiny.has(c.id) ? { shiny: true } : {}),
       };
       const place = gridPlace(p.slot, rows);
       board.push({
@@ -617,6 +643,8 @@ export interface FighterView {
   maxHp: number;
   /** Its HP when the stage began (a creature that fought before carries its HP). */
   startHp: number;
+  /** The creature is shiny (absent: it is not); read from the creature's row now, not stored with the fight. */
+  shiny?: boolean;
 }
 
 export interface ReplayViewV2 {
@@ -649,10 +677,19 @@ export interface ReplayViewV2 {
   carry: StageCarry;
 }
 
+/** The shiny creatures among a v2 input's fighters. */
+const shinyOf = (sql: SqlStorage, input: StageInputV2): Set<string> =>
+  shinyCreatureIds(
+    sql,
+    input.fighters.map((f) => f.key ?? f.uid),
+  );
+
 /** The fighters of a v2 input as a view. `before` is the carry the stage started from. */
 export function fighterViews(
   input: StageInputV2,
   before: Pick<StageCarry, 'hp'> | null,
+  /** The ids of the creatures that are shiny (`shinyCreatureIds`). */
+  shiny: ReadonlySet<string> = new Set(),
 ): FighterView[] {
   return input.fighters.map((f) => {
     const key = f.key ?? f.uid;
@@ -671,6 +708,7 @@ export function fighterViews(
       talents: [...f.talents],
       maxHp: f.maxHp,
       startHp: before?.hp[key] ?? f.maxHp,
+      ...(shiny.has(key) ? { shiny: true } : {}),
     };
   });
 }
@@ -735,7 +773,7 @@ export function buildReplayViewV2(
   const playerNames: Record<string, string> = {};
   for (const m of summary.members) playerNames[m.alias] = players.get(m.userId) ?? 'Unknown';
   const before = carryBefore(sql, weekId, party, phase);
-  const fighters = fighterViews(input, before);
+  const fighters = fighterViews(input, before, shinyOf(sql, input));
   return {
     rules: 2,
     weekId,
@@ -979,7 +1017,7 @@ export function liveSnapshotV2(
   const me = row.members.find((m) => m.userId === ctx.userId);
   const playerNames: Record<string, string> = {};
   for (const m of row.members) playerNames[m.alias] = ctx.names.get(m.userId) ?? 'Unknown';
-  const fighters = fighterViews(row.input, before);
+  const fighters = fighterViews(row.input, before, shinyOf(ctx.sql, row.input));
   const round = done ? Math.min(state.clockRound, row.rounds) : state.clockRound;
   let bossHp: number = before?.bossHp ?? row.input.boss.hp;
   for (const e of state.events) if (e.board?.type === 'end') bossHp = e.board.bossHp;
