@@ -57,6 +57,7 @@ import {
 import { fighterOf, knackOf, loadV2Creatures, type V2Creature } from './raid-v2-fighters';
 import {
   displayNames,
+  finaleStartedAt,
   nextPendingEvent,
   type PhaseResultView,
   type RaidView,
@@ -290,6 +291,7 @@ export function buildRaidViewV2(
   const arena = arenaOf(slot, week.seatOverride);
   const { rows, seats } = arena;
   const schedule = raid.schedule(week.weekId, tz);
+  finaleStartedAt(sql, week, userId, schedule);
   const pending = nextPendingEvent(week.status);
   const progression = readWeekProgression(sql, week.weekId);
   const festival = progression?.festival === true;

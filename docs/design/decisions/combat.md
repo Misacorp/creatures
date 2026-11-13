@@ -4,6 +4,14 @@ The shared combat engine, abilities, statuses, elements, the balance simulator, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-14: A live finale started off the calendar is on from its real start in the Raid view
+
+ID: `2026-11-14-a-live-finale-started-off-the` · Status: current
+
+**Decision.** While a week is in its finale, the Raid view (v1 and v2) reports `schedule.finale` as the start of the party's stored live fight (`finaleStartedAt`) instead of the calendar's Sunday time. On the calendar the two are within a moment of each other, so nothing changes there. The dev bench refuses "Play the finale" while a live finale runs with `finale_running` ("The live finale is already on. Open the Raid tab to watch it"), not "already played".
+
+**Reasoning.** The Raid tab opens the finale view when the clock is inside the finale window computed from `schedule.finale`. The bench's "Watch the finale live" starts the fight now, days before Sunday, so the tab never saw a finale and nothing showed (Misa, 2026-11-13 playtest).
+
 ## 2026-11-14: Raid seats are never moved: stage 1 widens the board instead of compacting it
 
 ID: `2026-11-14-raid-seats-are-never-moved-stage` · Status: current · Amends: `2026-11-03-combat-v2-arenas-how-the-piece`

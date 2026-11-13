@@ -28,6 +28,8 @@ const ERROR_SENTENCES: Readonly<Record<string, string>> = {
   nobody_left:
     'Nobody is left on the board to fight: the creatures that fell stay out this weekend.',
   already_played: 'That stage is already played. Clear the board to start again.',
+  finale_running:
+    'The live finale is already on. Open the Raid tab to watch it; when it ends, the result shows there.',
   play_stage1_first: 'Play stage 1 first.',
   play_stage2_first: 'Play stage 2 first.',
   boss_fell: 'The boss already fell.',

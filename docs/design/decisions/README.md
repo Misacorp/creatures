@@ -145,6 +145,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [combat.md](combat.md): The shared combat engine, abilities, statuses, elements, the balance simulator, balance passes, and combat v2 in the lab.
 
+- 2026-11-14 A live finale started off the calendar is on from its real start in the Raid view
 - 2026-11-14 Raid seats are never moved: stage 1 widens the board instead of compacting it
 - 2026-11-09 Finale actions stay as they are until the playtest; Rally unchanged; six icons accepted \[Misa\]
 - 2026-11-06 Finale actions measured: none dominates, Rally is worth about nothing, and picking the best action changes nothing at three players or more

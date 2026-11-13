@@ -304,6 +304,30 @@ export function displayNames(sql: SqlStorage): Map<string, string> {
   );
 }
 
+/**
+ * A finale that started off the calendar (the dev bench's "watch the finale live") is on from when it really started, so the Raid tab opens
+ * the finale view for the party as it does at the Sunday time. A finale on the calendar starts within a moment of it: no change. Edits
+ * `schedule` (the view's own copy); the caller's party's fight is preferred.
+ */
+export function finaleStartedAt(
+  sql: SqlStorage,
+  week: Pick<WeekRow, 'weekId' | 'status'>,
+  userId: string,
+  schedule: Record<RaidEvent, number>,
+): void {
+  if (week.status !== 'finale') return;
+  const live = sql
+    .exec<{ started_at: number }>(
+      `SELECT started_at FROM raid_live WHERE week_id = ? AND practice = 0
+       ORDER BY party = COALESCE((SELECT party FROM raid_party_members WHERE week_id = ? AND user_id = ?), 0) DESC, party LIMIT 1`,
+      week.weekId,
+      week.weekId,
+      userId,
+    )
+    .toArray()[0];
+  if (live !== undefined) schedule.finale = live.started_at;
+}
+
 /** The current week as the caller sees it. Creates the week if needed. */
 export function buildRaidView(
   raid: Raid,
@@ -317,6 +341,7 @@ export function buildRaidView(
   const names = displayNames(sql);
   const boss = bossFor(week.bossId, fightRank(sql, week.weekId));
   const schedule = raid.schedule(week.weekId, tz);
+  finaleStartedAt(sql, week, userId, schedule);
   const pending = nextPendingEvent(week.status);
 
   const memberRows = sql

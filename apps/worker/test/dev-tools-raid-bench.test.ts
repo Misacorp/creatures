@@ -332,6 +332,19 @@ describe('the raid test bench', () => {
         expect(count(ctx.sql, 'raid_results', "phase = 'finale'")).toBe(0);
         const snapshot = await me.call('GET', '/api/raid/live');
         expect(snapshot.body).toMatchObject({ rules: 2, status: 'live' });
+        // The Raid tab is told the finale is on now, not at the calendar's Sunday time, so it opens the finale view (and lines up its
+        // lobby and rounds with the real start).
+        const view = (await me.call('GET', '/api/raid')).body as {
+          status: string;
+          schedule: { finale: number };
+          serverNow: number;
+        };
+        expect(view.status).toBe('finale');
+        expect(view.schedule.finale).toBeLessThanOrEqual(view.serverNow);
+        expect(view.serverNow - view.schedule.finale).toBeLessThan(60_000);
+        // Asking for the finale again while it runs says so, not "already played".
+        await me.refused('raid-play', { stage: 'finale' }, 'finale_running');
+        await me.refused('raid-play', { stage: 'finale', live: true }, 'finale_running');
       },
       { start: V2_WEEK.open, core: CORE },
     );
