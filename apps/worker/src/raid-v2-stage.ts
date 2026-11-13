@@ -28,6 +28,7 @@ import {
   V2_WORLD,
   arenaOf,
   colsFor,
+  type Arena,
   determinationBpFor,
   effectivePlayers,
   gridPlace,
@@ -121,6 +122,23 @@ export function compactBoard(
   }
 }
 
+/**
+ * The players a party's board is sized for at stage 1: the players who placed, and at least as many as it takes for the board to reach
+ * the furthest column anyone stands in. A creature keeps the seat it was placed on (Misa, 2026-11-13): nothing moves into a free seat
+ * and empty seats stay empty, so a board with a gap, or a creature in the spare column, makes the fight's board that much wider (and
+ * its boss that much bigger) instead of closing the gap.
+ */
+export function playersCovering(
+  placed: number,
+  slots: readonly number[],
+  arena: Pick<Arena, 'rows' | 'seats'>,
+): number {
+  const lastCol = slots.reduce((m, slot) => Math.max(m, Math.floor(slot / arena.rows)), 0);
+  let players = Math.max(1, placed);
+  while (colsFor(players, false, arena) <= lastCol) players++;
+  return players;
+}
+
 /** The placed creatures that are not among the owner's three highest-level ones (ties by the species' power, then the id). */
 function beyondTop3(sql: SqlStorage, userId: string, placedIds: readonly string[]): number {
   const owned = sql
@@ -164,7 +182,13 @@ export function buildStageV2(
     placements.some((p) => p.user_id === id),
   );
   if (fightingIds.length === 0) return null;
-  const players = prior?.players ?? fightingIds.length;
+  const players =
+    prior?.players ??
+    playersCovering(
+      fightingIds.length,
+      placements.filter((p) => fightingIds.includes(p.user_id)).map((p) => p.slot),
+      arena,
+    );
   const cols = colsFor(players, false, arena);
   const boss = weekendBoss(week.trackSlot, effectivePlayers(players, arena));
   const aliases = fightingIds.map((_, i) => aliasFor(i));
@@ -501,7 +525,6 @@ export function resolveStageV2(
 ): boolean {
   const { storage } = deps;
   const sql = storage.sql;
-  const arena = arenaOf(week.trackSlot, week.seatOverride);
   return storage.transactionSync(() => {
     const done = sql
       .exec(
@@ -512,15 +535,6 @@ export function resolveStageV2(
       )
       .toArray();
     if (done.length > 0) return false;
-    if (stage === 1) {
-      const members = partyMembers(sql, week.weekId, party);
-      const owners = new Set(
-        partyPlacements(sql, week.weekId, party, arena.seats)
-          .map((p) => p.user_id)
-          .filter((id) => members.includes(id)),
-      );
-      compactBoard(sql, week.weekId, party, arena.rows, colsFor(owners.size, false, arena));
-    }
     const built = buildStageV2(sql, week, party, stage);
     if (built === null) return false;
     logLineups(deps, stage, built);

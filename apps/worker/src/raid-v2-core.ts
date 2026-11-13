@@ -8,8 +8,8 @@
  *
  * **The piece (Misa, 2026-11-03).** The boss's arena piece (`piece` in raid-bosses.json) is what one player adds: today one column of the
  * boss's rows. A player brings as many creatures as the piece has seats (`seatsFor`), and until stage 1 locks the board is the piece per
- * player plus one spare piece (`colsFor(players, true)`), so a newcomer can always place a first creature. Stage 1 drops the spare and
- * moves what stood in it (`compactBoard`).
+ * player plus one spare piece (`colsFor(players, true)`), so a newcomer can always place a first creature. Stage 1 drops the spare piece but moves
+ * nobody: every creature keeps its seat, and a board with a creature in the spare column is that column wider (`playersCovering`).
  */
 import { content } from '@creatures/game';
 import { SHIPPED } from './fighter-v2';

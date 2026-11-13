@@ -4,6 +4,14 @@ The shared combat engine, abilities, statuses, elements, the balance simulator, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-14: Raid seats are never moved: stage 1 widens the board instead of compacting it
+
+ID: `2026-11-14-raid-seats-are-never-moved-stage` · Status: current · Amends: `2026-11-03-combat-v2-arenas-how-the-piece`
+
+**Decision.** A v2 raid stage fights every creature on the seat it was placed on. Stage 1 no longer moves a placement into a free seat (`compactBoard` is gone from `resolveStageV2`; the dev bench still uses it when a Boss Rank change reshapes the board). Empty seats stay empty. The party's players for the weekend are the players who placed, and at least as many as it takes for the board to reach the furthest column anyone stands in (`playersCovering`): a creature in the spare column, or a gap, makes the fight's board wider and its boss sized for that width. The engine already read rows and columns from the seats (beside, reach, front and back), so it is unchanged; rows and "beside" now see the real gaps. Misa reported it as a bug (2026-11-13 playtest), not a rule change.
+
+**Reasoning.** Stage 1 used to close the board to the number of players who placed, moving creatures beyond that width into the lowest free seats, which broke rows players had set and any plan to leave a seat empty beside a creature. A board that is a column wider than the players is a smaller price than moving what a player chose. Stage 2 and the finale read the width stored at stage 1, so the board stays the same through the weekend.
+
 ## 2026-11-09: Finale actions stay as they are until the playtest; Rally unchanged; six icons accepted [Misa]
 
 ID: `2026-11-09-finale-actions-stay-as-they-are` · Status: current

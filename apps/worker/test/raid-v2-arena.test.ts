@@ -1,5 +1,5 @@
 // The combat v2 arena (Misa, 2026-11-03, docs/design/combat/integration.md): each boss's piece is the seats one player brings; the
-// board is one piece per player plus a spare piece until stage 1, which drops the spare and moves what stood in it.
+// board is one piece per player plus a spare piece until stage 1, which drops the spare; nobody is moved (2026-11-13).
 import { describe, expect, it } from 'vitest';
 import type { RaidV2Part } from '../src/raid-v2-view';
 import type { CoreContext } from './helpers';
@@ -55,7 +55,7 @@ describe('the seats of a piece', () => {
     });
   }, 60_000);
 
-  it('Storm Sovereign: the spare column appears and goes at stage 1, and what stood in it moves', async () => {
+  it('Storm Sovereign: the spare column appears and goes at stage 1', async () => {
     await run((ctx) => {
       setSlot(ctx, 3);
       const [a, b, c, d, e] = [1, 2, 3, 4, 5].map((n) => v2Player(ctx, n, { level: 22 })) as [
@@ -79,7 +79,7 @@ describe('the seats of a piece', () => {
       expect(place(ctx, e, 0, 6)).toMatchObject({ ok: true });
       expect(slotsOf(ctx, e)).toEqual([6]);
       expect(v2Of(ctx, a.id)).toMatchObject({ cols: 6, spare: true, players: 5 });
-      // Stage 1 locks the five players: five columns, no spare, and the creatures beyond move to free seats.
+      // Stage 1 locks the five players: five columns, no spare, and no creature moves.
       ctx.clock.t = V2_WEEK.stage1 + 5000;
       ctx.core.raid.runDue(HELSINKI);
       expect(rows(ctx.sql, 'SELECT v2_players FROM raid_parties')).toEqual([{ v2_players: 5 }]);
@@ -95,6 +95,30 @@ describe('the seats of a piece', () => {
       expect(fought).toHaveLength(9);
       for (const id of d.creatureIds.slice(0, 2)) expect(fought).toContain(id);
       expect(v2Of(ctx, a.id)).toMatchObject({ cols: 5, spare: false, players: 5 });
+    });
+  }, 120_000);
+
+  it('stage 1 keeps every creature on its seat: gaps stay empty and a creature in the spare column stays there (2026-11-13)', async () => {
+    await run((ctx) => {
+      setSlot(ctx, 3);
+      const [a, b] = [1, 2].map((n) => v2Player(ctx, n, { level: 22 })) as [Player, Player];
+      // Rows are two. a stands on slot 0 with the seat beside it (slot 2) empty; b stands alone in the spare column (slot 4), with the whole
+      // second column empty. The party is two players: before, slot 4 was moved into the first free seat (slot 1), closing the gaps.
+      expect(place(ctx, a, 0, 0)).toMatchObject({ ok: true });
+      expect(place(ctx, b, 0, 4)).toMatchObject({ ok: true });
+      expect(v2Of(ctx, a.id)).toMatchObject({ cols: 3, spare: true, players: 2 });
+      ctx.clock.t = V2_WEEK.stage1 + 5000;
+      ctx.core.raid.runDue(HELSINKI);
+      // The fight's input has each creature on its own row and column.
+      const input = JSON.parse(
+        rows<{ input: string }>(ctx.sql, "SELECT input FROM raid_results WHERE phase = 'stage1'")[0]
+          ?.input ?? '{}',
+      ) as { fighters: { uid: string; row: number; col: number }[] };
+      const at = (id: string) => input.fighters.find((f) => f.uid === id);
+      expect(at(a.creatureIds[0] as string)).toMatchObject({ row: 0, col: 0 });
+      expect(at(b.creatureIds[0] as string)).toMatchObject({ row: 0, col: 2 });
+      // The board is as wide as the furthest seat: three columns, three players' worth of boss.
+      expect(rows(ctx.sql, 'SELECT v2_players FROM raid_parties')).toEqual([{ v2_players: 3 }]);
     });
   }, 120_000);
 
