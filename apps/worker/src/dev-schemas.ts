@@ -58,8 +58,51 @@ export const DEV_ACTION_TOOLS = [
   'valley-fresh',
   'apply-roster-preset',
   'reset-account',
+  'grant-currency',
+  'grant-xp',
+  'grant-talent',
+  'set-knack',
 ] as const;
 export type DevActionTool = (typeof DEV_ACTION_TOOLS)[number];
+
+/**
+ * The tools that act on one player's own data and so may name another player of the guild (2026-11-13, Misa: "give target
+ * players pretty much everything"). The body may carry `userId` (default: the caller); `DevTools.run` takes it off, checks it
+ * (`TargetUserIdSchema`: a real, non-simulated player of this guild) and runs the tool for that player, so each tool's own
+ * strict schema never sees it. Left out on purpose: the clock, the raid bench, the Games, the dungeon's guild-wide day
+ * (`dungeon-modifiers`, `dungeon-seed`), the account reset and the roster presets (which name their target themselves).
+ */
+export const TARGETED_TOOLS: readonly DevActionTool[] = [
+  'set-balances',
+  'grant-parts',
+  'grant-supplies',
+  'grant-blueprints',
+  'grant-creature',
+  'set-creature',
+  'set-explorer',
+  'set-familiarity',
+  'set-crafting-xp',
+  'finish-jobs',
+  'grant-gear',
+  'fill-bag',
+  'finish-trips',
+  'force-offer',
+  'force-gates',
+  'set-slots',
+  'journal',
+  'slot-wipe-notice',
+  'dungeon-depth',
+  'dungeon-reset',
+  'dungeon-streak',
+  'dungeon-retry',
+  'grant-currency',
+  'grant-xp',
+  'grant-talent',
+  'set-knack',
+];
+
+/** The id of a target player (checked against the guild's players in `DevTools.run`). */
+export const TargetUserIdSchema = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 
 /** Read-only tools (GET). Not logged. */
 export const DEV_READ_TOOLS = ['state', 'events', 'players'] as const;
@@ -135,6 +178,38 @@ export const GrantCreatureBodySchema = v.strictObject({
   shiny: v.optional(v.boolean()),
   level: v.optional(int(1, 99)),
   fusion: v.optional(int(0, 5)),
+  /** How many creatures of the line the player ends up with (1 or 2: a line holds at most two); default 1. */
+  count: v.optional(int(1, 2)),
+});
+
+/** Gives Bait and/or Essence (adds to the balance, through the ledger as source `dev`). */
+export const GrantCurrencyBodySchema = v.pipe(
+  v.strictObject({
+    bait: v.optional(int(1, MAX_AMOUNT)),
+    essence: v.optional(int(1, MAX_AMOUNT)),
+  }),
+  v.check((o) => o.bait !== undefined || o.essence !== undefined, NEED_ONE),
+);
+
+/** Experience for one creature, or for all of the player's creatures (through the game's own `awardExperience`). */
+export const GrantXpBodySchema = v.union([
+  v.strictObject({ creatureId: IdSchema, amount: int(1, 1_000_000) }),
+  v.strictObject({ all: v.literal(true), amount: int(1, 1_000_000) }),
+]);
+
+const TALENT_IDS = Object.keys(combatV2.talents) as [string, ...string[]];
+
+/** A combat v2 talent into a creature's Talent Book (found, learned) and, if asked, into a slot (open slots only). */
+export const GrantTalentBodySchema = v.strictObject({
+  creatureId: IdSchema,
+  talentId: v.picklist(TALENT_IDS),
+  slot: v.optional(int(1, 3)),
+});
+
+/** A creature's saved Knack (one its form knows), or none (`null`). */
+export const SetKnackBodySchema = v.strictObject({
+  creatureId: IdSchema,
+  knack: v.nullable(v.pipe(v.string(), v.minLength(1), v.maxLength(64))),
 });
 
 export const SetCreatureBodySchema = v.pipe(
@@ -185,10 +260,15 @@ export const SetCraftingXpBodySchema = v.strictObject({
 // --- The Workshop ---
 
 export const GrantGearBodySchema = v.strictObject({
-  baseId: v.picklist(BASE_IDS),
-  rarity: v.picklist(['common', 'rare', 'epic']),
-  /** The item level (1 to 20); default 1. */
+  /** A base; absent: a random one (of `slot` when given). */
+  baseId: v.optional(v.picklist(BASE_IDS)),
+  slot: v.optional(v.picklist(['hat', 'scarf', 'charm'])),
+  /** Absent: random among common, rare and epic. */
+  rarity: v.optional(v.picklist(['common', 'rare', 'epic'])),
+  /** The item level (1 to 20); absent: the base's lowest level, or random for a random base. */
   itemLevel: v.optional(int(1, RULES.gear.maxItemLevel)),
+  /** How many items (default 1); the whole grant is refused when the bag cannot hold them. */
+  count: v.optional(int(1, 50)),
 });
 
 // --- Expeditions ---
