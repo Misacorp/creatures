@@ -266,9 +266,9 @@ describe('grant-xp', () => {
           rows<{ level: number }>(ctx.sql, 'SELECT level FROM creatures WHERE user_id = ?', me.id),
         ).toEqual(before);
         // One creature of the target's is not yours to name without the target.
-        expect(
-          await me.dev('grant-xp', { creatureId: a0, amount: 5 }),
-        ).toMatchObject({ status: 404 });
+        expect(await me.dev('grant-xp', { creatureId: a0, amount: 5 })).toMatchObject({
+          status: 404,
+        });
         expect(await me.dev('grant-xp', { all: true, creatureId: a0, amount: 5 })).toMatchObject({
           status: 400,
         });
@@ -361,8 +361,11 @@ describe('grant-talent and set-knack (combat v2, staging)', () => {
         const me = await player(ctx, 1);
         const low = await player(ctx, 2, { level: 1, creatures: 1 });
         const id = low.creatureIds[0] as string;
-        const line = rows<{ line: string }>(ctx.sql, 'SELECT line FROM creatures WHERE id = ?', id)[0]
-          ?.line as string;
+        const line = rows<{ line: string }>(
+          ctx.sql,
+          'SELECT line FROM creatures WHERE id = ?',
+          id,
+        )[0]?.line as string;
         const talentId = v2Pool(line)[0] as string;
         expect(
           await me.dev('grant-talent', { userId: low.id, creatureId: id, talentId, slot: 3 }),
@@ -410,7 +413,11 @@ describe('grant-talent and set-knack (combat v2, staging)', () => {
           status: 404,
         });
         expect(
-          await me.dev('grant-talent', { creatureId: id, talentId: Object.keys(combatV2.talents)[0], slot: 1 }),
+          await me.dev('grant-talent', {
+            creatureId: id,
+            talentId: Object.keys(combatV2.talents)[0],
+            slot: 1,
+          }),
         ).toMatchObject({ status: 404 });
       },
       ON,
@@ -430,7 +437,10 @@ describe('GET /api/dev/players', () => {
         expect(res.body.you).toBe(me.id);
         const hers = res.body.players.find((p: { userId: string }) => p.userId === ann.id);
         expect(hers.roster).toHaveLength(2);
-        expect(hers.roster[0]).toMatchObject({ species: expect.any(String), level: expect.any(Number) });
+        expect(hers.roster[0]).toMatchObject({
+          species: expect.any(String),
+          level: expect.any(Number),
+        });
         expect(hers.creatures).toBe(2);
       },
       ON,

@@ -50,7 +50,10 @@ export function grantXp(ctx: ToolCtx, body: Body<typeof GrantXpBodySchema>) {
   const ids =
     'all' in body
       ? ctx.sql
-          .exec<{ id: string }>('SELECT id FROM creatures WHERE user_id = ? ORDER BY id', ctx.userId)
+          .exec<{ id: string }>(
+            'SELECT id FROM creatures WHERE user_id = ? ORDER BY id',
+            ctx.userId,
+          )
           .toArray()
           .map((r) => r.id)
       : [ownCreature(ctx, body.creatureId).id];

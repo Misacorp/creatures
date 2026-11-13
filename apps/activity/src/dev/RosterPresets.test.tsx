@@ -5,20 +5,22 @@ import { parsePresetChoices, presetLine, type PresetChoices } from './dev-api';
 /** The roster preset picker: its list, the confirmation word, and the body it sends. The network is a stand-in. */
 
 const CHOICES: PresetChoices = {
+  you: '111',
   players: [
-    { userId: '111', name: 'Ann', creatures: 5, items: 0 },
-    { userId: '222', name: 'Bo', creatures: 9, items: 12 },
+    { userId: '111', name: 'Ann', creatures: 5, items: 0, roster: [] },
+    {
+      userId: '222',
+      name: 'Bo',
+      creatures: 9,
+      items: 12,
+      roster: [{ id: 'c1', species: 'cindle', level: 4 }],
+    },
   ],
   presets: [
     { id: 'week-2', name: 'Week 2', creatures: 7, minLevel: 10, maxLevel: 14, items: 15 },
     { id: 'week-8', name: 'Week 8', creatures: 18, minLevel: 11, maxLevel: 25, items: 22 },
   ],
 };
-
-vi.mock('./dev-api', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('./dev-api')>()),
-  fetchPresetChoices: () => Promise.resolve(CHOICES),
-}));
 
 const { RosterPresets, confirmWord, presetBody, typedMatches } = await import('./RosterPresets');
 
@@ -28,10 +30,10 @@ afterEach(() => {
   page = null;
 });
 
-async function draw(onApply: (body: Record<string, unknown>) => void): Promise<Page> {
+/** The picker for a target player (the panel's own picker names it; Ann, "You", by default). */
+function draw(onApply: (body: Record<string, unknown>) => void, target = '111'): Page {
   page = createPage();
-  page.draw(<RosterPresets busy={false} version={0} onApply={onApply} />);
-  for (let i = 0; i < 4; i++) await Promise.resolve();
+  page.draw(<RosterPresets choices={CHOICES} target={target} busy={false} onApply={onApply} />);
   return page;
 }
 
@@ -53,24 +55,37 @@ const submit = (p: Page): void => {
 };
 
 describe('the roster preset picker', () => {
-  it('lists everyone, the players with what they own, and the presets', async () => {
-    const p = await draw(vi.fn());
+  it('lists the presets, the target player and everyone', () => {
+    const p = draw(vi.fn());
     const options = byClass(p.root, 'dev-field').flatMap((f) =>
       byName(f, 'option', /./).map((o) => visibleText(o)),
     );
-    expect(options).toEqual([
-      'Everyone (2)',
-      'Ann (5 creatures, 0 items)',
-      'Bo (9 creatures, 12 items)',
-      'Week 2',
-      'Week 8',
-    ]);
+    expect(options).toEqual(['Week 2', 'Week 8', 'Ann', 'Everyone (2)']);
     expect(visibleText(p.root)).toContain('7 creatures, level 10 to 14, 15 items.');
   });
 
-  it('needs "everyone" typed for everyone, and sends that body', async () => {
+  it('gives the panel’s target player the preset once their name is typed', () => {
     const onApply = vi.fn();
-    const p = await draw(onApply);
+    const p = draw(onApply, '222');
+    expect(button(p).hasAttribute('disabled')).toBe(true);
+    expect(visibleText(p.root)).toContain('Type Bo to confirm');
+    p.type(field(p, 'input', 0), 'Ann');
+    expect(button(p).hasAttribute('disabled')).toBe(true);
+    const preset = field(p, 'select', 0);
+    preset.value = 'week-8';
+    p.event(preset, 'change');
+    p.type(field(p, 'input', 0), 'bo');
+    expect(button(p).hasAttribute('disabled')).toBe(false);
+    submit(p);
+    expect(onApply).toHaveBeenCalledWith({ preset: 'week-8', userId: '222', confirm: 'bo' });
+  });
+
+  it('needs "everyone" typed for everyone, and sends that body', () => {
+    const onApply = vi.fn();
+    const p = draw(onApply);
+    const who = field(p, 'select', 1);
+    who.value = 'everyone';
+    p.event(who, 'change');
     expect(button(p).hasAttribute('disabled')).toBe(true);
     expect(visibleText(p.root)).toContain('Type everyone to confirm');
     p.type(field(p, 'input', 0), 'Ann');
@@ -83,21 +98,6 @@ describe('the roster preset picker', () => {
       everyone: true,
       confirm: ' Everyone ',
     });
-  });
-
-  it('needs the picked player’s name, and sends the player and the preset', async () => {
-    const onApply = vi.fn();
-    const p = await draw(onApply);
-    const player = field(p, 'select', 0);
-    player.value = '222';
-    p.event(player, 'change');
-    const preset = field(p, 'select', 1);
-    preset.value = 'week-8';
-    p.event(preset, 'change');
-    expect(visibleText(p.root)).toContain('Type Bo to confirm');
-    p.type(field(p, 'input', 0), 'bo');
-    submit(p);
-    expect(onApply).toHaveBeenCalledWith({ preset: 'week-8', userId: '222', confirm: 'bo' });
   });
 });
 
