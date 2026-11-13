@@ -191,7 +191,7 @@ const SHAPE_PRESETS = SHAPES.map((shape) => ({
 }));
 
 const bossAnimation: Entry = {
-  name: 'BossAnimation',
+  name: 'BossAnimFrame',
   file: 'apps/activity/src/boss-anim/BossAnimLayer.tsx',
   group: 'Creatures & game pieces',
   description:

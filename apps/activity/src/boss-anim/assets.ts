@@ -4,7 +4,7 @@
  * A boss look (`looks.ts`) may replace any of them with art of its own, drawn with its own palette.
  *
  * Every weapon is drawn pointing UP with its grip at the bottom centre: the frame turns it to fly (down for a column, sideways for a
- * row). Preview the art in the workbench page `BossAnimation`.
+ * row). Preview the art in the workbench page `BossAnimFrame`.
  */
 import type { SpriteDef } from '../sprites/sprite-data';
 

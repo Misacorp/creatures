@@ -20,7 +20,7 @@ Pure pieces: `bossAimOf` (a boss beat's events to the move and the creatures it 
 
 ## Trying a look: the workbench and the screenshots
 
-- Workbench page **BossAnimation**: any look (or generic), any shape, a move id, any cells (`auto` or `row:col row:col`), play with 0.25x to 2x, step a frame at a time, or hold a phase.
+- Workbench page **BossAnimFrame**: any look (or generic), any shape, a move id, any cells (`auto` or `row:col row:col`), play with 0.25x to 2x, step a frame at a time, or hold a phase.
 - `cd apps/activity && node scripts/boss-anim-shots.mjs [--look storm-sovereign] [--moves id:shape,...] [--shapes columns,row,...] [--phases aim,throw,strike]` saves a picture per phase (and a sheet) at 390 px, at 2x density, under `screenshots/boss-anim/`.
 
 ## Adding a boss's look

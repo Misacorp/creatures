@@ -1,5 +1,5 @@
 /**
- * Screenshots of a boss move's animation, one picture per phase, from the workbench page `BossAnimation`
+ * Screenshots of a boss move's animation, one picture per phase, from the workbench page `BossAnimFrame`
  * (docs/design/boss-animations.md). For showing a boss's look to Misa, or checking a new one.
  *
  *   cd apps/activity && node scripts/boss-anim-shots.mjs [--look storm-sovereign|generic] [--moves id:shape,id:shape]
@@ -99,7 +99,7 @@ try {
           cells: 'auto',
           at: phase,
         };
-        const hash = `c=BossAnimation&p=${encodeURIComponent(JSON.stringify(props))}&w=full&bg=dusk`;
+        const hash = `c=BossAnimFrame&p=${encodeURIComponent(JSON.stringify(props))}&w=full&bg=dusk`;
         await page.goto(`http://localhost:${String(port)}/workbench.html?frame=1#${hash}`);
         await page.reload();
         await page.waitForSelector('.wb-frame-stage', { timeout: 15000 });
