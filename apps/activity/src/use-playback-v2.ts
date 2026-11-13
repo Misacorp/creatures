@@ -86,6 +86,22 @@ export function cuesOf(show: BeatShow, knackNames = false): Cue[] {
           drift: 0,
         }))
       : []),
+    // A Knack that gave up its creature's hit is always named: it is the reason the creature did not attack.
+    ...show.forgone.flatMap((k): Cue[] =>
+      k.name === null
+        ? []
+        : [
+            {
+              kind: 'float',
+              i: k.i,
+              target: k.who,
+              text: k.name,
+              tone: 'knack',
+              crit: false,
+              drift: 0,
+            },
+          ],
+    ),
     ...show.saves.map((s): Cue => ({ kind: 'cover', i: s.i, creature: s.who, guard: s.guard })),
     ...show.knockedOut.map((k): Cue => ({ kind: 'ko', i: k.i, creature: k.who })),
   ];

@@ -18,6 +18,40 @@
   outline-offset: calc(var(--px) * -2);
 }
 
+/*
+  A creature whose Knack gave up its hit (Double Mark, Feed the Marks) still has its turn: a gold glow in the tile and one short hop of
+  its picture, with the Knack's name floating over it. Reduced motion: the glow alone.
+*/
+.party-slot.fight-forgo {
+  background-color: var(--dusk-2);
+  box-shadow: inset 0 0 0 var(--px) var(--gold);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .party-slot.fight-forgo canvas.sprite {
+    animation: forgo-hop 520ms steps(4) 1;
+  }
+
+  @keyframes forgo-hop {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+
+    25% {
+      transform: translateY(-6px);
+    }
+
+    50% {
+      transform: translateY(-9px);
+    }
+
+    75% {
+      transform: translateY(-3px);
+    }
+  }
+}
+
 .party-slot.fight-hit {
   background-color: var(--dusk-2);
   box-shadow: inset 0 0 0 var(--px) var(--bad);

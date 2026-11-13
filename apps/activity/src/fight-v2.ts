@@ -347,7 +347,7 @@ export function stateAfter(
 export interface BeatV2 {
   from: number;
   to: number;
-  /** `round`: the round's start (Support verbs, Knacks at round start, announcements); `creature`: one creature's hit; `boss`: the boss's turn after a row; `end`: the fight's end. */
+  /** `round`: the round's start (Support verbs, Knacks at round start, announcements); `creature`: one creature's hit (or its forgone hit); `boss`: the boss's turn after a row; `end`: the fight's end. */
   kind: 'round' | 'creature' | 'boss' | 'end';
   round: number;
   /** The row of the creature or of the boss turn; 0 for the others. */
@@ -366,7 +366,7 @@ const isLead = (e: FightEvent): boolean =>
 
 /**
  * Cuts the events into beats. A round starts one; so does each boss turn; a creature's turn starts at its hit on the boss (and at the
- * reaction, crit or spent Sure Crit that comes right before it), so its mark, Store and knock-out follow it in the same beat; the end
+ * reaction, crit or spent Sure Crit that comes right before it), or at the `forgo` event of a Knack that gives the hit up, so its mark, Store and knock-out follow it in the same beat; the end
  * is the last. Events before the first round (the resistance shown at the stage break) go with the first beat.
  */
 export function buildBeats(
@@ -400,6 +400,9 @@ export function buildBeats(
       while (from > 0 && from - 1 > (last?.from ?? -1) && isLead(events[from - 1] as FightEvent))
         from--;
       starts.push({ from, kind: 'creature', round, row: rows.get(b.from) ?? 0, actor: b.from });
+    } else if (b.type === 'forgo' && rows.has(b.who)) {
+      // A creature whose Knack gives up its hit has no hit to start its turn: the engine says so, and the turn gets its own beat.
+      starts.push({ from: i, kind: 'creature', round, row: rows.get(b.who) ?? 0, actor: b.who });
     }
   });
   if (starts.length === 0)
@@ -512,6 +515,11 @@ export interface BeatShow {
   saves: readonly { i: number; guard: string; who: string; prevented: number | null }[];
   /** Creatures whose Knack acted in this beat, with the Knack's name (shown only when the player asked for Knack names). */
   knacks: readonly { i: number; who: string; name: string }[];
+  /**
+   * Creatures whose Knack gave up their hit in this beat, with the Knack's name: the stage shows each acting (a hop) and always names the
+   * Knack, so the turn is never seen as skipped. Not in `knacks`.
+   */
+  forgone: readonly { i: number; who: string; name: string | null }[];
 }
 
 const drift = (i: number): number => ((i * 5) % 7) - 3;
@@ -546,6 +554,7 @@ export function showOf(
   const actions: { kind: FinaleActionKind; row: number | null; by: string }[] = [];
   const saves: { i: number; guard: string; who: string; prevented: number | null }[] = [];
   const knackOwners = new Map<string, number>();
+  const forgone = new Map<string, number>();
   const boosts = new Map<string, { i: number; bp: number }>();
   // The creature behind each number on the boss, and who cashed each reaction: a reaction's callout takes the number of its own hit.
   const hitters = new Map<number, string>();
@@ -693,6 +702,9 @@ export function showOf(
       case 'silence':
         silenced.push(b.who);
         break;
+      case 'forgo':
+        if (!forgone.has(b.who)) forgone.set(b.who, i);
+        break;
       case 'reaction': {
         cashed.push(b.mark);
         const trigger = elementOf(b.by);
@@ -753,7 +765,10 @@ export function showOf(
       sub: `+${String(Math.round(bp / 100))}%`,
     });
   const knacks = [...knackOwners]
-    .filter(([who]) => !quiet.has(who) && (byKey.get(who)?.knackName ?? null) !== null)
+    .filter(
+      ([who]) =>
+        !forgone.has(who) && !quiet.has(who) && (byKey.get(who)?.knackName ?? null) !== null,
+    )
     .map(([who, i]) => ({ i, who, name: byKey.get(who)?.knackName as string }));
   return {
     flash,
@@ -767,6 +782,7 @@ export function showOf(
     actions,
     saves,
     knacks,
+    forgone: [...forgone].map(([who, i]) => ({ i, who, name: byKey.get(who)?.knackName ?? null })),
   };
 }
 

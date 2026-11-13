@@ -254,6 +254,8 @@ export function isBoardEvent(value: unknown): value is BoardEvent {
       );
     case 'knockout':
       return isStr(value['who']);
+    case 'forgo':
+      return isStr(value['who']);
     case 'silence':
       return isStr(value['who']) && isCount(value['turns']);
     case 'store':

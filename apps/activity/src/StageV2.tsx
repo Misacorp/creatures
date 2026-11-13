@@ -415,6 +415,7 @@ export function StageV2({
           // Silence is the one lowering a creature carries in the events today.
           ...((now?.silenced ?? 0) > 0 && now?.out !== true ? { debuffed: true as const } : {}),
           acting: landed?.kind === 'creature' && landed.actor === f.key,
+          ...(show?.forgone.some((k) => k.who === f.key) === true ? { forgo: true as const } : {}),
           ...(guards.has(f.key) ? { guarding: true as const } : {}),
           overlay: (
             <>

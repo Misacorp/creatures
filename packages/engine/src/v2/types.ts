@@ -530,6 +530,11 @@ export type BoardEvent =
   /** `who` is healed by `amount` (what was really restored); `by` is the healer, when there is one. */
   | { readonly type: 'heal'; readonly who: string; readonly amount: number; readonly by?: string }
   | { readonly type: 'knockout'; readonly who: string }
+  /**
+   * `who` forgoes its hit: its Knack gives up the damage (Heavy Prime: Double Mark, Feed the Marks), so no `hit` follows. It marks the creature's
+   * turn for the board, which shows it acting with the Knack's name instead of a skipped turn; what its Knack does instead follows it.
+   */
+  | { readonly type: 'forgo'; readonly who: string }
   /** A creature is silenced for `turns` of its turns. */
   | { readonly type: 'silence'; readonly who: string; readonly turns: number }
   /** A creature's Store (Heat, Calm, Dodge stacks) is now `value`. */

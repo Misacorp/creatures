@@ -84,6 +84,8 @@ export interface FightTile {
   hit: boolean;
   /** It is the creature acting in the beat on show. */
   acting: boolean;
+  /** Its Knack gave up its hit in the beat on show: it still acts (a short hop and a glow), the Knack's name floats over it. */
+  forgo?: boolean;
   /** It is the Guard of a save in this beat: its tile flashes (the pulse of protection starts from it, see `SlotModel.pulse`). */
   guarding?: boolean;
   /**
@@ -182,6 +184,7 @@ export function SlotButton(props: SlotButtonProps) {
     if (fight?.out === true) classes.push('fight-out');
     if (fight?.hit === true) classes.push('fight-hit');
     if (fight?.acting === true) classes.push('fight-acting');
+    if (fight?.forgo === true) classes.push('fight-forgo');
     if (fight?.guarding === true) classes.push('fight-guarding');
     if (fight?.boosted === true)
       classes.push('fight-boosted', `boost-${fight.boostLook ?? 'pattern'}`);
