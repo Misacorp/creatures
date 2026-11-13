@@ -12,7 +12,8 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import { cssVars } from '../css-vars';
 import { Sprite } from '../sprites/Sprite';
-import { frameAt, type Box, type FrameItem, type Geometry } from './frame';
+import { usePrefersReducedMotion } from '../hooks';
+import { frameAt, shakeAt, type Box, type FrameItem, type Geometry } from './frame';
 import { resolveLook } from './looks';
 import type { AnimPlan, Cell } from './plan';
 
@@ -77,7 +78,7 @@ function Item({ item }: { item: FrameItem }) {
     case 'pointer':
       return (
         <div
-          class="ba-pointer"
+          class={`ba-pointer ${item.dir}`}
           ref={cssVars({
             '--x': `${String(item.x)}px`,
             '--y': `${String(item.y)}px`,
@@ -88,13 +89,14 @@ function Item({ item }: { item: FrameItem }) {
     case 'sprite':
       return (
         <div
-          class="ba-sprite"
+          class={item.glow === undefined ? 'ba-sprite' : 'ba-sprite weapon'}
           ref={cssVars({
             '--x': `${item.x.toFixed(1)}px`,
             '--y': `${item.y.toFixed(1)}px`,
             '--rot': `${item.rot.toFixed(1)}deg`,
             '--s': item.scale.toFixed(3),
             '--o': item.opacity.toFixed(3),
+            ...(item.glow === undefined ? {} : { '--glow': item.glow }),
           })}
         >
           <Sprite sprite={item.asset.sprite} scale={item.asset.scale} />
@@ -127,6 +129,18 @@ export function BossAnimFrame({ plan, bossId, element, totalMs, t, grid }: Frame
     form: plan.form,
   });
   const items = geom === null ? [] : frameAt(plan, look, geom, totalMs, t);
+  // A heavy move rattles the board as it lands (never with reduced motion).
+  const reduced = usePrefersReducedMotion();
+  const shake = reduced ? { x: 0, y: 0 } : shakeAt(plan, look, totalMs, t);
+  useLayoutEffect(() => {
+    const board = layer.current?.closest('.stage')?.querySelector<HTMLElement>('.raid-board');
+    if (board === null || board === undefined) return undefined;
+    board.style.translate =
+      shake.x === 0 && shake.y === 0 ? '' : `${String(shake.x)}px ${String(shake.y)}px`;
+    return () => {
+      board.style.translate = '';
+    };
+  }, [shake.x, shake.y]);
   return (
     <div class="boss-anim" ref={layer} aria-hidden="true">
       {items.map((item) => (

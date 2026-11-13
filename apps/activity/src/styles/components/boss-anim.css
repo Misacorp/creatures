@@ -46,9 +46,20 @@
   box-shadow: inset 0 0 0 2px var(--gold);
 }
 
+/* A weapon: crisp pixels with a soft glow round its outline in the colour of its look (--glow). */
+.boss-anim .ba-sprite.weapon canvas {
+  filter: drop-shadow(0 0 3px var(--glow, #fff)) drop-shadow(0 0 7px var(--glow, #fff));
+}
+
+/* The white flash on the cells as the move lands. */
+.boss-anim .ba-cell.flash {
+  background: #fff;
+}
+
 /*
-  The marker over a cell: a stepped pixel triangle pointing down, built as the popover's arrow is (an ink outline, ::before, with the
-  colour on top, ::after). Its middle is at --x and its top at --y.
+  The marker: a large stepped pixel triangle, built as the popover's arrow is (an ink outline, ::before, with the colour on top,
+  ::after). `down` points down at a column or a creature, its middle at --x and its top at --y; `side` points right at a row from its left,
+  its middle at --x, --y. The script bobs it two pixels while the move is aimed.
 */
 .boss-anim .ba-pointer {
   position: absolute;
@@ -59,14 +70,18 @@
   opacity: var(--o, 1);
 }
 
+.boss-anim .ba-pointer.side {
+  transform: rotate(-90deg);
+}
+
 .boss-anim .ba-pointer::before,
 .boss-anim .ba-pointer::after {
   content: '';
   position: absolute;
-  left: -12px;
-  top: 0;
-  width: 24px;
-  height: 12px;
+  left: -24px;
+  top: -12px;
+  width: 48px;
+  height: 24px;
 }
 
 .boss-anim .ba-pointer::before {
@@ -88,10 +103,10 @@
 }
 
 .boss-anim .ba-pointer::after {
-  left: -9px;
-  top: 3px;
-  width: 18px;
-  height: 6px;
+  left: -18px;
+  top: -6px;
+  width: 36px;
+  height: 14px;
   background: var(--bad);
   clip-path: polygon(0 0, 100% 0, 100% 50%, 75% 50%, 75% 100%, 25% 100%, 25% 50%, 0 50%);
 }

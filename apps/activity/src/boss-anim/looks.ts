@@ -11,6 +11,7 @@ import type { SpriteDef } from '../sprites/sprite-data';
 import { swapPalette } from '../sprites/sprite-data';
 import {
   BURST,
+  GLINT,
   CHAIN,
   NOVA,
   ORB,
@@ -34,6 +35,10 @@ export interface Asset {
 export interface LookEntry {
   weapon?: Asset;
   impact?: Asset;
+  /** The colour of the soft glow round the weapon. */
+  glow?: string;
+  /** A heavy move rattles the board as it lands (a one-shot). */
+  heavy?: boolean;
 }
 
 /** One boss's look: art for single moves, and for whole shapes. */
@@ -46,6 +51,9 @@ export interface BossLook {
 export interface ResolvedLook {
   weapon: Asset;
   impact: Asset;
+  glint: Asset;
+  glow: string;
+  heavy: boolean;
 }
 
 /** The three colours the generic art takes from an element: main, dark and light. */
@@ -58,39 +66,39 @@ const TINTS: Readonly<Record<string, { a: string; b: string; c: string }>> = {
 const NEUTRAL = { a: '#a69fc8', b: '#4a4170', c: '#f4eedc' };
 
 const GENERIC: Readonly<Record<Form, Asset>> = {
-  spear: { sprite: SPEAR, scale: 4 },
-  wave: { sprite: WAVE, scale: 5 },
-  orb: { sprite: ORB, scale: 5 },
-  chain: { sprite: CHAIN, scale: 5 },
-  nova: { sprite: NOVA, scale: 6 },
+  spear: { sprite: SPEAR, scale: 7 },
+  wave: { sprite: WAVE, scale: 8 },
+  orb: { sprite: ORB, scale: 9 },
+  chain: { sprite: CHAIN, scale: 8 },
+  nova: { sprite: NOVA, scale: 8 },
 };
-const GENERIC_IMPACT: Asset = { sprite: BURST, scale: 4 };
+/** The sparks at the corners of a card that was hit: small, so the creature and its numbers stay readable. */
+const GENERIC_IMPACT: Asset = { sprite: BURST, scale: 2 };
+const GLINT_ASSET: Asset = { sprite: GLINT, scale: 4 };
+const STORM_GLOW = '#f2d43d';
+const STORM_IMPACT: Asset = { sprite: STORM_BURST, scale: 2 };
 
 /** The Storm Sovereign: its Lightning Bolt a spear tipped with a lightning bolt, its single bolts big jagged bolts, its Storm Front a ball of storm. */
 const STORM_SOVEREIGN: BossLook = {
   shapes: {
-    column: {
-      weapon: { sprite: STORM_SPEAR, scale: 4 },
-      impact: { sprite: STORM_BURST, scale: 4 },
+    column: { weapon: { sprite: STORM_SPEAR, scale: 6 }, impact: STORM_IMPACT, glow: STORM_GLOW },
+    columns: { weapon: { sprite: STORM_SPEAR, scale: 6 }, impact: STORM_IMPACT, glow: STORM_GLOW },
+    single: { weapon: { sprite: STORM_BOLT, scale: 8 }, impact: STORM_IMPACT, glow: STORM_GLOW },
+    chain: { weapon: { sprite: STORM_BOLT, scale: 7 }, impact: STORM_IMPACT, glow: STORM_GLOW },
+    scatter: { weapon: { sprite: STORM_FORK, scale: 8 }, impact: STORM_IMPACT, glow: STORM_GLOW },
+    all: {
+      weapon: { sprite: STORM_ORB, scale: 10 },
+      impact: STORM_IMPACT,
+      glow: STORM_GLOW,
+      heavy: true,
     },
-    columns: {
-      weapon: { sprite: STORM_SPEAR, scale: 4 },
-      impact: { sprite: STORM_BURST, scale: 4 },
-    },
-    single: { weapon: { sprite: STORM_BOLT, scale: 5 }, impact: { sprite: STORM_BURST, scale: 4 } },
-    chain: { weapon: { sprite: STORM_BOLT, scale: 4 }, impact: { sprite: STORM_BURST, scale: 4 } },
-    scatter: {
-      weapon: { sprite: STORM_FORK, scale: 5 },
-      impact: { sprite: STORM_BURST, scale: 4 },
-    },
-    all: { weapon: { sprite: STORM_ORB, scale: 6 }, impact: { sprite: STORM_BURST, scale: 4 } },
   },
   moves: {
-    // A heavier bolt for the one-shot.
-    'judgement-bolt': { weapon: { sprite: STORM_BOLT, scale: 7 } },
-    // Thunderclap and Static Strike are lines of three: the generic wave, in the look's own burst.
-    thunderclap: { impact: { sprite: STORM_BURST, scale: 4 } },
-    'static-strike': { impact: { sprite: STORM_BURST, scale: 4 } },
+    // A heavier bolt for the one-shot, which rattles the board.
+    'judgement-bolt': { weapon: { sprite: STORM_BOLT, scale: 11 }, heavy: true },
+    // Thunderclap and Static Strike are lines of three: the generic wave, in the look's own sparks.
+    thunderclap: { impact: STORM_IMPACT, glow: STORM_GLOW },
+    'static-strike': { impact: STORM_IMPACT, glow: STORM_GLOW },
   },
 };
 
@@ -118,5 +126,8 @@ export function resolveLook(
         sprite: swapPalette(GENERIC_IMPACT.sprite, tint),
         scale: GENERIC_IMPACT.scale,
       },
+    glint: GLINT_ASSET,
+    glow: own?.glow ?? shaped?.glow ?? tint.a,
+    heavy: own?.heavy ?? shaped?.heavy ?? false,
   };
 }

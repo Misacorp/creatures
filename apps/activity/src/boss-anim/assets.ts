@@ -225,3 +225,9 @@ export const STORM_BURST: SpriteDef = {
   palette: { k: '#0d0a1a', a: '#f2d43d', b: '#7a5f10', c: '#fffbe0' },
   rows: BURST.rows,
 };
+
+/** A glint of light, where a weapon appears in the boss's hand. */
+export const GLINT: SpriteDef = {
+  palette: { w: '#ffffff', y: '#fffbe0' },
+  rows: ['..w..', '..y..', 'wywyw', '..y..', '..w..'],
+};

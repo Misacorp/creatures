@@ -30,9 +30,17 @@ export interface Geometry {
 
 export type FrameItem =
   /** A cell's outline: `mark` while it is aimed, `hit` as the impact lands. */
-  | { kind: 'cell'; key: string; box: Box; tone: 'mark' | 'hit'; opacity: number }
+  | { kind: 'cell'; key: string; box: Box; tone: 'mark' | 'hit' | 'flash'; opacity: number }
   /** The down-pointing marker over a cell (`x` the middle, `y` the top of the cell). */
-  | { kind: 'pointer'; key: string; x: number; y: number; opacity: number }
+  | {
+      kind: 'pointer';
+      key: string;
+      x: number;
+      y: number;
+      opacity: number;
+      /** `down`: points down at a column or a creature from above; `side`: points right at a row from its left. */
+      dir: 'down' | 'side';
+    }
   /** A sprite centred on (`x`, `y`), turned `rot` degrees clockwise from pointing up. */
   | {
       kind: 'sprite';
@@ -43,6 +51,8 @@ export type FrameItem =
       rot: number;
       scale: number;
       opacity: number;
+      /** The soft glow round a weapon (a colour), absent for a burst or a glint. */
+      glow?: string;
     };
 
 const clamp01 = (n: number): number => Math.min(1, Math.max(0, n));
@@ -154,6 +164,14 @@ function along(
   return { x: lerp(a.x, b.x, local), y: lerp(a.y, b.y, local), rot };
 }
 
+/** How far a pointer stands off its cell: above it for a column or a creature, to the left of it for a row. */
+const POINTER_GAP = 30;
+/** How long (of the impact phase) the white flash on the hit cells lasts. */
+const FLASH_U = 0.2;
+/** The weapon is held tilted and smaller in the hand, so a long lance stays on the stage; it straightens as it is thrown. */
+const HELD_TILT = 38;
+const HELD_SCALE = 0.7;
+
 /** What is on the stage `t` milliseconds into a move that takes `totalMs`. Nothing before the wind-up and nothing after the impact. */
 export function frameAt(
   plan: AnimPlan,
@@ -181,15 +199,17 @@ export function frameAt(
       if (box !== null)
         items.push({ kind: 'cell', key: `mark-${key(c)}`, box, tone: 'mark', opacity });
     }
+    const bob = Math.round(Math.sin(t / 90) * 2);
     for (const c of plan.pointers) {
       const box = geom.cell(c);
       if (box === null) continue;
-      const bob = Math.round(Math.sin(t / 90) * 2);
+      const side = c.dir === 'side';
       items.push({
         kind: 'pointer',
         key: `pointer-${key(c)}`,
-        x: box.x + box.w / 2,
-        y: box.y + 2 + bob,
+        dir: c.dir,
+        x: side ? box.x - POINTER_GAP + bob : box.x + box.w / 2,
+        y: side ? box.y + box.h / 2 : box.y - POINTER_GAP + bob,
         opacity: phase === 'aim' ? clamp01(since * 4) : 1,
       });
     }
@@ -198,76 +218,136 @@ export function frameAt(
   const weapon = look.weapon;
   const { w: weaponW, h } = sizeOf(weapon);
   const count = Math.max(1, plan.strikes.length);
-  // At the hand the weapons fan out a little, so several do not sit on one another.
-  const heldAt = (i: number): { x: number; y: number } => ({
-    x: geom.hand.x + (i - (count - 1) / 2) * (weaponW + 4),
-    y: geom.hand.y - h / 2,
+  const glow = look.glow;
+  // The grip is at the hand; the weapon leans away from it, so its middle is up and to the right of the grip.
+  const heldAt = (i: number, tilt: number, scale: number): { x: number; y: number } => {
+    const rad = (tilt * Math.PI) / 180;
+    return {
+      x:
+        geom.hand.x +
+        (i - (count - 1) / 2) * (weaponW * scale + 6) +
+        (Math.sin(rad) * h * scale) / 2,
+      y: geom.hand.y - (Math.cos(rad) * h * scale) / 2,
+    };
+  };
+  const weaponItem = (
+    i: number,
+    at: { x: number; y: number },
+    rot: number,
+    scale: number,
+    opacity: number,
+  ): FrameItem => ({
+    kind: 'sprite',
+    key: `weapon-${String(i)}`,
+    asset: weapon,
+    x: at.x,
+    y: at.y,
+    rot,
+    scale,
+    opacity,
+    glow,
   });
 
-  if (phase === 'windup' || phase === 'aim') {
-    for (let i = 0; i < count; i++) {
-      const at = heldAt(i);
-      const grow = phase === 'windup' ? u : 1;
-      const bob = phase === 'aim' ? Math.sin(t / 110 + i) * 2 : 0;
+  if (phase === 'windup') {
+    // It appears in the hand: a quick scale-in from the grip with a glint.
+    const grow = clamp01(u * 1.6);
+    const s = HELD_SCALE * (0.15 + 0.85 * grow);
+    for (let i = 0; i < count; i++)
+      items.push(weaponItem(i, heldAt(i, HELD_TILT, s), HELD_TILT, s, clamp01(u * 3)));
+    const glint = clamp01(1 - Math.abs(u - 0.35) * 3.5);
+    if (glint > 0)
       items.push({
         kind: 'sprite',
-        key: `weapon-${String(i)}`,
-        asset: weapon,
-        x: at.x,
-        y: at.y + bob - (1 - grow) * 6,
+        key: 'glint',
+        asset: look.glint,
+        x: geom.hand.x,
+        y: geom.hand.y - 6,
         rot: 0,
-        scale: 0.5 + 0.5 * grow,
-        opacity: grow,
+        scale: 0.6 + glint,
+        opacity: glint,
       });
+  } else if (phase === 'aim') {
+    for (let i = 0; i < count; i++) {
+      const at = heldAt(i, HELD_TILT, HELD_SCALE);
+      const bob = Math.sin(t / 110 + i) * 2;
+      items.push(weaponItem(i, { x: at.x, y: at.y + bob }, HELD_TILT, HELD_SCALE, 1));
     }
   } else if (phase === 'throw') {
+    // It straightens and leaves the stage upwards.
     for (let i = 0; i < count; i++) {
-      const at = heldAt(i);
-      items.push({
-        kind: 'sprite',
-        key: `weapon-${String(i)}`,
-        asset: weapon,
-        x: at.x,
-        y: lerp(at.y, -h - 12, easeIn(u)),
-        rot: 0,
-        scale: 1,
-        opacity: 1,
-      });
+      const tilt = lerp(HELD_TILT, 0, clamp01(u * 2));
+      const s = lerp(HELD_SCALE, 1, clamp01(u * 2));
+      const from = heldAt(i, tilt, s);
+      items.push(weaponItem(i, { x: from.x, y: lerp(from.y, -h - 12, easeIn(u)) }, tilt, s, 1));
     }
   } else if (phase === 'strike') {
     plan.strikes.forEach((spec, i) => {
       const path = strikePath(spec, weapon, geom);
       if (path === null) return;
-      const p = along(path, spec.kind === 'hops' ? u : easeIn(u));
-      items.push({
-        kind: 'sprite',
-        key: `weapon-${String(i)}`,
-        asset: weapon,
-        x: p.x,
-        y: p.y,
-        rot: spec.kind === 'column' || spec.kind === 'drop' || spec.kind === 'all' ? 180 : p.rot,
-        scale: 1,
-        opacity: 1,
-      });
+      const at = (v: number): { x: number; y: number; rot: number } =>
+        along(path, spec.kind === 'hops' ? v : easeIn(v));
+      const fixedRot = spec.kind === 'column' || spec.kind === 'drop' || spec.kind === 'all';
+      // A trail: a few fading after-images behind the weapon.
+      for (let k = 3; k >= 1; k--) {
+        const back = u - k * 0.07;
+        if (back <= 0) continue;
+        const g = at(back);
+        items.push({
+          ...weaponItem(i, g, fixedRot ? 180 : g.rot, 1, 0.5 - k * 0.12),
+          key: `trail-${String(i)}-${String(k)}`,
+        });
+      }
+      const p = at(u);
+      items.push(weaponItem(i, p, fixedRot ? 180 : p.rot, 1, 1));
     });
   } else {
-    // The impact: a burst on each creature hit, and its cell lit then fading.
+    // The impact: a white flash on the cells hit and a few sparks at the corners of each card; the creature stays readable.
     for (const c of plan.impacts) {
       const box = geom.cell(c);
       if (box === null) continue;
-      const at = centre(box);
-      items.push({ kind: 'cell', key: `hit-${key(c)}`, box, tone: 'hit', opacity: 1 - u });
-      items.push({
-        kind: 'sprite',
-        key: `burst-${key(c)}`,
-        asset: look.impact,
-        x: at.x,
-        y: at.y,
-        rot: 0,
-        scale: (plan.big ? 1.4 : 1) * (0.6 + 0.7 * Math.sqrt(u)),
-        opacity: 1 - u * u,
-      });
+      if (u < FLASH_U)
+        items.push({
+          kind: 'cell',
+          key: `flash-${key(c)}`,
+          box,
+          tone: 'flash',
+          opacity: 1 - u / FLASH_U,
+        });
+      items.push({ kind: 'cell', key: `hit-${key(c)}`, box, tone: 'hit', opacity: (1 - u) * 0.6 });
+      const reach = 4 + 10 * Math.sqrt(u);
+      const corners: [number, number][] = [
+        [box.x - reach, box.y - reach],
+        [box.x + box.w + reach, box.y - reach],
+        [box.x - reach, box.y + box.h + reach],
+        [box.x + box.w + reach, box.y + box.h + reach],
+      ];
+      corners.forEach(([x, y], k) =>
+        items.push({
+          kind: 'sprite',
+          key: `spark-${key(c)}-${String(k)}`,
+          asset: look.impact,
+          x,
+          y,
+          rot: 0,
+          scale: (plan.big ? 1.2 : 1) * (1 - 0.4 * u),
+          opacity: 1 - u * u,
+        }),
+      );
     }
   }
   return items;
+}
+
+/** How far the board is shaken `t` milliseconds in: a heavy move (a one-shot, the whole board) rattles it as it lands, then it settles. */
+export function shakeAt(
+  plan: AnimPlan,
+  look: ResolvedLook,
+  totalMs: number,
+  t: number,
+): { x: number; y: number } {
+  if (!look.heavy && !plan.big) return { x: 0, y: 0 };
+  const { id, u } = phaseAt(totalMs, t);
+  if (id !== 'impact' || t > totalMs) return { x: 0, y: 0 };
+  const fade = 1 - u;
+  return { x: Math.round(Math.sin(t / 18) * 4 * fade), y: Math.round(Math.cos(t / 23) * 2 * fade) };
 }

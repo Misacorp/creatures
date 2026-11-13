@@ -63,6 +63,11 @@ export const FORM_OF: Readonly<Record<Shape, Form>> = {
   all: 'nova',
 };
 
+/** A cell that carries the marker: `down` points at it from above, `side` points at its row from the left. */
+export interface Pointer extends Cell {
+  dir: 'down' | 'side';
+}
+
 /** One thing that flies through the strike phase. */
 export type StrikeSpec =
   /** Down through a whole column, top to bottom. */
@@ -88,7 +93,7 @@ export interface AnimPlan {
   /** Cells outlined while the move is aimed: everything the move covers. */
   marks: readonly Cell[];
   /** Cells that carry the down-pointing marker. */
-  pointers: readonly Cell[];
+  pointers: readonly Pointer[];
   /** The weapons that fly, one after the other copy in the same phase. */
   strikes: readonly StrikeSpec[];
   /** The creatures it hit: where the impact bursts. */
@@ -195,7 +200,7 @@ export function planOf(aim: BossAim, grid: { rows: number; cols: number }): Anim
         ...base,
         marks: cols.flatMap((c) => column(c, grid.rows)),
         pointers: cap(
-          cols.map((c) => ({ row: 0, col: c })),
+          cols.map((c): Pointer => ({ row: 0, col: c, dir: 'down' })),
           MAX_POINTERS,
         ),
         strikes: cap(
@@ -212,7 +217,7 @@ export function planOf(aim: BossAim, grid: { rows: number; cols: number }): Anim
         ...base,
         marks: rowsHit.flatMap((r) => row(r, grid.cols)),
         pointers: cap(
-          rowsHit.map((r) => ({ row: r, col: 0 })),
+          rowsHit.map((r): Pointer => ({ row: r, col: 0, dir: 'side' })),
           MAX_POINTERS,
         ),
         strikes: cap(
@@ -234,7 +239,7 @@ export function planOf(aim: BossAim, grid: { rows: number; cols: number }): Anim
       return {
         ...base,
         marks: cells,
-        pointers: cap(cells, MAX_POINTERS),
+        pointers: [{ row: r, col: 0, dir: 'side' }],
         strikes: [{ kind: 'span', row: r, fromCol, toCol }],
       };
     }
@@ -243,7 +248,11 @@ export function planOf(aim: BossAim, grid: { rows: number; cols: number }): Anim
       return {
         ...base,
         marks: cells,
-        pointers: cap(cells, MAX_POINTERS),
+        pointers: distinct(cells.map((c) => c.row)).map((r): Pointer => ({
+          row: r,
+          col: 0,
+          dir: 'side',
+        })),
         strikes: cap(
           cells.map((c): StrikeSpec => ({
             kind: 'end',
@@ -259,7 +268,7 @@ export function planOf(aim: BossAim, grid: { rows: number; cols: number }): Anim
       return {
         ...base,
         marks: cells,
-        pointers: cap(cells.slice(0, 1), MAX_POINTERS),
+        pointers: cap(cells.slice(0, 1), MAX_POINTERS).map((c): Pointer => ({ ...c, dir: 'down' })),
         strikes: cells.length === 0 ? [] : [{ kind: 'hops', cells }],
       };
     case 'all':
@@ -279,7 +288,7 @@ export function planOf(aim: BossAim, grid: { rows: number; cols: number }): Anim
       return {
         ...base,
         marks: cells,
-        pointers: cap(cells, MAX_POINTERS),
+        pointers: cap(cells, MAX_POINTERS).map((c): Pointer => ({ ...c, dir: 'down' })),
         strikes: cap(
           (shape === 'cross' ? cells.slice(0, 1) : cells).map((cell): StrikeSpec => ({
             kind: 'drop',

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { FightEvent } from '@creatures/engine/v2';
 import { validateSprite } from '../sprites/sprite-data';
 import * as assets from './assets';
-import { frameAt, type Geometry } from './frame';
+import { frameAt, shakeAt, type Geometry } from './frame';
 import { BOSS_LOOKS, resolveLook } from './looks';
 import { FORM_OF, SHAPES, bossAimOf, planOf, type Shape } from './plan';
 import { parseCells, sampleCells } from './sample-cells';
@@ -69,8 +69,8 @@ describe('plans', () => {
     ]);
     expect(plan.marks).toHaveLength(6);
     expect(plan.pointers).toEqual([
-      { row: 0, col: 1 },
-      { row: 0, col: 2 },
+      { row: 0, col: 1, dir: 'down' },
+      { row: 0, col: 2, dir: 'down' },
     ]);
   });
   it('caps the weapons that fly but still bursts on every creature', () => {
@@ -177,7 +177,7 @@ describe('frames', () => {
     const weapon = strike.find((i) => i.kind === 'sprite');
     expect(weapon).toMatchObject({ rot: 180 });
     const impact = frameAt(plan, look, geom, BOSS_MOVE_MS, phaseShot(BOSS_MOVE_MS, 'impact'));
-    expect(impact.some((i) => i.kind === 'sprite' && i.key.startsWith('burst'))).toBe(true);
+    expect(impact.some((i) => i.kind === 'sprite' && i.key.startsWith('spark'))).toBe(true);
     expect(impact.some((i) => i.kind === 'pointer')).toBe(false);
   });
   it('sends the thrown weapon off the top of the stage', () => {
@@ -190,6 +190,50 @@ describe('frames', () => {
     );
     const weapon = end.find((i) => i.kind === 'sprite');
     expect(weapon !== undefined && weapon.kind === 'sprite' && weapon.y < 0).toBe(true);
+  });
+  it('leaves a trail behind the falling weapon and flashes the hit cells as it lands', () => {
+    const strike = frameAt(plan, look, geom, BOSS_MOVE_MS, phaseShot(BOSS_MOVE_MS, 'strike'));
+    expect(
+      strike.filter((i) => i.kind === 'sprite' && i.key.startsWith('trail')).length,
+    ).toBeGreaterThan(0);
+    const spans = phaseSpans(BOSS_MOVE_MS);
+    const landing = (spans.find((s) => s.id === 'impact')?.start ?? 0) + 5;
+    const flash = frameAt(plan, look, geom, BOSS_MOVE_MS, landing);
+    expect(flash.some((i) => i.kind === 'cell' && i.tone === 'flash')).toBe(true);
+    const later = frameAt(plan, look, geom, BOSS_MOVE_MS, BOSS_MOVE_MS - 5);
+    expect(later.some((i) => i.kind === 'cell' && i.tone === 'flash')).toBe(false);
+  });
+  it('points down at a column from above and at a row from the left', () => {
+    const aim = phaseShot(BOSS_MOVE_MS, 'aim');
+    const down = frameAt(plan, look, geom, BOSS_MOVE_MS, aim).find((i) => i.kind === 'pointer');
+    expect(down).toMatchObject({ dir: 'down' });
+    expect(down !== undefined && down.kind === 'pointer' && down.y < 300).toBe(true);
+    const rowPlan = planOf({ moveId: 'x', shape: 'row', cells: sampleCells('row', GRID) }, GRID);
+    const side = frameAt(rowPlan, look, geom, BOSS_MOVE_MS, aim).find((i) => i.kind === 'pointer');
+    expect(
+      side !== undefined && side.kind === 'pointer' && side.dir === 'side' && side.x < 40,
+    ).toBe(true);
+  });
+  it('shakes the board only for a heavy move, as it lands', () => {
+    const impact = phaseShot(BOSS_MOVE_MS, 'impact') - 120;
+    const heavy = resolveLook('storm-sovereign', 'spark', {
+      id: 'judgement-bolt',
+      shape: 'single',
+      form: 'orb',
+    });
+    const single = planOf(
+      { moveId: 'judgement-bolt', shape: 'single', cells: [{ row: 0, col: 0 }] },
+      GRID,
+    );
+    const moved = Array.from({ length: 20 }, (_, k) =>
+      shakeAt(single, heavy, BOSS_MOVE_MS, impact + k * 5),
+    );
+    expect(moved.some((s) => s.x !== 0 || s.y !== 0)).toBe(true);
+    expect(shakeAt(single, look, BOSS_MOVE_MS, impact)).toEqual({ x: 0, y: 0 });
+    expect(shakeAt(single, heavy, BOSS_MOVE_MS, phaseShot(BOSS_MOVE_MS, 'aim'))).toEqual({
+      x: 0,
+      y: 0,
+    });
   });
   it('draws nothing outside the move', () => {
     expect(frameAt(plan, look, geom, BOSS_MOVE_MS, -1)).toEqual([]);
