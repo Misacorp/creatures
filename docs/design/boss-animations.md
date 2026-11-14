@@ -29,7 +29,7 @@ Pure pieces: `bossAimOf` (a boss beat's events to the move and the creatures it 
 2. Add one entry to `BOSS_LOOKS` in `looks.ts`, keyed by the boss id: `shapes` for a shape's art (`columns`, `single`, ...) and `moves` for a single move by id (a heavier bolt for the one-shot). Anything left out plays the generic art.
 3. Look at every move with the script above and send Misa the pictures.
 
-Bosses with a look: Storm Sovereign. The others play the generic art in their element's colours.
+Bosses with a look: Storm Sovereign (spear and bolts), Tidal Colossus (trident, curling waves, spray drops, splash). The others play the generic art in their element's colours.
 
 ## Known limits
 
