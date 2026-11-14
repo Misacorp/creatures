@@ -169,6 +169,7 @@ describe('what the flag changes', () => {
         const id = '11111111-1111-4111-8111-111111111111';
         expect((await call('POST', `/api/raid/swap/${id}/accept`)).status).toBe(404);
         expect((await call('POST', `/api/raid/swap/${id}/decline`)).status).toBe(404);
+        expect((await call('POST', `/api/raid/swap/${id}/cancel`)).status).toBe(404);
       },
       { start: V2_WEEK.open },
     );
@@ -404,6 +405,48 @@ describe('swap requests', () => {
           ok: true,
         });
         expect(slotsOf(ctx, a.id)).toContain(theirs[0]);
+      },
+      { start: V2_WEEK.open, core: V2 },
+    );
+  }, 60_000);
+
+  it('lets only the asker cancel an open request, leaves answered ones, and is safe to repeat', async () => {
+    await runRaid(
+      async (ctx) => {
+        const { players } = await party(ctx);
+        const [a, b] = players as [(typeof players)[0], (typeof players)[0]];
+        const mine = slotsOf(ctx, a.id);
+        const theirs = slotsOf(ctx, b.id);
+        expect(
+          ctx.core.raid.askSwap(a.id, HELSINKI, mine[0] as number, theirs[0] as number).ok,
+        ).toBe(true);
+        const id = ctx.core.raid.swaps(a.id, HELSINKI).outgoing[0]?.id as string;
+        // The asked player cannot cancel it: nothing changes.
+        expect(ctx.core.raid.cancelSwap(b.id, HELSINKI, id).ok).toBe(true);
+        expect(ctx.core.raid.swaps(b.id, HELSINKI).incoming).toHaveLength(1);
+        // The asker cancels: open nowhere, no note, the asked player's row is gone. Twice is fine.
+        for (let i = 0; i < 2; i++) {
+          expect(ctx.core.raid.cancelSwap(a.id, HELSINKI, id).ok).toBe(true);
+        }
+        expect(ctx.core.raid.swaps(a.id, HELSINKI)).toEqual({
+          incoming: [],
+          outgoing: [],
+          settled: [],
+        });
+        expect(ctx.core.raid.swaps(b.id, HELSINKI).incoming).toEqual([]);
+        expect(count(ctx.sql, 'raid_swap_requests', "status = 'open'")).toBe(0);
+        // An answered request cannot be cancelled.
+        expect(
+          ctx.core.raid.askSwap(a.id, HELSINKI, mine[1] as number, theirs[1] as number).ok,
+        ).toBe(true);
+        const second = ctx.core.raid.swaps(b.id, HELSINKI).incoming[0]?.id as string;
+        expect(ctx.core.raid.answerSwap(b.id, HELSINKI, second, 'decline').ok).toBe(true);
+        expect(ctx.core.raid.cancelSwap(a.id, HELSINKI, second)).toMatchObject({
+          ok: false,
+          status: 409,
+          error: 'answered',
+        });
+        expect(ctx.core.raid.swaps(a.id, HELSINKI).settled).toHaveLength(1);
       },
       { start: V2_WEEK.open, core: V2 },
     );

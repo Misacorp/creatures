@@ -22,7 +22,7 @@ import { summaryBoss } from './raid-summary-view';
 import { SwapOutcomes, SwapRequests } from './SwapRequests';
 import { BossCardV2 } from './BossCardV2';
 import { litMove } from './raid-board-v2';
-import { answerSwap, askSwap } from './raid-v2-api';
+import { answerSwap, askSwap, cancelSwap } from './raid-v2-api';
 import { TrackStrip } from './ui/TrackStrip';
 import {
   fetchRaid,
@@ -282,6 +282,16 @@ export function Raid({
     });
   }
 
+  /** Combat v2: withdraws a request you asked. The answer is your requests, so the board need not load again. */
+  function cancelToSwap(id: string): void {
+    void mutate(async () => {
+      const swaps = await cancelSwap(id);
+      const current = loadedRef.current?.view;
+      if (current?.v2 === undefined) return fetchRaid();
+      return { ...current, v2: { ...current.v2, swaps } };
+    });
+  }
+
   function runIntent(intent: Intent): void {
     void mutate(() =>
       intent.type === 'place'
@@ -481,6 +491,7 @@ export function Raid({
                       lit: tappedMove === undefined ? null : litMove(v2.preview, tappedMove),
                       onAskSwap: askToSwap,
                       onAnswerSwap: answerToSwap,
+                      onCancelSwap: cancelToSwap,
                     }
               }
             />

@@ -55,7 +55,7 @@ import {
   startFinaleV2,
   unresolvedRealV2,
 } from './raid-v2-live';
-import { askSwap, acceptSwap, declineSwap } from './raid-swap';
+import { askSwap, acceptSwap, cancelSwap, declineSwap } from './raid-swap';
 import { endWeekV2 } from './raid-v2-track';
 import { resolveStageV2, type ResultPhase } from './raid-v2-stage';
 import {
@@ -1710,6 +1710,18 @@ export class Raid {
     const outcome = this.atomically(() => {
       const { week, party } = this.swapContext(userId, tz);
       askSwap(this.sql, week, userId, slotA, slotB, this.v2Length(week, party), this.deps.now());
+      return null;
+    });
+    if (!outcome.ok) return outcome;
+    return { ok: true, value: this.swaps(userId, tz) };
+  }
+
+  /** Withdraws a request the caller made (see `cancelSwap`); a request someone else made is left alone. */
+  cancelSwap(userId: string, tz: string, id: string): Outcome<SwapsView> {
+    this.runDue(tz);
+    const outcome = this.atomically(() => {
+      const { week } = this.swapContext(userId, tz);
+      cancelSwap(this.sql, week, userId, id);
       return null;
     });
     if (!outcome.ok) return outcome;

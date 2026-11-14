@@ -31,6 +31,7 @@ const GAME_MESSAGES: Readonly<Record<string, string>> = {
   changed: 'That swap is out of date: the creatures moved. The board was refreshed.',
   too_many_requests: 'You have too many swap requests open. Wait for some answers first.',
   invalid_swap: 'That swap cannot be asked. Pick one of your creatures and another player\u2019s.',
+  answered: 'That swap was already answered, so it cannot be cancelled.',
   not_v2: 'This week\u2019s raid does not have swap requests.',
   already_fired: 'Your ability has already been used.',
   not_your_ability: 'That ability is not yours. The screen was out of date.',
@@ -117,7 +118,7 @@ describe('error messages', () => {
   });
 
   it('pins every code of the table', () => {
-    expect(Object.keys(GAME_MESSAGES)).toHaveLength(77);
+    expect(Object.keys(GAME_MESSAGES)).toHaveLength(78);
   });
 
   it('says the same words for every dungeon code', () => {

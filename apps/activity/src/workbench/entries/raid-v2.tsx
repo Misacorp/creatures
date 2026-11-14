@@ -117,6 +117,9 @@ function RaidWeekDemo({ p }: { p: Props }) {
           onAnswerSwap: () => {
             setRefused('An answer goes to the server; this page has none.');
           },
+          onCancelSwap: () => {
+            setRefused('A cancel goes to the server; this page has none.');
+          },
           onAskSwap: (mySlot, theirSlot) => {
             const mine = party.row.find((s) => s.slot === mySlot)?.creature;
             const theirs = party.row.find((s) => s.slot === theirSlot)?.creature;
@@ -177,7 +180,7 @@ const bossCardV2: Entry = {
   file: 'apps/activity/src/BossCardV2.tsx',
   group: 'Creatures & game pieces',
   description:
-    "The v2 raid tab as a player meets it before and between stages: the track strip, the boss card (armour, the weekend's HP bar with a tick per stage and last week's best as a ghost, rule cards with their strength, the Escalating meter, the plain attack, a tile for each move and the turn strip) and the party board under it, with the boss's rows by the party's columns. Tap a move tile and the slots it would hit light on the board (a move aimed when it comes lights nothing) and a popover explains the move: what it does, when it comes and a tag for each keyword on it; the tap control does the same from the controls. A creature in an open swap request carries a circling two-arrow mark; a tap opens the request (Accept and Decline for the owner, who is asked; the asker reads who they wait for). Tap another player's creature, then Ask to swap.",
+    "The v2 raid tab as a player meets it before and between stages: the track strip, the boss card (armour, the weekend's HP bar with a tick per stage and last week's best as a ghost, rule cards with their strength, the Escalating meter, the plain attack, a tile for each move and the turn strip) and the party board under it, with the boss's rows by the party's columns. Tap a move tile and the slots it would hit light on the board (a move aimed when it comes lights nothing) and a popover explains the move: what it does, when it comes and a tag for each keyword on it; the tap control does the same from the controls. A creature in an open swap request carries a circling two-arrow mark; a tap opens the request (Accept and Decline for the owner, who is asked; the asker reads who they wait for and can Cancel request). Tap another player's creature, then Ask to swap.",
   covers: ['boardTurnSteps', 'strengthPips', 'stageTicks'],
   controls: WEEK_CONTROLS,
   defaults: WEEK_DEFAULTS,

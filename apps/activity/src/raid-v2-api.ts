@@ -262,7 +262,7 @@ export function isRaidV2View(value: unknown): value is RaidV2View {
   );
 }
 
-// --- Swap requests (`GET/POST /api/raid/swap`, `POST /api/raid/swap/:id/accept|decline`) ---
+// --- Swap requests (`GET/POST /api/raid/swap`, `POST /api/raid/swap/:id/accept|decline|cancel`) ---
 
 function parseSwaps(data: unknown): SwapsV2 {
   if (!isSwaps(data)) throw new Error('the server returned unexpected swap requests');
@@ -280,6 +280,13 @@ export async function fetchSwaps(): Promise<SwapsV2> {
  */
 export async function askSwap(slotA: number, slotB: number): Promise<SwapsV2> {
   return parseSwaps(await apiFetch('/api/raid/swap', jsonRequest('POST', { slotA, slotB })));
+}
+
+/** Withdraws a request the caller asked (only the asker can; asking again is harmless). Answers the caller's open requests. */
+export async function cancelSwap(id: string): Promise<SwapsV2> {
+  return parseSwaps(
+    await apiFetch(`/api/raid/swap/${encodeURIComponent(id)}/cancel`, { method: 'POST' }),
+  );
 }
 
 /** Accepts or declines a request addressed to the caller. Answers the caller's open requests. */
