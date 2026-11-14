@@ -25,6 +25,7 @@ import { Drawer } from './ui/Drawer';
 import { PreviewStatus } from './ui/PreviewStatus';
 import { type WizardStep, useWizard } from './ui/use-wizard';
 import { WizardFooter, WizardView } from './ui/Wizard';
+import { PanelBody } from './valley/PlaceCanvas';
 import { useJobPreview, usePickedCreature } from './use-job-preview';
 
 /** The steps of dismantling: the warning about worn items (only when some are worn), who does it, the confirmation. */
@@ -351,4 +352,20 @@ export function DismantleDrawer({
       {body}
     </Drawer>
   );
+}
+
+/**
+ * The same flow as a step of a canvas place's drawer or page (the Forge's bag): no sheet over a drawer. The body scrolls and the gold
+ * button stays pinned under it, as in the drawer's footer; Back from the first step is `onClose`.
+ */
+export function DismantlePanelStep({
+  onClose,
+  exitLabel = 'to the bag',
+  ...flow
+}: Omit<DismantleFlowProps, 'onExit' | 'exitLabel'> & {
+  onClose: () => void;
+  exitLabel?: string | undefined;
+}) {
+  const { body, footer } = useDismantleFlow({ ...flow, onExit: onClose, exitLabel });
+  return <PanelBody footer={footer}>{body}</PanelBody>;
 }
