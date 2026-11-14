@@ -18,7 +18,8 @@ describe('the sealed crate in the paper (V-FORGE-5)', () => {
     const merged = mergeLogs({ ...emptyLog(), crate: 'epic' }, { ...emptyLog(), crate: 'rare' });
     expect(merged.crate).toBe('epic');
     expect(mergeLogs(emptyLog(), { ...emptyLog(), crate: 'rare' }).crate).toBe('rare');
-    const { crate: _crate, ...old } = emptyLog();
+    const old: Record<string, unknown> = { ...emptyLog() };
+    delete old.crate;
     expect(v.parse(PaperLogSchema, old).crate).toBeNull();
   });
 
