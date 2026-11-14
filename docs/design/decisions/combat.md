@@ -4,6 +4,14 @@ The shared combat engine, abilities, statuses, elements, the balance simulator, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-14: Boss animations: lances pass through the whole column; the aim is the board's highlight, no triangle [Misa]
+
+ID: `2026-11-14-boss-animations-lances-pass-through-the` · Status: current · Amends: `2026-11-14-boss-move-animations-five-phases-motion`
+
+**Decision.** A lance (a column strike) flies through the whole column and out past its last row, instead of stopping with its middle on the board's bottom edge. The aim phase shows only the board's own target highlight (the red the lit move uses) on the cells the move will hit; the down-pointing and side-pointing triangle markers are removed.
+
+**Reasoning.** Misa (2026-11-14): "I'd like them to travel through. The triangles showing the targeting are way too big or at least clunky looking. Perhaps the existing way of showing which spaces will be targeted (highlight color) is good and versatile enough." One way to show targets, the one players already know from the boss card.
+
 ## 2026-11-14: Rename: the Mire debuff is Bogged Down, the Mire mark is Mired [Misa]
 
 ID: `2026-11-14-rename-the-mire-debuff-is-bogged` · Status: current
@@ -30,7 +38,7 @@ ID: `2026-11-14-raid-seats-are-never-moved-stage` · Status: current · Amends: 
 
 ## 2026-11-14: Boss move animations: five phases, motion by shape, art by boss look
 
-ID: `2026-11-14-boss-move-animations-five-phases-motion` · Status: current
+ID: `2026-11-14-boss-move-animations-five-phases-motion` · Status: current, amended by `2026-11-14-boss-animations-lances-pass-through-the`
 
 **Decision.** A raid boss's move is animated on the client in five phases (wind-up in the boss's hand, aim with the down-pointing marker on the cells, throw off the top of the screen, strike through the cells, impact), timed in one place (`apps/activity/src/boss-anim/timeline.ts`, `BOSS_MOVE_MS`, which is also the boss beat's length). The motion belongs to the move's shape (one generic motion per engine shape); a boss look (`BOSS_LOOKS` in `looks.ts`, by boss id, per shape or per move id) only supplies the weapon and impact art, falling back to generic art per weapon form in the boss's element colours. The playback holds a boss beat back for the first four phases inside the beat's own time, so the board never runs ahead of the picture and the round's length is unchanged. Reduced motion and dungeon foes skip it. Prototype look: the Storm Sovereign. Guide: `docs/design/boss-animations.md`.
 

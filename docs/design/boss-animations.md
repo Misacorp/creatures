@@ -9,14 +9,14 @@ Code: `apps/activity/src/boss-anim/`. Client only: it draws from the events the 
 A move is **five phases**, timed in one place (`timeline.ts`; `BOSS_MOVE_MS`, 1.7 s at 1x, split by weights):
 
 1. **windup**: the weapon appears in the boss's hand.
-2. **aim**: the cells the move will hit are outlined and the down-pointing marker (the popover's stepped pixel arrow, `styles/components/boss-anim.css`) sits over them.
+2. **aim**: the cells the move will hit light up in the board's own target highlight (the red the lit move uses). No extra marker (Misa, 2026-11-14: the triangles were too big and clunky; the highlight is versatile enough).
 3. **throw**: the weapon leaves the screen upwards.
 4. **strike**: it comes through the marked cells (down a column, across a row, onto a creature, hopping along a chain).
 5. **impact**: a burst on each creature hit. The beat lands (HP, damage numbers, callouts) as this phase begins: the playback holds the beat back for the first four phases, inside the beat's own time (`BEAT_MS.boss` is `BOSS_MOVE_MS`), so a round's length and the live finale's budget do not change.
 
 The **motion belongs to the move's shape** (`plan.ts`: the table at the top says what every shape does). The **look only chooses the art** (`looks.ts`): weapon sprite and impact sprite, with the lookup move id, then shape, then the generic art of the shape's weapon form (`spear`, `wave`, `orb`, `chain`, `nova`) in the boss's element colours.
 
-Pure pieces: `bossAimOf` (a boss beat's events to the move and the creatures it hit), `planOf` (grid terms: marks, pointers, strikes, impacts), `frameAt` (the picture at time `t`). `BossAnimLayer.tsx` measures the stage (`.stage-boss-art`, `[data-slot]`) and draws; `use-playback-v2.ts` starts a run before a boss beat lands (`bossRun`). Reduced motion: no run, the board's own flash and numbers say it. A dungeon foe passes no `bossAnim` setup and keeps today's look.
+Pure pieces: `bossAimOf` (a boss beat's events to the move and the creatures it hit), `planOf` (grid terms: marks, strikes, impacts), `frameAt` (the picture at time `t`). `BossAnimLayer.tsx` measures the stage (`.stage-boss-art`, `[data-slot]`) and draws; `use-playback-v2.ts` starts a run before a boss beat lands (`bossRun`). Reduced motion: no run, the board's own flash and numbers say it. A dungeon foe passes no `bossAnim` setup and keeps today's look.
 
 ## Trying a look: the workbench and the screenshots
 

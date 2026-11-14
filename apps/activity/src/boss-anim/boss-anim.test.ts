@@ -68,10 +68,6 @@ describe('plans', () => {
       { kind: 'column', col: 2 },
     ]);
     expect(plan.marks).toHaveLength(6);
-    expect(plan.pointers).toEqual([
-      { row: 0, col: 1, dir: 'down' },
-      { row: 0, col: 2, dir: 'down' },
-    ]);
   });
   it('caps the weapons that fly but still bursts on every creature', () => {
     const cells = sampleCells('checker', GRID);
@@ -169,16 +165,19 @@ describe('frames', () => {
   });
   const kinds = (t: number): string[] =>
     frameAt(plan, look, geom, BOSS_MOVE_MS, t).map((i) => i.kind);
-  it('shows the weapon at the hand, then the markers, then the strike, then the burst', () => {
+  it('shows the weapon at the hand, then the lit cells, then the strike, then the burst', () => {
     expect(kinds(phaseShot(BOSS_MOVE_MS, 'windup'))).toEqual(['sprite']);
-    expect(kinds(phaseShot(BOSS_MOVE_MS, 'aim'))).toContain('pointer');
-    expect(kinds(phaseShot(BOSS_MOVE_MS, 'aim'))).toContain('cell');
+    expect(kinds(phaseShot(BOSS_MOVE_MS, 'aim'))).toEqual(
+      expect.arrayContaining(['sprite', 'cell']),
+    );
+    expect(kinds(phaseShot(BOSS_MOVE_MS, 'aim')).every((k) => k === 'sprite' || k === 'cell')).toBe(
+      true,
+    );
     const strike = frameAt(plan, look, geom, BOSS_MOVE_MS, phaseShot(BOSS_MOVE_MS, 'strike'));
     const weapon = strike.find((i) => i.kind === 'sprite');
     expect(weapon).toMatchObject({ rot: 180 });
     const impact = frameAt(plan, look, geom, BOSS_MOVE_MS, phaseShot(BOSS_MOVE_MS, 'impact'));
     expect(impact.some((i) => i.kind === 'sprite' && i.key.startsWith('spark'))).toBe(true);
-    expect(impact.some((i) => i.kind === 'pointer')).toBe(false);
   });
   it('sends the thrown weapon off the top of the stage', () => {
     const end = frameAt(
@@ -203,16 +202,16 @@ describe('frames', () => {
     const later = frameAt(plan, look, geom, BOSS_MOVE_MS, BOSS_MOVE_MS - 5);
     expect(later.some((i) => i.kind === 'cell' && i.tone === 'flash')).toBe(false);
   });
-  it('points down at a column from above and at a row from the left', () => {
-    const aim = phaseShot(BOSS_MOVE_MS, 'aim');
-    const down = frameAt(plan, look, geom, BOSS_MOVE_MS, aim).find((i) => i.kind === 'pointer');
-    expect(down).toMatchObject({ dir: 'down' });
-    expect(down !== undefined && down.kind === 'pointer' && down.y < 300).toBe(true);
-    const rowPlan = planOf({ moveId: 'x', shape: 'row', cells: sampleCells('row', GRID) }, GRID);
-    const side = frameAt(rowPlan, look, geom, BOSS_MOVE_MS, aim).find((i) => i.kind === 'pointer');
-    expect(
-      side !== undefined && side.kind === 'pointer' && side.dir === 'side' && side.x < 40,
-    ).toBe(true);
+  it('sends a lance through the whole column and out past its last row', () => {
+    const spans = phaseSpans(BOSS_MOVE_MS);
+    const strikeEnd = (spans.find((s) => s.id === 'strike')?.end ?? 0) - 1;
+    const last = geom.cell({ row: GRID.rows - 1, col: 1 });
+    const lance = frameAt(plan, look, geom, BOSS_MOVE_MS, strikeEnd).find(
+      (i) => i.kind === 'sprite' && i.key.startsWith('weapon'),
+    );
+    expect(last).not.toBeNull();
+    expect(lance !== undefined && lance.kind === 'sprite' && last !== null).toBe(true);
+    if (lance?.kind === 'sprite' && last !== null) expect(lance.y).toBeGreaterThan(last.y + last.h);
   });
   it('shakes the board only for a heavy move, as it lands', () => {
     const impact = phaseShot(BOSS_MOVE_MS, 'impact') - 120;

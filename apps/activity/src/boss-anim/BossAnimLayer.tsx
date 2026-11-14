@@ -75,17 +75,6 @@ function Item({ item }: { item: FrameItem }) {
           })}
         />
       );
-    case 'pointer':
-      return (
-        <div
-          class={`ba-pointer ${item.dir}`}
-          ref={cssVars({
-            '--x': `${String(item.x)}px`,
-            '--y': `${String(item.y)}px`,
-            '--o': item.opacity,
-          })}
-        />
-      );
     case 'sprite':
       return (
         <div

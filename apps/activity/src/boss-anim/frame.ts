@@ -31,16 +31,6 @@ export interface Geometry {
 export type FrameItem =
   /** A cell's outline: `mark` while it is aimed, `hit` as the impact lands. */
   | { kind: 'cell'; key: string; box: Box; tone: 'mark' | 'hit' | 'flash'; opacity: number }
-  /** The down-pointing marker over a cell (`x` the middle, `y` the top of the cell). */
-  | {
-      kind: 'pointer';
-      key: string;
-      x: number;
-      y: number;
-      opacity: number;
-      /** `down`: points down at a column or a creature from above; `side`: points right at a row from its left. */
-      dir: 'down' | 'side';
-    }
   /** A sprite centred on (`x`, `y`), turned `rot` degrees clockwise from pointing up. */
   | {
       kind: 'sprite';
@@ -81,9 +71,10 @@ function strikePath(
       const bottom = cell({ row: geom.grid.rows - 1, col: spec.col });
       if (top === null || bottom === null) return null;
       const x = centre(top).x;
+      // Through the whole column and out past its last row: the lance passes, it does not stop in the board.
       return [
         { x, y: above },
-        { x, y: bottom.y + bottom.h },
+        { x, y: bottom.y + bottom.h + h / 2 + 8 },
       ];
     }
     case 'row': {
@@ -164,8 +155,6 @@ function along(
   return { x: lerp(a.x, b.x, local), y: lerp(a.y, b.y, local), rot };
 }
 
-/** How far a pointer stands off its cell: above it for a column or a creature, to the left of it for a row. */
-const POINTER_GAP = 30;
 /** How long (of the impact phase) the white flash on the hit cells lasts. */
 const FLASH_U = 0.2;
 /** The weapon is held tilted and smaller in the hand, so a long lance stays on the stage; it straightens as it is thrown. */
@@ -187,7 +176,7 @@ export function frameAt(
   const aimStart = spans.find((s) => s.id === 'aim')?.start ?? 0;
   const key = (k: Cell): string => `${String(k.row)}-${String(k.col)}`;
 
-  // The aimed cells and their markers show from the aim until the strike has passed.
+  // The aimed cells light up (the board's own target highlight) from the aim until the strike has passed.
   if (phase === 'aim' || phase === 'throw' || phase === 'strike') {
     const since = clamp01(
       (t - aimStart) / Math.max(1, (spans.find((s) => s.id === 'aim')?.end ?? 1) - aimStart),
@@ -198,20 +187,6 @@ export function frameAt(
       const box = geom.cell(c);
       if (box !== null)
         items.push({ kind: 'cell', key: `mark-${key(c)}`, box, tone: 'mark', opacity });
-    }
-    const bob = Math.round(Math.sin(t / 90) * 2);
-    for (const c of plan.pointers) {
-      const box = geom.cell(c);
-      if (box === null) continue;
-      const side = c.dir === 'side';
-      items.push({
-        kind: 'pointer',
-        key: `pointer-${key(c)}`,
-        dir: c.dir,
-        x: side ? box.x - POINTER_GAP + bob : box.x + box.w / 2,
-        y: side ? box.y + box.h / 2 : box.y - POINTER_GAP + bob,
-        opacity: phase === 'aim' ? clamp01(since * 4) : 1,
-      });
     }
   }
 
