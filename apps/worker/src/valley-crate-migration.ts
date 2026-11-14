@@ -1,5 +1,5 @@
 /**
- * Migration 68: the Forge's sealed crate (V-FORGE-5, Misa 2026-11-15, option C of "collecting gear should be a big moment"). Additive:
+ * Migration 69: the Forge's sealed crate (V-FORGE-5, Misa 2026-11-15, option C of "collecting gear should be a big moment"). Additive:
  * with the flag off the table stays empty and the new columns hold their defaults. `forge_crate` carries `user_id`, so `purgeUser` (the
  * `valley-fresh` tool) clears it with the rest.
  *

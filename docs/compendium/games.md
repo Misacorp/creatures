@@ -117,3 +117,4 @@ These were played in the first days of the Games and then taken out of the daily
 - The melon has a name, but only the committee know it.
 - Some say the giant pumpkins are cousins of the melon, grown from a seed that blew over the fence.
 - A pin board in the sauna hut lists every record ever set. Nobody has ever cleaned it.
+- The **Fairground** furniture set (`housing.md`) is the committee's leftovers made into a house: stall cloth, a bunting string, bulbs from the loudspeaker pole.

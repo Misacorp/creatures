@@ -1,0 +1,14 @@
+{
+  "roof": "thatch",
+  "walls": "plaster",
+  "layout": {
+    "window-a": "cosy-curtains",
+    "wall-large-a": "cosy-shelf-wall",
+    "wall-small-a": "cosy-clock",
+    "ceiling-a": "cosy-lamp",
+    "floor-large-a": "cosy-sofa",
+    "floor-small-a": "cosy-chair",
+    "floor-small-b": "cosy-plant",
+    "rug-a": "cosy-rug"
+  }
+}

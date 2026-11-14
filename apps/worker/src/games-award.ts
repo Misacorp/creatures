@@ -102,6 +102,12 @@ export function awardDay(deps: GamesDeps, day: string): boolean {
           p.event_id === row.bonus,
         ),
       });
+      if (p.medal !== null)
+        deps.housing?.drop(p.user_id, {
+          kind: 'games',
+          key: `games:${day}:${p.event_id}`,
+          medal: p.medal,
+        });
       recordAway(sql, p.user_id, 'games', { medals: p.medal === null ? 0 : 1, xp }, now);
       sql.exec(
         'UPDATE games_placings SET pins = ?, xp = ? WHERE day = ? AND event_id = ? AND user_id = ?',

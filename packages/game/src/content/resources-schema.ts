@@ -15,6 +15,7 @@ export const RESOURCE_KINDS = [
   'supply',
   'prize',
   'collectible',
+  'luxury',
 ] as const;
 export type ResourceKind = (typeof RESOURCE_KINDS)[number];
 

@@ -10,9 +10,22 @@ function place(id: string, group: string, pip: string | null = null): NavPlace {
 
 const ids = (list: readonly { id: string }[]): string[] => list.map((p) => p.id);
 
+describe('the House place', () => {
+  it('is left out unless the server offers housing, and sits after Stats in the Collection when it does', () => {
+    expect(ids(navPlaces(NO_ALERTS))).not.toContain('house');
+    expect(ids(navPlaces(NO_ALERTS, { housing: false }))).not.toContain('house');
+    const on = ids(navPlaces(NO_ALERTS, { housing: true }));
+    expect(on[on.indexOf('stats') + 1]).toBe('house');
+    const group = navGroups(navPlaces(NO_ALERTS, { housing: true })).find(
+      (g) => g.id === 'collection',
+    );
+    expect(ids(group?.places ?? [])).toContain('house');
+  });
+});
+
 describe('the place list', () => {
-  it('is the eight tabs in their order, each with its group and its pip from the alerts', () => {
-    const places = navPlaces({ ...NO_ALERTS, workshop: ALERT_TEXT.jobReady });
+  it('is the tabs in their order (the House only with housing on), each with its group and its pip from the alerts', () => {
+    const places = navPlaces({ ...NO_ALERTS, workshop: ALERT_TEXT.jobReady }, { housing: true });
     expect(ids(places)).toEqual(TABS.map((t) => t.id));
     expect(places.map((p) => p.label)).toEqual(TABS.map((t) => t.label));
     expect(places.map((p) => p.group)).toEqual(TABS.map((t) => t.group));

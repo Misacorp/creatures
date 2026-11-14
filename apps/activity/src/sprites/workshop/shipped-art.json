@@ -1,0 +1,398 @@
+{
+  "tidepool-bed": {
+    "made": "hand",
+    "hash": "5895631f"
+  },
+  "tidepool-cupboard": {
+    "made": "hand",
+    "hash": "f63d0764"
+  },
+  "tidepool-table": {
+    "made": "hand",
+    "hash": "6ec7dfd8"
+  },
+  "tidepool-shelf": {
+    "made": "hand",
+    "hash": "0891a6c0"
+  },
+  "tidepool-stool": {
+    "made": "hand",
+    "hash": "c9e2730c"
+  },
+  "tidepool-lamp": {
+    "made": "layers",
+    "hash": "64f6b3cb"
+  },
+  "tidepool-rug": {
+    "made": "hand",
+    "hash": "6a6770f6"
+  },
+  "tidepool-frame": {
+    "made": "hand",
+    "hash": "1cd28b2f"
+  },
+  "tidepool-curtains": {
+    "made": "hand",
+    "hash": "2868a247"
+  },
+  "moonlit-bed": {
+    "made": "hand",
+    "hash": "87d4d3f2"
+  },
+  "moonlit-cupboard": {
+    "made": "hand",
+    "hash": "2aa795a2"
+  },
+  "moonlit-table": {
+    "made": "hand",
+    "hash": "57d6e4f7"
+  },
+  "moonlit-shelf": {
+    "made": "hand",
+    "hash": "8611214b"
+  },
+  "moonlit-stool": {
+    "made": "hand",
+    "hash": "16da7c56"
+  },
+  "moonlit-lamp": {
+    "made": "layers",
+    "hash": "2fae159f"
+  },
+  "moonlit-rug": {
+    "made": "hand",
+    "hash": "479ac058"
+  },
+  "moonlit-frame": {
+    "made": "hand",
+    "hash": "d91b24bc"
+  },
+  "moonlit-curtains": {
+    "made": "hand",
+    "hash": "310c67f8"
+  },
+  "emberhold-bed": {
+    "made": "hand",
+    "hash": "c60d1e30"
+  },
+  "emberhold-cupboard": {
+    "made": "hand",
+    "hash": "ab475dd9"
+  },
+  "emberhold-table": {
+    "made": "hand",
+    "hash": "adb295d5"
+  },
+  "emberhold-shelf": {
+    "made": "hand",
+    "hash": "d9e115bd"
+  },
+  "emberhold-stool": {
+    "made": "hand",
+    "hash": "c700b92b"
+  },
+  "emberhold-lamp": {
+    "made": "layers",
+    "hash": "73f9c3c0"
+  },
+  "emberhold-rug": {
+    "made": "hand",
+    "hash": "8e0eefe7"
+  },
+  "emberhold-frame": {
+    "made": "hand",
+    "hash": "a13205b2"
+  },
+  "emberhold-curtains": {
+    "made": "hand",
+    "hash": "05497a86"
+  },
+  "rootwood-bed": {
+    "made": "hand",
+    "hash": "15c92a69"
+  },
+  "rootwood-cupboard": {
+    "made": "hand",
+    "hash": "1f23ddb1"
+  },
+  "rootwood-table": {
+    "made": "hand",
+    "hash": "9f5e0873"
+  },
+  "rootwood-shelf": {
+    "made": "hand",
+    "hash": "39eec87f"
+  },
+  "rootwood-stool": {
+    "made": "hand",
+    "hash": "f9ecc1ae"
+  },
+  "rootwood-lamp": {
+    "made": "layers",
+    "hash": "47c87186"
+  },
+  "rootwood-rug": {
+    "made": "hand",
+    "hash": "9305bad8"
+  },
+  "rootwood-frame": {
+    "made": "hand",
+    "hash": "b9322152"
+  },
+  "rootwood-curtains": {
+    "made": "hand",
+    "hash": "077de091"
+  },
+  "stormglass-bed": {
+    "made": "hand",
+    "hash": "84418d89"
+  },
+  "stormglass-cupboard": {
+    "made": "hand",
+    "hash": "82147530"
+  },
+  "stormglass-table": {
+    "made": "hand",
+    "hash": "a0abac22"
+  },
+  "stormglass-shelf": {
+    "made": "hand",
+    "hash": "0eab7da2"
+  },
+  "stormglass-stool": {
+    "made": "hand",
+    "hash": "2032af18"
+  },
+  "stormglass-lamp": {
+    "made": "hand",
+    "hash": "e81f960a"
+  },
+  "stormglass-rug": {
+    "made": "hand",
+    "hash": "80659714"
+  },
+  "stormglass-frame": {
+    "made": "hand",
+    "hash": "a2457f05"
+  },
+  "stormglass-curtains": {
+    "made": "hand",
+    "hash": "4c2d12fc"
+  },
+  "fenkeeper-bed": {
+    "made": "hand",
+    "hash": "94d03cd5"
+  },
+  "fenkeeper-cupboard": {
+    "made": "hand",
+    "hash": "f88df590"
+  },
+  "fenkeeper-table": {
+    "made": "hand",
+    "hash": "540b27c8"
+  },
+  "fenkeeper-shelf": {
+    "made": "hand",
+    "hash": "f15eec89"
+  },
+  "fenkeeper-stool": {
+    "made": "hand",
+    "hash": "5e355958"
+  },
+  "fenkeeper-lamp": {
+    "made": "hand",
+    "hash": "07040f93"
+  },
+  "fenkeeper-rug": {
+    "made": "hand",
+    "hash": "29de59ea"
+  },
+  "fenkeeper-frame": {
+    "made": "hand",
+    "hash": "cddd0c7f"
+  },
+  "fenkeeper-curtains": {
+    "made": "hand",
+    "hash": "a473a07c"
+  },
+  "ancient-bed": {
+    "made": "hand",
+    "hash": "52b7562b"
+  },
+  "ancient-cupboard": {
+    "made": "hand",
+    "hash": "33e0f710"
+  },
+  "ancient-table": {
+    "made": "hand",
+    "hash": "578c7830"
+  },
+  "ancient-shelf": {
+    "made": "hand",
+    "hash": "fb394319"
+  },
+  "ancient-stool": {
+    "made": "hand",
+    "hash": "bdc7ea5a"
+  },
+  "ancient-lamp": {
+    "made": "hand",
+    "hash": "ae48e680"
+  },
+  "ancient-rug": {
+    "made": "hand",
+    "hash": "fe77987c"
+  },
+  "ancient-frame": {
+    "made": "hand",
+    "hash": "180d1b16"
+  },
+  "ancient-curtains": {
+    "made": "hand",
+    "hash": "b86be7f4"
+  },
+  "lantern-night-bed": {
+    "made": "hand",
+    "hash": "3f9d451b"
+  },
+  "lantern-night-cupboard": {
+    "made": "hand",
+    "hash": "105d3114"
+  },
+  "lantern-night-table": {
+    "made": "hand",
+    "hash": "e251a78c"
+  },
+  "lantern-night-shelf": {
+    "made": "hand",
+    "hash": "41c6cb0a"
+  },
+  "lantern-night-stool": {
+    "made": "hand",
+    "hash": "7a0eaee0"
+  },
+  "lantern-night-lamp": {
+    "made": "hand",
+    "hash": "b33a9ae5"
+  },
+  "lantern-night-rug": {
+    "made": "hand",
+    "hash": "be32170c"
+  },
+  "lantern-night-frame": {
+    "made": "hand",
+    "hash": "12fcab18"
+  },
+  "lantern-night-curtains": {
+    "made": "hand",
+    "hash": "245d08fc"
+  },
+  "quiet-verge-bed": {
+    "made": "generated",
+    "hash": "f8560a7d"
+  },
+  "quiet-verge-cupboard": {
+    "made": "generated",
+    "hash": "87f2d741"
+  },
+  "quiet-verge-table": {
+    "made": "generated",
+    "hash": "77437c30"
+  },
+  "quiet-verge-shelf": {
+    "made": "generated",
+    "hash": "061cada1"
+  },
+  "quiet-verge-stool": {
+    "made": "generated",
+    "hash": "750d3270"
+  },
+  "quiet-verge-lamp": {
+    "made": "generated",
+    "hash": "c9c5bfb7"
+  },
+  "quiet-verge-rug": {
+    "made": "generated",
+    "hash": "d200cd0e"
+  },
+  "quiet-verge-frame": {
+    "made": "generated",
+    "hash": "f0ac3ccc"
+  },
+  "quiet-verge-curtains": {
+    "made": "generated",
+    "hash": "70943a65"
+  },
+  "fairground-bed": {
+    "made": "generated",
+    "hash": "e6be1fa9"
+  },
+  "fairground-cupboard": {
+    "made": "generated",
+    "hash": "f0bf0882"
+  },
+  "fairground-table": {
+    "made": "generated",
+    "hash": "538b3455"
+  },
+  "fairground-shelf": {
+    "made": "generated",
+    "hash": "78b3bf53"
+  },
+  "fairground-stool": {
+    "made": "generated",
+    "hash": "40f14652"
+  },
+  "fairground-lamp": {
+    "made": "generated",
+    "hash": "dd5298a6"
+  },
+  "fairground-rug": {
+    "made": "generated",
+    "hash": "ee07e8fa"
+  },
+  "fairground-frame": {
+    "made": "generated",
+    "hash": "42baf434"
+  },
+  "fairground-curtains": {
+    "made": "generated",
+    "hash": "71c102e0"
+  },
+  "schoolhouse-bed": {
+    "made": "generated",
+    "hash": "8afd6772"
+  },
+  "schoolhouse-cupboard": {
+    "made": "generated",
+    "hash": "df028e7d"
+  },
+  "schoolhouse-table": {
+    "made": "generated",
+    "hash": "3e2f1d07"
+  },
+  "schoolhouse-shelf": {
+    "made": "generated",
+    "hash": "57c0dd2c"
+  },
+  "schoolhouse-stool": {
+    "made": "generated",
+    "hash": "d2693bf4"
+  },
+  "schoolhouse-lamp": {
+    "made": "generated",
+    "hash": "ac932052"
+  },
+  "schoolhouse-rug": {
+    "made": "generated",
+    "hash": "9e2ac4a0"
+  },
+  "schoolhouse-frame": {
+    "made": "generated",
+    "hash": "a1f0edc7"
+  },
+  "schoolhouse-curtains": {
+    "made": "generated",
+    "hash": "528554d5"
+  }
+}

@@ -260,5 +260,165 @@
       "id": "journal"
     },
     "glossary": "journal"
+  },
+  {
+    "id": "driftwood",
+    "kind": "luxury",
+    "name": "Driftwood",
+    "plural": "Driftwood",
+    "icon": {
+      "kind": "glyph",
+      "id": "lux-driftwood"
+    }
+  },
+  {
+    "id": "charwood",
+    "kind": "luxury",
+    "name": "Charwood",
+    "plural": "Charwood",
+    "icon": {
+      "kind": "glyph",
+      "id": "lux-charwood"
+    }
+  },
+  {
+    "id": "heartbark",
+    "kind": "luxury",
+    "name": "Heartbark",
+    "plural": "Heartbark",
+    "icon": {
+      "kind": "glyph",
+      "id": "lux-heartbark"
+    }
+  },
+  {
+    "id": "lightning-ash",
+    "kind": "luxury",
+    "name": "Lightning Ash",
+    "plural": "Lightning Ash",
+    "icon": {
+      "kind": "glyph",
+      "id": "lux-lightning-ash"
+    }
+  },
+  {
+    "id": "bog-oak",
+    "kind": "luxury",
+    "name": "Bog Oak",
+    "plural": "Bog Oak",
+    "icon": {
+      "kind": "glyph",
+      "id": "lux-bog-oak"
+    }
+  },
+  {
+    "id": "sea-glass",
+    "kind": "luxury",
+    "name": "Sea Glass",
+    "plural": "Sea Glass",
+    "icon": {
+      "kind": "glyph",
+      "id": "lux-sea-glass"
+    }
+  },
+  {
+    "id": "moonstone",
+    "kind": "luxury",
+    "name": "Moonstone",
+    "plural": "Moonstones",
+    "icon": {
+      "kind": "glyph",
+      "id": "lux-moonstone"
+    }
+  },
+  {
+    "id": "cinder-garnet",
+    "kind": "luxury",
+    "name": "Cinder Garnet",
+    "plural": "Cinder Garnets",
+    "icon": {
+      "kind": "glyph",
+      "id": "lux-cinder-garnet"
+    }
+  },
+  {
+    "id": "storm-quartz",
+    "kind": "luxury",
+    "name": "Storm Quartz",
+    "plural": "Storm Quartz",
+    "icon": {
+      "kind": "glyph",
+      "id": "lux-storm-quartz"
+    }
+  },
+  {
+    "id": "fen-opal",
+    "kind": "luxury",
+    "name": "Fen Opal",
+    "plural": "Fen Opals",
+    "icon": {
+      "kind": "glyph",
+      "id": "lux-fen-opal"
+    }
+  },
+  {
+    "id": "cinder-iron",
+    "kind": "luxury",
+    "name": "Cinder Iron",
+    "plural": "Cinder Iron",
+    "icon": {
+      "kind": "glyph",
+      "id": "lux-cinder-iron"
+    }
+  },
+  {
+    "id": "bright-copper",
+    "kind": "luxury",
+    "name": "Bright Copper",
+    "plural": "Bright Copper",
+    "icon": {
+      "kind": "glyph",
+      "id": "lux-bright-copper"
+    }
+  },
+  {
+    "id": "old-gold",
+    "kind": "luxury",
+    "name": "Old Gold",
+    "plural": "Old Gold",
+    "icon": {
+      "kind": "glyph",
+      "id": "lux-old-gold"
+    }
+  },
+  {
+    "id": "sea-silk",
+    "kind": "luxury",
+    "name": "Sea Silk",
+    "plural": "Sea Silk",
+    "icon": {
+      "kind": "glyph",
+      "id": "lux-sea-silk"
+    }
+  },
+  {
+    "id": "moss-velvet",
+    "kind": "luxury",
+    "name": "Moss Velvet",
+    "plural": "Moss Velvet",
+    "icon": {
+      "kind": "glyph",
+      "id": "lux-moss-velvet"
+    }
+  },
+  {
+    "id": "lantern-silk",
+    "kind": "luxury",
+    "name": "Lantern Silk",
+    "plural": "Lantern Silk",
+    "icon": {
+      "kind": "glyph",
+      "id": "lux-lantern-silk"
+    }
   }
 ]

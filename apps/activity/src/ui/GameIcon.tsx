@@ -2,6 +2,7 @@ import { combatGlyph } from '../combat-glyphs';
 import { ItemSprite } from '../GearArt';
 import { partIcon } from '../gear-sprites';
 import { glyphOrUnknown } from '../glyphs';
+import { HouseIcon } from '../housing/house-icon';
 import type { IconRef } from '../icon-ref';
 import { Sprite } from '../sprites/Sprite';
 import { elementIcon } from '../sprites/element-icons';
@@ -20,6 +21,15 @@ export function GameIcon({ icon, scale = 3 }: { icon: IconRef; scale?: number })
     case 'element':
       return (
         <Sprite sprite={elementIcon(icon.element) ?? glyphOrUnknown('unknown')} scale={scale} />
+      );
+    case 'house':
+      return (
+        <HouseIcon
+          id={icon.id}
+          scale={scale}
+          silhouette={icon.silhouette === true}
+          box={icon.box}
+        />
       );
   }
 }

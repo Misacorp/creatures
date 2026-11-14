@@ -7,6 +7,7 @@
  * depend on it can never be interleaved with another request. The user is always an argument from
  * the verified session. The guild's timezone is always passed in, never defaulted.
  */
+import type { HousingHook } from '@creatures/game';
 import { basicAbilities, content, RULES, type ReadinessBand, type Rng } from '@creatures/game';
 import type { Analytics } from './analytics';
 import { GameError, atomically, type Outcome } from './outcome';
@@ -133,6 +134,8 @@ export interface RaidDeps {
   talentRng?: Rng;
   /** The `COMBAT_V2` flag: a Festival creature also rolls its v2 talent (`talent-v2-store.ts`). */
   combatV2?: boolean;
+  /** Player housing's reward hook (`HOUSING` on): a drop at the reward moment. Absent: nothing happens. */
+  housing?: HousingHook | undefined;
   /** Live randomness for gear drops (a cleared phase, a won finale, a Festival piece). Crypto in production. */
   gearRng?: Rng;
   /** The analytics event log (see `analytics.ts`). Optional: without it nothing is logged. */

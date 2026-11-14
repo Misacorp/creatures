@@ -98,6 +98,8 @@ export function createHandler(overrides: Partial<HandlerDeps> = {}): ExportedHan
           ...(env.VALLEY === 'on' ? { valley: true } : {}),
           // The valley's base systems (staging only until phase 6): only with VALLEY and COMBAT_V2 on too. Absent, not false.
           ...(valleySystemsOn(env) ? { valleySystems: true } : {}),
+          // Player housing (staging only until Misa turns it on): the House place. Absent, not false.
+          ...(env.HOUSING === 'on' ? { housing: true } : {}),
         });
       },
     },

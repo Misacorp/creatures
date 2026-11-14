@@ -208,6 +208,7 @@ export function finishRun(
     newStreak,
     progress.last_day !== day,
   );
+  deps.housing?.drop(userId, { kind: 'dungeon', key: `dungeon:${row.id}`, depth, cleared });
 
   // --- Creature experience, from the fights each creature stood in the row for (a treat doubles it) ---
   const experience: DungeonExperienceView[] = [];
