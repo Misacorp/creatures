@@ -1,14 +1,26 @@
-import { GLOSSARY_SECTIONS, GLOSSARY_SECTIONS_V2, content, glossaryEntry } from '@creatures/game';
+import {
+  GLOSSARY_SECTIONS,
+  GLOSSARY_SECTIONS_V2,
+  GLOSSARY_SECTIONS_VALLEY,
+  content,
+  glossaryEntry,
+} from '@creatures/game';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { HowToPlay } from './HowToPlay';
 import { SectionArt } from './HowToPlayArt';
-import { V2_KEPT_SECTIONS, pageSections, sectionOnPage } from './how-to-pages';
+import {
+  V2_KEPT_SECTIONS,
+  VALLEY_REPLACED_SECTIONS,
+  pageSections,
+  sectionOnPage,
+} from './how-to-pages';
 import {
   BOARD_EXAMPLE_MOVE,
   markExample,
   rankPicture,
   weekendStrip,
   exampleSpecies,
+  growthSteps,
 } from './howto';
 import { PopoverHost } from './PopoverHost';
 import { KeywordText } from './ui/KeywordText';
@@ -58,10 +70,10 @@ describe('which sections the page shows', () => {
     ).toBe('housing');
   });
 
-  it('shows the six combat v2 sections first, then the shipped ones it keeps, once combat v2 is on', () => {
+  it('shows the seven combat v2 sections first, then the shipped ones it keeps, once combat v2 is on', () => {
     const ids = pageSections(true).map((s) => s.id);
-    expect(ids.slice(0, 6)).toEqual([...GLOSSARY_SECTIONS_V2]);
-    expect(ids.slice(6)).toEqual(
+    expect(ids.slice(0, 7)).toEqual([...GLOSSARY_SECTIONS_V2]);
+    expect(ids.slice(7)).toEqual(
       GLOSSARY_SECTIONS.filter((s) => s !== 'housing').filter((s) =>
         (V2_KEPT_SECTIONS as readonly string[]).includes(s),
       ),
@@ -69,6 +81,29 @@ describe('which sections the page shows', () => {
     for (const gone of ['first-week', 'creatures', 'combos', 'raid-week', 'finale', 'ranks']) {
       expect(ids, gone).not.toContain(gone);
     }
+  });
+
+  it('adds the valley sections after the combat v2 ones, in place of trips, the Workshop and gear', () => {
+    const ids = pageSections(true, false, true).map((s) => s.id);
+    expect(ids.slice(0, 7)).toEqual([...GLOSSARY_SECTIONS_V2]);
+    expect(ids.slice(7, 13)).toEqual([...GLOSSARY_SECTIONS_VALLEY]);
+    for (const gone of VALLEY_REPLACED_SECTIONS) expect(ids, gone).not.toContain(gone);
+    expect(ids.slice(13)).toEqual(['dungeon', 'games']);
+    // The valley needs combat v2: with it off, nothing changes.
+    expect(pageSections(false, false, true).map((s) => s.id)).toEqual(
+      pageSections(false).map((s) => s.id),
+    );
+    // Without the valley no valley section shows.
+    for (const id of GLOSSARY_SECTIONS_VALLEY)
+      expect(pageSections(true).map((s) => s.id)).not.toContain(id);
+  });
+
+  it('sends a link for a replaced shipped section to the valley section that took over', () => {
+    const sections = pageSections(true, false, true);
+    expect(sectionOnPage('workshop', true, sections, true)).toBe('valley-forge');
+    expect(sectionOnPage('gear', true, sections, true)).toBe('valley-gear');
+    expect(sectionOnPage('expeditions', true, sections, true)).toBe('valley-day');
+    expect(sectionOnPage('gear', true)).toBe('gear');
   });
 
   it('sends a link to the section that took over a gone one, and to the top when nothing did', () => {
@@ -86,7 +121,7 @@ describe('which sections the page shows', () => {
 });
 
 describe('the pictures of the combat v2 page', () => {
-  it('draws one for each of the six sections, from the game’s own pieces', () => {
+  it('draws one for each of the seven sections, from the game’s own pieces', () => {
     for (const id of GLOSSARY_SECTIONS_V2) {
       page?.unmount();
       page = createPage();
@@ -139,6 +174,61 @@ describe('the pictures of the combat v2 page', () => {
           boss,
         ).toBe(true);
     }
+  });
+});
+
+describe('the growth picture', () => {
+  const names = (steps: ReturnType<typeof growthSteps>): string =>
+    steps.flatMap((s) => s.names).join(' | ');
+
+  it('keeps the shipped picture while combat v2 is off: Scarf, Charm, ribbons and the finale ability', () => {
+    const text = names(growthSteps());
+    for (const word of ['Scarf', 'Charm', 'Bronze Ribbon', 'Gold Ribbon', 'Finale ability']) {
+      expect(text, word).toContain(word);
+    }
+    // The valley's switch alone changes nothing: it needs combat v2.
+    expect(growthSteps({ allSlotsOpen: true })).toEqual(growthSteps());
+  });
+
+  it('has no Scarf, Charm, ribbon or finale ability with combat v2 and the valley on, and shows honours', () => {
+    const steps = growthSteps({ combatV2: true, allSlotsOpen: true });
+    const text = names(steps);
+    expect(text).not.toMatch(/Scarf at|Ribbon|ability/i);
+    expect(steps[0]?.names).toEqual(['Knack', 'First talent', 'Hat, Scarf and Charm']);
+    for (const word of [
+      'Bronze honour',
+      'Silver honour',
+      'Gold honour',
+      'Evolution',
+      'Second talent',
+    ]) {
+      expect(text, word).toContain(word);
+    }
+    expect(steps.map((s) => s.level)).toEqual([...steps.map((s) => s.level)].sort((a, b) => a - b));
+  });
+
+  it('has no ribbon and no finale ability with combat v2 alone, and still has the gear slots that wait', () => {
+    const text = names(growthSteps({ combatV2: true }));
+    expect(text).not.toMatch(/Ribbon|honour|ability/i);
+    expect(text).toContain('Scarf');
+    expect(text).toContain('Charm');
+    expect(text).toContain('Knack');
+  });
+
+  it('is drawn on the page from the switches', () => {
+    page = createPage();
+    page.draw(
+      <PopoverHost onOpenHowTo={() => undefined}>
+        <HowToPlay section={null} nonce={0} onClose={() => undefined} v2 valley />
+      </PopoverHost>,
+    );
+    const text = visibleText(page.root);
+    expect(text).toContain('Levels and growth');
+    expect(text).toContain('Bronze honour');
+    expect(text).toContain('A day in the valley');
+    expect(text).not.toContain('Finale ability');
+    expect(text).not.toContain('Ribbon');
+    expect(text).not.toContain('Your first week');
   });
 });
 

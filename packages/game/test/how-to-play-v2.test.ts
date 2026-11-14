@@ -9,10 +9,14 @@ import {
   glossary,
   glossaryEntry,
   howToPlay,
+  GLOSSARY_SECTIONS_VALLEY,
   howToPlayV2,
+  howToPlayValley,
+  loadHowToPlayValley,
   loadHowToPlayV2,
 } from '../src/index';
 import howToPlayV2Json from '../src/content/data/how-to-play-v2.json';
+import howToPlayValleyJson from '../src/content/data/how-to-play-valley.json';
 
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
@@ -23,9 +27,9 @@ const keywordsIn = (text: string): string[] =>
 const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 describe('the combat v2 How to play text', () => {
-  it('has the six sections in the page order, each with 3 to 5 lines', () => {
+  it('has the seven sections in the page order, each with 3 to 5 lines', () => {
     expect(howToPlayV2.sections.map((s) => s.id)).toEqual([...GLOSSARY_SECTIONS_V2]);
-    expect(howToPlayV2.sections).toHaveLength(6);
+    expect(howToPlayV2.sections).toHaveLength(7);
     for (const s of howToPlayV2.sections) {
       expect(s.lines.length, s.id).toBeGreaterThanOrEqual(3);
       expect(s.lines.length, s.id).toBeLessThanOrEqual(5);
@@ -53,7 +57,10 @@ describe('the combat v2 How to play text', () => {
     // Names, not rules: "Stage 1", "stage 2" and "Row 1".
     expect(all.replace(/\b(?:stage|row) \d\b/gi, '')).not.toMatch(/\d/);
     expect(all).not.toMatch(/\bR\d|intent|formula|%/i);
-    expect(all).not.toMatch(/\bwall\b|harder|hardest|tougher|difficult/i);
+    // "Shield Wall" is a finale order's name.
+    expect(all.replace(/Shield Wall/g, '')).not.toMatch(
+      /\bwall\b|harder|hardest|tougher|difficult/i,
+    );
   });
 
   it('says the weekend as the schedule has it: stage 1, stage 2 and the finale in the evening', () => {
@@ -216,5 +223,40 @@ describe('the help a v2 player reads instead of the shipped entries', () => {
     const rank = howToPlayV2.sections.find((s) => s.id === 'v2-rank')?.lines.join(' ') ?? '';
     expect(rank).toContain('{Determination}');
     expect(combatV2.keywords['Determination']).toBeDefined();
+  });
+});
+
+describe('the valley How to play text (placeholder structure)', () => {
+  it('has its six sections in order, each with 3 to 5 plain lines and no chips', () => {
+    expect(howToPlayValley.sections.map((s) => s.id)).toEqual([...GLOSSARY_SECTIONS_VALLEY]);
+    for (const s of howToPlayValley.sections) {
+      expect(s.lines.length, s.id).toBeGreaterThanOrEqual(3);
+      expect(s.lines.join(' '), s.id).not.toMatch(/[{}%]/);
+    }
+  });
+
+  it('keeps the player-facing facts that rules decide: the visitor and teacher days, the trial levels', () => {
+    const text = (id: string): string =>
+      howToPlayValley.sections.find((s) => s.id === id)?.lines.join(' ') ?? '';
+    expect(text('valley-market')).toContain('Thursday to the end of Sunday');
+    expect(text('valley-school')).toContain('Monday to Wednesday');
+    expect(text('valley-school')).toContain('announced on Friday');
+    expect(text('valley-school')).toMatch(/Bronze from level 10, Silver from 20 and Gold from 30/);
+    expect(RULES.experience.ribbons.map((r) => r.level)).toEqual([10, 20]);
+    expect(RULES.experience.maxLevel).toBe(30);
+  });
+
+  it('rejects a wrong order and a missing section', () => {
+    const raw = (): { sections: Record<string, unknown>[] } =>
+      clone<{ sections: Record<string, unknown>[] }>(howToPlayValleyJson);
+    const swapped = raw();
+    [swapped.sections[0], swapped.sections[1]] = [
+      swapped.sections[1] as Record<string, unknown>,
+      swapped.sections[0] as Record<string, unknown>,
+    ];
+    expect(() => loadHowToPlayValley(swapped)).toThrow(/must be "valley-day"/);
+    const missing = raw();
+    missing.sections.pop();
+    expect(() => loadHowToPlayValley(missing)).toThrow(/schema/);
   });
 });

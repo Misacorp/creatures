@@ -160,6 +160,7 @@ export function App() {
           onClose={close}
           v2={loadedBoot?.config.combatV2 === true}
           housing={loadedBoot?.config.housing === true}
+          valley={loadedBoot?.config.valleySystems === true}
         />
       )}
     </PopoverHost>
