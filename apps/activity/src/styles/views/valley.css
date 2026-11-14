@@ -154,11 +154,6 @@ main.card:has(.vy-frame) > .hud.hud-float {
   color: var(--bone);
 }
 
-.vy-frame :is(.vy-place, .vy-mon):focus-visible {
-  outline: none;
-  box-shadow: var(--ring);
-}
-
 .vy-frame canvas,
 .vy-frame .sprite {
   image-rendering: pixelated;
@@ -370,11 +365,6 @@ main.card:has(.vy-frame) > .hud.hud-float {
   color: var(--bone);
 }
 
-.vy-hatch:focus-visible {
-  outline: none;
-  box-shadow: var(--ring);
-}
-
 /* How many places have something waiting, on the Places button: the same cream tag as an edge chip's. */
 .vy-hatch-count {
   position: absolute;
@@ -466,11 +456,6 @@ main.card:has(.vy-frame) > .hud.hud-float {
   flex-direction: row-reverse;
   padding-left: 10px;
   clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 6px 50%);
-}
-
-.vy-edge:focus-visible {
-  outline: 3px solid var(--gold);
-  outline-offset: -3px;
 }
 
 /* What waits at an off-screen place: its count, or a "!", on a cream tag. */
@@ -829,11 +814,6 @@ main.card:has(.vy-frame) > .hud.hud-float {
   transform: none;
   line-height: 0;
   cursor: pointer;
-}
-
-.vy-frame .vy-stand-btn:focus-visible {
-  outline: none;
-  box-shadow: var(--ring);
 }
 
 /* A prop of a scene (a rail, the feed box, the rim) in the creatures' depth order: art, never a tap. */

@@ -137,7 +137,7 @@ export interface TrialsTickResult {
 
 /**
  * The `trials-tick` dev tool (staging only, with the valley systems on; 404 otherwise): ticks every box of the next trial of one of the
- * caller's creatures now, whatever its level, so a graduation can be seen. It then graduates at the next ceremony, or at `trials-ceremony`.
+ * target player's creatures (the caller by default) now, whatever its level, so a graduation can be seen. It then graduates at the next ceremony, or at `trials-ceremony`.
  */
 export function trialsTick(ctx: ToolCtx, body: { creatureId: string }): TrialsTickResult {
   if (!ctx.valleySystems || ctx.trials === null) throw new DevError(404, 'not_found');
@@ -146,7 +146,7 @@ export function trialsTick(ctx: ToolCtx, body: { creatureId: string }): TrialsTi
 }
 
 export interface TrialsCeremonyResult {
-  /** The caller's creatures that graduated now. */
+  /** The target player's creatures (the caller by default) that graduated now. */
   graduated: number;
 }
 

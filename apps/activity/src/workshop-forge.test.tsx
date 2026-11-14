@@ -84,7 +84,7 @@ function forgeMode(anvils: ReturnType<typeof sampleAnvil>[], sent: unknown[] = [
     },
     onOpenPaddock: () => undefined,
     onOpenMarket: () => undefined,
-    inside: true,
+    onLeave: () => undefined,
   };
 }
 

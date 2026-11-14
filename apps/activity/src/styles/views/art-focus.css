@@ -1,0 +1,79 @@
+/*
+  Keyboard focus in an art scene (Misa, 2026-11-15: "focus outlines should never be visible in these 'art scenes' ... they just break the
+  immersion entirely"; `docs/design/ux-patterns.md`, "A place is a canvas"; the decision "No focus outlines in art scenes").
+
+  An art scene is the valley's map and every place drawn as a canvas: the map's place buttons and edge flags, a canvas's targets
+  (`cv-target`), the creatures standing in a scene (`vy-stand-btn`), the expedition map's destinations and its two corner buttons, the
+  Places flag, and the strips under a canvas scene (the shelf's resource chips, the creature tray). On these:
+
+  - no browser focus ring or outline, on any input;
+  - a keyboard user still sees where they are: a small gold pixel arrow over the target, shown only on :focus-visible. One rule, the
+    same cue for every target. Outside art scenes (drawers, pages, forms) the usual ring stays.
+
+  A new kind of target in an art scene is added to the list below, nowhere else.
+*/
+
+/* No outline, no ring, whatever has the focus. */
+.vy-frame
+  :is(
+    .cv-target,
+    .vy-place,
+    .vy-mon,
+    .vy-stand-btn,
+    .vy-edge,
+    .vy-hatch,
+    .sg-map .wm-marker,
+    .pc-below :is(button, a, [tabindex])
+  ):is(:focus, :focus-visible),
+.vy-frame .vy-valley:focus {
+  outline: none;
+}
+
+/* The target the arrow hangs on needs a box of its own to sit on (the others are positioned already). */
+.vy-frame .vy-stand-btn,
+.vy-frame .pc-below :is(button, a, [tabindex]) {
+  position: relative;
+}
+
+/* The cue: a stepped gold arrow over the target's top edge, ink-edged to stand out on any art. Keyboard focus only. */
+.vy-frame
+  :is(
+    .cv-target,
+    .vy-place,
+    .vy-mon,
+    .vy-stand-btn,
+    .vy-edge,
+    .vy-hatch,
+    .sg-map .wm-marker,
+    .pc-below :is(button, a, [tabindex])
+  ):focus-visible::after {
+  content: '';
+  position: absolute;
+  z-index: 30;
+  left: 50%;
+  top: -0.875rem;
+  width: 0.75rem;
+  height: 0.5rem;
+  translate: -50% 0;
+  background: var(--gold);
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    100% 25%,
+    83% 25%,
+    83% 50%,
+    67% 50%,
+    67% 75%,
+    58% 75%,
+    58% 100%,
+    42% 100%,
+    42% 75%,
+    33% 75%,
+    33% 50%,
+    17% 50%,
+    17% 25%,
+    0 25%
+  );
+  filter: drop-shadow(0 1px 0 var(--ink));
+  pointer-events: none;
+}

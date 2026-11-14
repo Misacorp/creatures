@@ -1047,6 +1047,54 @@ const expectTopmost = async (locator, what) => {
 /** A place as a canvas (`PlaceCanvas`): a thing in the scene you click, by the start of its name. */
 const sceneTarget = (name) =>
   page.locator(`button.cv-target[aria-label^="${name}"]`).locator('visible=true');
+/** The expedition map's two corner buttons (the packs, the project board): the Signpost's way into the left drawer. */
+const mapTool = (name) =>
+  page.locator(`button.sg-map-tool[aria-label^="${name}"]`).locator('visible=true');
+/**
+ * Misa's rule 6 (2026-11-15): no focus ring is ever visible in an art scene. With the keyboard (Tab back onto the target, so the
+ * browser matches :focus-visible) the target has no outline and no ring shadow and shows the in-world cue (the gold arrow, `::after`);
+ * with a mouse click it shows neither.
+ */
+const focusLook = (locator) =>
+  locator.evaluate((el) => {
+    const css = getComputedStyle(el);
+    // The game's focus ring (`--ring`), as the browser computes it: a button's own bevel is not a ring.
+    const probe = document.createElement('i');
+    probe.style.boxShadow = 'var(--ring)';
+    document.body.append(probe);
+    const ring = getComputedStyle(probe).boxShadow;
+    probe.remove();
+    const cue = getComputedStyle(el, '::after');
+    return {
+      visible: el.matches(':focus-visible'),
+      outline: `${css.outlineStyle} ${css.outlineWidth}`,
+      ring: css.boxShadow === ring,
+      cue: cue.content,
+    };
+  });
+const expectFocusCue = async (locator, what) => {
+  await locator.focus();
+  await page.keyboard.press('Shift+Tab');
+  await page.keyboard.press('Tab');
+  const look = await focusLook(locator);
+  if (!look.visible) throw new Error(`${what}: the keyboard focus did not land on it`);
+  if (!look.outline.startsWith('none'))
+    throw new Error(`${what} shows a focus outline: ${look.outline}`);
+  if (look.ring) throw new Error(`${what} shows a focus ring`);
+  if (look.cue === 'none' || look.cue === 'normal')
+    throw new Error(`${what} has no in-world cue on keyboard focus`);
+};
+const expectNoFocusOnClick = async (locator, what) => {
+  // A phone's page hides the scene once the click opens a panel, so keep hold of the element itself.
+  const handle = await locator.elementHandle();
+  if (handle === null) throw new Error(`${what}: not found`);
+  await handle.evaluate((el) => el.blur());
+  await locator.click();
+  const look = await focusLook(handle);
+  if (look.visible || look.cue !== 'none')
+    throw new Error(`${what} shows a focus cue after a mouse click`);
+  if (!look.outline.startsWith('none')) throw new Error(`${what} shows an outline after a click`);
+};
 /** What a click opens: the drawer beside the scene on a wide window, a page of its own on a phone. */
 const drawer = page.locator('.pc-side, .pc-page');
 /** The right drawer (the thing clicked) and the left one (a collection): each a page on a phone, where only one shows at a time. */
@@ -1067,25 +1115,11 @@ const expectNoScroll = async () => {
   );
   if (over.length > 0) throw new Error(`the canvas scrolls: ${over.join(' | ')}`);
 };
-/** The Forge opens on its outside: a click on the building goes into the workshop (its own canvas, with a door back out). */
+/** The Forge opens straight on its interior (Misa, 2026-11-15): one click on the building in the valley, no outside view first. */
 const goInside = async () => {
-  await waitFor(sceneTarget('The forge. Go inside'));
-  const n = await page.locator('button[aria-label="The forge. Go inside"]').count();
-  if (n !== 1) {
-    const where = await page.evaluate(() =>
-      [...document.querySelectorAll('button[aria-label="The forge. Go inside"]')].map((b) => {
-        const chain = [];
-        for (let el = b; el !== null && chain.length < 9; el = el.parentElement)
-          chain.push(
-            `${el.tagName}.${String(el.className).split(' ')[0]}${el.hidden ? '[hidden]' : ''}`,
-          );
-        return chain.join(' < ');
-      }),
-    );
-    throw new Error(`${String(n)} building buttons: ${where.join(' || ')}`);
-  }
-  await sceneTarget('The forge. Go inside').click();
-  await waitFor(sceneTarget('The door. Go back outside'));
+  await waitFor(sceneTarget('The furnace'));
+  if ((await page.locator('button[aria-label^="The forge. Go inside"]').count()) > 0)
+    throw new Error('the Forge still has an outside view');
 };
 const backToValley = async () => {
   await hudBack().click();
@@ -1232,7 +1266,7 @@ try {
   );
 
   await step(
-    'Tab walks the valley in reading order and every stop shows a focus ring',
+    'Tab walks the valley in reading order and every stop shows the in-world cue, never a ring',
     async () => {
       await page.evaluate(() => {
         document.activeElement?.blur();
@@ -1244,18 +1278,29 @@ try {
           const el = document.activeElement;
           if (el === null || !el.closest('.vy-frame')) return null;
           const css = getComputedStyle(el);
+          const probe = document.createElement('i');
+          probe.style.boxShadow = 'var(--ring)';
+          document.body.append(probe);
+          const ringShadow = getComputedStyle(probe).boxShadow;
+          probe.remove();
           const ring =
-            css.boxShadow !== 'none' || (css.outlineStyle !== 'none' && css.outlineWidth !== '0px');
+            css.boxShadow === ringShadow ||
+            (css.outlineStyle !== 'none' && css.outlineWidth !== '0px');
+          const cue = !['none', 'normal'].includes(getComputedStyle(el, '::after').content);
           return {
             place: el.getAttribute('data-place'),
             name: (el.getAttribute('aria-label') ?? el.textContent ?? '').trim().slice(0, 30),
             ring,
+            cue,
           };
         });
         if (stop !== null) stops.push(stop);
       }
-      const bare = stops.filter((s) => !s.ring).map((s) => s.name);
-      if (bare.length > 0) throw new Error(`no visible focus ring on: ${bare.join(' | ')}`);
+      // Misa's rule 6 (2026-11-15): no ring in the art scene; the keyboard sees a gold arrow over the stop instead.
+      const ringed = stops.filter((s) => s.ring).map((s) => s.name);
+      if (ringed.length > 0) throw new Error(`a focus ring shows on: ${ringed.join(' | ')}`);
+      const bare = stops.filter((s) => !s.cue).map((s) => s.name);
+      if (bare.length > 0) throw new Error(`no in-world focus cue on: ${bare.join(' | ')}`);
       const places = stops.map((s) => s.place).filter((id) => id !== null);
       const order = await page.evaluate(() =>
         [...document.querySelectorAll('button[data-place]')].map((b) =>
@@ -1816,22 +1861,28 @@ try {
         throw new Error('the Expeditions page is still drawn');
       if ((await page.locator('li.sp-seat').count()) > 0)
         throw new Error('the old page of seat cards is still drawn');
-      // The scene opens first: the signpost, and the dashed outline of the first seat (free).
-      await waitFor(sceneTarget('The signpost'));
-      await waitFor(sceneTarget('A new seat'));
+      // The place opens straight on the expedition map (no scene first): its two corner buttons are the way to the packs and the board.
+      const map = page.locator('.world-map.fill');
+      await waitFor(map);
+      await waitFor(place('ember-caves'));
+      await waitFor(mapTool('The packs'));
+      if ((await page.locator('button[aria-label^="The signpost: the map"]').count()) > 0)
+        throw new Error('the Signpost still has a scene with a signpost to click first');
       await expectNoScroll();
-      await expectTopmost(sceneTarget('A new seat'), 'the dashed outline of the next seat');
-      await expectTopmost(sceneTarget('The signpost'), 'the signpost');
+      await expectTopmost(mapTool('The packs'), 'the packs button');
+      await shot('signpost-map');
+      // Buy the first seat from the packs drawer: the buy step opens beside the canvas (a page on a phone).
+      await mapTool('The packs').click();
+      await waitFor(leftPanel.getByRole('button', { name: /^A new seat\. Buy it/ }));
       await shot('signpost-canvas-no-seats');
-      // Buy the first seat from its outline: the buy step opens beside the canvas (a page on a phone).
-      await sceneTarget('A new seat').click();
+      await leftPanel.getByRole('button', { name: /^A new seat\. Buy it/ }).click();
       await waitFor(drawer.getByRole('heading', { name: 'A new scout seat' }));
       await shot('signpost-step-buy');
       await drawer.getByRole('button', { name: /^Buy the seat/ }).click();
       await drawer
         .getByRole('heading', { name: 'A new scout seat' })
         .waitFor({ state: 'detached', timeout: 10000 });
-      await waitFor(sceneTarget('Seat 1: nobody posted'));
+      await waitFor(leftPanel.getByRole('button', { name: /^Seat 1: nobody posted|^Seat 1\b/ }));
       if (
         !scoutCalls.some(
           ([kind, body]) => kind === 'buy' && typeof body.idempotencyKey === 'string',
@@ -1840,13 +1891,11 @@ try {
         throw new Error('the seat was bought without an idempotency key');
       await expectNoScroll();
       await shot('signpost-canvas-one-seat');
-      // A click on the signpost opens the expedition map as the canvas.
-      await sceneTarget('The signpost').click();
-      const map = page.locator('.world-map.fill');
-      await waitFor(map);
-      await waitFor(place('ember-caves'));
-      await expectNoScroll();
-      await shot('signpost-map');
+      await leftPanel
+        .getByRole('button', { name: /Close|^Back/ })
+        .first()
+        .click();
+      await leftPanel.waitFor({ state: 'detached', timeout: 10000 });
       // The map pans by drag (when the view is smaller than the map), and a drag that starts on a place never opens it.
       const before = await map.evaluate((el) => [el.scrollLeft, el.scrollTop]);
       const room = await map.evaluate((el) => [
@@ -1939,39 +1988,46 @@ try {
       await shot('signpost-step-closed');
       await page.keyboard.press('Escape');
       await drawer.waitFor({ state: 'detached', timeout: 10000 });
-      // Back to the signpost scene: the scout stands at its seat; drag a resting creature from the tray onto the seat, which previews the fit.
-      await page.getByRole('button', { name: /^Back to the signpost/ }).click();
-      await waitFor(sceneTarget('Seat 1: Sproutle'));
-      const mover = page.locator(
-        `section[aria-label="Creatures to post"] button[data-creature="${first.id}"]`,
-      );
-      const start = await mover.boundingBox();
-      const over = await sceneTarget('Seat 1: Sproutle').boundingBox();
-      if (start === null || over === null) throw new Error('no boxes to drag between');
-      await page.mouse.move(start.x + start.width / 2, start.y + start.height / 2);
-      await page.mouse.down();
-      await page.mouse.move(start.x + start.width / 2 + 12, start.y + start.height / 2 + 12, {
-        steps: 4,
-      });
-      await page.mouse.move(over.x + over.width / 2, over.y + over.height / 2, { steps: 10 });
-      // A slow machine may not have settled the hand over the seat yet: nudge it until the preview shows.
-      await page.mouse.move(over.x + over.width / 2 + 2, over.y + over.height / 2 + 2, {
-        steps: 3,
-      });
-      await page.waitForTimeout(150);
-      await page.mouse.move(over.x + over.width / 2, over.y + over.height / 2, { steps: 3 });
-      await waitFor(page.locator('.sp-preview'));
-      await expectTopmost(page.locator('.sp-preview').first(), 'the fit preview');
-      await shot('signpost-drag-preview');
-      await page.mouse.up();
-      await waitFor(sceneTarget('Seat 1: Cindle'));
-      if (scoutCalls.filter(([k]) => k === 'seat').at(-1)?.[1].creatureId !== first.id)
-        throw new Error('the drop posted another creature');
+      // The packs drawer lists the seat: on a wide window a resting creature is dragged from the tray onto its row, which previews the fit.
+      await mapTool('The packs').click();
+      await waitFor(leftPanel.getByRole('button', { name: /^Seat 1: Sproutle/ }));
+      if (width >= 960) {
+        const mover = page.locator(
+          `section[aria-label="Creatures to post"] button[data-creature="${first.id}"]`,
+        );
+        const start = await mover.boundingBox();
+        const over = await leftPanel
+          .getByRole('button', { name: /^Seat 1: Sproutle/ })
+          .boundingBox();
+        if (start === null || over === null) throw new Error('no boxes to drag between');
+        await page.mouse.move(start.x + start.width / 2, start.y + start.height / 2);
+        await page.mouse.down();
+        await page.mouse.move(start.x + start.width / 2 + 12, start.y + start.height / 2 + 12, {
+          steps: 4,
+        });
+        await page.mouse.move(over.x + over.width / 2, over.y + over.height / 2, { steps: 10 });
+        // A slow machine may not have settled the hand over the row yet: nudge it until the preview shows.
+        await page.mouse.move(over.x + over.width / 2 + 2, over.y + over.height / 2 + 2, {
+          steps: 3,
+        });
+        await page.waitForTimeout(150);
+        await page.mouse.move(over.x + over.width / 2, over.y + over.height / 2, { steps: 3 });
+        await waitFor(page.locator('.sp-preview'));
+        await expectTopmost(page.locator('.sp-preview').first(), 'the fit preview');
+        await shot('signpost-drag-preview');
+        await page.mouse.up();
+        await waitFor(leftPanel.getByRole('button', { name: /^Seat 1: Cindle/ }));
+        if (scoutCalls.filter(([k]) => k === 'seat').at(-1)?.[1].creatureId !== first.id)
+          throw new Error('the drop posted another creature');
+      }
       // Rest it: the seat's own step, back to resting.
-      await sceneTarget('Seat 1: Cindle').click();
+      const seatName = width >= 960 ? /^Seat 1: Cindle/ : /^Seat 1: Sproutle/;
+      await leftPanel.getByRole('button', { name: seatName }).click();
       await waitFor(drawer.getByRole('button', { name: /^Back to resting/ }));
       await drawer.getByRole('button', { name: /^Back to resting/ }).click();
-      await waitFor(sceneTarget('Seat 1: nobody posted'));
+      await waitFor(
+        leftPanel.getByRole('button', { name: /^Seat 1: nobody posted|^Seat 1\b(?!:)/ }),
+      );
       if (scoutCalls.filter(([k]) => k === 'seat').at(-1)?.[1].creatureId !== null)
         throw new Error('rest did not send null');
       await expectNoScroll();
@@ -2004,21 +2060,22 @@ try {
         throw new Error('the Signpost has no full-pack bubble');
       await bubble.evaluate((el) => el.click());
       await waitFor(heading('Signpost'));
-      // The scene says it on the seat (the scout's bubble and name), the crate counts the full packs.
-      await waitFor(sceneTarget('Seat 1'));
-      if (!/Pack full/.test((await sceneTarget('Seat 1').getAttribute('aria-label')) ?? ''))
-        throw new Error('the seat in the scene does not say its pack is full');
-      if (
-        !/Pack filling|Full in/.test((await sceneTarget('Seat 2').getAttribute('aria-label')) ?? '')
-      )
-        throw new Error('the second seat does not say its pack is filling');
-      if (!/1 full/.test((await sceneTarget('The packs').getAttribute('aria-label')) ?? ''))
-        throw new Error('the crate does not count the full pack');
+      // The packs button counts the full packs; its drawer says it on the seat.
+      await waitFor(mapTool('The packs'));
+      if (!/1 full/.test((await mapTool('The packs').getAttribute('aria-label')) ?? ''))
+        throw new Error('the packs button does not count the full pack');
       await expectNoScroll();
       await shot('signpost-two-seats');
-      // The crate opens the packs of every seat in the left drawer; a tap on one leads to its scout on the map.
-      await sceneTarget('The packs').click();
+      // The packs button opens the packs of every seat in the left drawer; a tap on one leads to its scout on the map.
+      await mapTool('The packs').click();
       await waitFor(leftPanel.getByRole('button', { name: /^Seat 1.*Pack full/ }));
+      if (
+        !/Pack filling|Full in/.test(
+          (await leftPanel.getByRole('button', { name: /^Seat 2/ }).getAttribute('aria-label')) ??
+            '',
+        )
+      )
+        throw new Error('the second seat does not say its pack is filling');
       await page.waitForTimeout(400);
       await expectTopmost(leftPanel.first(), 'the packs drawer');
       await shot('signpost-packs');
@@ -2104,18 +2161,31 @@ try {
             }),
           ),
         );
-      // The Forge opens on its outside: the building (the way in) and the project board; no anvils out here, and nothing scrolls.
-      await waitFor(sceneTarget('The forge. Go inside'));
-      await expectNoScroll();
-      await expectTopmost(sceneTarget('The forge. Go inside'), 'the building');
-      if ((await sceneTarget('A new anvil').count()) > 0) throw new Error('an anvil is outside');
-      await shot('forge-outside');
+      // The Forge opens straight on its interior: the anvils, the furnace and the door are there at once, and nothing scrolls.
       await goInside();
       await waitFor(sceneTarget('A new anvil'));
       await expectNoScroll();
       await expectTopmost(sceneTarget('A new anvil'), 'the dashed outline of the next anvil');
-      await expectTopmost(sceneTarget('The door. Go back outside'), 'the door');
+      await expectTopmost(sceneTarget('The door. Back to the valley'), 'the door');
       await expectTopmost(sceneTarget('The furnace'), 'the furnace');
+      // Rule 6: no focus ring in the art scene. The HUD's back took the focus by script on entry with no key pressed: no ring there.
+      const backLook = await focusLook(hudBack());
+      if (backLook.visible && !backLook.outline.startsWith('none'))
+        throw new Error(`the HUD back shows a focus ring on entry: ${backLook.outline}`);
+      await expectFocusCue(sceneTarget('A new anvil'), 'the new-anvil outline');
+      await expectFocusCue(sceneTarget('The plans'), 'the plans table');
+      await expectFocusCue(
+        page.locator('.fc-shelf :is(button, [tabindex]):not([tabindex="-1"])').first(),
+        'a resource chip under the scene',
+      );
+      await expectNoFocusOnClick(sceneTarget('The plans'), 'the plans table');
+      await drawer
+        .getByRole('button', { name: /Close|^Back/ })
+        .first()
+        .click();
+      await drawer.waitFor({ state: 'detached', timeout: 10000 });
+      // The scene settles back to its full width before the next look at it.
+      await page.waitForTimeout(500);
       // Another player's smith works at a bench behind: a tap shows its owner on a plate; a second tap closes it.
       await waitFor(sceneTarget("Bea's Dot"));
       await expectTopmost(sceneTarget("Bea's Dot"), "Bea's smith");
@@ -2262,11 +2332,9 @@ try {
         .click();
       await drawer.waitFor({ state: 'detached', timeout: 10000 });
       await expectTopmost(hudBack(), 'the way back from the Forge');
-      // The door goes back outside (the building is there again), the place's back goes to the valley.
-      await sceneTarget('The door. Go back outside').click();
-      await waitFor(sceneTarget('The forge. Go inside'));
-      await shot('forge-outside-after');
-      await backToValley();
+      // The door goes back to the valley, as the place's back does.
+      await sceneTarget('The door. Back to the valley').click();
+      await waitFor(page.locator(VALLEY), 'attached');
 
       forgeState.anvils = [];
       forgeState.crowd = [];
@@ -2601,14 +2669,13 @@ try {
         await waitFor(page.locator(VALLEY), 'attached');
         await place('signpost').evaluate((el) => el.click());
         await waitFor(heading('Signpost'));
-        // The seat in the scene says its scout is in the raid (its pack waits for the finale).
-        await waitFor(sceneTarget('Seat 1'));
-        if (
-          !/In the raid until Sunday/.test(
-            (await sceneTarget('Seat 1').getAttribute('aria-label')) ?? '',
-          )
-        )
-          throw new Error('the seat in the scene does not say its scout is in the raid');
+        // The seat in the packs drawer says its scout is in the raid (its pack waits for the finale).
+        await waitFor(mapTool('The packs'));
+        await mapTool('The packs').click();
+        const seatRow = leftPanel.getByRole('button', { name: /^Seat 1/ });
+        await waitFor(seatRow);
+        if (!/In the raid until Sunday/.test((await seatRow.getAttribute('aria-label')) ?? ''))
+          throw new Error('the seat in the packs drawer does not say its scout is in the raid');
         await shot('bonfire5-signpost-paused');
         await hudBack().click();
         await waitFor(page.locator(VALLEY), 'attached');
@@ -2672,12 +2739,12 @@ try {
         await waitFor(page.locator(VALLEY), 'attached');
         await place('signpost').evaluate((el) => el.click());
         await waitFor(heading('Signpost'));
-        // The plans table in the scene is the way to the project board (the left drawer; a page on a phone).
-        await waitFor(sceneTarget('The project board'));
+        // The board button over the map is the way to the project board (the left drawer; a page on a phone).
+        await waitFor(mapTool('The project board'));
         // The scaffolding stands round the road as the project fills.
         await page.waitForTimeout(300);
         await shot('commons-signpost-scaffolding');
-        await sceneTarget('The project board').click();
+        await mapTool('The project board').click();
         const board = page.locator('section[aria-label="Signpost project"]');
         await waitFor(board);
         await board.scrollIntoViewIfNeeded();
@@ -2791,10 +2858,10 @@ try {
         await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
         await place('forge').evaluate((el) => el.click());
         await waitFor(heading('Forge'));
-        // The notice board beside the forge is the way to its fire and project board (the left drawer; a page on a phone); the scaffolding is on the building's art.
-        await waitFor(sceneTarget('The project board'));
+        // The furnace is the way to the fire and the project board (the left drawer; a page on a phone).
+        await waitFor(sceneTarget('The furnace'));
         await shot('commons-forge-canvas');
-        await sceneTarget('The project board').click();
+        await sceneTarget('The furnace').click();
         const fire = drawer.getByRole('button', { name: /^The fire\./ });
         await waitFor(fire);
         await expectTopmost(fire, 'the fire');

@@ -4,6 +4,14 @@ Navigation and the frame, Home and the notice board, type scale, shared componen
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-15: No focus outlines in art scenes; keyboard focus shows as an in-world cue **[Misa]**
+
+ID: `2026-11-15-no-focus-outlines-in-art-scenes` · Status: current
+
+**Decision.** Misa (2026-11-15): "focus outlines should never be visible in these 'art scenes'. I don't generally like them here either way, but especially in the art scenes they just break the immersion entirely." A standing rule. In an art scene (the valley map and every place drawn as a canvas) no browser focus ring or outline is ever visible on a target, on any input (mouse, touch, keyboard): the map's place buttons and edge flags, a canvas's `CanvasTarget`s, the creatures standing in a scene, the expedition map's destinations and its corner buttons, the Places flag, and the strips under a canvas scene (the shelf's resource chips, the creature tray). A keyboard user still sees where they are through one in-world cue, the same for every target: a small gold pixel arrow over the target, drawn only on `:focus-visible`. It is one CSS rule, `styles/views/art-focus.css`; a new kind of target is added to its list. Outside art scenes (drawers, pages, forms) the usual ring stays. Entering a place by click or tap puts the HUD's back button in focus by script without a ring (`arrivedByKeyboard` in `ui/focus-return.ts`); the keyboard's arrival keeps it. Tested by `styles/art-focus.test.ts` (the stylesheet) and the valley e2e (computed style on a real focus).
+
+**Reasoning.** A ring round a sprite, a building or a prop is a box drawn over the picture, which Misa finds breaks the world. Keyboard players still need a place to start from, so the cue lives in the world (an arrow over the thing) and shows for the keyboard only. One shared rule keeps every scene the same and keeps new targets from bringing a ring back.
+
 ## 2026-11-11: Pixel canvases paint in a layout effect, never after the frame
 
 ID: `2026-11-11-pixel-canvases-paint-in-a-layout` · Status: current
@@ -14,7 +22,7 @@ ID: `2026-11-11-pixel-canvases-paint-in-a-layout` · Status: current
 
 ## 2026-11-11: The Signpost is a canvas: a click on the signpost opens the expedition map, a click on a place opens its scout wizard **[Misa]**
 
-ID: `2026-11-11-the-signpost-is-a-canvas-a` · Status: current
+ID: `2026-11-11-the-signpost-is-a-canvas-a` · Status: current, amended by `2026-11-15-a-click-on-a-place-opens`
 
 **Decision.** With the valley's systems on, the Signpost is a canvas (`SignpostCanvas`, built on `PlaceCanvas` like the Forge) and its page of seat cards is gone. It opens on its scene: the road and its signpost, the scouts standing at their seats, the dashed outline of the next seat with its price as icons, and two props (the crate of finds in the packs, the plans table of the project board). **A click on the signpost opens the expedition map as the canvas** (`SignpostMap`: the Expeditions screen's own `WorldMap`, drawn with a new `fill` option so it fills the view instead of sitting in a page). It never scrolls the page; the map itself pans both ways by drag (with the shared drag-click guard: a drag never picks a place), wheel and trackpad. A small "Signpost" button over its top left goes back to the scene; the HUD's back still leaves for the valley. On the map each destination the valley lists is at its map spot (all eight already have one, so no spot was added), the scouts stand at the place they are at (the map's existing creature-at-place look), the pack's state is the small gold flag (FULL, or the fullest pack's percent), a closed place is dimmed with what opens it under it (Festival weeks). **A click on a destination opens its drawer (right; a page on a phone)**, a wizard: the place and who scouts there (a tap on a scout opens its pack and pace, change scout, change kit, move to another place, back to resting), and the gold "Send a scout here": who (`ui/CreatureList`), which seat (free, one that holds someone, or a new one to buy; skipped when the scout already has a seat), kit (owned, none, or buy), then a confirm that reads the choice back and sends it in one post (seat, creature and destination). The left drawer holds the packs of every seat and the project board. Dragging a creature from the tray onto a seat in the scene still works and still previews the fit. Seat rules, prices and limits are the server's, unchanged.
 
