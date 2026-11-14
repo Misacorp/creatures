@@ -545,6 +545,7 @@ Superseded: 1 entry (see the topic file).
 
 [valley.md](valley.md): The valley and peaceful systems overhaul planned in docs/design/valley/: job posts, the bonfire, the commons, the Forge loop, gear, trials, the School, the visitor, the economy lab, and Misa's question rounds.
 
+- 2026-11-15 \[Misa\] Every daily place gets the picture layout before release, after the Forge and Expedition are tuned
 - 2026-11-06 Combat v2 and the valley systems together: a knocked-out raider stays paused; presets empty seats
 - 2026-11-06 Patchwork pieces built: the plainest piece of the shard's element, Rare at best
 - 2026-11-06 Patchwork pieces: blueprints that take any shard, with scrap \[Misa\] (amended)

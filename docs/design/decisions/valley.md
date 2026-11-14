@@ -4,6 +4,14 @@ The valley and peaceful systems overhaul planned in docs/design/valley/: job pos
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-15: [Misa] Every daily place gets the picture layout before release, after the Forge and Expedition are tuned
+
+ID: `2026-11-15-every-daily-place-gets-the-picture` · Status: current
+
+**Decision.** The Bonfire, Paddock, Market, School, Visitor and House move to the "place is a picture you click" layout before the valley goes live; they do not ship with the old page layout. First the two places that already have it, the Forge and the Expedition (Signpost), are fine-tuned with Misa; the tuned pattern is then rolled out to the other six. On the same day Misa also took the suggested picks that the Forge interior keeps one look for now (per level later) and that the Paddock gets a taller canvas so its barn can grow.
+
+**Reasoning.** Misa (2026-11-14): "We need to update the other places into the new layout. I'd like to fine tune the existing two before we do that." He finds the big picture on the two existing screens crammed and not intuitive yet, so copying it to six more places now would copy the problems.
+
 ## 2026-11-06: Combat v2 and the valley systems together: a knocked-out raider stays paused; presets empty seats
 
 ID: `2026-11-06-combat-v2-and-the-valley-systems` · Status: current
