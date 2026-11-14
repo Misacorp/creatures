@@ -36,6 +36,7 @@ import {
   CINDER_SHOWER,
   CINDER_WAVE,
 } from './cinder-art';
+import { BOG_GLOB, BOG_HARPOON, BOG_SPLAT, BOG_SPLATS, BOG_WAVE } from './bog-art';
 import type { Form, Shape } from './plan';
 import {
   THORN_BRAMBLE,
@@ -83,6 +84,7 @@ const TINTS: Readonly<Record<string, { a: string; b: string; c: string }>> = {
   ember: { a: '#ef6a3a', b: '#8a2a12', c: '#ffd25a' },
   grove: { a: '#5cbf5a', b: '#1f5a2a', c: '#d4f5a0' },
   spark: { a: '#f2d43d', b: '#7a5f10', c: '#ffffff' },
+  mire: { a: '#7a5a3a', b: '#3e2c1a', c: '#d7e08a' },
 };
 const NEUTRAL = { a: '#a69fc8', b: '#4a4170', c: '#f4eedc' };
 
@@ -168,12 +170,20 @@ const CINDER_FALL: LookEntry = {
 /** The Cinder Wyrm: a fire lance, rolling flame waves for its lines, fireballs and falling embers, a burst of fire where they land. */
 const CINDER_WYRM: BossLook = {
   shapes: {
-    column: { weapon: { sprite: CINDER_LANCE, scale: 6 }, impact: CINDER_IMPACT, glow: CINDER_GLOW },
+    column: {
+      weapon: { sprite: CINDER_LANCE, scale: 6 },
+      impact: CINDER_IMPACT,
+      glow: CINDER_GLOW,
+    },
     line3: CINDER_SWEEP,
     row: CINDER_SWEEP,
     single: CINDER_FALL,
     checker: CINDER_FALL,
-    scatter: { weapon: { sprite: CINDER_SHOWER, scale: 6 }, impact: CINDER_IMPACT, glow: CINDER_GLOW },
+    scatter: {
+      weapon: { sprite: CINDER_SHOWER, scale: 6 },
+      impact: CINDER_IMPACT,
+      glow: CINDER_GLOW,
+    },
     chain: { weapon: { sprite: CINDER_LEAP, scale: 7 }, impact: CINDER_IMPACT, glow: CINDER_GLOW },
     all: {
       weapon: { sprite: CINDER_ERUPTION, scale: 10 },
@@ -213,12 +223,40 @@ const THORNMOTHER: BossLook = {
   },
 };
 
+const BOG_GLOW = '#8a9a3a';
+const BOG_IMPACT: Asset = { sprite: BOG_SPLAT, scale: 2 };
+const BOG_SWEEP: LookEntry = {
+  weapon: { sprite: BOG_WAVE, scale: 8 },
+  impact: BOG_IMPACT,
+  glow: BOG_GLOW,
+};
+const BOG_FALL: LookEntry = {
+  weapon: { sprite: BOG_GLOB, scale: 8 },
+  impact: BOG_IMPACT,
+  glow: BOG_GLOW,
+};
+
+/** Old Bogback: a mud-caked root harpoon, heavy mud waves for its sweeps, globs and spat clots of mud, a splat where they land. */
+const OLD_BOGBACK: BossLook = {
+  shapes: {
+    column: { weapon: { sprite: BOG_HARPOON, scale: 6 }, impact: BOG_IMPACT, glow: BOG_GLOW },
+    columns: { weapon: { sprite: BOG_HARPOON, scale: 6 }, impact: BOG_IMPACT, glow: BOG_GLOW },
+    row: BOG_SWEEP,
+    rows: BOG_SWEEP,
+    randomRow: BOG_SWEEP,
+    line3: BOG_SWEEP,
+    single: BOG_FALL,
+    scatter: { weapon: { sprite: BOG_SPLATS, scale: 6 }, impact: BOG_IMPACT, glow: BOG_GLOW },
+  },
+};
+
 /** The looks by boss id (`content.bosses`). */
 export const BOSS_LOOKS: Readonly<Record<string, BossLook>> = {
   'storm-sovereign': STORM_SOVEREIGN,
   'tidal-colossus': TIDAL_COLOSSUS,
   'cinder-wyrm': CINDER_WYRM,
   thornmother: THORNMOTHER,
+  'old-bogback': OLD_BOGBACK,
 };
 
 /** The art a boss's move plays with; `element` colours the generic art. */

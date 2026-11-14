@@ -29,7 +29,15 @@ Pure pieces: `bossAimOf` (a boss beat's events to the move and the creatures it 
 2. Add one entry to `BOSS_LOOKS` in `looks.ts`, keyed by the boss id: `shapes` for a shape's art (`columns`, `single`, ...) and `moves` for a single move by id (a heavier bolt for the one-shot). Anything left out plays the generic art.
 3. Look at every move with the script above and send Misa the pictures.
 
-Bosses with a look: Storm Sovereign (spear and bolts), Tidal Colossus (trident, curling waves, spray drops, splash). The others play the generic art in their element's colours.
+Bosses with a look (art in `assets.ts`, `cinder-art.ts`, `thorn-art.ts`, `bog-art.ts`):
+
+- Storm Sovereign: spear and bolts.
+- Tidal Colossus: trident, curling waves, spray drops, splash.
+- Cinder Wyrm (Ember): fire lance for Scorch Lane, rolling flame wave for its lines (Anvil Fall, Volcanic Meteor), fireballs for single shells, falling embers for Cinder Fall, a leaping flame for Ember Leap, a fire star for Eruption (heavy), fire burst on impact.
+- Thornmother (Grove): thorned vine spear for Grasping Vines, creeping bramble for the row moves (rowEnds, row), seed pods for single and cross, falling thorns for Thorn Rain, a barbed vine whip for Thorn Lash, petals and leaves on impact.
+- Old Bogback (Mire): mud-caked root harpoon for Mud Slide, heavy mud wave for rows and lines (Sinking Mud, Belly Flop, Bog Lob, Peat Wave), mud globs for single, spat clots for Mud Spit, a mud splat on impact.
+
+A boss with no entry plays the generic art in its element's colours.
 
 ## Known limits
 
