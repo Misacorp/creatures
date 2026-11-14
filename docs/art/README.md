@@ -10,6 +10,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | --- | --- | --- | --- |
 | [Combat v2 icons: attack shapes, board states, store meters](#combat-icons) | draft | 11 | 2026-10-31, Misa: "icons for keywords and attack shapes" (roadmap phase 3, combat v2). |
 | [Element shards, told apart by shape](#shards) | liked | 15 | 2026-11-03: the element shard icons must differ by shape, not only colour (accessibility review from the valley session; Misa asked to provide what the valley needs). |
+| [The sealed gear crate](#valley-forge-crate) | draft | 9 | 2026-11-14 (via the valley session): collecting gear should be a "big moment": common pieces come home on their own; rare and epic pieces wait in a sealed crate inside the Forge until the player opens it; opening reveals them one by one, best last. |
 | [The Forge, inside](#valley-forge-interior) | draft | 13 | 2026-11-11 (via the valley session): clicking the Forge goes inside, into a workshop interior. "It would be cool to have the same stuff there (my creatures working at the anvils) but also see some other creatures working in the background, a fire going, etc. Basically make it look like the interior of a workshop." |
 | [The camp's other places, glow style](#valley-glow-camp) | draft | 6 | 2026-11-03: the valley prototype's remaining places (arena, fairground, road, chest, lectern, paddock) in the liked glow style, day and night. |
 | [Valley places: glow, day and night](#valley-glow) | liked | 9 | 2026-10-31: night glow redone to stand on the valley ground, with a daytime version of the same assets. |
@@ -95,6 +96,34 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | `mire-now` | part |  | archived | The shipped mire shard, unchanged, for comparison. |
 | `mire-a` | part |  | archived | A lump with a single drip hanging from its belly. |
 | `mire-b` | part |  | liked | A slumped blob with two drips, one longer. |
+
+<a id="valley-forge-crate"></a>
+
+## The sealed gear crate
+
+![The sealed gear crate](valley-forge-crate.png)
+
+- **Status:** draft
+- **Requested:** 2026-11-14 (via the valley session): collecting gear should be a "big moment": common pieces come home on their own; rare and epic pieces wait in a sealed crate inside the Forge until the player opens it; opening reveals them one by one, best last.
+- **Source:** `apps/activity/src/sprites/concepts/valley-forge-crate.ts` (draw it with `pnpm art valley-forge-crate`)
+- **Sheet of:** `5b038cd648f6`
+- Crate pieces are `free`, night palette main plus `alts`: `day` (lighter wood, deeper glow so it reads on pale ground), `epic` (pink-violet glow) and `epic-day`. The main palette is the RARE one (blue seam glow); `epic` swaps only the glow keys `g G h s`. Glow colours are the game rarity colours (`--rarity-rare #4da3ff`, `--rarity-epic #ff6fbf`, tints `#7ebcff`, `#f397ff`). Ink, woods and iron are the Forge props (`valley/forge-props.ts`).
+- `crate-sealed` 20 x 18: the 14-wide crate body sits at x 3-16 (3 px of margin each side), base row 17. Iron bands, a brass padlock on an iron hasp, a glowing lid gap, a glowing plank joint and glowing vertical joints. CRATE_PROP is 16 x 16; this one is 14 wide and 14 tall inside a 20 x 18 canvas that leaves room for the shake.
+- `crate-shake-1`, `-2`, `-3` share the 20 x 18 canvas and base row 17, so they swap in place of the sealed crate: 1 and 2 lean opposite ways (top shifted 1 px) with the lid lifted 1 px (a double glow gap), dust at one foot and two sparks; 3 is upright with dust at both feet. Play sealed, 1, 2, 1, 3 as a rattle. `shake-strip` (80 x 18) shows sealed, 1, 2, 3 side by side.
+- `crate-open` 20 x 27: the box takes the bottom 10 rows (y 17-26), its base row 26 sits on the sealed crate base row (row 17): align the bottom rows; the sprite reaches 9 px higher than the sealed canvas. The lid leans against the left wall (x 0-3) and the padlock hangs open; a stepped column of rarity glow rises from the mouth with sparks. Same glow keys, so `epic` and the days work.
+- `burst-common`, `burst-rare`, `burst-epic` are 48 x 48 UI overlays, one palette each (no night/day), drawn with a dark rim so they read on dark and on light. The centre 16 x 16 (x 16-31, y 16-31) is empty: draw the revealed item there. Escalation: common is a broken grey ring (radius to 17), rare is a blue ring with eight rays (to 22), epic is a pink-violet ring, sixteen rays to the edge, four-point sparkles and loose sparks.
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `crate-sealed` | free |  | draft | A sturdy iron-banded crate with a brass padlock, light seeping from the lid gap and plank joints. |
+| `crate-shake-1` | free |  | draft | Rattling: leaning left, lid lifted, dust at the right foot. |
+| `crate-shake-2` | free |  | draft | Rattling: leaning right, lid lifted, dust at the left foot. |
+| `crate-shake-3` | free |  | draft | Rattling: upright hop, dust at both feet. |
+| `shake-strip` | free |  | draft | Sequence: sealed, shake 1, 2, 3 side by side. |
+| `crate-open` | free |  | draft | Lid off and leaning on the left, padlock hanging open, a column of light pouring out. |
+| `burst-common` | free |  | draft | A small grey puff ring; the item sits in the clear centre. |
+| `burst-rare` | free |  | draft | A blue ring with eight rays. |
+| `burst-epic` | free |  | draft | A big pink-violet starburst with sparkles. |
 
 <a id="valley-forge-interior"></a>
 
