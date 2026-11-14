@@ -7,11 +7,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { PopoverHost } from './PopoverHost';
 import { BossCardV2, RuleCards, boardTurnSteps, stageTicks, strengthPips } from './BossCardV2';
 import { moveGlyphId } from './combat-glyphs';
+import { moveHelp } from './move-help';
 import { parseRaidView } from './raid-api';
 import {
-  askedSlots,
   boardCuesV2,
   boardSlotV2,
+  swapMarkText,
+  swapMarks,
   creaturesBySlot,
   everyShort,
   gridRowsV2,
@@ -24,7 +26,8 @@ import {
   swapNoticeText,
 } from './raid-board-v2';
 import { isRaidV2View } from './raid-v2-api';
-import { SwapRequests } from './SwapRequests';
+import { SwapOutcomes, SwapRequests } from './SwapRequests';
+import { markSwapSeen, seenSwapIds, settledText, unseenSwaps } from './swap-outcome';
 import { byClass, byName, createPage, visibleText, type Page } from './test-dom';
 import { MoveTile } from './ui/MoveTile';
 import { TrackStrip } from './ui/TrackStrip';
@@ -78,7 +81,7 @@ describe('the grid', () => {
 });
 
 describe('a v2 tile', () => {
-  it('carries the role, the Knack, the carried HP and "Asked"', () => {
+  it('carries the role, the Knack, the carried HP and the swap mark', () => {
     const view = sample({ stagesPlayed: 1, swaps: 'asked' });
     const v2 = v2Of(view);
     const party = view.party;
@@ -86,13 +89,14 @@ describe('a v2 tile', () => {
     const ctx = {
       grid: { rows: v2.rows, cols: v2.cols },
       creatures: creaturesBySlot(v2.creatures),
-      asked: askedSlots(v2.swaps.outgoing, party.row),
+      swaps: swapMarks(v2.swaps, party.row),
     };
     const theirs = party.row.find((s) => s.creature !== null && !s.creature.mine);
-    const asked = [...ctx.asked][0];
+    const asked = [...ctx.swaps.keys()].find((k) => party.row[k]?.creature?.mine === false);
     expect(asked).toBeDefined();
     const model = boardSlotV2(party.row[asked ?? 0] ?? party.row[0]!, ctx, V2_NAMES, true);
-    expect(model.badge).toBe('Asked');
+    expect(model.swap).toBe(true);
+    expect(model.badge).toBeUndefined();
     expect(model.occupant?.v2?.carried).not.toBeNull();
     expect(model.occupant?.v2?.knack).not.toBeNull();
     expect(model.occupant?.ownId).toBeNull();
@@ -110,13 +114,44 @@ describe('a v2 tile', () => {
       {
         grid: { rows: v2.rows, cols: v2.cols },
         creatures: creaturesBySlot(v2.creatures),
-        asked: new Set(),
+        swaps: new Map(),
       },
       V2_NAMES,
       true,
     );
     expect(model.occupant?.v2?.carried).toBeNull();
     expect(model.occupant?.ownId).not.toBeNull();
+  });
+});
+
+describe('the swap mark', () => {
+  it('marks both creatures of an open request, for the asker and the asked, and none without one', () => {
+    for (const kind of ['asked', 'incoming'] as const) {
+      const view = sample({ swaps: kind });
+      const v2 = v2Of(view);
+      const row = view.party?.row ?? [];
+      const marks = swapMarks(v2.swaps, row);
+      const request = v2.swaps.outgoing[0] ?? v2.swaps.incoming[0];
+      expect([...marks.keys()].sort()).toEqual([request?.slotA, request?.slotB].sort());
+      const line = swapMarkText(marks.get(request?.slotA ?? 0)!, { rows: v2.rows, cols: v2.cols });
+      expect(line).toContain(kind === 'asked' ? 'Waiting for' : 'asks to swap');
+      expect(line).toContain('Seats: Row');
+    }
+    const none = sample({ swaps: 'none' });
+    expect(swapMarks(v2Of(none).swaps, none.party?.row ?? []).size).toBe(0);
+  });
+
+  it('shows no "Asked" strip: the mark is the circling icon', () => {
+    const view = sample({ swaps: 'asked' });
+    const v2 = v2Of(view);
+    const row = view.party?.row ?? [];
+    const ctx = {
+      grid: { rows: v2.rows, cols: v2.cols },
+      creatures: creaturesBySlot(v2.creatures),
+      swaps: swapMarks(v2.swaps, row),
+    };
+    const slot = row.find((s) => ctx.swaps.has(s.slot))!;
+    expect(boardSlotV2(slot, ctx, V2_NAMES, true)).toMatchObject({ swap: true });
   });
 });
 
@@ -336,16 +371,30 @@ describe('the boss card', () => {
     );
   });
 
-  it('says a tapped Wind-up move is aimed when it comes', () => {
+  it('draws no "Aimed when it comes" line, and a tap opens a popover that explains the move and its keywords', () => {
     const view = sample();
-    const windUp = v2Of(view).card.moves.find((m) => m.windUp);
-    const p = draw(view, windUp?.id ?? null);
-    expect(visibleText(p.root)).toContain('Aimed when it comes');
-    const fixed = v2Of(view).card.moves.find(
-      (m) => !m.windUp && v2Of(view).preview?.moves[m.id] != null,
-    );
+    const windUp = v2Of(view).card.moves.find((m) => m.windUp)!;
+    expect(visibleText(draw(view, windUp.id).root)).not.toContain('Aimed when it comes');
     page?.unmount();
-    expect(visibleText(draw(view, fixed?.id ?? null).root)).not.toContain('Aimed when it comes');
+    vi.stubGlobal('window', {
+      innerHeight: 800,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    });
+    page = createPage();
+    page.draw(
+      <PopoverHost onOpenHowTo={() => undefined}>
+        <BossCardV2 view={view} lit={null} onLit={() => undefined} />
+      </PopoverHost>,
+    );
+    const tiles = byClass(page.root, 'move-tile');
+    const index = v2Of(view).card.moves.findIndex((m) => m.id === windUp.id);
+    page.click(tiles[index]!);
+    const text = visibleText(page.root);
+    expect(text).toContain(moveHelp(windUp).what);
+    expect(text).toContain(moveHelp(windUp).rhythm);
+    // The hourglass word is a tag that opens the game's own keyword help.
+    expect(byName(page.root, 'button', /^Wind-up/).length).toBeGreaterThan(0);
   });
 
   it('taps a move tile to select it and again to let go', () => {
@@ -467,5 +516,87 @@ describe('the swap requests asked of you', () => {
       />,
     );
     expect(byClass(page.root, 'swap-requests')).toHaveLength(0);
+  });
+});
+
+describe('how your swap requests went', () => {
+  const grid = { rows: 3, cols: 4 };
+  const settled = (status: 'accepted' | 'declined' | 'ended') => {
+    const view = sample({ swaps: 'settled' });
+    const request = v2Of(view).swaps.settled[0]!;
+    return { ...request, status };
+  };
+
+  it('says each outcome in a line, naming the creatures as they were asked', () => {
+    expect(settledText(settled('accepted'), grid)).toMatch(
+      /^Mira accepted: .+ and .+ swapped places\.$/,
+    );
+    expect(settledText(settled('declined'), grid)).toMatch(
+      /^Mira declined your swap of .+ for .+\.$/,
+    );
+    expect(settledText(settled('ended'), grid)).toContain('Your request to Mira ended');
+    expect(settledText({ ...settled('accepted'), creatureB: null }, grid)).toContain(
+      'moved to Row',
+    );
+  });
+
+  it('shows an outcome once: closing it remembers it', () => {
+    const store = new Map<string, string>();
+    const storage = {
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => void store.set(k, v),
+    };
+    const one = settled('accepted');
+    expect(unseenSwaps([one], seenSwapIds(storage))).toHaveLength(1);
+    expect(markSwapSeen(one.id, storage)).toBe(true);
+    expect(unseenSwaps([one], seenSwapIds(storage))).toEqual([]);
+    expect(seenSwapIds({ getItem: () => 'not json', setItem: () => undefined }).size).toBe(0);
+  });
+
+  it('draws a note for a settled request and nothing without one', () => {
+    page = createPage();
+    page.draw(<SwapOutcomes settled={[settled('accepted')]} grid={grid} />);
+    expect(visibleText(page.root)).toContain('Mira accepted');
+    page.unmount();
+    page = createPage();
+    page.draw(<SwapOutcomes settled={[]} grid={grid} />);
+    expect(byClass(page.root, 'swap-requests')).toHaveLength(0);
+  });
+});
+
+describe('the words of a move', () => {
+  const base = {
+    id: 'x',
+    name: 'Judgement Bolt',
+    label: 'One-shot',
+    shape: 'single',
+    silences: false,
+    oneShot: true,
+    fizzles: false,
+    every: 4,
+    turn: 1,
+    windUp: false,
+    later: false,
+  };
+
+  it('reads the rhythm, the turn and the keywords the glossary already has', () => {
+    const help = moveHelp({ ...base, oneShot: false, shape: 'scatter', windUp: true });
+    expect(help.rhythm).toBe('Every 4: it comes every 4 rounds, after row 2.');
+    expect(help.keywords.map((k) => k.name)).toEqual(['Wind-up', 'Barrage']);
+    expect(moveHelp({ ...base, every: 1, oneShot: false }).rhythm).toContain('Every round');
+  });
+
+  it('explains One-shot in a line, since the glossary has no entry for it', () => {
+    const help = moveHelp(base);
+    expect(help.notes[0]).toContain('One-shot');
+    expect(help.keywords).toEqual([]);
+  });
+
+  it('puts Area hit on a move that hits several slots and Silenced on Hush', () => {
+    expect(moveHelp({ ...base, oneShot: false, shape: 'row' }).keywords.map((k) => k.name)).toEqual(
+      ['Area hit'],
+    );
+    const hush = moveHelp({ ...base, oneShot: false, shape: 'rowEnds', silences: true });
+    expect(hush.keywords.map((k) => k.name)).toEqual(['Silenced', 'Row end', 'Area hit']);
   });
 });

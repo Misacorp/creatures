@@ -116,6 +116,8 @@ function besideRoleOf(f: Fighter, k: KnackFx, near: readonly Fighter[]): number 
 function creatureHit(s: State, f: Fighter, shareBp: number): void {
   const R = s.ctx.rules;
   const k = fx(f);
+  // A Knack that gives up the damage still takes its turn: the board is told, so the creature is not seen to skip it.
+  if (k.noDamage && s.opts.log) emit(s, { type: 'forgo', who: keyOf(f) });
   // 1. Plain damage: Attack, the element chart, boosts (capped, R15), the Knack's share, a crit.
   const near = beside(s, f);
   let guardBeside = false;

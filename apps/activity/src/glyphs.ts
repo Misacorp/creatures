@@ -20,6 +20,21 @@ const TIDE = '#4f8fe6';
 const MUD = '#b8864a';
 const MUD_DARK = '#6b4a2e';
 
+/** Two arrows chasing round a ring: a swap request on the raid board (it turns slowly, see `.slot-swap`). */
+const swap: SpriteDef = {
+  palette: { g: GOLD },
+  rows: [
+    '.gggg...',
+    'g....g..',
+    'g...ggg.',
+    '.....g..',
+    '..g.....',
+    '.ggg...g',
+    '..g....g',
+    '...gggg.',
+  ],
+};
+
 // --- Boss gimmicks (one per gimmick op in the content schema, plus the chain's bolt) ---
 
 /** A heavy blow on the ground: an arrow slamming into a floor. */
@@ -1046,6 +1061,7 @@ export const BUNDLED_GLYPHS: Readonly<Record<string, SpriteDef>> = {
   'shape-lance': shapeLance,
   'shape-pincer': shapePincer,
   attack,
+  swap,
   ...EXPEDITION_GLYPHS,
   ...DUNGEON_MAP_GLYPHS,
   ...GAMES_GLYPHS,

@@ -1,7 +1,7 @@
 /*
   A boss move as a tile (ui/MoveTile.tsx): a tiny arena (the boss's rows by the party's columns, one small square per slot) with
   the slots the move would hit lit in the boss-target red, "/3" for every third round, the hourglass for a Wind-up, and the move's
-  name over its plain label. A move aimed when it comes shows its picture over a dim arena. The tapped tile has a gold ring.
+  name over its plain label. A move aimed when it comes shows its picture over a dim arena. The tapped tile has a gold border (one, no ring).
 */
 .move-tile {
   display: flex;
@@ -20,7 +20,6 @@
 
 .move-tile.selected {
   border-color: var(--gold);
-  box-shadow: var(--ring);
 }
 
 /* A move added by the boss's change of pattern: dashed, it is not in play yet. */

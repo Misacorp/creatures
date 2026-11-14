@@ -19,7 +19,7 @@ import { RevealCard } from './Reveal';
 import { RaidSummary } from './RaidSummary';
 import { StageResultRow } from './StageResultRow';
 import { summaryBoss } from './raid-summary-view';
-import { SwapRequests } from './SwapRequests';
+import { SwapOutcomes, SwapRequests } from './SwapRequests';
 import { BossCardV2 } from './BossCardV2';
 import { litMove } from './raid-board-v2';
 import { answerSwap, askSwap } from './raid-v2-api';
@@ -422,6 +422,9 @@ export function Raid({
               onAnswer={answerToSwap}
             />
           )}
+          {v2 !== undefined && (
+            <SwapOutcomes settled={v2.swaps.settled} grid={{ rows: v2.rows, cols: v2.cols }} />
+          )}
           <RaidTimeline
             view={view}
             serverNow={serverNow}
@@ -477,6 +480,7 @@ export function Raid({
                       view: v2,
                       lit: tappedMove === undefined ? null : litMove(v2.preview, tappedMove),
                       onAskSwap: askToSwap,
+                      onAnswerSwap: answerToSwap,
                     }
               }
             />

@@ -53,6 +53,8 @@ interface PlaybackArgs {
   introMs: number;
   /** What the beats of one round may take together (at 1x); `Infinity` for none. */
   budgetMs: number;
+  /** A replay holds each round to this long at 1x (the live finale's round, `STAGE_ROUND_MS`); absent: no holding (the live finale's clock does it). */
+  roundMs?: number;
   /**
    * `replay`: starts at the beginning and plays by itself. `live`: starts at what is there and plays what arrives (a round at a time), skipping
    * rounds that went by unseen.
@@ -105,6 +107,22 @@ export function cuesOf(show: BeatShow, knackNames = false): Cue[] {
           drift: 0,
         }))
       : []),
+    // A Knack that gave up its creature's hit is always named: it is the reason the creature did not attack.
+    ...show.forgone.flatMap((k): Cue[] =>
+      k.name === null
+        ? []
+        : [
+            {
+              kind: 'float',
+              i: k.i,
+              target: k.who,
+              text: k.name,
+              tone: 'knack',
+              crit: false,
+              drift: 0,
+            },
+          ],
+    ),
     ...show.saves.map((s): Cue => ({ kind: 'cover', i: s.i, creature: s.who, guard: s.guard })),
     ...show.knockedOut.map((k): Cue => ({ kind: 'ko', i: k.i, creature: k.who })),
   ];
@@ -130,8 +148,14 @@ export function usePlaybackV2(args: PlaybackArgs): PlaybackV2 {
   const reduced = usePrefersReducedMotion();
   const trail = useFxTrail();
   const durations = useMemo(
-    () => beatDurations(model.beats, { speed, budgetMs }),
-    [model.beats, speed, budgetMs],
+    () =>
+      beatDurations(model.beats, {
+        speed,
+        budgetMs,
+        introMs,
+        ...(args.roundMs === undefined ? {} : { roundMs: args.roundMs }),
+      }),
+    [model.beats, speed, budgetMs, introMs, args.roundMs],
   );
   const latest = useRef({ model, events, durations, rounds });
   latest.current = { model, events, durations, rounds };
