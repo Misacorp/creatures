@@ -968,6 +968,7 @@ export function ValleyDemo({
                       onOpenMarket: () => {
                         open('market');
                       },
+                      onLeave: leave,
                       start: forgeStartOf(opened),
                       ...(opened === 'order editor'
                         ? { orderStart: { anvilId: 'anvil-1', baseId: BLUEPRINT } }

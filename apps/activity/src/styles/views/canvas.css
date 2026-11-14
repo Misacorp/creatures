@@ -183,11 +183,6 @@ button.cv-target:is(:hover, :active) {
   cursor: pointer;
 }
 
-button.cv-target:focus-visible {
-  outline: none;
-  box-shadow: var(--ring);
-}
-
 /* A creature is carried over it. */
 button.cv-target.cv-over {
   box-shadow: inset 0 0 0 2px var(--gold);

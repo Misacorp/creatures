@@ -145,6 +145,7 @@
 @import './views/forge.css';
 @import './views/canvas.css';
 @import './views/signpost-canvas.css';
+@import './views/art-focus.css';
 @import './views/commons.css';
 @import './views/market.css';
 @import './views/visitor.css';

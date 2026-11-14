@@ -56,8 +56,8 @@ export interface ForgeMode {
   /** What the canvas and the order wizard have open at the start (the workbench shows each). */
   start?: ForgeStart;
   orderStart?: { anvilId: string; baseId?: string; orderId?: string };
-  /** Open inside the workshop (the workbench and the tests); else the Forge opens outside. */
-  inside?: boolean;
+  /** The door: back to the valley. */
+  onLeave: () => void;
 }
 
 const ELEMENT_IDS: readonly string[] = content.elements.map((e) => e.id);
@@ -425,7 +425,7 @@ export function Workshop({
         onOpenMarket={forge.onOpenMarket}
         start={forge.start}
         orderStart={forge.orderStart}
-        inside={forge.inside}
+        onLeave={forge.onLeave}
         blueprints={blueprintViews(gear.blueprints, gear.skills, true)}
         bag={
           <>

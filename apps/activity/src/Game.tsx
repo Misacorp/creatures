@@ -1011,6 +1011,7 @@ export function Game({
                     openPlace('paddock');
                   },
                   // Q64: an anvil that waits on a shard leads to the Market (its exchange once built, else its project).
+                  onLeave: leavePlace,
                   onOpenMarket: (to: string | null) => {
                     setMarketStart(
                       systems.market?.open === true && to !== null ? { exchange: to } : undefined,

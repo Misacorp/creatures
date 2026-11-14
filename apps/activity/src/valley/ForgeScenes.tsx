@@ -1,12 +1,10 @@
 /**
- * What stands in the Forge's two scenes, over their canvases (`ForgeCanvas.tsx` holds the state and the drawers): the targets, the
- * creatures and their small bubbles.
+ * What stands in the Forge's scene, over its canvas (`ForgeCanvas.tsx` holds the state and the drawers): the targets, the creatures
+ * and their small bubbles. The place opens straight on its interior (Misa, 2026-11-15; there is no outside view).
  *
- * - `ForgeOutside`: the building (the whole of it is the way in, with a plate saying so), the notice board beside it (the project),
- *   the helper who was posted to the project, and a bubble over the door when something waits (pieces on a floor, a bag that needs a look).
  * - `ForgeInside` (Misa, 2026-11-11, "the interior of a workshop"): the player's smiths at their anvils with the dashed outline of the
  *   next, the furnace with its fire (opens the project board), the plans table, the chest (the bag) and the crate (the floor), the
- *   door out, and at the back benches other players' smiths at work, small, each a tap that shows its creature's plate with the owner's
+ *   door (back to the valley), and at the back benches other players' smiths at work, small, each a tap that shows its creature's plate with the owner's
  *   name (never a list of everyone). With nobody else's, a couple of ambient workers keep the room alive (decoration: no plate, no
  *   tap). Small idle motions step (hammering, carrying) and stop for reduced motion (`canvas.css`).
  */
@@ -21,14 +19,7 @@ import { CanvasTarget, type Opener } from './PlaceCanvas';
 import type { SceneGeometry } from './SceneFrame';
 import { At, CreatureSprite, Pic, SpeechBubble } from './parts';
 import { ANVIL_PROP } from './forge-props';
-import {
-  PROP,
-  PROP_HIT,
-  anvilGlyph,
-  anvilLabel,
-  anvilWorking,
-  outsideLayout,
-} from './forge-canvas';
+import { PROP, anvilGlyph, anvilLabel, anvilWorking } from './forge-canvas';
 import { interiorLayout } from './forge-interior';
 import { interiorSprite } from './forge-interior-art';
 import { WARMING_FLAME } from './valley-art';
@@ -102,82 +93,6 @@ function Bubble({
       />
       <SpeechBubble glyph={glyph} count={count} />
     </At>
-  );
-}
-
-export function ForgeOutside({
-  g,
-  helper,
-  waiting,
-  bagAttention,
-  boardOpen,
-  boardKnown,
-  onEnter,
-  onBoard,
-}: {
-  g: SceneGeometry;
-  /** The creature posted to the forge's project, standing at the building. */
-  helper: Creature | undefined;
-  /** Finished pieces waiting on the floors. */
-  waiting: number;
-  /** The bag is full or has a notice: the door says so. */
-  bagAttention: boolean;
-  boardOpen: boolean;
-  /** The place has a project board to open. */
-  boardKnown: boolean;
-  onEnter: (opener: Opener) => void;
-  onBoard: (opener: Opener) => void;
-}) {
-  const lay = outsideLayout(g);
-  const { art } = lay;
-  const doorX = art.x + Math.floor(art.width / 2);
-  const bubble =
-    waiting > 0
-      ? { glyph: 'gift', count: waiting }
-      : bagAttention
-        ? { glyph: 'warning', count: null }
-        : null;
-  return (
-    <>
-      {helper !== undefined && (
-        <At x={g.X(doorX - 26)} y={g.Y(art.y + art.height - 20)} class="vy-stand">
-          <CreatureSprite creature={helper} scale={g.s} />
-        </At>
-      )}
-      {bubble !== null && (
-        <Bubble
-          g={g}
-          x={doorX - PROP / 2}
-          y={art.y + art.height - 34}
-          glyph={bubble.glyph}
-          count={bubble.count}
-        />
-      )}
-      <FeetPlate g={g} x={doorX} y={art.y + art.height + 1}>
-        Inside
-      </FeetPlate>
-      <CanvasTarget
-        g={g}
-        x={art.x}
-        y={art.y}
-        w={art.width}
-        h={art.height - 8}
-        label="The forge. Go inside"
-        onClick={onEnter}
-      />
-      {boardKnown && (
-        <CanvasTarget
-          g={g}
-          x={lay.board.x - (PROP_HIT - PROP) / 2}
-          y={lay.board.y - (PROP_HIT - PROP) / 2}
-          w={PROP_HIT}
-          h={PROP_HIT}
-          label="The project board: the fire and what the valley builds here. Open"
-          expanded={boardOpen}
-          onClick={onBoard}
-        />
-      )}
-    </>
   );
 }
 
@@ -304,7 +219,7 @@ export function ForgeInside({
       {(bagFull || bagAttention) && (
         <Bubble g={g} x={lay.chest.x} y={lay.chest.y} glyph="warning" count={null} />
       )}
-      {feetPlate(lay.door.x + lay.door.w / 2, lay.door.y + lay.door.h + 1, 'Outside')}
+      {feetPlate(lay.door.x + lay.door.w / 2, lay.door.y + lay.door.h + 1, 'Valley')}
 
       {/* The targets, over everything above: each a real button. */}
       {others.map((other, i) => {
@@ -353,7 +268,7 @@ export function ForgeInside({
         y={lay.door.y}
         w={lay.door.w}
         h={lay.door.h}
-        label="The door. Go back outside"
+        label="The door. Back to the valley"
         onClick={onOut}
       />
       {visit.anvils.map((anvil, i) => {

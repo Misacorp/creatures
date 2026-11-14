@@ -491,11 +491,12 @@ Superseded: 1 entry (see the topic file).
 
 [ui.md](ui.md): Navigation and the frame, Home and the notice board, type scale, shared components, look and feel rules that apply across screens.
 
+- 2026-11-15 No focus outlines in art scenes; keyboard focus shows as an in-world cue \[Misa\]
 - 2026-11-12 The house's night indoors follows the living room's look: graded, not ramped
 - 2026-11-11 The postcard follows the phase, lights are data per piece, and one painter stamps every scene
 - 2026-11-11 The house is lit by one painter pass, from the living room's phase (amended)
 - 2026-11-11 Pixel canvases paint in a layout effect, never after the frame
-- 2026-11-11 The Signpost is a canvas: a click on the signpost opens the expedition map, a click on a place opens its scout wizard \[Misa\]
+- 2026-11-11 The Signpost is a canvas: a click on the signpost opens the expedition map, a click on a place opens its scout wizard \[Misa\] (amended)
 - 2026-11-11 \[Misa\] A place is a canvas: the scene never scrolls, every action is a click in it, content opens in a left or right drawer holding a wizard
 - 2026-11-11 A valley frame clips instead of scrolling: the HUD's way back never slides off
 - 2026-11-10 Housing screen pass: the whole house, build moment, one pinned action
@@ -582,6 +583,7 @@ Superseded: 1 entry (see the topic file).
 [valley.md](valley.md): The valley and peaceful systems overhaul planned in docs/design/valley/: job posts, the bonfire, the commons, the Forge loop, gear, trials, the School, the visitor, the economy lab, and Misa's question rounds.
 
 - 2026-11-15 The Forge's rare and epic pieces wait in a sealed crate until opened \[Misa\]
+- 2026-11-15 A click on a place opens its real view directly: the Forge interior, the expedition map \[Misa\]
 - 2026-11-11 The Forge opens on its outside and goes inside to a workshop of its own \[Misa\]
 - 2026-11-11 Scene trees stand on the grass, and the Bonfire's +N more stays above the pinned action
 - 2026-11-11 A flat place is built on the ground (stakes, rope, planks, tools), a tall one in poles \[Misa\]
@@ -669,3 +671,5 @@ Superseded: 1 entry (see the topic file).
 - 2026-10-29 Valley: gifts count in full, stores last a day and a half, raiders' seats are kept (round 2)
 - 2026-10-29 Valley: one shared valley, posts instead of timers, away growth in steps (round 1)
 - 2026-10-29 Valley: be brave, and decide in small rounds of questions
+
+Superseded: 1 entry (see the topic file).
