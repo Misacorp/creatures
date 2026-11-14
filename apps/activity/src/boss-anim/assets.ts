@@ -11,10 +11,14 @@ import type { SpriteDef } from '../sprites/sprite-data';
 const PLACEHOLDER = { k: '#0d0a1a', a: '#888888', b: '#333333', c: '#ffffff' } as const;
 
 /** Mirrors the rows top to bottom around the last row: a shape drawn as its top half and its middle row. */
-const mirrorDown = (rows: readonly string[]): string[] => [
+export const mirrorDown = (rows: readonly string[]): string[] => [
   ...rows,
   ...[...rows].slice(0, -1).reverse(),
 ];
+
+/** Mirrors the left half of each row (its last character is the centre column): a symmetric sprite drawn as half. */
+export const sym = (half: readonly string[]): string[] =>
+  half.map((r) => r + [...r].reverse().slice(1).join(''));
 
 /** A spear: a leaf-shaped head on a shaft (a column strike: it comes down the lane). */
 export const SPEAR: SpriteDef = {

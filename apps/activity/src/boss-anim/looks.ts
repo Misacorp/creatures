@@ -27,6 +27,15 @@ import {
   TIDE_WAVE,
   WAVE,
 } from './assets';
+import {
+  CINDER_BURST,
+  CINDER_ERUPTION,
+  CINDER_FIREBALL,
+  CINDER_LANCE,
+  CINDER_LEAP,
+  CINDER_SHOWER,
+  CINDER_WAVE,
+} from './cinder-art';
 import type { Form, Shape } from './plan';
 
 /** A sprite and the whole screen pixels per sprite pixel it is drawn at. Weapons point up, gripped at the bottom centre. */
@@ -135,10 +144,43 @@ const TIDAL_COLOSSUS: BossLook = {
   },
 };
 
+const CINDER_GLOW = '#ef6a3a';
+const CINDER_IMPACT: Asset = { sprite: CINDER_BURST, scale: 2 };
+const CINDER_SWEEP: LookEntry = {
+  weapon: { sprite: CINDER_WAVE, scale: 8 },
+  impact: CINDER_IMPACT,
+  glow: CINDER_GLOW,
+};
+const CINDER_FALL: LookEntry = {
+  weapon: { sprite: CINDER_FIREBALL, scale: 8 },
+  impact: CINDER_IMPACT,
+  glow: CINDER_GLOW,
+};
+
+/** The Cinder Wyrm: a fire lance, rolling flame waves for its lines, fireballs and falling embers, a burst of fire where they land. */
+const CINDER_WYRM: BossLook = {
+  shapes: {
+    column: { weapon: { sprite: CINDER_LANCE, scale: 6 }, impact: CINDER_IMPACT, glow: CINDER_GLOW },
+    line3: CINDER_SWEEP,
+    row: CINDER_SWEEP,
+    single: CINDER_FALL,
+    checker: CINDER_FALL,
+    scatter: { weapon: { sprite: CINDER_SHOWER, scale: 6 }, impact: CINDER_IMPACT, glow: CINDER_GLOW },
+    chain: { weapon: { sprite: CINDER_LEAP, scale: 7 }, impact: CINDER_IMPACT, glow: CINDER_GLOW },
+    all: {
+      weapon: { sprite: CINDER_ERUPTION, scale: 10 },
+      impact: CINDER_IMPACT,
+      glow: CINDER_GLOW,
+      heavy: true,
+    },
+  },
+};
+
 /** The looks by boss id (`content.bosses`). */
 export const BOSS_LOOKS: Readonly<Record<string, BossLook>> = {
   'storm-sovereign': STORM_SOVEREIGN,
   'tidal-colossus': TIDAL_COLOSSUS,
+  'cinder-wyrm': CINDER_WYRM,
 };
 
 /** The art a boss's move plays with; `element` colours the generic art. */
