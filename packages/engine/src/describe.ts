@@ -14,7 +14,7 @@ export interface EventNames {
   elements?: Readonly<Record<string, string>>;
   adaptations?: Readonly<Record<string, string>>;
   /**
-   * Status effect names by id, for example mired: "Mired". `buildNames` does not fill it (the names the
+   * Status effect names by id, for example boggedDown: "Bogged Down". `buildNames` does not fill it (the names the
    * server sends the client keep their shape until the effects have a UI slice); without it the log
    * uses the shipped content's name for the effect, or its id.
    */

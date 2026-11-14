@@ -80,12 +80,12 @@ Foes have no turn order of their own: in the dungeon **your creatures always act
 
 ### Mire foes
 
-Status: 2026-10-20. Shipped (`docs/design/speed-and-dodge.md` section 5.5). In combat v2 (2026-11-05) Mired sits on the foe, never on your creatures: the fen foes are the ones the team Mires, not foes that Mire the team. `(content: dungeon-foes.json, combat-v2 foes.json)`
+Status: 2026-10-20. Shipped (`docs/design/speed-and-dodge.md` section 5.5). In combat v2 (2026-11-05) Bogged Down sits on the foe, never on your creatures: the fen foes are the ones the team Mires, not foes that Mire the team. `(content: dungeon-foes.json, combat-v2 foes.json)`
 
 **Bog Toad** (Mud Spit, every second round, a mouthful of mud on one random creature; Swelling Croak, it swells +50% Attack every round, up to three times; Shake It Off, every third round it washes every debuff off itself)
 
 - Shipped flavour `(content)`: "Sits so still you take it for a stone, then spits a mouthful of mud. It is very sorry afterwards."
-- Compendium detail: a small cousin of Old Bogback, the one the Sunken Fen sends to the dungeon's damp corners. Its mud is only mud: the team is the one that Mires the toad. A Mired toad swells slower, and it shakes the Mire off every third round, so the Mire has to come back every round. It is the first taste of the fen's slow ground.
+- Compendium detail: a small cousin of Old Bogback, the one the Sunken Fen sends to the dungeon's damp corners. Its mud is only mud: the team is the one that Mires the toad. A Bogged Down toad swells slower, and it shakes the Mire off every third round, so the Mire has to come back every round. It is the first taste of the fen's slow ground.
 
 **Tar Leech** (Tar Cling, every third round, a heavy hit on the left creature)
 
@@ -147,12 +147,12 @@ Each floor boss is a smaller echo of a raid boss `(inferred)`. The raid bosses a
 - Echo: the Storm Sovereign's Lightning Rod `(inferred)`.
 - Landmark signature, **Overload** (every fourth round, marked a round ahead): a slam on the strongest creature, and the creatures beside it are splashed. `(content: dungeon-foes.json)`
 
-### Fen Lurker (Mire; Sink Down, every third round, a sweep of the row that leaves Mired)
+### Fen Lurker (Mire; Sink Down, every third round, a sweep of the row that leaves Bogged Down)
 
 - Shipped flavour `(content)`: "Looks like a bog-oak log until it blinks. Then you see that the log was looking at you."
 - Compendium detail: a bog-oak log, black and mossy, with reeds growing from its back. It lies half sunk in tar and watches with two gold eyes. It is the dungeon's patient floor boss, the smaller echo of Old Bogback `(inferred)`.
 - Echo: Old Bogback's Sinking Mud `(inferred)`.
-- Landmark signature, **Pull Under** (every fourth round, marked a round ahead): a sweep of the whole row that leaves Mired. `(content: dungeon-foes.json)`
+- Landmark signature, **Pull Under** (every fourth round, marked a round ahead): a sweep of the whole row that leaves Bogged Down. `(content: dungeon-foes.json)`
 
 ### Void floor bosses - concept, not shipped (2026-10-31)
 

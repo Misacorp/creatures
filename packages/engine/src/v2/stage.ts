@@ -45,7 +45,7 @@ export const carryKey = (spec: Pick<FighterSpec, 'key' | 'uid'>): string => spec
 /**
  * One raid stage with attrition (R14): creatures keep their HP from the carry, nobody heals between stages, a creature knocked out earlier
  * is not played, and Catch Breath's and Refuse to Fall's use (once per weekend) and the boss's escalation (step, phase and count, R22) pass
- * on; marks, Stores, Mired and "each fight" effects start fresh. From stage 2 an adapting boss resists the reaction used most so far
+ * on; marks, Stores, Bogged Down and "each fight" effects start fresh. From stage 2 an adapting boss resists the reaction used most so far
  * (Adapts) or the element whose creatures' hits (reactions included, counters not) dealt the most damage so far, chosen at the stage break;
  * a tie for the most gives no resistance (Element Resistance). The result's `fighters` are the creatures that were played, in input order.
  */

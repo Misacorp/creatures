@@ -1,6 +1,6 @@
 /**
  * Combat v2: the second answers of phase 5 (Pin Down, Backlash, Aftershock) and the board events that make off-turn and invisible
- * effects readable (the "cannot dodge" flag, a Knack's counter, Shake It Off's Mired). Built by hand with scripted dice.
+ * effects readable (the "cannot dodge" flag, a Knack's counter, Shake It Off's Bogged Down). Built by hand with scripted dice.
  */
 import { describe, expect, it } from 'vitest';
 import {
@@ -224,20 +224,20 @@ describe('Aftershock: a hit cap holds the hit and the bonus apart, and the bonus
   });
 });
 
-describe('Shake It Off tells the board how much Mired it cleared', () => {
-  it('the Mired event of the shake carries the stacks that were shaken off', () => {
+describe('Shake It Off tells the board how much Bogged Down it cleared', () => {
+  it('the Bogged Down event of the shake carries the stacks that were shaken off', () => {
     const song = (name: string) => spec({ name, fx: { miresAtStart: true } });
     const res = play(boss({ cols: 2, rounds: 3, mods: { shakeEvery: 3 } }), [
       song('S'),
       { ...song('T'), col: 1 },
     ]);
-    const events = boardEvents(res).filter((b) => b.type === 'mired');
+    const events = boardEvents(res).filter((b) => b.type === 'boggedDown');
     // Two songs a round, one stack fades at each round end: the shake at the end of round 3 clears what is left, all of it at full
-    // strength (the Mired of the third round: 2 + 1 + 1 from the rounds before, less what faded).
+    // strength (the Bogged Down of the third round: 2 + 1 + 1 from the rounds before, less what faded).
     const last = events.at(-1) as { stacks: number; shook?: number } | undefined;
     expect(last?.stacks).toBe(0);
     expect(last?.shook).toBeGreaterThan(0);
-    // The other Mired events (a stack, a fade) are not shakes.
+    // The other Bogged Down events (a stack, a fade) are not shakes.
     for (const e of events.slice(0, -1)) expect(e).not.toHaveProperty('shook');
   });
 });

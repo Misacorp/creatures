@@ -322,7 +322,7 @@
         },
         "power": 7500,
         "applies": {
-          "effect": "mired",
+          "effect": "bogged-down",
           "powerBp": 10000
         }
       }
@@ -350,7 +350,7 @@
         "power": 11000,
         "splashBp": 4000,
         "applies": {
-          "effect": "mired",
+          "effect": "bogged-down",
           "powerBp": 10000
         }
       }
@@ -377,7 +377,7 @@
         "rows": ["all"],
         "power": 4500,
         "applies": {
-          "effect": "mired",
+          "effect": "bogged-down",
           "powerBp": 10000
         }
       }
@@ -390,7 +390,7 @@
       },
       "op": "charge",
       "applies": {
-        "effect": "mired",
+        "effect": "bogged-down",
         "powerBp": 10000
       },
       "then": {

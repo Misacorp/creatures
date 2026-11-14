@@ -336,8 +336,8 @@ describe('the Mire icons', () => {
       expect(silhouette(other) === silhouette(icon), id).toBe(false);
   });
 
-  it('has a status glyph for Mired and a room glyph for Mud, both 8x8 and their own shape', () => {
-    for (const id of ['mired', 'mud']) {
+  it('has a status glyph for Bogged Down and a room glyph for Mud, both 8x8 and their own shape', () => {
+    for (const id of ['bogged-down', 'mud']) {
       const def = BUNDLED_GLYPHS[id];
       expect(def, id).toBeDefined();
       if (def === undefined) continue;

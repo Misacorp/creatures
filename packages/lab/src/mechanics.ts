@@ -1,6 +1,6 @@
 /**
  * Which mechanics the bosses and foes call for (Misa, 2026-10-28: every mechanic should matter somewhere: each Knack
- * family, talent kind, keyword, armour, silence, Mired, marks, Charged moves, Taunt, intercept and cover should be the
+ * family, talent kind, keyword, armour, silence, Bogged Down, marks, Charged moves, Taunt, intercept and cover should be the
  * answer or the problem for at least one boss or foe). Each mechanic has a predicate over a boss's data that returns why
  * it is present, or nothing. These predicates only say a feature is PRESENT on a boss ("features present"); that a
  * mechanic is really called for is measured (`ablation.ts`: taking it out of the boss's best line costs the line
@@ -155,7 +155,7 @@ const FAMILY_CALLS: Readonly<Record<string, Mechanic['calls']>> = {
   Debuff: (b) =>
     first(
       b.mods.shakeEvery !== undefined && 'it washes every debuff off itself',
-      b.escalation && 'Mired holds its escalation',
+      b.escalation && 'Bogged Down holds its escalation',
     ),
 };
 
@@ -199,8 +199,9 @@ const KEYWORD_CALLS: Readonly<Record<string, Mechanic['calls']>> = {
   Escalating: (b) => b.escalation !== undefined && 'it grows as the weekend goes on',
   // A track rule, not a boss's: every boss can be failed, so from the second lap every boss can give it.
   Determination: () => 'every boss can be failed, and from the second lap each failure helps',
-  Mired: (b) =>
-    (b.mods.shakeEvery !== undefined || b.escalation) && 'it washes debuffs off, or Mired holds it',
+  'Bogged Down': (b) =>
+    (b.mods.shakeEvery !== undefined || b.escalation) &&
+    'it washes debuffs off, or Bogged Down holds it',
   Beside: (b) => shapes(b, 'line3', 'chain', 'cross') && 'hits that spread to the creatures beside',
   'Row end': (b) => shapes(b, 'rowEnds') && 'it hits the ends of the rows',
   'Front row': (b) =>
@@ -241,13 +242,13 @@ const RULE_CALLS: readonly Mechanic[] = [
     calls: (b) => silences(b) && 'it silences',
   },
   {
-    id: 'rule:mired',
-    name: 'Mired',
+    id: 'rule:boggedDown',
+    name: 'Bogged Down',
     group: 'Rule',
     calls: (b) =>
       first(
         b.mods.shakeEvery !== undefined && 'it washes every debuff off itself',
-        b.escalation && 'Mired holds its escalation',
+        b.escalation && 'Bogged Down holds its escalation',
       ),
   },
   {

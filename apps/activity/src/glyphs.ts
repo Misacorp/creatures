@@ -834,8 +834,8 @@ const slotCharm: SpriteDef = {
 
 // --- Status effects and room modifiers ---
 
-/** A down arrow sinking into mud: the Mired status (slower and weaker). */
-const mired: SpriteDef = {
+/** A down arrow sinking into mud: the Bogged Down status (slower and weaker). */
+const boggedDown: SpriteDef = {
   palette: { r: BAD, o: MUD, d: MUD_DARK },
   rows: [
     '..rrrr..',
@@ -1047,7 +1047,7 @@ export const BUNDLED_GLYPHS: Readonly<Record<string, SpriteDef>> = {
   bait,
   flag,
   gift,
-  mired,
+  'bogged-down': boggedDown,
   mud,
   'slot-hat': slotHat,
   'slot-scarf': slotScarf,

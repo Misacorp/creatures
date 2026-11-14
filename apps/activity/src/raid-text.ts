@@ -235,7 +235,7 @@ function patternClause(p: Pattern, wording: Wording): string {
 }
 
 /**
- * What a move's rider says, for example "puts Mired x1 on each creature it hits": the effect's name
+ * What a move's rider says, for example "puts Bogged Down x1 on each creature it hits": the effect's name
  * and the stacks its power gives (100% is one stack; 140% is one, and sometimes a second; below 100% is
  * a chance of one). A move without a rider has none.
  */
@@ -260,7 +260,7 @@ export function appliesClause(g: Gimmick): string | null {
  * One gimmick in plain words, for example "Every 3 rounds: hits every creature in the front zone for
  * 80% of its attack." `row` (the dungeon, where the team is one row of three and each zone is the
  * one creature at that place) says "hits the left creature" instead of naming a zone. A move with a
- * status effect rider ends with it: "..., and puts Mired ×1 on each creature it hits."
+ * status effect rider ends with it: "..., and puts Bogged Down ×1 on each creature it hits."
  */
 export function gimmickText(g: Gimmick, wording: Wording = 'zones'): string {
   const base = gimmickBaseText(g, wording);

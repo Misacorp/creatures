@@ -49,7 +49,7 @@
     "multiplierBp": 45000,
     "payoffBonusBp": 11000,
     "appliesToFoe": {
-      "effect": "mired",
+      "effect": "bogged-down",
       "powerBp": 10000
     }
   },
@@ -63,7 +63,7 @@
     "multiplierBp": 45000,
     "payoffBonusBp": 11000,
     "consumes": {
-      "effect": "mired",
+      "effect": "bogged-down",
       "bonusPerStackBp": 2000
     }
   }

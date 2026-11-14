@@ -104,7 +104,7 @@ describe('Smother', () => {
     sturdy('mire', { element: 'mire', role: 'guard' }),
   ];
 
-  it('applies Mired to the boss at 100% power, with the reacting creature as the source', () => {
+  it('applies Bogged Down to the boss at 100% power, with the reacting creature as the source', () => {
     const r = fight(row());
     expect(eventsOf(r, 'reaction').map((e) => e.reaction)).toEqual(['smother']);
     expect(applies(r)).toEqual([
@@ -112,14 +112,14 @@ describe('Smother', () => {
         t: 'effect_apply',
         round: 1,
         target: null,
-        effect: 'mired',
+        effect: 'bogged-down',
         stacksAdded: 1,
         stacks: 1,
         turnsLeft: 3,
         source: 'mire',
       },
     ]);
-    // The Mired lands after the hit: the reaction event comes first.
+    // The Bogged Down lands after the hit: the reaction event comes first.
     const kinds = r.events.map((e) => e.t).filter((t) => t === 'reaction' || t === 'effect_apply');
     expect(kinds).toEqual(['reaction', 'effect_apply']);
   });
@@ -130,7 +130,7 @@ describe('Smother', () => {
     expect(stacks).toEqual([1, 2]);
     const names = buildNames({ boss: input([]).boss, row: row() }, {}, TEST_PACK);
     const text = applies(r).map((e) => describeEvent(e, names));
-    expect(text[1]).toBe('Tidal Colossus is Mired ×2 (3 turns).');
+    expect(text[1]).toBe('Tidal Colossus is Bogged Down ×2 (3 turns).');
   });
 
   it('is a plain reaction when effects are off: same damage, nothing applied', () => {
@@ -162,14 +162,14 @@ describe('Flare', () => {
     sturdy('mire', { element: 'mire', role: 'setter' }),
     sturdy('ember', { element: 'ember', role: 'payoff' }),
   ];
-  const mired = (stacks: number) =>
+  const boggedDown = (stacks: number) =>
     once(1, (apply) => {
-      apply(null, 'mired', stacks * 10_000);
+      apply(null, 'bogged-down', stacks * 10_000);
     });
 
-  it('burns off every Mired stack and adds +20% of the reaction bonus for each', () => {
+  it('burns off every Bogged Down stack and adds +20% of the reaction bonus for each', () => {
     const plain = fight(row(), { bossElement: 'spark' });
-    const burned = fight(row(), { bossElement: 'spark', hook: mired(3) });
+    const burned = fight(row(), { bossElement: 'spark', hook: boggedDown(3) });
     expect(eventsOf(burned, 'reaction').map((e) => e.reaction)).toEqual(['flare']);
     const base = hitOf(plain, 'ember');
     const more = hitOf(burned, 'ember');
@@ -186,7 +186,7 @@ describe('Flare', () => {
         t: 'effect_consume',
         round: 1,
         reaction: 'flare',
-        effect: 'mired',
+        effect: 'bogged-down',
         stacks: 3,
         bonusBp: 6_000,
       },
@@ -195,18 +195,18 @@ describe('Flare', () => {
     expect(eventsOf(burned, 'effect_expire')).toEqual([]);
   });
 
-  it('says it in the log: "Flare burns off Mired ×3!"', () => {
-    const r = fight(row(), { hook: mired(3) });
+  it('says it in the log: "Flare burns off Bogged Down ×3!"', () => {
+    const r = fight(row(), { hook: boggedDown(3) });
     const names = buildNames({ boss: input([]).boss, row: row() }, {}, TEST_PACK);
     const consume = eventsOf(r, 'effect_consume')[0];
     if (consume === undefined) throw new Error('no consume');
-    expect(describeEvent(consume, names)).toBe('Flare burns off Mired ×3!');
+    expect(describeEvent(consume, names)).toBe('Flare burns off Bogged Down ×3!');
   });
 
-  it('keeps the Mired of a fight where the reaction does not come (the stacks count down as usual)', () => {
+  it('keeps the Bogged Down of a fight where the reaction does not come (the stacks count down as usual)', () => {
     // Only the Mire creature: no Ember hit, so no Flare, and the effect stays until its turns run out.
     const r = fight([sturdy('mire', { element: 'mire', role: 'setter' })], {
-      hook: mired(2),
+      hook: boggedDown(2),
       rounds: 4,
     });
     expect(eventsOf(r, 'effect_consume')).toEqual([]);
@@ -218,7 +218,7 @@ describe('Flare', () => {
     expect(eventsOf(none, 'reaction').map((e) => e.reaction)).toEqual(['flare']);
     expect(eventsOf(none, 'effect_consume')).toEqual([]);
     // Effects off: the hook cannot apply anything either, so the hit is the plain reaction.
-    const off = fight(row(), { bossElement: 'spark', dice: null, hook: mired(3) });
+    const off = fight(row(), { bossElement: 'spark', dice: null, hook: boggedDown(3) });
     expect(eventsOf(off, 'effect_consume')).toEqual([]);
     expect(hitOf(off, 'ember')?.damage).toBe(hitOf(none, 'ember')?.damage);
   });
@@ -230,7 +230,7 @@ describe('Flare', () => {
       trigger: { eachRound: true },
       op: 'reflect_first_reaction',
     };
-    const r = fight(row(), { gimmicks: [trap], hook: mired(3) });
+    const r = fight(row(), { gimmicks: [trap], hook: boggedDown(3) });
     expect(eventsOf(r, 'reaction')[0]?.reflected).toBe(true);
     expect(eventsOf(r, 'effect_consume')).toEqual([]);
   });
@@ -254,14 +254,14 @@ describe('the Guard passive (on_hit_taken)', () => {
   };
   const guard = () => sturdy('g', { element: 'mire', role: 'guard' });
 
-  it('leaves Mired on the boss when the Guard takes a hit, at 60% power on the effect die', () => {
+  it('leaves Bogged Down on the boss when the Guard takes a hit, at 60% power on the effect die', () => {
     const hit = fight([guard()], {
       gimmicks: [slap],
       abilities: [choice('mud-wall', 'g')],
       rng: scripted([5_999]),
     });
     expect(applies(hit)).toEqual([
-      expect.objectContaining({ target: null, effect: 'mired', stacks: 1, source: 'g' }),
+      expect.objectContaining({ target: null, effect: 'bogged-down', stacks: 1, source: 'g' }),
     ]);
     // A die of 6000 or more misses (60%).
     const miss = fight([guard()], {
@@ -443,7 +443,7 @@ describe('the Support passive (round_start)', () => {
     return mods === undefined ? s : withMods(s, mods);
   };
 
-  it('leaves Mired on the boss each round with its Support action', () => {
+  it('leaves Bogged Down on the boss each round with its Support action', () => {
     const r = fight([support(), sturdy('a')], {
       abilities: [choice('squelch-song')],
       rounds: 3,
@@ -503,21 +503,21 @@ describe('the Support passive (round_start)', () => {
 });
 
 describe('the sheet fields of the debuff talents', () => {
-  const mired = (target: string, power: number) =>
+  const boggedDown = (target: string, power: number) =>
     once(1, (apply) => {
-      apply(target, 'mired', power);
+      apply(target, 'bogged-down', power);
     });
 
-  it('debuffResistBp cuts the per-stack numbers of debuffs on the wearer (Mired x2: -6% becomes -3%)', () => {
-    const bare = fight([sturdy('a')], { hook: mired('a', 20_000) });
+  it('debuffResistBp cuts the per-stack numbers of debuffs on the wearer (Bogged Down x2: -6% becomes -3%)', () => {
+    const bare = fight([sturdy('a')], { hook: boggedDown('a', 20_000) });
     const coated = fight([withMods(sturdy('a'), { debuffResistBp: 5_000 })], {
-      hook: mired('a', 20_000),
+      hook: boggedDown('a', 20_000),
     });
     expect(hitOf(bare, 'a')?.effectBp).toBe(-600);
     expect(hitOf(coated, 'a')?.effectBp).toBe(-300);
     // Full resistance: the stacks are there but weigh nothing.
     const immune = fight([withMods(sturdy('a'), { debuffResistBp: 10_000 })], {
-      hook: mired('a', 20_000),
+      hook: boggedDown('a', 20_000),
     });
     expect(hitOf(immune, 'a')?.effectBp).toBeUndefined();
     expect(hitOf(immune, 'a')?.damage).toBe(hitOf(fight([sturdy('a')]), 'a')?.damage);
@@ -533,7 +533,7 @@ describe('the sheet fields of the debuff talents', () => {
       ({
         spd: 100,
         mods: { debuffResistBp: resist },
-        effects: [{ id: 'mired', stacks: 5, turnsLeft: 1 }],
+        effects: [{ id: 'bogged-down', stacks: 5, turnsLeft: 1 }],
       }) as unknown as Creature;
     // 5 x -3% = -15%: 85. With 50% resist each stack is -1.5%: 5 x -1.5% = -7.5%, so 92 (rounded down).
     expect(effectiveSpd(state, creature(0))).toBe(85);
@@ -569,7 +569,7 @@ describe('the sheet fields of the debuff talents', () => {
   it('does not change what the boss applies, or a buff', () => {
     // A boss move has no source creature, so no sheet is read.
     const hook = once(1, (apply) => {
-      apply(null, 'mired', 10_000);
+      apply(null, 'bogged-down', 10_000);
     });
     const r = fight([withMods(sturdy('a'), { debuffPowerBp: 50_000, debuffDurationTurns: 5 })], {
       hook,
@@ -584,7 +584,7 @@ describe('passive abilities and the prefix property', () => {
     name: 'Test Passive',
     description: 'Mires the boss whenever it takes a hit.',
     kind: 'creature',
-    effects: [{ op: 'on_hit_taken', apply: { effect: 'mired', powerBp: 10_000 } }],
+    effects: [{ op: 'on_hit_taken', apply: { effect: 'bogged-down', powerBp: 10_000 } }],
     defaultRound: 5,
   };
   const pack: ContentPack = {

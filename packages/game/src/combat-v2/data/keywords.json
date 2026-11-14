@@ -66,7 +66,7 @@
     "step": "R8"
   },
   {
-    "name": "Mired",
+    "name": "Bogged Down",
     "means": "A debuff on the boss: per stack it deals less damage and dodges less (at most 5 stacks). It fades by 1 at the end of every round.",
     "not": "A mark",
     "step": "R15"
@@ -145,7 +145,7 @@
   },
   {
     "name": "Escalating",
-    "means": "A boss that is Escalating grows as a weekend goes on. It fills from something its text names (rounds, HP lost, reactions), grows a step each time it fills, up to a cap, carries across the weekend, and Mired slows it.",
+    "means": "A boss that is Escalating grows as a weekend goes on. It fills from something its text names (rounds, HP lost, reactions), grows a step each time it fills, up to a cap, carries across the weekend, and Bogged Down slows it.",
     "not": "A phase of the raid",
     "step": "R8"
   },

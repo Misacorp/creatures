@@ -283,7 +283,7 @@ const slotOf = (f: Pick<FightCreatureV2, 'row' | 'col'>, rows: number): number =
 
 /**
  * The stage: its head (where in the weekend, the round), the boss (picture, HP bar with a tick per stage, its move when it acts, marks,
- * Mired, what it resists, the Escalating meter), the turn strip lighting the step on, and the board.
+ * Bogged Down, what it resists, the Escalating meter), the turn strip lighting the step on, and the board.
  */
 export function StageV2({
   boss,
@@ -602,20 +602,20 @@ export function StageV2({
           text={compactPair(state.bossHp, hpMax)}
         />
         <MarkStrip marks={marks} />
-        {(state.mired > 0 ||
+        {(state.boggedDown > 0 ||
           state.fizzled ||
           resisted !== null ||
           escalation !== null ||
           actions.length > 0) && (
           <div class="stage-status">
             {escalation !== null && <EscalatingMeter {...escalation} />}
-            {state.mired > 0 && (
+            {state.boggedDown > 0 && (
               <Tag
                 kind="chip"
-                icon={{ kind: 'glyph', id: 'mired' }}
-                label={`Mired, ${String(state.mired)}`}
+                icon={{ kind: 'glyph', id: 'bogged-down' }}
+                label={`Bogged Down, ${String(state.boggedDown)}`}
               >
-                {`x${String(state.mired)}`}
+                {`x${String(state.boggedDown)}`}
               </Tag>
             )}
             {state.fizzled && (

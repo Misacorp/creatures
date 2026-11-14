@@ -91,7 +91,7 @@ describe('the raid bosses', () => {
     expect(esc ? esc.per * (esc.phase?.atStep ?? 0) : 0).toBe(5_000);
   });
 
-  it('Thornmother’s Second Bloom comes at half of the weekend’s HP, announced a round ahead, with Mired on her or not', () => {
+  it('Thornmother’s Second Bloom comes at half of the weekend’s HP, announced a round ahead, with Bogged Down on her or not', () => {
     const b = raidBossOf('thornmother');
     const weekendOf = (line: string, seed: string) =>
       weekend(b, toPlacements(answerLine(line), raidMode(b)), raidBench(b.cols, b.rosterLevel), {
@@ -99,11 +99,11 @@ describe('the raid bosses', () => {
         log: true,
       });
     const plain = BOSS_ANSWERS['thornmother']?.[0];
-    // The same line with a Croakmire first in the front row: a Squelch Song keeps Mired on her all weekend.
-    const mired = (plain?.line ?? '').replace(/^\S+/, 'croakmire/squelch-song+clinging');
-    expect(mired).toMatch(/squelch-song/);
+    // The same line with a Croakmire first in the front row: a Squelch Song keeps Bogged Down on her all weekend.
+    const boggedDown = (plain?.line ?? '').replace(/^\S+/, 'croakmire/squelch-song+clinging');
+    expect(boggedDown).toMatch(/squelch-song/);
     for (const [line, seed] of [
-      [mired, 'sb1'],
+      [boggedDown, 'sb1'],
       [plain?.line ?? '', 'sb2'],
       [
         classicFor(raidMode(b))

@@ -39,8 +39,8 @@
     "section": "v2-marks"
   },
   {
-    "id": "kw-mired",
-    "title": "Mired",
+    "id": "kw-bogged-down",
+    "title": "Bogged Down",
     "short": "A debuff on the boss: it hits softer and dodges less.",
     "lines": [
       "It stacks up to a limit, and fades a little every round.",
@@ -49,7 +49,7 @@
     ],
     "visual": {
       "kind": "glyph",
-      "id": "mired"
+      "id": "bogged-down"
     },
     "section": "v2-marks"
   },
@@ -282,7 +282,7 @@
     "lines": [
       "It fills from something its card names: rounds, HP lost or Reactions.",
       "Each time it fills, the boss grows a step, up to a limit.",
-      "It carries across the weekend, and Mired slows it.",
+      "It carries across the weekend, and Bogged Down slows it.",
       "It is not a stage of the raid."
     ],
     "section": "v2-weekend"

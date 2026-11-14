@@ -168,9 +168,9 @@ export interface KnackFx {
   readonly mendBonusBp?: number;
   /** Healing it receives is this much stronger. */
   readonly healReceivedBp?: number;
-  /** Mire: each hit it takes puts a Mired stack on the boss. */
+  /** Mire: each hit it takes puts a Bogged Down stack on the boss. */
   readonly miresOnHit?: boolean;
-  /** Mire: at round start the boss gains a Mired stack. */
+  /** Mire: at round start the boss gains a Bogged Down stack. */
   readonly miresAtStart?: boolean;
   // Talent library, first batch (docs/design/combat/modifiers.md). Numbers add, flags combine.
   /** Its hits deal this much more for each neighbour of its own element, at most two. */
@@ -208,9 +208,9 @@ export interface KnackFx {
   readonly interceptHitBackBp?: number;
   /** It takes this much less from a Charged landing aimed at its slot. */
   readonly braceBp?: number;
-  /** Its Mired has this chance (bp) to add 1 extra stack each time. */
-  readonly miredExtraBp?: number;
-  /** While it stands, the boss's Mired fades only every `miredClingingFadeEvery` rounds and each stack counts for half as much again. */
+  /** Its Bogged Down has this chance (bp) to add 1 extra stack each time. */
+  readonly boggedDownExtraBp?: number;
+  /** While it stands, the boss's Bogged Down fades only every `boggedDownClingingFadeEvery` rounds and each stack counts for half as much again. */
   readonly clinging?: boolean;
   /** Every second time its Support verb runs, its boost is doubled. */
   readonly brightBoost?: boolean;
@@ -334,7 +334,7 @@ export const GEAR_FIELDS: readonly (keyof KnackFx)[] = [
   'momentumBp',
   'ownMarkBp',
   'braceBp',
-  'miredExtraBp',
+  'boggedDownExtraBp',
   'ignoreSilence',
   'holdOn',
   'clinging',
@@ -418,7 +418,7 @@ export const ADDITIVE_FIELDS: ReadonlySet<keyof KnackFx> = new Set<keyof KnackFx
   'distanceCoverBp',
   'interceptHitBackBp',
   'braceBp',
-  'miredExtraBp',
+  'boggedDownExtraBp',
   'clinging',
   'brightBoost',
   'kindredBoostBp',

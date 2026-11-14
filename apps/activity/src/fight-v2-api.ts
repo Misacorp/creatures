@@ -260,7 +260,7 @@ export function isBoardEvent(value: unknown): value is BoardEvent {
       return isStr(value['who']) && isCount(value['turns']);
     case 'store':
       return isStr(value['who']) && isCount(value['value']);
-    case 'mired':
+    case 'boggedDown':
       return isCount(value['stacks']) && (value['shook'] === undefined || isCount(value['shook']));
     case 'escalation':
       return (

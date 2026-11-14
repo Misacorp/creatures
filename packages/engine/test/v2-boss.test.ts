@@ -15,7 +15,7 @@ import {
   by,
   count,
   hush,
-  mired,
+  boggedDown,
   move,
   mover,
   play,
@@ -138,13 +138,13 @@ describe('dodge, its auras and the boss own dodge (R1)', () => {
     expect(dodged(slippery(), [spec()], 2_999)).toBe(1);
     expect(dodged(slippery(), [spec()], 3_000)).toBe(0);
     expect(dodged(boss({ cols: 4 }), [spec()], 0)).toBe(0);
-    // Speed 50 adds 5%. Mired x1 (round start) takes off 1.5% of that, and nothing off the flat part.
+    // Speed 50 adds 5%. Bogged Down x1 (round start) takes off 1.5% of that, and nothing off the flat part.
     const song = [spec({ name: 'S', fx: { miresAtStart: true } })];
     expect(dodged(slippery({ spd: 50 }), [spec()], 3_499)).toBe(1);
     expect(dodged(slippery({ spd: 50 }), [spec()], 3_500)).toBe(0);
     expect(dodged(slippery({ spd: 50 }), song, 3_349)).toBe(1);
     expect(dodged(slippery({ spd: 50 }), song, 3_350)).toBe(0);
-    // With no Speed the Mired has nothing to take off: the flat part is the whole chance.
+    // With no Speed the Bogged Down has nothing to take off: the flat part is the whole chance.
     expect(dodged(slippery(), song, 2_999)).toBe(1);
     expect(dodged(slippery(), song, 3_000)).toBe(0);
     // Clear Skies: the hits of the creatures beside the Support cannot be dodged. Draws: A's crit roll (no dodge roll for it), then
@@ -701,16 +701,16 @@ describe('the strength of the boss gates and rule cards (Misa, 2026-10-29)', () 
     expect(run(10_000).damage).toBe(600 + 6 * 200 - 5 * 100);
   });
 
-  it('Shake It Off clears the card strength of the Mired, all of it at full strength', () => {
+  it('Shake It Off clears the card strength of the Bogged Down, all of it at full strength', () => {
     // Clinging holds the fade back to every second round, so the song builds stacks.
     const song = [spec({ name: 'S', fx: { miresAtStart: true, clinging: true } })];
     const left = (st: number, every: number, rounds: number) =>
-      mired(play(strength(boss({ rounds, mods: { shakeEvery: every } }), st), song)).at(-1);
-    expect(left(10_000, 1, 1)).toBe('Mired x0');
+      boggedDown(play(strength(boss({ rounds, mods: { shakeEvery: every } }), st), song)).at(-1);
+    expect(left(10_000, 1, 1)).toBe('Bogged Down x0');
     // The song adds three stacks over three rounds and one fades after round 2: at the end of round 3 there are two.
-    expect(left(10_000, 3, 3)).toBe('Mired x0');
-    expect(left(5_000, 3, 3)).toBe('Mired x1');
-    expect(left(0, 3, 3)).toBe('Mired x2');
+    expect(left(10_000, 3, 3)).toBe('Bogged Down x0');
+    expect(left(5_000, 3, 3)).toBe('Bogged Down x1');
+    expect(left(0, 3, 3)).toBe('Bogged Down x2');
   });
 
   it('a silence hits the strength share of its slots and lasts that share of its turns (at least one)', () => {

@@ -136,10 +136,10 @@ describe('the hand-made boss moves of the workbench', () => {
     expect(patternRow(15).map((r) => r.id)).toHaveLength(15);
   });
 
-  it('holds Mired on the boss and creatures, the dodge cues and the purge', () => {
-    const mired = patternFight('Mired: stacks and turns on the boss and a creature');
-    const state = stateAt(mired.events, mired.events.length, mired.hpMax);
-    expect(state.bossEffects).toEqual([{ effect: 'mired', stacks: 5, turnsLeft: 3 }]);
+  it('holds Bogged Down on the boss and creatures, the dodge cues and the purge', () => {
+    const boggedDown = patternFight('Bogged Down: stacks and turns on the boss and a creature');
+    const state = stateAt(boggedDown.events, boggedDown.events.length, boggedDown.hpMax);
+    expect(state.bossEffects).toEqual([{ effect: 'bogged-down', stacks: 5, turnsLeft: 3 }]);
     expect(Object.keys(state.creatureEffects)).toEqual(['c1', 'c4']);
     const dodges = patternFight('Dodges: a creature and the boss');
     const words = cuesForEvents(
@@ -157,7 +157,7 @@ describe('the hand-made boss moves of the workbench', () => {
         ['c0', 'Dodged!'],
       ]),
     );
-    const purge = patternFight('Shake Off: the boss purges its Mired');
+    const purge = patternFight('Shake Off: the boss purges its Bogged Down');
     expect(stateAt(purge.events, 2, purge.hpMax).bossEffects).toHaveLength(1);
     expect(stateAt(purge.events, purge.events.length, purge.hpMax).bossEffects).toEqual([]);
   });

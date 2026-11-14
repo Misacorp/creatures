@@ -28,9 +28,9 @@ export const PATTERN_SCENARIOS = [
   'Cover pips (Guard beside)',
   'Armor pip (a Guard takes less)',
   'Crowded sweep (15 creatures)',
-  'Mired: stacks and turns on the boss and a creature',
+  'Bogged Down: stacks and turns on the boss and a creature',
   'Dodges: a creature and the boss',
-  'Shake Off: the boss purges its Mired',
+  'Shake Off: the boss purges its Bogged Down',
   'Enraged',
   'Retreat, Phase 1',
   'Retreat, Phase 2',
@@ -90,7 +90,7 @@ const start = (round: number, bossHp = 1000): FightEvent => ({
   mark: null,
 });
 
-/** A Mired application on a creature (`target`) or the boss (null), as the engine writes it. */
+/** A Bogged Down application on a creature (`target`) or the boss (null), as the engine writes it. */
 const effect = (
   round: number,
   target: string | null,
@@ -100,7 +100,7 @@ const effect = (
   t: 'effect_apply',
   round,
   target,
-  effect: 'mired',
+  effect: 'bogged-down',
   stacksAdded: stacks,
   stacks,
   turnsLeft,
@@ -370,7 +370,7 @@ export function patternFight(scenario: PatternScenario): PatternFight {
       }
       return { ...done(colossus, events), row: big };
     }
-    case 'Mired: stacks and turns on the boss and a creature':
+    case 'Bogged Down: stacks and turns on the boss and a creature':
       return done(
         bogback,
         [
@@ -401,12 +401,12 @@ export function patternFight(scenario: PatternScenario): PatternFight {
         hit(4, 'c0', 0, { dodged: true }),
         hit(4, 'c1', 80),
       ]);
-    case 'Shake Off: the boss purges its Mired':
+    case 'Shake Off: the boss purges its Bogged Down':
       return done(bogback, [
         start(5, 800),
         effect(5, null, 4, 2),
         gimmick(5, 'shake-off', 'purge'),
-        { t: 'effect_purge', round: 5, removed: [{ effect: 'mired', stacks: 4 }] },
+        { t: 'effect_purge', round: 5, removed: [{ effect: 'bogged-down', stacks: 4 }] },
       ]);
     case 'Enraged':
       return done(

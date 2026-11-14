@@ -96,14 +96,14 @@ Status: design, not shipped (`(design: speed-and-dodge.md section 5)`). Everythi
 
 **The mark and the reactions** `(design)`:
 
-| Element | Mark it leaves | Cashed in by           | Reaction               | What it means in-world `(compendium detail, not shipped)`                                                                                                                         |
-| ------- | -------------- | ---------------------- | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Mire    | Muddied        | Ember                  | Flare                  | The swamp gas in the mud catches a spark and goes up in one great breath. It also burns the Mired mud off the boss: keeping the mud keeps the boss slow, and burning it pays out. |
-| Ember   | Scorched       | Tide, and now Mire too | Steam, and now Smother | Water on a hot rock is Steam. Wet earth on a fire is Smother: no steam, just a soft sound and the fire is gone, and the mud sticks to whatever it covered.                        |
+| Element | Mark it leaves | Cashed in by           | Reaction               | What it means in-world `(compendium detail, not shipped)`                                                                                                                               |
+| ------- | -------------- | ---------------------- | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Mire    | Muddied        | Ember                  | Flare                  | The swamp gas in the mud catches a spark and goes up in one great breath. It also burns the Bogged Down mud off the boss: keeping the mud keeps the boss slow, and burning it pays out. |
+| Ember   | Scorched       | Tide, and now Mire too | Steam, and now Smother | Water on a hot rock is Steam. Wet earth on a fire is Smother: no steam, just a soft sound and the fire is gone, and the mud sticks to whatever it covered.                              |
 
 **The derived fact still holds** `(design)`: every reaction pairs an element with the mark of the element it beats. Mire beats Ember, so Mire cashes Scorched (Smother). Ember beats Mire, so Ember cashes Muddied (Flare). Ember and Mire are the first pair that cash each other's marks.
 
-**Mired** `(design)` is the first status effect a boss can put on your creatures and your creatures can put on a boss: mud that holds on to the feet. It makes a fighter slower and weaker for a few turns. It is not a wound; the fen only holds on. `(compendium detail, not shipped)`
+**Bogged Down** `(design)` is the first status effect a boss can put on your creatures and your creatures can put on a boss: mud that holds on to the feet. It makes a fighter slower and weaker for a few turns. It is not a wound; the fen only holds on. `(compendium detail, not shipped)`
 
 **Mire as a force** `(compendium detail, not shipped)`: Grove is living patience, which grows. Mire is patience that keeps: it does not grow, it holds. Where Grove shelters, Mire keeps. Where Tide washes, Mire stays put. Its creatures are guards and debuffers, the ones who make a fight slower, which is how patience wins. Together with Ember it forms the first pair of elements that are strong against each other.
 

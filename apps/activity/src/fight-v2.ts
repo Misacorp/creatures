@@ -2,7 +2,7 @@
  * The combat v2 fight as board states: the one place playback reads the engine's events (the way `replay.ts` is for v1). A stored stage
  * and the live finale carry a list of events, each with the engine's typed `board` part beside its text (`FightEvent.board`); this module
  * folds them into the state of the board after any event: each creature's HP and status, who is out, silence with its turns left, Store, the
- * boss's HP, its marks oldest first with their counts, Mired, the Escalating count and step, what it resists, the moves announced and
+ * boss's HP, its marks oldest first with their counts, Bogged Down, the Escalating count and step, what it resists, the moves announced and
  * not yet landed, and the live inputs in play. It also cuts the events into beats (the playback's steps) and says what each beat shows
  * (who hit, who is out, what was cashed). Pure: no DOM, no clock, no network; all names and ids stay data (drawn as text by the screens).
  *
@@ -109,7 +109,7 @@ export interface BoardState {
   marks: readonly MarkState[];
   /** The marks that will be shed by the boss's next turn (a boss that sheds, shown just before it). */
   expiring: readonly string[];
-  mired: number;
+  boggedDown: number;
   /** Fizzle: the boss is immune to reactions until its next turn. */
   fizzled: boolean;
   escalation: EscalationState | null;
@@ -134,7 +134,7 @@ export function startState(setup: FoldSetup): BoardState {
     bossHp: setup.bossHpStart,
     marks: [],
     expiring: [],
-    mired: 0,
+    boggedDown: 0,
     fizzled: false,
     escalation:
       setup.escalationStep === null
@@ -278,8 +278,8 @@ function play(
       if (c !== undefined && !c.out) c.store = b.value;
       break;
     }
-    case 'mired':
-      s.mired = b.stacks;
+    case 'boggedDown':
+      s.boggedDown = b.stacks;
       break;
     case 'fizzle':
       if (b.state !== 'blocked') s.fizzled = b.state === 'on';
@@ -655,8 +655,8 @@ export function showOf(
         // The boss cannot dodge `who` this round: nothing on the board changes, so the Knack that did it is named on its tile.
         if (!knackOwners.has(b.by)) knackOwners.set(b.by, i);
         break;
-      case 'mired':
-        // Shake It Off: the boss clears its Mired. The same callout a reaction uses, in no element's colours.
+      case 'boggedDown':
+        // Shake It Off: the boss clears its Bogged Down. The same callout a reaction uses, in no element's colours.
         if (b.shook !== undefined && b.shook > 0)
           floats.push({
             i,
@@ -665,7 +665,7 @@ export function showOf(
             tone: 'reaction',
             crit: false,
             drift: drift(i),
-            sub: `-${String(b.shook)} Mired`,
+            sub: `-${String(b.shook)} Bogged Down`,
           });
         break;
       case 'fizzle':

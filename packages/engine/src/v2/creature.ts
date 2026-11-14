@@ -14,7 +14,7 @@ import type { Mark, State } from './state';
 // Bound once: a named import is read through a getter on every call under the lab's Vite loader, which costs 15% of a report.
 const { addMark, heal } = marksMod;
 const { beside } = boardMod;
-const { feed, grown, miredCut } = escalationMod;
+const { feed, grown, boggedDownCut } = escalationMod;
 const { takeHit } = takingMod;
 const {
   alive,
@@ -197,7 +197,10 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
         R.dodgeMaxBp,
         Math.max(
           0,
-          Math.min(R.dodgeMaxBp, s.boss.spd * R.dodgePerSpdBp + grown(s).dodgeBp - miredCut(s)),
+          Math.min(
+            R.dodgeMaxBp,
+            s.boss.spd * R.dodgePerSpdBp + grown(s).dodgeBp - boggedDownCut(s),
+          ),
         ) + (s.boss.dodgeBp ?? 0),
       );
   const dodged = !k.noDamage && roll(s, bossDodge);

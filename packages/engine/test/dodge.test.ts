@@ -145,8 +145,8 @@ describe('the dodge chance of a creature', () => {
     expect(hit(0, 0).dodged).toBeUndefined();
   });
 
-  it('is lowered by Mired: 5 stacks take 15% off the Speed', () => {
-    const mired = (die: number) =>
+  it('is lowered by Bogged Down: 5 stacks take 15% off the Speed', () => {
+    const boggedDown = (die: number) =>
       plain(
         play(
           [withMods('s0', {}, { spd: 100 })],
@@ -155,16 +155,16 @@ describe('the dodge chance of a creature', () => {
             extra: { effects: { dice: 1 } },
             options: {
               effectHook: (round, apply) => {
-                if (round === 1) apply('s0', 'mired', 50_000);
+                if (round === 1) apply('s0', 'bogged-down', 50_000);
               },
             },
           },
         ),
       );
     // 100 Speed is 1000 bp, 85 Speed is 850 bp.
-    expect(mired(849)?.dodged).toBe(true);
-    expect(mired(850)?.dodged).toBeUndefined();
-    // The same die against the same Speed without Mired dodges (900 is under 1000).
+    expect(boggedDown(849)?.dodged).toBe(true);
+    expect(boggedDown(850)?.dodged).toBeUndefined();
+    // The same die against the same Speed without Bogged Down dodges (900 is under 1000).
     expect(hit(100, 900).dodged).toBe(true);
   });
 });
@@ -346,7 +346,7 @@ describe('a dodged hit is a hit that never happened', () => {
         op: 'hit_zone',
         zone: 'middle',
         power: 10_000,
-        applies: { effect: 'mired', powerBp: 10_000 },
+        applies: { effect: 'bogged-down', powerBp: 10_000 },
       },
       'blow',
     );
@@ -452,7 +452,7 @@ describe('the boss dodges a creature hit', () => {
     expect(heroes(landed)[0]?.dodged).toBeUndefined();
   });
 
-  it('is lowered by Mired on the boss', () => {
+  it('is lowered by Bogged Down on the boss', () => {
     const run = (die: number) =>
       bossFight(
         [withMods('s0', {}, { atk: 1_000 })],
@@ -461,12 +461,12 @@ describe('the boss dodges a creature hit', () => {
           extra: { effects: { dice: 1 } },
           options: {
             effectHook: (round, apply) => {
-              if (round === 1) apply(null, 'mired', 50_000);
+              if (round === 1) apply(null, 'bogged-down', 50_000);
             },
           },
         },
       );
-    // 100 Speed with 5 stacks of Mired is 85 Speed: 850 bp.
+    // 100 Speed with 5 stacks of Bogged Down is 85 Speed: 850 bp.
     expect(heroes(run(849))[0]?.dodged).toBe(true);
     expect(heroes(run(850))[0]?.dodged).toBeUndefined();
   });

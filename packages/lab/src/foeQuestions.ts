@@ -125,7 +125,7 @@ export const FOE_QUESTIONS: Readonly<Record<string, FoeQuestion>> = Object.fromE
         UNDER_ELITE,
         'tidewing/steady-mark kilnmole/keep-the-heat-in tempestray/detonate',
       ],
-      // It swells every round and washes every debuff off every third: a Mired that comes back every round slows the swelling.
+      // It swells every round and washes every debuff off every third: a Bogged Down that comes back every round slows the swelling.
       [
         'bog-toad',
         'family:Debuff',
@@ -153,7 +153,7 @@ export const FOE_QUESTIONS: Readonly<Record<string, FoeQuestion>> = Object.fromE
         UNDER_ELITE,
         'tidewing/none ohmouse/catch-the-bolts tempestray/none',
       ],
-      // Its shell thickens with every reaction: a Mired that comes back every round holds the Molten Shell down.
+      // Its shell thickens with every reaction: a Bogged Down that comes back every round holds the Molten Shell down.
       [
         'slag-tyrant',
         'family:Debuff',

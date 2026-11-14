@@ -601,7 +601,7 @@ function assembleReport(
       .map((c) => c.name)
       .join(
         ', ',
-      )}. Shake It Off only costs a debuff build something (Mired x5 is -15% boss damage, and Mire has no Setter or Payoff yet), so the classic line is not hurt by it and no Mire team beats the classic line on it; its answer is a team that does not lean on a debuff.`,
+      )}. Shake It Off only costs a debuff build something (Bogged Down x5 is -15% boss damage, and Mire has no Setter or Payoff yet), so the classic line is not hurt by it and no Mire team beats the classic line on it; its answer is a team that does not lean on a debuff.`,
     '',
   );
 
