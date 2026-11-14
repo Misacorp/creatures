@@ -150,7 +150,7 @@ export interface TrialsCeremonyResult {
   graduated: number;
 }
 
-/** The `trials-ceremony` dev tool (staging only, with the valley systems on; 404 otherwise): the School's ceremony now, for the caller's ready creatures. */
+/** The `trials-ceremony` dev tool (staging only, with the valley systems on; 404 otherwise): the School's ceremony now, for the target player's ready creatures (the caller by default). */
 export function trialsCeremony(ctx: ToolCtx): TrialsCeremonyResult {
   if (!ctx.valleySystems || ctx.trials === null) throw new DevError(404, 'not_found');
   const ids = ctx.sql

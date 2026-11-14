@@ -113,7 +113,7 @@ describe('application power', () => {
         dice: 1,
         rng: scripted([die]),
         hook: once(1, (apply) => {
-          apply(null, 'mired', power);
+          apply(null, 'bogged-down', power);
         }),
       });
       if (added === null) expect(applies(r)).toEqual([]);
@@ -123,7 +123,7 @@ describe('application power', () => {
             t: 'effect_apply',
             round: 1,
             target: null,
-            effect: 'mired',
+            effect: 'bogged-down',
             stacksAdded: added,
             stacks: added,
             turnsLeft: 3,
@@ -139,10 +139,10 @@ describe('application power', () => {
       dice: 3,
       rng: scripted([5_000, 0, 9_000]),
       hook: once(1, (apply) => {
-        apply('a', 'mired', 10_000); // a whole stack: takes no die
-        apply('b', 'mired', 6_000); // die 5000: lands
-        apply('c', 'mired', 6_000); // die 0: lands
-        apply(null, 'mired', 6_000); // die 9000: misses
+        apply('a', 'bogged-down', 10_000); // a whole stack: takes no die
+        apply('b', 'bogged-down', 6_000); // die 5000: lands
+        apply('c', 'bogged-down', 6_000); // die 0: lands
+        apply(null, 'bogged-down', 6_000); // die 9000: misses
       }),
     });
     expect(applies(r).map((e) => [e.target, e.stacksAdded])).toEqual([
@@ -157,8 +157,8 @@ describe('application power', () => {
       dice: 1,
       rng: scripted([0]),
       hook: once(1, (apply) => {
-        apply(null, 'mired', 5_000); // the one die, 0: lands
-        apply(null, 'mired', 5_000); // spent: a miss, however lucky
+        apply(null, 'bogged-down', 5_000); // the one die, 0: lands
+        apply(null, 'bogged-down', 5_000); // spent: a miss, however lucky
       }),
     });
     expect(applies(r)).toHaveLength(1);
@@ -181,7 +181,7 @@ describe('application power', () => {
     const r = fight([sturdy('a')], {
       dice: null,
       hook: once(1, (apply) => {
-        apply(null, 'mired', 20_000);
+        apply(null, 'bogged-down', 20_000);
       }),
     });
     expect(applies(r)).toEqual([]);
@@ -195,14 +195,14 @@ describe('application power', () => {
         }),
       });
     expect(bad('nope', 10_000)).toThrow(/unknown status effect/);
-    expect(bad('mired', -1)).toThrow(RangeError);
-    expect(bad('mired', 1.5)).toThrow(RangeError);
+    expect(bad('bogged-down', -1)).toThrow(RangeError);
+    expect(bad('bogged-down', 1.5)).toThrow(RangeError);
   });
 
   it('adds a duration bonus from the source', () => {
     const r = fight([sturdy('a')], {
       hook: once(1, (apply) => {
-        apply(null, 'mired', 10_000, 2);
+        apply(null, 'bogged-down', 10_000, 2);
       }),
     });
     expect(applies(r)[0]?.turnsLeft).toBe(5);
@@ -218,10 +218,10 @@ describe('stacks, the cap and refresh', () => {
   it('adds stacks up to the cap and says how many it really added', () => {
     const r = fight([sturdy('a')], {
       hook: once(1, (apply) => {
-        apply(null, 'mired', 20_000);
-        apply(null, 'mired', 20_000);
-        apply(null, 'mired', 20_000);
-        apply(null, 'mired', 20_000);
+        apply(null, 'bogged-down', 20_000);
+        apply(null, 'bogged-down', 20_000);
+        apply(null, 'bogged-down', 20_000);
+        apply(null, 'bogged-down', 20_000);
       }),
     });
     expect(applies(r).map((e) => [e.stacksAdded, e.stacks])).toEqual([
@@ -236,8 +236,8 @@ describe('stacks, the cap and refresh', () => {
     const r = fight([sturdy('a')], {
       rounds: 3,
       hook: (round, apply) => {
-        if (round === 1) apply(null, 'mired', 50_000);
-        if (round === 2) apply(null, 'mired', 10_000);
+        if (round === 1) apply(null, 'bogged-down', 50_000);
+        if (round === 2) apply(null, 'bogged-down', 10_000);
       },
     });
     const [first, second] = applies(r);
@@ -254,8 +254,8 @@ describe('stacks, the cap and refresh', () => {
       dice: 1,
       rng: scripted([9_999, 9_999, 9_999]),
       hook: (round, apply) => {
-        if (round === 1) apply(null, 'mired', 10_000);
-        if (round === 2) apply(null, 'mired', 5_000); // misses: no event, no refresh
+        if (round === 1) apply(null, 'bogged-down', 10_000);
+        if (round === 2) apply(null, 'bogged-down', 5_000); // misses: no event, no refresh
       },
     });
     expect(applies(r)).toHaveLength(1);
@@ -267,13 +267,13 @@ describe('stacks, the cap and refresh', () => {
     const r = fight([sturdy('a')], {
       rounds: 3,
       hook: once(1, (apply) => {
-        apply(null, 'mired', 10_000); // 3 turns
+        apply(null, 'bogged-down', 10_000); // 3 turns
         apply(null, 'sluggish', 10_000); // 2 turns
       }),
     });
     expect(eventsOf(r, 'effect_expire').map((e) => [e.round, e.effect])).toEqual([
       [2, 'sluggish'],
-      [3, 'mired'],
+      [3, 'bogged-down'],
     ]);
   });
 });
@@ -283,12 +283,12 @@ describe('the countdown runs on the target`s own turns', () => {
     const r = fight([sturdy('a'), sturdy('b')], {
       rounds: 4,
       hook: once(1, (apply) => {
-        apply(null, 'mired', 40_000);
+        apply(null, 'bogged-down', 40_000);
       }),
     });
     // 3 turns from round 1: rounds 1, 2 and 3. One expiry for all four stacks.
     expect(eventsOf(r, 'effect_expire')).toEqual([
-      { t: 'effect_expire', round: 3, target: null, effect: 'mired' },
+      { t: 'effect_expire', round: 3, target: null, effect: 'bogged-down' },
     ]);
   });
 
@@ -296,7 +296,7 @@ describe('the countdown runs on the target`s own turns', () => {
     const r = fight([sturdy('a'), sturdy('b')], {
       rounds: 4,
       hook: once(1, (apply) => {
-        apply('b', 'mired', 10_000);
+        apply('b', 'bogged-down', 10_000);
       }),
     });
     const expire = eventsOf(r, 'effect_expire');
@@ -315,7 +315,7 @@ describe('the countdown runs on the target`s own turns', () => {
       rounds: 5,
       gimmicks: [silence],
       hook: once(2, (apply) => {
-        apply('b', 'mired', 10_000);
+        apply('b', 'bogged-down', 10_000);
       }),
     });
     // Silenced again every round, b skips rounds 2, 3 and 4: the third skipped turn ends the effect.
@@ -331,7 +331,7 @@ describe('the countdown runs on the target`s own turns', () => {
       rounds: 4,
       extra: { skipFirstTurn: ['b'] },
       hook: once(1, (apply) => {
-        apply('b', 'mired', 10_000);
+        apply('b', 'bogged-down', 10_000);
       }),
     });
     // Round 1 (hazed) counts: rounds 1, 2, 3.
@@ -342,7 +342,7 @@ describe('the countdown runs on the target`s own turns', () => {
     const r = fight([sturdy('a', { atk: 10_000 })], {
       pool: 100,
       hook: once(1, (apply) => {
-        apply(null, 'mired', 10_000);
+        apply(null, 'bogged-down', 10_000);
       }),
     });
     expect(r.bossHpEnd).toBe(0);
@@ -354,8 +354,8 @@ describe('the countdown runs on the target`s own turns', () => {
       rounds: 4,
       bossAtk: 100,
       hook: (round, apply) => {
-        if (round === 1) apply('a', 'mired', 10_000);
-        if (round === 2) apply('a', 'mired', 10_000); // a is down by now: nothing lands
+        if (round === 1) apply('a', 'bogged-down', 10_000);
+        if (round === 2) apply('a', 'bogged-down', 10_000); // a is down by now: nothing lands
       },
     });
     expect(eventsOf(r, 'knockout').map((e) => e.creature)).toEqual(['a']);
@@ -375,13 +375,13 @@ describe('what stacks do to the numbers', () => {
         .filter((e) => e.source === 'attack')
         .map((e) => e.damage);
     expect(damage(run())).toEqual([plain, plain, plain, plain]);
-    // Five stacks of Mired: -15%, for the boss turns of rounds 1 to 3, then it wears off.
+    // Five stacks of Bogged Down: -15%, for the boss turns of rounds 1 to 3, then it wears off.
     const cut = Math.floor((plain * 8_500) / 10_000);
     expect(
       damage(
         run(
           once(1, (apply) => {
-            apply(null, 'mired', 50_000);
+            apply(null, 'bogged-down', 50_000);
           }),
         ),
       ),
@@ -393,7 +393,7 @@ describe('what stacks do to the numbers', () => {
       bossAtk: 1_000,
       gimmicks: [everyRound({ op: 'hit_zone', zone: 'middle', power: 10_000 })],
       hook: once(1, (apply) => {
-        apply(null, 'mired', 50_000);
+        apply(null, 'bogged-down', 50_000);
       }),
     });
     const hits = eventsOf(r, 'boss_hit').filter((e) => e.source === 'gimmick');
@@ -408,7 +408,7 @@ describe('what stacks do to the numbers', () => {
     expect(base?.effectBp).toBeUndefined();
     const slowed = run(
       once(1, (apply) => {
-        apply('a', 'mired', 50_000);
+        apply('a', 'bogged-down', 50_000);
       }),
     );
     expect(slowed?.damage).toBe(850);
@@ -435,7 +435,7 @@ describe('what stacks do to the numbers', () => {
     const r = fight([sturdy('a')], {
       hook: once(1, (apply) => {
         apply('a', 'zeal', 10_000); // +20%
-        apply('a', 'mired', 20_000); // -6%
+        apply('a', 'bogged-down', 20_000); // -6%
       }),
     });
     const hit = eventsOf(r, 'hit')[0];
@@ -447,20 +447,20 @@ describe('what stacks do to the numbers', () => {
     const state = {
       effectDefs: new Map(PACK.statusEffects.map((e) => [e.id, e])),
       boss: {},
-      bossEffects: [{ id: 'mired', stacks: 5, turnsLeft: 3 }],
+      bossEffects: [{ id: 'bogged-down', stacks: 5, turnsLeft: 3 }],
     } as unknown as FightState;
     const c = {
       spd: 100,
       mods: NO_MODS,
       effects: [
-        { id: 'mired', stacks: 3, turnsLeft: 1 },
+        { id: 'bogged-down', stacks: 3, turnsLeft: 1 },
         { id: 'sluggish', stacks: 3, turnsLeft: 1 },
       ],
     } as unknown as Creature;
     // -9% and -30%: 100 x 61%.
     expect(effectiveSpd(state, c)).toBe(61);
     expect(effectiveSpd(state, { ...c, effects: [] })).toBe(100);
-    // A boss without a `baseSpd` has no Speed; with one, its effects (Mired, 5 x -3%) fold in.
+    // A boss without a `baseSpd` has no Speed; with one, its effects (Bogged Down, 5 x -3%) fold in.
     expect(effectiveSpd(state, BOSS)).toBe(0);
     const fast = { ...state, boss: { baseSpd: 200 } } as unknown as FightState;
     expect(effectiveSpd(fast, BOSS)).toBe(170);
@@ -475,14 +475,14 @@ describe('purge and cleanse', () => {
       bossAtk: 1_000,
       gimmicks: [purge, hitter],
       hook: once(1, (apply) => {
-        apply(null, 'mired', 50_000);
+        apply(null, 'bogged-down', 50_000);
         apply(null, 'zeal', 10_000);
       }),
     });
     expect(eventsOf(r, 'effect_purge')).toEqual([
-      { t: 'effect_purge', round: 1, removed: [{ effect: 'mired', stacks: 5 }] },
+      { t: 'effect_purge', round: 1, removed: [{ effect: 'bogged-down', stacks: 5 }] },
     ]);
-    // The purge comes first in the boss's list, so the move after it is no longer cut by Mired
+    // The purge comes first in the boss's list, so the move after it is no longer cut by Bogged Down
     // (full 1000), and Zeal (a buff, +20%) is still there.
     expect(eventsOf(r, 'boss_hit').find((e) => e.source === 'gimmick')?.damage).toBe(1_200);
   });
@@ -508,9 +508,9 @@ describe('purge and cleanse', () => {
       rounds: 3,
       extra: { rules },
       hook: once(1, (apply) => {
-        apply('a', 'mired', 30_000);
+        apply('a', 'bogged-down', 30_000);
         apply('a', 'zeal', 10_000);
-        apply('s', 'mired', 10_000); // the Support does not cleanse itself
+        apply('s', 'bogged-down', 10_000); // the Support does not cleanse itself
       }),
     });
     expect(eventsOf(r, 'effect_cleanse')).toEqual([
@@ -519,14 +519,14 @@ describe('purge and cleanse', () => {
         round: 1,
         supporter: 's',
         target: 'a',
-        effect: 'mired',
+        effect: 'bogged-down',
         stacks: 3,
       },
     ]);
     // The buff was untouched: it still runs out on its own after 2 of a's turns.
     expect(eventsOf(r, 'effect_expire').map((e) => [e.round, e.target, e.effect])).toEqual([
       [2, 'a', 'zeal'],
-      [3, 's', 'mired'],
+      [3, 's', 'bogged-down'],
     ]);
   });
 
@@ -536,7 +536,7 @@ describe('purge and cleanse', () => {
     const r = fight(row, {
       extra: { rules },
       hook: once(1, (apply) => {
-        apply('a', 'mired', 10_000);
+        apply('a', 'bogged-down', 10_000);
       }),
     });
     expect(eventsOf(r, 'effect_cleanse')).toEqual([]);
@@ -552,7 +552,7 @@ describe('the forecast', () => {
 });
 
 describe('a boss move that applies an effect', () => {
-  const rider = { effect: 'mired', powerBp: 10_000 };
+  const rider = { effect: 'bogged-down', powerBp: 10_000 };
   /** A move that fires every round and carries the rider (the type of `everyRound` is loose on purpose). */
   const carrying = (
     g: Record<string, unknown>,
@@ -604,7 +604,7 @@ describe('a boss move that applies an effect', () => {
       gimmicks: [
         carrying(
           { op: 'hit_zone', zone: 'middle', power: 10_000 },
-          { effect: 'mired', powerBp: 30_000 },
+          { effect: 'bogged-down', powerBp: 30_000 },
         ),
       ],
     });
@@ -621,14 +621,14 @@ describe('Old Bogback in the shipped content', () => {
     .find((b) => b.id === 'old-bogback')
     ?.gimmicks.find((g) => g.id === 'sinking-mud');
 
-  it('leaves Mired on every creature Sinking Mud hits, in a fight with effects on', () => {
+  it('leaves Bogged Down on every creature Sinking Mud hits, in a fight with effects on', () => {
     if (sinking === undefined) throw new Error('missing move');
     const r = fight([sturdy('a'), sturdy('b'), sturdy('c')], { rounds: 3, gimmicks: [sinking] });
-    // The move fires in round 3: each creature of the row it walks to is hit, then mired for 1 stack.
+    // The move fires in round 3: each creature of the row it walks to is hit, then boggedDown for 1 stack.
     const got = applies(r);
     expect(got.length).toBeGreaterThan(0);
     for (const e of got) {
-      expect([e.round, e.effect, e.stacksAdded, e.turnsLeft]).toEqual([3, 'mired', 1, 3]);
+      expect([e.round, e.effect, e.stacksAdded, e.turnsLeft]).toEqual([3, 'bogged-down', 1, 3]);
     }
     const hit = eventsOf(r, 'boss_hit')
       .filter((e) => e.round === 3)
@@ -688,8 +688,8 @@ describe('dice and replays', () => {
       rounds: 4,
       bossAtk: 500,
       hook: (_, apply) => {
-        apply(null, 'mired', 14_000);
-        apply('a', 'mired', 6_000);
+        apply(null, 'bogged-down', 14_000);
+        apply('a', 'bogged-down', 6_000);
       },
     };
     const a = fight([sturdy('a'), sturdy('b')], {
@@ -711,33 +711,35 @@ describe('the log text', () => {
     describeEvent(e, { ...names, effects, boss: 'Old Bogback' });
 
   it('says each event in a plain sentence', () => {
-    const base = { t: 'effect_apply', round: 2, effect: 'mired', stacksAdded: 1 } as const;
+    const base = { t: 'effect_apply', round: 2, effect: 'bogged-down', stacksAdded: 1 } as const;
     expect(say({ ...base, target: null, stacks: 3, turnsLeft: 3 })).toBe(
-      'Old Bogback is Mired ×3 (3 turns).',
+      'Old Bogback is Bogged Down ×3 (3 turns).',
     );
-    expect(say({ ...base, target: 'a', stacks: 1, turnsLeft: 1 })).toBe('a is Mired ×1 (1 turn).');
-    expect(say({ t: 'effect_expire', round: 2, target: null, effect: 'mired' })).toBe(
-      'Old Bogback is no longer Mired.',
+    expect(say({ ...base, target: 'a', stacks: 1, turnsLeft: 1 })).toBe(
+      'a is Bogged Down ×1 (1 turn).',
+    );
+    expect(say({ t: 'effect_expire', round: 2, target: null, effect: 'bogged-down' })).toBe(
+      'Old Bogback is no longer Bogged Down.',
     );
     expect(
       say({
         t: 'effect_purge',
         round: 2,
         removed: [
-          { effect: 'mired', stacks: 2 },
+          { effect: 'bogged-down', stacks: 2 },
           { effect: 'sluggish', stacks: 1 },
         ],
       }),
-    ).toBe('Old Bogback shakes off Mired and Sluggish.');
+    ).toBe('Old Bogback shakes off Bogged Down and Sluggish.');
     expect(
       say({
         t: 'effect_cleanse',
         round: 2,
         supporter: 's',
         target: 'a',
-        effect: 'mired',
+        effect: 'bogged-down',
         stacks: 2,
       }),
-    ).toBe('s clears Mired from a.');
+    ).toBe('s clears Bogged Down from a.');
   });
 });

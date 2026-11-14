@@ -157,7 +157,7 @@ export const ReactionDefSchema = v.strictObject({
   /**
    * Optional rider: the reaction burns off every stack of the status effect on the boss and adds
    * `bonusPerStackBp` to the reaction's bonus (its extra damage) for each stack burned (Flare burns
-   * Mired). Only in a fight with effects on; else a plain reaction.
+   * Bogged Down). Only in a fight with effects on; else a plain reaction.
    */
   consumes: v.optional(
     v.strictObject({

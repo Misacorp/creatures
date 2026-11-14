@@ -155,7 +155,7 @@ export function hitBoss(
   const reflected = armedTrap && !proof;
   const backlashed = backlashHit && !proof;
   const brambled = brambling && !reflected;
-  // A reaction that consumes a status effect on the boss (Flare burns Mired) adds its share of the bonus
+  // A reaction that consumes a status effect on the boss (Flare burns Bogged Down) adds its share of the bonus
   // for each stack on it. Nothing without effects on, or on a reflected reaction (no bonus lands).
   const burned =
     reaction?.consumes === undefined || reflected ? 0 : bossStacks(state, reaction.consumes.effect);

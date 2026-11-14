@@ -36,7 +36,7 @@ const effectIcons: Entry = {
   file: 'apps/activity/src/ui/EffectIcons.tsx',
   group: 'Creatures & game pieces',
   description:
-    'The status effects on a fighter on the fight stage: a small chip with the effect\'s glyph, its stacks ("×5") and, beside the boss, the turns left; on a creature only the glyph and the stacks. Tap one for what the effect means. Only Mired exists today.',
+    'The status effects on a fighter on the fight stage: a small chip with the effect\'s glyph, its stacks ("×5") and, beside the boss, the turns left; on a creature only the glyph and the stacks. Tap one for what the effect means. Only Bogged Down exists today.',
   controls: {
     stacks: { kind: 'number', min: 1, max: 5 },
     turns: { kind: 'number', min: 1, max: 5 },
@@ -44,7 +44,7 @@ const effectIcons: Entry = {
   },
   defaults: { stacks: 5, turns: 3, onCreature: false },
   presets: [
-    { name: 'On the boss: Mired ×5, 3 turns', props: {} },
+    { name: 'On the boss: Bogged Down ×5, 3 turns', props: {} },
     { name: 'On the boss: one stack, last turn', props: { stacks: 1, turns: 1 } },
     { name: 'On a creature (small)', props: { stacks: 2, turns: 2, onCreature: true } },
   ],
@@ -52,7 +52,7 @@ const effectIcons: Entry = {
     <div class="effect-sample">
       <EffectIcons
         compact={bool(p, 'onCreature')}
-        effects={[{ effect: 'mired', stacks: num(p, 'stacks'), turnsLeft: num(p, 'turns') }]}
+        effects={[{ effect: 'bogged-down', stacks: num(p, 'stacks'), turnsLeft: num(p, 'turns') }]}
       />
     </div>
   ),

@@ -389,17 +389,33 @@ export function gearShare(
 // --- The wear rule ---
 
 /**
+ * The game's `wearBlock`, with the level rules read from what the server says the item needs: with the
+ * valley's systems on (V-GEAR-3) the server sends `needs.level` 1 and any creature wears any item, so the
+ * level checks pass; the role check always applies. Without `needs` (or with it at the item's own rule)
+ * this is `wearBlock` as it is.
+ */
+export function clientWearBlock(
+  item: Pick<GearItem, 'slot' | 'tag' | 'itemLevel'> & { needs?: Pick<GearItem['needs'], 'level'> },
+  creature: { level: number; role: Parameters<typeof wearBlock>[1]['role'] },
+): ReturnType<typeof wearBlock> {
+  const relaxed = wearBlock(item, creature, true);
+  if (relaxed !== null) return relaxed;
+  if (item.needs !== undefined && creature.level >= item.needs.level) return null;
+  return wearBlock(item, creature);
+}
+
+/**
  * Why a creature cannot wear an item, in words; null when it can. The rule itself is the game's
  * (`wearBlock`): a role-locked Charm only goes on its role, a slot opens at a creature level, and an
  * item's level may not be above the creature's.
  */
 export function wearReason(
-  item: Pick<GearItem, 'slot' | 'tag' | 'itemLevel'>,
+  item: Pick<GearItem, 'slot' | 'tag' | 'itemLevel'> & { needs?: Pick<GearItem['needs'], 'level'> },
   creature: Pick<Creature, 'level' | 'species'>,
 ): string | null {
   const species = getSpecies(creature.species);
   if (species === undefined) return null;
-  const block = wearBlock(item, { level: creature.level, role: species.role });
+  const block = clientWearBlock(item, { level: creature.level, role: species.role });
   if (block === null) return null;
   switch (block.reason) {
     case 'role':

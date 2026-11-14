@@ -494,7 +494,7 @@ Status: written 2026-10-31. **Combat v2 is in development and these talents are 
 
 ### Wicked
 
-- Was **Heavy Hand**. Its text now says "its debuffs", not Mired, because it covers every debuff (Mired is the only one today).
+- Was **Heavy Hand**. Its text now says "its debuffs", not Bogged Down, because it covers every debuff (Bogged Down is the only one today).
 - Roles: guard, support.
 - Line pools: Mudlump, Squelch.
 - Text `(content: combat-v2/talents.json)`: "Each debuff it puts on the boss has an 80% chance to add 1 extra stack."
@@ -505,7 +505,7 @@ Status: written 2026-10-31. **Combat v2 is in development and these talents are 
 
 - Roles: guard, support.
 - Line pools: Mudlump, Squelch.
-- Text `(content: combat-v2/talents.json)`: "While it stands, {Mired} fades only every second round, and each stack counts for half as much again."
+- Text `(content: combat-v2/talents.json)`: "While it stands, {Bogged Down} fades only every second round, and each stack counts for half as much again."
 - Gear line `(content: gear-lines.json)`: **Clinging** (same name as the shipped gear line).
 - Canon `(compendium detail, not shipped)`: It sticks to the boss like mud, and the Mire's gift is that it stays stuck.
 

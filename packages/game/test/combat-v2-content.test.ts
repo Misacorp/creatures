@@ -730,7 +730,7 @@ describe('combat v2 content gate: names and words of the bosses (the compendium 
     ])
       expect(pack.keywords, k).toHaveProperty(k);
     expect(pack.keywords).not.toHaveProperty('Build-up');
-    expect(pack.keywords['Escalating']?.means).toMatch(/Mired slows it/);
+    expect(pack.keywords['Escalating']?.means).toMatch(/Bogged Down slows it/);
     expect(pack.keywords['Escalating']?.means).toMatch(/weekend/);
   });
 

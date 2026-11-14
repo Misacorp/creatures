@@ -1,4 +1,4 @@
-import { content, type ContentPack } from '@creatures/game';
+import { content, currentStatusId, type ContentPack } from '@creatures/game';
 import type { FightEvent, FightInput } from './types';
 
 /** Display names used when turning events into text. Missing entries fall back to the id. */
@@ -14,7 +14,7 @@ export interface EventNames {
   elements?: Readonly<Record<string, string>>;
   adaptations?: Readonly<Record<string, string>>;
   /**
-   * Status effect names by id, for example mired: "Mired". `buildNames` does not fill it (the names the
+   * Status effect names by id, for example boggedDown: "Bogged Down". `buildNames` does not fill it (the names the
    * server sends the client keep their shape until the effects have a UI slice); without it the log
    * uses the shipped content's name for the effect, or its id.
    */
@@ -59,7 +59,9 @@ const signedPct = (bp: number): string => `${bp < 0 ? '-' : '+'}${Math.abs(bp) /
 
 /** An effect's display name: the names table, else the shipped content's, else the id. */
 const effectName = (names: EventNames, id: string): string =>
-  names.effects?.[id] ?? content.statusEffects.find((e) => e.id === id)?.name ?? id;
+  names.effects?.[id] ??
+  content.statusEffects.find((e) => e.id === currentStatusId(id))?.name ??
+  id;
 
 const lookup = (table: Readonly<Record<string, string>> | undefined, id: string): string =>
   table?.[id] ?? id;

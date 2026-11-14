@@ -30,7 +30,7 @@ import type {
 // Bound once: a named import is read through a getter on every call under the lab's Vite loader, which costs 15% of a report.
 const { bossTurn } = bossMod;
 const { creatureTurn } = creatureMod;
-const { escalationState, fadeMired } = escalationMod;
+const { escalationState, fadeBoggedDown } = escalationMod;
 const { roundStart } = marksMod;
 const { alive, aliveBySlot, applyActions, contextOf, effectsCarried, emit, log, strengthOf } =
   stateMod;
@@ -137,7 +137,7 @@ export function startState(
     shadowHp: opts.potential ? (opts.shadowHp ?? opts.bossHp ?? boss.hp) : (opts.bossHp ?? boss.hp),
     marks: new Map(),
     markAge: 0,
-    mired: 0,
+    boggedDown: 0,
     round: 0,
     turn: 0,
     bossTurnsDone: 0,
@@ -205,16 +205,16 @@ export function playFight(
       for (const f of aliveBySlot(s).filter((x) => x.row === r)) creatureTurn(s, f);
       bossTurn(s, r);
     }
-    fadeMired(s);
+    fadeBoggedDown(s);
     // Shake It Off: announced at round start, the boss clears every debuff when its round ends.
-    if (s.boss.mods.shakeEvery && s.round % s.boss.mods.shakeEvery === 0 && s.mired > 0) {
-      // Shake It Off clears the card's strength's share of the Mired (all of it at full strength).
-      const before = s.mired;
-      s.mired -= Math.min(s.mired, Math.round((s.mired * strengthOf(s)) / 10_000));
+    if (s.boss.mods.shakeEvery && s.round % s.boss.mods.shakeEvery === 0 && s.boggedDown > 0) {
+      // Shake It Off clears the card's strength's share of the Bogged Down (all of it at full strength).
+      const before = s.boggedDown;
+      s.boggedDown -= Math.min(s.boggedDown, Math.round((s.boggedDown * strengthOf(s)) / 10_000));
       if (s.opts.log) log(s, 'shake', `${boss.name} shakes off its debuffs`);
       if (s.opts.log)
-        log(s, 'mired', `Mired x${s.mired}`, {
-          board: { type: 'mired', stacks: s.mired, shook: before - s.mired },
+        log(s, 'boggedDown', `Bogged Down x${s.boggedDown}`, {
+          board: { type: 'boggedDown', stacks: s.boggedDown, shook: before - s.boggedDown },
         });
     }
   }

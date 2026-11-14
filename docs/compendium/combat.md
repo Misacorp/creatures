@@ -329,7 +329,7 @@ Each entry: the family, the forms that know it, the player text, and a line of c
 - Family: Debuff.
 - Was **Mud Wall**. The shipped v1 finale ability Mud Wall keeps its name until v1 goes.
 - Forms: Mudlump; kept when evolving by Bogwarden.
-- Text `(content: combat-v2/knacks.json)`: "Each hit it takes, even Blocked, puts {Mired} x1 on the boss."
+- Text `(content: combat-v2/knacks.json)`: "Each hit it takes, even Blocked, puts {Bogged Down} x1 on the boss."
 - Canon `(compendium detail, not shipped)`: Whatever strikes it gets a little stuck. (The Bogwarden's own lore says it first.)
 - Design `(design)`: Keeps the Mire debuff up once the old finale abilities go.
 
@@ -337,7 +337,7 @@ Each entry: the family, the forms that know it, the player text, and a line of c
 
 - Family: Debuff.
 - Forms: Squelch; kept when evolving by Croakmire.
-- Text `(content: combat-v2/knacks.json)`: "At round start the boss gains {Mired} x1."
+- Text `(content: combat-v2/knacks.json)`: "At round start the boss gains {Bogged Down} x1."
 - Canon `(compendium detail, not shipped)`: It hums when nobody listens, and the boss sinks a little deeper with every verse.
 - Design `(design)`: Keeps the Mire debuff up.
 
@@ -489,18 +489,18 @@ Who stands where, who covers whom, and what a creature can and cannot do. `(comp
 
 Words for what a boss does and how it changes. The moves themselves are in the "Moves" section after the rule cards. `(compendium detail, not shipped)`
 
-| Keyword       | Means                                                                                                                                                                                                                    | Is not                           | Old name |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------- | -------- |
-| Wind-up       | A boss move announced at round start: its slots are shown, and it lands on them.                                                                                                                                         | The Spark mark Charged           |          |
-| Mired         | A debuff on the boss: per stack it deals less damage and dodges less (at most 5 stacks). It fades by 1 at the end of every round.                                                                                        | A mark                           |          |
-| Barrage       | A boss attack or move that hits a number of different creatures, drawn at random from the whole arena.                                                                                                                   | A hit on every creature of a row | Scatter  |
-| Leap          | A boss move that hits one creature, then jumps to the strongest creature right next to it, and on, each jump softer.                                                                                                     | The Knack family Chain           |          |
-| Cross         | A boss move that hits one creature and the creatures right beside, in front of and behind it.                                                                                                                            | A whole row or column            |          |
-| Checker       | A boss move that hits every other slot of the arena, like the dark squares of a board.                                                                                                                                   | A row                            |          |
-| Most hurt     | The creature with the lowest share of its max HP.                                                                                                                                                                        | The creature with the least HP   |          |
-| Back-most     | The last living creature to act (by default the back row's right end).                                                                                                                                                   | The creature in the last slot    |          |
-| Escalating    | A boss that is Escalating grows as a weekend goes on. It fills from something its text names (rounds, HP lost, reactions), grows a step each time it fills, up to a cap, carries across the weekend, and Mired slows it. | A phase of the raid              | Build-up |
-| Determination | From the second lap of the boss order: +5% damage and healing for each failed weekend on the same boss, at most 5 stacks. Kept over a Festival, cleared when the boss is beaten.                                         | A reward for winning             |          |
+| Keyword       | Means                                                                                                                                                                                                                          | Is not                           | Old name |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------- | -------- |
+| Wind-up       | A boss move announced at round start: its slots are shown, and it lands on them.                                                                                                                                               | The Spark mark Charged           |          |
+| Bogged Down   | A debuff on the boss: per stack it deals less damage and dodges less (at most 5 stacks). It fades by 1 at the end of every round.                                                                                              | A mark                           |          |
+| Barrage       | A boss attack or move that hits a number of different creatures, drawn at random from the whole arena.                                                                                                                         | A hit on every creature of a row | Scatter  |
+| Leap          | A boss move that hits one creature, then jumps to the strongest creature right next to it, and on, each jump softer.                                                                                                           | The Knack family Chain           |          |
+| Cross         | A boss move that hits one creature and the creatures right beside, in front of and behind it.                                                                                                                                  | A whole row or column            |          |
+| Checker       | A boss move that hits every other slot of the arena, like the dark squares of a board.                                                                                                                                         | A row                            |          |
+| Most hurt     | The creature with the lowest share of its max HP.                                                                                                                                                                              | The creature with the least HP   |          |
+| Back-most     | The last living creature to act (by default the back row's right end).                                                                                                                                                         | The creature in the last slot    |          |
+| Escalating    | A boss that is Escalating grows as a weekend goes on. It fills from something its text names (rounds, HP lost, reactions), grows a step each time it fills, up to a cap, carries across the weekend, and Bogged Down slows it. | A phase of the raid              | Build-up |
+| Determination | From the second lap of the boss order: +5% damage and healing for each failed weekend on the same boss, at most 5 stacks. Kept over a Festival, cleared when the boss is beaten.                                               | A reward for winning             |          |
 
 ## Rule cards
 
@@ -616,7 +616,7 @@ A rule card has no element, so the move it adds has the plain label as its name.
 
 ## Escalating meters
 
-An **Escalating** boss or foe has a meter with a name of its own. It fills from something the fight does, grows the boss a step each time it fills, up to a cap, and Mired slows it. (The words are in the keywords section above.) The names are Misa's, approved 2026-10-31 and 2026-11-01. `(content: combat-v2/raid-bosses.json, foes.json)`
+An **Escalating** boss or foe has a meter with a name of its own. It fills from something the fight does, grows the boss a step each time it fills, up to a cap, and Bogged Down slows it. (The words are in the keywords section above.) The names are Misa's, approved 2026-10-31 and 2026-11-01. `(content: combat-v2/raid-bosses.json, foes.json)`
 
 | Meter           | Whose           | Fills from            | Each step                                                        | Canon `(compendium detail, not shipped)`                                         |
 | --------------- | --------------- | --------------------- | ---------------------------------------------------------------- | -------------------------------------------------------------------------------- |
