@@ -21,6 +21,10 @@ import {
   STORM_FORK,
   STORM_ORB,
   STORM_SPEAR,
+  TIDE_DROPS,
+  TIDE_SPLASH,
+  TIDE_TRIDENT,
+  TIDE_WAVE,
   WAVE,
 } from './assets';
 import type { Form, Shape } from './plan';
@@ -102,9 +106,39 @@ const STORM_SOVEREIGN: BossLook = {
   },
 };
 
+const TIDE_GLOW = '#3fc9a5';
+const TIDE_IMPACT: Asset = { sprite: TIDE_SPLASH, scale: 2 };
+const TIDE_ROW: LookEntry = {
+  weapon: { sprite: TIDE_WAVE, scale: 8 },
+  impact: TIDE_IMPACT,
+  glow: TIDE_GLOW,
+};
+const TIDE_LANCE: LookEntry = {
+  weapon: { sprite: TIDE_TRIDENT, scale: 6 },
+  impact: TIDE_IMPACT,
+  glow: TIDE_GLOW,
+};
+
+/** The Tidal Colossus: a trident for its lances, a curling wave for its rows, falling drops for the Spray, a splash where they land. */
+const TIDAL_COLOSSUS: BossLook = {
+  shapes: {
+    column: TIDE_LANCE,
+    columns: TIDE_LANCE,
+    row: TIDE_ROW,
+    rows: TIDE_ROW,
+    randomRow: TIDE_ROW,
+    scatter: { weapon: { sprite: TIDE_DROPS, scale: 6 }, impact: TIDE_IMPACT, glow: TIDE_GLOW },
+  },
+  moves: {
+    // The Great Wave is the big one: a taller wave that rattles the board.
+    'great-wave': { weapon: { sprite: TIDE_WAVE, scale: 10 }, heavy: true },
+  },
+};
+
 /** The looks by boss id (`content.bosses`). */
 export const BOSS_LOOKS: Readonly<Record<string, BossLook>> = {
   'storm-sovereign': STORM_SOVEREIGN,
+  'tidal-colossus': TIDAL_COLOSSUS,
 };
 
 /** The art a boss's move plays with; `element` colours the generic art. */

@@ -274,9 +274,22 @@ describe('looks', () => {
     // The generic art takes the element's colour.
     expect(generic.weapon.sprite.palette['a']).toBe('#4f8fe6');
   });
+  it('gives the Tidal Colossus a trident, waves and drops', () => {
+    const at = (id: string, shape: Shape) =>
+      resolveLook('tidal-colossus', 'tide', { id, shape, form: FORM_OF[shape] });
+    expect(at('deepwater-spear', 'columns').weapon.sprite).toBe(assets.TIDE_TRIDENT);
+    expect(at('riptide', 'columns').weapon.sprite).toBe(assets.TIDE_TRIDENT);
+    expect(at('undertow', 'row').weapon.sprite).toBe(assets.TIDE_WAVE);
+    expect(at('backflow', 'rows').weapon.sprite).toBe(assets.TIDE_WAVE);
+    expect(at('spray', 'scatter').weapon.sprite).toBe(assets.TIDE_DROPS);
+    const great = at('great-wave', 'randomRow');
+    expect(great.heavy).toBe(true);
+    expect(great.weapon.scale).toBeGreaterThan(at('rogue-wave', 'row').weapon.scale);
+    expect(at('plain', 'row').impact.sprite).toBe(assets.TIDE_SPLASH);
+  });
   it('draws every asset as a valid sprite', () => {
     const all = Object.values(assets).filter((v) => typeof v === 'object' && 'rows' in v);
-    expect(all.length).toBeGreaterThanOrEqual(11);
+    expect(all.length).toBeGreaterThanOrEqual(15);
     for (const sprite of all) expect(() => validateSprite(sprite)).not.toThrow();
     for (const look of Object.values(BOSS_LOOKS))
       for (const entry of [

@@ -226,6 +226,100 @@ export const STORM_BURST: SpriteDef = {
   rows: BURST.rows,
 };
 
+// --- The Tidal Colossus's own: palette `k` ink, `g` sea green, `t` deep teal, `f` foam white, `s` sea blue. ---
+
+const TIDE = {
+  k: '#0d0a1a',
+  g: '#3fc9a5',
+  t: '#1c6b66',
+  f: '#f1fbff',
+  s: '#4f8fe6',
+} as const;
+
+/** A trident with three prongs and a foam-wrapped shaft: the Deepwater Spear and the Riptide, lances down a lane. */
+export const TIDE_TRIDENT: SpriteDef = {
+  palette: TIDE,
+  rows: [
+    '.....k.....',
+    '.k..kfk..k.',
+    'kfk.kfk.kfk',
+    'kfk.kgk.kfk',
+    'kgk.kgk.kgk',
+    'kgk.kgk.kgk',
+    'kgkkkgkkkgk',
+    '.kgggfgggk.',
+    '..kktgtkk..',
+    '....kgk....',
+    '....kfk....',
+    '....kgk....',
+    '....ktk....',
+    '....kgk....',
+    '....kgk....',
+    '....kfk....',
+    '....kgk....',
+    '....ktk....',
+    '....kgk....',
+    '....kgk....',
+    '....kfk....',
+    '....kgk....',
+    '....ktk....',
+    '....kgk....',
+    '...ktgtk...',
+    '....kkk....',
+  ],
+};
+
+/** A curling wave, crest leading, foam on its lip: the Colossus's rows (it travels across the row, the curl in front). */
+export const TIDE_WAVE: SpriteDef = {
+  palette: TIDE,
+  rows: [
+    '.......kkk.......',
+    '.....kkfffkk.....',
+    '....kfffgggfk....',
+    '...kfgggssggfk...',
+    '..kfggssttsggfk..',
+    '.kfgssttkkttsgfk.',
+    '.kgsstk...ktsggk.',
+    'kgsstk.....ktsgk.',
+    'kssttk.....kttsk.',
+    'ksttk.......kttk.',
+    'kttk.........ktk.',
+    'kkk...........kk.',
+  ],
+};
+
+/** A cluster of three falling drops, round end leading: the Spray, onto a few creatures. */
+export const TIDE_DROPS: SpriteDef = {
+  palette: TIDE,
+  rows: [
+    '...kkk.......',
+    '..kfggk..kk..',
+    '.kfgggsk.kfk.',
+    '.kgggsstk.kk.',
+    '..kssttk.....',
+    '...kkkk..kk..',
+    '.kk.kgk.kgsk.',
+    '.kgk.k..kttk.',
+    '..k.......kk.',
+    '.....kk......',
+    '....kgtk.....',
+    '.....kk......',
+  ],
+};
+
+/** Where a drop or wave lands: the splash on a creature that was hit. */
+export const TIDE_SPLASH: SpriteDef = {
+  palette: { k: '#0d0a1a', a: '#3fc9a5', b: '#1c6b66', c: '#f1fbff' },
+  rows: mirrorDown([
+    '.....k.....',
+    '..k..c..k..',
+    '.kck.c.kck.',
+    '..k.kck.k..',
+    '.kcc.a.cck.',
+    'kcaaaaaaack',
+  ]),
+};
+
 /** A glint of light, where a weapon appears in the boss's hand. */
 export const GLINT: SpriteDef = {
   palette: { w: '#ffffff', y: '#fffbe0' },
