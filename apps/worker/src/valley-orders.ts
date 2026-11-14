@@ -23,13 +23,7 @@ import {
 } from '@creatures/game';
 import { runKeyed, settleSpend } from './keyed-action';
 import { itemView } from './gear-access';
-import {
-  blueprintMarks,
-  creditParts,
-  debitParts,
-  findItem,
-  getParts,
-} from './gear-store';
+import { blueprintMarks, creditParts, debitParts, findItem, getParts } from './gear-store';
 import type { GearItemView } from './gear-types';
 import { spend, type LedgerStorage } from './ledger';
 import { GameError, atomically, type Outcome } from './outcome';

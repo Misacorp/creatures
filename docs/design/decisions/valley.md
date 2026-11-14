@@ -4,6 +4,22 @@ The valley and peaceful systems overhaul planned in docs/design/valley/: job pos
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-15: The Forge's rare and epic pieces wait in a sealed crate until opened **[Misa]**
+
+ID: `2026-11-15-the-forge-s-rare-and-epic` · Status: current
+
+Amends: `V-FORGE-5` (`docs/design/valley/systems/forge.md`).
+
+**Decision.** Misa, asked how collecting gear could become a big moment, was shown three options (A, B, C) and picked the third: "I like C" (C is this crate; the wording of A and B is in the lead session's message to him, not in the repo). The rule: **common pieces come home on their own as before; rare and epic pieces wait in a sealed crate at the Forge until the player opens it; opening it reveals them one by one, best last.** Server side (the client's reveal comes next):
+
+- When a floor comes home (an arrival, or a floor that filled) the commons are rolled and come home as before (a piece "for my team" is worn at once). Rare and epic pieces (`VALLEY_RULES.forge.crateMinRarity`, 1) move, unrolled (only blueprint, element, rarity and item level, as on the floor), into the crate (`forge_crate`, migration 68).
+- A sealed piece does not count toward an anvil's floor cap, so it never pauses an anvil. The crate holds at most `crateCap` (30). Past that the oldest sealed piece comes home on its own, rolled like a common, to make room; when the bag is full nothing can come home, so the newer piece stays on the floor and the crate stays at its cap. No piece is lost and storage stays bounded.
+- `POST /api/valley/forge/crate/open` (keyed, `runKeyed`) rolls every sealed piece now with the live gear dice, best first (rarity, then item level). "For my team" pieces are worn at once by the creature of their element with the empty or weakest slot; the rest go to the bag, and a full bag keeps the rest sealed (the answer says `bagFull` and how many are `sealed`). The answer lists the pieces worst first and best last, each with its item view, who wore it and the smith who made it. A retry returns the stored answer.
+- The valley view shows `forge.crate` (count, cap, best rarity; never ids or lines). The Gazette no longer lists sealed pieces as "came home": it teases the crate once per arrival while it holds any ("Something rare waits at the Forge", an epic outranks a rare). Pieces pushed out of a full crate do appear as came home.
+- The bots (`valley-bots.ts`) open the crate at every visit through the real action. The lab is unchanged: the crate moves only the time a piece comes home, not a measured number.
+
+**Reasoning.** Gear that simply appears in the bag is a small moment; a rare piece deserves a ceremony, and sealing it until the player is there makes opening the moment itself. Keeping commons automatic keeps the idle loop light. Rolling at opening (not at sealing) keeps the reveal live and the server authoritative. The cap keeps rows bounded (reads are priced: the crate is read only when a floor comes home and when it is opened; the view reads one row of the player's own).
+
 ## 2026-11-11: The Forge opens on its outside and goes inside to a workshop of its own **[Misa]**
 
 ID: `2026-11-11-the-forge-opens-on-its-outside` · Status: current

@@ -274,8 +274,7 @@ export function mergeLogs(base: PaperLog, more: PaperLog): PaperLog {
       best,
       by: more.forge.by ?? base.forge.by,
     },
-    crate:
-      base.crate === 'epic' || more.crate === 'epic' ? 'epic' : (more.crate ?? base.crate),
+    crate: base.crate === 'epic' || more.crate === 'epic' ? 'epic' : (more.crate ?? base.crate),
     mastery: [...base.mastery, ...more.mastery]
       .sort((a, b) => b.step - a.step)
       .slice(0, LOG_CAPS.mastery),

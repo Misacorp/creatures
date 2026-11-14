@@ -5,6 +5,7 @@ import { runInDurableObject } from 'cloudflare:test';
 import { GAMES_TABLES } from '../src/games-migration';
 import { MIGRATIONS } from '../src/migrations';
 import { valleyForgeCrowdMigration } from '../src/valley-forge-crowd-migration';
+import { valleyCrateMigration } from '../src/valley-crate-migration';
 import { valleyTrialsMigration } from '../src/valley-trials-migration';
 import { GuildCore, type GuildCoreOptions } from '../src/guild-core';
 import { DiscordError, type DiscordApi, type GuildApi } from '../src/discord';
@@ -329,8 +330,24 @@ export function undoValleySchoolMigration(sql: SqlStorage): void {
   sql.exec('DELETE FROM schema_version WHERE version = 65');
 }
 
-/** Puts a database back to before the workshop background smiths' migration (`valley_seats_place`, the last one). */
+/** Puts a database back to before migration 68 (the Forge's sealed crate, the last one): its table and the player columns go. */
+export function undoValleyCrateMigration(sql: SqlStorage): void {
+  sql.exec('DROP TABLE IF EXISTS forge_crate');
+  for (const column of ['crate_count', 'crate_best']) {
+    const has = sql
+      .exec('SELECT 1 FROM pragma_table_info(?) WHERE name = ?', 'valley_players', column)
+      .toArray();
+    if (has.length > 0) sql.exec(`ALTER TABLE valley_players DROP COLUMN ${column}`);
+  }
+  sql.exec(
+    'DELETE FROM schema_version WHERE version = ?',
+    MIGRATIONS.indexOf(valleyCrateMigration) + 1,
+  );
+}
+
+/** Puts a database back to before the workshop background smiths' migration (`valley_seats_place`). */
 export function undoValleyForgeCrowdMigration(sql: SqlStorage): void {
+  undoValleyCrateMigration(sql);
   sql.exec('DROP INDEX IF EXISTS valley_seats_place');
   sql.exec(
     'DELETE FROM schema_version WHERE version = ?',

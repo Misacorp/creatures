@@ -550,3 +550,11 @@ Misa added: nameplates sit under the creature on an ink background, level first 
 **Done.** Misa saw the valley art flash on re-renders and on going back to the map. Cause: canvases painted in `useEffect`, which Preact runs after the browser's paint, so a new or resized canvas showed one blank frame. `Sprite`, `SceneFrame`, `ValleyMap` and the Gazette's `SceneCrop` now paint in `useLayoutEffect`. The Signpost's blank creature pictures in the "Who scouts here?" step were the same gap (screenshot taken inside it); they show now. The valley e2e got a flash watch (a frame with an empty scene or sprite canvas fails): 91 of 315 frames blank before, 0 after. Decision in `decisions/ui.md`.
 
 **Next.** Nothing open; if a flash shows again, look for a canvas painted outside a layout effect.
+
+## 2026-11-15: the Forge's sealed crate, server side (implementer, worktree of `ccr-93a1de17-yutb1a`)
+
+**Misa's pick:** option C of "collecting gear should be a big moment": "I like C". Rare and epic pieces wait in a sealed crate at the Forge until the player opens it; opening reveals them one by one, best last. Commons come home as before.
+
+**Done** (behind `VALLEY_SYSTEMS`; migration 68: `forge_crate`, `valley_players.crate_count` and `crate_best`). A floor coming home seals the rare and epic pieces unrolled (`ValleyForgePass.collect`); `POST /api/valley/forge/crate/open` (keyed, `ValleyOrders.openCrate`) rolls them with the live dice, wears team pieces, keeps the rest sealed when the bag is full and answers worst first, best last. The valley view shows `forge.crate` (count, cap, best rarity). The Gazette teases the crate once per arrival (`crate-waits`). The bots open it at every visit; the lab is unchanged (timing only). Picks: cap 30, rare and up waits (`for-misa.md`).
+
+**Next:** the crate's reveal on the client (needs reveal art from the Art session): the glowing crate at the Forge, a bubble on the map and Places, the one-by-one reveal from `pieces` of the open answer.
