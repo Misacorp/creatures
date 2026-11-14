@@ -18,6 +18,7 @@ import {
   outgoingText,
   placeTextV2,
   rowNameV2,
+  swapActionSpecs,
   swapMarkText,
   swapMarks,
   type LitMove,
@@ -69,6 +70,8 @@ export interface PlacementV2 {
   onAskSwap: (mySlot: number, theirSlot: number) => void;
   /** Accepts or declines a request asked of you (from the popover of a creature that carries the swap mark). */
   onAnswerSwap: (id: string, answer: 'accept' | 'decline') => void;
+  /** Withdraws a request you asked (from the popover of a creature that carries the swap mark). */
+  onCancelSwap: (id: string) => void;
 }
 
 interface Props {
@@ -353,18 +356,20 @@ export function Placement(props: Props) {
     ]);
   }
 
-  /** The answers a marked creature's popover offers: Accept and Decline for each request asked of its owner (yours to answer). The asker's own requests have none: they wait. */
+  /** The actions a marked creature's popover offers: Accept and Decline for each request asked of its owner, Cancel request for each one you asked. */
   function swapAnswers(mark: SwapMark): { label: string; onAct: () => void }[] {
-    const several = mark.incoming.length > 1;
-    return mark.incoming.flatMap((request) =>
-      (['accept', 'decline'] as const).map((answer) => ({
-        label: `${answer === 'accept' ? 'Accept' : 'Decline'}${several ? ` ${request.from}` : ''}`,
-        onAct: () => {
-          announce(answer === 'accept' ? 'Swap accepted.' : 'Swap declined.');
-          v2?.onAnswerSwap(request.id, answer);
-        },
-      })),
-    );
+    return swapActionSpecs(mark).map((spec) => ({
+      label: spec.label,
+      onAct: () => {
+        if (spec.kind === 'cancel') {
+          announce('Swap request cancelled.');
+          v2?.onCancelSwap(spec.id);
+          return;
+        }
+        announce(spec.kind === 'accept' ? 'Swap accepted.' : 'Swap declined.');
+        v2?.onAnswerSwap(spec.id, spec.kind);
+      },
+    }));
   }
 
   function pick(creatureId: string): void {

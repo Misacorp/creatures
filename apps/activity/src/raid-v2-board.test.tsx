@@ -12,6 +12,7 @@ import { parseRaidView } from './raid-api';
 import {
   boardCuesV2,
   boardSlotV2,
+  swapActionSpecs,
   swapMarkText,
   swapMarks,
   creaturesBySlot,
@@ -139,6 +140,21 @@ describe('the swap mark', () => {
     }
     const none = sample({ swaps: 'none' });
     expect(swapMarks(v2Of(none).swaps, none.party?.row ?? []).size).toBe(0);
+  });
+
+  it('offers Cancel request to the asker only, and Accept and Decline to the asked only', () => {
+    const askerView = sample({ swaps: 'asked' });
+    const asker = v2Of(askerView);
+    const request = asker.swaps.outgoing[0]!;
+    const askerMark = swapMarks(asker.swaps, askerView.party?.row ?? []).get(request.slotA)!;
+    expect(swapActionSpecs(askerMark)).toEqual([
+      { id: request.id, kind: 'cancel', label: 'Cancel request' },
+    ]);
+    const askedView = sample({ swaps: 'incoming' });
+    const asked = v2Of(askedView);
+    const incoming = asked.swaps.incoming[0]!;
+    const askedMark = swapMarks(asked.swaps, askedView.party?.row ?? []).get(incoming.slotA)!;
+    expect(swapActionSpecs(askedMark).map((a) => a.kind)).toEqual(['accept', 'decline']);
   });
 
   it('shows no "Asked" strip: the mark is the circling icon', () => {

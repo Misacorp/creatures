@@ -255,5 +255,34 @@ export function swapNoticeText(incoming: readonly SwapV2[], grid: GridV2 | null)
     : incomingText(one, grid ?? { rows: 1, cols: 1 }).replace(/\.$/, '');
 }
 
+/** One action of a marked creature's popover: answering a request asked of you, or withdrawing one you made. */
+export interface SwapActionSpec {
+  id: string;
+  kind: 'accept' | 'decline' | 'cancel';
+  label: string;
+}
+
+/**
+ * The actions a marked creature's popover offers, in order: Accept and Decline for each request asked of its owner, then Cancel request
+ * for each request you made (only the asker can withdraw it). With several requests the label names the other player.
+ */
+export function swapActionSpecs(mark: SwapMark): SwapActionSpec[] {
+  const several = mark.incoming.length > 1;
+  const answers = mark.incoming.flatMap((request) =>
+    (['accept', 'decline'] as const).map((kind) => ({
+      id: request.id,
+      kind,
+      label: `${kind === 'accept' ? 'Accept' : 'Decline'}${several ? ` ${request.from}` : ''}`,
+    })),
+  );
+  const manyOut = mark.outgoing.length > 1;
+  const cancels = mark.outgoing.map((request) => ({
+    id: request.id,
+    kind: 'cancel' as const,
+    label: `Cancel request${manyOut ? ` to ${request.to}` : ''}`,
+  }));
+  return [...answers, ...cancels];
+}
+
 /** The player's swap requests as one list for a count (incoming and outgoing). */
 export const swapCount = (swaps: SwapsV2): number => swaps.incoming.length + swaps.outgoing.length;
