@@ -64,6 +64,30 @@ export class PaperRecorder {
     this.log.duplicates += 1;
   }
 
+  /** The visitor is in the valley (V-VIS-1): one line in the paper. */
+  visitor(): void {
+    this.log.visitor = true;
+  }
+
+  /** The School's teacher is announced or here (V-SCH-11): one line in the paper, with the talent's id. */
+  teacher(talentId: string): void {
+    this.log.teacher = talentId;
+  }
+
+  /** A creature learned a talent at the School (V-SCH-13): the first few are named, the rest are counted. */
+  lesson(creatureId: string, talentId: string): void {
+    this.log.lessonCount += 1;
+    if (this.log.lessons.length < LOG_CAPS.lessons) this.log.lessons.push({ creatureId, talentId });
+  }
+
+  /** A creature graduated at the School's ceremony (V-TRIAL-4): its honour (1 Bronze, 2 Silver, 3 Gold). */
+  graduate(creatureId: string, honour: 1 | 2 | 3): void {
+    this.log.graduateCount += 1;
+    if (this.log.graduates.length < LOG_CAPS.graduates) {
+      this.log.graduates.push({ creatureId, honour });
+    }
+  }
+
   /** Gear a scout's pack held when it came home, the best kept. */
   gear(item: PaperItem, by: string | null): void {
     this.log.gearCount += 1;

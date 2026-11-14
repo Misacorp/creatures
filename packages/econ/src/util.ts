@@ -1,4 +1,4 @@
-import type { Rng } from '@creatures/game';
+import { drawByWeight, type Rng } from '@creatures/game';
 
 const TWO_32 = 0x1_0000_0000;
 
@@ -28,14 +28,7 @@ export function poisson(rng: Rng, mean: number): number {
 
 /** The index drawn with probability proportional to its weight (weights are non-negative; all zero picks the last). */
 export function weighted(rng: Rng, weights: readonly number[]): number {
-  let sum = 0;
-  for (const w of weights) sum += w;
-  let point = uniform(rng) * sum;
-  for (let i = 0; i < weights.length; i++) {
-    point -= weights[i] ?? 0;
-    if (point < 0) return i;
-  }
-  return weights.length - 1;
+  return drawByWeight(weights, uniform(rng));
 }
 
 export const sum = (values: readonly number[]): number => values.reduce((a, b) => a + b, 0);

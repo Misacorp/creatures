@@ -44,6 +44,14 @@ export const DEV_TOOL_IDS = [
   'raid-seats',
   'combat-v2-convert',
   'reset-raids-dungeons',
+  'valley-fresh',
+  'valley-bots',
+  'valley-sim-day',
+  'valley-report',
+  'visitor-arrive',
+  'school-teacher',
+  'trials-tick',
+  'trials-ceremony',
   'apply-roster-preset',
   'reset-account',
   'grant-currency',
@@ -84,6 +92,8 @@ export const TARGETED_TOOL_IDS: readonly DevToolId[] = [
   'grant-xp',
   'grant-talent',
   'set-knack',
+  'trials-tick',
+  'trials-ceremony',
 ];
 
 /** Whether a tool acts on a player the panel's target picker names. */

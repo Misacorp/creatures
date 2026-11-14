@@ -23,6 +23,8 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [direction.md](direction.md): Roadmap calls, Misa's standing direction, naming and tone, content policy, how agents and Misa work.
 
+- 2026-11-15 \[Misa\] The Forge interior keeps one look for now
+- 2026-11-09 \[Misa\] Valley building levels share one look per level
 - 2026-11-06 Overnight sessions: quiet until news, then one message with every open question \[Misa\]
 - 2026-11-05 \[Misa\] Working rules: scalars best-guess and ask later, invent content for misses, fewer decisions for Misa
 - 2026-11-05 \[Misa\] CI runs the full check; agents push after quick local checks
@@ -46,6 +48,8 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 - 2026-10-13 Roadmap after M6 (Misa) (amended)
 - 2026-10-10 Game rules from the research review (amended)
 - 2026-10-10 Name and tone
+
+Superseded: 1 entry (see the topic file).
 
 ## Platform, data and tooling
 
@@ -472,6 +476,12 @@ Superseded: 1 entry (see the topic file).
 
 [ui.md](ui.md): Navigation and the frame, Home and the notice board, type scale, shared components, look and feel rules that apply across screens.
 
+- 2026-11-11 Pixel canvases paint in a layout effect, never after the frame
+- 2026-11-11 The Signpost is a canvas: a click on the signpost opens the expedition map, a click on a place opens its scout wizard \[Misa\]
+- 2026-11-11 \[Misa\] A place is a canvas: the scene never scrolls, every action is a click in it, content opens in a left or right drawer holding a wizard
+- 2026-11-11 A valley frame clips instead of scrolling: the HUD's way back never slides off
+- 2026-11-06 The School's page and a creature's trial reuse the seat cards, the creature list and the rule card
+- 2026-11-06 The visitor's page reuses the Workshop's grid, card and drawer
 - 2026-11-06 Costs show the resource's icon and a number, never its name \[Misa\]
 - 2026-11-06 \[Misa\] One pan hint, the same on every sideways-scrolling map; a popover never opens after a drag
 - 2026-11-06 Closing a drawer or popover gives the focus back only to a keyboard user
@@ -550,6 +560,28 @@ Superseded: 1 entry (see the topic file).
 
 [valley.md](valley.md): The valley and peaceful systems overhaul planned in docs/design/valley/: job posts, the bonfire, the commons, the Forge loop, gear, trials, the School, the visitor, the economy lab, and Misa's question rounds.
 
+- 2026-11-11 The Forge opens on its outside and goes inside to a workshop of its own \[Misa\]
+- 2026-11-11 Scene trees stand on the grass, and the Bonfire's +N more stays above the pinned action
+- 2026-11-11 A flat place is built on the ground (stakes, rope, planks, tools), a tall one in poles \[Misa\]
+- 2026-11-11 The valley map takes the whole window: the HUD floats over it, and a short window scrolls the map up and down \[Misa\]
+- 2026-11-09 The visitor's weekly blueprint may be any existing piece \[Misa\]
+- 2026-11-09 A creature's born talent is free \[Misa\]
+- 2026-11-07 Step 10c: the month compares against the lab's mixed8-market, the Market the server builds
+- 2026-11-07 Step 10b: what the compare cannot judge, and the waiting team order (not changed) (amended)
+- 2026-11-07 Step 10b: valley-fresh and the end of the month drop the month's dev triggers and tables
+- 2026-11-07 Step 10b: the bots play more like the lab's players, and the month has a stand-in for the human's seat
+- 2026-11-07 Step 10b: Master titles warm the Forge's fire (V-COM-13), a step for every five, counted by the daily job
+- 2026-11-07 Step 10b: an open project nobody has given to follows the daily weight (a new server's first project is sized for the players it has)
+- 2026-11-07 Step 10: the simulated month's stand-ins, flows and report (what the bots do not do, how the numbers are read)
+- 2026-11-07 Step 10: the bots play the lab's policies through the server's own code, one shared policy module
+- 2026-11-06 Phase 5 step 9b: the School's screens and the trials' screens
+- 2026-11-06 Learning on a card costs the School's price times the slot it fills, in Acorns, with the valley systems on
+- 2026-11-06 Phase 5 step 9a: the School's teacher and lessons
+- 2026-11-06 Trials (step 9c): the boxes, where each ticks, and the ceremony
+- 2026-11-06 Phase 5 step 8b: the visitor's screens
+- 2026-11-06 The visitor's weekly blueprint is drawn from the craftable bases for now (scouts can find them too)
+- 2026-11-06 The visitor prices a piece on its stored item level, and rerolls with the shipped line roller
+- 2026-11-06 The visitor's arrival is made by whatever sees him first, and one alarm a week wakes the object for it
 - 2026-11-06 Combat v2 and the valley systems together: a knocked-out raider stays paused; presets empty seats
 - 2026-11-06 Patchwork pieces built: the plainest piece of the shard's element, Rare at best
 - 2026-11-06 Patchwork pieces: blueprints that take any shard, with scrap \[Misa\] (amended)

@@ -501,6 +501,28 @@ describe('the weather tool', () => {
   });
 });
 
+describe('the Valley group', () => {
+  it('wipes everyone only after "everyone" is typed, and sends an empty body', () => {
+    expect(problem('valley-fresh', 'Valley fresh')).toMatch(/everyone/);
+    expect(problem('valley-fresh', 'Valley fresh', { confirm: 'Everyone' })).toMatch(/everyone/);
+    expect(body('valley-fresh', 'Valley fresh', { confirm: 'everyone' })).toEqual({});
+    expect(spec('valley-fresh', 'Valley fresh').danger).toBe(true);
+  });
+
+  it('sends the bodies the worker schemas take', () => {
+    expect(body('valley-bots', 'Make the bots')).toEqual({});
+    expect(body('valley-sim-day', 'Play one day')).toEqual({});
+    expect(body('valley-sim-day', 'Play one day', { maxVisits: '3' })).toEqual({ maxVisits: 3 });
+    expect(problem('valley-sim-day', 'Play one day', { maxVisits: '201' })).toMatch(/1 to 200/);
+    expect(body('valley-report', 'Month report')).toEqual({});
+    expect(body('visitor-arrive', 'Visitor arrives now')).toEqual({});
+    expect(body('school-teacher', 'Teacher arrives now')).toEqual({ mode: 'arrive' });
+    expect(body('school-teacher', 'Announce next teacher')).toEqual({ mode: 'announce' });
+    expect(body('trials-tick', "Tick a creature's trial")).toEqual({ creatureId: 'c-1' });
+    expect(body('trials-ceremony', 'Hold the ceremony now')).toEqual({});
+  });
+});
+
 describe('the sections', () => {
   it('are listed under group headings, in order, and each has a unique id', () => {
     expect(SECTIONS.map((s) => s.id)).toEqual([
@@ -512,13 +534,24 @@ describe('the sections', () => {
       'dungeon',
       'raid',
       'weather',
+      'valley',
       'clock',
       'analytics',
       'look',
       'build',
     ]);
-    expect(navGroups().map((g) => g.group)).toEqual(['Players', 'Game systems', 'Tools']);
-    expect(navGroups().flatMap((g) => g.sections)).toHaveLength(SECTIONS.length);
+    expect(navGroups(true).map((g) => g.group)).toEqual([
+      'Players',
+      'Game systems',
+      'Valley',
+      'Tools',
+    ]);
+    expect(navGroups(true).flatMap((g) => g.sections)).toHaveLength(SECTIONS.length);
+  });
+
+  it('lists the Valley section only with the valley systems on', () => {
+    expect(navGroups(false).map((g) => g.group)).toEqual(['Players', 'Game systems', 'Tools']);
+    expect(navGroups(false).flatMap((g) => g.sections)).toHaveLength(SECTIONS.length - 1);
   });
 
   it('opens the current place’s section first, and Give for a place with none', () => {
@@ -534,7 +567,7 @@ describe('the sections', () => {
       if (section === undefined) throw new Error(id);
       return sectionUsesTarget(section);
     };
-    for (const id of ['give', 'creatures', 'workshop', 'expeditions', 'dungeon']) {
+    for (const id of ['give', 'creatures', 'workshop', 'expeditions', 'dungeon', 'valley']) {
       expect(uses(id), id).toBe(true);
     }
     for (const id of ['raid', 'games', 'weather', 'clock', 'analytics', 'look', 'build']) {

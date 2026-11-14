@@ -28,6 +28,8 @@ import type { Analytics } from './analytics';
 import { DevError, purgeUser, type ToolCtx } from './dev-context';
 import {
   ApplyRosterPresetBodySchema,
+  TrialsTickBodySchema,
+  ValleySimDayBodySchema,
   ClockBodySchema,
   DEV_ACTION_TOOLS,
   DEV_READ_TOOLS,
@@ -57,6 +59,7 @@ import {
   RaidSeatsBodySchema,
   ResetAccountBodySchema,
   ResetRaidsDungeonsBodySchema,
+  SchoolTeacherBodySchema,
   SetWeatherBodySchema,
   SetBalancesBodySchema,
   SetCraftingXpBodySchema,
@@ -71,7 +74,20 @@ import { clockState, clockTool } from './dev-tools-clock';
 import { grantCurrency, grantTalent, grantXp, setKnack } from './dev-tools-give';
 import { combatV2Convert } from './dev-tools-combat-v2';
 import { applyRosterPreset, playersView } from './dev-tools-presets';
-import { valleyFresh } from './dev-tools-valley';
+import {
+  schoolTeacher,
+  trialsCeremony,
+  trialsTick,
+  valleyBotsTool,
+  valleyFresh,
+  valleyReportTool,
+  valleySimDayTool,
+  visitorArrive,
+} from './dev-tools-valley';
+import type { ValleyWorld } from './valley-bots';
+import type { SchoolWeeks } from './valley-school';
+import type { ValleyTrials } from './valley-trials';
+import type { VisitorWeeks } from './valley-visitor';
 import { setWeather } from './dev-tools-weather';
 import { gamesBots, gamesReset, gamesRunNow } from './dev-tools-games';
 import {
@@ -147,6 +163,14 @@ export interface DevToolsDeps {
   combatV2: boolean;
   /** The valley's base systems are on (`VALLEY_SYSTEMS`): the `valley-fresh` tool needs it. */
   valleySystems: boolean;
+  /** The weekly visitor's weeks (the `visitor-arrive` tool); null with the valley systems off. */
+  visitor: VisitorWeeks | null;
+  /** The School's teacher weeks (the `school-teacher` tool); null with the valley systems off. */
+  school: SchoolWeeks | null;
+  /** Trials and graduation (the `trials-tick` and `trials-ceremony` tools); null with the valley systems off. */
+  trials: ValleyTrials | null;
+  /** What the staging bots drive (the `valley-*` simulation tools); null with the valley systems off. */
+  world: ValleyWorld | null;
   /** Crypto randomness for what the tools roll. */
   rng: Rng;
   gearRng: Rng;
@@ -244,6 +268,17 @@ const TOOLS: Record<DevActionTool, Tool> = {
   }),
   // Staging with the valley systems on only (404 otherwise): wipes every player's progress in the guild for a day-0 valley; re-arms the alarm (the dev clock goes back to real time).
   'valley-fresh': tool(NoBodySchema, valleyFresh, { movesClock: true }),
+  // The simulated month (staging with the valley systems on only; 404 otherwise): the bots, one game day of them (the dev clock moves), the lab-shaped report.
+  'valley-bots': tool(NoBodySchema, valleyBotsTool, { movesClock: true }),
+  'valley-sim-day': tool(ValleySimDayBodySchema, valleySimDayTool, { movesClock: true }),
+  'valley-report': tool(NoBodySchema, valleyReportTool),
+  // Staging with the valley systems on only (404 otherwise): brings the weekly visitor now for the current week, whatever the weekday.
+  'visitor-arrive': tool(NoBodySchema, visitorArrive),
+  // Staging with the valley systems on only (404 otherwise): brings the School's teacher now (`arrive`) or announces next week's now (`announce`).
+  'school-teacher': tool(SchoolTeacherBodySchema, schoolTeacher),
+  // Staging with the valley systems on only (404 otherwise): ticks every box of a creature's next trial; and runs the School's ceremony now.
+  'trials-tick': tool(TrialsTickBodySchema, trialsTick),
+  'trials-ceremony': tool(NoBodySchema, trialsCeremony),
   // Staging with COMBAT_V2 on only: replaces one player's (or everyone's) creatures and gear bag with a preset (`dev-presets.ts`).
   'apply-roster-preset': tool(ApplyRosterPresetBodySchema, applyRosterPreset),
   // Give a player what the game gives (any player of the guild: see `TARGETED_TOOLS`).
@@ -285,6 +320,10 @@ export class DevTools {
       weather: d.weather,
       combatV2: d.combatV2,
       valleySystems: d.valleySystems,
+      visitor: d.visitor,
+      school: d.school,
+      trials: d.trials,
+      world: d.world,
       rng: d.rng,
       gearRng: d.gearRng,
       quirkRng: d.quirkRng,

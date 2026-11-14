@@ -29,9 +29,6 @@
     }
    },
    "events": [
-    "school: a creature learned its talent 1 on its card (12 Acorns)",
-    "school: a creature learned its talent 1 on its card (12 Acorns)",
-    "school: a creature learned its talent 1 on its card (12 Acorns)",
     "visitor: he is in the valley until the raid finale",
     "mastery: scout seat 1 reached Apprentice",
     "mastery: anvil 1 reached Apprentice"
@@ -75,6 +72,7 @@
    "events": [
     "new line: cindle",
     "new line: mistnewt",
+    "school: a student seated for sharp-claws",
     "visitor: he is in the valley until the raid finale",
     "mastery: scout seat 1 reached Expert",
     "mastery: scout seat 2 reached Apprentice",
@@ -123,11 +121,7 @@
    "events": [
     "new line: sproutle",
     "new line: coralynx",
-    "school: a student seated for crit-damage",
-    "school: a creature learned its talent 1 on its card (12 Acorns)",
-    "school: a creature learned its talent 1 on its card (12 Acorns)",
-    "school: a creature learned its talent 1 on its card (12 Acorns)",
-    "school: a creature learned its talent 1 on its card (12 Acorns)",
+    "school: a creature learned the teacher's talent on its card (24 Acorns)",
     "visitor: he is in the valley until the raid finale",
     "mastery: scout seat 2 reached Expert",
     "mastery: anvil 2 reached Apprentice",
@@ -161,8 +155,8 @@
     }
    },
    "events": [
-    "school: a creature learned the teacher's talent on its card (12 Acorns)",
     "visitor: he is in the valley until the raid finale",
+    "visitor: bought the week's blueprint (a new one) for 40 Acorns and 50 shards",
     "mastery: scout seat 1 reached Master",
     "mastery: anvil 1 reached Master",
     "mastery: anvil 2 reached Expert"

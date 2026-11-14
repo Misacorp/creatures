@@ -16,6 +16,8 @@ import { glowSprite, type MapName } from './valley-places';
 /** The `valley-sky` strip's size in its own pixels: it tiles sideways every `SKY_WIDTH`. */
 export const SKY_WIDTH = 128;
 export const SKY_ROWS = 40;
+/** The most rows of one sprite (`MAX_HEIGHT` of `sprite-data`): taller layers are painted in bands. */
+const BAND = 64;
 /** Scene pixels from the top of the place's art to the sky strip's bottom row (the grass): the hills end behind the place. */
 const SKY_BELOW_ART_TOP = 14;
 /** Scene pixels from the top of the scene's clear zone to the top of the place's art. */
@@ -71,10 +73,12 @@ export function skyTopRow(g: SceneGeometry, artTop: number = ART_TOP): number {
 export function skyBackdrop(g: SceneGeometry, artTop: number = ART_TOP): Placement[] {
   const strip = skySprite();
   const y = skyTopRow(g, artTop);
-  const above = skyTop(strip, Math.max(1, y));
   const out: Placement[] = [];
   for (const x of skyColumns(g.W, g.cx)) {
-    if (y > 0) out.push({ sprite: above, x, y: 0 });
+    // The carried-up rows go in bands of at most `BAND` rows (a sprite is at most 64 tall, a tall scene has more sky than that).
+    for (let top = 0; top < y; top += BAND) {
+      out.push({ sprite: skyTop(strip, Math.min(BAND, y - top)), x, y: top });
+    }
     out.push({ sprite: strip, x, y });
   }
   return out;
@@ -101,7 +105,7 @@ export function placeScale(width: number, height: number, name: MapName): number
 }
 
 /** The grass of a scene (the valley map's day grass) to every edge. */
-function grassTo(g: SceneGeometry): Placement[] {
+export function grassTo(g: SceneGeometry): Placement[] {
   const grass = tileFrame('grass');
   const out: Placement[] = [];
   for (let row = 0; row < g.H; row += TILE) {
@@ -110,17 +114,31 @@ function grassTo(g: SceneGeometry): Placement[] {
   return out;
 }
 
-/** The trees, a bush and flowers round a place's art at (`x`, `y`) in scene pixels. */
-function treesAround(x: number, y: number, art: { width: number; height: number }): Placement[] {
+/** A sprite standing with its feet (its lowest row) on scene row `base`. */
+function standing(sprite: SpriteDef, x: number, base: number): Placement {
+  return { sprite, x, y: base - sprite.rows.length };
+}
+
+/**
+ * The trees, a bush and flowers round a place's art at (`x`, `y`) in scene pixels. Every tree stands on the grass: its
+ * base on the grass line (where the hills end, `SKY_BELOW_ART_TOP` under the art's top) or in front of it, never on
+ * the hills band, where it would hang in the air (Misa, 2026-11-11).
+ */
+export function treesAround(
+  x: number,
+  y: number,
+  art: { width: number; height: number },
+): Placement[] {
   const wm = WORLD_MAP_SPRITE_DATA;
   const below = y + art.height;
+  const grass = y + SKY_BELOW_ART_TOP;
   return [
-    { sprite: wm.smallPine, x: x - 30, y: y - 6 },
+    standing(wm.smallPine, x - 30, grass + 4),
     { sprite: wm.bush, x: x - 18, y: below - 14 },
-    { sprite: wm.smallTree, x: x + art.width + 14, y: y - 2 },
+    standing(wm.smallTree, x + art.width + 14, grass + 8),
     { sprite: wm.flowers, x: x + art.width + 4, y: below - 10 },
-    { sprite: wm.smallTree, x: x - 70, y: y + 20 },
-    { sprite: wm.smallPine, x: x + art.width + 52, y: y + 26 },
+    standing(wm.smallTree, x - 70, grass + 22),
+    standing(wm.smallPine, x + art.width + 52, grass + 29),
   ];
 }
 
@@ -179,14 +197,23 @@ export function bandArtBox(g: SceneGeometry, name: MapName, aside = 0): ArtBox {
   };
 }
 
-/** The band's scene: as `placeSceneDraw`, the art higher up to leave the creatures room in front, plus `extra` over it. */
-export function bandSceneDraw(name: MapName, extra?: (box: ArtBox) => Placement[], aside = 0) {
+/**
+ * The band's scene: as `placeSceneDraw`, the art higher up to leave the creatures room in front, plus `extra` over it and `under` (the
+ * School's yard, whose top rows the art covers) between the trees and the art.
+ */
+export function bandSceneDraw(
+  name: MapName,
+  extra?: (box: ArtBox) => Placement[],
+  aside = 0,
+  under?: (box: ArtBox) => Placement[],
+) {
   return (g: SceneGeometry): Placement[] => {
     const box = bandArtBox(g, name, aside);
     return [
       ...grassTo(g),
       ...skyBackdrop(g, BAND_ART_TOP),
       ...treesAround(box.x, box.y, box),
+      ...(under?.(box) ?? []),
       { sprite: glowSprite(name), x: box.x, y: box.y },
       ...(extra?.(box) ?? []),
     ];

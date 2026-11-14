@@ -83,8 +83,19 @@ describe('nameplates: no two overlap and none leaves the scene, at the phone and
       signpost: 'road',
       forge: 'forge',
       market: 'market',
+      visitor: 'visitor',
+      school: 'school',
     })[place] as
-      'house' | 'cave' | 'arena' | 'fairground' | 'paddock' | 'road' | 'forge' | 'market';
+      | 'house'
+      | 'cave'
+      | 'arena'
+      | 'fairground'
+      | 'paddock'
+      | 'road'
+      | 'forge'
+      | 'market'
+      | 'visitor'
+      | 'school';
 
   it.each(CAST_PLACES.flatMap((place) => scenes.map((sc) => [place, sc.width, sc] as const)))(
     '%s at %i px',

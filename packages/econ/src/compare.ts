@@ -1,7 +1,8 @@
 import * as v from 'valibot';
 import { levelOf, band, type Band } from './stats';
-import type { PlayerRun } from './sim';
-import { R, type WeekRecord } from './types';
+import type { PlayerRun, ServerRun } from './sim';
+import { FORGE_BUCKETS, R, type WeekRecord } from './types';
+import { sum } from './util';
 
 /**
  * The live report and how it is judged against the lab (phase 5 plan, section 4 item 3). The dev route `valley-report` (step 10) returns a
@@ -43,12 +44,68 @@ export const METRICS = {
   shardsIn: { kind: 'expected', lab: cumulative((w) => w.inn[R.shards] ?? 0) },
   shardsOut: { kind: 'expected', lab: cumulative((w) => w.out[R.shards] ?? 0) },
   piecesMade: { kind: 'expected', lab: cumulative((w) => w.piecesMade) },
+  /** The share of the anvils' time spent tinkering (not working on a piece) since the player joined. */
+  tinkerShare: {
+    kind: 'expected',
+    lab: (weeks, week) => {
+      const forge = weeks.slice(0, week).map((w) => w.forge);
+      const all = sum(forge.map((f) => sum(f)));
+      const work = sum(forge.map((f) => f[FORGE_BUCKETS.indexOf('work')] ?? 0));
+      return all > 0 ? 1 - work / all : 0;
+    },
+  },
   rowsRead: { kind: 'info', lab: cumulative((w) => w.rowsRead) },
   rowsWritten: { kind: 'info', lab: cumulative((w) => w.rowsWritten) },
 } as const satisfies Record<string, MetricDef>;
 
 export type MetricName = keyof typeof METRICS;
 const METRIC_NAMES = Object.keys(METRICS) as [MetricName, ...MetricName[]];
+
+/** The server-wide metrics (not per player): the lab's value comes from one whole run of the server. `null`: nothing to compare that week. */
+interface ServerMetricDef {
+  readonly kind: MetricKind;
+  readonly lab: (run: ServerRun, week: number) => number | null;
+}
+
+/** The week's index in the run's weekly log, clamped. */
+const logAt = (run: ServerRun, week: number) => run.log[Math.min(week, run.log.length) - 1];
+
+export const SERVER_METRICS = {
+  /** The fire's item level at the end of the week. */
+  fire: { kind: 'expected', lab: (run, week) => logAt(run, week)?.fire ?? null },
+  /** The levels of the places added up (a place starts at 1). */
+  placeLevels: {
+    kind: 'expected',
+    lab: (run, week) => {
+      const levels = logAt(run, week)?.levels;
+      return levels ? sum(levels) : null;
+    },
+  },
+  keystones: { kind: 'drawn', lab: (run, week) => logAt(run, week)?.keystones ?? null },
+  collections: { kind: 'drawn', lab: (run, week) => logAt(run, week)?.collections ?? null },
+  /** The day (0-based) of the server's first place level-up, when it came within the weeks; null when none had. */
+  firstLevelUpDay: {
+    kind: 'drawn',
+    lab: (run, week) => {
+      const first = run.levelUps[0];
+      return first !== undefined && first.hour < week * 168 ? Math.floor(first.hour / 24) : null;
+    },
+  },
+  /** The share of players the teacher's talent would benefit, over the teacher weeks so far. */
+  teacherReach: {
+    kind: 'drawn',
+    lab: (run, week) => {
+      const visits = run.teacherVisits.filter((t) => t.week < week);
+      const players = sum(visits.map((t) => t.players));
+      return players > 0 ? sum(visits.map((t) => t.eligible)) / players : null;
+    },
+  },
+} as const satisfies Record<string, ServerMetricDef>;
+export type ServerMetricName = keyof typeof SERVER_METRICS;
+const SERVER_METRIC_NAMES = Object.keys(SERVER_METRICS) as [
+  ServerMetricName,
+  ...ServerMetricName[],
+];
 
 const amount = v.pipe(v.number(), v.finite(), v.minValue(0));
 
@@ -80,6 +137,27 @@ export const LiveReportSchema = v.strictObject({
       ),
     }),
   ),
+  /** The valley's own numbers on each reported day (the fire, the places, the keystones, the first level-up, the teacher's reach). */
+  server: v.optional(
+    v.strictObject({
+      days: v.pipe(
+        v.array(
+          v.strictObject({
+            day: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(730)),
+            metrics: v.partial(
+              v.strictObject(
+                Object.fromEntries(SERVER_METRIC_NAMES.map((m) => [m, amount])) as Record<
+                  ServerMetricName,
+                  typeof amount
+                >,
+              ),
+            ),
+          }),
+        ),
+        v.maxLength(120),
+      ),
+    }),
+  ),
 });
 export type LiveReport = v.InferOutput<typeof LiveReportSchema>;
 
@@ -88,7 +166,7 @@ export type Verdict = 'agree' | 'disagree' | 'info' | 'skipped';
 export interface Judged {
   readonly profile: string;
   readonly day: number;
-  readonly metric: MetricName;
+  readonly metric: MetricName | ServerMetricName;
   readonly verdict: Verdict;
   readonly live: number;
   /** The lab's median and spread (absent when skipped). */
@@ -140,8 +218,40 @@ export function judgeMetric(
 export function compareReport(
   report: LiveReport,
   playersOf: (profile: string) => readonly PlayerRun[],
+  runs: readonly ServerRun[] = [],
 ): Judged[] {
   const out: Judged[] = [];
+  for (const { day, metrics } of report.server?.days ?? []) {
+    for (const metric of SERVER_METRIC_NAMES) {
+      const live = metrics[metric];
+      if (live === undefined) continue;
+      const base = { profile: 'server', day, metric, live };
+      if (day % 7 !== 0) {
+        out.push({
+          ...base,
+          verdict: 'skipped',
+          rule: '',
+          note: 'the lab records whole weeks: use days 7, 14, 28 ...',
+        });
+        continue;
+      }
+      const def: ServerMetricDef = SERVER_METRICS[metric];
+      const samples = runs.flatMap((run) => {
+        const value = def.lab(run, day / 7);
+        return value === null ? [] : [value];
+      });
+      if (samples.length === 0) {
+        out.push({
+          ...base,
+          verdict: 'skipped',
+          rule: '',
+          note: 'the lab has no value of this at that week',
+        });
+        continue;
+      }
+      out.push({ ...base, ...judgeMetric(def.kind, live, samples) });
+    }
+  }
   for (const [profile, entry] of Object.entries(report.profiles)) {
     const players = playersOf(profile);
     for (const { day, metrics } of entry.days) {

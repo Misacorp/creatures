@@ -34,6 +34,7 @@ import { isTargeted, type CreatureChoice, type ToolSpec } from './forms';
 import { speciesName } from './options';
 import {
   ROSTER_PRESET_SPEC,
+  VALLEY_SPECS,
   SECTIONS,
   firstSection,
   navGroups,
@@ -41,6 +42,8 @@ import {
   type SectionDef,
   type SectionExtra,
 } from './specs';
+import { PlayDays } from './PlayDays';
+import { reportRows } from './play-days';
 import { RosterPresets } from './RosterPresets';
 import { ToolForm } from './ToolForm';
 import { COMBAT_LAB_URL } from './combat-lab-link';
@@ -48,7 +51,7 @@ import { PROTOTYPE_URL } from './prototype-link';
 import { WORKBENCH_URL } from './workbench-link';
 import { Replay } from '../Replay';
 import { ToggleButton } from '../ui/ToggleButton';
-import { DataTable } from '../ui/DataTable';
+import { DataTable, type DataRow } from '../ui/DataTable';
 
 /** The "Look" section: which look and room band mode this device tries (remembered on the device). */
 function LookSwitch(): JSX.Element {
@@ -253,7 +256,12 @@ function TargetBar({
   );
 }
 
-export default function DevPanel({ tab, creatures, onChanged }: DevPanelProps): JSX.Element {
+export default function DevPanel({
+  tab,
+  creatures,
+  valleySystems = false,
+  onChanged,
+}: DevPanelProps): JSX.Element {
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<DevStateView | null>(null);
   const [players, setPlayers] = useState<PresetChoices | null>(null);
@@ -265,6 +273,8 @@ export default function DevPanel({ tab, creatures, onChanged }: DevPanelProps): 
   const [target, setTarget] = useState(YOU);
   /** The fight a Play button opened: its replay is on screen over the game. */
   const [watch, setWatch] = useState<WatchTarget | null>(null);
+  /** The month report's rows, once "Month report" ran. */
+  const [report, setReport] = useState<DataRow[] | null>(null);
   const inFlight = useRef(false);
 
   const section = SECTIONS.find((s) => s.id === sectionId) ?? SECTIONS[0];
@@ -339,7 +349,11 @@ export default function DevPanel({ tab, creatures, onChanged }: DevPanelProps): 
       const who = targetPlayer !== null && isTargeted(spec.tool) ? ` (${targetPlayer.name})` : '';
       setStatus({
         ok: true,
-        text: `${spec.label}${who}: ${describeBench(spec.tool, outcome.result) ?? describeResult(outcome.result)}`,
+        text: `${spec.label}${who}: ${
+          spec.tool === 'valley-report'
+            ? 'shown in the Valley section.'
+            : (describeBench(spec.tool, outcome.result) ?? describeResult(outcome.result))
+        }`,
       });
       // A played stage opens its replay at once (a live finale has none: the game's own finale screen shows it).
       const watchTarget = spec.tool === 'raid-play' ? parseWatch(outcome.result) : null;
@@ -347,6 +361,7 @@ export default function DevPanel({ tab, creatures, onChanged }: DevPanelProps): 
         setWatch(watchTarget);
         setOpen(false);
       }
+      if (spec.tool === 'valley-report') setReport(reportRows(outcome.result));
       reloadView();
       if (spec.tool === 'analytics-rollup' && events !== null) loadEvents();
       onChanged();
@@ -481,6 +496,27 @@ export default function DevPanel({ tab, creatures, onChanged }: DevPanelProps): 
     }
   };
 
+  /** The Valley section: Valley fresh first, then Play days (its own component), then the timed tools and the month report. */
+  const valleySteps = (): JSX.Element => (
+    <>
+      <p class="dev-hint">
+        For a playtest, in this order: Valley fresh, Play days, a roster preset per tester (Give
+        section), then the timed tools below.
+      </p>
+      {steps(VALLEY_SPECS.slice(0, 1))}
+      <PlayDays
+        busy={busy}
+        onRunning={setBusy}
+        onDone={() => {
+          reloadView();
+          onChanged();
+        }}
+      />
+      {steps(VALLEY_SPECS.slice(1))}
+      {report !== null && <DataTable class="dev-clock" rows={report} />}
+    </>
+  );
+
   const body = (def: SectionDef): JSX.Element => (
     <>
       {def.before?.map((id) => (
@@ -493,9 +529,11 @@ export default function DevPanel({ tab, creatures, onChanged }: DevPanelProps): 
               {forms(block.specs)}
             </section>
           ))
-        : def.ordered === true
-          ? steps(def.specs)
-          : forms(def.specs)}
+        : def.id === 'valley'
+          ? valleySteps()
+          : def.ordered === true
+            ? steps(def.specs)
+            : forms(def.specs)}
       {def.after?.map((id) => (
         <div key={id}>{extra(id)}</div>
       ))}
@@ -556,7 +594,7 @@ export default function DevPanel({ tab, creatures, onChanged }: DevPanelProps): 
           />
           <div class="dev-body">
             <nav class="dev-nav" aria-label="Dev tool sections">
-              {navGroups().map((g) => (
+              {navGroups(valleySystems).map((g) => (
                 <div key={g.group} class="dev-nav-group">
                   <p class="dev-nav-heading">{g.group}</p>
                   <div class="dev-nav-items">

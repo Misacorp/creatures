@@ -81,9 +81,11 @@ export function pruneReads(sql: SqlStorage, cutoffDay: string): void {
 export class ReadMeter {
   /** The wrapped storage: hand this, not the raw one, to everything that reads. */
   readonly sql: SqlStorage;
-  private pending: { rowsRead: number }[] = [];
+  private pending: { rowsRead: number; rowsWritten?: number }[] = [];
   /** Rows of cursors that were dropped from `pending` to bound it. */
   private overflow = 0;
+  /** The rows those dropped cursors wrote (only `peek` reads it; the counters keep reads alone). */
+  private overflowWritten = 0;
   /** Settled rows per source, waiting for the next flush (the start's wait here for the first one). */
   private readonly settled = new Map<string, number>();
 
@@ -105,12 +107,29 @@ export class ReadMeter {
     });
   }
 
-  private track(cursor: { rowsRead: number }): void {
+  private track(cursor: { rowsRead: number; rowsWritten?: number }): void {
     if (this.pending.length >= MAX_PENDING) {
-      for (const c of this.pending) this.overflow += c.rowsRead;
+      for (const c of this.pending) {
+        this.overflow += c.rowsRead;
+        this.overflowWritten += c.rowsWritten ?? 0;
+      }
       this.pending = [];
     }
     this.pending.push(cursor);
+  }
+
+  /**
+   * The rows read and written since the last settle, without moving them: the dev tools' simulated month measures what one bot's visit
+   * cost by taking the difference of two peeks (staging only; nothing is stored).
+   */
+  peek(): { read: number; written: number } {
+    let read = this.overflow;
+    let written = this.overflowWritten;
+    for (const c of this.pending) {
+      read += c.rowsRead;
+      written += c.rowsWritten ?? 0;
+    }
+    return { read, written };
   }
 
   /** Moves the rows read since the last settle to `source` (in memory only). */
@@ -119,6 +138,7 @@ export class ReadMeter {
     for (const c of this.pending) sum += c.rowsRead;
     this.pending = [];
     this.overflow = 0;
+    this.overflowWritten = 0;
     if (sum > 0) this.settled.set(source, (this.settled.get(source) ?? 0) + sum);
   }
 
