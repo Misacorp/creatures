@@ -160,6 +160,10 @@ const FLASH_U = 0.2;
 /** The weapon is held tilted and smaller in the hand, so a long lance stays on the stage; it straightens as it is thrown. */
 const HELD_TILT = 38;
 const HELD_SCALE = 0.7;
+/** At most this many copies are held in the hand (a move with many strikes still flies every one of them), kept within the boss's art. */
+export const HELD_MAX = 2;
+/** The widest gap between two held copies, in pixels. */
+const HELD_GAP_MAX = 34;
 
 /** What is on the stage `t` milliseconds into a move that takes `totalMs`. Nothing before the wind-up and nothing after the impact. */
 export function frameAt(
@@ -193,6 +197,9 @@ export function frameAt(
   const weapon = look.weapon;
   const { w: weaponW, h } = sizeOf(weapon);
   const count = Math.max(1, plan.strikes.length);
+  const held = Math.min(count, HELD_MAX);
+  // Two copies side by side are drawn a little smaller so they stay within the boss's art.
+  const heldScale = held > 1 ? HELD_SCALE * 0.85 : HELD_SCALE;
   const glow = look.glow;
   // The grip is at the hand; the weapon leans away from it, so its middle is up and to the right of the grip.
   const heldAt = (i: number, tilt: number, scale: number): { x: number; y: number } => {
@@ -200,7 +207,7 @@ export function frameAt(
     return {
       x:
         geom.hand.x +
-        (i - (count - 1) / 2) * (weaponW * scale + 6) +
+        ((i % held) - (held - 1) / 2) * Math.min(weaponW * scale + 6, HELD_GAP_MAX) +
         (Math.sin(rad) * h * scale) / 2,
       y: geom.hand.y - (Math.cos(rad) * h * scale) / 2,
     };
@@ -226,8 +233,8 @@ export function frameAt(
   if (phase === 'windup') {
     // It appears in the hand: a quick scale-in from the grip with a glint.
     const grow = clamp01(u * 1.6);
-    const s = HELD_SCALE * (0.15 + 0.85 * grow);
-    for (let i = 0; i < count; i++)
+    const s = heldScale * (0.15 + 0.85 * grow);
+    for (let i = 0; i < held; i++)
       items.push(weaponItem(i, heldAt(i, HELD_TILT, s), HELD_TILT, s, clamp01(u * 3)));
     const glint = clamp01(1 - Math.abs(u - 0.35) * 3.5);
     if (glint > 0)
@@ -242,16 +249,16 @@ export function frameAt(
         opacity: glint,
       });
   } else if (phase === 'aim') {
-    for (let i = 0; i < count; i++) {
-      const at = heldAt(i, HELD_TILT, HELD_SCALE);
+    for (let i = 0; i < held; i++) {
+      const at = heldAt(i, HELD_TILT, heldScale);
       const bob = Math.sin(t / 110 + i) * 2;
-      items.push(weaponItem(i, { x: at.x, y: at.y + bob }, HELD_TILT, HELD_SCALE, 1));
+      items.push(weaponItem(i, { x: at.x, y: at.y + bob }, HELD_TILT, heldScale, 1));
     }
   } else if (phase === 'throw') {
     // It straightens and leaves the stage upwards.
     for (let i = 0; i < count; i++) {
       const tilt = lerp(HELD_TILT, 0, clamp01(u * 2));
-      const s = lerp(HELD_SCALE, 1, clamp01(u * 2));
+      const s = lerp(heldScale, 1, clamp01(u * 2));
       const from = heldAt(i, tilt, s);
       items.push(weaponItem(i, { x: from.x, y: lerp(from.y, -h - 12, easeIn(u)) }, tilt, s, 1));
     }

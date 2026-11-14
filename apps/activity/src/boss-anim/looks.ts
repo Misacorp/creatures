@@ -157,7 +157,7 @@ const TIDAL_COLOSSUS: BossLook = {
 const CINDER_GLOW = '#ef6a3a';
 const CINDER_IMPACT: Asset = { sprite: CINDER_BURST, scale: 2 };
 const CINDER_SWEEP: LookEntry = {
-  weapon: { sprite: CINDER_WAVE, scale: 8 },
+  weapon: { sprite: CINDER_WAVE, scale: 6 },
   impact: CINDER_IMPACT,
   glow: CINDER_GLOW,
 };
@@ -197,7 +197,7 @@ const CINDER_WYRM: BossLook = {
 const THORN_GLOW = '#5cbf5a';
 const THORN_IMPACT: Asset = { sprite: THORN_BURST, scale: 2 };
 const THORN_SWEEP: LookEntry = {
-  weapon: { sprite: THORN_BRAMBLE, scale: 8 },
+  weapon: { sprite: THORN_BRAMBLE, scale: 5 },
   impact: THORN_IMPACT,
   glow: THORN_GLOW,
 };
@@ -226,7 +226,7 @@ const THORNMOTHER: BossLook = {
 const BOG_GLOW = '#8a9a3a';
 const BOG_IMPACT: Asset = { sprite: BOG_SPLAT, scale: 2 };
 const BOG_SWEEP: LookEntry = {
-  weapon: { sprite: BOG_WAVE, scale: 8 },
+  weapon: { sprite: BOG_WAVE, scale: 6 },
   impact: BOG_IMPACT,
   glow: BOG_GLOW,
 };
@@ -239,8 +239,8 @@ const BOG_FALL: LookEntry = {
 /** Old Bogback: a mud-caked root harpoon, heavy mud waves for its sweeps, globs and spat clots of mud, a splat where they land. */
 const OLD_BOGBACK: BossLook = {
   shapes: {
-    column: { weapon: { sprite: BOG_HARPOON, scale: 6 }, impact: BOG_IMPACT, glow: BOG_GLOW },
-    columns: { weapon: { sprite: BOG_HARPOON, scale: 6 }, impact: BOG_IMPACT, glow: BOG_GLOW },
+    column: { weapon: { sprite: BOG_HARPOON, scale: 5 }, impact: BOG_IMPACT, glow: BOG_GLOW },
+    columns: { weapon: { sprite: BOG_HARPOON, scale: 5 }, impact: BOG_IMPACT, glow: BOG_GLOW },
     row: BOG_SWEEP,
     rows: BOG_SWEEP,
     randomRow: BOG_SWEEP,

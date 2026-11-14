@@ -179,6 +179,30 @@ describe('frames', () => {
     const impact = frameAt(plan, look, geom, BOSS_MOVE_MS, phaseShot(BOSS_MOVE_MS, 'impact'));
     expect(impact.some((i) => i.kind === 'sprite' && i.key.startsWith('spark'))).toBe(true);
   });
+  it('holds at most two copies in the hand though every strike flies', () => {
+    const many = planOf(
+      {
+        moveId: 'lightning-bolt',
+        shape: 'columns',
+        cells: [0, 1, 2, 3].map((col) => ({ row: 0, col })),
+      },
+      GRID,
+    );
+    expect(many.strikes.length).toBe(4);
+    const weapons = (t: number): { x: number; key: string }[] =>
+      frameAt(many, look, geom, BOSS_MOVE_MS, t).flatMap((i) =>
+        i.kind === 'sprite' && i.key.startsWith('weapon') ? [{ x: i.x, key: i.key }] : [],
+      );
+    for (const phase of ['windup', 'aim'] as const) {
+      const held = weapons(phaseShot(BOSS_MOVE_MS, phase));
+      expect(held.length).toBe(2);
+      const xs = held.map((w) => w.x);
+      expect(Math.max(...xs) - Math.min(...xs)).toBeLessThanOrEqual(60);
+    }
+    expect(weapons(phaseShot(BOSS_MOVE_MS, 'throw')).length).toBe(4);
+    const struck = frameAt(many, look, geom, BOSS_MOVE_MS, phaseShot(BOSS_MOVE_MS, 'strike'));
+    expect(struck.filter((i) => i.kind === 'sprite' && i.key.startsWith('weapon')).length).toBe(4);
+  });
   it('sends the thrown weapon off the top of the stage', () => {
     const end = frameAt(
       plan,
