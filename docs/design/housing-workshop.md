@@ -151,6 +151,7 @@ Every override has a reason (a test checks). A new set made from a style alone h
 
 - `pnpm housing variants <style> [--form id] [--out dir]`: every variant of every form drawn in the style (see Variants).
 - `pnpm housing sheet <style or set> --room [--night] [--out dir]`: the room sheet and the report (below). `--night` adds the rooms at night at phone scale, every pixel through the lighting pass of `house-light.ts` (`shade`, `levelMap`, `windowPixel`) and lit by each room's lamp; the window's stars are not drawn.
+- `pnpm housing sheet <set> --room [--night] --variation <id>`: the set with an art option laid over it (a recoloured wallpaper or furniture, a new silhouette), from `apps/activity/src/sprites/workshop/variations/` (`index.ts` lists them). Options for the owner to pick from by picture; nothing in the game imports them and the lock does not see them.
 - The step-by-step for a new set is the `furniture-set` skill (`.claude/skills/furniture-set/SKILL.md`).
 
 ## The room sheet and the report (A4)
