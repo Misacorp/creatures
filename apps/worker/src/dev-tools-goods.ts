@@ -109,53 +109,62 @@ export function grantBlueprints(ctx: ToolCtx, body: Body<typeof GrantBlueprintsB
 // --- Creatures ---
 
 /**
- * Gives the caller a creature of a species. A player has one creature per line: if they have the line
- * already, that creature becomes this species (and takes the level, fusions and shine that were asked
- * for). With no starter chosen yet, the first creature also counts as the starter, so the picker goes.
+ * Gives the player a creature of a species. A line holds at most two creatures (`count` 1 or 2 is how many the player ends up
+ * with): a slot that has a creature already turns into this species (and takes the level, fusions and shine that were asked
+ * for); an empty one gets a new creature through the normal creation path. With no starter chosen yet, the first creature
+ * also counts as the starter, so the picker goes.
  */
 export function grantCreature(ctx: ToolCtx, body: Body<typeof GrantCreatureBodySchema>) {
   const species = speciesOf(body.species);
   if (body.level !== undefined && body.level > species.levelCap) {
     throw new DevError(400, 'level_cap');
   }
-  const existing = ctx.sql
-    .exec<{ id: string }>(
-      'SELECT id FROM creatures WHERE user_id = ? AND line = ?',
-      ctx.userId,
-      species.line,
-    )
-    .toArray()[0];
-  let creatureId: string;
-  if (existing === undefined) {
-    creatureId = insertCreature(ctx.sql, creatureRngsOf(ctx), {
-      userId: ctx.userId,
-      species: species.id,
-      origin: 'dev',
-      shiny: body.shiny === true,
-      now: ctx.now,
-    }).id;
-    ctx.sql.exec(
-      'UPDATE creatures SET level = ?, fusion_count = ?, fusion_points = ?, exp = 0, ribbons = ? WHERE id = ?',
-      body.level ?? 1,
-      body.fusion ?? 0,
-      fusionThreshold(body.fusion ?? 0),
-      ribbonsForLevel(body.level ?? 1),
-      creatureId,
-    );
-  } else {
-    creatureId = existing.id;
-    ctx.sql.exec(
-      `UPDATE creatures SET species = ?,
-         level = COALESCE(?, level), fusion_count = COALESCE(?, fusion_count),
-         fusion_points = COALESCE(?, fusion_points), shiny = COALESCE(?, shiny)
-       WHERE id = ?`,
-      species.id,
-      body.level ?? null,
-      body.fusion ?? null,
-      body.fusion === undefined ? null : fusionThreshold(body.fusion),
-      body.shiny === undefined ? null : body.shiny ? 1 : 0,
-      creatureId,
-    );
+  const ids: string[] = [];
+  let created = 0;
+  for (const lineSlot of [1, 2].slice(0, body.count ?? 1) as (1 | 2)[]) {
+    const existing = ctx.sql
+      .exec<{ id: string }>(
+        'SELECT id FROM creatures WHERE user_id = ? AND line = ? AND line_slot = ?',
+        ctx.userId,
+        species.line,
+        lineSlot,
+      )
+      .toArray()[0];
+    let creatureId: string;
+    if (existing === undefined) {
+      creatureId = insertCreature(ctx.sql, creatureRngsOf(ctx), {
+        userId: ctx.userId,
+        species: species.id,
+        origin: 'dev',
+        lineSlot,
+        shiny: body.shiny === true,
+        now: ctx.now,
+      }).id;
+      ctx.sql.exec(
+        'UPDATE creatures SET level = ?, fusion_count = ?, fusion_points = ?, exp = 0, ribbons = ? WHERE id = ?',
+        body.level ?? 1,
+        body.fusion ?? 0,
+        fusionThreshold(body.fusion ?? 0),
+        ribbonsForLevel(body.level ?? 1),
+        creatureId,
+      );
+      created++;
+    } else {
+      creatureId = existing.id;
+      ctx.sql.exec(
+        `UPDATE creatures SET species = ?,
+           level = COALESCE(?, level), fusion_count = COALESCE(?, fusion_count),
+           fusion_points = COALESCE(?, fusion_points), shiny = COALESCE(?, shiny)
+         WHERE id = ?`,
+        species.id,
+        body.level ?? null,
+        body.fusion ?? null,
+        body.fusion === undefined ? null : fusionThreshold(body.fusion),
+        body.shiny === undefined ? null : body.shiny ? 1 : 0,
+        creatureId,
+      );
+    }
+    ids.push(creatureId);
   }
   ctx.sql.exec(
     `INSERT INTO player_progress (user_id, starter_species) VALUES (?, ?)
@@ -163,7 +172,8 @@ export function grantCreature(ctx: ToolCtx, body: Body<typeof GrantCreatureBodyS
     ctx.userId,
     species.id,
   );
-  return { creatureId, created: existing === undefined };
+  ctx.raid.invalidateReadiness();
+  return { creatureId: ids[0], creatureIds: ids, created: created > 0, createdCount: created };
 }
 
 /** Sets a creature's level and fusions, or evolves it (the same line only). Levels stay within the cap. */
@@ -257,17 +267,44 @@ export function finishJobs(ctx: ToolCtx) {
   return { finished: done.length };
 }
 
-/** Gives the caller one item (its lines drawn now from live randomness). Refused when the bag is full. */
+/**
+ * Gives the player items (lines drawn now from live randomness): a base, or a random one (of a slot when asked), a rarity or a
+ * random one, an item level or the base's lowest (random for a random base, as the bag filler does). Refused, with nothing
+ * given, when the bag cannot hold them all.
+ */
 export function grantGear(ctx: ToolCtx, body: Body<typeof GrantGearBodySchema>) {
-  const base = gearBase(body.baseId);
-  if (base === undefined) throw new DevError(400, 'invalid_base');
-  if (!hasRoom(ctx.sql, ctx.userId)) throw new DevError(409, 'bag_full');
-  // A better base only exists from its item level; the default is the lowest level it can have.
-  const itemLevel = body.itemLevel ?? baseMinLevel(base);
-  if (itemLevel < baseMinLevel(base)) throw new DevError(400, 'item_level_too_low');
-  const item = rollItem(ctx.gearRng, { baseId: base.id, rarity: body.rarity, itemLevel });
-  const gearId = insertItem(ctx.sql, ctx.userId, item, { source: 'dev', now: ctx.now });
-  return { gearId };
+  const named = body.baseId === undefined ? undefined : gearBase(body.baseId);
+  if (body.baseId !== undefined && named === undefined) throw new DevError(400, 'invalid_base');
+  if (named !== undefined && body.slot !== undefined && named.slot !== body.slot) {
+    throw new DevError(400, 'wrong_slot');
+  }
+  if (named !== undefined && body.itemLevel !== undefined && body.itemLevel < baseMinLevel(named)) {
+    throw new DevError(400, 'item_level_too_low');
+  }
+  const level = body.itemLevel;
+  const pool = gearContent.bases.filter(
+    (b) =>
+      (body.slot === undefined || b.slot === body.slot) &&
+      (level === undefined || baseMinLevel(b) <= level),
+  );
+  if (named === undefined && pool.length === 0) throw new DevError(400, 'no_such_base');
+  const ids: string[] = [];
+  for (let i = 0; i < (body.count ?? 1); i++) {
+    if (!hasRoom(ctx.sql, ctx.userId)) throw new DevError(409, 'bag_full');
+    const base = named ?? pool[int(ctx.gearRng, pool.length)];
+    if (base === undefined) throw new DevError(400, 'no_such_base');
+    const rarity: GearRarity =
+      body.rarity ?? NORMAL_RARITIES[int(ctx.gearRng, NORMAL_RARITIES.length)] ?? 'common';
+    // A better base only exists from its item level; the default is the lowest level it can have.
+    const itemLevel =
+      level ??
+      (named === undefined
+        ? Math.max(baseMinLevel(base), 1 + int(ctx.gearRng, RULES.gear.maxItemLevel))
+        : baseMinLevel(base));
+    const item = rollItem(ctx.gearRng, { baseId: base.id, rarity, itemLevel });
+    ids.push(insertItem(ctx.sql, ctx.userId, item, { source: 'dev', now: ctx.now }));
+  }
+  return { gearId: ids[0], gearIds: ids, given: ids.length };
 }
 
 const NORMAL_RARITIES: readonly GearRarity[] = ['common', 'rare', 'epic'];

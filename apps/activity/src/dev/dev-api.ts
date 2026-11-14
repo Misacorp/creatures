@@ -149,6 +149,15 @@ export interface PresetPlayer {
   name: string;
   creatures: number;
   items: number;
+  /** The player's creatures, best first: what the creature pickers list for this target. */
+  roster: RosterCreature[];
+}
+
+/** One creature of a player, as the target pickers list it. */
+export interface RosterCreature {
+  id: string;
+  species: string;
+  level: number;
 }
 
 /** A roster preset in numbers (the server's `presetSummary`), for the picker. */
@@ -163,6 +172,8 @@ export interface PresetInfo {
 
 /** What the preset picker lists: the guild's players and the presets. */
 export interface PresetChoices {
+  /** The caller's own id (the picker's "You"). */
+  you: string;
   players: PresetPlayer[];
   presets: PresetInfo[];
 }
@@ -171,6 +182,7 @@ export function parsePresetChoices(data: unknown): PresetChoices | null {
   if (!isRecord(data) || !Array.isArray(data['players']) || !Array.isArray(data['presets'])) {
     return null;
   }
+  if (typeof data['you'] !== 'string') return null;
   const players: PresetPlayer[] = [];
   for (const p of data['players'] as unknown[]) {
     if (
@@ -178,15 +190,29 @@ export function parsePresetChoices(data: unknown): PresetChoices | null {
       typeof p['userId'] !== 'string' ||
       typeof p['name'] !== 'string' ||
       !isNum(p['creatures']) ||
-      !isNum(p['items'])
+      !isNum(p['items']) ||
+      !Array.isArray(p['roster'])
     ) {
       return null;
+    }
+    const roster: RosterCreature[] = [];
+    for (const c of p['roster'] as unknown[]) {
+      if (
+        !isRecord(c) ||
+        typeof c['id'] !== 'string' ||
+        typeof c['species'] !== 'string' ||
+        !isNum(c['level'])
+      ) {
+        return null;
+      }
+      roster.push({ id: c['id'], species: c['species'], level: c['level'] });
     }
     players.push({
       userId: p['userId'],
       name: p['name'],
       creatures: p['creatures'],
       items: p['items'],
+      roster,
     });
   }
   const presets: PresetInfo[] = [];
@@ -211,7 +237,7 @@ export function parsePresetChoices(data: unknown): PresetChoices | null {
       items: p['items'],
     });
   }
-  return { players, presets };
+  return { you: data['you'], players, presets };
 }
 
 /** The guild's players and the presets, or null when the call failed. */
@@ -301,6 +327,27 @@ export function describeBench(tool: DevToolId, result: unknown): string | null {
       const items = num(result, 'items');
       if (players === null || creatures === null || items === null) return null;
       return `Given to ${String(players)} ${players === 1 ? 'player' : 'players'}: ${String(creatures)} creatures and ${String(items)} items in all.`;
+    }
+    case 'grant-currency': {
+      const balances = result['balances'];
+      if (!isRecord(balances)) return null;
+      return `Balance now ${String(num(balances, 'bait') ?? 0)} Bait and ${String(num(balances, 'essence') ?? 0)} Essence.`;
+    }
+    case 'grant-gear': {
+      const given = num(result, 'given');
+      return given === null ? null : `${String(given)} ${given === 1 ? 'item' : 'items'} given.`;
+    }
+    case 'grant-xp': {
+      const creatures = num(result, 'creatures');
+      const levels = num(result, 'levelsGained');
+      if (creatures === null || levels === null) return null;
+      return `${String(creatures)} ${creatures === 1 ? 'creature' : 'creatures'} paid, ${String(levels)} ${levels === 1 ? 'level' : 'levels'} gained.`;
+    }
+    case 'grant-creature': {
+      const made = num(result, 'createdCount');
+      const ids = result['creatureIds'];
+      if (made === null || !Array.isArray(ids)) return null;
+      return `${String(ids.length)} ${ids.length === 1 ? 'creature' : 'creatures'} set, ${String(made)} new.`;
     }
     default:
       return null;
