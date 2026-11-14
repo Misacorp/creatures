@@ -1,6 +1,11 @@
 import { DiscordSDK } from '@discord/embedded-app-sdk';
 import { setExternalLinkOpener } from './external-link';
-import { setCombatV2, setFinaleLiveOffered, setRaidLiveOffered, setValleySystemsOn } from './live-flags';
+import {
+  setCombatV2,
+  setFinaleLiveOffered,
+  setRaidLiveOffered,
+  setValleySystemsOn,
+} from './live-flags';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import {
   ApiError,

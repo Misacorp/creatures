@@ -592,8 +592,12 @@ describe('the swap outcome on Home', () => {
 
   it('says the one outcome without its full stop, or how many there are', () => {
     const a = { ...one(), status: 'accepted' as const };
-    expect(swapOutcomeNoticeText([a], grid, new Set())).toBe(settledText(a, grid).replace(/\.$/, ''));
-    expect(swapOutcomeNoticeText([a, { ...a, id: 'other' }], grid, new Set())).toBe('2 swap answers');
+    expect(swapOutcomeNoticeText([a], grid, new Set())).toBe(
+      settledText(a, grid).replace(/\.$/, ''),
+    );
+    expect(swapOutcomeNoticeText([a, { ...a, id: 'other' }], grid, new Set())).toBe(
+      '2 swap answers',
+    );
     expect(swapOutcomeNoticeText([], grid, new Set())).toBeNull();
   });
 
