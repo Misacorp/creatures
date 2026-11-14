@@ -4,6 +4,14 @@ Roadmap calls, Misa's standing direction, naming and tone, content policy, how a
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-14: [Misa] One coordination session, one release board, one merge queue
+
+ID: `2026-11-14-one-coordination-session-one-release-board` · Status: current
+
+**Decision.** One session, "Game feature release coordination", coordinates the combat, valley, housing and art sessions. It writes no features. It keeps the release board for Misa (`https://claude.ai/artifact/MHj3WxFCUVv6jT71xDGsHW`: what needs him across all sessions, the merge queue, the road to release, one block per stream) and republishes it when something changes. It runs a merge queue: combat's playtest polish (#136), then one valley PR, then housing (#133); after each merge the next session merges `main` and resolves its conflicts before Misa sees its PR. Sessions report to the coordinator by cross-session message and open small PRs often. Housing merges switched off and stays off for the combat and valley release. The road to release is: empty the queue, the valley UI must-fix list (Misa's gripes with the Expedition and Forge screens), a staging playtest with both reworks on, the reset, the switches on.
+
+**Reasoning.** Misa had lost track of what four long sessions were doing and which PR to merge next. Most of both reworks was already on `main` behind switches, but there was no shared picture (`docs/progress.md` described 2026-11-06, each session kept its own list for him) and the three open branches no longer merged cleanly with each other (combat and valley 5 files, valley and housing 9 including the migrations, combat and housing 3). One board and a fixed merge order fix both.
+
 ## 2026-11-06: Overnight sessions: quiet until news, then one message with every open question [Misa]
 
 ID: `2026-11-06-overnight-sessions-quiet-until-news-then` · Status: current
