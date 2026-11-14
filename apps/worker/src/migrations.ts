@@ -44,6 +44,7 @@ import { raidPlacementCapMigration } from './raid-placement-cap-migration';
 import { raidProgressionMigration } from './raid-progression-migration';
 import { valleyMigration } from './valley-migration';
 import { valleyScoutsMigration } from './valley-scouts-migration';
+import { valleyCrateMigration } from './valley-crate-migration';
 import { valleyForgeMigration } from './valley-forge-migration';
 import { valleyBonfireMigration } from './valley-bonfire-migration';
 import { valleyCommonsMigration } from './valley-commons-migration';
@@ -378,6 +379,8 @@ export const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
   valleyTrialsMigration,
   // Version 67: the index behind the workshop's background smiths (see valley-forge-crowd-migration.ts).
   valleyForgeCrowdMigration,
+  // Version 68: the Forge's sealed crate: rare and epic pieces wait until it is opened (see valley-crate-migration.ts).
+  valleyCrateMigration,
 ];
 
 /** The schema version of a fresh database. */
