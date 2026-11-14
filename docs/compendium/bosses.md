@@ -14,7 +14,7 @@ Read `README.md` for the tags. Every boss has one element, and four of the bosse
 | Cinder Wyrm     | Ember   | Serpentine    | Backdraft: turns the first reaction of every round back on the team              | Element Resistance       |
 | Thornmother     | Grove   | Right to left | Bramble Bind: silences the creatures at both ends of each row every second round | Reaction Resistance      |
 | Storm Sovereign | Spark   | Left to right | Lightning Rod: strikes the creature with the highest Attack every round          | Element Resistance       |
-| Old Bogback     | Mire    | Left to right | Sinking Mud: a sweep of one row that leaves Mired on every creature in it        | Element Resistance       |
+| Old Bogback     | Mire    | Left to right | Sinking Mud: a sweep of one row that leaves Bogged Down on every creature in it  | Element Resistance       |
 
 `(content: bosses.json, adaptations.json)`
 
@@ -223,9 +223,9 @@ Status: 2026-10-20. Shipped (`bosses.json`, `bosses-lore.json`) from `docs/desig
 ### Fighting style `(content: bosses.json)`
 
 - **Turn order:** left to right.
-- **Sinking Mud:** the trick, every third round. A sweep of one row (front, then middle, then back) that leaves Mired on every creature in it. Mired cuts Speed (so dodge) and damage, so debuff resistance and Clean coat are worth chasing on this boss's week.
+- **Sinking Mud:** the trick, every third round. A sweep of one row (front, then middle, then back) that leaves Bogged Down on every creature in it. Bogged Down cuts Speed (so dodge) and damage, so debuff resistance and Clean coat are worth chasing on this boss's week.
 - **Belly Flop:** every fourth round, a slam on the front creature, with a share on its neighbours. The joke of the set.
-- **Shake Off:** every fifth round, a purge: the boss washes every debuff off itself, so a team cannot park Mired at its cap for the whole fight.
+- **Shake Off:** every fifth round, a purge: the boss washes every debuff off itself, so a team cannot park Bogged Down at its cap for the whole fight.
 - **Bog Lob (rank 4 and up):** every seventh round, a slam on the strongest Payoff. A move added so that every boss has a rank-4 move and a rank-7 move; it is the mud the toad spits at whoever has been showing off. `(compendium detail, not shipped)`
 - **Rising Bubbles (rank 7 and up):** every ninth round, bubbles rise under some creatures, marked a round ahead, then burst. Swamp gas going up, the same gas Flare sets alight.
 - **Adaptation:** Element Resistance: the bog learns the element that hurt it most. Ember teams still shine, but not for the whole fight.

@@ -48,14 +48,14 @@ export const RULES: V2Rules = {
   maxHitBonusBp: 15_000,
   flankGuardSlots: 2,
   opportunistFromStacks: 2,
-  miredPerStackBp: 150,
-  miredClingingStackBp: 225,
-  miredMaxStacks: 5,
-  miredFadeEvery: 1,
-  miredClingingFadeEvery: 2,
+  boggedDownPerStackBp: 150,
+  boggedDownClingingStackBp: 225,
+  boggedDownMaxStacks: 5,
+  boggedDownFadeEvery: 1,
+  boggedDownClingingFadeEvery: 2,
   holdOnLeaveBp: 4_000,
   adaptElementBp: 7_500,
-  miredSlowsEscalationBp: 2_500,
+  boggedDownSlowsEscalationBp: 2_500,
   finisherBelowBp: 3_333,
   rallyBp: 1_000,
   shieldWallBp: 5_000,
@@ -285,8 +285,8 @@ export const texts = (res: FightResult, kind: string): string[] =>
 /** The marks the fight left, in order ("tide x1"). */
 export const marks = (res: FightResult): string[] => texts(res, 'mark');
 
-/** The Mired stack counts the fight went through ("Mired x1"). */
-export const mired = (res: FightResult): string[] => texts(res, 'mired');
+/** The Bogged Down stack counts the fight went through ("Bogged Down x1"). */
+export const boggedDown = (res: FightResult): string[] => texts(res, 'boggedDown');
 
 /** What each hit on `name` did (the "takes N" lines), in order. */
 export const takes = (res: FightResult, name: string): number[] =>

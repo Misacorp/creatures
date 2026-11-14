@@ -241,6 +241,37 @@ export function declineSwap(
   return { ...row, status: 'declined' };
 }
 
+/**
+ * Withdraws a request the caller made. The `status` CHECK of `raid_swap_requests` has no `cancelled` value (a new one would need a
+ * migration), and a request ended any other way shows the asker a note, so a cancel deletes the open row: it is open nowhere and the
+ * asker gets no note for their own act. Only the asker may cancel: someone else's request, or an id that is gone, changes nothing and
+ * answers as success, so a retry is safe (and nothing is told about other players' requests). An accepted or declined request is
+ * `answered` (409).
+ */
+export function cancelSwap(
+  sql: SqlStorage,
+  week: { weekId: string },
+  userId: string,
+  id: string,
+): void {
+  const row = sql
+    .exec<SwapRequestRow>(
+      `SELECT ${COLUMNS} FROM raid_swap_requests WHERE week_id = ? AND from_user = ? AND id = ?`,
+      week.weekId,
+      userId,
+      id,
+    )
+    .toArray()[0];
+  if (row === undefined) return;
+  if (row.status === 'accepted' || row.status === 'declined') throw new GameError(409, 'answered');
+  sql.exec(
+    "DELETE FROM raid_swap_requests WHERE week_id = ? AND party = ? AND id = ? AND status = 'open'",
+    row.week_id,
+    row.party,
+    row.id,
+  );
+}
+
 /** The open requests of a week that involve the player: addressed to them (incoming) and made by them (outgoing). Two indexed lookups. */
 export function openSwaps(
   sql: SqlStorage,
@@ -256,4 +287,21 @@ export function openSwaps(
       )
       .toArray();
   return { incoming: pick('to_user'), outgoing: pick('from_user') };
+}
+
+/**
+ * The requests the player made that are no longer open (accepted, declined or ended), newest last, at most `MAX_OPEN_SWAPS`: the asker's
+ * view of how a request went. One indexed lookup; the client remembers which it has shown.
+ */
+export function settledSwaps(sql: SqlStorage, weekId: string, userId: string): SwapRequestRow[] {
+  return sql
+    .exec<SwapRequestRow>(
+      `SELECT ${COLUMNS} FROM raid_swap_requests WHERE week_id = ? AND from_user = ? AND status != 'open'
+       ORDER BY created_at DESC, id DESC LIMIT ?`,
+      weekId,
+      userId,
+      MAX_OPEN_SWAPS,
+    )
+    .toArray()
+    .reverse();
 }

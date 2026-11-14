@@ -91,7 +91,7 @@ describe('the effects the engine rule tests name directly (the catalogue gives t
     ['flank-guard', 'flankGuard'],
     ['long-shadow', 'distanceCoverBp'],
     ['clinging', 'clinging'],
-    ['heavy-hand', 'miredExtraBp'],
+    ['heavy-hand', 'boggedDownExtraBp'],
     ['shoulder-to-shoulder', 'perKindredBesideBp'],
     ['odd-one-out', 'oddOneOutBp'],
     ['edge-walker', 'rowEndBp'],

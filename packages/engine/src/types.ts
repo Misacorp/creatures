@@ -657,7 +657,7 @@ export type FightEvent =
   /** An effect ran out on its target's own turns; all its stacks fell off. */
   | { t: 'effect_expire'; round: number; target: string | null; effect: string }
   /**
-   * A reaction burned every stack of `effect` off the boss (Flare burns Mired): `stacks` of them, for
+   * A reaction burned every stack of `effect` off the boss (Flare burns Bogged Down): `stacks` of them, for
    * `bonusBp` more reaction bonus. Written only when stacks went.
    */
   | {

@@ -1,5 +1,5 @@
 /**
- * Combat v2: the boss's escalation (R22: steps, phases, feeds, strength, how Mired slows it) and Mired itself (stacks, fading, Clinging,
+ * Combat v2: the boss's escalation (R22: steps, phases, feeds, strength, how Bogged Down slows it) and Bogged Down itself (stacks, fading, Clinging,
  * Wicked, Shake It Off). Creatures and boss are built by hand with their effects named directly; the dice are scripted or a fixed
  * seed checks an invariant of the whole fight. These were the lab's `engine`, `strength` and `talents` rule tests about escalation.
  */
@@ -15,7 +15,7 @@ import {
   boss,
   by,
   count,
-  mired,
+  boggedDown,
   move,
   play,
   playScripted,
@@ -91,13 +91,13 @@ describe('the escalation carries across a raid weekend like HP (R22)', () => {
     expect(carried.reactions).toBe(3);
   });
 
-  it('a phase change is announced a round ahead and Mired does not stop it; the announcement carries over a stage break', () => {
+  it('a phase change is announced a round ahead and Bogged Down does not stop it; the announcement carries over a stage break', () => {
     const phased = esc({ per: 2, cap: 2, phase: { atStep: 1, name: 'P2', moves: [phaseMove] } });
     for (const crew of [team(), [song(), ...team().slice(1)]]) {
       const r = play(arena(phased, { rounds: 8 }), crew);
       const ahead = r.events.find((e) => e.kind === 'announce' && /begins next round/.test(e.text));
       const applied = r.events.find((e) => e.kind === 'phase');
-      // The feed reaches 2 rounds at round 3's start: announced then, applied at round 4's start, Mired or not.
+      // The feed reaches 2 rounds at round 3's start: announced then, applied at round 4's start, Bogged Down or not.
       expect(ahead?.round).toBe(3);
       expect(applied?.round).toBe(4);
     }
@@ -240,8 +240,8 @@ describe('steps and bars (R22)', () => {
     expect(hitsOnA({ hits: 1 })).toBe(1 + 2 + 3);
   });
 
-  it('a falling armour comes in on the steps Mired does not slow (R22.3)', () => {
-    // A step is Attack up and armour down together; Mired holds the first back, never the second.
+  it('a falling armour comes in on the steps Bogged Down does not slow (R22.3)', () => {
+    // A step is Attack up and armour down together; Bogged Down holds the first back, never the second.
     const b = arena(esc({ per: 1, cap: 3, grow: { atkBp: 5_000, armour: -30 } }), {
       rounds: 4,
       armour: 200,
@@ -250,7 +250,7 @@ describe('steps and bars (R22)', () => {
     const slowed = play(b, [song(), ...team().slice(1)]);
     expect(free.escalation?.step).toBe(3);
     expect(free.escalation?.fallStep).toBe(3);
-    // Mired: the boss-helping step is behind, the falling one is not.
+    // Bogged Down: the boss-helping step is behind, the falling one is not.
     expect(slowed.escalation?.step).toBeLessThan(3);
     expect(slowed.escalation?.fallStep).toBe(3);
     // A growth with no falling part keeps one count: nothing to split.
@@ -271,56 +271,58 @@ describe('steps and bars (R22)', () => {
     );
   });
 
-  it('Mired slows a step instead of freezing it', () => {
+  it('Bogged Down slows a step instead of freezing it', () => {
     const b = arena(esc({ per: 1, cap: 1 }), { rounds: 8 });
     const free = play(b, team());
     const slowed = play(b, [song(), ...team().slice(1)]);
-    // Free: the count reaches 1 at round 2. Mired: a quarter of a step's units more per stack, so the step comes later but does come.
+    // Free: the count reaches 1 at round 2. Bogged Down: a quarter of a step's units more per stack, so the step comes later but does come.
     expect(stepRounds(free)).toEqual([2]);
     expect(stepRounds(slowed)).toEqual([3]);
     expect(
-      slowed.events.some((e) => e.kind === 'escalation' && e.text.includes('slowed by the Mired')),
+      slowed.events.some(
+        (e) => e.kind === 'escalation' && e.text.includes('slowed by the Bogged Down'),
+      ),
     ).toBe(true);
   });
 });
 
-describe('Mired (R22.3, panel 3)', () => {
+describe('Bogged Down (R22.3, panel 3)', () => {
   const sing = (talent: object, rounds: number, over: Partial<BossDef> = {}) =>
     play(boss({ rounds, ...over }), [spec({ name: 'S', fx: { miresAtStart: true, ...talent } })]);
 
-  it('Mired fades by 1 at the end of every round, so Squelch Song alone holds one stack', () => {
+  it('Bogged Down fades by 1 at the end of every round, so Squelch Song alone holds one stack', () => {
     // The song adds a stack at each round start; the fade takes it again at the end of every round.
-    expect(mired(sing({}, 4))).toEqual([
-      'Mired x1',
-      'Mired x0',
-      'Mired x1',
-      'Mired x0',
-      'Mired x1',
-      'Mired x0',
-      'Mired x1',
-      'Mired x0',
+    expect(boggedDown(sing({}, 4))).toEqual([
+      'Bogged Down x1',
+      'Bogged Down x0',
+      'Bogged Down x1',
+      'Bogged Down x0',
+      'Bogged Down x1',
+      'Bogged Down x0',
+      'Bogged Down x1',
+      'Bogged Down x0',
     ]);
   });
 
-  it('Clinging: Mired fades only at the end of every second round while it stands', () => {
+  it('Clinging: Bogged Down fades only at the end of every second round while it stands', () => {
     const r = sing({ clinging: true }, 6);
     // With Clinging the fade comes at the end of rounds 2, 4 and 6 only, so the song builds stacks.
-    expect(mired(r)).toEqual([
-      'Mired x1',
-      'Mired x2',
-      'Mired x1',
-      'Mired x2',
-      'Mired x3',
-      'Mired x2',
-      'Mired x3',
-      'Mired x4',
-      'Mired x3',
+    expect(boggedDown(r)).toEqual([
+      'Bogged Down x1',
+      'Bogged Down x2',
+      'Bogged Down x1',
+      'Bogged Down x2',
+      'Bogged Down x3',
+      'Bogged Down x2',
+      'Bogged Down x3',
+      'Bogged Down x4',
+      'Bogged Down x3',
     ]);
     // It held back the base fade at the end of rounds 1, 3 and 5.
     expect(by(r, 'S').fires['clinging']).toBe(3);
   });
 
-  it('a Mired stack takes more off the boss damage while Clinging stands', () => {
+  it('a Bogged Down stack takes more off the boss damage while Clinging stands', () => {
     // Round 1: the song has put x1 on the boss before it hits the strongest creature, which does not dodge.
     const aimed = striker({ cols: 2, atk: 1_000 }, { anchor: 'strongest', shape: 'single' });
     const hit = (fx: object) =>
@@ -336,35 +338,45 @@ describe('Mired (R22.3, panel 3)', () => {
     expect(hit({ clinging: true })).toBe(977 - 5);
   });
 
-  it('Wicked: its Mired has its number as the chance to add 1 extra stack', () => {
-    const roll = (draw: number, fx: object = { miredExtraBp: 3_000 }) =>
-      mired(playScripted(boss(), [spec({ fx: { miresAtStart: true, ...fx } })], [draw]).res);
+  it('Wicked: its Bogged Down has its number as the chance to add 1 extra stack', () => {
+    const roll = (draw: number, fx: object = { boggedDownExtraBp: 3_000 }) =>
+      boggedDown(playScripted(boss(), [spec({ fx: { miresAtStart: true, ...fx } })], [draw]).res);
     // One round: the stacks are put on at its start, one fades at its end.
-    expect(roll(2_999)).toEqual(['Mired x2', 'Mired x1']);
-    expect(roll(3_000)).toEqual(['Mired x1', 'Mired x0']);
+    expect(roll(2_999)).toEqual(['Bogged Down x2', 'Bogged Down x1']);
+    expect(roll(3_000)).toEqual(['Bogged Down x1', 'Bogged Down x0']);
     // Without it, never, and no die is drawn for it.
     const none = playScripted(boss(), [spec({ fx: { miresAtStart: true } })], [0]);
-    expect(mired(none.res)).toEqual(['Mired x1', 'Mired x0']);
+    expect(boggedDown(none.res)).toEqual(['Bogged Down x1', 'Bogged Down x0']);
   });
 
-  it('Sticky Mud: each hit it takes puts a Mired stack on the boss, Blocked or not', () => {
+  it('Sticky Mud: each hit it takes puts a Bogged Down stack on the boss, Blocked or not', () => {
     const hit = (armour: number) =>
-      mired(
+      boggedDown(
         play(striker({ rounds: 2 }), [
           spec({ role: 'guard', baseArmour: armour, fx: { miresOnHit: true } }),
         ]),
       );
     // One stack a round, faded at the end of each.
-    expect(hit(0)).toEqual(['Mired x1', 'Mired x0', 'Mired x1', 'Mired x0']);
-    expect(hit(50)).toEqual(['Mired x1', 'Mired x0', 'Mired x1', 'Mired x0']);
+    expect(hit(0)).toEqual([
+      'Bogged Down x1',
+      'Bogged Down x0',
+      'Bogged Down x1',
+      'Bogged Down x0',
+    ]);
+    expect(hit(50)).toEqual([
+      'Bogged Down x1',
+      'Bogged Down x0',
+      'Bogged Down x1',
+      'Bogged Down x0',
+    ]);
   });
 
-  it('Mired takes off the boss damage and its dodge, per stack, and stops at the most stacks', () => {
+  it('Bogged Down takes off the boss damage and its dodge, per stack, and stops at the most stacks', () => {
     const aimed = (rounds: number) => striker({ rounds, atk: 1_000 });
     const r = play(aimed(8), [spec({ name: 'S', maxHp: 100_000, fx: { miresAtStart: true } })]);
     // Round 1: x1 (985 of 1000). The most a fight holds is 5 stacks.
     expect(takes(r, 'S')[0]).toBe(985);
-    expect(Math.max(...mired(r).map((t) => Number(t.split('x')[1])))).toBeLessThanOrEqual(5);
+    expect(Math.max(...boggedDown(r).map((t) => Number(t.split('x')[1])))).toBeLessThanOrEqual(5);
   });
 
   it('Shake It Off: announced at round start, the boss clears every debuff when that round ends', () => {
@@ -376,14 +388,14 @@ describe('Mired (R22.3, panel 3)', () => {
     expect(texts(r, 'shake')).toHaveLength(1);
     // With Clinging: x1, x2 (faded to x1 at the end of round 2), x2 in round 3, shaken to x0, round 4 starts from nothing
     // (x1, faded at its end).
-    expect(mired(r)).toEqual([
-      'Mired x1',
-      'Mired x2',
-      'Mired x1',
-      'Mired x2',
-      'Mired x0',
-      'Mired x1',
-      'Mired x0',
+    expect(boggedDown(r)).toEqual([
+      'Bogged Down x1',
+      'Bogged Down x2',
+      'Bogged Down x1',
+      'Bogged Down x2',
+      'Bogged Down x0',
+      'Bogged Down x1',
+      'Bogged Down x0',
     ]);
   });
 });

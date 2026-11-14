@@ -441,7 +441,7 @@
       "id": "mud-wall",
       "name": "Sticky Mud",
       "family": "Debuff",
-      "text": "Each hit it takes, even Blocked, puts {Mired} x1 on the boss.",
+      "text": "Each hit it takes, even Blocked, puts {Bogged Down} x1 on the boss.",
       "intent": "Keeps Mire's debuff alive after finale abilities go.",
       "fx": {
         "miresOnHit": true
@@ -451,7 +451,7 @@
       "id": "squelch-song",
       "name": "Squelch Song",
       "family": "Debuff",
-      "text": "At round start the boss gains {Mired} x1.",
+      "text": "At round start the boss gains {Bogged Down} x1.",
       "intent": "Keeps Mire's debuff alive after finale abilities go.",
       "fx": {
         "miresAtStart": true

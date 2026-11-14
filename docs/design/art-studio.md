@@ -41,6 +41,8 @@ Art Misa requests is kept until the content that uses it exists. **The catalogue
 - **When he answers:** set `status` to `liked` or `redo` (per sprite when only some changed) and add his feedback to `notes`, then `pnpm art library`.
 - **When content is added** (a species, boss, item or place): look in the catalogue first. If art was made for it, use it: move the sprite into `src/sprites/data/` under the content id, add its shiny palette, delete the concept and run `pnpm art library` in the same PR. Say in the PR which library art it uses.
 
+**Boss attack art** (weapons, bursts that a boss move throws in the fight) is not a concept set: it ships with `apps/activity/src/boss-anim/` and is tried in the workbench page `BossAnimFrame`. How to give a boss its own look: `docs/design/boss-animations.md`.
+
 ## What the studio draws
 
 - **`<id>.png`, the card.** A large zoom with a coordinate grid: x across the top, y down the side, a stronger line every 4 pixels, and a yellow line at the mirror axis of a mirrored sprite. Transparent pixels are a checker. Beside it, the sprite at 1×, 2×, 3× and 4× on each of the three panel colours (`--night`, `--dusk`, `--dusk-2`), the solid silhouette on a light card, and each alternative palette at 4×. Name fixes by coordinate ("row 6, x 3 should be shade").

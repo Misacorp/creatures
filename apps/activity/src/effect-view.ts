@@ -2,7 +2,7 @@
  * What a status effect icon says, from the content and the replay's effect state. Pure: the stage
  * draws it (`ui/EffectIcons.tsx`). All text is plain text.
  */
-import { GLOSSARY_IDS, content } from '@creatures/game';
+import { GLOSSARY_IDS, content, currentStatusId } from '@creatures/game';
 import type { EventNames } from '@creatures/engine';
 import type { EffectView } from './replay';
 
@@ -31,17 +31,18 @@ export function effectIcons(
   names?: Pick<EventNames, 'effects'>,
 ): EffectIconInfo[] {
   return list.map((e) => {
-    const def = content.statusEffects.find((d) => d.id === e.effect);
+    const id = currentStatusId(e.effect);
+    const def = content.statusEffects.find((d) => d.id === id);
     const name = names?.effects?.[e.effect] ?? def?.name ?? e.effect;
     return {
-      id: e.effect,
+      id,
       name,
       kind: def?.kind ?? 'debuff',
       stacks: e.stacks,
       turnsLeft: e.turnsLeft,
       stacksText: `×${String(e.stacks)}`,
       turnsText: turnsText(e.turnsLeft),
-      entry: GLOSSARY_IDS.status(e.effect),
+      entry: GLOSSARY_IDS.status(id),
       label: `${name}, ${String(e.stacks)} ${e.stacks === 1 ? 'stack' : 'stacks'}, ${turnsText(e.turnsLeft)} left. What does this mean?`,
     };
   });

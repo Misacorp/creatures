@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'preact/hooks';
 import { BossCardV2 } from '../../BossCardV2';
 import { Placement } from '../../Placement';
-import { SwapRequests } from '../../SwapRequests';
+import { SwapOutcomes, SwapRequests } from '../../SwapRequests';
 import { litMove } from '../../raid-board-v2';
 import type { BossMoveV2, SwapV2 } from '../../raid-v2-api';
 import { MoveTile } from '../../ui/MoveTile';
@@ -11,7 +11,7 @@ import { speciesLabel } from '../data';
 import { bool, num, str } from '../props';
 import type { Entry, Props } from '../types';
 
-const SWAP_KINDS = ['none', 'asked', 'incoming', 'both'] as const;
+const SWAP_KINDS = ['none', 'asked', 'incoming', 'both', 'settled'] as const;
 
 /** The week a page asks for. */
 function optionsOf(p: Props): V2SampleOptions {
@@ -90,6 +90,7 @@ function RaidWeekDemo({ p }: { p: Props }) {
   });
   return (
     <>
+      <SwapOutcomes settled={v2.swaps.settled} grid={{ rows: v2.rows, cols: v2.cols }} />
       <SwapRequests
         requests={v2.swaps.incoming}
         grid={{ rows: v2.rows, cols: v2.cols }}
@@ -113,6 +114,12 @@ function RaidWeekDemo({ p }: { p: Props }) {
         v2={{
           view: { ...v2, swaps: { ...v2.swaps, outgoing: [...v2.swaps.outgoing, ...asked] } },
           lit: tapped === undefined ? null : litMove(v2.preview, tapped),
+          onAnswerSwap: () => {
+            setRefused('An answer goes to the server; this page has none.');
+          },
+          onCancelSwap: () => {
+            setRefused('A cancel goes to the server; this page has none.');
+          },
           onAskSwap: (mySlot, theirSlot) => {
             const mine = party.row.find((s) => s.slot === mySlot)?.creature;
             const theirs = party.row.find((s) => s.slot === theirSlot)?.creature;
@@ -173,7 +180,7 @@ const bossCardV2: Entry = {
   file: 'apps/activity/src/BossCardV2.tsx',
   group: 'Creatures & game pieces',
   description:
-    "The v2 raid tab as a player meets it before and between stages: the track strip, the boss card (armour, the weekend's HP bar with a tick per stage and last week's best as a ghost, rule cards with their strength, the Escalating meter, the plain attack, a tile for each move and the turn strip) and the party board under it, with the boss's rows by the party's columns. Tap a move tile and the slots it would hit light on the board (a move aimed when it comes lights nothing and says so); the tap control does the same from the controls. Tap another player's creature, then Ask to swap.",
+    "The v2 raid tab as a player meets it before and between stages: the track strip, the boss card (armour, the weekend's HP bar with a tick per stage and last week's best as a ghost, rule cards with their strength, the Escalating meter, the plain attack, a tile for each move and the turn strip) and the party board under it, with the boss's rows by the party's columns. Tap a move tile and the slots it would hit light on the board (a move aimed when it comes lights nothing) and a popover explains the move: what it does, when it comes and a tag for each keyword on it; the tap control does the same from the controls. A creature in an open swap request carries a circling two-arrow mark; a tap opens the request (Accept and Decline for the owner, who is asked; the asker reads who they wait for and can Cancel request). Tap another player's creature, then Ask to swap.",
   covers: ['boardTurnSteps', 'strengthPips', 'stageTicks'],
   controls: WEEK_CONTROLS,
   defaults: WEEK_DEFAULTS,
@@ -214,7 +221,7 @@ const moveTile: Entry = {
   file: 'apps/activity/src/ui/MoveTile.tsx',
   group: 'Creatures & game pieces',
   description:
-    "One boss move as a tile on the v2 boss card: a tiny arena with the slots the move would hit lit in red (or, for a move aimed when it comes, its shape's picture over a dim arena), how often it is due, an hourglass for a Wind-up, and its name over its plain label. A tap selects it; the board lights the same slots.",
+    "One boss move as a tile on the v2 boss card: a tiny arena with the slots the move would hit lit in red (or, for a move aimed when it comes, its shape's picture over a dim arena), how often it is due, an hourglass for a Wind-up, and its name over its plain label. A tap selects it (one gold border); the board lights the same slots and the card opens a popover that explains the move.",
   covers: ['everyText'],
   controls: {
     slot: { kind: 'number', min: 1, max: 5 },

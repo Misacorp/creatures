@@ -160,6 +160,16 @@ describe('describeEvent', () => {
   });
 });
 
+describe('describeEvent for a fight stored before a rename', () => {
+  it('names the old Mire debuff id as Bogged Down', () => {
+    const line = describeEvent(
+      { t: 'effect_expire', round: 2, target: null, effect: 'mired' },
+      { boss: 'Old Bogback', creatures: {} },
+    );
+    expect(line).toBe('Old Bogback is no longer Bogged Down.');
+  });
+});
+
 describe('describeEvent for the retune events', () => {
   const names = {
     boss: 'Boss',

@@ -75,7 +75,7 @@ export const COMBAT_ICONS_CONCEPTS: ConceptSet = {
     { group: BOARD, id: 'lock', marks: 'Seal' },
     { group: BOARD, id: 'charge', marks: 'Wind-up' },
     { group: BOARD, id: 'silence_ends', marks: 'Silenced' },
-    { group: BOARD, id: 'mired', marks: 'Mired' },
+    { group: BOARD, id: 'bogged-down', marks: 'Bogged Down' },
     { group: BOARD, id: 'skull', marks: 'Knocked out' },
     { group: ALREADY, id: 'tide', marks: 'Tide' },
     { group: ALREADY, id: 'ember', marks: 'Ember' },

@@ -145,21 +145,21 @@ export interface V2Rules {
   readonly flankGuardSlots: number;
   /** Opportunist: a mark with at least this many counts. */
   readonly opportunistFromStacks: number;
-  /** Mired, the Mire debuff: per stack, the boss deals less damage and dodges less. */
-  readonly miredPerStackBp: number;
+  /** Bogged Down, the Mire debuff: per stack, the boss deals less damage and dodges less. */
+  readonly boggedDownPerStackBp: number;
   /** With Clinging on a living creature each stack counts for this much instead (reworked 2026-10-28). */
-  readonly miredClingingStackBp: number;
-  readonly miredMaxStacks: number;
-  /** Mired fades: one stack at the end of every this many rounds (1: every round, 2026-11-01); with Clinging on a living creature, every `miredClingingFadeEvery` instead. */
-  readonly miredFadeEvery: number;
-  /** While a living creature has Clinging, Mired fades only every this many rounds. */
-  readonly miredClingingFadeEvery: number;
+  readonly boggedDownClingingStackBp: number;
+  readonly boggedDownMaxStacks: number;
+  /** Bogged Down fades: one stack at the end of every this many rounds (1: every round, 2026-11-01); with Clinging on a living creature, every `boggedDownClingingFadeEvery` instead. */
+  readonly boggedDownFadeEvery: number;
+  /** While a living creature has Clinging, Bogged Down fades only every this many rounds. */
+  readonly boggedDownClingingFadeEvery: number;
   /** Refuse to Fall (Hold On): once per fight (a raid: once per weekend), a hit that would knock it out leaves it at the lower of this share of its Max HP and its HP before the hit (never a heal). */
   readonly holdOnLeaveBp: number;
   /** Element Resistance: the resisted element's creatures' hits start from this share of their base damage (a quarter less; counters are not cut). */
   readonly adaptElementBp: number;
-  /** Mired slows the boss's escalation (R22): each stack raises the units the next step needs by this share of a step's units. */
-  readonly miredSlowsEscalationBp: number;
+  /** Bogged Down slows the boss's escalation (R22): each stack raises the units the next step needs by this share of a step's units. */
+  readonly boggedDownSlowsEscalationBp: number;
   /** "The boss is low" for Finisher: its HP is below this share of its full HP. */
   readonly finisherBelowBp: number;
   /** The live finale's Rally (R18): every creature's hits deal this much more that round, counted in the hit-boost cap (`maxHitBonusBp`, R15). */
@@ -270,7 +270,7 @@ export type EscalationFeed = (typeof ESCALATION_FEEDS)[number];
 
 /**
  * What each step of an escalation adds to the boss. Growth adds up in a straight line: step 3 adds three times what step 1 does.
- * A positive number helps the boss and a negative one helps the players (it **falls**): Mired slows the growth that helps the
+ * A positive number helps the boss and a negative one helps the players (it **falls**): Bogged Down slows the growth that helps the
  * boss, not the one that falls (R22.3), so a boss with both (Thornmother: Attack and jumps up, armour down) gets the falling
  * part on time.
  */
@@ -296,12 +296,12 @@ export interface EscalationGrowth {
  * it stops at `cap` steps, and each step `grow`s the boss (R22, the escalation rules):
  * - Steps apply only at round start, after the round-start Knacks and before the Charged announcements, at most one step
  *   per round, and each is announced in the log first. An optional `phase` adds moves once the feed has reached `atStep`
- *   steps' worth of units: announced at that round start, applied at the next, and Mired does not slow it (a phase is not a step).
+ *   steps' worth of units: announced at that round start, applied at the next, and Bogged Down does not slow it (a phase is not a step).
  * - Step, phase and the feed's count carry across a raid weekend's stages like the boss's HP; event feeds keep counting
  *   (`rounds` too: the weekend's rounds, not the stage's).
- * - Mired slows it, it does not freeze it: each Mired stack on the boss at round start raises the units the next step
- *   needs by `rules.miredSlowsEscalationBp` of `per` (a quarter of a step's units per stack). A step that is due but
- *   not yet through the slowed bar comes in a later round, when the Mired has faded.
+ * - Bogged Down slows it, it does not freeze it: each Bogged Down stack on the boss at round start raises the units the next step
+ *   needs by `rules.boggedDownSlowsEscalationBp` of `per` (a quarter of a step's units per stack). A step that is due but
+ *   not yet through the slowed bar comes in a later round, when the Bogged Down has faded.
  * - Feeds: `reactions` it takes, `hpLost` (units are bp of its full HP, the weekend's shared HP in a raid), `rounds`
  *   passed, `crits` it takes, its `dodges`, creatures it `knockouts`, marks it `shed`.
  */
@@ -320,7 +320,7 @@ export interface Escalation {
   /** Each step grows the boss by this share (bp, default the boss's `strengthBp`) of what `grow` says. */
   readonly strengthBp?: number;
   readonly phase?: {
-    /** The phase starts when the feed has `atStep * per` units (announced a round ahead; Mired does not delay it). */
+    /** The phase starts when the feed has `atStep * per` units (announced a round ahead; Bogged Down does not delay it). */
     readonly atStep: number;
     readonly name: string;
     /** Added once the phase applies; a move with the id of one of the boss's own moves REPLACES it (`withPhase`). */
@@ -351,13 +351,13 @@ export interface BossDef {
    */
   readonly critChanceBp?: number;
   /**
-   * A flat dodge chance (bp, default 0) on top of the Speed's, which Mired does not lower (the Slippery card gives it). Only a hit
+   * A flat dodge chance (bp, default 0) on top of the Speed's, which Bogged Down does not lower (the Slippery card gives it). Only a hit
    * that cannot be dodged (Clear Skies) gets past it for certain.
    */
   readonly dodgeBp?: number;
   /**
    * The strength of the boss's rule cards and gates (bp, default 10000 = full): reflection returns this share of the
-   * reaction's bonus, Shake It Off clears this share of the Mired, Clean Scales takes hold on this share of the
+   * reaction's bonus, Shake It Off clears this share of the Bogged Down, Clean Scales takes hold on this share of the
    * marks, Reaction Resistance halves the bonus by this share (a cut of half at full strength), Element Resistance cuts a quarter
    * at full strength and this share of that below it; cards that change a number (armour, Speed, the cap, healing, an
    * added move's power) are built with it (`applyCard`, `cards.ts`).
@@ -530,12 +530,17 @@ export type BoardEvent =
   /** `who` is healed by `amount` (what was really restored); `by` is the healer, when there is one. */
   | { readonly type: 'heal'; readonly who: string; readonly amount: number; readonly by?: string }
   | { readonly type: 'knockout'; readonly who: string }
+  /**
+   * `who` forgoes its hit: its Knack gives up the damage (Heavy Prime: Double Mark, Feed the Marks), so no `hit` follows. It marks the creature's
+   * turn for the board, which shows it acting with the Knack's name instead of a skipped turn; what its Knack does instead follows it.
+   */
+  | { readonly type: 'forgo'; readonly who: string }
   /** A creature is silenced for `turns` of its turns. */
   | { readonly type: 'silence'; readonly who: string; readonly turns: number }
   /** A creature's Store (Heat, Calm, Dodge stacks) is now `value`. */
   | { readonly type: 'store'; readonly who: string; readonly value: number }
-  /** The boss's Mired is now `stacks`; `shook`: it shook off this many stacks just now (Shake It Off). */
-  | { readonly type: 'mired'; readonly stacks: number; readonly shook?: number }
+  /** The boss's Bogged Down is now `stacks`; `shook`: it shook off this many stacks just now (Shake It Off). */
+  | { readonly type: 'boggedDown'; readonly stacks: number; readonly shook?: number }
   /**
    * The boss's escalation moved: its feed count, the steps that help it (`step`) and that help the players (`fall`), and the phase
    * (`phaseNext`: announced, it applies at the next round start).
@@ -583,9 +588,9 @@ export interface EscalationState {
   readonly feed: EscalationFeed;
   /** Feed units so far this fight (for `hpLost` and `rounds`, the figure it was last read at). */
   readonly count: number;
-  /** Steps of the growth that helps the boss (Mired slows them). */
+  /** Steps of the growth that helps the boss (Bogged Down slows them). */
   readonly step: number;
-  /** Steps of the growth that helps the players (a falling armour; Mired does not slow them). Equal to `step` when nothing falls. */
+  /** Steps of the growth that helps the players (a falling armour; Bogged Down does not slow them). Equal to `step` when nothing falls. */
   readonly fallStep: number;
   readonly cap: number;
   /** The count at which the next step applies, or null at the cap. */
@@ -683,7 +688,7 @@ export interface WeekendInputV2 {
 /**
  * What passes from one raid stage to the next (R14, R22, R23): plain JSON (records and arrays, no Maps or Sets), so a caller stores it between
  * Saturday and Sunday. Creatures are named by their `key` (`FighterSpec.key`, else the `uid`). `startCarry` is the carry before stage 1.
- * What is not here starts fresh each stage: marks, Stores, Mired, silence and every "each fight" effect.
+ * What is not here starts fresh each stage: marks, Stores, Bogged Down, silence and every "each fight" effect.
  */
 export interface StageCarry {
   /** Stages played so far: the index of the next stage (0 before the first). */

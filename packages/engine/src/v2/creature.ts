@@ -14,7 +14,7 @@ import type { Mark, State } from './state';
 // Bound once: a named import is read through a getter on every call under the lab's Vite loader, which costs 15% of a report.
 const { addMark, heal } = marksMod;
 const { beside } = boardMod;
-const { feed, grown, miredCut } = escalationMod;
+const { feed, grown, boggedDownCut } = escalationMod;
 const { takeHit } = takingMod;
 const {
   alive,
@@ -116,6 +116,8 @@ function besideRoleOf(f: Fighter, k: KnackFx, near: readonly Fighter[]): number 
 function creatureHit(s: State, f: Fighter, shareBp: number): void {
   const R = s.ctx.rules;
   const k = fx(f);
+  // A Knack that gives up the damage still takes its turn: the board is told, so the creature is not seen to skip it.
+  if (k.noDamage && s.opts.log) emit(s, { type: 'forgo', who: keyOf(f) });
   // 1. Plain damage: Attack, the element chart, boosts (capped, R15), the Knack's share, a crit.
   const near = beside(s, f);
   let guardBeside = false;
@@ -195,7 +197,10 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
         R.dodgeMaxBp,
         Math.max(
           0,
-          Math.min(R.dodgeMaxBp, s.boss.spd * R.dodgePerSpdBp + grown(s).dodgeBp - miredCut(s)),
+          Math.min(
+            R.dodgeMaxBp,
+            s.boss.spd * R.dodgePerSpdBp + grown(s).dodgeBp - boggedDownCut(s),
+          ),
         ) + (s.boss.dodgeBp ?? 0),
       );
   const dodged = !k.noDamage && roll(s, bossDodge);

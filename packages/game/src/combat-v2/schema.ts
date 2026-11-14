@@ -63,7 +63,7 @@
  *
  * Each pool was chosen for the line's forms and flavour (branch forms share the line's pool). Every role in a
  * line has at least three that fit it, and two lines of one role roll different tools. Only Tide and Grove
- * Supports have a heal to aim (Triage, Overheal Spill); only Mire lines put Mired on the boss (Wicked,
+ * Supports have a heal to aim (Triage, Overheal Spill); only Mire lines put Bogged Down on the boss (Wicked,
  * Clinging). Culling Strike, an enabler, is in five pools (mistnewt, cindle, mossback, stormray, squelch: one line per role and per element). The themes: splashet, splashes first and
  * thinks later; cindle, a pounce, a lucky crit, a steady flame; sproutle, shy, soaks up hits for its friends;
  * zipmouse, static that never sits still (the Ohmouse plants its feet); mistnewt, a calm newt in a cloud of

@@ -46,8 +46,48 @@ export const DEV_TOOL_IDS = [
   'reset-raids-dungeons',
   'apply-roster-preset',
   'reset-account',
+  'grant-currency',
+  'grant-xp',
+  'grant-talent',
+  'set-knack',
 ] as const;
 export type DevToolId = (typeof DEV_TOOL_IDS)[number];
+
+/**
+ * The tools that act on one player's own data and so take a target player (`userId` in the body; none means the caller).
+ * Kept in step with `TARGETED_TOOLS` of the Worker (`dev-schemas.ts`); a test compares the two lists.
+ */
+export const TARGETED_TOOL_IDS: readonly DevToolId[] = [
+  'set-balances',
+  'grant-parts',
+  'grant-supplies',
+  'grant-blueprints',
+  'grant-creature',
+  'set-creature',
+  'set-explorer',
+  'set-familiarity',
+  'set-crafting-xp',
+  'finish-jobs',
+  'grant-gear',
+  'fill-bag',
+  'finish-trips',
+  'force-offer',
+  'force-gates',
+  'set-slots',
+  'journal',
+  'slot-wipe-notice',
+  'dungeon-depth',
+  'dungeon-reset',
+  'dungeon-streak',
+  'dungeon-retry',
+  'grant-currency',
+  'grant-xp',
+  'grant-talent',
+  'set-knack',
+];
+
+/** Whether a tool acts on a player the panel's target picker names. */
+export const isTargeted = (tool: DevToolId): boolean => TARGETED_TOOL_IDS.includes(tool);
 
 export interface Option {
   value: string;
@@ -71,7 +111,14 @@ export type Field =
       /** What an empty optional field says (default "unchanged"). */
       placeholder?: string;
     })
-  | (FieldBase & { kind: 'select'; options: readonly Option[] })
+  | (FieldBase & {
+      kind: 'select';
+      options: readonly Option[];
+      /** What an empty optional choice says (default "unchanged"). */
+      blank?: string;
+      /** Narrows the list to the creature picked in the form's `creatureId` field (the line's talents, the form's Knacks). */
+      forCreature?: (creature: CreatureChoice) => readonly Option[];
+    })
   /** Yes or no; as an optional field it also has "unchanged". */
   | (FieldBase & { kind: 'bool' })
   /** One of the player's own creatures. */
@@ -106,6 +153,8 @@ type BuildResult = { ok: true; body: Record<string, unknown> } | { ok: false; er
 export interface CreatureChoice {
   id: string;
   label: string;
+  /** The species id, for the lists that depend on the creature (its line's talents, its form's Knacks). */
+  species?: string;
 }
 
 function fieldValue(

@@ -52,6 +52,7 @@ describe('errorSentence', () => {
     expect(errorSentence('fought')).toBe('This week has been fought. Clear the board first.');
     for (const code of [
       'already_played',
+      'finale_running',
       'nobody_placed',
       'nobody_left',
       'clear_first',

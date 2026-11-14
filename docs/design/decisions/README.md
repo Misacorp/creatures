@@ -51,6 +51,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [platform.md](platform.md): Hosting, Durable Objects, scheduling, CI and deploys, staging, dependencies, security, database reads, data cleanup, analytics, dev tools, the workbench, player feedback, sockets.
 
+- 2026-11-14 Dev panel: a full-screen layout with sections, and a target player for every per-player tool
 - 2026-11-06 Dev tools: server managers only, roster presets, creatures-per-player override \[Misa\]
 - 2026-11-05 The lab's tests share modules between files, and boss rule measurements live in the report
 - 2026-11-03 Raid test bench: the staging raid dev tools become four steps \[Misa\]
@@ -145,6 +146,11 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [combat.md](combat.md): The shared combat engine, abilities, statuses, elements, the balance simulator, balance passes, and combat v2 in the lab.
 
+- 2026-11-14 Boss animations: lances pass through the whole column; the aim is the board's highlight, no triangle \[Misa\]
+- 2026-11-14 Rename: the Mire debuff is Bogged Down, the Mire mark is Mired \[Misa\]
+- 2026-11-14 A live finale started off the calendar is on from its real start in the Raid view
+- 2026-11-14 Raid seats are never moved: stage 1 widens the board instead of compacting it
+- 2026-11-14 Boss move animations: five phases, motion by shape, art by boss look (amended)
 - 2026-11-09 Finale actions stay as they are until the playtest; Rally unchanged; six icons accepted \[Misa\]
 - 2026-11-06 Finale actions measured: none dominates, Rally is worth about nothing, and picking the best action changes nothing at three players or more
 - 2026-11-06 Combat v2 goes live with the valley rework in one reset \[Misa\]
@@ -235,7 +241,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 - 2026-11-04 Combat v2 kill bonus doubled to two epic and four rare pieces \[Misa\]
 - 2026-11-04 Combat v2 phase 5 answers in the game: the small boss, threshold payouts, the kill bonus and no fight weather (amended)
 - 2026-11-04 Combat v2 phase 5 answers: small parties fight a smaller boss, rewards at HP thresholds with a big kill bonus, no weather in fights \[Misa\] (amended)
-- 2026-11-03 Combat v2 arenas: how the piece, the seats and the spare are built
+- 2026-11-03 Combat v2 arenas: how the piece, the seats and the spare are built (amended)
 - 2026-11-03 Combat v2 arenas: each boss defines one player's piece; the board repeats it per player with one spare until stage 1 \[Misa\]
 - 2026-11-03 Combat v2 replays keep no Pause or 2x \[Misa\]
 - 2026-11-03 Combat v2 bots and the gate run (phase 4, slice 6): v2 guests, the raid-weekend dev tool and one stat calculation (amended)

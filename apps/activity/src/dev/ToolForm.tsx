@@ -2,22 +2,26 @@ import type { JSX } from 'preact';
 import { useState } from 'preact/hooks';
 import {
   buildBody,
+  isTargeted,
   initialValues,
   type CreatureChoice,
   type Field,
+  type Option,
   type ToolSpec,
   type Values,
 } from './forms';
 
 interface FieldInputProps {
   field: Field;
+  /** The select's options when a creature narrows them (`forCreature`); else the field's own. */
+  options?: readonly Option[] | undefined;
   value: string;
   choices: readonly CreatureChoice[];
   onInput: (value: string) => void;
 }
 
 /** One input: text, a whole number or a drop-down. Always text content, never raw HTML. */
-function FieldInput({ field, value, choices, onInput }: FieldInputProps): JSX.Element {
+function FieldInput({ field, options, value, choices, onInput }: FieldInputProps): JSX.Element {
   const change = (event: Event): void => {
     onInput((event.currentTarget as HTMLInputElement | HTMLSelectElement).value);
   };
@@ -58,8 +62,8 @@ function FieldInput({ field, value, choices, onInput }: FieldInputProps): JSX.El
     case 'select':
       return (
         <select value={value} onChange={change}>
-          {field.optional === true && <option value="">unchanged</option>}
-          {field.options.map((o) => (
+          {field.optional === true && <option value="">{field.blank ?? 'unchanged'}</option>}
+          {(options ?? field.options).map((o) => (
             <option key={o.value} value={o.value}>
               {o.label}
             </option>
@@ -67,6 +71,18 @@ function FieldInput({ field, value, choices, onInput }: FieldInputProps): JSX.El
         </select>
       );
   }
+}
+
+/** The options a select offers now: its own, or those of the creature picked in the form. */
+function optionsNow(
+  field: Field,
+  values: Values,
+  choices: readonly CreatureChoice[],
+): readonly Option[] | undefined {
+  if (field.kind !== 'select' || field.forCreature === undefined) return undefined;
+  const id = creatureValue(values['creatureId'] ?? '', choices);
+  const creature = choices.find((c) => c.id === id);
+  return creature === undefined ? [] : field.forCreature(creature);
 }
 
 /** The value a creature picker shows: the chosen one if it still exists, else the first creature. */
@@ -80,6 +96,8 @@ interface ToolFormProps {
   busy: boolean;
   /** Runs the tool with a checked body. */
   onRun: (spec: ToolSpec, body: Record<string, unknown>) => void;
+  /** The player the tool acts on, when it is not the caller: shown in the form's title ("for Bo"). */
+  targetName?: string | null;
   /** A step in a sequence: a button with no fields shows its hint under it, on a row of its own. */
   stacked?: boolean;
 }
@@ -91,6 +109,7 @@ export function ToolForm({
   busy,
   onRun,
   stacked = false,
+  targetName = null,
 }: ToolFormProps): JSX.Element {
   const [values, setValues] = useState<Values>(() => initialValues(spec, choices));
   const [problem, setProblem] = useState<string | null>(null);
@@ -99,6 +118,12 @@ export function ToolForm({
     const out: Record<string, string> = { ...values };
     for (const f of spec.fields) {
       if (f.kind === 'creature') out[f.key] = creatureValue(out[f.key] ?? '', choices);
+    }
+    // A list narrowed by the creature: a choice the creature does not have falls back to its first.
+    for (const f of spec.fields) {
+      const list = optionsNow(f, out, choices);
+      if (list === undefined || f.optional === true) continue;
+      if (!list.some((o) => o.value === out[f.key])) out[f.key] = list[0]?.value ?? '';
     }
     return out;
   };
@@ -135,13 +160,19 @@ export function ToolForm({
   const shown = effective();
   return (
     <form class="dev-form" onSubmit={submit}>
-      <p class="dev-form-title">{spec.label}</p>
+      <p class="dev-form-title">
+        {spec.label}
+        {targetName !== null && isTargeted(spec.tool) && (
+          <span class="dev-target-tag"> for {targetName}</span>
+        )}
+      </p>
       <div class="dev-fields">
         {spec.fields.map((field) => (
           <label key={field.key} class="dev-field">
             <span>{field.label}</span>
             <FieldInput
               field={field}
+              options={optionsNow(field, shown, choices)}
               value={shown[field.key] ?? ''}
               choices={choices}
               onInput={(value) => {

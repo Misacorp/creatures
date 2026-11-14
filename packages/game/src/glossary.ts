@@ -108,6 +108,16 @@ export function glossaryEntry(id: string): GlossaryEntry | undefined {
 const kebab = (id: string): string => id.replaceAll('_', '-');
 
 /**
+ * Status ids that were renamed. A fight stored before the rename (a replay, a dungeon run) still names the old id, so display code
+ * reads an id through `currentStatusId`. The Mire debuff `mired` became `bogged-down` on 2026-11-13.
+ */
+const LEGACY_STATUS_IDS: Readonly<Record<string, string>> = { mired: 'bogged-down' };
+
+/** The current id of a status effect id read from a stored fight. */
+export const currentStatusId = (id: string): string =>
+  Object.hasOwn(LEGACY_STATUS_IDS, id) ? (LEGACY_STATUS_IDS[id] ?? id) : id;
+
+/**
  * The glossary id of each kind of content. Elements, roles and so on use the content's own ids, so
  * a new element (or reaction, role, gimmick op, zone, turn order, readiness band) needs one entry
  * with the matching id, which `glossaryGaps` checks.
@@ -126,8 +136,8 @@ export const GLOSSARY_IDS = {
   readiness: (band: string): string => `readiness-${kebab(band)}`,
   /** The kind of effect an ability has, such as `shield_wall`. */
   abilityEffect: (op: string): string => `ability-${kebab(op)}`,
-  /** A status effect such as `mired`. */
-  status: (id: string): string => `status-${id}`,
+  /** A status effect such as `bogged-down` (an id from before a rename is read as the current one). */
+  status: (id: string): string => `status-${currentStatusId(id)}`,
   /** A gear slot such as `scarf`. */
   gearSlot: (slot: string): string => `gear-slot-${slot}`,
   /** A gear line such as `tide-attunement`. */
@@ -302,7 +312,7 @@ export const V2_COUNTERPARTS: Readonly<Record<string, string>> = {
   'mark-charged': 'v2-mark-charged',
   'mark-overgrown': 'v2-mark-overgrown',
   'mark-scorched': 'v2-mark-scorched',
-  'mark-muddied': 'v2-mark-muddied',
+  'mark-mired': 'v2-mark-mired',
   'reaction-overload': 'v2-reaction-overload',
   'reaction-grounding': 'v2-reaction-grounding',
   'reaction-wildfire': 'v2-reaction-wildfire',
@@ -315,7 +325,7 @@ export const V2_COUNTERPARTS: Readonly<Record<string, string>> = {
   'element-spark': 'v2-element-spark',
   'element-mire': 'v2-element-mire',
   crit: 'kw-crit',
-  'status-mired': 'kw-mired',
+  'status-bogged-down': 'kw-bogged-down',
   'boss-rank': 'v2-boss-rank',
   festival: 'v2-festival',
   adaptation: 'v2-resistance',
@@ -361,7 +371,7 @@ export function requiredGlossaryIds(pack: ContentPack): string[] {
   for (const a of pack.finaleAbilities) for (const e of a.effects) effects.add(e.op);
   for (const op of effects) ids.push(GLOSSARY_IDS.abilityEffect(op));
   for (const a of pack.finaleAbilities) ids.push(...abilityEntryIds(a));
-  // Every status effect (Mired), and the rules around them.
+  // Every status effect (Bogged Down), and the rules around them.
   for (const e of pack.statusEffects) ids.push(GLOSSARY_IDS.status(e.id));
   // Gear: every slot, line, rarity, part kind and job kind the rules know, and the Crafting skill.
   for (const slot of GEAR_SLOTS) ids.push(GLOSSARY_IDS.gearSlot(slot));

@@ -322,7 +322,7 @@
         "rows": ["front", "middle", "back"],
         "power": 14000,
         "applies": {
-          "effect": "mired",
+          "effect": "bogged-down",
           "powerBp": 10000
         }
       },

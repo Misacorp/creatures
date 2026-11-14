@@ -1,6 +1,6 @@
 /**
- * The boss's escalation and Mired (R22): the Store's feed, the escalation's steps and the phase change, what the steps add to the boss
- * (`grown`), and the Mired stacks that slow it and cut the boss's damage and dodge (R22.3). Docs: docs/design/combat/proposals/001-combat-v2.md.
+ * The boss's escalation and Bogged Down (R22): the Store's feed, the escalation's steps and the phase change, what the steps add to the boss
+ * (`grown`), and the Bogged Down stacks that slow it and cut the boss's damage and dodge (R22.3). Docs: docs/design/combat/proposals/001-combat-v2.md.
  */
 import type {
   BoardEvent,
@@ -50,7 +50,7 @@ export const grown = (s: State): Grown => {
   if (s.grownNow && s.grownStep === n && s.grownFall === s.esc.fall) return s.grownNow;
   const g = s.boss.escalation?.grow ?? {};
   const st = s.boss.escalation?.strengthBp ?? strengthOf(s);
-  // A growth that falls (a negative number) helps the players and comes in on the steps Mired does not slow (R22.3).
+  // A growth that falls (a negative number) helps the players and comes in on the steps Bogged Down does not slow (R22.3).
   const part = (v: number | undefined) =>
     Math.trunc((((v ?? 0) < 0 ? s.esc.fall : n) * (v ?? 0) * st) / 10_000);
   s.grownStep = n;
@@ -120,15 +120,15 @@ export function escalationState(s: State): EscalationState | null {
 
 /**
  * Round start, after the Knacks (R8.2 b) and before the Charged announcements: the boss steps up when its count has
- * reached the next step's units, announcing the step before it applies; at most one step per round (R22). Mired slows
- * it: each Mired stack at this moment raises the units the next step needs by a share of a step's units, so a step
- * that is due but not through the slowed bar waits for the Mired to fade.
+ * reached the next step's units, announcing the step before it applies; at most one step per round (R22). Bogged Down slows
+ * it: each Bogged Down stack at this moment raises the units the next step needs by a share of a step's units, so a step
+ * that is due but not through the slowed bar waits for the Bogged Down to fade.
  */
 export function escalate(s: State): void {
   const e = s.boss.escalation;
   if (!e) return;
   s.esc.count = escalationCount(s);
-  // The phase change is not a step: Mired does not slow it. It is announced at the round start the feed reaches its
+  // The phase change is not a step: Bogged Down does not slow it. It is announced at the round start the feed reaches its
   // units (`atStep` steps' worth) and applies at the next round start, so players see it coming a round ahead.
   if (e.phase && !s.esc.phase) {
     if (s.esc.phaseNext) {
@@ -153,7 +153,7 @@ export function escalate(s: State): void {
       log(
         s,
         'escalation',
-        `${e.name}: what helps the players falls to step ${s.esc.fall} of ${e.cap}; Mired does not slow it`,
+        `${e.name}: what helps the players falls to step ${s.esc.fall} of ${e.cap}; Bogged Down does not slow it`,
         { board: escalationBoard(s) },
       );
   }
@@ -161,16 +161,16 @@ export function escalate(s: State): void {
   if (!falls) s.esc.fall = s.esc.step;
 }
 
-/** The escalation's steps that help the boss: one step if the count has reached the next bar, raised by the Mired (R22.3). */
+/** The escalation's steps that help the boss: one step if the count has reached the next bar, raised by the Bogged Down (R22.3). */
 function stepUp(s: State, e: Escalation, per: number): void {
   const R = s.ctx.rules;
   const due = (s.esc.step + 1) * per;
   if (s.esc.count < due) return;
-  if (s.esc.count * 10_000 < due * 10_000 + s.mired * per * R.miredSlowsEscalationBp) {
+  if (s.esc.count * 10_000 < due * 10_000 + s.boggedDown * per * R.boggedDownSlowsEscalationBp) {
     log(
       s,
       'escalation',
-      `${e.name} is slowed by the Mired (x${s.mired}): ${s.esc.count} of the ${due} ${e.feed} its next step needs, and more while it is Mired`,
+      `${e.name} is slowed by the Bogged Down (x${s.boggedDown}): ${s.esc.count} of the ${due} ${e.feed} its next step needs, and more while it is Bogged Down`,
     );
     return;
   }
@@ -186,43 +186,47 @@ function stepUp(s: State, e: Escalation, per: number): void {
     );
 }
 
-/** What the boss's Mired takes off its damage and its dodge, in bp: per stack, more while a living creature has Clinging. */
-export function miredCut(s: State): number {
+/** What the boss's Bogged Down takes off its damage and its dodge, in bp: per stack, more while a living creature has Clinging. */
+export function boggedDownCut(s: State): number {
   const R = s.ctx.rules;
-  if (s.mired === 0) return 0;
+  if (s.boggedDown === 0) return 0;
   const per =
     s.carries.has('clinging') && alive(s).some((f) => fx(f).clinging)
-      ? R.miredClingingStackBp
-      : R.miredPerStackBp;
-  return s.mired * per;
+      ? R.boggedDownClingingStackBp
+      : R.boggedDownPerStackBp;
+  return s.boggedDown * per;
 }
 
-/** Mired stacks (capped); Wicked gives a chance of 1 extra stack each time. */
-export function addMired(s: State, by: Fighter): void {
+/** Bogged Down stacks (capped); Wicked gives a chance of 1 extra stack each time. */
+export function addBoggedDown(s: State, by: Fighter): void {
   const R = s.ctx.rules;
-  const extra = roll(s, fx(by).miredExtraBp ?? 0) ? 1 : 0;
-  if (extra) bump(by, 'miredExtraBp');
-  s.mired = Math.min(R.miredMaxStacks, s.mired + 1 + extra);
+  const extra = roll(s, fx(by).boggedDownExtraBp ?? 0) ? 1 : 0;
+  if (extra) bump(by, 'boggedDownExtraBp');
+  s.boggedDown = Math.min(R.boggedDownMaxStacks, s.boggedDown + 1 + extra);
   if (s.opts.log)
-    log(s, 'mired', `Mired x${s.mired}`, { board: { type: 'mired', stacks: s.mired } });
+    log(s, 'boggedDown', `Bogged Down x${s.boggedDown}`, {
+      board: { type: 'boggedDown', stacks: s.boggedDown },
+    });
 }
 
 /**
- * Mired fades at the end of every round (`miredFadeEvery`); while a living creature has Clinging, only every second
+ * Bogged Down fades at the end of every round (`boggedDownFadeEvery`); while a living creature has Clinging, only every second
  * round (Misa, 2026-10-28: one debuff creature must not hold it for the whole fight; 2026-11-01: faster, with up to 45
  * creatures acting a round it is put back often). Clinging also makes each stack
- * count for more (`miredCut`). Squelch Song alone builds stacks over a fight.
+ * count for more (`boggedDownCut`). Squelch Song alone builds stacks over a fight.
  */
-export function fadeMired(s: State): void {
+export function fadeBoggedDown(s: State): void {
   const R = s.ctx.rules;
-  if (s.mired <= 0) return;
+  if (s.boggedDown <= 0) return;
   const clinging = s.carries.has('clinging') ? alive(s).find((f) => fx(f).clinging) : undefined;
-  const every = clinging ? R.miredClingingFadeEvery : R.miredFadeEvery;
+  const every = clinging ? R.boggedDownClingingFadeEvery : R.boggedDownFadeEvery;
   if (s.round % every !== 0) {
-    if (clinging && s.round % R.miredFadeEvery === 0) bump(clinging, 'clinging');
+    if (clinging && s.round % R.boggedDownFadeEvery === 0) bump(clinging, 'clinging');
     return;
   }
-  s.mired--;
+  s.boggedDown--;
   if (s.opts.log)
-    log(s, 'mired', `Mired x${s.mired}`, { board: { type: 'mired', stacks: s.mired } });
+    log(s, 'boggedDown', `Bogged Down x${s.boggedDown}`, {
+      board: { type: 'boggedDown', stacks: s.boggedDown },
+    });
 }

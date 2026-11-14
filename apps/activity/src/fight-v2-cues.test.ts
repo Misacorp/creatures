@@ -74,19 +74,21 @@ describe('the board cues of the second answers', () => {
     expect(stateAfter(setup, off, 2).fizzled).toBe(false);
   });
 
-  it("Shake It Off is the reaction callout on the boss with what it cleared, and the board's Mired follows", () => {
-    const events = [ev({ type: 'mired', stacks: 1, shook: 3 })];
+  it("Shake It Off is the reaction callout on the boss with what it cleared, and the board's Bogged Down follows", () => {
+    const events = [ev({ type: 'boggedDown', stacks: 1, shook: 3 })];
     const show = showOf(events, beat(1), { creatures });
     expect(show.floats).toHaveLength(1);
     expect(show.floats[0]).toMatchObject({
       target: null,
       text: 'Shakes it off!',
       tone: 'reaction',
-      sub: '-3 Mired',
+      sub: '-3 Bogged Down',
     });
-    expect(stateAfter(setup, events, 1).mired).toBe(1);
-    // A Mired change that is no shake (the fade, a new stack) says nothing.
-    expect(showOf([ev({ type: 'mired', stacks: 2 })], beat(1), { creatures }).floats).toEqual([]);
+    expect(stateAfter(setup, events, 1).boggedDown).toBe(1);
+    // A Bogged Down change that is no shake (the fade, a new stack) says nothing.
+    expect(showOf([ev({ type: 'boggedDown', stacks: 2 })], beat(1), { creatures }).floats).toEqual(
+      [],
+    );
   });
 
   it("Aftershock's bonus is its own hit float after the plain hit, and the reaction callout leaves the bonus out", () => {
@@ -145,13 +147,26 @@ describe('the board cues of the second answers', () => {
     expect(whole.floats[0]?.sub).toBe('+40');
   });
 
+  it('a stored event with the old name of the debuff event reads as the current one', async () => {
+    const { isFightEventV2 } = await import('./fight-v2-api');
+    const stored = {
+      round: 1,
+      turn: 0,
+      kind: 'board',
+      text: '',
+      board: { type: 'mired', stacks: 2 },
+    };
+    expect(isFightEventV2(stored)).toBe(true);
+    expect(stored.board.type).toBe('boggedDown');
+  });
+
   it('the client reads the new board fields and nothing malformed', () => {
     expect(isBoardEvent({ type: 'sure', who: 'a', by: 'b' })).toBe(true);
     expect(isBoardEvent({ type: 'sure', who: 'a' })).toBe(false);
     expect(isBoardEvent({ type: 'counter', from: 'a', damage: 3, byKnack: true })).toBe(true);
     expect(isBoardEvent({ type: 'counter', from: 'a', damage: 3, byKnack: 'yes' })).toBe(false);
-    expect(isBoardEvent({ type: 'mired', stacks: 1, shook: 2 })).toBe(true);
-    expect(isBoardEvent({ type: 'mired', stacks: 1, shook: -1 })).toBe(false);
+    expect(isBoardEvent({ type: 'boggedDown', stacks: 1, shook: 2 })).toBe(true);
+    expect(isBoardEvent({ type: 'boggedDown', stacks: 1, shook: -1 })).toBe(false);
     expect(isBoardEvent({ type: 'fizzle', state: 'blocked', by: 'a', mark: 'tide' })).toBe(true);
     expect(isBoardEvent({ type: 'fizzle', state: 'on' })).toBe(true);
     expect(isBoardEvent({ type: 'fizzle', state: 'later' })).toBe(false);

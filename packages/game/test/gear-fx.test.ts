@@ -43,7 +43,7 @@ describe('gearFx: the line to effect map', () => {
     ['clinging', 'support', { clinging: true }],
     // x0.6, no armour price (2026-11-06).
     ['guards-shadow', 'setter', { besideGuardBp: 1020 }],
-    ['heavy-hand', 'support', { miredExtraBp: 4000 }],
+    ['heavy-hand', 'support', { boggedDownExtraBp: 4000 }],
     ['first-pounce', 'setter', { firstHitBp: 8500 }],
     ['owners-mark', 'setter', { ownMarkBp: 750 }],
     ['shoulder-to-shoulder', 'setter', { perKindredBesideBp: 1150 }],

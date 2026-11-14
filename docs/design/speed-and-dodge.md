@@ -12,7 +12,7 @@ The work, in five parts:
 2. **Dodge:** Speed becomes the base of a dodge chance, for creatures and foes.
 3. **Status effects:** debuffs (and the base for buffs), measured in turns, with stacks.
 4. **The element chart:** element matchups become a table of attacker → defender pairs, so the wheel can grow.
-5. **Mire,** the fifth element: two creature lines, a raid boss, dungeon foes, a trip place, gear, a mark, two reactions and the first debuff, Mired.
+5. **Mire,** the fifth element: two creature lines, a raid boss, dungeon foes, a trip place, gear, a mark, two reactions and the first debuff, Bogged Down.
 
 ## 1. Serpentine turn order
 
@@ -54,7 +54,7 @@ Every creature and every foe has a **dodge chance**. A dodged hit deals nothing.
 | A hit a reaction reflects back                                              | Never                                               |
 | A hit a Guard steps in to take                                              | Never (the Guard chose to take it)                  |
 
-Order in the hit: the target is picked, a Guard steps in or not, then the taker rolls dodge, before Shield Wall, armor, cover and crit. A dodged hit is a `boss_hit` with `damage: 0` and `dodged: true`. Nothing that waits for a hit taken fires on it (Payback, Last stand, Stubborn, Rally cry, the Mire Guard's Mired).
+Order in the hit: the target is picked, a Guard steps in or not, then the taker rolls dodge, before Shield Wall, armor, cover and crit. A dodged hit is a `boss_hit` with `damage: 0` and `dodged: true`. Nothing that waits for a hit taken fires on it (Payback, Last stand, Stubborn, Rally cry, the Mire Guard's Bogged Down).
 
 If dodge streaks make the finale drag, the lever is enrage escalation (the boss's enrage damage grows each enrage round), not a rule change.
 
@@ -90,7 +90,7 @@ A **status effect** sits on one fighter (a creature, a boss or a foe). Each is d
 
 - `id`, `name`, `kind` (`debuff` now; `buff` is in the schema from day one),
 - `maxStacks`, `turns` (the base duration),
-- `perStack`: plain numbers on the modifier sheet (for Mired: Speed −%, damage dealt −%).
+- `perStack`: plain numbers on the modifier sheet (for Bogged Down: Speed −%, damage dealt −%).
 
 On a fighter, an effect has **stacks** and **turns left**.
 
@@ -114,7 +114,7 @@ A **turn** is one fighter's action. **A status effect counts down on its target'
 ### 3.5 Brakes, so a boss is not pinned at the cap forever
 
 1. Most sources apply **below 100% power**, so duration matters between lucky rolls.
-2. A low cap with modest stacks: Mired at 5 × 3% is at most −15%.
+2. A low cap with modest stacks: Bogged Down at 5 × 3% is at most −15%.
 3. Only some things apply debuffs: a creature's plain hit leaves its mark, not a debuff.
 4. **Flare** (5.4) burns the stacks away for damage, and purge moves clear them.
 5. Later, if needed: boss debuff resistance by Boss Rank.
@@ -152,17 +152,17 @@ Matchups become a list of attacker → defender pairs with a multiplier. A pair 
 
 **Identity: Mire is patience. It sticks, it holds, it keeps.** Peat brown, ochre, tar black with an oily rainbow sheen. Slow, sturdy creatures (the lowest Speed in the game, so little dodge, and high HP). The bog keeps old things: its trip place turns up old finds.
 
-### 5.1 Mark and the Mired debuff
+### 5.1 Mark and the Bogged Down debuff
 
-- **Mark:** **Muddied** (Mire's element mark, left like every mark).
-- **Mired** (status effect, debuff): per stack Speed −3% and damage dealt −3%, cap 5, 3 turns (all kept by the balance pass).
+- **Mark:** **Mired** (Mire's element mark, left like every mark).
+- **Bogged Down** (status effect, debuff): per stack Speed −3% and damage dealt −3%, cap 5, 3 turns (all kept by the balance pass).
 
 ### 5.2 Reactions
 
-| Reaction    | Mark set off     | By    | Extra                                                                                |
-| ----------- | ---------------- | ----- | ------------------------------------------------------------------------------------ |
-| **Smother** | Scorched (Ember) | Mire  | Normal reaction bonus, and applies Mired (100% power)                                |
-| **Flare**   | Muddied (Mire)   | Ember | Normal reaction bonus, then **burns off all Mired stacks** for +20% damage per stack |
+| Reaction    | Mark set off     | By    | Extra                                                                                      |
+| ----------- | ---------------- | ----- | ------------------------------------------------------------------------------------------ |
+| **Smother** | Scorched (Ember) | Mire  | Normal reaction bonus, and applies Bogged Down (100% power)                                |
+| **Flare**   | Mired (Mire)     | Ember | Normal reaction bonus, then **burns off all Bogged Down stacks** for +20% damage per stack |
 
 Flare gives a real choice: keep the stacks (boss slower and weaker) or burn them for one big hit.
 
@@ -170,16 +170,16 @@ Flare gives a real choice: keep the stacks (boss slower and weaker) or burn them
 
 Two lines, each a base form that evolves at level 15, like the existing lines. The names are final and in the compendium.
 
-- **Guard line: Mudlump → Bogwarden.** The steadfast tank: very high HP, the lowest Speed. Finale ability (the Guard kind): **Mud Wall** (Mudlump) and **Bog Hold** (Bogwarden), a Shield Wall on its zone (40% less damage for 2 rounds, then 60% for 3) and, whenever it takes a hit (not dodged), Mired on the **boss** (60% power in the first form, 80% in the second). A talent in its pool resists debuffs.
-- **Support line: Squelch → Croakmire.** The debuffer: finale ability (the Support kind): **Squelch Song** (Squelch, all creatures hit 4% harder for 2 rounds) and **Deep Croak** (Croakmire, 7%), and every round it applies Mired to the boss (60% power in the first form, 80% in the second); its talents and gear lean to debuff duration and power (Clinging, Heavy hand).
+- **Guard line: Mudlump → Bogwarden.** The steadfast tank: very high HP, the lowest Speed. Finale ability (the Guard kind): **Mud Wall** (Mudlump) and **Bog Hold** (Bogwarden), a Shield Wall on its zone (40% less damage for 2 rounds, then 60% for 3) and, whenever it takes a hit (not dodged), Bogged Down on the **boss** (60% power in the first form, 80% in the second). A talent in its pool resists debuffs.
+- **Support line: Squelch → Croakmire.** The debuffer: finale ability (the Support kind): **Squelch Song** (Squelch, all creatures hit 4% harder for 2 rounds) and **Deep Croak** (Croakmire, 7%), and every round it applies Bogged Down to the boss (60% power in the first form, 80% in the second); its talents and gear lean to debuff duration and power (Clinging, Heavy hand).
 
-The Mired parts of these abilities are always-on signatures: they work in every fight (Phase 1 and 2 of a raid, the finale, practice, the dungeon), not only when the ability fires in the finale. The Shield Wall and the rally stay the finale's. A hit that deals 0 damage does not fire the Guard's passive.
+The Bogged Down parts of these abilities are always-on signatures: they work in every fight (Phase 1 and 2 of a raid, the finale, practice, the dungeon), not only when the ability fires in the finale. The Shield Wall and the rally stay the finale's. A hit that deals 0 damage does not fire the Guard's passive.
 
 Setter and Payoff Mire lines come later **(Misa)**.
 
 ### 5.4 Raid boss: Old Bogback
 
-A huge, half-sunk ancient toad. Element Mire. Its moves: **Sinking Mud** (a sweep of all three rows that puts Mired on every creature it hits), **Belly Flop** (a slam on the front), **Shake Off** (it purges its own debuffs), and from higher Boss Ranks **Bog Lob** (a slam on the Payoff, from Rank 4) and **Rising Bubbles** (a charged barrage, from Rank 7). Mired on creatures cuts their Speed and so their dodge, so debuff resistance and Clean coat are worth chasing on its week. It has lore, a sprite, a portrait, retreat lines, a loot table and an adaptation like the other bosses. Spark is neutral against it; Ember teams shine (150%), Tide teams struggle (75%).
+A huge, half-sunk ancient toad. Element Mire. Its moves: **Sinking Mud** (a sweep of all three rows that puts Bogged Down on every creature it hits), **Belly Flop** (a slam on the front), **Shake Off** (it purges its own debuffs), and from higher Boss Ranks **Bog Lob** (a slam on the Payoff, from Rank 4) and **Rising Bubbles** (a charged barrage, from Rank 7). Bogged Down on creatures cuts their Speed and so their dodge, so debuff resistance and Clean coat are worth chasing on its week. It has lore, a sprite, a portrait, retreat lines, a loot table and an adaptation like the other bosses. Spark is neutral against it; Ember teams shine (150%), Tide teams struggle (75%).
 
 ### 5.5 Dungeon
 
@@ -219,7 +219,7 @@ Done in the balance pass of 2026-10-20 (`docs/balance/log.md` B-023); dodge and 
 2. The element chart (pairs, multi-trigger reactions), no Mire yet; nothing changes for players.
 3. Status effects in the engine (model, turns, power, refresh, purge, cleanse, events), with a test effect.
 4. Dodge in the engine (rules, dice, hit table, the Setter mark rule, events).
-5. Mire content: element, chart pairs, mark, Mired, Smother, Flare, creatures, boss, foes, Muddy, Sunken Fen, shards, bases; foe Speeds for every foe.
+5. Mire content: element, chart pairs, mark, Bogged Down, Smother, Flare, creatures, boss, foes, Muddy, Sunken Fen, shards, bases; foe Speeds for every foe.
 6. Lines and talents: Fleet, Light-footed, Sidestep, Riposte, Momentum, Slipstream, Clinging, Heavy hand, Clean coat; the power score counts dodge.
 7. The game UI: sprites and portraits, Mire colours and icon, status icons, dodge on the stage and creature page, the element chart in help, the boss card.
 8. Balance pass, then everything on by default; docs (`combat-rules.md`, compendium, how-to-play).

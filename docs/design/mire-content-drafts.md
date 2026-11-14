@@ -16,8 +16,8 @@ Tone rules followed: simple English, short sentences, warm, no violence words, "
 | `old-bogback`                         | Old Bogback                     | Kept. It rhymes on purpose with Mossback, the turtle that carries a garden: the bog's toad carries the whole fen.                                        |
 | `bog-toad`, `tar-leech`, `fen-lurker` | Bog Toad, Tar Leech, Fen Lurker | Descriptor and noun, like Puddle Imp and Bramble Hound. Fen Lurker is the room boss.                                                                     |
 | `mud`                                 | **Muddy**                       | Changed from "Mud": the other modifiers are adjectives (Flooded, Scorched, Stormy), so it reads as "Muddy". The id stays `mud`.                          |
-| `muddied`                             | Muddied                         | Past-tense state, like Soaked.                                                                                                                           |
-| `mired`                               | Mired                           | The status effect.                                                                                                                                       |
+| `mired`                               | Mired                           | Past-tense state, like Soaked.                                                                                                                           |
+| `bogged-down`                         | Bogged Down                     | The status effect.                                                                                                                                       |
 | `smother`, `flare`                    | Smother, Flare                  | One word for the event.                                                                                                                                  |
 | `sunken-fen`                          | Sunken Fen                      | Plain and descriptive, like Ember Caves.                                                                                                                 |
 
@@ -337,14 +337,14 @@ The description names the move that is in `bosses.json` (`Sinking Mud`) and says
 
 ### Moves
 
-Names and one-line descriptions (80 characters or fewer, so they fit a glossary `short`). The ops are the engine's: a sweep that applies Mired, a slam, the new `purge`, and a rank-gated charge into a barrage. Each move also needs a glossary entry only if it uses a new op; `purge` does (`gimmick-purge`, below), the rest reuse `gimmick-sweep`, `gimmick-slam` and `gimmick-charge`.
+Names and one-line descriptions (80 characters or fewer, so they fit a glossary `short`). The ops are the engine's: a sweep that applies Bogged Down, a slam, the new `purge`, and a rank-gated charge into a barrage. Each move also needs a glossary entry only if it uses a new op; `purge` does (`gimmick-purge`, below), the rest reuse `gimmick-sweep`, `gimmick-slam` and `gimmick-charge`.
 
-| Move           | Kind                    | One line                                                     |
-| -------------- | ----------------------- | ------------------------------------------------------------ |
-| Sinking Mud    | sweep that leaves Mired | Hits one row and leaves Mired on every creature in it.       |
-| Belly Flop     | slam                    | A heavy flop on one creature. Its neighbours take a share.   |
-| Shake Off      | purge                   | Old Bogback shakes every debuff off itself.                  |
-| Rising Bubbles | rank-gated charge       | Bubbles rise under some creatures. A round later they burst. |
+| Move           | Kind                          | One line                                                     |
+| -------------- | ----------------------------- | ------------------------------------------------------------ |
+| Sinking Mud    | sweep that leaves Bogged Down | Hits one row and leaves Bogged Down on every creature in it. |
+| Belly Flop     | slam                          | A heavy flop on one creature. Its neighbours take a share.   |
+| Shake Off      | purge                         | Old Bogback shakes every debuff off itself.                  |
+| Rising Bubbles | rank-gated charge             | Bubbles rise under some creatures. A round later they burst. |
 
 Move ids (suggested): `sinking-mud`, `belly-flop`, `shake-off`, `rising-bubbles`. Sinking Mud is the signature trick (shown on the boss card first). Rising Bubbles is the rank-gated one: "Bubbles rise" is the warning a round ahead, and "burst" is the hit, which is swamp gas going up (the Ember connection). Belly Flop is the dry joke: the boss is not scary, it just sits on someone.
 
@@ -380,12 +380,12 @@ Names, flavour lines (at most 120 characters) and a suggested trick for each. `k
 
 Suggested tricks (names and plain words; the ops are the engine's):
 
-| Foe                             | Trick      | What it does                                                                        |
-| ------------------------------- | ---------- | ----------------------------------------------------------------------------------- |
-| Bog Toad                        | Mud Spit   | every second round, a small shell of mud on one random creature that leaves Mired   |
-| Tar Leech                       | Tar Cling  | every third round, a heavy hit on the left creature that leaves Mired               |
-| Fen Lurker                      | Sink Down  | every third round, a sweep of one row that leaves Mired                             |
-| Fen Lurker (landmark signature) | Pull Under | every fourth round, announced a round ahead: a sweep of every row that leaves Mired |
+| Foe                             | Trick      | What it does                                                                              |
+| ------------------------------- | ---------- | ----------------------------------------------------------------------------------------- |
+| Bog Toad                        | Mud Spit   | every second round, a small shell of mud on one random creature that leaves Bogged Down   |
+| Tar Leech                       | Tar Cling  | every third round, a heavy hit on the left creature that leaves Bogged Down               |
+| Fen Lurker                      | Sink Down  | every third round, a sweep of one row that leaves Bogged Down                             |
+| Fen Lurker (landmark signature) | Pull Under | every fourth round, announced a round ahead: a sweep of every row that leaves Bogged Down |
 
 ### Room modifier (`room-modifiers.json`)
 
@@ -487,7 +487,7 @@ One new set for the fen and four pages, one of them an any-place page about the 
 
 ## 6. Glossary (`glossary.json`)
 
-New entries, in the shape of the file (`id`, `title`, `short`, `lines`, `visual`, `section`). Visuals use things that exist: the element icon `mire`, the mark glyph tinted by `markPalette('mire')`, the reactions (`smother` and `flare` need their entries in `reactions.json` first, which the slice adds), and the glyphs `mired`, `mud` and `speed`. The numbers 50% and 25% come from the chart in the design; the per-stack numbers of Mired are not in the text on purpose, because they are still being tuned.
+New entries, in the shape of the file (`id`, `title`, `short`, `lines`, `visual`, `section`). Visuals use things that exist: the element icon `mire`, the mark glyph tinted by `markPalette('mire')`, the reactions (`smother` and `flare` need their entries in `reactions.json` first, which the slice adds), and the glyphs `bogged-down`, `mud` and `speed`. The numbers 50% and 25% come from the chart in the design; the per-stack numbers of Bogged Down are not in the text on purpose, because they are still being tuned.
 
 ```json
 [
@@ -498,7 +498,7 @@ New entries, in the shape of the file (`id`, `title`, `short`, `lines`, `visual`
     "lines": [
       "Hits Ember bosses for 50% more damage.",
       "Ember hits Mire bosses for 50% more. Tide hits them for 25% less.",
-      "Mire hits leave Muddied on the boss. Ember cashes it in.",
+      "Mire hits leave Mired on the boss. Ember cashes it in.",
       "Slow and sturdy: they hold the line and weigh the boss down."
     ],
     "visual": {
@@ -508,8 +508,8 @@ New entries, in the shape of the file (`id`, `title`, `short`, `lines`, `visual`
     "section": "creatures"
   },
   {
-    "id": "mark-muddied",
-    "title": "Muddied",
+    "id": "mark-mired",
+    "title": "Mired",
     "short": "Mire's mark. Ember cashes it in.",
     "lines": [
       "Left on the boss by a Mire hit.",
@@ -530,7 +530,7 @@ New entries, in the shape of the file (`id`, `title`, `short`, `lines`, `visual`
     "lines": [
       "A Mire hit on a Scorched boss sets it off.",
       "It deals much more damage than a normal hit.",
-      "It also leaves Mired on the boss.",
+      "It also leaves Bogged Down on the boss.",
       "It uses up the mark. The next hit leaves a new one."
     ],
     "visual": {
@@ -542,11 +542,11 @@ New entries, in the shape of the file (`id`, `title`, `short`, `lines`, `visual`
   {
     "id": "reaction-flare",
     "title": "Flare",
-    "short": "Ember on Muddied: deals much more damage, burns off Mired.",
+    "short": "Ember on Mired: deals much more damage, burns off Bogged Down.",
     "lines": [
-      "An Ember hit on a Muddied boss sets it off.",
+      "An Ember hit on a Mired boss sets it off.",
       "It deals much more damage than a normal hit.",
-      "It then burns away every Mired stack on the boss, for extra damage on each.",
+      "It then burns away every Bogged Down stack on the boss, for extra damage on each.",
       "Keep the stacks to keep the boss slow, or burn them for one big hit."
     ],
     "visual": {
@@ -556,8 +556,8 @@ New entries, in the shape of the file (`id`, `title`, `short`, `lines`, `visual`
     "section": "combos"
   },
   {
-    "id": "status-mired",
-    "title": "Mired",
+    "id": "status-bogged-down",
+    "title": "Bogged Down",
     "short": "Stuck in the mud: slower and weaker.",
     "lines": [
       "Each stack lowers Speed and the damage dealt.",
@@ -567,7 +567,7 @@ New entries, in the shape of the file (`id`, `title`, `short`, `lines`, `visual`
     ],
     "visual": {
       "kind": "glyph",
-      "id": "mired"
+      "id": "bogged-down"
     },
     "section": "combos"
   },
@@ -616,7 +616,7 @@ New entries, in the shape of the file (`id`, `title`, `short`, `lines`, `visual`
     "title": "Purge",
     "short": "The boss washes every debuff off itself.",
     "lines": [
-      "Mired and any other debuff on the boss end at once.",
+      "Bogged Down and any other debuff on the boss end at once.",
       "Keep your debuffs fresh, or cash them in before it comes."
     ],
     "visual": {
@@ -782,18 +782,18 @@ A Mire pool keyed `mudlump` mixes Guard and Support talents on purpose, like the
 
 All the art is in `apps/activity/src/sprites/data/`, in the same format as the existing sprites. A new test, `apps/activity/src/sprites/mire-sprites.test.ts`, holds every new sprite to the rules of the existing sprite tests (size, ink, palette, face, edge, unique silhouette, brief colours) until the content exists.
 
-| Art                                                              | Where                                                         | Registered now?                                       |
-| ---------------------------------------------------------------- | ------------------------------------------------------------- | ----------------------------------------------------- |
-| Element icon `mire` (8x8)                                        | `sprites/element-icons.ts`                                    | Yes                                                   |
-| Glyph `mired` (status icon, 8x8) and glyph `mud` (room modifier) | `glyphs.ts`                                                   | Yes                                                   |
-| Muddied mark                                                     | The existing `mark` glyph, tinted with `markPalette('mire')`  | Yes (`ELEMENT_COLOURS.mire` in `art.ts`)              |
-| `--mire` colour token                                            | `styles/base/tokens.css`                                      | Yes                                                   |
-| Shiny palettes for the four species                              | `art.ts` (`SHINY_PALETTES`)                                   | Yes (teal and violet: the sheen comes through)        |
-| Species `mudlump`, `bogwarden`, `squelch`, `croakmire` (16x16)   | `data/mire-species-sprites.ts`                                | **No**: add to `SPECIES_SPRITE_DATA` with the species |
-| Boss `old-bogback` (24x24)                                       | `data/mire-boss-sprites.ts`                                   | **No**: add to `BOSS_SPRITE_DATA` with the boss       |
-| Foes `bog-toad`, `tar-leech` (16x16)                             | `data/mire-boss-sprites.ts`                                   | **No**: add to `DUNGEON_FOE_SPRITE_DATA`              |
-| Floor boss `fen-lurker` (24x24)                                  | `data/mire-boss-sprites.ts` (`MIRE_DUNGEON_BOSS_SPRITE_DATA`) | **No**: add to `DUNGEON_BOSS_SPRITE_DATA`             |
-| Banner `sunken-fen` (64x24)                                      | `data/mire-banner-sprites.ts`                                 | **No**: add to `BANNER_SPRITE_DATA`                   |
+| Art                                                                    | Where                                                         | Registered now?                                       |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------- | ----------------------------------------------------- |
+| Element icon `mire` (8x8)                                              | `sprites/element-icons.ts`                                    | Yes                                                   |
+| Glyph `bogged-down` (status icon, 8x8) and glyph `mud` (room modifier) | `glyphs.ts`                                                   | Yes                                                   |
+| Mired mark                                                             | The existing `mark` glyph, tinted with `markPalette('mire')`  | Yes (`ELEMENT_COLOURS.mire` in `art.ts`)              |
+| `--mire` colour token                                                  | `styles/base/tokens.css`                                      | Yes                                                   |
+| Shiny palettes for the four species                                    | `art.ts` (`SHINY_PALETTES`)                                   | Yes (teal and violet: the sheen comes through)        |
+| Species `mudlump`, `bogwarden`, `squelch`, `croakmire` (16x16)         | `data/mire-species-sprites.ts`                                | **No**: add to `SPECIES_SPRITE_DATA` with the species |
+| Boss `old-bogback` (24x24)                                             | `data/mire-boss-sprites.ts`                                   | **No**: add to `BOSS_SPRITE_DATA` with the boss       |
+| Foes `bog-toad`, `tar-leech` (16x16)                                   | `data/mire-boss-sprites.ts`                                   | **No**: add to `DUNGEON_FOE_SPRITE_DATA`              |
+| Floor boss `fen-lurker` (24x24)                                        | `data/mire-boss-sprites.ts` (`MIRE_DUNGEON_BOSS_SPRITE_DATA`) | **No**: add to `DUNGEON_BOSS_SPRITE_DATA`             |
+| Banner `sunken-fen` (64x24)                                            | `data/mire-banner-sprites.ts`                                 | **No**: add to `BANNER_SPRITE_DATA`                   |
 
 Why not now: `sprite-data.test.ts`, `dungeon-sprites.test.ts` and `banner-sprites.test.ts` assert that the bundled maps hold sprites for exactly the content that exists, so registering early would fail them. When the content lands, spread the Mire maps into the bundled ones and move the `mire-sprites.test.ts` checks into the existing tests (or leave them: they keep passing).
 

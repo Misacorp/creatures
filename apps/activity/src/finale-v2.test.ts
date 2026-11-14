@@ -1,3 +1,4 @@
+import { RULES } from '@creatures/game';
 import { combatV2 } from '@creatures/game/combat-v2';
 import { describe, expect, it } from 'vitest';
 import {
@@ -10,7 +11,15 @@ import {
   ownInput,
 } from './finale-v2';
 import type { LiveAbilityV2 } from './fight-v2-api';
-import { beatDurations, resumeAt, BEAT_MS, REACTION_HOLD_MS } from './playback-v2';
+import {
+  beatDurations,
+  resumeAt,
+  roundBudgetMs,
+  BEAT_MS,
+  INTRO_LIVE_MS,
+  REACTION_HOLD_MS,
+  STAGE_ROUND_MS,
+} from './playback-v2';
 import { buildBeats } from './fight-v2';
 import { liveSample, playSample } from './workbench/fight-v2-sample';
 
@@ -93,6 +102,38 @@ describe('the pace of a playback', () => {
     smallBeats.forEach((b, k) => expect(smallMs[k]).toBe(base(b)));
     const fast = beatDurations(smallBeats, { speed: 2, budgetMs: budget });
     expect(fast[0]).toBeLessThan(smallMs[0] ?? 0);
+  });
+
+  it("a replay holds each round to the live finale's round (one constant), the last round and a round that is longer excepted", () => {
+    expect(STAGE_ROUND_MS).toBe(RULES.raid.v2.liveRoundMs);
+    const s = playSample({ slot: 4, players: 4, stage: 1, seed: 'pace' });
+    const beats = buildBeats(s.events, { creatures: s.fighters });
+    const budgetMs = roundBudgetMs(STAGE_ROUND_MS, INTRO_LIVE_MS);
+    const held = beatDurations(beats, {
+      speed: 1,
+      budgetMs,
+      roundMs: STAGE_ROUND_MS,
+      introMs: INTRO_LIVE_MS,
+    });
+    const rounds = [...new Set(beats.map((b) => b.round))].filter((r) => r > 0);
+    const length = (round: number): number =>
+      beats.reduce((sum, b, k) => (b.round === round ? sum + (held[k] ?? 0) : sum), 0);
+    for (const round of rounds.slice(0, -1)) {
+      expect(length(round) + INTRO_LIVE_MS).toBe(STAGE_ROUND_MS);
+    }
+    // The last round is not padded, and 2x halves everything.
+    const last = rounds[rounds.length - 1] as number;
+    const plain = beatDurations(beats, { speed: 1, budgetMs });
+    expect(length(last)).toBe(
+      beats.reduce((sum, b, k) => (b.round === last ? sum + (plain[k] ?? 0) : sum), 0),
+    );
+    const fast = beatDurations(beats, {
+      speed: 2,
+      budgetMs,
+      roundMs: STAGE_ROUND_MS,
+      introMs: INTRO_LIVE_MS,
+    });
+    expect(fast[0]).toBeLessThan(held[0] ?? 0);
   });
 
   it('a live stage that fell behind resumes at the round that is on', () => {

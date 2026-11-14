@@ -37,7 +37,7 @@
       "mid": { "hpBp": 7700, "atkBp": 9400, "armourBp": 10000 }
     },
     "asks": "The whole sea sweeps the rows. Wide Reach and row wards turn the waves; who stands where?",
-    "note": "The sea washes the mud off it (Shake It Off), so Mired is no must-have here; reactions it resists from stage 2. The tide rises as the Colossus is hurt: every fifth of its HP gone widens its columns and rows, and Mired slows it."
+    "note": "The sea washes the mud off it (Shake It Off), so Bogged Down is no must-have here; reactions it resists from stage 2. The tide rises as the Colossus is hurt: every fifth of its HP gone widens its columns and rows, and Bogged Down slows it."
   },
   {
     "id": "cinder-wyrm",
@@ -77,8 +77,8 @@
       "low": { "hpBp": 3708, "atkBp": 9000, "armourBp": 9200 },
       "mid": { "hpBp": 5833, "atkBp": 9400, "armourBp": 10000 }
     },
-    "asks": "The forge turns the first reaction of every row back on you, and every reaction heats it. Keep Mired on it, or make each reaction count.",
-    "note": "Every cashed reaction stokes the forge: the fire grows hotter and throws more shells. Few, big reactions or Mired hold it down."
+    "asks": "The forge turns the first reaction of every row back on you, and every reaction heats it. Keep Bogged Down on it, or make each reaction count.",
+    "note": "Every cashed reaction stokes the forge: the fire grows hotter and throws more shells. Few, big reactions or Bogged Down hold it down."
   },
   {
     "id": "thornmother",
@@ -236,7 +236,7 @@
       "mid": { "hpBp": 9500, "atkBp": 9500, "armourBp": 8800 }
     },
     "asks": "The Rod leaps from the strongest Payoff, round after round, and a Judgement Bolt, announced at round start, can fell it. Draw the Rod onto something that can take it, and have Night Watch beside the Payoff for the Bolt.",
-    "note": "Lightning Rod: the plain attack leaps from the strongest Payoff, twice a round. A Taunt takes the first strike. The storm gathers as the rounds pass: a race. Mired holds it back. Judgement Bolt is a one-shot: 120% of the strongest Payoff's Max HP at full strength, a heavy hit of that share below it."
+    "note": "Lightning Rod: the plain attack leaps from the strongest Payoff, twice a round. A Taunt takes the first strike. The storm gathers as the rounds pass: a race. Bogged Down holds it back. Judgement Bolt is a one-shot: 120% of the strongest Payoff's Max HP at full strength, a heavy hit of that share below it."
   },
   {
     "id": "old-bogback",
@@ -292,6 +292,6 @@
       "low": { "hpBp": 8059, "atkBp": 6200, "armourBp": 5000 },
       "mid": { "hpBp": 9192, "atkBp": 8100, "armourBp": 5300 }
     },
-    "asks": "The fen pulls the most hurt creature down. Keep them up, and keep the Mired on it."
+    "asks": "The fen pulls the most hurt creature down. Keep them up, and keep the Bogged Down on it."
   }
 ]

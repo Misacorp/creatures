@@ -4,7 +4,8 @@ import { combatGlyph, moveGlyphId } from './combat-glyphs';
 import { elementSlug } from './art';
 import { glyphOrUnknown } from './glyphs';
 import { usePopoverHost } from './PopoverHost';
-import { AIMED_WHEN_IT_COMES, NO_TARGETS, litMove } from './raid-board-v2';
+import { moveHelp } from './move-help';
+import { litMove } from './raid-board-v2';
 import { bossHpWords, rankLabel } from './raid-progress';
 import type { RaidView } from './raid-api';
 import type { BossCardV2 as CardView, BossMoveV2 } from './raid-v2-api';
@@ -142,12 +143,44 @@ export function boardTurnSteps(card: CardView, rows: number): TurnStripChip[] {
   return steps;
 }
 
+/** A tap on a move tile opens its popover: the name and label, what it does, when it comes and a tag for each keyword on it. */
+function openMoveHelp(
+  popovers: ReturnType<typeof usePopoverHost>,
+  move: BossMoveV2,
+  anchor: HTMLElement,
+): void {
+  const help = moveHelp(move);
+  popovers?.openCustom(`move:${move.id}`, anchor, {
+    label: help.name,
+    body: (
+      <div class="pop-stack">
+        <strong class="pix">{help.name}</strong>
+        <p class="muted small">{help.label}</p>
+        <p>{help.what}</p>
+        <p>{help.rhythm}</p>
+        {help.notes.map((note) => (
+          <p key={note}>{note}</p>
+        ))}
+        {help.keywords.length > 0 && (
+          <p class="tags pop-tags">
+            {help.keywords.map((k) => (
+              <Tag key={k.name} entry={k.entry}>
+                {k.name}
+              </Tag>
+            ))}
+          </p>
+        )}
+      </div>
+    ),
+  });
+}
+
 /**
  * The boss card of a combat v2 week (docs/design/combat/proposals/001-combat-v2.md, "On the board: The boss card"): the head (picture,
  * name, element, armour as a shield with its number, the weekend's HP bar with a tick per stage and last week's best as a ghost),
  * the rule cards with their strength as pips and the Escalating meter (a row that is empty is not drawn, so the tutorial boss shows
- * neither), the plain attack, the moves as tiles (a tap lights the slots a move would hit on the board; one aimed when it comes says
- * so) and the turn strip. Every name and sentence is the server's, drawn as text only. No text calls any boss harder than another.
+ * neither), the plain attack, the moves as tiles (a tap lights the slots a move would hit on the board and opens a popover that
+ * explains the move's words) and the turn strip. Every name and sentence is the server's, drawn as text only. No text calls any boss harder than another.
  */
 export function BossCardV2({
   view,
@@ -159,6 +192,7 @@ export function BossCardV2({
   lit: string | null;
   onLit: (moveId: string | null) => void;
 }) {
+  const popovers = usePopoverHost();
   const v2 = view.v2;
   if (v2 === undefined) return null;
   const { boss } = view;
@@ -169,10 +203,6 @@ export function BossCardV2({
   const stage = Math.min(v2.nextStage, STAGES);
   const element = elementSlug(boss.element);
   const moves = card.moves;
-  const tapped = moves.find((m) => m.id === lit);
-  const noTargets = tapped?.fizzles === true;
-  const aimedLater =
-    tapped !== undefined && !noTargets && litMove(v2.preview, tapped).slots === null;
   return (
     <section
       class={`raid-section boss-card boss-card-v2 el-${element}`}
@@ -229,23 +259,16 @@ export function BossCardV2({
                 arena={arena}
                 lit={litMove(v2.preview, move).slots}
                 selected={lit === move.id}
-                onToggle={() => {
-                  onLit(lit === move.id ? null : move.id);
+                onToggle={(button) => {
+                  const opening = lit !== move.id;
+                  onLit(opening ? move.id : null);
+                  if (opening) openMoveHelp(popovers, move, button);
+                  else popovers?.close();
                 }}
               />
             </li>
           ))}
         </ul>
-      )}
-      {noTargets && (
-        <p class="muted small boss-aimed" role="status">
-          {NO_TARGETS}
-        </p>
-      )}
-      {aimedLater && (
-        <p class="muted small boss-aimed" role="status">
-          {AIMED_WHEN_IT_COMES}
-        </p>
       )}
       <TurnStrip chips={boardTurnSteps(card, v2.rows)} label="One round: the rows and the boss" />
     </section>

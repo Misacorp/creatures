@@ -4,7 +4,7 @@
  * are refused with a 400), so a new field there needs a field here.
  */
 import type { Place, Tab } from '../tabs';
-import type { Field, Option, ToolSpec } from './forms';
+import { isTargeted, type Field, type Option, type ToolSpec } from './forms';
 import {
   BASE_OPTIONS,
   BOON_OPTIONS,
@@ -21,21 +21,37 @@ import {
   RANK_OPTIONS,
   RARITY_OPTIONS,
   SEATS_OPTIONS,
+  SLOT_OPTIONS,
   SPECIES_OPTIONS,
   SUPPLY_OPTIONS,
+  TALENT_OPTIONS,
+  KNACK_OPTIONS,
+  knackOptionsFor,
+  talentOptionsFor,
+  lineOfSpecies,
 } from './options';
 import { resourceName } from '@creatures/game';
 
 const HOUR = 3_600_000;
 const MAX_AMOUNT = 1_000_000_000;
 
-const int = (key: string, label: string, min: number, max: number, optional = false): Field => ({
+const int = (
+  key: string,
+  label: string,
+  min: number,
+  max: number,
+  optional = false,
+  initial?: number,
+  placeholder?: string,
+): Field => ({
   kind: 'int',
   key,
   label,
   min,
   max,
   ...(optional ? { optional: true } : {}),
+  ...(initial === undefined ? {} : { initial }),
+  ...(placeholder === undefined ? {} : { placeholder }),
 });
 const pick = (key: string, label: string, options: readonly Option[], optional = false): Field => ({
   kind: 'select',
@@ -44,6 +60,12 @@ const pick = (key: string, label: string, options: readonly Option[], optional =
   options,
   ...(optional ? { optional: true } : {}),
 });
+const pickBlank = (
+  key: string,
+  label: string,
+  options: readonly Option[],
+  blank: string,
+): Field => ({ kind: 'select', key, label, options, optional: true, blank });
 const flag = (key: string, label: string, optional = false): Field => ({
   kind: 'bool',
   key,
@@ -111,17 +133,111 @@ export const ROSTER_PRESET_SPEC: ToolSpec = {
   fields: [],
 };
 
-const CREATURES_SPECS: readonly ToolSpec[] = [
+/** Gives a creature: the species is the form (an evolved form is its own species). */
+const GIVE_CREATURE_SPEC: ToolSpec = {
+  tool: 'grant-creature',
+  label: 'Give a creature',
+  fields: [
+    pick('species', 'Species (form)', SPECIES_OPTIONS),
+    int('level', 'Level', 1, 99, true, undefined, 'level 1'),
+    int('fusion', 'Fusion', 0, 5, true, undefined, 'none'),
+    int('count', 'How many (a line holds 2)', 1, 2, true, 1),
+    flag('shiny', 'Shiny', true),
+  ],
+  hint: 'A line the player has already becomes this species at that level; an empty slot gets a new creature with its talent.',
+};
+
+const GIVE_ITEMS_SPEC: ToolSpec = {
+  tool: 'grant-gear',
+  label: 'Give gear',
+  fields: [
+    pickBlank('baseId', 'Base', BASE_OPTIONS, 'random'),
+    pickBlank('slot', 'Slot', SLOT_OPTIONS, 'any'),
+    pickBlank('rarity', 'Rarity', RARITY_OPTIONS, 'random'),
+    int('itemLevel', 'Item level', 1, LIMITS.maxItemLevel, true, undefined, 'lowest'),
+    int('count', 'How many', 1, 50, true, 1),
+  ],
+  hint: "Lines are rolled now by the live gear dice. A blank base is random (of the slot); a blank item level is the base's lowest (random for a random base). Nothing is given when the bag cannot hold all of it.",
+};
+
+const GIVE_CURRENCY_SPEC: ToolSpec = {
+  tool: 'grant-currency',
+  label: 'Give Bait or Essence',
+  fields: [
+    int('bait', resourceName('bait'), 1, MAX_AMOUNT, true),
+    int('essence', resourceName('essence'), 1, MAX_AMOUNT, true),
+  ],
+  needOne: true,
+  hint: 'Adds to the balance through the ledger. "Set Bait and Essence" below sets an exact amount.',
+};
+
+const GIVE_XP_SPECS: readonly ToolSpec[] = [
   {
-    tool: 'grant-creature',
-    label: 'Grant a creature',
-    fields: [
-      pick('species', 'Species', SPECIES_OPTIONS),
-      flag('shiny', 'Shiny', true),
-      int('level', 'Level', 1, 99, true),
-      int('fusion', 'Fusion', 0, 5, true),
-    ],
+    tool: 'grant-xp',
+    label: 'Give XP to a creature',
+    fields: [creature(), int('amount', 'XP', 1, 1_000_000)],
+    hint: 'Levels it up while the way is open and banks the rest at a ribbon or an evolution.',
   },
+  {
+    tool: 'grant-xp',
+    label: 'Give XP to all their creatures',
+    fields: [int('amount', 'XP', 1, 1_000_000)],
+    fixed: { all: true },
+  },
+];
+
+const GIVE_TALENT_SPECS: readonly ToolSpec[] = [
+  {
+    tool: 'grant-talent',
+    label: 'Teach a talent (combat v2)',
+    fields: [
+      creature(),
+      {
+        kind: 'select',
+        key: 'talentId',
+        label: "Talent (the creature's line)",
+        options: TALENT_OPTIONS,
+        forCreature: (c) => talentOptionsFor(lineOfSpecies(c.species ?? '') ?? ''),
+      },
+      {
+        kind: 'select',
+        key: 'slot',
+        label: 'Slot',
+        options: [1, 2, 3].map((n) => ({ value: String(n), label: `Slot ${String(n)}` })),
+        optional: true,
+        blank: 'learned only',
+      },
+    ],
+    build: (values) => ({
+      creatureId: values['creatureId'] ?? '',
+      talentId: values['talentId'] ?? '',
+      ...(values['slot'] === undefined || values['slot'] === ''
+        ? {}
+        : { slot: Number(values['slot']) }),
+    }),
+    hint: "Goes in the line's Talent Book and the creature learns it. A slot must be open at its level.",
+  },
+  {
+    tool: 'set-knack',
+    label: 'Save a Knack (combat v2)',
+    fields: [
+      creature(),
+      {
+        kind: 'select',
+        key: 'knack',
+        label: "Knack (the form's)",
+        options: KNACK_OPTIONS,
+        forCreature: (c) => knackOptionsFor(c.species ?? ''),
+      },
+    ],
+    build: (values) => ({
+      creatureId: values['creatureId'] ?? '',
+      knack: values['knack'] === 'none' || values['knack'] === undefined ? null : values['knack'],
+    }),
+  },
+];
+
+const CREATURES_SPECS: readonly ToolSpec[] = [
   {
     tool: 'set-creature',
     label: 'Set level, fusion or evolve',
@@ -166,15 +282,6 @@ const CREATURES_SPECS: readonly ToolSpec[] = [
 const WORKSHOP_SPECS: readonly ToolSpec[] = [
   { tool: 'finish-jobs', label: 'Finish all jobs now', fields: [] },
   { tool: 'fill-bag', label: 'Fill the bag', fields: [], hint: 'To test the bag cap.' },
-  {
-    tool: 'grant-gear',
-    label: 'Grant a gear item',
-    fields: [
-      pick('baseId', 'Base', BASE_OPTIONS),
-      pick('rarity', 'Rarity', RARITY_OPTIONS),
-      int('itemLevel', 'Item level', 1, LIMITS.maxItemLevel, true),
-    ],
-  },
 ];
 
 const EXPEDITIONS_SPECS: readonly ToolSpec[] = [
@@ -346,39 +453,135 @@ const ANALYTICS_SPECS: readonly ToolSpec[] = [
   { tool: 'analytics-rollup', label: 'Roll up now', fields: [] },
 ];
 
-interface SectionDef {
+/** A titled group of controls inside a section (a card on a wide screen). */
+export interface BlockDef {
+  title: string;
+  specs: readonly ToolSpec[];
+}
+
+/** What the panel draws in a section besides its controls: a piece with its own component (`Panel.tsx`). */
+export type SectionExtra =
+  'presets' | 'clock-status' | 'events' | 'look' | 'links' | 'build' | 'local-flags';
+
+export interface SectionDef {
   id: string;
   title: string;
-  /** The tab whose view this section is about; null for Analytics. */
+  /** The nav's heading it is listed under. A new group (the valley's tools, say) is just another heading. */
+  group: string;
+  /** The tab whose view this section is about; null for a section that belongs to none. */
   tab: Tab | null;
   specs: readonly ToolSpec[];
   /** Show the controls one after the other, as listed (a sequence of steps), not the buttons first and the forms after. */
   ordered?: true;
+  /** The controls in titled groups (the specs, split); absent: one group, untitled. */
+  blocks?: readonly BlockDef[];
+  /** Pieces drawn before and after the controls. */
+  before?: readonly SectionExtra[];
+  after?: readonly SectionExtra[];
 }
 
-/** The per-view sections, in the order of the navigation's places. The panel moves the current place's one to the top. */
+export const GROUP_PLAYERS = 'Players';
+export const GROUP_GAME = 'Game systems';
+export const GROUP_TOOLS = 'Tools';
+
+const GIVE_BLOCKS: readonly BlockDef[] = [
+  { title: 'Creatures', specs: [GIVE_CREATURE_SPEC] },
+  { title: 'Gear', specs: [GIVE_ITEMS_SPEC] },
+  { title: 'Currency, parts and supplies', specs: [GIVE_CURRENCY_SPEC, ...GOODS_SPECS] },
+  { title: 'Experience', specs: GIVE_XP_SPECS },
+  { title: 'Talents and Knacks', specs: GIVE_TALENT_SPECS },
+];
+
+/**
+ * The panel's sections, in the nav's order, under their group headings. The per-view ones follow the navigation's places; the
+ * panel opens the current place's section first.
+ */
 export const SECTIONS: readonly SectionDef[] = [
-  { id: 'creatures', title: 'Creatures', tab: 'collection', specs: CREATURES_SPECS },
-  { id: 'workshop', title: 'Workshop', tab: 'workshop', specs: WORKSHOP_SPECS },
-  { id: 'expeditions', title: 'Expeditions', tab: 'expeditions', specs: EXPEDITIONS_SPECS },
-  { id: 'games', title: 'Games', tab: 'games', specs: GAMES_SPECS },
-  { id: 'dungeon', title: 'Dungeon', tab: 'dungeon', specs: DUNGEON_SPECS },
-  { id: 'raid', title: 'Raid', tab: 'raid', specs: RAID_SPECS, ordered: true },
-  { id: 'weather', title: 'Weather', tab: null, specs: WEATHER_SPECS },
-  { id: 'analytics', title: 'Analytics', tab: null, specs: ANALYTICS_SPECS },
+  {
+    id: 'give',
+    title: 'Give',
+    group: GROUP_PLAYERS,
+    tab: null,
+    specs: GIVE_BLOCKS.flatMap((b) => b.specs),
+    blocks: GIVE_BLOCKS,
+    after: ['presets'],
+  },
+  {
+    id: 'creatures',
+    title: 'Creatures',
+    group: GROUP_PLAYERS,
+    tab: 'collection',
+    specs: CREATURES_SPECS,
+  },
+  { id: 'workshop', title: 'Workshop', group: GROUP_GAME, tab: 'workshop', specs: WORKSHOP_SPECS },
+  {
+    id: 'expeditions',
+    title: 'Expeditions',
+    group: GROUP_GAME,
+    tab: 'expeditions',
+    specs: EXPEDITIONS_SPECS,
+  },
+  { id: 'games', title: 'Games', group: GROUP_GAME, tab: 'games', specs: GAMES_SPECS },
+  { id: 'dungeon', title: 'Dungeon', group: GROUP_GAME, tab: 'dungeon', specs: DUNGEON_SPECS },
+  { id: 'raid', title: 'Raid', group: GROUP_GAME, tab: 'raid', specs: RAID_SPECS, ordered: true },
+  { id: 'weather', title: 'Weather', group: GROUP_GAME, tab: null, specs: WEATHER_SPECS },
+  {
+    id: 'clock',
+    title: 'Clock',
+    group: GROUP_TOOLS,
+    tab: null,
+    specs: CLOCK_SPECS,
+    before: ['clock-status'],
+  },
+  {
+    id: 'analytics',
+    title: 'Analytics',
+    group: GROUP_TOOLS,
+    tab: null,
+    specs: ANALYTICS_SPECS,
+    after: ['events'],
+  },
+  {
+    id: 'look',
+    title: 'Look and links',
+    group: GROUP_TOOLS,
+    tab: null,
+    specs: [],
+    before: ['look'],
+    after: ['links'],
+  },
+  {
+    id: 'build',
+    title: 'Build and account',
+    group: GROUP_TOOLS,
+    tab: null,
+    specs: [RESET_ACCOUNT_SPEC],
+    before: ['build', 'local-flags'],
+  },
 ];
 
 /** Every spec, for tests. */
 export const ALL_SPECS: readonly ToolSpec[] = [
-  ...CLOCK_SPECS,
-  ...GOODS_SPECS,
-  RESET_ACCOUNT_SPEC,
-  ROSTER_PRESET_SPEC,
   ...SECTIONS.flatMap((s) => s.specs),
+  ROSTER_PRESET_SPEC,
 ];
 
-/** The sections with the current tab's first (the others keep their order). */
-export function orderedSections(tab: Place): SectionDef[] {
-  const here = SECTIONS.filter((s) => s.tab === tab);
-  return [...here, ...SECTIONS.filter((s) => s.tab !== tab)];
+/** The section that opens first for a place: the place's own, else Give. */
+export function firstSection(tab: Place): string {
+  return SECTIONS.find((s) => s.tab === tab)?.id ?? 'give';
 }
+
+/** The nav: the sections under their group headings, in order. */
+export function navGroups(): { group: string; sections: SectionDef[] }[] {
+  const out: { group: string; sections: SectionDef[] }[] = [];
+  for (const section of SECTIONS) {
+    const last = out[out.length - 1];
+    if (last?.group === section.group) last.sections.push(section);
+    else out.push({ group: section.group, sections: [section] });
+  }
+  return out;
+}
+
+/** Whether a section has a tool that acts on the target player (the picker matters there). */
+export const sectionUsesTarget = (section: SectionDef): boolean =>
+  section.specs.some((s) => isTargeted(s.tool)) || section.after?.includes('presets') === true;

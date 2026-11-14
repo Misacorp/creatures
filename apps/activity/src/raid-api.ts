@@ -44,6 +44,8 @@ export interface RowSlotView {
     mine: boolean;
     /** Only present for the caller's own creatures. */
     creatureId?: string;
+    /** The creature is shiny (absent: not). */
+    shiny?: boolean;
     /** A Guard's reach (how many creatures it protects on each side); Guards only. */
     reach?: { left: number; right: number };
   };
@@ -325,6 +327,7 @@ function isRowSlot(value: unknown): value is RowSlotView {
     isInt(c['level']) &&
     isBool(c['mine']) &&
     (c['creatureId'] === undefined || isStr(c['creatureId'])) &&
+    (c['shiny'] === undefined || isBool(c['shiny'])) &&
     (c['reach'] === undefined || isGuardReach(c['reach']))
   );
 }

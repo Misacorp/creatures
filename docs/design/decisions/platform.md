@@ -4,6 +4,14 @@ Hosting, Durable Objects, scheduling, CI and deploys, staging, dependencies, sec
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-14: Dev panel: a full-screen layout with sections, and a target player for every per-player tool
+
+ID: `2026-11-14-dev-panel-a-full-screen-layout` · Status: current
+
+**Decision.** Misa (2026-11-13): "The entire dev panel is quite cramped on a desktop view. Could we make it full screen and more organised? Having the option to give target players pretty much everything would be nice." The dev panel opens as a full-screen overlay on a desktop (a bottom sheet on a phone), with a section nav under group headings (Players, Game systems, Tools; a new group such as the valley's is one more heading) and the **target player** picker at the top: "You" (the default) or any player of the server. Every per-player tool (`TARGETED_TOOLS` in `dev-schemas.ts`) takes an optional `userId`: `DevTools.run` takes it off the body, checks that it is a real, non-simulated player of the guild (`404 not_found` otherwise) and runs the tool for that player, so each tool's own strict schema is unchanged. New tools: `grant-currency`, `grant-xp`, `grant-talent`, `set-knack`; `grant-creature` takes a `count` (1 or 2) and `grant-gear` takes a slot, a random base or rarity and a count. "Everyone" exists only for the roster presets, which still need the typed name or `everyone`.
+
+**Reasoning.** The panel had grown to about 40 tools in one folded list, built for a phone. One shared target beats a user field per form: it is set once and shown on every form it affects (a "for Bo" tag, a gold edge on the bar), and a section about the whole server says it does not use it. Taking `userId` off the body in one place keeps the schemas strict and the list of tools that may target a player a single, tested list. The grants go through the game's own functions (`credit`, `awardExperience`, the Talent Book store, `rollItem`, `insertCreature`), so the ledger stays append-only and levels stop at ribbons. Tools that act on the whole guild (the clock, the raid bench, the Games, the dungeon's day) and the account reset never take a target.
+
 ## 2026-11-06: Dev tools: server managers only, roster presets, creatures-per-player override [Misa]
 
 ID: `2026-11-06-dev-tools-server-managers-only-roster` · Status: current

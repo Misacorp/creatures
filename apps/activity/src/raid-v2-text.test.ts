@@ -133,6 +133,7 @@ describe('the swap answers', () => {
   it.each([
     ['changed', 'That swap is out of date: the creatures moved. The board was refreshed.'],
     ['too_many_requests', 'You have too many swap requests open. Wait for some answers first.'],
+    ['answered', 'That swap was already answered, so it cannot be cancelled.'],
     ['locked', 'The raid is locked. Changes are closed for this week.'],
     ['knocked_out', 'That creature is out for the rest of this weekend.'],
   ])('says "%s" in plain words', (code, text) => {

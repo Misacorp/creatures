@@ -17,7 +17,7 @@ import { fetchLiveV2, parseLiveV2, sendLiveActionV2, type LiveSnapshotV2 } from 
 import { useServerNow } from './hooks';
 import { finaleLiveOffered } from './live-flags';
 import { createKeyLock, finaleSocketTarget, pickNewer } from './live';
-import { INTRO_LIVE_MS } from './playback-v2';
+import { INTRO_LIVE_MS, roundBudgetMs } from './playback-v2';
 import type { RaidView } from './raid-api';
 import { RevealCard } from './Reveal';
 import { summaryBoss } from './raid-summary-view';
@@ -27,10 +27,8 @@ import { formatCountdown } from './time-format';
 import { Alert } from './ui/Alert';
 import { DrillHead } from './ui/DrillHead';
 import { onDrillKey } from './ui/drill-keys';
+import { bossAnimSetup } from './boss-anim/setup';
 import { usePlaybackV2 } from './use-playback-v2';
-
-/** What of a snapshot's round the playback keeps free for the round's last effects, so a round ends before the next starts. */
-const ROUND_TAIL_MS = 3000;
 
 export function LiveV2({
   initial,
@@ -329,8 +327,9 @@ function LiveStageV2({
     rounds: snapshot.rounds,
     speed: 1,
     introMs: INTRO_LIVE_MS,
-    budgetMs: Math.max(2000, snapshot.roundMs - ROUND_TAIL_MS - INTRO_LIVE_MS),
+    budgetMs: roundBudgetMs(snapshot.roundMs, INTRO_LIVE_MS),
     mode: 'live',
+    bossAnim: bossAnimSetup(boss, card, snapshot.fighters),
   });
   return (
     <>

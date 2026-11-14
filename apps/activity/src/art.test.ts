@@ -29,7 +29,7 @@ describe('Mire in the stylesheet and the palettes', () => {
   });
   const all = Object.values(css).join('\n');
 
-  it('colours Mire creatures, chips, slot cues and the Muddied mark like the other elements', () => {
+  it('colours Mire creatures, chips, slot cues and the Mired mark like the other elements', () => {
     expect(elementClass('mire')).toBe('el-mire');
     expect(markPalette('mire')).toEqual({ m: '#b8864a' });
     expect(all).toContain('--mire: #b8864a;');

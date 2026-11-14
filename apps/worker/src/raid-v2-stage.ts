@@ -27,7 +27,8 @@ import { partyPlacements, type PlacementRow } from './raid-teams';
 import {
   V2_WORLD,
   arenaOf,
-  colsFor,
+  boardCols,
+  widened,
   determinationBpFor,
   effectivePlayers,
   gridPlace,
@@ -164,9 +165,17 @@ export function buildStageV2(
     placements.some((p) => p.user_id === id),
   );
   if (fightingIds.length === 0) return null;
+  // The boss is sized by the players who placed; the board is as wide as the furthest seat anyone stands in (see `boardCols`).
   const players = prior?.players ?? fightingIds.length;
-  const cols = colsFor(players, false, arena);
-  const boss = weekendBoss(week.trackSlot, effectivePlayers(players, arena));
+  const cols = boardCols(
+    sql,
+    week.weekId,
+    party,
+    players,
+    arena,
+    placements.filter((p) => fightingIds.includes(p.user_id)).map((p) => p.slot),
+  );
+  const boss = widened(weekendBoss(week.trackSlot, effectivePlayers(players, arena)), cols);
   const aliases = fightingIds.map((_, i) => aliasFor(i));
   const creatures = loadV2Creatures(
     sql,
@@ -501,7 +510,6 @@ export function resolveStageV2(
 ): boolean {
   const { storage } = deps;
   const sql = storage.sql;
-  const arena = arenaOf(week.trackSlot, week.seatOverride);
   return storage.transactionSync(() => {
     const done = sql
       .exec(
@@ -512,15 +520,6 @@ export function resolveStageV2(
       )
       .toArray();
     if (done.length > 0) return false;
-    if (stage === 1) {
-      const members = partyMembers(sql, week.weekId, party);
-      const owners = new Set(
-        partyPlacements(sql, week.weekId, party, arena.seats)
-          .map((p) => p.user_id)
-          .filter((id) => members.includes(id)),
-      );
-      compactBoard(sql, week.weekId, party, arena.rows, colsFor(owners.size, false, arena));
-    }
     const built = buildStageV2(sql, week, party, stage);
     if (built === null) return false;
     logLineups(deps, stage, built);

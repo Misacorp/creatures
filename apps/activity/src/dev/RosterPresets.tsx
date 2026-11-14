@@ -1,15 +1,18 @@
 /**
- * The roster preset picker of the "Playtest" section: a player of this server (or everyone), a preset, and a
+ * The roster preset picker of the "Give" section: a preset, who gets it (the panel's target player, or everyone) and a
  * confirmation typed in (the player's name, or "everyone") before Apply works. It replaces that player's creatures and
  * gear bag with the preset, on the server (`apply-roster-preset`, `apps/worker/src/dev-presets.ts`). The controls are
- * the panel's own (`dev-form`, `dev-field`, `dev-btn`); the list comes from `GET /api/dev/players`.
+ * the panel's own (`dev-form`, `dev-field`, `dev-btn`); the players come from the panel's one read of
+ * `GET /api/dev/players`, so the target the panel's picker names is the one shown here.
  */
 import type { JSX } from 'preact';
-import { useEffect, useState } from 'preact/hooks';
-import { fetchPresetChoices, presetLine, type PresetChoices } from './dev-api';
+import { useState } from 'preact/hooks';
+import { presetLine, type PresetChoices } from './dev-api';
 
 /** The picker's value for "everyone". */
 const EVERYONE = 'everyone';
+/** The picker's value for the panel's target player. */
+const TARGET = 'target';
 
 /** What must be typed to confirm: the picked player's name, or `everyone`. Case and outer spaces do not matter. */
 export function confirmWord(choices: PresetChoices | null, target: string): string | null {
@@ -36,67 +39,39 @@ export function presetBody(
 }
 
 interface Props {
+  /** The guild's players and the presets (the panel reads them once and again after every tool). */
+  choices: PresetChoices | null;
+  /** The panel's target player (a user id; the caller's own when it says "You"). */
+  target: string;
   busy: boolean;
-  /** Bumps after a tool ran, so the counts shown next to the names are read again. */
-  version: number;
   onApply: (body: Record<string, unknown>) => void;
 }
 
-export function RosterPresets({ busy, version, onApply }: Props): JSX.Element {
-  const [choices, setChoices] = useState<PresetChoices | null>(null);
-  const [failed, setFailed] = useState(false);
-  const [target, setTarget] = useState(EVERYONE);
+export function RosterPresets({ choices, target, busy, onApply }: Props): JSX.Element {
+  const [who, setWho] = useState(TARGET);
   const [preset, setPreset] = useState('');
   const [typed, setTyped] = useState('');
 
-  useEffect(() => {
-    void fetchPresetChoices().then((found) => {
-      setFailed(found === null);
-      if (found !== null) setChoices(found);
-    });
-  }, [version]);
-
-  if (choices === null) {
-    return (
-      <p class="dev-hint">{failed ? 'Could not load the players.' : 'Loading the players...'}</p>
-    );
-  }
+  if (choices === null) return <p class="dev-hint">Loading the players...</p>;
   const presetId = choices.presets.some((p) => p.id === preset)
     ? preset
     : (choices.presets[0]?.id ?? '');
-  const targetId =
-    target === EVERYONE || choices.players.some((p) => p.userId === target) ? target : EVERYONE;
-  const word = confirmWord(choices, targetId);
+  const targetPlayer = choices.players.find((p) => p.userId === target);
+  const resolved = who === EVERYONE ? EVERYONE : (targetPlayer?.userId ?? null);
+  const word = resolved === null ? null : confirmWord(choices, resolved);
   const picked = choices.presets.find((p) => p.id === presetId);
-  const ready = presetId !== '' && typedMatches(typed, word);
+  const ready = presetId !== '' && resolved !== null && typedMatches(typed, word);
 
   return (
     <form
       class="dev-form"
       onSubmit={(event) => {
         event.preventDefault();
-        if (ready) onApply(presetBody(targetId, presetId, typed));
+        if (ready && resolved !== null) onApply(presetBody(resolved, presetId, typed));
       }}
     >
       <p class="dev-form-title">Give a roster preset</p>
       <div class="dev-fields">
-        <label class="dev-field">
-          <span>Player</span>
-          <select
-            value={targetId}
-            onChange={(e) => {
-              setTarget(e.currentTarget.value);
-              setTyped('');
-            }}
-          >
-            <option value={EVERYONE}>Everyone ({String(choices.players.length)})</option>
-            {choices.players.map((p) => (
-              <option key={p.userId} value={p.userId}>
-                {p.name} ({String(p.creatures)} creatures, {String(p.items)} items)
-              </option>
-            ))}
-          </select>
-        </label>
         <label class="dev-field">
           <span>Preset</span>
           <select
@@ -110,6 +85,19 @@ export function RosterPresets({ busy, version, onApply }: Props): JSX.Element {
                 {p.name}
               </option>
             ))}
+          </select>
+        </label>
+        <label class="dev-field">
+          <span>Give it to</span>
+          <select
+            value={who}
+            onChange={(e) => {
+              setWho(e.currentTarget.value);
+              setTyped('');
+            }}
+          >
+            <option value={TARGET}>{targetPlayer?.name ?? 'The target player'}</option>
+            <option value={EVERYONE}>Everyone ({String(choices.players.length)})</option>
           </select>
         </label>
         <label class="dev-field">
@@ -130,8 +118,8 @@ export function RosterPresets({ busy, version, onApply }: Props): JSX.Element {
       {picked !== undefined && <p class="dev-hint">{presetLine(picked)}.</p>}
       <p class="dev-hint">
         Replaces the creatures and the gear bag of{' '}
-        {targetId === EVERYONE ? 'every player of this server' : 'that player'} (their raid
-        placements go with them; Bait, Essence and the rest stay). Simulated players are left alone.
+        {who === EVERYONE ? 'every player of this server' : 'that player'} (their raid placements go
+        with them; Bait, Essence and the rest stay). Simulated players are left alone.
       </p>
     </form>
   );

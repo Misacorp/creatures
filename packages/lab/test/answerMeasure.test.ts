@@ -120,7 +120,7 @@ describe('the gate check (P-05, P-10)', () => {
       familyDrops([
         m('family:Debuff', 70, true),
         m('family:Reach', 0, false),
-        m('rule:mired', 70, true),
+        m('rule:boggedDown', 70, true),
       ]),
     ).toEqual({ Debuff: 70 });
   });
@@ -150,14 +150,14 @@ describe('the card hint from measurement', () => {
       [
         [
           call('family:Debuff', 60, 'same'),
-          call('rule:mired', 60, 'same'),
-          call('keyword:Mired', 60, 'same'),
+          call('rule:boggedDown', 60, 'same'),
+          call('keyword:Bogged Down', 60, 'same'),
           call('family:Reach', 30),
         ],
       ],
       10,
     );
-    expect(hint).toBe('Mired, Reach Knacks');
+    expect(hint).toBe('Bogged Down, Reach Knacks');
   });
 
   it('a keyword with a family’s name is the same entry, and a tie goes to the Knack family', () => {

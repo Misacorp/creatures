@@ -49,21 +49,21 @@
     "multiplierBp": 45000,
     "payoffBonusBp": 11000,
     "appliesToFoe": {
-      "effect": "mired",
+      "effect": "bogged-down",
       "powerBp": 10000
     }
   },
   {
     "id": "flare",
     "name": "Flare",
-    "markId": "muddied",
-    "markName": "Muddied",
+    "markId": "mired",
+    "markName": "Mired",
     "markElement": "mire",
     "triggerElement": "ember",
     "multiplierBp": 45000,
     "payoffBonusBp": 11000,
     "consumes": {
-      "effect": "mired",
+      "effect": "bogged-down",
       "bonusPerStackBp": 2000
     }
   }

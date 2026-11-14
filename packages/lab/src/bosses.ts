@@ -15,7 +15,7 @@
  * HP is the weekend's shared HP (R14). Fourth panel (Misa, 2026-10-28): a raid is announced, so a team built for the week
  * should usually win (about 85% to 100% of weekends) and still lose creatures, while the classic raid party (four players
  * with Tidewing, Tempestray and Thornbuck) never wins. Each boss has one tool it really asks for (the first of its
- * `BOSS_ANSWERS`, tested by taking the tool away): Reach for the Tidal Colossus, Mired on the Cinder Wyrm, Pierce for
+ * `BOSS_ANSWERS`, tested by taking the tool away): Reach for the Tidal Colossus, Bogged Down on the Cinder Wyrm, Pierce for
  * Thornmother, Taunt for the Storm Sovereign and healing for Old Bogback. Attack and the move powers are
  * the boss's threat: a weekend should cost the party creatures. The boss's escalation (`escalation` in the data) is the
  * word players read.
@@ -36,7 +36,7 @@
  * (`RAID_RANKS`: the lab's creatures are level 12, 18 and 25), so a lower rank is softer without being a walkover.
  *
  * Panel 5, content and tuning (Misa, 2026-10-29: the primary measure is the share of the boss's HP removed in a weekend, with the
- * retreat tiers beside it; the kill is the cliff): Mired's cut is halved, the Colossus washes debuffs off (Shake It Off), Thornmother's
+ * retreat tiers beside it; the kill is the cliff): Bogged Down's cut is halved, the Colossus washes debuffs off (Shake It Off), Thornmother's
  * bark cracks at each escalation step, every rule card and gate has a strength (`strengthBp`, 0% to 100%) that rises with the Boss Rank,
  * the boss's Attack grows with the players (`RAID_ATK_EXPONENT`) so the tool gap holds at ten players, and the prepared answers
  * were searched for a team with random legal talents (`bossAnswers.ts`). The numbers in the data are the high rank's; each boss's
@@ -114,7 +114,7 @@ export const NOT_PORTED: readonly string[] = [
   'Turn orders (left to right, serpentine, right to left): the lab acts row by row, left to right, with a boss turn after each row (R8).',
   'Phase 1, Phase 2 and the twelve-round finale, with their retreat lines: a weekend is three stages of eight rounds that share the boss\u2019s HP (R14). The retreat lines are live-finale flavour.',
   'The lance\u2019s falloff (each row softer) and the Guard that stops a lance: a column hits every creature in it at the move\u2019s power, and a Guard covers by reach like any area hit.',
-  'Mired on creatures (the mud bosses\u2019 Wild Sweep, Barrage, Front Slam and Quake): the lab has Mired only on the boss (-1.5% damage and dodge per stack). A creature debuff needs a debuff-resistance tool first, so it is a proposal question.',
+  'Bogged Down on creatures (the mud bosses\u2019 Wild Sweep, Barrage, Front Slam and Quake): the lab has Bogged Down only on the boss (-1.5% damage and dodge per stack). A creature debuff needs a debuff-resistance tool first, so it is a proposal question.',
   'Purge as a move: it is the Shake It Off card, every third round instead of every fifth.',
   'Finale abilities (Rally, Shield Wall, Purge): gone with R18\u2019s Knacks.',
   'Slag Tyrant\u2019s backlash (half the time a reaction burns its Payoff): it is Reflective Hide, which is certain (P-04), plus an escalation that thickens its shell.',

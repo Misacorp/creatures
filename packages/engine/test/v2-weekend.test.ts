@@ -11,7 +11,7 @@ import {
   boss,
   by,
   count,
-  mired,
+  boggedDown,
   marks,
   member,
   play,
@@ -54,12 +54,17 @@ describe('attrition and carried state (R14)', () => {
     expect(w.stages.map((s) => ended(s, 'A').hp)).toEqual([700, 400, 100]);
   });
 
-  it('marks, Mired and each-fight effects start fresh each stage; a knocked-out creature of an owner is replaced by that owner only', () => {
+  it('marks, Bogged Down and each-fight effects start fresh each stage; a knocked-out creature of an owner is replaced by that owner only', () => {
     const team = crew({ name: 'S', fx: { miresAtStart: true, firstHitBp: 5_000 } });
     const w = playWeekend(boss({ rounds: 2 }), team, [], { stages: 2 });
     for (const stage of w.stages) {
       expect(marks(stage)).toEqual(['tide x1', 'tide x2']);
-      expect(mired(stage)).toEqual(['Mired x1', 'Mired x0', 'Mired x1', 'Mired x0']);
+      expect(boggedDown(stage)).toEqual([
+        'Bogged Down x1',
+        'Bogged Down x0',
+        'Bogged Down x1',
+        'Bogged Down x0',
+      ]);
       expect(by(stage, 'S').fires['firstHitBp']).toBe(1);
     }
     const owners = playWeekend(
