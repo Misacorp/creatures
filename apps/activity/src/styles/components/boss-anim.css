@@ -1,0 +1,112 @@
+/*
+  The boss moves' animation layer (boss-anim/BossAnimLayer.tsx). It sits in the stage's overlay, over everything, lets taps through
+  and clips what flies off the stage. Every piece is positioned by custom properties the script sets each frame: --x and --y (the
+  piece's place in the layer), --w and --h (a cell's size), --rot, --s (scale) and --o (opacity).
+*/
+.boss-anim {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 7;
+}
+
+/* A weapon or a burst: centred on its place, turned and scaled around its middle. Pixel art stays sharp. */
+.boss-anim .ba-sprite {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  opacity: var(--o, 1);
+  transform: translate(-50%, -50%) rotate(var(--rot, 0deg)) scale(var(--s, 1));
+  line-height: 0;
+}
+
+.boss-anim .ba-sprite canvas {
+  image-rendering: pixelated;
+}
+
+/* A cell the move will hit (a red ring: the same boss-target look as the card's lit move) and the flash as it lands. */
+.boss-anim .ba-cell {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: var(--w);
+  height: var(--h);
+  opacity: var(--o, 1);
+  box-sizing: border-box;
+}
+
+.boss-anim .ba-cell.mark {
+  box-shadow: inset 0 0 0 2px var(--bad);
+  background: rgb(var(--bad-rgb) / 18%);
+}
+
+.boss-anim .ba-cell.hit {
+  background: rgb(var(--gold-rgb) / 45%);
+  box-shadow: inset 0 0 0 2px var(--gold);
+}
+
+/* A weapon: crisp pixels with a soft glow round its outline in the colour of its look (--glow). */
+.boss-anim .ba-sprite.weapon canvas {
+  filter: drop-shadow(0 0 3px var(--glow, #fff)) drop-shadow(0 0 7px var(--glow, #fff));
+}
+
+/* The white flash on the cells as the move lands. */
+.boss-anim .ba-cell.flash {
+  background: #fff;
+}
+
+/*
+  The marker: a large stepped pixel triangle, built as the popover's arrow is (an ink outline, ::before, with the colour on top,
+  ::after). `down` points down at a column or a creature, its middle at --x and its top at --y; `side` points right at a row from its left,
+  its middle at --x, --y. The script bobs it two pixels while the move is aimed.
+*/
+.boss-anim .ba-pointer {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: 0;
+  height: 0;
+  opacity: var(--o, 1);
+}
+
+.boss-anim .ba-pointer.side {
+  transform: rotate(-90deg);
+}
+
+.boss-anim .ba-pointer::before,
+.boss-anim .ba-pointer::after {
+  content: '';
+  position: absolute;
+  left: -24px;
+  top: -12px;
+  width: 48px;
+  height: 24px;
+}
+
+.boss-anim .ba-pointer::before {
+  background: var(--ink);
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    100% 33.34%,
+    83.33% 33.34%,
+    83.33% 66.67%,
+    66.67% 66.67%,
+    66.67% 100%,
+    33.33% 100%,
+    33.33% 66.67%,
+    16.67% 66.67%,
+    16.67% 33.34%,
+    0 33.34%
+  );
+}
+
+.boss-anim .ba-pointer::after {
+  left: -18px;
+  top: -6px;
+  width: 36px;
+  height: 14px;
+  background: var(--bad);
+  clip-path: polygon(0 0, 100% 0, 100% 50%, 75% 50%, 75% 100%, 25% 100%, 25% 50%, 0 50%);
+}

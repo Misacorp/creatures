@@ -6,6 +6,7 @@
  */
 import type { ComponentChildren } from 'preact';
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'preact/hooks';
+import { BossRunLayer } from './boss-anim/BossAnimLayer';
 import { bossArt, elementClass } from './art';
 import { ArmourChip, EscalatingMeter, boardTurnSteps, stageTicks } from './BossCardV2';
 import { combatGlyph, moveGlyphId } from './combat-glyphs';
@@ -696,6 +697,7 @@ export function StageV2({
             />
           )}
         </div>
+        <BossRunLayer run={playback.bossRun ?? null} grid={grid} />
         {intro !== null && <RoundIntro intro={intro} />}
         {overlay}
       </div>

@@ -1,5 +1,8 @@
 import type { FightEvent } from '@creatures/engine/v2';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
+import type { BossRun } from './boss-anim/BossAnimLayer';
+import { bossAimOf, planOf, type AnimPlan, type MoveInfo } from './boss-anim/plan';
+import { leadMs } from './boss-anim/timeline';
 import { showOf, type BeatShow, type StageModel } from './fight-v2';
 import { useKnackNames } from './home/use-knack-names';
 import { usePrefersReducedMotion } from './hooks';
@@ -24,7 +27,21 @@ export interface PlaybackV2 {
   fx: readonly FxItem[];
   /** The "Round N" overlay while a round opens. */
   intro: IntroView | null;
+  /** The boss move being drawn (its weapon, markers and bursts, `boss-anim/`), from before its beat lands to the end of its impact. */
+  bossRun?: BossRun | null;
 }
+
+/** What the playback needs to animate a boss's moves (`boss-anim/`): the boss, its grid and its moves' shapes. Absent: no animation (a dungeon foe). */
+export interface BossAnimSetup {
+  bossId: string;
+  element: string | null;
+  grid: { rows: number; cols: number };
+  moves: readonly MoveInfo[];
+  plainShape: string;
+}
+
+/** A boss beat shorter than this (a crowded round squeezed it) does not animate: nothing would be seen. */
+const MIN_ANIM_MS = 500;
 
 interface PlaybackArgs {
   model: StageModel;
@@ -45,6 +62,8 @@ interface PlaybackArgs {
   knackNames?: boolean;
   /** Start playing at once (the default), or wait until `setPlaying(true)` (the dungeon's room waits behind its banner). */
   autoplay?: boolean;
+  /** Animate the boss's moves (raid stages and the finale); absent for a dungeon foe. */
+  bossAnim?: BossAnimSetup;
 }
 
 /** The creatures whose Knack does not act when beat `at` begins: silenced or knocked out in the state before it. */
@@ -105,6 +124,9 @@ export function usePlaybackV2(args: PlaybackArgs): PlaybackV2 {
   const [pos, setPos] = useState({ beat: live ? total : 0, prev: live ? total : 0, seq: 0 });
   const [playing, setPlaying] = useState(args.autoplay !== false);
   const [intro, setIntro] = useState<IntroView | null>(null);
+  const [bossRun, setBossRun] = useState<BossRun | null>(null);
+  // True while a boss move's picture runs before its beat lands: leaving then (a pause, a jump) takes the picture away with it.
+  const holding = useRef(false);
   const reduced = usePrefersReducedMotion();
   const trail = useFxTrail();
   const durations = useMemo(
@@ -115,7 +137,23 @@ export function usePlaybackV2(args: PlaybackArgs): PlaybackV2 {
   latest.current = { model, events, durations, rounds };
   const { beat } = pos;
 
+  /** The animation of boss beat `k`: its plan and its time, or null (not a boss move, no setup, reduced motion, or too short a beat). */
+  const animOf = (k: number): { plan: AnimPlan; totalMs: number } | null => {
+    const setup = args.bossAnim;
+    const { model: m, events: ev, durations: ms } = latest.current;
+    const b = m.beats[k];
+    const totalMs = ms[k] ?? 0;
+    if (setup === undefined || reduced || b === undefined || totalMs < MIN_ANIM_MS) return null;
+    const aim = bossAimOf(ev, b, {
+      moves: setup.moves,
+      plainShape: setup.plainShape,
+      creatures: m.setup.creatures,
+    });
+    return aim === null ? null : { plan: planOf(aim, setup.grid), totalMs };
+  };
+
   const move = (to: number): void => {
+    setBossRun(null);
     setPos((p) => ({ beat: to, prev: p.beat, seq: p.seq + 1 }));
   };
 
@@ -136,7 +174,12 @@ export function usePlaybackV2(args: PlaybackArgs): PlaybackV2 {
     const { model: m, durations: ms, rounds: limit } = latest.current;
     const next = m.beats[beat];
     if (next === undefined) return undefined;
-    const lead = beat === 0 || (live && next.kind === 'round') ? 0 : (ms[beat - 1] ?? 0);
+    // A boss move's picture runs before its beat lands, inside the beat's own time: the beat after it waits for what is left.
+    const prior = beat === 0 ? null : animOf(beat - 1);
+    const lead =
+      beat === 0 || (live && next.kind === 'round')
+        ? 0
+        : (ms[beat - 1] ?? 0) - (prior === null ? 0 : leadMs(prior.totalMs));
     const timers: ReturnType<typeof setTimeout>[] = [];
     const later = (fn: () => void, wait: number): void => {
       timers.push(setTimeout(fn, wait));
@@ -153,10 +196,32 @@ export function usePlaybackV2(args: PlaybackArgs): PlaybackV2 {
           advance();
         }, wait);
       } else {
-        advance();
+        const anim = animOf(beat);
+        if (anim === null) {
+          setBossRun(null);
+          advance();
+        } else {
+          holding.current = true;
+          setBossRun({
+            id: pos.seq + 1,
+            plan: anim.plan,
+            bossId: args.bossAnim?.bossId ?? null,
+            element: args.bossAnim?.element ?? null,
+            totalMs: anim.totalMs,
+            startedAt: performance.now(),
+          });
+          later(() => {
+            holding.current = false;
+            advance();
+          }, leadMs(anim.totalMs));
+        }
       }
     }, lead);
     return () => {
+      if (holding.current) {
+        holding.current = false;
+        setBossRun(null);
+      }
       for (const t of timers) clearTimeout(t);
       setIntro(null);
     };
@@ -194,5 +259,6 @@ export function usePlaybackV2(args: PlaybackArgs): PlaybackV2 {
     show,
     fx,
     intro,
+    bossRun,
   };
 }

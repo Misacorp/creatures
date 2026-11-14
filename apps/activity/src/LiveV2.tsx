@@ -27,6 +27,7 @@ import { formatCountdown } from './time-format';
 import { Alert } from './ui/Alert';
 import { DrillHead } from './ui/DrillHead';
 import { onDrillKey } from './ui/drill-keys';
+import { bossAnimSetup } from './boss-anim/setup';
 import { usePlaybackV2 } from './use-playback-v2';
 
 /** What of a snapshot's round the playback keeps free for the round's last effects, so a round ends before the next starts. */
@@ -331,6 +332,7 @@ function LiveStageV2({
     introMs: INTRO_LIVE_MS,
     budgetMs: Math.max(2000, snapshot.roundMs - ROUND_TAIL_MS - INTRO_LIVE_MS),
     mode: 'live',
+    bossAnim: bossAnimSetup(boss, card, snapshot.fighters),
   });
   return (
     <>

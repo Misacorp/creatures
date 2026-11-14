@@ -148,6 +148,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 - 2026-11-14 A live finale started off the calendar is on from its real start in the Raid view
 - 2026-11-14 Raid seats are never moved: stage 1 widens the board instead of compacting it
+- 2026-11-14 Boss move animations: five phases, motion by shape, art by boss look
 - 2026-11-09 Finale actions stay as they are until the playtest; Rally unchanged; six icons accepted \[Misa\]
 - 2026-11-06 Finale actions measured: none dominates, Rally is worth about nothing, and picking the best action changes nothing at three players or more
 - 2026-11-06 Combat v2 goes live with the valley rework in one reset \[Misa\]
