@@ -19,6 +19,7 @@ export function DrillHead({
   focus = false,
   disabled = false,
   word = 'Back',
+  leaves = false,
 }: {
   title: string;
   onBack: () => void;
@@ -28,6 +29,11 @@ export function DrillHead({
   focus?: boolean;
   disabled?: boolean;
   word?: string;
+  /**
+   * Back leaves the whole view (a wizard's first step): marked on the head so a canvas drawer, which has its own X, can leave
+   * the Back out (`views/canvas.css`). A page keeps drawing it.
+   */
+  leaves?: boolean;
 }) {
   const head = useRef<HTMLDivElement>(null);
   const back = useRef<HTMLButtonElement>(null);
@@ -37,7 +43,7 @@ export function DrillHead({
   }, []);
   const Title = level === 3 ? 'h3' : 'h4';
   return (
-    <div ref={head} class="drill-head">
+    <div ref={head} class="drill-head" data-leaves={leaves ? 'yes' : undefined}>
       <button
         ref={back}
         type="button"

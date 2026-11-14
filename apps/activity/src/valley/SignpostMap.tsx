@@ -15,6 +15,7 @@ import { scrollBehavior } from '../scroll-to';
 import { HUB } from '../sprites/world-map-art';
 import { WorldMap } from '../WorldMap';
 import { CRATE_PROP, PLANS_PROP } from './forge-props';
+import { Nameplate } from '../ui/Nameplate';
 import { Pic } from './parts';
 import type { Opener } from './PlaceCanvas';
 import { openerOf } from './PlaceCanvas';
@@ -22,6 +23,18 @@ import { openerOf } from './PlaceCanvas';
 /** The place a map opens on: one with a pack to look at, else one with a scout, else the hub (Old Crossroads). */
 export function startPlace(places: readonly MapPlace[]): string {
   return places.find((p) => p.flag === 'FULL')?.id ?? places.find((p) => p.count > 0)?.id ?? HUB;
+}
+
+/** The cue of a button over the map (the same plate and pip as a scene's targets, `canvas.css`). */
+function ToolCue({ name }: { name: string }) {
+  return (
+    <>
+      <span class="cv-plate" aria-hidden="true">
+        <Nameplate size="sm">{name}</Nameplate>
+      </span>
+      <span class="cv-pip" aria-hidden="true" />
+    </>
+  );
 }
 
 export function SignpostMap({
@@ -59,7 +72,10 @@ export function SignpostMap({
     const scroller = box.current?.querySelector<HTMLElement>('.world-map');
     const target = box.current?.querySelector<HTMLElement>(`[data-place="${id}"]`);
     if (scroller !== null && scroller !== undefined && target !== null && target !== undefined) {
-      centerOn(scroller, target, behavior);
+      // The drawers lie over the map's edges (the map itself never moves): the middle is that of what they leave clear.
+      const side = (name: string): number =>
+        box.current?.closest('.pc-root')?.querySelector<HTMLElement>(name)?.offsetWidth ?? 0;
+      centerOn(scroller, target, behavior, { left: side('.pc-left'), right: side('.pc-right') });
     }
   };
 
@@ -108,6 +124,7 @@ export function SignpostMap({
         }}
       >
         <Pic sprite={CRATE_PROP} scale={2} />
+        <ToolCue name="Packs" />
         {fullPacks > 0 && (
           <span class="vy-hatch-count pix" aria-hidden="true">
             {fullPacks}
@@ -125,6 +142,7 @@ export function SignpostMap({
           }}
         >
           <Pic sprite={PLANS_PROP} scale={2} />
+          <ToolCue name="Board" />
         </button>
       )}
     </div>

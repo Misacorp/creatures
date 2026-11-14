@@ -1,7 +1,8 @@
 /*
   A place as a canvas (`valley/PlaceCanvas.tsx`, `docs/design/ux-patterns.md` "A place is a canvas"): the scene fills the view and the
-  page never scrolls. Wide (60 rem and up): the scene sits between a left and a right drawer (`ui/SidePanel`), each 24 rem, the scene
-  keeping its scale in what is left. A phone has no drawers: an open panel is a full page over the scene (which stays mounted, only
+  page never scrolls. Wide (60 rem and up): the scene fills the whole stage and never moves or rescales while you are in it; a left and a
+  right drawer (`ui/SidePanel`), each 24 rem, lie over its edges (only when a drawer would cover what was clicked is the scene panned
+  sideways, `--pan`, never rescaled). A phone has no drawers: an open panel is a full page over the scene (which stays mounted, only
   hidden, so it keeps its size and the button the focus returns to). Targets are real buttons with no look but a ring and, for a slot,
   a dashed outline.
 */
@@ -51,17 +52,27 @@
 }
 
 .pc-stage {
+  position: relative;
   flex: 1;
   min-height: 0;
   display: flex;
+  overflow: hidden;
 }
 
+/* The scene: the whole stage, one size and place; panned sideways only to keep what was clicked clear of a drawer. */
 .pc-main {
   flex: 1;
   min-width: 0;
   min-height: 0;
   display: flex;
   flex-direction: column;
+  transform: translateX(var(--pan, 0px));
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pc-main {
+    transition: transform 160ms ease-out;
+  }
 }
 
 .pc-below {
@@ -73,9 +84,12 @@
   display: none;
 }
 
-/* A wide window's drawer: beside the scene, full height, its body scrolling inside (a step rarely needs it). */
+/* A wide window's drawer: over the scene's edge, full height, its body scrolling inside (a step rarely needs it). */
 .pc-side {
-  flex: none;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 10;
   width: 24rem;
   max-width: 40%;
   min-height: 0;
@@ -93,11 +107,18 @@
 }
 
 .pc-left {
+  left: 0;
   box-shadow: 2px 0 0 0 var(--ink);
 }
 
 .pc-right {
+  right: 0;
   box-shadow: -2px 0 0 0 var(--ink);
+}
+
+/* A drawer's first step has only the X: its Back would only close the drawer (Misa, 2026-11-15). A step that goes back to another panel keeps it. */
+.pc-side:not([data-keepback]) .drill-head[data-leaves] .drill-back {
+  display: none;
 }
 
 /* A phone's page. */
@@ -183,6 +204,72 @@ button.cv-target:is(:hover, :active) {
   cursor: pointer;
 }
 
+/*
+  The cue that a thing is clickable (`art-variants.ts`, `clickCue`, `data-cue` on `.pc-root`; decoration has none):
+  A: a small name plate under it, always. B: the plate and a 1 px light outline only on hover or press (and the plate on keyboard focus).
+  C: a small gold pip always, and the plate on hover, press or keyboard focus. The keyboard's own cue stays the gold arrow
+  (`art-focus.css`); there is never a focus outline.
+*/
+.cv-plate {
+  position: absolute;
+  left: 50%;
+  top: var(--py, 100%);
+  z-index: 3;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  line-height: 1.1;
+  pointer-events: none;
+}
+
+.cv-plate .nameplate {
+  max-width: 7.5rem;
+}
+
+.pc-root:is([data-cue='B'], [data-cue='C']) .cv-plate {
+  visibility: hidden;
+}
+
+.pc-root:is([data-cue='B'], [data-cue='C'])
+  :is(button.cv-target, .sg-map-tool, .wm-marker):is(:hover, :active, :focus-visible)
+  .cv-plate {
+  visibility: visible;
+}
+
+.pc-root[data-cue='B'] button.cv-target:is(:hover, :active):not(:disabled):not(.cv-slot) {
+  box-shadow:
+    inset 0 0 0 2px var(--bone),
+    0 0 0 1px var(--ink);
+}
+
+.cv-pip {
+  display: none;
+}
+
+.pc-root[data-cue='C'] .cv-pip {
+  display: block;
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--gold);
+  filter: drop-shadow(0 1px 0 var(--ink));
+  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pc-root[data-cue='C'] .cv-pip {
+    animation: cv-pip 1600ms steps(1) infinite;
+  }
+}
+
+@keyframes cv-pip {
+  60% {
+    opacity: 0.45;
+  }
+}
+
 /* A creature is carried over it. */
 button.cv-target.cv-over {
   box-shadow: inset 0 0 0 2px var(--gold);
@@ -203,7 +290,7 @@ button.cv-slot:is(:hover, :active) {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: 0.125rem;
   padding: 0.125rem;
   border: 2px dashed var(--bone);
@@ -219,7 +306,7 @@ button.cv-slot:hover:not(:disabled) {
 .cv-ghost {
   position: absolute;
   left: 50%;
-  top: 0.25rem;
+  top: var(--gy, 0.25rem);
   transform: translateX(-50%);
   opacity: 0.55;
   line-height: 0;

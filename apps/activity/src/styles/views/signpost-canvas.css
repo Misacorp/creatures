@@ -38,7 +38,14 @@
 
 /* The packs and the project board: two of the Places button's flags (`.vy-hatch`) in the map's top left, one under the other. */
 .sg-map .sg-map-tool-2 {
-  top: 3.5rem;
+  top: 5.25rem;
+}
+
+/* A tool's pip sits at its bottom right, clear of the count tag at its top right. */
+.sg-map .sg-map-tool .cv-pip {
+  top: auto;
+  bottom: 0.125rem;
+  right: 0.125rem;
 }
 
 /* The lists of the drawers: the scouts at a place, and the packs of every seat. */

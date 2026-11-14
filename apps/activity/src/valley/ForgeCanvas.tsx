@@ -256,6 +256,8 @@ export function ForgeCanvas(props: ForgeCanvasProps) {
       rightPanel = {
         title: anvil === undefined ? 'Order' : anvilName(visit, anvil),
         wizard: true,
+        // Back from the order's first step goes to the anvil it was opened from: that Back stays.
+        keepBack: back !== null,
         returnFocusTo: from,
         onClose: leave,
         children: (
