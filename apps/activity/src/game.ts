@@ -207,6 +207,7 @@ const ERROR_TEXT: Record<string, string> = {
   changed: 'That swap is out of date: the creatures moved. The board was refreshed.',
   too_many_requests: 'You have too many swap requests open. Wait for some answers first.',
   invalid_swap: 'That swap cannot be asked. Pick one of your creatures and another player\u2019s.',
+  answered: 'That swap was already answered, so it cannot be cancelled.',
   not_v2: 'This week\u2019s raid does not have swap requests.',
   // The live finale.
   already_fired: 'Your ability has already been used.',
@@ -226,6 +227,14 @@ const ERROR_TEXT: Record<string, string> = {
   channel_unknown: 'The game does not know which channel this was opened in. Reopen the Activity.',
   // Gear and the Workshop.
   insufficient_parts: 'You do not have the parts for that.',
+  // The weekly visitor.
+  visitor_away: 'The visitor has left the valley. Back Thursday.',
+  already_bought: 'You bought this week\u2019s blueprint already.',
+  // The School's teacher.
+  no_teacher: 'No teacher is at the School right now.',
+  would_not_learn: 'That creature would not learn this lesson.',
+  line_seated: 'A creature of the same kind already sits at the School.',
+  no_such_seat: 'There is no such seat at the School.',
   creature_on_job: 'That creature is on a job in the Workshop. Claim it first.',
   // The living room.
   creature_not_found: 'That creature no longer exists. The page was refreshed.',

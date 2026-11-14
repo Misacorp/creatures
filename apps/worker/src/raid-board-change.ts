@@ -10,7 +10,7 @@
  */
 import { slotFor } from './raid-resolve';
 import { loadCreaturesById } from './raid-teams';
-import { cellCreature, type RowSlotView } from './raid-view';
+import { cellCreature, shinyCreatureIds, type RowSlotView } from './raid-view';
 
 /** One board cell after the change: the slot, and the creature in it (null: empty). */
 export interface BoardCell {
@@ -65,9 +65,13 @@ export function boardPush(sql: SqlStorage, change: BoardChange): BoardPush {
           }>('SELECT display_name FROM players WHERE user_id = ?', change.userId)
           .toArray()[0]?.display_name ?? 'Unknown')
       : 'Unknown';
+  const shiny = shinyCreatureIds(sql, ids);
   const cells: BoardCell[] = change.slots.map(({ slot, creatureId }) => {
     const fight = creatureId === null ? undefined : byId.get(creatureId);
-    return { slot, creature: fight === undefined ? null : cellCreature(fight, owner, false) };
+    return {
+      slot,
+      creature: fight === undefined ? null : cellCreature(fight, owner, false, shiny),
+    };
   });
   return {
     week: change.week,

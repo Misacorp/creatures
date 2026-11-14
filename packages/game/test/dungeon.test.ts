@@ -79,14 +79,14 @@ describe('the dungeon content', () => {
     ]);
   });
 
-  it('has the Mire foes and the Muddy room: Mired on the foes, the whole team slower in the room', () => {
+  it('has the Mire foes and the Muddy room: Bogged Down on the foes, the whole team slower in the room', () => {
     for (const id of ['bog-toad', 'tar-leech', 'fen-lurker']) {
       const f = dungeonFoe(id);
       expect(f?.element, id).toBe('mire');
       const moves =
         f?.signature === undefined ? f?.gimmicks : [...(f?.gimmicks ?? []), f.signature];
       expect(
-        moves?.every((g) => 'applies' in g && g.applies?.effect === 'mired'),
+        moves?.every((g) => 'applies' in g && g.applies?.effect === 'bogged-down'),
         id,
       ).toBe(true);
     }
@@ -94,7 +94,7 @@ describe('the dungeon content', () => {
     expect(dungeonFoe('tar-leech')?.kind).toBe('foe');
     expect(dungeonFoe('fen-lurker')).toMatchObject({
       kind: 'boss',
-      signature: { id: 'pull-under', op: 'charge', applies: { effect: 'mired' } },
+      signature: { id: 'pull-under', op: 'charge', applies: { effect: 'bogged-down' } },
     });
     expect(roomModifier('mud')).toMatchObject({
       name: 'Muddy',

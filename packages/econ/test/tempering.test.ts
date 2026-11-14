@@ -275,6 +275,8 @@ describe('the switch and the rules', () => {
       );
       return [...piles].sort((x, y) => x - y)[Math.floor(piles.length / 2)] ?? 0;
     };
-    expect(stock(true)).toBeLessThan(stock(false) * 0.6);
+    // 0.65 since 2026-11-09 (was 0.6): with the born talent free (Misa) players keep more Acorns, other sinks drain the pile without
+    // tempering too (median 5095, was 7859), and tempering's share moved from 0.48 to 0.60 while its own pile fell (3064, was 3742).
+    expect(stock(true)).toBeLessThan(stock(false) * 0.65);
   });
 });

@@ -669,3 +669,31 @@ export function formatStagePostV2(post: StagePostV2): PostMessage {
     fields,
   });
 }
+
+/**
+ * Thursday: the weekly visitor has come to the valley (phase 5 step 8, V-VIS-1; the game's "where is Xur" moment). The game's voice, no
+ * amounts, and nothing a player typed: the text is fixed.
+ */
+export function formatVisitorPost(): PostMessage {
+  return message({
+    title: '🧳 A visitor has come to the valley',
+    description:
+      'Someone with a heavy pack is waiting at the crossroads. Bring a piece of gear and they will look it over again. They never stay for long.',
+    color: POST_COLOURS.plain,
+    fields: [],
+  });
+}
+
+/**
+ * Friday: the School's visiting teacher is announced (phase 5 step 9, V-SCH-11). The talent's name is content (never typed by a player;
+ * escaped all the same) and the days are Discord time stamps, so each reader sees them in their own time. No amounts.
+ */
+export function formatTeacherPost(talentName: string, from: number, until: number): PostMessage {
+  const stamp = (at: number): string => `<t:${String(Math.floor(at / 1000))}:D>`;
+  return message({
+    title: '🎓 A teacher is coming to the School',
+    description: `They will teach **${escapeMarkdown(talentName)}**. They are at the School from ${stamp(from)} to ${stamp(until)}. Creatures seated there learn it by the next morning, if it fits their line.`,
+    color: POST_COLOURS.plain,
+    fields: [],
+  });
+}

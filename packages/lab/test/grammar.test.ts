@@ -369,9 +369,9 @@ describe('escalation (the boss Store)', () => {
     expect(r.escalation?.phase).toBe(true);
   });
 
-  it('Mired slows it: the next step needs more units for each Mired stack, so it comes later but is not frozen', () => {
+  it('Bogged Down slows it: the next step needs more units for each Bogged Down stack, so it comes later but is not frozen', () => {
     const e = esc({ per: 1, cap: 3 });
-    const mired = fight(
+    const boggedDown = fight(
       base(e),
       [at('croakmire', 0, 0, { knack: 'squelch-song' }), ...team.slice(1)],
       {
@@ -387,12 +387,14 @@ describe('escalation (the boss Store)', () => {
       r.events
         .filter((x) => x.kind === 'escalation' && x.text.includes(': step '))
         .map((x) => x.round);
-    // Free: a step in each of rounds 2, 3 and 4. Mired: the steps still come, but later, and some rounds are logged as slowed.
+    // Free: a step in each of rounds 2, 3 and 4. Bogged Down: the steps still come, but later, and some rounds are logged as slowed.
     expect(stepRounds(free)).toEqual([2, 3, 4]);
-    expect(mired.escalation?.step).toBeGreaterThan(0);
-    expect(stepRounds(mired).at(-1)).toBeGreaterThan(4);
+    expect(boggedDown.escalation?.step).toBeGreaterThan(0);
+    expect(stepRounds(boggedDown).at(-1)).toBeGreaterThan(4);
     expect(
-      mired.events.some((x) => x.kind === 'escalation' && x.text.includes('slowed by the Mired')),
+      boggedDown.events.some(
+        (x) => x.kind === 'escalation' && x.text.includes('slowed by the Bogged Down'),
+      ),
     ).toBe(true);
   });
 

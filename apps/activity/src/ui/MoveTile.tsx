@@ -22,7 +22,7 @@ interface MoveTileProps {
   /** The move is the one tapped: its slots light on the board too. */
   selected: boolean;
   /** Absent: a plain tile nothing can be pressed on (the dungeon map's drawer: there is no board to light). */
-  onToggle?: () => void;
+  onToggle?: (button: HTMLElement) => void;
 }
 
 /** "every 3 rounds" in few words, for the tile and for a screen reader. */
@@ -86,7 +86,9 @@ export function MoveTile({ move, arena, lit, selected, onToggle }: MoveTileProps
       class={classes}
       aria-pressed={selected}
       aria-label={name}
-      onClick={onToggle}
+      onClick={(event) => {
+        onToggle(event.currentTarget);
+      }}
     >
       {inside}
     </button>

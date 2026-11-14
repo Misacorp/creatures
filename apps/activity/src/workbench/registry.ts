@@ -34,6 +34,7 @@ import { supplyCraftingEntries } from './entries/supply-crafting';
 import { raidBoardEntries } from './entries/raid-board';
 import { raidV2Entries } from './entries/raid-v2';
 import { fightV2Entries } from './entries/fight-v2';
+import { bossAnimEntries } from './entries/boss-anim';
 import { raidSummaryEntries } from './entries/raid-summary';
 import { sendFormEntries } from './entries/send-form';
 import { sidePanelEntries } from './entries/side-panel';
@@ -64,6 +65,7 @@ export const ENTRIES: readonly Entry[] = [
   ...raidBoardEntries,
   ...raidV2Entries,
   ...fightV2Entries,
+  ...bossAnimEntries,
   ...raidSummaryEntries,
   ...lootEntries,
   ...findEntries,

@@ -50,6 +50,10 @@ import { valleyBonfireMigration } from './valley-bonfire-migration';
 import { valleyCommonsMigration } from './valley-commons-migration';
 import { valleyMarketMigration } from './valley-market-migration';
 import { valleyMarketOpenMigration } from './valley-market-open-migration';
+import { valleySchoolMigration } from './valley-school-migration';
+import { valleyForgeCrowdMigration } from './valley-forge-crowd-migration';
+import { valleyTrialsMigration } from './valley-trials-migration';
+import { valleyVisitorMigration } from './valley-visitor-migration';
 import { valleyGazetteMigration } from './valley-gazette-migration';
 import { weatherMigration } from './weather-migration';
 import { workshopConvertMigration } from './workshop-convert-migration';
@@ -370,15 +374,15 @@ export const MIGRATIONS: readonly Migration[] = [
   valleyMarketMigration,
   // Version 63: the Market's opening is told once to each player in the paper (see valley-market-open-migration.ts).
   valleyMarketOpenMigration,
-  // Versions 64 to 66 are RESERVED for the valley session's branch (the weekly visitor, the School, the trials). `null` is
-  // skipped and never recorded in schema_version (the runner applies every version it has not recorded, not "everything
-  // above the highest"), so on a database that gets housing first the valley's real 64 to 66 still run later, once.
-  // When the valley branch merges: replace these three `null`s with its migrations in place (keep 67 where it is). A
-  // database that already recorded 64 to 66 (staging) skips them; one that did not (production) runs them after 67.
-  null,
-  null,
-  null,
-  // Version 67: player housing: houses, parts, rooms, items, trophies, guestbook, mail and drops (see housing-migration.ts).
+  // Version 64: the weekly visitor: his weeks and each player's rerolls (see valley-visitor-migration.ts).
+  valleyVisitorMigration,
+  // Version 65: the School's weekly teacher: his weeks, each player's lessons and the student seat's home (see valley-school-migration.ts).
+  valleySchoolMigration,
+  // Version 66: the trials' state per creature (see valley-trials-migration.ts).
+  valleyTrialsMigration,
+  // Version 67: the index behind the workshop's background smiths (see valley-forge-crowd-migration.ts).
+  valleyForgeCrowdMigration,
+  // Version 68: player housing: houses, parts, rooms, items, trophies, guestbook, mail and drops (see housing-migration.ts).
   housingMigration,
 ];
 

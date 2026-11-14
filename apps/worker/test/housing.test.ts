@@ -78,10 +78,10 @@ describe('the HOUSING flag: configuration', () => {
   });
 });
 
-describe('migration 67', () => {
+describe('migration 68', () => {
   it('is the housing migration, and creates the eight tables', async () => {
-    expect(SCHEMA_VERSION).toBeGreaterThanOrEqual(67);
-    expect(MIGRATIONS[66]?.name).toBe('housingMigration');
+    expect(SCHEMA_VERSION).toBeGreaterThanOrEqual(68);
+    expect(MIGRATIONS[67]?.name).toBe('housingMigration');
     await runHouse((ctx) => {
       for (const table of HOUSING_TABLES) {
         expect(count(ctx.sql, 'sqlite_master', `name = '${table}'`)).toBe(1);

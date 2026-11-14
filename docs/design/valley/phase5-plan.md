@@ -124,6 +124,7 @@ Every step: **pricing** (a case in `read-budget.test.ts`, statements in `query-p
 
 - Dev only: `valley-bots` (guests with the lab's profiles), `valley-sim-day` (the dev clock one game day on; each bot's due visit runs the real settle and the intents its policy picks; policies ported from `packages/econ/src/policy.ts` as one pure module the lab and the bots share), `valley-report` (lab-shaped metrics plus rows read and written).
 - `apps/worker/scripts/valley-month.mjs`: 28 day calls, then `pnpm --filter @creatures/econ compare` on the same scenario.
+- **Built (2026-11-06)**, with a local dry run (`log.md`); the month on staging and the gate's boxes wait for Misa's go.
 
 ## 3. Flags
 

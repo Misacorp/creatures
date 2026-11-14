@@ -430,8 +430,9 @@ export const VALLEY_LANDMARK_CONCEPTS: ConceptSet = {
   title: 'Valley places: map landmarks',
   requested:
     '2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations.',
-  status: 'draft',
+  status: 'archived',
   notes: [
+    '2026-11-11: archived; Misa picked the glow direction (valley-glow).',
     'One of several directions for the four valley places; this one draws each as a map marker. Compare it with the other sets before picking.',
     'To use: the valley screen composes places from sprites; these are free sprites up to 64 px and would be shown at their drawn size on grass.',
     'The visitor and visitor-away drawings share a stall; the away sign is a calendar page and a moon, not words.',

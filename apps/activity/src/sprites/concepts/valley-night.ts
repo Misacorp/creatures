@@ -536,8 +536,9 @@ export const VALLEY_NIGHT_CONCEPTS: ConceptSet = {
   title: 'Valley places: night glow',
   requested:
     '2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations.',
-  status: 'draft',
+  status: 'archived',
   notes: [
+    '2026-11-11: archived; Misa picked the glow direction (valley-glow).',
     'Direction "night glow": each place at dusk or night, lit by its own light (fire orange, window yellow, violet lamp, teal shard glow), warm stepped rings on the ground and cool blue-purple shadow.',
     'Each sprite is a 64x64 island vignette (kind free, 16 colours) in a 3/4 top-down view, made to sit in a valley map; the island rim keeps it readable on the dark panels.',
     "The creatures in these are small stand-ins (10x7), not species; the game would draw the player's own creatures there.",

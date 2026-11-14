@@ -4,9 +4,10 @@
  * from the finale's result. The log is the engine's own text, closed until asked for. Names are drawn as text only.
  */
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
+import { bossAnimSetup } from './boss-anim/setup';
 import { foldSetupOf, removedPercent, stageModelOf } from './fight-v2';
 import type { FightPhaseV2, ReplayViewV2 } from './fight-v2-api';
-import { INTRO_REPLAY_MS, type SpeedV2 } from './playback-v2';
+import { INTRO_LIVE_MS, STAGE_ROUND_MS, roundBudgetMs, type SpeedV2 } from './playback-v2';
 import { phaseName } from './raid-text';
 import { StageV2 } from './StageV2';
 import { LogToggle } from './Stage';
@@ -18,9 +19,6 @@ import { usePlaybackV2 } from './use-playback-v2';
 /** The stage's name for the head of the stage and of the page: "Stage 1 / 3", "Finale". */
 export const stagePlace = (phase: FightPhaseV2): string =>
   phase === 'stage1' ? 'Stage 1 / 3' : phase === 'stage2' ? 'Stage 2 / 3' : 'Finale';
-
-/** A big raid's round is squeezed to this long at 1x, so a replay of fifteen players does not drag (a round of four runs shorter). */
-const REPLAY_ROUND_BUDGET_MS = 18_000;
 
 /** The page of a replay of a v2 stage: the drill-in head (Back goes to the raid, so does Escape) and the stage. */
 export function ReplayV2({ data, onClose }: { data: ReplayViewV2; onClose: () => void }) {
@@ -51,14 +49,21 @@ export function PlayerV2({
   );
   const model = useMemo(() => stageModelOf(setup, data.events), [setup, data.events]);
   const [speed, setSpeed] = useState<SpeedV2>(1);
+  const bossAnim = useMemo(
+    () => bossAnimSetup(data.boss, data.card, data.fighters),
+    [data.boss, data.card, data.fighters],
+  );
   const playback = usePlaybackV2({
     model,
     events: data.events,
     rounds: data.boss.rounds,
     speed,
-    introMs: INTRO_REPLAY_MS,
-    budgetMs: REPLAY_ROUND_BUDGET_MS,
+    // The pace of the live finale (`playback-v2.ts`): its intro, its round budget and its round length.
+    introMs: INTRO_LIVE_MS,
+    budgetMs: roundBudgetMs(STAGE_ROUND_MS, INTRO_LIVE_MS),
+    roundMs: STAGE_ROUND_MS,
     mode: 'replay',
+    bossAnim: bossAnim,
   });
   const { beat, total, finished, playing, setPlaying, move } = playback;
   const logRef = useRef<HTMLOListElement>(null);

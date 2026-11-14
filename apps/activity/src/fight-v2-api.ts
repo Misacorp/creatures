@@ -57,6 +57,8 @@ export interface FightCreatureV2 {
   maxHp: number;
   /** Its HP when the stage began (carried between stages). */
   startHp: number;
+  /** The creature is shiny (absent: not). */
+  shiny?: boolean;
 }
 
 /** The boss of a fight: what the stage draws of it. */
@@ -252,11 +254,13 @@ export function isBoardEvent(value: unknown): value is BoardEvent {
       );
     case 'knockout':
       return isStr(value['who']);
+    case 'forgo':
+      return isStr(value['who']);
     case 'silence':
       return isStr(value['who']) && isCount(value['turns']);
     case 'store':
       return isStr(value['who']) && isCount(value['value']);
-    case 'mired':
+    case 'boggedDown':
       return isCount(value['stacks']) && (value['shook'] === undefined || isCount(value['shook']));
     case 'escalation':
       return (
@@ -295,13 +299,26 @@ export function isBoardEvent(value: unknown): value is BoardEvent {
   }
 }
 
-export const isFightEventV2 = (value: unknown): value is FightEvent =>
-  isRecord(value) &&
-  isCount(value['round']) &&
-  isCount(value['turn']) &&
-  isStr(value['kind']) &&
-  isStr(value['text']) &&
-  (value['board'] === undefined || isBoardEvent(value['board']));
+/**
+ * A stored fight written before the debuff was renamed (2026-11-13) names its board event `mired`. The payload is freshly parsed
+ * JSON, so the old type is rewritten in place to the current one before the shape check; nothing else holds the old name.
+ */
+const migrateLegacyBoard = (value: unknown): void => {
+  if (!isRecord(value) || !isRecord(value['board'])) return;
+  if (value['board']['type'] === 'mired') value['board']['type'] = 'boggedDown';
+};
+
+export function isFightEventV2(value: unknown): value is FightEvent {
+  migrateLegacyBoard(value);
+  return (
+    isRecord(value) &&
+    isCount(value['round']) &&
+    isCount(value['turn']) &&
+    isStr(value['kind']) &&
+    isStr(value['text']) &&
+    (value['board'] === undefined || isBoardEvent(value['board']))
+  );
+}
 
 const isStrRecord = (value: unknown): value is Record<string, string> =>
   isRecord(value) && Object.values(value).every(isStr);
@@ -324,7 +341,8 @@ const isCreature = (value: unknown): value is FightCreatureV2 =>
   isNullableStr(value['knackName']) &&
   isArrayOf(value['talents'], isStr) &&
   isPositiveInt(value['maxHp']) &&
-  isCount(value['startHp']);
+  isCount(value['startHp']) &&
+  (value['shiny'] === undefined || typeof value['shiny'] === 'boolean');
 
 /** The boss's own numbers the stage draws (the server sends the whole definition; the rest is not read). */
 const bossOf = (value: unknown): FightBossV2 | null =>

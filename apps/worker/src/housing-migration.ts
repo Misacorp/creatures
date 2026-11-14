@@ -1,5 +1,5 @@
 /**
- * Migration 67: player housing (`docs/design/housing.md` 3.2). Additive: every table is empty until the `HOUSING` flag is on and a player
+ * Migration 68: player housing (`docs/design/housing.md` 3.2). Additive: every table is empty until the `HOUSING` flag is on and a player
  * opens the House (or a reward path drops a luxury material). Never edit a released migration. Times are UTC epoch milliseconds, amounts are
  * integers, and the game day (`day`) is the allowance's (`gameDay` in `time.ts`).
  *

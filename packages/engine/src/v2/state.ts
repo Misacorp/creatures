@@ -102,7 +102,7 @@ export interface State {
   shadowHp: number;
   marks: Map<string, Mark>;
   markAge: number;
-  mired: number;
+  boggedDown: number;
   round: number;
   turn: number;
   bossTurnsDone: number;
@@ -116,9 +116,9 @@ export interface State {
   esc: {
     fed: number;
     base: number;
-    /** Steps applied: the escalation's growth that helps the boss, which Mired slows (R22.3). */
+    /** Steps applied: the escalation's growth that helps the boss, which Bogged Down slows (R22.3). */
     step: number;
-    /** Steps applied to the growth that helps the players (a falling armour): the same rule without Mired's slowing (R22.3). */
+    /** Steps applied to the growth that helps the players (a falling armour): the same rule without Bogged Down's slowing (R22.3). */
     fall: number;
     count: number;
     phase: boolean;

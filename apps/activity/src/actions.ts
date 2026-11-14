@@ -129,6 +129,11 @@ export const ActionIds = {
   kitBuy: (kit: string): ActionId => `kit-buy:${kit}`,
   /** Buying the Forge's next anvil: the number of anvils owned makes it this purchase. */
   anvilBuy: (owned: number): ActionId => `anvil-buy:${String(owned)}`,
+  /** One reroll of one piece: the player's rerolls so far this week make the next one another action (its price rose). */
+  visitorReroll: (itemId: string, rerolls: number): ActionId =>
+    `visitor-reroll:${itemId}:${String(rerolls)}`,
+  /** The week's blueprint: once a week, so one key (a repeat after a success is another action once the key is settled). */
+  visitorBlueprint: (): ActionId => 'visitor-blueprint',
   /** One run of trades at the shard exchange: what it asks, and how many shards of the target the player held (so the next run is another action). */
   exchange: (to: string, from: string | null, times: number, held: number): ActionId =>
     `exchange:${to}:${from ?? '*'}:${String(times)}:${String(held)}`,

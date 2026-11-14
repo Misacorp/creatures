@@ -7,7 +7,7 @@ import {
   gearContent,
   weatherContent,
 } from '@creatures/game';
-import { combatV2 } from '@creatures/game/combat-v2';
+import { combatV2, knownKnacks } from '@creatures/game/combat-v2';
 import type { Option } from './forms';
 
 function options<T extends { id: string }>(
@@ -95,3 +95,43 @@ export const LIMITS = {
   maxExplorerXp: (RULES.expeditions.rank.xpForRank.at(-1) ?? 0) * 2,
   maxSlots: 1 + 1 + RULES.expeditions.slots.thresholds.length,
 } as const;
+
+/** Every combat v2 talent, by name; a talent grant narrows it to the creature's line (`talentOptionsFor`). */
+export const TALENT_OPTIONS: readonly Option[] = Object.values(combatV2.talents).map((t) => ({
+  value: t.id,
+  label: t.name,
+}));
+
+/** The talents of a line's pool, for the talent picker once a creature is chosen. */
+export function talentOptionsFor(line: string): readonly Option[] {
+  const pool = new Set(combatV2.pools[line] ?? []);
+  return TALENT_OPTIONS.filter((o) => pool.has(o.value));
+}
+
+/** "No Knack" first, then every Knack by name; the real list for a creature is `knackOptionsFor`. */
+export const KNACK_OPTIONS: readonly Option[] = [
+  { value: 'none', label: 'No Knack' },
+  ...Object.values(combatV2.knacks).map((k) => ({ value: k.id, label: k.name })),
+];
+
+/** The Knacks a form knows (what the Knack route accepts), with "No Knack" first. */
+export function knackOptionsFor(species: string): readonly Option[] {
+  const known = new Set(knownKnacks(species));
+  return KNACK_OPTIONS.filter((o) => o.value === 'none' || known.has(o.value));
+}
+
+/** The gear slots, for the item grant. */
+export const SLOT_OPTIONS: readonly Option[] = ['hat', 'scarf', 'charm'].map((s) => ({
+  value: s,
+  label: s,
+}));
+
+/** A species' name, or the id when the content does not know it. */
+export function speciesName(id: string): string {
+  return content.creatures.find((c) => c.id === id)?.name ?? id;
+}
+
+/** A species' line, or null. */
+export function lineOfSpecies(id: string): string | null {
+  return content.creatures.find((c) => c.id === id)?.line ?? null;
+}

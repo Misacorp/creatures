@@ -4,7 +4,7 @@
  * keeps them a sprite's width apart; lower feet are drawn in front). The player is never in it. A creature in it
  * is a `SmallCreature`: a tap (or Enter) opens its popover, for the curious.
  */
-import { useEffect, useMemo, useRef } from 'preact/hooks';
+import { useLayoutEffect, useMemo, useRef } from 'preact/hooks';
 import { getSpecies } from '../../game';
 import { SmallCreature } from '../../SmallCreature';
 import type { CreatureInfo } from '../../creature-info';
@@ -25,6 +25,8 @@ const DOORS: Partial<Record<PlaceId, { x: number; y: number }>> = {
   signpost: { x: 492, y: 272 },
   // The Market's stall (322, 68, 60 by 48): a door inside it, so the window keeps the whole stall (the paper's Market story, Q64).
   market: { x: 352, y: 108 },
+  // The School (122, 66, 60 by 50): its door is under the bell, so the window keeps the house (the paper's graduation, lesson and teacher stories, step 9b).
+  school: { x: 152, y: 108 },
 };
 
 /** A place's door: its entry above, else the middle of the foot of its art. */
@@ -146,7 +148,7 @@ export function SceneCrop({ scene, class: extra }: { scene: Scene; class?: strin
   const cx = Math.round(size.width / 2);
   const cy = Math.round(size.height * DOOR_AT);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
     if (!canvas || !ctx) return;

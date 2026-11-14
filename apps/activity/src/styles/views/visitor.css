@@ -1,0 +1,57 @@
+/*
+  The visitor's page (phase 5 step 8b, `valley/VisitorPage.tsx`): two cards of the Signpost's seat family (`.sp-seat`, `.sp-line`, `.sp-buy`),
+  and the reroll's drawer (the bag's item grid, the card and the odds over one footer with the price and the confirm). Only what these add is
+  here.
+*/
+.vs-page .sp-line {
+  flex-wrap: wrap;
+  overflow-wrap: anywhere;
+}
+
+/* The prices: icons and numbers, a size up from the small text. */
+
+.vs-priceline .part-amount {
+  font-size: var(--fs-row);
+}
+
+.vs-bought {
+  color: var(--gold);
+}
+
+.vs-body {
+  padding-bottom: 0.5rem;
+}
+
+/* The odds: short plain lines under the card. */
+.vs-odds {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The plain warning that the old lines do not come back. */
+.vs-gone {
+  margin: 0;
+  color: var(--gold);
+}
+
+.vs-quiet {
+  margin: 0;
+  color: var(--haze);
+}
+
+.vs-foot {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.vs-priceline,
+.vs-short {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+}

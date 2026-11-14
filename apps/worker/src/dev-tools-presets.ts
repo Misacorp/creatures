@@ -51,12 +51,24 @@ export function playersView(ctx: Pick<ToolCtx, 'sql'>) {
     );
   const creatures = counts('creatures');
   const items = counts('gear_items');
+  // Each player's creatures, for the pickers of the tools that act on a creature of the target player.
+  const roster = new Map<string, { id: string; species: string; level: number }[]>();
+  for (const r of ctx.sql
+    .exec<{ id: string; user_id: string; species: string; level: number }>(
+      'SELECT id, user_id, species, level FROM creatures ORDER BY level DESC, caught_at, id',
+    )
+    .toArray()) {
+    const list = roster.get(r.user_id) ?? [];
+    list.push({ id: r.id, species: r.species, level: r.level });
+    roster.set(r.user_id, list);
+  }
   return {
     players: guildPlayers(ctx.sql).map((p) => ({
       userId: p.user_id,
       name: p.display_name,
       creatures: creatures.get(p.user_id) ?? 0,
       items: items.get(p.user_id) ?? 0,
+      roster: roster.get(p.user_id) ?? [],
     })),
     presets: Object.values(ROSTER_PRESETS).map(presetSummary),
   };

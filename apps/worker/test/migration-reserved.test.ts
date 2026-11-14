@@ -4,8 +4,10 @@ import { runCore } from './helpers';
 import { nextGuild } from './raid-helpers';
 
 /**
- * The reserved versions 64 to 66 (the valley branch's) and housing at 67. The lists below stand in for the real ones
- * with one marker table per migration, so each scenario can see which ran and how often. "Production today" is
+ * The runner applies every version it has not recorded, and skips a reserved (`null`) version without a record. Housing
+ * was built while the valley branch held 64 to 66 unmerged; the valley merged first (64 to 67), so the real list has
+ * no reserved version today and housing is 68. The scenarios below keep proving the runner on stand-in lists (housing
+ * straight after three reserved versions), with one marker table per migration, so each can see which ran and how often. "Production today" is
  * recorded up to 63; "staging" has the valley's real 64 to 66 recorded.
  */
 const BEFORE = 63;
@@ -53,10 +55,15 @@ const blank = (sql: SqlStorage) => {
 };
 
 describe('reserved migration versions', () => {
-  it('the real list reserves exactly 64 to 66 and puts housing at 67', () => {
-    expect(MIGRATIONS.slice(63, 66)).toEqual([null, null, null]);
-    expect(MIGRATIONS.filter((m) => m === null)).toHaveLength(3);
-    expect(MIGRATIONS[66]?.name).toBe('housingMigration');
+  it('the real list reserves nothing today and puts housing at 68, after the valley', () => {
+    expect(MIGRATIONS.filter((m) => m === null)).toHaveLength(0);
+    expect(MIGRATIONS.slice(63, 67).map((m) => m?.name)).toEqual([
+      'valleyVisitorMigration',
+      'valleySchoolMigration',
+      'valleyTrialsMigration',
+      'valleyForgeCrowdMigration',
+    ]);
+    expect(MIGRATIONS[67]?.name).toBe('housingMigration');
   });
 
   it('a fresh database records every real version and nothing for the reserved ones', async () => {

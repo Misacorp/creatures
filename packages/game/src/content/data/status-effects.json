@@ -1,7 +1,7 @@
 [
   {
-    "id": "mired",
-    "name": "Mired",
+    "id": "bogged-down",
+    "name": "Bogged Down",
     "kind": "debuff",
     "maxStacks": 5,
     "turns": 3,

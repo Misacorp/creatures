@@ -3,7 +3,10 @@ import { expect } from 'vitest';
 import { env } from 'cloudflare:workers';
 import { runInDurableObject } from 'cloudflare:test';
 import { GAMES_TABLES } from '../src/games-migration';
-import { HOUSING_TABLES } from '../src/housing-migration';
+import { HOUSING_TABLES, housingMigration } from '../src/housing-migration';
+import { MIGRATIONS } from '../src/migrations';
+import { valleyForgeCrowdMigration } from '../src/valley-forge-crowd-migration';
+import { valleyTrialsMigration } from '../src/valley-trials-migration';
 import { GuildCore, type GuildCoreOptions } from '../src/guild-core';
 import { DiscordError, type DiscordApi, type GuildApi } from '../src/discord';
 import { createHandler } from '../src/index';
@@ -317,17 +320,62 @@ export function undoGamesIndexMigration(sql: SqlStorage): void {
 }
 
 /**
- * Puts a database back to before migration 67 (player housing): its tables go. Versions 64 to 66 are reserved for the valley session's
- * branch (no-ops here), so their rows go with it; the merge puts that branch's own undo between this one and the Market's.
+ * Puts a database back to before the housing migration (the last one): its tables go.
  */
 export function undoHousingMigration(sql: SqlStorage): void {
   for (const table of HOUSING_TABLES) sql.exec(`DROP TABLE IF EXISTS ${table}`);
-  sql.exec('DELETE FROM schema_version WHERE version IN (64, 65, 66, 67)');
+  sql.exec(
+    'DELETE FROM schema_version WHERE version = ?',
+    MIGRATIONS.indexOf(housingMigration) + 1,
+  );
+}
+
+/** Puts a database back to before migration 65 (the School's teacher): its tables and the seat's home column go. */
+export function undoValleySchoolMigration(sql: SqlStorage): void {
+  sql.exec('DROP TABLE IF EXISTS school_students');
+  sql.exec('DROP TABLE IF EXISTS school_weeks');
+  const has = sql
+    .exec("SELECT 1 FROM pragma_table_info('valley_seats') WHERE name = 'home_seat_id'")
+    .toArray();
+  if (has.length > 0) sql.exec('ALTER TABLE valley_seats DROP COLUMN home_seat_id');
+  sql.exec('DELETE FROM schema_version WHERE version = 65');
+}
+
+/** Puts a database back to before the workshop background smiths' migration (`valley_seats_place`, the last one). */
+export function undoValleyForgeCrowdMigration(sql: SqlStorage): void {
+  undoHousingMigration(sql);
+  sql.exec('DROP INDEX IF EXISTS valley_seats_place');
+  sql.exec(
+    'DELETE FROM schema_version WHERE version = ?',
+    MIGRATIONS.indexOf(valleyForgeCrowdMigration) + 1,
+  );
+}
+
+/**
+ * Puts a database back to before the trials' migration (`creature_trials`, the last one at step 9c): the table goes. Its version is read from
+ * its place in the list, so it stays right whatever migrations other steps put before it.
+ */
+export function undoValleyTrialsMigration(sql: SqlStorage): void {
+  undoValleyForgeCrowdMigration(sql);
+  sql.exec('DROP TABLE IF EXISTS creature_trials');
+  sql.exec(
+    'DELETE FROM schema_version WHERE version = ?',
+    MIGRATIONS.indexOf(valleyTrialsMigration) + 1,
+  );
+}
+
+/** Puts a database back to before migration 64 (the weekly visitor): his tables go. */
+export function undoValleyVisitorMigration(sql: SqlStorage): void {
+  undoValleyTrialsMigration(sql);
+  undoValleySchoolMigration(sql);
+  sql.exec('DROP TABLE IF EXISTS visitor_rerolls');
+  sql.exec('DROP TABLE IF EXISTS visitor_weeks');
+  sql.exec('DELETE FROM schema_version WHERE version = 64');
 }
 
 /** Puts a database back to before migration 63 (the Market's opening in the paper): the told mark goes. */
 export function undoValleyMarketOpenMigration(sql: SqlStorage): void {
-  undoHousingMigration(sql);
+  undoValleyVisitorMigration(sql);
   const has = sql
     .exec("SELECT 1 FROM pragma_table_info('valley_gazette') WHERE name = 'market_told'")
     .toArray();

@@ -59,6 +59,8 @@ export const HIGHLIGHT_WEIGHT = {
   placeLevel: 85,
   blueprint: 60,
   visitor: 50,
+  /** V-SCH-11: the School's teacher is announced (or here): the School's news, a creature story (see `GROUP_OF`). */
+  teacher: 45,
   packFull: 20,
   allowance: 15,
 } as const;
@@ -110,6 +112,8 @@ export const LOG_CAPS = {
   mastery: 8,
   xp: 3,
   packs: 6,
+  lessons: 3,
+  graduates: 6,
 } as const;
 
 const by = v.nullable(id);
@@ -168,6 +172,34 @@ export const PaperLogSchema = v.strictObject({
    * It is the one story that does not wait for three hours away.
    */
   market: v.optional(v.boolean(), false),
+  /** The weekly visitor is in the valley (V-VIS-1: told once a week to each player whose return falls while he is here). */
+  visitor: v.optional(v.boolean(), false),
+  /**
+   * The School's teacher is announced or here (V-SCH-11: told once per teacher week to each player whose return falls then): the talent's
+   * id; null for none. The stored log of an older paper has none.
+   */
+  teacher: v.optional(v.nullable(id), null),
+  /** Lessons learned at the School (V-SCH-13): which creature learned which talent, the first few; `lessonCount` counts them all. */
+  lessons: v.optional(
+    v.pipe(
+      v.array(v.strictObject({ creatureId: id, talentId: id })),
+      v.maxLength(LOG_CAPS.lessons),
+    ),
+    [],
+  ),
+  lessonCount: v.optional(int, 0),
+  /**
+   * Creatures that graduated at the School's ceremony (V-TRIAL-4), the first few with the honour each earned (1 Bronze, 2 Silver, 3 Gold);
+   * `graduateCount` counts them all. The stored log of an older paper has none.
+   */
+  graduates: v.optional(
+    v.pipe(
+      v.array(v.strictObject({ creatureId: id, honour: v.picklist([1, 2, 3]) })),
+      v.maxLength(LOG_CAPS.graduates),
+    ),
+    [],
+  ),
+  graduateCount: v.optional(int, 0),
 });
 export type PaperLog = v.InferOutput<typeof PaperLogSchema>;
 
@@ -187,6 +219,12 @@ export const emptyLog = (): PaperLog => ({
   moment: null,
   brought: { acorns: 0, scrap: 0, shards: 0 },
   market: false,
+  visitor: false,
+  teacher: null,
+  lessons: [],
+  lessonCount: 0,
+  graduates: [],
+  graduateCount: 0,
 });
 
 const rank = (rarity: PaperRarity): number => RARITIES.indexOf(rarity);
@@ -244,6 +282,12 @@ export function mergeLogs(base: PaperLog, more: PaperLog): PaperLog {
       shards: base.brought.shards + more.brought.shards,
     },
     market: base.market || more.market,
+    visitor: base.visitor || more.visitor,
+    teacher: more.teacher ?? base.teacher,
+    lessons: [...base.lessons, ...more.lessons].slice(0, LOG_CAPS.lessons),
+    lessonCount: base.lessonCount + more.lessonCount,
+    graduates: [...base.graduates, ...more.graduates].slice(0, LOG_CAPS.graduates),
+    graduateCount: base.graduateCount + more.graduateCount,
   };
 }
 
@@ -264,6 +308,10 @@ export const HEADLINE_KINDS = [
   'allowance',
   'moment',
   'market-open',
+  'visitor',
+  'teacher',
+  'lesson',
+  'graduation',
 ] as const;
 export type HeadlineKind = (typeof HEADLINE_KINDS)[number];
 
@@ -281,6 +329,11 @@ const GROUP_OF: Record<HeadlineKind, HighlightGroup> = {
   allowance: 'server',
   moment: 'creature',
   'market-open': 'server',
+  visitor: 'server',
+  // The School's news is about creatures (the visitor's `server` story would always outrank it: both are here from Friday).
+  teacher: 'creature',
+  lesson: 'creature',
+  graduation: 'creature',
 };
 
 /** One of a paper's headlines, as data: the client words it (names, places) and draws its scene from the creatures. */
@@ -294,7 +347,7 @@ export const PaperHeadlineSchema = v.strictObject({
   creatureIds: v.pipe(v.array(id), v.maxLength(3)),
   /** The species of a newcomer (for its face), else null. */
   species: v.nullable(id),
-  /** The mastery step reached (1 Skilled, 2 Expert, 3 Master), else null. */
+  /** The mastery step reached (1 Skilled, 2 Expert, 3 Master), or for a graduation the best honour earned (1 Bronze, 2 Silver, 3 Gold), else null. */
   step: v.nullable(v.picklist([1, 2, 3])),
   /** The best rarity among its pieces, else null. */
   rarity: v.nullable(v.picklist(RARITIES)),
@@ -305,6 +358,8 @@ export const PaperHeadlineSchema = v.strictObject({
   blueprints: v.pipe(v.array(id), v.maxLength(MAX_HEADLINE_FINDS)),
   /** Newcomers it found, shown as faces: the creatures' ids. */
   newcomers: v.pipe(v.array(id), v.maxLength(MAX_HEADLINE_FINDS)),
+  /** The talent of a `teacher` or `lesson` headline (the client has the name); absent on any other. */
+  talent: v.exactOptional(v.nullable(id)),
 });
 export type PaperHeadline = v.InferOutput<typeof PaperHeadlineSchema>;
 
@@ -361,6 +416,26 @@ const crew = (...ids: (string | null)[]): string[] =>
 export function headlinesOf(log: PaperLog): PaperHeadline[] {
   const out: PaperHeadline[] = [];
   if (log.market) out.push(blank('market-open', HIGHLIGHT_WEIGHT.marketOpen, 0));
+  if (log.visitor) out.push(blank('visitor', HIGHLIGHT_WEIGHT.visitor, 0));
+  if (log.teacher !== null) {
+    out.push({ ...blank('teacher', HIGHLIGHT_WEIGHT.teacher, 0), talent: log.teacher });
+  }
+  const lesson = log.lessons[0];
+  if (log.lessonCount > 0 && lesson !== undefined) {
+    out.push({
+      ...blank('lesson', HIGHLIGHT_WEIGHT.lesson, log.lessonCount),
+      creatureIds: crew(...log.lessons.map((l) => l.creatureId)),
+      talent: lesson.talentId,
+    });
+  }
+  if (log.graduateCount > 0 && log.graduates[0] !== undefined) {
+    const top = Math.max(...log.graduates.map((g) => g.honour)) as 1 | 2 | 3;
+    out.push({
+      ...blank('graduation', HIGHLIGHT_WEIGHT.graduation, log.graduateCount),
+      creatureIds: crew(...log.graduates.map((g) => g.creatureId)),
+      step: top,
+    });
+  }
   const first = log.newcomers[0];
   if (log.newcomerCount > 0 && first !== undefined) {
     out.push({

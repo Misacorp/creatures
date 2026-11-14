@@ -18,7 +18,7 @@ export interface MarkChipModel {
 /**
  * The marks on the boss, in one strip under it, oldest first (docs/design/combat/proposals/001-combat-v2.md, "On the board: Marks"): the
  * element's icon and its count ("x2"), a lock on a Sealed mark, and a blink on the marks that will be shed before the boss's next turn.
- * Debuffs (Mired) never sit here. The strip keeps one line of height when it is empty, so the boss does not move when the first mark
+ * Debuffs (Bogged Down) never sit here. The strip keeps one line of height when it is empty, so the boss does not move when the first mark
  * lands. Every chip says its element, count and state to a screen reader; the icon's shape is the element's cue, colour is never the only one.
  */
 export function MarkStrip({ marks }: { marks: readonly MarkChipModel[] }) {

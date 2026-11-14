@@ -95,5 +95,5 @@ export const SwapAskBodySchema = v.strictObject({
   slotB: v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(MAX_SLOT)),
 });
 
-/** `:id` of `POST /api/raid/swap/:id/accept` and `/decline`: a request id (a UUID). */
+/** `:id` of `POST /api/raid/swap/:id/accept` and `/decline`/`/cancel`: a request id (a UUID). */
 export const SwapIdSchema = v.pipe(v.string(), v.uuid());

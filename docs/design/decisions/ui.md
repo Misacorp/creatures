@@ -28,6 +28,38 @@ ID: `2026-11-11-the-house-is-lit-by-one` · Status: current, amended by `2026-11
 
 **Reasoning.** One pass with no per-phase sprites keeps night from costing about 200 redrawn sprites per phase, and the same maths can later serve the postcard (B3) and a shared layered painter (B2). Tagging by scene role plus colour-hue sorting survives the art packs being redrawn. The pass runs once per scene change (a phase swap or a rebuilt house), never per frame.
 
+## 2026-11-11: Pixel canvases paint in a layout effect, never after the frame
+
+ID: `2026-11-11-pixel-canvases-paint-in-a-layout` · Status: current
+
+**Decision.** Every canvas that draws pixel art (`Sprite`, the valley's `SceneFrame` and `ValleyMap`, the Gazette's `SceneCrop`) paints in `useLayoutEffect`, not `useEffect`. The valley e2e has a flash watch: every frame it looks for a visible scene or sprite canvas with no opaque pixel and fails on one.
+
+**Reasoning.** A canvas that is new (a place opening, the map coming back) or resized (its width attribute changed) is blank. Preact runs `useEffect` after the browser has painted, so one frame showed the blank canvas before the effect drew into it: the flash Misa saw on re-renders and on the way back to the map, and the blank creature pictures in the Signpost's "Who scouts here?" step (the same `CreatureList`, caught in that frame). A layout effect runs before the frame. Measured on the e2e at 390 px: 91 blank frames of 315 before, 0 after (0 of 312 at 1100 px after). No sprite cache or keep-mounted map was needed.
+
+## 2026-11-11: The Signpost is a canvas: a click on the signpost opens the expedition map, a click on a place opens its scout wizard **[Misa]**
+
+ID: `2026-11-11-the-signpost-is-a-canvas-a` · Status: current
+
+**Decision.** With the valley's systems on, the Signpost is a canvas (`SignpostCanvas`, built on `PlaceCanvas` like the Forge) and its page of seat cards is gone. It opens on its scene: the road and its signpost, the scouts standing at their seats, the dashed outline of the next seat with its price as icons, and two props (the crate of finds in the packs, the plans table of the project board). **A click on the signpost opens the expedition map as the canvas** (`SignpostMap`: the Expeditions screen's own `WorldMap`, drawn with a new `fill` option so it fills the view instead of sitting in a page). It never scrolls the page; the map itself pans both ways by drag (with the shared drag-click guard: a drag never picks a place), wheel and trackpad. A small "Signpost" button over its top left goes back to the scene; the HUD's back still leaves for the valley. On the map each destination the valley lists is at its map spot (all eight already have one, so no spot was added), the scouts stand at the place they are at (the map's existing creature-at-place look), the pack's state is the small gold flag (FULL, or the fullest pack's percent), a closed place is dimmed with what opens it under it (Festival weeks). **A click on a destination opens its drawer (right; a page on a phone)**, a wizard: the place and who scouts there (a tap on a scout opens its pack and pace, change scout, change kit, move to another place, back to resting), and the gold "Send a scout here": who (`ui/CreatureList`), which seat (free, one that holds someone, or a new one to buy; skipped when the scout already has a seat), kit (owned, none, or buy), then a confirm that reads the choice back and sends it in one post (seat, creature and destination). The left drawer holds the packs of every seat and the project board. Dragging a creature from the tray onto a seat in the scene still works and still previews the fit. Seat rules, prices and limits are the server's, unchanged.
+
+**Reasoning.** Misa (2026-11-11): the expedition screen did not use the expedition location map at all; "a click on the sign post open the expedition map, which the user could then drag and select a place. We already show each creature at the place they're at which fits the game-like idea." Choosing a destination on the map is the game-like way, and the map already shows who is where. Reusing `WorldMap` (one new optional `fill` prop, plus optional `flag` and `locked` on `MapPlace`) keeps one map drawing for both screens; with the valley's systems off the Expeditions screen is unchanged. Everything the old page offered stays reachable (seat, scout, destination, kit, pack numbers, buying seats and kit, the project board, the drag with a fit preview).
+
+## 2026-11-11: [Misa] A place is a canvas: the scene never scrolls, every action is a click in it, content opens in a left or right drawer holding a wizard
+
+ID: `2026-11-11-a-place-is-a-canvas-the` · Status: current
+
+**Decision.** Place pages are a canvas: the scene fills the view and never scrolls, every interaction is a click on something in it (a real, named button over the art), empty or buyable slots are dashed outlines with their price as icons, and content opens beside the canvas in a drawer that holds a wizard (`ui/Wizard`, one small step per page). **Right drawer: the one thing that was clicked** (an anvil, a seat: its wizard, its buy step, its order). **Left drawer: the place's collections and overviews that belong to no one spot** (the bag, the floor, the plans, the project board, a log). From 60 rem (`WIDE_QUERY`) the drawers sit beside the scene (24 rem each); below it there are no drawers: an open panel is its own full page (same wizard, other shell) with the scene hidden behind it, and the right panel wins when both are open. No drawer on a drawer; a single-choice picker inside a step may use a bottom sheet. Focus moves into the panel and, for a keyboard user, back to the target on close. Built first for the Forge (`ForgeCanvas`, `PlaceCanvas`, `CanvasTarget`, the anvil wizard and the order wizard); the Signpost is next, using the expedition location map for destinations; every other place follows.
+
+**Reasoning.** Misa (2026-11-11) disliked art that opens up over a page that scrolls into forms: the interactions should start in the image, with a ban on scrolling and wizard-type drawers. The side rule keeps the thing you act on beside its gold button on the right, and lets a collection stay open on the left while an anvil is worked (a click in a left list may open a right wizard, never the reverse), so the same rule works in every view. A phone cannot hold drawers over drawers, so the same wizard is a page there. The old page's parts were kept reachable: the shelf and tray stay in view under the scene, the floor, bag, plans and board are the left drawer, the anvil's smith, kit, orders and floor numbers its wizard. Built behind `VALLEY_SYSTEMS` only; the classic Workshop is unchanged.
+
+## 2026-11-11: A valley frame clips instead of scrolling: the HUD's way back never slides off
+
+ID: `2026-11-11-a-valley-frame-clips-instead-of` · Status: current
+
+**Decision.** With the valley on, `main.card` clips its overflow (`overflow: clip`) instead of hiding it. A hidden box still scrolls when something inside takes the focus or is scrolled into view, and nobody can scroll it back.
+
+**Reasoning.** On the Forge a card scrolled into view moved the whole card up by 22 px, which slid the HUD (and its way back to the valley) off the top; Misa had no way back. The e2e now scrolls each place's page to its end and checks the way back is still the topmost control, and the Forge scenario with the valley's systems does the same before going back.
+
 ## 2026-11-10: Housing screen pass: the whole house, build moment, one pinned action
 
 ID: `2026-11-10-housing-screen-pass-the-whole-house` · Status: current
@@ -51,6 +83,22 @@ ID: `2026-11-10-house-scene-canvases-at-1x-scaled` · Status: current
 **Decision.** The house scene (`apps/activity/src/housing/`) is two canvases drawn at one pixel per scene pixel and shown at an integer CSS scale with `image-rendering: pixelated`; the workbench and the mailbox stand in the yard right of the building (not in the Hearth); rugs are drawn first in a room, under the furniture; the scene ships one light (day), because most set art has no twilight or night row; the art registry's `ART_PENDING` also lists `keepsake:<set>` for a set with no keepsake art (the Cosy set today); the roof is one gable per run of columns with the same top floor (a low hip on wings, glass-tinted over a one-storey conservatory).
 
 **Reasoning.** A mansion is about 1,350 x 360 scene px: at scale 3 two canvases would be 36 MB, at 1x about 2 MB, and the crop is the same. The Hearth has no free floor for a 32 px bench (every spot is taken by the starter layout), and the carpenter seam reads well outdoors. A rug under a stool would hide its feet. Day-only keeps every pack as drawn; a phase colour map can come later without touching the scene's geometry.
+
+## 2026-11-06: The School's page and a creature's trial reuse the seat cards, the creature list and the rule card
+
+ID: `2026-11-06-the-school-s-page-and-a` · Status: current
+
+**Decision.** The School (valley, `VALLEY_SYSTEMS` on) is a page of the seat family under a `PlaceScene` band (`castFor('school')`), as the visitor's: cards of `.sp-seat` (the visiting teacher with the shared `TalentChip` and the stay's days in the reader's own time zone; your students as `ui/CreatureList` in `show` mode with one Send or Take off at the row's right end, `side`, and a note under a seated one; the graduation: how many are ready and "the next ceremony is this evening"). Refusals (`no_teacher`, `would_not_learn`, `line_seated`) are the game's shared alert (`ERROR_TEXT`). A creature's next trial on its card (and page) is the rule card's look (`.rule-card`) with `ui/PipRow`, and its list opens in the game's one popover (`PopoverHost.openCustom`, as a boss's rule cards do); only the next trial shows. Honours are the creature's title in the name's place ("Pip, Silver"), a `ui/Tag` badge and a small ribbon pinned to the sprite's corner, read from one context (`HonoursContext`, provided by `Game` from `valley.creatures[].trial`). No new list, card, popover or badge component. The School's place in the valley keeps no countdown: "learns it by morning", "this evening", the days as names.
+
+**Reasoning.** Misa's rule is to reuse before building, and each part had a twin: the Send list is the Workshop's and the Signpost's creature rows, the trial is a named strength in pips like the boss's rule cards, and the honour is a badge like Shiny or Festival. A context avoids carrying the trial through every list and page between the game and a card. The ribbon on the sprite is the one new picture (a 6 x 6 rosette in three metals, `valley-honours` in the art library).
+
+## 2026-11-06: The visitor's page reuses the Workshop's grid, card and drawer
+
+ID: `2026-11-06-the-visitor-s-page-reuses-the` · Status: current
+
+**Decision.** Picking a piece to hand to the visitor uses the parts the bag and the item picker already have: `ItemTile` in `.item-grid` (worn pieces first, with the "Worn" flag), `ItemCard` for the chosen piece and for Before and After (the changes marked with the compare's `diffItems`), in a `ui/Drawer` opened from a page (never from a drawer). No new picker and no new card. His page is two cards of the seat family (`.sp-seat`, as the Market's) under a `PlaceScene` band, the blueprint is `ui/FindBlueprint` in a `ui/FindList`, prices are `ActionButton`'s `cost` (icons and numbers), what is short is `ShortOfLine`, and a refusal is the shared `ui/Alert`. A price is said once (on the button that pays it), not once more beside it. The page has no creature tray and no drag, so the drag-click guard has nothing to guard here.
+
+**Reasoning.** Misa's rule is to reuse before building, and the prototype's own drawer was built from these same parts. A page that says a price twice (a line and the button) makes a player read each number two times.
 
 ## 2026-11-06: Costs show the resource's icon and a number, never its name [Misa]
 

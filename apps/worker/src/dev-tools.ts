@@ -28,6 +28,8 @@ import type { Analytics } from './analytics';
 import { DevError, purgeUser, type ToolCtx } from './dev-context';
 import {
   ApplyRosterPresetBodySchema,
+  TrialsTickBodySchema,
+  ValleySimDayBodySchema,
   ClockBodySchema,
   DEV_ACTION_TOOLS,
   DEV_READ_TOOLS,
@@ -43,6 +45,12 @@ import {
   HousingGuestsBodySchema,
   GrantBlueprintsBodySchema,
   GrantCreatureBodySchema,
+  GrantCurrencyBodySchema,
+  GrantTalentBodySchema,
+  GrantXpBodySchema,
+  SetKnackBodySchema,
+  TARGETED_TOOLS,
+  TargetUserIdSchema,
   GrantGearBodySchema,
   GrantPartsBodySchema,
   GrantSuppliesBodySchema,
@@ -54,6 +62,7 @@ import {
   RaidSeatsBodySchema,
   ResetAccountBodySchema,
   ResetRaidsDungeonsBodySchema,
+  SchoolTeacherBodySchema,
   SetWeatherBodySchema,
   SetBalancesBodySchema,
   SetCraftingXpBodySchema,
@@ -65,9 +74,23 @@ import {
 } from './dev-schemas';
 import { devKey, type DevState } from './dev-state';
 import { clockState, clockTool } from './dev-tools-clock';
+import { grantCurrency, grantTalent, grantXp, setKnack } from './dev-tools-give';
 import { combatV2Convert } from './dev-tools-combat-v2';
 import { applyRosterPreset, playersView } from './dev-tools-presets';
-import { valleyFresh } from './dev-tools-valley';
+import {
+  schoolTeacher,
+  trialsCeremony,
+  trialsTick,
+  valleyBotsTool,
+  valleyFresh,
+  valleyReportTool,
+  valleySimDayTool,
+  visitorArrive,
+} from './dev-tools-valley';
+import type { ValleyWorld } from './valley-bots';
+import type { SchoolWeeks } from './valley-school';
+import type { ValleyTrials } from './valley-trials';
+import type { VisitorWeeks } from './valley-visitor';
 import { setWeather } from './dev-tools-weather';
 import { gamesBots, gamesReset, gamesRunNow } from './dev-tools-games';
 import { housingBuild, housingFresh, housingGrant, housingGuests } from './dev-tools-housing';
@@ -147,6 +170,14 @@ export interface DevToolsDeps {
   combatV2: boolean;
   /** The valley's base systems are on (`VALLEY_SYSTEMS`): the `valley-fresh` tool needs it. */
   valleySystems: boolean;
+  /** The weekly visitor's weeks (the `visitor-arrive` tool); null with the valley systems off. */
+  visitor: VisitorWeeks | null;
+  /** The School's teacher weeks (the `school-teacher` tool); null with the valley systems off. */
+  school: SchoolWeeks | null;
+  /** Trials and graduation (the `trials-tick` and `trials-ceremony` tools); null with the valley systems off. */
+  trials: ValleyTrials | null;
+  /** What the staging bots drive (the `valley-*` simulation tools); null with the valley systems off. */
+  world: ValleyWorld | null;
   /** Crypto randomness for what the tools roll. */
   rng: Rng;
   gearRng: Rng;
@@ -249,8 +280,24 @@ const TOOLS: Record<DevActionTool, Tool> = {
   }),
   // Staging with the valley systems on only (404 otherwise): wipes every player's progress in the guild for a day-0 valley; re-arms the alarm (the dev clock goes back to real time).
   'valley-fresh': tool(NoBodySchema, valleyFresh, { movesClock: true }),
+  // The simulated month (staging with the valley systems on only; 404 otherwise): the bots, one game day of them (the dev clock moves), the lab-shaped report.
+  'valley-bots': tool(NoBodySchema, valleyBotsTool, { movesClock: true }),
+  'valley-sim-day': tool(ValleySimDayBodySchema, valleySimDayTool, { movesClock: true }),
+  'valley-report': tool(NoBodySchema, valleyReportTool),
+  // Staging with the valley systems on only (404 otherwise): brings the weekly visitor now for the current week, whatever the weekday.
+  'visitor-arrive': tool(NoBodySchema, visitorArrive),
+  // Staging with the valley systems on only (404 otherwise): brings the School's teacher now (`arrive`) or announces next week's now (`announce`).
+  'school-teacher': tool(SchoolTeacherBodySchema, schoolTeacher),
+  // Staging with the valley systems on only (404 otherwise): ticks every box of a creature's next trial; and runs the School's ceremony now.
+  'trials-tick': tool(TrialsTickBodySchema, trialsTick),
+  'trials-ceremony': tool(NoBodySchema, trialsCeremony),
   // Staging with COMBAT_V2 on only: replaces one player's (or everyone's) creatures and gear bag with a preset (`dev-presets.ts`).
   'apply-roster-preset': tool(ApplyRosterPresetBodySchema, applyRosterPreset),
+  // Give a player what the game gives (any player of the guild: see `TARGETED_TOOLS`).
+  'grant-currency': tool(GrantCurrencyBodySchema, grantCurrency),
+  'grant-xp': tool(GrantXpBodySchema, grantXp),
+  'grant-talent': tool(GrantTalentBodySchema, grantTalent),
+  'set-knack': tool(SetKnackBodySchema, setKnack),
   'reset-account': tool(ResetAccountBodySchema, (ctx) => {
     purgeUser(ctx.sql, ctx.userId, true);
     ctx.state.clearUser(ctx.userId);
@@ -260,6 +307,7 @@ const TOOLS: Record<DevActionTool, Tool> = {
 };
 
 const TOOL_IDS: ReadonlySet<string> = new Set(DEV_ACTION_TOOLS);
+const TARGETED_IDS: ReadonlySet<string> = new Set(TARGETED_TOOLS);
 const READ_IDS: ReadonlySet<string> = new Set(DEV_READ_TOOLS);
 
 export class DevTools {
@@ -285,6 +333,10 @@ export class DevTools {
       housing: d.housing,
       combatV2: d.combatV2,
       valleySystems: d.valleySystems,
+      visitor: d.visitor,
+      school: d.school,
+      trials: d.trials,
+      world: d.world,
       rng: d.rng,
       gearRng: d.gearRng,
       quirkRng: d.quirkRng,
@@ -298,12 +350,34 @@ export class DevTools {
     };
   }
 
+  /** True for a real player of this guild (not a simulated `dev-guest-*` one). */
+  private isTargetable(userId: string): boolean {
+    if (userId.startsWith('dev-guest-')) return false;
+    return (
+      this.deps.storage.sql.exec('SELECT 1 FROM players WHERE user_id = ?', userId).toArray()
+        .length > 0
+    );
+  }
+
   /** Runs one tool for the caller: validates the body, runs it in one transaction, logs `dev_action`. */
   async run(toolId: string, userId: string, raw: unknown): Promise<ToolOutcome> {
     if (!TOOL_IDS.has(toolId)) return { ok: false, status: 404, error: 'not_found' };
     const id = toolId as DevActionTool;
     const def = TOOLS[id];
-    const parsed = v.safeParse(def.schema, raw);
+    // A per-player tool may name another player of the guild (`userId`, default the caller): taken off the body here, so the
+    // tool's own strict schema stays as it is and still refuses every unknown key.
+    let body = raw;
+    let target = userId;
+    if (TARGETED_IDS.has(id) && typeof raw === 'object' && raw !== null && 'userId' in raw) {
+      const { userId: wanted, ...rest } = raw as Record<string, unknown>;
+      const named = v.safeParse(TargetUserIdSchema, wanted);
+      if (!named.success) return { ok: false, status: 400, error: 'invalid_body' };
+      // A player of this guild; simulated guests (`dev-guest-*`) are never targets, as for the roster presets.
+      if (!this.isTargetable(named.output)) return { ok: false, status: 404, error: 'not_found' };
+      target = named.output;
+      body = rest;
+    }
+    const parsed = v.safeParse(def.schema, body);
     if (!parsed.success) return { ok: false, status: 400, error: 'invalid_body' };
     const log = (): void => this.deps.analytics.record({ kind: 'dev_action', tool: id }, userId);
     try {
@@ -313,7 +387,7 @@ export class DevTools {
         this.deps.storage.transactionSync(log);
       } else {
         value = this.deps.storage.transactionSync(() => {
-          const out = def.run(this.ctx(userId), parsed.output as never);
+          const out = def.run(this.ctx(target), parsed.output as never);
           log();
           return out;
         });
@@ -362,7 +436,7 @@ export class DevTools {
 
   /** The guild's players and the roster presets: what the panel's preset picker lists. */
   players(userId: string) {
-    return playersView(this.ctx(userId));
+    return { ...playersView(this.ctx(userId)), you: userId };
   }
 
   /** The last 50 analytics events of this guild: kind, time and props. Never an actor. */

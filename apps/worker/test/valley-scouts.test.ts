@@ -132,6 +132,8 @@ describe('migration 57: seats, kit and the new columns', () => {
           'wait_reason',
           'wait_element',
           'wait_since',
+          // Migration 65 (the School): the post a student was taken from.
+          'home_seat_id',
         ]);
         expect(columns('valley_kit')).toEqual(['user_id', 'kit_id', 'bought_at']);
         expect(columns('pending_catches')).toContain('auto_at');

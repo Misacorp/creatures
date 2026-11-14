@@ -11,7 +11,7 @@ import * as stateMod from './state';
 import type { State } from './state';
 
 // Bound once: a named import is read through a getter on every call under the lab's Vite loader, which costs 15% of a report.
-const { addMired, feed } = escalationMod;
+const { addBoggedDown, feed } = escalationMod;
 const { beside, inReach } = boardMod;
 const { heal } = marksMod;
 const { alive, best, bump, emit, fx, keyOf, log, ownArmour, setStore, silenced } = stateMod;
@@ -206,7 +206,7 @@ export function takeHit(
           ) - Math.max(0, dmg),
         );
   // Sticky Mud counts every hit it takes, Blocked or not.
-  if (k.miresOnHit) addMired(s, taker);
+  if (k.miresOnHit) addBoggedDown(s, taker);
   if (dmg <= 0) {
     s.count.blocked++;
     if (covered !== undefined && saved > 0)

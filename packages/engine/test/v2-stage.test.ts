@@ -1,6 +1,6 @@
 /**
  * Combat v2: one raid stage at a time (`stageV2`, R14). The carry is plain JSON, a creature is carried by its key (else its uid), a
- * knocked-out creature stays out, HP and the once-a-weekend uses carry, and marks, Stores and Mired start fresh. The weekend is a loop over
+ * knocked-out creature stays out, HP and the once-a-weekend uses carry, and marks, Stores and Bogged Down start fresh. The weekend is a loop over
  * it, so a weekend played stage by stage with the carry stored and read back as JSON is the same weekend.
  */
 import { createSeededRng } from '@creatures/game';
@@ -13,7 +13,7 @@ import {
   ELEMENTS,
   marks,
   member,
-  mired,
+  boggedDown,
   move,
   playWeekend,
   RULES,
@@ -164,7 +164,7 @@ describe('stageV2', () => {
     expect(two.carry.out).toEqual(['h']);
   });
 
-  it('marks, Stores and Mired start fresh each stage; the boss HP and the escalation carry', () => {
+  it('marks, Stores and Bogged Down start fresh each stage; the boss HP and the escalation carry', () => {
     const arena = boss({
       rounds: 2,
       hp: 10_000,
@@ -181,7 +181,12 @@ describe('stageV2', () => {
     for (let i = 0; i < 2; i++) {
       const played = stageV2(stageInput(arena, team), carry, scripted().rng);
       expect(marks(played.result)).toEqual(['tide x1', 'tide x2']);
-      expect(mired(played.result)).toEqual(['Mired x1', 'Mired x0', 'Mired x1', 'Mired x0']);
+      expect(boggedDown(played.result)).toEqual([
+        'Bogged Down x1',
+        'Bogged Down x0',
+        'Bogged Down x1',
+        'Bogged Down x0',
+      ]);
       expect(played.carry.bossHp).toBe(played.result.bossHpLeft);
       expect(played.carry.bossHp).toBeLessThan(arena.hp);
       expect(played.carry.escalation?.count).toBe((i + 1) * 2);

@@ -14,7 +14,15 @@
  * the client's idempotency key (CLAUDE.md spending rules): the balance check, the debit and the learning are
  * one transaction, and a retry returns the stored result and charges nothing.
  */
-import { RULES, slotCount, slotOpensAt, slotsOpen, type CreatureSpecies } from '@creatures/game';
+import {
+  RULES,
+  VALLEY_RULES,
+  learningPrice,
+  slotCount,
+  slotOpensAt,
+  slotsOpen,
+  type CreatureSpecies,
+} from '@creatures/game';
 import { combatV2, knownKnacks, v2TalentWorksFor } from '@creatures/game/combat-v2';
 import type { Analytics } from './analytics';
 import { fightNumbers, slottedGolden, slottedTalents } from './fighter-v2';
@@ -138,6 +146,11 @@ export interface CreatureV2Deps {
   storage: LedgerStorage;
   now: () => number;
   analytics?: Analytics | undefined;
+  /**
+   * `VALLEY_SYSTEMS` (V-SCH-10): learning on a card costs the School's price times the slot it fills, in Acorns, once, instead of
+   * `RULES.talents.bookSlotBait`. Off: today's flat price.
+   */
+  valleySystems?: boolean;
 }
 
 type OwnedRow = { id: string; line: string; species: string; level: number; knack: string | null };
@@ -215,6 +228,16 @@ export class CreatureV2 {
     return { books: booksByLine(this.sql, userId), learned: learnedByCreature(this.sql, userId) };
   }
 
+  /**
+   * What learning one more talent costs this creature on its card, given how many it has learned. Off the valley: the flat price. With the
+   * valley systems on (V-SCH-10): `school.price` times the slot the learning fills (the creature's next, at most its species' last slot).
+   */
+  learnPrice(speciesId: string, learnedCount: number): number {
+    if (this.deps.valleySystems !== true) return RULES.talents.bookSlotBait;
+    const slot = Math.min(learnedCount + 1, slotCount(speciesOf(speciesId).rarity));
+    return learningPrice(VALLEY_RULES, slot);
+  }
+
   /** The v2 part of a creature's view. */
   view(
     row: {
@@ -270,7 +293,7 @@ export class CreatureV2 {
       // A saved Knack the form no longer knows (content changed) reads as none.
       knack: row.knack !== null && known.some((k) => k.id === row.knack) ? row.knack : null,
       knownKnacks: known,
-      talentsV2: { slots, book: bookView, learnBait: RULES.talents.bookSlotBait },
+      talentsV2: { slots, book: bookView, learnBait: this.learnPrice(row.species, learned.length) },
       statsV2: statsV2Of({
         species,
         level: row.level,
@@ -349,12 +372,15 @@ export class CreatureV2 {
         throw new GameError(409, 'key_conflict');
       }
       if (prior === null) this.checkLearning(userId, creatureId, talentId);
+      const owned = this.owned(userId, creatureId);
+      const price = this.learnPrice(owned.species, learnedOf(this.sql, owned.id).length);
       const spent = spend(
         this.deps.storage,
         {
           userId,
           currency: 'bait',
-          amount: RULES.talents.bookSlotBait,
+          // A retry is charged what the first try was (the price grows with what the creature has learned since).
+          amount: prior?.amount ?? price,
           purpose: 'talent_learn',
           idempotencyKey,
           apply: () => {

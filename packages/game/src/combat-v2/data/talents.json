@@ -304,18 +304,18 @@
       "name": "Wicked",
       "text": "Each debuff it puts on the boss has an 80% chance to add 1 extra stack.",
       "roles": ["guard", "support"],
-      "intent": "Meant for every debuff it puts on the boss; today that is Mired, the only debuff, so no number moves. The shipped line is a chance of an extra stack, and luck is welcome. More stacks per application keeps the debuff up.",
+      "intent": "Meant for every debuff it puts on the boss; today that is Bogged Down, the only debuff, so no number moves. The shipped line is a chance of an extra stack, and luck is welcome. More stacks per application keeps the debuff up.",
       "gearLine": "heavy-hand",
       "fx": {
-        "miredExtraBp": 8000
+        "boggedDownExtraBp": 8000
       }
     },
     {
       "id": "clinging",
       "name": "Clinging",
-      "text": "While it stands, {Mired} fades only every second round, and each stack counts for half as much again.",
+      "text": "While it stands, {Bogged Down} fades only every second round, and each stack counts for half as much again.",
       "roles": ["guard", "support"],
-      "intent": "Mire only: the v2 form of the shipped \"lasts more turns\"; one creature can hold a debuff for the team. Reworked (2026-10-28): slower fading alone gained under a point, so its stacks also count for half as much again (4.5% instead of 3%); it still fades, every second round (every third until 2026-11-01, when Mired began to fade every round), so one creature cannot hold the debuff for the whole fight (Misa).",
+      "intent": "Mire only: the v2 form of the shipped \"lasts more turns\"; one creature can hold a debuff for the team. Reworked (2026-10-28): slower fading alone gained under a point, so its stacks also count for half as much again (4.5% instead of 3%); it still fades, every second round (every third until 2026-11-01, when Bogged Down began to fade every round), so one creature cannot hold the debuff for the whole fight (Misa).",
       "gearLine": "clinging",
       "fx": {
         "clinging": true
