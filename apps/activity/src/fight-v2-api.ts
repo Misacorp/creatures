@@ -308,14 +308,17 @@ const migrateLegacyBoard = (value: unknown): void => {
   if (value['board']['type'] === 'mired') value['board']['type'] = 'boggedDown';
 };
 
-export const isFightEventV2 = (value: unknown): value is FightEvent =>
-  (migrateLegacyBoard(value), true) &&
-  isRecord(value) &&
-  isCount(value['round']) &&
-  isCount(value['turn']) &&
-  isStr(value['kind']) &&
-  isStr(value['text']) &&
-  (value['board'] === undefined || isBoardEvent(value['board']));
+export function isFightEventV2(value: unknown): value is FightEvent {
+  migrateLegacyBoard(value);
+  return (
+    isRecord(value) &&
+    isCount(value['round']) &&
+    isCount(value['turn']) &&
+    isStr(value['kind']) &&
+    isStr(value['text']) &&
+    (value['board'] === undefined || isBoardEvent(value['board']))
+  );
+}
 
 const isStrRecord = (value: unknown): value is Record<string, string> =>
   isRecord(value) && Object.values(value).every(isStr);
