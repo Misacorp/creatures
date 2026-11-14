@@ -367,17 +367,151 @@ const SEALED = sealed({});
 const SHAKE1 = sealed({ lift: 1, shear: -1, dust: 'r', sparks: true });
 const SHAKE2 = sealed({ lift: 1, shear: 1, dust: 'l', sparks: true });
 const SHAKE3 = sealed({ lift: 0, shear: 0, dust: 'both' });
+
+// ------------------------------------------------------------------ variations of the sealed crate (2026-11-15)
+/** B: a treasure chest: domed lid, gold corner caps, a big keyhole plate whose keyhole glows. */
+function sealedChest(): string[] {
+  const g = new Grid(W, H);
+  // outline: a domed lid over a wide body (x 1-18, y 3-17)
+  g.rect(5, 3, 10, 1, 'k');
+  g.rect(3, 4, 14, 1, 'k');
+  g.rect(2, 5, 16, 1, 'k');
+  g.rect(1, 6, 18, 12, 'k');
+  // lid: lit top, mid, dark under the rim
+  g.rect(5, 4, 10, 1, 'a');
+  g.rect(3, 5, 14, 1, 'a');
+  g.rect(2, 6, 16, 2, 'b');
+  g.rect(2, 8, 16, 1, 'c');
+  // the seam, glowing
+  g.rect(2, 9, 16, 1, 'G');
+  // body
+  g.rect(2, 10, 16, 1, 'a');
+  g.rect(2, 11, 16, 4, 'b');
+  g.rect(2, 15, 16, 2, 'c');
+  // iron straps over the dome and body
+  for (const bx of [4, 14]) {
+    for (let y = 5; y <= 16; y++) {
+      g.set(bx, y, y === 9 ? 'i' : 'I');
+      g.set(bx + 1, y, 'i');
+    }
+  }
+  g.set(4, 5, 'k');
+  g.set(5, 5, 'I');
+  g.set(14, 5, 'I');
+  g.set(15, 5, 'k');
+  // gold corner caps
+  for (const x of [2, 16]) {
+    g.rect(x, 6, 2, 3, 'l');
+    g.rect(x, 8, 2, 1, 'L');
+    g.rect(x, 14, 2, 3, 'l');
+    g.rect(x, 16, 2, 1, 'L');
+  }
+  // the big keyhole plate across the seam
+  g.rect(8, 7, 4, 1, 'k');
+  g.rect(7, 8, 6, 8, 'k');
+  g.rect(8, 8, 4, 7, 'l');
+  g.rect(8, 14, 4, 1, 'L');
+  g.set(8, 8, 'j');
+  g.rect(9, 9, 2, 1, 'G');
+  g.rect(8, 10, 4, 1, 'G');
+  g.rect(9, 10, 2, 1, 's');
+  g.rect(9, 11, 2, 1, 'g');
+  g.rect(9, 12, 2, 1, 'G');
+  // dim glow on the wood beside the plate
+  g.pts('h', [
+    [6, 10],
+    [13, 10],
+    [6, 9],
+    [13, 9],
+  ]);
+  g.pts('s', [
+    [0, 8],
+    [19, 12],
+  ]);
+  return g.rows();
+}
+
+/** C: a crate bound shut with rune-bands that glow, with a sigil on the front instead of a lock. */
+function sealedRunes(): string[] {
+  const g = new Grid(W, H);
+  g.rect(2, 2, 16, 16, 'k');
+  g.rect(3, 3, 14, 1, 'a');
+  g.rect(3, 4, 14, 12, 'b');
+  g.rect(3, 15, 14, 2, 'c');
+  g.rect(3, 9, 14, 1, 'c');
+  // the plank seams
+  for (const x of [7, 12]) for (const y of [10, 11, 12]) g.set(x, y, 'c');
+  // two bands of dark wood with glowing runes: a dim edge above and below
+  const glyphs = [
+    ['g.g', 'sGg'],
+    ['.g.', 'gsG'],
+    ['gg.', 'Gsg'],
+  ];
+  const band = (y: number): void => {
+    g.rect(3, y, 14, 1, 'h');
+    g.rect(3, y + 1, 14, 2, 'c');
+    g.rect(3, y + 3, 14, 1, 'h');
+    glyphs.forEach((gl, i) => {
+      gl.forEach((row, j) =>
+        [...row].forEach((ch, k) => {
+          if (ch !== '.') g.set(4 + i * 4 + k, y + 1 + j, ch);
+        }),
+      );
+    });
+    g.pts('g', [
+      [16, y + 1],
+      [16, y + 2],
+    ]);
+  };
+  band(4);
+  band(13);
+  // the sigil between the bands: a glowing ring with a hot core
+  g.rect(9, 9, 2, 1, 'g');
+  g.pts('g', [
+    [8, 10],
+    [11, 10],
+    [8, 11],
+    [11, 11],
+  ]);
+  g.rect(9, 10, 2, 2, 's');
+  g.rect(9, 12, 2, 1, 'g');
+  g.pts('G', [
+    [7, 11],
+    [12, 11],
+  ]);
+  g.pts('h', [
+    [6, 10],
+    [13, 10],
+    [5, 11],
+    [14, 11],
+    [6, 12],
+    [13, 12],
+  ]);
+  g.pts('s', [
+    [0, 4],
+    [19, 14],
+  ]);
+  return g.rows();
+}
+
 const OPEN = openCrate();
 const STRIP = [SEALED, SHAKE1, SHAKE2, SHAKE3].reduce<string[]>(
   (acc, r) => r.map((row, i) => (acc[i] ?? '') + row),
   [],
 );
 
-const crate = (note: string, rows: string[]) => ({
+const crate = (note: string, rows: string[], variants?: Record<string, readonly string[]>) => ({
   kind: 'free' as const,
   note,
   sprite: mk(rows),
   alts: alts(rows),
+  ...(variants
+    ? {
+        variants: Object.fromEntries(
+          Object.entries(variants).map(([name, r]) => [name, mk([...r])]),
+        ),
+      }
+    : {}),
 });
 
 const BURST_RARITY = {
@@ -406,8 +540,9 @@ export const VALLEY_FORGE_CRATE_CONCEPTS: ConceptSet = {
   ],
   sprites: {
     'crate-sealed': crate(
-      'A sturdy iron-banded crate with a brass padlock, light seeping from the lid gap and plank joints.',
+      'A sturdy iron-banded crate with a brass padlock, light seeping from the lid gap and plank joints. Variations: A (main) the iron-banded crate with a brass padlock, B a treasure chest (domed lid, gold corner caps, a big keyhole plate whose keyhole glows, a glowing seam), C a crate bound with glowing rune-bands and a sigil instead of iron and a lock. Both use the main\'s keys, so `epic` and `day` recolour them (B and C add no colours). Pick: B, because the chest shape says "treasure" before any glow does, and its keyhole is the one bright spot to tap.',
       SEALED,
+      { 'B treasure chest': sealedChest(), 'C rune-bound': sealedRunes() },
     ),
     'crate-shake-1': crate('Rattling: leaning left, lid lifted, dust at the right foot.', SHAKE1),
     'crate-shake-2': crate('Rattling: leaning right, lid lifted, dust at the left foot.', SHAKE2),
