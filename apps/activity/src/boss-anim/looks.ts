@@ -37,6 +37,14 @@ import {
   CINDER_WAVE,
 } from './cinder-art';
 import type { Form, Shape } from './plan';
+import {
+  THORN_BRAMBLE,
+  THORN_BURST,
+  THORN_LASH,
+  THORN_POD,
+  THORN_RAIN,
+  THORN_SPEAR,
+} from './thorn-art';
 
 /** A sprite and the whole screen pixels per sprite pixel it is drawn at. Weapons point up, gripped at the bottom centre. */
 export interface Asset {
@@ -176,11 +184,41 @@ const CINDER_WYRM: BossLook = {
   },
 };
 
+const THORN_GLOW = '#5cbf5a';
+const THORN_IMPACT: Asset = { sprite: THORN_BURST, scale: 2 };
+const THORN_SWEEP: LookEntry = {
+  weapon: { sprite: THORN_BRAMBLE, scale: 8 },
+  impact: THORN_IMPACT,
+  glow: THORN_GLOW,
+};
+const THORN_FALL: LookEntry = {
+  weapon: { sprite: THORN_POD, scale: 8 },
+  impact: THORN_IMPACT,
+  glow: THORN_GLOW,
+};
+
+/** The Thornmother: a thorned vine spear, creeping bramble for its rows, seed pods and falling thorns, petals and leaves where they land. */
+const THORNMOTHER: BossLook = {
+  shapes: {
+    column: { weapon: { sprite: THORN_SPEAR, scale: 6 }, impact: THORN_IMPACT, glow: THORN_GLOW },
+    columns: { weapon: { sprite: THORN_SPEAR, scale: 6 }, impact: THORN_IMPACT, glow: THORN_GLOW },
+    row: THORN_SWEEP,
+    rows: THORN_SWEEP,
+    rowEnds: THORN_SWEEP,
+    single: THORN_FALL,
+    cross: THORN_FALL,
+    checker: THORN_FALL,
+    scatter: { weapon: { sprite: THORN_RAIN, scale: 6 }, impact: THORN_IMPACT, glow: THORN_GLOW },
+    chain: { weapon: { sprite: THORN_LASH, scale: 7 }, impact: THORN_IMPACT, glow: THORN_GLOW },
+  },
+};
+
 /** The looks by boss id (`content.bosses`). */
 export const BOSS_LOOKS: Readonly<Record<string, BossLook>> = {
   'storm-sovereign': STORM_SOVEREIGN,
   'tidal-colossus': TIDAL_COLOSSUS,
   'cinder-wyrm': CINDER_WYRM,
+  thornmother: THORNMOTHER,
 };
 
 /** The art a boss's move plays with; `element` colours the generic art. */
