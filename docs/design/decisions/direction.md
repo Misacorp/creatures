@@ -4,6 +4,14 @@ Roadmap calls, Misa's standing direction, naming and tone, content policy, how a
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-15: [Misa] The Forge interior keeps one look for now
+
+ID: `2026-11-15-the-forge-interior-keeps-one-look` · Status: current
+
+**Decision.** <!-- TODO: decision and reasoning -->
+
+**Reasoning.**
+
 ## 2026-11-09: [Misa] Valley building levels share one look per level
 
 ID: `2026-11-09-valley-building-levels-share-one-look` · Status: current · Supersedes: `2026-11-09-building-level-art-keeps-its-level`
