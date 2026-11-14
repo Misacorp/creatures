@@ -7,6 +7,10 @@ import type { DevState } from './dev-state';
 import type { Games } from './games';
 import type { LedgerStorage } from './ledger';
 import type { Raid } from './raid';
+import type { ValleyWorld } from './valley-bots';
+import type { SchoolWeeks } from './valley-school';
+import type { ValleyTrials } from './valley-trials';
+import type { VisitorWeeks } from './valley-visitor';
 import type { Weather } from './weather';
 
 /** What a new creature draws its talents with: the quirk and talent rngs, and the `COMBAT_V2` flag. */
@@ -50,6 +54,14 @@ export interface ToolCtx {
   combatV2: boolean;
   /** The valley's base systems are on (`VALLEY_SYSTEMS` with `VALLEY` and `COMBAT_V2`: the `valley-fresh` tool needs it). */
   valleySystems: boolean;
+  /** The weekly visitor's weeks (the `visitor-arrive` tool); null with the valley systems off. */
+  visitor: VisitorWeeks | null;
+  /** The School's teacher weeks (the `school-teacher` tool); null with the valley systems off. */
+  school: SchoolWeeks | null;
+  /** Trials and graduation (the `trials-*` tools); null with the valley systems off. */
+  trials: ValleyTrials | null;
+  /** What the staging bots drive (the `valley-bots`, `valley-sim-day` and `valley-report` tools); null with the valley systems off. */
+  world: ValleyWorld | null;
   /** Crypto randomness for the things the tools roll (guest teams, gear, the day's seed). */
   rng: Rng;
   gearRng: Rng;

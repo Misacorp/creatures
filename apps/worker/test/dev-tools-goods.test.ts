@@ -100,7 +100,7 @@ describe('goods tools', () => {
         });
         // One creature per line: the same line becomes the new species and keeps what was not asked for.
         const again = await p.tool('grant-creature', { species: 'tidewing' });
-        expect(again).toEqual({ creatureId: made.creatureId, created: false });
+        expect(again).toMatchObject({ creatureId: made.creatureId, created: false });
         expect(await find(made.creatureId)).toMatchObject({ species: 'tidewing', level: 7 });
         expect((await p.dev('grant-creature', { species: 'splashet', level: 16 })).body).toEqual({
           error: 'level_cap',

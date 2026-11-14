@@ -214,6 +214,17 @@ export const raidRoutes: Routes<RaidRouteContext> = {
       return json(outcome.value);
     },
   },
+  '/api/raid/swap/:id/cancel': {
+    POST: async (request, { params, user, core }) => {
+      if (!core.raid.swapsEnabled()) return errorResponse('not_found', 404);
+      const id = v.safeParse(SwapIdSchema, params['id']);
+      if (!id.success) return invalidId();
+      if (!(await hasNoPayload(request))) return invalidBody();
+      const outcome = core.raid.cancelSwap(user.id, core.timezone(), id.output);
+      if (!outcome.ok) return failure(outcome);
+      return json(outcome.value);
+    },
+  },
   '/api/raid/reveal-seen': {
     POST: async (request, { user, core }) => {
       const body = await parseBody(request, RevealSeenBodySchema);

@@ -49,6 +49,10 @@ import { valleyBonfireMigration } from './valley-bonfire-migration';
 import { valleyCommonsMigration } from './valley-commons-migration';
 import { valleyMarketMigration } from './valley-market-migration';
 import { valleyMarketOpenMigration } from './valley-market-open-migration';
+import { valleySchoolMigration } from './valley-school-migration';
+import { valleyForgeCrowdMigration } from './valley-forge-crowd-migration';
+import { valleyTrialsMigration } from './valley-trials-migration';
+import { valleyVisitorMigration } from './valley-visitor-migration';
 import { valleyGazetteMigration } from './valley-gazette-migration';
 import { weatherMigration } from './weather-migration';
 import { workshopConvertMigration } from './workshop-convert-migration';
@@ -366,6 +370,14 @@ export const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
   valleyMarketMigration,
   // Version 63: the Market's opening is told once to each player in the paper (see valley-market-open-migration.ts).
   valleyMarketOpenMigration,
+  // Version 64: the weekly visitor: his weeks and each player's rerolls (see valley-visitor-migration.ts).
+  valleyVisitorMigration,
+  // Version 65: the School's weekly teacher: his weeks, each player's lessons and the student seat's home (see valley-school-migration.ts).
+  valleySchoolMigration,
+  // Version 66: the trials' state per creature (see valley-trials-migration.ts).
+  valleyTrialsMigration,
+  // Version 67: the index behind the workshop's background smiths (see valley-forge-crowd-migration.ts).
+  valleyForgeCrowdMigration,
 ];
 
 /** The schema version of a fresh database. */

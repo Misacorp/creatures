@@ -16,7 +16,7 @@ import { FULL_STRENGTH_BP } from './types';
 const { counter } = creatureMod;
 const { AIMED, beside, inReach, targetsOf } = boardMod;
 const { addMark } = marksMod;
-const { feed, grown, miredCut, movesOf } = escalationMod;
+const { feed, grown, boggedDownCut, movesOf } = escalationMod;
 const { critWardOf, dodgeOf, gainSureCrit, takeHit } = takingMod;
 const {
   alive,
@@ -57,7 +57,7 @@ function bossHits(
   const shape = move.pattern.shape;
   const aimedAt = AIMED.get(targets);
   const full = Math.floor(
-    (((grown(s).atk * move.powerBp) / 10_000) * (10_000 - miredCut(s))) / 10_000,
+    (((grown(s).atk * move.powerBp) / 10_000) * (10_000 - boggedDownCut(s))) / 10_000,
   );
   // Wards are read before the move lands: a ward silenced by this same move still protects.
   const warded = new Set(
@@ -92,10 +92,10 @@ function bossHits(
     // A chain's jumps each deal a share of the hit before: the first hit full, the next at decay, then decay squared.
     const gate = move.strengthBp ?? strengthOf(s);
     let proposed = full;
-    // A one-shot is a share of the target's Max HP (a heavy hit below full strength), still cut by Mired.
+    // A one-shot is a share of the target's Max HP (a heavy hit below full strength), still cut by Bogged Down.
     if (move.oneShotBp)
       proposed = Math.floor(
-        (((t.maxHp * move.oneShotBp * gate) / 1e8) * (10_000 - miredCut(s))) / 10_000,
+        (((t.maxHp * move.oneShotBp * gate) / 1e8) * (10_000 - boggedDownCut(s))) / 10_000,
       );
     if (shape === 'chain')
       for (let k = targets.indexOf(t); k > 0; k--)

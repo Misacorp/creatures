@@ -38,6 +38,13 @@ export interface DungeonDeps {
    * keeps the rules it started with. Absent: runs start on v1.
    */
   combatV2?: boolean | undefined;
+  /**
+   * The valley's trials (V-TRIAL-2): a run was cleared with these creatures in the team (those that fought), and it beat `undercroftLevels`
+   * keepers of the Undercroft. Called inside the run's transaction; absent with the valley systems off.
+   */
+  onCleared?:
+    | ((userId: string, creatureIds: readonly string[], undercroftLevels: number) => void)
+    | undefined;
 }
 
 // --- Storage ---

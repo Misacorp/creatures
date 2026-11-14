@@ -37,12 +37,23 @@ body:has(.nav-tray) .dev-fab {
   display: flex;
   flex-direction: column;
   width: min(100%, 32rem);
-  max-height: 66vh;
+  max-height: 80vh;
   margin: 0 auto;
   background: var(--dusk);
   color: var(--bone);
   box-shadow: var(--frame);
   font-size: 0.875rem;
+}
+
+/* On a desktop the panel is a full-screen overlay: the nav on the left, the section beside it. */
+@media (min-width: 60rem) {
+  .dev-drawer {
+    inset: 0;
+    width: auto;
+    max-height: none;
+    margin: 0;
+    font-size: 0.95rem;
+  }
 }
 
 .dev-head {
@@ -81,19 +92,193 @@ body:has(.nav-tray) .dev-fab {
   color: var(--bad);
 }
 
+/* The target player, shared by every tool that acts on a player. */
+.dev-target {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.25rem 0.9rem;
+  padding: 0.4rem 0.6rem;
+  background: var(--dusk-2);
+  border-bottom: 2px solid var(--line);
+}
+
+.dev-target.is-other {
+  border-bottom-color: var(--gold);
+}
+
+.dev-target-pick {
+  display: flex;
+  flex: 1 1 16rem;
+  flex-direction: column;
+  gap: 0.15rem;
+  max-width: 34rem;
+  font-size: 0.75rem;
+}
+
+.dev-target-pick select {
+  width: 100%;
+  min-width: 0;
+  min-height: 2.2rem;
+  padding: 0.15rem 0.4rem;
+  border: 0;
+  background: var(--night);
+  color: var(--bone);
+  font: inherit;
+  font-size: 0.9rem;
+  box-shadow: 0 0 0 var(--px) var(--ink);
+}
+
+.dev-target-note {
+  margin: 0;
+  color: var(--haze);
+  font-size: 0.75rem;
+}
+
+.dev-target.is-other .dev-target-note {
+  color: var(--gold);
+}
+
+.dev-target-tag {
+  color: var(--gold);
+  font-family: inherit;
+  font-size: 0.8em;
+}
+
+.dev-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* The section nav: a row you scroll sideways on a phone, a column of headings and buttons on a desktop. */
+.dev-nav {
+  display: flex;
+  flex: none;
+  gap: 0.8rem;
+  padding: 0.35rem 0.6rem;
+  overflow-x: auto;
+  background: var(--dusk-2);
+}
+
+.dev-nav-group {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.dev-nav-heading {
+  margin: 0;
+  color: var(--haze);
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.dev-nav-items {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.dev-nav .toggle {
+  min-height: 2rem;
+  padding: 0.1rem 0.6rem;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
 .dev-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   padding: 0.4rem 0.6rem 0.8rem;
   overscroll-behavior: contain;
 }
 
-.dev-section {
-  margin-top: 0.4rem;
+.dev-section-title {
+  margin: 0.2rem 0 0.4rem;
+  font-family: var(--display);
+  font-size: 1.2rem;
+  font-weight: 400;
+}
+
+.dev-block {
+  margin-top: 0.9rem;
+}
+
+.dev-block-title {
+  margin: 0.3rem 0 0;
+  color: var(--gold);
+  font-family: var(--display);
+  font-size: 1.05rem;
+  font-weight: 400;
+}
+
+/* Forms as cards, side by side on a wide screen (one column on a phone). */
+.dev-cards {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0 0.9rem;
+}
+
+.dev-cards > .dev-form,
+.dev-cards > .dev-workbench {
+  margin-top: 0.7rem;
+  padding: 0.5rem 0.7rem 0.6rem;
+  border-top: 0;
   background: var(--dusk-2);
 }
 
-.dev-section-body {
-  padding: 0.2rem 0.6rem 0.6rem;
+@media (min-width: 60rem) {
+  .dev-body {
+    flex-direction: row;
+  }
+
+  .dev-nav {
+    flex-direction: column;
+    gap: 1rem;
+    width: 14rem;
+    padding: 0.8rem 0.7rem;
+    overflow-x: visible;
+    overflow-y: auto;
+  }
+
+  .dev-nav-group {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.3rem;
+  }
+
+  .dev-nav-items {
+    flex-direction: column;
+  }
+
+  .dev-nav .toggle {
+    width: 100%;
+    text-align: left;
+  }
+
+  .dev-scroll {
+    padding: 0.8rem 1.5rem 2rem;
+  }
+
+  .dev-cards {
+    grid-template-columns: repeat(auto-fill, minmax(24rem, 1fr));
+  }
+
+  .dev-fields {
+    grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  }
+
+  .dev-head {
+    padding: 0.5rem 1rem;
+  }
+
+  .dev-target {
+    padding: 0.5rem 1rem;
+  }
 }
 
 /* The clock is a data table (ui/DataTable); only the gap below it is the panel's. */

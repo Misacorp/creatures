@@ -29,9 +29,10 @@ export interface Concept {
 
 /**
  * `draft`: drawn, Misa has not said yet. `liked`: Misa approved the look; use it when the content
- * comes. `redo`: Misa wants it changed before use (say what in `notes`).
+ * comes. `redo`: Misa wants it changed before use (say what in `notes`). `archived`: kept for
+ * reference only (a direction not picked, or replaced by newer art); the review page never asks about it.
  */
-export type ConceptStatus = 'draft' | 'liked' | 'redo';
+export type ConceptStatus = 'draft' | 'liked' | 'redo' | 'archived';
 
 export interface ConceptSet {
   /** The set's code, also the studio's argument (`art.mts void`). */
@@ -56,6 +57,12 @@ export interface ConceptSet {
    * cards), and its colours for each alternative palette by name (a night tile for the `night` alt).
    */
   backdrop?: { tile: SpriteDef; alts?: Readonly<Record<string, Readonly<Record<string, string>>>> };
+  /**
+   * A building's art by level, from level 1 to its max: for each place, one `set/sprite` reference per level
+   * (any set's sprite, so a level can stay in the set it was first drawn in). `pnpm art levels` draws each
+   * place's levels side by side, by night and by day, into `docs/art/levels/<place>.png`.
+   */
+  levels?: Readonly<Record<string, readonly string[]>>;
 }
 
 /** Whether a module export is a concept set (an object with an id, a title and sprites). */

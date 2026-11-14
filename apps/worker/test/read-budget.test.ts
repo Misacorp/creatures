@@ -7,6 +7,7 @@
 // `read-day.test.ts` adds them up over a day.
 import { describe, expect, it } from 'vitest';
 import { eventTimes, weekIdFor } from '../src/raid-schedule';
+import { ValleyForgePass } from '../src/valley-forge';
 import { ReadMeter, readSourceOfPath } from '../src/read-meter';
 import { addDays, gameDay } from '../src/time';
 import { USER_ID, runCore } from './helpers';
@@ -191,6 +192,25 @@ describe('rows read counter', () => {
         { day: '2027-01-14', source: 'alarm', rows: 4 },
         { day: '2027-01-15', source: 'alarm', rows: 3 },
       ]);
+    });
+  });
+
+  it('peeks at the rows read and written so far without moving them (the simulated month measures a visit with it)', async () => {
+    await runCore(nextGuild(), (ctx) => {
+      for (let n = 1; n <= 3; n++) seedPlayer(ctx, n, { creatures: 0 });
+      const meter = new ReadMeter(ctx.sql);
+      const start = meter.peek();
+      meter.sql.exec('SELECT * FROM players').toArray();
+      const mid = meter.peek();
+      expect(mid.read - start.read).toBe(3);
+      expect(mid.written).toBe(start.written);
+      meter.sql.exec('UPDATE players SET last_seen_at = last_seen_at').toArray();
+      const end = meter.peek();
+      expect(end.written - mid.written).toBe(3);
+      // Peeking moved nothing: the flush still counts every row once.
+      meter.flush('alarm', '2027-01-14');
+      expect(counters(ctx).alarm).toBeGreaterThanOrEqual(6);
+      expect(meter.peek()).toEqual({ read: 0, written: 0 });
     });
   });
 
@@ -696,6 +716,48 @@ describe('read budget with the bonfire', () => {
 });
 
 /**
+ * The Forge's background smiths (`ValleyForgePass.backSmiths`, the workshop's interior): one indexed read of at most twelve anvil seats
+ * of other players, then for each of up to four a creature by key and the owner's name by key. Part of every valley look.
+ */
+describe('read budget: the workshop background smiths', () => {
+  it('reads a handful of rows through the index and shows at most four, two to an owner', async () => {
+    await inGuild(
+      async (env) => {
+        const { metered } = env;
+        const world = await seedWorld(env, { valleySystems: true });
+        for (let p = 2; p <= 7; p++) {
+          const mine = world.creatures[userId(p)] ?? [];
+          for (let i = 0; i < 3; i++) {
+            metered.sql.exec(
+              `INSERT INTO valley_seats (seat_id, user_id, place, kind, position, destination_id, creature_id, passed_at)
+               VALUES (?, ?, 'forge', 'anvil', ?, 'forge', ?, 0)`,
+              crypto.randomUUID(),
+              userId(p),
+              i + 1,
+              mine[i] ?? null,
+            );
+          }
+        }
+        const pass = new ValleyForgePass({
+          storage: { sql: metered.sql, transactionSync: (f) => f() },
+          now: () => 0,
+          rng: undefined as never,
+        });
+        const seen = await metered.measure(() => pass.backSmiths(userId(1)));
+        expect(seen.result).toHaveLength(4);
+        const owners = seen.result.map((x) => x.owner);
+        for (const o of owners) expect(owners.filter((n) => n === o).length).toBeLessThanOrEqual(2);
+        expect(seen.reads.total, `${String(seen.reads.total)} rows read`).toBeLessThanOrEqual(40);
+        const again = await metered.measure(() => pass.backSmiths(userId(2)));
+        expect(again.result.every((x) => x.owner !== 'Player 2')).toBe(true);
+        console.info(`background smiths: ${String(seen.reads.total)} rows read`);
+      },
+      { fresh: true },
+    );
+  }, 60_000);
+});
+
+/**
  * The commons (phase 5 step 6, `valley-commons.ts`, `valley-gifts.ts`): what a look, a gift and an arrival with a communal seat read and
  * write, for the seeded player's 30 creatures (each pass settles them all; the commons add a few rows on top, V-COM-8):
  * - a look mid-visit: the places (one row each), the fire's last row and its last five, the collections' set sockets, the keystone
@@ -879,6 +941,316 @@ describe('read budget with the broker', () => {
       if (reads === undefined) throw new Error('the measuring test did not run');
       expectReadsUnder(`market ${name}`, reads, MARKET_BUDGET[name].reads);
       expectWritesUnder(`market ${name}`, reads, MARKET_BUDGET[name].writes);
+    },
+  );
+});
+
+/**
+ * The weekly visitor (phase 5 step 8, `valley-visitor.ts`): what a look at him, a reroll, a blueprint, the alarm during his days and the
+ * paper's mention of him read and write. A look reads the week's row (`visitor_weeks` by its key) and the player's (`visitor_rerolls` by
+ * its key), and the first look of a week makes the week's row and queues his post; the spends add the ledger and parts rows of any
+ * keyed spend. The alarm reads one row while he is here and none outside his days. The valley's own settle before a spend is the
+ * pass of `VALLEY_BUDGET`; the numbers here are the whole request.
+ */
+const VISITOR_BUDGET = {
+  // The first look of the week: the week's row is made, the blueprint drawn and the post queued.
+  first: { reads: 40, writes: 12 }, // measured 26 reads (the request's own: the session, the raid and Games checks; his two rows are 3 of them), 7 written (the week's row, the player's pass and the request's own counters)
+  // A look with a piece asked about (its price and odds).
+  look: { reads: 45, writes: 4 }, // measured 28 reads, 2 written (the request's own counters)
+  // A reroll: the valley's pass before a spend (as `VALLEY_BUDGET.visit`) and the answer's own state.
+  reroll: { reads: 1150, writes: 120 }, // measured 749 reads, 78 written (the debit, the scrap, the item's lines and the rerolls row are about 8 of them)
+  blueprint: { reads: 1150, writes: 70 }, // measured 765 reads, 43 written
+  // The alarm's own check while he is here (his row exists).
+  alarm: { reads: 40, writes: 4 }, // measured 25 reads, none of them the visitor's once his row exists
+  // A return after twelve hours inside his days: the pass tells him once.
+  arrival: { reads: 1300, writes: 100 }, // measured 864 reads, 67 written (the pass of `VALLEY_BUDGET.arrival`; the paper's line adds the told row)
+} as const;
+
+describe('read budget with the visitor', () => {
+  const measured: Record<string, ReadReport> = {};
+
+  it('measures a look, a reroll, a blueprint, the alarm and a return while he is here', async () => {
+    await inGuild(
+      async (env) => {
+        const { metered, clock } = env;
+        const world = await seedWorld(env, { valleySystems: true });
+        const { core, secrets } = world;
+        const relog = async (): Promise<void> => {
+          secrets.set(
+            userId(1),
+            await core.createSession(GUILD_ID, { id: userId(1), displayName: 'Player 1' }),
+          );
+        };
+        const state = (): Promise<unknown> => callAs(core, secrets, 1, '/api/state');
+        clock.t += 6 * MINUTE;
+        await callAs(core, secrets, 1, '/api/me');
+        await state();
+        // Thursday afternoon: he is here. Funds and a piece to reroll.
+        clock.t += 2 * 24 * 60 * MINUTE;
+        await relog();
+        const id = userId(1);
+        metered.sql.exec(
+          "UPDATE balances SET amount = 100000 WHERE user_id = ? AND currency = 'bait'",
+          id,
+        );
+        metered.sql.exec(
+          "INSERT INTO parts (user_id, kind, amount) VALUES (?, 'scrap', 100000), (?, 'mire-shard', 500) ON CONFLICT(user_id, kind) DO UPDATE SET amount = excluded.amount",
+          id,
+          id,
+        );
+        const item = metered.sql
+          .exec<{ id: string }>('SELECT id FROM gear_items WHERE user_id = ? LIMIT 1', id)
+          .one().id;
+        clock.t += MINUTE;
+        measured['first'] = (
+          await metered.measure(() => callAs(core, secrets, 1, '/api/valley/visitor'))
+        ).reads;
+        clock.t += MINUTE;
+        measured['look'] = (
+          await metered.measure(() => callAs(core, secrets, 1, `/api/valley/visitor?item=${item}`))
+        ).reads;
+        clock.t += MINUTE;
+        measured['reroll'] = (
+          await metered.measure(() =>
+            callAs(core, secrets, 1, '/api/valley/visitor/reroll', {
+              method: 'POST',
+              body: { itemId: item, idempotencyKey: 'budget-reroll-key' },
+            }),
+          )
+        ).reads;
+        clock.t += MINUTE;
+        measured['blueprint'] = (
+          await metered.measure(() =>
+            callAs(core, secrets, 1, '/api/valley/visitor/blueprint', {
+              method: 'POST',
+              body: { idempotencyKey: 'budget-blueprint-key' },
+            }),
+          )
+        ).reads;
+        clock.t += MINUTE;
+        await core.alarm();
+        clock.t += MINUTE;
+        measured['alarm'] = (await metered.measure(() => core.alarm())).reads;
+        // Twelve hours away, still inside his days (Friday 03:00 Helsinki): the paper tells him.
+        metered.sql.exec('UPDATE visitor_rerolls SET told = 0 WHERE user_id = ?', id);
+        clock.t += 12 * 60 * MINUTE;
+        // The object's alarm wakes at Friday 00:00 and makes the School's weekly row (the pick over the server: priced in the School's
+        // own budget), so the return below finds it, as it does in production.
+        await core.alarm();
+        await relog();
+        measured['arrival'] = (await metered.measure(state)).reads;
+      },
+      { fresh: true },
+    );
+  }, 60_000);
+
+  it.each(Object.keys(VISITOR_BUDGET) as (keyof typeof VISITOR_BUDGET)[])(
+    'the visitor: %s reads and writes few rows',
+    (name) => {
+      const reads = measured[name];
+      if (reads === undefined) throw new Error('the measuring test did not run');
+      expectReadsUnder(`visitor ${name}`, reads, VISITOR_BUDGET[name].reads);
+      expectWritesUnder(`visitor ${name}`, reads, VISITOR_BUDGET[name].writes);
+    },
+  );
+});
+
+/**
+ * The School's teacher (phase 5 step 9a, `valley-school.ts`): the weekly pick, a look, seating a student, the alarm while he is announced
+ * or here, and the return on which a lesson is learned. The pick is the one costly read of the week: it reads every creature's line
+ * (`SELECT DISTINCT user_id, line FROM creatures`, one row per creature of the server) and every book entry (`line_talents`), once a week,
+ * on a server of 15 with full rosters (the world of these tests). Everything after it reads the week's row by its key. The valley's own
+ * settle before a seat is the pass of `VALLEY_BUDGET`; the numbers here are the whole request.
+ */
+const SCHOOL_BUDGET = {
+  // The first look of the week: the pick over the whole server, the row and (with a channel) the post.
+  pick: { reads: 3000, writes: 80 }, // measured 1925 reads here (1330 of them the books, 390 the creatures' lines: once a week); 2490 when all 15 players hold whole books, 56 written (the pass of a first look, the week's row)
+  // A look with the row made.
+  look: { reads: 250, writes: 45 }, // measured 182 reads, 29 written (the valley's pass of this player: the first of the object's life here; the School's own part is the week's row and the player's creatures and book, about 51 rows)
+  // Seating a student: the valley's pass before and after, the seat row and the checks.
+  seat: { reads: 1100, writes: 90 }, // measured 801 reads, 62 written (the valley's pass before and after, the seat row and the two seat moves)
+  // The alarm's own check while he is here (his row exists).
+  alarm: { reads: 40, writes: 4 }, // measured 26 reads (the week's row is one of them), none written
+  // A return after twelve hours on which the student's morning has come: the pass learns the lesson and sends it home.
+  arrival: { reads: 1100, writes: 100 }, // measured 783 reads, 72 written (the pass of `VALLEY_BUDGET.arrival`; the lesson adds the seat's rows, the book entry and the player's week row)
+} as const;
+
+describe('read budget with the School', () => {
+  const measured: Record<string, ReadReport> = {};
+
+  it('measures the weekly pick, a look, a seat, the alarm and a return with a lesson', async () => {
+    await inGuild(
+      async (env) => {
+        const { metered, clock } = env;
+        const world = await seedWorld(env, { valleySystems: true });
+        const { core, secrets } = world;
+        clock.t += 6 * MINUTE;
+        await callAs(core, secrets, 1, '/api/me');
+        await callAs(core, secrets, 1, '/api/state');
+        // Four players have found little: their books keep only what their creatures learned, so the teacher has students (the rest hold
+        // whole pools, as a month of catches leaves them).
+        metered.sql.exec(
+          `DELETE FROM line_talents WHERE user_id IN (?, ?, ?, ?) AND NOT EXISTS (
+             SELECT 1 FROM creature_talents_v2 t JOIN creatures c ON c.id = t.creature_id
+             WHERE c.user_id = line_talents.user_id AND c.line = line_talents.line AND t.talent_id = line_talents.talent_id)`,
+          userId(1),
+          userId(2),
+          userId(3),
+          userId(4),
+        );
+        // The world's first alarm made this week's row from the full books (no talent): it is drawn again from these.
+        metered.sql.exec('DELETE FROM school_weeks');
+        // The teacher is here (a Tuesday afternoon).
+        clock.t += MINUTE;
+        measured['pick'] = (
+          await metered.measure(() => callAs(core, secrets, 1, '/api/valley/school'))
+        ).reads;
+        clock.t += MINUTE;
+        measured['look'] = (
+          await metered.measure(() => callAs(core, secrets, 1, '/api/valley/school'))
+        ).reads;
+        // The student is one of the four who found little: the first of them the teacher benefits.
+        let student = 0;
+        let first: string | undefined;
+        for (const n of [1, 2, 3, 4]) {
+          const view = (await callAs(core, secrets, n, '/api/valley/school')) as {
+            wouldLearn: string[];
+          };
+          if (view.wouldLearn[0] !== undefined) {
+            student = n;
+            first = view.wouldLearn[0];
+            break;
+          }
+        }
+        if (first === undefined) throw new Error('the world has no student for the teacher');
+        clock.t += MINUTE;
+        measured['seat'] = (
+          await metered.measure(() =>
+            callAs(core, secrets, student, '/api/valley/school/seat', {
+              method: 'POST',
+              body: { index: 0, creatureId: first },
+            }),
+          )
+        ).reads;
+        clock.t += MINUTE;
+        await core.alarm();
+        clock.t += MINUTE;
+        measured['alarm'] = (await metered.measure(() => core.alarm())).reads;
+        // Twelve hours later the next morning has come: the pass learns the lesson.
+        clock.t += 12 * 60 * MINUTE;
+        secrets.set(
+          userId(student),
+          await core.createSession(GUILD_ID, {
+            id: userId(student),
+            displayName: `Player ${String(student)}`,
+          }),
+        );
+        measured['arrival'] = (
+          await metered.measure(() => callAs(core, secrets, student, '/api/state'))
+        ).reads;
+        // The lesson was learned and the student is home.
+        expect(
+          metered.sql
+            .exec<{ n: number }>(
+              'SELECT COUNT(*) AS n FROM valley_seats WHERE user_id = ? AND place = ? AND creature_id IS NOT NULL',
+              userId(student),
+              'school',
+            )
+            .one().n,
+        ).toBe(0);
+        expect(
+          metered.sql
+            .exec<{ n: number }>('SELECT COALESCE(SUM(lessons), 0) AS n FROM school_students')
+            .one().n,
+        ).toBe(1);
+      },
+      { fresh: true },
+    );
+  }, 60_000);
+
+  it.each(Object.keys(SCHOOL_BUDGET) as (keyof typeof SCHOOL_BUDGET)[])(
+    'the School: %s reads and writes few rows',
+    (name) => {
+      const reads = measured[name];
+      if (reads === undefined) throw new Error('the measuring test did not run');
+      expectReadsUnder(`school ${name}`, reads, SCHOOL_BUDGET[name].reads);
+      expectWritesUnder(`school ${name}`, reads, SCHOOL_BUDGET[name].writes);
+    },
+  );
+});
+
+/**
+ * Trials and the School's ceremony (phase 5 step 9c, `valley-trials.ts`): what a pass adds. The creature rows come joined with their trial
+ * row by primary key (one more row read per creature, inside the pass of `VALLEY_BUDGET`); a pass writes a trial row only for a creature whose
+ * boxes, honour or told mark changed; an event tick (a dungeon clear's team, a raid kill's party) reads each creature's level and trial row and
+ * writes the one it ticked. The numbers are the whole request, for the seeded player's 30 creatures all ticking at once.
+ */
+const TRIALS_BUDGET = {
+  // A pass in which all 30 creatures reach a day at a post and a day of smithing: 30 rows made.
+  tick: { reads: 1150, writes: 200 }, // measured 768 reads, 131 written (26 new trial rows: each is 3 rows with its two indexes)
+  // A dungeon clear's team of 5: a level read and a trial row read each, one row written each.
+  event: { reads: 25, writes: 10 }, // measured 15 reads, 5 written
+  // Two days later: the ceremony has passed for all 30 (30 rows rewritten with the honour and the told mark) and the paper tells it.
+  graduation: { reads: 1500, writes: 150 }, // measured 987 reads, 96 written
+} as const;
+
+describe('read budget with trials', () => {
+  const measured: Record<string, ReadReport> = {};
+
+  it('measures a pass that ticks every creature, an event tick and a pass that graduates them all', async () => {
+    await inGuild(
+      async (env) => {
+        const { metered, clock } = env;
+        const world = await seedWorld(env, { valleySystems: true });
+        const { core, secrets } = world;
+        const relog = async (): Promise<void> => {
+          secrets.set(
+            userId(1),
+            await core.createSession(GUILD_ID, { id: userId(1), displayName: 'Player 1' }),
+          );
+        };
+        const state = (): Promise<unknown> => callAs(core, secrets, 1, '/api/state');
+        clock.t += 6 * MINUTE;
+        await callAs(core, secrets, 1, '/api/me');
+        await state();
+        const id = userId(1);
+        // Every creature is level 12 with a day at a post and a day of smithing behind it.
+        metered.sql.exec('UPDATE creatures SET level = 12 WHERE user_id = ?', id);
+        metered.sql.exec(
+          'UPDATE valley_creatures SET scout_hours = 30, smith_hours = 30 WHERE user_id = ?',
+          id,
+        );
+        clock.t += 2 * MINUTE;
+        measured['tick'] = (await metered.measure(state)).reads;
+        const ids = metered.sql
+          .exec<{ id: string }>('SELECT id FROM creatures WHERE user_id = ?', id)
+          .toArray()
+          .map((r) => r.id);
+        const trials = core.valleyTrials;
+        if (trials === null) throw new Error('the valley is off');
+        measured['event'] = (
+          await metered.measure(() => {
+            trials.tickEvent(id, ids.slice(0, 5), 'dungeon', clock.t);
+            return Promise.resolve();
+          })
+        ).reads;
+        trials.tickEvent(id, ids, 'dungeon', clock.t);
+        trials.tickEvent(id, ids, 'fire', clock.t);
+        clock.t += 2 * 24 * 60 * MINUTE;
+        await relog();
+        measured['graduation'] = (await metered.measure(state)).reads;
+      },
+      { fresh: true },
+    );
+  }, 60_000);
+
+  it.each(Object.keys(TRIALS_BUDGET) as (keyof typeof TRIALS_BUDGET)[])(
+    'trials: %s reads and writes few rows',
+    (name) => {
+      const reads = measured[name];
+      if (reads === undefined) throw new Error('the measuring test did not run');
+      expectReadsUnder(`trials ${name}`, reads, TRIALS_BUDGET[name].reads);
+      expectWritesUnder(`trials ${name}`, reads, TRIALS_BUDGET[name].writes);
     },
   );
 });

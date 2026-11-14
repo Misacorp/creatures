@@ -59,6 +59,31 @@ describe('Hud', () => {
   });
 });
 
+describe('Hud, floating over the valley map', () => {
+  it('keeps the page heading (unseen), the purse and the cog, and marks the bar as floating', () => {
+    page = createPage();
+    page.draw(
+      <PopoverHost onOpenHowTo={() => undefined}>
+        <Hud
+          title="Valley"
+          float
+          balances={{ bait: 5, essence: 1 }}
+          helpRef={{ current: null }}
+          onHelp={() => undefined}
+          onSettings={() => undefined}
+        />
+      </PopoverHost>,
+    );
+    const [bar] = byClass(page.root, 'hud');
+    expect(bar?.getAttribute('class')).toContain('hud-float');
+    const heading = find(page.root, (el) => el.localName === 'h1');
+    expect(heading.map((h) => h.textContent)).toEqual(['Valley']);
+    expect(heading[0]?.getAttribute('class')).toContain('visually-hidden');
+    expect(byClass(page.root, 'currency-pile')).toHaveLength(1);
+    expect(byName(page.root, 'button', 'Settings')).toHaveLength(1);
+  });
+});
+
 describe('the currency popover', () => {
   const entry = (id: number, amount: number, source: string, currency = 'bait') => ({
     id,

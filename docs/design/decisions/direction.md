@@ -4,6 +4,7 @@ Roadmap calls, Misa's standing direction, naming and tone, content policy, how a
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+<<<<<<< HEAD
 ## 2026-11-14: [Misa] One coordination session, one release board, one merge queue
 
 ID: `2026-11-14-one-coordination-session-one-release-board` · Status: current
@@ -11,6 +12,23 @@ ID: `2026-11-14-one-coordination-session-one-release-board` · Status: current
 **Decision.** One session, "Game feature release coordination", coordinates the combat, valley, housing and art sessions. It writes no features. It keeps the release board for Misa (`https://claude.ai/artifact/MHj3WxFCUVv6jT71xDGsHW`: what needs him across all sessions, the merge queue, the road to release, one block per stream) and republishes it when something changes. It runs a merge queue: combat's playtest polish (#136), then one valley PR, then housing (#133); after each merge the next session merges `main` and resolves its conflicts before Misa sees its PR. Sessions report to the coordinator by cross-session message and open small PRs often. Housing merges switched off and stays off for the combat and valley release. The road to release is: empty the queue, the valley UI must-fix list (Misa's gripes with the Expedition and Forge screens), a staging playtest with both reworks on, the reset, the switches on.
 
 **Reasoning.** Misa had lost track of what four long sessions were doing and which PR to merge next. Most of both reworks was already on `main` behind switches, but there was no shared picture (`docs/progress.md` described 2026-11-06, each session kept its own list for him) and the three open branches no longer merged cleanly with each other (combat and valley 5 files, valley and housing 9 including the migrations, combat and housing 3). One board and a fixed merge order fix both.
+=======
+## 2026-11-15: [Misa] The Forge interior keeps one look for now
+
+ID: `2026-11-15-the-forge-interior-keeps-one-look` · Status: current
+
+**Decision.** The Forge's interior (`valley-forge-interior`) has one look, the level-3 sandstone and timber, at every Forge level for now. A per-level interior, following the five shared looks in `docs/design/art-levels.md`, comes later.
+
+**Reasoning.** Misa took the suggested pick on the release board (2026-11-14, relayed by the release coordination session): ship one interior first and grow it with the levels later.
+
+## 2026-11-09: [Misa] Valley building levels share one look per level
+
+ID: `2026-11-09-valley-building-levels-share-one-look` · Status: current · Supersedes: `2026-11-09-building-level-art-keeps-its-level`
+
+**Decision.** Every valley building goes through the same five levels: Humble (raw logs, rope, packed earth), Settled (planks, red-brown shingles), Stone (cut stone, slate, black iron), Valley (teal-and-cream banners, brass lamps) and Crystal (glowing valley crystal, gold trim). Each level's materials come from one shared palette, `concepts/valley-tiers.ts`, so a level looks the same on every building, and level 1 is humbler than the old glow art. Each building keeps one canvas for all five levels (Bonfire 64x56, Forge 56x60, Signpost 64x56, Paddock 64x64, School 64x64), with the art on one base row. The rules are in `docs/design/art-levels.md`.
+
+**Reasoning.** Misa (2026-11-09): buildings should get "better, not just more decorative", may change material as they level, and need "a common motif between buildings of the same level", like "how Clash of Clans brings a new look with each new town hall level"; he agreed to the Paddock's taller canvas. One canvas per building means one map footprint and one scene placement for all its levels.
+>>>>>>> origin/main
 
 ## 2026-11-06: Overnight sessions: quiet until news, then one message with every open question [Misa]
 
@@ -268,3 +286,15 @@ Misa reviewed the research defaults (`docs/research/`). **[Misa]** on all of the
 ID: `2026-10-10-name-and-tone` · Status: current
 
 **Decision.** The game is called **Leet Creatures** **[Misa]**. The game stands on its own: creatures, art and mechanics are not built around leet or tech humour. Leet is the currency source; light references are fine **[Misa]**.
+
+<!-- Superseded entries below: kept for history, no longer in force. -->
+
+# Superseded
+
+## 2026-11-09: Building level art keeps its level 1 canvas
+
+ID: `2026-11-09-building-level-art-keeps-its-level` · Status: superseded by `2026-11-09-valley-building-levels-share-one-look`
+
+**Decision.** Each valley building's art for levels 2 to 5 is drawn on the canvas size of its level 1 (the Bonfire: its level 2, `bonfire-grand`), keeping the parts the game depends on (the School's door and bell cupola, the Paddock's roam rectangle, the hearth's seats) pixel for pixel; tests check the School and the Paddock. Levels are listed per place in a concept set's `levels`, and `pnpm art levels` draws each place's progression into `docs/art/levels/`. Concept sets `valley-levels-bonfire`, `-forge`, `-signpost` (with the unbuilt Market), `-paddock` and `-school`.
+
+**Reasoning.** The same canvas needs no new map spot, button, name plate or scene placement, so the valley session can wire a level by swapping the sprite name. The cost is that the tightest canvases (the Paddock, the School's side wing) grow only a little; a bigger canvas is Misa's call, since it moves the map layout.

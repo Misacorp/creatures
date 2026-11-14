@@ -265,3 +265,42 @@ describe('Deep Tracks (deepTracks)', () => {
     ]);
   });
 });
+
+describe('a Knack that gives up its hit (forgo)', () => {
+  const feeder = (over: SpecOver = {}) =>
+    spec({
+      name: 'FM',
+      role: 'setter',
+      element: 'spark',
+      col: 0,
+      fx: { noDamage: true, markStacks: 2, marksAs: 'own' },
+      ...over,
+    });
+
+  it('tells the board the creature took its turn, right before what its Knack does instead', () => {
+    const board = boardEvents(play(boss({ cols: 2, rounds: 1 }), [feeder(), setter(1)]));
+    const forgo = board.findIndex((e) => e.type === 'forgo');
+    expect(forgo).toBeGreaterThanOrEqual(0);
+    expect(board[forgo]).toEqual({ type: 'forgo', who: 'FM' });
+    // The creature that hits does not forgo, and the forgone turn has no hit from it.
+    expect(board.filter((e) => e.type === 'forgo')).toHaveLength(1);
+    expect(board.some((e) => e.type === 'hit' && e.from === 'FM')).toBe(false);
+    expect(board[forgo + 1]).toMatchObject({ type: 'mark', element: 'spark' });
+  });
+
+  it('is not said while the creature is silenced (its Knack does nothing, it hits)', () => {
+    const board = boardEvents(
+      play(
+        boss({
+          cols: 2,
+          rounds: 2,
+          moves: [{ ...hush('single', 9), pattern: { anchor: 'front', shape: 'single' } }],
+        }),
+        [feeder(), setter(1)],
+      ),
+    );
+    // Round 1 it forgoes; the Hush lands at round 2's start, so the silenced creature hits instead.
+    expect(board.filter((e) => e.type === 'forgo')).toHaveLength(1);
+    expect(board.some((e) => e.type === 'hit' && e.from === 'FM')).toBe(true);
+  });
+});

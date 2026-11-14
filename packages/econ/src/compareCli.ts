@@ -13,7 +13,7 @@ import { RULES } from './rules';
 export function main(args: readonly string[]): number {
   const seedsAt = args.indexOf('--seeds');
   const seeds = seedsAt >= 0 ? Number(args[seedsAt + 1]) : DEFAULT_SEEDS;
-  const file = args.find((a, i) => !a.startsWith('--') && i !== seedsAt + 1);
+  const file = args.find((a, i) => !a.startsWith('--') && (seedsAt < 0 || i !== seedsAt + 1));
   if (file === undefined || !Number.isInteger(seeds) || seeds < 1) {
     console.error('usage: compare <live-report.json> [--seeds n]');
     return 2;
@@ -41,11 +41,12 @@ export function main(args: readonly string[]): number {
   const weeks = Math.max(
     1,
     ...Object.values(report.profiles).flatMap((p) => p.days.map((d) => Math.ceil(d.day / 7))),
+    ...(report.server?.days ?? []).map((d) => Math.ceil(d.day / 7)),
   );
   console.log(`${config.label}: lab over ${seeds} seeds, ${weeks} weeks`);
   const result = runScenario({ ...config, weeks: Math.max(weeks, 1) }, seeds, RULES);
   const { lines, ok } = formatComparison(
-    compareReport(report, (profile) => playersOf(result, profile)),
+    compareReport(report, (profile) => playersOf(result, profile), result.runs),
   );
   for (const line of lines) console.log(line);
   return ok ? 0 : 1;

@@ -1,4 +1,4 @@
-import { RULES, type Rng } from '@creatures/game';
+import { RULES, VALLEY_RULES, type Rng } from '@creatures/game';
 import * as v from 'valibot';
 import { DailyAllowance } from './allowance';
 import { Analytics, RETENTION_MS } from './analytics';
@@ -121,6 +121,7 @@ import { MIGRATIONS } from './migrations';
 import { ReadMeter, pruneReads, readSourceOfPath, type ReadSource } from './read-meter';
 import { liveRng } from './rng';
 import { ValleyBonfire } from './valley-bonfire';
+import { recordForgeHours, type ValleyWorld } from './valley-bots';
 import { ValleyCommons } from './valley-commons';
 import { ValleyFinds } from './valley-finds';
 import { ValleyForgePass } from './valley-forge';
@@ -130,7 +131,10 @@ import { valleyRoutes } from './valley-routes';
 import { ValleyOrders } from './valley-orders';
 import { ValleySeats } from './valley-seats';
 import { ValleySettle } from './valley-settle';
-import type { ValleyView } from '@creatures/game';
+import { SchoolLessons, SchoolWeeks, ValleySchool } from './valley-school';
+import { ValleyTrials } from './valley-trials';
+import { ValleyVisitor, VisitorWeeks } from './valley-visitor';
+import type { ForgeHours, ValleyView } from '@creatures/game';
 import type { LoungeClient, LoungeResult } from './lounge-discord';
 import { nextRaidBoundary, raidStageAt } from './lounge-raid';
 import {
@@ -458,10 +462,23 @@ export class GuildCore {
   readonly valleyGazette: ValleyGazette | null;
   /** The server's middle, who is online and the raid's pause of posts (`VALLEY_SYSTEMS`), or null with the flag off. */
   readonly valleyBonfire: ValleyBonfire | null;
+  readonly valleyCommons: ValleyCommons | null;
   /** Gifts to the commons' projects (`VALLEY_SYSTEMS`), or null with the flag off. */
   readonly valleyGifts: ValleyGifts | null;
+  /** The weekly visitor's reads and spends (`VALLEY_SYSTEMS`), or null with the flag off. */
+  readonly valleyVisitor: ValleyVisitor | null;
+  /** The visitor's weeks: his arrival, its post and the alarm for it (`VALLEY_SYSTEMS`), or null with the flag off. */
+  readonly valleyVisitorWeeks: VisitorWeeks | null;
+  /** The School's teacher: reads, seats and lessons (`VALLEY_SYSTEMS`), or null with the flag off. */
+  readonly valleySchool: ValleySchool | null;
+  /** The School's weeks: the weekly pick, its announcement post and the alarm for it (`VALLEY_SYSTEMS`), or null with the flag off. */
+  readonly valleySchoolWeeks: SchoolWeeks | null;
+  /** Trials and graduation (`VALLEY_SYSTEMS`), or null with the flag off. */
+  readonly valleyTrials: ValleyTrials | null;
   /** The `VALLEY_SYSTEMS` flag as the worker resolved it (see `valley-flag.ts`). */
   readonly valleySystems: boolean;
+  /** What the staging bots drive (`valley-bots.ts`): only with the dev tools and the valley systems on, else null. */
+  private valleyWorld: ValleyWorld | null = null;
   private postsInFlight: Promise<void> | null = null;
   private dmsInFlight: Promise<void> | null = null;
   private loungeInFlight: Promise<void> | null = null;
@@ -566,6 +583,28 @@ export class GuildCore {
       });
       this.valleyBonfire = bonfire;
       const commons = new ValleyCommons({ storage, now, roll: () => finds.roll() });
+      this.valleyCommons = commons;
+      const visitorWeeks = new VisitorWeeks({
+        storage,
+        now,
+        timezone: () => this.timezone(),
+        rng: gearRng,
+      });
+      this.valleyVisitorWeeks = visitorWeeks;
+      const schoolWeeks = new SchoolWeeks({
+        storage,
+        now,
+        timezone: () => this.timezone(),
+        rng: talentRng,
+      });
+      const schoolLessons = new SchoolLessons({
+        storage,
+        timezone: () => this.timezone(),
+        weeks: schoolWeeks,
+      });
+      this.valleySchoolWeeks = schoolWeeks;
+      const trials = new ValleyTrials({ storage, timezone: () => this.timezone() });
+      this.valleyTrials = trials;
       const valley = new ValleySettle({
         storage,
         now,
@@ -576,6 +615,16 @@ export class GuildCore {
         gazette,
         bonfire,
         commons,
+        visitor: visitorWeeks,
+        school: { weeks: schoolWeeks, lessons: schoolLessons },
+        trials,
+        // Staging only: the anvils' hours by what they did, for the simulated month's tinkering share (`valley-bots.ts`).
+        ...(this.devState === null
+          ? {}
+          : {
+              onForgeHours: (userId: string, hours: ForgeHours) =>
+                recordForgeHours(storage.sql, userId, hours),
+            }),
       });
       this.valley = valley;
       this.valleySeats = new ValleySeats({
@@ -586,17 +635,64 @@ export class GuildCore {
         finds,
         gazette,
         commons,
+        trials,
       });
       this.valleyGazette = gazette;
       this.valleyOrders = new ValleyOrders({ storage, now, settle: valley, forge, commons });
       this.valleyGifts = new ValleyGifts({ storage, now, settle: valley, commons });
+      this.valleySchool = new ValleySchool({
+        storage,
+        now,
+        timezone: () => this.timezone(),
+        settle: valley,
+        weeks: schoolWeeks,
+        lessons: schoolLessons,
+      });
+      this.valleyVisitor = new ValleyVisitor({
+        storage,
+        now,
+        settle: valley,
+        weeks: visitorWeeks,
+        rng: gearRng,
+      });
+      if (this.devState !== null) {
+        this.valleyWorld = {
+          storage,
+          settle: valley,
+          seats: this.valleySeats,
+          orders: this.valleyOrders,
+          gifts: this.valleyGifts,
+          visitor: this.valleyVisitor,
+          school: this.valleySchool,
+          commons,
+          collection: this.collection,
+          // The player's gear module (Equip best), which the bots press at a visit (staging only).
+          gear: () => this.gear,
+          // What the alarm runs by itself in a game day, for the simulated month's day calls (staging only).
+          daily: () => {
+            this.weather.ensure();
+            this.catchUpRaid();
+            this.catchUpGames();
+            this.ensureVisitor();
+            this.ensureTeacher();
+            this.maintain();
+          },
+          rows: () => this.meter.peek(),
+        };
+      }
     } else {
       this.valley = null;
       this.valleySeats = null;
       this.valleyOrders = null;
       this.valleyGifts = null;
+      this.valleyVisitor = null;
+      this.valleyVisitorWeeks = null;
+      this.valleySchool = null;
+      this.valleySchoolWeeks = null;
+      this.valleyTrials = null;
       this.valleyGazette = null;
       this.valleyBonfire = null;
+      this.valleyCommons = null;
     }
     this.gear = new Gear({
       storage,
@@ -616,6 +712,19 @@ export class GuildCore {
       dev: this.devState ?? undefined,
       weather: this.weather,
       ...(options.combatV2 === true ? { combatV2: true } : {}),
+      // The valley's trials: a clear ticks the dungeon and Undercroft boxes of the creatures that fought.
+      ...(this.valleyTrials === null
+        ? {}
+        : {
+            onCleared: (userId: string, ids: readonly string[], levels: number) => {
+              const trials = this.valleyTrials;
+              if (trials === null) return;
+              trials.tickEvent(userId, ids, 'dungeon', this.now());
+              if (levels >= VALLEY_RULES.honours.undercroftLevels) {
+                trials.tickEvent(userId, ids, 'undercroft', this.now());
+              }
+            },
+          }),
     });
     this.raid = new Raid({
       storage,
@@ -635,6 +744,14 @@ export class GuildCore {
       talentRng,
       gearRng,
       ...(options.combatV2 === true ? { combatV2: true } : {}),
+      // The valley's trials: a raid kill ticks Gold's combat box for the creatures of the party.
+      ...(this.valleyTrials === null
+        ? {}
+        : {
+            onKill: (userId: string, ids: readonly string[]) => {
+              this.valleyTrials?.tickEvent(userId, ids, 'raid', this.now());
+            },
+          }),
       ...(options.readinessRng === undefined ? {} : { readinessRng: options.readinessRng }),
       // Staging only: the dev tools' seats-per-player override. Without the dev tools nothing is read.
       ...(this.devState === null
@@ -682,6 +799,10 @@ export class GuildCore {
             weather: this.weather,
             combatV2: options.combatV2 === true,
             valleySystems: options.valleySystems === true,
+            visitor: this.valleyVisitorWeeks,
+            school: this.valleySchoolWeeks,
+            trials: this.valleyTrials,
+            world: this.valleyWorld,
             rng: options.raidRng ?? liveRng(),
             gearRng,
             quirkRng,
@@ -1284,6 +1405,14 @@ export class GuildCore {
       const offset = this.devOffset();
       candidates.push(this.nextRollupAt(from - offset) + offset);
     }
+    // The weekly visitor's arrival (Thursday 00:00 guild-local): one wake a week, so his post goes out when he comes.
+    if (this.valleyVisitorWeeks !== null && this.storedGuildId() !== null) {
+      candidates.push(this.valleyVisitorWeeks.nextArrivalAt(this.now()));
+    }
+    // The School's teacher is announced on Friday 00:00 guild-local: one wake a week, so the announcement post goes out then.
+    if (this.valleySchoolWeeks !== null && this.storedGuildId() !== null) {
+      candidates.push(this.valleySchoolWeeks.nextAnnounceAt(this.now()));
+    }
     // The valley's weather of the next game day is drawn at the daily reset (13:37 guild-local).
     if (this.weather.enabled && this.storedGuildId() !== null) {
       const { hour, minute } = RULES.daily.reset;
@@ -1316,6 +1445,24 @@ export class GuildCore {
       this.raid.settleDueLive();
     } catch (err) {
       console.error('raid catch-up failed', err instanceof Error ? err.name : 'unknown');
+    }
+  }
+
+  /** Makes the week's visitor row (and queues his post) if he is here and none exists. Failures never reach callers. */
+  private ensureVisitor(): void {
+    try {
+      this.valleyVisitorWeeks?.ensureArrival(this.now());
+    } catch (err) {
+      console.error('visitor arrival failed', err instanceof Error ? err.name : 'unknown');
+    }
+  }
+
+  /** Makes the week's teacher row (and queues the announcement) if it is announced or here and none exists. Failures never reach callers. */
+  private ensureTeacher(): void {
+    try {
+      this.valleySchoolWeeks?.ensureAnnounced(this.now());
+    } catch (err) {
+      console.error('teacher announcement failed', err instanceof Error ? err.name : 'unknown');
     }
   }
 
@@ -1778,6 +1925,10 @@ export class GuildCore {
     // The Games' lock and awards, before the posts go out (the award queues the podium post).
     this.catchUpGames();
     this.scanDmDue();
+    // The visitor's arrival is queued before the posts go out (a row read only while he is here).
+    this.ensureVisitor();
+    // The School's teacher is announced and queued the same way (a row read only while he is announced or here).
+    this.ensureTeacher();
     await this.deliverPosts();
     await this.deliverDms();
     await this.runLounge();
@@ -1803,7 +1954,13 @@ export class GuildCore {
     this.dungeon.prune();
     pruneAway(this.sql, this.now());
     // The valley's server middle (V-BON-2), once a game day: one read of the active players' levels and one row written.
-    this.valleyBonfire?.writeMiddle(this.now());
+    const written = this.valleyBonfire?.writeMiddle(this.now());
+    // A project nobody has given to yet follows the day's weight, so a server that filled up after its first visit is sized for the
+    // players it has now (V-COM-5), not for the one who opened the valley.
+    if (written !== undefined && written.weight > 0)
+      this.valleyCommons?.resizeUnfunded(written.weight);
+    // Master titles warm the fire a step for every few of them (V-COM-13).
+    this.valleyCommons?.warmMasters(this.now());
     const oldBacklog = pruneOldData(this.storage, this.now(), this.timezone());
     this.pruneBacklog = analyticsBacklog || oldBacklog;
     if (!this.pruneBacklog) markMaintained(this.sql, day);

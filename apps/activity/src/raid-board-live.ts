@@ -22,7 +22,7 @@ export interface BoardPush {
 
 const KEYS = new Set(['v', 'type', 'week', 'party', 'cells', 'rowLength', 'member']);
 const CELL_KEYS = new Set(['slot', 'creature']);
-const CREATURE_KEYS = new Set(['ownerName', 'species', 'name', 'level', 'mine', 'reach']);
+const CREATURE_KEYS = new Set(['ownerName', 'species', 'name', 'level', 'mine', 'shiny', 'reach']);
 const MAX_CELLS = 8;
 const MAX_TEXT = 100;
 
@@ -34,16 +34,18 @@ const onlyKeys = (value: Record<string, unknown>, allowed: ReadonlySet<string>):
 function parseCreature(value: unknown): PushedCreature | null | undefined {
   if (value === null) return null;
   if (!isRecord(value) || !onlyKeys(value, CREATURE_KEYS)) return undefined;
-  const { ownerName, species, name, level, mine, reach } = value;
+  const { ownerName, species, name, level, mine, shiny, reach } = value;
   if (!isText(ownerName) || !isText(species) || !isText(name)) return undefined;
   if (!isInt(level) || level < 1 || level > 999 || mine !== false) return undefined;
   if (reach !== undefined && !isGuardReach(reach)) return undefined;
+  if (shiny !== undefined && typeof shiny !== 'boolean') return undefined;
   return {
     ownerName,
     species,
     name,
     level,
     mine: false,
+    ...(shiny === true ? { shiny } : {}),
     ...(reach === undefined ? {} : { reach }),
   };
 }

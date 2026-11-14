@@ -33,7 +33,7 @@ export function creatureDodgeBp(state: FightState, c: Creature, area: boolean): 
   return Math.min(d.maxBp, Math.floor((full * d.areaShareBp) / 10_000) + c.mods.areaDodgeBp);
 }
 
-/** The boss's (or foe's) dodge chance in basis points: its Speed (with its effects, Mired) times `perSpeedBp`, capped. */
+/** The boss's (or foe's) dodge chance in basis points: its Speed (with its effects, Bogged Down) times `perSpeedBp`, capped. */
 export function bossDodgeBp(state: FightState): number {
   const d = state.dodge;
   if (d === undefined) return 0;

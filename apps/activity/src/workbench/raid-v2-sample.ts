@@ -70,7 +70,7 @@ export interface V2SampleOptions {
   /** One of your creatures was knocked out in the stage already played: it is out for the weekend. */
   knockedOut: boolean;
   /** The swap requests: none, one you asked, one you were asked, or both. */
-  swaps: 'none' | 'asked' | 'incoming' | 'both';
+  swaps: 'none' | 'asked' | 'incoming' | 'both' | 'settled';
   /** Failed weekends on this boss from the second lap: the bonus they give, in basis points (default 0: none). */
   determinationBp?: number;
 }
@@ -394,7 +394,7 @@ function swapsOf(kind: V2SampleOptions['swaps'], standing: readonly Standing[]):
   const mine = standing.find((c) => c.owner === 0);
   const theirs = standing.find((c) => c.owner === 1);
   if (mine === undefined || theirs === undefined || kind === 'none') {
-    return { incoming: [], outgoing: [] };
+    return { incoming: [], outgoing: [], settled: [] };
   }
   const line = (c: Standing) => ({
     species: c.species,
@@ -424,5 +424,6 @@ function swapsOf(kind: V2SampleOptions['swaps'], standing: readonly Standing[]):
   return {
     outgoing: kind === 'asked' || kind === 'both' ? [ask] : [],
     incoming: kind === 'incoming' || kind === 'both' ? [asked] : [],
+    settled: kind === 'settled' ? [{ ...ask, status: 'accepted' as const }] : [],
   };
 }

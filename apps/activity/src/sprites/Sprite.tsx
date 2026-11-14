@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { blinkSprite, twinkleSpots, twinkleSprite } from './creature-life';
 import { REST, subscribeLife, type LifeState } from './life-clock';
 import { parseSprite, swapPalette, type SpriteDef } from './sprite-data';
@@ -66,7 +66,8 @@ export function Sprite({
     return parseSprite(def);
   }, [sprite, palette, blink, twinkle, spotIndex]);
 
-  useEffect(() => {
+  // A layout effect: a fresh or resized canvas is blank, and it must be painted before the browser shows a frame.
+  useLayoutEffect(() => {
     const ctx = ref.current?.getContext('2d');
     if (!ctx) return;
     ctx.clearRect(0, 0, parsed.width * factor, parsed.height * factor);

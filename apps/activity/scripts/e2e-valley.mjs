@@ -10,11 +10,12 @@
  * `shoot.mjs`). There is no server: every `/api/*` call is answered from the worker's captured fixtures
  * (`src/fixtures/`, staging-shaped data from `pnpm fixtures:capture`), with `valley: true` in the config, the
  * starter chosen, and an away notice that the first dismissal clears. Nothing is mocked inside the game.
+ *   --only <text>   run only the items whose name contains the text (for iterating on one)
  *
  * It prints one line per checklist item and exits 1 on the first failure (with a screenshot of it in `--out`).
  * With `--out` it also writes a shot of the map at the end. About 30 s; not part of `check:changed`.
  */
-/* global console, document, getComputedStyle, setTimeout, URL, window */
+/* global console, document, getComputedStyle, requestAnimationFrame, setTimeout, URL, window */
 import { mkdirSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import process from 'node:process';
@@ -33,6 +34,8 @@ const argOf = (flag, fallback) => {
 const out = resolve(argOf('--out', join(here, '../screenshots/e2e-valley')));
 const width = Number.parseInt(argOf('--width', '390'), 10);
 const reduced = args.includes('--reduced');
+/** Runs only the checklist items whose name contains this text (for iterating on one: `--only School`). */
+const only = argOf('--only', null);
 mkdirSync(out, { recursive: true });
 
 // --- The server's answers ---------------------------------------------------------------------------------
@@ -119,10 +122,13 @@ async function answer(route) {
     await route.fulfill({ status: 404, contentType: 'application/json', body: '{"error":"e2e"}' });
     return;
   }
+  const made = make(route.request());
+  // A refusal: `{ refuse: 409, error: 'code' }` answers that status with `{ error }` (the game reads the code).
+  const refused = made !== null && typeof made === 'object' && 'refuse' in made;
   await route.fulfill({
-    status: 200,
+    status: refused ? made.refuse : 200,
     contentType: 'application/json',
-    body: JSON.stringify(make(route.request())),
+    body: JSON.stringify(refused ? { error: made.error } : made),
   });
 }
 
@@ -238,6 +244,8 @@ const forgeState = {
   anvils: [],
   shelf: { scrap: 120, essence: 30, shards: { tide: 4, ember: 7, grove: 0, spark: 2, mire: 3 } },
   nextOrder: 1,
+  /** Other players' smiths at work, for the workshop's background (the valley block's `smiths`). */
+  crowd: [],
   /** An element every smith with an order waits for (Q64's wait line); null: nobody waits for a shard. */
   waitShard: null,
 };
@@ -307,6 +315,8 @@ const marketBlock = () => ({
       }
     : null,
 });
+/** The trial of a creature with no honour and nothing ticked: Bronze is next. */
+const NO_TRIAL = { honour: 0, tier: 1, boxes: [false, false, false, false], ready: false };
 /** The server's `valley` block for the scenario's seats; every creature rests unless a seat holds it. */
 const valleyBlock = () => ({
   settledAt: 1799760000000,
@@ -331,6 +341,7 @@ const valleyBlock = () => ({
                 : 'resting',
       gained: 25 + i * 11,
       catchUpBp: bonfire.warm.has(id) ? 24000 : 10000,
+      ...(trialsState.on ? { trial: trialsState.byId[id] ?? NO_TRIAL } : {}),
       seatId:
         seat?.id ??
         anvil?.id ??
@@ -338,6 +349,7 @@ const valleyBlock = () => ({
     };
   }),
   online: bonfire.online,
+  smiths: forgeState.crowd,
   allowance: { store: 0, cap: 480, brought: 0 },
   anvils: forgeState.anvils.map(anvilView),
   anvilPrices: {
@@ -366,6 +378,9 @@ const valleyBlock = () => ({
   night: false,
   special: { destination: 'ember-caves', twist: 'rich-veins' },
   ...(gazette.paper === null ? {} : { paper: gazette.paper }),
+  ...(trialsState.on
+    ? { graduation: { ready: trialsState.ready, nextAt: 1799760000000 + 5 * 3600 * 1000 } }
+    : {}),
   ...(commonsState.on ? { commons: commonsBlock() } : {}),
   ...(marketState.on ? { market: marketBlock() } : {}),
 });
@@ -726,6 +741,198 @@ ROUTES.set('/api/valley/communal', (request) => {
   return { seatId: `communal-${body.place}`, ...syncValley() };
 });
 
+// --- The weekly visitor (phase 5 step 8b): a small server of its own for his three routes -------------------
+
+/**
+ * The visitor's state of a scenario: whether he is here, the rerolls this player made this week, whether the blueprint was bought, which
+ * pieces were rerolled (their lines' tiers move up one), what the player holds, and what his routes were asked (the bodies, in order).
+ */
+const visitorState = {
+  here: false,
+  rerolls: 0,
+  bought: false,
+  rerolled: new Set(),
+  bait: 900,
+  scrap: 9000,
+  shards: 120,
+  calls: [],
+};
+const visitorReset = () => {
+  Object.assign(visitorState, {
+    here: false,
+    rerolls: 0,
+    bought: false,
+    bait: 900,
+    scrap: 9000,
+    shards: 120,
+    calls: [],
+  });
+  visitorState.rerolled.clear();
+};
+const VISITOR_BLUEPRINT = 'thundercap';
+/** A reroll's price at an item level after `n` rerolls this week (`rerollPrice`: 60 Acorns and 400 scrap at item level 10, times 1.5 each). */
+const visitorPrice = (level, n) => ({
+  acorns: Math.round(((60 * level) / 10) * 1.5 ** n),
+  scrap: Math.round(((400 * level) / 10) * 1.5 ** n),
+});
+/** The captured bag with the player's piles and the lines' tiers of rerolled pieces moved up one. */
+const visitorGear = () => {
+  const gear = fixture('gear-state');
+  const each = Math.floor(visitorState.shards / 5);
+  return {
+    ...gear,
+    parts: {
+      ...gear.parts,
+      scrap: visitorState.scrap,
+      'tide-shard': each,
+      'ember-shard': each,
+      'grove-shard': each,
+      'spark-shard': each,
+      'mire-shard': each,
+    },
+    items: gear.items.map((item) =>
+      visitorState.rerolled.has(item.id)
+        ? {
+            ...item,
+            lines: item.lines.map((l) =>
+              l.source === 'rolled' && l.tier !== null
+                ? { ...l, tier: (l.tier % (l.bestTier ?? 5)) + 1 }
+                : l,
+            ),
+          }
+        : item,
+    ),
+  };
+};
+const visitorOdds = (item) => ({
+  lines: item.lines.filter((l) => l.source === 'rolled').length,
+  topTier: 3,
+  tiers: [
+    { tier: 3, chance: 0.4 },
+    { tier: 2, chance: 0.3 },
+    { tier: 1, chance: 0.2 },
+    { tier: 0, chance: 0.1 },
+  ],
+  topChance: 0.4,
+  singleShare: 0,
+});
+ROUTES.set('/api/valley/visitor', (request) => {
+  if (!visitorState.here) return { here: false };
+  const id = new URL(request.url()).searchParams.get('item');
+  const stock = {
+    here: true,
+    blueprint: { baseId: VISITOR_BLUEPRINT, acorns: 40, shards: 50, bought: visitorState.bought },
+    rerolls: visitorState.rerolls,
+  };
+  const item = id === null ? undefined : visitorGear().items.find((i) => i.id === id);
+  return item === undefined
+    ? stock
+    : {
+        ...stock,
+        item: {
+          id: item.id,
+          itemLevel: item.itemLevel,
+          rarity: item.rarity,
+          price: visitorPrice(item.itemLevel, visitorState.rerolls),
+          odds: visitorOdds(item),
+        },
+      };
+});
+ROUTES.set('/api/valley/visitor/reroll', (request) => {
+  const body = bodyOf(request);
+  visitorState.calls.push(['reroll', body]);
+  if (!visitorState.here) return { refuse: 409, error: 'visitor_away' };
+  const item = visitorGear().items.find((i) => i.id === body.itemId);
+  if (item === undefined) return { refuse: 404, error: 'not_found' };
+  const paid = visitorPrice(item.itemLevel, visitorState.rerolls);
+  const next = visitorPrice(item.itemLevel, visitorState.rerolls + 1);
+  const linesOf = (list) =>
+    list.filter((l) => l.source === 'rolled').map((l) => ({ id: l.id, tier: l.tier - 1 }));
+  const before = linesOf(item.lines);
+  visitorState.bait -= paid.acorns;
+  visitorState.scrap -= paid.scrap;
+  visitorState.rerolls += 1;
+  visitorState.rerolled.add(item.id);
+  const after = linesOf(visitorGear().items.find((i) => i.id === item.id).lines);
+  stateOverride = {
+    ...stateOverride,
+    balances: { ...baseState.balances, bait: visitorState.bait },
+  };
+  return {
+    itemId: item.id,
+    before,
+    after,
+    paid,
+    rerolls: visitorState.rerolls,
+    next,
+    ...syncValley(),
+  };
+});
+ROUTES.set('/api/valley/visitor/blueprint', (request) => {
+  visitorState.calls.push(['blueprint', bodyOf(request)]);
+  if (!visitorState.here) return { refuse: 409, error: 'visitor_away' };
+  if (visitorState.bought) return { refuse: 409, error: 'already_bought' };
+  visitorState.bought = true;
+  visitorState.bait -= 40;
+  visitorState.shards -= 50;
+  stateOverride = {
+    ...stateOverride,
+    balances: { ...baseState.balances, bait: visitorState.bait },
+  };
+  return {
+    baseId: VISITOR_BLUEPRINT,
+    duplicate: false,
+    paid: { acorns: 40, shards: 50 },
+    ...syncValley(),
+  };
+});
+
+// --- The School and the trials (phase 5 step 9b): a small server of its own for the School's two routes ---------
+
+/**
+ * The School's state of a scenario: where the teacher stands, which creatures would learn the talent (ids), who sits at the two seats, and
+ * what the seat route was asked (the bodies, in order); and the trials of the creatures (by id) with the ceremony's count.
+ */
+const schoolState = { phase: 'away', would: [], seats: [null, null], calls: [], refuse: null };
+const trialsState = { on: false, byId: {}, ready: 0 };
+const schoolReset = () => {
+  Object.assign(schoolState, {
+    phase: 'away',
+    would: [],
+    seats: [null, null],
+    calls: [],
+    refuse: null,
+  });
+  Object.assign(trialsState, { on: false, byId: {}, ready: 0 });
+};
+const STAY_FROM = Date.UTC(2027, 0, 17, 22);
+const schoolView = () => {
+  const open = schoolState.phase !== 'away';
+  return {
+    phase: schoolState.phase,
+    talent: open
+      ? { id: 'first-pounce', name: 'First Pounce', text: 'Your first attack hits harder.' }
+      : null,
+    arrivesAt: open ? STAY_FROM : null,
+    leavesAt: open ? STAY_FROM + 3 * 24 * 3600 * 1000 : null,
+    seats: schoolState.seats.map((creatureId, index) => ({
+      index,
+      creatureId,
+      learnsAt: creatureId === null ? null : STAY_FROM + 24 * 3600 * 1000,
+    })),
+    wouldLearn: open ? schoolState.would : [],
+  };
+};
+ROUTES.set('/api/valley/school', () => schoolView());
+ROUTES.set('/api/valley/school/seat', (request) => {
+  const body = bodyOf(request);
+  schoolState.calls.push(body);
+  if (schoolState.refuse !== null) return { refuse: 409, error: schoolState.refuse };
+  schoolState.seats[body.index] = body.creatureId;
+  // A student leaves the fire, but the server's valley still says "resting" (step 9a): the client takes the School's word.
+  return { index: body.index, creatureId: body.creatureId, ...syncValley() };
+});
+
 // --- The checklist ----------------------------------------------------------------------------------------
 
 /** The seven places that open today's page: the place, its name (the HUD's title), and the row of the plan's table. */
@@ -785,6 +992,7 @@ await page.route('**/api/**', answer);
 
 let done = 0;
 async function step(name, run) {
+  if (only !== null && !name.toLowerCase().includes(only.toLowerCase())) return;
   try {
     await run();
     done += 1;
@@ -835,6 +1043,49 @@ const expectTopmost = async (locator, what) => {
     node.remove();
   });
   if (hits.length > 0) throw new Error(`${what} is covered by ${hits.join(' | ')}`);
+};
+/** A place as a canvas (`PlaceCanvas`): a thing in the scene you click, by the start of its name. */
+const sceneTarget = (name) =>
+  page.locator(`button.cv-target[aria-label^="${name}"]`).locator('visible=true');
+/** What a click opens: the drawer beside the scene on a wide window, a page of its own on a phone. */
+const drawer = page.locator('.pc-side, .pc-page');
+/** The right drawer (the thing clicked) and the left one (a collection): each a page on a phone, where only one shows at a time. */
+const rightPanel = page.locator('.pc-side.pc-right, .pc-page[data-side="right"]');
+const leftPanel = page.locator('.pc-side.pc-left, .pc-page[data-side="left"]');
+/** A canvas never scrolls: the page, the frame and the document all fit their box (a drawer's own body may scroll). */
+const expectNoScroll = async () => {
+  const over = await page.evaluate(() =>
+    [
+      document.scrollingElement,
+      ...document.querySelectorAll('main.card, .vy-page, .pc-root, .pc-view'),
+    ]
+      .filter((el) => el !== null && el.scrollHeight > el.clientHeight + 1)
+      .map(
+        (el) =>
+          `${el.tagName}.${String(el.className)} ${String(el.scrollHeight)}>${String(el.clientHeight)}`,
+      ),
+  );
+  if (over.length > 0) throw new Error(`the canvas scrolls: ${over.join(' | ')}`);
+};
+/** The Forge opens on its outside: a click on the building goes into the workshop (its own canvas, with a door back out). */
+const goInside = async () => {
+  await waitFor(sceneTarget('The forge. Go inside'));
+  const n = await page.locator('button[aria-label="The forge. Go inside"]').count();
+  if (n !== 1) {
+    const where = await page.evaluate(() =>
+      [...document.querySelectorAll('button[aria-label="The forge. Go inside"]')].map((b) => {
+        const chain = [];
+        for (let el = b; el !== null && chain.length < 9; el = el.parentElement)
+          chain.push(
+            `${el.tagName}.${String(el.className).split(' ')[0]}${el.hidden ? '[hidden]' : ''}`,
+          );
+        return chain.join(' < ');
+      }),
+    );
+    throw new Error(`${String(n)} building buttons: ${where.join(' || ')}`);
+  }
+  await sceneTarget('The forge. Go inside').click();
+  await waitFor(sceneTarget('The door. Go back outside'));
 };
 const backToValley = async () => {
   await hudBack().click();
@@ -914,6 +1165,71 @@ try {
     const back = await page.evaluate(() => document.activeElement?.getAttribute('data-place'));
     if (back !== 'cave') throw new Error(`Left went to ${String(back)}`);
   });
+
+  // A laptop's window is shorter than the valley: a mouse drags the map up and down (as a finger swipes it), a drag that starts on a place
+  // never opens it, and a press without a drag still does (Misa, 2026-11-11).
+  await step(
+    'a mouse drags the map up and down on a short window, and a drag never opens a place',
+    async () => {
+      const size = page.viewportSize();
+      await page.setViewportSize({ width: Math.max(width, 1280), height: 600 });
+      try {
+        await page.waitForTimeout(300);
+        const scroller = page.locator('.vy-valley.pans-y .vy-scroller');
+        await waitFor(scroller, 'attached');
+        const top = () => scroller.evaluate((el) => el.scrollTop);
+        const before = await top();
+        // Start on a place's button, so the drag-click guard is what keeps it closed.
+        let at = null;
+        for (const id of ['house', 'paddock', 'forge', 'cave', 'fair', 'arena']) {
+          const box = await place(id).boundingBox();
+          if (
+            box !== null &&
+            box.y > 120 &&
+            box.y + box.height < 440 &&
+            box.x > 20 &&
+            box.x + box.width < 1200
+          )
+            at = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+          if (at !== null) break;
+        }
+        if (at === null) throw new Error('no place is in view to start the drag on');
+        const { x, y } = at;
+        await page.mouse.move(x, y);
+        await page.mouse.down();
+        await page.mouse.move(x, y - 60, { steps: 6 });
+        await page.mouse.up();
+        const after = await top();
+        if (after <= before)
+          throw new Error(`the map did not move up: ${String(before)} to ${String(after)}`);
+        if ((await page.locator(VALLEY).count()) === 0) throw new Error('a drag opened a place');
+        // The way back: drag down again.
+        await page.mouse.move(x, y - 100);
+        await page.mouse.down();
+        await page.mouse.move(x, y + 20, { steps: 6 });
+        await page.mouse.up();
+        if ((await top()) >= after) throw new Error('the map did not move down again');
+        if ((await page.locator(VALLEY).count()) === 0) throw new Error('a drag opened a place');
+        // The purse and the cog float over the map: the bar has no row of its own.
+        const hud = await page.evaluate(() => {
+          const bar = document.querySelector('header.hud');
+          const frame = document.querySelector('.vy-frame');
+          return {
+            float: bar?.classList.contains('hud-float') === true,
+            barBottom: bar?.getBoundingClientRect().bottom ?? 0,
+            frameTop: frame?.getBoundingClientRect().top ?? 1,
+          };
+        });
+        if (!hud.float || hud.frameTop > 1)
+          throw new Error(`the bar still takes a row: ${JSON.stringify(hud)}`);
+        await expectTopmost(page.locator('header.hud button.hud-gear'), 'the cog over the map');
+        await shot('map-short-window');
+      } finally {
+        if (size !== null) await page.setViewportSize(size);
+        await page.waitForTimeout(300);
+      }
+    },
+  );
 
   await step(
     'Tab walks the valley in reading order and every stop shows a focus ring',
@@ -1001,6 +1317,13 @@ try {
       await page.waitForTimeout(600);
       const alerts = await page.locator('.vy-page [role="alert"]').allInnerTexts();
       if (alerts.length > 0) throw new Error(`the page shows an error: ${alerts.join(' | ')}`);
+      // Scrolled to the very end (and every card brought to the middle) the way back is still there and nothing slid the HUD up (Misa, 2026-11-11).
+      await page.evaluate(() => {
+        for (const el of document.querySelectorAll('.vy-page, .vy-page *'))
+          el.scrollTop = el.scrollHeight;
+        document.querySelector('.vy-page *:last-child')?.scrollIntoView({ block: 'center' });
+      });
+      await expectTopmost(hudBack(), `the way back from ${id}`);
       await backToValley();
     });
   }
@@ -1230,6 +1553,71 @@ try {
     },
   );
 
+  // --- No flashing: a pixel scene is never seen empty, not on a re-render, not on the way in or back ---------
+  // A watcher samples every frame (before the browser paints it): a visible scene canvas or sprite canvas with no
+  // opaque pixel at all is a frame where the art is gone (a fresh or resized canvas waiting for its paint).
+  const flashWatch = {
+    start: () =>
+      page.evaluate(() => {
+        const w = window;
+        w.__flash = { frames: 0, blank: 0, last: '' };
+        w.__flashOn = true;
+        const blankOf = (c) => {
+          const r = c.getBoundingClientRect();
+          if (r.width === 0 || r.height === 0 || c.width === 0 || c.height === 0) return false;
+          const ctx = c.getContext('2d');
+          if (ctx === null) return false;
+          const data = ctx.getImageData(0, 0, c.width, c.height).data;
+          for (let i = 3; i < data.length; i += 4) if (data[i] !== 0) return false;
+          return true;
+        };
+        const tick = () => {
+          if (!w.__flashOn) return;
+          w.__flash.frames += 1;
+          for (const c of document.querySelectorAll('canvas.vy-canvas, canvas.sprite')) {
+            if (blankOf(c)) {
+              w.__flash.blank += 1;
+              w.__flash.last = `${c.className} ${String(c.width)}x${String(c.height)}`;
+            }
+          }
+          requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      }),
+    stop: () =>
+      page.evaluate(() => {
+        window.__flashOn = false;
+        return window.__flash;
+      }),
+  };
+  await step(
+    'no pixel scene flashes: not on a re-render, not on the way into a place or back to the map',
+    async () => {
+      await waitFor(page.locator(VALLEY), 'attached');
+      await flashWatch.start();
+      for (const id of ['paddock', 'school', 'forge', 'signpost']) {
+        await place(id).evaluate((el) => el.click());
+        await waitFor(hudBack());
+        await page.waitForTimeout(500);
+        await backToValley();
+        await page.waitForTimeout(400);
+      }
+      // A window resize re-renders the map under the player's eyes.
+      await page.setViewportSize({ width: width + 20, height: 800 });
+      await page.waitForTimeout(500);
+      await page.setViewportSize({ width, height: 844 });
+      await page.waitForTimeout(500);
+      const result = await flashWatch.stop();
+      console.log(
+        `     flash watch: ${String(result.blank)} blank frames in ${String(result.frames)} (${result.last})`,
+      );
+      if (result.blank > 0)
+        throw new Error(
+          `${String(result.blank)} frames showed an empty scene or sprite (${result.last})`,
+        );
+    },
+  );
+
   // --- Scenarios: the same game in other states. Each reloads the page with test-only answers ---------------
 
   /** Runs `run` on a fresh load of the valley with `change` applied to the server's answers; the answers are put back after. */
@@ -1404,10 +1792,11 @@ try {
     },
   );
 
-  // The Signpost with the valley's systems on (phase 5 step 2): take a seat, post a scout, move it, drag one on with the fit
-  // previewed, remove it; a full pack. Nothing may overlap (`expectTopmost`) at any width.
+  // The Signpost with the valley's systems on, as a canvas (Misa, 2026-11-11): the scene, a click on the signpost opens the expedition map,
+  // which is dragged and where a destination is picked; its drawer sends a scout (who, seat, kit, confirm) and the scout stands on the map.
+  // Nothing may overlap (`expectTopmost`) and nothing scrolls (`expectNoScroll`) at any width.
   await scenario(
-    'valley systems on: the Signpost is its scouts: take a seat, post, move, drag with a preview, remove',
+    'valley systems on: the Signpost is a canvas: buy a seat, open the map, drag it, pick a place, send a scout, move it, drag one on, rest it',
     () => {
       const config = ROUTES.get('/api/config');
       answerOverride.set('/api/config', () => ({ ...config(), valleySystems: true }));
@@ -1422,94 +1811,173 @@ try {
       await waitFor(page.locator(VALLEY), 'attached');
       await place('signpost').evaluate((el) => el.click());
       await waitFor(heading('Signpost'));
-      // Today's Expeditions page is gone: no trips, no explorer to send.
+      // Today's Expeditions page is gone: no trips, no explorer to send, no page of seat cards.
       if ((await page.getByText(/Send an explorer|Send on a trip/i).count()) > 0)
         throw new Error('the Expeditions page is still drawn');
-      await shot('signpost-no-seats');
-      // The scene's one step, then the seat to buy (the first is free).
-      const take = page.getByRole('button', { name: /^Take your first seat/ });
-      await waitFor(take);
-      await expectTopmost(take.first(), 'the "Take your first seat" button');
-      await page.getByRole('button', { name: /A new seat/ }).click();
-      await waitFor(page.getByRole('dialog'));
-      await page.getByRole('button', { name: /^Buy the seat/ }).click();
-      await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
-      await waitFor(page.getByRole('heading', { name: 'Seat 1' }));
+      if ((await page.locator('li.sp-seat').count()) > 0)
+        throw new Error('the old page of seat cards is still drawn');
+      // The scene opens first: the signpost, and the dashed outline of the first seat (free).
+      await waitFor(sceneTarget('The signpost'));
+      await waitFor(sceneTarget('A new seat'));
+      await expectNoScroll();
+      await expectTopmost(sceneTarget('A new seat'), 'the dashed outline of the next seat');
+      await expectTopmost(sceneTarget('The signpost'), 'the signpost');
+      await shot('signpost-canvas-no-seats');
+      // Buy the first seat from its outline: the buy step opens beside the canvas (a page on a phone).
+      await sceneTarget('A new seat').click();
+      await waitFor(drawer.getByRole('heading', { name: 'A new scout seat' }));
+      await shot('signpost-step-buy');
+      await drawer.getByRole('button', { name: /^Buy the seat/ }).click();
+      await drawer
+        .getByRole('heading', { name: 'A new scout seat' })
+        .waitFor({ state: 'detached', timeout: 10000 });
+      await waitFor(sceneTarget('Seat 1: nobody posted'));
       if (
         !scoutCalls.some(
           ([kind, body]) => kind === 'buy' && typeof body.idempotencyKey === 'string',
         )
       )
         throw new Error('the seat was bought without an idempotency key');
-      // Post a scout from the picker.
-      const slot = page.getByRole('button', { name: /^Seat 1: nobody posted/ });
-      await expectTopmost(slot, 'the empty scout slot');
-      await slot.click();
-      await waitFor(page.getByRole('dialog', { name: /Who scouts/ }));
-      await shot('signpost-picker');
-      const [first, second] = baseState.creatures;
-      await page
+      await expectNoScroll();
+      await shot('signpost-canvas-one-seat');
+      // A click on the signpost opens the expedition map as the canvas.
+      await sceneTarget('The signpost').click();
+      const map = page.locator('.world-map.fill');
+      await waitFor(map);
+      await waitFor(place('ember-caves'));
+      await expectNoScroll();
+      await shot('signpost-map');
+      // The map pans by drag (when the view is smaller than the map), and a drag that starts on a place never opens it.
+      const before = await map.evaluate((el) => [el.scrollLeft, el.scrollTop]);
+      const room = await map.evaluate((el) => [
+        el.scrollWidth - el.clientWidth,
+        el.scrollHeight - el.clientHeight,
+      ]);
+      const pin = place('tidepools').locator('.wm-pin');
+      const at = await pin.boundingBox();
+      if (at === null) throw new Error('no box for the Tidepools pin');
+      await page.mouse.move(at.x + at.width / 2, at.y + at.height / 2);
+      await page.mouse.down();
+      // The content follows the hand: drag toward the side of the map that has room to scroll.
+      const dx = before[0] < room[0] / 2 ? -40 : 40;
+      const dy = before[1] < room[1] / 2 ? -30 : 30;
+      await page.mouse.move(at.x + at.width / 2 + dx, at.y + at.height / 2 + dy, { steps: 6 });
+      await page.mouse.up();
+      if ((await drawer.count()) > 0) throw new Error('a drag on a place opened it');
+      const after = await map.evaluate((el) => [el.scrollLeft, el.scrollTop]);
+      if ((room[0] > 0 || room[1] > 0) && after[0] === before[0] && after[1] === before[1])
+        throw new Error('the map did not pan by drag');
+      await shot('signpost-map-dragged');
+      // A place is picked: its drawer, with what it is and the one gold button.
+      await place('ember-caves').locator('.wm-pin').click();
+      await waitFor(drawer.getByRole('heading', { name: 'Ember Caves' }));
+      await waitFor(drawer.getByRole('button', { name: /^Send a scout here/ }));
+      await shot('signpost-step-place');
+      await drawer.getByRole('button', { name: /^Send a scout here/ }).click();
+      await waitFor(drawer.getByRole('heading', { name: 'Who scouts here?' }));
+      await shot('signpost-step-who');
+      await drawer
         .getByRole('option')
         .filter({ hasText: /Sproutle/ })
         .first()
         .click();
-      await waitFor(page.getByRole('button', { name: /^Seat 1: Sproutle/ }));
-      if (scoutCalls.at(-1)?.[1].creatureId !== second.id)
-        throw new Error('the post named another creature');
-      // The pack's line, and the tray calls the scout Scouting (no z on it).
-      await waitFor(page.getByRole('button', { name: /^Full in / }));
+      // Sproutle has no seat yet: which seat (the free one), then the kit, then the confirm.
+      await waitFor(drawer.getByRole('heading', { name: 'Which seat?' }));
+      await shot('signpost-step-seat');
+      await drawer.getByRole('button', { name: /^Seat 1/ }).click();
+      await waitFor(drawer.getByRole('heading', { name: 'Kit' }));
+      await shot('signpost-step-kit');
+      await drawer.getByRole('button', { name: /^No kit/ }).click();
+      await waitFor(drawer.getByRole('heading', { name: /Send a scout to Ember Caves/ }));
+      await shot('signpost-step-ready');
+      const [first, second] = baseState.creatures;
+      if (scoutCalls.some(([kind]) => kind === 'seat')) throw new Error('sent before the confirm');
+      await drawer.getByRole('button', { name: /^Send Sproutle to Ember Caves/ }).click();
+      await drawer.waitFor({ state: 'detached', timeout: 10000 });
+      const sent = scoutCalls.filter(([k]) => k === 'seat').at(-1)?.[1];
+      if (
+        sent?.seatId !== 'seat-1' ||
+        sent.creatureId !== second.id ||
+        sent.destination !== 'ember-caves'
+      )
+        throw new Error(`the post was ${JSON.stringify(sent)}`);
+      // The scout stands at the place on the map, with the pack's state on a small flag.
+      await waitFor(place('ember-caves').locator('.wm-chip'));
+      if (!/1 scout there/.test((await place('ember-caves').getAttribute('aria-label')) ?? ''))
+        throw new Error('the map does not say a scout is at Ember Caves');
+      await waitFor(place('ember-caves').locator('.wm-flag'));
+      await expectNoScroll();
+      await shot('signpost-map-scout');
+      // The tray calls the scout Scouting (no z on it).
       const tray = page.locator(
         `section[aria-label="Creatures to post"] button[data-creature="${second.id}"]`,
       );
       if (!/Scouting/.test((await tray.getAttribute('aria-label')) ?? ''))
         throw new Error('the tray does not say Scouting');
       if ((await tray.locator('.vy-zz').count()) > 0) throw new Error('a scout carries the z');
-      // Move it: another destination, from the drawer.
-      await page.getByRole('button', { name: /^Seat 1: scouting Tidepools/ }).click();
-      await waitFor(page.getByRole('dialog'));
-      await shot('signpost-where');
-      await page.getByRole('button', { name: /^Ember Caves/ }).click();
-      await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
-      await waitFor(page.getByRole('button', { name: /^Seat 1: scouting Ember Caves/ }));
-      // Drag a resting creature from the tray onto the seat: the seat previews the change before the drop.
+      // The scout's own step: its pack and pace; move it to another place.
+      await place('ember-caves').locator('.wm-pin').click();
+      await waitFor(drawer.getByRole('button', { name: /^Seat 1: Sproutle/ }));
+      await drawer.getByRole('button', { name: /^Seat 1: Sproutle/ }).click();
+      await waitFor(drawer.getByText('In the pack'));
+      await shot('signpost-step-scout');
+      await drawer.getByRole('button', { name: /^Move to another place/ }).click();
+      await waitFor(drawer.getByRole('heading', { name: 'Move the scout' }));
+      await shot('signpost-step-move');
+      await drawer.getByRole('button', { name: /^Tidepools/ }).click();
+      await drawer.waitFor({ state: 'detached', timeout: 10000 });
+      await waitFor(place('tidepools').locator('.wm-chip'));
+      if ((await place('ember-caves').locator('.wm-chip').count()) > 0)
+        throw new Error('the scout is still drawn at Ember Caves');
+      // A closed place is dimmed and says what opens it; it cannot be sent to.
+      if (!/locked/.test((await place('festival-grounds').getAttribute('class')) ?? ''))
+        throw new Error('the closed place is not dimmed');
+      await place('festival-grounds').locator('.wm-pin').click();
+      await waitFor(drawer.getByText(/Closed until a Festival week/));
+      if (await drawer.getByRole('button', { name: /^Send a scout here/ }).isEnabled())
+        throw new Error('a closed place can be sent to');
+      await shot('signpost-step-closed');
+      await page.keyboard.press('Escape');
+      await drawer.waitFor({ state: 'detached', timeout: 10000 });
+      // Back to the signpost scene: the scout stands at its seat; drag a resting creature from the tray onto the seat, which previews the fit.
+      await page.getByRole('button', { name: /^Back to the signpost/ }).click();
+      await waitFor(sceneTarget('Seat 1: Sproutle'));
       const mover = page.locator(
         `section[aria-label="Creatures to post"] button[data-creature="${first.id}"]`,
       );
-      const card = page.locator('li.sp-seat').first();
-      await mover.scrollIntoViewIfNeeded();
-      const at = await mover.boundingBox();
-      const over = await card.boundingBox();
-      if (at === null || over === null) throw new Error('no boxes to drag between');
-      await page.mouse.move(at.x + at.width / 2, at.y + at.height / 2);
+      const start = await mover.boundingBox();
+      const over = await sceneTarget('Seat 1: Sproutle').boundingBox();
+      if (start === null || over === null) throw new Error('no boxes to drag between');
+      await page.mouse.move(start.x + start.width / 2, start.y + start.height / 2);
       await page.mouse.down();
-      await page.mouse.move(at.x + at.width / 2 + 12, at.y + at.height / 2 + 12, { steps: 4 });
+      await page.mouse.move(start.x + start.width / 2 + 12, start.y + start.height / 2 + 12, {
+        steps: 4,
+      });
       await page.mouse.move(over.x + over.width / 2, over.y + over.height / 2, { steps: 10 });
+      // A slow machine may not have settled the hand over the seat yet: nudge it until the preview shows.
+      await page.mouse.move(over.x + over.width / 2 + 2, over.y + over.height / 2 + 2, {
+        steps: 3,
+      });
+      await page.waitForTimeout(150);
+      await page.mouse.move(over.x + over.width / 2, over.y + over.height / 2, { steps: 3 });
       await waitFor(page.locator('.sp-preview'));
       await expectTopmost(page.locator('.sp-preview').first(), 'the fit preview');
       await shot('signpost-drag-preview');
       await page.mouse.up();
-      await waitFor(page.getByRole('button', { name: /^Seat 1: Cindle/ }));
-      if (scoutCalls.at(-1)?.[1].creatureId !== first.id)
+      await waitFor(sceneTarget('Seat 1: Cindle'));
+      if (scoutCalls.filter(([k]) => k === 'seat').at(-1)?.[1].creatureId !== first.id)
         throw new Error('the drop posted another creature');
-      // Remove it: back to resting.
-      await page.getByRole('button', { name: /^Seat 1: Cindle/ }).click();
-      await waitFor(page.getByRole('dialog', { name: /Who scouts/ }));
-      await page
-        .getByRole('option')
-        .filter({ hasText: /Back to resting/ })
-        .first()
-        .click();
-      await waitFor(page.getByRole('button', { name: /^Seat 1: nobody posted/ }));
-      if (scoutCalls.at(-1)?.[1].creatureId !== null) throw new Error('remove did not send null');
-      // No two things overlap: every seat card and the tray is the topmost thing at its box.
-      for (const loc of [
-        page.locator('li.sp-seat').first(),
-        page.locator('.sp-page .vy-tray').first(),
-      ]) {
-        await loc.scrollIntoViewIfNeeded();
-        await expectTopmost(loc, 'a Signpost card');
-      }
-      await shot('signpost-one-seat');
+      // Rest it: the seat's own step, back to resting.
+      await sceneTarget('Seat 1: Cindle').click();
+      await waitFor(drawer.getByRole('button', { name: /^Back to resting/ }));
+      await drawer.getByRole('button', { name: /^Back to resting/ }).click();
+      await waitFor(sceneTarget('Seat 1: nobody posted'));
+      if (scoutCalls.filter(([k]) => k === 'seat').at(-1)?.[1].creatureId !== null)
+        throw new Error('rest did not send null');
+      await expectNoScroll();
+      await shot('signpost-canvas-rested');
+      await expectTopmost(hudBack(), 'the way back from the Signpost');
+      await backToValley();
     },
   );
 
@@ -1536,19 +2004,46 @@ try {
         throw new Error('the Signpost has no full-pack bubble');
       await bubble.evaluate((el) => el.click());
       await waitFor(heading('Signpost'));
-      await waitFor(page.getByText('Pack full').first());
-      await waitFor(page.getByRole('heading', { name: 'Seat 2' }));
-      await page
-        .getByRole('button', { name: /^Pack full/ })
+      // The scene says it on the seat (the scout's bubble and name), the crate counts the full packs.
+      await waitFor(sceneTarget('Seat 1'));
+      if (!/Pack full/.test((await sceneTarget('Seat 1').getAttribute('aria-label')) ?? ''))
+        throw new Error('the seat in the scene does not say its pack is full');
+      if (
+        !/Pack filling|Full in/.test((await sceneTarget('Seat 2').getAttribute('aria-label')) ?? '')
+      )
+        throw new Error('the second seat does not say its pack is filling');
+      if (!/1 full/.test((await sceneTarget('The packs').getAttribute('aria-label')) ?? ''))
+        throw new Error('the crate does not count the full pack');
+      await expectNoScroll();
+      await shot('signpost-two-seats');
+      // The crate opens the packs of every seat in the left drawer; a tap on one leads to its scout on the map.
+      await sceneTarget('The packs').click();
+      await waitFor(leftPanel.getByRole('button', { name: /^Seat 1.*Pack full/ }));
+      await page.waitForTimeout(400);
+      await expectTopmost(leftPanel.first(), 'the packs drawer');
+      await shot('signpost-packs');
+      await leftPanel.getByRole('button', { name: /^Seat 1.*Pack full/ }).click();
+      await waitFor(drawer.getByText('In the pack'));
+      await page.waitForTimeout(600);
+      await expectTopmost(rightPanel.first(), 'the pack drawer');
+      await shot('signpost-pack');
+      // The map flags the full pack and the fill of the other, each at its place.
+      // Escape closes the top panel while the focus is inside it.
+      await rightPanel.first().focus();
+      await page.keyboard.press('Escape');
+      await rightPanel.waitFor({ state: 'detached', timeout: 10000 });
+      // The packs list is still open (a page of its own on a phone, under the pack): close it.
+      await leftPanel
+        .getByRole('button', { name: /Close|^Back/ })
         .first()
         .click();
-      await waitFor(page.getByRole('dialog', { name: /Pack and pace/ }));
-      await page.waitForTimeout(600);
-      await expectTopmost(page.getByRole('dialog').first(), 'the pack drawer');
-      await shot('signpost-pack');
-      await page.keyboard.press('Escape');
-      await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
-      await shot('signpost-two-seats');
+      await leftPanel.waitFor({ state: 'detached', timeout: 10000 });
+      await waitFor(place('ember-caves'));
+      if ((await place('ember-caves').locator('.wm-flag').innerText()) !== 'FULL')
+        throw new Error('the map does not flag the full pack at Ember Caves');
+      if ((await place('tidepools').locator('.wm-flag').innerText()) !== '41%')
+        throw new Error('the map does not show the second pack at Tidepools');
+      await shot('signpost-map-packs');
     },
   );
 
@@ -1565,6 +2060,14 @@ try {
       forgeState.anvils = [];
       forgeState.nextOrder = 1;
       forgeCalls.length = 0;
+      // Another player's smith at work, for the workshop's background.
+      forgeState.crowd = [
+        {
+          owner: 'Bea',
+          creature: { id: 'far-1', species: 'splashet', shiny: false, level: 5, name: 'Dot' },
+          working: true,
+        },
+      ];
       // Acorns for the second anvil (123).
       stateOverride = {
         creatures,
@@ -1576,33 +2079,76 @@ try {
       await waitFor(page.locator(VALLEY), 'attached');
       await place('forge').evaluate((el) => el.click());
       await waitFor(heading('Forge'));
-      // Today's job slots are gone.
+      // Today's job slots are gone, and the page is a canvas: nothing scrolls, everything starts from a click in the scene.
       if ((await page.getByText(/Craft supplies/).count()) > 0)
         throw new Error('the Workshop still draws supply crafts');
-      await waitFor(page.getByRole('button', { name: /A new anvil/ }));
-      const take = page.getByRole('button', { name: /^Take your first anvil/ });
-      await waitFor(take);
-      await expectTopmost(take.first(), 'the "Take your first anvil" button');
-      await shot('forge-no-anvils');
-      await page.getByRole('button', { name: /A new anvil/ }).click();
-      await waitFor(page.getByRole('dialog'));
-      await page.getByRole('button', { name: /^Buy the anvil/ }).click();
-      await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
-      await waitFor(page.getByRole('heading', { name: 'Anvil 1' }));
+      if (process.env.DEBUG_CANVAS)
+        console.log(
+          await page.evaluate(() =>
+            [
+              '.vy-body',
+              '.vy-page',
+              '.fc-root',
+              '.pc-root',
+              '.pc-view',
+              '.pc-stage',
+              '.pc-main',
+              '.vy-interior',
+              '.vy-scene-box',
+              '.pc-below',
+            ].map((q) => {
+              const el = document.querySelector(q);
+              return el === null
+                ? `${q}: none`
+                : `${q}: ${String(el.clientWidth)}x${String(el.clientHeight)} ${getComputedStyle(el).display}`;
+            }),
+          ),
+        );
+      // The Forge opens on its outside: the building (the way in) and the project board; no anvils out here, and nothing scrolls.
+      await waitFor(sceneTarget('The forge. Go inside'));
+      await expectNoScroll();
+      await expectTopmost(sceneTarget('The forge. Go inside'), 'the building');
+      if ((await sceneTarget('A new anvil').count()) > 0) throw new Error('an anvil is outside');
+      await shot('forge-outside');
+      await goInside();
+      await waitFor(sceneTarget('A new anvil'));
+      await expectNoScroll();
+      await expectTopmost(sceneTarget('A new anvil'), 'the dashed outline of the next anvil');
+      await expectTopmost(sceneTarget('The door. Go back outside'), 'the door');
+      await expectTopmost(sceneTarget('The furnace'), 'the furnace');
+      // Another player's smith works at a bench behind: a tap shows its owner on a plate; a second tap closes it.
+      await waitFor(sceneTarget("Bea's Dot"));
+      await expectTopmost(sceneTarget("Bea's Dot"), "Bea's smith");
+      await sceneTarget("Bea's Dot").click();
+      await waitFor(page.locator('.nameplate-owner', { hasText: 'Bea' }));
+      await shot('forge-inside-background-smith');
+      await sceneTarget("Bea's Dot").click();
+      await page.locator('.nameplate-owner').waitFor({ state: 'detached', timeout: 10000 });
+      await shot('forge-canvas-no-anvils');
+      // Buy the first anvil from its outline: the buy step opens beside the canvas (a page on a phone).
+      await sceneTarget('A new anvil').click();
+      await waitFor(drawer.getByRole('heading', { name: 'A new anvil' }));
+      await shot('forge-step-buy');
+      await drawer.getByRole('button', { name: /^Buy the anvil/ }).click();
+      await drawer
+        .getByRole('heading', { name: 'A new anvil' })
+        .waitFor({ state: 'detached', timeout: 10000 });
+      await waitFor(sceneTarget('Anvil 1: nobody posted'));
       if (!forgeCalls.some(([k, b]) => k === 'anvil/buy' && typeof b.idempotencyKey === 'string'))
         throw new Error('the anvil was bought without an idempotency key');
-      // Post a smith from the picker.
-      const slot = page.getByRole('button', { name: /^Anvil 1: nobody posted/ });
-      await slot.scrollIntoViewIfNeeded();
-      await expectTopmost(slot, 'the empty smith slot');
-      await slot.click();
-      await waitFor(page.getByRole('dialog', { name: /Who smiths/ }));
-      await page
+      // Click the anvil: an anvil nobody smiths at opens on who smiths. Post a smith from the list.
+      await expectTopmost(sceneTarget('Anvil 1: nobody posted'), 'the empty anvil');
+      await sceneTarget('Anvil 1: nobody posted').click();
+      await waitFor(drawer.getByRole('heading', { name: 'Who smiths here?' }));
+      await shot('forge-step-smith');
+      await drawer
         .getByRole('option')
         .filter({ hasText: /Sproutle/ })
         .first()
         .click();
-      await waitFor(page.getByRole('button', { name: /^Anvil 1: Sproutle/ }));
+      await waitFor(drawer.getByRole('button', { name: /^Anvil 1: Sproutle/ }));
+      await waitFor(drawer.getByText(/Tinkering/));
+      await shot('forge-step-anvil');
       const [first, second] = baseState.creatures;
       const tray = page.locator(
         `section[aria-label="Creatures to post"] button[data-creature="${second.id}"]`,
@@ -1610,96 +2156,120 @@ try {
       if (!/Smithing/.test((await tray.getAttribute('aria-label')) ?? ''))
         throw new Error('the tray does not say Smithing');
       if ((await tray.locator('.vy-zz').count()) > 0) throw new Error('a smith carries the z');
-      await waitFor(page.getByText(/Tinkering/));
-      await shot('forge-one-smith-tinkering');
-      // Add an order: a blueprint, one more, Reach for Rare.
-      await page.getByRole('button', { name: /^Add an order/ }).click();
-      await waitFor(page.getByRole('dialog', { name: /Add an order/ }));
-      await page.getByRole('button', { name: /What to make: nothing chosen/ }).click();
-      await page.locator('ul[aria-label="Blueprints"] button').nth(1).click();
-      await page.getByRole('button', { name: /One more piece/ }).click();
-      await page.getByRole('button', { name: /Reach for Rare/ }).click();
-      await page.waitForTimeout(400);
-      await expectTopmost(page.getByRole('dialog').first(), 'the order editor');
-      await shot('forge-order-editor');
-      await page.getByRole('button', { name: /^Add to the queue/ }).click();
-      await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+      // Add an order from the anvil's page: what to make, then the order (a blueprint, one more, Reach for Rare).
+      await drawer.getByRole('button', { name: /^Add an order/ }).click();
+      await waitFor(drawer.getByRole('heading', { name: 'What to make' }));
+      await shot('forge-step-what');
+      await drawer.locator('ul[aria-label="Blueprints"] button').nth(1).click();
+      await waitFor(drawer.getByRole('heading', { name: 'The order' }));
+      await drawer.getByRole('button', { name: /One more piece/ }).click();
+      await drawer.getByRole('button', { name: /Reach for Rare/ }).click();
+      await page.waitForTimeout(300);
+      await shot('forge-step-order');
+      await drawer.getByRole('button', { name: /^Add to the queue/ }).click();
       const added = forgeCalls.at(-1)?.[1];
       if (added?.action !== 'add' || added.count !== 2 || added.reach !== 'rare')
         throw new Error(`the order was ${JSON.stringify(added)}`);
-      await waitFor(page.locator('button.fg-order'));
-      await shot('forge-one-smith-at-work');
+      // Back on the anvil's page with the order in its queue.
+      await waitFor(drawer.locator('button.fg-order'));
+      await shot('forge-step-anvil-at-work');
       // Edit it, then take it off.
-      await page.locator('button.fg-order').first().click();
-      await waitFor(page.getByRole('dialog', { name: /Change the order/ }));
-      await page.getByRole('button', { name: /One more piece/ }).click();
-      await page.getByRole('button', { name: /^Save/ }).click();
-      await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+      await drawer.locator('button.fg-order').first().click();
+      await waitFor(drawer.getByRole('heading', { name: 'Change the order' }));
+      await drawer.getByRole('button', { name: /One more piece/ }).click();
+      await drawer.getByRole('button', { name: /^Save/ }).click();
+      await waitFor(drawer.locator('button.fg-order'));
       if (forgeCalls.at(-1)?.[1].count !== 3) throw new Error('the edit did not send count 3');
-      await page.locator('button.fg-order').first().click();
-      await waitFor(page.getByRole('dialog', { name: /Change the order/ }));
-      await page.getByRole('button', { name: /Take it off the queue/ }).click();
-      await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+      await drawer.locator('button.fg-order').first().click();
+      await waitFor(drawer.getByRole('heading', { name: 'Change the order' }));
+      await drawer.getByRole('button', { name: /Take it off the queue/ }).click();
+      await waitFor(drawer.getByText(/No orders yet/));
       if (forgeCalls.at(-1)?.[1].action !== 'remove') throw new Error('remove was not sent');
-      // A second anvil, a smith dragged on from the tray.
-      await page.getByRole('button', { name: /A new anvil/ }).click();
-      await waitFor(page.getByRole('dialog'));
-      await page.getByRole('button', { name: /^Buy the anvil/ }).click();
-      await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
-      await waitFor(page.getByRole('heading', { name: 'Anvil 2' }));
+      // The focus goes back to the anvil that was clicked when the keyboard closes its drawer.
+      await page.keyboard.press('Tab');
+      await page.keyboard.press('Escape');
+      await drawer.waitFor({ state: 'detached', timeout: 10000 }).catch(() => undefined);
+      if ((await drawer.count()) > 0) {
+        await drawer.getByRole('button', { name: /^Back/ }).first().click();
+      }
+      await drawer.waitFor({ state: 'detached', timeout: 10000 });
+      // The keyboard: Enter on an anvil opens its drawer with the focus inside it; Escape closes it and the focus is back on that anvil.
+      await page.keyboard.press('Tab');
+      await sceneTarget('Anvil 1:').focus();
+      await page.keyboard.press('Enter');
+      await waitFor(rightPanel);
+      await page
+        .waitForFunction(
+          () => document.activeElement?.closest('.pc-side, .pc-page') != null,
+          null,
+          {
+            timeout: 3000,
+          },
+        )
+        .catch(() => {
+          throw new Error('the focus did not move into the anvil drawer');
+        });
+      await page.keyboard.press('Escape');
+      await rightPanel.waitFor({ state: 'detached', timeout: 10000 });
+      await page
+        .waitForFunction(
+          () => document.activeElement?.getAttribute('aria-label')?.startsWith('Anvil 1:') === true,
+          null,
+          { timeout: 3000 },
+        )
+        .catch(async () => {
+          const now = await page.evaluate(
+            () =>
+              document.activeElement?.getAttribute('aria-label') ?? document.activeElement?.tagName,
+          );
+          throw new Error(`the focus went to "${String(now)}", not back to the anvil`);
+        });
+      // A second anvil from its outline, then a smith carried onto it from the tray (the canvas never scrolls, so a drop is always in reach).
+      await sceneTarget('A new anvil').click();
+      await drawer.getByRole('button', { name: /^Buy the anvil/ }).click();
+      await waitFor(sceneTarget('Anvil 2: nobody posted'));
       const mover = page.locator(
         `section[aria-label="Creatures to post"] button[data-creature="${first.id}"]`,
       );
-      const card = page.locator('li.sp-seat').nth(1);
-      await mover.scrollIntoViewIfNeeded();
       const start = await mover.boundingBox();
-      const target = await card.boundingBox();
-      const view = page.viewportSize();
-      if (start === null || target === null || view === null) throw new Error('no boxes to drag');
-      // A drop needs the card on screen with the tray (there is no scroll while carrying): wide pages
-      // drag it; a phone, where the card is screens below the tray, posts the smith from the picker.
-      const reachable = target.y + target.height / 2 < view.height && target.y > 0;
-      if (reachable) {
-        await page.mouse.move(start.x + start.width / 2, start.y + start.height / 2);
-        await page.mouse.down();
-        await page.mouse.move(start.x + start.width / 2 + 12, start.y + start.height / 2 + 12, {
-          steps: 4,
-        });
-        await page.mouse.move(target.x + target.width / 2, target.y + target.height / 2, {
-          steps: 10,
-        });
-        await page.mouse.up();
-      } else {
-        await page.getByRole('button', { name: /^Anvil 2: nobody posted/ }).click();
-        await waitFor(page.getByRole('dialog', { name: /Who smiths/ }));
-        await page
-          .getByRole('option')
-          .filter({ hasText: /Cindle/ })
-          .first()
-          .click();
-      }
-      await waitFor(page.getByRole('button', { name: /^Anvil 2: Cindle/ }));
-      await shot('forge-two-anvils');
-      // The bag's filter and sort, with the count against the cap.
-      await waitFor(page.getByText(/Bag: \d+ \/ \d+/));
-      const tools = page.getByRole('button', { name: /Filter and sort/ });
-      await tools.scrollIntoViewIfNeeded();
+      const target = await sceneTarget('Anvil 2: nobody posted').boundingBox();
+      if (start === null || target === null) throw new Error('no boxes to drag');
+      await page.mouse.move(start.x + start.width / 2, start.y + start.height / 2);
+      await page.mouse.down();
+      await page.mouse.move(start.x + start.width / 2 + 12, start.y + start.height / 2 + 12, {
+        steps: 4,
+      });
+      await page.mouse.move(target.x + target.width / 2, target.y + target.height / 2, {
+        steps: 10,
+      });
+      await page.mouse.up();
+      await waitFor(sceneTarget('Anvil 2: Cindle'));
+      await expectNoScroll();
+      await shot('forge-canvas-two-anvils');
+      // The bag is the chest in the yard: it opens in the left drawer (a page on a phone), with its count against the cap and its filter.
+      await sceneTarget('The bag').click();
+      await waitFor(drawer.getByText(/Bag: \d+ \/ \d+/));
+      const tools = drawer.getByRole('button', { name: /Filter and sort/ });
       await tools.click();
-      await page.getByRole('button', { name: 'Rare', exact: true }).first().click();
+      await drawer.getByRole('button', { name: 'Rare', exact: true }).first().click();
       await page.waitForTimeout(300);
       await expectTopmost(tools, 'the bag tools header');
-      await shot('forge-bag-filter');
-      // The trade's notice floats at the top of the screen: bring each card to the middle.
-      for (const loc of [
-        page.locator('li.sp-seat').first(),
-        page.locator('.fg-page .vy-tray').first(),
-      ]) {
-        await loc.evaluate((el) => {
-          el.scrollIntoView({ block: 'center' });
-        });
-        await expectTopmost(loc, 'a Forge card');
-      }
+      await shot('forge-step-bag');
+      await expectNoScroll();
+      await drawer
+        .getByRole('button', { name: /Close|^Back/ })
+        .first()
+        .click();
+      await drawer.waitFor({ state: 'detached', timeout: 10000 });
+      await expectTopmost(hudBack(), 'the way back from the Forge');
+      // The door goes back outside (the building is there again), the place's back goes to the valley.
+      await sceneTarget('The door. Go back outside').click();
+      await waitFor(sceneTarget('The forge. Go inside'));
+      await shot('forge-outside-after');
+      await backToValley();
+
       forgeState.anvils = [];
+      forgeState.crowd = [];
     },
   );
 
@@ -1739,8 +2309,10 @@ try {
       await waitFor(page.locator(VALLEY), 'attached');
       await place('forge').evaluate((el) => el.click());
       await waitFor(heading('Forge'));
-      await waitFor(page.getByRole('heading', { name: 'Anvil 1' }));
-      // The Blueprints list has the three patchwork blueprints with their price as icons (no words, no quality).
+      await goInside();
+      await waitFor(sceneTarget('Anvil 1: '));
+      // The plans table in the workshop opens the Blueprints list, with the three patchwork blueprints and their price as icons (no words, no quality).
+      await sceneTarget('The plans').click();
       const rows = page.locator('li.blueprint').filter({ hasText: /Patchwork/ });
       await waitFor(rows);
       if ((await rows.count()) !== 3)
@@ -1761,17 +2333,17 @@ try {
       await shot('patch-blueprints');
       // Order it from its row: the editor opens with the blueprint picked and "Most held" (Ember holds most: 7).
       await row.getByRole('button', { name: /^Order/ }).click();
-      await waitFor(page.getByRole('dialog', { name: /Add an order/ }));
+      await waitFor(rightPanel.getByRole('heading', { name: 'The order' }));
       const shards = page.getByRole('button', { name: /^Shards: most held, now Ember/ });
       await waitFor(shards);
       if ((await page.locator('ul[aria-label="Reach"]').count()) > 0)
         throw new Error('a patchwork order offers a Reach');
       await page.waitForTimeout(400);
-      await expectTopmost(page.getByRole('dialog').first(), 'the patchwork order editor');
+      await expectTopmost(rightPanel.first(), 'the patchwork order wizard');
       await expectTopmost(shards, 'the shard slot');
       await shot('patch-order-editor');
-      await page.getByRole('button', { name: /^Add to the queue/ }).click();
-      await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+      await rightPanel.getByRole('button', { name: /^Add to the queue/ }).click();
+      await rightPanel.waitFor({ state: 'detached', timeout: 10000 });
       const most = forgeCalls.at(-1)?.[1];
       if (
         most?.action !== 'add' ||
@@ -1780,11 +2352,17 @@ try {
         most.reach !== 'none'
       )
         throw new Error(`the "most held" order was ${JSON.stringify(most)}`);
-      await waitFor(page.locator('button.fg-order'));
+      // Close the plans, open the anvil: the order is in its queue.
+      await leftPanel
+        .getByRole('button', { name: /Close|^Back/ })
+        .first()
+        .click();
+      await leftPanel.waitFor({ state: 'detached', timeout: 10000 });
+      await sceneTarget('Anvil 1: ').click();
+      await waitFor(drawer.locator('button.fg-order'));
       // A second one with a named element: the shard choice lists Most held and the five elements.
-      await page.getByRole('button', { name: /^Add an order/ }).click();
-      await waitFor(page.getByRole('dialog', { name: /Add an order/ }));
-      await page.getByRole('button', { name: /What to make: nothing chosen/ }).click();
+      await drawer.getByRole('button', { name: /^Add an order/ }).click();
+      await waitFor(drawer.getByRole('heading', { name: 'What to make' }));
       const pick = page.locator('ul[aria-label="Blueprints"] button').filter({
         hasText: /Patchwork Charm/,
       });
@@ -1797,12 +2375,12 @@ try {
       if ((await page.locator('ul[aria-label="Shards"] button').count()) !== 6)
         throw new Error('the shard choice does not list Most held and the five elements');
       await page.waitForTimeout(300);
-      await expectTopmost(page.getByRole('dialog').first(), 'the shard choice');
+      await expectTopmost(drawer.first(), 'the shard choice');
       await shot('patch-shard-choice');
       await page.locator('ul[aria-label="Shards"] button').filter({ hasText: /Grove/ }).click();
       await waitFor(page.getByRole('button', { name: /^Shards: Grove/ }));
-      await page.getByRole('button', { name: /^Add to the queue/ }).click();
-      await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+      await drawer.getByRole('button', { name: /^Add to the queue/ }).click();
+      await waitFor(drawer.locator('button.fg-order').nth(1));
       const named = forgeCalls.at(-1)?.[1];
       if (
         named?.action !== 'add' ||
@@ -1813,6 +2391,12 @@ try {
         throw new Error(`the named order was ${JSON.stringify(named)}`);
       await shot('patch-queue');
       // The finished piece in the bag is an Ember hat like any other: its element badge and tint are the element's.
+      await drawer
+        .getByRole('button', { name: /Close|^Back/ })
+        .first()
+        .click();
+      await drawer.waitFor({ state: 'detached', timeout: 10000 });
+      await sceneTarget('The bag').click();
       const piece = page.getByRole('option', { name: /Coal-Warm Cap/ }).first();
       await piece.scrollIntoViewIfNeeded();
       await piece.click();
@@ -2017,14 +2601,30 @@ try {
         await waitFor(page.locator(VALLEY), 'attached');
         await place('signpost').evaluate((el) => el.click());
         await waitFor(heading('Signpost'));
-        await waitFor(page.getByText('In the raid until Sunday'));
+        // The seat in the scene says its scout is in the raid (its pack waits for the finale).
+        await waitFor(sceneTarget('Seat 1'));
+        if (
+          !/In the raid until Sunday/.test(
+            (await sceneTarget('Seat 1').getAttribute('aria-label')) ?? '',
+          )
+        )
+          throw new Error('the seat in the scene does not say its scout is in the raid');
         await shot('bonfire5-signpost-paused');
         await hudBack().click();
         await waitFor(page.locator(VALLEY), 'attached');
         await place('forge').evaluate((el) => el.click());
         await waitFor(heading('Forge'));
-        await waitFor(page.getByText('In the raid until Sunday'));
-        await page.getByText('In the raid until Sunday').first().scrollIntoViewIfNeeded();
+        await goInside();
+        // The anvil in the scene says it is paused; its page (the drawer) says why.
+        await waitFor(sceneTarget('Anvil 1: '));
+        if (
+          !/paused for the raid/.test(
+            (await sceneTarget('Anvil 1: ').getAttribute('aria-label')) ?? '',
+          )
+        )
+          throw new Error('the anvil in the scene does not say it is paused');
+        await sceneTarget('Anvil 1: ').click();
+        await waitFor(drawer.getByText('In the raid until Sunday'));
         await shot('bonfire5-forge-paused');
         await hudBack().click();
         await waitFor(page.locator(VALLEY), 'attached');
@@ -2072,11 +2672,14 @@ try {
         await waitFor(page.locator(VALLEY), 'attached');
         await place('signpost').evaluate((el) => el.click());
         await waitFor(heading('Signpost'));
-        const board = page.locator('section[aria-label="Signpost project"]');
-        await waitFor(board);
+        // The plans table in the scene is the way to the project board (the left drawer; a page on a phone).
+        await waitFor(sceneTarget('The project board'));
         // The scaffolding stands round the road as the project fills.
         await page.waitForTimeout(300);
         await shot('commons-signpost-scaffolding');
+        await sceneTarget('The project board').click();
+        const board = page.locator('section[aria-label="Signpost project"]');
+        await waitFor(board);
         await board.scrollIntoViewIfNeeded();
         await expectTopmost(board, 'the Signpost board');
         await shot('commons-signpost-board');
@@ -2188,11 +2791,15 @@ try {
         await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
         await place('forge').evaluate((el) => el.click());
         await waitFor(heading('Forge'));
-        const fire = page.getByRole('button', { name: /^The fire\./ });
+        // The notice board beside the forge is the way to its fire and project board (the left drawer; a page on a phone); the scaffolding is on the building's art.
+        await waitFor(sceneTarget('The project board'));
+        await shot('commons-forge-canvas');
+        await sceneTarget('The project board').click();
+        const fire = drawer.getByRole('button', { name: /^The fire\./ });
         await waitFor(fire);
         await expectTopmost(fire, 'the fire');
         await shot('commons-forge-fire');
-        const board = page.locator('section[aria-label="Forge project"]');
+        const board = drawer.locator('section[aria-label="Forge project"]');
         await board.scrollIntoViewIfNeeded();
         await waitFor(board.getByText(/being built, 2 days left/));
         await expectTopmost(board, 'the Forge board');
@@ -2585,6 +3192,10 @@ try {
         await waitFor(page.locator(VALLEY), 'attached');
         await place('forge').evaluate((el) => el.click());
         await waitFor(heading('Forge'));
+        await goInside();
+        // The anvil in the scene says it waits for a shard; a click opens its page, whose wait line is below.
+        await waitFor(sceneTarget('Anvil 1: '));
+        await sceneTarget('Anvil 1: ').click();
         // Before: the wait line says the Market will trade once the valley builds it; there is no exchange tap at the Forge.
         const before = page.getByText(
           /Waiting for\s+for 3 h\. The Market will trade for them once the valley builds it\./,
@@ -2621,6 +3232,9 @@ try {
         await waitFor(page.locator(VALLEY), 'attached');
         await place('forge').evaluate((el) => el.click());
         await waitFor(heading('Forge'));
+        await goInside();
+        await waitFor(sceneTarget('Anvil 1: '));
+        await sceneTarget('Anvil 1: ').click();
         const after = page.getByText(/Waiting for\s+for 3 h/);
         await waitFor(after);
         await after.first().scrollIntoViewIfNeeded();
@@ -2732,6 +3346,437 @@ try {
         await page.locator('.gz-fly').waitFor({ state: 'detached', timeout: 15000 });
       } finally {
         gazette.paper = null;
+      }
+    },
+  );
+
+  // The weekly visitor (phase 5 step 8b): his place as the server says (shuttered while away, a stall and a page while here), the reroll
+  // of one piece (picker, price and odds, one confirm, before and after) and the week's blueprint.
+  const visitorOn = (here) => {
+    const creatures = commonsOn();
+    visitorReset();
+    visitorState.here = here;
+    answerOverride.set('/api/gear', visitorGear);
+    stateOverride = {
+      creatures,
+      balances: { ...baseState.balances, bait: visitorState.bait },
+      valley: valleyBlock(),
+    };
+  };
+  const visitorOff = () => {
+    visitorReset();
+    commonsOff();
+  };
+  const rerollTitle = /Reroll a piece/;
+
+  await scenario(
+    'the visitor away (V-VIS-1): his stall is shuttered on the map, his place says back Thursday and offers nothing',
+    () => {
+      visitorOn(false);
+    },
+    async () => {
+      try {
+        await waitFor(page.locator(VALLEY), 'attached');
+        await page.waitForTimeout(300);
+        await shot('visitor-map-away');
+        await place('visitor').evaluate((el) => el.click());
+        await waitFor(heading('Visitor'));
+        await waitFor(page.getByText('Back Thursday.'));
+        if ((await page.getByRole('button', { name: /Reroll|Choose a piece|Buy/ }).count()) > 0)
+          throw new Error('his shuttered place offers something');
+        const body = await page.locator('main').innerText();
+        if (/until|\d+ ?h\b|\d+ ?days?/i.test(body))
+          throw new Error(`a countdown on his shuttered place: ${body}`);
+        await shot('visitor-away');
+        await backToValley();
+        // The Places list says it too.
+        await page.getByRole('button', { name: /^Places/ }).click();
+        await waitFor(page.getByText('back Thursday', { exact: true }));
+        await page.keyboard.press('Escape');
+      } finally {
+        visitorOff();
+      }
+    },
+  );
+
+  await scenario(
+    'the visitor here (V-VIS-2, 4, 5): reroll one piece with one confirm, see before and after and the next price, and buy the blueprint',
+    () => {
+      visitorOn(true);
+    },
+    async () => {
+      try {
+        await waitFor(page.locator(VALLEY), 'attached');
+        await page.waitForTimeout(300);
+        await shot('visitor-map-here');
+        await place('visitor').evaluate((el) => el.click());
+        await waitFor(heading('Visitor'));
+        await waitFor(page.getByRole('heading', { name: rerollTitle }));
+        // His page is two cards under his stall: no timer, no "until" line.
+        const text = await page.locator('main').innerText();
+        if (/until|Back Thursday/i.test(text)) throw new Error(`a countdown or away line: ${text}`);
+        await shot('visitor-here');
+        // The blueprint card: its price is icons and numbers.
+        const buy = page.locator('button.action-btn', { hasText: /^Buy/ });
+        await buy.first().scrollIntoViewIfNeeded();
+        await expectTopmost(buy.first(), 'the Buy button');
+        await shot('visitor-blueprint');
+        // The reroll: the picker (worn pieces first), then a piece.
+        await page
+          .getByRole('button', { name: /Choose a piece/ })
+          .first()
+          .click();
+        const picker = page.getByRole('dialog', { name: rerollTitle });
+        await waitFor(picker);
+        await waitFor(picker.locator('.item-tile'));
+        await page.waitForTimeout(300);
+        await shot('visitor-picker');
+        await picker
+          .getByRole('button', { name: /Emberkeeper/ })
+          .first()
+          .click();
+        await waitFor(picker.getByText(/chance of Tier 4 \/ 5/));
+        await waitFor(picker.getByText(/old lines are gone for good/));
+        if (visitorState.calls.length > 0) throw new Error('looking at a piece spent something');
+        const confirm = picker.locator('button.action-btn', { hasText: /^Reroll/ });
+        await expectTopmost(confirm.first(), 'the Reroll button');
+        await page.waitForTimeout(200);
+        await shot('visitor-confirm');
+        await confirm.first().click();
+        await waitFor(picker.getByText(/Rerolled\. The old lines are gone\./));
+        const [reroll] = visitorState.calls;
+        if (
+          reroll === undefined ||
+          reroll[0] !== 'reroll' ||
+          typeof reroll[1].idempotencyKey !== 'string' ||
+          reroll[1].idempotencyKey.length < 8
+        )
+          throw new Error(
+            `the reroll was sent without an idempotency key: ${JSON.stringify(reroll)}`,
+          );
+        if (visitorState.calls.length !== 1) throw new Error('a reroll was sent twice');
+        await waitFor(picker.getByText('Before', { exact: true }));
+        await waitFor(picker.getByText('After', { exact: true }));
+        await waitFor(picker.getByText(/Next reroll/));
+        await page.waitForTimeout(200);
+        await shot('visitor-result');
+        // Again: back to the piece, whose price rose.
+        await picker
+          .locator('button.action-btn', { hasText: /Reroll again/ })
+          .first()
+          .click();
+        await waitFor(picker.locator('.item-tile'));
+        await picker
+          .getByRole('button', { name: /Emberkeeper/ })
+          .first()
+          .click();
+        await waitFor(picker.getByText(/chance of Tier 4 \/ 5/));
+        await page.keyboard.press('Escape');
+        await picker.waitFor({ state: 'detached', timeout: 10000 });
+        // The blueprint: one tap, then it says so for the week.
+        await buy.first().click();
+        await waitFor(page.getByText('Bought this week.'));
+        const calls = visitorState.calls.filter(([name]) => name === 'blueprint');
+        if (calls.length !== 1 || typeof calls[0][1].idempotencyKey !== 'string')
+          throw new Error(`the blueprint was sent without a key: ${JSON.stringify(calls)}`);
+        await page.getByText('Bought this week.').first().scrollIntoViewIfNeeded();
+        await shot('visitor-bought');
+        await backToValley();
+      } finally {
+        visitorOff();
+      }
+    },
+  );
+
+  await scenario(
+    'the visitor leaves while his page is open (409 visitor_away before any spend): the page turns to his shuttered place',
+    () => {
+      visitorOn(true);
+    },
+    async () => {
+      try {
+        await waitFor(page.locator(VALLEY), 'attached');
+        await place('visitor').evaluate((el) => el.click());
+        await waitFor(page.getByRole('heading', { name: rerollTitle }));
+        visitorState.here = false;
+        const buy = page.locator('button.action-btn', { hasText: /^Buy/ });
+        await buy.first().scrollIntoViewIfNeeded();
+        await buy.first().click();
+        await waitFor(page.getByText('Back Thursday.'));
+        if ((await page.getByRole('button', { name: /Choose a piece|^Buy/ }).count()) > 0)
+          throw new Error('the page still offers his stock after he left');
+        await shot('visitor-left');
+        await backToValley();
+      } finally {
+        visitorOff();
+      }
+    },
+  );
+
+  // The School and the trials (phase 5 step 9b): the School's place as the server says (the teacher announced, here, or away), Send and
+  // Take off, a student that leaves the fire and the tray's "z", the refusals, a creature's next trial as pips with its list a tap away,
+  // an honour on the card and the sprite, and a graduation told in the paper.
+  const schoolOn = (phase, wouldLearn, honours = {}) => {
+    const creatures = commonsOn();
+    schoolReset();
+    schoolState.phase = phase;
+    schoolState.would = wouldLearn(creatures.map((c) => c.id));
+    trialsState.on = true;
+    trialsState.ready = 2;
+    trialsState.byId = honours;
+    stateOverride = { creatures, valley: valleyBlock() };
+    return creatures;
+  };
+  const schoolOff = () => {
+    schoolReset();
+    commonsOff();
+  };
+  const noCountdown = (text, what) => {
+    if (/until|\d+ ?h\b|\d+ ?minutes?|\d+ ?days?|left/i.test(text))
+      throw new Error(`a countdown on ${what}: ${text}`);
+  };
+  const BRONZE_HONOUR = { honour: 1, tier: 2, boxes: [false, false, false], ready: false };
+  const TWO_OF_FOUR = { honour: 0, tier: 1, boxes: [true, true, false, false], ready: false };
+
+  await scenario(
+    'the School with the teacher here (V-SCH-11, 13): the days, the faces with one Send, a student leaves the fire, Take off, and the refusals',
+    () => {
+      const creatures = schoolOn('here', (ids) => ids.slice(0, 3), {});
+      trialsState.byId = { [creatures[1].id]: BRONZE_HONOUR };
+      stateOverride = { creatures, valley: valleyBlock() };
+    },
+    async () => {
+      try {
+        await waitFor(page.locator(VALLEY), 'attached');
+        await page.waitForTimeout(300);
+        await shot('school-map-here');
+        await page.getByRole('button', { name: /^Places/ }).click();
+        await waitFor(page.getByText('2 ready to graduate · a teacher is here', { exact: true }));
+        await shot('school-places');
+        await page.keyboard.press('Escape');
+        await place('school').evaluate((el) => el.click());
+        await waitFor(heading('School'));
+        await waitFor(page.getByRole('heading', { name: 'Visiting teacher' }));
+        await waitFor(page.getByText(/The visiting teacher is here \w+ to \w+\./));
+        const text = await page.locator('main').innerText();
+        noCountdown(text, 'the School');
+        if (/\bAcorns?\b|\bscrap\b|\bshards?\b/i.test(text))
+          throw new Error(`a currency named in words on the School: ${text}`);
+        await waitFor(page.getByText('First Pounce'));
+        await waitFor(page.getByText(/The next ceremony is (today|this evening|tomorrow)/));
+        await shot('school-here');
+        // The faces that would learn, one Send each.
+        const sends = page.getByRole('button', { name: /^Send / });
+        if ((await sends.count()) !== 3) throw new Error('not one Send for each face');
+        // The second face (Cindle, the first, can evolve and shows that mark on the tray instead).
+        await sends.nth(1).scrollIntoViewIfNeeded();
+        await expectTopmost(sends.nth(1), 'the Send button');
+        await sends.nth(1).click();
+        await waitFor(page.getByText('Learns it by morning'));
+        if (schoolState.calls.length !== 1 || schoolState.calls[0].index !== 0)
+          throw new Error(`Send asked the server wrongly: ${JSON.stringify(schoolState.calls)}`);
+        await page.waitForTimeout(300);
+        // The student sits on the bench in the scene, wearing its honour on the sprite.
+        if ((await page.locator('.vy-stand .honour-ribbon').count()) !== 1)
+          throw new Error('the seated student shows no ribbon in the scene');
+        await page.evaluate(() => window.scrollTo(0, 0));
+        await shot('school-send');
+        // The student left the fire: the tray marks it, the Bonfire's ring has no one of that name.
+        const studentId = schoolState.seats[0];
+        await backToValley();
+        await waitFor(page.locator(`button[data-creature="${studentId}"].vy-mon-studying`));
+        await shot('school-student-tray');
+        await place('bonfire').evaluate((el) => el.click());
+        await waitFor(heading('Bonfire'));
+        await page.waitForTimeout(300);
+        if ((await page.locator(`#scene-${studentId}`).count()) > 0)
+          throw new Error('a student still sits at the fire');
+        await backToValley();
+        // Take off: the seat is free again and the Send comes back.
+        await place('school').evaluate((el) => el.click());
+        await waitFor(page.getByText('Learns it by morning'));
+        await page.getByRole('button', { name: /^Take .* off the seat/ }).click();
+        await waitFor(page.getByRole('button', { name: /^Send / }).first());
+        if (schoolState.calls.length !== 2 || schoolState.calls[1].creatureId !== null)
+          throw new Error(
+            `Take off asked the server wrongly: ${JSON.stringify(schoolState.calls)}`,
+          );
+        // A refusal is the game's shared alert in words.
+        schoolState.refuse = 'would_not_learn';
+        await page
+          .getByRole('button', { name: /^Send / })
+          .first()
+          .click();
+        await waitFor(page.getByText('That creature would not learn this lesson.'));
+        await page.evaluate(() => window.scrollTo(0, 0));
+        await shot('school-refusal');
+        await backToValley();
+      } finally {
+        schoolOff();
+      }
+    },
+  );
+
+  await scenario(
+    'the School with the teacher announced (V-SCH-11): the bell and the lectern at the door, the days, a seat can already be used',
+    () => {
+      schoolOn('announced', (ids) => ids.slice(0, 2));
+    },
+    async () => {
+      try {
+        await waitFor(page.locator(VALLEY), 'attached');
+        await place('school').evaluate((el) => el.click());
+        await waitFor(heading('School'));
+        await waitFor(page.getByText(/A visiting teacher comes \w+ to \w+\./));
+        noCountdown(await page.locator('main').innerText(), 'the announced School');
+        await waitFor(page.getByRole('button', { name: /^Send / }));
+        await shot('school-announced');
+        await backToValley();
+      } finally {
+        schoolOff();
+      }
+    },
+  );
+
+  await scenario(
+    'the School when none of yours would learn it ("none of yours this time" in words), and with no teacher (the empty yard and the ceremony)',
+    () => {
+      schoolOn('here', () => []);
+    },
+    async () => {
+      try {
+        await waitFor(page.locator(VALLEY), 'attached');
+        await place('school').evaluate((el) => el.click());
+        await waitFor(heading('School'));
+        await waitFor(page.getByText('None of yours this time.'));
+        if ((await page.getByRole('button', { name: /^Send / }).count()) > 0)
+          throw new Error('a Send with nobody to send');
+        await shot('school-none-of-yours');
+        await backToValley();
+        schoolState.phase = 'away';
+        // The place is read again each time it is opened.
+        await place('school').evaluate((el) => el.click());
+        await waitFor(page.getByText('No teacher at the School right now.'));
+        await waitFor(page.getByText('2 ready to graduate', { exact: true }));
+        await waitFor(page.getByText(/The next ceremony is (today|this evening|tomorrow)/));
+        noCountdown(await page.locator('main').innerText(), 'the School without a teacher');
+        await shot('school-away');
+        await backToValley();
+      } finally {
+        schoolOff();
+      }
+    },
+  );
+
+  await scenario(
+    'a creature’s next trial on its card (V-TRIAL-3): pips for its ticked boxes, the list a tap away, and an honour as a title, a badge and a ribbon (V-TRIAL-1)',
+    () => {
+      const creatures = commonsOn();
+      schoolReset();
+      trialsState.on = true;
+      trialsState.byId = { [creatures[0].id]: TWO_OF_FOUR, [creatures[1].id]: BRONZE_HONOUR };
+      stateOverride = { creatures, valley: valleyBlock() };
+    },
+    async () => {
+      try {
+        await waitFor(page.locator(VALLEY), 'attached');
+        await place('paddock').evaluate((el) => el.click());
+        await waitFor(heading('Paddock'));
+        const pips = page.locator('button.trial-pips');
+        await waitFor(pips);
+        const labels = await pips.evaluateAll((els) =>
+          els.map((el) => el.getAttribute('aria-label')),
+        );
+        if (!labels.includes('Bronze trial, 2 / 4 boxes ticked'))
+          throw new Error(`the pips are not named: ${labels.join(' | ')}`);
+        if (!labels.some((l) => /^Silver trial/.test(l ?? '')))
+          throw new Error('the creature with Bronze shows no Silver trial next');
+        // Only the next trial shows on the card.
+        const cards = await page.locator('li.creature-card').first().innerText();
+        if (/Gold/.test(cards)) throw new Error('a later trial shows on the card');
+        await pips.first().scrollIntoViewIfNeeded();
+        await expectTopmost(pips.first(), 'the trial pips');
+        await shot('trial-pips-card');
+        // The list is a tap away, in the one popover, and nothing opens it but a tap.
+        await pips.first().click();
+        const list = page.locator('ul.trial-list');
+        await waitFor(list);
+        const rows = await list.locator('li').count();
+        if (rows < 3) throw new Error('the trial list has too few rows');
+        await waitFor(page.getByText('A moment at the bonfire'));
+        await expectTopmost(page.getByRole('dialog').first(), 'the trial popover');
+        await shot('trial-list');
+        await page.keyboard.press('Escape');
+        // An honour: the title, a badge, a ribbon on the sprite.
+        const honoured = page.locator('li.creature-card', { hasText: /, Bronze/ });
+        await waitFor(honoured);
+        await honoured.first().scrollIntoViewIfNeeded();
+        if ((await honoured.first().locator('.honour-ribbon').count()) !== 1)
+          throw new Error('an honour shows no ribbon on the sprite');
+        await shot('trial-honour-card');
+        await backToValley();
+      } finally {
+        schoolOff();
+      }
+    },
+  );
+
+  await scenario(
+    'a graduation told in the paper (V-TRIAL-4): "graduated at the School", with the teacher’s and the lesson’s lines in the same paper',
+    () => {
+      const config = ROUTES.get('/api/config');
+      answerOverride.set('/api/config', () => ({ ...config(), valleySystems: true }));
+      const creatures = baseState.creatures.map((c) => ({ ...c, busy: null, away: false }));
+      scouts.seats = [];
+      scouts.owned = [];
+      scouts.ids = creatures.map((c) => c.id);
+      gazetteCalls.length = 0;
+      const [a, b, c] = creatures;
+      schoolReset();
+      trialsState.on = true;
+      trialsState.byId = { [a.id]: BRONZE_HONOUR };
+      gazette.paper = {
+        id: '1799760000888',
+        at: 1799760000000,
+        awayHours: 30,
+        headlines: [
+          headline('graduation', 80, 3, { creatureIds: [a.id, b.id, c.id], step: 1 }),
+          headline('teacher', 45, 0, { talent: 'first-pounce' }),
+          headline('lesson', 35, 1, { creatureIds: [b.id], talent: 'first-pounce' }),
+        ],
+        more: 0,
+        brought: { acorns: 0, scrap: 0, shards: 0 },
+        decision: null,
+      };
+      stateOverride = { creatures, valley: valleyBlock() };
+      answerOverride.set('/api/valley/gazette/close', (request) => {
+        gazetteCalls.push(['close', bodyOf(request)]);
+        gazette.paper = null;
+        stateOverride = { ...stateOverride, valley: valleyBlock() };
+        return { closed: true };
+      });
+    },
+    async () => {
+      try {
+        const paper = page.locator('article[aria-label="The Valley Gazette"]');
+        await waitFor(paper);
+        await waitFor(page.locator('h3.gz-headline'));
+        await page.waitForTimeout(800);
+        const heads = await page.locator('.gz-headline, .gz-brief-headline').allInnerTexts();
+        if (!heads.some((h) => /^THREE OF YOURS GRADUATED AT THE SCHOOL$/i.test(h.trim())))
+          throw new Error(`the paper does not tell the graduation: ${heads.join(' | ')}`);
+        if (!heads.some((h) => /A TEACHER VISITS THE SCHOOL: FIRST POUNCE/i.test(h)))
+          throw new Error(`the paper does not name the teacher’s talent: ${heads.join(' | ')}`);
+        await expectTopmost(page.locator('h3.gz-headline').first(), 'the graduation headline');
+        await shot('school-paper-graduation');
+        const closer = page.getByRole('button', { name: /more things?|Into the valley/i }).last();
+        await closer.scrollIntoViewIfNeeded();
+        await closer.click();
+        await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+        await page.locator('.gz-fly').waitFor({ state: 'detached', timeout: 15000 });
+      } finally {
+        gazette.paper = null;
+        schoolOff();
       }
     },
   );

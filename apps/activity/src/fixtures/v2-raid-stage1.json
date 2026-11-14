@@ -745,7 +745,8 @@
     ],
     "swaps": {
       "incoming": [],
-      "outgoing": []
+      "outgoing": [],
+      "settled": []
     }
   },
   "channel": {

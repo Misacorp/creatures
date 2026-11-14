@@ -256,6 +256,14 @@ export function finishRun(
   }
   rewards.experience = experience;
   rewards.recap = recap;
+  // The valley's trials: a clear ticks the dungeon box (and Silver's Undercroft box) for the creatures that fought.
+  if (cleared && deps.onCleared !== undefined) {
+    deps.onCleared(
+      userId,
+      st.everyone.filter((id) => (st.earned[id]?.base ?? 0) > 0),
+      st.deepest,
+    );
+  }
 
   // --- Store ---
   const summary = summarise(deps, {

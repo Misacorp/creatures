@@ -331,12 +331,12 @@ describe('moves, silence, heals, Stores and the rest of the board', () => {
     ]);
   });
 
-  it('Mired is on the board with its stacks, and the escalation with its steps and counts', () => {
+  it('Bogged Down is on the board with its stacks, and the escalation with its steps and counts', () => {
     const heat = { name: 'Heat', feed: 'rounds', per: 1, cap: 2, grow: { atkBp: 1_000 } } as const;
-    const mired = play(boss({ cols: 1, rounds: 3, atk: 1 }), [
+    const boggedDown = play(boss({ cols: 1, rounds: 3, atk: 1 }), [
       spec({ name: 'Song', fx: { miresAtStart: true } }),
     ]);
-    expect(of(mired, 'mired').map((m) => m.stacks)).toEqual([1, 0, 1, 0, 1, 0]);
+    expect(of(boggedDown, 'boggedDown').map((m) => m.stacks)).toEqual([1, 0, 1, 0, 1, 0]);
     const r = play(boss({ cols: 1, rounds: 3, atk: 1, escalation: heat }), [spec({ name: 'A' })]);
     const steps = of(r, 'escalation');
     expect(steps.map((s) => [s.step, s.fall, s.phase])).toEqual([

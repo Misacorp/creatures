@@ -1,5 +1,5 @@
 /**
- * Content of the fifth design panel's fixes (2026-10-29): Mired halved, a second cleanse boss, Thornmother's cracking bark and
+ * Content of the fifth design panel's fixes (2026-10-29): Bogged Down halved, a second cleanse boss, Thornmother's cracking bark and
  * her second Pierce Knack, common-species answers, Reliably Covered trimmed, rare Knacks with somewhere to be an answer.
  */
 import { createSeededRng } from '@creatures/game';
@@ -30,11 +30,11 @@ const at = (formId: string, row: number, col: number, knack?: string): Placement
   ...(knack ? { knack } : {}),
 });
 
-describe('Mired is halved and a second boss washes debuffs off', () => {
-  it('a Mired stack cuts the boss’s damage by 1.5% (2.25% with Clinging), half of what it was', () => {
-    expect(LAB_RULES.miredPerStackBp).toBe(150);
-    expect(LAB_RULES.miredClingingStackBp).toBe(225);
-    expect(LAB_RULES.miredClingingStackBp).toBeGreaterThan(LAB_RULES.miredPerStackBp);
+describe('Bogged Down is halved and a second boss washes debuffs off', () => {
+  it('a Bogged Down stack cuts the boss’s damage by 1.5% (2.25% with Clinging), half of what it was', () => {
+    expect(LAB_RULES.boggedDownPerStackBp).toBe(150);
+    expect(LAB_RULES.boggedDownClingingStackBp).toBe(225);
+    expect(LAB_RULES.boggedDownClingingStackBp).toBeGreaterThan(LAB_RULES.boggedDownPerStackBp);
   });
 
   it('two raid bosses carry Shake It Off: the Colossus (the sea washes the mud off) and Old Bogback', () => {
