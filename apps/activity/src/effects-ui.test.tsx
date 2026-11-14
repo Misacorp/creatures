@@ -35,6 +35,16 @@ describe('the effect icons', () => {
     expect(turnsText(1)).toBe('1 turn');
   });
 
+  it('reads the old id of the renamed debuff from a stored fight as Bogged Down', () => {
+    const [old] = effectIcons([{ effect: 'mired', stacks: 2, turnsLeft: 1 }]);
+    expect(old).toMatchObject({
+      id: 'bogged-down',
+      name: 'Bogged Down',
+      entry: 'status-bogged-down',
+    });
+    expect(entryView(old?.entry ?? '')).toBeDefined();
+  });
+
   it('has a glossary entry in the content for every status effect', () => {
     for (const e of content.statusEffects) {
       expect(entryView(`status-${e.id}`), e.id).toBeDefined();

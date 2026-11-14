@@ -407,8 +407,8 @@
     "section": "v2-marks"
   },
   {
-    "id": "v2-mark-muddied",
-    "title": "Muddied",
+    "id": "v2-mark-mired",
+    "title": "Mired",
     "short": "Mire’s mark. Ember cashes it in.",
     "lines": [
       "Left on the boss by a Setter’s Mire hit.",
@@ -521,9 +521,9 @@
   {
     "id": "v2-reaction-flare",
     "title": "Flare",
-    "short": "Ember on Muddied: bonus damage.",
+    "short": "Ember on Mired: bonus damage.",
     "lines": [
-      "A Payoff’s Ember hit on a Muddied boss sets it off.",
+      "A Payoff’s Ember hit on a Mired boss sets it off.",
       "It deals bonus damage, and a crit makes the bonus bigger.",
       "It takes a stack off the mark.",
       "Only a Payoff does it, or a Knack that says so."
@@ -603,7 +603,7 @@
     "lines": [
       "Hits Ember bosses for 50% more damage.",
       "Ember hits Mire bosses for 50% more. Tide hits them for 25% less.",
-      "Mire Setter hits leave Muddied on the boss. Ember cashes it in."
+      "Mire Setter hits leave Mired on the boss. Ember cashes it in."
     ],
     "visual": {
       "kind": "element",

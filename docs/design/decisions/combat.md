@@ -4,6 +4,14 @@ The shared combat engine, abilities, statuses, elements, the balance simulator, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-14: Rename: the Mire debuff is Bogged Down, the Mire mark is Mired [Misa]
+
+ID: `2026-11-14-rename-the-mire-debuff-is-bogged` · Status: current
+
+**Decision.** Misa (2026-11-13): players read "Mired" as the name of the mark Mire creatures leave, but it was the name of the debuff (the mark was Muddied). The debuff is now **Bogged Down** (status id `bogged-down`, keyword `kw-bogged-down`, glossary `status-bogged-down`, glyph `bogged-down`, v2 board event type `boggedDown`, rule keys `boggedDown...` in `rules.json`, Knack and gear fx `boggedDownExtraBp`). The Mire mark is now **Mired** (mark id `mired`, glossary `mark-mired` and `v2-mark-mired`). Done in two commits, the debuff first, so no name meant two things at any point. The room modifier **Muddy** (id `mud`) is not the mark and keeps its name. Fights stored before the rename name the old ids: `currentStatusId` (`packages/game/src/glossary.ts`) reads the old status id `mired` as `bogged-down` (replay effect icons, event text), and the v2 replay parser reads the old board event type `mired` as `boggedDown`. Stored event text and the dated entries in the decision files and reviews keep the old names, as history. The status effect and the reaction mark are shared content, so the v1 game shows the new names too.
+
+**Reasoning.** One word for one thing. Marks are the thing players watch and cash; the debuff is the quieter one. Reading old ids at the places that parse stored fights keeps replays working without a migration.
+
 ## 2026-11-14: A live finale started off the calendar is on from its real start in the Raid view
 
 ID: `2026-11-14-a-live-finale-started-off-the` · Status: current

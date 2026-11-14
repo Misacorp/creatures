@@ -154,7 +154,7 @@ Matchups become a list of attacker → defender pairs with a multiplier. A pair 
 
 ### 5.1 Mark and the Bogged Down debuff
 
-- **Mark:** **Muddied** (Mire's element mark, left like every mark).
+- **Mark:** **Mired** (Mire's element mark, left like every mark).
 - **Bogged Down** (status effect, debuff): per stack Speed −3% and damage dealt −3%, cap 5, 3 turns (all kept by the balance pass).
 
 ### 5.2 Reactions
@@ -162,7 +162,7 @@ Matchups become a list of attacker → defender pairs with a multiplier. A pair 
 | Reaction    | Mark set off     | By    | Extra                                                                                      |
 | ----------- | ---------------- | ----- | ------------------------------------------------------------------------------------------ |
 | **Smother** | Scorched (Ember) | Mire  | Normal reaction bonus, and applies Bogged Down (100% power)                                |
-| **Flare**   | Muddied (Mire)   | Ember | Normal reaction bonus, then **burns off all Bogged Down stacks** for +20% damage per stack |
+| **Flare**   | Mired (Mire)     | Ember | Normal reaction bonus, then **burns off all Bogged Down stacks** for +20% damage per stack |
 
 Flare gives a real choice: keep the stacks (boss slower and weaker) or burn them for one big hit.
 

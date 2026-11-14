@@ -56,8 +56,8 @@
   {
     "id": "flare",
     "name": "Flare",
-    "markId": "muddied",
-    "markName": "Muddied",
+    "markId": "mired",
+    "markName": "Mired",
     "markElement": "mire",
     "triggerElement": "ember",
     "multiplierBp": 45000,

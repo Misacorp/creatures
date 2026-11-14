@@ -147,6 +147,19 @@ describe('the board cues of the second answers', () => {
     expect(whole.floats[0]?.sub).toBe('+40');
   });
 
+  it('a stored event with the old name of the debuff event reads as the current one', async () => {
+    const { isFightEventV2 } = await import('./fight-v2-api');
+    const stored = {
+      round: 1,
+      turn: 0,
+      kind: 'board',
+      text: '',
+      board: { type: 'mired', stacks: 2 },
+    };
+    expect(isFightEventV2(stored)).toBe(true);
+    expect(stored.board.type).toBe('boggedDown');
+  });
+
   it('the client reads the new board fields and nothing malformed', () => {
     expect(isBoardEvent({ type: 'sure', who: 'a', by: 'b' })).toBe(true);
     expect(isBoardEvent({ type: 'sure', who: 'a' })).toBe(false);

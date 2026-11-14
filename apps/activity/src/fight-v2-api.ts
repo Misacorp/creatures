@@ -299,7 +299,17 @@ export function isBoardEvent(value: unknown): value is BoardEvent {
   }
 }
 
+/**
+ * A stored fight written before the debuff was renamed (2026-11-13) names its board event `mired`. The payload is freshly parsed
+ * JSON, so the old type is rewritten in place to the current one before the shape check; nothing else holds the old name.
+ */
+const migrateLegacyBoard = (value: unknown): void => {
+  if (!isRecord(value) || !isRecord(value['board'])) return;
+  if (value['board']['type'] === 'mired') value['board']['type'] = 'boggedDown';
+};
+
 export const isFightEventV2 = (value: unknown): value is FightEvent =>
+  (migrateLegacyBoard(value), true) &&
   isRecord(value) &&
   isCount(value['round']) &&
   isCount(value['turn']) &&

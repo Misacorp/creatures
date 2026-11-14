@@ -410,10 +410,10 @@ describe('raid content', () => {
       ['overgrown', 'grove', 'ember', 'Wildfire'],
       ['scorched', 'ember', 'tide', 'Steam'],
       ['scorched', 'ember', 'mire', 'Smother'],
-      ['muddied', 'mire', 'ember', 'Flare'],
+      ['mired', 'mire', 'ember', 'Flare'],
     ]);
     expect(content.reactions.find((r) => r.id === 'smother')?.markName).toBe('Scorched');
-    expect(content.reactions.find((r) => r.id === 'flare')?.markName).toBe('Muddied');
+    expect(content.reactions.find((r) => r.id === 'flare')?.markName).toBe('Mired');
     // Every reaction uses the same multipliers; their values are balance tuning (the simulator).
     const [first] = content.reactions;
     for (const r of content.reactions) {
@@ -1403,7 +1403,7 @@ describe('Mire', () => {
     );
   };
 
-  it('is the fifth element, with the chart pairs, the mark Muddied and the reactions Smother and Flare', () => {
+  it('is the fifth element, with the chart pairs, the mark Mired and the reactions Smother and Flare', () => {
     expect(content.elements.map((e) => e.id)).toEqual(['tide', 'ember', 'grove', 'spark', 'mire']);
     expect(content.elements.find((e) => e.id === 'mire')?.name).toBe('Mire');
     const smother = content.reactions.find((r) => r.id === 'smother');
@@ -1414,8 +1414,8 @@ describe('Mire', () => {
       triggerElement: 'mire',
     });
     expect(flare).toMatchObject({
-      markId: 'muddied',
-      markName: 'Muddied',
+      markId: 'mired',
+      markName: 'Mired',
       markElement: 'mire',
       triggerElement: 'ember',
     });

@@ -98,10 +98,10 @@ Status: design, not shipped (`(design: speed-and-dodge.md section 5)`). Everythi
 
 | Element | Mark it leaves | Cashed in by           | Reaction               | What it means in-world `(compendium detail, not shipped)`                                                                                                                               |
 | ------- | -------------- | ---------------------- | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Mire    | Muddied        | Ember                  | Flare                  | The swamp gas in the mud catches a spark and goes up in one great breath. It also burns the Bogged Down mud off the boss: keeping the mud keeps the boss slow, and burning it pays out. |
+| Mire    | Mired          | Ember                  | Flare                  | The swamp gas in the mud catches a spark and goes up in one great breath. It also burns the Bogged Down mud off the boss: keeping the mud keeps the boss slow, and burning it pays out. |
 | Ember   | Scorched       | Tide, and now Mire too | Steam, and now Smother | Water on a hot rock is Steam. Wet earth on a fire is Smother: no steam, just a soft sound and the fire is gone, and the mud sticks to whatever it covered.                              |
 
-**The derived fact still holds** `(design)`: every reaction pairs an element with the mark of the element it beats. Mire beats Ember, so Mire cashes Scorched (Smother). Ember beats Mire, so Ember cashes Muddied (Flare). Ember and Mire are the first pair that cash each other's marks.
+**The derived fact still holds** `(design)`: every reaction pairs an element with the mark of the element it beats. Mire beats Ember, so Mire cashes Scorched (Smother). Ember beats Mire, so Ember cashes Mired (Flare). Ember and Mire are the first pair that cash each other's marks.
 
 **Bogged Down** `(design)` is the first status effect a boss can put on your creatures and your creatures can put on a boss: mud that holds on to the feet. It makes a fighter slower and weaker for a few turns. It is not a wound; the fen only holds on. `(compendium detail, not shipped)`
 

@@ -108,6 +108,16 @@ export function glossaryEntry(id: string): GlossaryEntry | undefined {
 const kebab = (id: string): string => id.replaceAll('_', '-');
 
 /**
+ * Status ids that were renamed. A fight stored before the rename (a replay, a dungeon run) still names the old id, so display code
+ * reads an id through `currentStatusId`. The Mire debuff `mired` became `bogged-down` on 2026-11-13.
+ */
+const LEGACY_STATUS_IDS: Readonly<Record<string, string>> = { mired: 'bogged-down' };
+
+/** The current id of a status effect id read from a stored fight. */
+export const currentStatusId = (id: string): string =>
+  Object.hasOwn(LEGACY_STATUS_IDS, id) ? (LEGACY_STATUS_IDS[id] ?? id) : id;
+
+/**
  * The glossary id of each kind of content. Elements, roles and so on use the content's own ids, so
  * a new element (or reaction, role, gimmick op, zone, turn order, readiness band) needs one entry
  * with the matching id, which `glossaryGaps` checks.
@@ -126,8 +136,8 @@ export const GLOSSARY_IDS = {
   readiness: (band: string): string => `readiness-${kebab(band)}`,
   /** The kind of effect an ability has, such as `shield_wall`. */
   abilityEffect: (op: string): string => `ability-${kebab(op)}`,
-  /** A status effect such as `bogged-down`. */
-  status: (id: string): string => `status-${id}`,
+  /** A status effect such as `bogged-down` (an id from before a rename is read as the current one). */
+  status: (id: string): string => `status-${currentStatusId(id)}`,
   /** A gear slot such as `scarf`. */
   gearSlot: (slot: string): string => `gear-slot-${slot}`,
   /** A gear line such as `tide-attunement`. */
@@ -302,7 +312,7 @@ export const V2_COUNTERPARTS: Readonly<Record<string, string>> = {
   'mark-charged': 'v2-mark-charged',
   'mark-overgrown': 'v2-mark-overgrown',
   'mark-scorched': 'v2-mark-scorched',
-  'mark-muddied': 'v2-mark-muddied',
+  'mark-mired': 'v2-mark-mired',
   'reaction-overload': 'v2-reaction-overload',
   'reaction-grounding': 'v2-reaction-grounding',
   'reaction-wildfire': 'v2-reaction-wildfire',

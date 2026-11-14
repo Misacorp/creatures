@@ -16,7 +16,7 @@ Tone rules followed: simple English, short sentences, warm, no violence words, "
 | `old-bogback`                         | Old Bogback                     | Kept. It rhymes on purpose with Mossback, the turtle that carries a garden: the bog's toad carries the whole fen.                                        |
 | `bog-toad`, `tar-leech`, `fen-lurker` | Bog Toad, Tar Leech, Fen Lurker | Descriptor and noun, like Puddle Imp and Bramble Hound. Fen Lurker is the room boss.                                                                     |
 | `mud`                                 | **Muddy**                       | Changed from "Mud": the other modifiers are adjectives (Flooded, Scorched, Stormy), so it reads as "Muddy". The id stays `mud`.                          |
-| `muddied`                             | Muddied                         | Past-tense state, like Soaked.                                                                                                                           |
+| `mired`                               | Mired                           | Past-tense state, like Soaked.                                                                                                                           |
 | `bogged-down`                         | Bogged Down                     | The status effect.                                                                                                                                       |
 | `smother`, `flare`                    | Smother, Flare                  | One word for the event.                                                                                                                                  |
 | `sunken-fen`                          | Sunken Fen                      | Plain and descriptive, like Ember Caves.                                                                                                                 |
@@ -498,7 +498,7 @@ New entries, in the shape of the file (`id`, `title`, `short`, `lines`, `visual`
     "lines": [
       "Hits Ember bosses for 50% more damage.",
       "Ember hits Mire bosses for 50% more. Tide hits them for 25% less.",
-      "Mire hits leave Muddied on the boss. Ember cashes it in.",
+      "Mire hits leave Mired on the boss. Ember cashes it in.",
       "Slow and sturdy: they hold the line and weigh the boss down."
     ],
     "visual": {
@@ -508,8 +508,8 @@ New entries, in the shape of the file (`id`, `title`, `short`, `lines`, `visual`
     "section": "creatures"
   },
   {
-    "id": "mark-muddied",
-    "title": "Muddied",
+    "id": "mark-mired",
+    "title": "Mired",
     "short": "Mire's mark. Ember cashes it in.",
     "lines": [
       "Left on the boss by a Mire hit.",
@@ -542,9 +542,9 @@ New entries, in the shape of the file (`id`, `title`, `short`, `lines`, `visual`
   {
     "id": "reaction-flare",
     "title": "Flare",
-    "short": "Ember on Muddied: deals much more damage, burns off Bogged Down.",
+    "short": "Ember on Mired: deals much more damage, burns off Bogged Down.",
     "lines": [
-      "An Ember hit on a Muddied boss sets it off.",
+      "An Ember hit on a Mired boss sets it off.",
       "It deals much more damage than a normal hit.",
       "It then burns away every Bogged Down stack on the boss, for extra damage on each.",
       "Keep the stacks to keep the boss slow, or burn them for one big hit."
@@ -786,7 +786,7 @@ All the art is in `apps/activity/src/sprites/data/`, in the same format as the e
 | ---------------------------------------------------------------------- | ------------------------------------------------------------- | ----------------------------------------------------- |
 | Element icon `mire` (8x8)                                              | `sprites/element-icons.ts`                                    | Yes                                                   |
 | Glyph `bogged-down` (status icon, 8x8) and glyph `mud` (room modifier) | `glyphs.ts`                                                   | Yes                                                   |
-| Muddied mark                                                           | The existing `mark` glyph, tinted with `markPalette('mire')`  | Yes (`ELEMENT_COLOURS.mire` in `art.ts`)              |
+| Mired mark                                                             | The existing `mark` glyph, tinted with `markPalette('mire')`  | Yes (`ELEMENT_COLOURS.mire` in `art.ts`)              |
 | `--mire` colour token                                                  | `styles/base/tokens.css`                                      | Yes                                                   |
 | Shiny palettes for the four species                                    | `art.ts` (`SHINY_PALETTES`)                                   | Yes (teal and violet: the sheen comes through)        |
 | Species `mudlump`, `bogwarden`, `squelch`, `croakmire` (16x16)         | `data/mire-species-sprites.ts`                                | **No**: add to `SPECIES_SPRITE_DATA` with the species |

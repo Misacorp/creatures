@@ -2117,7 +2117,7 @@
     "lines": [
       "Hits Ember bosses for 50% more damage.",
       "Ember hits Mire bosses for 50% more. Tide hits them for 25% less.",
-      "Mire hits leave Muddied on the boss. Ember cashes it in.",
+      "Mire hits leave Mired on the boss. Ember cashes it in.",
       "Slow and sturdy: they hold the line and weigh the boss down."
     ],
     "visual": {
@@ -2127,8 +2127,8 @@
     "section": "creatures"
   },
   {
-    "id": "mark-muddied",
-    "title": "Muddied",
+    "id": "mark-mired",
+    "title": "Mired",
     "short": "Mire's mark. Ember cashes it in.",
     "lines": [
       "Left on the boss by a Mire hit.",
@@ -2161,9 +2161,9 @@
   {
     "id": "reaction-flare",
     "title": "Flare",
-    "short": "Ember on Muddied: deals much more damage, burns off Bogged Down.",
+    "short": "Ember on Mired: deals much more damage, burns off Bogged Down.",
     "lines": [
-      "An Ember hit on a Muddied boss sets it off.",
+      "An Ember hit on a Mired boss sets it off.",
       "It deals much more damage than a normal hit.",
       "It then burns away every Bogged Down stack on the boss, for extra damage on each.",
       "Keep the stacks to keep the boss slow, or burn them for one big hit."

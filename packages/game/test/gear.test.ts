@@ -1030,7 +1030,7 @@ describe('folding worn items', () => {
     expect(fx.mods.vsElementBp).toEqual({ ember: 1_700 });
     // The Ember Ward (value 0 is tier I, 400) covers every element that deals 150% to Ember: Tide and Mire.
     expect(fx.mods.wardBp).toEqual({ spark: 1_700, tide: 400, mire: 400 });
-    // Ember sets off two reactions (Wildfire on Overgrown, Flare on Muddied): its reaction line boosts both.
+    // Ember sets off two reactions (Wildfire on Overgrown, Flare on Mired): its reaction line boosts both.
     expect(fx.mods.reactionBp).toEqual({ wildfire: 2_400, flare: 2_400 });
     expect(fx.mods.besideRoleBp).toEqual({ guard: 1_700 });
     expect(fx.mods.chargedBp).toBe(2_500);

@@ -156,7 +156,7 @@ describe('Smother', () => {
 });
 
 describe('Flare', () => {
-  // A Mire creature leaves Muddied; the Ember creature after it sets off Flare. The boss is Tide, so the
+  // A Mire creature leaves Mired; the Ember creature after it sets off Flare. The boss is Tide, so the
   // Ember hit is neutral... no: Ember into Tide is 75%, which only scales both fights the same.
   const row = () => [
     sturdy('mire', { element: 'mire', role: 'setter' }),

@@ -346,7 +346,7 @@ describe('the Mire icons', () => {
     }
   });
 
-  it('turns the mark glyph into the Muddied colour with the Mire element colour', () => {
+  it('turns the mark glyph into the Mired colour with the Mire element colour', () => {
     expect(markPalette('mire')).toEqual({ m: '#b8864a' });
   });
 });
