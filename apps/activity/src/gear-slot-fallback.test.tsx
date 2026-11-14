@@ -2,7 +2,7 @@ import { RULES } from '@creatures/game';
 import { afterEach, describe, expect, it } from 'vitest';
 import { GearList } from './GearList';
 import { fallbackSlotOpens, setValleySystemsOn } from './live-flags';
-import { byClass, createPage, visibleText, type FakeElement, type Page } from './test-dom';
+import { byClass, createPage, visibleText, type Page } from './test-dom';
 
 let page: Page | null = null;
 
@@ -14,7 +14,7 @@ afterEach(() => {
 
 function rowsText(p: Page): string {
   return byClass(p.root, 'find-row')
-    .map((r) => visibleText(r as FakeElement))
+    .map((r) => visibleText(r))
     .join(' ');
 }
 
