@@ -258,7 +258,7 @@ function shingleRoof(g: Grid, x: number, y: number, w: number, rows: number): vo
     // one light from the upper left, like the posts: the left half of the roof is the lit plane
     paint(g, rectPts(x + inset, y + r, w - 2 * inset, 1), (px) => {
       const tick = (px + r * 2) % 4 === 0;
-      return px < x + w / 2 ? (tick ? 's' : 'h') : tick ? 'S' : 's';
+      return px < x + w / 2 ? (tick ? 'S' : 's') : tick ? 's' : 'S';
     });
   }
 }
@@ -266,19 +266,12 @@ function shingleRoof(g: Grid, x: number, y: number, w: number, rows: number): vo
 const L2 = build(
   (g) => {
     glow(g, 32, 46, 27, 9);
-    // wood store at the back right: two posts, a shingle roof, a stack of logs
-    for (const px of [46, 58]) paint(g, rectPts(px, 28, 2, 11), 'P');
-    for (let r = 0; r < 3; r++) {
-      for (let i = 0; i < 4 - (r > 1 ? 1 : 0); i++) {
-        const lx = 48 + i * 3 + (r === 2 ? 1 : 0);
-        paint(g, rectPts(lx, 33 + r * 2, 3, 2), 'v', false);
-      }
-    }
-    shingleRoof(g, 44, 21, 17, 7);
     // a plank sign on a post, back left
     paint(g, rectPts(10, 28, 2, 10), 'P');
     paint(g, rectPts(3, 22, 14, 6), (_x, y) => (y === 27 ? 'P' : 'p'));
     for (const sx of [6, 9, 12]) put(g, sx, 24, 'k');
+    // a small shingled cap over the sign
+    shingleRoof(g, 2, 19, 16, 3);
     // fire ring
     paint(g, ellPts(32, 43, 12, 4.5), 'e', false);
     const rock = (x: number, y: number): void => paint(g, rectPts(x - 2, y - 1, 5, 3), 't');
@@ -296,7 +289,6 @@ const L2 = build(
     tierPalette(2, {
       p: 'plank',
       P: 'plankShade',
-      h: 'shingleLight',
       s: 'shingle',
       S: 'shingleShade',
     }),
@@ -317,35 +309,23 @@ function stonePit(g: Grid, fireTop: (g: Grid) => void): void {
 const L3 = build(
   (g) => {
     glow(g, 32, 46, 29, 11);
-    // firewood pile at the back right
-    for (let r = 0; r < 3; r++) {
-      for (let i = 0; i < 4 - r; i++) {
-        paint(g, rectPts(47 + i * 4 + r * 2, 34 + r * 3, 4, 3), (_x, y) =>
-          y === 36 + r * 3 ? 'w' : 'v',
-        );
-      }
-    }
-    // iron crane at the back left with a hanging cauldron
-    block(g, 9, 37, 8, 4, 'T', 'L', 'S');
-    paint(g, rectPts(12, 21, 2, 16), 'i');
-    paint(g, rectPts(12, 21, 14, 2), 'i');
-    for (let y = 23; y < 28; y++) put(g, 25, y, 'i');
-    paint(g, ellPts(25, 31, 4, 3.5), 'i');
-    for (let x = 22; x <= 28; x++) put(g, x, 28, 'S');
-    put(g, 22, 31, 'S');
-    put(g, 23, 33, 'S');
-    // a bail handle over the pot
-    for (const x of [22, 28]) put(g, x, 27, 'i');
-    for (let x = 23; x <= 27; x++) put(g, x, 26, 'i');
     stonePit(g, (gg) => {
       fireLogs(gg, 32, 36, 10);
       flame(gg, 32, 36, 16, 9);
-      // iron grate bar over the logs
+      // an iron grate over the logs: two bars on short legs
+      for (const x of [26, 37]) paint(gg, rectPts(x, 39, 1, 3), 'i', false);
       paint(gg, rectPts(26, 39, 12, 1), 'i', false);
     });
     arcBench(g, 32, 43, 25, 9, () => 'L');
-    // iron bands on the benches' ends
-    for (const bx of [4, 59]) paint(g, rectPts(bx, 44, 1, 4), 'i', false);
+    // black iron bands across each slab seat
+    for (const [bx, by] of [
+      [9, 46],
+      [32, 52],
+      [55, 46],
+    ] as const) {
+      paint(g, rectPts(bx - 2, by - 2, 1, 4), 'i', false);
+      paint(g, rectPts(bx + 2, by - 2, 1, 4), 'i', false);
+    }
   },
   [
     tierPalette(1, { v: 'log', w: 'logShade' }),
@@ -355,19 +335,16 @@ const L3 = build(
 );
 
 // ---- Level 4: Valley ----------------------------------------------------------------------------------------
-function lampPost(g: Grid, x: number): void {
-  paint(g, rectPts(x - 1, 22, 2, 22), 'k', false);
-  paint(g, rectPts(x - 3, 15, 6, 7), (px, py) =>
-    py === 15 || py === 21 || px === x - 3 || px === x + 2 ? 'b' : 'G',
-  );
-  paint(g, rectPts(x - 2, 13, 4, 2), 'b');
-  // a banner hung from the post, teal with a cream edge and a swallow tail
-  const x0 = x < 32 ? x + 2 : x - 7;
+function bannerPole(g: Grid, x: number): void {
+  paint(g, rectPts(x - 1, 28, 2, 16), 'k', false);
+  paint(g, rectPts(x - 2, 26, 4, 2), 'b');
+  // a banner hung from the pole, teal with a cream edge and a swallow tail
+  const x0 = x < 32 ? x + 1 : x - 6;
   for (let j = 0; j < 11; j++) {
     for (let i = 0; i < 5; i++) {
       if (j >= 9 && i === 2) continue;
       if (j === 10 && i !== 0 && i !== 4) continue;
-      put(g, x0 + i, 24 + j, i === 0 || i === 4 || j === 0 ? 'm' : 't');
+      put(g, x0 + i, 29 + j, i === 0 || i === 4 || j === 0 ? 'm' : 't');
     }
   }
 }
@@ -376,8 +353,8 @@ const L4 = build(
   (g) => {
     glow(g, 32, 46, 30, 11);
     paving(g, 32, 46, 27, 9, 25);
-    lampPost(g, 6);
-    lampPost(g, 58);
+    bannerPole(g, 6);
+    bannerPole(g, 58);
     stonePit(g, (gg) => {
       fireLogs(gg, 32, 36, 10, 'k');
       flame(gg, 32, 36, 20, 11);
@@ -397,7 +374,7 @@ const L4 = build(
     tierPalette(3, { T: 'stone', S: 'stoneShade', L: 'stoneLight' }),
     tierPalette(4, { t: 'teal', m: 'cream', b: 'brass' }),
   ],
-  { night: { G: '#ffd966' }, day: { G: '#8fa8b8' } },
+  none,
 );
 
 // ---- Level 5: Crystal ---------------------------------------------------------------------------------------
@@ -415,10 +392,20 @@ function shard(g: Grid, x: number, by: number, h: number, w: number, lean: numbe
   });
 }
 
-function crystalPost(g: Grid, x: number): void {
-  paint(g, rectPts(x - 3, 38, 7, 6), (_x, py) => (py === 38 ? 'L' : py === 43 ? 'S' : 'T'));
-  paint(g, rectPts(x - 3, 36, 7, 1), 'g');
-  shard(g, x, 35, 10, 5, 0);
+/** A low curved wall of sandstone blocks behind the hearth, gold coping on top, a crystal at each shoulder. */
+function backWall(g: Grid): void {
+  const pts: Pt[] = [];
+  for (let deg = 188; deg <= 352; deg += 8) {
+    const a = (deg * Math.PI) / 180;
+    pts.push([Math.round(32 + 27 * Math.cos(a)), Math.round(41 + 11 * Math.sin(a))]);
+  }
+  pts.sort((p, q) => p[1] - q[1]);
+  for (const [x, y] of pts) {
+    paint(g, rectPts(x - 3, y - 2, 7, 6), (_px, py) =>
+      py === y - 2 ? 'g' : py === y + 3 ? 'S' : py === y + 1 ? 'L' : 'T',
+    );
+  }
+  for (const x of [17, 47]) shard(g, x, 28, 5, 3, 0);
 }
 
 const L5 = build(
@@ -434,14 +421,18 @@ const L5 = build(
       put(g, x, y, 'C');
       put(g, x + 1, y, 'l');
     }
-    crystalPost(g, 5);
-    crystalPost(g, 59);
-    // the brazier: stone plinth, gold band, a bowl crowned with crystal
+    backWall(g);
+    // the brazier: stone plinth with gold bands, a bowl set with crystal shards and crowned with two more
     shard(g, 25, 36, 15, 4, -2);
     shard(g, 39, 36, 17, 4, 2);
     paint(g, ellPts(32, 44, 10, 3.5), (_x, py) => (py > 45 ? 'S' : 'T'));
-    paint(g, rectPts(26, 41, 13, 4), (_x, py) => (py === 41 ? 'L' : 'T'));
-    paint(g, rectPts(26, 43, 13, 1), 'g', false);
+    paint(g, rectPts(26, 41, 13, 5), (_x, py) => (py === 41 ? 'L' : 'T'));
+    paint(g, rectPts(26, 42, 13, 1), 'g', false);
+    paint(g, rectPts(26, 45, 13, 1), 'g', false);
+    for (const x of [28, 32, 36]) {
+      put(g, x, 43, 'C');
+      put(g, x, 44, 'D');
+    }
     paint(g, ellPts(32, 38, 11, 4), 'T');
     paint(g, ellPts(32, 38, 9, 3), 'S', false);
     for (let x = 22; x <= 42; x++) {
@@ -457,9 +448,12 @@ const L5 = build(
       [32, 52],
       [55, 46],
     ] as const) {
-      put(g, x - 1, y, 'C');
-      put(g, x, y, 'l');
-      put(g, x + 1, y, 'C');
+      for (const dx of [-2, 0, 2]) {
+        put(g, x + dx, y, 'C');
+        put(g, x + dx, y + 1, 'D');
+      }
+      put(g, x - 1, y, 'l');
+      put(g, x + 1, y, 'l');
     }
   },
   [
@@ -478,16 +472,19 @@ const LEVELS = [
   { l: L1, note: 'A small campfire in a loose ring of fieldstones, a log to sit on, two sticks.' },
   {
     l: L2,
-    note: 'A fire ring with sawn plank benches, a plank sign and a shingle-roofed wood store.',
+    note: 'A fire ring with sawn plank benches and a plank sign under a small shingled cap (no store).',
   },
-  { l: L3, note: 'A dressed-stone pit, curved stone bench, black iron grate and cauldron crane.' },
+  {
+    l: L3,
+    note: 'A dressed-stone pit, curved stone slab seats with iron bands, a black iron grate (no crane, no woodpile).',
+  },
   {
     l: L4,
-    note: 'The stone pit on a paved floor, teal and cream cushions, brass lamps with banners.',
+    note: 'The stone pit on a paved floor, teal and cream cushions, banners on short poles (no lamps).',
   },
   {
     l: L5,
-    note: 'A crystal-crowned stone brazier with gold trim, gold-edged benches, crystal posts.',
+    note: 'A crystal-set gold-banded brazier, gold-edged crystal-inlaid benches, a curved stone wall behind (no posts).',
   },
 ] as const;
 
@@ -500,10 +497,10 @@ export const VALLEY_LEVELS_BONFIRE_CONCEPTS: ConceptSet = {
   notes: [
     'All five levels are 64x56 with the hearth at the same spot (fire centred on x 32) and the art on one base row; smaller levels leave the top and sides empty. Night is the main palette with the firelight in stepped rings on the ground; alts.day keeps the fire lit.',
     'Level 1 Humble: a small fire in a loose ring of fieldstones on packed earth, one log to sit on (rope lashing, pale cut ends) and two sticks. Seat: (47, 52).',
-    'Level 2 Settled: a neater fire ring, two sawn plank benches and a front bench, a plank sign, and a wood store with the red-brown shingle roof. Seats: (13, 48), (51, 48), (32, 54).',
-    'Level 3 Stone: a pit of dressed grey stone, an arc of five separate dressed-stone slab seats, black iron: a grate over the logs, a crane with a hanging cauldron, bands on the bench ends, and a firewood pile. Seats: (9, 49), (32, 55), (55, 49).',
-    'Level 4 Valley: the stone pit on a paved floor lit by the fire, teal-and-cream cushions on the three seats, brass lamps on posts with teal banners (lamp glass lit at night, plain by day). Seats as level 3.',
-    'Level 5 Crystal: a stone brazier with a gold band and gold rim, crowned with four crystal shards (the crystal glows by day too), crystal posts with gold caps, gold-edged benches with crystal inlay, crystal inlay in the paving. Seats as level 3. The 16-colour limit leaves no room for the level 4 pennants here; the crystal posts replace the lamps.',
+    'Level 2 Settled: a neater fire ring, two sawn plank benches and a front bench, and a plank sign with a small red-brown shingled cap. Seats: (13, 48), (51, 48), (32, 54). Misa 2026-11-11 (Redo): "The store is unnecessary." The wood store is gone; the shingles live on the sign cap.',
+    'Level 3 Stone: a pit of dressed grey stone, an arc of five separate dressed-stone slab seats with black iron bands across them, and a black iron grate on short legs over the logs. Seats: (9, 49), (32, 55), (55, 49). Misa 2026-11-11 (Redo): "Quite crowded. Remove whatever the thing in the top right is (brown funnel looking)." The firewood pile, and the crane and cauldron, are gone.',
+    'Level 4 Valley: the stone pit on a paved floor lit by the fire, teal-and-cream cushions on the three seats, and a teal-and-cream banner on a short pole at each side with a brass cap. Seats as level 3. Misa 2026-11-11 (Redo): "This is really nice but let\'s drop the lamps." The brass lamps are gone; the banners stand on their own poles.',
+    'Level 5 Crystal: a stone brazier with two gold bands and crystal shards set into it and crowning it (the crystal glows by day too), gold-edged stone benches with crystal inlays, crystal inlay in the paving, and a curved low sandstone wall behind the fire with gold coping and a crystal at each shoulder. Seats as level 3. Misa 2026-11-11 (Redo): "Drop the posts and move the gold and crystal motif more strongly into the brazier and benches. Add a curved supporting wall behind the fire." The crystal posts are gone.',
   ],
   ...(VALLEY_GLOW_CONCEPTS.backdrop === undefined
     ? {}

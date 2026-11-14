@@ -239,21 +239,21 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 - **Status:** draft
 - **Requested:** 2026-11-09 (Misa): "The campfire could also get better, not just more decorative. Think from a humble campfire to a fire pit with cool stone benches and the sort. Each building can absolutely change building material as it upgrades in levels, and I'm thinking we might even want to tweak the earlier levels to be less elaborate... If you change materials, there needs to be a common motif between buildings of the same level... Think of how Clash of Clans brings a new look with each new town hall level."
 - **Source:** `apps/activity/src/sprites/concepts/valley-levels-bonfire.ts` (draw it with `pnpm art valley-levels-bonfire`)
-- **Sheet of:** `e02943151de8`
+- **Sheet of:** `24cbf08dab9c`
 - All five levels are 64x56 with the hearth at the same spot (fire centred on x 32) and the art on one base row; smaller levels leave the top and sides empty. Night is the main palette with the firelight in stepped rings on the ground; alts.day keeps the fire lit.
 - Level 1 Humble: a small fire in a loose ring of fieldstones on packed earth, one log to sit on (rope lashing, pale cut ends) and two sticks. Seat: (47, 52).
-- Level 2 Settled: a neater fire ring, two sawn plank benches and a front bench, a plank sign, and a wood store with the red-brown shingle roof. Seats: (13, 48), (51, 48), (32, 54).
-- Level 3 Stone: a pit of dressed grey stone, an arc of five separate dressed-stone slab seats, black iron: a grate over the logs, a crane with a hanging cauldron, bands on the bench ends, and a firewood pile. Seats: (9, 49), (32, 55), (55, 49).
-- Level 4 Valley: the stone pit on a paved floor lit by the fire, teal-and-cream cushions on the three seats, brass lamps on posts with teal banners (lamp glass lit at night, plain by day). Seats as level 3.
-- Level 5 Crystal: a stone brazier with a gold band and gold rim, crowned with four crystal shards (the crystal glows by day too), crystal posts with gold caps, gold-edged benches with crystal inlay, crystal inlay in the paving. Seats as level 3. The 16-colour limit leaves no room for the level 4 pennants here; the crystal posts replace the lamps.
+- Level 2 Settled: a neater fire ring, two sawn plank benches and a front bench, and a plank sign with a small red-brown shingled cap. Seats: (13, 48), (51, 48), (32, 54). Misa 2026-11-11 (Redo): "The store is unnecessary." The wood store is gone; the shingles live on the sign cap.
+- Level 3 Stone: a pit of dressed grey stone, an arc of five separate dressed-stone slab seats with black iron bands across them, and a black iron grate on short legs over the logs. Seats: (9, 49), (32, 55), (55, 49). Misa 2026-11-11 (Redo): "Quite crowded. Remove whatever the thing in the top right is (brown funnel looking)." The firewood pile, and the crane and cauldron, are gone.
+- Level 4 Valley: the stone pit on a paved floor lit by the fire, teal-and-cream cushions on the three seats, and a teal-and-cream banner on a short pole at each side with a brass cap. Seats as level 3. Misa 2026-11-11 (Redo): "This is really nice but let's drop the lamps." The brass lamps are gone; the banners stand on their own poles.
+- Level 5 Crystal: a stone brazier with two gold bands and crystal shards set into it and crowning it (the crystal glows by day too), gold-edged stone benches with crystal inlays, crystal inlay in the paving, and a curved low sandstone wall behind the fire with gold coping and a crystal at each shoulder. Seats as level 3. Misa 2026-11-11 (Redo): "Drop the posts and move the gold and crystal motif more strongly into the brazier and benches. Add a curved supporting wall behind the fire." The crystal posts are gone.
 
 | Code | Kind | Role | Status | Idea |
 | --- | --- | --- | --- | --- |
 | `bonfire-1` | free |  | draft | A small campfire in a loose ring of fieldstones, a log to sit on, two sticks. |
-| `bonfire-2` | free |  | draft | A fire ring with sawn plank benches, a plank sign and a shingle-roofed wood store. |
-| `bonfire-3` | free |  | draft | A dressed-stone pit, curved stone bench, black iron grate and cauldron crane. |
-| `bonfire-4` | free |  | draft | The stone pit on a paved floor, teal and cream cushions, brass lamps with banners. |
-| `bonfire-5` | free |  | draft | A crystal-crowned stone brazier with gold trim, gold-edged benches, crystal posts. |
+| `bonfire-2` | free |  | draft | A fire ring with sawn plank benches and a plank sign under a small shingled cap (no store). |
+| `bonfire-3` | free |  | draft | A dressed-stone pit, curved stone slab seats with iron bands, a black iron grate (no crane, no woodpile). |
+| `bonfire-4` | free |  | draft | The stone pit on a paved floor, teal and cream cushions, banners on short poles (no lamps). |
+| `bonfire-5` | free |  | draft | A crystal-set gold-banded brazier, gold-edged crystal-inlaid benches, a curved stone wall behind (no posts). |
 
 <a id="valley-levels-forge"></a>
 
