@@ -40,6 +40,9 @@ import {
   ForceOfferBodySchema,
   GamesBotsBodySchema,
   GamesRunNowBodySchema,
+  HousingBuildBodySchema,
+  HousingGrantBodySchema,
+  HousingGuestsBodySchema,
   GrantBlueprintsBodySchema,
   GrantCreatureBodySchema,
   GrantCurrencyBodySchema,
@@ -90,6 +93,7 @@ import type { ValleyTrials } from './valley-trials';
 import type { VisitorWeeks } from './valley-visitor';
 import { setWeather } from './dev-tools-weather';
 import { gamesBots, gamesReset, gamesRunNow } from './dev-tools-games';
+import { housingBuild, housingFresh, housingGrant, housingGuests } from './dev-tools-housing';
 import {
   fillBag,
   finishJobs,
@@ -131,6 +135,7 @@ import {
 import { DiscordError } from './discord';
 import type { LedgerStorage } from './ledger';
 import type { Games } from './games';
+import type { Housing } from './housing';
 import type { Raid } from './raid';
 import type { Weather } from './weather';
 import { weekIdFor } from './raid-schedule';
@@ -159,6 +164,8 @@ export interface DevToolsDeps {
   games: Games;
   /** The valley's weather, for the `set-weather` tool. */
   weather: Weather;
+  /** Player housing, for the `housing-*` tools (null with the `HOUSING` flag off). */
+  housing: Housing | null;
   /** The `COMBAT_V2` flag: the `combat-v2-convert` tool needs it, and new creatures roll their v2 talent. */
   combatV2: boolean;
   /** The valley's base systems are on (`VALLEY_SYSTEMS`): the `valley-fresh` tool needs it. */
@@ -252,6 +259,11 @@ const TOOLS: Record<DevActionTool, Tool> = {
   'games-bots': tool(GamesBotsBodySchema, gamesBots, { movesClock: true }),
   'games-run-now': tool(GamesRunNowBodySchema, gamesRunNow, { movesClock: true }),
   'games-reset': tool(NoBodySchema, gamesReset, { movesClock: true }),
+  // Player housing (staging with HOUSING on only: 404 otherwise): holdings for a try-out, parts built without paying, guest houses, a fresh start.
+  'housing-grant': tool(HousingGrantBodySchema, housingGrant),
+  'housing-build': tool(HousingBuildBodySchema, housingBuild),
+  'housing-guests': tool(HousingGuestsBodySchema, housingGuests),
+  'housing-fresh': tool(NoBodySchema, housingFresh),
   'analytics-rollup': {
     schema: NoBodySchema,
     runAsync: async (tools) => {
@@ -318,6 +330,7 @@ export class DevTools {
       raid: d.raid,
       games: d.games,
       weather: d.weather,
+      housing: d.housing,
       combatV2: d.combatV2,
       valleySystems: d.valleySystems,
       visitor: d.visitor,

@@ -24,6 +24,7 @@ import { gamesBadgesMigration } from './games-badges-migration';
 import { gamesMigrationV39 } from './games-migration';
 import { gearMigration } from './gear-migration';
 import { gearV2Migration } from './gear-v2-migration';
+import { housingMigration } from './housing-migration';
 import { loungeMigration } from './lounge';
 import { loungeCompanyMigration } from './lounge-company';
 import { maintenanceMigration } from './maintenance';
@@ -58,8 +59,11 @@ import { weatherMigration } from './weather-migration';
 import { workshopConvertMigration } from './workshop-convert-migration';
 import { workshopV2Migration } from './workshop-v2-migration';
 
+/** One migration, or `null` for a reserved version: a number held for another branch, never recorded as applied. */
+export type Migration = ((sql: SqlStorage) => void) | null;
+
 /** Versioned schema migrations; index 0 is version 1. Never edit a released migration. */
-export const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
+export const MIGRATIONS: readonly Migration[] = [
   (sql) => {
     sql.exec(`CREATE TABLE players (
       user_id TEXT PRIMARY KEY,
@@ -378,7 +382,39 @@ export const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
   valleyTrialsMigration,
   // Version 67: the index behind the workshop's background smiths (see valley-forge-crowd-migration.ts).
   valleyForgeCrowdMigration,
+  // Version 68: player housing: houses, parts, rooms, items, trophies, guestbook, mail and drops (see housing-migration.ts).
+  housingMigration,
 ];
 
-/** The schema version of a fresh database. */
+/** The schema version of a fresh database: the highest version in the list. */
 export const SCHEMA_VERSION = MIGRATIONS.length;
+
+/** How many rows a fully migrated database holds in schema_version (the reserved versions have none). */
+export const MIGRATION_ROWS = MIGRATIONS.filter((m) => m !== null).length;
+
+/**
+ * Applies every migration of `list` whose version is not yet recorded, in version order, each with its record in one
+ * transaction, so each real migration runs exactly once. Reserved (`null`) versions are skipped without a record. The
+ * one read is the table scan the old "highest version" lookup also made, so object start costs the same.
+ */
+export function applyMigrations(
+  storage: { transactionSync<T>(closure: () => T): T },
+  sql: SqlStorage,
+  list: readonly Migration[] = MIGRATIONS,
+): void {
+  sql.exec('CREATE TABLE IF NOT EXISTS schema_version (version INTEGER NOT NULL)');
+  const applied = new Set(
+    sql
+      .exec<{ version: number }>('SELECT version FROM schema_version')
+      .toArray()
+      .map((r) => r.version),
+  );
+  list.forEach((migration, index) => {
+    const version = index + 1;
+    if (migration === null || applied.has(version)) return;
+    storage.transactionSync(() => {
+      migration(sql);
+      sql.exec('INSERT INTO schema_version (version) VALUES (?)', version);
+    });
+  });
+}

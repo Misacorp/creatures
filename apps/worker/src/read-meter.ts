@@ -41,6 +41,8 @@ export const READ_AREAS: ReadonlySet<string> = new Set([
   'lounger',
   'notifications',
   'weather',
+  'house',
+  'houses',
   'dev',
   // Not a path: the login the Worker makes over RPC (`createSession`).
   'session',

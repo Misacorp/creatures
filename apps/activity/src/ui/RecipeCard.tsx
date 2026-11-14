@@ -6,7 +6,7 @@ export type RecipeInput = CountItem & { amount: number; have: number };
 export interface RecipeCardProps {
   /** What goes in, each with the amount needed and the amount held ("2 / 3"; short ones are marked). */
   inputs: readonly RecipeInput[];
-  /** What comes out, as plain count badges. */
+  /** What comes out, as plain count badges. None: a payment into something (no arrow, no output). */
   outputs: readonly CountItem[];
   /** How long it takes, as a badge (`nominalDurationCountItem`); left out when there is no time. */
   duration?: CountItem | undefined;
@@ -57,17 +57,21 @@ export function RecipeCard({
             );
           })}
         </ul>
-        <span class="recipe-arrow" aria-hidden="true">
-          →
-        </span>
-        <span class="visually-hidden">makes</span>
-        <ul class="recipe-side gives" aria-label="Makes">
-          {outputs.map(({ key, ...badge }) => (
-            <li key={key}>
-              <CountBadge {...badge} />
-            </li>
-          ))}
-        </ul>
+        {outputs.length > 0 && (
+          <>
+            <span class="recipe-arrow" aria-hidden="true">
+              →
+            </span>
+            <span class="visually-hidden">makes</span>
+            <ul class="recipe-side gives" aria-label="Makes">
+              {outputs.map(({ key, ...badge }) => (
+                <li key={key}>
+                  <CountBadge {...badge} />
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
       </div>
       {duration !== undefined && (
         <p class="recipe-time muted">

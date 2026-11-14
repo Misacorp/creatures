@@ -18,14 +18,17 @@ export function HowToPlay({
   nonce,
   onClose,
   v2 = false,
+  housing = false,
 }: {
   section: GlossarySection | null;
   nonce: number;
   onClose: () => void;
   /** The server plays combat v2 (`/api/config`'s `combatV2`): the combat v2 sections instead of the shipped combat ones. */
   v2?: boolean;
+  /** The server offers housing (`/api/config`'s `housing`): the Your House section is shown. */
+  housing?: boolean;
 }) {
-  const sections = pageSections(v2);
+  const sections = pageSections(v2, housing);
   const target = sectionOnPage(section, v2, sections);
   const closeRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);

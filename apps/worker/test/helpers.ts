@@ -3,6 +3,7 @@ import { expect } from 'vitest';
 import { env } from 'cloudflare:workers';
 import { runInDurableObject } from 'cloudflare:test';
 import { GAMES_TABLES } from '../src/games-migration';
+import { HOUSING_TABLES, housingMigration } from '../src/housing-migration';
 import { MIGRATIONS } from '../src/migrations';
 import { valleyForgeCrowdMigration } from '../src/valley-forge-crowd-migration';
 import { valleyTrialsMigration } from '../src/valley-trials-migration';
@@ -318,6 +319,17 @@ export function undoGamesIndexMigration(sql: SqlStorage): void {
   sql.exec('DELETE FROM schema_version WHERE version = 42');
 }
 
+/**
+ * Puts a database back to before the housing migration (the last one): its tables go.
+ */
+export function undoHousingMigration(sql: SqlStorage): void {
+  for (const table of HOUSING_TABLES) sql.exec(`DROP TABLE IF EXISTS ${table}`);
+  sql.exec(
+    'DELETE FROM schema_version WHERE version = ?',
+    MIGRATIONS.indexOf(housingMigration) + 1,
+  );
+}
+
 /** Puts a database back to before migration 65 (the School's teacher): its tables and the seat's home column go. */
 export function undoValleySchoolMigration(sql: SqlStorage): void {
   sql.exec('DROP TABLE IF EXISTS school_students');
@@ -331,6 +343,7 @@ export function undoValleySchoolMigration(sql: SqlStorage): void {
 
 /** Puts a database back to before the workshop background smiths' migration (`valley_seats_place`, the last one). */
 export function undoValleyForgeCrowdMigration(sql: SqlStorage): void {
+  undoHousingMigration(sql);
   sql.exec('DROP INDEX IF EXISTS valley_seats_place');
   sql.exec(
     'DELETE FROM schema_version WHERE version = ?',

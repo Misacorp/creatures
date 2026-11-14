@@ -1,4 +1,4 @@
-import { SCHEMA_VERSION } from '../src/migrations';
+import { MIGRATION_ROWS, SCHEMA_VERSION } from '../src/migrations';
 import {
   EXPEDITION_LENGTHS,
   GEAR_RARITIES,
@@ -629,7 +629,7 @@ describe('migration 16 (the analytics event log)', () => {
       });
       expect(sql.exec('SELECT user_id FROM players').toArray()).toEqual([{ user_id: USER_ID }]);
       core.migrate();
-      expect(sql.exec('SELECT * FROM schema_version').toArray()).toHaveLength(SCHEMA_VERSION);
+      expect(sql.exec('SELECT * FROM schema_version').toArray()).toHaveLength(MIGRATION_ROWS);
     });
   });
 

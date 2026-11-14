@@ -5,6 +5,8 @@ export interface SidePanelProps {
   /** The heading (an h3) and its id; absent: a bare panel, its content brings its own heading. */
   title?: ComponentChildren;
   titleId?: string | undefined;
+  /** The heading is only spoken, not shown (the body starts with its own name): the X stays. */
+  titleHidden?: boolean | undefined;
   /** For a bare panel: the id of the heading inside its content. */
   labelledBy?: string | undefined;
   /** The X in the heading row; absent: no X (a panel that stays while its screen does). */
@@ -25,6 +27,7 @@ export interface SidePanelProps {
 export function SidePanel({
   title,
   titleId,
+  titleHidden = false,
   labelledBy,
   onClose,
   footer,
@@ -46,7 +49,10 @@ export function SidePanel({
   return (
     <aside class={classes} aria-labelledby={titleId} onKeyDown={onKeyDown}>
       <div class="side-panel-head">
-        <h3 id={titleId} class="side-panel-title">
+        <h3
+          id={titleId}
+          class={titleHidden ? 'side-panel-title visually-hidden' : 'side-panel-title'}
+        >
           {title}
         </h3>
         {onClose !== undefined && (

@@ -1,4 +1,4 @@
-import { SCHEMA_VERSION } from '../src/migrations';
+import { MIGRATION_ROWS } from '../src/migrations';
 import { RULES, createSeededRng } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import { dungeonPlayer } from './dungeon-helpers';
@@ -34,7 +34,7 @@ describe('migration 26', () => {
       ).toEqual([]);
       ctx.core.migrate();
       ctx.core.migrate();
-      expect(count(ctx.sql, 'schema_version')).toBe(SCHEMA_VERSION);
+      expect(count(ctx.sql, 'schema_version')).toBe(MIGRATION_ROWS);
       expect(count(ctx.sql, 'dungeon_drafts')).toBe(0);
       expect((await p.today()).draftTeam).toBeNull();
     });

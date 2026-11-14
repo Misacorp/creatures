@@ -102,6 +102,7 @@ import { Workshop, type ForgeMode } from './Workshop';
 import type { TeamConfigure } from './TeamCreaturePage';
 import { Alert } from './ui/Alert';
 import { WelcomeBack } from './valley/gazette/WelcomeBack';
+import { HouseHost } from './housing/HouseHost';
 import { ValleyFrame } from './valley/ValleyFrame';
 import { createVisitorActions, isAway } from './valley/visitor-actions';
 import { createSchoolActions, isSchoolRefusal, refreshSchool } from './valley/school-actions';
@@ -145,6 +146,7 @@ export function Game({
   loungeLive = false,
   valley = false,
   valleySystems = false,
+  housing = false,
 }: {
   initial: GameState;
   /** The signed-in player (their id and display name put their own creature in the living room). */
@@ -162,6 +164,8 @@ export function Game({
   valley?: boolean;
   /** The valley's base systems are on (`valleySystems` of `/api/config`; phase 5): the Bonfire opens and creatures rest. */
   valleySystems?: boolean;
+  /** The server offers the player's house (`housing` of `/api/config`): the House place is in the navigation. */
+  housing?: boolean;
   /** True on staging and local runs, where the server can start a practice finale. */
   showPractice: boolean;
   /** The daily Bait allowance the server paid when the Activity opened; null when there is none to tell. */
@@ -654,7 +658,7 @@ export function Game({
   const roomMode = useRoomMode();
   // Between the phone and the wide window: one bottom bar with every place (no sub-menus).
   const bar = useBar();
-  const places = navPlaces(alerts);
+  const places = navPlaces(alerts, { housing });
   /** Goes to a place the way the navigation does (the dock, the rail and the valley's places all come through here). */
   const select = (id: Place): void => {
     goTo(id);
@@ -892,6 +896,16 @@ export function Game({
                 bare: true,
               }
             : {})}
+        />
+      )}
+      {tab === 'house' && housing && (
+        <HouseHost
+          phase={phase}
+          creatures={game.creatures}
+          now={Date.now() + offset}
+          onSpent={() => {
+            refreshState();
+          }}
         />
       )}
       {tab === 'collection' && (
@@ -1164,6 +1178,7 @@ export function Game({
               error,
               ...(marketStart === undefined ? {} : { marketStart }),
             })}
+        housing={housing}
         castExtra={{
           dungeonTeam,
           dungeonPhase,
@@ -1285,7 +1300,7 @@ export function Game({
 function valleyTitle(view: ValleyView): string {
   if (view.kind === 'valley') return 'Valley';
   if (view.kind === 'place' && view.book !== null) {
-    return view.book === 'journal' ? 'Journal' : 'Stats';
+    return view.book === 'journal' ? 'Journal' : view.book === 'house' ? 'Your house' : 'Stats';
   }
   return placeOf(view.place).name;
 }
