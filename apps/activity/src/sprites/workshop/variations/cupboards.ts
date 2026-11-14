@@ -10,6 +10,7 @@ import type { Variation } from './types';
 const base = FENKEEPER.hand?.pieces?.['fenkeeper-cupboard'];
 if (base === undefined) throw new Error('fenkeeper-cupboard has no hand art');
 const ROWS = base.sprite.rows;
+const PALETTE = base.sprite.palette;
 const W = 30;
 const H = 36;
 
@@ -20,10 +21,8 @@ function piece(rows: readonly string[]): PieceArt {
   for (const r of rows)
     if (r.length !== W) throw new Error(`row of ${String(r.length)}, wanted ${String(W)}`);
   if (rows.length !== H) throw new Error(`${String(rows.length)} rows, wanted ${String(H)}`);
-  return { sprite: { rows, palette: base.sprite.palette } };
+  return { sprite: { rows, palette: PALETTE } };
 }
-
-const row = (i: number): string => ROWS[i] ?? '';
 
 /**
  * Stilts: a fen house stands out of the water. The rounded crown and the doors stay, the body is shorter by seven rows, and the

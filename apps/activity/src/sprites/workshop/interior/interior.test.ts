@@ -200,7 +200,7 @@ describe('the mixes and the house', () => {
     const base = waysHouse('arch', 'spiral', 'day');
     expect(base.h).toBe(houseMock().h);
     expect(base.w).toBe(houseMock().w);
-    const key = (r: typeof base): string => Buffer.from(r.px).toString('base64');
+    const key = (r: typeof base): string => r.px.join(',');
     const looks = new Set<string>();
     for (const d of WAYS_DOORS) looks.add(key(waysHouse(d, 'spiral', 'day')));
     for (const t of WAYS_STAIRS) looks.add(key(waysHouse('arch', t, 'day')));
