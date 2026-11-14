@@ -23,6 +23,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [direction.md](direction.md): Roadmap calls, Misa's standing direction, naming and tone, content policy, how agents and Misa work.
 
+- 2026-11-15 Art glows use the game's rarity colours
 - 2026-11-15 \[Misa\] The Forge interior keeps one look for now
 - 2026-11-09 \[Misa\] Valley building levels share one look per level
 - 2026-11-06 Overnight sessions: quiet until news, then one message with every open question \[Misa\]
