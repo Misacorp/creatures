@@ -23,15 +23,9 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [direction.md](direction.md): Roadmap calls, Misa's standing direction, naming and tone, content policy, how agents and Misa work.
 
-<<<<<<< HEAD
-
-- 2026-11-14 \[Misa\] One coordination session, one release board, one merge queue
-  \=======
 - 2026-11-15 \[Misa\] The Forge interior keeps one look for now
+- 2026-11-14 \[Misa\] One coordination session, one release board, one merge queue
 - 2026-11-09 \[Misa\] Valley building levels share one look per level
-
-> > > > > > > origin/main
-
 - 2026-11-06 Overnight sessions: quiet until news, then one message with every open question \[Misa\]
 - 2026-11-05 \[Misa\] Working rules: scalars best-guess and ask later, invent content for misses, fewer decisions for Misa
 - 2026-11-05 \[Misa\] CI runs the full check; agents push after quick local checks
@@ -567,10 +561,7 @@ Superseded: 1 entry (see the topic file).
 
 [valley.md](valley.md): The valley and peaceful systems overhaul planned in docs/design/valley/: job posts, the bonfire, the commons, the Forge loop, gear, trials, the School, the visitor, the economy lab, and Misa's question rounds.
 
-<<<<<<< HEAD
-
 - 2026-11-15 \[Misa\] Every daily place gets the picture layout before release, after the Forge and Expedition are tuned
-  \=======
 - 2026-11-11 The Forge opens on its outside and goes inside to a workshop of its own \[Misa\]
 - 2026-11-11 Scene trees stand on the grass, and the Bonfire's +N more stays above the pinned action
 - 2026-11-11 A flat place is built on the ground (stakes, rope, planks, tools), a tall one in poles \[Misa\]
@@ -593,9 +584,6 @@ Superseded: 1 entry (see the topic file).
 - 2026-11-06 The visitor's weekly blueprint is drawn from the craftable bases for now (scouts can find them too)
 - 2026-11-06 The visitor prices a piece on its stored item level, and rerolls with the shipped line roller
 - 2026-11-06 The visitor's arrival is made by whatever sees him first, and one alarm a week wakes the object for it
-
-> > > > > > > origin/main
-
 - 2026-11-06 Combat v2 and the valley systems together: a knocked-out raider stays paused; presets empty seats
 - 2026-11-06 Patchwork pieces built: the plainest piece of the shard's element, Rare at best
 - 2026-11-06 Patchwork pieces: blueprints that take any shard, with scrap \[Misa\] (amended)

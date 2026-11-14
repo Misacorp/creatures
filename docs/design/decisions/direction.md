@@ -4,15 +4,6 @@ Roadmap calls, Misa's standing direction, naming and tone, content policy, how a
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
-<<<<<<< HEAD
-## 2026-11-14: [Misa] One coordination session, one release board, one merge queue
-
-ID: `2026-11-14-one-coordination-session-one-release-board` · Status: current
-
-**Decision.** One session, "Game feature release coordination", coordinates the combat, valley, housing and art sessions. It writes no features. It keeps the release board for Misa (`https://claude.ai/artifact/MHj3WxFCUVv6jT71xDGsHW`: what needs him across all sessions, the merge queue, the road to release, one block per stream) and republishes it when something changes. It runs a merge queue: combat's playtest polish (#136), then one valley PR, then housing (#133); after each merge the next session merges `main` and resolves its conflicts before Misa sees its PR. Sessions report to the coordinator by cross-session message and open small PRs often. Housing merges switched off and stays off for the combat and valley release. The road to release is: empty the queue, the valley UI must-fix list (Misa's gripes with the Expedition and Forge screens), a staging playtest with both reworks on, the reset, the switches on.
-
-**Reasoning.** Misa had lost track of what four long sessions were doing and which PR to merge next. Most of both reworks was already on `main` behind switches, but there was no shared picture (`docs/progress.md` described 2026-11-06, each session kept its own list for him) and the three open branches no longer merged cleanly with each other (combat and valley 5 files, valley and housing 9 including the migrations, combat and housing 3). One board and a fixed merge order fix both.
-=======
 ## 2026-11-15: [Misa] The Forge interior keeps one look for now
 
 ID: `2026-11-15-the-forge-interior-keeps-one-look` · Status: current
@@ -21,6 +12,14 @@ ID: `2026-11-15-the-forge-interior-keeps-one-look` · Status: current
 
 **Reasoning.** Misa took the suggested pick on the release board (2026-11-14, relayed by the release coordination session): ship one interior first and grow it with the levels later.
 
+## 2026-11-14: [Misa] One coordination session, one release board, one merge queue
+
+ID: `2026-11-14-one-coordination-session-one-release-board` · Status: current
+
+**Decision.** One session, "Game feature release coordination", coordinates the combat, valley, housing and art sessions. It writes no features. It keeps the release board for Misa (`https://claude.ai/artifact/MHj3WxFCUVv6jT71xDGsHW`: what needs him across all sessions, the merge queue, the road to release, one block per stream) and republishes it when something changes. It runs a merge queue: combat's playtest polish (#136), then one valley PR, then housing (#133); after each merge the next session merges `main` and resolves its conflicts before Misa sees its PR. Sessions report to the coordinator by cross-session message and open small PRs often. Housing merges switched off and stays off for the combat and valley release. The road to release is: empty the queue, the valley UI must-fix list (Misa's gripes with the Expedition and Forge screens), a staging playtest with both reworks on, the reset, the switches on.
+
+**Reasoning.** Misa had lost track of what four long sessions were doing and which PR to merge next. Most of both reworks was already on `main` behind switches, but there was no shared picture (`docs/progress.md` described 2026-11-06, each session kept its own list for him) and the three open branches no longer merged cleanly with each other (combat and valley 5 files, valley and housing 9 including the migrations, combat and housing 3). One board and a fixed merge order fix both.
+
 ## 2026-11-09: [Misa] Valley building levels share one look per level
 
 ID: `2026-11-09-valley-building-levels-share-one-look` · Status: current · Supersedes: `2026-11-09-building-level-art-keeps-its-level`
@@ -28,7 +27,6 @@ ID: `2026-11-09-valley-building-levels-share-one-look` · Status: current · Sup
 **Decision.** Every valley building goes through the same five levels: Humble (raw logs, rope, packed earth), Settled (planks, red-brown shingles), Stone (cut stone, slate, black iron), Valley (teal-and-cream banners, brass lamps) and Crystal (glowing valley crystal, gold trim). Each level's materials come from one shared palette, `concepts/valley-tiers.ts`, so a level looks the same on every building, and level 1 is humbler than the old glow art. Each building keeps one canvas for all five levels (Bonfire 64x56, Forge 56x60, Signpost 64x56, Paddock 64x64, School 64x64), with the art on one base row. The rules are in `docs/design/art-levels.md`.
 
 **Reasoning.** Misa (2026-11-09): buildings should get "better, not just more decorative", may change material as they level, and need "a common motif between buildings of the same level", like "how Clash of Clans brings a new look with each new town hall level"; he agreed to the Paddock's taller canvas. One canvas per building means one map footprint and one scene placement for all its levels.
->>>>>>> origin/main
 
 ## 2026-11-06: Overnight sessions: quiet until news, then one message with every open question [Misa]
 
