@@ -38,11 +38,25 @@ const STORM_MOVES = [
   ['Plain attack', 'plain', 'chain'],
 ] as const;
 
+/** A stage-1 replay sample of the boss `look` names, from the first of the track's first slots it holds; else the Storm Sovereign's (slot 3). */
+function sampleFor(look: string): ReturnType<typeof replaySample> {
+  const sample = (slot: number): ReturnType<typeof replaySample> =>
+    replaySample({ slot, players: 4, stage: 1, seed: 'fold' });
+  if (look !== 'generic') {
+    for (let slot = 1; slot <= 5; slot++) {
+      const s = sample(slot);
+      if (s.boss.id === look) return s;
+    }
+  }
+  return sample(3);
+}
+
 function BossAnimPage({ p }: { p: Props }) {
   const shape = SHAPES.find((s) => s === str(p, 'shape')) ?? 'column';
   const look = str(p, 'look');
   const at = str(p, 'at');
-  const replay = useMemo(() => replaySample({ slot: 3, players: 4, stage: 1, seed: 'fold' }), []);
+  // The stage shows the boss whose look plays (the first track slot it holds); the generic art plays on the Storm Sovereign's stage.
+  const replay = useMemo(() => sampleFor(look), [look]);
   const model = useMemo(
     () =>
       stageModelOf(
