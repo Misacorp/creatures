@@ -1,6 +1,6 @@
 /**
  * One frame of a boss move's animation as a pure function of the time: `frameAt(...)` says what is on the stage at `t` milliseconds
- * (the cells outlined, the markers, the weapon where it is, the bursts). The playback draws it from a clock, the workbench from a
+ * (the cells lit, the weapon where it is, the bursts). The playback draws it from a clock, the workbench from a
  * slider or a step button, and a test reads it at a phase: nothing here keeps time or touches the page.
  *
  * Positions are pixels in the stage's strike layer; the geometry (where the boss's hand and each cell are) is measured by

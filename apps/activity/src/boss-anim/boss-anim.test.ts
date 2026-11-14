@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { FightEvent } from '@creatures/engine/v2';
-import { validateSprite } from '../sprites/sprite-data';
+import { spriteSize, validateSprite } from '../sprites/sprite-data';
 import * as assets from './assets';
 import { frameAt, shakeAt, type Geometry } from './frame';
 import { BOSS_LOOKS, resolveLook } from './looks';
@@ -209,9 +209,10 @@ describe('frames', () => {
     const lance = frameAt(plan, look, geom, BOSS_MOVE_MS, strikeEnd).find(
       (i) => i.kind === 'sprite' && i.key.startsWith('weapon'),
     );
-    expect(last).not.toBeNull();
-    expect(lance !== undefined && lance.kind === 'sprite' && last !== null).toBe(true);
-    if (lance?.kind === 'sprite' && last !== null) expect(lance.y).toBeGreaterThan(last.y + last.h);
+    if (last === null || lance?.kind !== 'sprite') throw new Error('no last cell or no lance');
+    // The lance's whole body (its centre minus half its height) is below the last row.
+    const half = (spriteSize(lance.asset.sprite).height * lance.asset.scale) / 2;
+    expect(lance.y - half).toBeGreaterThan(last.y + last.h);
   });
   it('shakes the board only for a heavy move, as it lands', () => {
     const impact = phaseShot(BOSS_MOVE_MS, 'impact') - 120;

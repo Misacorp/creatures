@@ -4,9 +4,9 @@
  * squeeze it like any other beat). Every number of a boss animation (the playback's, the workbench's) comes from here.
  *
  * - `windup`: the weapon appears in the boss's hand.
- * - `aim`: the down-pointing marker shows the cells the move will hit; the weapon waits.
+ * - `aim`: the cells the move will hit light up in the board's target highlight; the weapon waits.
  * - `throw`: the weapon leaves the screen upwards.
- * - `strike`: it comes through the marked cells.
+ * - `strike`: it comes through the lit cells (a lance all the way through its column and out past the last row).
  * - `impact`: the burst on each creature hit. The beat lands (HP, damage numbers, callouts) as this phase begins, so the playback holds
  *   the beat back for the first four phases (`leadMs`) and the board is never ahead of the picture.
  */
