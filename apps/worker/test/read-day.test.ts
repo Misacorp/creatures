@@ -742,14 +742,22 @@ describe('a v2 raid weekend day with the valley systems on', () => {
  * The rest of the day is the other tests' (housing reads nothing on `/api/state`, an alarm tick or the object's start).
  */
 // Measured 2,717 rows read and 149 written (0.05% of the free tier; was 3,665: craft 441 now 57, and no re-read of the house after the payment): house:own 1,088 (x2), house:place 671 (x4), visit 320, list 221, collect 110, stamp 109, craft 57, pay 50, gift 50, seen 41.
+// Measured again on 2026-11-14 (main with the valley and combat v2 merged): 3,438 read and 149 written with housing alone; 4,030 read and 402 written with
+// the valley systems and combat v2 on too (the valley's pass runs before the day's writes: collect 263, pay 210, gift 201, craft 169 rows). The same budget covers both.
 const HOUSING_DAY_BUDGET = 4_100;
-describe('a housing day', () => {
+describe.each([
+  { label: 'housing alone', flags: {} },
+  {
+    label: 'housing with the valley systems and combat v2',
+    flags: { combatV2: true, valleySystems: true },
+  },
+])('a housing day with $label', ({ flags }) => {
   it('reads few rows in a realistic day of an active house owner', async () => {
     const reads = new DayReads();
     await inGuild(
       async (env: GuildEnv) => {
-        const world = await seedWorld(env);
-        const core = housingCore(env, world, BUILD);
+        const world = await seedWorld(env, flags);
+        const core = housingCore(env, world, BUILD, flags);
         env.clock.t += 6 * MINUTE;
         await callAs(core, world.secrets, 1, '/api/house');
         env.clock.t += MINUTE;
@@ -804,6 +812,9 @@ describe('a housing day', () => {
         await step('house:own', '/api/house');
       },
       { fresh: true },
+    );
+    console.info(
+      `housing day (${Object.keys(flags).join('+') || 'housing alone'})\n${reads.describe()}`,
     );
     expect(
       reads.total,
