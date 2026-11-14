@@ -144,6 +144,8 @@ export const PaperLogSchema = v.strictObject({
     best: v.pipe(v.array(PaperItemSchema), v.maxLength(LOG_CAPS.items)),
     by,
   }),
+  /** The best rarity the Forge's sealed crate held when the player arrived (null: nothing waits), told once per arrival (V-FORGE-5). */
+  crate: v.optional(v.nullable(v.picklist(['rare', 'epic'])), null),
   /** Mastery steps reached (1 Skilled, 2 Expert, 3 Master), the highest first. */
   mastery: v.pipe(
     v.array(
@@ -214,6 +216,7 @@ export const emptyLog = (): PaperLog => ({
   pages: 0,
   packsFull: [],
   forge: { count: 0, byRarity: [0, 0, 0], best: [], by: null },
+  crate: null,
   mastery: [],
   xp: [],
   moment: null,
@@ -271,6 +274,7 @@ export function mergeLogs(base: PaperLog, more: PaperLog): PaperLog {
       best,
       by: more.forge.by ?? base.forge.by,
     },
+    crate: base.crate === 'epic' || more.crate === 'epic' ? 'epic' : (more.crate ?? base.crate),
     mastery: [...base.mastery, ...more.mastery]
       .sort((a, b) => b.step - a.step)
       .slice(0, LOG_CAPS.mastery),
@@ -302,6 +306,7 @@ export const HEADLINE_KINDS = [
   'found-blueprint',
   'found-pages',
   'forge-pieces',
+  'crate-waits',
   'duplicates',
   'resting-xp',
   'pack-full',
@@ -323,6 +328,7 @@ const GROUP_OF: Record<HeadlineKind, HighlightGroup> = {
   'found-blueprint': 'piece',
   'found-pages': 'piece',
   'forge-pieces': 'piece',
+  'crate-waits': 'piece',
   duplicates: 'creature',
   'resting-xp': 'creature',
   'pack-full': 'server',
@@ -494,6 +500,13 @@ export function headlinesOf(log: PaperLog): PaperHeadline[] {
       creatureIds: crew(log.forge.by),
       rarity: best,
       items: log.forge.best.slice(0, MAX_HEADLINE_FINDS),
+    });
+  }
+  if (log.crate !== null) {
+    // V-FORGE-5: rare and epic pieces wait sealed at the Forge; the paper only teases them (an epic outranks a rare).
+    out.push({
+      ...blank('crate-waits', rarityWeight(log.crate, HIGHLIGHT_WEIGHT.fitted), 1),
+      rarity: log.crate,
     });
   }
   if (log.duplicates > 0) {

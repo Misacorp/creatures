@@ -601,6 +601,8 @@ describe('query plan audit', () => {
       await callAs(world.core, world.secrets, 1, '/api/state');
       clock.t += 10 * MINUTE;
       await callAs(world.core, world.secrets, 1, '/api/state');
+      // The floors' rare piece came home sealed (V-FORGE-5): the crate is opened.
+      await call('/api/valley/forge/crate/open', { idempotencyKey: 'audit-crate-open-0001' });
       // A full bag holds the floors' pieces back.
       env.metered.sql.exec(
         'INSERT OR REPLACE INTO valley_bag (user_id, items) VALUES (?, 200)',
@@ -612,7 +614,14 @@ describe('query plan audit', () => {
     });
 
     expect(result.seen, 'statements recorded').toBeGreaterThan(40);
-    for (const table of ['forge_orders', 'forge_floor', 'valley_bag', 'valley_seats', 'parts'])
+    for (const table of [
+      'forge_orders',
+      'forge_floor',
+      'forge_crate',
+      'valley_bag',
+      'valley_seats',
+      'parts',
+    ])
       expect(
         result.statements.some((q) => q.includes(table)),
         table,

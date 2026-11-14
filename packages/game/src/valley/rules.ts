@@ -287,6 +287,11 @@ export const VALLEY_RULES = {
     tinkerScrapEveryHours: 12,
     // ASSUMPTION: the floor holds about three days of pieces (V-FORGE-5): ceil(72 / 16) per anvil.
     floorPiecesPerAnvil: 5,
+    // V-FORGE-5 (the sealed crate, Misa 2026-11-15, "I like C"): pieces of this rarity or better (1 rare, 2 epic) wait sealed at the Forge until
+    // the player opens the crate; commons come home on their own. A sealed piece does not count toward an anvil's floor. The crate holds at
+    // most `crateCap` pieces: past that the oldest come home on their own (timing only: no piece is lost).
+    crateMinRarity: 1,
+    crateCap: 30,
     bag: 200,
     // Step 3 (the server's reading of V-FORGE-1 and V-FORGE-9; the lab models neither a queue nor marks): an anvil's queue holds at most
     // this many orders (posts.md example), an order asks for at most this many pieces, and each piece of a blueprint adds a well-thumbed

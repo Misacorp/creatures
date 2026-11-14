@@ -213,6 +213,9 @@ export const ValleyKitBodySchema = v.variant('action', [
 
 export const ValleyAnvilBuyBodySchema = v.strictObject({ idempotencyKey: IdempotencyKeySchema });
 
+/** Opening the Forge's sealed crate (V-FORGE-5): a keyed action with no other input. */
+export const ValleyCrateOpenBodySchema = v.strictObject({ idempotencyKey: IdempotencyKeySchema });
+
 const ReachSchema = v.picklist(['none', 'rare', 'epic']);
 
 /**

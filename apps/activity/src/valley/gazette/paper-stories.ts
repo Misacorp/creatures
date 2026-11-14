@@ -98,6 +98,7 @@ const PLACE_OF: Record<PaperHeadline['kind'], PlaceId> = {
   'found-blueprint': 'signpost',
   'found-pages': 'signpost',
   'forge-pieces': 'forge',
+  'crate-waits': 'forge',
   duplicates: 'paddock',
   'resting-xp': 'bonfire',
   'pack-full': 'signpost',
@@ -219,6 +220,14 @@ function storyOf(h: PaperHeadline, paper: Paper, byId: ReadonlyMap<string, Creat
               ),
         blurb: h.count > items.length ? `${num(h.count)} pieces in all.` : '',
         finds: items,
+        scene: scene(members),
+      };
+    case 'crate-waits':
+      // V-FORGE-5: the paper only teases the sealed crate; the pieces are not named before it is opened.
+      return {
+        ...base,
+        headline: `SOMETHING ${h.rarity === 'epic' ? 'EPIC' : 'RARE'} WAITS AT THE FORGE`,
+        finds: [],
         scene: scene(members),
       };
     case 'duplicates':
