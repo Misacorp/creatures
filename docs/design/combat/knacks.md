@@ -277,14 +277,14 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 ### Sticky Mud
 
-- **Text:** Each hit it takes, even Blocked, puts {Mired} x1 on the boss.
+- **Text:** Each hit it takes, even Blocked, puts {Bogged Down} x1 on the boss.
 - **Family:** Debuff
 - **Forms:** mudlump, bogwarden
 - **Intent (for contributors, never shown to players):** Keeps Mire's debuff alive after finale abilities go.
 
 ### Squelch Song
 
-- **Text:** At round start the boss gains {Mired} x1.
+- **Text:** At round start the boss gains {Bogged Down} x1.
 - **Family:** Debuff
 - **Forms:** squelch, croakmire
 - **Intent (for contributors, never shown to players):** Keeps Mire's debuff alive after finale abilities go.
@@ -433,8 +433,8 @@ Generated from `packages/lab/src/talents.ts`. One shared library; each line link
 | Catch Breath | Once per fight (in a raid, once per weekend), when a hit drops it below half its max HP, it heals 30% of max HP. | setter, payoff, guard, support | Survives one big hit (Crusher, Payoff Hunter). Not the gear line Second Wind, which is a chance each round to heal. |
 | Unbothered | It cannot be {Silenced}, and has +3% Attack and +6% Max HP. | setter, payoff, guard, support | The silence answer on the creature itself, for row ends and front rows. Reworked (2026-10-28): the immunity alone did nothing on the gauntlet, where a creature can always stand in the middle (a Guard gained nothing), so it carries a little Attack and HP as well, less than Sharp Claws or Hardy. Shrunk (2026-10-28 panel 4, from +6% and +14%): it won a boss by its stats; it should win by its ward. |
 | Culling Strike | A hit that leaves the boss below 5% of its full HP defeats it. The HP removed counts as the killing blow, not as damage. | setter, payoff, guard, support | An enabler: effects are meant to stack on it later (killing-blow triggers, R21.5), so it is not intended to be used alone. A weak result for it alone is expected and is not a reason to buff it; judge it only with the effects that build on it (Misa, 2026-11-03). In the pools of hearthshell, lanternfin, mossback, stormray and squelch. |
-| Wicked | Each debuff it puts on the boss has an 80% chance to add 1 extra stack. | guard, support | Meant for every debuff it puts on the boss; today that is Mired, the only debuff, so no number moves. The shipped line is a chance of an extra stack, and luck is welcome. More stacks per application keeps the debuff up. |
-| Clinging | While it stands, {Mired} fades only every second round, and each stack counts for half as much again. | guard, support | Mire only: the v2 form of the shipped "lasts more turns"; one creature can hold a debuff for the team. Reworked (2026-10-28): slower fading alone gained under a point, so its stacks also count for half as much again (4.5% instead of 3%); it still fades, every second round (every third until 2026-11-01, when Mired began to fade every round), so one creature cannot hold the debuff for the whole fight (Misa). |
+| Wicked | Each debuff it puts on the boss has an 80% chance to add 1 extra stack. | guard, support | Meant for every debuff it puts on the boss; today that is Bogged Down, the only debuff, so no number moves. The shipped line is a chance of an extra stack, and luck is welcome. More stacks per application keeps the debuff up. |
+| Clinging | While it stands, {Bogged Down} fades only every second round, and each stack counts for half as much again. | guard, support | Mire only: the v2 form of the shipped "lasts more turns"; one creature can hold a debuff for the team. Reworked (2026-10-28): slower fading alone gained under a point, so its stacks also count for half as much again (4.5% instead of 3%); it still fades, every second round (every third until 2026-11-01, when Bogged Down began to fade every round), so one creature cannot hold the debuff for the whole fight (Misa). |
 | Bright Boost | Every second {Boost} it gives is doubled. | support | A Support with a visible rhythm instead of a crit chance. |
 | Kindred Boost | Its {Boost} +26% on creatures of its own element. | support | Mono-element rows in the raid, across players. |
 | Triage | Its heal on the creatures {Beside} it goes to the most hurt one, 100% bigger. | support | Aims the Support's own base heal on the creatures beside it, bigger; only healing Supports (Tide, Grove) have a heal to aim. Idle under a Support shape Knack (Sunbeam, Drizzle, Curl Up and the rest), which replaces that verb. |

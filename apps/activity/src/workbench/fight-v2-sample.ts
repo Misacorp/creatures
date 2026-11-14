@@ -62,7 +62,7 @@ const MIXED_BY_ROW: readonly (readonly string[])[] = [
 
 /**
  * The party of the second answers (2026-11-05): a Setter with Pin Down and a Payoff after it, a Setter and Detonators behind it, a
- * Backlash Payoff and Squelch Song Supports, for the boss that sheds its marks, caps a hit and shakes off its Mired
+ * Backlash Payoff and Squelch Song Supports, for the boss that sheds its marks, caps a hit and shakes off its Bogged Down
  * (`ANSWERS_CARDS`). The Knack of each creature is named by species and row.
  */
 const ANSWERS_BY_ROW: readonly (readonly string[])[] = [

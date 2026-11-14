@@ -1,16 +1,37 @@
-import { combatV2 } from '@creatures/game/combat-v2';
+import { combatV2, knownKnacks } from '@creatures/game/combat-v2';
 import { describe, expect, it } from 'vitest';
-import { DEV_TOOL_IDS, buildBody, initialValues, specId, type ToolSpec } from './forms';
+import {
+  DEV_TOOL_IDS,
+  TARGETED_TOOL_IDS,
+  buildBody,
+  initialValues,
+  isTargeted,
+  specId,
+  type ToolSpec,
+} from './forms';
 import {
   BASE_OPTIONS,
   BOON_OPTIONS,
+  KNACK_OPTIONS,
   LIMITS,
   OMEN_OPTIONS,
   RANK_OPTIONS,
   SEATS_OPTIONS,
   SPECIES_OPTIONS,
+  TALENT_OPTIONS,
+  knackOptionsFor,
+  lineOfSpecies,
+  talentOptionsFor,
 } from './options';
-import { ALL_SPECS, CLOCK_SPECS, GOODS_SPECS, SECTIONS, orderedSections } from './specs';
+import {
+  ALL_SPECS,
+  CLOCK_SPECS,
+  GOODS_SPECS,
+  SECTIONS,
+  firstSection,
+  navGroups,
+  sectionUsesTarget,
+} from './specs';
 
 const CREATURES = [
   { id: 'c-1', label: 'Cindle (Lv 3)' },
@@ -132,14 +153,20 @@ describe('goods', () => {
 
 describe('creatures', () => {
   it('grants a species, with the optional fields only when set', () => {
-    expect(body('grant-creature', 'Grant a creature')).toEqual({ species: firstSpecies });
+    expect(body('grant-creature', 'Give a creature')).toEqual({ species: firstSpecies, count: 1 });
     expect(
-      body('grant-creature', 'Grant a creature', { shiny: 'true', level: '12', fusion: '0' }),
-    ).toEqual({ species: firstSpecies, shiny: true, level: 12, fusion: 0 });
-    expect(body('grant-creature', 'Grant a creature', { shiny: 'false' })).toEqual({
+      body('grant-creature', 'Give a creature', {
+        shiny: 'true',
+        level: '12',
+        fusion: '0',
+        count: '2',
+      }),
+    ).toEqual({ species: firstSpecies, shiny: true, level: 12, fusion: 0, count: 2 });
+    expect(body('grant-creature', 'Give a creature', { shiny: 'false', count: '' })).toEqual({
       species: firstSpecies,
       shiny: false,
     });
+    expect(problem('grant-creature', 'Give a creature', { count: '3' })).toMatch(/How many/);
   });
 
   it('sets a creature by its id, and needs something to set', () => {
@@ -203,14 +230,84 @@ describe('the Workshop', () => {
   it('has no-body buttons and a gear grant', () => {
     expect(body('finish-jobs', 'Finish all jobs now')).toEqual({});
     expect(body('fill-bag', 'Fill the bag')).toEqual({});
-    expect(body('grant-gear', 'Grant a gear item', { rarity: 'epic' })).toEqual({
-      baseId: firstBase,
-      rarity: 'epic',
+  });
+});
+
+describe('Give', () => {
+  it('gives gear by base or at random, in numbers', () => {
+    // Everything but the count is optional: a blank base, slot and rarity are random.
+    expect(body('grant-gear', 'Give gear')).toEqual({ count: 1 });
+    expect(
+      body('grant-gear', 'Give gear', {
+        baseId: firstBase,
+        slot: 'hat',
+        rarity: 'epic',
+        itemLevel: '3',
+        count: '5',
+      }),
+    ).toEqual({ baseId: firstBase, slot: 'hat', rarity: 'epic', itemLevel: 3, count: 5 });
+    expect(problem('grant-gear', 'Give gear', { rarity: 'mythic' })).toMatch(/Rarity/);
+    expect(problem('grant-gear', 'Give gear', { count: '51' })).toMatch(/How many/);
+  });
+
+  it('gives Bait and Essence (at least one, never zero), and XP to one creature or all', () => {
+    expect(body('grant-currency', 'Give Bait or Essence', { bait: '50' })).toEqual({ bait: 50 });
+    expect(problem('grant-currency', 'Give Bait or Essence')).toMatch(/at least one/);
+    expect(problem('grant-currency', 'Give Bait or Essence', { bait: '0' })).toMatch(/Bait/);
+    expect(body('grant-xp', 'Give XP to a creature', { amount: '300' })).toEqual({
+      creatureId: 'c-1',
+      amount: 300,
     });
-    expect(body('grant-gear', 'Grant a gear item', { itemLevel: '3' })).toMatchObject({
-      itemLevel: 3,
+    expect(body('grant-xp', 'Give XP to all their creatures', { amount: '9' })).toEqual({
+      all: true,
+      amount: 9,
     });
-    expect(problem('grant-gear', 'Grant a gear item', { rarity: 'mythic' })).toMatch(/Rarity/);
+  });
+
+  it('teaches a talent into a slot or the book only, and saves a Knack or none', () => {
+    const talent = TALENT_OPTIONS[0]?.value ?? '';
+    expect(body('grant-talent', 'Teach a talent (combat v2)', { talentId: talent })).toEqual({
+      creatureId: 'c-1',
+      talentId: talent,
+    });
+    expect(
+      body('grant-talent', 'Teach a talent (combat v2)', { talentId: talent, slot: '2' }),
+    ).toEqual({ creatureId: 'c-1', talentId: talent, slot: 2 });
+    expect(body('set-knack', 'Save a Knack (combat v2)', { knack: 'none' })).toEqual({
+      creatureId: 'c-1',
+      knack: null,
+    });
+    const knack = KNACK_OPTIONS[1]?.value ?? '';
+    expect(body('set-knack', 'Save a Knack (combat v2)', { knack })).toEqual({
+      creatureId: 'c-1',
+      knack,
+    });
+  });
+
+  it('narrows the talents to the creature’s line and the Knacks to its form', () => {
+    const species = 'cindle';
+    const line = lineOfSpecies(species) ?? '';
+    const own = talentOptionsFor(line);
+    expect(own.length).toBeGreaterThan(0);
+    expect(own.length).toBeLessThan(TALENT_OPTIONS.length);
+    expect(own.map((o) => o.value).sort()).toEqual([...(combatV2.pools[line] ?? [])].sort());
+    const knacks = knackOptionsFor(species);
+    expect(knacks[0]?.value).toBe('none');
+    expect(
+      knacks
+        .slice(1)
+        .map((o) => o.value)
+        .sort(),
+    ).toEqual([...knownKnacks(species)].sort());
+  });
+
+  it('lists the targeted tools like the server does', () => {
+    // The Worker's list (`TARGETED_TOOLS`) is the same: a tool is on both or on neither.
+    expect(new Set(TARGETED_TOOL_IDS).size).toBe(TARGETED_TOOL_IDS.length);
+    for (const tool of TARGETED_TOOL_IDS) expect(DEV_TOOL_IDS).toContain(tool);
+    for (const never of ['reset-account', 'apply-roster-preset', 'clock', 'raid-clear']) {
+      expect(isTargeted(never as never)).toBe(false);
+    }
   });
 });
 
@@ -404,19 +501,44 @@ describe('the weather tool', () => {
   });
 });
 
-describe('the section order', () => {
-  it('puts the current tab first and keeps every section', () => {
-    expect(orderedSections('dungeon').map((s) => s.id)).toEqual([
-      'dungeon',
+describe('the sections', () => {
+  it('are listed under group headings, in order, and each has a unique id', () => {
+    expect(SECTIONS.map((s) => s.id)).toEqual([
+      'give',
       'creatures',
       'workshop',
       'expeditions',
       'games',
+      'dungeon',
       'raid',
       'weather',
+      'clock',
       'analytics',
+      'look',
+      'build',
     ]);
-    expect(orderedSections('collection')[0]?.id).toBe('creatures');
-    expect(orderedSections('raid')).toHaveLength(SECTIONS.length);
+    expect(navGroups().map((g) => g.group)).toEqual(['Players', 'Game systems', 'Tools']);
+    expect(navGroups().flatMap((g) => g.sections)).toHaveLength(SECTIONS.length);
+  });
+
+  it('opens the current place’s section first, and Give for a place with none', () => {
+    expect(firstSection('dungeon')).toBe('dungeon');
+    expect(firstSection('collection')).toBe('creatures');
+    expect(firstSection('raid')).toBe('raid');
+    expect(firstSection('home')).toBe('give');
+  });
+
+  it('knows which sections act on a player', () => {
+    const uses = (id: string): boolean => {
+      const section = SECTIONS.find((s) => s.id === id);
+      if (section === undefined) throw new Error(id);
+      return sectionUsesTarget(section);
+    };
+    for (const id of ['give', 'creatures', 'workshop', 'expeditions', 'dungeon']) {
+      expect(uses(id), id).toBe(true);
+    }
+    for (const id of ['raid', 'games', 'weather', 'clock', 'analytics', 'look', 'build']) {
+      expect(uses(id), id).toBe(false);
+    }
   });
 });

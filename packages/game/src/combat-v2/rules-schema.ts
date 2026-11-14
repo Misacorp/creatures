@@ -45,21 +45,21 @@ export const RulesSchema = v.pipe(
     flankGuardSlots: Int,
     /** Opportunist: a mark with at least this many counts. */
     opportunistFromStacks: Int,
-    /** Mired, the Mire debuff: per stack, the boss deals less damage and dodges less. */
-    miredPerStackBp: Int,
+    /** Bogged Down, the Mire debuff: per stack, the boss deals less damage and dodges less. */
+    boggedDownPerStackBp: Int,
     /** With Clinging on a living creature each stack counts for this much instead (reworked 2026-10-28). */
-    miredClingingStackBp: Int,
-    miredMaxStacks: Int,
-    /** Mired fades: one stack at the end of every this many rounds (1: every round, 2026-11-01); with Clinging on a living creature, every `miredClingingFadeEvery` instead. */
-    miredFadeEvery: Int,
-    /** While a living creature has Clinging, Mired fades only every this many rounds. */
-    miredClingingFadeEvery: Int,
+    boggedDownClingingStackBp: Int,
+    boggedDownMaxStacks: Int,
+    /** Bogged Down fades: one stack at the end of every this many rounds (1: every round, 2026-11-01); with Clinging on a living creature, every `boggedDownClingingFadeEvery` instead. */
+    boggedDownFadeEvery: Int,
+    /** While a living creature has Clinging, Bogged Down fades only every this many rounds. */
+    boggedDownClingingFadeEvery: Int,
     /** Refuse to Fall (Hold On): once per fight (a raid: once per weekend), a hit that would knock it out leaves it at the lower of this share of its Max HP and its HP before the hit (never a heal). */
     holdOnLeaveBp: Int,
     /** Element Resistance: the resisted element's creatures' hits start from this share of their base damage (a quarter less; counters are not cut). */
     adaptElementBp: Int,
-    /** Mired slows the boss's escalation (R22): each stack raises the units the next step needs by this share of a step's units. */
-    miredSlowsEscalationBp: Int,
+    /** Bogged Down slows the boss's escalation (R22): each stack raises the units the next step needs by this share of a step's units. */
+    boggedDownSlowsEscalationBp: Int,
     /** "The boss is low" for Finisher: its HP is below this share of its full HP. */
     finisherBelowBp: Int,
     /** The live finale's Rally (R18): every creature's hits deal this much more that round, counted in the hit-boost cap (`maxHitBonusBp`, R15). */

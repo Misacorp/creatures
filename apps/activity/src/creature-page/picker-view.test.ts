@@ -37,6 +37,21 @@ describe('the item picker rules', () => {
       expect(n).toBeLessThanOrEqual(25);
     }
   });
+
+  it('with the valley on (the server says needs.level 1) a high-level item is not blocked by level (V-GEAR-3)', () => {
+    const valley = scene.gear.items.map((item) => ({
+      ...item,
+      needs: { ...item.needs, level: 1 },
+    }));
+    const off = pickerChoices(scene.gear.items, scene.creature, scene.state.creatures, 'hat');
+    const on = pickerChoices(valley, scene.creature, scene.state.creatures, 'hat');
+    expect(off.some((c) => c.blocked?.startsWith('Needs creature level'))).toBe(true);
+    // Only the role lock may still block.
+    expect(on.every((c) => c.blocked === null || c.blocked.endsWith(' only.'))).toBe(true);
+    const high = valley.find((i) => i.slot === 'hat' && i.itemLevel > scene.creature.level);
+    expect(high).toBeDefined();
+    expect(compactReason(high as (typeof valley)[number], scene.creature)).toBeNull();
+  });
 });
 
 describe('statRows', () => {

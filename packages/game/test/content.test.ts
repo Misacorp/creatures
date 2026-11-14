@@ -410,10 +410,10 @@ describe('raid content', () => {
       ['overgrown', 'grove', 'ember', 'Wildfire'],
       ['scorched', 'ember', 'tide', 'Steam'],
       ['scorched', 'ember', 'mire', 'Smother'],
-      ['muddied', 'mire', 'ember', 'Flare'],
+      ['mired', 'mire', 'ember', 'Flare'],
     ]);
     expect(content.reactions.find((r) => r.id === 'smother')?.markName).toBe('Scorched');
-    expect(content.reactions.find((r) => r.id === 'flare')?.markName).toBe('Muddied');
+    expect(content.reactions.find((r) => r.id === 'flare')?.markName).toBe('Mired');
     // Every reaction uses the same multipliers; their values are balance tuning (the simulator).
     const [first] = content.reactions;
     for (const r of content.reactions) {
@@ -1242,11 +1242,11 @@ describe('status effects', () => {
     });
   const move = { id: 'bog-slap', name: 'Bog Slap', trigger: { every: 3 } };
 
-  it('ships Mired and nothing else, and only Mire bosses and foes apply it', () => {
+  it('ships Bogged Down and nothing else, and only Mire bosses and foes apply it', () => {
     expect(content.statusEffects).toEqual([
       {
-        id: 'mired',
-        name: 'Mired',
+        id: 'bogged-down',
+        name: 'Bogged Down',
         kind: 'debuff',
         maxStacks: 5,
         turns: 3,
@@ -1256,7 +1256,7 @@ describe('status effects', () => {
     const uses = (g: Gimmick) => 'applies' in g && g.applies !== undefined;
     const movesOf = (f: { gimmicks: readonly Gimmick[]; signature?: Gimmick | undefined }) =>
       f.signature === undefined ? f.gimmicks : [...f.gimmicks, f.signature];
-    // Mired comes from the Mire bosses and foes only, and Sinking Mud is the raid's source.
+    // Bogged Down comes from the Mire bosses and foes only, and Sinking Mud is the raid's source.
     for (const b of content.bosses) expect(b.gimmicks.some(uses), b.id).toBe(b.element === 'mire');
     for (const f of dungeonContent.foes) {
       expect(movesOf(f).some(uses), f.id).toBe(f.element === 'mire');
@@ -1265,7 +1265,7 @@ describe('status effects', () => {
     expect(sinking).toMatchObject({
       id: 'sinking-mud',
       op: 'sweep',
-      applies: { effect: 'mired', powerBp: 10_000 },
+      applies: { effect: 'bogged-down', powerBp: 10_000 },
     });
   });
 
@@ -1278,12 +1278,12 @@ describe('status effects', () => {
         ...(f.signature === undefined ? [] : [f.signature]),
       ]),
     ];
-    for (const g of moves) expect(ids.has(appliedEffect(g) ?? 'mired')).toBe(true);
+    for (const g of moves) expect(ids.has(appliedEffect(g) ?? 'bogged-down')).toBe(true);
   });
 
   it('is strict: no unknown keys, a real kind, and positive caps and turns', () => {
     const bad = (fn: (e: ContentPack['statusEffects'][number]) => void) =>
-      expect(() => loadContent(mutate((p) => fn(effect(p, 'mired'))))).toThrow(/schema/);
+      expect(() => loadContent(mutate((p) => fn(effect(p, 'bogged-down'))))).toThrow(/schema/);
     bad((e) => Object.assign(e, { surprise: 1 }));
     bad((e) => Object.assign(e.perStack, { hpBp: -100 }));
     bad((e) => Object.assign(e, { kind: 'neutral' }));
@@ -1312,22 +1312,22 @@ describe('status effects', () => {
 
   it('rejects duplicate ids', () => {
     expect(() =>
-      loadContent(mutate((p) => p.statusEffects.push(deepClone(effect(p, 'mired'))))),
+      loadContent(mutate((p) => p.statusEffects.push(deepClone(effect(p, 'bogged-down'))))),
     ).toThrow(/duplicate status effect/);
   });
 
   it('lets a damaging move apply a known effect, and only that', () => {
     const slap = { ...move, op: 'hit_zone', zone: 'front', power: 5_000 };
-    const ok = { ...slap, applies: { effect: 'mired', powerBp: 14_000, durationTurns: 1 } };
+    const ok = { ...slap, applies: { effect: 'bogged-down', powerBp: 14_000, durationTurns: 1 } };
     expect(() => loadContent(withMove(ok))).not.toThrow();
     expect(() =>
       loadContent(withMove({ ...slap, applies: { effect: 'nope', powerBp: 10_000 } })),
     ).toThrow(/unknown status effect/);
     expect(() =>
-      loadContent(withMove({ ...slap, applies: { effect: 'mired', powerBp: 0 } })),
+      loadContent(withMove({ ...slap, applies: { effect: 'bogged-down', powerBp: 0 } })),
     ).toThrow(/schema/);
     expect(() =>
-      loadContent(withMove({ ...slap, applies: { effect: 'mired', powerBp: 1, extra: 1 } })),
+      loadContent(withMove({ ...slap, applies: { effect: 'bogged-down', powerBp: 1, extra: 1 } })),
     ).toThrow(/schema/);
     // A move that does no damage has nothing to carry it.
     expect(() =>
@@ -1337,7 +1337,7 @@ describe('status effects', () => {
           op: 'silence_ends',
           scope: 'row',
           turns: 1,
-          applies: { effect: 'mired', powerBp: 10_000 },
+          applies: { effect: 'bogged-down', powerBp: 10_000 },
         }),
       ),
     ).toThrow(/schema/);
@@ -1347,7 +1347,7 @@ describe('status effects', () => {
     const charge = {
       ...move,
       op: 'charge',
-      applies: { effect: 'mired', powerBp: 10_000 },
+      applies: { effect: 'bogged-down', powerBp: 10_000 },
       then: { op: 'pincer', scope: 'rows', power: 5_000 },
     };
     expect(() => loadContent(withMove(charge))).not.toThrow();
@@ -1403,7 +1403,7 @@ describe('Mire', () => {
     );
   };
 
-  it('is the fifth element, with the chart pairs, the mark Muddied and the reactions Smother and Flare', () => {
+  it('is the fifth element, with the chart pairs, the mark Mired and the reactions Smother and Flare', () => {
     expect(content.elements.map((e) => e.id)).toEqual(['tide', 'ember', 'grove', 'spark', 'mire']);
     expect(content.elements.find((e) => e.id === 'mire')?.name).toBe('Mire');
     const smother = content.reactions.find((r) => r.id === 'smother');
@@ -1414,8 +1414,8 @@ describe('Mire', () => {
       triggerElement: 'mire',
     });
     expect(flare).toMatchObject({
-      markId: 'muddied',
-      markName: 'Muddied',
+      markId: 'mired',
+      markName: 'Mired',
       markElement: 'mire',
       triggerElement: 'ember',
     });
@@ -1429,12 +1429,12 @@ describe('Mire', () => {
 
   it('gives Smother and Flare their riders, and no other reaction has one', () => {
     expect(content.reactions.find((r) => r.id === 'smother')?.appliesToFoe).toEqual({
-      effect: 'mired',
+      effect: 'bogged-down',
       powerBp: 10_000,
     });
     expect(content.reactions.find((r) => r.id === 'smother')?.consumes).toBeUndefined();
     expect(content.reactions.find((r) => r.id === 'flare')?.consumes).toEqual({
-      effect: 'mired',
+      effect: 'bogged-down',
       bonusPerStackBp: 2_000,
     });
     expect(content.reactions.find((r) => r.id === 'flare')?.appliesToFoe).toBeUndefined();
@@ -1459,11 +1459,15 @@ describe('Mire', () => {
     ).toThrow(/unknown status effect/);
     expect(() =>
       loadContent(
-        mutate((p) => (smother(p)['appliesToFoe'] = { effect: 'mired', powerBp: 1, extra: 1 })),
+        mutate(
+          (p) => (smother(p)['appliesToFoe'] = { effect: 'bogged-down', powerBp: 1, extra: 1 }),
+        ),
       ),
     ).toThrow(/schema/);
     expect(() =>
-      loadContent(mutate((p) => (flare(p)['consumes'] = { effect: 'mired', bonusPerStackBp: 0 }))),
+      loadContent(
+        mutate((p) => (flare(p)['consumes'] = { effect: 'bogged-down', bonusPerStackBp: 0 })),
+      ),
     ).toThrow(/schema/);
   });
 
@@ -1541,10 +1545,10 @@ describe('Mire', () => {
       const e = ability(id)?.effects.find((x) => x.op === op);
       return e !== undefined && 'apply' in e ? e.apply : undefined;
     };
-    expect(power('mud-wall', 'on_hit_taken')).toEqual({ effect: 'mired', powerBp: 6_000 });
-    expect(power('bog-hold', 'on_hit_taken')).toEqual({ effect: 'mired', powerBp: 8_000 });
-    expect(power('squelch-song', 'round_start')).toEqual({ effect: 'mired', powerBp: 6_000 });
-    expect(power('deep-croak', 'round_start')).toEqual({ effect: 'mired', powerBp: 8_000 });
+    expect(power('mud-wall', 'on_hit_taken')).toEqual({ effect: 'bogged-down', powerBp: 6_000 });
+    expect(power('bog-hold', 'on_hit_taken')).toEqual({ effect: 'bogged-down', powerBp: 8_000 });
+    expect(power('squelch-song', 'round_start')).toEqual({ effect: 'bogged-down', powerBp: 6_000 });
+    expect(power('deep-croak', 'round_start')).toEqual({ effect: 'bogged-down', powerBp: 8_000 });
     // Guards fire (their wall) when the boss first hits a zone, like every Guard.
     expect(ability('mud-wall')?.defaultAtZoneHit).toBe(true);
     expect(ability('bog-hold')?.defaultAtZoneHit).toBe(true);
@@ -1558,7 +1562,7 @@ describe('Mire', () => {
   });
 
   it('refuses a passive ability that is basic, or applies an unknown effect', () => {
-    const passive = { op: 'on_hit_taken', apply: { effect: 'mired', powerBp: 6_000 } };
+    const passive = { op: 'on_hit_taken', apply: { effect: 'bogged-down', powerBp: 6_000 } };
     expect(() =>
       loadContent(
         mutate((p) => {
@@ -1584,7 +1588,7 @@ describe('Mire', () => {
           const a = p.finaleAbilities.find((x) => x.id === 'mud-wall');
           if (a)
             (a.effects as unknown[]) = [
-              { op: 'round_start', apply: { effect: 'mired', powerBp: 0 } },
+              { op: 'round_start', apply: { effect: 'bogged-down', powerBp: 0 } },
             ];
         }),
       ),

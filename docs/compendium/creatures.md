@@ -1001,7 +1001,7 @@ Slow, patient lumps of peat that stand in front and let the bog do the rest. The
 **Notes** `(compendium detail, not shipped)`:
 
 - It is the lowest-Speed creature in the game (10 at level 1, growing by 1), so it dodges little, and it has the most HP of any common Guard. `(content: creatures.json)`
-- Mud Wall: its zone takes 40% less damage for 2 rounds, and whenever it takes a hit (not dodged, not shielded, not reflected) the boss gets Mired (60% power). The Mired part is always on, from round 1; it does nothing in a fight with status effects off. Bogwarden's Bog Hold is stronger: 60% less for 3 rounds, Mired at 80%. `(content: finale-abilities.json)`
+- Mud Wall: its zone takes 40% less damage for 2 rounds, and whenever it takes a hit (not dodged, not shielded, not reflected) the boss gets Bogged Down (60% power). The Bogged Down part is always on, from round 1; it does nothing in a fight with status effects off. Bogwarden's Bog Hold is stronger: 60% less for 3 rounds, Bogged Down at 80%. `(content: finale-abilities.json)`
 - The quirk pool leans against its calm: it gets excited about puddles. Working name kept; it hints at its nature, like Splashet.
 
 ### Bogwarden (stage 2)
@@ -1074,7 +1074,7 @@ Small ochre frogs that hum in the damp. They make the boss feel slow and heavy: 
 
 **Notes** `(compendium detail, not shipped)`:
 
-- The debuffer. Besides its usual Support work, its round-start action leaves Mired on the boss (60% power). Squelch Song also rallies all creatures for +4% damage for 2 rounds; Deep Croak is Mired at 80% and +7%. `(content: finale-abilities.json)`
+- The debuffer. Besides its usual Support work, its round-start action leaves Bogged Down on the boss (60% power). Squelch Song also rallies all creatures for +4% damage for 2 rounds; Deep Croak is Bogged Down at 80% and +7%. `(content: finale-abilities.json)`
 - Its wide smile and brow bumps make it read as a frog at 16 pixels. The face is the same chibi face as every creature.
 - Always humming: the Mire folk say a squelch is the fen's way of saying hello.
 

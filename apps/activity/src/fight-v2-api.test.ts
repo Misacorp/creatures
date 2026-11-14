@@ -44,6 +44,8 @@ describe('the v2 payloads the engine and the server make', () => {
     for (const type of ['cover', 'boost', 'reaction', 'hit']) expect(types.has(type)).toBe(true);
     expect(isBoardEvent({ type: 'intercept', guard: 'a', who: 'b' })).toBe(true);
     expect(isBoardEvent({ type: 'intercept', guard: 'a' })).toBe(false);
+    expect(isBoardEvent({ type: 'forgo', who: 'a' })).toBe(true);
+    expect(isBoardEvent({ type: 'forgo' })).toBe(false);
     expect(isBoardEvent({ type: 'cover', guard: 'a', who: 'b', prevented: -1 })).toBe(false);
     expect(isBoardEvent({ type: 'cover', guard: 'a', who: 'b', prevented: 3, byKnack: true })).toBe(
       true,

@@ -253,7 +253,7 @@ const RANK: readonly Mechanic['group'][] = [
 /**
  * The answer hint of a boss from what it measurably calls for. `lines` are the measurements of the boss's lines (its best
  * line, each written answer): in each, mechanics that take the same Knacks and talents off the line (the Debuff family and
- * Mired, say) are one entry named by the most general of them (a rule before a family before a keyword before a talent
+ * Bogged Down, say) are one entry named by the most general of them (a rule before a family before a keyword before a talent
  * kind); a keyword with the name of a family or a rule is the same entry. The hint lists the biggest `top` entries whose
  * removal costs at least `min`, those that most lines cannot do without first (a drop alone is not a ranking: the lines
  * are brittle, and many drops are near 100), then by the biggest drop, then a family before the rest. Empty when the boss

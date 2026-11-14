@@ -55,7 +55,7 @@ ID: `2026-11-04-combat-v2-phase-5-answers-small` · Status: current, amended by 
 
 ## 2026-11-03: Combat v2 arenas: how the piece, the seats and the spare are built
 
-ID: `2026-11-03-combat-v2-arenas-how-the-piece` · Status: current
+ID: `2026-11-03-combat-v2-arenas-how-the-piece` · Status: current, amended by `2026-11-14-raid-seats-are-never-moved-stage`
 
 **Decision.** The calls the arena decision (`2026-11-03-combat-v2-arenas-each-boss-defines`) left open:
 

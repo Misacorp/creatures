@@ -115,7 +115,7 @@
     "lines": [
       "Each round, its neighbours' next hit deals 15% more damage. In the raid its reach stops at the row's edge.",
       "By element: Ember boosts 25%, Spark adds reaction damage, Tide and Grove heal (Tide clears silence too).",
-      "Mire has no element boost: a Mire Support's own ability leaves the boss Mired instead.",
+      "Mire has no element boost: a Mire Support's own ability leaves the boss Bogged Down instead.",
       "Nothing reaches past a knocked-out neighbour. A knocked-out or silenced Support gives nothing."
     ],
     "visual": {
@@ -2117,7 +2117,7 @@
     "lines": [
       "Hits Ember bosses for 50% more damage.",
       "Ember hits Mire bosses for 50% more. Tide hits them for 25% less.",
-      "Mire hits leave Muddied on the boss. Ember cashes it in.",
+      "Mire hits leave Mired on the boss. Ember cashes it in.",
       "Slow and sturdy: they hold the line and weigh the boss down."
     ],
     "visual": {
@@ -2127,8 +2127,8 @@
     "section": "creatures"
   },
   {
-    "id": "mark-muddied",
-    "title": "Muddied",
+    "id": "mark-mired",
+    "title": "Mired",
     "short": "Mire's mark. Ember cashes it in.",
     "lines": [
       "Left on the boss by a Mire hit.",
@@ -2149,7 +2149,7 @@
     "lines": [
       "A Mire hit on a Scorched boss sets it off.",
       "It deals much more damage than a normal hit.",
-      "It also leaves Mired on the boss.",
+      "It also leaves Bogged Down on the boss.",
       "It uses up the mark. The next hit leaves a new one."
     ],
     "visual": {
@@ -2161,11 +2161,11 @@
   {
     "id": "reaction-flare",
     "title": "Flare",
-    "short": "Ember on Muddied: deals much more damage, burns off Mired.",
+    "short": "Ember on Mired: deals much more damage, burns off Bogged Down.",
     "lines": [
-      "An Ember hit on a Muddied boss sets it off.",
+      "An Ember hit on a Mired boss sets it off.",
       "It deals much more damage than a normal hit.",
-      "It then burns away every Mired stack on the boss, for extra damage on each.",
+      "It then burns away every Bogged Down stack on the boss, for extra damage on each.",
       "Keep the stacks to keep the boss slow, or burn them for one big hit."
     ],
     "visual": {
@@ -2175,8 +2175,8 @@
     "section": "combos"
   },
   {
-    "id": "status-mired",
-    "title": "Mired",
+    "id": "status-bogged-down",
+    "title": "Bogged Down",
     "short": "Stuck in the mud: slower and weaker.",
     "lines": [
       "Each stack lowers Speed and the damage dealt.",
@@ -2186,7 +2186,7 @@
     ],
     "visual": {
       "kind": "glyph",
-      "id": "mired"
+      "id": "bogged-down"
     },
     "section": "combos"
   },

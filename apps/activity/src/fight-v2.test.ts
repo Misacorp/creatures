@@ -1,4 +1,6 @@
+import type { FightEvent } from '@creatures/engine/v2';
 import { combatV2 } from '@creatures/game/combat-v2';
+import { cuesOf } from './use-playback-v2';
 import { describe, expect, it } from 'vitest';
 import {
   PURGE_ROUNDS,
@@ -372,5 +374,60 @@ describe('what a beat shows of the new events (reactions, crits, saves, boosts, 
     expect(named.knacks.map((k) => k.name)).toEqual(['Cool Head']);
     expect(named.saves).toHaveLength(1);
     expect(showOf(ev(false) as never, beat, { creatures }).knacks).toEqual([]);
+  });
+});
+
+describe('a creature whose Knack gives up its hit', () => {
+  const ev = (board: NonNullable<FightEvent['board']>, kind = 'log'): FightEvent => ({
+    round: 1,
+    turn: 0,
+    kind,
+    text: board.type,
+    board,
+  });
+  const events: FightEvent[] = [
+    ev({ type: 'round', round: 1 }),
+    ev({ type: 'forgo', who: 'a' }),
+    ev({ type: 'mark', element: 'spark', stacks: 2, sealed: false }),
+    ev({ type: 'hit', from: 'b', to: null, damage: 9, crit: false, blocked: false, dodged: false }),
+    ev({ type: 'bossTurn', row: 0 }),
+  ];
+  const creatures = [
+    {
+      key: 'a',
+      maxHp: 50,
+      startHp: 50,
+      row: 0,
+      col: 0,
+      element: 'spark',
+      knackName: 'Double Mark',
+    },
+    { key: 'b', maxHp: 50, startHp: 50, row: 0, col: 1, element: 'tide', knackName: null },
+  ];
+
+  it('gets a beat of its own, like a creature that hits, so it is never seen to skip its turn', () => {
+    const beats = buildBeats(events, { creatures });
+    expect(beats.map((b) => [b.kind, b.actor])).toEqual([
+      ['round', null],
+      ['creature', 'a'],
+      ['creature', 'b'],
+      ['boss', null],
+    ]);
+    // What its Knack does instead (the mark) stays in its beat.
+    expect(beats[1]).toMatchObject({ from: 1, to: 3 });
+  });
+
+  it('shows the Knack by name, whether or not the player asked for Knack names, and not twice', () => {
+    const beats = buildBeats(events, { creatures });
+    const show = showOf(events, beats[1] as never, { creatures });
+    expect(show.forgone).toEqual([{ i: 1, who: 'a', name: 'Double Mark' }]);
+    expect(show.knacks).toEqual([]);
+    for (const names of [false, true]) {
+      const cues = cuesOf(show, names).filter((c) => c.kind === 'float' && c.tone === 'knack');
+      expect(cues).toHaveLength(1);
+      expect(cues[0]).toMatchObject({ target: 'a', text: 'Double Mark' });
+    }
+    // A creature that hits has nothing forgone.
+    expect(showOf(events, beats[2] as never, { creatures }).forgone).toEqual([]);
   });
 });

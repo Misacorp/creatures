@@ -75,10 +75,12 @@ describe('the foe’s dodge and riders', () => {
     const text = info.moves.join('\n');
     expect(text).toContain('Shake Off');
     expect(text).toContain('shakes every debuff off itself');
-    expect(text).toMatch(/Sinking Mud\..*puts Mired ×1 on each creature it hits/);
+    expect(text).toMatch(/Sinking Mud\..*puts Bogged Down ×1 on each creature it hits/);
     const mud = content.bosses
       .find((b) => b.id === 'old-bogback')
       ?.gimmicks.find((g) => g.id === 'sinking-mud');
-    expect(mud && gimmickText(mud)).toMatch(/, and puts Mired ×1 on each creature it hits\.$/);
+    expect(mud && gimmickText(mud)).toMatch(
+      /, and puts Bogged Down ×1 on each creature it hits\.$/,
+    );
   });
 });

@@ -40,6 +40,12 @@ import {
   GamesRunNowBodySchema,
   GrantBlueprintsBodySchema,
   GrantCreatureBodySchema,
+  GrantCurrencyBodySchema,
+  GrantTalentBodySchema,
+  GrantXpBodySchema,
+  SetKnackBodySchema,
+  TARGETED_TOOLS,
+  TargetUserIdSchema,
   GrantGearBodySchema,
   GrantPartsBodySchema,
   GrantSuppliesBodySchema,
@@ -62,6 +68,7 @@ import {
 } from './dev-schemas';
 import { devKey, type DevState } from './dev-state';
 import { clockState, clockTool } from './dev-tools-clock';
+import { grantCurrency, grantTalent, grantXp, setKnack } from './dev-tools-give';
 import { combatV2Convert } from './dev-tools-combat-v2';
 import { applyRosterPreset, playersView } from './dev-tools-presets';
 import { valleyFresh } from './dev-tools-valley';
@@ -239,6 +246,11 @@ const TOOLS: Record<DevActionTool, Tool> = {
   'valley-fresh': tool(NoBodySchema, valleyFresh, { movesClock: true }),
   // Staging with COMBAT_V2 on only: replaces one player's (or everyone's) creatures and gear bag with a preset (`dev-presets.ts`).
   'apply-roster-preset': tool(ApplyRosterPresetBodySchema, applyRosterPreset),
+  // Give a player what the game gives (any player of the guild: see `TARGETED_TOOLS`).
+  'grant-currency': tool(GrantCurrencyBodySchema, grantCurrency),
+  'grant-xp': tool(GrantXpBodySchema, grantXp),
+  'grant-talent': tool(GrantTalentBodySchema, grantTalent),
+  'set-knack': tool(SetKnackBodySchema, setKnack),
   'reset-account': tool(ResetAccountBodySchema, (ctx) => {
     purgeUser(ctx.sql, ctx.userId, true);
     ctx.state.clearUser(ctx.userId);
@@ -248,6 +260,7 @@ const TOOLS: Record<DevActionTool, Tool> = {
 };
 
 const TOOL_IDS: ReadonlySet<string> = new Set(DEV_ACTION_TOOLS);
+const TARGETED_IDS: ReadonlySet<string> = new Set(TARGETED_TOOLS);
 const READ_IDS: ReadonlySet<string> = new Set(DEV_READ_TOOLS);
 
 export class DevTools {
@@ -285,12 +298,34 @@ export class DevTools {
     };
   }
 
+  /** True for a real player of this guild (not a simulated `dev-guest-*` one). */
+  private isTargetable(userId: string): boolean {
+    if (userId.startsWith('dev-guest-')) return false;
+    return (
+      this.deps.storage.sql.exec('SELECT 1 FROM players WHERE user_id = ?', userId).toArray()
+        .length > 0
+    );
+  }
+
   /** Runs one tool for the caller: validates the body, runs it in one transaction, logs `dev_action`. */
   async run(toolId: string, userId: string, raw: unknown): Promise<ToolOutcome> {
     if (!TOOL_IDS.has(toolId)) return { ok: false, status: 404, error: 'not_found' };
     const id = toolId as DevActionTool;
     const def = TOOLS[id];
-    const parsed = v.safeParse(def.schema, raw);
+    // A per-player tool may name another player of the guild (`userId`, default the caller): taken off the body here, so the
+    // tool's own strict schema stays as it is and still refuses every unknown key.
+    let body = raw;
+    let target = userId;
+    if (TARGETED_IDS.has(id) && typeof raw === 'object' && raw !== null && 'userId' in raw) {
+      const { userId: wanted, ...rest } = raw as Record<string, unknown>;
+      const named = v.safeParse(TargetUserIdSchema, wanted);
+      if (!named.success) return { ok: false, status: 400, error: 'invalid_body' };
+      // A player of this guild; simulated guests (`dev-guest-*`) are never targets, as for the roster presets.
+      if (!this.isTargetable(named.output)) return { ok: false, status: 404, error: 'not_found' };
+      target = named.output;
+      body = rest;
+    }
+    const parsed = v.safeParse(def.schema, body);
     if (!parsed.success) return { ok: false, status: 400, error: 'invalid_body' };
     const log = (): void => this.deps.analytics.record({ kind: 'dev_action', tool: id }, userId);
     try {
@@ -300,7 +335,7 @@ export class DevTools {
         this.deps.storage.transactionSync(log);
       } else {
         value = this.deps.storage.transactionSync(() => {
-          const out = def.run(this.ctx(userId), parsed.output as never);
+          const out = def.run(this.ctx(target), parsed.output as never);
           log();
           return out;
         });
@@ -349,7 +384,7 @@ export class DevTools {
 
   /** The guild's players and the roster presets: what the panel's preset picker lists. */
   players(userId: string) {
-    return playersView(this.ctx(userId));
+    return { ...playersView(this.ctx(userId)), you: userId };
   }
 
   /** The last 50 analytics events of this guild: kind, time and props. Never an actor. */

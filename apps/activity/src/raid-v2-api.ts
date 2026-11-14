@@ -96,9 +96,16 @@ export interface SwapV2 {
   createdAt: number;
 }
 
+/** A request you made that has been answered or has ended (newest last); the creatures are named as they were asked. */
+export interface SettledSwapV2 extends SwapV2 {
+  status: 'accepted' | 'declined' | 'ended';
+}
+
 export interface SwapsV2 {
   incoming: SwapV2[];
   outgoing: SwapV2[];
+  /** How your earlier requests went: the asker sees each once (the screen remembers which it showed). */
+  settled: SettledSwapV2[];
 }
 
 /** The v2 part of a raid week view. */
@@ -217,8 +224,16 @@ const isSwap = (value: unknown): value is SwapV2 =>
   isSwapCreature(value['creatureB']) &&
   isInt(value['createdAt']);
 
+const isSettledSwap = (value: unknown): value is SettledSwapV2 =>
+  isSwap(value) &&
+  isRecord(value) &&
+  (value['status'] === 'accepted' || value['status'] === 'declined' || value['status'] === 'ended');
+
 export const isSwaps = (value: unknown): value is SwapsV2 =>
-  isRecord(value) && isArrayOf(value['incoming'], isSwap) && isArrayOf(value['outgoing'], isSwap);
+  isRecord(value) &&
+  isArrayOf(value['incoming'], isSwap) &&
+  isArrayOf(value['outgoing'], isSwap) &&
+  isArrayOf(value['settled'], isSettledSwap);
 
 /** Whether the v2 part of a week view reads right. */
 export function isRaidV2View(value: unknown): value is RaidV2View {
@@ -247,7 +262,7 @@ export function isRaidV2View(value: unknown): value is RaidV2View {
   );
 }
 
-// --- Swap requests (`GET/POST /api/raid/swap`, `POST /api/raid/swap/:id/accept|decline`) ---
+// --- Swap requests (`GET/POST /api/raid/swap`, `POST /api/raid/swap/:id/accept|decline|cancel`) ---
 
 function parseSwaps(data: unknown): SwapsV2 {
   if (!isSwaps(data)) throw new Error('the server returned unexpected swap requests');
@@ -265,6 +280,13 @@ export async function fetchSwaps(): Promise<SwapsV2> {
  */
 export async function askSwap(slotA: number, slotB: number): Promise<SwapsV2> {
   return parseSwaps(await apiFetch('/api/raid/swap', jsonRequest('POST', { slotA, slotB })));
+}
+
+/** Withdraws a request the caller asked (only the asker can; asking again is harmless). Answers the caller's open requests. */
+export async function cancelSwap(id: string): Promise<SwapsV2> {
+  return parseSwaps(
+    await apiFetch(`/api/raid/swap/${encodeURIComponent(id)}/cancel`, { method: 'POST' }),
+  );
 }
 
 /** Accepts or declines a request addressed to the caller. Answers the caller's open requests. */

@@ -595,7 +595,7 @@
       {
         "op": "on_hit_taken",
         "apply": {
-          "effect": "mired",
+          "effect": "bogged-down",
           "powerBp": 6000
         }
       }
@@ -618,7 +618,7 @@
       {
         "op": "on_hit_taken",
         "apply": {
-          "effect": "mired",
+          "effect": "bogged-down",
           "powerBp": 8000
         }
       }
@@ -640,7 +640,7 @@
       {
         "op": "round_start",
         "apply": {
-          "effect": "mired",
+          "effect": "bogged-down",
           "powerBp": 6000
         }
       }
@@ -661,7 +661,7 @@
       {
         "op": "round_start",
         "apply": {
-          "effect": "mired",
+          "effect": "bogged-down",
           "powerBp": 8000
         }
       }
