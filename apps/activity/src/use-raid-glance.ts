@@ -9,6 +9,7 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { RaidGlance } from './home-view';
 import { swapNoticeText } from './raid-board-v2';
+import { swapOutcomeNoticeText } from './swap-outcome';
 import { fetchRaid, type RaidView } from './raid-api';
 
 /** What the Home page keeps of a raid view. */
@@ -30,6 +31,7 @@ export function glanceOf(
     schedule: view.schedule,
     rules: 2,
     swapText: swapNoticeText(v2.swaps.incoming, { rows: v2.rows, cols: v2.cols }),
+    swapOutcomeText: swapOutcomeNoticeText(v2.swaps.settled, { rows: v2.rows, cols: v2.cols }),
     ...scene,
   };
 }

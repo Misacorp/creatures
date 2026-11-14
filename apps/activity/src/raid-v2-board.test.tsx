@@ -26,9 +26,15 @@ import {
   slotAtV2,
   swapNoticeText,
 } from './raid-board-v2';
-import { isRaidV2View } from './raid-v2-api';
+import { isRaidV2View, type SettledSwapV2 } from './raid-v2-api';
 import { SwapOutcomes, SwapRequests } from './SwapRequests';
-import { markSwapSeen, seenSwapIds, settledText, unseenSwaps } from './swap-outcome';
+import {
+  markSwapSeen,
+  seenSwapIds,
+  settledText,
+  swapOutcomeNoticeText,
+  unseenSwaps,
+} from './swap-outcome';
 import { byClass, byName, createPage, visibleText, type Page } from './test-dom';
 import { MoveTile } from './ui/MoveTile';
 import { TrackStrip } from './ui/TrackStrip';
@@ -577,6 +583,30 @@ describe('how your swap requests went', () => {
     page = createPage();
     page.draw(<SwapOutcomes settled={[]} grid={grid} />);
     expect(byClass(page.root, 'swap-requests')).toHaveLength(0);
+  });
+});
+
+describe('the swap outcome on Home', () => {
+  const grid = { rows: 3, cols: 3 };
+  const one = (): SettledSwapV2 => v2Of(sample({ swaps: 'settled' })).swaps.settled[0]!;
+
+  it('says the one outcome without its full stop, or how many there are', () => {
+    const a = { ...one(), status: 'accepted' as const };
+    expect(swapOutcomeNoticeText([a], grid, new Set())).toBe(settledText(a, grid).replace(/\.$/, ''));
+    expect(swapOutcomeNoticeText([a, { ...a, id: 'other' }], grid, new Set())).toBe('2 swap answers');
+    expect(swapOutcomeNoticeText([], grid, new Set())).toBeNull();
+  });
+
+  it('shares the Raid tab seen-once state: an outcome closed there is gone from Home', () => {
+    const a = one();
+    expect(swapOutcomeNoticeText([a], grid, new Set([a.id]))).toBeNull();
+    const store = new Map<string, string>();
+    const storage = {
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => void store.set(k, v),
+    };
+    markSwapSeen(a.id, storage);
+    expect(swapOutcomeNoticeText([a], grid, seenSwapIds(storage))).toBeNull();
   });
 });
 
