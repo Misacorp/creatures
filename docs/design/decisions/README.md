@@ -494,6 +494,7 @@ Superseded: 1 entry (see the topic file).
 
 [ui.md](ui.md): Navigation and the frame, Home and the notice board, type scale, shared components, look and feel rules that apply across screens.
 
+- 2026-11-15 How to play follows the switches: combat v2 sections, then valley sections
 - 2026-11-12 The house's night indoors follows the living room's look: graded, not ramped
 - 2026-11-11 The postcard follows the phase, lights are data per piece, and one painter stamps every scene
 - 2026-11-11 The house is lit by one painter pass, from the living room's phase (amended)
