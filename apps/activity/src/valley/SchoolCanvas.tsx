@@ -32,7 +32,14 @@ import { SceneFrame, sceneGeometry, type SceneGeometry } from './SceneFrame';
 import { GraduationPanel, SeatPanel, TeacherPanel } from './SchoolPanels';
 import { Tray } from './Tray';
 import { At, CreatureSprite, Pic } from './parts';
-import { FLAG_AT, HELPER_AT, TABLE_BOX, pileMaterial, pileSize } from './builders-corner';
+import {
+  CORNER_GROUP,
+  FLAG_AT,
+  HELPER_AT,
+  TABLE_BOX,
+  pileMaterial,
+  pileSize,
+} from './builders-corner';
 import { cornerSprite } from './builders-corner-art';
 import { commonsOf, hearthLine, percentFilled, placeOf } from './commons-view';
 import { CREATURE_PX } from './place-cast';
@@ -43,6 +50,7 @@ import {
   schoolLayout,
   schoolScale,
   schoolSceneDraw,
+  freeSeatBox,
   seatBox,
   type TargetBox,
 } from './school-canvas';
@@ -544,11 +552,14 @@ function SchoolInside({
         />
       )}
       {view.seats.map((s) => {
-        const at = seatBox(s.index);
         const student = students.find((x) => x.index === s.index)?.creature;
+        // A seated student's tap is the creature's whole box; an empty seat's outline is the seat only, under the house's walls.
+        const at = student === undefined ? freeSeatBox(s.index) : seatBox(s.index);
         // An empty seat is a target only while a lesson is on; a student can always be taken off.
         if (at === null || (student === undefined && !teachingNow)) return null;
         const where = placed(box, at);
+        // Its depth is the creature's own (the full box), so a seated student and its outline order the same way.
+        const full = placed(box, seatBox(s.index) ?? at);
         const id = seatDropId(s.index);
         return (
           <CanvasTarget
@@ -556,9 +567,9 @@ function SchoolInside({
             g={g}
             x={where.x}
             y={where.y}
-            w={CREATURE_PX}
-            h={CREATURE_PX}
-            z={PLATES_Z + depthOf(where.x, where.y)}
+            w={at.w}
+            h={at.h}
+            z={PLATES_Z + depthOf(full.x, full.y)}
             seat={id}
             over={over === id}
             slot={student === undefined}
@@ -569,7 +580,7 @@ function SchoolInside({
             }
             plate={student === undefined ? 'Seat' : creatureName(student)}
             {...(student === undefined ? {} : { plateMeta: { level: student.level } })}
-            plateAt={CREATURE_PX + 1}
+            plateAt={at.h + 1}
             expanded={open.seat === s.index}
             disabled={busy}
             onClick={(opener) => {
@@ -587,6 +598,7 @@ function SchoolInside({
           h={TABLE_BOX.h}
           label={`The builders' table, ${hearthOpen ? "the School's project is open" : 'the School is being built'}. Open the project board`}
           plate="Project"
+          group={CORNER_GROUP}
           plateAt={TABLE_BOX.h + 1}
           expanded={open.board}
           onClick={onTable}
@@ -609,6 +621,7 @@ function SchoolInside({
               : `${creatureName(helper)}, level ${String(helper.level)}, helping build the School at the builders' table. Change`
           }
           plate={helper === undefined ? 'Helper' : creatureName(helper)}
+          group={CORNER_GROUP}
           {...(helper === undefined ? {} : { plateMeta: { level: helper.level } })}
           plateAt={CREATURE_PX + 1}
           expanded={open.helper}

@@ -220,6 +220,20 @@ export function seatBox(index: number): TargetBox | null {
 }
 
 /**
+ * The first row of the School's art (from its top) under the house's walls and steps: below it is the trodden yard where a seated student's
+ * feet stand. A free seat's outline starts here, so it never covers the lower wall (`valley-school` rows 0 to 41 are the house).
+ */
+export const HOUSE_BASE_ROW = 42;
+
+/** The box an empty seat is outlined with: the seat's width, from under the house's base down to where a student's feet stand. */
+export function freeSeatBox(index: number): TargetBox | null {
+  const full = seatBox(index);
+  if (full === null) return null;
+  const y = Math.max(full.y, HOUSE_BASE_ROW);
+  return { x: full.x, y, w: full.w, h: full.y + full.h - y };
+}
+
+/**
  * The lectern and the teacher at it, one target. The first seat stands by the teacher (its right edge reaches the teacher's left by a
  * pixel or two): the seat keeps those pixels, so the two targets never overlap.
  */
