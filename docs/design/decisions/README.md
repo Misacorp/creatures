@@ -491,6 +491,7 @@ Superseded: 1 entry (see the topic file).
 
 [ui.md](ui.md): Navigation and the frame, Home and the notice board, type scale, shared components, look and feel rules that apply across screens.
 
+- 2026-11-15 No sheet over a drawer in the Forge: the item card, the dismantle flow, the fire's numbers and the project board's lists are steps of their panel
 - 2026-11-15 No focus outlines in art scenes; keyboard focus shows as an in-world cue \[Misa\]
 - 2026-11-12 The house's night indoors follows the living room's look: graded, not ramped
 - 2026-11-11 The postcard follows the phase, lights are data per piece, and one painter stamps every scene
