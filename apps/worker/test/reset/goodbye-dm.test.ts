@@ -193,7 +193,7 @@ describe('the goodbye DM', () => {
       const text = embedText(embedOf(s));
       for (const part of expected) expect(text, nick).toContain(part);
       // Every @ is followed by a zero-width space, so it never resolves; a hostile line break never starts a new line.
-      expect(text, nick).not.toMatch(/@(?!​)/);
+      expect(text, nick).not.toMatch(new RegExp(`@(?!${String.fromCharCode(0x200b)})`));
       // Title, description, six fields and the creature field: one line each.
       expect(text.split('\n'), nick).toHaveLength(9);
     }
