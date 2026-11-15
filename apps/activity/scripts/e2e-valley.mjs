@@ -175,13 +175,14 @@ const headline = (kind, weight, count, extra = {}) => ({
 const paperOf = (kind, creatures) => {
   const [a, , c] = creatures;
   const newest = creatures[creatures.length - 1];
+  // The fixture has three creatures, so the newest is also `c`: three distinct newcomers are the newest, the second and the first.
   const long = kind === 'long absence';
   const headlines = long
     ? [
         headline('new-species', 95, 3, {
           creatureIds: [a.id],
           species: newest.species,
-          newcomers: [newest.id, creatures[1].id, c.id],
+          newcomers: [newest.id, creatures[1].id, a.id],
         }),
         headline('mastery-scout', 90, 2, { creatureIds: [a.id], step: 3 }),
         headline('found-gear', 95, 7, {
