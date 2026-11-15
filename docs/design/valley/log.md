@@ -675,3 +675,9 @@ Misa (2026-11-15): "We need to update the other places into the new layout". The
 **Art the place would like** (for the Art session): a small blueprint prop on the counter (the target sits over the stall's shelf now, since the art has no separate blueprint), and a clearer wooden sign on the open stall's side if a second sign is wanted there.
 
 **Pick up here:** the Market and the School pages (other agents), then the Paddock and the House.
+
+## 2026-11-15: four props on the place canvases (implementer, worktree of the five canvases combined)
+
+**Done.** The art library's `valley-place-props` are wired in, the pick of each in one constant (`PLACE_PROP_PICKS` in the set; `valley/place-prop-art.ts` draws them by day). The visitor's blueprint lies on his counter (x 33, bottom row on stall row 46) only while it is for sale: bought, or he is away, and the sprite, its tap and its plate are gone. The School's Graduation target is now the stage (pick B, the banner arch) in front of the yard, under the last yard row, clear of the house, seats, teacher and the corner; the old house box is gone. The Market shows `market-building` (pick B) instead of the stall plus rising scaffold until it is built (the scaffold still rises on a built stall being upgraded). The Paddock's "Creatures" button is the gate sign (pick C), centred under the meadow's front row and its plates; the meadow is shorter by the sign's room (`underFront`), so no roamer stands on it.
+
+**Decided.** The unbuilt Market has no tap on its prop (it had none on the old site), so the notes' clickable region is unused. The sign may suit the newcomers' gate better; the "Creatures" button still gets it, as asked. Log order: this file runs newest last, so the entry is at the end.
