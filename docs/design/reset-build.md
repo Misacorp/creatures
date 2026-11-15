@@ -41,7 +41,7 @@ Everything lives in `apps/worker/src/reset/`. Nothing in production reaches it: 
 
 ## Undecided
 
-- **Where the DM pairing lives** (point 6): the plan keeps no ids in the record; the release step needs the pairing of settler to Discord id for one run. Proposal: build the record and the list of Discord ids together in memory, send, then discard; if the object restarts midway, rebuild from the live database (still not wiped) and the `idHash` ties the retry to the same people. A DM sent twice after a crash is possible; a `dm_sent` style mark would prevent it.
+- **Where the DM pairing lives: decided by the lead (2026-11-15).** The release trigger builds the record and, in the same read, a settler id to Discord id list held in memory only; it sends the DMs, then discards the list. Each sent DM leaves a `dm_sent` mark (the settler id) in the guild's own store, which the wipe deletes anyway; after a restart midway the trigger rebuilds from the live database (not yet wiped) and skips settlers already marked, so nobody gets two goodbyes. The 24-hour cap still wipes even if some DMs never went.
 - **Whether `guild_meta` should be kept** (it is, so the object can ask the leet source who played). The alternative is a full wipe with the guild id re-learned from the next session; the leet sync then waits for the first session.
 - **Record size**: a 15-player server is a few hundred KB of JSON; the archive refuses a record over 1.5 million characters (one SQLite row holds up to 2 MB). A larger server would need chunking.
 - **Quirk**: stored as the quirk id, not its text, so later content reads the current wording.
