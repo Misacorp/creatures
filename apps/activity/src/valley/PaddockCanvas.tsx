@@ -192,6 +192,7 @@ export function PaddockCanvas({
           <CreatureHub
             key={`hub-${right.id}`}
             creature={one}
+            state={state}
             where={whereLine(one, visit, studying)}
             helper={post}
             busy={busy}

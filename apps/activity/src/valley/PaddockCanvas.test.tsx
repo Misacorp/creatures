@@ -208,6 +208,9 @@ describe('the Paddock canvas: what a click opens', () => {
     p.click(target(p, /at home in the Paddock/));
     expect(byClass(p.root, 'pc-page')).toHaveLength(1);
     expect(visibleText(p.root)).toMatch(/At home in the Paddock/);
+    expect(byClass(p.root, 'cs-summary')).toHaveLength(1);
+    expect(byClass(p.root, 'cc-name')).toHaveLength(0);
+    expect(byClass(p.root, 'xp-static')).toHaveLength(1);
     expect(byName(p.root, 'button', /^Open its page/)).toHaveLength(1);
     p.click(byName(p.root, 'button', /^Help build the Paddock/)[0] as FakeElement);
     const [[place, who] = []] = calls.posts;

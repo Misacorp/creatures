@@ -10,8 +10,9 @@
  * Every panel is a `PanelBody`; the two right ones are a one-step `ui/Wizard` whose first step has no Back (the X is the way out).
  */
 import { baseOption } from '../roster-picker';
+import { CreatureSummary } from './CreatureSummary';
 import { creatureName } from '../game';
-import type { Creature } from '../api';
+import type { Creature, GameState } from '../api';
 import { CreatureList } from '../ui/CreatureList';
 import { useWizard } from '../ui/use-wizard';
 import { WizardFooter, WizardView } from '../ui/Wizard';
@@ -36,11 +37,17 @@ export interface HelperPost {
 
 export function RestingPanel({
   resting,
+  creature,
+  tagState,
   helper,
   busy,
   onClose,
 }: {
   resting: Resting;
+  /** The whole creature (the fire's cast holds only what a plate needs). */
+  creature: Creature;
+  /** What the creature's tags read (lounging, first on server). */
+  tagState: Pick<GameState, 'loungerId' | 'loungeXp' | 'serverFirsts'>;
   /** Absent: the hearth's project is not on offer (the flag's block has not come), so only the creature shows. */
   helper: HelperPost | undefined;
   busy: boolean;
@@ -72,24 +79,16 @@ export function RestingPanel({
       }
     >
       <WizardView wizard={wizard}>
-        <div class="dr-stack">
-          <CreatureList
-            options={[
-              {
-                ...baseOption(resting.creature),
-                note: helping
-                  ? 'Helping build the hearth'
-                  : restingNote(resting.gained, resting.warm),
-              },
-            ]}
-            selection={{ mode: 'show', label: 'Resting creature' }}
-            chips={false}
-            class="flat"
-          />
+        <CreatureSummary
+          creature={creature}
+          state={tagState}
+          doing={helping ? 'Helping build the hearth' : 'Resting at the fire'}
+          gain={restingNote(resting.gained, resting.warm)}
+        >
           {helper !== undefined && (
             <p class="sp-note">A creature here helps build, a little each day.</p>
           )}
-        </div>
+        </CreatureSummary>
       </WizardView>
     </PanelBody>
   );

@@ -204,6 +204,13 @@ describe('the Bonfire canvas: what a click opens', () => {
     p.click(target(p, /resting by the fire, gained 25/));
     expect(byClass(p.root, 'pc-page')).toHaveLength(1);
     expect(visibleText(p.root)).toMatch(/\+25 XP this visit/);
+    // The drawer's title is the one name: under it the creature's portrait, tags and experience row (the card's own pieces), no second name.
+    expect(byClass(p.root, 'cs-summary')).toHaveLength(1);
+    expect(byClass(p.root, 'cc-big')).toHaveLength(1);
+    expect(byClass(p.root, 'cc-tags')).toHaveLength(1);
+    expect(byClass(p.root, 'xp-static')).toHaveLength(1);
+    expect(byClass(p.root, 'cc-name')).toHaveLength(0);
+    expect(visibleText(p.root)).toMatch(/Resting at the fire/);
     p.click(byName(p.root, 'button', /^Help build the hearth/)[0] as FakeElement);
     const [[place, who] = []] = calls.posts;
     expect(place).toBe('bonfire');

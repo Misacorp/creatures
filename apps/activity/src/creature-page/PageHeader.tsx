@@ -7,6 +7,21 @@ import { XpTrack } from '../ui/XpTrack';
 import { TrialPips } from '../valley/TrialPips';
 import { skillRows } from './skill-rows';
 
+/** The card's experience row (the level tag and the bar): the page's head and every drawer that sums a creature up draw it the same way. */
+export function ExperienceRow({ creature }: { creature: Creature }) {
+  return (
+    <XpTrack
+      level={creature.level}
+      value={creature.exp}
+      max={creature.expNeeded ?? 1}
+      top={creature.expNeeded === null}
+      label={experienceLabel(creature)}
+      text={xpWords(creature)}
+      levelEntry="level"
+    />
+  );
+}
+
 /**
  * The creature page's head: the card's own top (`CreatureHead`: the portrait at the top left, the name, the
  * tags in words under it, in the card's order) and then the card's experience row (`XpTrack`: the level tag
@@ -31,15 +46,7 @@ export function PageHeader({
   return (
     <div class="cp-head">
       <CreatureHead creature={creature} state={state} nameId={nameId} />
-      <XpTrack
-        level={creature.level}
-        value={creature.exp}
-        max={creature.expNeeded ?? 1}
-        top={creature.expNeeded === null}
-        label={experienceLabel(creature)}
-        text={xpWords(creature)}
-        levelEntry="level"
-      />
+      <ExperienceRow creature={creature} />
       <TrialPips creature={creature} />
       {skillRows(creature, skills).map((row) => (
         <XpTrack

@@ -18,7 +18,7 @@
  * panel as its own page. The scene keeps one size and place for the whole visit; drawers lie over its edges.
  */
 import { useMemo, useRef, useState } from 'preact/hooks';
-import type { Creature, ValleyVisit } from '../api';
+import type { Creature, GameState, ValleyVisit } from '../api';
 import { creatureName } from '../game';
 import { TOUCH_HOLD_MS } from '../dnd-core';
 import { busyReason } from '../gear-view';
@@ -28,6 +28,7 @@ import { useDragDrop } from '../use-drag-drop';
 import { Nameplate } from '../ui/Nameplate';
 import { CommonsBoard, type CommonsActions, type CommonsStart } from './CommonsBoard';
 import { HelperPanel, RestingList, RestingPanel, type HelperPost } from './BonfirePanels';
+import { NO_TAG_STATE } from './CreatureSummary';
 import { CanvasTarget, PanelBody, PlaceCanvas, type CanvasPanel, type Opener } from './PlaceCanvas';
 import { PLATES_Z } from './PlaceScene';
 import { seatAt } from './seat-parts';
@@ -75,6 +76,7 @@ export function BonfireCanvas({
   commons,
   acorns = 0,
   busy = false,
+  tagState = NO_TAG_STATE,
   start = {},
 }: {
   creatures: readonly Creature[];
@@ -90,6 +92,8 @@ export function BonfireCanvas({
   /** The player's Acorns (the `bait` balance). */
   acorns?: number;
   busy?: boolean;
+  /** What a creature's tags read in its drawer (lounging, first on server); absent shows none of those. */
+  tagState?: Pick<GameState, 'loungerId' | 'loungeXp' | 'serverFirsts'>;
   /** What is open at the start (the workbench and the tests show each). */
   start?: CommonsStart & { sheet?: boolean; resting?: boolean; helper?: boolean };
 }) {
@@ -175,7 +179,8 @@ export function BonfireCanvas({
   let rightPanel: CanvasPanel | null = null;
   if (right?.kind === 'resting') {
     const one = resting.find((r) => r.creature.id === right.id);
-    if (one !== undefined) {
+    const whole = creatures.find((c) => c.id === right.id);
+    if (one !== undefined && whole !== undefined) {
       rightPanel = {
         title: creatureName(one.creature),
         wizard: true,
@@ -188,6 +193,8 @@ export function BonfireCanvas({
           <RestingPanel
             key={right.id}
             resting={one}
+            creature={whole}
+            tagState={tagState}
             helper={post}
             busy={busy}
             onClose={() => {

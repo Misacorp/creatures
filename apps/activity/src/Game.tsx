@@ -1199,6 +1199,7 @@ export function Game({
                 zone: readerZone(),
               },
               acorns: game.balances.bait,
+              tagState: game,
               busy,
               error,
               ...(marketStart === undefined ? {} : { marketStart }),
