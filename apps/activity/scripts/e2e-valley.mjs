@@ -3082,7 +3082,6 @@ try {
     commonsState.communal = {};
     commonsState.hearthBp = 10000;
   };
-  const dialogOf = (name) => page.getByRole('dialog', { name });
 
   await scenario(
     "valley systems on: the Signpost's project board: give Acorns, post a helper, the plaque and the collection",
@@ -4168,7 +4167,11 @@ try {
           .first()
           .click();
         await waitFor(rightPanel.getByText(/chance of Tier 4 \/ 5/));
-        await page.keyboard.press('Escape');
+        // On a wide window the item card is in the left drawer: Escape closes the layers one at a time (the card, then the panel).
+        for (let i = 0; i < 3 && (await rightPanel.count()) > 0; i += 1) {
+          await page.keyboard.press('Escape');
+          await page.waitForTimeout(250);
+        }
         await rightPanel.waitFor({ state: 'detached', timeout: 10000 });
         // The blueprint on the counter: its price is icons and numbers; one tap buys, then it says so for the week.
         await sceneTarget("This week's blueprint").click();
