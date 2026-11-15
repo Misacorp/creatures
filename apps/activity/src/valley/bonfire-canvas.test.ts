@@ -1,73 +1,219 @@
 import { describe, expect, it } from 'vitest';
-import { CLUSTER_HALF, bonfireSceneDraw, edgeDressing, fireTarget } from './bonfire-canvas';
-import { placeArtBox, placeScale } from './place-scene';
+import {
+  ART_Y,
+  CLUSTER_PAD,
+  SCALE_MAX,
+  SCALE_MIN,
+  bonfireLayout,
+  bonfireSceneDraw,
+  bonfireScale,
+  edgeDressing,
+  fireTarget,
+  modeFor,
+} from './bonfire-canvas';
+import { fireSpots, FIRE_BOX, GRAND_BOX, moreSpot } from './bonfire-cast';
+import { CORNER, HELPER_AT, TABLE_BOX, cornerPieceBoxes } from './builders-corner';
+import { CORNER_SIZE, cornerSprite } from './builders-corner-art';
+import { PLATE_ROW_PX, plateGap, standBounds } from './place-plates';
 import { sceneGeometry } from './SceneFrame';
-import { GRAND_BOX, FIRE_BOX } from './bonfire-cast';
 
 const SIZES: [number, number][] = [
+  [360, 600],
   [390, 700],
+  [390, 780],
   [700, 600],
   [1100, 700],
+  [1100, 780],
   [1440, 800],
   [1920, 1000],
 ];
 
-const geometry = (width: number, height: number, art: 'bonfire' | 'bonfire-grand') =>
-  sceneGeometry(width, height, placeScale(width, height, art));
+const geometry = (width: number, height: number, grand: boolean, corner: boolean) =>
+  sceneGeometry(width, height, bonfireScale(width, height, grand, corner));
 
-describe('the Bonfire canvas: the edges of the scene', () => {
-  it('dresses only past the cluster, never over the fire and its seats', () => {
-    for (const [w, h] of SIZES) {
-      for (const art of ['bonfire', 'bonfire-grand'] as const) {
-        const g = geometry(w, h, art);
-        const box = placeArtBox(g, art);
-        const middle = box.x + box.width / 2;
-        for (const p of edgeDressing(g, box)) {
-          const width = p.sprite.rows[0]?.length ?? 0;
-          const near = Math.min(Math.abs(p.x - middle), Math.abs(p.x + width - middle));
-          const inside = p.x < middle + CLUSTER_HALF && p.x + width > middle - CLUSTER_HALF;
-          expect(inside, `${String(w)}x${String(h)} ${art}: a piece at ${String(p.x)}`).toBe(false);
-          expect(near).toBeGreaterThanOrEqual(CLUSTER_HALF - 1);
-        }
+const each = (check: (w: number, h: number, grand: boolean, corner: boolean) => void): void => {
+  for (const [w, h] of SIZES) {
+    for (const grand of [false, true]) {
+      for (const corner of [false, true]) check(w, h, grand, corner);
+    }
+  }
+};
+
+describe('the Bonfire canvas: the scale', () => {
+  it('is a whole number from the phone’s to the biggest, and a taller window never gets a smaller one', () => {
+    each((w, h, grand, corner) => {
+      const s = bonfireScale(w, h, grand, corner);
+      expect(Number.isInteger(s)).toBe(true);
+      expect(s).toBeGreaterThanOrEqual(SCALE_MIN);
+      expect(s).toBeLessThanOrEqual(SCALE_MAX);
+      expect(bonfireScale(w, h + 300, grand, corner)).toBeGreaterThanOrEqual(s);
+    });
+  });
+
+  it('fills a laptop: bigger than the old fire, which was never over 6', () => {
+    expect(bonfireScale(1440, 800, false, false)).toBe(8);
+    expect(bonfireScale(1440, 800, false, true)).toBeGreaterThanOrEqual(6);
+    expect(bonfireScale(1100, 780, false, true)).toBeGreaterThanOrEqual(6);
+  });
+
+  it('a corner below the fire costs a phone nothing in width, a hearth at the top level gets the room back', () => {
+    for (const grand of [false, true]) {
+      expect(bonfireScale(390, 780, grand, false)).toBeGreaterThanOrEqual(
+        bonfireScale(390, 780, grand, true),
+      );
+    }
+    expect(bonfireScale(390, 780, false, true)).toBe(4);
+  });
+
+  it('the corner goes beside the fire on a wide window and under it on a phone', () => {
+    expect(modeFor(98, false, true)).toBe('below');
+    expect(modeFor(260, false, true)).toBe('beside');
+    expect(modeFor(98, false, false)).toBe('none');
+    expect(modeFor(500, true, false)).toBe('none');
+  });
+});
+
+describe('the Bonfire canvas: the layout', () => {
+  it('keeps the fire, its ring and the corner inside the scene, and the corner clear of the ring', () => {
+    each((w, h, grand, corner) => {
+      const g = geometry(w, h, grand, corner);
+      const lay = bonfireLayout(g, grand, corner);
+      const name = `${String(w)}x${String(h)} ${grand ? 'grand' : 'plain'} ${corner ? 'corner' : 'no corner'}`;
+      expect(lay.box.y, name).toBeGreaterThanOrEqual(ART_Y);
+      expect(lay.box.y + lay.box.height, name).toBeLessThanOrEqual(g.H);
+      expect(lay.mode === 'none', name).toBe(!corner);
+      if (lay.corner === null) return;
+      // The corner is whole in the scene (a phone at the smallest scale may be narrower than it: then it is the one that cannot).
+      if (g.s > SCALE_MIN) {
+        expect(lay.corner.x, name).toBeGreaterThanOrEqual(0);
+        expect(lay.corner.x + CORNER.w, name).toBeLessThanOrEqual(g.W);
+        expect(lay.corner.y + CORNER.feet + Math.ceil(PLATE_ROW_PX / g.s), name).toBeLessThanOrEqual(
+          g.H,
+        );
       }
+      // Under the ring or beside it, never over it: the seats and the "+N more" button under the front seat end above or left of it.
+      const front = lay.box.y + (grand ? 74 : 80);
+      const under = Math.ceil((PLATE_ROW_PX + 40) / g.s);
+      if (lay.mode === 'below') expect(lay.corner.y, name).toBeGreaterThanOrEqual(front + under);
+      else expect(lay.corner.x, name).toBeGreaterThan(lay.box.x + (grand ? 82 : 60));
+    });
+  });
+
+  it('shows at least the front three creatures on a phone with a corner, with or without a "+N more" under them', () => {
+    for (const grand of [false, true]) {
+      const g = geometry(390, 780, grand, true);
+      const lay = bonfireLayout(g, grand, true);
+      const many = Array.from({ length: 7 }, (_, i) => ({
+        creature: { id: `c${String(i)}`, species: 'sproutle', level: 1, shiny: false, nickname: null },
+        gained: 0,
+        warm: false,
+      }));
+      const spots = fireSpots(many, lay.box, g, { grand });
+      expect(spots.length).toBeGreaterThanOrEqual(3);
+      const bounds = standBounds(g);
+      const gap = plateGap(g.s);
+      // The "+N more" button's top stands below every seat's plate, and the corner below the button.
+      const more = moreSpot(lay.box, g.s, grand);
+      for (const spot of spots) expect(more.y).toBeGreaterThan(spot.y + gap.y - 16);
+      expect(bounds.y).toBeLessThanOrEqual(lay.box.y);
     }
   });
 
+  it('is the same for the same window every time, and centres the working area', () => {
+    for (const grand of [false, true]) {
+      const g = geometry(1440, 800, grand, true);
+      const one = bonfireLayout(g, grand, true);
+      expect(bonfireLayout(g, grand, true)).toEqual(one);
+      const mid = (one.extent.left + one.extent.right) / 2;
+      expect(Math.abs(mid - g.cx)).toBeLessThanOrEqual(CORNER.w / 2 + 10);
+    }
+  });
+});
+
+describe('the Bonfire canvas: the builders’ corner', () => {
+  it('stands every piece inside its box, on the ground patch, with the helper beside the table', () => {
+    for (const p of cornerPieceBoxes()) {
+      expect(p.x, p.piece).toBeGreaterThanOrEqual(0);
+      expect(p.y, p.piece).toBeGreaterThanOrEqual(0);
+      expect(p.x + p.w, p.piece).toBeLessThanOrEqual(CORNER.w);
+      expect(p.y + p.h, p.piece).toBeLessThanOrEqual(CORNER.h);
+    }
+    expect(HELPER_AT.x).toBeGreaterThanOrEqual(TABLE_BOX.x + TABLE_BOX.w);
+    expect(HELPER_AT.y + 16).toBe(CORNER.feet);
+    expect(HELPER_AT.x + 16).toBeLessThanOrEqual(CORNER.w);
+  });
+
+  it('draws the pieces at the sizes the name map says (the art drops in by name)', () => {
+    for (const [name, size] of Object.entries(CORNER_SIZE) as [
+      keyof typeof CORNER_SIZE,
+      { w: number; h: number },
+    ][]) {
+      const sprite = cornerSprite(name);
+      expect(sprite.rows[0]?.length, name).toBe(size.w);
+      expect(sprite.rows.length, name).toBe(size.h);
+    }
+  });
+});
+
+describe('the Bonfire canvas: the edges of the scene', () => {
+  it('dresses only past the working area, never over the fire, its seats or the corner', () => {
+    each((w, h, grand, corner) => {
+      const g = geometry(w, h, grand, corner);
+      const lay = bonfireLayout(g, grand, corner);
+      for (const p of edgeDressing(g, lay.box, lay.extent)) {
+        const width = p.sprite.rows[0]?.length ?? 0;
+        const clear = p.x + width <= lay.extent.left || p.x >= lay.extent.right;
+        expect(clear, `${String(w)}x${String(h)}: a piece at ${String(p.x)}`).toBe(true);
+        const gapOk =
+          lay.extent.left - (p.x + width) >= CLUSTER_PAD - 1 ||
+          p.x - lay.extent.right >= CLUSTER_PAD - 1;
+        expect(gapOk).toBe(true);
+      }
+    });
+  });
+
   it('puts nothing below the scene, keeps every piece at least partly in view, and is the same every time', () => {
-    for (const [w, h] of SIZES) {
-      const g = geometry(w, h, 'bonfire');
-      const box = placeArtBox(g, 'bonfire');
-      const one = edgeDressing(g, box);
-      expect(edgeDressing(g, box)).toEqual(one);
+    each((w, h, grand, corner) => {
+      const g = geometry(w, h, grand, corner);
+      const lay = bonfireLayout(g, grand, corner);
+      const one = edgeDressing(g, lay.box, lay.extent);
+      expect(edgeDressing(g, lay.box, lay.extent)).toEqual(one);
       for (const p of one) {
         const width = p.sprite.rows[0]?.length ?? 0;
         expect(p.x + width).toBeGreaterThan(0);
         expect(p.x).toBeLessThan(g.W);
         expect(p.y + p.sprite.rows.length).toBeLessThanOrEqual(g.H);
       }
-    }
+    });
   });
 
   it('fills more of a wide window than of a phone, and draws back to front', () => {
-    const phone = geometry(390, 700, 'bonfire');
-    const wide = geometry(1920, 1000, 'bonfire');
-    const count = (g: typeof phone) => edgeDressing(g, placeArtBox(g, 'bonfire')).length;
-    expect(count(wide)).toBeGreaterThan(count(phone));
-    const g = wide;
-    const list = edgeDressing(g, placeArtBox(g, 'bonfire'));
-    const feet = list.map((p) => p.y + p.sprite.rows.length);
+    const count = (w: number, h: number) => {
+      const g = geometry(w, h, false, false);
+      const lay = bonfireLayout(g, false, false);
+      return edgeDressing(g, lay.box, lay.extent).length;
+    };
+    expect(count(1920, 1000)).toBeGreaterThan(count(390, 700));
+    const g = geometry(1920, 1000, false, false);
+    const lay = bonfireLayout(g, false, false);
+    const feet = edgeDressing(g, lay.box, lay.extent).map((p) => p.y + p.sprite.rows.length);
     expect(feet).toEqual([...feet].sort((a, b) => a - b));
   });
 
-  it('draws the ground to every edge, the fire in the middle, and the scaffolding over it while the project fills', () => {
-    const g = geometry(1100, 700, 'bonfire-grand');
-    const plain = bonfireSceneDraw('bonfire-grand', 0)(g);
-    const built = bonfireSceneDraw('bonfire-grand', 2)(g);
+  it('draws the ground to every edge, the fire, the scaffolding over it while the project fills, and the corner while there is one', () => {
+    const g = geometry(1100, 780, true, true);
+    const none = bonfireSceneDraw('bonfire-grand', 0, false)(g);
+    const plain = bonfireSceneDraw('bonfire-grand', 0, true)(g);
+    const built = bonfireSceneDraw('bonfire-grand', 2, true)(g);
     expect(built.length).toBe(plain.length + 1);
-    const box = placeArtBox(g, 'bonfire-grand');
+    // The corner: its table is drawn with it and not without it.
+    const table = cornerSprite('table');
+    expect(plain.some((p) => p.sprite === table)).toBe(true);
+    expect(none.some((p) => p.sprite === table)).toBe(false);
+    const lay = bonfireLayout(g, true, true);
     const last = built[built.length - 1];
-    expect(last).toMatchObject({ x: box.x, y: box.y });
-    const grass = plain.filter((p) => p.sprite.rows.length === 16 && p.y >= 0);
+    expect(last).toMatchObject({ x: lay.box.x, y: lay.box.y });
+    const grass = none.filter((p) => p.sprite.rows.length === 16 && p.y >= 0);
     expect(Math.max(...grass.map((p) => p.x))).toBeGreaterThanOrEqual(g.W - 16);
     expect(Math.max(...grass.map((p) => p.y))).toBeGreaterThanOrEqual(g.H - 16);
   });

@@ -15,7 +15,7 @@ import {
 import { homeInput } from '../workbench/home-sample';
 import { BonfireCanvas } from './BonfireCanvas';
 import type { CommonsActions } from './CommonsBoard';
-import { withCommons } from './commons-sample';
+import { buildingPlace, openPlace, sampleCommons, withCommons } from './commons-sample';
 import { sampleValley } from './signpost-sample';
 
 let page: Page | null = null;
@@ -104,22 +104,80 @@ describe('the Bonfire canvas: the scene', () => {
     expect(byClass(p.root, 'nameplate-level').length).toBeGreaterThan(0);
   });
 
-  it('draws the helper seat as a dashed outline only while the hearth has a project and nobody helps', () => {
+  it('draws the builders’ corner only while the hearth has a project being built, with the helper spot as a dashed outline while nobody helps', () => {
     const none = draw(resting, false);
-    expect(labels(none).some((n) => /^The helper seat/.test(n))).toBe(false);
+    expect(labels(none).some((n) => /^The helper spot/.test(n))).toBe(false);
+    expect(labels(none).some((n) => /^The builders' table/.test(n))).toBe(false);
     none.unmount();
     page = null;
     const open = draw(withCommons(resting), true);
-    const seat = target(open, /^The helper seat/);
+    const seat = target(open, /^The helper spot/);
     expect(seat.getAttribute('class')).toMatch(/cv-slot/);
+    expect(labels(open).some((n) => /^The builders' table/.test(n))).toBe(true);
+    // The fire is no way into the board while the table is.
+    expect(labels(open).some((n) => /^The hearth/.test(n))).toBe(false);
     open.unmount();
     page = null;
     const helped = draw(
       withCommons(resting, undefined, { place: 'bonfire', creatureId: a.id }),
       true,
     );
-    expect(labels(helped).some((n) => /^The helper seat/.test(n))).toBe(false);
-    expect(labels(helped).some((n) => /helping build the hearth\. Change/.test(n))).toBe(true);
+    expect(labels(helped).some((n) => /^The helper spot/.test(n))).toBe(false);
+    expect(
+      labels(helped).some((n) => /helping build the hearth at the builders' table\. Change/.test(n)),
+    ).toBe(true);
+  });
+
+  it('keeps the corner while the project builds for its days, drops it at the top level and while the guided start has not come', () => {
+    const top = openPlace('bonfire', 5, 900, 0.2, { cosmetic: 1 });
+    const cases: [string, ReturnType<typeof sampleCommons>, boolean][] = [
+      ['open', sampleCommons(), true],
+      ['building', sampleCommons({ places: [buildingPlace('bonfire', 2, 2, [])] }), true],
+      ['top level', sampleCommons({ places: [{ ...top, level: top.max }] }), false],
+      ['not reached', sampleCommons({ places: [{ ...top, state: 'waiting', level: 1 }] }), false],
+    ];
+    for (const [name, commons, corner] of cases) {
+      const p = draw(withCommons(resting, commons), true);
+      expect(
+        labels(p).some((n) => /^The builders' table/.test(n)),
+        name,
+      ).toBe(corner);
+      expect(
+        labels(p).some((n) => /^The hearth/.test(n)),
+        name,
+      ).toBe(!corner);
+      p.unmount();
+      page = null;
+    }
+  });
+
+  it('a helper still posted at the top level stays in sight with its table', () => {
+    const top = openPlace('bonfire', 5, 900, 0.2, { cosmetic: 1 });
+    const p = draw(
+      withCommons(resting, sampleCommons({ places: [{ ...top, level: top.max }] }), {
+        place: 'bonfire',
+        creatureId: a.id,
+      }),
+      true,
+    );
+    expect(labels(p).some((n) => /helping build the hearth at the builders' table/.test(n))).toBe(
+      true,
+    );
+  });
+});
+
+describe('the Bonfire canvas: who does what', () => {
+  it('the creatures at the fire idle like the lounge’s, and the helper hammers at the table, not at the fire', () => {
+    const p = draw(
+      withCommons(resting, undefined, { place: 'bonfire', creatureId: a.id }),
+      true,
+    );
+    const idle = byClass(p.root, 'vy-bob');
+    const resters = labels(p).filter((n) => /resting by the fire/.test(n)).length;
+    expect(idle.length).toBe(resters);
+    expect(idle.length).toBeGreaterThan(0);
+    expect(byClass(p.root, 'fi-hammer')).toHaveLength(1);
+    expect(byClass(p.root, 'fi-hammer')[0]?.getAttribute('class')).not.toMatch(/vy-bob/);
   });
 });
 
@@ -148,18 +206,25 @@ describe('the Bonfire canvas: what a click opens', () => {
     expect(visibleText(p.root)).toMatch(/XP this visit|Resting/);
   });
 
-  it('the fire opens the project board in the left drawer, with the hearth line', () => {
-    const p = draw({ ...withCommons(resting) }, true);
-    p.click(target(p, /^The hearth/));
+  it('the builders’ table opens the project board in the left drawer, with the hearth line', () => {
+    const p = draw(withCommons(resting, sampleCommons({ hearthBp: 10_800 })), true);
+    p.click(target(p, /^The builders' table/));
     expect(visibleText(p.root)).toMatch(/Project board/);
     expect(visibleText(p.root)).toMatch(/Give/);
+    expect(visibleText(p.root)).toMatch(/The hearth adds 8%/);
+  });
+
+  it('with no corner the fire opens the board', () => {
+    const p = draw(resting, true);
+    p.click(target(p, /^The hearth/));
+    expect(visibleText(p.root)).toMatch(/Project board/);
   });
 
   it('the helper seat opens the picker (a list of creatures, a tap picks and posts)', () => {
     const calls: Calls = { posts: [] };
     const p = draw(withCommons(resting), true, calls);
-    p.click(target(p, /^The helper seat/));
-    expect(visibleText(p.root)).toMatch(/Who lights the lanterns/);
+    p.click(target(p, /^The helper spot/));
+    expect(visibleText(p.root)).toMatch(/Who helps build the hearth/);
     expect(byRole(p.root, 'option').length).toBeGreaterThan(0);
   });
 });

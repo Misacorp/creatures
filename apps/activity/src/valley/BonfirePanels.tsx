@@ -4,7 +4,7 @@
  * - `RestingPanel` (right drawer, a page on a phone): one resting creature of the player's, as a row of the shared creature list (`show`
  *   mode) with what it gained this visit, and the one thing a creature at the fire can do: help build the hearth, or go back to resting
  *   when it already does. Nothing here decides anything: the post is the game's action and the server answers.
- * - `LampPanel` (right drawer): the helper's seat, who lights the lanterns: the creature list with a tap picking, or "Back to resting".
+ * - `HelperPanel` (right drawer): the helper's seat, who helps at the builders' table: the creature list with a tap picking, or "Back to resting".
  * - `RestingList` (left drawer): everyone resting with the visit's gain, each row a tap that opens that creature's right drawer.
  *
  * Every panel is a `PanelBody`; the two right ones are a one-step `ui/Wizard` whose first step has no Back (the X is the way out).
@@ -95,7 +95,7 @@ export function RestingPanel({
   );
 }
 
-export function LampPanel({
+export function HelperPanel({
   visit,
   creatures,
   helper,
@@ -107,7 +107,7 @@ export function LampPanel({
   onClose: () => void;
 }) {
   const wizard = useWizard(
-    [{ id: 'who', title: 'Who lights the lanterns?', backLabel: 'to the fire' }],
+    [{ id: 'who', title: 'Who helps build the hearth?', backLabel: 'to the fire' }],
     { onExit: onClose },
   );
   const seat = commonsOf(visit)?.communal.find((c) => c.place === 'bonfire');

@@ -175,6 +175,30 @@ function rope(grid: PixelGrid, from: number, to: number, y: number): void {
   }
 }
 
+/** The pieces of ground work as loose sprites (the builders' corner's materials, `builders-corner-art.ts`). */
+export type GroundPiece = 'sawhorse' | 'pail' | 'mallet' | 'planks';
+
+const pieceCache = new Map<GroundPiece, SpriteDef>();
+
+/** One piece of the ground work on its own: a sawhorse (16 x 9), a pail (7 x 7), a mallet (10 x 6) or a stack of three planks (15 x 10). */
+export function groundPiece(piece: GroundPiece): SpriteDef {
+  const hit = pieceCache.get(piece);
+  if (hit !== undefined) return hit;
+  let rows: readonly string[];
+  if (piece === 'planks') {
+    const grid = new PixelGrid(15, 10);
+    planks(grid, 0, 9, 3);
+    rows = grid.rows();
+  } else {
+    rows = { sawhorse: SAWHORSE, pail: BUCKET, mallet: MALLET }[piece];
+  }
+  const used = new Set(rows.join(''));
+  const palette = Object.fromEntries(Object.entries(PALETTE).filter(([k]) => used.has(k)));
+  const out: SpriteDef = { rows: [...rows], palette };
+  pieceCache.set(piece, out);
+  return out;
+}
+
 const groundCache = new WeakMap<SpriteDef, Map<number, SpriteDef>>();
 
 /**

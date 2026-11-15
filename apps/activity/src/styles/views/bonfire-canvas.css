@@ -10,3 +10,40 @@
   display: flex;
   flex-direction: column;
 }
+
+/*
+  The creatures at the fire idle as the living room's loungers do (`CreatureSprite`, `idle`): a bob of 3 px in two steps (the
+  lounge's), each creature a little out of step with the next (`vy-bd0` to `vy-bd5`), and still for reduced motion. The bob is a
+  `translate`, so a mirrored creature keeps its `transform`.
+*/
+@media (prefers-reduced-motion: no-preference) {
+  .vy-bob {
+    animation: vy-bob 1200ms steps(1) infinite;
+  }
+
+  .vy-bd1 {
+    animation-delay: -200ms;
+  }
+
+  .vy-bd2 {
+    animation-delay: -400ms;
+  }
+
+  .vy-bd3 {
+    animation-delay: -600ms;
+  }
+
+  .vy-bd4 {
+    animation-delay: -800ms;
+  }
+
+  .vy-bd5 {
+    animation-delay: -1000ms;
+  }
+}
+
+@keyframes vy-bob {
+  50% {
+    translate: 0 -3px;
+  }
+}

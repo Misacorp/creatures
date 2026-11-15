@@ -3239,11 +3239,14 @@ try {
         await place('bonfire').evaluate((el) => el.click());
         await waitFor(heading('Bonfire'));
         await bonfireCanvasChecks();
-        // The fire is the project board's way in; the helper seat is a dashed outline; nothing scrolls.
-        const fire = sceneTarget('The hearth');
+        // The builders' corner (the project is being built): its table is the project board's way in, the fire is no target, the
+        // helper spot beside the table is a dashed outline; nothing scrolls.
+        const fire = sceneTarget("The builders' table");
         await waitFor(fire);
-        await expectTopmost(fire, 'the hearth target');
-        await waitFor(page.locator('button.cv-target.cv-slot[aria-label^="The helper seat"]'));
+        await expectTopmost(fire, 'the builders table target');
+        if ((await sceneTarget('The hearth').count()) > 0)
+          throw new Error('the fire is a target while the builders corner stands');
+        await waitFor(page.locator('button.cv-target.cv-slot[aria-label^="The helper spot"]'));
         const plates = page.locator('.cv-plate .nameplate');
         for (let i = 0; i < (await plates.count()); i += 1)
           await expectTopmost(plates.nth(i), `plate ${String(i)} at the fire`);
@@ -3292,7 +3295,7 @@ try {
         if ((await page.locator('button.cv-target.cv-slot').count()) !== 0)
           throw new Error('the helper seat is still an empty outline');
         await page
-          .locator('button.cv-target[aria-label*="helping build the hearth. Change"]')
+          .locator('button.cv-target[aria-label*="at the builders\' table. Change"]')
           .click();
         await waitFor(rightPanel.getByRole('option').first());
         await shot('commons-bonfire-seat');
@@ -3301,6 +3304,49 @@ try {
         await hudBack().click();
         await waitFor(page.locator(VALLEY), 'attached');
         await shot('commons-map-level3');
+      } finally {
+        commonsOff();
+      }
+    },
+  );
+
+  await scenario(
+    'valley systems on: the Bonfire at its top level has no builders corner, and the fire opens the board',
+    () => {
+      const creatures = commonsOn();
+      commonsScene({
+        bonfire: {
+          level: 5,
+          state: 'open',
+          size: 900,
+          have: { acorns: 120, scrap: 200, shards: 20 },
+          given: 0,
+          plaque: ['Ada', 'Mia'],
+          keepsakes: 1,
+        },
+      });
+      commonsState.hearthBp = 12500;
+      stateOverride = { creatures, valley: valleyBlock() };
+    },
+    async () => {
+      try {
+        await waitFor(page.locator(VALLEY), 'attached');
+        await place('bonfire').evaluate((el) => el.click());
+        await waitFor(heading('Bonfire'));
+        await bonfireCanvasChecks();
+        const fire = sceneTarget('The hearth');
+        await waitFor(fire);
+        await expectTopmost(fire, 'the hearth target');
+        if ((await page.locator('button.cv-target[aria-label^="The builders"]').count()) > 0)
+          throw new Error('the builders corner stands at the top level');
+        if ((await page.locator('button.cv-target[aria-label^="The helper spot"]').count()) > 0)
+          throw new Error('a helper spot stands at the top level');
+        await expectNoScroll();
+        await page.waitForTimeout(300);
+        await shot('bonfire-top-level');
+        await fire.click();
+        await waitFor(leftPanel.getByText(/The hearth adds 25% to every creature/));
+        await page.keyboard.press('Escape');
       } finally {
         commonsOff();
       }
