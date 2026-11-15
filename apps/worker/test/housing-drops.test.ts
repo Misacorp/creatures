@@ -75,6 +75,7 @@ describe('the reward paths call the housing hook', () => {
       state: () => Promise<unknown>;
       moveTo: (destination: string) => Promise<number>;
     }) => Promise<void>,
+    housingRng: Rng,
   ): Promise<void> => {
     const NONE: Rng = { nextU32: () => 0 };
     await runCore(
@@ -114,10 +115,18 @@ describe('the reward paths call the housing hook', () => {
         combatV2: true,
         dailyAllowance: true,
         scoutRng: NONE,
-        ...housingOptions(),
+        housing: true,
+        housingRng,
       },
     );
   };
+
+  const materialsHeld = (ctx: CoreContext): number =>
+    count(ctx.sql, 'house_items', "kind = 'material'");
+  // Every roll succeeds at any chance above zero.
+  const SURE: Rng = { nextU32: () => 0 };
+  // A roll 10% of the way up: under the listed 30% of a full day's pack, over the scaled chance of a short one.
+  const TENTH: Rng = { nextU32: () => 100_000 };
 
   it('a scout pack that scouted a day comes home and drops once, keyed by the seat and its arrival', async () => {
     await scoutWorld(async ({ ctx, seatId, state }) => {
@@ -126,10 +135,13 @@ describe('the reward paths call the housing hook', () => {
       const dropped = keysOf(ctx, 'scout:');
       expect(dropped).toHaveLength(1);
       expect(dropped[0]?.key.startsWith(`scout:${seatId}:`)).toBe(true);
-      // Another look brings nothing home and drops nothing.
+      expect(materialsHeld(ctx)).toBeGreaterThan(0);
+      // Another look brings nothing home and drops nothing more.
+      const held = materialsHeld(ctx);
       await state();
       expect(keysOf(ctx, 'scout:')).toEqual(dropped);
-    });
+      expect(materialsHeld(ctx)).toBe(held);
+    }, SURE);
   });
 
   it('a pack left two days still drops once, not twice', async () => {
@@ -138,45 +150,41 @@ describe('the reward paths call the housing hook', () => {
       await state();
       await state();
       expect(keysOf(ctx, 'scout:')).toHaveLength(1);
-    });
+    }, SURE);
   });
 
-  it('a short pack brought home by a destination change drops nothing', async () => {
+  it('a short pack brought home by a destination change rolls at its scaled chance, which a 10% roll misses', async () => {
     await scoutWorld(async ({ ctx, moveTo }) => {
       ctx.clock.t += HOUR / 2;
       expect(await moveTo('ember-caves')).toBe(200);
-      expect(keysOf(ctx, 'scout:')).toHaveLength(0);
-    });
+      expect(materialsHeld(ctx)).toBe(0);
+    }, TENTH);
   });
 
-  it('a pack that came home before the rule (11 hours) drops nothing, and its hours do not carry over', async () => {
-    await scoutWorld(async ({ ctx, seatId, state }) => {
-      ctx.clock.t += 11 * HOUR;
+  it('the same 10% roll does drop from a full day pack (the listed 30%)', async () => {
+    await scoutWorld(async ({ ctx, state }) => {
+      ctx.clock.t += 24 * HOUR;
       await state();
-      expect(keysOf(ctx, 'scout:')).toHaveLength(0);
-      // The store is empty after coming home: the next 11 hours are a new, short pack again.
-      expect(
-        rows<{ h: number }>(
-          ctx.sql,
-          'SELECT store_hours AS h FROM valley_seats WHERE seat_id = ?',
-          seatId,
-        )[0]?.h,
-      ).toBe(0);
-    });
+      expect(materialsHeld(ctx)).toBeGreaterThan(0);
+    }, TENTH);
   });
 
-  it('changing destination every half hour for a day drops nothing; a day on one place after it drops once', async () => {
-    await scoutWorld(async ({ ctx, moveTo, state }) => {
+  it('a pack with no hours (nothing scouted yet) is not rolled at all', async () => {
+    await scoutWorld(async ({ ctx, moveTo }) => {
+      expect(await moveTo('ember-caves')).toBe(200);
+      expect(keysOf(ctx, 'scout:')).toHaveLength(0);
+    }, SURE);
+  });
+
+  it('changing destination every half hour for a day drops nothing a 10% roll can win', async () => {
+    await scoutWorld(async ({ ctx, moveTo }) => {
       for (let i = 0; i < 48; i++) {
         ctx.clock.t += HOUR / 2;
         expect(await moveTo(i % 2 === 0 ? 'ember-caves' : 'storm-ridge')).toBe(200);
         ctx.sql.exec('UPDATE valley_seats SET gear_finds = 1 WHERE gear_finds = 0');
       }
-      expect(keysOf(ctx, 'scout:')).toHaveLength(0);
-      ctx.clock.t += 24 * HOUR;
-      await state();
-      expect(keysOf(ctx, 'scout:')).toHaveLength(1);
-    });
+      expect(materialsHeld(ctx)).toBe(0);
+    }, TENTH);
   });
 
   it('a dungeon run that ends drops once, and the drop shows in GET /api/house', async () => {
@@ -313,7 +321,14 @@ describe('what the hook costs when it is on (rows read and written for one momen
         const user = '8000000000000000001';
         const moments = [
           { kind: 'trip', key: 'trip:a', place: 'tidepools', element: 'tide', ticks: 9 },
-          { kind: 'scout', key: 'scout:a', place: 'tidepools', element: 'tide', finds: 7 },
+          {
+            kind: 'scout',
+            key: 'scout:a',
+            place: 'tidepools',
+            element: 'tide',
+            finds: 7,
+            hours: 24,
+          },
           { kind: 'dungeon', key: 'dungeon:a', depth: 10, cleared: true },
           {
             kind: 'raid',

@@ -41,7 +41,14 @@ const BUDGET = {
 
 const MOMENTS = {
   dropTrip: { kind: 'trip', key: 'trip:m', place: 'tidepools', element: 'tide', ticks: 9 },
-  dropScout: { kind: 'scout', key: 'scout:m', place: 'tidepools', element: 'tide', finds: 7 },
+  dropScout: {
+    kind: 'scout',
+    key: 'scout:m',
+    place: 'tidepools',
+    element: 'tide',
+    finds: 7,
+    hours: 24,
+  },
   dropDungeon: { kind: 'dungeon', key: 'dungeon:m', depth: 10, cleared: true },
   dropRaid: {
     kind: 'raid',
