@@ -621,3 +621,17 @@ Misa reviewed the sample: 6a yes, the canvas pattern rolls out; 6b "bigger" (a l
 **Picks to glance at.** `SCALE_MAX` 8; the corner's ground is a plain rectangle of the map's dirt tile; the fire still shows the ground-work scaffolding (stakes, rope, planks and so on) while the project fills, as before, though the corner holds the tools and materials too: it could be cut back to stakes and rope if the fire looks crowded.
 
 **Pick up here:** the same corner for the other places' projects when they move onto the canvas (the Paddock and the Signpost keep theirs in their boards).
+
+## 2026-11-15: the Paddock as a canvas (implementer, worktree of the Bonfire's tip)
+
+Misa: "We need to update the other places into the new layout." Decision `2026-11-15-the-paddock-is-a-canvas-the` (topic `valley`) holds the detail.
+
+**Built** (behind `VALLEY_SYSTEMS`; the flag off keeps the old page and band scene). `valley/PaddockCanvas.tsx`, `PaddockPanels.tsx`, `paddock-canvas.ts`, `styles/views/paddock-canvas.css`. The yard fills the window (the paddock's art with the Bonfire's ground, sky and edge dressing; scale picked like `bonfireScale`) and never scrolls. The creatures at home roam in a meadow as wide as the working area, each a tap with a plate (right drawer: where it is, "Help build the Paddock", "Open its page"); a drag still moves one (`Draggable`, now exported from `PlaceScene`). The gate (newcomers stand at it, at most two) opens the waiting catches in the right drawer; "Creatures" (or "+N more") opens the Creatures page in the left drawer. The builders' corner holds the project (table: board, left; helper seat: right), as at the Bonfire.
+
+**Where each old function went.** Creatures list, finder, filters, cards and creature pages: the left drawer (`Collection`, with `catchesElsewhere`: no waiting catches in it; a page's "Answer a waiting catch" opens the gate). Waiting catches and Confirm: the gate's drawer. The popover's "View": the creature's page in the right drawer. Roaming and dragging: the yard. The project board and the helper seat (board under the scene before): the builders' corner. The band scene's pinned "Choose for the newcomer" button: the gate tap.
+
+**Small fixes on the way.** `SceneFrame`'s Escape no longer leaves a place when it only closes a popover over it (the popover's re-render could land between the two handlers); the e2e's Paddock steps follow the canvas.
+
+**Picks to glance at.** The level art of the Paddock (`valley-levels-paddock`, five levels) is not wired in the game, so the yard shows today's paddock art. A creature that is not at home opens (from the popover's "View") with where it is.
+
+**Pick up here:** the other places that still have a page under a band scene (Cave, Arena, Fairground, House).

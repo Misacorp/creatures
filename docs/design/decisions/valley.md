@@ -4,6 +4,14 @@ The valley and peaceful systems overhaul planned in docs/design/valley/: job pos
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-15: The Paddock is a canvas: the yard is the scene, the gate and each creature are taps, the project in a builders' corner
+
+ID: `2026-11-15-the-paddock-is-a-canvas-the` · Status: current
+
+**Decision.** With `VALLEY_SYSTEMS` on, the Paddock opens straight on its yard as a canvas (`valley/PaddockCanvas`, rule "A place is a canvas"). The creatures at home roam in it, each a tap with its plate that opens in the right drawer (where it is, "Help build the Paddock" with a project, and "Open its page", the creature's own page as the next step of that panel); a hand still moves a creature and a drag never opens a drawer. The gate is a tap while newcomers wait (at most two stand at it) and opens the waiting catches in the right drawer, the same cards and the one Confirm. A "Creatures" button under the meadow (or "+N more" when not all fit) opens the whole Creatures page (`Collection`, with the waiting catches left out) in the left drawer. The project is in a builders' corner (`builders-corner.ts`), only while one is being built or a helper is posted: its table opens the board (left), its helper seat picks who helps (right, the Bonfire's `HelperPanel` with the Paddock's words). The Creatures tab's page, the band scene and the board under it are gone from the valley; with the flag off the old page and band scene stay. Escape no longer leaves a canvas place when it closes a popover over it (`SceneFrame` looks for a dialog before any layer's own handler runs).
+
+**Reasoning.** Misa (2026-11-15): "We need to update the other places into the new layout." The Paddock's idea is its creatures and its gate, so those are the scene and its taps; the project is somewhere else, as at the Bonfire. The Creatures page is a collection that belongs to no one spot, so it is the left drawer. The creature's page keeps every action it had (equip, talents, evolve, note, lounge) as a step of the drawer, so nothing was lost. Keep and release exist for newcomers only (a creature already kept has no release); they are at the gate.
+
 ## 2026-11-15: The Bonfire is a canvas of creatures chilling round the fire, and the project lives in a builders' corner **[Misa]**
 
 ID: `2026-11-15-the-bonfire-is-a-canvas-of` · Status: current

@@ -587,6 +587,7 @@ Superseded: 1 entry (see the topic file).
 
 [valley.md](valley.md): The valley and peaceful systems overhaul planned in docs/design/valley/: job posts, the bonfire, the commons, the Forge loop, gear, trials, the School, the visitor, the economy lab, and Misa's question rounds.
 
+- 2026-11-15 The Paddock is a canvas: the yard is the scene, the gate and each creature are taps, the project in a builders' corner
 - 2026-11-15 The Bonfire is a canvas of creatures chilling round the fire, and the project lives in a builders' corner \[Misa\]
 - 2026-11-15 The sealed crate's reveal is a modal part of the Forge's art scene, four plays behind one switch
 - 2026-11-15 The Forge's rare and epic pieces wait in a sealed crate until opened \[Misa\]

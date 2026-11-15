@@ -9,6 +9,7 @@ import {
   gateSpots,
   gateTarget,
   meadowAt,
+  meadowFor,
   modeFor,
   paddockLayout,
   paddockScale,
@@ -71,7 +72,7 @@ describe('the Paddock canvas: the layout', () => {
       const name = `${String(w)}x${String(h)} ${corner ? 'corner' : 'no corner'}`;
       expect(lay.mode === 'none', name).toBe(!corner);
       expect(lay.box.y, name).toBeGreaterThanOrEqual(0);
-      const meadow = meadowAt(lay.box);
+      const meadow = meadowFor(g, lay);
       const underFeet = Math.ceil((PLATE_ROW_PX + 40) / g.s);
       expect(meadow.y + meadow.height + CREATURE_PX + underFeet, name).toBeLessThanOrEqual(g.H);
       // The gate's newcomers stand on the scene.
@@ -102,14 +103,26 @@ describe('the Paddock canvas: the layout', () => {
     expect(Math.abs(mid - g.cx)).toBeLessThanOrEqual(CORNER.w / 2 + 10);
   });
 
-  it('puts the "Creatures" button under the meadow’s front row, inside the scene', () => {
+  it('gives a taller window’s spare height to the meadow, keeping the rails high', () => {
+    const short = geometry(390, 700, false);
+    const tall = geometry(390, 900, false);
+    const a = meadowFor(short, paddockLayout(short, false));
+    const b = meadowFor(tall, paddockLayout(tall, false));
+    expect(b.height).toBeGreaterThan(a.height);
+    expect(paddockLayout(tall, false).box.y).toBeLessThan(tall.H / 4);
+  });
+
+  it('puts the "Creatures" button under the meadow’s front row, inside the scene, above the corner', () => {
     each((w, h, corner) => {
       const g = geometry(w, h, corner);
       const lay = paddockLayout(g, corner);
-      const spot = creaturesSpot(lay.box, g.s);
-      const meadow = meadowAt(lay.box);
+      const meadow = meadowFor(g, lay);
+      const spot = creaturesSpot(meadow, g.s);
       expect(spot.y).toBeGreaterThanOrEqual(meadow.y + meadow.height + CREATURE_PX);
       expect(spot.y + Math.ceil(32 / g.s)).toBeLessThanOrEqual(g.H);
+      if (lay.mode === 'below' && lay.corner !== null) {
+        expect(spot.y + Math.ceil(32 / g.s)).toBeLessThanOrEqual(lay.corner.y);
+      }
     });
   });
 });

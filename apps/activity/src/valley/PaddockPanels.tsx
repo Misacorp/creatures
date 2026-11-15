@@ -12,7 +12,6 @@
  */
 import { useState } from 'preact/hooks';
 import type { Creature, GameState } from '../api';
-import { creatureName } from '../game';
 import type { GearState } from '../gear-types';
 import { baseOption } from '../roster-picker';
 import { CreatureList } from '../ui/CreatureList';
@@ -111,7 +110,7 @@ export function CreatureStep({
           },
         }}
         focus={null}
-        backLabel={`to ${creatureName(creature)}`}
+        backLabel="Back"
         onBack={onBack}
         onAnswerCatch={onAnswerCatch}
         loadGames={loadGames}

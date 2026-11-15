@@ -1164,6 +1164,16 @@ const bonfireCanvasChecks = async () => {
   if ((await page.locator('.vy-soon .vy-page').count()) > 0)
     throw new Error('the Bonfire has a page under its scene');
 };
+/** The Paddock opens straight on its yard as a canvas (no page under it): the scene is inside the canvas shell, with no board on it. */
+const paddockCanvasChecks = async () => {
+  await waitFor(page.locator('.pc-root .vy-in-paddock'));
+  if ((await page.locator('.vy-page section[aria-label="Paddock project"]').count()) > 0)
+    throw new Error('the Paddock has its project board on the yard');
+  if ((await page.locator('.vy-band').count()) > 0) throw new Error('the Paddock has a band scene');
+};
+/** The Paddock's "Creatures" button (or "+N more" when not all fit): the way into the Creatures page, the left drawer. */
+const creaturesButton = () =>
+  page.locator('button.cv-target[aria-label*="your creatures"]').locator('visible=true');
 const backToValley = async () => {
   await hudBack().click();
   await waitFor(page.locator(VALLEY), 'attached');
@@ -3186,28 +3196,110 @@ try {
         await waitFor(page.locator(VALLEY), 'attached');
         await place('paddock').evaluate((el) => el.click());
         await waitFor(heading('Paddock'));
-        const paddock = page.locator('section[aria-label="Paddock project"]');
-        await waitFor(paddock);
+        // The Paddock is a canvas: the yard is the page, and its project is in the builders' corner, never on the yard.
+        await paddockCanvasChecks();
         // The scaffolding stands high round the Paddock: its project is three quarters full.
         await page.waitForTimeout(300);
+        await expectNoScroll();
         await shot('commons-paddock-scaffolding');
-        // A helper at the Paddock stands at its rails (it does not wander the meadow).
-        await paddock.getByRole('button', { name: /^Paddock: nobody helps/ }).click();
-        await waitFor(dialogOf(/Who helps build/));
-        await page
+        // A helper at the Paddock works at the builders' table (it does not wander the meadow).
+        await sceneTarget('The helper spot').click();
+        await waitFor(rightPanel.getByRole('option').first());
+        await page.waitForTimeout(300);
+        await shot('commons-paddock-helper-picker');
+        await rightPanel
           .getByRole('option')
           .filter({ hasText: /Sproutle/ })
           .first()
           .click();
-        await waitFor(paddock.getByRole('button', { name: /^Paddock: Sproutle.*helping/ }));
+        await waitFor(
+          page
+            .locator('button.cv-target[aria-label*="helping build the Paddock at the builders"]')
+            .locator('visible=true'),
+        );
         await page.waitForTimeout(400);
         await shot('commons-paddock-helper');
+        await sceneTarget("The builders' table").click();
+        const paddock = leftPanel.locator('section[aria-label="Paddock project"]');
+        await waitFor(paddock);
         await paddock.scrollIntoViewIfNeeded();
         await expectTopmost(paddock, 'the Paddock board');
         await shot('commons-paddock-board');
       } finally {
         commonsOff();
       }
+    },
+  );
+
+  // The Paddock with the valley's systems on, as a canvas (Misa, 2026-11-15): the yard fills the window, the creatures at home roam in it
+  // and are taps (a drag moves one and opens nothing), the gate opens the waiting catches, "Creatures" opens the Creatures page.
+  await scenario(
+    'valley systems on: the Paddock is a canvas: a creature opens in the right drawer, the gate has the newcomers, Creatures is the left drawer',
+    () => {
+      const config = ROUTES.get('/api/config');
+      answerOverride.set('/api/config', () => ({ ...config(), valleySystems: true }));
+      const creatures = baseState.creatures.map((c) => ({ ...c, busy: null, away: false }));
+      scouts.seats = [];
+      scouts.ids = creatures.map((c) => c.id);
+      stateOverride = { creatures, valley: valleyBlock() };
+    },
+    async () => {
+      await waitFor(page.locator(VALLEY), 'attached');
+      await place('paddock').evaluate((el) => el.click());
+      await waitFor(heading('Paddock'));
+      await paddockCanvasChecks();
+      const roamers = page.locator('button.cv-target[aria-label*="at home in the Paddock"]');
+      await waitFor(roamers);
+      await expectNoScroll();
+      await page.waitForTimeout(400);
+      await shot('paddock-open');
+      // A drag moves a creature and opens no drawer.
+      const box = await roamers.first().boundingBox();
+      if (box === null) throw new Error('a creature has no box');
+      const cx = box.x + box.width / 2;
+      const cy = box.y + box.height / 2;
+      await page.mouse.move(cx, cy);
+      await page.mouse.down();
+      await page.mouse.move(cx + 30, cy + 6, { steps: 6 });
+      await page.mouse.up();
+      await page.waitForTimeout(200);
+      if ((await rightPanel.count()) > 0) throw new Error('a drag opened a drawer');
+      // A tap opens it in the right drawer: where it is, and its page one step on.
+      await roamers.first().evaluate((el) => el.click());
+      const openPage = rightPanel.getByRole('button', { name: /^Open its page/ });
+      await waitFor(openPage);
+      await expectNoScroll();
+      await page.waitForTimeout(300);
+      await shot('paddock-creature');
+      await openPage.click();
+      const back = rightPanel.getByRole('button', { name: /Back/ });
+      await waitFor(back);
+      await page.waitForTimeout(300);
+      await shot('paddock-creature-page');
+      await back.first().click();
+      await waitFor(openPage);
+      await page.keyboard.press('Escape');
+      await rightPanel.waitFor({ state: 'detached', timeout: 10000 });
+      // The gate is a tap while newcomers wait: the same cards and the one Confirm as the Creatures page had.
+      const gate = page.locator('button.cv-target[aria-label^="The gate"]').locator('visible=true');
+      if ((await gate.count()) > 0) {
+        await expectTopmost(gate.first(), 'the gate');
+        await gate.first().click();
+        await waitFor(rightPanel.getByRole('button', { name: /^Confirm/ }));
+        await page.waitForTimeout(300);
+        await shot('paddock-gate');
+        await page.keyboard.press('Escape');
+        await rightPanel.waitFor({ state: 'detached', timeout: 10000 });
+      }
+      // The Creatures page is the left drawer; the waiting catches are not repeated in it.
+      await expectTopmost(creaturesButton().first(), 'the Creatures button');
+      await creaturesButton().first().click();
+      await waitFor(leftPanel.locator('li.creature-card'));
+      if ((await leftPanel.locator('section.pending-catches').count()) > 0)
+        throw new Error('the waiting catches are in the Creatures drawer as well as at the gate');
+      await expectNoScroll();
+      await page.waitForTimeout(300);
+      await shot('paddock-creatures');
     },
   );
 
@@ -4118,6 +4210,9 @@ try {
         await waitFor(page.locator(VALLEY), 'attached');
         await place('paddock').evaluate((el) => el.click());
         await waitFor(heading('Paddock'));
+        // The Creatures page is the Paddock's left drawer.
+        await creaturesButton().click();
+        await waitFor(leftPanel.locator('li.creature-card'));
         const pips = page.locator('button.trial-pips');
         await waitFor(pips);
         const labels = await pips.evaluateAll((els) =>

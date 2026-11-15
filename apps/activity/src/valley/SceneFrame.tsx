@@ -98,11 +98,19 @@ export function SceneFrame({
 
   useEffect(() => {
     if (band) return undefined;
-    const onKey = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape' && document.querySelector('[role="dialog"]') === null) onLeave();
+    // Whether a dialog (a popover, a sheet) was up when Escape went down, looked at before any layer's own handler runs: a popover
+    // closes itself on this very key, and its re-render may land between our handler and its own, which would then leave the place too.
+    let dialogUp = false;
+    const onDown = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') dialogUp = document.querySelector('[role="dialog"]') !== null;
     };
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape' && !dialogUp) onLeave();
+    };
+    document.addEventListener('keydown', onDown, true);
     document.addEventListener('keydown', onKey);
     return () => {
+      document.removeEventListener('keydown', onDown, true);
       document.removeEventListener('keydown', onKey);
     };
   }, [onLeave, band]);

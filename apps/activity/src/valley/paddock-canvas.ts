@@ -30,6 +30,8 @@ const GAP_BESIDE = 10;
 const GAP_BELOW = 2;
 /** Scene pixels the working area keeps from each side edge. */
 const EDGE = 6;
+/** The share of a window's spare height that goes above the rails; the rest is meadow. */
+const SPARE_ABOVE = 0.15;
 
 /** How many newcomers wait drawn at the gate, at most (the gate's drawer has all of them). */
 export const MAX_AT_GATE = 2;
@@ -137,10 +139,11 @@ export function paddockLayout(
   const need = needed(mode, g.s);
   const underRing = r.frontFeet + underFront(g.s);
   const cornerY = g.H - (CORNER.feet + Math.ceil(PLATE_ROW_PX / g.s) + 2) - 2;
+  // The yard stands high: the room a taller window has goes to the meadow under it (`meadowFor`), not above the rails.
   const y =
     mode === 'below'
-      ? ART_Y + Math.floor(Math.max(0, cornerY - GAP_BELOW - ART_Y - underRing) / 2)
-      : ART_Y + Math.floor(Math.max(0, g.H - need.h) * 0.4);
+      ? ART_Y + Math.floor(Math.max(0, cornerY - GAP_BELOW - ART_Y - underRing) * SPARE_ABOVE)
+      : ART_Y + Math.floor(Math.max(0, g.H - need.h) * SPARE_ABOVE);
   const groupW = r.right + GAP_BESIDE + CORNER.w - r.left;
   // The art's middle is not the working area's: the meadow reaches further left of the rails than the gate does right of them.
   const x =
@@ -165,7 +168,7 @@ export function paddockLayout(
   };
 }
 
-/** The meadow the creatures roam, in scene pixels (the paddock's own, from the art's top-left). */
+/** The paddock's own meadow in scene pixels (from the art's top-left): in front of and beside the rails, as the old scene had it. */
 export function meadowAt(box: { x: number; y: number }): {
   x: number;
   y: number;
@@ -180,12 +183,36 @@ export function meadowAt(box: { x: number; y: number }): {
   };
 }
 
-/** The "Creatures" button's middle: under the meadow's front row and its plates, in scene pixels. */
-export function creaturesSpot(box: { x: number; y: number }, s: number): { x: number; y: number } {
+/**
+ * The meadow the creatures roam in a scene of `g`'s size: the paddock's own, as wide as the working area and with the room a taller window has under it, down to the
+ * "Creatures" button (which stands under its front row) or, with the corner under it, down to the corner.
+ */
+export function meadowFor(
+  g: Pick<SceneGeometry, 'H' | 's'>,
+  lay: Pick<PaddockLayout, 'mode' | 'box' | 'corner'>,
+): { x: number; y: number; width: number; height: number } {
+  const base = meadowAt(lay.box);
+  const limit =
+    (lay.mode === 'below' && lay.corner !== null ? lay.corner.y - GAP_BELOW : g.H - 2) -
+    underFront(g.s);
+  // The whole working area's width, from the meadow's left edge to a sprite short of the gate (the roaming stops there anyway).
   const r = ring();
   return {
-    x: box.x + PADDOCK_ROAM_AREA.x + Math.floor(PADDOCK_ROAM_AREA.width / 2),
-    y: box.y + r.frontFeet + Math.ceil(PLATE_ROW_PX / s) + 2,
+    x: base.x,
+    y: base.y,
+    width: Math.max(base.width, r.right - r.left - CREATURE_PX),
+    height: Math.max(base.height, limit - CREATURE_PX - base.y),
+  };
+}
+
+/** The "Creatures" button's middle: under the meadow's front row and its plates, in scene pixels. */
+export function creaturesSpot(
+  meadow: { x: number; y: number; width: number; height: number },
+  s: number,
+): { x: number; y: number } {
+  return {
+    x: meadow.x + Math.floor(meadow.width / 2),
+    y: meadow.y + meadow.height + CREATURE_PX + Math.ceil(PLATE_ROW_PX / s) + 2,
   };
 }
 

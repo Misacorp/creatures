@@ -38,7 +38,7 @@ import {
   creaturesSpot,
   gateSpots,
   gateTarget,
-  meadowAt,
+  meadowFor,
   paddockLayout,
   paddockSceneDraw,
   paddockScale,
@@ -324,6 +324,7 @@ export function PaddockCanvas({
             key={`${String(g.W)}-${String(g.H)}-${String(g.s)}`}
             g={g}
             box={lay.box}
+            meadow={meadowFor(g, lay)}
             roamers={roamers}
             waiting={waiting}
             helper={helper}
@@ -374,6 +375,7 @@ export function PaddockCanvas({
 function PaddockInside({
   g,
   box,
+  meadow,
   roamers,
   waiting,
   helper,
@@ -389,6 +391,8 @@ function PaddockInside({
 }: {
   g: SceneGeometry;
   box: { x: number; y: number; width: number; height: number };
+  /** The meadow the creatures roam (scene pixels). */
+  meadow: { x: number; y: number; width: number; height: number };
   roamers: readonly Creature[];
   waiting: readonly PendingCatch[];
   helper: Creature | undefined;
@@ -417,10 +421,10 @@ function PaddockInside({
   const first = gates[0];
   const stop = first === undefined ? Infinity : box.x + first.x - CREATURE_PX;
   const limited = { ...bounds, width: Math.max(1, Math.min(bounds.width, stop - bounds.x + 1)) };
-  const { area, fit } = roamMeadow(meadowAt(box), roamers.length, limited, plateGap(g.s));
+  const { area, fit } = roamMeadow(meadow, roamers.length, limited, plateGap(g.s));
   const shown = roamers.slice(0, Math.min(roamers.length, fit));
   const more = roamers.length - shown.length;
-  const spot = creaturesSpot(box, g.s);
+  const spot = creaturesSpot(meadow, g.s);
   const gate = gateTarget();
   return (
     <>
