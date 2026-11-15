@@ -1,30 +1,8 @@
-/* The "A new valley" card after the reset: the scene look and the full-view welcome (the plain look is .wipe-notice). */
+/* The "A new valley" card after the reset: the quiet bonfire above the words (the card itself is .wipe-notice). */
 .new-valley-art {
   display: flex;
   justify-content: center;
   margin: 0 0 0.5rem;
-}
-
-.new-valley-welcome {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  min-height: 24rem;
-  padding: 1.5rem 1rem;
-  text-align: center;
-  background: var(--dusk-2);
-  box-shadow: inset 0 0 0 var(--px) var(--gold);
-}
-
-.new-valley-welcome h2,
-.new-valley-welcome p {
-  margin: 0;
-}
-
-.new-valley-welcome p {
-  max-width: 26rem;
 }
 
 /* The goodbye DM as Discord draws it (a preview for judging the layout, workbench only). */
