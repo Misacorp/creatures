@@ -313,6 +313,7 @@ export function CanvasTarget({
   z,
   plate,
   plateAt,
+  plateMeta,
   children,
 }: {
   g: SceneGeometry;
@@ -338,6 +339,8 @@ export function CanvasTarget({
   plate?: string;
   /** Where the plate sits, in scene pixels down from the target's top (default: under it). */
   plateAt?: number;
+  /** A creature's plate (the Bonfire): its level first, a gain ("+N") and an owner's name, as `ui/Nameplate` shows them. */
+  plateMeta?: { level?: number; gain?: number; owner?: string };
   children?: ComponentChildren;
 }) {
   return (
@@ -361,7 +364,14 @@ export function CanvasTarget({
             aria-hidden="true"
             ref={cssVars({ '--py': `${String((plateAt ?? h) * g.s)}px` })}
           >
-            <Nameplate size="sm">{plate}</Nameplate>
+            <Nameplate
+              size="sm"
+              level={plateMeta?.level}
+              gain={plateMeta?.gain}
+              owner={plateMeta?.owner}
+            >
+              {plate === '' ? undefined : plate}
+            </Nameplate>
           </span>
         )}
       </button>

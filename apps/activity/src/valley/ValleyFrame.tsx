@@ -11,15 +11,16 @@ import { useRef, useState } from 'preact/hooks';
 import type { Creature, ValleyVisit } from '../api';
 import type { TabAlerts } from '../tab-alerts';
 import { scrollAndFocus } from '../scroll-to';
-import { BonfireScene } from './BonfireScene';
-import { CommonsBoard, type CommonsActions, type CommonsStart } from './CommonsBoard';
+import { BonfireCanvas } from './BonfireCanvas';
+import type { CommonsActions, CommonsStart } from './CommonsBoard';
 import { YourHouseRow } from './YourHouseRow';
 import { Keepsakes } from './Keepsakes';
-import { MarketPage, type MarketActions, type MarketStart } from './MarketPage';
+import { MarketCanvas, type MarketActions, type MarketStart } from './MarketCanvas';
 import { marketState } from './market-view';
-import { VisitorPage, type VisitorFeed } from './VisitorPage';
-import { AWAY_LINE, isHere } from './visitor-view';
-import { SchoolPage, type SchoolFeed } from './SchoolPage';
+import { VisitorCanvas } from './VisitorCanvas';
+import type { VisitorFeed } from './VisitorPanels';
+import { SchoolCanvas } from './SchoolCanvas';
+import type { SchoolFeed } from './school-feed';
 import { isSchoolHere, studentIds } from './school-view';
 import { commonsOf, levelOf } from './commons-view';
 import { PinnedAct } from './PinnedAct';
@@ -45,7 +46,7 @@ import {
 import { placeOf, type PlaceId } from './valley-art';
 import { placeLabel } from './valley-logic';
 import { soonLine, type SoonPlaceId, type ValleyView } from './valley-nav';
-import { DEFAULT_LOOK, visitorName, type GlowName } from './valley-places';
+import { DEFAULT_LOOK, type GlowName } from './valley-places';
 
 /** The sprite of a place that is not open yet. */
 const SOON_ART: Readonly<Record<SoonPlaceId, GlowName>> = {
@@ -98,7 +99,7 @@ export function ValleyFrame({
   castExtra: CastExtra;
   /** The valley's resting creatures and allowance (`VALLEY_SYSTEMS` on): the Bonfire opens with it; null (flag off, or not heard yet) leaves it "not open yet". */
   visit?: ValleyVisit | null;
-  /** The commons' gifts and communal seats (`VALLEY_SYSTEMS` on): the Bonfire's and the Paddock's project boards; absent shows none. */
+  /** The commons' gifts and communal seats (`VALLEY_SYSTEMS` on): the Bonfire's project board (the Paddock's is drawn by the game, in its canvas); absent shows none. */
   commons?: CommonsActions;
   /** The Market's broker seat (`VALLEY_SYSTEMS` on): its page opens once the Market's project is under way; absent leaves the Market "not open yet". */
   market?: MarketActions;
@@ -158,7 +159,9 @@ export function ValleyFrame({
     view.kind === 'place' &&
     view.book === null &&
     hasScene(view.place) &&
-    ((view.place !== 'signpost' && view.place !== 'forge') || visit !== null)
+    ((view.place !== 'signpost' && view.place !== 'forge') || visit !== null) &&
+    // The Paddock is a canvas with the valley's systems on (`PaddockCanvas`, drawn by the game): its yard is its scene.
+    !(view.place === 'paddock' && visit !== null)
       ? castFor(
           view.place,
           { ...placeInput, ...castExtra, visit },
@@ -175,38 +178,20 @@ export function ValleyFrame({
     market !== undefined &&
     marketAt !== null &&
     marketAt !== 'waiting';
-  const marketCast = marketPage
-    ? castFor('market', { ...placeInput, ...castExtra, visit }, artSize(SCENE_ART.market), bubbles)
-    : null;
-  // The visitor has a page while the server says he is here; away it is his shuttered spot and one line; before the server has said, "not open yet".
+  // The visitor's stall is a canvas once the server has said anything of him (here: the visitor and the blueprint; away: the shuttered
+  // stall and its sign); before the server has said, "not open yet".
   const visitorView = visit !== null && visitor !== undefined ? visitor.view : null;
   const visitorPage =
     view.kind === 'soon' &&
     view.place === 'visitor' &&
     visitor !== undefined &&
-    isHere(visitorView);
-  const visitorCast = visitorPage
-    ? castFor(
-        'visitor',
-        { ...placeInput, ...castExtra, visit },
-        artSize(SCENE_ART.visitor),
-        bubbles,
-      )
-    : null;
+    visitorView !== null;
   // The School has a page once the server has said anything of it (away it is the empty yard and one line).
   const schoolPage =
     view.kind === 'soon' &&
     view.place === 'school' &&
     school !== undefined &&
     isSchoolHere(schoolView);
-  const schoolCast = schoolPage
-    ? castFor(
-        'school',
-        { ...placeInput, ...castExtra, visit, school: schoolView },
-        artSize(SCENE_ART.school),
-        bubbles,
-      )
-    : null;
   // Today's page of the place: the House's two books, then the page the game drew.
   const inside = (
     <>
@@ -240,21 +225,6 @@ export function ValleyFrame({
           <Keepsakes visit={visit} />
         </div>
       )}
-      {view.kind === 'place' &&
-        view.place === 'paddock' &&
-        view.book === null &&
-        visit !== null &&
-        commons !== undefined && (
-          <CommonsBoard
-            place="paddock"
-            visit={visit}
-            creatures={creatures}
-            acorns={acorns}
-            busy={busy}
-            actions={commons}
-            {...(commonsStart?.view === undefined ? {} : { start: { view: commonsStart.view } })}
-          />
-        )}
       {children}
     </>
   );
@@ -319,87 +289,80 @@ export function ValleyFrame({
         )}
         {view.kind === 'soon' && view.place === 'bonfire' && visit !== null && (
           <section class="vy-soon" aria-label={placeLabel(view.place)}>
-            <BonfireScene
+            <BonfireCanvas
               creatures={creatures}
               visit={visit}
+              trayInput={tray}
+              onOpenPaddock={() => {
+                onOpen('paddock');
+              }}
               level={bonfireLevel}
-              onLeave={onLeave}
               {...(commons === undefined ? {} : { commons, acorns, busy })}
               {...(commonsStart === undefined ? {} : { start: commonsStart })}
             />
           </section>
         )}
-        {marketPage && marketCast !== null && visit !== null && market !== undefined && (
-          <div class="vy-page">
-            <PlaceScene
-              cast={marketCast}
-              onAct={() => {
-                scrollAndFocus(insideRef.current);
+        {marketPage && visit !== null && market !== undefined && (
+          <section class="vy-soon" aria-label={placeLabel('market')}>
+            <MarketCanvas
+              visit={visit}
+              creatures={creatures}
+              acorns={acorns}
+              busy={busy}
+              error={error}
+              actions={market}
+              {...(commons === undefined ? {} : { commons })}
+              trayInput={tray}
+              onOpenPaddock={() => {
+                onOpen('paddock');
+              }}
+              start={{
+                ...marketStart,
+                ...(commonsStart === undefined ? {} : { commons: commonsStart }),
               }}
             />
-            <div class="vy-inside" ref={insideRef} tabIndex={-1}>
-              <MarketPage
-                visit={visit}
-                creatures={creatures}
-                trayInput={tray}
-                acorns={acorns}
-                busy={busy}
-                error={error}
-                actions={market}
-                {...(commons === undefined ? {} : { commons })}
-                onOpenPaddock={() => {
-                  onOpen('paddock');
-                }}
-                start={{
-                  ...marketStart,
-                  ...(commonsStart === undefined ? {} : { commons: commonsStart }),
-                }}
-              />
-            </div>
-          </div>
+          </section>
         )}
-        {visitorPage && visitorCast !== null && visitor !== undefined && isHere(visitorView) && (
-          <div class="vy-page">
-            <PlaceScene
-              cast={visitorCast}
-              onAct={() => {
-                scrollAndFocus(insideRef.current);
+        {visitorPage && visitor !== undefined && visitorView !== null && (
+          <section class="vy-soon" aria-label={placeLabel('visitor')}>
+            <VisitorCanvas
+              view={visitorView}
+              creatures={creatures}
+              trayInput={tray}
+              items={visitor.items}
+              blueprints={visitor.blueprints}
+              purse={visitor.purse}
+              busy={busy}
+              error={error}
+              actions={visitor.actions}
+              {...(visitor.start === undefined ? {} : { start: visitor.start })}
+              onOpenPaddock={() => {
+                onOpen('paddock');
               }}
             />
-            <div class="vy-inside" ref={insideRef} tabIndex={-1}>
-              <VisitorPage
-                view={visitorView}
-                items={visitor.items}
-                blueprints={visitor.blueprints}
-                purse={visitor.purse}
-                busy={busy}
-                error={error}
-                actions={visitor.actions}
-                {...(visitor.start === undefined ? {} : { start: visitor.start })}
-              />
-            </div>
-          </div>
+          </section>
         )}
-        {schoolPage && schoolCast !== null && school !== undefined && isSchoolHere(schoolView) && (
-          <div class="vy-page">
-            <PlaceScene
-              cast={schoolCast}
-              onAct={() => {
-                scrollAndFocus(insideRef.current);
+        {schoolPage && school !== undefined && isSchoolHere(schoolView) && visit !== null && (
+          <section
+            class="vy-soon"
+            aria-label={placeLabel(view.kind === 'soon' ? view.place : 'school')}
+          >
+            <SchoolCanvas
+              creatures={creatures}
+              visit={visit}
+              view={schoolView}
+              graduation={visit.graduation}
+              now={school.now}
+              zone={school.zone}
+              actions={school.actions}
+              trayInput={tray}
+              onOpenPaddock={() => {
+                onOpen('paddock');
               }}
+              {...(commons === undefined ? {} : { commons, acorns, busy })}
+              {...(commonsStart === undefined ? {} : { start: commonsStart })}
             />
-            <div class="vy-inside" ref={insideRef} tabIndex={-1}>
-              <SchoolPage
-                view={schoolView}
-                creatures={creatures}
-                graduation={visit?.graduation}
-                now={school.now}
-                zone={school.zone}
-                busy={busy}
-                actions={school.actions}
-              />
-            </div>
-          </div>
+          </section>
         )}
         {view.kind === 'soon' &&
           !(view.place === 'bonfire' && visit !== null) &&
@@ -407,21 +370,14 @@ export function ValleyFrame({
           !visitorPage &&
           !schoolPage && (
             <section class="vy-soon" aria-label={placeLabel(view.place)}>
-              {(() => {
-                // His shuttered spot once the server has said he is away (a place not open yet keeps its own art).
-                const away = view.place === 'visitor' && visitorView !== null && !visitorView.here;
-                const art = away ? visitorName(false) : SOON_ART[view.place];
-                return (
-                  <SceneFrame
-                    id={view.place}
-                    label={placeLabel(view.place)}
-                    draw={placeSceneDraw(art)}
-                    scaleFor={(width, height) => placeScale(width, height, art)}
-                    onLeave={onLeave}
-                    act={<PinnedAct calm={away ? AWAY_LINE : soonLine(view.place)} />}
-                  />
-                );
-              })()}
+              <SceneFrame
+                id={view.place}
+                label={placeLabel(view.place)}
+                draw={placeSceneDraw(SOON_ART[view.place])}
+                scaleFor={(width, height) => placeScale(width, height, SOON_ART[view.place])}
+                onLeave={onLeave}
+                act={<PinnedAct calm={soonLine(view.place)} />}
+              />
             </section>
           )}
         {view.kind === 'place' && (

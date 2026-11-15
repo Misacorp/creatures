@@ -1,4 +1,4 @@
-import type { RefObject } from 'preact';
+import type { ComponentProps, RefObject } from 'preact';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import {
   buyAnvil,
@@ -110,7 +110,8 @@ import { createSchoolActions, isSchoolRefusal, refreshSchool } from './valley/sc
 import { readerZone, studentIds, withoutStudents } from './valley/school-view';
 import { HonoursContext, honoursOf } from './valley/HonourRibbon';
 import { shardsHeld } from './valley/visitor-view';
-import type { MarketActions, MarketStart } from './valley/MarketPage';
+import type { MarketActions, MarketStart } from './valley/MarketCanvas';
+import { PaddockCanvas } from './valley/PaddockCanvas';
 import { SignpostCanvas } from './valley/SignpostCanvas';
 import type { SignpostActions } from './valley/SignpostSeats';
 import type { CommonsActions } from './valley/CommonsBoard';
@@ -856,6 +857,23 @@ export function Game({
     />
   ) : null;
 
+  /** What the Creatures page reads and does: the tab's page, and the Paddock canvas's left drawer. */
+  const collectionProps: ComponentProps<typeof Collection> = {
+    initialNeeds: creaturesNeeds,
+    openRequest: viewing,
+    onOpenHandled: () => {
+      setViewing(null);
+    },
+    state: game,
+    gear,
+    busy,
+    viewerId: user.id,
+    loadGames: fetchCreatureGames,
+    onEquip: equipOn,
+    catchActions,
+    ...creatureActions,
+  };
+
   const pages = (
     <div key={devNonce} hidden={settingsOpen}>
       {tab === 'home' && !valleyOn && (
@@ -918,23 +936,19 @@ export function Game({
           }}
         />
       )}
-      {tab === 'collection' && (
-        <Collection
-          initialNeeds={creaturesNeeds}
-          openRequest={viewing}
-          onOpenHandled={() => {
-            setViewing(null);
-          }}
-          state={game}
-          gear={gear}
-          busy={busy}
-          viewerId={user.id}
-          loadGames={fetchCreatureGames}
-          onEquip={equipOn}
-          catchActions={catchActions}
-          {...creatureActions}
-        />
-      )}
+      {tab === 'collection' &&
+        (valleyOn && valleySystems && systems !== null ? (
+          // With the valley's systems on the Paddock is a canvas: the yard is the page, the Creatures page is its left drawer.
+          <PaddockCanvas
+            collection={collectionProps}
+            visit={systems}
+            commons={commonsActions}
+            acorns={game.balances.bait}
+            studying={students}
+          />
+        ) : (
+          <Collection {...collectionProps} />
+        ))}
       {tab === 'expeditions' && valleyOn && valleySystems && systems !== null && (
         // With the valley's systems on the Signpost is its scouts, not trips (`/api/expeditions` answers 404).
         <SignpostCanvas

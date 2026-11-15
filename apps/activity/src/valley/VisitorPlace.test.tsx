@@ -4,7 +4,7 @@ import { homeAlerts } from '../home-view';
 import { byClass, byName, createPage, visibleText, type Page } from '../test-dom';
 import { HOME_NOW, homeInput } from '../workbench/home-sample';
 import { ValleyFrame } from './ValleyFrame';
-import type { VisitorFeed } from './VisitorPage';
+import type { VisitorFeed } from './VisitorPanels';
 import { DEFAULT_LOOK, placePlacements, visitorName } from './valley-places';
 import { sampleValley } from './signpost-sample';
 import { trayStates } from './tray-state';
@@ -81,41 +81,42 @@ function draw(view: ValleyView, visitor: VisitorFeed | undefined, systems = true
 const AT_VISITOR: ValleyView = { kind: 'soon', place: 'visitor' };
 
 describe('his place with the valley systems on', () => {
-  it('here: his stall as a scene, and his page under it (the reroll and the week`s blueprint)', () => {
+  it('here: his stall is the canvas (the visitor and the blueprint to click), no page under it', () => {
     const p = draw(AT_VISITOR, feed(sampleVisitor()));
-    expect(byClass(p.root, 'vs-page')).toHaveLength(1);
-    expect(byClass(p.root, 'vy-soon')).toHaveLength(0);
-    const text = visibleText(p.root);
-    expect(text).toMatch(/Reroll a piece/);
-    expect(text).toMatch(/This week.s blueprint/);
+    expect(byClass(p.root, 'vs-page')).toHaveLength(0);
+    expect(byClass(p.root, 'pc-root')).toHaveLength(1);
+    const names = byClass(p.root, 'cv-target').map((el) => el.getAttribute('aria-label') ?? '');
+    expect(names.some((n) => /^The visitor/.test(n))).toBe(true);
+    expect(names.some((n) => /^This week's blueprint/.test(n))).toBe(true);
     // No timer and no "until" line while he is here.
-    expect(text).not.toMatch(/until|back thursday|\d+ ?h\b/i);
-    expect(visibleText(p.root)).not.toContain(AWAY_LINE);
+    expect(visibleText(p.root)).not.toMatch(/until|back thursday|\d+ ?h\b/i);
   });
 
-  it('away: the shuttered spot and one line that he is back Thursday, no page', () => {
+  it('away: the shuttered stall and its sign (back Thursday) as the canvas, nothing to reroll', () => {
     const p = draw(AT_VISITOR, feed(SAMPLE_AWAY));
     expect(byClass(p.root, 'vs-page')).toHaveLength(0);
-    expect(byClass(p.root, 'vy-soon')).toHaveLength(1);
-    expect(visibleText(p.root)).toContain(AWAY_LINE);
+    expect(byClass(p.root, 'pc-root')).toHaveLength(1);
+    const names = byClass(p.root, 'cv-target').map((el) => el.getAttribute('aria-label') ?? '');
+    expect(names).toHaveLength(1);
+    expect(names[0]).toContain(AWAY_LINE);
     expect(byName(p.root, 'button', /Reroll/)).toHaveLength(0);
   });
 
   it('before the server has said: the old "not open yet" line', () => {
     const p = draw(AT_VISITOR, feed(null));
-    expect(byClass(p.root, 'vs-page')).toHaveLength(0);
+    expect(byClass(p.root, 'pc-root')).toHaveLength(0);
     expect(visibleText(p.root)).toContain(WAITING_LINE);
   });
 
   it('with the systems off nothing changes: the place stays not open yet even if a feed is given', () => {
     const p = draw(AT_VISITOR, feed(sampleVisitor()), false);
-    expect(byClass(p.root, 'vs-page')).toHaveLength(0);
+    expect(byClass(p.root, 'pc-root')).toHaveLength(0);
     expect(visibleText(p.root)).toContain(WAITING_LINE);
   });
 
   it('without a feed (the flag off) his place is as it was', () => {
     const p = draw(AT_VISITOR, undefined);
-    expect(byClass(p.root, 'vs-page')).toHaveLength(0);
+    expect(byClass(p.root, 'pc-root')).toHaveLength(0);
     expect(visibleText(p.root)).toContain(WAITING_LINE);
   });
 });

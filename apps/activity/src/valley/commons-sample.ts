@@ -151,6 +151,7 @@ export const COMMONS_PRESETS = [
   'the fire grown',
   'bonfire level 3',
   'helpers posted',
+  'bonfire max',
 ] as const;
 
 /** The commons of a preset, with the first creatures of the roster as helpers where the preset has them. */
@@ -189,6 +190,18 @@ export function presetCommons(
         hearthBp: 10_800,
         places: [
           openPlace('bonfire', 3, 900, 0.28, { plaque: ['Ada', 'Mia', 'Tobias'], keepsakes: 1 }),
+          buildingPlace('forge', 3, 1, ['Ada', 'Mia', 'Tobias', 'You']),
+          openPlace('signpost', 2, 900, 0.5, { plaque: ['Ada', 'Mia'] }),
+          openPlace('paddock', 2, 900, 0.1),
+          waitingPlace('school'),
+        ],
+      });
+    case 'bonfire max':
+      // The hearth at its top level (a cosmetic project may be open, but the builders' corner is gone).
+      return sampleCommons({
+        hearthBp: 12_500,
+        places: [
+          openPlace('bonfire', VALLEY_RULES.commons.maxLevel, 900, 0.2, { cosmetic: 1 }),
           buildingPlace('forge', 3, 1, ['Ada', 'Mia', 'Tobias', 'You']),
           openPlace('signpost', 2, 900, 0.5, { plaque: ['Ada', 'Mia'] }),
           openPlace('paddock', 2, 900, 0.1),
