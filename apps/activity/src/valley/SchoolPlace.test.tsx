@@ -8,7 +8,7 @@ import { castFor } from './place-cast';
 import { bubbleAt, listOrder, placeBubbles, placeStates } from './place-state';
 import { sampleValley } from './signpost-sample';
 import { sampleSchool, sampleTrial, withTrials } from './school-sample';
-import type { SchoolFeed } from './SchoolPage';
+import type { SchoolFeed } from './school-feed';
 import { WAITING_LINE, studentIds } from './school-view';
 import { artSize } from './place-scene';
 import { trayBadge, trayFor, trayStates } from './tray-state';
@@ -87,39 +87,39 @@ function draw(
 const AT_SCHOOL: ValleyView = { kind: 'soon', place: 'school' };
 
 describe('the School’s place with the valley systems on', () => {
-  it('here: the School as a scene and its page under it (the teacher, the faces, the ceremony)', () => {
+  it('here: the School as a canvas (the lectern, the seats, the house), no page under it', () => {
     const p = draw(AT_SCHOOL, feed(sampleSchool({ wouldLearn: [a.id] })), { ready: 2 });
-    expect(byClass(p.root, 'sch-page')).toHaveLength(1);
-    expect(byClass(p.root, 'vy-soon')).toHaveLength(0);
-    const text = visibleText(p.root);
-    expect(text).toContain('The visiting teacher is here');
-    expect(text).toContain('2 ready to graduate');
-    expect(byName(p.root, 'button', /^Send /)).toHaveLength(1);
-    expect(text).not.toContain(WAITING_LINE);
+    expect(byClass(p.root, 'pc-root')).toHaveLength(1);
+    expect(byClass(p.root, 'sch-page')).toHaveLength(0);
+    expect(byClass(p.root, 'vy-soon')).toHaveLength(1);
+    const names = byClass(p.root, 'cv-target').map((el) => el.getAttribute('aria-label') ?? '');
+    expect(names.some((n) => /^The lectern, the visiting teacher is here/.test(n))).toBe(true);
+    expect(names.some((n) => /^The School's house, 2 ready to graduate/.test(n))).toBe(true);
+    expect(visibleText(p.root)).not.toContain(WAITING_LINE);
   });
 
-  it('away: still the page (an empty yard and one line), never a countdown', () => {
+  it('away: still the canvas (an empty yard, the teacher line read out), never a countdown', () => {
     const p = draw(AT_SCHOOL, feed(sampleSchool({ phase: 'away' })));
-    expect(byClass(p.root, 'sch-page')).toHaveLength(1);
+    expect(byClass(p.root, 'pc-root')).toHaveLength(1);
     expect(visibleText(p.root)).toContain('No teacher at the School right now.');
     expect(visibleText(p.root)).not.toMatch(/until|\d+ ?h\b/i);
   });
 
   it('before the server has said: the old "not open yet" line', () => {
     const p = draw(AT_SCHOOL, feed(null));
-    expect(byClass(p.root, 'sch-page')).toHaveLength(0);
+    expect(byClass(p.root, 'pc-root')).toHaveLength(0);
     expect(visibleText(p.root)).toContain(WAITING_LINE);
   });
 
   it('with the systems off nothing changes, even if a feed is given', () => {
     const p = draw(AT_SCHOOL, feed(sampleSchool()), { systems: false });
-    expect(byClass(p.root, 'sch-page')).toHaveLength(0);
+    expect(byClass(p.root, 'pc-root')).toHaveLength(0);
     expect(visibleText(p.root)).toContain(WAITING_LINE);
   });
 
   it('without a feed (the flag off) the place is as it was', () => {
     const p = draw(AT_SCHOOL, undefined);
-    expect(byClass(p.root, 'sch-page')).toHaveLength(0);
+    expect(byClass(p.root, 'pc-root')).toHaveLength(0);
     expect(visibleText(p.root)).toContain(WAITING_LINE);
   });
 

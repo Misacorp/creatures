@@ -95,22 +95,39 @@ export function RestingPanel({
   );
 }
 
+/** The helper's seat of a place's project: the Bonfire's by default; the School's builders' corner says its own place and words. */
+export interface HelperWords {
+  place: string;
+  /** What is being built, in the question ("the hearth"). */
+  what: string;
+  /** What Back says it goes back to ("to the fire"). */
+  backLabel: string;
+}
+
+const HEARTH_WORDS: HelperWords = {
+  place: 'bonfire',
+  what: 'the hearth',
+  backLabel: 'to the fire',
+};
+
 export function HelperPanel({
   visit,
   creatures,
   helper,
   onClose,
+  words = HEARTH_WORDS,
 }: {
   visit: ValleyVisit;
   creatures: readonly Creature[];
   helper: HelperPost;
   onClose: () => void;
+  words?: HelperWords;
 }) {
   const wizard = useWizard(
-    [{ id: 'who', title: 'Who helps build the hearth?', backLabel: 'to the fire' }],
+    [{ id: 'who', title: `Who helps build ${words.what}?`, backLabel: words.backLabel }],
     { onExit: onClose },
   );
-  const seat = commonsOf(visit)?.communal.find((c) => c.place === 'bonfire');
+  const seat = commonsOf(visit)?.communal.find((c) => c.place === words.place);
   return (
     <PanelBody>
       <WizardView wizard={wizard}>
@@ -120,9 +137,9 @@ export function HelperPanel({
             options={seatOptions(creatures, visit, seat?.seatId ?? null, helper.creatureId)}
             selection={{
               mode: 'pick',
-              label: 'Who helps build the hearth',
+              label: `Who helps build ${words.what}`,
               onPick: (id) => {
-                void helper.actions.post('bonfire', id === REMOVE_ID ? null : id).then(() => {
+                void helper.actions.post(words.place, id === REMOVE_ID ? null : id).then(() => {
                   onClose();
                 });
               },

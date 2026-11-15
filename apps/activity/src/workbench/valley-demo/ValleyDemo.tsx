@@ -41,7 +41,7 @@ import {
 } from '../../valley/visitor-sample';
 import type { SchoolState, VisitorState } from '../../api';
 import { HonoursContext, honoursOf } from '../../valley/HonourRibbon';
-import type { SchoolFeed } from '../../valley/SchoolPage';
+import type { SchoolFeed } from '../../valley/school-feed';
 import { sampleSchool, sampleTrial, withTrials } from '../../valley/school-sample';
 import { readerZone, studentIds, withoutStudents } from '../../valley/school-view';
 import type { GearItem } from '../../gear-types';

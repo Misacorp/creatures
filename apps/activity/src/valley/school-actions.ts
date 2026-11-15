@@ -14,7 +14,7 @@ import {
   type SchoolState,
   type ValleyAnswer,
 } from '../api';
-import type { SchoolActions } from './SchoolPage';
+import type { SchoolActions } from './school-feed';
 
 /** What `Game` gives the actions. */
 export interface SchoolDeps {
