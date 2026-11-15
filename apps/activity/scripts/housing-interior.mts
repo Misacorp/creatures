@@ -52,6 +52,10 @@ export function main(args: string[]): void {
   const phone = house.scaled(2);
   writeFileSync(join(dir, '8-house-phone.png'), png(phone.px, phone.w, phone.h));
   out.push(join(dir, '8-house-phone.png'));
+  // the ways as looks on the same house: three doorway styles and three stair styles, by day and by night
+  for (const kind of ['doors', 'stairs'] as const)
+    for (const phase of ['day', 'night'] as const)
+      out.push(...write(dir, `9-ways-${kind}-${phase}`, sheets.waysRow(kind, phase), 2));
   console.log(out.join('\n'));
   console.log(`\n${collisionTable(rooms)}`);
 }

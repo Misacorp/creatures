@@ -349,7 +349,8 @@ function drawRoof(
 ): number {
   const n = postcardSlope(base, kind);
   const step = kind === 'spire' ? 1 : 2;
-  r.mat = glass ? 'auto' : 'roof';
+  // glass is outdoors in the dusk: dimmed like the rest of the picture, not left at its day colours
+  r.mat = glass ? 'outdoor' : 'roof';
   const tile = sampler(skin.tile);
   const ridge = skin.ridge === undefined ? null : sampler(skin.ridge);
   const eave = skin.eave === undefined ? null : sampler(skin.eave);
@@ -392,7 +393,7 @@ interface Unit {
 
 /** The glass wall of a conservatory cell: panes with white bars and a plant behind one. */
 function drawGlassCell(r: Raster, x: number, y: number): void {
-  r.mat = 'auto';
+  r.mat = 'outdoor';
   for (let j = 0; j < POSTCARD_CELL_H; j++) {
     for (let i = 0; i < POSTCARD_CELL_W; i++) {
       let colour: string = GLASS.M;
@@ -612,7 +613,7 @@ export function composePostcard(
     // the silhouette: ink where there is no wall beside it, a shade line between two parts
     const left = unitAt(u.floor, u.col - 1);
     const right = unitAt(u.floor, u.col + 1);
-    r.mat = u.kind === 'conservatory' ? 'auto' : 'wall';
+    r.mat = u.kind === 'conservatory' ? 'outdoor' : 'wall';
     for (let j = 0; j < POSTCARD_CELL_H; j++) {
       if (left === undefined) r.set(x, y + j, INK);
       else if (left.part !== u.part) r.set(x, y + j, wallPal.A);

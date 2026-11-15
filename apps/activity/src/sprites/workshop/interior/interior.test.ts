@@ -6,7 +6,7 @@ import { FRAMES } from './frame';
 import { CELL_H, CELL_W, luma } from './kit';
 import { FLOOR_COLOURS, TRIM_COLOURS, WALL_COLOURS } from './palettes';
 import { collisionTable } from './report';
-import { houseMock, lookOf, MIXES, mixRoom } from './sheets';
+import { houseMock, lookOf, MIXES, mixRoom, waysHouse, WAYS_DOORS, WAYS_STAIRS } from './sheets';
 import { TRIM_KINDS, trimOverlay } from './trim';
 import {
   collisions,
@@ -194,5 +194,21 @@ describe('the mixes and the house', () => {
   it('the house mock renders three floors', () => {
     const h = houseMock();
     expect(h.h).toBeGreaterThan(3 * CELL_H);
+  });
+
+  it('the ways house: one house, every doorway and stair style a different picture, night unlike day', () => {
+    const base = waysHouse('arch', 'spiral', 'day');
+    expect(base.h).toBe(houseMock().h);
+    expect(base.w).toBe(houseMock().w);
+    const key = (r: typeof base): string => r.px.join(',');
+    const looks = new Set<string>();
+    for (const d of WAYS_DOORS) looks.add(key(waysHouse(d, 'spiral', 'day')));
+    for (const t of WAYS_STAIRS) looks.add(key(waysHouse('arch', t, 'day')));
+    // the arch with spiral stairs is in both lists: five distinct pictures
+    expect(looks.size).toBe(WAYS_DOORS.length + WAYS_STAIRS.length - 1);
+    expect(key(waysHouse('arch', 'spiral', 'day'))).toBe(key(waysHouse('arch', 'spiral', 'day')));
+    expect(key(waysHouse('arch', 'spiral', 'night'))).not.toBe(key(base));
+    // the default mock is unchanged by the options
+    expect(key(houseMock())).toBe(key(houseMock({ frame: 'timber-dark' })));
   });
 });

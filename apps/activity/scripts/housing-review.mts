@@ -19,6 +19,7 @@ const { SET_FORMS } = await import('../src/sprites/workshop/style.ts');
 const { generatePiece, makePiece } = await import('../src/sprites/workshop/pack.ts');
 const { SHIPPED_SETS, SAMPLE_STYLES } = await import('../src/sprites/workshop/sets.ts');
 const { VARIANTS } = await import('../src/sprites/workshop/variants.ts');
+const { VARIATIONS } = await import('../src/sprites/workshop/variations/index.ts');
 const { SHADE_KINDS, RUG_SHAPES } = await import('../src/sprites/draw/parts.ts');
 const room = await import('../src/sprites/workshop/room.ts');
 const light = await import('../src/housing/house-light.ts');
@@ -164,7 +165,28 @@ interface SetArt {
 }
 
 /** A set's finished pieces and skins: a shipped set as it ships, a sample style as it generates (on neutral skins). */
-function setArt(id: string): SetArt {
+function setArt(id: string, variationId?: string): SetArt {
+  const variation = variationId === undefined ? undefined : VARIATIONS[variationId];
+  if (variationId !== undefined && (variation === undefined || variation.set !== id)) {
+    console.error(
+      `No variation "${variationId}" for ${id}. Variations: ${Object.values(VARIATIONS)
+        .map((v) => `${v.id} (${v.set})`)
+        .join(', ')}`,
+    );
+    process.exit(1);
+  }
+  const art = baseSetArt(id);
+  if (variation === undefined) return art;
+  return {
+    ...art,
+    pieces: { ...art.pieces, ...variation.pieces } as Record<FormId, PieceArt>,
+    wall: variation.wall ?? art.wall,
+    floor: variation.floor ?? art.floor,
+    skins: `${art.skins}, with the variation ${variation.id}`,
+  };
+}
+
+function baseSetArt(id: string): SetArt {
   const source = SHIPPED_SETS[id];
   const style = source?.style ?? styleOf(id);
   const pieces = Object.fromEntries(
@@ -256,7 +278,8 @@ function paintNight(
 
 async function roomSheet(args: readonly string[]): Promise<void> {
   const id = args[1] ?? '';
-  const set = setArt(id);
+  const variationId = flag(args, '--variation');
+  const set = setArt(id, variationId);
   const rooms = JSON.parse(readFileSync(join(CONTENT, 'rooms.json'), 'utf8')) as {
     id: string;
     cells: { w: number };
@@ -344,7 +367,12 @@ async function roomSheet(args: readonly string[]): Promise<void> {
     16 +
     (night ? model.height * phone + 26 : 0);
   const img = new Image(W, H, glyph);
-  img.text(`${set.style.name} in a room`, 16, 10, 3);
+  img.text(
+    `${set.style.name} in a room${variationId === undefined ? '' : `, ${variationId}`}`,
+    16,
+    10,
+    3,
+  );
   let y = 40;
   img.text('1x', 16 + model.width + 12, y + 10, 1, MUTED);
   paint(img, model, 16, y, 1);
@@ -382,8 +410,9 @@ async function roomSheet(args: readonly string[]): Promise<void> {
     img.text(form.slice(0, 8), tx, y + 48, 1, bad ? RED : TEXT);
   }
   const dir = outDir(args, id);
-  const file = join(dir, `${id}-room.png`);
-  const text = join(dir, `${id}-report.txt`);
+  const stem = variationId ?? id;
+  const file = join(dir, `${stem}-room.png`);
+  const text = join(dir, `${stem}-report.txt`);
   img.save(file);
   writeFileSync(text, `${lines.join('\n')}\n`);
   console.log(lines.join('\n'));
