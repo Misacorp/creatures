@@ -216,7 +216,7 @@ const VALLEY_ART: Readonly<
     label: 'The Forge',
     items: [
       { glyph: 'anvil', word: 'Anvil' },
-      { glyph: 'satchel', word: 'Crate' },
+      { glyph: 'satchel', word: 'Floor' },
       { glyph: 'lock', word: 'Sealed' },
       { glyph: 'shard-any', word: 'Shards' },
     ],

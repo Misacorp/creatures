@@ -15,7 +15,7 @@
       "id": "valley-commons",
       "title": "The commons",
       "lines": [
-        "Each place has one building project for the whole server. Give Acorns, scrap and shards; the Market takes any.",
+        "Each place has one project for the whole server. Give Acorns, scrap and shards; the Market's takes shards of any kind.",
         "A full project takes a few build days, then the place levels up: more seats and anvils, a plaque of helpers, a keepsake.",
         "Build the hearth, then the Market, then the Forge, then the rest. Give early: the commons unlock everything.",
         "Collections and keystones are goals for the whole server too."
@@ -25,8 +25,8 @@
       "id": "valley-forge",
       "title": "The Forge",
       "lines": [
-        "Tap the Forge to open the workshop. Each anvil has a smith: give it orders for what to make, or it tinks on its own.",
-        "Buy the next anvil from the dashed outline. Finished pieces wait in the anvil's crate; a full crate pauses it.",
+        "Tap the Forge to open the workshop. Each anvil has a smith: give it orders for what to make, or it tinkers on its own.",
+        "Buy the next anvil from the dashed outline. Finished pieces pile up on its floor; a full floor pauses that anvil.",
         "On your next arrival, common pieces come home by themselves. One made for your team is worn; the rest go to the bag.",
         "Rare and epic pieces wait in the sealed crate. Open it to reveal them one by one, best last. It never pauses an anvil.",
         "Patchwork pieces take shards of any kind."
@@ -47,9 +47,9 @@
       "title": "The Market and the visitor",
       "lines": [
         "Shards are exchanged only at the Market, once the server has built it. A broker seat swaps spare shards for you.",
-        "The visitor is here from Thursday to the end of Sunday. He rerolls all lines of one piece for Acorns and scrap.",
+        "The visitor is here from Thursday to the end of Sunday and rerolls all lines of one piece for Acorns and scrap.",
         "A reroll keeps the piece's rarity and item level, and each reroll that week costs more.",
-        "He also sells one blueprint a week, for Acorns and shards of any kind."
+        "The visitor also sells one blueprint a week, for Acorns and shards of any kind."
       ]
     },
     {
