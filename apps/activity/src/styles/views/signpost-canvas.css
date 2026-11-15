@@ -1,7 +1,7 @@
 /*
   The Signpost as a canvas (`valley/SignpostCanvas.tsx`): the shell, drawers and targets are `canvas.css`'s (`pc-`, `cv-`). Only what the
-  Signpost adds is here: its root (the same column as the Forge's `fc-root`), the expedition map filling the view with its way back to
-  the scene, and the lists of its two drawers.
+  Signpost adds is here: its root (the same column as the Forge's `fc-root`), the expedition map filling the view with its two collection
+  buttons, and the lists of its two drawers.
 */
 .sg-root {
   position: relative;
@@ -36,15 +36,16 @@
   height: auto;
 }
 
-/* The way back to the signpost scene, over the map's top left. */
-button.sg-map-back {
-  position: absolute;
-  top: 0.5rem;
-  left: 0.5rem;
-  z-index: 3;
-  min-height: 0;
-  padding: 0.25rem 0.625rem;
-  font-size: var(--fs-row);
+/* The packs and the project board: two of the Places button's flags (`.vy-hatch`) in the map's top left, one under the other. */
+.sg-map .sg-map-tool-2 {
+  top: 5.25rem;
+}
+
+/* A tool's pip sits at its bottom right, clear of the count tag at its top right. */
+.sg-map .sg-map-tool .cv-pip {
+  top: auto;
+  bottom: 0.125rem;
+  right: 0.125rem;
 }
 
 /* The lists of the drawers: the scouts at a place, and the packs of every seat. */
@@ -68,7 +69,8 @@ button.sg-map-back {
   top: 0.5rem;
   left: 0.5rem;
   right: 0.5rem;
-  z-index: 5;
+  /* Above the map's two corner buttons (the Places flag's z-index, 25). */
+  z-index: 30;
   margin: 0;
   pointer-events: none;
 }

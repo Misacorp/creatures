@@ -31,6 +31,7 @@ import {
 } from '../resource-count';
 import { formatCountdown } from '../time-format';
 import type { CountItem } from '../ui/CountBadge';
+import { crateLine } from './crate-view';
 
 const plural = (n: number, one: string, many: string): string =>
   n === 1 ? one : `${String(n)} ${many}`;
@@ -238,8 +239,9 @@ export const longWaits = (visit: ValleyVisit): number =>
       a.tinkering.sinceHours > 24,
   ).length;
 
-/** The Forge's line in the Places list: a full floor first, then a tinkering anvil, else how many smiths are at work. */
+/** The Forge's line in the Places list: a sealed crate first, then a full floor, then a tinkering anvil, else how many smiths are at work. */
 export function forgeSystemsLine(visit: ValleyVisit): string {
+  if (visit.forge.crate.count > 0) return crateLine(visit.forge.crate.best);
   const full = fullFloors(visit);
   if (full > 0) return full === 1 ? 'the floor is full' : `${String(full)} floors are full`;
   const tink = tinkering(visit);

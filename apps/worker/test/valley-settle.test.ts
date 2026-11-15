@@ -96,6 +96,9 @@ describe('migration 56: the valley tables', () => {
           'visit_mask',
           'mask_day',
           'joined_day',
+          // Migration 68: the sealed crate's count and best rarity (V-FORGE-5).
+          'crate_count',
+          'crate_best',
         ]);
         expect(columns('valley_creatures')).toEqual([
           'creature_id',

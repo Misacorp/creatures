@@ -5,6 +5,7 @@ import { CurrencyPile } from './CurrencyPile';
 import { GEAR_SPRITE } from './sprites/data/hud-sprites';
 import { Sprite } from './sprites/Sprite';
 import { instantPress } from './ui/instant-press';
+import { arrivedByKeyboard } from './ui/focus-return';
 
 /** The cog that opens Settings (How to play is inside Settings, so the HUD keeps one button). */
 export function SettingsButton({ onSettings }: { onSettings: () => void }) {
@@ -55,7 +56,12 @@ function BackButton({
   // A layout effect, not a passive one: the focus is on the button in the same commit that shows the place, so an
   // Escape pressed the moment the page appears (or a script that waits for its title) never finds it elsewhere.
   useLayoutEffect(() => {
-    ref.current?.focus({ preventScroll: true });
+    const button = ref.current;
+    if (button === null) return;
+    // A player who clicked in gets the focus here without a ring (`data-quiet`, cleared by the first key press); the keyboard's arrival keeps it.
+    if (arrivedByKeyboard()) button.removeAttribute('data-quiet');
+    else button.setAttribute('data-quiet', 'yes');
+    button.focus({ preventScroll: true });
   }, [token]);
   return (
     <button
@@ -65,6 +71,7 @@ function BackButton({
       aria-label={label}
       onClick={onBack}
       onKeyDown={(e) => {
+        e.currentTarget.removeAttribute('data-quiet');
         if (e.key === 'Escape') onBack();
       }}
     >

@@ -170,6 +170,15 @@ export const ValleyForgeViewSchema = v.strictObject({
   /** The most orders an anvil's queue holds, and the most pieces one order asks for. */
   queueMax: int,
   orderCountMax: int,
+  /**
+   * V-FORGE-5, the sealed crate: rare and epic pieces wait here until the player opens it. Only how many and the best rarity are shown
+   * (no ids and no lines before opening).
+   */
+  crate: v.strictObject({
+    count: int,
+    cap: int,
+    best: v.nullable(v.picklist(['rare', 'epic'])),
+  }),
 });
 
 /**

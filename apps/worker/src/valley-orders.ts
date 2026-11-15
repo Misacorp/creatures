@@ -22,7 +22,9 @@ import {
   type ReachId,
 } from '@creatures/game';
 import { runKeyed, settleSpend } from './keyed-action';
-import { blueprintMarks, creditParts, debitParts, getParts } from './gear-store';
+import { itemView } from './gear-access';
+import { blueprintMarks, creditParts, debitParts, findItem, getParts } from './gear-store';
+import type { GearItemView } from './gear-types';
 import { spend, type LedgerStorage } from './ledger';
 import { GameError, atomically, type Outcome } from './outcome';
 import {
@@ -67,6 +69,23 @@ export interface ExchangeResult {
   trades: ExchangeTrade[];
   /** Shards of the wanted element gained in all. */
   gained: number;
+}
+
+/** One piece of an opened crate, in the answer: the rolled item, who wears it (if the creature was dressed at once) and who made it. */
+export interface CratePiece {
+  item: GearItemView;
+  /** The creature that now wears it ("for my team" pieces), or null: it is in the bag. */
+  wornBy: string | null;
+  /** The smith that made it (null when that anvil is gone). */
+  madeBy: string | null;
+}
+
+/** The answer of opening the crate: the pieces in reveal order (worst first, best last) and what is still sealed. */
+export interface CrateOpened {
+  pieces: CratePiece[];
+  /** Pieces still sealed (the bag was full), and whether the bag is why. */
+  sealed: number;
+  bagFull: boolean;
 }
 
 export class ValleyOrders {
@@ -118,6 +137,39 @@ export class ValleyOrders {
                   ),
                 );
           return { seatId, price };
+        },
+      );
+    });
+  }
+
+  /**
+   * V-FORGE-5: opens the Forge's sealed crate. Keyed (the pieces are rolled with live dice); a retry returns the stored answer. Each sealed
+   * piece is rolled now, best first, and goes to the bag or is worn at once ("for my team"); a full bag keeps the rest sealed. The answer
+   * lists the pieces worst first, best last.
+   */
+  openCrate(userId: string, key: string): Outcome<CrateOpened> {
+    return atomically(this.deps.storage, () => {
+      this.deps.settle.settle(userId, 'now');
+      return runKeyed(
+        this.sql,
+        this.deps.now,
+        { userId, key, kind: 'valley_crate_open', fingerprint: 'forge' },
+        () => {
+          const team = this.sql
+            .exec<{ id: string; species: string; level: number }>(
+              'SELECT id, species, level FROM creatures WHERE user_id = ? ORDER BY caught_at, rowid',
+              userId,
+            )
+            .toArray();
+          const now = this.deps.now();
+          const result = this.deps.forge.openCrate(userId, now, team, VALLEY_RULES.forge.bag);
+          const pieces: CratePiece[] = result.opened.flatMap((p) => {
+            const row = findItem(this.sql, userId, p.itemId);
+            return row === undefined
+              ? []
+              : [{ item: itemView(this.sql, row), wornBy: p.wornBy, madeBy: p.madeBy }];
+          });
+          return { pieces, sealed: result.sealed, bagFull: result.bagFull };
         },
       );
     });

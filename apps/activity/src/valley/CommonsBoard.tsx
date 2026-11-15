@@ -4,7 +4,7 @@
  * project's bar with what is still needed, the player's own part (private, V-COM-2), one gold Give button, a row for the plaque and a
  * row for the collection, and the player's communal seat (V-COM-14) as the shared slot row.
  *
- * The same card opens in a drawer from the Bonfire's scene (`host="sheet"`, which has no page): there the Give list, the plaque, the
+ * In a canvas place's drawer (`host="panel"`) the same drill-ins are steps of the panel, as below. The same card opens in a drawer from the Bonfire's scene (`host="sheet"`, which has no page): there the Give list, the plaque, the
  * collection and the seat open as drill-ins of the one drawer (never a layer over it). In a page they open in a drawer of their own,
  * and the seat in the shared creature picker. Giving is a keyed spend with one clear button (`SpendConfirm`); the server decides.
  */
@@ -79,8 +79,11 @@ export interface CommonsBoardProps {
   acorns: number;
   busy: boolean;
   actions: CommonsActions;
-  /** A page (a card among the page's cards) or the sheet the Bonfire opens. */
-  host?: 'page' | 'sheet';
+  /**
+   * A page (a card among the page's cards, whose lists open in a drawer of their own), the sheet the Bonfire opens, or a `panel`: the
+   * card inside a canvas place's drawer or page, where the lists are steps of that panel (Back returns to the card; no sheet over a drawer).
+   */
+  host?: 'page' | 'sheet' | 'panel';
   /** The id a carried creature lands on (the card carries it as `data-seat`); absent on a page without a tray. */
   dropId?: string;
   /** A carried creature is over the card. */
@@ -186,7 +189,7 @@ export function CommonsBoard({
   const percent = percentFilled(p);
   const card = (
     <>
-      {host === 'page' && (
+      {host !== 'sheet' && (
         <>
           <div class="sp-seat-head">
             <h3 class="pix">{name}</h3>
@@ -499,6 +502,32 @@ export function CommonsBoard({
           </div>
         )}
       </Drawer>
+    );
+  }
+
+  if (host === 'panel') {
+    return (
+      <section
+        class={`sp-seat cm-board cm-panel${over ? ' over' : ''}`}
+        aria-label={`${name} project`}
+        ref={sheetRef}
+        tabIndex={-1}
+        {...(dropId === undefined ? {} : { 'data-seat': dropId })}
+      >
+        {view === null ? (
+          card
+        ) : (
+          <div class="dr-stack" onKeyDown={onDrillKey(back)}>
+            <DrillHead
+              title={titleOf(view)}
+              backLabel={view === 'give' && rowId !== null ? 'to the list' : `to the ${name}`}
+              focus
+              onBack={back}
+            />
+            {bodyOf(view)}
+          </div>
+        )}
+      </section>
     );
   }
 

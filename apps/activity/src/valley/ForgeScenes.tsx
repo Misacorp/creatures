@@ -1,16 +1,16 @@
 /**
- * What stands in the Forge's two scenes, over their canvases (`ForgeCanvas.tsx` holds the state and the drawers): the targets, the
- * creatures and their small bubbles.
+ * What stands in the Forge's scene, over its canvas (`ForgeCanvas.tsx` holds the state and the drawers): the targets, the creatures
+ * and their small bubbles. The place opens straight on its interior (Misa, 2026-11-15; there is no outside view).
  *
- * - `ForgeOutside`: the building (the whole of it is the way in, with a plate saying so), the notice board beside it (the project),
- *   the helper who was posted to the project, and a bubble over the door when something waits (pieces on a floor, a bag that needs a look).
  * - `ForgeInside` (Misa, 2026-11-11, "the interior of a workshop"): the player's smiths at their anvils with the dashed outline of the
- *   next, the furnace with its fire (opens the project board), the plans table, the chest (the bag) and the crate (the floor), the
- *   door out, and at the back benches other players' smiths at work, small, each a tap that shows its creature's plate with the owner's
- *   name (never a list of everyone). With nobody else's, a couple of ambient workers keep the room alive (decoration: no plate, no
- *   tap). Small idle motions step (hammering, carrying) and stop for reduced motion (`canvas.css`).
+ *   next, the furnace with its fire (opens the project board), the plans board, the chest (the bag) and the crate of finished pieces
+ *   (the floor), the door (back to the valley), and at the back benches other players' smiths at work, small, each a tap that shows its
+ *   creature's plate with the owner's name (never a list of everyone). With nobody else's, a couple of ambient workers keep the room
+ *   alive. Small idle motions step (hammering, carrying) and stop for reduced motion (`canvas.css`).
+ * - One cue for every clickable thing, none for decoration (Misa, 2026-11-15: "It was also inconsistent which elements were actually
+ *   clickable and I didn't find any kind of visual cue"): each target has a `plate` (its short name; `art-variants.ts`, `clickCue`
+ *   says how it shows). The racks, shelf, trough, coal, cat, rug and the rest of the dressing are canvas art only: no target, no plate.
  */
-import type { ComponentChildren } from 'preact';
 import { useState } from 'preact/hooks';
 import type { Creature, ValleyVisit } from '../api';
 import { creatureName } from '../game';
@@ -21,21 +21,21 @@ import { CanvasTarget, type Opener } from './PlaceCanvas';
 import type { SceneGeometry } from './SceneFrame';
 import { At, CreatureSprite, Pic, SpeechBubble } from './parts';
 import { ANVIL_PROP } from './forge-props';
-import {
-  PROP,
-  PROP_HIT,
-  anvilGlyph,
-  anvilLabel,
-  anvilWorking,
-  outsideLayout,
-} from './forge-canvas';
+import { PROP, anvilGlyph, anvilLabel, anvilWorking } from './forge-canvas';
 import { interiorLayout } from './forge-interior';
+import { CrateProp } from './CrateProp';
+import { CrateReveal } from './CrateReveal';
+import { crateLook, crateReveal } from './art-variants';
+import type { CrateOpened, CrateState } from './crate-view';
 import { interiorSprite } from './forge-interior-art';
 import { WARMING_FLAME } from './valley-art';
 
 /** The flame's top-left over the furnace's mouth, from the furnace's top-left (the art's fire is at x 14 to 33). */
 const FLAME_AT = { x: 22, y: 36 } as const;
 import { anvilName, anvilPrice } from './forge-view';
+
+/** Where an anvil cell's plate sits, scene pixels down from the cell's top: under the anvil. */
+const PLATE_AT = 28;
 
 /** The two ambient workers (decoration when no one else's smith is at work): species and motion. */
 export const AMBIENT = [
@@ -59,25 +59,6 @@ export function ambientSpots(others: number, spots: number): number[] {
   if (count >= 1) out.push(free[free.length - 1] as number);
   if (count >= 2) out.push(free[0] as number);
   return out;
-}
-
-/** A plate under a thing in the scene, centred on `x`. */
-function FeetPlate({
-  g,
-  x,
-  y,
-  children,
-}: {
-  g: SceneGeometry;
-  x: number;
-  y: number;
-  children: ComponentChildren;
-}) {
-  return (
-    <At x={g.X(x)} y={g.Y(y)} class="vy-feet-plate">
-      <Nameplate size="sm">{children}</Nameplate>
-    </At>
-  );
 }
 
 /** A bubble over a spot, `PROP` pixels wide. */
@@ -105,80 +86,12 @@ function Bubble({
   );
 }
 
-export function ForgeOutside({
-  g,
-  helper,
-  waiting,
-  bagAttention,
-  boardOpen,
-  boardKnown,
-  onEnter,
-  onBoard,
-}: {
-  g: SceneGeometry;
-  /** The creature posted to the forge's project, standing at the building. */
-  helper: Creature | undefined;
-  /** Finished pieces waiting on the floors. */
-  waiting: number;
-  /** The bag is full or has a notice: the door says so. */
-  bagAttention: boolean;
-  boardOpen: boolean;
-  /** The place has a project board to open. */
-  boardKnown: boolean;
-  onEnter: (opener: Opener) => void;
-  onBoard: (opener: Opener) => void;
-}) {
-  const lay = outsideLayout(g);
-  const { art } = lay;
-  const doorX = art.x + Math.floor(art.width / 2);
-  const bubble =
-    waiting > 0
-      ? { glyph: 'gift', count: waiting }
-      : bagAttention
-        ? { glyph: 'warning', count: null }
-        : null;
-  return (
-    <>
-      {helper !== undefined && (
-        <At x={g.X(doorX - 26)} y={g.Y(art.y + art.height - 20)} class="vy-stand">
-          <CreatureSprite creature={helper} scale={g.s} />
-        </At>
-      )}
-      {bubble !== null && (
-        <Bubble
-          g={g}
-          x={doorX - PROP / 2}
-          y={art.y + art.height - 34}
-          glyph={bubble.glyph}
-          count={bubble.count}
-        />
-      )}
-      <FeetPlate g={g} x={doorX} y={art.y + art.height + 1}>
-        Inside
-      </FeetPlate>
-      <CanvasTarget
-        g={g}
-        x={art.x}
-        y={art.y}
-        w={art.width}
-        h={art.height - 8}
-        label="The forge. Go inside"
-        onClick={onEnter}
-      />
-      {boardKnown && (
-        <CanvasTarget
-          g={g}
-          x={lay.board.x - (PROP_HIT - PROP) / 2}
-          y={lay.board.y - (PROP_HIT - PROP) / 2}
-          w={PROP_HIT}
-          h={PROP_HIT}
-          label="The project board: the fire and what the valley builds here. Open"
-          expanded={boardOpen}
-          onClick={onBoard}
-        />
-      )}
-    </>
-  );
+/** The sealed crate being opened: the glow it had (the valley's crate is empty once the server has opened it) and, when it has answered, what it held. */
+export interface CrateRun {
+  best: 'rare' | 'epic' | null;
+  count: number;
+  /** Null while the crate rattles and the server is asked; set when the reveal starts. */
+  answer: CrateOpened | null;
 }
 
 /** The inside's state of the drawers, as the targets need it. */
@@ -201,6 +114,11 @@ export function ForgeInside({
   bagAttention,
   open,
   overSeat,
+  crate,
+  crateRun,
+  onCrate,
+  onCrateDone,
+  crateFailed,
   onAnvil,
   onBuy,
   onLeft,
@@ -218,6 +136,13 @@ export function ForgeInside({
   open: InsideOpen;
   /** A hand carrying a creature is over this seat (an anvil's id). */
   overSeat: string | null;
+  /** The sealed crate as the valley says it, and the one being opened now (null: none). */
+  crate: CrateState;
+  crateRun: CrateRun | null;
+  onCrate: (opener: Opener) => void;
+  onCrateDone: () => void;
+  /** The crate would not open (the server said no, or nothing came back): a line over it. */
+  crateFailed: string | null;
   onAnvil: (anvilId: string, hasSmith: boolean, opener: Opener) => void;
   onBuy: (opener: Opener) => void;
   onLeft: (kind: 'bag' | 'floor' | 'plans' | 'board', opener: Opener) => void;
@@ -231,11 +156,6 @@ export function ForgeInside({
   const others = visit.smiths;
   const bs = Math.max(1, g.s - 1);
   const benchSprite = interiorSprite('workbench', night);
-  const feetPlate = (x: number, y: number, text: string): ComponentChildren => (
-    <FeetPlate g={g} x={x} y={y}>
-      {text}
-    </FeetPlate>
-  );
   // The far smiths: small, behind the benches (the benches come after them, so they stand over their feet).
   const backTop = (spot: { y: number }): number => g.Y(spot.y) - 16 * bs;
   const backLeft = (spot: { x: number }): number => g.X(spot.x) - 8 * bs;
@@ -296,15 +216,38 @@ export function ForgeInside({
             {glyph !== null && (
               <Bubble g={g} x={cell.smith.x} y={cell.smith.y} glyph={glyph} count={null} />
             )}
-            {feetPlate(cell.x + cell.w / 2, cell.anvil.y + PROP, creatureName(smith))}
           </span>
         );
       })}
       {waiting > 0 && <Bubble g={g} x={lay.crate.x} y={lay.crate.y} glyph="gift" count={waiting} />}
+      {crateFailed !== null && crateRun === null && (
+        <At
+          x={g.X(lay.sealed.x + lay.sealed.w / 2)}
+          y={g.Y(lay.sealed.y - 20)}
+          class="vy-feet-plate vy-over"
+        >
+          <span class="cr-fail pix" role="alert">
+            {crateFailed}
+          </span>
+        </At>
+      )}
+      {(crate.count > 0 || crateRun !== null) &&
+        (crateRun === null || crateRun.answer === null) && (
+          <CrateProp
+            g={g}
+            box={lay.sealed}
+            crate={crate}
+            best={crateRun?.best ?? crate.best}
+            night={night}
+            look={crateLook()}
+            phase={crateRun === null ? 'idle' : 'rattle'}
+            disabled={busy || crateRun !== null}
+            onOpen={onCrate}
+          />
+        )}
       {(bagFull || bagAttention) && (
         <Bubble g={g} x={lay.chest.x} y={lay.chest.y} glyph="warning" count={null} />
       )}
-      {feetPlate(lay.door.x + lay.door.w / 2, lay.door.y + lay.door.h + 1, 'Outside')}
 
       {/* The targets, over everything above: each a real button. */}
       {others.map((other, i) => {
@@ -320,6 +263,15 @@ export function ForgeInside({
               w={14}
               h={16}
               label={`${who}, ${other.working ? 'at work' : 'at the bench'}. Show who`}
+              {...(peek === i
+                ? {}
+                : {
+                    plate: creatureName({
+                      nickname: other.creature.name,
+                      species: other.creature.species,
+                    }),
+                    plateAt: i % 2 === 0 ? -6 : -12,
+                  })}
               expanded={peek === i}
               onClick={() => {
                 setPeek(peek === i ? null : i);
@@ -342,6 +294,8 @@ export function ForgeInside({
         w={lay.furnace.w}
         h={lay.furnace.h}
         label="The furnace: the fire and the project board. Open"
+        plate="Furnace"
+        plateAt={lay.furnace.h}
         expanded={open.left === 'board'}
         onClick={(opener) => {
           onLeft('board', opener);
@@ -353,7 +307,8 @@ export function ForgeInside({
         y={lay.door.y}
         w={lay.door.w}
         h={lay.door.h}
-        label="The door. Go back outside"
+        label="The door. Back to the valley"
+        plate="Valley"
         onClick={onOut}
       />
       {visit.anvils.map((anvil, i) => {
@@ -377,6 +332,8 @@ export function ForgeInside({
               anvil,
               marketBuilt,
             )}
+            plate={smith === undefined ? name : creatureName(smith)}
+            plateAt={PLATE_AT}
             expanded={open.anvilId === anvil.id}
             disabled={busy}
             onClick={(opener) => {
@@ -394,11 +351,17 @@ export function ForgeInside({
           h={lay.cells[owned].h}
           slot
           label="A new anvil. Buy it"
+          plate="New anvil"
+          plateAt={PLATE_AT}
           expanded={open.buy}
           disabled={busy}
           onClick={onBuy}
         >
-          <span class="cv-ghost" aria-hidden="true">
+          <span
+            class="cv-ghost"
+            aria-hidden="true"
+            ref={cssVars({ '--gy': `${String(12 * g.s)}px` })}
+          >
             <Pic sprite={ANVIL_PROP} scale={g.s} />
           </span>
           <span class="cv-price">
@@ -409,9 +372,8 @@ export function ForgeInside({
       <CanvasTarget
         g={g}
         {...lay.plans}
-        w={PROP}
-        h={PROP}
         label="The plans: the blueprints you know. Open"
+        plate="Plans"
         expanded={open.left === 'plans'}
         onClick={(opener) => {
           onLeft('plans', opener);
@@ -420,9 +382,8 @@ export function ForgeInside({
       <CanvasTarget
         g={g}
         {...lay.chest}
-        w={PROP}
-        h={PROP}
         label={`The bag${bagFull ? ', full' : ''}. Open`}
+        plate="Bag"
         expanded={open.left === 'bag'}
         onClick={(opener) => {
           onLeft('bag', opener);
@@ -431,14 +392,37 @@ export function ForgeInside({
       <CanvasTarget
         g={g}
         {...lay.crate}
-        w={PROP}
-        h={PROP}
         label={`The floor: ${waiting === 0 ? 'nothing waiting' : `${String(waiting)} pieces waiting`}. Open`}
+        plate="Floor"
         expanded={open.left === 'floor'}
         onClick={(opener) => {
           onLeft('floor', opener);
         }}
       />
+      {crateRun !== null && crateRun.answer !== null && (
+        <CrateReveal
+          g={g}
+          crate={lay.sealed}
+          best={crateRun.best}
+          night={night}
+          answer={crateRun.answer}
+          variant={crateReveal()}
+          look={crateLook()}
+          nameOf={(id) => {
+            const c = creatureOf(id);
+            return c === undefined ? undefined : creatureName(c);
+          }}
+          flyTo={(piece) => {
+            const i = visit.anvils.findIndex(
+              (a) => piece.wornBy !== null && a.creatureId === piece.wornBy,
+            );
+            const cell = lay.cells[i];
+            if (cell !== undefined) return { x: cell.smith.x + 8, y: cell.smith.y + 8 };
+            return { x: lay.chest.x + lay.chest.w / 2, y: lay.chest.y + lay.chest.h / 2 };
+          }}
+          onDone={onCrateDone}
+        />
+      )}
     </>
   );
 }

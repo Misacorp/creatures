@@ -142,6 +142,11 @@ export class PaperRecorder {
     if (items.length > 0) this.log.forge.by = by ?? this.log.forge.by;
   }
 
+  /** The Forge's sealed crate holds rare or epic pieces (told once per arrival; the best rarity is kept). */
+  crateWaits(rarity: 'rare' | 'epic'): void {
+    if (this.log.crate !== 'epic') this.log.crate = rarity;
+  }
+
   mastery(post: 'scout' | 'anvil', creatureId: string, step: 1 | 2 | 3): void {
     this.log.mastery.push({ post, creatureId, step });
     this.log.mastery.sort((a, b) => b.step - a.step);
