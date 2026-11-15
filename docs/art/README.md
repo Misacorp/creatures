@@ -28,6 +28,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | [House: Stormglass set](#house-stormglass) | draft | 14 | 2026-11-09: player housing furniture, batch E3 (Stormglass, Fenkeeper, Ancient, Lantern Night), see docs/design/housing.md section 5. |
 | [House shell (housing E1)](#house-shell) | draft | 33 | 2026-11-09: housing art batch E1, the building, roofs, walls and ground skins. |
 | [Element shards, told apart by shape](#shards) | liked | 15 | 2026-11-03: the element shard icons must differ by shape, not only colour (accessibility review from the valley session; Misa asked to provide what the valley needs). |
+| [Builders' corner](#valley-builders-corner) | draft | 16 | 2026-11-15 (valley session): every valley place moves to a "picture you click" layout. On the Bonfire the fire is only where creatures chill; building work happens apart: "The helper spot should be something that's clearly separate, perhaps next to a construction table or something near the bottom of the screen ... the construction workers can do their own thing elsewhere." |
 | [The sealed gear crate](#valley-forge-crate) | draft | 9 | 2026-11-14 (via the valley session): collecting gear should be a "big moment": common pieces come home on their own; rare and epic pieces wait in a sealed crate inside the Forge until the player opens it; opening reveals them one by one, best last. |
 | [The Forge, inside](#valley-forge-interior) | draft | 27 | 2026-11-11 (via the valley session): clicking the Forge goes inside, into a workshop interior. "It would be cool to have the same stuff there (my creatures working at the anvils) but also see some other creatures working in the background, a fire going, etc. Basically make it look like the interior of a workshop." |
 | [The camp's other places, glow style](#valley-glow-camp) | draft | 6 | 2026-11-03: the valley prototype's remaining places (arena, fairground, road, chest, lectern, paddock) in the liked glow style, day and night. |
@@ -716,6 +717,45 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | `mire-now` | part |  | archived | The shipped mire shard, unchanged, for comparison. |
 | `mire-a` | part |  | archived | A lump with a single drip hanging from its belly. |
 | `mire-b` | part |  | liked | A slumped blob with two drips, one longer. |
+
+<a id="valley-builders-corner"></a>
+
+## Builders' corner
+
+![Builders' corner](valley-builders-corner.png)
+
+- **Status:** draft
+- **Requested:** 2026-11-15 (valley session): every valley place moves to a "picture you click" layout. On the Bonfire the fire is only where creatures chill; building work happens apart: "The helper spot should be something that's clearly separate, perhaps next to a construction table or something near the bottom of the screen ... the construction workers can do their own thing elsewhere."
+- **Source:** `apps/activity/src/sprites/concepts/valley-builders-corner.ts` (draw it with `pnpm art valley-builders-corner`)
+- **Sheet of:** `eda42b33da8a`
+- A reusable kit for every place with a building project: the corner where the project board and the helper spot stand, apart from the place's own art. Outdoor valley look: ink, night as the main palette and `alts.day` for the same pixels, materials from `valley-tiers` (wood, rope and planks of levels 1 and 2, cut stone of level 3, cream canvas and the teal pennant of level 4), so it matches the buildings. One key set for the kit, so a composed corner stays within 16 colours.
+- Every piece stands on its own bottom row (its base row, the lowest ink row); place pieces by that row. Sizes include the 1 px ink outline. Piles grow s to m to l on the same base row, so a project that grows swaps the sprite in place: stone 12x5, 20x9, 24x13 (cut blocks with dark joints, lit top edges, one or two grey blocks, a loose chip: 2, 5, 9 blocks); timber 10x10, 14x14, 22x14 (round log ends, light end grain and dark heart, stacked in a pyramid: 3, 6, 10 logs); bags 9x9, 17x13, 25x13 (plump sacks with tied necks: 1, 3, 5).
+- `table` 32x20, base row 19 (the feet), is the clickable piece: it opens the project board. It has a lit cream top edge and a small white glint on the weight, so it stands out from the decoration. Variations: B a slanted drafting table on one stand (32x22, base row 21), C the table under a lantern on a pole (36x34, base row 33; warm light on the plan and on the ground at night, plain by day). Pick: see the table note.
+- `sawhorse` 16x12, base row 11, and `planks` 20x8, base row 7: decoration, mid tones, no glint.
+- `toolbox` 12x8, base row 7. `pile-stone-s/m/l`, `pile-timber-s/m/l`, `pile-bags-s/m/l`: base row = last row.
+- `tarp` 48x24, base row 23 (the pole feet): a canvas awning that sags a little between two poles, with a darker tan hem and guy ropes to pegs (wider than the 40 asked, for the ropes); the table stands between the poles (clear width 32, table at x 8 of the tarp, same base row).
+- `help-flag` 8x16, base row 15: a stake with a small teal flag, marks the empty helper spot.
+- `preview` 96x48 (the corner composed, base rows 32 and 46): tarp x 25, y 9; table x 33, y 13 (under the tarp); stone pile l x 0, y 20; timber pile l x 72, y 19; sawhorse x 2, y 35; planks x 20, y 39; toolbox x 44, y 39; bags pile l x 58, y 34; help flag x 86, y 31. Tops left, in sprite pixels.
+- The content needs the project board (the click target) and a helper spot before this art is used.
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `table` | free |  | draft | The clickable piece: a construction table on trestle legs with a blue plan rolled out on it (white lines, a curled end), a pencil and a stone weight on the corner. The top has a lit cream edge and a small glint, so it reads as the place to look at the project. Variations: B a slanted drafting table on a single stand, C a table under a small lantern on a pole (warm light on the plan at night). Pick: A, because it reads at 1x as a table with a plan, is the widest and flattest so it sits under the tarp and next to any place, and keeps the plan itself the brightest thing in the corner; B reads as an easel, C is the best at night but is tall and ties the table to a lantern the places already have. |
+| `sawhorse` | free |  | draft | A sawhorse with a plank across it: decoration, mid tones, no glint. |
+| `planks` | free |  | draft | A stack of sawn planks on two bearers: decoration, quiet. |
+| `toolbox` | free |  | draft | A small wooden toolbox with a handle and a rope strap. |
+| `pile-stone-s` | free |  | draft | Two cut stone blocks, one of them grey, with a chip at the foot. |
+| `pile-stone-m` | free |  | draft | Five cut blocks in two layers with dark joints. |
+| `pile-stone-l` | free |  | draft | Nine cut blocks in three layers, two of them grey. |
+| `pile-timber-s` | free |  | draft | Three logs seen end-on. |
+| `pile-timber-m` | free |  | draft | Six logs seen end-on in a pyramid. |
+| `pile-timber-l` | free |  | draft | Ten logs seen end-on in a pyramid. |
+| `pile-bags-s` | free |  | draft | One tied sack. |
+| `pile-bags-m` | free |  | draft | Three plump tied sacks leaning together. |
+| `pile-bags-l` | free |  | draft | Five plump tied sacks in two layers. |
+| `tarp` | free |  | draft | A canvas canopy on two poles over the corner, drawn so the table stands under it. |
+| `help-flag` | free |  | draft | A stake with a small teal flag marking the empty helper spot. |
+| `preview` | free |  | draft | The corner composed once, as a starting layout: tarp, table under it, sawhorse, planks, toolbox, an l pile of each material and the help flag. |
 
 <a id="valley-forge-crate"></a>
 

@@ -57,7 +57,7 @@ export const SCENE_ART: Readonly<Record<CastPlace, MapName>> = {
 };
 
 /** The nameplates' layer: above every creature (`depthOf` stays below it). */
-const PLATES_Z = 500000;
+export const PLATES_Z = 500000;
 
 /** A creature held by a hand: above every creature, below the nameplates. */
 const LIFTED_Z = PLATES_Z - 1;

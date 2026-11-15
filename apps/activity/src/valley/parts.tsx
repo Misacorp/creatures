@@ -7,6 +7,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { shinyPalette } from '../art';
 import { cssVars } from '../css-vars';
 import { glyphOrUnknown } from '../glyphs';
+import { fnv1a } from '../room-layout';
 import { creatureSpriteOrFallback } from '../sprites/creature-sprites';
 import { Sprite } from '../sprites/Sprite';
 import type { SpriteDef } from '../sprites/sprite-data';
@@ -86,27 +87,35 @@ export function At({
   );
 }
 
-/** A creature's sprite at a scale, mirrored when it faces left, its shiny colours when shiny. */
+/**
+ * A creature's sprite at a scale, mirrored when it faces left, its shiny colours when shiny. `idle` (the creature's id) makes it idle as
+ * the living room's loungers do: the one-pixel bob and a blink now and then, each out of step with the others by the id. The bob is a
+ * `translate`, so it keeps a mirrored sprite's `transform`; both stand still for reduced motion.
+ */
 export function CreatureSprite({
   creature,
   scale,
   flip = false,
+  idle,
   class: extra,
 }: {
   creature: Pick<Creature, 'species' | 'shiny'>;
   scale: number;
   flip?: boolean;
+  idle?: string | undefined;
   class?: string | undefined;
 }) {
   const palette = creature.shiny ? shinyPalette(creature.species) : undefined;
   const classes = ['vy-creature'];
   if (flip) classes.push('vy-flip');
+  if (idle !== undefined) classes.push('vy-bob', `vy-bd${String(fnv1a(idle) % 6)}`);
   if (extra !== undefined) classes.push(extra);
   return (
     <Sprite
       sprite={creatureSpriteOrFallback(creature.species)}
       scale={scale}
       class={classes.join(' ')}
+      {...(idle === undefined ? {} : { life: { seed: idle, shiny: creature.shiny } })}
       {...(palette === undefined ? {} : { palette })}
     />
   );

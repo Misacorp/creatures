@@ -19,7 +19,7 @@ export const SKY_ROWS = 40;
 /** The most rows of one sprite (`MAX_HEIGHT` of `sprite-data`): taller layers are painted in bands. */
 const BAND = 64;
 /** Scene pixels from the top of the place's art to the sky strip's bottom row (the grass): the hills end behind the place. */
-const SKY_BELOW_ART_TOP = 14;
+export const SKY_BELOW_ART_TOP = 14;
 /** Scene pixels from the top of the scene's clear zone to the top of the place's art. */
 const ART_TOP = 20;
 
