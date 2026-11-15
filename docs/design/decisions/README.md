@@ -23,6 +23,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [direction.md](direction.md): Roadmap calls, Misa's standing direction, naming and tone, content policy, how agents and Misa work.
 
+- 2026-11-15 The reset: the goodbye DM is an embed, the new-valley card is look B \[Misa\]
 - 2026-11-15 Art glows use the game's rarity colours
 - 2026-11-15 \[Misa\] The Forge interior keeps one look for now
 - 2026-11-09 \[Misa\] Valley building levels share one look per level
@@ -163,6 +164,7 @@ Superseded: 1 entry (see the topic file).
 
 [combat.md](combat.md): The shared combat engine, abilities, statuses, elements, the balance simulator, balance passes, and combat v2 in the lab.
 
+- 2026-11-15 Raid replays play at the live finale's pace, fixed \[Misa\]
 - 2026-11-14 Boss animations: lances pass through the whole column; the aim is the board's highlight, no triangle \[Misa\]
 - 2026-11-14 Rename: the Mire debuff is Bogged Down, the Mire mark is Mired \[Misa\]
 - 2026-11-14 A live finale started off the calendar is on from its real start in the Raid view
