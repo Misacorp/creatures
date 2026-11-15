@@ -30,17 +30,6 @@ import { WARMING_FLAME, placeOf, type Rect } from './valley-art';
 import { scaffoldFor } from './scaffold';
 import { HonourRibbon, useHonour } from './HonourRibbon';
 import type { MapName } from './valley-places';
-import {
-  BELL_AT,
-  YARD_ASIDE,
-  bellSprite,
-  lecternSprite,
-  lecternTopLeft,
-  teacherSprite,
-  teacherTopLeft,
-  yardSprite,
-  yardTopLeft,
-} from './school-yard';
 
 /** The sprite each scene stands its place's art from. */
 export const SCENE_ART: Readonly<Record<CastPlace, MapName>> = {
@@ -51,9 +40,6 @@ export const SCENE_ART: Readonly<Record<CastPlace, MapName>> = {
   paddock: 'paddock',
   signpost: 'road',
   forge: 'forge',
-  market: 'market',
-  visitor: 'visitor',
-  school: 'school',
 };
 
 /** The nameplates' layer: above every creature (`depthOf` stays below it). */
@@ -295,36 +281,14 @@ function Roamers({
 export function PlaceScene({ cast, onAct }: { cast: Cast; onAct: () => void }) {
   const art = SCENE_ART[cast.place];
   const bossId = cast.boss?.id ?? null;
-  // The boss stands beside the art: the pair is centred in the band, not the art alone. The School's yard is wider than its house.
-  const aside = cast.school !== null ? YARD_ASIDE : bossId === null ? 0 : BOSS_ASIDE;
+  // The boss stands beside the art: the pair is centred in the band, not the art alone.
+  const aside = bossId === null ? 0 : BOSS_ASIDE;
   const steps = cast.scaffold;
-  const school = cast.school;
   const draw = useMemo(
     () =>
       bandSceneDraw(
         art,
         (box) => [
-          // The School's visit: the bell tilted while announced, the lectern, and the teacher at it while here (V-SCH-11).
-          ...(school === null || !school.bell
-            ? []
-            : [{ sprite: bellSprite(), x: box.x + BELL_AT.x, y: box.y + BELL_AT.y }]),
-          ...(school === null || !school.lectern
-            ? []
-            : [
-                {
-                  sprite: lecternSprite(),
-                  x: box.x + lecternTopLeft().x,
-                  y: box.y + lecternTopLeft().y,
-                },
-              ]),
-          ...(school === null || school.teacher === null
-            ? []
-            : (() => {
-                const sprite = teacherSprite(school.teacher);
-                return sprite === null
-                  ? []
-                  : [{ sprite, x: box.x + teacherTopLeft().x, y: box.y + teacherTopLeft().y }];
-              })()),
           // The scaffolding rises in front of the place as its project fills (V-COM-6).
           ...(steps === 0 ? [] : [{ sprite: scaffoldFor(art, steps), x: box.x, y: box.y }]),
           ...(bossId === null
@@ -338,14 +302,8 @@ export function PlaceScene({ cast, onAct }: { cast: Cast; onAct: () => void }) {
               ]),
         ],
         aside,
-        // The yard under the School, always there: a bench with room to join.
-        school === null
-          ? undefined
-          : (box) => [
-              { sprite: yardSprite(), x: box.x + yardTopLeft().x, y: box.y + yardTopLeft().y },
-            ],
       ),
-    [art, bossId, aside, steps, school?.lectern, school?.bell, school?.teacher],
+    [art, bossId, aside, steps],
   );
   const name = placeOf(cast.place).name;
   return (
