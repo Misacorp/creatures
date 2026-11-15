@@ -3,10 +3,12 @@
  * dev-only keys (not the `lc.` prefix, so "Reset local flags" leaves them alone). Loaded by the staging
  * build only; production never sets a look.
  */
+import { isReplayPace, setReplayPace, type ReplayPaceId } from '../playback-v2';
 import { applyLook, applyRoom, isLook, isRoomMode, type LookId, type RoomMode } from '../looks';
 
 export const LOOK_KEY = 'dev-look';
 export const ROOM_KEY = 'dev-room';
+export const PACE_KEY = 'dev-replay-pace';
 
 /** The part of the Web Storage API this needs (so a test can pass a fake). */
 export interface PrefStorage {
@@ -50,6 +52,18 @@ export function storedRoom(storage: PrefStorage | null = browserStorage()): Room
   return value !== null && isRoomMode(value) ? value : 'every';
 }
 
+/** The stored replay pace, or `finale` (today's). */
+export function storedPace(storage: PrefStorage | null = browserStorage()): ReplayPaceId {
+  const value = read(PACE_KEY, storage);
+  return value !== null && isReplayPace(value) ? value : 'finale';
+}
+
+/** Applies a replay pace and remembers it (the next replay that opens uses it). */
+export function choosePace(id: ReplayPaceId, storage: PrefStorage | null = browserStorage()): void {
+  setReplayPace(id);
+  write(PACE_KEY, id, storage);
+}
+
 /** Applies a look and remembers it. */
 export function chooseLook(id: LookId, storage: PrefStorage | null = browserStorage()): void {
   applyLook(id);
@@ -66,4 +80,5 @@ export function chooseRoom(mode: RoomMode, storage: PrefStorage | null = browser
 export function applyStoredLook(storage: PrefStorage | null = browserStorage()): void {
   applyLook(storedLook(storage));
   applyRoom(storedRoom(storage));
+  setReplayPace(storedPace(storage));
 }

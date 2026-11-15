@@ -6,9 +6,11 @@
 import {
   howToPlay,
   howToPlayV2,
+  howToPlayValley,
   type GlossarySection,
   type HowToPlaySection,
   type HowToPlayV2,
+  type HowToPlayValley,
 } from '@creatures/game';
 
 /** A section of either page: its id, title and lines (a line may carry `{Keyword}` chips). */
@@ -32,17 +34,36 @@ export const V2_KEPT_SECTIONS: readonly GlossarySection[] = [
   'housing',
 ];
 
-/** The sections of the page, in order. */
+/**
+ * The shipped sections the valley's own sections take the place of (with the valley's base systems on): trips are
+ * scouts from the Signpost, the Workshop is the Forge, and gear is worn from level 1 and made at the Forge.
+ */
+export const VALLEY_REPLACED_SECTIONS: readonly GlossarySection[] = [
+  'expeditions',
+  'workshop',
+  'gear',
+];
+
+/**
+ * The sections of the page, in order. `valley` (the server runs the valley's base systems, `/api/config`'s
+ * `valleySystems`, which needs combat v2) adds the valley sections after the combat v2 ones and drops the shipped
+ * sections they replace.
+ */
 export function pageSections(
   v2: boolean,
   housing: boolean = false,
+  valley: boolean = false,
   shipped: readonly HowToPlaySection[] = howToPlay.sections,
   combat: HowToPlayV2 = howToPlayV2,
+  valleyText: HowToPlayValley = howToPlayValley,
 ): PageSection[] {
   // The housing section shows only while the server offers housing (`/api/config`'s `housing`).
   const offered = shipped.filter((s) => s.id !== 'housing' || housing);
   if (!v2) return [...offered];
-  return [...combat.sections, ...offered.filter((s) => V2_KEPT_SECTIONS.includes(s.id))];
+  const kept = offered.filter(
+    (s) => V2_KEPT_SECTIONS.includes(s.id) && !(valley && VALLEY_REPLACED_SECTIONS.includes(s.id)),
+  );
+  return [...combat.sections, ...(valley ? valleyText.sections : []), ...kept];
 }
 
 /**
@@ -58,6 +79,13 @@ const V2_TAKEOVER: Readonly<Partial<Record<GlossarySection, GlossarySection>>> =
   rewards: 'v2-weekend',
 };
 
+/** With the valley on, the valley section that took over the subject of a shipped section it replaces. */
+const VALLEY_TAKEOVER: Readonly<Partial<Record<GlossarySection, GlossarySection>>> = {
+  expeditions: 'valley-day',
+  workshop: 'valley-forge',
+  gear: 'valley-gear',
+};
+
 /**
  * Where a "More in How to play" link leads: the section itself when the page has it, else the v2 section that took
  * over its subject, else the top of the page (null).
@@ -66,9 +94,12 @@ export function sectionOnPage(
   section: GlossarySection | null,
   v2: boolean,
   sections: readonly PageSection[] = pageSections(v2),
+  valley: boolean = false,
 ): GlossarySection | null {
   if (section === null) return null;
   if (sections.some((s) => s.id === section)) return section;
-  const takeover = v2 ? V2_TAKEOVER[section] : undefined;
+  const takeover = v2
+    ? ((valley ? VALLEY_TAKEOVER[section] : undefined) ?? V2_TAKEOVER[section])
+    : undefined;
   return takeover !== undefined && sections.some((s) => s.id === takeover) ? takeover : null;
 }

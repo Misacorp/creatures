@@ -44,6 +44,14 @@ ID: `2026-11-15-no-focus-outlines-in-art-scenes` · Status: current
 
 **Reasoning.** A ring round a sprite, a building or a prop is a box drawn over the picture, which Misa finds breaks the world. Keyboard players still need a place to start from, so the cue lives in the world (an arrow over the thing) and shows for the keyboard only. One shared rule keeps every scene the same and keeps new targets from bringing a ring back.
 
+## 2026-11-15: How to play follows the switches: combat v2 sections, then valley sections
+
+ID: `2026-11-15-how-to-play-follows-the-switches` · Status: current
+
+**Decision.** The How to play page follows `/api/config`: with `combatV2` it shows seven combat v2 sections (a new "Levels and growth" among them) and, with `valleySystems` too, six valley sections (a day, the commons, the Forge, gear, the Market and visitor, the School and trials) in place of the shipped Expeditions, Workshop and Gear. The growth picture has no ribbon or finale ability under v2; with the valley on every gear slot is open from level 1 and the old ribbons show as honours. With the switches off the page is unchanged. The valley text is a placeholder structure (`how-to-play-valley.json`).
+
+**Reasoning.** Combat v2 and the valley go live together; the page must not teach v1 steps (Scarf at 7, Charm at 13, ribbons, the finale ability). Section ids and text are data, the pictures come from the rules, so a rule change moves them.
+
 ## 2026-11-12: The house's night indoors follows the living room's look: graded, not ramped
 
 ID: `2026-11-12-the-house-s-night-indoors-follows` · Status: current · Amends: `2026-11-11-the-house-is-lit-by-one`

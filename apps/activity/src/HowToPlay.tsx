@@ -19,6 +19,7 @@ export function HowToPlay({
   onClose,
   v2 = false,
   housing = false,
+  valley = false,
 }: {
   section: GlossarySection | null;
   nonce: number;
@@ -27,9 +28,11 @@ export function HowToPlay({
   v2?: boolean;
   /** The server offers housing (`/api/config`'s `housing`): the Your House section is shown. */
   housing?: boolean;
+  /** The server runs the valley's base systems (`/api/config`'s `valleySystems`, with combat v2): the valley sections replace trips, gear and the Workshop. */
+  valley?: boolean;
 }) {
-  const sections = pageSections(v2, housing);
-  const target = sectionOnPage(section, v2, sections);
+  const sections = pageSections(v2, housing, valley);
+  const target = sectionOnPage(section, v2, sections, valley);
   const closeRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -90,7 +93,7 @@ export function HowToPlay({
               {s.title}
             </h3>
             <div class="howto-art">
-              <SectionArt id={s.id} />
+              <SectionArt id={s.id} valley={valley} />
             </div>
             <ul class="howto-lines">
               {s.lines.map((line, j) => (
