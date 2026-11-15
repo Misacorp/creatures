@@ -7,7 +7,6 @@ import type { LiveAbilityV2 } from '../../fight-v2-api';
 import { FightV2 } from '../../LiveV2';
 import type { RaidView } from '../../raid-api';
 import { RaidSummaryCardV2 } from '../../RaidSummaryV2';
-import { isReplayPace, REPLAY_PACE_IDS, setReplayPace } from '../../playback-v2';
 import { PlayerV2 } from '../../ReplayV2';
 import { StageResultRow } from '../../StageResultRow';
 import type { PhaseResultView } from '../../raid-api';
@@ -479,7 +478,6 @@ const CONTROLS = {
   seed: { kind: 'text', maxLength: 12 },
   party: { kind: 'select', options: ['rows', 'mixed', 'answers'] },
   knackNames: { kind: 'toggle' },
-  replayPace: { kind: 'select', options: REPLAY_PACE_IDS },
   boostLook: { kind: 'select', options: ['pattern', 'glow'] },
   moment: { kind: 'select', options: MOMENTS },
   beat: { kind: 'number', min: 0, max: 400 },
@@ -503,7 +501,6 @@ const DEFAULTS = {
   seed: 'fold',
   party: 'rows',
   knackNames: false,
-  replayPace: 'finale',
   boostLook: 'pattern',
   moment: 'marks and an announced move',
   beat: 0,
@@ -742,9 +739,6 @@ function ReplayDemo({ p }: { p: Props }) {
     () => replaySample(opts),
     [opts.slot, opts.players, opts.stage, opts.seed],
   );
-  // The replay's pace (staging's device choice, here a control to compare): read when the player opens.
-  const pace = str(p, 'replayPace');
-  setReplayPace(isReplayPace(pace) ? pace : 'finale');
   return <PlayerV2 data={replay} />;
 }
 

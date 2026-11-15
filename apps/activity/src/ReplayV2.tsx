@@ -7,7 +7,7 @@ import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { bossAnimSetup } from './boss-anim/setup';
 import { foldSetupOf, removedPercent, stageModelOf } from './fight-v2';
 import type { FightPhaseV2, ReplayViewV2 } from './fight-v2-api';
-import { replayPace, type SpeedV2 } from './playback-v2';
+import { REPLAY_PACE, type SpeedV2 } from './playback-v2';
 import { phaseName } from './raid-text';
 import { StageV2 } from './StageV2';
 import { LogToggle } from './Stage';
@@ -53,16 +53,13 @@ export function PlayerV2({
     () => bossAnimSetup(data.boss, data.card, data.fighters),
     [data.boss, data.card, data.fighters],
   );
-  const pace = replayPace();
   const playback = usePlaybackV2({
     model,
     events: data.events,
     rounds: data.boss.rounds,
     speed,
-    // The pace (`playback-v2.ts`): the live finale's unless the staging panel chose another on this device.
-    introMs: pace.introMs,
-    budgetMs: pace.budgetMs,
-    ...(pace.roundMs === null ? {} : { roundMs: pace.roundMs }),
+    // The live finale's pace (`REPLAY_PACE` in `playback-v2.ts`).
+    ...REPLAY_PACE,
     mode: 'replay',
     bossAnim: bossAnim,
   });

@@ -4,6 +4,14 @@ The shared combat engine, abilities, statuses, elements, the balance simulator, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-15: Raid replays play at the live finale's pace, fixed **[Misa]**
+
+ID: `2026-11-15-raid-replays-play-at-the-live` · Status: current
+
+**Decision.** Every raid replay (stage 1, stage 2, the finale) plays at the live finale's pace (`STAGE_ROUND_MS`, one constant `REPLAY_PACE` in `playback-v2.ts`). The device-local "Replay pace" choice (finale, half, brisk), its DEV panel select, its stored key and the workbench control are removed. Dungeon playback is unchanged. Supersedes nothing: it fixes the 2026-11-13 default as the only pace.
+
+**Reasoning.** Misa (2026-11-15): "Replay speed is good in the finale and that should be the de-facto raid replay speed." One pace is easier to track and removes a test option nobody needs.
+
 ## 2026-11-14: Boss animations: lances pass through the whole column; the aim is the board's highlight, no triangle [Misa]
 
 ID: `2026-11-14-boss-animations-lances-pass-through-the` · Status: current · Amends: `2026-11-14-boss-move-animations-five-phases-motion`
