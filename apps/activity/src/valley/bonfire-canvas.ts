@@ -17,7 +17,7 @@ import type { SpriteDef } from '../sprites/sprite-data';
 import { WORLD_MAP_SPRITE_DATA } from '../sprites/data/world-map-sprites';
 import type { SceneGeometry } from './SceneFrame';
 import { FIRE_BOX, GRAND_BOX, MORE_CSS } from './bonfire-cast';
-import { CORNER, cornerPlacements } from './builders-corner';
+import { CORNER, cornerPlacements, type Pile } from './builders-corner';
 import { PLATE_ROW_PX } from './place-plates';
 import { SKY_BELOW_ART_TOP, grassTo, skyBackdrop, treesAround, type ArtBox } from './place-scene';
 import { scaffoldFor } from './scaffold';
@@ -225,19 +225,25 @@ export function edgeDressing(
 /**
  * The scene: grass and sky to every edge, the edges dressed, the trees round the place, the fire (`art`: the fire or the grand hearth at
  * the place's level) with the scaffolding rising round it as its project fills (`steps`, V-COM-6; 0 for none), and the builders' corner
- * while `corner` is on.
+ * (its pile of materials as `corner` says) while there is one.
  */
-export function bonfireSceneDraw(art: MapName, steps: number, corner: boolean) {
+export function bonfireSceneDraw(art: MapName, steps: number, corner: Pile | null) {
   const grand = art === 'bonfire-grand';
   return (g: SceneGeometry): Placement[] => {
-    const lay = bonfireLayout(g, grand, corner);
+    const lay = bonfireLayout(g, grand, corner !== null);
     const { box } = lay;
     return [
       ...grassTo(g),
       ...skyBackdrop(g, box.y - g.top),
       ...edgeDressing(g, box, lay.extent),
       ...treesAround(box.x, box.y, box),
-      ...(lay.corner === null ? [] : cornerPlacements(lay.corner.x, lay.corner.y)),
+      ...(lay.corner === null
+        ? []
+        : cornerPlacements(
+            lay.corner.x,
+            lay.corner.y,
+            corner ?? { material: 'timber', size: 's' },
+          )),
       { sprite: glowSprite(art), x: box.x, y: box.y },
       ...(steps === 0 ? [] : [{ sprite: scaffoldFor(art, steps), x: box.x, y: box.y }]),
     ];

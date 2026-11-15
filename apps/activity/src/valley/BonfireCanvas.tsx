@@ -39,7 +39,8 @@ import {
   type FireSpot,
 } from './bonfire-cast';
 import { bonfireLayout, bonfireScale, bonfireSceneDraw, fireTarget } from './bonfire-canvas';
-import { HELPER_AT, TABLE_BOX } from './builders-corner';
+import { FLAG_AT, HELPER_AT, TABLE_BOX, pileMaterial, pileSize } from './builders-corner';
+import { cornerSprite } from './builders-corner-art';
 import { commonsOf, hearthLine, percentFilled, placeOf } from './commons-view';
 import { CREATURE_PX } from './place-cast';
 import { scaffoldSteps } from './scaffold';
@@ -117,7 +118,13 @@ export function BonfireCanvas({
     (((place.state === 'open' || place.state === 'building') && place.level < place.max) ||
       helperId !== null);
   const corner = post !== undefined && building;
-  const draw = useMemo(() => bonfireSceneDraw(art, steps, corner), [art, steps, corner]);
+  // The pile of materials in the corner grows with the project (small, medium, large) and changes with the level's material.
+  const material = pileMaterial(place?.level ?? 1);
+  const size = pileSize(place === undefined ? 0 : percentFilled(place));
+  const draw = useMemo(
+    () => bonfireSceneDraw(art, steps, corner ? { material, size } : null),
+    [art, steps, corner, material, size],
+  );
 
   const closeTop = (): void => {
     if (right !== null) setRight(null);
@@ -368,6 +375,12 @@ function BonfireInside({
       {helper !== undefined && seat !== null && (
         <At x={g.X(seat.x)} y={g.Y(seat.y)} class="vy-stand" z={depthOf(seat.x, seat.y)}>
           <CreatureSprite creature={helper} scale={g.s} flip class="fi-hammer fi-d1" />
+        </At>
+      )}
+      {/* The empty spot's flag: a piece of the scene's art, no tap of its own (the dashed outline over it is the target). */}
+      {corner !== null && helper === undefined && (
+        <At x={g.X(corner.x + FLAG_AT.x)} y={g.Y(corner.y + FLAG_AT.y)}>
+          <Pic sprite={cornerSprite('help-flag')} scale={g.s} />
         </At>
       )}
       {fire !== null && (

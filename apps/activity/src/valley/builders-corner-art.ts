@@ -1,65 +1,58 @@
 /**
- * The pieces of the builders' corner (a place's project site: `builders-corner.ts` lays them out, `BonfireCanvas.tsx` draws it), by name:
- * the one place that says where each one's picture comes from, so the Art session's set `valley-builders-corner` drops in by changing
- * this table and nothing else (Misa, 2026-11-15; the rule is in `ux-patterns.md`, "A place's project lives in a builders' corner").
+ * The pieces of the builders' corner (`builders-corner.ts` lays them out, `BonfireCanvas.tsx` draws it), by name: the one place that
+ * reads the Art session's set `valley-builders-corner` (night is the set's main palette, `alts.day` the recolour of the same pixels, as
+ * the Forge's interior does). Wiring the set into the game was approved by the lead, 2026-11-15, so the concept set stays in the library
+ * as it is. Every piece stands on its last row (its base row); the layout places them by it.
  *
- * Until that set lands the pieces are the ones already in the game: the ground work that rises round a flat place while its project
- * fills (`scaffold.ts`: sawhorse, pail, mallet, planks) and the Forge's workbench and plans-board (`forge-interior-art.ts`, by day), on
- * the valley map's dirt tile. Sizes are in art pixels; every piece's anchor is its top-left, and the layout puts its feet on a row.
- *
- * | name       | size  | what it is                                                    |
- * | ---------- | ----- | ------------------------------------------------------------- |
- * | `table`    | 32x20 | the construction table (top starts on row 4)                  |
- * | `plans`    | 24x24 | the plans board standing beside the table                     |
- * | `sawhorse` | 16x9  | a sawhorse with a plank across it                             |
- * | `planks`   | 15x10 | a stack of planks                                             |
- * | `pail`     | 7x7   | a pail                                                        |
- * | `mallet`   | 10x6  | a mallet lying on the table                                   |
- * | `ground`   | 16x16 | the site's trodden ground, tiled                              |
+ * | name                    | size            | what it is                                                        |
+ * | ----------------------- | --------------- | ----------------------------------------------------------------- |
+ * | `table`                 | 32x20           | the construction table with the plan (main A, Misa's pick)        |
+ * | `tarp`                  | 48x24           | the canvas awning; the table stands under it, at its x 8          |
+ * | `sawhorse`              | 16x12           | a sawhorse with a plank                                           |
+ * | `planks`                | 20x8            | a stack of planks                                                 |
+ * | `toolbox`               | 12x8            | a toolbox                                                         |
+ * | `pile-stone-s/m/l`      | 14x5, 22x9, 26x13 | cut stone, by how full the project is                           |
+ * | `pile-timber-s/m/l`     | 10x10, 14x14, 23x14 | logs                                                          |
+ * | `pile-bags-s/m/l`       | 9x9, 17x13, 25x13 | sacks                                                           |
+ * | `help-flag`             | 8x16            | a stake with a teal flag: marks the empty helper spot             |
+ * | `ground`                | 16x16           | the site's trodden ground, tiled (the map's dirt tile)            |
  */
 import { tileFrame } from '../games/art/tiles';
-import type { SpriteDef } from '../sprites/sprite-data';
-import { interiorSprite } from './forge-interior-art';
-import { groundPiece } from './scaffold';
+import { VALLEY_BUILDERS_CORNER_CONCEPTS } from '../sprites/concepts/valley-builders-corner';
+import { swapPalette, type SpriteDef } from '../sprites/sprite-data';
 
-export const CORNER_PIECES = [
-  'table',
-  'plans',
-  'sawhorse',
-  'planks',
-  'pail',
-  'mallet',
-  'ground',
-] as const;
-export type CornerPiece = (typeof CORNER_PIECES)[number];
+export const PILE_MATERIALS = ['timber', 'stone', 'bags'] as const;
+export type PileMaterial = (typeof PILE_MATERIALS)[number];
+export const PILE_SIZES = ['s', 'm', 'l'] as const;
+export type PileSize = (typeof PILE_SIZES)[number];
 
-/** Each piece's size in art pixels. */
-export const CORNER_SIZE: Readonly<Record<CornerPiece, { w: number; h: number }>> = {
-  table: { w: 32, h: 20 },
-  plans: { w: 24, h: 24 },
-  sawhorse: { w: 16, h: 9 },
-  planks: { w: 15, h: 10 },
-  pail: { w: 7, h: 7 },
-  mallet: { w: 10, h: 6 },
-  ground: { w: 16, h: 16 },
-};
+export type CornerPiece =
+  | 'table'
+  | 'tarp'
+  | 'sawhorse'
+  | 'planks'
+  | 'toolbox'
+  | 'help-flag'
+  | 'ground'
+  | `pile-${PileMaterial}-${PileSize}`;
 
-/** A piece of the corner by name (the picture itself comes from one of these lines). */
+const cache = new Map<string, SpriteDef>();
+
+/** A piece of the corner by name, by day. Cached. */
 export function cornerSprite(piece: CornerPiece): SpriteDef {
-  switch (piece) {
-    case 'table':
-      return interiorSprite('workbench', false);
-    case 'plans':
-      return interiorSprite('plans-board', false);
-    case 'sawhorse':
-      return groundPiece('sawhorse');
-    case 'planks':
-      return groundPiece('planks');
-    case 'pail':
-      return groundPiece('pail');
-    case 'mallet':
-      return groundPiece('mallet');
-    case 'ground':
-      return tileFrame('dirt');
-  }
+  if (piece === 'ground') return tileFrame('dirt');
+  const hit = cache.get(piece);
+  if (hit !== undefined) return hit;
+  const concept = VALLEY_BUILDERS_CORNER_CONCEPTS.sprites[piece];
+  if (concept === undefined) throw new Error(`valley-builders-corner has no ${piece}`);
+  const day = concept.alts?.['day'];
+  const sprite = day === undefined ? concept.sprite : swapPalette(concept.sprite, day);
+  cache.set(piece, sprite);
+  return sprite;
+}
+
+/** A piece's size in its own pixels. */
+export function cornerSize(piece: CornerPiece): { w: number; h: number } {
+  const sprite = cornerSprite(piece);
+  return { w: sprite.rows[0]?.length ?? 0, h: sprite.rows.length };
 }

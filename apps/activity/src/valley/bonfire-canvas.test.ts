@@ -12,8 +12,17 @@ import {
   modeFor,
 } from './bonfire-canvas';
 import { fireSpots, FIRE_BOX, GRAND_BOX, moreSpot } from './bonfire-cast';
-import { CORNER, HELPER_AT, TABLE_BOX, cornerPieceBoxes } from './builders-corner';
-import { CORNER_SIZE, cornerSprite } from './builders-corner-art';
+import {
+  CORNER,
+  CORNER_AT,
+  FLAG_AT,
+  HELPER_AT,
+  TABLE_BOX,
+  cornerPieceBoxes,
+  pileMaterial,
+  pileSize,
+} from './builders-corner';
+import { cornerSize, cornerSprite } from './builders-corner-art';
 import { PLATE_ROW_PX, plateGap, standBounds } from './place-plates';
 import { sceneGeometry } from './SceneFrame';
 
@@ -150,15 +159,56 @@ describe('the Bonfire canvas: the builders’ corner', () => {
     expect(HELPER_AT.x + 16).toBeLessThanOrEqual(CORNER.w);
   });
 
-  it('draws the pieces at the sizes the name map says (the art drops in by name)', () => {
-    for (const [name, size] of Object.entries(CORNER_SIZE) as [
-      keyof typeof CORNER_SIZE,
-      { w: number; h: number },
+  it('draws the pieces at the Art session’s sizes (the art is read by name)', () => {
+    const sizes = {
+      table: [32, 20],
+      tarp: [48, 24],
+      sawhorse: [16, 12],
+      planks: [20, 8],
+      toolbox: [12, 8],
+      'help-flag': [8, 16],
+      'pile-stone-s': [14, 5],
+      'pile-stone-m': [22, 9],
+      'pile-stone-l': [26, 13],
+      'pile-timber-s': [10, 10],
+      'pile-timber-m': [14, 14],
+      'pile-timber-l': [23, 14],
+      'pile-bags-s': [9, 9],
+      'pile-bags-m': [17, 13],
+      'pile-bags-l': [25, 13],
+    } as const;
+    for (const [name, [w, h]] of Object.entries(sizes) as [
+      keyof typeof sizes,
+      [number, number],
     ][]) {
-      const sprite = cornerSprite(name);
-      expect(sprite.rows[0]?.length, name).toBe(size.w);
-      expect(sprite.rows.length, name).toBe(size.h);
+      expect(cornerSize(name), name).toEqual({ w, h });
     }
+  });
+
+  it('the table stands under the tarp at its x 8, and the helper’s flag has clear ground (no pile touches it)', () => {
+    expect(CORNER_AT.table.x).toBe(CORNER_AT.tarp.x + 8);
+    expect(CORNER_AT.table.y + 19).toBe(CORNER_AT.tarp.y + 23);
+    const flag = { x: FLAG_AT.x, y: FLAG_AT.y, w: 8, h: 16 };
+    for (const p of cornerPieceBoxes()) {
+      if (!p.piece.startsWith('pile-')) continue;
+      const touches =
+        p.x < flag.x + flag.w + 1 &&
+        p.x + p.w > flag.x - 1 &&
+        p.y < flag.y + flag.h + 1 &&
+        p.y + p.h > flag.y - 1;
+      expect(touches, p.piece).toBe(false);
+    }
+  });
+
+  it('the pile grows with the project and its material follows the level', () => {
+    expect([0, 33, 34, 66, 67, 100].map(pileSize)).toEqual(['s', 's', 'm', 'm', 'l', 'l']);
+    expect([1, 2, 3, 4, 5].map(pileMaterial)).toEqual([
+      'timber',
+      'timber',
+      'stone',
+      'bags',
+      'bags',
+    ]);
   });
 });
 
@@ -209,9 +259,10 @@ describe('the Bonfire canvas: the edges of the scene', () => {
 
   it('draws the ground to every edge, the fire, the scaffolding over it while the project fills, and the corner while there is one', () => {
     const g = geometry(1100, 780, true, true);
-    const none = bonfireSceneDraw('bonfire-grand', 0, false)(g);
-    const plain = bonfireSceneDraw('bonfire-grand', 0, true)(g);
-    const built = bonfireSceneDraw('bonfire-grand', 2, true)(g);
+    const pile = { material: 'timber', size: 's' } as const;
+    const none = bonfireSceneDraw('bonfire-grand', 0, null)(g);
+    const plain = bonfireSceneDraw('bonfire-grand', 0, pile)(g);
+    const built = bonfireSceneDraw('bonfire-grand', 2, pile)(g);
     expect(built.length).toBe(plain.length + 1);
     // The corner: its table is drawn with it and not without it.
     const table = cornerSprite('table');
