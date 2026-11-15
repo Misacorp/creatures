@@ -28,6 +28,14 @@ ID: `2026-11-15-drawers-lie-over-a-canvas-place` · Status: current · Amends: `
 
 **Reasoning.** The old layout shrank the scene's box to what lay between the drawers, so the room re-centred (192 px each way at 1440 px) and a scene with both drawers open was redrawn about a quarter smaller. A Back that only closes the drawer duplicates the X. The valley e2e checks that the scene's size is unchanged when a drawer opens and that the clicked thing is clear of it.
 
+## 2026-11-15: No sheet over a drawer in the Forge: the item card, the dismantle flow, the fire's numbers and the project board's lists are steps of their panel
+
+ID: `2026-11-15-no-sheet-over-a-drawer-in` · Status: current
+
+**Decision.** Misa's rule for canvas places (2026-11-14): wide screens open drawers, phones open a page, and there is never a drawer on a drawer. In the Forge four things still opened the app's bottom `Drawer` over the bag's or the board's drawer or page: the item card, the dismantle flow (from the card, and from the bag's bulk bar), the fire's numbers, and the project board's lists (Give, the helper list, the plaque, the collection; the Signpost's board had the same). Each is now a step of the panel that holds it, with Back (`valley/PanelStep`: `StepHold` keeps the list mounted but hidden and puts its scroll and focus back; `StepBody` is the step's frame; `valley/forge-steps`; `DismantlePanelStep`; `FireNumbers`; `CommonsBoard host="panel"`). One switch, `valley/drawer-step`, read from the page's `?step=` (a setter for tests): `replace` (default; the step takes the list's place in the same drawer, a page on a phone) or `beside` (on a wide window the step opens in the OTHER drawer, left list to right step, a phone as `replace`). The Workshop outside the valley's Forge keeps its bottom drawers. The switch covers the item card (with the dismantle flow after it) and the fire's numbers; the board's lists are always a step in place. No third look was built.
+
+**Reasoning.** A step inside the drawer is what the wizard rule already says ("a choice inside a step is a step of the wizard, never a sheet on the drawer"), costs no new component for the board and the dismantle flow (both already were wizard-shaped), and keeps the card where the player looked. `replace` is the pick because the card and the list are one conversation (open, act, back), the card needs the drawer's full width for its tiles and buttons, and `beside` makes the right drawer jump between "an anvil" and "an item" (an anvil click closes the card). `beside` stays one URL away for Misa to compare. Elsewhere (the Market, visitor, School and house pages, the old Signpost seats page) a bottom sheet over a page is left as it was: those places are not canvases yet.
+
 ## 2026-11-15: No focus outlines in art scenes; keyboard focus shows as an in-world cue **[Misa]**
 
 ID: `2026-11-15-no-focus-outlines-in-art-scenes` · Status: current

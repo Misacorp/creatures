@@ -278,6 +278,7 @@ export function SignpostCanvas(props: SignpostCanvasProps) {
             {commons !== undefined && (
               <CommonsBoard
                 place="signpost"
+                host="panel"
                 visit={visit}
                 creatures={creatures}
                 acorns={acorns}

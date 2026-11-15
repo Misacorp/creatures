@@ -27,6 +27,7 @@ import { Bar } from '../ui/Bar';
 import { DragGhost } from '../ui/DragGhost';
 import { CommonsBoard, type CommonsActions } from './CommonsBoard';
 import { CommonsFire } from './CommonsFire';
+import { useForgeSteps, type ForgeCard } from './forge-steps';
 import {
   COMMUNAL_DROP,
   Shelf,
@@ -81,6 +82,8 @@ export interface ForgeCanvasProps {
   blueprints: readonly BlueprintView[] | null;
   /** The bag (the Workshop draws it: its grid, filter, item card and dismantle flow). */
   bag: ComponentChildren;
+  /** The open item card or dismantle flow (the Workshop builds it): a step of the bag's drawer or page, never a sheet over it. */
+  card?: ForgeCard | null | undefined;
   /** The plans table's list (the Workshop draws it); `onOrder` opens the order wizard on a blueprint. */
   plans: (onOrder: (baseId: string, opener: HTMLElement) => void) => ComponentChildren;
   /** The bag has no room: its chest says so. */
@@ -126,7 +129,8 @@ function startRight(props: ForgeCanvasProps): Right | null {
 
 function startLeft(props: ForgeCanvasProps): Left | null {
   const { start } = props;
-  if (start?.bag === true) return { kind: 'bag', from: null };
+  if (start?.bag === true || (props.card !== null && props.card !== undefined))
+    return { kind: 'bag', from: null };
   if (start?.commons !== undefined || start?.fire === true) return { kind: 'board', from: null };
   return null;
 }
@@ -141,6 +145,14 @@ export function ForgeCanvas(props: ForgeCanvasProps) {
   useEffect(() => {
     if (props.bagAttention) setLeft((now) => now ?? { kind: 'bag', from: null });
   }, [props.bagAttention]);
+
+  const steps = useForgeSteps({
+    card: props.card,
+    left: left?.kind ?? null,
+    anvilOpen: right !== null,
+    visit,
+    startFire: start?.fire === true,
+  });
 
   const creatureOf = (id: string | null): Creature | undefined =>
     id === null ? undefined : creatures.find((c) => c.id === id);
@@ -286,7 +298,11 @@ export function ForgeCanvas(props: ForgeCanvasProps) {
       },
     };
     if (left.kind === 'bag') {
-      leftPanel = { ...base, title: 'Bag', children: <PanelBody>{props.bag}</PanelBody> };
+      leftPanel = {
+        ...base,
+        title: 'Bag',
+        ...steps.hold('bag', <PanelBody>{props.bag}</PanelBody>),
+      };
     } else if (left.kind === 'plans') {
       leftPanel = {
         ...base,
@@ -353,13 +369,15 @@ export function ForgeCanvas(props: ForgeCanvasProps) {
       leftPanel = {
         ...base,
         title: 'Project board',
-        children: (
+        ...steps.hold(
+          'board',
           <PanelBody>
             <div class="fc-hub">
-              <CommonsFire visit={visit} start={start?.fire === true} />
+              <CommonsFire visit={visit} onOpen={steps.openFire} />
               {commons !== undefined && (
                 <CommonsBoard
                   place="forge"
+                  host="panel"
                   visit={visit}
                   creatures={creatures}
                   acorns={acorns}
@@ -371,11 +389,14 @@ export function ForgeCanvas(props: ForgeCanvasProps) {
                 />
               )}
             </div>
-          </PanelBody>
+          </PanelBody>,
         ),
       };
     }
   }
+
+  // A step that opens beside its list (the `beside` look, a wide window) takes the right drawer while no anvil holds it.
+  rightPanel ??= steps.side;
 
   const openLeft = (kind: Left['kind']) => (opener: Opener) => {
     setLeft({ kind, from: opener });

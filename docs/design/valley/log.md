@@ -581,3 +581,13 @@ Misa added: nameplates sit under the creature on an ink background, level first 
 - Tests: `forge-interior.test.ts` (rewritten for the new room, both fill variants), `PlaceCanvas.test.tsx` (overlay order, pan maths, plates, keepBack), `wizard.test.tsx` (`exits`); the valley e2e checks that the scene is the same size with a drawer open, the clicked thing is clear of the drawer, every Forge target has a plate and no first step shows a Back (`--height` and `E2E_QUERY` added to it for variant shots).
 
 **Not done / to look at.** The hover outline of cue B is the target's box, not the sprite's own outline (the art is one canvas). Fill B only differs from A on tall windows (the second row of anvils must stay in view). The Forge's background smiths now show their plate always in cue A (staggered); with four of them it is busy. **Pick up here:** the other places still on a band scene; Misa to pick the variants.
+
+## 2026-11-15: no sheet over a drawer (implementer, worktree of `ccr-93a1de17-yutb1a`)
+
+**Misa's rule** (2026-11-14): wide screens open drawers, phones open a page, never a drawer on a drawer. Decision of the same name (topic `ui`).
+
+**Done** (behind `VALLEY_SYSTEMS`). In the Forge the item card, the dismantle flow (from the card and from the bag's bulk bar), the fire's numbers and the project board's lists (Give, helper list, plaque, collection; the Signpost's board too) were the app's bottom `Drawer` over the bag's or board's drawer or page. They are now steps of that panel with Back: `valley/PanelStep.tsx` (`StepHold` keeps the list mounted but hidden, scroll and focus put back; `StepBody` the frame), `valley/forge-steps.tsx` (the hook `ForgeCanvas` calls), `DismantlePanelStep`, `FireNumbers`, `CommonsBoard host="panel"`. The Workshop builds the card (`ForgeCanvas` takes it as `card`). **Variations behind one switch** (`valley/drawer-step.ts`, the URL's `?step=`): `replace` (default; the step takes the list's place; a page on a phone) and `beside` (wide: the step opens in the other drawer, list on the left and step on the right; a phone as `replace`). The e2e takes `--step beside`.
+
+**Others found, not fixed (outside the Forge and the Signpost):** the Market page (`MarketPage`: three bottom drawers; its `CommonsBoard` is the `page` host), the visitor page (`VisitorPage`), the old Signpost seats page (`SignpostSeats`) and `ValleyFrame`'s board (`CommonsBoard` page host), the House (`HousePlace`), `PlacesList`; the School's and visitor's pages use the Wizard and the shared picker as sheets. Each becomes a canvas in turn and moves its sheets into steps then.
+
+**Pick up here:** the Market, School, visitor and House canvases should use `StepHold`/`StepBody` and `CommonsBoard host="panel"` from the start.

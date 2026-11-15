@@ -180,6 +180,27 @@
   box-shadow: inset 0 2px 0 0 var(--line);
 }
 
+/* A list with a step over it (`valley/PanelStep`): the list stays mounted but hidden while the step shows. */
+.ps-list {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.ps-list[hidden] {
+  display: none;
+}
+
+.ps-step {
+  min-width: 0;
+}
+
+/* An item's flip arrows under the step's Back. */
+.ps-flip {
+  display: flex;
+}
+
 /* --- Targets in the scene --- */
 .cv-at {
   pointer-events: auto;

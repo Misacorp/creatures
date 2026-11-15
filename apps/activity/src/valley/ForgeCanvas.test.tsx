@@ -11,6 +11,7 @@ import {
   badgesIn,
   byClass,
   byName,
+  byRole,
   createPage,
   visibleText,
   type FakeElement,
@@ -414,5 +415,19 @@ describe('the Forge canvas: the left drawer is for the collections', () => {
     // The floor row leads to the anvil's own page, on its floor step: the right drawer.
     expect(byClass(q.root, 'pc-page')[0]?.getAttribute('data-side')).toBe('right');
     expect(visibleText(q.root)).toMatch(/Floor and pace/);
+  });
+});
+
+describe('the fire numbers are a step of the project board, never a sheet over it', () => {
+  it('a tap on the fire shows its numbers in place of the board, and Back returns to it', () => {
+    const q = draw(withCommons(withAnvils(plain, [])));
+    q.click(target(q, /^The furnace/));
+    q.click(byName(q.root, 'button', /^The fire\./)[0] as FakeElement);
+    expect(byRole(q.root, 'dialog')).toHaveLength(0);
+    expect(visibleText(q.root)).toMatch(/What warmed it last/);
+    expect(byClass(q.root, 'ps-list')[0]?.getAttribute('hidden')).not.toBeNull();
+    q.click(byName(q.root, 'button', /^‹ Back to the project board/)[0] as FakeElement);
+    expect(byClass(q.root, 'ps-list')[0]?.getAttribute('hidden')).toBeNull();
+    expect(byName(q.root, 'button', /^‹ Back to the project board/)).toHaveLength(0);
   });
 });

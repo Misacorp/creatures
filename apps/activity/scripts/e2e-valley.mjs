@@ -37,6 +37,8 @@ const height = Number.parseInt(argOf('--height', '844'), 10);
 /** Page-address options for a look at a variant of an art scene (`E2E_QUERY='forge-fill=B&click-cue=C'`; `valley/art-variants.ts`). */
 const extraQuery = process.env.E2E_QUERY === undefined ? '' : `&${process.env.E2E_QUERY}`;
 const reduced = args.includes('--reduced');
+/** The look of the steps that used to be sheets (`valley/drawer-step`): `--step beside` shows the other one. */
+const stepQuery = argOf('--step', null) === null ? '' : `&step=${argOf('--step', '')}`;
 /** Runs only the checklist items whose name contains this text (for iterating on one: `--only School`). */
 const only = argOf('--only', null);
 mkdirSync(out, { recursive: true });
@@ -1131,7 +1133,7 @@ const backToValley = async () => {
 };
 
 try {
-  await page.goto(`http://localhost:${String(port)}/?frame_id=e2e${extraQuery}`);
+  await page.goto(`http://localhost:${String(port)}/?frame_id=e2e${extraQuery}${stepQuery}`);
   await page.evaluate(() => document.fonts.ready);
 
   await step('the valley opens with the map, the tray and the HUD', async () => {
@@ -1675,7 +1677,7 @@ try {
       awayDismissed = true;
       change();
       try {
-        await page.goto(`http://localhost:${String(port)}/?frame_id=e2e${extraQuery}`);
+        await page.goto(`http://localhost:${String(port)}/?frame_id=e2e${extraQuery}${stepQuery}`);
         await page.evaluate(() => document.fonts.ready);
         await run();
       } finally {
@@ -2544,10 +2546,13 @@ try {
       const piece = page.getByRole('option', { name: /Coal-Warm Cap/ }).first();
       await piece.scrollIntoViewIfNeeded();
       await piece.click();
-      await waitFor(page.getByRole('dialog'));
+      // The item card is a step of the bag's drawer (a page on a phone), never a sheet over it.
+      await waitFor(drawer.locator('.item-detail'));
       await page.waitForTimeout(500);
-      await expectTopmost(page.getByRole('dialog').first(), 'the finished piece card');
-      if (!/Ember/.test((await page.getByRole('dialog').first().textContent()) ?? ''))
+      if ((await page.getByRole('dialog').count()) !== 0)
+        throw new Error('a sheet is over the drawer');
+      await expectTopmost(drawer.locator('.item-detail').first(), 'the finished piece card');
+      if (!/Ember/.test((await drawer.locator('.item-detail').first().textContent()) ?? ''))
         throw new Error('the finished piece does not show its element');
       await shot('patch-finished-piece');
       forgeState.anvils = [];
@@ -2826,23 +2831,22 @@ try {
         await board.scrollIntoViewIfNeeded();
         await expectTopmost(board, 'the Signpost board');
         await shot('commons-signpost-board');
-        // Give: the list, then the amount, then the one confirm.
+        // Give: the list, then the amount, then the one confirm. Each is a step of the panel (Back returns), never a sheet over it.
         await board.getByRole('button', { name: /^Give/ }).click();
-        await waitFor(dialogOf(/Give to the project/));
+        await waitFor(drawer.getByRole('heading', { name: /Give to the project/ }));
         await page.waitForTimeout(500);
-        await expectTopmost(page.getByRole('dialog').first(), 'the give drawer');
+        if ((await page.getByRole('dialog').count()) !== 0)
+          throw new Error('a sheet is over the drawer');
+        await expectTopmost(board, 'the give step');
         await shot('commons-give-list');
-        await page.getByRole('dialog').getByRole('button', { name: /^Bait/ }).click();
-        await waitFor(page.getByRole('dialog').getByRole('button', { name: /^Give/ }));
+        await board.getByRole('button', { name: /^Bait/ }).click();
+        await waitFor(board.getByRole('button', { name: /^Give/ }));
         await page.waitForTimeout(300);
-        await expectTopmost(page.getByRole('dialog').first(), 'the give amount');
+        await expectTopmost(board, 'the give amount');
         await shot('commons-give-amount');
-        await page
-          .getByRole('dialog')
-          .getByRole('button', { name: /One fewer/ })
-          .click();
-        await page.getByRole('dialog').getByRole('button', { name: /^Give/ }).click();
-        await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+        await board.getByRole('button', { name: /One fewer/ }).click();
+        await board.getByRole('button', { name: /^Give/ }).click();
+        await waitFor(board.getByText(/You gave/));
         const gift = commonsCalls.find(([k]) => k === 'gift')?.[1];
         if (
           gift === undefined ||
@@ -2852,13 +2856,14 @@ try {
           typeof gift.idempotencyKey !== 'string'
         )
           throw new Error(`the gift was ${JSON.stringify(gift)}`);
-        await waitFor(board.getByText(/You gave/));
-        // A helper on the communal seat: the shared picker, then the slot and the tray say so.
+        // A helper on the communal seat: the creature list is a step of the panel, then the slot and the tray say so.
         const seat = board.getByRole('button', { name: /^Signpost: nobody helps/ });
         await seat.scrollIntoViewIfNeeded();
         await expectTopmost(seat, 'the empty helper slot');
         await seat.click();
-        await waitFor(dialogOf(/Who helps build/));
+        await waitFor(drawer.getByRole('heading', { name: /Who helps build/ }));
+        if ((await page.getByRole('dialog').count()) !== 0)
+          throw new Error('a sheet is over the drawer');
         await page
           .getByRole('option')
           .filter({ hasText: /Sproutle/ })
@@ -2878,29 +2883,25 @@ try {
         await shot('commons-signpost-helper');
         // The plaque of the last finished level: names, no amounts.
         await board.getByRole('button', { name: /The plaque of level 2/ }).click();
-        await waitFor(dialogOf(/Plaque, level 2/));
+        await waitFor(drawer.getByRole('heading', { name: /Plaque, level 2/ }));
         await page.waitForTimeout(500);
-        await expectTopmost(page.getByRole('dialog').first(), 'the plaque');
-        if (
-          (await page
-            .getByRole('dialog')
-            .getByText(/\d+%|\bAcorns\b/)
-            .count()) > 0
-        )
+        await expectTopmost(board, 'the plaque');
+        if ((await board.getByText(/\d+%|\bAcorns\b/).count()) > 0)
           throw new Error('the plaque shows an amount');
         await shot('commons-plaque');
+        // Escape goes one step back, to the board.
         await page.keyboard.press('Escape');
-        await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+        await waitFor(board.getByRole('button', { name: /Stones of the Roads/ }));
         // The collection board with its five sockets.
         await board.getByRole('button', { name: /Stones of the Roads/ }).click();
-        await waitFor(dialogOf(/Stones of the Roads/));
+        await waitFor(drawer.getByRole('heading', { name: /Stones of the Roads/ }));
         await page.waitForTimeout(500);
-        await expectTopmost(page.getByRole('dialog').first(), 'the collection board');
-        if ((await page.getByRole('dialog').locator('.cm-socket').count()) !== 5)
+        await expectTopmost(board, 'the collection board');
+        if ((await board.locator('.cm-socket').count()) !== 5)
           throw new Error('the board does not have five sockets');
         await shot('commons-collection');
         await page.keyboard.press('Escape');
-        await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+        await waitFor(board.getByRole('button', { name: /^Give/ }));
       } finally {
         commonsOff();
       }
@@ -2949,12 +2950,15 @@ try {
         await shot('commons-forge-building');
         await fire.scrollIntoViewIfNeeded();
         await fire.click();
-        await waitFor(dialogOf(/The fire/));
+        // The fire's numbers are a step of the board's panel (Back returns), never a sheet over it.
+        await waitFor(drawer.getByRole('heading', { name: /The fire, level/ }));
         await page.waitForTimeout(500);
-        await expectTopmost(page.getByRole('dialog').first(), 'the fire drawer');
+        if ((await page.getByRole('dialog').count()) !== 0)
+          throw new Error('a sheet is over the drawer');
+        await expectTopmost(drawer.first(), 'the fire step');
         await shot('commons-forge-fire-numbers');
-        await page.keyboard.press('Escape');
-        await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+        await drawer.getByRole('button', { name: /Back to the project board/ }).click();
+        await waitFor(fire);
         await hudBack().click();
         await waitFor(page.locator(VALLEY), 'attached');
         await place('paddock').evaluate((el) => el.click());
