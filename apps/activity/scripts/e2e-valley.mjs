@@ -34,11 +34,9 @@ const argOf = (flag, fallback) => {
 const out = resolve(argOf('--out', join(here, '../screenshots/e2e-valley')));
 const width = Number.parseInt(argOf('--width', '390'), 10);
 const height = Number.parseInt(argOf('--height', '844'), 10);
-/** Page-address options for a look at a variant of an art scene (`E2E_QUERY='forge-fill=B&click-cue=C'`; `valley/art-variants.ts`). */
+/** Extra page-address options for a look at the game (`E2E_QUERY='name=value'`). */
 const extraQuery = process.env.E2E_QUERY === undefined ? '' : `&${process.env.E2E_QUERY}`;
 const reduced = args.includes('--reduced');
-/** The look of the steps that used to be sheets (`valley/drawer-step`): `--step beside` shows the other one. */
-const stepQuery = argOf('--step', null) === null ? '' : `&step=${argOf('--step', '')}`;
 /** Runs only the checklist items whose name contains this text (for iterating on one: `--only School`). */
 const only = argOf('--only', null);
 mkdirSync(out, { recursive: true });
@@ -1164,7 +1162,7 @@ const backToValley = async () => {
 };
 
 try {
-  await page.goto(`http://localhost:${String(port)}/?frame_id=e2e${extraQuery}${stepQuery}`);
+  await page.goto(`http://localhost:${String(port)}/?frame_id=e2e${extraQuery}`);
   await page.evaluate(() => document.fonts.ready);
 
   await step('the valley opens with the map, the tray and the HUD', async () => {
@@ -1708,7 +1706,7 @@ try {
       awayDismissed = true;
       change();
       try {
-        await page.goto(`http://localhost:${String(port)}/?frame_id=e2e${extraQuery}${stepQuery}`);
+        await page.goto(`http://localhost:${String(port)}/?frame_id=e2e${extraQuery}`);
         await page.evaluate(() => document.fonts.ready);
         await run();
       } finally {
@@ -2452,7 +2450,7 @@ try {
 
   // The Forge's sealed crate (V-FORGE-5, Misa's option C): rare and epic pieces wait in a crate in the room; the Gazette teases it, the map's
   // Forge has a bubble, and a click opens it: it rattles, then the pieces are revealed one at a time, worst first and best last, ending on a
-  // summary of everything. One keyed call opens it. `E2E_QUERY='crate-reveal=B&crate-look=C'` shows the variants.
+  // summary of everything. One keyed call opens it.
   await scenario(
     'valley systems on: the sealed crate is teased, opened and revealed worst first, best last',
     () => {
@@ -2516,7 +2514,7 @@ try {
       await crate.click();
       const reveal = page.getByRole('dialog', { name: 'The sealed crate is open' });
       await waitFor(reveal);
-      const card = reveal.locator('button.cr-card');
+      const card = reveal.locator('button.cr-piece');
       await waitFor(card);
       await page.waitForTimeout(900);
       await shot('crate-reveal-first');
@@ -2538,22 +2536,44 @@ try {
         );
         if (!inside) throw new Error('Tab left the reveal for the scene behind it');
       }
+      // The piece shows its item card on hover (a mouse) and on a tap, inside the reveal, and a second tap closes it.
+      const pop = reveal.locator('.cr-pop');
+      await card.hover();
+      await waitFor(pop);
+      await expectTopmost(pop.locator('.idc'), 'the hovered piece card');
+      await shot('crate-reveal-card-hover');
+      await page.mouse.move(2, 2);
+      await pop.waitFor({ state: 'detached', timeout: 5000 });
+      await card.click();
+      await waitFor(pop);
+      if (!/1 \/ 3/.test((await reveal.locator('.cr-count').textContent()) ?? ''))
+        throw new Error('tapping the piece went on instead of showing its card');
+      await page.mouse.move(2, 2);
+      await waitFor(pop);
+      await shot('crate-reveal-card-tap');
+      // A second tap closes it: on a phone the card lies over the piece, so the tap lands on the card, which closes it too.
+      await (width < 720 ? pop : card).click();
+      await page.mouse.move(2, 2);
+      await pop.waitFor({ state: 'detached', timeout: 5000 });
+      // Enter on the focused piece toggles the card too; Escape closes it before it skips.
       await card.focus();
-      // Enter goes on to the second piece (a creature puts it on), then the best, last.
       await page.keyboard.press('Enter');
-      if (/crate-reveal=[CD]/.test(extraQuery) && !reduced) {
-        // Variants C and D: the first piece flies to the bag (or onto its creature) before the next one comes.
-        await page.waitForTimeout(160);
-        await shot('crate-reveal-flying');
-      }
+      await waitFor(pop);
+      await page.keyboard.press('Escape');
+      await pop.waitFor({ state: 'detached', timeout: 5000 });
+      if ((await reveal.locator('.cr-summary').count()) > 0)
+        throw new Error('Escape skipped instead of closing the card');
+      // Next goes on to the second piece (a creature puts it on), then the best, last.
+      await reveal.getByRole('button', { name: 'Next' }).click();
       await page.waitForFunction(() =>
         /2 \/ 3/.test(document.querySelector('.cr-count')?.textContent ?? ''),
       );
       await page.waitForTimeout(700);
-      if (!/puts it on/.test(await card.innerText()))
+      if (!/puts it on/.test(await reveal.locator('.cr-card').innerText()))
         throw new Error('the second piece does not say who puts it on');
       await shot('crate-reveal-second');
-      await page.keyboard.press('Space');
+      // A tap on the stage outside the piece goes on too.
+      await reveal.locator('.cr-name').click();
       await page.waitForFunction(() =>
         /3 \/ 3/.test(document.querySelector('.cr-count')?.textContent ?? ''),
       );
@@ -2563,9 +2583,9 @@ try {
       await shot('crate-reveal-epic');
       // The best waits: it does not move on by itself.
       await page.waitForTimeout(3200);
-      if ((await reveal.locator('button.cr-card').count()) !== 1)
+      if ((await reveal.locator('button.cr-piece').count()) !== 1)
         throw new Error('the best piece moved on by itself');
-      await card.click();
+      await reveal.getByRole('button', { name: 'Show everything' }).click();
       const summary = reveal.locator('.cr-summary');
       await waitFor(summary);
       await page.waitForTimeout(500);
@@ -2576,6 +2596,19 @@ try {
       )
         throw new Error(`the summary says: ${await summary.innerText()}`);
       await shot('crate-reveal-summary');
+      // Each listed piece shows its card on hover and tap.
+      const thumb = reveal.locator('.cr-thumb').first();
+      await thumb.hover();
+      await waitFor(pop);
+      await shot('crate-reveal-summary-hover');
+      await page.mouse.move(2, 2);
+      await pop.waitFor({ state: 'detached', timeout: 5000 });
+      await thumb.click();
+      await waitFor(pop);
+      await page.mouse.move(2, 2);
+      await shot('crate-reveal-summary-card');
+      await page.keyboard.press('Escape');
+      await pop.waitFor({ state: 'detached', timeout: 5000 });
       await reveal.getByRole('button', { name: 'Done' }).click();
       await reveal.waitFor({ state: 'detached', timeout: 10000 });
       // The crate is gone from the room (nothing waits), and so is the Forge's bubble.
@@ -2593,7 +2626,7 @@ try {
         await place('forge').evaluate((el) => el.click());
         await waitFor(heading('Forge'));
         await sceneTarget('The sealed crate').click();
-        await waitFor(reveal.locator('button.cr-card'));
+        await waitFor(reveal.locator('button.cr-piece'));
         if (how === 'Skip') await reveal.getByRole('button', { name: 'Skip' }).click();
         else await page.keyboard.press('Escape');
         await waitFor(reveal.locator('.cr-summary'));
@@ -2740,9 +2773,17 @@ try {
       const piece = page.getByRole('option', { name: /Coal-Warm Cap/ }).first();
       await piece.scrollIntoViewIfNeeded();
       await piece.click();
-      // The item card is a step of the bag's drawer (a page on a phone), never a sheet over it.
+      // The item card is a step, never a sheet over the drawer: on a wide window it opens in the OTHER drawer, the bag staying on the
+      // left (Misa's pick, 2026-11-15); on a phone it is a page of its own.
       await waitFor(drawer.locator('.item-detail'));
       await page.waitForTimeout(500);
+      if (width >= 960) {
+        await waitFor(rightPanel.locator('.item-detail'));
+        if ((await leftPanel.locator('.item-detail').count()) !== 0)
+          throw new Error('the item card opened in the bag drawer instead of beside it');
+        await waitFor(leftPanel.getByRole('option', { name: /Coal-Warm Cap/ }).first());
+      }
+      await shot('patch-bag-card');
       if ((await page.getByRole('dialog').count()) !== 0)
         throw new Error('a sheet is over the drawer');
       await expectTopmost(drawer.locator('.item-detail').first(), 'the finished piece card');

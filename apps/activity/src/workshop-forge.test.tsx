@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GEAR_STATE, SAMPLE_GEAR } from './creature-card-sample';
 import type { GearActions } from './gear-actions';
 import { byClass, byName, byRole, createPage, visibleText, type Page } from './test-dom';
-import { setStepPlace } from './valley/drawer-step';
 import { PopoverHost } from './PopoverHost';
 import { sampleAnvil, sampleOrder, withAnvils } from './valley/forge-sample';
 import { sampleValley } from './valley/signpost-sample';
@@ -21,7 +20,6 @@ beforeEach(() => {
 });
 afterEach(() => {
   vi.unstubAllGlobals();
-  setStepPlace(null);
   page?.unmount();
   page = null;
 });
@@ -145,21 +143,18 @@ function openCard(p: Page): void {
 }
 
 describe('the item card and the dismantle flow in the Forge are steps, never a sheet over the drawer', () => {
-  for (const look of ['replace', 'beside'] as const) {
-    it(`${look}: the card is no dialog; Back returns to the bag list`, () => {
-      setStepPlace(look);
-      const p = draw(forgeMode([sampleAnvil('a1', smith.id, [])]));
-      openCard(p);
-      // A phone (the fake DOM has no media query): one page, the card in place of the list, whichever the look.
-      expect(byRole(p.root, 'dialog')).toHaveLength(0);
-      expect(byName(p.root, 'button', /^‹ Back to the bag/)).not.toHaveLength(0);
-      expect(byClass(p.root, 'item-detail')).not.toHaveLength(0);
-      expect(byClass(p.root, 'ps-list')[0]?.getAttribute('hidden')).not.toBeNull();
-      p.click(byName(p.root, 'button', /^‹ Back to the bag/)[0] as never);
-      expect(byClass(p.root, 'item-detail')).toHaveLength(0);
-      expect(byClass(p.root, 'ps-list')[0]?.getAttribute('hidden')).toBeNull();
-    });
-  }
+  it('on a phone the card is no dialog; Back returns to the bag list', () => {
+    const p = draw(forgeMode([sampleAnvil('a1', smith.id, [])]));
+    openCard(p);
+    // A phone (the fake DOM has no media query): one page, the card in place of the list.
+    expect(byRole(p.root, 'dialog')).toHaveLength(0);
+    expect(byName(p.root, 'button', /^‹ Back to the bag/)).not.toHaveLength(0);
+    expect(byClass(p.root, 'item-detail')).not.toHaveLength(0);
+    expect(byClass(p.root, 'ps-list')[0]?.getAttribute('hidden')).not.toBeNull();
+    p.click(byName(p.root, 'button', /^‹ Back to the bag/)[0] as never);
+    expect(byClass(p.root, 'item-detail')).toHaveLength(0);
+    expect(byClass(p.root, 'ps-list')[0]?.getAttribute('hidden')).toBeNull();
+  });
 
   it('Dismantle on the card is the next step of the same panel, and its Back returns to the card', () => {
     const p = draw(forgeMode([sampleAnvil('a1', smith.id, [])]));
@@ -172,31 +167,23 @@ describe('the item card and the dismantle flow in the Forge are steps, never a s
     expect(byClass(p.root, 'item-detail')).not.toHaveLength(0);
   });
 
-  it('on a wide window the look decides: replace keeps the card in the left drawer, beside puts it in the right one with the list kept', () => {
+  it('on a wide window the card opens in the other drawer (beside), the bag list staying on the left', () => {
     vi.stubGlobal('matchMedia', () => ({
       matches: true,
       addEventListener: () => undefined,
       removeEventListener: () => undefined,
     }));
-    const sideOfCard = (look: 'replace' | 'beside'): string | null => {
-      setStepPlace(look);
-      const p = draw(forgeMode([sampleAnvil('a1', smith.id, [])]));
-      openCard(p);
-      const side = byClass(p.root, 'item-detail')[0];
-      let up = side?.parentNode ?? null;
-      let found: string | null = null;
-      while (up !== null && found === null) {
-        found = up.getAttribute?.('data-side') ?? null;
-        up = up.parentNode;
-      }
-      // The list is on the page either way; beside leaves it showing.
-      const hidden = byClass(p.root, 'ps-list')[0]?.getAttribute('hidden') !== null;
-      expect(hidden).toBe(look === 'replace');
-      p.unmount();
-      page = null;
-      return found;
-    };
-    expect(sideOfCard('replace')).toBe('left');
-    expect(sideOfCard('beside')).toBe('right');
+    const p = draw(forgeMode([sampleAnvil('a1', smith.id, [])]));
+    openCard(p);
+    const side = byClass(p.root, 'item-detail')[0];
+    let up = side?.parentNode ?? null;
+    let found: string | null = null;
+    while (up !== null && found === null) {
+      found = up.getAttribute?.('data-side') ?? null;
+      up = up.parentNode;
+    }
+    expect(found).toBe('right');
+    // The list stays showing.
+    expect(byClass(p.root, 'ps-list')[0]?.getAttribute('hidden')).toBeNull();
   });
 });

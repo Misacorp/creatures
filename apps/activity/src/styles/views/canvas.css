@@ -226,10 +226,8 @@ button.cv-target:is(:hover, :active) {
 }
 
 /*
-  The cue that a thing is clickable (`art-variants.ts`, `clickCue`, `data-cue` on `.pc-root`; decoration has none):
-  A: a small name plate under it, always. B: the plate and a 1 px light outline only on hover or press (and the plate on keyboard focus).
-  C: a small gold pip always, and the plate on hover, press or keyboard focus. The keyboard's own cue stays the gold arrow
-  (`art-focus.css`); there is never a focus outline.
+  The cue that a thing is clickable (Misa, 2026-11-15: plates always; decoration has none): a small name plate under it, always. The
+  keyboard's own cue stays the gold arrow (`art-focus.css`); there is never a focus outline.
 */
 .cv-plate {
   position: absolute;
@@ -244,51 +242,6 @@ button.cv-target:is(:hover, :active) {
 
 .cv-plate .nameplate {
   max-width: 7.5rem;
-}
-
-.pc-root:is([data-cue='B'], [data-cue='C']) .cv-plate {
-  visibility: hidden;
-}
-
-.pc-root:is([data-cue='B'], [data-cue='C'])
-  :is(button.cv-target, .sg-map-tool, .wm-marker):is(:hover, :active, :focus-visible)
-  .cv-plate {
-  visibility: visible;
-}
-
-.pc-root[data-cue='B'] button.cv-target:is(:hover, :active):not(:disabled):not(.cv-slot) {
-  box-shadow:
-    inset 0 0 0 2px var(--bone),
-    0 0 0 1px var(--ink);
-}
-
-.cv-pip {
-  display: none;
-}
-
-.pc-root[data-cue='C'] .cv-pip {
-  display: block;
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 0.75rem;
-  height: 0.75rem;
-  background: var(--gold);
-  filter: drop-shadow(0 1px 0 var(--ink));
-  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .pc-root[data-cue='C'] .cv-pip {
-    animation: cv-pip 1600ms steps(1) infinite;
-  }
-}
-
-@keyframes cv-pip {
-  60% {
-    opacity: 0.45;
-  }
 }
 
 /* A creature is carried over it. */
@@ -419,19 +372,4 @@ button.cv-slot:hover:not(:disabled) {
   50% {
     translate: 0 -2px;
   }
-}
-
-/*
-  The expedition map's destinations carry their name already (the logo's letters, or a plate where a place has no logo) and a gem pin that
-  is their persistent pip; the cue variants only decide when the plate of a place without a logo shows.
-*/
-.pc-root:is([data-cue='B'], [data-cue='C']) .sg-map .wm-marker:not(.selected) .wm-plate {
-  visibility: hidden;
-}
-
-.pc-root:is([data-cue='B'], [data-cue='C'])
-  .sg-map
-  .wm-marker:is(:hover, :active, :focus-visible)
-  .wm-plate {
-  visibility: visible;
 }

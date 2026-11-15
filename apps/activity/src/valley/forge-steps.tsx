@@ -1,15 +1,14 @@
 /**
  * The Forge's steps that used to be sheets over a drawer (Misa, 2026-11-14: "no sheet over a drawer"): an item's card (opened from the
  * bag, with the dismantle flow after it) and the fire's numbers (opened from the project board). Each is a step of the panel that holds
- * it, with Back; where it shows is one switch (`valley/drawer-step`): in place of the list (`replace`, and always on a phone), or on a
- * wide window in the other drawer (`beside`).
+ * it, with Back. On a wide window it opens in the other drawer, the list staying on the left (Misa's pick, 2026-11-15); on a phone it
+ * takes the place of the list (a phone shows one page).
  */
 import type { ComponentChildren } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import type { ValleyVisit } from '../api';
 import { useWide } from '../ui/wide-layout';
 import { FireNumbers } from './CommonsFire';
-import { stepBeside } from './drawer-step';
 import { StepHold } from './PanelStep';
 import type { CanvasPanel } from './PlaceCanvas';
 
@@ -33,7 +32,7 @@ export interface ForgeSteps {
     kind: StepList,
     list: ComponentChildren,
   ) => { children: ComponentChildren; wizard: boolean };
-  /** The right drawer's panel when a step opens beside the list (wide window, `beside` look), else null. */
+  /** The right drawer's panel when a step opens beside the list (wide window), else null. */
   side: CanvasPanel | null;
   openFire: () => void;
 }
@@ -54,7 +53,8 @@ export function useForgeSteps({
   startFire: boolean;
 }): ForgeSteps {
   const wide = useWide();
-  const beside = stepBeside(wide);
+  // Misa's pick (2026-11-15): on a wide window the step opens in the OTHER drawer, the list staying put; a phone shows one page.
+  const beside = wide;
   const [fire, setFire] = useState(startFire);
   const cardOn = card !== null && card !== undefined && left === 'bag';
   const fireOn = fire && left === 'board';

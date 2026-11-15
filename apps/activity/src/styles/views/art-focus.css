@@ -33,7 +33,7 @@
 
 /* The target the arrow hangs on needs a box of its own to sit on (the others are positioned already). */
 .vy-frame .vy-stand-btn,
-.vy-frame .cr-card,
+.vy-frame .cr-piece,
 .vy-frame .cr-summary button,
 .vy-frame .pc-below :is(button, a, [tabindex]) {
   position: relative;

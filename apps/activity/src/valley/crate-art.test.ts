@@ -1,15 +1,15 @@
 /**
  * The sealed crate's pictures (`crate-art.ts`, the Art session's set `valley-forge-crate`): sizes, that the open crate stands on the sealed
- * crate's base row, the glow alts for rare and epic by night and by day, the Art session's variants, and that every burst keeps its centre
+ * crate's base row, the glow alts for rare and epic by night and by day, and that every burst keeps its centre
  * clear for the item.
  */
 import { describe, expect, it } from 'vitest';
 import { parseSprite, type SpriteDef } from '../sprites/sprite-data';
 import { BURST, CRATE_OPEN, CRATE_SEALED, burstSprite, crateSprite } from './crate-art';
-import { RATTLE, type CrateFrame } from './crate-view';
+import { RATTLE } from './crate-view';
 
 const size = (def: SpriteDef) => ({ w: def.rows[0]?.length ?? 0, h: def.rows.length });
-const NIGHT = { night: true, look: 'A' } as const;
+const NIGHT = { night: true } as const;
 
 describe('the crate art', () => {
   it('has the sealed crate and its shakes at one size, and the open crate 9 rows taller on the same base', () => {
@@ -35,30 +35,12 @@ describe('the crate art', () => {
 
   it('glows blue for a rare best and pink-violet for an epic one, deeper by day', () => {
     const glow = (best: 'rare' | 'epic', night: boolean) =>
-      crateSprite('sealed', { best, night, look: 'A' }).palette['G'];
+      crateSprite('sealed', { best, night }).palette['G'];
     expect(glow('rare', true)).toBe('#4da3ff');
     expect(glow('epic', true)).toBe('#ff6fbf');
     expect(glow('rare', false)).not.toBe(glow('rare', true));
     expect(glow('epic', false)).not.toBe(glow('epic', true));
     expect(glow('epic', false)).not.toBe(glow('rare', false));
-  });
-
-  it("offers the Art session's other looks for the sealed crate, and keeps the main frames for the rest", () => {
-    const main = crateSprite('sealed', { ...NIGHT, best: 'rare' });
-    const chest = crateSprite('sealed', { night: true, look: 'B', best: 'rare' });
-    const runes = crateSprite('sealed', { night: true, look: 'C', best: 'rare' });
-    expect(chest.rows).not.toEqual(main.rows);
-    expect(runes.rows).not.toEqual(main.rows);
-    expect(chest.rows).not.toEqual(runes.rows);
-    expect(size(chest)).toEqual(size(main));
-    // A look recolours like the main one (epic).
-    expect(crateSprite('sealed', { night: true, look: 'B', best: 'epic' }).palette['G']).toBe(
-      '#ff6fbf',
-    );
-    const open: CrateFrame = 'open';
-    expect(crateSprite(open, { night: true, look: 'C', best: 'rare' }).rows).toEqual(
-      crateSprite(open, { ...NIGHT, best: 'rare' }).rows,
-    );
   });
 
   it('draws each rarity burst at 48 x 48 with the centre left clear for the item', () => {

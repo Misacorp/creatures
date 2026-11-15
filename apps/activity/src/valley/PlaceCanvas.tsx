@@ -12,8 +12,8 @@
  *   own turns it off). On a phone there are no drawers: an open panel is its own full page with the scene hidden behind it (no drawer
  *   on a drawer), and its Back goes to the scene. The panel's content is the same component either way, normally a `ui/Wizard` (a
  *   branch of steps with Back and one gold action).
- * - The cue (`art-variants.ts`, `clickCue`): a clickable thing in the scene is a `CanvasTarget` with a `plate`, its short name; the
- *   root's `data-cue` says how the plate and the other cues show (`canvas.css`). Decoration is no target and shows nothing.
+ * - The cue: a clickable thing in the scene is a `CanvasTarget` with a `plate`, its short name, always shown under it (`canvas.css`,
+ *   Misa's pick 2026-11-15). Decoration is no target and shows nothing.
  *
  * Which side holds what is the rule's: the right drawer acts on the one thing that was clicked in the scene (an anvil, a seat, its
  * wizard); the left drawer holds the place's collections and overviews that belong to no one spot (the bag, the floor, the plans, the
@@ -28,7 +28,6 @@ import { Nameplate } from '../ui/Nameplate';
 import { SidePanel } from '../ui/SidePanel';
 import { useWide } from '../ui/wide-layout';
 import type { SceneGeometry } from './SceneFrame';
-import { clickCue } from './art-variants';
 import { At } from './parts';
 
 export type CanvasSide = 'left' | 'right';
@@ -267,7 +266,6 @@ export function PlaceCanvas({
       role="group"
       aria-label={label}
       data-wide={wide ? 'yes' : 'no'}
-      data-cue={clickCue()}
       data-page={page === null ? undefined : 'yes'}
     >
       <div class="pc-view">
@@ -334,7 +332,7 @@ export function CanvasTarget({
   /** Draw order among the scene's things (`depthOf`): a target is above the sprites it covers. */
   z?: number;
   /**
-   * The thing's short name, the cue that it can be clicked (`art-variants.ts`, `clickCue`: always under it, or on hover, or with a pip).
+   * The thing's short name, the cue that it can be clicked, always shown under it.
    * Every clickable thing in an art scene has one; decoration has none and is not a target. Text only.
    */
   plate?: string;
@@ -358,16 +356,13 @@ export function CanvasTarget({
       >
         {children}
         {plate !== undefined && (
-          <>
-            <span
-              class="cv-plate"
-              aria-hidden="true"
-              ref={cssVars({ '--py': `${String((plateAt ?? h) * g.s)}px` })}
-            >
-              <Nameplate size="sm">{plate}</Nameplate>
-            </span>
-            <span class="cv-pip" aria-hidden="true" />
-          </>
+          <span
+            class="cv-plate"
+            aria-hidden="true"
+            ref={cssVars({ '--py': `${String((plateAt ?? h) * g.s)}px` })}
+          >
+            <Nameplate size="sm">{plate}</Nameplate>
+          </span>
         )}
       </button>
     </At>

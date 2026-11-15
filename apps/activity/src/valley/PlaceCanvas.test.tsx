@@ -94,11 +94,6 @@ describe('the scene under the drawers', () => {
     // A thing that cannot fit leaves the scene where it is rather than pan the wrong way.
     expect(panFor(300, 900, 384, 700)).toBeLessThanOrEqual(0);
   });
-
-  it('is told how a clickable thing shows it is one: the root says which cue, and a plate is text under the target', () => {
-    const p = draw(true, null, null);
-    expect(['A', 'B', 'C']).toContain(byClass(p.root, 'pc-root')[0]?.getAttribute('data-cue'));
-  });
 });
 
 describe('CanvasTarget', () => {
