@@ -41,13 +41,6 @@
   top: 5.25rem;
 }
 
-/* A tool's pip sits at its bottom right, clear of the count tag at its top right. */
-.sg-map .sg-map-tool .cv-pip {
-  top: auto;
-  bottom: 0.125rem;
-  right: 0.125rem;
-}
-
 /* The lists of the drawers: the scouts at a place, and the packs of every seat. */
 .sg-scouts,
 .sg-packs {

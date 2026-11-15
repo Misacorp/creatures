@@ -25,15 +25,12 @@ export function startPlace(places: readonly MapPlace[]): string {
   return places.find((p) => p.flag === 'FULL')?.id ?? places.find((p) => p.count > 0)?.id ?? HUB;
 }
 
-/** The cue of a button over the map (the same plate and pip as a scene's targets, `canvas.css`). */
+/** The cue of a button over the map (the same plate as a scene's targets, `canvas.css`). */
 function ToolCue({ name }: { name: string }) {
   return (
-    <>
-      <span class="cv-plate" aria-hidden="true">
-        <Nameplate size="sm">{name}</Nameplate>
-      </span>
-      <span class="cv-pip" aria-hidden="true" />
-    </>
+    <span class="cv-plate" aria-hidden="true">
+      <Nameplate size="sm">{name}</Nameplate>
+    </span>
   );
 }
 

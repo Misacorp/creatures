@@ -8,8 +8,7 @@
  *   creature's plate with the owner's name (never a list of everyone). With nobody else's, a couple of ambient workers keep the room
  *   alive. Small idle motions step (hammering, carrying) and stop for reduced motion (`canvas.css`).
  * - One cue for every clickable thing, none for decoration (Misa, 2026-11-15: "It was also inconsistent which elements were actually
- *   clickable and I didn't find any kind of visual cue"): each target has a `plate` (its short name; `art-variants.ts`, `clickCue`
- *   says how it shows). The racks, shelf, trough, coal, cat, rug and the rest of the dressing are canvas art only: no target, no plate.
+ *   clickable and I didn't find any kind of visual cue"): each target has a `plate` (its short name, always shown under it). The racks, shelf, trough, coal, cat, rug and the rest of the dressing are canvas art only: no target, no plate.
  */
 import { useState } from 'preact/hooks';
 import type { Creature, ValleyVisit } from '../api';
@@ -25,7 +24,6 @@ import { PROP, anvilGlyph, anvilLabel, anvilWorking } from './forge-canvas';
 import { interiorLayout } from './forge-interior';
 import { CrateProp } from './CrateProp';
 import { CrateReveal } from './CrateReveal';
-import { crateLook, crateReveal } from './art-variants';
 import type { CrateOpened, CrateState } from './crate-view';
 import { interiorSprite } from './forge-interior-art';
 import { WARMING_FLAME } from './valley-art';
@@ -239,7 +237,6 @@ export function ForgeInside({
             crate={crate}
             best={crateRun?.best ?? crate.best}
             night={night}
-            look={crateLook()}
             phase={crateRun === null ? 'idle' : 'rattle'}
             disabled={busy || crateRun !== null}
             onOpen={onCrate}
@@ -402,23 +399,12 @@ export function ForgeInside({
       {crateRun !== null && crateRun.answer !== null && (
         <CrateReveal
           g={g}
-          crate={lay.sealed}
           best={crateRun.best}
           night={night}
           answer={crateRun.answer}
-          variant={crateReveal()}
-          look={crateLook()}
           nameOf={(id) => {
             const c = creatureOf(id);
             return c === undefined ? undefined : creatureName(c);
-          }}
-          flyTo={(piece) => {
-            const i = visit.anvils.findIndex(
-              (a) => piece.wornBy !== null && a.creatureId === piece.wornBy,
-            );
-            const cell = lay.cells[i];
-            if (cell !== undefined) return { x: cell.smith.x + 8, y: cell.smith.y + 8 };
-            return { x: lay.chest.x + lay.chest.w / 2, y: lay.chest.y + lay.chest.h / 2 };
           }}
           onDone={onCrateDone}
         />

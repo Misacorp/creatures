@@ -493,10 +493,12 @@ describe('the Forge canvas: the sealed crate', () => {
     expect(calls.actions.filter((x) => x === 'openCrate')).toHaveLength(1);
     expect(byClass(p.root, 'cr-reveal')).toHaveLength(1);
     expect(byClass(p.root, 'cr-count')[0]?.textContent.trim()).toBe('1 / 2');
-    expect(byClass(p.root, 'cr-card')[0]?.getAttribute('aria-label')).toMatch(/^Rare /);
-    p.click(byClass(p.root, 'cr-card')[0] as FakeElement);
-    expect(byClass(p.root, 'cr-card')[0]?.getAttribute('aria-label')).toMatch(/^Epic /);
-    p.click(byClass(p.root, 'cr-card')[0] as FakeElement);
+    expect(byClass(p.root, 'cr-piece')[0]?.getAttribute('aria-label')).toMatch(/^Rare /);
+    const next = (): FakeElement =>
+      byName(p.root, 'button', /^(Next|Show everything)$/)[0] as FakeElement;
+    p.click(next());
+    expect(byClass(p.root, 'cr-piece')[0]?.getAttribute('aria-label')).toMatch(/^Epic /);
+    p.click(next());
     expect(byClass(p.root, 'cr-summary')).toHaveLength(1);
     p.click(byName(p.root, 'button', 'Done')[0] as FakeElement);
     expect(byClass(p.root, 'cr-reveal')).toHaveLength(0);

@@ -6,7 +6,6 @@
 import { useEffect, useState } from 'preact/hooks';
 import { cssVars } from '../css-vars';
 import { usePrefersReducedMotion } from '../hooks';
-import type { CrateLookVariant } from './art-variants';
 import { crateSprite } from './crate-art';
 import { RATTLE, RATTLE_STEP_MS, crateLabel, type CrateState } from './crate-view';
 import type { Box } from './forge-interior';
@@ -43,7 +42,6 @@ export function CrateProp({
   crate,
   best,
   night,
-  look,
   phase,
   disabled,
   onOpen,
@@ -54,23 +52,16 @@ export function CrateProp({
   /** The glow (kept from before the open, when the valley's crate is already empty). */
   best: 'rare' | 'epic' | null;
   night: boolean;
-  look: CrateLookVariant;
   phase: CratePhase;
   disabled: boolean;
   onOpen: (opener: Opener) => void;
 }) {
   const frame = useRattle(phase === 'rattle');
-  const sprite = crateSprite(frame, { best, night, look });
-  // A look other than the main one has no drawn rattle: its one picture slides instead (`crate.css`).
-  const slides = phase === 'rattle' && look !== 'A' && frame !== 'sealed';
+  const sprite = crateSprite(frame, { best, night });
   return (
     <>
       <At x={g.X(box.x)} y={g.Y(box.y)}>
-        <Pic
-          sprite={sprite}
-          scale={g.s}
-          class={`cr-prop cr-glow-${best ?? 'rare'}${slides ? ` cr-slide-${frame}` : ''}`}
-        />
+        <Pic sprite={sprite} scale={g.s} class={`cr-prop cr-glow-${best ?? 'rare'}`} />
       </At>
       {phase === 'idle' && (
         <>

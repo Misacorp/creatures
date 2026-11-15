@@ -9,7 +9,6 @@
 import type { SpriteDef } from '../sprites/sprite-data';
 import { swapPalette } from '../sprites/sprite-data';
 import { VALLEY_FORGE_CRATE_CONCEPTS } from '../sprites/concepts/valley-forge-crate';
-import type { CrateLookVariant } from './art-variants';
 import { crateAlt, type CrateFrame } from './crate-view';
 
 /** The crate pieces' size, and the row each stands on (the same for the sealed crate and its shakes; the open one is taller). */
@@ -26,33 +25,24 @@ const PIECE: Readonly<Record<CrateFrame, string>> = {
   open: 'crate-open',
 };
 
-/** The Art session's variants of the sealed crate, by look (A is the main picture). */
-const LOOK_VARIANT: Readonly<Record<'B' | 'C', string>> = {
-  B: 'B treasure chest',
-  C: 'C rune-bound',
-};
-
 const cache = new Map<string, SpriteDef>();
 
 /**
- * A frame of the crate: its glow by `best`, its colours by `night`. Another look than A swaps only the sealed picture (the art draws the
- * rattle and the open crate for A alone).
+ * A frame of the crate: its glow by `best`, its colours by `night`. The picture is the Art session's main one, the iron-banded crate
+ * (Misa's pick, 2026-11-15); the chest and the rune-bound variants stay in the art library, unwired.
  */
 export function crateSprite(
   frame: CrateFrame,
-  opts: { best: 'rare' | 'epic' | null; night: boolean; look: CrateLookVariant },
+  opts: { best: 'rare' | 'epic' | null; night: boolean },
 ): SpriteDef {
-  const look = frame === 'sealed' && opts.look !== 'A' ? opts.look : 'A';
   const alt = crateAlt(opts.best, opts.night);
-  const key = `${frame}:${look}:${alt ?? 'main'}`;
+  const key = `${frame}:${alt ?? 'main'}`;
   const hit = cache.get(key);
   if (hit !== undefined) return hit;
   const concept = VALLEY_FORGE_CRATE_CONCEPTS.sprites[PIECE[frame]];
   if (concept === undefined) throw new Error(`valley-forge-crate has no ${PIECE[frame]}`);
-  const main =
-    look === 'A' ? concept.sprite : (concept.variants?.[LOOK_VARIANT[look]] ?? concept.sprite);
   const colours = alt === undefined ? undefined : concept.alts?.[alt];
-  const sprite = colours === undefined ? main : swapPalette(main, colours);
+  const sprite = colours === undefined ? concept.sprite : swapPalette(concept.sprite, colours);
   cache.set(key, sprite);
   return sprite;
 }

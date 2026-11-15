@@ -1,22 +1,27 @@
 /**
- * The sealed crate's reveal (V-FORGE-5; Misa, 2026-11-15, option C: "a big moment"): the crate has opened and its pieces come out one at a
- * time, worst first and best last, each over the burst of its rarity with its sprite in the burst's clear centre, its name, its rarity
- * and, when a creature put it on, "Pip puts it on". A tap, Enter or Space goes on (a card also moves on by itself after a pause, except
- * the last, the best, which waits for the player); Skip, or Escape, shows the summary at once; the summary lists everything and says
- * when the bag was full and some stay sealed. Reduced motion: no rattling, bursts' rise or flight, just the cards.
+ * The sealed crate's reveal (V-FORGE-5; Misa, 2026-11-15: option C "a big moment", the full-screen look): the crate has opened and its
+ * pieces come out one at a time over a dark stage, worst first and best last, each over the burst of its rarity with its sprite in the
+ * burst's clear centre, its name, its rarity and, when a creature put it on, "Pip puts it on". The piece itself is a button: hovering it
+ * (a mouse) or tapping it shows its full item card (`ItemCard`, the bag's), beside it on a wide window and over the stage on a phone; a
+ * second tap, a tap on the card, or Escape closes it (Misa, 2026-11-15: "can we show the item card when the user hovers or clicks on the
+ * revealed item"). Going on is the "Next" button, a tap on the stage outside the piece, or Enter / Space with the focus on the dialog (a
+ * card also moves on by itself after a pause, except the last, the best, which waits for the player, and never while a card is shown).
+ * Skip, or Escape, shows the summary at once; the summary lists everything, each piece showing its card the same way, and says when the
+ * bag was full and some stay sealed. Reduced motion: no rattling or rise, just the cards.
  *
- * It is a modal part of the Forge's art scene (a child of `ForgeInside`, drawn over the scene in its own pixels; `crate-reveal` in
- * `art-variants.ts` picks how it plays). The server has already rolled and moved the pieces; this only shows them. The buttons are in an
- * art scene, so they show no focus ring (`art-focus.css`: the gold arrow instead).
+ * It is a modal part of the Forge's art scene (a child of `ForgeInside`, drawn over the scene in its own pixels). The server has
+ * already rolled and moved the pieces; this only shows them. The buttons are in an art scene, so they show no focus ring
+ * (`art-focus.css`: the gold arrow instead).
  */
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import type { CratePiece } from '../api';
 import { cssVars } from '../css-vars';
+import { gearName } from '../gear-view';
 import { ItemSprite, ItemThumb } from '../GearArt';
 import { usePrefersReducedMotion } from '../hooks';
+import { ItemCard } from '../ItemCard';
 import { ActionButton } from '../ui/ActionButton';
-import type { CrateLookVariant, RevealVariant } from './art-variants';
-import { BURST, CRATE_OPEN, CRATE_SEALED, burstSprite, crateSprite } from './crate-art';
+import { BURST, CRATE_OPEN, burstSprite, crateSprite } from './crate-art';
 import {
   CARD_AUTO_MS,
   advance,
@@ -29,31 +34,86 @@ import {
   type CrateOpened,
   type PieceCard,
 } from './crate-view';
-import type { Box } from './forge-interior';
 import { Pic, isStill } from './parts';
 import type { SceneGeometry } from './SceneFrame';
 
-/** How long a card flies away (variants C and D) before the next one comes. */
-export const FLY_MS = 380;
-
 export interface CrateRevealProps {
   g: SceneGeometry;
-  /** Where the sealed crate stands in the scene (scene pixels): the pieces rise from it in the in-scene variants. */
-  crate: Box;
   best: 'rare' | 'epic' | null;
   night: boolean;
   answer: CrateOpened;
-  variant: RevealVariant;
-  look: CrateLookVariant;
   /** A creature's name from its id. */
   nameOf: (creatureId: string) => string | undefined;
-  /** Where a piece flies to in C and D: the creature that wears it, else the bag (scene pixels). */
-  flyTo: (piece: CratePiece) => { x: number; y: number };
   /** The summary was closed. */
   onDone: () => void;
 }
 
-/** One card: the burst of the piece's rarity with its sprite in the centre, and its words. A button: a tap goes on. */
+/**
+ * Which piece's item card shows: the one the mouse is over, or the one a tap pinned (a pinned card stays until a second tap, a tap on
+ * the card, Escape, or going on). A finger's tap raises mouse-like pointer events too, so only a `mouse` pointer counts as a hover.
+ */
+function useShownCard() {
+  const [hover, setHover] = useState<string | null>(null);
+  const [pinned, setPinned] = useState<string | null>(null);
+  return {
+    shown: pinned ?? hover,
+    pinned: pinned !== null,
+    close: (): void => {
+      setHover(null);
+      setPinned(null);
+    },
+    /** The handlers of the thing that shows piece `id`'s card. */
+    bind: (id: string) => ({
+      onPointerEnter: (e: PointerEvent): void => {
+        if (e.pointerType === 'mouse') setHover(id);
+      },
+      onPointerLeave: (e: PointerEvent): void => {
+        if (e.pointerType === 'mouse') setHover((now) => (now === id ? null : now));
+      },
+      onClick: (): void => {
+        if (pinned === id) {
+          setPinned(null);
+          setHover(null);
+        } else {
+          setPinned(id);
+        }
+      },
+    }),
+  };
+}
+type ShownCard = ReturnType<typeof useShownCard>;
+
+/**
+ * The item card of the shown piece, inside the reveal: beside what it belongs to on a wide window (`beside` is that thing's half width
+ * as a CSS length), over the stage on a phone (`crate.css`). A tap on the card closes it.
+ */
+function CardPop({
+  piece,
+  beside,
+  pinned,
+  onClose,
+}: {
+  piece: CratePiece;
+  beside: string;
+  /** A tap pinned it: it takes taps (a hovered one lets them through, so the mouse that is over it keeps it). */
+  pinned: boolean;
+  onClose: () => void;
+}) {
+  return (
+    <div class="cr-pop-layer" ref={cssVars({ '--beside': beside })}>
+      <div
+        class={`cr-pop${pinned ? ' cr-pinned' : ''}`}
+        role="group"
+        aria-label={`${gearName(piece.item.baseId)}, the item card`}
+        onClick={onClose}
+      >
+        <ItemCard item={piece.item} plainRarity />
+      </div>
+    </div>
+  );
+}
+
+/** One card: the burst of the piece's rarity with its sprite in the centre, and its words. The piece is a button: it shows its card. */
 function Card({
   piece,
   card,
@@ -61,10 +121,10 @@ function Card({
   index,
   total,
   last,
-  flying,
   rise,
+  shown,
   onGo,
-  buttonRef,
+  pieceRef,
 }: {
   piece: CratePiece;
   card: PieceCard;
@@ -72,45 +132,41 @@ function Card({
   index: number;
   total: number;
   last: boolean;
-  flying: { dx: number; dy: number } | null;
   rise: { dx: number; dy: number };
+  shown: ShownCard;
   onGo: () => void;
-  buttonRef: (el: HTMLButtonElement | null) => void;
+  pieceRef: (el: HTMLButtonElement | null) => void;
 }) {
   const side = BURST.size * scale;
   const itemAt = (BURST.centre + (BURST.centreSize - 12) / 2) * scale;
   return (
-    <button
-      type="button"
-      ref={(el) => {
-        buttonRef(el);
-        if (el !== null) {
-          cssVars({
-            '--rise-x': `${String(rise.dx)}px`,
-            '--rise-y': `${String(rise.dy)}px`,
-            '--fly-x': `${String(flying?.dx ?? 0)}px`,
-            '--fly-y': `${String(flying?.dy ?? 0)}px`,
-          })(el);
-        }
-      }}
-      class={`cr-card rarity-${piece.item.rarity}${last ? ' cr-last' : ''}${flying === null ? '' : ' cr-flying'}`}
+    <div
+      class={`cr-card rarity-${piece.item.rarity}${last ? ' cr-last' : ''}`}
       data-first={index === 0 ? 'yes' : undefined}
-      aria-label={`${card.spoken}. ${last ? 'Show everything' : 'Next piece'}`}
-      onClick={onGo}
+      ref={cssVars({ '--rise-x': `${String(rise.dx)}px`, '--rise-y': `${String(rise.dy)}px` })}
     >
       <span class="cr-count pix" aria-hidden="true">
         {index + 1} / {total}
       </span>
-      <span
-        class="cr-burst"
-        data-burst
-        ref={cssVars({ '--bw': `${String(side)}px`, '--item': `${String(itemAt)}px` })}
+      <button
+        type="button"
+        class="cr-piece cr-keep"
+        ref={pieceRef}
+        aria-label={`${card.spoken}. Show the item card`}
+        aria-expanded={shown.shown === piece.item.id}
+        {...shown.bind(piece.item.id)}
       >
-        <Pic sprite={burstSprite(piece.item.rarity)} scale={scale} class="cr-ring" />
-        <span class="cr-item">
-          <ItemSprite baseId={piece.item.baseId} scale={scale} />
+        <span
+          class="cr-burst"
+          data-burst
+          ref={cssVars({ '--bw': `${String(side)}px`, '--item': `${String(itemAt)}px` })}
+        >
+          <Pic sprite={burstSprite(piece.item.rarity)} scale={scale} class="cr-ring" />
+          <span class="cr-item">
+            <ItemSprite baseId={piece.item.baseId} scale={scale} />
+          </span>
         </span>
-      </span>
+      </button>
       <span class="cr-name pix" aria-hidden="true">
         {card.name}
       </span>
@@ -123,21 +179,26 @@ function Card({
         </span>
       )}
       <span class="cr-hint pix" aria-hidden="true">
-        {last ? 'Tap to see it all' : 'Tap to go on'}
+        Tap the piece for its card
       </span>
-    </button>
+      <span class="cr-next cr-keep">
+        <ActionButton label={last ? 'Show everything' : 'Next'} onClick={onGo} />
+      </span>
+    </div>
   );
 }
 
-/** The end: everything the crate held. */
+/** The end: everything the crate held, each piece showing its card on hover or tap. */
 function Summary({
   answer,
   ordered,
+  shown,
   onDone,
   doneRef,
 }: {
   answer: CrateOpened;
   ordered: readonly CratePiece[];
+  shown: ShownCard;
   onDone: () => void;
   doneRef: (el: HTMLElement | null) => void;
 }) {
@@ -151,7 +212,14 @@ function Summary({
         <ul class="cr-thumbs" aria-label="Everything in the crate, best first">
           {[...ordered].reverse().map((p) => (
             <li key={p.item.id}>
-              <ItemThumb item={p.item} scale={3} spoken />
+              <button
+                type="button"
+                class="cr-thumb"
+                aria-expanded={shown.shown === p.item.id}
+                {...shown.bind(p.item.id)}
+              >
+                <ItemThumb item={p.item} scale={3} spoken />
+              </button>
             </li>
           ))}
         </ul>
@@ -179,99 +247,71 @@ function Summary({
   );
 }
 
-export function CrateReveal({
-  g,
-  crate,
-  best,
-  night,
-  answer,
-  variant,
-  look,
-  nameOf,
-  flyTo,
-  onDone,
-}: CrateRevealProps) {
+export function CrateReveal({ g, best, night, answer, nameOf, onDone }: CrateRevealProps) {
   const ordered = revealOrder(answer.pieces);
   const total = ordered.length;
   const [at, setAt] = useState(0);
-  const [flying, setFlying] = useState<{ dx: number; dy: number } | null>(null);
   const reduced = usePrefersReducedMotion();
   const still = isStill();
-  const fly = (variant === 'C' || variant === 'D') && !reduced;
-  const full = variant === 'B' || variant === 'D';
   const rootRef = useRef<HTMLDivElement | null>(null);
-  const cardRef = useRef<HTMLButtonElement | null>(null);
+  const pieceRef = useRef<HTMLButtonElement | null>(null);
   const doneRef = useRef<HTMLElement | null>(null);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const summary = at >= total;
-
-  const clear = (): void => {
-    if (timer.current !== null) clearTimeout(timer.current);
-    timer.current = null;
-  };
-  useEffect(() => clear, []);
+  const shown = useShownCard();
 
   const go = (): void => {
-    if (summary || flying !== null) return;
-    clear();
-    const piece = ordered[at];
-    const burst = cardRef.current?.querySelector('[data-burst]');
-    const scene = rootRef.current?.getBoundingClientRect();
-    if (!fly || piece === undefined || burst === null || burst === undefined || !scene) {
-      setAt((now) => advance(now, total));
-      return;
-    }
-    const from = burst.getBoundingClientRect();
-    const to = flyTo(piece);
-    setFlying({
-      dx: Math.round(scene.left + g.X(to.x) - (from.left + from.width / 2)),
-      dy: Math.round(scene.top + g.Y(to.y) - (from.top + from.height / 2)),
-    });
-    timer.current = setTimeout(() => {
-      setFlying(null);
-      setAt((now) => advance(now, total));
-    }, FLY_MS);
+    if (summary) return;
+    shown.close();
+    setAt((now) => advance(now, total));
   };
   const skip = (): void => {
-    clear();
-    setFlying(null);
+    shown.close();
     setAt(skipTo(total));
   };
+  /** Escape: a shown card closes first; then Skip, or the summary's close. */
+  const escape = (): void => {
+    if (shown.pinned) shown.close();
+    else if (summary) onDone();
+    else skip();
+  };
+  const latestEscape = useRef(escape);
+  latestEscape.current = escape;
 
-  // A card moves on by itself after a pause (not the last, which is the best, and not for a player who asked for less motion).
+  // A card moves on by itself after a pause (not the last, which is the best, not for a player who asked for less motion, and not
+  // while a card of its item is shown: the player is reading it).
   useEffect(() => {
-    if (summary || reduced || still || onLastPiece(at, total)) return undefined;
+    if (summary || reduced || still || onLastPiece(at, total) || shown.shown !== null) {
+      return undefined;
+    }
     const id = setTimeout(go, CARD_AUTO_MS);
     return () => {
       clearTimeout(id);
     };
-  }, [at, summary, reduced, still, total]);
+  }, [at, summary, reduced, still, total, shown.shown]);
 
-  // The focus goes to the card, then to the summary; the page behind is inert for the keyboard while this is open.
+  // The focus goes to the piece, then to the summary; the page behind is inert for the keyboard while this is open.
   useLayoutEffect(() => {
-    (summary ? doneRef.current : cardRef.current)?.focus();
+    (summary ? doneRef.current : pieceRef.current)?.focus();
   }, [summary, at]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
       if (e.key !== 'Escape') return;
       e.preventDefault();
-      if (summary) onDone();
-      else skip();
+      latestEscape.current();
     };
     document.addEventListener('keydown', onKey);
     return () => {
       document.removeEventListener('keydown', onKey);
     };
-  }, [summary, total, onDone]);
+  }, []);
 
   const onKeyDown = (e: KeyboardEvent): void => {
     if (e.key === 'Escape') {
-      // Skip, or close the summary; the document's own listener below is for a focus that was lost.
+      // The document's own listener is for a focus that was lost.
       e.preventDefault();
       e.stopPropagation();
-      if (summary) onDone();
-      else skip();
+      escape();
     } else if (e.key === 'Tab') {
       const items = [...(rootRef.current?.querySelectorAll<HTMLElement>('button') ?? [])];
       const first = items[0];
@@ -295,25 +335,26 @@ export function CrateReveal({
     }
   };
 
-  // The open crate: where it stood (in the scene) or big at the bottom (full screen).
-  const open = crateSprite('open', { best, night, look });
-  const cardScale = full ? g.s + 1 : g.s;
-  const crateScale = full ? g.s * 2 : g.s;
-  const stageW = g.X(g.W);
-  // In the scene a card rises from the crate to the middle; full screen it rises from the crate at the bottom.
-  const cardTop = g.Y(Math.max(g.top + 6, 18));
-  const rise = full
-    ? { dx: 0, dy: Math.round(g.Y(g.H) * 0.3) }
-    : {
-        dx: Math.round(g.X(crate.x + crate.w / 2) - stageW / 2),
-        dy: Math.round(g.Y(crate.y) - cardTop - BURST.size * cardScale * 0.4),
-      };
+  // A tap on the stage outside the piece, the card and the buttons goes on (those carry `cr-keep`).
+  const onStageClick = (e: MouseEvent): void => {
+    if (summary) return;
+    const target = e.target as { closest?: (selector: string) => unknown } | null;
+    if (target?.closest?.('.cr-keep') == null) go();
+  };
+
+  // The open crate big at the bottom of the dark stage; a piece rises from it.
+  const open = crateSprite('open', { best, night });
+  const cardScale = g.s + 1;
+  const crateScale = g.s * 2;
+  const rise = { dx: 0, dy: Math.round(g.Y(g.H) * 0.3) };
   const piece = ordered[at];
   const card = piece === undefined ? undefined : pieceCard(piece, (id) => nameOf(id));
+  const burstSide = BURST.size * cardScale;
+  const shownPiece = ordered.find((p) => p.item.id === shown.shown);
 
   return (
     <div
-      class={`cr-reveal cr-v-${variant}${full ? ' cr-full' : ''}`}
+      class="cr-reveal"
       role="dialog"
       aria-modal="true"
       aria-label="The sealed crate is open"
@@ -325,28 +366,15 @@ export function CrateReveal({
       }}
     >
       <div class="cr-dim" aria-hidden="true" />
-      {full ? (
-        <div class="cr-crate cr-crate-big" aria-hidden="true">
-          <Pic sprite={open} scale={crateScale} class={`cr-open cr-glow-${best ?? 'rare'}`} />
-        </div>
-      ) : (
-        <div
-          class="cr-crate"
-          aria-hidden="true"
-          ref={cssVars({
-            '--cx': `${String(g.X(crate.x))}px`,
-            '--cy': `${String(g.Y(crate.y + CRATE_SEALED.base + 1 - CRATE_OPEN.h))}px`,
-          })}
-        >
-          <Pic sprite={open} scale={crateScale} class={`cr-open cr-glow-${best ?? 'rare'}`} />
-        </div>
-      )}
+      <div class="cr-crate" aria-hidden="true">
+        <Pic sprite={open} scale={crateScale} class={`cr-open cr-glow-${best ?? 'rare'}`} />
+      </div>
       {!summary && (
         <button type="button" class="cr-skip pix" onClick={skip}>
           Skip
         </button>
       )}
-      <div class="cr-stage" ref={cssVars({ '--card-top': `${String(cardTop)}px` })}>
+      <div class="cr-stage" onClick={onStageClick}>
         {piece !== undefined && card !== undefined && (
           <Card
             key={piece.item.id}
@@ -356,11 +384,11 @@ export function CrateReveal({
             index={at}
             total={total}
             last={onLastPiece(at, total)}
-            flying={flying}
             rise={rise}
+            shown={shown}
             onGo={go}
-            buttonRef={(el) => {
-              cardRef.current = el;
+            pieceRef={(el) => {
+              pieceRef.current = el;
             }}
           />
         )}
@@ -368,6 +396,7 @@ export function CrateReveal({
           <Summary
             answer={answer}
             ordered={ordered}
+            shown={shown}
             onDone={onDone}
             doneRef={(el) => {
               doneRef.current = el;
@@ -375,6 +404,14 @@ export function CrateReveal({
           />
         )}
       </div>
+      {shownPiece !== undefined && (
+        <CardPop
+          piece={shownPiece}
+          beside={summary ? '11rem' : `${String(burstSide / 2)}px`}
+          pinned={shown.pinned}
+          onClose={shown.close}
+        />
+      )}
     </div>
   );
 }

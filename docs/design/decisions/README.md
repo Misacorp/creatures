@@ -496,6 +496,7 @@ Superseded: 1 entry (see the topic file).
 
 [ui.md](ui.md): Navigation and the frame, Home and the notice board, type scale, shared components, look and feel rules that apply across screens.
 
+- 2026-11-15 Misa's Forge picks: plates, whole room, item card beside, full-screen reveal \[Misa\]
 - 2026-11-15 The Forge room fills the window: the 128x176 room centred, edges tiled and dressed (two fill variants, A is the pick) \[Misa\]
 - 2026-11-15 One cue for every clickable thing in the Forge and on the Signpost map, none for decoration (three variants behind one switch, A is the pick) \[Misa\]
 - 2026-11-15 Drawers lie over a canvas place; the scene never moves or rescales, and a drawer's first step has only the X \[Misa\]

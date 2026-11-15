@@ -24,15 +24,12 @@ import { sceneScale } from './scale';
 import { CHEST_PROP, ANVIL_PROP } from './forge-props';
 import { CELL_H, type Cell, type Pt } from './forge-canvas';
 import { PIECE_SIZE, interiorSprite, type InteriorPiece } from './forge-interior-art';
-import { forgeFill, type FillVariant } from './art-variants';
 import type { SceneGeometry } from './SceneFrame';
 
 /** The art's room in scene pixels (its phone layout), and the working height that always stays in view. */
 export const ROOM = { w: 128, h: 176 } as const;
 export const ROOM_H = ROOM.h;
 export const ESSENTIAL_H = 170;
-/** Variant B: the wall's top rows cropped off, so the working height that must show is this much shorter. */
-export const CROP_B = 7;
 
 /** The most background smiths (two to a bench, two benches). */
 export const BACK_SPOTS = 4;
@@ -143,26 +140,15 @@ export interface InteriorLayout {
   sealed: Box;
 }
 
-/** How much of the room's top is cropped in a fill variant. */
-function cropOf(fill: FillVariant): number {
-  return fill === 'B' ? CROP_B : 0;
-}
-
 /**
- * The interior's pixel scale: as everywhere (3 on a phone, 4 on a wide window; variant B one more), but never wider than the room fits
- * (`ROOM.w` times the scale at most the width) nor taller than the window shows the working height (`ESSENTIAL_H`, less the crop of B,
- * times the scale at most the height), never under 1. The size depends on the window alone, never on how many anvils there are, so the
+ * The interior's pixel scale: as everywhere (3 on a phone, 4 on a wide window), but never wider than the room fits
+ * (`ROOM.w` times the scale at most the width) nor taller than the window shows the working height (`ESSENTIAL_H` times the scale at
+ * most the height), never under 1. The size depends on the window alone, never on how many anvils there are, so the
  * scene does not change size while you are in it.
  */
-export function interiorScale(
-  width: number,
-  height: number,
-  fill: FillVariant = forgeFill(),
-): number {
-  const cap = sceneScale(width) + (fill === 'B' ? 1 : 0);
-  let s = Math.min(cap, Math.floor(width / ROOM.w));
-  const need = ESSENTIAL_H - cropOf(fill);
-  while (s > 1 && need * s > height) s -= 1;
+export function interiorScale(width: number, height: number): number {
+  let s = Math.min(sceneScale(width), Math.floor(width / ROOM.w));
+  while (s > 1 && ESSENTIAL_H * s > height) s -= 1;
   return Math.max(1, s);
 }
 
@@ -170,10 +156,9 @@ export function interiorScale(
 export function interiorLayout(
   g: Pick<SceneGeometry, 'W' | 'H' | 'cx'>,
   slots: number,
-  fill: FillVariant = forgeFill(),
 ): InteriorLayout {
   const ox = g.cx - ROOM.w / 2;
-  const oy = fill === 'B' ? -CROP_B : 0;
+  const oy = 0;
   const at = (p: Pt): Pt => ({ x: ox + p.x, y: oy + p.y });
   const box = (piece: InteriorPiece, p: Pt): Box => ({ ...at(p), ...PIECE_SIZE[piece] });
   const cells: Cell[] = Array.from({ length: Math.min(slots, 4) }, (_, i) => {
@@ -226,16 +211,11 @@ function across(
  * The room as sprites on the canvas: the wall and the floor to every edge, the rug and the firelight on the floor, what hangs on the
  * wall, the dressing and props on the floor (and at the edges of a wide window), the door, and an anvil for each cell owned and the
  * three props. The benches are not here: they stand in front of the smiths behind them, so they are drawn over those (`ForgeInside`).
- * `night` picks the palette; `fill` the variant of how the room fills the window (`art-variants.ts`).
+ * `night` picks the palette.
  */
-export function interiorSceneDraw(
-  owned: number,
-  slots: number,
-  night: boolean,
-  fill: FillVariant = forgeFill(),
-) {
+export function interiorSceneDraw(owned: number, slots: number, night: boolean) {
   return (g: SceneGeometry): Placement[] => {
-    const lay = interiorLayout(g, slots, fill);
+    const lay = interiorLayout(g, slots);
     const sprite = (piece: InteriorPiece): ReturnType<typeof interiorSprite> =>
       interiorSprite(piece, night);
     const out: Placement[] = [];
