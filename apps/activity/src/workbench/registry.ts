@@ -20,6 +20,7 @@ import { headingEntries } from './entries/headings';
 import { housingEntries } from './entries/housing';
 import { housingPanelEntries } from './entries/housing-panels';
 import { housingPostcardEntries } from './entries/housing-postcard';
+import { resetEntries } from './entries/reset';
 import { iconEntries } from './entries/icons';
 import { jobRevealEntries } from './entries/job-reveal';
 import { findEntries } from './entries/find';
@@ -108,6 +109,7 @@ export const ENTRIES: readonly Entry[] = [
   ...housingEntries,
   ...housingPanelEntries,
   ...housingPostcardEntries,
+  ...resetEntries,
 ];
 
 export function findEntry(name: string | null): Entry | null {
