@@ -67,7 +67,15 @@ describe('the reward paths call the housing hook', () => {
     );
   });
 
-  it('a scout pack that comes home drops once, keyed by the seat and its arrival', async () => {
+  /** Runs one scout seat in a valley world with housing on; `body` gets the caller, the seat and a way to move it. */
+  const scoutWorld = async (
+    body: (w: {
+      ctx: CoreContext;
+      seatId: string;
+      state: () => Promise<unknown>;
+      moveTo: (destination: string) => Promise<number>;
+    }) => Promise<void>,
+  ): Promise<void> => {
     const NONE: Rng = { nextU32: () => 0 };
     await runCore(
       nextGuild(),
@@ -83,25 +91,22 @@ describe('the reward paths call the housing hook', () => {
         });
         expect(bought.status).toBe(200);
         const seatId = bought.body.seatId as string;
-        const posted = await api.call('POST', '/api/valley/seat', {
-          seatId,
-          creatureId: seeded.creatureIds[0],
-          destination: 'storm-ridge',
-        });
-        expect(posted.status).toBe(200);
+        const moveTo = async (destination: string): Promise<number> =>
+          (
+            await api.call('POST', '/api/valley/seat', {
+              seatId,
+              creatureId: seeded.creatureIds[0],
+              destination,
+            })
+          ).status;
+        expect(await moveTo('storm-ridge')).toBe(200);
+        // A pack that holds finds, so a drop that does not come is the rule's doing and not an empty pack's.
         ctx.sql.exec(
           'UPDATE valley_seats SET gear_finds = 3, blueprint_finds = 2, page_finds = 2 WHERE seat_id = ?',
           seatId,
         );
         expect(dropRows(ctx)).toBe(0);
-        ctx.clock.t += 2 * HOUR;
-        await api.call('GET', '/api/state');
-        const dropped = keysOf(ctx, 'scout:');
-        expect(dropped).toHaveLength(1);
-        expect(dropped[0]?.key.startsWith(`scout:${seatId}:`)).toBe(true);
-        // Another look brings nothing home and drops nothing.
-        await api.call('GET', '/api/state');
-        expect(keysOf(ctx, 'scout:')).toEqual(dropped);
+        await body({ ctx, seatId, state: () => api.call('GET', '/api/state'), moveTo });
       },
       {
         ...ON,
@@ -112,6 +117,66 @@ describe('the reward paths call the housing hook', () => {
         ...housingOptions(),
       },
     );
+  };
+
+  it('a scout pack that scouted a day comes home and drops once, keyed by the seat and its arrival', async () => {
+    await scoutWorld(async ({ ctx, seatId, state }) => {
+      ctx.clock.t += 24 * HOUR;
+      await state();
+      const dropped = keysOf(ctx, 'scout:');
+      expect(dropped).toHaveLength(1);
+      expect(dropped[0]?.key.startsWith(`scout:${seatId}:`)).toBe(true);
+      // Another look brings nothing home and drops nothing.
+      await state();
+      expect(keysOf(ctx, 'scout:')).toEqual(dropped);
+    });
+  });
+
+  it('a pack left two days still drops once, not twice', async () => {
+    await scoutWorld(async ({ ctx, state }) => {
+      ctx.clock.t += 48 * HOUR;
+      await state();
+      await state();
+      expect(keysOf(ctx, 'scout:')).toHaveLength(1);
+    });
+  });
+
+  it('a short pack brought home by a destination change drops nothing', async () => {
+    await scoutWorld(async ({ ctx, moveTo }) => {
+      ctx.clock.t += HOUR / 2;
+      expect(await moveTo('ember-caves')).toBe(200);
+      expect(keysOf(ctx, 'scout:')).toHaveLength(0);
+    });
+  });
+
+  it('a pack that came home before the rule (11 hours) drops nothing, and its hours do not carry over', async () => {
+    await scoutWorld(async ({ ctx, seatId, state }) => {
+      ctx.clock.t += 11 * HOUR;
+      await state();
+      expect(keysOf(ctx, 'scout:')).toHaveLength(0);
+      // The store is empty after coming home: the next 11 hours are a new, short pack again.
+      expect(
+        rows<{ h: number }>(
+          ctx.sql,
+          'SELECT store_hours AS h FROM valley_seats WHERE seat_id = ?',
+          seatId,
+        )[0]?.h,
+      ).toBe(0);
+    });
+  });
+
+  it('changing destination every half hour for a day drops nothing; a day on one place after it drops once', async () => {
+    await scoutWorld(async ({ ctx, moveTo, state }) => {
+      for (let i = 0; i < 48; i++) {
+        ctx.clock.t += HOUR / 2;
+        expect(await moveTo(i % 2 === 0 ? 'ember-caves' : 'storm-ridge')).toBe(200);
+        ctx.sql.exec('UPDATE valley_seats SET gear_finds = 1 WHERE gear_finds = 0');
+      }
+      expect(keysOf(ctx, 'scout:')).toHaveLength(0);
+      ctx.clock.t += 24 * HOUR;
+      await state();
+      expect(keysOf(ctx, 'scout:')).toHaveLength(1);
+    });
   });
 
   it('a dungeon run that ends drops once, and the drop shows in GET /api/house', async () => {

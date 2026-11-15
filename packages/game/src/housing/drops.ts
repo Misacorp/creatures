@@ -118,6 +118,11 @@ function blueprintPool(
   return out;
 }
 
+/** True when a scout pack of `hours` effective hours is long enough to roll a housing drop (`HOUSING_RULES.drops.scout.minHours`). */
+export function scoutPackRolls(hours: number): boolean {
+  return hours >= HOUSING_RULES.drops.scout.minHours - 1e-9;
+}
+
 /**
  * Rolls one moment's drop. The moment says where it happened, the content what drops there, `HOUSING_RULES.drops` how
  * often. Materials: `rolls` chances at `materialPct`, each one material of the pool (rare ones at a quarter weight). One

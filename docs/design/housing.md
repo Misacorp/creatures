@@ -269,6 +269,8 @@ One function decides what a moment brings: `rollHouseDrops`. The moment says whe
 | `raid` with a Festival species | as above, plus 2 Lantern Silk if cleared |                                                                         | Lantern Night pool if cleared |               |
 | `games` (a medal is awarded)   | gold 1 at 100%, silver 60%, bronze 30%   | one `games` cloth                                                       | 5% on gold                    | 2% on gold    |
 
+A scout pack rolls only when it holds at least `HOUSING_RULES.drops.scout.minHours` (12) effective hours of scouting (`store_hours`, passed to `collect` as `SeatStore.hours`). A pack comes home on a visit and on every free destination change or "go deeper", so without the floor four seats tapped every half hour gave about 190 rolls a day. A short pack that comes home is emptied as before and rolls nothing; its hours do not carry over (the store resets to 0), so changing destination often never banks time. A pack left longer (24 h, 48 h, up to the 72 h cap) rolls once, not more. The key stays `scout:<seat>:<at>`.
+
 A blueprint drop picks, among blueprints the player does not know whose sources match the moment (moment kind, place, boss), one at random (sets' pieces and skins and wild pieces alike); none left means no blueprint. A stamp drop picks a `drop` stamp whose `moments` include this one and the player lacks. The draws use the hook's own live RNG (`crypto.getRandomValues`, a separate `housingRng` so no scripted RNG of another system is consumed in tests).
 
 ### 2.4 The house as cells (layout)
@@ -1029,4 +1031,5 @@ Every brief starts with `git fetch origin <session branch> && git reset --hard o
 | Skin price, wall or floor / roof or walls | 20 Acorns, 60 scrap, 2 primary / 60 Acorns, 300 scrap, 6 of the part's first material |
 | Part prices                               | `parts.json` (the table in 2.5)                                                       |
 | Drops                                     | the table in 2.3; rare materials at ¼ weight                                          |
+| Scout pack minimum for a drop             | 12 effective hours (`HOUSING_RULES.drops.scout.minHours`)                             |
 | Overview scale / focus scale              | 2 on a phone, 3 from 700 px / the largest integer up to 4 that fits                   |

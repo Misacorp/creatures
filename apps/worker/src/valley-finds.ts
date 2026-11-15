@@ -36,6 +36,7 @@ import {
   type ScoutSpecial,
   type SeatStretch,
   type HousingHook,
+  scoutPackRolls,
 } from '@creatures/game';
 import type { Analytics } from './analytics';
 import type { CatchChoices } from './catch-choices';
@@ -86,6 +87,8 @@ export interface SeatStore {
   readonly gear: number;
   readonly blueprints: number;
   readonly pages: number;
+  /** The pack's effective hours of scouting (`store_hours`): a housing drop needs `HOUSING_RULES.drops.scout.minHours` of them. */
+  readonly hours: number;
 }
 
 /** What drawing a pass's stretches produced, to write back to the seats. */
@@ -321,13 +324,16 @@ export class ValleyFinds {
     let pages = 0;
     if (store.pages > 0) pages = this.rollPages(userId, place, store.pages, at);
     creditParts(this.sql, userId, parts);
-    this.deps.housing?.drop(userId, {
-      kind: 'scout',
-      key: `scout:${seatId}:${String(at)}`,
-      place: place.id,
-      element: place.element,
-      finds: store.gear + store.blueprints + store.pages,
-    });
+    // A short pack (a visit after a short gap, a destination change) rolls nothing: only a pack that scouted long enough does.
+    if (scoutPackRolls(store.hours)) {
+      this.deps.housing?.drop(userId, {
+        kind: 'scout',
+        key: `scout:${seatId}:${String(at)}`,
+        place: place.id,
+        element: place.element,
+        finds: store.gear + store.blueprints + store.pages,
+      });
+    }
     if (paper !== undefined) {
       paper.rec.parts(store.scrap, store.shards);
       paper.rec.pages(pages);

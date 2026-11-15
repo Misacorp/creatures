@@ -44,7 +44,11 @@ export const HOUSING_RULES = {
     commonWeight: 4,
     rareWeight: 1,
     trip: { ticksPerExtraRoll: 3, materialPct: 40, blueprintPct: 3, stampPct: 1 },
-    scout: { materialPct: 30, blueprintPct: 2, stampPct: 1 },
+    /**
+     * `minHours`: a pack rolls a drop only when it holds this many effective hours of scouting (a short pack brought home by a visit or
+     * a destination change drops nothing, so tapping seats cannot farm rolls). A pick, a scalar to change here.
+     */
+    scout: { minHours: 12, materialPct: 30, blueprintPct: 2, stampPct: 1 },
     dungeon: {
       depthPerExtraRoll: 5,
       clearedExtraRolls: 1,

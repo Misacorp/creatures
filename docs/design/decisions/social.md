@@ -4,6 +4,14 @@ The living room and lounging, the lounge message, Discord DMs and other social f
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-15: A scout pack rolls a housing drop only after 12 hours
+
+ID: `2026-11-15-a-scout-pack-rolls-a-housing` · Status: current
+
+**Decision.** A scout pack rolls a housing drop only when it holds at least `HOUSING_RULES.drops.scout.minHours` (12) effective hours of scouting (the seat's `store_hours`). A shorter pack still comes home and is emptied but rolls nothing, and its hours are not banked. A longer pack (up to the 72 h cap) rolls once. The number is a scalar Misa can change in one place.
+
+**Reasoning.** A pack comes home on a visit after a short gap and on every free destination change or "go deeper", and about 30 minutes of scouting holds a scrap, so tapping four seats every half hour gave about 190 housing rolls a day (design intent: one or two per seat). The floor ties rolls to time scouted. Cost: an honest player who collects at 11 hours gets none for that pack; packs fill over 72 hours and a daily player collects at about 24, so a daily check-in is unaffected.
+
 ## 2026-11-12: Housing: a ceiling and frame left as built are their starters; only a trim can be None
 
 ID: `2026-11-12-housing-a-ceiling-and-frame-left` · Status: current

@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
+  HOUSING_RULES,
   createSeededRng,
   rollHouseDrops,
   rollHouseDropsLazy,
+  scoutPackRolls,
   type Rng,
   type HouseDrop,
   type HousingContent,
@@ -258,5 +260,17 @@ describe('rollHouseDropsLazy: the known set is read only when a keepsake roll hi
       return none;
     });
     expect(loads).toBe(1);
+  });
+});
+
+describe('a scout pack rolls a housing drop only when it scouted long enough', () => {
+  it('needs HOUSING_RULES.drops.scout.minHours (12) effective hours', () => {
+    expect(HOUSING_RULES.drops.scout.minHours).toBe(12);
+    expect(scoutPackRolls(0)).toBe(false);
+    expect(scoutPackRolls(0.5)).toBe(false);
+    expect(scoutPackRolls(11.99)).toBe(false);
+    expect(scoutPackRolls(12)).toBe(true);
+    expect(scoutPackRolls(24)).toBe(true);
+    expect(scoutPackRolls(72)).toBe(true);
   });
 });
