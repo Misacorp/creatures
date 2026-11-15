@@ -29,15 +29,7 @@ import { buildRows, readBuildInfo } from '../build-info';
 import { openExternalLink } from '../external-link';
 import { isLook, LOOKS, ROOM_MODES, type LookId, type RoomMode } from '../looks';
 import { resetLocalFlags } from './flags';
-import {
-  chooseLook,
-  choosePace,
-  chooseRoom,
-  storedLook,
-  storedPace,
-  storedRoom,
-} from './look-prefs';
-import { isReplayPace, REPLAY_PACES, REPLAY_PACE_IDS, type ReplayPaceId } from '../playback-v2';
+import { chooseLook, chooseRoom, storedLook, storedRoom } from './look-prefs';
 import { isTargeted, type CreatureChoice, type ToolSpec } from './forms';
 import { speciesName } from './options';
 import {
@@ -66,7 +58,6 @@ import { DataTable, type DataRow } from '../ui/DataTable';
 function LookSwitch(): JSX.Element {
   const [look, setLook] = useState<LookId>(() => storedLook());
   const [room, setRoom] = useState<RoomMode>(() => storedRoom());
-  const [pace, setPace] = useState<ReplayPaceId>(() => storedPace());
   return (
     <div class="dev-fields">
       <label class="dev-field">
@@ -102,24 +93,6 @@ function LookSwitch(): JSX.Element {
           {ROOM_MODES.map((mode) => (
             <option key={mode} value={mode}>
               {mode}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label class="dev-field">
-        Replay pace
-        <select
-          value={pace}
-          onChange={(e) => {
-            const value = e.currentTarget.value;
-            if (!isReplayPace(value)) return;
-            setPace(value);
-            choosePace(value);
-          }}
-        >
-          {REPLAY_PACE_IDS.map((id) => (
-            <option key={id} value={id}>
-              {REPLAY_PACES[id].label}
             </option>
           ))}
         </select>
@@ -488,8 +461,7 @@ export default function DevPanel({
             <LookSwitch />
             <p class="dev-hint">
               Tries a visual style on this device (kept until you change it). Room band: every
-              place, or Home only on a wide window. Replay pace: how long a stage replay takes (the
-              next replay that opens uses it).
+              place, or Home only on a wide window.
             </p>
           </>
         );

@@ -8,7 +8,7 @@
  * staging and is why it is not reachable anywhere else.
  */
 import { LEET_BACKFILL_DAYS } from '../leet';
-import { goodbyeMessage } from './goodbye-dm';
+import { EMBED_TOTAL_LIMIT, embedChars, embedText, goodbyeMessage } from './goodbye-dm';
 import type { FeatCreature, Settler, SettlersRecord } from './record-schema';
 import { buildSettlersRecord } from './settlers-record';
 import { wipedRowCounts } from './wipe-tables';
@@ -40,7 +40,7 @@ export interface DryRunReport {
 }
 
 const PREVIEWS = 3;
-export const DM_LIMIT = 2000;
+export const DM_LIMIT = EMBED_TOTAL_LIMIT;
 
 const title = (c: FeatCreature): string =>
   c.nickname !== null && c.nickname.trim() !== ''
@@ -139,10 +139,10 @@ export async function resetDryRun(
   // A key made for this call only: the report never shows the hashes.
   const throwaway = crypto.randomUUID() + crypto.randomUUID();
   const record = await buildSettlersRecord(sql, { ...options, hmacKey: throwaway });
-  const texts = record.settlers.map((settler) => ({
-    name: settler.name,
-    content: goodbyeMessage(settler).content,
-  }));
+  const texts = record.settlers.map((settler) => {
+    const [embed] = goodbyeMessage(settler).embeds;
+    return { name: settler.name, length: embedChars(embed), content: embedText(embed) };
+  });
   const tables = wipedRowCounts(sql);
   return {
     settlers: record.settlers.length,
@@ -152,12 +152,12 @@ export async function resetDryRun(
     rowsToDelete: tables.reduce((n, t) => n + t.rows, 0),
     dms: {
       count: texts.length,
-      longest: Math.max(0, ...texts.map((t) => t.content.length)),
+      longest: Math.max(0, ...texts.map((t) => t.length)),
       limit: DM_LIMIT,
-      over: texts.filter((t) => t.content.length > DM_LIMIT).length,
+      over: texts.filter((t) => t.length > DM_LIMIT).length,
       previews: texts
         .slice(0, PREVIEWS)
-        .map((t) => ({ name: t.name, length: t.content.length, content: t.content })),
+        .map((t) => ({ name: t.name, length: t.length, content: t.content })),
     },
     recordChars: JSON.stringify(record).length,
     leet: `The leet bot's ledger is never touched. After the wipe, payouts start from ${record.switchDay} (no ${String(LEET_BACKFILL_DAYS)}-day backfill), so no day is paid twice.`,

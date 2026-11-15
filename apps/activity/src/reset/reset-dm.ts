@@ -1,10 +1,17 @@
 /**
- * The goodbye DM's layouts, for judging them in the workbench (docs/design/reset.md, section 5). The worker
- * builds the real message; this previews two layouts with a seeded sample player. Plain Discord markdown, at
- * most 2,000 characters. Inert.
+ * The goodbye DM as an embed, for judging it in the workbench (docs/design/reset.md, section 5). The worker builds the real
+ * message (`apps/worker/src/reset/goodbye-dm.ts`); this previews it with a seeded sample player, with the same fields and
+ * Discord's field limit. Inert.
  */
-export const DM_LIMIT = 2000;
+export const DM_FIELD_LIMIT = 1024;
 export const DM_BOT_NAME = 'Leet Creatures';
+export const DM_TITLE = 'You were one of the first settlers';
+export const DM_DESCRIPTION =
+  'The valley is starting over, and it will remember you. Here is what it keeps:';
+/** The game's gold, as the worker sends it (`POST_COLOURS.won`). */
+export const DM_COLOUR = '#f2b33d';
+/** A feat value up to this long sits beside others in a row. */
+const INLINE_MAX = 48;
 
 interface Named {
   name: string;
@@ -43,57 +50,47 @@ export const SAMPLE_SETTLER: SettlerSample = {
   ],
 };
 
-export const DM_LAYOUTS = ['A', 'B'] as const;
-export type DmLayout = (typeof DM_LAYOUTS)[number];
+export interface DmField {
+  name: string;
+  value: string;
+  inline: boolean;
+}
 
 function listOf(items: readonly string[]): string {
   const last = items[items.length - 1] ?? '';
   return items.length <= 1 ? last : `${items.slice(0, -1).join(', ')} and ${last}`;
 }
 
-/** "Your creatures: Pebbles, Ember, Fizz and 39 more": as many names as fit in `room` characters. */
-export function creatureLine(s: SettlerSample, room: number): string {
+/** "Pebbles, Ember, Fizz and 39 more": as many names as fit in `room` characters. */
+export function creatureValue(s: SettlerSample, room: number): string {
   for (let shown = s.names.length; shown > 0; shown--) {
     const rest = s.names.length - shown;
     const names = s.names.slice(0, shown);
-    const line =
-      rest === 0
-        ? `Your creatures: ${listOf(names)}`
-        : `Your creatures: ${names.join(', ')} and ${String(rest)} more`;
-    if (line.length <= room) return line;
+    const value = rest === 0 ? listOf(names) : `${names.join(', ')} and ${String(rest)} more`;
+    if (value.length <= room) return value;
   }
-  return `Your creatures: ${String(s.names.length)} in all`;
+  return `${String(s.names.length)} in all`;
 }
-
-const HEAD = '**You were one of the first settlers.**';
-const INTRO = 'The valley is starting over, and it will remember you. Here is what it keeps:';
 
 const the = (n: Named): string => `${n.name} the ${n.species}`;
 
-/** Layout A, the plan's draft as it is: the feats on three lines, then the creature names. */
-export function dmLayoutA(s: SettlerSample): string {
-  const top = [
-    HEAD,
-    INTRO,
-    `First ${listOf(s.firstOn)} on the server · Cleared depth ${String(s.depth)} · ${String(s.blueprints)} blueprints`,
-    `${String(s.creatures)} creatures, ${String(s.levels)} levels in all · Highest: ${the(s.highest)}, level ${String(s.highest.level)}`,
-    `Best crafter: ${the(s.crafter)}, Crafting ${String(s.crafter.level)} · Best explorer: ${the(s.explorer)}, Explorer ${String(s.explorer.level)}`,
-  ].join('\n');
-  return `${top}\n${creatureLine(s, DM_LIMIT - top.length - 1)}`;
-}
-
-/** Layout B, tighter: one line of headline feats, one of the best three, then the creature list. */
-export function dmLayoutB(s: SettlerSample): string {
-  const top = [
-    HEAD,
-    INTRO,
-    `${String(s.creatures)} creatures · ${String(s.levels)} levels · Cleared depth ${String(s.depth)} · ${String(s.blueprints)} blueprints · First ${listOf(s.firstOn)} on the server`,
-    `Best: ${the(s.highest)} (level ${String(s.highest.level)}), ${the(s.crafter)} (Crafting ${String(s.crafter.level)}), ${the(s.explorer)} (Explorer ${String(s.explorer.level)})`,
-  ].join('\n');
-  return `${top}\n\n${creatureLine(s, DM_LIMIT - top.length - 2)}`;
-}
-
-/** The message of a layout. */
-export function dmText(layout: DmLayout, s: SettlerSample = SAMPLE_SETTLER): string {
-  return layout === 'A' ? dmLayoutA(s) : dmLayoutB(s);
+/** The embed's fields: a short-named field per feat, then the creature names. */
+export function dmFields(s: SettlerSample): DmField[] {
+  const feat = (name: string, value: string): DmField => ({
+    name,
+    value,
+    inline: value.length <= INLINE_MAX,
+  });
+  return [
+    feat('First on the server', listOf(s.firstOn)),
+    feat('Deepest dungeon', `Cleared depth ${String(s.depth)}`),
+    feat(
+      'Collection',
+      `${String(s.creatures)} creatures · ${String(s.levels)} levels · ${String(s.blueprints)} blueprints`,
+    ),
+    feat('Highest level', `${the(s.highest)}, level ${String(s.highest.level)}`),
+    feat('Best crafter', `${the(s.crafter)}, Crafting ${String(s.crafter.level)}`),
+    feat('Best explorer', `${the(s.explorer)}, Explorer ${String(s.explorer.level)}`),
+    { name: 'Your creatures', value: creatureValue(s, DM_FIELD_LIMIT), inline: false },
+  ];
 }

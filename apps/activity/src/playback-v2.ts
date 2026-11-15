@@ -27,59 +27,15 @@ export const ROUND_TAIL_MS = 3000;
 export const roundBudgetMs = (roundMs: number, introMs: number): number =>
   Math.max(2000, roundMs - ROUND_TAIL_MS - introMs);
 
-/** The replay paces Misa can try on staging (2026-11-14): one entry each, the only place their numbers live. */
-export type ReplayPaceId = 'finale' | 'half' | 'brisk';
-
-export interface ReplayPace {
-  label: string;
-  /** The "Round N" intro, at 1x. */
-  introMs: number;
-  /** What a round's beats may take together at 1x (they are squeezed to fit). */
-  budgetMs: number;
-  /** Each round but the last is held to this length at 1x; null: no holding, each beat plays at its own time. */
-  roundMs: number | null;
-}
-
-/** The replay's original budget before the live pace (2026-11-12): a round of many creatures is squeezed to this. */
-const BRISK_ROUND_BUDGET_MS = 18_000;
-
-export const REPLAY_PACES: Readonly<Record<ReplayPaceId, ReplayPace>> = {
-  // Today's: the live finale's round (30 s).
-  finale: {
-    label: 'Finale pace (30 s a round)',
-    introMs: INTRO_LIVE_MS,
-    budgetMs: roundBudgetMs(STAGE_ROUND_MS, INTRO_LIVE_MS),
-    roundMs: STAGE_ROUND_MS,
-  },
-  // Half of it (15 s).
-  half: {
-    label: 'Half (15 s a round)',
-    introMs: INTRO_LIVE_MS,
-    budgetMs: roundBudgetMs(STAGE_ROUND_MS / 2, INTRO_LIVE_MS),
-    roundMs: STAGE_ROUND_MS / 2,
-  },
-  // As before 2026-11-13: no padding.
-  brisk: {
-    label: 'Brisk (no padding)',
-    introMs: INTRO_REPLAY_MS,
-    budgetMs: BRISK_ROUND_BUDGET_MS,
-    roundMs: null,
-  },
-};
-
-export const REPLAY_PACE_IDS = Object.keys(REPLAY_PACES) as ReplayPaceId[];
-
-export const isReplayPace = (value: string): value is ReplayPaceId =>
-  REPLAY_PACE_IDS.some((id) => id === value);
-
-let chosenPace: ReplayPaceId = 'finale';
-
-/** The staging panel's device choice (`dev/look-prefs.ts` calls this at start-up and on a change); production never calls it. */
-export function setReplayPace(id: ReplayPaceId): void {
-  chosenPace = id;
-}
-
-export const replayPace = (): ReplayPace => REPLAY_PACES[chosenPace];
+/**
+ * The pace of a raid replay: the live finale's (Misa, 2026-11-15: "Replay speed is good in the finale and that should be the de-facto raid
+ * replay speed"). The "Round N" intro of a live round, and the beats squeezed into what is left of `STAGE_ROUND_MS`.
+ */
+export const REPLAY_PACE = {
+  introMs: INTRO_LIVE_MS,
+  budgetMs: roundBudgetMs(STAGE_ROUND_MS, INTRO_LIVE_MS),
+  roundMs: STAGE_ROUND_MS,
+} as const;
 
 /**
  * How long each kind of beat stays at 1x, in milliseconds, before a round's budget squeezes it. A boss beat takes the length of a boss

@@ -78,7 +78,7 @@ Decided with Misa, 2026-11-06:
 
 ## 5. The one-time notice
 
-**Your record, by DM (Misa, 2026-11-06).** Each player gets one Discord DM with their record, and it is not shown in the game. It goes to everyone once, also to those with reminder DMs off (a one-off goodbye, not a reminder). A player whose DMs are closed doesn't get it. It fits Discord's 2,000 characters: the eight feats, then creature names until the limit, then "and N more". Markdown is escaped and mentions are off. Draft:
+**Your record, by DM (Misa, 2026-11-06).** Each player gets one Discord DM with their record, and it is not shown in the game. It goes to everyone once, also to those with reminder DMs off (a one-off goodbye, not a reminder). A player whose DMs are closed doesn't get it. It is a Discord embed (Misa, 2026-11-15): a field per feat, then a last field of creature names until Discord's 1,024-character field limit, then "and N more". Markdown is escaped and mentions are off. Draft:
 
 > **You were one of the first settlers.**
 > The valley is starting over, and it will remember you. Here is what it keeps:

@@ -4,6 +4,14 @@ Roadmap calls, Misa's standing direction, naming and tone, content policy, how a
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-15: The reset: the goodbye DM is an embed, the new-valley card is look B **[Misa]**
+
+ID: `2026-11-15-the-reset-the-goodbye-dm-is` · Status: current
+
+**Decision.** The goodbye DM is one Discord embed, not a wall of text: title "You were one of the first settlers", the plan's intro as the description, the game's gold, a short-named field per feat (empty ones skipped, inline when short) and a last "Your creatures" field cut to Discord's field limit with "and N more". All embed limits are enforced and tested; no `content` text; `allowed_mentions: { parse: [] }` and escaping kept. The body has the shape of a stored post so the release's sender takes it as is. The "A new valley" card keeps only look B (the level reset's card with the quiet bonfire above the words); A and C are removed.
+
+**Reasoning.** Misa (2026-11-15): "I agree with your picks though the DM needs to be an embed since it's just a massive unorganized wall of text right now." The embed groups the same content by feat. Look B was the lead's pick, which he agreed with.
+
 ## 2026-11-15: Art glows use the game's rarity colours
 
 ID: `2026-11-15-art-glows-use-the-game-s` · Status: current

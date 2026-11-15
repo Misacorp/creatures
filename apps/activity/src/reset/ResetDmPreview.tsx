@@ -1,24 +1,19 @@
-import { DM_BOT_NAME, DM_LIMIT, type DmLayout, dmText } from './reset-dm';
-
-/** Plain text with Discord's `**bold**` drawn as bold. Text only: the pieces are never read as HTML. */
-function Marked({ text }: { text: string }) {
-  return (
-    <>
-      {text
-        .split('**')
-        .map((part, i) =>
-          i % 2 === 1 ? <strong key={`${String(i)}-${part}`}>{part}</strong> : part,
-        )}
-    </>
-  );
-}
+import {
+  DM_BOT_NAME,
+  DM_COLOUR,
+  DM_DESCRIPTION,
+  DM_TITLE,
+  SAMPLE_SETTLER,
+  dmFields,
+} from './reset-dm';
 
 /**
- * The goodbye DM as a Discord message bubble (dark theme, the bot's name), for judging its layout. Preview
- * only: the worker builds the real text (docs/design/reset.md, section 5).
+ * The goodbye DM as Discord draws an embed (dark theme, a colour bar on the left, the title, the description, inline
+ * fields in a grid, the creature field below), for judging it. Preview only: the worker builds the real message
+ * (docs/design/reset.md, section 5). Text only: the pieces are never read as HTML.
  */
-export function ResetDmPreview({ layout }: { layout: DmLayout }) {
-  const text = dmText(layout);
+export function ResetDmPreview() {
+  const fields = dmFields(SAMPLE_SETTLER);
   return (
     <div class="dm-preview">
       <div class="dm-preview-msg">
@@ -29,14 +24,20 @@ export function ResetDmPreview({ layout }: { layout: DmLayout }) {
             <span class="dm-preview-tag">APP</span>
             <span class="dm-preview-time">Today at 09:00</span>
           </p>
-          <p class="dm-preview-text">
-            <Marked text={text} />
-          </p>
+          <div class="dm-embed" style={{ borderLeftColor: DM_COLOUR }}>
+            <p class="dm-embed-title">{DM_TITLE}</p>
+            <p class="dm-embed-description">{DM_DESCRIPTION}</p>
+            <div class="dm-embed-fields">
+              {fields.map((f) => (
+                <div key={f.name} class={f.inline ? 'dm-embed-field inline' : 'dm-embed-field'}>
+                  <p class="dm-embed-field-name">{f.name}</p>
+                  <p class="dm-embed-field-value">{f.value}</p>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
-      <p class="dm-preview-count">
-        {String(text.length)} / {String(DM_LIMIT)} characters
-      </p>
     </div>
   );
 }
