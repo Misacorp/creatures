@@ -250,8 +250,8 @@ button.cv-target:is(:hover, :active) {
   position: absolute;
   top: 0;
   right: 0;
-  width: 0.5rem;
-  height: 0.5rem;
+  width: 0.75rem;
+  height: 0.75rem;
   background: var(--gold);
   filter: drop-shadow(0 1px 0 var(--ink));
   clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
@@ -398,4 +398,19 @@ button.cv-slot:hover:not(:disabled) {
   50% {
     translate: 0 -2px;
   }
+}
+
+/*
+  The expedition map's destinations carry their name already (the logo's letters, or a plate where a place has no logo) and a gem pin that
+  is their persistent pip; the cue variants only decide when the plate of a place without a logo shows.
+*/
+.pc-root:is([data-cue='B'], [data-cue='C']) .sg-map .wm-marker:not(.selected) .wm-plate {
+  visibility: hidden;
+}
+
+.pc-root:is([data-cue='B'], [data-cue='C'])
+  .sg-map
+  .wm-marker:is(:hover, :active, :focus-visible)
+  .wm-plate {
+  visibility: visible;
 }

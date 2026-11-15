@@ -1936,7 +1936,9 @@ try {
         mapBefore.width !== mapAfter.width ||
         mapBefore.height !== mapAfter.height
       )
-        throw new Error(`the map moved or resized when a place was picked: ${JSON.stringify([mapBefore, mapAfter])}`);
+        throw new Error(
+          `the map moved or resized when a place was picked: ${JSON.stringify([mapBefore, mapAfter])}`,
+        );
       if (width >= 960) {
         const pinAt = await place('ember-caves').locator('.wm-pin').boundingBox();
         const sideAt = await page.locator('.pc-right').boundingBox();
@@ -2239,9 +2241,17 @@ try {
         // The drawer lies over the scene: it keeps its size and place, and a drawer's first step has no Back, only the X.
         await page.waitForTimeout(400);
         const now = await forgeCanvas();
-        if (now === null || restCanvas === null || now.width !== restCanvas.width || now.height !== restCanvas.height)
-          throw new Error(`the scene resized when the drawer opened: ${JSON.stringify([restCanvas, now])}`);
-        if (now.x !== restCanvas.x) throw new Error('the scene moved though the clicked anvil was clear of the drawer');
+        if (
+          now === null ||
+          restCanvas === null ||
+          now.width !== restCanvas.width ||
+          now.height !== restCanvas.height
+        )
+          throw new Error(
+            `the scene resized when the drawer opened: ${JSON.stringify([restCanvas, now])}`,
+          );
+        if (now.x !== restCanvas.x)
+          throw new Error('the scene moved though the clicked anvil was clear of the drawer');
         if ((await drawer.getByRole('button', { name: /^Back/ }).count()) > 0)
           throw new Error('the first step of a drawer has a Back');
         if ((await drawer.getByRole('button', { name: 'Close' }).count()) === 0)
@@ -2379,8 +2389,15 @@ try {
         const now = await forgeCanvas();
         const chest = await sceneTarget('The bag').boundingBox();
         const side = await page.locator('.pc-left').boundingBox();
-        if (now === null || restCanvas === null || now.width !== restCanvas.width || now.height !== restCanvas.height)
-          throw new Error(`the scene resized when the bag opened: ${JSON.stringify([restCanvas, now])}`);
+        if (
+          now === null ||
+          restCanvas === null ||
+          now.width !== restCanvas.width ||
+          now.height !== restCanvas.height
+        )
+          throw new Error(
+            `the scene resized when the bag opened: ${JSON.stringify([restCanvas, now])}`,
+          );
         if (chest === null || side === null || chest.x < side.x + side.width)
           throw new Error('the bag chest is under the left drawer');
       }

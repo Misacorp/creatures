@@ -247,7 +247,13 @@ export function PlaceCanvas({
   const wide = useWide();
   const stage = useRef<HTMLDivElement | null>(null);
   const wrapper = useRef<HTMLDivElement | null>(null);
-  const pan = useScenePan(wide && panEnabled, wide ? left : null, wide ? right : null, stage, wrapper);
+  const pan = useScenePan(
+    wide && panEnabled,
+    wide ? left : null,
+    wide ? right : null,
+    stage,
+    wrapper,
+  );
   const page = wide
     ? null
     : right !== null

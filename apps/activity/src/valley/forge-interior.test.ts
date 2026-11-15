@@ -93,7 +93,7 @@ describe('the Forge interior layout', () => {
     }
     expect(interiorScale(390, 520, 'A')).toBe(3);
     expect(interiorScale(1100, 700, 'A')).toBe(4);
-    expect(interiorScale(1440, 760, 'B')).toBe(5);
+    expect(interiorScale(1440, 830, 'B')).toBe(5);
   });
 
   it('takes the window alone: the number of anvils cannot change the size of a scene in use', () => {
@@ -113,7 +113,14 @@ describe('the Forge interior layout', () => {
           const roomEnd = lay.oy + ROOM_H;
           for (const c of lay.cells) expect(c.y + CELL_H).toBeLessThanOrEqual(roomEnd);
           // Every clickable box is inside the room and none overlaps another.
-          const boxes: Box[] = [lay.furnace, lay.door, lay.plans, lay.chest, lay.crate, ...lay.cells];
+          const boxes: Box[] = [
+            lay.furnace,
+            lay.door,
+            lay.plans,
+            lay.chest,
+            lay.crate,
+            ...lay.cells,
+          ];
           for (const b of boxes) {
             expect(b.x).toBeGreaterThanOrEqual(lay.ox);
             expect(b.x + b.w).toBeLessThanOrEqual(lay.ox + ROOM.w);

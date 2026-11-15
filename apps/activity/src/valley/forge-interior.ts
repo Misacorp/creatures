@@ -32,7 +32,7 @@ export const ROOM = { w: 128, h: 176 } as const;
 export const ROOM_H = ROOM.h;
 export const ESSENTIAL_H = 170;
 /** Variant B: the wall's top rows cropped off, so the working height that must show is this much shorter. */
-export const CROP_B = 22;
+export const CROP_B = 7;
 
 /** The most background smiths (two to a bench, two benches). */
 export const BACK_SPOTS = 4;
@@ -107,7 +107,8 @@ function wallDressing(from: number, to: number): { piece: InteriorPiece; x: numb
     else out.push({ piece: kind, x: centre - 14, y: 9 }, { piece: kind, x: centre + 2, y: 9 });
   };
   for (let k = 0; -32 - 64 * k + 21 > from; k += 1) put(kinds[k % 3] ?? 'tool-rack', -32 - 64 * k);
-  for (let k = 0; 160 + 64 * k - 21 < to; k += 1) put(kinds[(k + 1) % 3] ?? 'tool-rack', 160 + 64 * k);
+  for (let k = 0; 160 + 64 * k - 21 < to; k += 1)
+    put(kinds[(k + 1) % 3] ?? 'tool-rack', 160 + 64 * k);
   return out;
 }
 
@@ -172,7 +173,14 @@ export function interiorLayout(
     const cx = ox + (COL_X[i % 2] ?? 32);
     const y = oy + (ROW_Y[Math.floor(i / 2)] ?? 72);
     const ax = cx - 8;
-    return { x: cx - CELL_W / 2, y, w: CELL_W, h: CELL_H, anvil: { x: ax, y: y + 12 }, smith: { x: ax, y } };
+    return {
+      x: cx - CELL_W / 2,
+      y,
+      w: CELL_W,
+      h: CELL_H,
+      anvil: { x: ax, y: y + 12 },
+      smith: { x: ax, y },
+    };
   });
   const door = at(ROOM_AT.door);
   return {
