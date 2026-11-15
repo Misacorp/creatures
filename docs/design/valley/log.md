@@ -599,3 +599,11 @@ Misa added: nameplates sit under the creature on an ink background, level first 
 **For Misa to pick** (screenshots in the report): how the reveal plays (A in the scene, B full screen, C and D with flight) and the sealed crate's look (main crate, chest, rune-bound). The chest (the Art session's pick) has no rattle or open frames of its own: it slides while rattling and the main open crate comes out of it, so choosing it needs those frames drawn.
 
 **Not done / to look at.** Home has no notice row for the crate (a Home row for the Forge does not exist yet either: only the map's bubble and the Places line say it waits). The flight goes to the creature's anvil spot or the bag chest, never to a creature in the tray.
+
+## 2026-11-15: Misa's Forge picks applied, and the item card in the crate reveal (implementer, worktree of `ccr-93a1de17-yutb1a`)
+
+**Misa's answers** (decision `2026-11-15-misa-s-forge-picks-plates-whole`, topic `ui`): plates always (A), the whole room (A), the item card beside (B), the full-screen reveal (B), the crate look (A) with "can we show the item card when the user hovers or clicks on the revealed item".
+
+**Done** (behind `VALLEY_SYSTEMS`). The switches for the five are gone: `forge-fill`, `click-cue`, `crate-reveal` and `valley/drawer-step.ts` (`?step=`), with the dead code (the fill's crop and larger scale, the cue's hover outline and pip, the in-scene reveal and its flight, the e2e's `--step` and `crate-reveal` options). `art-variants.ts` is deleted: Misa also picked the crate look A (the iron crate), so `crate-look` and the crate's slide-rattle for other looks are gone; the chest and rune-bound variants stay in the art library, unwired. The item card now opens beside the bag on a wide window (`forge-steps.tsx`: `beside = wide`). `CrateReveal`: the piece is a button that shows the bag's `ItemCard` on mouse hover or on a tap (second tap, a tap on the card, or Escape closes it; Enter on the focused piece toggles it); going on is the gold "Next", a tap on the stage outside the piece, or Enter / Space on the dialog; a shown card pauses the auto advance; the summary's thumbs show their cards the same way. Tests: `CrateReveal.test.tsx`, `forge-interior.test.ts`, `workshop-forge.test.tsx`, the valley e2e.
+
+**Not done / to look at.** Nothing waits on Misa's pick here any more.

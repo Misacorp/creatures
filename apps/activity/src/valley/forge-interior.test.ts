@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { CELL_H } from './forge-canvas';
 import {
   BACK_SPOTS,
-  CROP_B,
   ESSENTIAL_H,
   ROOM,
   CRATE_AT,
@@ -78,74 +77,68 @@ describe('the Forge interior: art by name', () => {
 });
 
 describe('the Forge interior layout', () => {
-  it('keeps the scale whole, the working height and the room in the window; B is one step larger at most', () => {
+  it('keeps the scale whole, the working height and the room in the window', () => {
     for (const [w, h] of SIZES) {
-      for (const fill of ['A', 'B'] as const) {
-        const s = interiorScale(w, h, fill);
-        expect(Number.isInteger(s)).toBe(true);
-        expect(s).toBeGreaterThanOrEqual(1);
-        expect(s).toBeLessThanOrEqual(fill === 'A' ? 4 : 5);
-        if (s > 1) {
-          expect(ROOM.w * s).toBeLessThanOrEqual(w);
-          expect((ESSENTIAL_H - (fill === 'B' ? CROP_B : 0)) * s).toBeLessThanOrEqual(h);
-        }
+      const s = interiorScale(w, h);
+      expect(Number.isInteger(s)).toBe(true);
+      expect(s).toBeGreaterThanOrEqual(1);
+      expect(s).toBeLessThanOrEqual(4);
+      if (s > 1) {
+        expect(ROOM.w * s).toBeLessThanOrEqual(w);
+        expect(ESSENTIAL_H * s).toBeLessThanOrEqual(h);
       }
-      expect(interiorScale(w, h, 'B')).toBeGreaterThanOrEqual(interiorScale(w, h, 'A'));
     }
-    expect(interiorScale(390, 520, 'A')).toBe(3);
-    expect(interiorScale(1100, 700, 'A')).toBe(4);
-    expect(interiorScale(1440, 830, 'B')).toBe(5);
+    expect(interiorScale(390, 520)).toBe(3);
+    expect(interiorScale(1100, 700)).toBe(4);
   });
 
   it('takes the window alone: the number of anvils cannot change the size of a scene in use', () => {
-    // `interiorScale(width, height, fill)` has no anvil count, so buying an anvil cannot rescale the room.
-    expect(interiorScale.length).toBeLessThanOrEqual(3);
+    // `interiorScale(width, height)` has no anvil count, so buying an anvil cannot rescale the room.
+    expect(interiorScale.length).toBeLessThanOrEqual(2);
   });
 
   it('stands every cell, prop and back spot inside the room, nothing overlapping', () => {
     for (const [w, h] of SIZES) {
-      for (const fill of ['A', 'B'] as const) {
-        const g = sceneGeometry(w, h, interiorScale(w, h, fill));
-        for (const slots of [1, 2, 3, 4]) {
-          const lay = interiorLayout(g, slots, fill);
-          expect(lay.ox).toBe(g.cx - 64);
-          expect(lay.oy).toBe(fill === 'A' ? 0 : -CROP_B);
-          expect(lay.cells).toHaveLength(slots);
-          const roomEnd = lay.oy + ROOM_H;
-          for (const c of lay.cells) expect(c.y + CELL_H).toBeLessThanOrEqual(roomEnd);
-          // Every clickable box is inside the room and none overlaps another.
-          const boxes: Box[] = [
-            lay.furnace,
-            lay.door,
-            lay.plans,
-            lay.chest,
-            lay.crate,
-            lay.sealed,
-            ...lay.cells,
-          ];
-          for (const b of boxes) {
-            expect(b.x).toBeGreaterThanOrEqual(lay.ox);
-            expect(b.x + b.w).toBeLessThanOrEqual(lay.ox + ROOM.w);
-            expect(b.y + b.h).toBeLessThanOrEqual(roomEnd);
+      const g = sceneGeometry(w, h, interiorScale(w, h));
+      for (const slots of [1, 2, 3, 4]) {
+        const lay = interiorLayout(g, slots);
+        expect(lay.ox).toBe(g.cx - 64);
+        expect(lay.oy).toBe(0);
+        expect(lay.cells).toHaveLength(slots);
+        const roomEnd = lay.oy + ROOM_H;
+        for (const c of lay.cells) expect(c.y + CELL_H).toBeLessThanOrEqual(roomEnd);
+        // Every clickable box is inside the room and none overlaps another.
+        const boxes: Box[] = [
+          lay.furnace,
+          lay.door,
+          lay.plans,
+          lay.chest,
+          lay.crate,
+          lay.sealed,
+          ...lay.cells,
+        ];
+        for (const b of boxes) {
+          expect(b.x).toBeGreaterThanOrEqual(lay.ox);
+          expect(b.x + b.w).toBeLessThanOrEqual(lay.ox + ROOM.w);
+          expect(b.y + b.h).toBeLessThanOrEqual(roomEnd);
+        }
+        for (let i = 0; i < boxes.length; i += 1) {
+          for (let j = i + 1; j < boxes.length; j += 1) {
+            const name = `${String(i)}-${String(j)}`;
+            expect(`${name} ${String(apart(boxes[i] as Box, boxes[j] as Box))}`).toBe(
+              `${name} true`,
+            );
           }
-          for (let i = 0; i < boxes.length; i += 1) {
-            for (let j = i + 1; j < boxes.length; j += 1) {
-              const name = `${String(i)}-${String(j)}`;
-              expect(`${name} ${String(apart(boxes[i] as Box, boxes[j] as Box))}`).toBe(
-                `${name} true`,
-              );
-            }
-          }
-          expect(lay.door.h).toBe(PIECE_SIZE.door.h + PIECE_SIZE['door-mat'].h);
-          // The background smiths stand behind the benches, four spots.
-          expect(lay.backSpots).toHaveLength(BACK_SPOTS);
-          for (const [i, spot] of lay.backSpots.entries()) {
-            const bench = lay.benches[i < 2 ? 0 : 1];
-            expect(spot.x).toBeGreaterThanOrEqual(bench.x);
-            expect(spot.x).toBeLessThanOrEqual(bench.x + 32);
-            expect(spot.y).toBeGreaterThan(bench.y);
-            expect(spot.y).toBeLessThan(bench.y + 20);
-          }
+        }
+        expect(lay.door.h).toBe(PIECE_SIZE.door.h + PIECE_SIZE['door-mat'].h);
+        // The background smiths stand behind the benches, four spots.
+        expect(lay.backSpots).toHaveLength(BACK_SPOTS);
+        for (const [i, spot] of lay.backSpots.entries()) {
+          const bench = lay.benches[i < 2 ? 0 : 1];
+          expect(spot.x).toBeGreaterThanOrEqual(bench.x);
+          expect(spot.x).toBeLessThanOrEqual(bench.x + 32);
+          expect(spot.y).toBeGreaterThan(bench.y);
+          expect(spot.y).toBeLessThan(bench.y + 20);
         }
       }
     }
@@ -184,8 +177,8 @@ describe('the Forge interior layout', () => {
 
   it('draws the wall and the floor to every edge, the glow over the floor, the rug under it, the door and the crate', () => {
     for (const [w, h] of SIZES) {
-      const g = sceneGeometry(w, h, interiorScale(w, h, 'A'));
-      const placed = interiorSceneDraw(2, 3, true, 'A')(g);
+      const g = sceneGeometry(w, h, interiorScale(w, h));
+      const placed = interiorSceneDraw(2, 3, true)(g);
       const walls = placed.filter((p) => p.sprite === interiorSprite('back-wall', true));
       expect(walls.length).toBeGreaterThanOrEqual(Math.ceil(g.W / 128));
       expect(Math.min(...walls.map((p) => p.x))).toBeLessThanOrEqual(0);
@@ -206,9 +199,9 @@ describe('the Forge interior layout', () => {
   });
 
   it('fills a wide window with dressed edges and keeps the clickable cluster in the middle', () => {
-    const g = sceneGeometry(1440, 720, interiorScale(1440, 720, 'A'));
-    const placed = interiorSceneDraw(2, 3, true, 'A')(g);
-    const lay = interiorLayout(g, 3, 'A');
+    const g = sceneGeometry(1440, 720, interiorScale(1440, 720));
+    const placed = interiorSceneDraw(2, 3, true)(g);
+    const lay = interiorLayout(g, 3);
     // Pieces left of the room and right of it: narrow windows, barrels and sacks on both sides; the rack on the left, a lantern on the right.
     const xsOf = (piece: Parameters<typeof interiorSprite>[0]): number[] =>
       placed.filter((p) => p.sprite === interiorSprite(piece, true)).map((p) => p.x);
@@ -221,14 +214,14 @@ describe('the Forge interior layout', () => {
     // The cluster is centred: the room's middle is the scene's middle.
     expect(lay.ox + ROOM.w / 2).toBe(g.cx);
     // A phone shows the room and no more: an edge of a pixel or two.
-    const phone = sceneGeometry(390, 640, interiorScale(390, 640, 'A'));
-    expect(interiorLayout(phone, 2, 'A').ox).toBeLessThanOrEqual(2);
+    const phone = sceneGeometry(390, 640, interiorScale(390, 640));
+    expect(interiorLayout(phone, 2).ox).toBeLessThanOrEqual(2);
   });
 
   it('draws the day palette by day', () => {
     const g = sceneGeometry(390, 520, 3);
-    const night = interiorSceneDraw(1, 2, true, 'A')(g);
-    const day = interiorSceneDraw(1, 2, false, 'A')(g);
+    const night = interiorSceneDraw(1, 2, true)(g);
+    const day = interiorSceneDraw(1, 2, false)(g);
     expect(day).toHaveLength(night.length);
     expect(day[0]?.sprite).not.toBe(night[0]?.sprite);
   });

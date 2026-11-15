@@ -4,6 +4,14 @@ Navigation and the frame, Home and the notice board, type scale, shared componen
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-15: Misa's Forge picks: plates, whole room, item card beside, full-screen reveal [Misa]
+
+ID: `2026-11-15-misa-s-forge-picks-plates-whole` · Status: current
+
+**Decision.** Misa answered the Forge review page (2026-11-15) in five questions: (1) clickable cue **A**, a name plate always shown under each clickable thing; (2) room fill **A**, the whole 128 x 176 room at the largest whole scale, edges tiled and dressed; (3) where an item's card opens **B**, "beside": on a wide window the card opens in the OTHER drawer and the bag or list stays on the left, phones unchanged (a page); (4) crate reveal **B**, the full-screen moment, and, in his words, "can we show the item card when the user hovers or clicks on the revealed item". So the variant switches for 1 to 5 are gone (`forge-fill`, `click-cue`, `crate-reveal`, `crate-look`, `?step=`; `valley/drawer-step.ts` is deleted) and only the chosen behaviour remains; (5) crate look **A**, the iron-banded crate: the `crate-look` switch is gone too (`valley/art-variants.ts` is deleted) and the art's B (treasure chest) and C (rune-bound) variants stay in the art library, unwired. In the reveal the piece is a button: hover (a mouse) or a tap shows its full `ItemCard` inside the reveal (beside the piece on a wide window, over the stage on a phone), a second tap, a tap on the card or Escape closes it. Going on is a "Next" button or a tap on the stage outside the piece (and Enter / Space on the dialog). The summary's pieces show their cards the same way.
+
+**Reasoning.** Misa decided; the dead variant code, CSS and e2e options are removed so there is one behaviour to maintain and test. The reveal's old "a tap anywhere goes on" had to be split from "a tap on the piece shows its card", which is why going on now has its own button and the stage outside the piece. The card is the bag's own `ItemCard` so a piece looks the same everywhere. On a phone the card opens over the reveal's stage because the reveal is already a full-screen moment of its own (no drawer over a drawer). A card that is shown pauses the reveal's own timer so it is not taken away while it is read. Amends the three earlier entries of the same date on the fill, the cue and the reveal's variants.
+
 ## 2026-11-15: The Forge room fills the window: the 128x176 room centred, edges tiled and dressed (two fill variants, A is the pick) **[Misa]**
 
 ID: `2026-11-15-the-forge-room-fills-the-window` · Status: current
