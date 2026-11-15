@@ -66,3 +66,20 @@ export const unseenSwaps = (
   settled: readonly SettledSwapV2[],
   seen: ReadonlySet<string>,
 ): SettledSwapV2[] => settled.filter((r) => !seen.has(r.id));
+
+/**
+ * Home's notice for the outcomes of the requests you asked that you have not closed yet: the one outcome in words (the
+ * Raid tab's note without its full stop), or how many there are. Null for none. It reads the same seen ids as the Raid tab's
+ * notes (`SwapOutcomes`), so an outcome closed there leaves Home too.
+ */
+export function swapOutcomeNoticeText(
+  settled: readonly SettledSwapV2[],
+  grid: GridV2,
+  seen: ReadonlySet<string> = seenSwapIds(),
+): string | null {
+  const unseen = unseenSwaps(settled, seen);
+  const [one] = unseen;
+  if (one === undefined) return null;
+  if (unseen.length > 1) return `${String(unseen.length)} swap answers`;
+  return settledText(one, grid).replace(/\.$/, '');
+}
