@@ -3300,6 +3300,44 @@ try {
         await waitFor(rightPanel.getByRole('option').first());
         await shot('commons-bonfire-seat');
         await page.keyboard.press('Escape');
+        await rightPanel.waitFor({ state: 'detached', timeout: 10000 });
+        // The creature tray stays under the scene: on a wide window a tray creature dragged onto the helper spot is posted as the
+        // helper, and a drag opens no drawer (a phone's tray creature needs a hold, which the mouse here does not give).
+        await waitFor(page.locator('section[aria-label="Creatures to post"]'));
+        // The scene pans back as the drawer goes: measure once it has settled.
+        await page.waitForTimeout(700);
+        if (width >= 960) {
+          const mover = page
+            .locator('section[aria-label="Creatures to post"] button[data-creature]')
+            .first();
+          const moverId = await mover.getAttribute('data-creature');
+          const start = await mover.boundingBox();
+          const spot = await page
+            .locator('button.cv-target[aria-label*="at the builders\' table"]')
+            .last()
+            .boundingBox();
+          if (start === null || spot === null) throw new Error('no boxes to drag between');
+          const before = commonsCalls.filter(([k]) => k === 'communal').length;
+          await page.mouse.move(start.x + start.width / 2, start.y + start.height / 2);
+          await page.mouse.down();
+          await page.mouse.move(start.x + start.width / 2 + 12, start.y + start.height / 2 + 12, {
+            steps: 4,
+          });
+          await page.mouse.move(spot.x + spot.width / 2, spot.y + spot.height / 2, { steps: 12 });
+          await page.waitForTimeout(150);
+          await page.mouse.move(spot.x + spot.width / 2 + 1, spot.y + spot.height / 2 + 1, {
+            steps: 2,
+          });
+          await shot('bonfire-tray-drag');
+          await page.mouse.up();
+          await page.waitForTimeout(300);
+          const posted = commonsCalls.filter(([k]) => k === 'communal');
+          if (posted.length !== before + 1 || posted.at(-1)?.[1].creatureId !== moverId)
+            throw new Error('the dragged tray creature was not posted as the helper');
+          if (posted.at(-1)?.[1].place !== 'bonfire') throw new Error('posted to another place');
+          if ((await page.locator('.pc-side, .pc-page').count()) !== 0)
+            throw new Error('a drag opened a drawer');
+        }
         // The map draws the grand bonfire too.
         await hudBack().click();
         await waitFor(page.locator(VALLEY), 'attached');

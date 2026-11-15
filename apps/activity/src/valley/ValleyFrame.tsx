@@ -322,6 +322,10 @@ export function ValleyFrame({
             <BonfireCanvas
               creatures={creatures}
               visit={visit}
+              trayInput={tray}
+              onOpenPaddock={() => {
+                onOpen('paddock');
+              }}
               level={bonfireLevel}
               {...(commons === undefined ? {} : { commons, acorns, busy })}
               {...(commonsStart === undefined ? {} : { start: commonsStart })}

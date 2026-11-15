@@ -13,10 +13,11 @@ import {
   type Page,
 } from '../test-dom';
 import { homeInput } from '../workbench/home-sample';
-import { BonfireCanvas } from './BonfireCanvas';
+import { BonfireCanvas, HELPER_DROP } from './BonfireCanvas';
 import type { CommonsActions } from './CommonsBoard';
 import { buildingPlace, openPlace, sampleCommons, withCommons } from './commons-sample';
 import { sampleValley } from './signpost-sample';
+import { trayStates } from './tray-state';
 
 let page: Page | null = null;
 beforeEach(() => {
@@ -62,6 +63,8 @@ function draw(visit: typeof resting, withActions: boolean, calls: Calls = { post
     <BonfireCanvas
       creatures={free}
       visit={visit}
+      trayInput={{ trips: [], jobs: null, now: 0, ...trayStates(visit) }}
+      onOpenPaddock={() => undefined}
       level={1}
       acorns={100}
       {...(withActions ? { commons } : {})}
@@ -165,6 +168,15 @@ describe('the Bonfire canvas: the scene', () => {
     expect(labels(p).some((n) => /helping build the hearth at the builders' table/.test(n))).toBe(
       true,
     );
+  });
+});
+
+describe('the Bonfire canvas: the creature tray', () => {
+  it('keeps the creature tray under the scene, and the helper spot is where a dragged creature lands', () => {
+    const p = draw(withCommons(resting), true);
+    expect(byClass(p.root, 'vy-tray').length).toBeGreaterThan(0);
+    const seat = target(p, /^The helper spot/);
+    expect(seat.getAttribute('data-seat')).toBe(HELPER_DROP);
   });
 });
 

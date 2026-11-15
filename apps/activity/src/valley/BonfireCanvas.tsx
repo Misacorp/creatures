@@ -17,14 +17,22 @@
  * helper's seat), the left for the collections that belong to no one spot (the project board, everyone resting). A phone shows the open
  * panel as its own page. The scene keeps one size and place for the whole visit; drawers lie over its edges.
  */
-import { useMemo, useState } from 'preact/hooks';
+import { useMemo, useRef, useState } from 'preact/hooks';
 import type { Creature, ValleyVisit } from '../api';
 import { creatureName } from '../game';
+import { TOUCH_HOLD_MS } from '../dnd-core';
+import { busyReason } from '../gear-view';
+import { dropOutcome } from '../slot-outcome';
+import { DragGhost } from '../ui/DragGhost';
+import { useDragDrop } from '../use-drag-drop';
 import { Nameplate } from '../ui/Nameplate';
 import { CommonsBoard, type CommonsActions, type CommonsStart } from './CommonsBoard';
 import { HelperPanel, RestingList, RestingPanel, type HelperPost } from './BonfirePanels';
 import { CanvasTarget, PanelBody, PlaceCanvas, type CanvasPanel, type Opener } from './PlaceCanvas';
 import { PLATES_Z } from './PlaceScene';
+import { seatAt } from './seat-parts';
+import { Tray } from './Tray';
+import { trayFor, type TrayInput } from './tray-state';
 import { SceneFrame, sceneGeometry, type SceneGeometry } from './SceneFrame';
 import { At, CreatureSprite, Pic } from './parts';
 import {
@@ -55,9 +63,14 @@ type Right =
 /** The left drawer: a collection. */
 type Left = { kind: 'board' | 'resting'; from: Opener | null };
 
+/** The helper spot's drop id: a creature dropped on it (from the tray) is posted as the hearth's helper. */
+export const HELPER_DROP = 'communal:bonfire';
+
 export function BonfireCanvas({
   creatures,
   visit,
+  trayInput,
+  onOpenPaddock,
   level,
   commons,
   acorns = 0,
@@ -66,6 +79,10 @@ export function BonfireCanvas({
 }: {
   creatures: readonly Creature[];
   visit: ValleyVisit;
+  /** The creature tray under the scene (as at the Forge): what each creature is doing. */
+  trayInput: TrayInput;
+  /** A tap on a tray creature (as on the other places). */
+  onOpenPaddock: () => void;
   /** The bonfire's place level (1 until the commons grow it). */
   level: number;
   /** The hearth's project board (the commons): its gifts and its helper seat; absent leaves the fire with no project. */
@@ -124,6 +141,28 @@ export function BonfireCanvas({
   const draw = useMemo(
     () => bonfireSceneDraw(art, steps, corner ? { material, size } : null),
     [art, steps, corner, material, size],
+  );
+
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  // A creature of the tray dragged onto the helper spot is posted as the hearth's helper; a drag never opens a drawer.
+  const drag = useDragDrop<string>({
+    disabled: busy,
+    stripRef: rootRef,
+    touchHoldMs: TOUCH_HOLD_MS,
+    locate: (p) => seatAt(p.x, p.y),
+    onDrop: (creatureId, dropId) => {
+      if (dropId === null) return dropOutcome('none', null, null, 'Cancelled.');
+      if (dropId === HELPER_DROP && commons !== undefined && creatureId !== helperId) {
+        void commons.post('bonfire', creatureId);
+        return dropOutcome('valid', null, null, '');
+      }
+      return dropOutcome('none', null, null, '');
+    },
+  });
+  const carried = creatures.find((c) => c.id === drag.drag?.creatureId);
+  const ordered = trayFor(
+    creatures.filter((c) => busyReason(c) === null),
+    trayInput,
   );
 
   const closeTop = (): void => {
@@ -268,6 +307,7 @@ export function BonfireCanvas({
             fire={corner ? null : { x: box.x + fire.x, y: box.y + fire.y, w: fire.w, h: fire.h }}
             more={more}
             moreAt={moreAt}
+            dragOver={drag.drag?.over === HELPER_DROP}
             open={{
               board: left?.kind === 'board',
               resting: left?.kind === 'resting',
@@ -297,13 +337,40 @@ export function BonfireCanvas({
   );
 
   return (
-    <div class="bc-root">
-      <PlaceCanvas label="Bonfire" scene={scene} left={leftPanel} right={rightPanel} />
+    <div
+      class="bc-root"
+      ref={rootRef}
+      data-carrying={drag.drag === null ? undefined : 'yes'}
+      data-over={drag.drag?.over ?? undefined}
+    >
+      <PlaceCanvas
+        label="Bonfire"
+        scene={scene}
+        left={leftPanel}
+        right={rightPanel}
+        below={
+          <Tray
+            creatures={ordered}
+            input={trayInput}
+            label="Creatures to post"
+            onPick={onOpenPaddock}
+            drag={drag}
+          />
+        }
+      />
       {calm !== '' && (
         <p class="visually-hidden" role="status">
           {calm}
         </p>
       )}
+      <DragGhost
+        ghostRef={drag.ghostRef}
+        creature={
+          carried === undefined
+            ? undefined
+            : { species: carried.species, name: creatureName(carried) }
+        }
+      />
     </div>
   );
 }
@@ -318,6 +385,7 @@ function BonfireInside({
   more,
   moreAt,
   open,
+  dragOver,
   hearthOpen,
   peek,
   busy,
@@ -337,6 +405,8 @@ function BonfireInside({
   more: number;
   moreAt: { x: number; y: number };
   open: { board: boolean; resting: boolean; restingId: string | null; helper: boolean };
+  /** A tray creature is carried over the helper spot. */
+  dragOver: boolean;
   hearthOpen: boolean;
   peek: string | null;
   busy: boolean;
@@ -468,6 +538,8 @@ function BonfireInside({
           h={CREATURE_PX}
           z={PLATES_Z + depthOf(seat.x, seat.y)}
           slot={helper === undefined}
+          seat={HELPER_DROP}
+          over={dragOver}
           label={
             helper === undefined
               ? "The helper spot at the builders' table: nobody helps build. Choose a creature"
