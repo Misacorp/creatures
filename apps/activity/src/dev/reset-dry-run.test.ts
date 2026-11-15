@@ -46,7 +46,7 @@ describe('the reset dry run view', () => {
     if (view === null) throw new Error('not parsed');
     expect(summaryRows(view).map((r) => [r.label, r.value])).toContainEqual([
       'Longest DM',
-      '410 of 2000',
+      '410 / 2000',
     ]);
     expect(featRows(view)).toEqual([
       { label: 'Deepest dungeon depth', value: 'Ann: Cleared depth 18' },

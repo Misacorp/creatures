@@ -110,7 +110,7 @@ export function summaryRows(view: DryRunView): DataRow[] {
     { label: 'Creatures recorded', value: String(view.creatures) },
     { label: 'Record size', value: `${String(view.recordChars)} chars` },
     { label: 'DMs to send', value: String(view.dms.count) },
-    { label: 'Longest DM', value: `${String(view.dms.longest)} of ${String(view.dms.limit)}` },
+    { label: 'Longest DM', value: `${String(view.dms.longest)} / ${String(view.dms.limit)}` },
     { label: 'DMs over the limit', value: String(view.dms.over) },
     { label: 'Rows the wipe deletes', value: String(view.rowsToDelete) },
   ];
