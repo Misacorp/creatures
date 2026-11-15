@@ -32,6 +32,7 @@ export const HOME_STATES = [
   'crowded',
   'away',
   'swap request',
+  'swap answer',
 ] as const;
 export type HomeState = (typeof HOME_STATES)[number];
 
@@ -150,6 +151,20 @@ export function homeInput(state: string, raid: boolean): HomeInput {
       : {
           ...busy,
           raid: { ...busy.raid, rules: 2, swapText: 'Mira asks to swap Cindle for Pyrelynx' },
+        };
+  }
+  if (state === 'swap answer') {
+    // A combat v2 week: a request the player asked was answered (the note waits on the Raid tab until closed).
+    const busy = homeInput('busy', raid);
+    return busy.raid === null
+      ? busy
+      : {
+          ...busy,
+          raid: {
+            ...busy.raid,
+            rules: 2,
+            swapOutcomeText: 'Mira accepted: Cindle and Pyrelynx swapped places',
+          },
         };
   }
   if (state === 'nothing waiting') {

@@ -1,4 +1,5 @@
-import { GEAR_SLOTS, RULES } from '@creatures/game';
+import { GEAR_SLOTS } from '@creatures/game';
+import { fallbackSlotOpens } from './live-flags';
 import { FestivalTag, ItemThumb, RarityTag, SlotIcon } from './GearArt';
 import type { GearSlot } from './gear-types';
 import {
@@ -27,7 +28,7 @@ import { Tag } from './ui/Tag';
 export function GearList({
   level,
   worn,
-  slotOpens = RULES.gear.slotUnlockLevel,
+  slotOpens = fallbackSlotOpens(),
   emptySlots = true,
   openSlot = null,
   onPick,

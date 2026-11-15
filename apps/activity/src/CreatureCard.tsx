@@ -1,4 +1,5 @@
-import { GEAR_SLOTS, RULES } from '@creatures/game';
+import { GEAR_SLOTS } from '@creatures/game';
+import { fallbackSlotOpens } from './live-flags';
 import type { Creature, GameState } from './api';
 import {
   canLounge,
@@ -67,7 +68,7 @@ export function CreatureCard({
   const needs = creatureNeeds(creature, state);
   const first = needs[0];
   const kit = talentKit(creature);
-  const opens = gear?.slotOpens ?? RULES.gear.slotUnlockLevel;
+  const opens = gear?.slotOpens ?? fallbackSlotOpens();
 
   function act(need: Need): void {
     switch (need.kind) {
