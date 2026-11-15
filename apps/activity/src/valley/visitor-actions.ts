@@ -18,7 +18,7 @@ import {
 } from '../api';
 import { fetchGear } from '../gear-api';
 import type { GearItem, GearState } from '../gear-types';
-import type { BlueprintDone, RerollDone, VisitorActions } from './VisitorPage';
+import type { BlueprintDone, RerollDone, VisitorActions } from './VisitorPanels';
 import { isHere, type VisitorHere } from './visitor-view';
 
 /** What `Game` gives the actions. */

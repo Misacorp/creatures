@@ -1,5 +1,5 @@
 /*
-  The School and honours (phase 5 step 9b): the School's page (`valley/SchoolPage.tsx`: cards of the Signpost's seat family, `.sp-seat`),
+  The School and honours (phase 5 step 9b): the School's drawers (`valley/SchoolPanels.tsx`: the teacher, a seat, the graduation),
   a creature's next trial on its card (`valley/TrialPips.tsx`, the rule card's look with pips) and its popover's list, and the honour ribbon
   on a sprite (`valley/HonourRibbon.tsx`). Only what these add is here.
 */
@@ -64,8 +64,8 @@
   box-shadow: inset 0 0 0 var(--px) var(--gold);
 }
 
-/* The School's page. */
-.sch-page .sp-line {
+/* The School's drawers. */
+.pc-panel .sp-line {
   flex-wrap: wrap;
   overflow-wrap: anywhere;
 }

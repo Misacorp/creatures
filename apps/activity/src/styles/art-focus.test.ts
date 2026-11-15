@@ -44,6 +44,7 @@ describe('focus in art scenes', () => {
       'views/valley.css',
       'views/canvas.css',
       'views/signpost-canvas.css',
+      'views/bonfire-canvas.css',
       'views/expeditions/world-map.css',
       'components/creature-pop.css',
       'components/main-nav.css',

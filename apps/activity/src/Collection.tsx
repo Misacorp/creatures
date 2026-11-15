@@ -42,7 +42,12 @@ interface Props extends CardActions {
   initialNeeds?: boolean;
   /** A creature whose page should open now (the popover's "View"); `onOpenHandled` says it did, once. */
   openRequest?: string | null;
-  onOpenHandled?: () => void;
+  onOpenHandled?: (() => void) | undefined;
+  /**
+   * The waiting catches are answered somewhere else (the Paddock's gate): the list draws none of them, and a creature page's
+   * "Answer a waiting catch" calls this instead of scrolling to them.
+   */
+  catchesElsewhere?: () => void;
 }
 
 /** How long a card the finder chose stays marked. */
@@ -78,6 +83,7 @@ export function Collection({
   initialNeeds = false,
   openRequest = null,
   onOpenHandled,
+  catchesElsewhere,
   ...actions
 }: Props) {
   const [filters, setFilters] = useState<Filters>(() => {
@@ -249,6 +255,10 @@ export function Collection({
           onBack={back}
           loadGames={loadGames}
           onAnswerCatch={() => {
+            if (catchesElsewhere !== undefined) {
+              catchesElsewhere();
+              return;
+            }
             back();
             // The list is drawn again by the time this runs; the catches are at its top.
             setTimeout(() => {
@@ -273,12 +283,14 @@ export function Collection({
         />
       )}
       <div hidden={pageOpen}>
-        <PendingCatches
-          cards={state.pending}
-          creatures={state.creatures}
-          busy={busy}
-          actions={catchActions}
-        />
+        {catchesElsewhere === undefined && (
+          <PendingCatches
+            cards={state.pending}
+            creatures={state.creatures}
+            busy={busy}
+            actions={catchActions}
+          />
+        )}
         {showFinder && (
           <CreatureFinder
             creatures={state.creatures}
@@ -301,7 +313,8 @@ export function Collection({
               current={lastViewed === creature.id}
               actions={cardActions}
               onAnswerCatch={() => {
-                scrollAndFocus(document.getElementById(PENDING_CATCHES_ID));
+                if (catchesElsewhere !== undefined) catchesElsewhere();
+                else scrollAndFocus(document.getElementById(PENDING_CATCHES_ID));
               }}
               onOpen={(focus) => {
                 open(creature, focus);

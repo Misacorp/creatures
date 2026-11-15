@@ -7,10 +7,11 @@ import type { Balances, Creature, ValleyVisit } from '../../api';
 import type { KitName, ValleySeatView } from '@creatures/game';
 import { homeAlerts } from '../../home-view';
 import type { Place } from '../../tabs';
-import { GEAR_STATE, SAMPLE_GEAR } from '../../creature-card-sample';
+import { GEAR_STATE, SAMPLE_GEAR, SAMPLE_STATE } from '../../creature-card-sample';
 import type { GearActions } from '../../gear-actions';
 import type { CratePiece, OrderRequest } from '../../api';
 import type { ValleyAnvilView, ValleyCommonsView, ValleyOrderView } from '@creatures/game';
+import { PaddockCanvas } from '../../valley/PaddockCanvas';
 import { SignpostSeats, type SignpostStart } from '../../valley/SignpostSeats';
 import type { CommonsActions, CommonsStart } from '../../valley/CommonsBoard';
 import {
@@ -25,13 +26,13 @@ import {
   withMarket,
   withMarketPlace,
 } from '../../valley/market-sample';
-import type { MarketActions, MarketStart } from '../../valley/MarketPage';
+import type { MarketActions, MarketStart } from '../../valley/MarketCanvas';
 import type {
   BlueprintDone,
   RerollDone,
   VisitorFeed,
   VisitorStart,
-} from '../../valley/VisitorPage';
+} from '../../valley/VisitorPanels';
 import {
   KNOWN_BLUEPRINT,
   SAMPLE_AWAY,
@@ -41,7 +42,7 @@ import {
 } from '../../valley/visitor-sample';
 import type { SchoolState, VisitorState } from '../../api';
 import { HonoursContext, honoursOf } from '../../valley/HonourRibbon';
-import type { SchoolFeed } from '../../valley/SchoolPage';
+import type { SchoolFeed } from '../../valley/school-feed';
 import { sampleSchool, sampleTrial, withTrials } from '../../valley/school-sample';
 import { readerZone, studentIds, withoutStudents } from '../../valley/school-view';
 import type { GearItem } from '../../gear-types';
@@ -134,6 +135,7 @@ export const VALLEY_OPEN = [
   'broker rates',
   'reroll picker',
   'reroll piece',
+  'blueprint',
 ] as const;
 
 /** How the demo's commons stand (phase 5 step 6b): off, a young server, a full collection, a grown fire, a bonfire at level 3, helpers posted. */
@@ -166,6 +168,8 @@ function visitorStartOf(setting: string, piece: string | undefined): VisitorStar
       return { reroll: true };
     case 'reroll piece':
       return { reroll: piece ?? true };
+    case 'blueprint':
+      return { blueprint: true };
     default:
       return undefined;
   }
@@ -1067,6 +1071,27 @@ export function ValleyDemo({
                       },
                     } satisfies ForgeMode
                   }
+                />
+              )}
+              {tab === 'collection' && visit !== null && (
+                // The Paddock is a canvas with the valley's systems on: the yard, the gate, and the Creatures page in its left drawer.
+                <PaddockCanvas
+                  visit={visit}
+                  {...(commonsActions === undefined ? {} : { commons: commonsActions })}
+                  acorns={acorns}
+                  collection={{
+                    state: { ...SAMPLE_STATE, creatures: [...base.creatures] },
+                    gear: SAMPLE_GEAR,
+                    busy: false,
+                    catchActions: { chooseMany: () => Promise.resolve(true) },
+                    onEquip: () => Promise.resolve(true),
+                    onRibbon: () => undefined,
+                    onEvolve: () => undefined,
+                    onRename: () => undefined,
+                    onNote: () => undefined,
+                    onLounge: () => undefined,
+                    onSlotTalent: () => undefined,
+                  }}
                 />
               )}
               {tab === 'expeditions' && visit !== null && (

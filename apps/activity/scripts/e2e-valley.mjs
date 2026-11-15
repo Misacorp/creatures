@@ -1156,6 +1156,28 @@ const goInside = async () => {
   if ((await page.locator('button[aria-label^="The forge. Go inside"]').count()) > 0)
     throw new Error('the Forge still has an outside view');
 };
+/** The Bonfire opens straight on its scene as a canvas (no page under it): the scene is inside the canvas shell. */
+const bonfireCanvasChecks = async () => {
+  await waitFor(page.locator('.pc-root .vy-in-bonfire'));
+  if ((await page.locator('.vy-soon .vy-page').count()) > 0)
+    throw new Error('the Bonfire has a page under its scene');
+};
+/** The Market opens straight on its scene as a canvas (no page under it): the stall and the builders' corner are inside the canvas shell. */
+const marketCanvasChecks = async () => {
+  await waitFor(page.locator('.pc-root .vy-in-market'), 'attached');
+  if ((await page.locator('.vy-soon .vy-page').count()) > 0)
+    throw new Error('the Market has a page under its scene');
+};
+/** The Paddock opens straight on its yard as a canvas (no page under it): the scene is inside the canvas shell, with no board on it. */
+const paddockCanvasChecks = async () => {
+  await waitFor(page.locator('.pc-root .vy-in-paddock'));
+  if ((await page.locator('.vy-page section[aria-label="Paddock project"]').count()) > 0)
+    throw new Error('the Paddock has its project board on the yard');
+  if ((await page.locator('.vy-band').count()) > 0) throw new Error('the Paddock has a band scene');
+};
+/** The Paddock's "Creatures" button (or "+N more" when not all fit): the way into the Creatures page, the left drawer. */
+const creaturesButton = () =>
+  page.locator('button.cv-target[aria-label*="your creatures"]').locator('visible=true');
 const backToValley = async () => {
   await hudBack().click();
   await waitFor(page.locator(VALLEY), 'attached');
@@ -1844,27 +1866,46 @@ try {
       await shot('tray-resting');
       await place('bonfire').evaluate((el) => el.click());
       await waitFor(heading('Bonfire'));
-      // Not the "not open yet" line: creatures sit round the fire, each with its +N on the plate.
+      // Not the "not open yet" line: creatures sit round the fire, each with its +N on the plate (a plate of its tap target).
       if ((await page.getByText(/will burn here/).count()) > 0)
         throw new Error('the Bonfire is still "not open yet"');
-      const plates = page.locator('.vy-feet-plate .nameplate-gain');
+      await bonfireCanvasChecks();
+      const plates = page.locator('.cv-plate .nameplate-gain');
       await waitFor(plates);
-      const drawn = await plates.count();
-      for (let i = 0; i < drawn; i += 1)
+      const drawn = await page.locator('button.cv-target[aria-label*="by the fire"]').count();
+      for (let i = 0; i < (await plates.count()); i += 1)
         await expectTopmost(plates.nth(i).locator('xpath=..'), `plate ${String(i)} at the fire`);
+      await expectNoScroll();
       await page.waitForTimeout(300);
       await shot('bonfire-open');
-      const more = page.getByRole('button', { name: /more: show all \d+ resting/ });
-      if ((await more.count()) > 0) {
-        await expectTopmost(more.first(), 'the "+N more" button');
-        await more.first().click();
-        await waitFor(page.getByRole('dialog'));
-        const rows = await page.getByRole('dialog').locator('ul li').count();
+      // A tap on a resting creature opens it in the right drawer: its gain, and the hearth post (a page on a phone).
+      const first = page.locator('button.cv-target[aria-label*="by the fire"]').first();
+      await first.click();
+      await waitFor(rightPanel.getByRole('list', { name: 'Resting creature' }));
+      await page.waitForTimeout(300);
+      await shot('bonfire-creature');
+      await page.keyboard.press('Escape');
+      await rightPanel.waitFor({ state: 'detached', timeout: 10000 });
+      if (
+        (await page.locator('button.cv-target[aria-label*="show everyone resting"]').count()) > 0
+      ) {
+        const moreButton = page
+          .locator('button.cv-target[aria-label*="show everyone resting"]')
+          .first();
+        await expectTopmost(moreButton, 'the "+N more" target');
+        await moreButton.click();
+        await waitFor(leftPanel);
+        const rows = await leftPanel.getByRole('option').count();
         if (rows !== baseState.creatures.length)
           throw new Error(
             `the list shows ${String(rows)} of ${String(baseState.creatures.length)}`,
           );
+        await page.waitForTimeout(300);
         await shot('bonfire-all-resting');
+        // A row of the list opens that creature in the right drawer (a step of the list's panel on a phone).
+        await leftPanel.getByRole('option').first().click();
+        await waitFor(rightPanel.getByRole('list', { name: 'Resting creature' }));
+        await page.keyboard.press('Escape');
         await page.keyboard.press('Escape');
       } else if (drawn !== baseState.creatures.length) {
         throw new Error(`${String(drawn)} drawn, no "+N more" for the rest`);
@@ -2970,15 +3011,19 @@ try {
         await waitFor(page.locator(VALLEY), 'attached');
         await place('bonfire').evaluate((el) => el.click());
         await waitFor(heading('Bonfire'));
-        const owners = page.locator('.vy-feet-plate .nameplate-owner');
+        await bonfireCanvasChecks();
+        const owners = page.locator('.cv-plate .nameplate-owner');
         await waitFor(owners);
         const names = (await owners.allInnerTexts()).join(',');
         if (!names.includes('Mia') || !names.includes('Tobias'))
           throw new Error(`the visitors' owners are not on their plates: ${names}`);
         await waitFor(page.locator('.vy-flame'));
-        const plates = page.locator('.vy-feet-plate .nameplate');
+        const plates = page.locator('.cv-plate .nameplate');
         for (let i = 0; i < (await plates.count()); i += 1)
           await expectTopmost(plates.nth(i), `plate ${String(i)} at the fire`);
+        // A tap on a visitor's creature shows its owner's plate, as at the Forge (no drawer: it is not the player's).
+        await page.locator('button.cv-target[aria-label*="visiting the fire"]').first().click();
+        await waitFor(page.locator('.vy-scene .vy-feet-plate .nameplate-owner'));
         await page.waitForTimeout(300);
         await shot('bonfire5-company');
         await hudBack().click();
@@ -3037,7 +3082,6 @@ try {
     commonsState.communal = {};
     commonsState.hearthBp = 10000;
   };
-  const dialogOf = (name) => page.getByRole('dialog', { name });
 
   await scenario(
     "valley systems on: the Signpost's project board: give Acorns, post a helper, the plaque and the collection",
@@ -3198,28 +3242,113 @@ try {
         await waitFor(page.locator(VALLEY), 'attached');
         await place('paddock').evaluate((el) => el.click());
         await waitFor(heading('Paddock'));
-        const paddock = page.locator('section[aria-label="Paddock project"]');
-        await waitFor(paddock);
+        // The Paddock is a canvas: the yard is the page, and its project is in the builders' corner, never on the yard.
+        await paddockCanvasChecks();
         // The scaffolding stands high round the Paddock: its project is three quarters full.
         await page.waitForTimeout(300);
+        await expectNoScroll();
         await shot('commons-paddock-scaffolding');
-        // A helper at the Paddock stands at its rails (it does not wander the meadow).
-        await paddock.getByRole('button', { name: /^Paddock: nobody helps/ }).click();
-        await waitFor(dialogOf(/Who helps build/));
-        await page
+        // A helper at the Paddock works at the builders' table (it does not wander the meadow).
+        await sceneTarget('The helper spot').click();
+        await waitFor(rightPanel.getByRole('option').first());
+        await page.waitForTimeout(300);
+        await shot('commons-paddock-helper-picker');
+        await rightPanel
           .getByRole('option')
           .filter({ hasText: /Sproutle/ })
           .first()
           .click();
-        await waitFor(paddock.getByRole('button', { name: /^Paddock: Sproutle.*helping/ }));
+        await waitFor(
+          page
+            .locator('button.cv-target[aria-label*="helping build the Paddock at the builders"]')
+            .locator('visible=true'),
+        );
         await page.waitForTimeout(400);
         await shot('commons-paddock-helper');
+        await sceneTarget("The builders' table").click();
+        const paddock = leftPanel.locator('section[aria-label="Paddock project"]');
+        await waitFor(paddock);
         await paddock.scrollIntoViewIfNeeded();
         await expectTopmost(paddock, 'the Paddock board');
         await shot('commons-paddock-board');
       } finally {
         commonsOff();
       }
+    },
+  );
+
+  // The Paddock with the valley's systems on, as a canvas (Misa, 2026-11-15): the yard fills the window, the creatures at home roam in it
+  // and are taps (a drag moves one and opens nothing), the gate opens the waiting catches, "Creatures" opens the Creatures page.
+  await scenario(
+    'valley systems on: the Paddock is a canvas: a creature opens in the right drawer, the gate has the newcomers, Creatures is the left drawer',
+    () => {
+      const config = ROUTES.get('/api/config');
+      answerOverride.set('/api/config', () => ({ ...config(), valleySystems: true }));
+      // A state with newcomers waiting at the gate (the creatures-state fixture's four duplicates and the roster they belong to).
+      const waiting = fixture('creatures-state');
+      const creatures = waiting.creatures.map((c) => ({ ...c, busy: null, away: false }));
+      scouts.seats = [];
+      scouts.ids = creatures.map((c) => c.id);
+      stateOverride = { creatures, pending: waiting.pending, valley: valleyBlock() };
+    },
+    async () => {
+      await waitFor(page.locator(VALLEY), 'attached');
+      await place('paddock').evaluate((el) => el.click());
+      await waitFor(heading('Paddock'));
+      await paddockCanvasChecks();
+      const roamers = page.locator('button.cv-target[aria-label*="at home in the Paddock"]');
+      await waitFor(roamers);
+      await expectNoScroll();
+      await page.waitForTimeout(400);
+      await shot('paddock-open');
+      // A drag moves a creature and opens no drawer.
+      const box = await roamers.first().boundingBox();
+      if (box === null) throw new Error('a creature has no box');
+      const cx = box.x + box.width / 2;
+      const cy = box.y + box.height / 2;
+      await page.mouse.move(cx, cy);
+      await page.mouse.down();
+      await page.mouse.move(cx + 30, cy + 6, { steps: 6 });
+      await page.mouse.up();
+      await page.waitForTimeout(200);
+      if ((await rightPanel.count()) > 0) throw new Error('a drag opened a drawer');
+      // A tap opens it in the right drawer: where it is, and its page one step on.
+      await roamers.first().evaluate((el) => el.click());
+      const openPage = rightPanel.getByRole('button', { name: /^Open its page/ });
+      await waitFor(openPage);
+      await expectNoScroll();
+      await page.waitForTimeout(300);
+      await shot('paddock-creature');
+      await openPage.click();
+      const back = rightPanel.getByRole('button', { name: /Back/ });
+      await waitFor(back);
+      await page.waitForTimeout(300);
+      await shot('paddock-creature-page');
+      await back.first().click();
+      await waitFor(openPage);
+      await page.keyboard.press('Escape');
+      await rightPanel.waitFor({ state: 'detached', timeout: 10000 });
+      // The gate is a tap while newcomers wait: the same cards and the one Confirm as the Creatures page had.
+      const gate = page.locator('button.cv-target[aria-label^="The gate"]').locator('visible=true');
+      if ((await gate.count()) > 0) {
+        await expectTopmost(gate.first(), 'the gate');
+        await gate.first().click();
+        await waitFor(rightPanel.getByRole('button', { name: /^Confirm/ }));
+        await page.waitForTimeout(300);
+        await shot('paddock-gate');
+        await page.keyboard.press('Escape');
+        await rightPanel.waitFor({ state: 'detached', timeout: 10000 });
+      }
+      // The Creatures page is the left drawer; the waiting catches are not repeated in it (the scene settles back first).
+      await page.waitForTimeout(500);
+      await expectTopmost(creaturesButton().first(), 'the Creatures button');
+      await creaturesButton().first().click();
+      await waitFor(leftPanel.locator('li.creature-card'));
+      if ((await leftPanel.locator('section.pending-catches').count()) > 0)
+        throw new Error('the waiting catches are in the Creatures drawer as well as at the gate');
+      await expectNoScroll();
+      await page.waitForTimeout(300);
+      await shot('paddock-creatures');
     },
   );
 
@@ -3250,52 +3379,153 @@ try {
         await waitFor(page.locator(VALLEY), 'attached');
         await place('bonfire').evaluate((el) => el.click());
         await waitFor(heading('Bonfire'));
-        await waitFor(page.getByText(/Hearth adds 8% to every creature/));
-        const act = page.getByRole('button', { name: /^Help build the hearth/ });
-        await waitFor(act);
-        await expectTopmost(act, 'the hearth button');
-        const plates = page.locator('.vy-feet-plate .nameplate');
+        await bonfireCanvasChecks();
+        // The builders' corner (the project is being built): its table is the project board's way in, the fire is no target, the
+        // helper spot beside the table is a dashed outline; nothing scrolls.
+        const fire = sceneTarget("The builders' table");
+        await waitFor(fire);
+        await expectTopmost(fire, 'the builders table target');
+        if ((await sceneTarget('The hearth').count()) > 0)
+          throw new Error('the fire is a target while the builders corner stands');
+        await waitFor(page.locator('button.cv-target.cv-slot[aria-label^="The helper spot"]'));
+        const plates = page.locator('.cv-plate .nameplate');
         for (let i = 0; i < (await plates.count()); i += 1)
           await expectTopmost(plates.nth(i), `plate ${String(i)} at the fire`);
+        await expectNoScroll();
         await page.waitForTimeout(300);
         await shot('commons-bonfire-level3');
-        await act.click();
-        await waitFor(dialogOf(/^Bonfire/));
+        // A tap on a resting creature opens it in the right drawer with the one thing it can do here: help build the hearth.
+        await page.locator('button.cv-target[aria-label*="by the fire"]').first().click();
+        await waitFor(rightPanel.getByRole('button', { name: /^Help build the hearth/ }));
+        await page.waitForTimeout(300);
+        await shot('commons-bonfire-creature');
+        await page.keyboard.press('Escape');
+        await rightPanel.waitFor({ state: 'detached', timeout: 10000 });
+        await fire.click();
+        await waitFor(leftPanel.getByText(/The hearth adds 8% to every creature/));
         await page.waitForTimeout(500);
-        await expectTopmost(page.getByRole('dialog').first(), 'the Bonfire board');
+        await expectTopmost(leftPanel, 'the Bonfire board');
         await shot('commons-bonfire-board');
-        // The give flow is a drill-in of the same drawer: one dialog at all times.
-        await page.getByRole('dialog').getByRole('button', { name: /^Give/ }).click();
-        await waitFor(page.getByRole('dialog').getByRole('button', { name: /^Bait/ }));
-        if ((await page.getByRole('dialog').count()) !== 1) throw new Error('two layers are up');
-        await page.getByRole('dialog').getByRole('button', { name: /^Bait/ }).click();
-        await page.getByRole('dialog').getByRole('button', { name: /^Give/ }).click();
+        // The give flow is a step of the same drawer: one panel at all times.
+        await leftPanel.getByRole('button', { name: /^Give/ }).click();
+        await waitFor(leftPanel.getByRole('button', { name: /^Bait/ }));
+        if ((await page.getByRole('dialog').count()) !== 0)
+          throw new Error('a sheet is over the drawer');
+        await leftPanel.getByRole('button', { name: /^Bait/ }).click();
+        await leftPanel.getByRole('button', { name: /^Give/ }).click();
         // The gift lands and the drawer is back on the board.
-        await waitFor(page.getByRole('dialog').getByText(/You gave/));
+        await waitFor(leftPanel.getByText(/You gave/));
         if (!commonsCalls.some(([k, b]) => k === 'gift' && b.place === 'bonfire'))
           throw new Error('no gift to the hearth');
-        // A helper at the fire (the lamplighter) is a drill-in of the same drawer too.
-        await page
-          .getByRole('dialog')
-          .getByRole('button', { name: /^Bonfire: nobody helps/ })
-          .click();
-        await waitFor(page.getByRole('dialog').getByRole('option').first());
-        if ((await page.getByRole('dialog').count()) !== 1) throw new Error('two layers are up');
-        await page
-          .getByRole('dialog')
+        // A helper at the fire (the lamplighter) is a step of the same drawer too.
+        await leftPanel.getByRole('button', { name: /^Bonfire: nobody helps/ }).click();
+        await waitFor(leftPanel.getByRole('option').first());
+        if ((await page.getByRole('dialog').count()) !== 0)
+          throw new Error('a sheet is over the drawer');
+        await leftPanel
           .getByRole('option')
           .filter({ hasText: /Sproutle/ })
           .first()
           .click();
-        await waitFor(page.getByRole('dialog').getByRole('button', { name: /helping/ }));
+        await waitFor(leftPanel.getByRole('button', { name: /helping/ }));
         await page.keyboard.press('Escape');
-        await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+        await leftPanel.waitFor({ state: 'detached', timeout: 10000 });
         await page.waitForTimeout(300);
         await shot('commons-bonfire-lamplighter');
+        // The helper stands on its seat now; a tap on it picks who helps (the right drawer), and the dashed outline is gone.
+        if ((await page.locator('button.cv-target.cv-slot').count()) !== 0)
+          throw new Error('the helper seat is still an empty outline');
+        await page
+          .locator('button.cv-target[aria-label*="at the builders\' table. Change"]')
+          .click();
+        await waitFor(rightPanel.getByRole('option').first());
+        await shot('commons-bonfire-seat');
+        await page.keyboard.press('Escape');
+        await rightPanel.waitFor({ state: 'detached', timeout: 10000 });
+        // The creature tray stays under the scene: on a wide window a tray creature dragged onto the helper spot is posted as the
+        // helper, and a drag opens no drawer (a phone's tray creature needs a hold, which the mouse here does not give).
+        await waitFor(page.locator('section[aria-label="Creatures to post"]'));
+        // The scene pans back as the drawer goes: measure once it has settled.
+        await page.waitForTimeout(700);
+        if (width >= 960) {
+          const mover = page
+            .locator('section[aria-label="Creatures to post"] button[data-creature]')
+            .first();
+          const moverId = await mover.getAttribute('data-creature');
+          const start = await mover.boundingBox();
+          const spot = await page
+            .locator('button.cv-target[aria-label*="at the builders\' table"]')
+            .last()
+            .boundingBox();
+          if (start === null || spot === null) throw new Error('no boxes to drag between');
+          const before = commonsCalls.filter(([k]) => k === 'communal').length;
+          await page.mouse.move(start.x + start.width / 2, start.y + start.height / 2);
+          await page.mouse.down();
+          await page.mouse.move(start.x + start.width / 2 + 12, start.y + start.height / 2 + 12, {
+            steps: 4,
+          });
+          await page.mouse.move(spot.x + spot.width / 2, spot.y + spot.height / 2, { steps: 12 });
+          await page.waitForTimeout(150);
+          await page.mouse.move(spot.x + spot.width / 2 + 1, spot.y + spot.height / 2 + 1, {
+            steps: 2,
+          });
+          await shot('bonfire-tray-drag');
+          await page.mouse.up();
+          await page.waitForTimeout(300);
+          const posted = commonsCalls.filter(([k]) => k === 'communal');
+          if (posted.length !== before + 1 || posted.at(-1)?.[1].creatureId !== moverId)
+            throw new Error('the dragged tray creature was not posted as the helper');
+          if (posted.at(-1)?.[1].place !== 'bonfire') throw new Error('posted to another place');
+          if ((await page.locator('.pc-side, .pc-page').count()) !== 0)
+            throw new Error('a drag opened a drawer');
+        }
         // The map draws the grand bonfire too.
         await hudBack().click();
         await waitFor(page.locator(VALLEY), 'attached');
         await shot('commons-map-level3');
+      } finally {
+        commonsOff();
+      }
+    },
+  );
+
+  await scenario(
+    'valley systems on: the Bonfire at its top level has no builders corner, and the fire opens the board',
+    () => {
+      const creatures = commonsOn();
+      commonsScene({
+        bonfire: {
+          level: 5,
+          state: 'open',
+          size: 900,
+          have: { acorns: 120, scrap: 200, shards: 20 },
+          given: 0,
+          plaque: ['Ada', 'Mia'],
+          keepsakes: 1,
+        },
+      });
+      commonsState.hearthBp = 12500;
+      stateOverride = { creatures, valley: valleyBlock() };
+    },
+    async () => {
+      try {
+        await waitFor(page.locator(VALLEY), 'attached');
+        await place('bonfire').evaluate((el) => el.click());
+        await waitFor(heading('Bonfire'));
+        await bonfireCanvasChecks();
+        const fire = sceneTarget('The hearth');
+        await waitFor(fire);
+        await expectTopmost(fire, 'the hearth target');
+        if ((await page.locator('button.cv-target[aria-label^="The builders"]').count()) > 0)
+          throw new Error('the builders corner stands at the top level');
+        if ((await page.locator('button.cv-target[aria-label^="The helper spot"]').count()) > 0)
+          throw new Error('a helper spot stands at the top level');
+        await expectNoScroll();
+        await page.waitForTimeout(300);
+        await shot('bonfire-top-level');
+        await fire.click();
+        await waitFor(leftPanel.getByText(/The hearth adds 25% to every creature/));
+        await page.keyboard.press('Escape');
       } finally {
         commonsOff();
       }
@@ -3390,12 +3620,28 @@ try {
         await waitFor(page.locator(VALLEY), 'attached');
         await place('market').evaluate((el) => el.click());
         await waitFor(heading('Market'));
-        const board = page.locator('section[aria-label="Market project"]');
-        await waitFor(board);
+        await marketCanvasChecks();
+        // Before it is built the whole Market is a building site: no stall to use and no broker seat, the builders' corner with its
+        // table (the project board's way in) and the helper's dashed spot.
+        const table = sceneTarget("The builders' table");
+        await waitFor(table);
+        await expectTopmost(table, 'the builders table target');
+        await waitFor(page.locator('button.cv-target.cv-slot[aria-label^="The helper spot"]'));
+        if ((await sceneTarget('The shard stall').count()) > 0)
+          throw new Error('the stall can be used before the Market is built');
+        if ((await page.locator('button.cv-target[aria-label*="broker"]').count()) > 0)
+          throw new Error('a broker seat stands before the Market is built');
+        const plates = page.locator('.cv-plate .nameplate');
+        for (let i = 0; i < (await plates.count()); i += 1)
+          await expectTopmost(plates.nth(i), `plate ${String(i)} at the Market`);
+        await expectNoScroll();
         await page.waitForTimeout(300);
         await shot('market-building');
-        await board.scrollIntoViewIfNeeded();
-        await expectTopmost(board, 'the Market board');
+        await table.click();
+        const board = leftPanel.locator('section[aria-label="Market project"]');
+        await waitFor(board);
+        await page.waitForTimeout(500);
+        await expectTopmost(leftPanel, 'the Market board');
         // What is needed is icons and numbers (Acorns, scrap), never words.
         await waitFor(board.getByText(/Still needed:/));
         // Shards of any kind count too (V-COM-15): a line says so with the any-shard icon, and "Still needed" names no shard part.
@@ -3416,15 +3662,15 @@ try {
           throw new Error('the Market board should need exactly Acorns and scrap, as icons');
         await expectTopmost(board.getByText(/counts too, as many as you like/), 'the shard line');
         await shot('mshards-board');
-        if ((await page.getByRole('button', { name: /^Broker/ }).count()) > 0)
-          throw new Error('a broker seat stands before the Market is built');
+        // The give flow is a step of the same drawer: one panel at all times, never a sheet over it.
         await board.getByRole('button', { name: /^Give/ }).click();
-        await waitFor(dialogOf(/Give to the project/));
+        await waitFor(leftPanel.getByRole('button', { name: /^Ember Shard/ }));
+        if ((await page.getByRole('dialog').count()) !== 0)
+          throw new Error('a sheet is over the drawer');
         await page.waitForTimeout(500);
-        await expectTopmost(page.getByRole('dialog').first(), 'the Market give drawer');
+        await expectTopmost(leftPanel, 'the Market give step');
         // A row is an icon and a number: its name is the icon's spoken label ("Ember Shards: 7").
-        const rows = await page
-          .getByRole('dialog')
+        const rows = await leftPanel
           .getByRole('button')
           .evaluateAll((els) =>
             els.map((e) => e.querySelector('[role="img"]')?.getAttribute('aria-label') ?? ''),
@@ -3438,16 +3684,13 @@ try {
           throw new Error(`the give list offers shards in the wrong order: ${rows.join(' | ')}`);
         await shot('mshards-give-list');
         // Give Ember shards (any element counts in full): the gift names the element, one keyed gift.
-        await page
-          .getByRole('dialog')
-          .getByRole('button', { name: /^Ember Shard/ })
-          .click();
-        await waitFor(page.getByRole('dialog').getByRole('button', { name: /^Give/ }));
+        await leftPanel.getByRole('button', { name: /^Ember Shard/ }).click();
+        await waitFor(leftPanel.getByRole('button', { name: /^Give/ }));
         await page.waitForTimeout(300);
-        await expectTopmost(page.getByRole('dialog').first(), 'the Market shard amount');
+        await expectTopmost(leftPanel, 'the Market shard amount');
         await shot('mshards-give-amount');
-        await page.getByRole('dialog').getByRole('button', { name: /^Give/ }).click();
-        await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+        await leftPanel.getByRole('button', { name: /^Give/ }).click();
+        await waitFor(leftPanel.getByText(/You gave/));
         const gift = commonsCalls.find(([k]) => k === 'gift')?.[1];
         if (
           gift === undefined ||
@@ -3458,6 +3701,12 @@ try {
           typeof gift.idempotencyKey !== 'string'
         )
           throw new Error(`the shard gift was wrong: ${JSON.stringify(gift)}`);
+        // The helper's spot beside the table: a tap lists who can help (the right drawer).
+        await page.keyboard.press('Escape');
+        await leftPanel.waitFor({ state: 'detached', timeout: 10000 });
+        await sceneTarget('The helper spot').click();
+        await waitFor(rightPanel.getByRole('option').first());
+        await shot('market-helper-seat');
         await backToValley();
       } finally {
         marketOff();
@@ -3479,58 +3728,100 @@ try {
         await waitFor(page.locator(VALLEY), 'attached');
         await place('market').evaluate((el) => el.click());
         await waitFor(heading('Market'));
-        const slot = page.getByRole('button', { name: /^Broker: nobody posted/ });
-        await waitFor(slot);
-        await slot.scrollIntoViewIfNeeded();
-        await expectTopmost(slot, 'the empty broker slot');
+        await marketCanvasChecks();
+        // Built: the stall (the exchange) and the broker's dashed seat in front of it; the builders' corner is gone with the project.
+        const stall = sceneTarget('The shard stall');
+        const seat = page.locator('button.cv-target.cv-slot[aria-label^="The broker seat"]');
+        await waitFor(stall);
+        await waitFor(seat);
+        await expectTopmost(stall, 'the shard stall');
+        await expectTopmost(seat, 'the empty broker seat');
+        if ((await sceneTarget("The builders' table").count()) > 0)
+          throw new Error('the builders corner stands at a built Market');
+        const plates = page.locator('.cv-plate .nameplate');
+        for (let i = 0; i < (await plates.count()); i += 1)
+          await expectTopmost(plates.nth(i), `plate ${String(i)} at the Market`);
+        await expectNoScroll();
+        await page.waitForTimeout(300);
         await shot('market-free-seat');
-        for (const loc of [page.locator('.sp-seat').first(), page.locator('.vy-tray').first()]) {
-          if ((await loc.count()) > 0) await expectTopmost(loc, 'a Market card');
-        }
-        await slot.click();
-        await waitFor(dialogOf(/Who trades at the Market/));
+        await expectFocusCue(stall, 'the shard stall');
+        await expectNoFocusOnClick(seat, 'the broker seat');
+        await waitFor(rightPanel.getByRole('option').first());
+        await waitFor(page.getByText('Who trades at the Market?').first());
         await page.waitForTimeout(400);
-        await expectTopmost(page.getByRole('dialog').first(), 'the broker picker');
+        await expectTopmost(rightPanel, 'the broker list');
+        if ((await page.getByRole('dialog').count()) !== 0)
+          throw new Error('a sheet is over the drawer');
         await shot('market-broker-picker');
-        await page
+        await rightPanel
           .getByRole('option')
           .filter({ hasText: /Sproutle/ })
           .first()
           .click();
-        await waitFor(page.getByRole('button', { name: /^Broker: Sproutle/ }));
+        await rightPanel.waitFor({ state: 'detached', timeout: 10000 });
         const posted = scoutCalls.filter(([k]) => k === 'seat').at(-1)?.[1];
         if (posted?.seatId !== 'broker-1' || typeof posted.creatureId !== 'string')
           throw new Error(`the broker was ${JSON.stringify(posted)}`);
-        await waitFor(page.getByText(/Swaps\s+12\s+for\s+5, with a 10% chance of one extra/));
+        // The broker stands at its seat now, no empty outline; a tap opens it.
+        const broker = page.locator('button.cv-target[aria-label*="the broker."]');
+        await waitFor(broker);
+        if ((await page.locator('button.cv-target.cv-slot').count()) !== 0)
+          throw new Error('the broker seat is still an empty outline');
         await page.waitForTimeout(300);
         await shot('market-broker-posted');
-        // What it trades toward: a drawer of choices, one tap.
-        const toward = page.getByRole('button', { name: /^Trades toward: What the orders need/ });
-        await toward.scrollIntoViewIfNeeded();
-        await toward.click();
-        await waitFor(dialogOf(/Trade toward/));
-        await page.waitForTimeout(500);
-        await expectTopmost(page.getByRole('dialog').first(), 'the trade-toward drawer');
-        await shot('market-trade-toward');
-        await page
-          .getByRole('dialog')
-          .getByRole('button', { name: /^Grove Shard/ })
+        await broker.click();
+        await waitFor(rightPanel.getByText(/Swaps\s+12\s+for\s+5, with a 10% chance of one extra/));
+        await page.waitForTimeout(400);
+        await expectTopmost(rightPanel, 'the broker panel');
+        await shot('market-rates');
+        // What it trades toward: a step of the same panel, one tap.
+        await rightPanel
+          .getByRole('button', { name: /^Trades toward: What the orders need/ })
           .click();
-        await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+        await waitFor(rightPanel.getByText(/It never trades the few shards you keep/));
+        await page.waitForTimeout(500);
+        if ((await page.getByRole('dialog').count()) !== 0)
+          throw new Error('a sheet is over the drawer');
+        await expectTopmost(rightPanel, 'the trade-toward step');
+        await shot('market-trade-toward');
+        await rightPanel.getByRole('button', { name: /^Grove Shard/ }).click();
         const sent = commonsCalls.find(([k]) => k === 'broker')?.[1];
         if (sent?.seatId !== 'broker-1' || sent.toward !== 'grove')
           throw new Error(`the setting was ${JSON.stringify(sent)}`);
-        await waitFor(page.getByRole('button', { name: /^Trades toward: Grove shards/ }));
-        // Its rates and the next step.
-        await page.getByRole('button', { name: /Show the rates/ }).click();
-        await waitFor(dialogOf(/Rates/));
-        await page.waitForTimeout(500);
-        await expectTopmost(page.getByRole('dialog').first(), 'the rates drawer');
-        await shot('market-rates');
+        await waitFor(rightPanel.getByRole('button', { name: /^Trades toward: Grove shards/ }));
         await page.keyboard.press('Escape');
-        // The tray says Trading for the creature at the seat.
-        await waitFor(page.getByRole('button', { name: /Sproutle.*Trading at the Market/ }));
+        await rightPanel.waitFor({ state: 'detached', timeout: 10000 });
+        // The stall opens the exchange in the right drawer.
+        await stall.click();
+        await waitFor(rightPanel.getByRole('button', { name: /^Trade\b.*× \d/ }));
+        await page.waitForTimeout(500);
+        await expectTopmost(rightPanel, 'the exchange');
+        await shot('market-exchange');
+        await page.keyboard.press('Escape');
+        // A creature carried from the tray onto the broker takes its seat, and the drag never opens a drawer.
+        const mover = page
+          .locator('section[aria-label="Creatures to post"] button[data-creature]')
+          .nth(1);
+        const moverId = await mover.getAttribute('data-creature');
+        const from = await mover.boundingBox();
+        const to = await broker.boundingBox();
+        if (from === null || to === null) throw new Error('no boxes to drag');
+        await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+        await page.mouse.down();
+        await page.mouse.move(from.x + from.width / 2 + 12, from.y + from.height / 2 + 12, {
+          steps: 4,
+        });
+        await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 10 });
+        await page.mouse.up();
+        await page.waitForTimeout(400);
+        const dragged = scoutCalls.filter(([k]) => k === 'seat').at(-1)?.[1];
+        if (dragged?.seatId !== 'broker-1' || dragged.creatureId !== moverId)
+          throw new Error(`the dragged broker was ${JSON.stringify(dragged)}`);
+        if ((await drawer.count()) !== 0) throw new Error('a drag opened a drawer');
+        await shot('market-tray-drag');
+        // The tray (the map's) says Trading for the creature at the seat.
         await backToValley();
+        await waitFor(page.getByRole('button', { name: /Trading at the Market/ }));
       } finally {
         marketOff();
       }
@@ -3597,12 +3888,14 @@ try {
         // It leads to the Market's project board.
         await go.first().click();
         await waitFor(heading('Market'));
-        const board = page.locator('section[aria-label="Market project"]');
-        await waitFor(board);
-        await board.scrollIntoViewIfNeeded();
-        await expectTopmost(board, 'the Market board');
-        if ((await page.getByRole('button', { name: /Trade shards/ }).count()) > 0)
+        await marketCanvasChecks();
+        await waitFor(sceneTarget("The builders' table"));
+        if ((await sceneTarget('The shard stall').count()) > 0)
           throw new Error('the Market offers the exchange before it is built');
+        await sceneTarget("The builders' table").click();
+        const board = leftPanel.locator('section[aria-label="Market project"]');
+        await waitFor(board);
+        await expectTopmost(leftPanel, 'the Market board');
         await backToValley();
 
         // The server builds the Market: the same anvil now leads to the exchange.
@@ -3631,24 +3924,22 @@ try {
         // It leads to the Market's exchange, on the shard the anvil waits for: rate and crit are shown, the trade is keyed.
         await trade.first().click();
         await waitFor(heading('Market'));
-        await waitFor(page.getByRole('dialog', { name: /Trade shards/ }));
+        await marketCanvasChecks();
+        await waitFor(rightPanel.getByRole('button', { name: /^Trade\b.*× \d/ }));
         await page.waitForTimeout(500);
-        const text = await page.getByRole('dialog').innerText();
+        const text = await rightPanel.innerText();
         if (!/10% chance to get\s+2/.test(text))
           throw new Error('the exchange does not show the crit chance');
         // The shard to get is its icon (Grove) with a number, then "You get".
         if (
           !/You get/.test(text) ||
-          (await page
-            .getByRole('dialog')
-            .locator('[role="img"][aria-label^="Grove Shard"]')
-            .count()) === 0
+          (await rightPanel.locator('[role="img"][aria-label^="Grove Shard"]').count()) === 0
         )
           throw new Error(`the exchange did not start on Grove: ${text}`);
-        await expectTopmost(page.getByRole('dialog').first(), 'the exchange drawer');
+        await expectTopmost(rightPanel, 'the exchange drawer');
         await shot('q64-market-exchange');
-        await page.getByRole('button', { name: /^Trade.*× \d/ }).click();
-        await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+        await rightPanel.getByRole('button', { name: /^Trade\b.*× \d/ }).click();
+        await rightPanel.waitFor({ state: 'detached', timeout: 10000 });
         const traded = forgeCalls.at(-1);
         if (
           traded?.[0] !== 'exchange' ||
@@ -3656,10 +3947,8 @@ try {
           traded[1].to !== 'grove'
         )
           throw new Error('the trade was sent without an idempotency key, or not for Grove');
-        // The exchange is also one tap away on the Market's own page.
-        const tap = page.getByRole('button', { name: /^Trade shards/ });
-        await tap.scrollIntoViewIfNeeded();
-        await expectTopmost(tap.first(), 'the exchange row');
+        // The exchange is also one tap away on the Market's own stall.
+        await expectTopmost(sceneTarget('The shard stall'), 'the stall');
         await backToValley();
       } finally {
         forgeState.waitShard = null;
@@ -3732,8 +4021,9 @@ try {
     },
   );
 
-  // The weekly visitor (phase 5 step 8b): his place as the server says (shuttered while away, a stall and a page while here), the reroll
-  // of one piece (picker, price and odds, one confirm, before and after) and the week's blueprint.
+  // The weekly visitor (phase 5 step 8b), his stall as a canvas: his place as the server says (the shuttered stall and its sign while away;
+  // the visitor and the blueprint on his counter while here), the reroll of one piece (picker, price and odds, one confirm, before and
+  // after) and the week's blueprint.
   const visitorOn = (here) => {
     const creatures = commonsOn();
     visitorReset();
@@ -3749,10 +4039,21 @@ try {
     visitorReset();
     commonsOff();
   };
-  const rerollTitle = /Reroll a piece/;
+
+  /** The visitor's stall is a canvas: the scene is inside the canvas shell, with no page under it and no builders' corner. */
+  const visitorCanvasChecks = async () => {
+    await waitFor(page.locator('.pc-root .vy-in-visitor'));
+    if ((await page.locator('.vy-soon .vy-page, .vs-page').count()) > 0)
+      throw new Error('his stall has a page under its scene');
+    if ((await page.locator('button.cv-target[aria-label*="builders" i]').count()) > 0)
+      throw new Error('his stall has a builders corner');
+    await expectNoScroll();
+    // The creature tray stays under the scene, as at the other places.
+    await waitFor(page.locator('.pc-below section[aria-label="Your creatures"]'));
+  };
 
   await scenario(
-    'the visitor away (V-VIS-1): his stall is shuttered on the map, his place says back Thursday and offers nothing',
+    'the visitor away (V-VIS-1): the shuttered stall is the canvas, its sign says back Thursday and it offers nothing else',
     () => {
       visitorOn(false);
     },
@@ -3763,13 +4064,25 @@ try {
         await shot('visitor-map-away');
         await place('visitor').evaluate((el) => el.click());
         await waitFor(heading('Visitor'));
-        await waitFor(page.getByText('Back Thursday.'));
+        await visitorCanvasChecks();
+        // The sign is the one thing to click, and its plate says when he is back (no timer).
+        await waitFor(sceneTarget('The sign'));
+        if ((await page.locator('button.cv-target').locator('visible=true').count()) !== 1)
+          throw new Error('his shuttered place offers more than its sign');
+        await waitFor(page.locator('.cv-plate', { hasText: 'Back Thursday' }));
         if ((await page.getByRole('button', { name: /Reroll|Choose a piece|Buy/ }).count()) > 0)
           throw new Error('his shuttered place offers something');
         const body = await page.locator('main').innerText();
         if (/until|\d+ ?h\b|\d+ ?days?/i.test(body))
           throw new Error(`a countdown on his shuttered place: ${body}`);
+        await page.waitForTimeout(300);
         await shot('visitor-away');
+        await expectFocusCue(sceneTarget('The sign'), 'the sign');
+        await sceneTarget('The sign').click();
+        await waitFor(rightPanel.getByText('The stall is shuttered. Back Thursday.'));
+        await shot('visitor-away-sign');
+        await page.keyboard.press('Escape');
+        await rightPanel.waitFor({ state: 'detached', timeout: 10000 });
         await backToValley();
         // The Places list says it too.
         await page.getByRole('button', { name: /^Places/ }).click();
@@ -3782,7 +4095,7 @@ try {
   );
 
   await scenario(
-    'the visitor here (V-VIS-2, 4, 5): reroll one piece with one confirm, see before and after and the next price, and buy the blueprint',
+    'the visitor here (V-VIS-2, 4, 5): click him to reroll one piece with one confirm, see before and after and the next price; click the blueprint on his counter to buy it',
     () => {
       visitorOn(true);
     },
@@ -3793,39 +4106,40 @@ try {
         await shot('visitor-map-here');
         await place('visitor').evaluate((el) => el.click());
         await waitFor(heading('Visitor'));
-        await waitFor(page.getByRole('heading', { name: rerollTitle }));
-        // His page is two cards under his stall: no timer, no "until" line.
+        await visitorCanvasChecks();
+        // The two things to click, each with one plate; no timer, no "until" line, no away line.
+        await waitFor(sceneTarget('The visitor'));
+        await waitFor(sceneTarget("This week's blueprint"));
+        if ((await page.locator('button.cv-target').locator('visible=true').count()) !== 2)
+          throw new Error('his stall offers more than the visitor and the blueprint');
+        const plates = page.locator('.cv-plate .nameplate');
+        if ((await plates.count()) !== 2) throw new Error('each clickable thing has one plate');
+        for (let i = 0; i < 2; i += 1)
+          await expectTopmost(plates.nth(i), `plate ${String(i)} at his stall`);
         const text = await page.locator('main').innerText();
         if (/until|Back Thursday/i.test(text)) throw new Error(`a countdown or away line: ${text}`);
+        await page.waitForTimeout(300);
         await shot('visitor-here');
-        // The blueprint card: its price is icons and numbers.
-        const buy = page.locator('button.action-btn', { hasText: /^Buy/ });
-        await buy.first().scrollIntoViewIfNeeded();
-        await expectTopmost(buy.first(), 'the Buy button');
-        await shot('visitor-blueprint');
-        // The reroll: the picker (worn pieces first), then a piece.
-        await page
-          .getByRole('button', { name: /Choose a piece/ })
-          .first()
-          .click();
-        const picker = page.getByRole('dialog', { name: rerollTitle });
-        await waitFor(picker);
-        await waitFor(picker.locator('.item-tile'));
+        // The reroll: a click on him opens the picker (worn pieces first) in the right drawer, a page on a phone.
+        await expectNoFocusOnClick(sceneTarget('The visitor'), 'the visitor');
+        await waitFor(rightPanel);
+        await waitFor(rightPanel.locator('.item-tile'));
+        await expectNoScroll();
         await page.waitForTimeout(300);
         await shot('visitor-picker');
-        await picker
+        await rightPanel
           .getByRole('button', { name: /Emberkeeper/ })
           .first()
           .click();
-        await waitFor(picker.getByText(/chance of Tier 4 \/ 5/));
-        await waitFor(picker.getByText(/old lines are gone for good/));
+        await waitFor(rightPanel.getByText(/chance of Tier 4 \/ 5/));
+        await waitFor(rightPanel.getByText(/old lines are gone for good/));
         if (visitorState.calls.length > 0) throw new Error('looking at a piece spent something');
-        const confirm = picker.locator('button.action-btn', { hasText: /^Reroll/ });
+        const confirm = rightPanel.locator('button.action-btn', { hasText: /^Reroll/ });
         await expectTopmost(confirm.first(), 'the Reroll button');
         await page.waitForTimeout(200);
         await shot('visitor-confirm');
         await confirm.first().click();
-        await waitFor(picker.getByText(/Rerolled\. The old lines are gone\./));
+        await waitFor(rightPanel.getByText(/Rerolled\. The old lines are gone\./));
         const [reroll] = visitorState.calls;
         if (
           reroll === undefined ||
@@ -3837,32 +4151,44 @@ try {
             `the reroll was sent without an idempotency key: ${JSON.stringify(reroll)}`,
           );
         if (visitorState.calls.length !== 1) throw new Error('a reroll was sent twice');
-        await waitFor(picker.getByText('Before', { exact: true }));
-        await waitFor(picker.getByText('After', { exact: true }));
-        await waitFor(picker.getByText(/Next reroll/));
+        await waitFor(rightPanel.getByText('Before', { exact: true }));
+        await waitFor(rightPanel.getByText('After', { exact: true }));
+        await waitFor(rightPanel.getByText(/Next reroll/));
         await page.waitForTimeout(200);
         await shot('visitor-result');
-        // Again: back to the piece, whose price rose.
-        await picker
+        // Again: back to the pieces, then a piece, whose price rose.
+        await rightPanel
           .locator('button.action-btn', { hasText: /Reroll again/ })
           .first()
           .click();
-        await waitFor(picker.locator('.item-tile'));
-        await picker
+        await waitFor(rightPanel.locator('.item-tile'));
+        await rightPanel
           .getByRole('button', { name: /Emberkeeper/ })
           .first()
           .click();
-        await waitFor(picker.getByText(/chance of Tier 4 \/ 5/));
-        await page.keyboard.press('Escape');
-        await picker.waitFor({ state: 'detached', timeout: 10000 });
-        // The blueprint: one tap, then it says so for the week.
+        await waitFor(rightPanel.getByText(/chance of Tier 4 \/ 5/));
+        // On a wide window the item card is in the left drawer: Escape closes the layers one at a time (the card, then the panel).
+        for (let i = 0; i < 3 && (await rightPanel.count()) > 0; i += 1) {
+          await page.keyboard.press('Escape');
+          await page.waitForTimeout(250);
+        }
+        await rightPanel.waitFor({ state: 'detached', timeout: 10000 });
+        // The blueprint on the counter: its price is icons and numbers; one tap buys, then it says so for the week.
+        await sceneTarget("This week's blueprint").click();
+        await waitFor(rightPanel);
+        const buy = rightPanel.locator('button.action-btn', { hasText: /^Buy/ });
+        await waitFor(buy.first());
+        await expectTopmost(buy.first(), 'the Buy button');
+        await shot('visitor-blueprint');
         await buy.first().click();
-        await waitFor(page.getByText('Bought this week.'));
+        await waitFor(rightPanel.getByText('Bought this week.'));
         const calls = visitorState.calls.filter(([name]) => name === 'blueprint');
         if (calls.length !== 1 || typeof calls[0][1].idempotencyKey !== 'string')
           throw new Error(`the blueprint was sent without a key: ${JSON.stringify(calls)}`);
-        await page.getByText('Bought this week.').first().scrollIntoViewIfNeeded();
         await shot('visitor-bought');
+        await page.keyboard.press('Escape');
+        await rightPanel.waitFor({ state: 'detached', timeout: 10000 });
+        await expectNoScroll();
         await backToValley();
       } finally {
         visitorOff();
@@ -3871,7 +4197,7 @@ try {
   );
 
   await scenario(
-    'the visitor leaves while his page is open (409 visitor_away before any spend): the page turns to his shuttered place',
+    'the visitor leaves while his blueprint is open (409 visitor_away before any spend): the scene turns to his shuttered stall and its sign',
     () => {
       visitorOn(true);
     },
@@ -3879,14 +4205,15 @@ try {
       try {
         await waitFor(page.locator(VALLEY), 'attached');
         await place('visitor').evaluate((el) => el.click());
-        await waitFor(page.getByRole('heading', { name: rerollTitle }));
+        await waitFor(sceneTarget("This week's blueprint"));
+        await sceneTarget("This week's blueprint").click();
         visitorState.here = false;
-        const buy = page.locator('button.action-btn', { hasText: /^Buy/ });
-        await buy.first().scrollIntoViewIfNeeded();
+        const buy = rightPanel.locator('button.action-btn', { hasText: /^Buy/ });
+        await waitFor(buy.first());
         await buy.first().click();
-        await waitFor(page.getByText('Back Thursday.'));
+        await waitFor(sceneTarget('The sign'));
         if ((await page.getByRole('button', { name: /Choose a piece|^Buy/ }).count()) > 0)
-          throw new Error('the page still offers his stock after he left');
+          throw new Error('the stall still offers his stock after he left');
         await shot('visitor-left');
         await backToValley();
       } finally {
@@ -3920,8 +4247,18 @@ try {
   const BRONZE_HONOUR = { honour: 1, tier: 2, boxes: [false, false, false], ready: false };
   const TWO_OF_FOUR = { honour: 0, tier: 1, boxes: [true, true, false, false], ready: false };
 
+  /** The School opens straight on its scene as a canvas (no page under it): the scene is inside the canvas shell. */
+  const schoolCanvasChecks = async () => {
+    await waitFor(page.locator('.pc-root .vy-in-school'));
+    if ((await page.locator('.vy-soon .vy-page').count()) > 0)
+      throw new Error('the School has a page under its scene');
+    await expectNoScroll();
+  };
+  const schoolSeats = () => page.locator('button.cv-target[aria-label^="A student seat"]');
+  const sitting = () => page.locator('button.cv-target[aria-label*="sits at the School"]');
+
   await scenario(
-    'the School with the teacher here (V-SCH-11, 13): the days, the faces with one Send, a student leaves the fire, Take off, and the refusals',
+    'the School with the teacher here (V-SCH-11, 13): the lectern opens the days and the faces with one Send, a student leaves the fire, Take off, the seat, a drag from the tray, and the refusals',
     () => {
       const creatures = schoolOn('here', (ids) => ids.slice(0, 3), {});
       trialsState.byId = { [creatures[1].id]: BRONZE_HONOUR };
@@ -3938,31 +4275,57 @@ try {
         await page.keyboard.press('Escape');
         await place('school').evaluate((el) => el.click());
         await waitFor(heading('School'));
-        await waitFor(page.getByRole('heading', { name: 'Visiting teacher' }));
-        await waitFor(page.getByText(/The visiting teacher is here \w+ to \w+\./));
-        const text = await page.locator('main').innerText();
+        await schoolCanvasChecks();
+        await waitFor(sceneTarget('The lectern'));
+        // Everything in the scene is a named, topmost tap with a plate: the lectern, the two seats, the graduation stage.
+        for (const name of ['The lectern', 'The graduation stage'])
+          await expectTopmost(sceneTarget(name), name);
+        if ((await schoolSeats().count()) !== 2) throw new Error('the bench has not two seats');
+        await expectTopmost(schoolSeats().first(), 'the first seat');
+        await expectTopmost(schoolSeats().nth(1), 'the second seat');
+        if (
+          (await page.locator('.cv-plate').count()) !==
+          (await page.locator('button.cv-target').count())
+        )
+          throw new Error('a tap in the School has no plate, or decoration has one');
+        await page.waitForTimeout(300);
+        await shot('school-here');
+        // The lectern opens the teacher: the days, the talent, who would learn it.
+        await sceneTarget('The lectern').click();
+        await waitFor(rightPanel);
+        await waitFor(rightPanel.getByText(/The visiting teacher is here \w+ to \w+\./));
+        const text = await rightPanel.innerText();
         noCountdown(text, 'the School');
         if (/\bAcorns?\b|\bscrap\b|\bshards?\b/i.test(text))
           throw new Error(`a currency named in words on the School: ${text}`);
-        await waitFor(page.getByText('First Pounce'));
-        await waitFor(page.getByText(/The next ceremony is (today|this evening|tomorrow)/));
-        await shot('school-here');
+        await waitFor(rightPanel.getByText('First Pounce'));
+        await page.waitForTimeout(300);
+        await shot('school-teacher');
         // The faces that would learn, one Send each.
-        const sends = page.getByRole('button', { name: /^Send / });
+        const sends = rightPanel.getByRole('button', { name: /^Send / });
         if ((await sends.count()) !== 3) throw new Error('not one Send for each face');
         // The second face (Cindle, the first, can evolve and shows that mark on the tray instead).
-        await sends.nth(1).scrollIntoViewIfNeeded();
         await expectTopmost(sends.nth(1), 'the Send button');
         await sends.nth(1).click();
-        await waitFor(page.getByText('Learns it by morning'));
+        await waitFor(rightPanel.getByText('Learns it by morning'));
         if (schoolState.calls.length !== 1 || schoolState.calls[0].index !== 0)
           throw new Error(`Send asked the server wrongly: ${JSON.stringify(schoolState.calls)}`);
+        await page.keyboard.press('Escape');
+        await rightPanel.waitFor({ state: 'detached', timeout: 10000 });
         await page.waitForTimeout(300);
         // The student sits on the bench in the scene, wearing its honour on the sprite.
         if ((await page.locator('.vy-stand .honour-ribbon').count()) !== 1)
           throw new Error('the seated student shows no ribbon in the scene');
-        await page.evaluate(() => window.scrollTo(0, 0));
+        await waitFor(sitting());
+        await expectNoScroll();
         await shot('school-send');
+        // The seat's own tap opens that student, and the one Take off is there.
+        await sitting().click();
+        await waitFor(rightPanel.getByText('Learns it by morning'));
+        await page.waitForTimeout(300);
+        await shot('school-student');
+        await page.keyboard.press('Escape');
+        await rightPanel.waitFor({ state: 'detached', timeout: 10000 });
         // The student left the fire: the tray marks it, the Bonfire's ring has no one of that name.
         const studentId = schoolState.seats[0];
         await backToValley();
@@ -3971,26 +4334,76 @@ try {
         await place('bonfire').evaluate((el) => el.click());
         await waitFor(heading('Bonfire'));
         await page.waitForTimeout(300);
-        if ((await page.locator(`#scene-${studentId}`).count()) > 0)
-          throw new Error('a student still sits at the fire');
+        const resting = await page
+          .locator('button.cv-target[aria-label*="resting by the fire"]')
+          .count();
+        if (resting !== baseState.creatures.length - 1)
+          throw new Error(`${String(resting)} rest by the fire; a student still sits there`);
         await backToValley();
-        // Take off: the seat is free again and the Send comes back.
+        // Take off: the seat is free again.
         await place('school').evaluate((el) => el.click());
-        await waitFor(page.getByText('Learns it by morning'));
-        await page.getByRole('button', { name: /^Take .* off the seat/ }).click();
-        await waitFor(page.getByRole('button', { name: /^Send / }).first());
+        await waitFor(sitting());
+        await sitting().click();
+        await rightPanel.getByRole('button', { name: /^Take off the seat/ }).click();
+        await rightPanel.waitFor({ state: 'detached', timeout: 10000 });
+        await waitFor(schoolSeats().first());
+        if ((await schoolSeats().count()) !== 2) throw new Error('the seat is not free again');
         if (schoolState.calls.length !== 2 || schoolState.calls[1].creatureId !== null)
           throw new Error(
             `Take off asked the server wrongly: ${JSON.stringify(schoolState.calls)}`,
           );
+        // An empty seat picks who joins: a tap on a face sends it to that seat.
+        await schoolSeats().nth(1).click();
+        await waitFor(rightPanel.getByRole('option').first());
+        await page.waitForTimeout(300);
+        await shot('school-seat-empty');
+        if ((await rightPanel.getByRole('option').count()) !== 3)
+          throw new Error('the empty seat does not offer the three faces');
+        await rightPanel.getByRole('option').nth(2).click();
+        await rightPanel.waitFor({ state: 'detached', timeout: 10000 });
+        if (schoolState.calls.length !== 3 || schoolState.calls[2].index !== 1)
+          throw new Error(`the seat pick asked wrongly: ${JSON.stringify(schoolState.calls)}`);
+        // Take that one off by its seat again.
+        await waitFor(sitting());
+        await sitting().click();
+        await rightPanel.getByRole('button', { name: /^Take off the seat/ }).click();
+        await rightPanel.waitFor({ state: 'detached', timeout: 10000 });
+        await waitFor(schoolSeats().nth(1));
+        // A hand carries a creature from the tray onto a free seat (a wide window; a phone's tray is a strip a finger holds).
+        if (width >= 960) {
+          const mover = page.locator(
+            `section[aria-label="Creatures to send"] button[data-creature="${schoolState.would[2]}"]`,
+          );
+          const start = await mover.boundingBox();
+          const over = await schoolSeats().first().boundingBox();
+          if (start === null || over === null) throw new Error('no boxes to drag between');
+          await page.mouse.move(start.x + start.width / 2, start.y + start.height / 2);
+          await page.mouse.down();
+          await page.mouse.move(start.x + start.width / 2 + 12, start.y + start.height / 2 + 12, {
+            steps: 4,
+          });
+          await page.mouse.move(over.x + over.width / 2, over.y + over.height / 2, { steps: 10 });
+          await page.mouse.move(over.x + over.width / 2 + 2, over.y + over.height / 2 + 2, {
+            steps: 3,
+          });
+          await page.waitForTimeout(150);
+          await page.mouse.move(over.x + over.width / 2, over.y + over.height / 2, { steps: 3 });
+          await shot('school-drag');
+          await page.mouse.up();
+          await waitFor(sitting());
+          const last = schoolState.calls.at(-1);
+          if (last.creatureId !== schoolState.would[2])
+            throw new Error(`the drop seated another creature: ${JSON.stringify(last)}`);
+          await sitting().click();
+          await rightPanel.getByRole('button', { name: /^Take off the seat/ }).click();
+          await rightPanel.waitFor({ state: 'detached', timeout: 10000 });
+        }
         // A refusal is the game's shared alert in words.
         schoolState.refuse = 'would_not_learn';
-        await page
-          .getByRole('button', { name: /^Send / })
-          .first()
-          .click();
+        await schoolSeats().first().click();
+        await waitFor(rightPanel.getByRole('option').first());
+        await rightPanel.getByRole('option').first().click();
         await waitFor(page.getByText('That creature would not learn this lesson.'));
-        await page.evaluate(() => window.scrollTo(0, 0));
         await shot('school-refusal');
         await backToValley();
       } finally {
@@ -4009,10 +4422,15 @@ try {
         await waitFor(page.locator(VALLEY), 'attached');
         await place('school').evaluate((el) => el.click());
         await waitFor(heading('School'));
-        await waitFor(page.getByText(/A visiting teacher comes \w+ to \w+\./));
-        noCountdown(await page.locator('main').innerText(), 'the announced School');
-        await waitFor(page.getByRole('button', { name: /^Send / }));
+        await schoolCanvasChecks();
         await shot('school-announced');
+        await sceneTarget('The lectern').click();
+        await waitFor(rightPanel.getByText(/A visiting teacher comes \w+ to \w+\./));
+        noCountdown(await rightPanel.innerText(), 'the announced School');
+        await waitFor(rightPanel.getByRole('button', { name: /^Send / }));
+        await page.waitForTimeout(300);
+        await shot('school-announced-teacher');
+        await page.keyboard.press('Escape');
         await backToValley();
       } finally {
         schoolOff();
@@ -4021,7 +4439,7 @@ try {
   );
 
   await scenario(
-    'the School when none of yours would learn it ("none of yours this time" in words), and with no teacher (the empty yard and the ceremony)',
+    'the School when none of yours would learn it ("none of yours this time" in words), and with no teacher (the empty yard and the ceremony at the house)',
     () => {
       schoolOn('here', () => []);
     },
@@ -4030,19 +4448,104 @@ try {
         await waitFor(page.locator(VALLEY), 'attached');
         await place('school').evaluate((el) => el.click());
         await waitFor(heading('School'));
-        await waitFor(page.getByText('None of yours this time.'));
-        if ((await page.getByRole('button', { name: /^Send / }).count()) > 0)
+        await schoolCanvasChecks();
+        await sceneTarget('The lectern').click();
+        await waitFor(rightPanel.getByText('None of yours this time.'));
+        if ((await rightPanel.getByRole('button', { name: /^Send / }).count()) > 0)
           throw new Error('a Send with nobody to send');
         await shot('school-none-of-yours');
+        await page.keyboard.press('Escape');
         await backToValley();
         schoolState.phase = 'away';
         // The place is read again each time it is opened.
         await place('school').evaluate((el) => el.click());
-        await waitFor(page.getByText('No teacher at the School right now.'));
-        await waitFor(page.getByText('2 ready to graduate', { exact: true }));
-        await waitFor(page.getByText(/The next ceremony is (today|this evening|tomorrow)/));
-        noCountdown(await page.locator('main').innerText(), 'the School without a teacher');
+        await waitFor(heading('School'));
+        await schoolCanvasChecks();
+        await waitFor(sceneTarget('The graduation stage'));
+        if ((await page.locator('button.cv-target[aria-label^="The lectern"]').count()) > 0)
+          throw new Error('the lectern stands with no teacher');
+        if ((await schoolSeats().count()) > 0) throw new Error('a seat to use with no teacher');
         await shot('school-away');
+        await sceneTarget('The graduation stage').click();
+        await waitFor(rightPanel.getByText('No teacher at the School right now.'));
+        await waitFor(rightPanel.getByText('2 ready to graduate', { exact: true }));
+        await waitFor(rightPanel.getByText(/The next ceremony is (today|this evening|tomorrow)/));
+        noCountdown(await rightPanel.innerText(), 'the School without a teacher');
+        await page.waitForTimeout(300);
+        await shot('school-graduation');
+        await page.keyboard.press('Escape');
+        await backToValley();
+      } finally {
+        schoolOff();
+      }
+    },
+  );
+
+  await scenario(
+    'the School while its project is built (V-COM-6): the builders corner stands apart, the table opens the board, the helper spot picks a helper, and the yard keeps its seats',
+    () => {
+      const creatures = schoolOn('here', (ids) => ids.slice(0, 3), {});
+      commonsScene({
+        school: {
+          level: 1,
+          state: 'open',
+          size: 600,
+          have: { acorns: 60, scrap: 100, shards: 4 },
+          given: 0,
+        },
+      });
+      stateOverride = {
+        creatures,
+        balances: { ...baseState.balances, bait: 1000 },
+        valley: valleyBlock(),
+      };
+    },
+    async () => {
+      try {
+        await waitFor(page.locator(VALLEY), 'attached');
+        await place('school').evaluate((el) => el.click());
+        await waitFor(heading('School'));
+        await schoolCanvasChecks();
+        const table = sceneTarget("The builders' table");
+        await waitFor(table);
+        await expectTopmost(table, 'the builders table target');
+        await waitFor(page.locator('button.cv-target.cv-slot[aria-label^="The helper spot"]'));
+        await expectTopmost(sceneTarget('The helper spot'), 'the helper spot');
+        await expectTopmost(sceneTarget('The lectern'), 'the lectern');
+        if ((await schoolSeats().count()) !== 2) throw new Error('the corner took a seat away');
+        const plates = page.locator('.cv-plate .nameplate');
+        for (let i = 0; i < (await plates.count()); i += 1)
+          await expectTopmost(plates.nth(i), `plate ${String(i)} at the School`);
+        await expectNoScroll();
+        await page.waitForTimeout(300);
+        await shot('school-corner');
+        // The table opens the project board in the left drawer (a page on a phone), the give flow a step of it.
+        await table.click();
+        await waitFor(leftPanel.getByRole('button', { name: /^Give/ }));
+        await page.waitForTimeout(300);
+        await shot('school-board');
+        await page.keyboard.press('Escape');
+        await leftPanel.waitFor({ state: 'detached', timeout: 10000 });
+        // The helper spot picks who helps build, in the right drawer; the pick is the commons' post to the School.
+        await sceneTarget('The helper spot').click();
+        await waitFor(rightPanel.getByRole('option').first());
+        await waitFor(rightPanel.getByText(/Who helps build the School/));
+        await page.waitForTimeout(300);
+        await shot('school-helper');
+        await rightPanel
+          .getByRole('option')
+          .filter({ hasText: /Sproutle/ })
+          .first()
+          .click();
+        await rightPanel.waitFor({ state: 'detached', timeout: 10000 });
+        if (!commonsCalls.some(([k, b]) => k === 'communal' && b.place === 'school'))
+          throw new Error('no post to the School');
+        await waitFor(
+          page.locator('button.cv-target[aria-label*="at the builders\' table. Change"]'),
+        );
+        if ((await page.locator('.fi-hammer').count()) !== 1)
+          throw new Error('the helper does not hammer at the table');
+        await shot('school-helper-posted');
         await backToValley();
       } finally {
         schoolOff();
@@ -4064,6 +4567,9 @@ try {
         await waitFor(page.locator(VALLEY), 'attached');
         await place('paddock').evaluate((el) => el.click());
         await waitFor(heading('Paddock'));
+        // The Creatures page is the Paddock's left drawer.
+        await creaturesButton().click();
+        await waitFor(leftPanel.locator('li.creature-card'));
         const pips = page.locator('button.trial-pips');
         await waitFor(pips);
         const labels = await pips.evaluateAll((els) =>
