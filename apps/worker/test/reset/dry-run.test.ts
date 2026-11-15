@@ -65,12 +65,12 @@ describe('the reset-dry-run dev tool', () => {
         expect(report.rowsToDelete).toBe(report.tables.reduce((n, t) => n + t.rows, 0));
         expect(report.tables.some((t) => t.table === 'guild_meta')).toBe(false);
         // The DMs: one per settler, all within the limit, a few previews.
-        expect(report.dms).toMatchObject({ count: 4, limit: 2000, over: 0 });
-        expect(report.dms.longest).toBeLessThanOrEqual(2000);
+        expect(report.dms).toMatchObject({ count: 4, limit: 6000, over: 0 });
+        expect(report.dms.longest).toBeLessThanOrEqual(6000);
         expect(report.dms.previews).toHaveLength(3);
         const ann = report.dms.previews.find((d) => d.name === 'Ann');
-        expect(ann?.content).toContain('**You were one of the first settlers.**');
-        expect(ann?.content).toContain('Cleared depth 18');
+        expect(ann?.content).toContain('You were one of the first settlers');
+        expect(ann?.content).toContain('Deepest dungeon: Cleared depth 18');
         expect(ann?.content).not.toContain(HOSTILE);
         expect(report.leet).toContain(zonedDate(ctx.clock.t, HELSINKI));
         expect(report.leet).toContain('never touched');

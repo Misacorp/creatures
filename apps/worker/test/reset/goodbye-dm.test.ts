@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { goodbyeMessage } from '../../src/reset/goodbye-dm';
+import { embedChars, embedText, goodbyeMessage } from '../../src/reset/goodbye-dm';
 import type { Settler, SettlerCreature } from '../../src/reset/record-schema';
 import { buildSettlersRecord } from '../../src/reset/settlers-record';
 import { HELSINKI, nextGuild } from '../raid-helpers';
@@ -7,6 +7,7 @@ import { runCore } from '../helpers';
 import { HOSTILE, KEY, seedWorld } from './world';
 
 const HEX = 'a'.repeat(64);
+const DOT = '·';
 
 function creature(_i: number, nickname: string | null): SettlerCreature {
   return {
@@ -52,55 +53,91 @@ function settler(creatures: SettlerCreature[], over: Partial<Settler['feats']> =
   };
 }
 
+const embedOf = (s: Settler) => goodbyeMessage(s).embeds[0];
+
+/** Discord's limits, all of them. */
+function expectWithinLimits(s: Settler): void {
+  const body = goodbyeMessage(s);
+  const embed = body.embeds[0];
+  expect(body.embeds).toHaveLength(1);
+  expect(embed.title.length).toBeLessThanOrEqual(256);
+  expect((embed.description ?? '').length).toBeLessThanOrEqual(4096);
+  expect(embed.fields.length).toBeLessThanOrEqual(25);
+  for (const f of embed.fields) {
+    expect(f.name.length).toBeGreaterThan(0);
+    expect(f.value.length).toBeGreaterThan(0);
+    expect(f.name.length).toBeLessThanOrEqual(256);
+    expect(f.value.length).toBeLessThanOrEqual(1024);
+  }
+  expect(embedChars(embed)).toBeLessThanOrEqual(6000);
+  expect(body.allowed_mentions).toEqual({ parse: [] });
+  expect('content' in body).toBe(false);
+}
+
 describe('the goodbye DM', () => {
-  it("reads like the plan's draft", () => {
+  it("reads like the plan's draft, as an embed", () => {
     const names = ['Pebbles', 'Ember', 'Fizz'];
     const creatures = [
       ...names.map((n, i) => creature(i, n)),
       ...Array.from({ length: 39 }, (_, i) => creature(i, null)),
     ];
-    const body = goodbyeMessage(settler(creatures));
+    const s = settler(creatures);
+    const body = goodbyeMessage(s);
     expect(body.allowed_mentions).toEqual({ parse: [] });
-    expect(body.content.split('\n')).toEqual([
-      '**You were one of the first settlers.**',
+    expect(body.components).toEqual([]);
+    const embed = body.embeds[0];
+    expect(embed.title).toBe('You were one of the first settlers');
+    expect(embed.description).toBe(
       'The valley is starting over, and it will remember you. Here is what it keeps:',
-      'First Mossling and Lanternfin on the server · Cleared depth 18 · 31 blueprints',
-      '42 creatures, 612 levels in all · Highest: Pebbles the Cindle, level 31',
-      'Best crafter: Ember the Ashmole, Crafting 9 · Best explorer: Fizz the Zipmouse, Explorer 7',
-      `Your creatures: Pebbles, Ember, Fizz${', Cindle'.repeat(38)} and Cindle`,
+    );
+    expect(embed.color).toBe(0xf2b33d);
+    expect(embed.fields).toEqual([
+      { name: 'First on the server', value: 'Mossling and Lanternfin', inline: true },
+      { name: 'Deepest dungeon', value: 'Cleared depth 18', inline: true },
+      {
+        name: 'Collection',
+        value: `42 creatures ${DOT} 612 levels ${DOT} 31 blueprints`,
+        inline: true,
+      },
+      { name: 'Highest level', value: 'Pebbles the Cindle, level 31', inline: true },
+      { name: 'Best crafter', value: 'Ember the Ashmole, Crafting 9', inline: true },
+      { name: 'Best explorer', value: 'Fizz the Zipmouse, Explorer 7', inline: true },
+      {
+        name: 'Your creatures',
+        value: `Pebbles, Ember, Fizz${', Cindle'.repeat(38)} and Cindle`,
+        inline: false,
+      },
     ]);
+    expectWithinLimits(s);
   });
 
   it('skips the feats a settler has nothing for', () => {
-    const body = goodbyeMessage(
-      settler([creature(0, null)], {
-        deepestDepth: null,
-        firsts: [],
-        blueprints: 0,
-        bestCrafter: null,
-        bestExplorer: null,
-      }),
-    );
-    const lines = body.content.split('\n');
-    expect(lines).toHaveLength(4);
-    expect(lines[2]).toBe('1 creature, 612 levels in all · Highest: Pebbles the Cindle, level 31');
+    const s = settler([creature(0, null)], {
+      deepestDepth: null,
+      firsts: [],
+      blueprints: 0,
+      bestCrafter: null,
+      bestExplorer: null,
+    });
+    const fields = embedOf(s).fields;
+    expect(fields.map((f) => f.name)).toEqual(['Collection', 'Highest level', 'Your creatures']);
+    expect(fields[0]?.value).toBe(`1 creature ${DOT} 612 levels`);
     // A settler with no creatures and nothing else: only the greeting.
-    const bare = goodbyeMessage(
-      settler([], {
-        deepestDepth: null,
-        firsts: [],
-        blueprints: 0,
-        creatures: 0,
-        highestLevel: null,
-        totalLevels: 0,
-        bestCrafter: null,
-        bestExplorer: null,
-      }),
-    );
-    expect(bare.content.split('\n')).toHaveLength(2);
+    const bare = settler([], {
+      deepestDepth: null,
+      firsts: [],
+      blueprints: 0,
+      creatures: 0,
+      highestLevel: null,
+      totalLevels: 0,
+      bestCrafter: null,
+      bestExplorer: null,
+    });
+    expect(embedOf(bare).fields).toEqual([]);
+    expectWithinLimits(bare);
   });
 
-  it('stays within 2,000 characters for a huge roster of hostile nicknames, ending in "and N more"', () => {
+  it('stays within every Discord limit for a huge roster of hostile nicknames, ending in "and N more"', () => {
     const nick = HOSTILE.repeat(3);
     const creatures = Array.from({ length: 2000 }, (_, i) =>
       creature(i, i % 2 === 0 ? nick : `n${String(i)}`),
@@ -120,36 +157,45 @@ describe('the goodbye DM', () => {
         rank: 7,
       },
     };
-    const body = goodbyeMessage(settler(creatures, hostileFeats));
-    expect(body.content.length).toBeLessThanOrEqual(2000);
-    expect(body.content).toMatch(/ and \d+ more$/);
-    expect(body.content).toContain('Your creatures: ');
-    expect(body.allowed_mentions).toEqual({ parse: [] });
+    const s = settler(creatures, hostileFeats);
+    expectWithinLimits(s);
+    const last = embedOf(s).fields.at(-1);
+    expect(last?.name).toBe('Your creatures');
+    expect(last?.inline).toBe(false);
+    expect(last?.value).toMatch(/ and \d+ more$/);
+  });
+
+  it('fills the 1,024 limit of the creature field and says how many are left', () => {
+    const creatures = Array.from({ length: 2000 }, (_, i) => creature(i, `Name${String(i)}`));
+    const value = embedOf(settler(creatures)).fields.at(-1)?.value ?? '';
+    expect(value.length).toBeLessThanOrEqual(1024);
+    expect(value.length).toBeGreaterThan(1000);
+    const more = Number(/ and (\d+) more$/.exec(value)?.[1]);
+    expect(value.split(', ')).toHaveLength(2000 - more);
   });
 
   it('makes hostile text inert: no live mention, @everyone, channel link or markdown', () => {
     const cases: [string, string[]][] = [
-      ['**BIG** @everyone @here', ['\\*\\*BIG\\*\\*', '@\u200Beveryone', '@\u200Bhere']],
-      ['<@12345678901234567>', ['<@\u200B12345678901234567\\>']],
+      ['**BIG** @everyone @here', ['\\*\\*BIG\\*\\*', '@​everyone', '@​here']],
+      ['<@12345678901234567>', ['<@​12345678901234567\\>']],
       ['<#42> <&7>', ['<\\#42\\>']],
       ['<:x:1>', ['<\\:x\\:1\\>']],
       ['[a](http://x.t)', ['\\[a\\]\\(http\\:']],
       ['`c` ~~s~~ > q\n# h', ['\\`c\\`', '\\~\\~s\\~\\~', '\\> q \\# h']],
     ];
     for (const [nick, expected] of cases) {
-      const body = goodbyeMessage(
-        settler([creature(0, nick)], {
-          highestLevel: {
-            creature: { species: 'cindle', speciesName: 'Cindle', nickname: nick },
-            level: 3,
-          },
-        }),
-      );
-      const text = body.content;
+      const s = settler([creature(0, nick)], {
+        highestLevel: {
+          creature: { species: 'cindle', speciesName: 'Cindle', nickname: nick },
+          level: 3,
+        },
+      });
+      const text = embedText(embedOf(s));
       for (const part of expected) expect(text, nick).toContain(part);
       // Every @ is followed by a zero-width space, so it never resolves; a hostile line break never starts a new line.
-      expect(text, nick).not.toMatch(/@(?!\u200B)/);
-      expect(text.split('\n'), nick).toHaveLength(6);
+      expect(text, nick).not.toMatch(/@(?!​)/);
+      // Title, description, six fields and the creature field: one line each.
+      expect(text.split('\n'), nick).toHaveLength(9);
     }
   });
 
@@ -164,11 +210,14 @@ describe('the goodbye DM', () => {
       const ann = record.settlers[0];
       if (ann === undefined) throw new Error('no settler');
       const body = goodbyeMessage(ann);
-      expect(body.content).toContain('First Cindle, Sproutle and Zipmouse on the server');
-      expect(body.content).toContain('Cleared depth 18');
-      expect(body.content).toContain('2 blueprints');
-      expect(body.content).toContain('4 creatures, 44 levels in all');
-      expect(body.content).toContain('Highest: Pebbles the Pyrelynx, level 20');
+      expectWithinLimits(ann);
+      const value = (name: string) => body.embeds[0].fields.find((f) => f.name === name)?.value;
+      expect(value('First on the server')).toBe('Cindle, Sproutle and Zipmouse');
+      expect(value('Deepest dungeon')).toBe('Cleared depth 18');
+      expect(value('Collection')).toContain('44 levels');
+      expect(value('Collection')).toContain('2 blueprints');
+      expect(value('Highest level')).toBe('Pebbles the Pyrelynx, level 20');
+      expect(JSON.stringify(body)).toContain('"allowed_mentions":{"parse":[]}');
     });
   });
 });
