@@ -1162,6 +1162,12 @@ const bonfireCanvasChecks = async () => {
   if ((await page.locator('.vy-soon .vy-page').count()) > 0)
     throw new Error('the Bonfire has a page under its scene');
 };
+/** The Market opens straight on its scene as a canvas (no page under it): the stall and the builders' corner are inside the canvas shell. */
+const marketCanvasChecks = async () => {
+  await waitFor(page.locator('.pc-root .vy-in-market'), 'attached');
+  if ((await page.locator('.vy-soon .vy-page').count()) > 0)
+    throw new Error('the Market has a page under its scene');
+};
 const backToValley = async () => {
   await hudBack().click();
   await waitFor(page.locator(VALLEY), 'attached');
@@ -3520,12 +3526,28 @@ try {
         await waitFor(page.locator(VALLEY), 'attached');
         await place('market').evaluate((el) => el.click());
         await waitFor(heading('Market'));
-        const board = page.locator('section[aria-label="Market project"]');
-        await waitFor(board);
+        await marketCanvasChecks();
+        // Before it is built the whole Market is a building site: no stall to use and no broker seat, the builders' corner with its
+        // table (the project board's way in) and the helper's dashed spot.
+        const table = sceneTarget("The builders' table");
+        await waitFor(table);
+        await expectTopmost(table, 'the builders table target');
+        await waitFor(page.locator('button.cv-target.cv-slot[aria-label^="The helper spot"]'));
+        if ((await sceneTarget('The shard stall').count()) > 0)
+          throw new Error('the stall can be used before the Market is built');
+        if ((await page.locator('button.cv-target[aria-label*="broker"]').count()) > 0)
+          throw new Error('a broker seat stands before the Market is built');
+        const plates = page.locator('.cv-plate .nameplate');
+        for (let i = 0; i < (await plates.count()); i += 1)
+          await expectTopmost(plates.nth(i), `plate ${String(i)} at the Market`);
+        await expectNoScroll();
         await page.waitForTimeout(300);
         await shot('market-building');
-        await board.scrollIntoViewIfNeeded();
-        await expectTopmost(board, 'the Market board');
+        await table.click();
+        const board = leftPanel.locator('section[aria-label="Market project"]');
+        await waitFor(board);
+        await page.waitForTimeout(500);
+        await expectTopmost(leftPanel, 'the Market board');
         // What is needed is icons and numbers (Acorns, scrap), never words.
         await waitFor(board.getByText(/Still needed:/));
         // Shards of any kind count too (V-COM-15): a line says so with the any-shard icon, and "Still needed" names no shard part.
@@ -3546,15 +3568,15 @@ try {
           throw new Error('the Market board should need exactly Acorns and scrap, as icons');
         await expectTopmost(board.getByText(/counts too, as many as you like/), 'the shard line');
         await shot('mshards-board');
-        if ((await page.getByRole('button', { name: /^Broker/ }).count()) > 0)
-          throw new Error('a broker seat stands before the Market is built');
+        // The give flow is a step of the same drawer: one panel at all times, never a sheet over it.
         await board.getByRole('button', { name: /^Give/ }).click();
-        await waitFor(dialogOf(/Give to the project/));
+        await waitFor(leftPanel.getByRole('button', { name: /^Ember Shard/ }));
+        if ((await page.getByRole('dialog').count()) !== 0)
+          throw new Error('a sheet is over the drawer');
         await page.waitForTimeout(500);
-        await expectTopmost(page.getByRole('dialog').first(), 'the Market give drawer');
+        await expectTopmost(leftPanel, 'the Market give step');
         // A row is an icon and a number: its name is the icon's spoken label ("Ember Shards: 7").
-        const rows = await page
-          .getByRole('dialog')
+        const rows = await leftPanel
           .getByRole('button')
           .evaluateAll((els) =>
             els.map((e) => e.querySelector('[role="img"]')?.getAttribute('aria-label') ?? ''),
@@ -3568,16 +3590,13 @@ try {
           throw new Error(`the give list offers shards in the wrong order: ${rows.join(' | ')}`);
         await shot('mshards-give-list');
         // Give Ember shards (any element counts in full): the gift names the element, one keyed gift.
-        await page
-          .getByRole('dialog')
-          .getByRole('button', { name: /^Ember Shard/ })
-          .click();
-        await waitFor(page.getByRole('dialog').getByRole('button', { name: /^Give/ }));
+        await leftPanel.getByRole('button', { name: /^Ember Shard/ }).click();
+        await waitFor(leftPanel.getByRole('button', { name: /^Give/ }));
         await page.waitForTimeout(300);
-        await expectTopmost(page.getByRole('dialog').first(), 'the Market shard amount');
+        await expectTopmost(leftPanel, 'the Market shard amount');
         await shot('mshards-give-amount');
-        await page.getByRole('dialog').getByRole('button', { name: /^Give/ }).click();
-        await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+        await leftPanel.getByRole('button', { name: /^Give/ }).click();
+        await waitFor(leftPanel.getByText(/You gave/));
         const gift = commonsCalls.find(([k]) => k === 'gift')?.[1];
         if (
           gift === undefined ||
@@ -3588,6 +3607,12 @@ try {
           typeof gift.idempotencyKey !== 'string'
         )
           throw new Error(`the shard gift was wrong: ${JSON.stringify(gift)}`);
+        // The helper's spot beside the table: a tap lists who can help (the right drawer).
+        await page.keyboard.press('Escape');
+        await leftPanel.waitFor({ state: 'detached', timeout: 10000 });
+        await sceneTarget('The helper spot').click();
+        await waitFor(rightPanel.getByRole('option').first());
+        await shot('market-helper-seat');
         await backToValley();
       } finally {
         marketOff();
@@ -3609,58 +3634,100 @@ try {
         await waitFor(page.locator(VALLEY), 'attached');
         await place('market').evaluate((el) => el.click());
         await waitFor(heading('Market'));
-        const slot = page.getByRole('button', { name: /^Broker: nobody posted/ });
-        await waitFor(slot);
-        await slot.scrollIntoViewIfNeeded();
-        await expectTopmost(slot, 'the empty broker slot');
+        await marketCanvasChecks();
+        // Built: the stall (the exchange) and the broker's dashed seat in front of it; the builders' corner is gone with the project.
+        const stall = sceneTarget('The shard stall');
+        const seat = page.locator('button.cv-target.cv-slot[aria-label^="The broker seat"]');
+        await waitFor(stall);
+        await waitFor(seat);
+        await expectTopmost(stall, 'the shard stall');
+        await expectTopmost(seat, 'the empty broker seat');
+        if ((await sceneTarget("The builders' table").count()) > 0)
+          throw new Error('the builders corner stands at a built Market');
+        const plates = page.locator('.cv-plate .nameplate');
+        for (let i = 0; i < (await plates.count()); i += 1)
+          await expectTopmost(plates.nth(i), `plate ${String(i)} at the Market`);
+        await expectNoScroll();
+        await page.waitForTimeout(300);
         await shot('market-free-seat');
-        for (const loc of [page.locator('.sp-seat').first(), page.locator('.vy-tray').first()]) {
-          if ((await loc.count()) > 0) await expectTopmost(loc, 'a Market card');
-        }
-        await slot.click();
-        await waitFor(dialogOf(/Who trades at the Market/));
+        await expectFocusCue(stall, 'the shard stall');
+        await expectNoFocusOnClick(seat, 'the broker seat');
+        await waitFor(rightPanel.getByRole('option').first());
+        await waitFor(page.getByText('Who trades at the Market?').first());
         await page.waitForTimeout(400);
-        await expectTopmost(page.getByRole('dialog').first(), 'the broker picker');
+        await expectTopmost(rightPanel, 'the broker list');
+        if ((await page.getByRole('dialog').count()) !== 0)
+          throw new Error('a sheet is over the drawer');
         await shot('market-broker-picker');
-        await page
+        await rightPanel
           .getByRole('option')
           .filter({ hasText: /Sproutle/ })
           .first()
           .click();
-        await waitFor(page.getByRole('button', { name: /^Broker: Sproutle/ }));
+        await rightPanel.waitFor({ state: 'detached', timeout: 10000 });
         const posted = scoutCalls.filter(([k]) => k === 'seat').at(-1)?.[1];
         if (posted?.seatId !== 'broker-1' || typeof posted.creatureId !== 'string')
           throw new Error(`the broker was ${JSON.stringify(posted)}`);
-        await waitFor(page.getByText(/Swaps\s+12\s+for\s+5, with a 10% chance of one extra/));
+        // The broker stands at its seat now, no empty outline; a tap opens it.
+        const broker = page.locator('button.cv-target[aria-label*="the broker."]');
+        await waitFor(broker);
+        if ((await page.locator('button.cv-target.cv-slot').count()) !== 0)
+          throw new Error('the broker seat is still an empty outline');
         await page.waitForTimeout(300);
         await shot('market-broker-posted');
-        // What it trades toward: a drawer of choices, one tap.
-        const toward = page.getByRole('button', { name: /^Trades toward: What the orders need/ });
-        await toward.scrollIntoViewIfNeeded();
-        await toward.click();
-        await waitFor(dialogOf(/Trade toward/));
-        await page.waitForTimeout(500);
-        await expectTopmost(page.getByRole('dialog').first(), 'the trade-toward drawer');
-        await shot('market-trade-toward');
-        await page
-          .getByRole('dialog')
-          .getByRole('button', { name: /^Grove Shard/ })
+        await broker.click();
+        await waitFor(rightPanel.getByText(/Swaps\s+12\s+for\s+5, with a 10% chance of one extra/));
+        await page.waitForTimeout(400);
+        await expectTopmost(rightPanel, 'the broker panel');
+        await shot('market-rates');
+        // What it trades toward: a step of the same panel, one tap.
+        await rightPanel
+          .getByRole('button', { name: /^Trades toward: What the orders need/ })
           .click();
-        await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+        await waitFor(rightPanel.getByText(/It never trades the few shards you keep/));
+        await page.waitForTimeout(500);
+        if ((await page.getByRole('dialog').count()) !== 0)
+          throw new Error('a sheet is over the drawer');
+        await expectTopmost(rightPanel, 'the trade-toward step');
+        await shot('market-trade-toward');
+        await rightPanel.getByRole('button', { name: /^Grove Shard/ }).click();
         const sent = commonsCalls.find(([k]) => k === 'broker')?.[1];
         if (sent?.seatId !== 'broker-1' || sent.toward !== 'grove')
           throw new Error(`the setting was ${JSON.stringify(sent)}`);
-        await waitFor(page.getByRole('button', { name: /^Trades toward: Grove shards/ }));
-        // Its rates and the next step.
-        await page.getByRole('button', { name: /Show the rates/ }).click();
-        await waitFor(dialogOf(/Rates/));
-        await page.waitForTimeout(500);
-        await expectTopmost(page.getByRole('dialog').first(), 'the rates drawer');
-        await shot('market-rates');
+        await waitFor(rightPanel.getByRole('button', { name: /^Trades toward: Grove shards/ }));
         await page.keyboard.press('Escape');
-        // The tray says Trading for the creature at the seat.
-        await waitFor(page.getByRole('button', { name: /Sproutle.*Trading at the Market/ }));
+        await rightPanel.waitFor({ state: 'detached', timeout: 10000 });
+        // The stall opens the exchange in the right drawer.
+        await stall.click();
+        await waitFor(rightPanel.getByRole('button', { name: /^Trade\b.*× \d/ }));
+        await page.waitForTimeout(500);
+        await expectTopmost(rightPanel, 'the exchange');
+        await shot('market-exchange');
+        await page.keyboard.press('Escape');
+        // A creature carried from the tray onto the broker takes its seat, and the drag never opens a drawer.
+        const mover = page
+          .locator('section[aria-label="Creatures to post"] button[data-creature]')
+          .nth(1);
+        const moverId = await mover.getAttribute('data-creature');
+        const from = await mover.boundingBox();
+        const to = await broker.boundingBox();
+        if (from === null || to === null) throw new Error('no boxes to drag');
+        await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+        await page.mouse.down();
+        await page.mouse.move(from.x + from.width / 2 + 12, from.y + from.height / 2 + 12, {
+          steps: 4,
+        });
+        await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 10 });
+        await page.mouse.up();
+        await page.waitForTimeout(400);
+        const dragged = scoutCalls.filter(([k]) => k === 'seat').at(-1)?.[1];
+        if (dragged?.seatId !== 'broker-1' || dragged.creatureId !== moverId)
+          throw new Error(`the dragged broker was ${JSON.stringify(dragged)}`);
+        if ((await drawer.count()) !== 0) throw new Error('a drag opened a drawer');
+        await shot('market-tray-drag');
+        // The tray (the map's) says Trading for the creature at the seat.
         await backToValley();
+        await waitFor(page.getByRole('button', { name: /Trading at the Market/ }));
       } finally {
         marketOff();
       }
@@ -3727,12 +3794,14 @@ try {
         // It leads to the Market's project board.
         await go.first().click();
         await waitFor(heading('Market'));
-        const board = page.locator('section[aria-label="Market project"]');
-        await waitFor(board);
-        await board.scrollIntoViewIfNeeded();
-        await expectTopmost(board, 'the Market board');
-        if ((await page.getByRole('button', { name: /Trade shards/ }).count()) > 0)
+        await marketCanvasChecks();
+        await waitFor(sceneTarget("The builders' table"));
+        if ((await sceneTarget('The shard stall').count()) > 0)
           throw new Error('the Market offers the exchange before it is built');
+        await sceneTarget("The builders' table").click();
+        const board = leftPanel.locator('section[aria-label="Market project"]');
+        await waitFor(board);
+        await expectTopmost(leftPanel, 'the Market board');
         await backToValley();
 
         // The server builds the Market: the same anvil now leads to the exchange.
@@ -3761,24 +3830,22 @@ try {
         // It leads to the Market's exchange, on the shard the anvil waits for: rate and crit are shown, the trade is keyed.
         await trade.first().click();
         await waitFor(heading('Market'));
-        await waitFor(page.getByRole('dialog', { name: /Trade shards/ }));
+        await marketCanvasChecks();
+        await waitFor(rightPanel.getByRole('button', { name: /^Trade\b.*× \d/ }));
         await page.waitForTimeout(500);
-        const text = await page.getByRole('dialog').innerText();
+        const text = await rightPanel.innerText();
         if (!/10% chance to get\s+2/.test(text))
           throw new Error('the exchange does not show the crit chance');
         // The shard to get is its icon (Grove) with a number, then "You get".
         if (
           !/You get/.test(text) ||
-          (await page
-            .getByRole('dialog')
-            .locator('[role="img"][aria-label^="Grove Shard"]')
-            .count()) === 0
+          (await rightPanel.locator('[role="img"][aria-label^="Grove Shard"]').count()) === 0
         )
           throw new Error(`the exchange did not start on Grove: ${text}`);
-        await expectTopmost(page.getByRole('dialog').first(), 'the exchange drawer');
+        await expectTopmost(rightPanel, 'the exchange drawer');
         await shot('q64-market-exchange');
-        await page.getByRole('button', { name: /^Trade.*× \d/ }).click();
-        await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+        await rightPanel.getByRole('button', { name: /^Trade\b.*× \d/ }).click();
+        await rightPanel.waitFor({ state: 'detached', timeout: 10000 });
         const traded = forgeCalls.at(-1);
         if (
           traded?.[0] !== 'exchange' ||
@@ -3786,10 +3853,8 @@ try {
           traded[1].to !== 'grove'
         )
           throw new Error('the trade was sent without an idempotency key, or not for Grove');
-        // The exchange is also one tap away on the Market's own page.
-        const tap = page.getByRole('button', { name: /^Trade shards/ });
-        await tap.scrollIntoViewIfNeeded();
-        await expectTopmost(tap.first(), 'the exchange row');
+        // The exchange is also one tap away on the Market's own stall.
+        await expectTopmost(sceneTarget('The shard stall'), 'the stall');
         await backToValley();
       } finally {
         forgeState.waitShard = null;

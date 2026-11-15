@@ -110,7 +110,7 @@ import { createSchoolActions, isSchoolRefusal, refreshSchool } from './valley/sc
 import { readerZone, studentIds, withoutStudents } from './valley/school-view';
 import { HonoursContext, honoursOf } from './valley/HonourRibbon';
 import { shardsHeld } from './valley/visitor-view';
-import type { MarketActions, MarketStart } from './valley/MarketPage';
+import type { MarketActions, MarketStart } from './valley/MarketCanvas';
 import { SignpostCanvas } from './valley/SignpostCanvas';
 import type { SignpostActions } from './valley/SignpostSeats';
 import type { CommonsActions } from './valley/CommonsBoard';

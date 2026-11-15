@@ -15,7 +15,7 @@ import { BonfireCanvas } from './BonfireCanvas';
 import { CommonsBoard, type CommonsActions, type CommonsStart } from './CommonsBoard';
 import { YourHouseRow } from './YourHouseRow';
 import { Keepsakes } from './Keepsakes';
-import { MarketPage, type MarketActions, type MarketStart } from './MarketPage';
+import { MarketCanvas, type MarketActions, type MarketStart } from './MarketCanvas';
 import { marketState } from './market-view';
 import { VisitorPage, type VisitorFeed } from './VisitorPage';
 import { AWAY_LINE, isHere } from './visitor-view';
@@ -175,9 +175,6 @@ export function ValleyFrame({
     market !== undefined &&
     marketAt !== null &&
     marketAt !== 'waiting';
-  const marketCast = marketPage
-    ? castFor('market', { ...placeInput, ...castExtra, visit }, artSize(SCENE_ART.market), bubbles)
-    : null;
   // The visitor has a page while the server says he is here; away it is his shuttered spot and one line; before the server has said, "not open yet".
   const visitorView = visit !== null && visitor !== undefined ? visitor.view : null;
   const visitorPage =
@@ -332,34 +329,26 @@ export function ValleyFrame({
             />
           </section>
         )}
-        {marketPage && marketCast !== null && visit !== null && market !== undefined && (
-          <div class="vy-page">
-            <PlaceScene
-              cast={marketCast}
-              onAct={() => {
-                scrollAndFocus(insideRef.current);
+        {marketPage && visit !== null && market !== undefined && (
+          <section class="vy-soon" aria-label={placeLabel('market')}>
+            <MarketCanvas
+              visit={visit}
+              creatures={creatures}
+              acorns={acorns}
+              busy={busy}
+              error={error}
+              actions={market}
+              {...(commons === undefined ? {} : { commons })}
+              trayInput={tray}
+              onOpenPaddock={() => {
+                onOpen('paddock');
+              }}
+              start={{
+                ...marketStart,
+                ...(commonsStart === undefined ? {} : { commons: commonsStart }),
               }}
             />
-            <div class="vy-inside" ref={insideRef} tabIndex={-1}>
-              <MarketPage
-                visit={visit}
-                creatures={creatures}
-                trayInput={tray}
-                acorns={acorns}
-                busy={busy}
-                error={error}
-                actions={market}
-                {...(commons === undefined ? {} : { commons })}
-                onOpenPaddock={() => {
-                  onOpen('paddock');
-                }}
-                start={{
-                  ...marketStart,
-                  ...(commonsStart === undefined ? {} : { commons: commonsStart }),
-                }}
-              />
-            </div>
-          </div>
+          </section>
         )}
         {visitorPage && visitorCast !== null && visitor !== undefined && isHere(visitorView) && (
           <div class="vy-page">
