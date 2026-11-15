@@ -4,10 +4,10 @@
       "id": "v2-marks",
       "title": "Marks and reactions",
       "lines": [
-        "A Setter's hit leaves its element's {Mark} on the boss. The mark strip under the boss shows them all.",
-        "Hit the same element again and the mark gains a stack. A boss can carry several marks at once.",
+        "A Setter's hit leaves its element's {Mark} on the boss. The mark strip under the boss shows them, oldest first.",
+        "Hit the same element again and the mark gains a stack, up to three. A boss carries one mark of each element.",
         "A Payoff that hits a mark its element is strong against sets off a {Reaction}: bonus damage.",
-        "Each Reaction takes a stack off the mark. When its stacks run out, the mark is gone.",
+        "Each Reaction takes a stack off the mark. Mire's mark is Mired. {Bogged Down} is a debuff, apart from the strip.",
         "A row acts from the front, left to right. Put the Setter before the Payoff, so the mark is there to cash."
       ]
     },
@@ -23,12 +23,23 @@
       ]
     },
     {
+      "id": "v2-growth",
+      "title": "Levels and growth",
+      "lines": [
+        "Whatever a creature does earns it experience, and levels keep coming. The picture shows what each one brings.",
+        "Talent slots open with level: one at the start, more later. Commons have two slots, rarer species three.",
+        "Learned talents live in the line's Talent Book. Swapping among them is free until the raid locks.",
+        "Many species evolve, and some choose one of two forms. A new form adds its own Knacks to the ones known.",
+        "Every catch rolls a talent. A duplicate catch is a choice: teach its talent, fuse it, release it, or keep it."
+      ]
+    },
+    {
       "id": "v2-board",
       "title": "The board",
       "lines": [
-        "Your team stands in rows and columns. Row 1 is the one nearest the boss.",
-        "Each row acts from left to right, and the boss takes a turn after every row.",
-        "The boss has a plain attack and named moves. A move's tile shows its shape and whom it picks.",
+        "A raid is one big board. Each player brings a few creatures to a seat of their own; the boss decides how many.",
+        "Row 1 is the one nearest the boss. Each row acts from left to right, and the boss takes a turn after every row.",
+        "The boss has a plain attack and named moves. Tap a move's tile to light its slots and read what it does.",
         "The shape says which slots it hits: Slam, Lance, Sweep, Barrage, Quake, Strike, Hush, Pincer or Leap.",
         "The target says whom it picks: Front, Rear, Payoff, Nemesis (the strongest), Vulture (the most hurt) or Wild."
       ]
@@ -51,8 +62,8 @@
         "Stage 1 plays on Saturday, stage 2 on Sunday, and the live finale on Sunday evening.",
         "The three stages share one boss. Only HP carries over: marks and the rest start fresh each stage.",
         "A creature that is knocked out is out for the weekend. A spare can take its empty slot before the next stage.",
-        "Players lock in when stage 1 begins: whoever is on the board fights, and nobody joins after.",
-        "To pair up differently, tap a teammate's creature and Ask to swap. They answer from Home."
+        "Players lock in at stage 1. In the live finale you give one order, when you choose: Rally, Shield Wall or Purge.",
+        "To pair up differently, tap a teammate's creature and Ask to swap. They answer from Home; you can Cancel."
       ]
     },
     {
@@ -60,9 +71,9 @@
       "title": "The Boss Rank",
       "lines": [
         "The server meets the bosses in a fixed order, and the Boss Rank counts how far along it is.",
-        "Beat the boss and the server moves on to the next one, a Rank higher.",
-        "The next boss is known a week ahead, so you can prepare.",
+        "Beat the boss and the server moves on to the next one, a Rank higher. The next boss is known a week ahead.",
         "A boss you did not beat comes back next week at full HP, with the most you took off it shown as a pale fill.",
+        "Every fifth week is a Festival: no raid, and the order waits for you.",
         "After the first lap, each failed weekend gives {Determination}: a little more damage and healing."
       ]
     }

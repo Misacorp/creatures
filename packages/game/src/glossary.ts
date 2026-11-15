@@ -13,10 +13,12 @@ import glossaryJson from './content/data/glossary.json';
 import glossaryV2Json from './content/data/glossary-v2.json';
 import howToPlayJson from './content/data/how-to-play.json';
 import howToPlayV2Json from './content/data/how-to-play-v2.json';
+import howToPlayValleyJson from './content/data/how-to-play-valley.json';
 import {
   loadGlossary,
   loadHowToPlay,
   loadHowToPlayV2,
+  loadHowToPlayValley,
   type Glossary,
   type GlossaryEntry,
   type GlossarySection,
@@ -97,6 +99,8 @@ export const glossary: Glossary = loadGlossary(
 export const howToPlay = loadHowToPlay(howToPlayJson, content);
 /** The combat v2 How to play page, shown instead of the combat sections of `howToPlay` while the server plays v2. */
 export const howToPlayV2 = loadHowToPlayV2(howToPlayV2Json);
+/** The valley's part of the How to play page, shown with combat v2 while the server runs the valley's base systems. */
+export const howToPlayValley = loadHowToPlayValley(howToPlayValleyJson);
 
 const BY_ID = new Map<string, GlossaryEntry>(glossary.map((e) => [e.id, e]));
 

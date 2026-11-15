@@ -1,4 +1,4 @@
-import { GLOSSARY_SECTIONS, GLOSSARY_SECTIONS_V2 } from '@creatures/game';
+import { GLOSSARY_SECTIONS, GLOSSARY_SECTIONS_V2, GLOSSARY_SECTIONS_VALLEY } from '@creatures/game';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { HowToPlay } from '../../HowToPlay';
 import { glyphOrUnknown } from '../../glyphs';
@@ -167,16 +167,22 @@ const howToPlay: Entry = {
   file: 'apps/activity/src/HowToPlay.tsx',
   group: 'Popovers',
   description:
-    'The How to play page, the last resort for how things work: its sections in order, each with a small picture built from the game\'s own pieces. "More in How to play" in a popover opens it at that section. Close does nothing here. With "combat v2" on (the server\'s `combatV2`) the six combat v2 sections come first and the shipped combat ones are gone; a keyword chip in a line opens that keyword\'s help.',
+    'The How to play page, the last resort for how things work: its sections in order, each with a small picture built from the game\'s own pieces. "More in How to play" in a popover opens it at that section. Close does nothing here. With "combat v2" on (the server\'s `combatV2`) the seven combat v2 sections come first and the shipped combat ones are gone; a keyword chip in a line opens that keyword\'s help. With "valley" on too (`valleySystems`) the valley sections follow and replace trips, the Workshop and gear, and the growth picture shows honours and every slot open.',
   controls: {
     section: {
       kind: 'select',
-      options: [ALL_SECTIONS, ...GLOSSARY_SECTIONS, ...GLOSSARY_SECTIONS_V2],
+      options: [
+        ALL_SECTIONS,
+        ...GLOSSARY_SECTIONS,
+        ...GLOSSARY_SECTIONS_V2,
+        ...GLOSSARY_SECTIONS_VALLEY,
+      ],
     },
     v2: { kind: 'toggle' },
     housing: { kind: 'toggle' },
+    valley: { kind: 'toggle' },
   },
-  defaults: { section: ALL_SECTIONS, v2: false, housing: false },
+  defaults: { section: ALL_SECTIONS, v2: false, housing: false, valley: false },
   presets: [
     { name: 'From the top', props: {} },
     { name: 'Gear', props: { section: 'gear' } },
@@ -189,10 +195,15 @@ const howToPlay: Entry = {
     { name: 'Combat v2: armour and crits', props: { v2: true, section: 'v2-armour' } },
     { name: 'Combat v2: the weekend', props: { v2: true, section: 'v2-weekend' } },
     { name: 'Combat v2: the Boss Rank', props: { v2: true, section: 'v2-rank' } },
+    { name: 'Combat v2: levels and growth', props: { v2: true, section: 'v2-growth' } },
+    { name: 'Valley, from the top', props: { v2: true, valley: true } },
+    { name: 'Valley: the Forge', props: { v2: true, valley: true, section: 'valley-forge' } },
   ],
   render: (p) => {
     const section =
-      [...GLOSSARY_SECTIONS, ...GLOSSARY_SECTIONS_V2].find((s) => s === str(p, 'section')) ?? null;
+      [...GLOSSARY_SECTIONS, ...GLOSSARY_SECTIONS_V2, ...GLOSSARY_SECTIONS_VALLEY].find(
+        (s) => s === str(p, 'section'),
+      ) ?? null;
     return (
       <HowToPlay
         section={section}
@@ -200,6 +211,7 @@ const howToPlay: Entry = {
         onClose={() => undefined}
         v2={bool(p, 'v2')}
         housing={bool(p, 'housing')}
+        valley={bool(p, 'valley')}
       />
     );
   },
