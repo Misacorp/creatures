@@ -429,7 +429,7 @@ export const VALLEY_PLACE_PROPS_CONCEPTS: ConceptSet = {
     },
     'graduation-stage': {
       kind: 'free',
-      note: "The graduation stage, 48x24, base row 19 (the platform foot; row 20 shadow, light on rows 20 to 23): a plank stage with a step at the right, two lantern posts and a string of bunting; the lanterns' light lies on the ground. Variations: A (this) a stage with bunting; B a banner arch over the School yard (two poles, a teal cloth banner with a cream mortarboard, lanterns, base row 22); C a low stone podium with a lectern, ribbons, rosettes and corner lamps (base row 21). Pick: A, because it reads as a place to stand at 1x with nothing to decode, its warm light matches the other places, and B and C each need the zoom to read their emblem or lectern.",
+      note: "The graduation stage, 48x24, base row 19 (the platform foot; row 20 shadow, light on rows 20 to 23): a plank stage with a step at the right, two lantern posts and a string of bunting; the lanterns' light lies on the ground. Variations: A (this) a stage with bunting; B a banner arch over the School yard (two poles, a teal cloth banner with a cream mortarboard, lanterns, base row 22); C a low stone podium with a lectern, ribbons, rosettes and corner lamps (base row 21). Pick: B (lead's review, 2026-11-15), because the mortarboard banner says graduation at a glance while A reads as any wooden platform; the drawing agent picked A for its warm light and simplicity.",
       sprite: ST.sprite,
       alts: { day: ST.day },
       variants: { B: archB(), C: podiumC() },
