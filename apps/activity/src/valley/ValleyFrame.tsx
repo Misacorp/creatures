@@ -17,8 +17,8 @@ import { YourHouseRow } from './YourHouseRow';
 import { Keepsakes } from './Keepsakes';
 import { MarketPage, type MarketActions, type MarketStart } from './MarketPage';
 import { marketState } from './market-view';
-import { VisitorPage, type VisitorFeed } from './VisitorPage';
-import { AWAY_LINE, isHere } from './visitor-view';
+import { VisitorCanvas } from './VisitorCanvas';
+import type { VisitorFeed } from './VisitorPanels';
 import { SchoolPage, type SchoolFeed } from './SchoolPage';
 import { isSchoolHere, studentIds } from './school-view';
 import { commonsOf, levelOf } from './commons-view';
@@ -45,7 +45,7 @@ import {
 import { placeOf, type PlaceId } from './valley-art';
 import { placeLabel } from './valley-logic';
 import { soonLine, type SoonPlaceId, type ValleyView } from './valley-nav';
-import { DEFAULT_LOOK, visitorName, type GlowName } from './valley-places';
+import { DEFAULT_LOOK, type GlowName } from './valley-places';
 
 /** The sprite of a place that is not open yet. */
 const SOON_ART: Readonly<Record<SoonPlaceId, GlowName>> = {
@@ -178,21 +178,14 @@ export function ValleyFrame({
   const marketCast = marketPage
     ? castFor('market', { ...placeInput, ...castExtra, visit }, artSize(SCENE_ART.market), bubbles)
     : null;
-  // The visitor has a page while the server says he is here; away it is his shuttered spot and one line; before the server has said, "not open yet".
+  // The visitor's stall is a canvas once the server has said anything of him (here: the visitor and the blueprint; away: the shuttered
+  // stall and its sign); before the server has said, "not open yet".
   const visitorView = visit !== null && visitor !== undefined ? visitor.view : null;
   const visitorPage =
     view.kind === 'soon' &&
     view.place === 'visitor' &&
     visitor !== undefined &&
-    isHere(visitorView);
-  const visitorCast = visitorPage
-    ? castFor(
-        'visitor',
-        { ...placeInput, ...castExtra, visit },
-        artSize(SCENE_ART.visitor),
-        bubbles,
-      )
-    : null;
+    visitorView !== null;
   // The School has a page once the server has said anything of it (away it is the empty yard and one line).
   const schoolPage =
     view.kind === 'soon' &&
@@ -357,27 +350,24 @@ export function ValleyFrame({
             </div>
           </div>
         )}
-        {visitorPage && visitorCast !== null && visitor !== undefined && isHere(visitorView) && (
-          <div class="vy-page">
-            <PlaceScene
-              cast={visitorCast}
-              onAct={() => {
-                scrollAndFocus(insideRef.current);
+        {visitorPage && visitor !== undefined && visitorView !== null && (
+          <section class="vy-soon" aria-label={placeLabel('visitor')}>
+            <VisitorCanvas
+              view={visitorView}
+              creatures={creatures}
+              trayInput={tray}
+              items={visitor.items}
+              blueprints={visitor.blueprints}
+              purse={visitor.purse}
+              busy={busy}
+              error={error}
+              actions={visitor.actions}
+              {...(visitor.start === undefined ? {} : { start: visitor.start })}
+              onOpenPaddock={() => {
+                onOpen('paddock');
               }}
             />
-            <div class="vy-inside" ref={insideRef} tabIndex={-1}>
-              <VisitorPage
-                view={visitorView}
-                items={visitor.items}
-                blueprints={visitor.blueprints}
-                purse={visitor.purse}
-                busy={busy}
-                error={error}
-                actions={visitor.actions}
-                {...(visitor.start === undefined ? {} : { start: visitor.start })}
-              />
-            </div>
-          </div>
+          </section>
         )}
         {schoolPage && schoolCast !== null && school !== undefined && isSchoolHere(schoolView) && (
           <div class="vy-page">
@@ -406,21 +396,14 @@ export function ValleyFrame({
           !visitorPage &&
           !schoolPage && (
             <section class="vy-soon" aria-label={placeLabel(view.place)}>
-              {(() => {
-                // His shuttered spot once the server has said he is away (a place not open yet keeps its own art).
-                const away = view.place === 'visitor' && visitorView !== null && !visitorView.here;
-                const art = away ? visitorName(false) : SOON_ART[view.place];
-                return (
-                  <SceneFrame
-                    id={view.place}
-                    label={placeLabel(view.place)}
-                    draw={placeSceneDraw(art)}
-                    scaleFor={(width, height) => placeScale(width, height, art)}
-                    onLeave={onLeave}
-                    act={<PinnedAct calm={away ? AWAY_LINE : soonLine(view.place)} />}
-                  />
-                );
-              })()}
+              <SceneFrame
+                id={view.place}
+                label={placeLabel(view.place)}
+                draw={placeSceneDraw(SOON_ART[view.place])}
+                scaleFor={(width, height) => placeScale(width, height, SOON_ART[view.place])}
+                onLeave={onLeave}
+                act={<PinnedAct calm={soonLine(view.place)} />}
+              />
             </section>
           )}
         {view.kind === 'place' && (

@@ -284,7 +284,7 @@ const valleyShell: Entry = {
       props: { start: 'visitor', visitor: 'here, known blueprint' },
     },
     {
-      name: 'Visitor away: the shuttered stall and one line',
+      name: 'Visitor away: the shuttered stall and its sign (Back Thursday)',
       props: { start: 'visitor', visitor: 'away' },
     },
     {
@@ -294,6 +294,10 @@ const valleyShell: Entry = {
     {
       name: 'Visitor: a piece chosen, its price and the odds',
       props: { start: 'visitor', visitor: 'here', open: 'reroll piece' },
+    },
+    {
+      name: 'Visitor: the week’s blueprint on the counter',
+      props: { start: 'visitor', visitor: 'here', open: 'blueprint' },
     },
     {
       name: 'The valley with the visitor here (his stall open on the map)',

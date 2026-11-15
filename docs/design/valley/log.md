@@ -621,3 +621,15 @@ Misa reviewed the sample: 6a yes, the canvas pattern rolls out; 6b "bigger" (a l
 **Picks to glance at.** `SCALE_MAX` 8; the corner's ground is a plain rectangle of the map's dirt tile; the fire still shows the ground-work scaffolding (stakes, rope, planks and so on) while the project fills, as before, though the corner holds the tools and materials too: it could be cut back to stakes and rope if the fire looks crowded.
 
 **Pick up here:** the same corner for the other places' projects when they move onto the canvas (the Paddock and the Signpost keep theirs in their boards).
+
+## 2026-11-15: the visitor's stall as a canvas (implementer, worktree of `ccr-93a1de17-yutb1a`)
+
+Misa (2026-11-15): "We need to update the other places into the new layout". The visitor's stall moves onto the canvas pattern, behind `VALLEY_SYSTEMS`.
+
+**Built.** `VisitorCanvas` replaces `VisitorPage` (the two `.sp-seat` cards under a `PlaceScene` band are gone). The scene is the stall (`visitor-canvas.ts`) filling the window at the largest whole scale 3 to 8 at which the stall and its plates fit, grass to every edge, the edges dressed with the Bonfire's quiet pieces. While he is here there are two things to click, each with one plate: **the visitor** (right drawer: the reroll wizard, pick a piece -> its card, odds and one confirm -> before and after with the next price) and **the blueprint on his counter** (right drawer: the shared `FindBlueprint` and a Buy, once a week). Away: the shuttered stall; its sign (plate "Back Thursday", right drawer with the one line) is the only thing to click; no timer. He has no building project, so no builders' corner. The creature tray stays under the scene (`below`). The item picker is the reroll's first step; the item card is a step of the same panel by default, and in the left drawer on a wide window with the `beside` look (`drawer-step`).
+
+**Where each old function went.** "Reroll a piece" card and its Choose a piece button: the visitor target (the intro line is the picker step's text). The reroll's drawer (grid, card, odds, warning, confirm, before and after, Reroll again, next price): `RerollPanel`'s three steps. "This week's blueprint" card (FindBlueprint, the new-or-known note, the price, short-of line, Buy, "Bought this week."): `BlueprintPanel`, and the counter's label says "bought this week". The away line "The stall is shuttered. Back Thursday." (was a pinned line in the soon scene): the sign's plate and drawer. The places list's "back Thursday" and the map's shuttered stall are unchanged.
+
+**Art the place would like** (for the Art session): a small blueprint prop on the counter (the target sits over the stall's shelf now, since the art has no separate blueprint), and a clearer wooden sign on the open stall's side if a second sign is wanted there.
+
+**Pick up here:** the Market and the School pages (other agents), then the Paddock and the House.

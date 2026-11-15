@@ -4,6 +4,14 @@ The valley and peaceful systems overhaul planned in docs/design/valley/: job pos
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-15: The visitor's stall is a canvas: the visitor and the blueprint to click, a sign while he is away
+
+ID: `2026-11-15-the-visitor-s-stall-is-a` · Status: current
+
+**Decision.** The weekly visitor's place is a canvas (`valley/VisitorCanvas`, replacing `VisitorPage`). While he is here the scene has two things to click, each with one plate: the visitor (right drawer: the reroll wizard, pick a piece, then its card, odds and one confirm, then before and after) and the week's blueprint on his counter (right drawer: its card and Buy). While he is away the shuttered stall shows and its sign (plate "Back Thursday", a drawer with the one line) is the only thing to click; there is no timer. He has no building project, so there is no builders' corner. The creature tray stays under the scene. The item card is a step of the reroll panel by default and opens in the left drawer on a wide window with the `beside` look, as the Forge's bag card does (`drawer-step`).
+
+**Reasoning.** Misa asked for the other places to move onto the new layout (2026-11-15). The stall's two jobs map to the two things in its art, so each is one click; the away state keeps what the old page said ("Back Thursday") in the scene itself. The blueprint's target sits over the stall's shelf because the art has no separate blueprint prop yet (asked of the Art session).
+
 ## 2026-11-15: The Bonfire is a canvas of creatures chilling round the fire, and the project lives in a builders' corner **[Misa]**
 
 ID: `2026-11-15-the-bonfire-is-a-canvas-of` · Status: current

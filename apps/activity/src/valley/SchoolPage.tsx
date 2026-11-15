@@ -1,6 +1,5 @@
 /**
- * The School's page (phase 5 step 9b, `systems/school.md` V-SCH-10 to 13, `systems/trials.md` V-TRIAL-3, 4), under the School's scene the way
- * the visitor's page sits under his stall (`VisitorPage`): cards of the Signpost's seat family (`.sp-seat`). The first says where the
+ * The School's page (phase 5 step 9b, `systems/school.md` V-SCH-10 to 13, `systems/trials.md` V-TRIAL-3, 4), under the School's scene: cards of the Signpost's seat family (`.sp-seat`). The first says where the
  * visiting teacher stands and what they teach (the shared talent chip, the stay's days in the reader's own time). The second is the
  * students: the faces of the player's creatures that would learn it, each with one Send (a seated student says "Learns it by morning" and
  * has one Take off); "None of yours this time." in words when no creature would. The third is the graduation: how many of the player's
