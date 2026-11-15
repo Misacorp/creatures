@@ -47,7 +47,7 @@ const PATHS = [
 
 /** Budgets: about 1.5x the rows read when they were set, rounded up (the measured value is in the comment). */
 const BUDGET = {
-  start: 70, // measured 45 (43 of them: `MAX(version)` reads every row of schema_version, one per migration)
+  start: 5, // measured 3 on 2026-11-15 (the highest recorded version through an index, the lounge row and the build row; was 70 with 68 migrations: the runner read every row of schema_version)
   alarm: 30, // measured 19
   '/api/me': 40, // measured 25
   '/api/state': 700, // measured 465 (610 before migration 44's trip indexes)

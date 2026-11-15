@@ -55,6 +55,7 @@ Superseded: 1 entry (see the topic file).
 
 [platform.md](platform.md): Hosting, Durable Objects, scheduling, CI and deploys, staging, dependencies, security, database reads, data cleanup, analytics, dev tools, the workbench, player feedback, sockets.
 
+- 2026-11-15 The migration runner reads one row at object start
 - 2026-11-15 Housing's migration is 68: the valley merged first with 64 to 67
 - 2026-11-14 Dev panel: a full-screen layout with sections, and a target player for every per-player tool
 - 2026-11-11 Furniture workshop: silhouette variants per form, chosen by the style

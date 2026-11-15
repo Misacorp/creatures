@@ -4,6 +4,14 @@ Hosting, Durable Objects, scheduling, CI and deploys, staging, dependencies, sec
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-15: The migration runner reads one row at object start
+
+ID: `2026-11-15-the-migration-runner-reads-one-row` · Status: current
+
+**Decision.** `applyMigrations` makes a non-unique index on `schema_version (version)` itself (like the table, not a numbered migration) and reads `SELECT MAX(version)`. When it equals the list length and the last entry is a real migration, the start is done after that one row. Otherwise (a deploy that added migrations, a fresh database, a list ending in a reserved `null`) it reads every recorded version and applies each unrecorded one, as before. The rule for the one thing the fast path cannot see: whoever replaces a reserved slot below the top with a real migration must do it in a change that also appends a migration (or bumps the top), so the slow path runs.
+
+**Reasoning.** Object start read one row per migration (68 rows, 70 rows with the lounge and build rows, equal to its budget), and every new migration made every start dearer. Now a start reads 3 rows whatever the migration count. The runner makes the index so no migration number is spent (another branch is taking 69). The index is not UNIQUE on purpose: a unique index would throw at start on a database that somehow holds a duplicate row, and a failed start is the worst outcome. The first start after deploy builds the index over the existing rows once (about 70 rows, trivial). The blind spot (a gap filled without the list growing) is pinned by a test in `migration-start.test.ts`; the real list has no reserved slot today.
+
 ## 2026-11-15: Housing's migration is 68: the valley merged first with 64 to 67
 
 ID: `2026-11-15-housing-s-migration-is-68-the` · Status: current

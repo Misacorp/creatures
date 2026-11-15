@@ -53,7 +53,7 @@ const SMALL_BY_DESIGN: Record<string, string> = {
   games_medals: 'one row per player who won a Games medal',
   raid_readiness:
     'one row per party of the current week; other weeks are deleted when a band is stored',
-  schema_version: 'one row per migration (about 50), read by the start',
+  schema_version: 'one row per migration (about 70); the start reads one of them through an index',
   guild_meta: 'one row per guild',
   maintenance: 'one row: the day the daily cleanup last finished',
   startup_passes: 'one row per deployed build of the recent past',

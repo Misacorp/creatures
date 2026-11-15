@@ -394,8 +394,17 @@ export const MIGRATION_ROWS = MIGRATIONS.filter((m) => m !== null).length;
 
 /**
  * Applies every migration of `list` whose version is not yet recorded, in version order, each with its record in one
- * transaction, so each real migration runs exactly once. Reserved (`null`) versions are skipped without a record. The
- * one read is the table scan the old "highest version" lookup also made, so object start costs the same.
+ * transaction, so each real migration runs exactly once. Reserved (`null`) versions are skipped without a record.
+ *
+ * Object start is a hot path, so the common case reads one row. The runner makes an index on `schema_version`
+ * itself (not a numbered migration; non-unique on purpose, so a database holding a duplicate row still starts) and
+ * reads `MAX(version)`: when it equals `list.length` and the last entry is a real migration, the database is current
+ * and nothing more is read. Anything else (a deploy that added migrations, a fresh database, a list ending in a
+ * reserved slot) takes the slow path: read every recorded version and apply each unrecorded one.
+ *
+ * The one case the fast path cannot see: a reserved slot below the top replaced by a real migration WITHOUT the list
+ * growing, on a database already recorded at the top. The rule: whoever fills a reserved slot does it in a change that
+ * also appends a migration (or otherwise bumps the top), so the slow path runs and fills the gap.
  */
 export function applyMigrations(
   storage: { transactionSync<T>(closure: () => T): T },
@@ -403,6 +412,11 @@ export function applyMigrations(
   list: readonly Migration[] = MIGRATIONS,
 ): void {
   sql.exec('CREATE TABLE IF NOT EXISTS schema_version (version INTEGER NOT NULL)');
+  sql.exec('CREATE INDEX IF NOT EXISTS schema_version_version ON schema_version (version)');
+  const top = sql
+    .exec<{ v: number | null }>('SELECT MAX(version) AS v FROM schema_version')
+    .one().v;
+  if (top === list.length && list[list.length - 1] !== null) return;
   const applied = new Set(
     sql
       .exec<{ version: number }>('SELECT version FROM schema_version')
