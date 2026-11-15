@@ -20,6 +20,16 @@ ID: `2026-11-15-the-paddock-is-a-canvas-the` · Status: current
 
 **Reasoning.** Misa (2026-11-15): "We need to update the other places into the new layout." The Paddock's idea is its creatures and its gate, so those are the scene and its taps; the project is somewhere else, as at the Bonfire. The Creatures page is a collection that belongs to no one spot, so it is the left drawer. The creature's page keeps every action it had (equip, talents, evolve, note, lounge) as a step of the drawer, so nothing was lost. Keep and release exist for newcomers only (a creature already kept has no release); they are at the gate.
 
+## 2026-11-15: The School is a canvas: the lectern, the seats and the house are the taps, its project is in a builders' corner
+
+ID: `2026-11-15-the-school-is-a-canvas-the` · Status: current
+
+**Decision.** The School moves onto the canvas pattern (Misa, 2026-11-15: "update the other places into the new layout"), `valley/SchoolCanvas`, behind `VALLEY_SYSTEMS`. The page and its band scene (`SchoolPage`, `PlaceScene`'s School) are gone from the School's place; the scene is the schoolyard, filling the window at the largest whole scale 3 to 8 (`schoolScale`, as the Bonfire's). Every thing the page offered is a tap in it: the **lectern with the teacher** (plate "Teacher", or "Lectern" while announced) opens the days, the talent and who of the player's would learn it, each with Send or Take off; each of the bench's **two student seats** is a tap (seated: that student and the one Take off; empty: a dashed outline that picks who joins); the **School's house** (plate "Graduation") opens how many are ready and when the next ceremony is. All three open in the right drawer (the thing clicked). The School's **project** is in the builders' corner (the Art session's set, shared with the Bonfire): the table opens the board in the left drawer (`CommonsBoard host="panel"`), the helper spot picks who helps in the right drawer (`HelperPanel`, now taking the place's words). The creature tray stays under the scene and a hand can drop a creature on a free seat or on the helper spot, as at the Forge. With the teacher away there is no lectern and no empty seat to use (a student already seated can still be reached); the house still says the ceremony, and the teacher line is read out.
+
+My picks: the ceremony spot is the School's house (no stage or banner art exists; one is asked of the Art session); the scaffolding is no longer drawn on the School (the corner's pile grows instead; the map still shows it); the builders' corner shows by the same rule as the Bonfire's (a project open or building below the top level, or a helper still posted).
+
+**Reasoning.** The Bonfire's rule carries over: the place is what it is for (a lesson in a yard), its building project is somewhere clearly apart. A canvas puts the School's three ideas (the teacher, the students, the ceremony) where they are in the picture, and a creature on a bench seat is the same thing as a creature in a list row, so the list's Send and Take off stay (in the teacher's panel) for a phone and a keyboard. Nothing the page did is lost; the server still decides every seating.
+
 ## 2026-11-15: The Bonfire is a canvas of creatures chilling round the fire, and the project lives in a builders' corner **[Misa]**
 
 ID: `2026-11-15-the-bonfire-is-a-canvas-of` · Status: current

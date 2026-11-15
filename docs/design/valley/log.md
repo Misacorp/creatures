@@ -653,3 +653,13 @@ Misa: "We need to update the other places into the new layout." Decision `2026-1
 **Picks to glance at.** The level art of the Paddock (`valley-levels-paddock`, five levels) is not wired in the game, so the yard shows today's paddock art. A creature that is not at home opens (from the popover's "View") with where it is.
 
 **Pick up here:** the other places that still have a page under a band scene (Cave, Arena, Fairground, House).
+
+## 2026-11-15: the School as a canvas (implementer, worktree of `ccr-93a1de17-yutb1a`)
+
+Misa, 2026-11-15: "We need to update the other places into the new layout." Decision `2026-11-15-the-school-is-a-canvas-the` (topic `valley`) holds the detail.
+
+**Built** (behind `VALLEY_SYSTEMS`; replaces `SchoolPage` and the School's band scene). `valley/SchoolCanvas.tsx` (state, scene, drag), `SchoolPanels.tsx` (the teacher, a seat, the graduation), `school-canvas.ts` (scale, layout, scene draw, target boxes), `school-feed.ts` (the feed's types, moved out of the page). In the scene: the lectern with the teacher (right drawer: the days, the talent, who would learn it, Send and Take off), each of the two student seats (a student is a tap with its plate and honour ribbon; an empty seat is a dashed outline that opens who could join), the School's house (plate "Graduation": who is ready, the next ceremony), and, while its project is built, the builders' corner (table: the board in the left drawer; helper spot: the helper in the right drawer). The creature tray stays under the scene and a creature can be dragged onto a free seat or the helper spot. `HelperPanel` (Bonfire) now takes the place's words. The e2e's School scenarios walk it all at 390 and 1100, plus a new one for the corner.
+
+**Where each old function went.** Teacher line, days and talent: the lectern's drawer (the days are also read out as the scene's status line). The students' faces with Send, "Learns it by morning" and Take off: the lectern's drawer, and each seat's own drawer. "None of yours this time", "both seats are taken": the lectern's drawer. Graduation (N ready, the next ceremony): the house's drawer. Trials on cards: the Paddock's cards, unchanged. The School's project, which no page showed before, is reachable through the corner.
+
+**Not done.** The School has no stage or banner art, so the house is the ceremony's tap (asked of the Art session). `castFor('school')` and `PlaceScene`'s School branch are no longer used by the app (their tests remain); they can go with the other places' conversions. The scaffolding is no longer drawn on the School's art.

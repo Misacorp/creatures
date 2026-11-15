@@ -4210,8 +4210,18 @@ try {
   const BRONZE_HONOUR = { honour: 1, tier: 2, boxes: [false, false, false], ready: false };
   const TWO_OF_FOUR = { honour: 0, tier: 1, boxes: [true, true, false, false], ready: false };
 
+  /** The School opens straight on its scene as a canvas (no page under it): the scene is inside the canvas shell. */
+  const schoolCanvasChecks = async () => {
+    await waitFor(page.locator('.pc-root .vy-in-school'));
+    if ((await page.locator('.vy-soon .vy-page').count()) > 0)
+      throw new Error('the School has a page under its scene');
+    await expectNoScroll();
+  };
+  const schoolSeats = () => page.locator('button.cv-target[aria-label^="A student seat"]');
+  const sitting = () => page.locator('button.cv-target[aria-label*="sits at the School"]');
+
   await scenario(
-    'the School with the teacher here (V-SCH-11, 13): the days, the faces with one Send, a student leaves the fire, Take off, and the refusals',
+    'the School with the teacher here (V-SCH-11, 13): the lectern opens the days and the faces with one Send, a student leaves the fire, Take off, the seat, a drag from the tray, and the refusals',
     () => {
       const creatures = schoolOn('here', (ids) => ids.slice(0, 3), {});
       trialsState.byId = { [creatures[1].id]: BRONZE_HONOUR };
@@ -4228,31 +4238,57 @@ try {
         await page.keyboard.press('Escape');
         await place('school').evaluate((el) => el.click());
         await waitFor(heading('School'));
-        await waitFor(page.getByRole('heading', { name: 'Visiting teacher' }));
-        await waitFor(page.getByText(/The visiting teacher is here \w+ to \w+\./));
-        const text = await page.locator('main').innerText();
+        await schoolCanvasChecks();
+        await waitFor(sceneTarget('The lectern'));
+        // Everything in the scene is a named, topmost tap with a plate: the lectern, the two seats, the house.
+        for (const name of ['The lectern', "The School's house"])
+          await expectTopmost(sceneTarget(name), name);
+        if ((await schoolSeats().count()) !== 2) throw new Error('the bench has not two seats');
+        await expectTopmost(schoolSeats().first(), 'the first seat');
+        await expectTopmost(schoolSeats().nth(1), 'the second seat');
+        if (
+          (await page.locator('.cv-plate').count()) !==
+          (await page.locator('button.cv-target').count())
+        )
+          throw new Error('a tap in the School has no plate, or decoration has one');
+        await page.waitForTimeout(300);
+        await shot('school-here');
+        // The lectern opens the teacher: the days, the talent, who would learn it.
+        await sceneTarget('The lectern').click();
+        await waitFor(rightPanel);
+        await waitFor(rightPanel.getByText(/The visiting teacher is here \w+ to \w+\./));
+        const text = await rightPanel.innerText();
         noCountdown(text, 'the School');
         if (/\bAcorns?\b|\bscrap\b|\bshards?\b/i.test(text))
           throw new Error(`a currency named in words on the School: ${text}`);
-        await waitFor(page.getByText('First Pounce'));
-        await waitFor(page.getByText(/The next ceremony is (today|this evening|tomorrow)/));
-        await shot('school-here');
+        await waitFor(rightPanel.getByText('First Pounce'));
+        await page.waitForTimeout(300);
+        await shot('school-teacher');
         // The faces that would learn, one Send each.
-        const sends = page.getByRole('button', { name: /^Send / });
+        const sends = rightPanel.getByRole('button', { name: /^Send / });
         if ((await sends.count()) !== 3) throw new Error('not one Send for each face');
         // The second face (Cindle, the first, can evolve and shows that mark on the tray instead).
-        await sends.nth(1).scrollIntoViewIfNeeded();
         await expectTopmost(sends.nth(1), 'the Send button');
         await sends.nth(1).click();
-        await waitFor(page.getByText('Learns it by morning'));
+        await waitFor(rightPanel.getByText('Learns it by morning'));
         if (schoolState.calls.length !== 1 || schoolState.calls[0].index !== 0)
           throw new Error(`Send asked the server wrongly: ${JSON.stringify(schoolState.calls)}`);
+        await page.keyboard.press('Escape');
+        await rightPanel.waitFor({ state: 'detached', timeout: 10000 });
         await page.waitForTimeout(300);
         // The student sits on the bench in the scene, wearing its honour on the sprite.
         if ((await page.locator('.vy-stand .honour-ribbon').count()) !== 1)
           throw new Error('the seated student shows no ribbon in the scene');
-        await page.evaluate(() => window.scrollTo(0, 0));
+        await waitFor(sitting());
+        await expectNoScroll();
         await shot('school-send');
+        // The seat's own tap opens that student, and the one Take off is there.
+        await sitting().click();
+        await waitFor(rightPanel.getByText('Learns it by morning'));
+        await page.waitForTimeout(300);
+        await shot('school-student');
+        await page.keyboard.press('Escape');
+        await rightPanel.waitFor({ state: 'detached', timeout: 10000 });
         // The student left the fire: the tray marks it, the Bonfire's ring has no one of that name.
         const studentId = schoolState.seats[0];
         await backToValley();
@@ -4267,23 +4303,70 @@ try {
         if (resting !== baseState.creatures.length - 1)
           throw new Error(`${String(resting)} rest by the fire; a student still sits there`);
         await backToValley();
-        // Take off: the seat is free again and the Send comes back.
+        // Take off: the seat is free again.
         await place('school').evaluate((el) => el.click());
-        await waitFor(page.getByText('Learns it by morning'));
-        await page.getByRole('button', { name: /^Take .* off the seat/ }).click();
-        await waitFor(page.getByRole('button', { name: /^Send / }).first());
+        await waitFor(sitting());
+        await sitting().click();
+        await rightPanel.getByRole('button', { name: /^Take off the seat/ }).click();
+        await rightPanel.waitFor({ state: 'detached', timeout: 10000 });
+        await waitFor(schoolSeats().first());
+        if ((await schoolSeats().count()) !== 2) throw new Error('the seat is not free again');
         if (schoolState.calls.length !== 2 || schoolState.calls[1].creatureId !== null)
           throw new Error(
             `Take off asked the server wrongly: ${JSON.stringify(schoolState.calls)}`,
           );
+        // An empty seat picks who joins: a tap on a face sends it to that seat.
+        await schoolSeats().nth(1).click();
+        await waitFor(rightPanel.getByRole('option').first());
+        await page.waitForTimeout(300);
+        await shot('school-seat-empty');
+        if ((await rightPanel.getByRole('option').count()) !== 3)
+          throw new Error('the empty seat does not offer the three faces');
+        await rightPanel.getByRole('option').nth(2).click();
+        await rightPanel.waitFor({ state: 'detached', timeout: 10000 });
+        if (schoolState.calls.length !== 3 || schoolState.calls[2].index !== 1)
+          throw new Error(`the seat pick asked wrongly: ${JSON.stringify(schoolState.calls)}`);
+        // Take that one off by its seat again.
+        await waitFor(sitting());
+        await sitting().click();
+        await rightPanel.getByRole('button', { name: /^Take off the seat/ }).click();
+        await rightPanel.waitFor({ state: 'detached', timeout: 10000 });
+        await waitFor(schoolSeats().nth(1));
+        // A hand carries a creature from the tray onto a free seat (a wide window; a phone's tray is a strip a finger holds).
+        if (width >= 960) {
+          const mover = page.locator(
+            `section[aria-label="Creatures to send"] button[data-creature="${schoolState.would[2]}"]`,
+          );
+          const start = await mover.boundingBox();
+          const over = await schoolSeats().first().boundingBox();
+          if (start === null || over === null) throw new Error('no boxes to drag between');
+          await page.mouse.move(start.x + start.width / 2, start.y + start.height / 2);
+          await page.mouse.down();
+          await page.mouse.move(start.x + start.width / 2 + 12, start.y + start.height / 2 + 12, {
+            steps: 4,
+          });
+          await page.mouse.move(over.x + over.width / 2, over.y + over.height / 2, { steps: 10 });
+          await page.mouse.move(over.x + over.width / 2 + 2, over.y + over.height / 2 + 2, {
+            steps: 3,
+          });
+          await page.waitForTimeout(150);
+          await page.mouse.move(over.x + over.width / 2, over.y + over.height / 2, { steps: 3 });
+          await shot('school-drag');
+          await page.mouse.up();
+          await waitFor(sitting());
+          const last = schoolState.calls.at(-1);
+          if (last.creatureId !== schoolState.would[2])
+            throw new Error(`the drop seated another creature: ${JSON.stringify(last)}`);
+          await sitting().click();
+          await rightPanel.getByRole('button', { name: /^Take off the seat/ }).click();
+          await rightPanel.waitFor({ state: 'detached', timeout: 10000 });
+        }
         // A refusal is the game's shared alert in words.
         schoolState.refuse = 'would_not_learn';
-        await page
-          .getByRole('button', { name: /^Send / })
-          .first()
-          .click();
+        await schoolSeats().first().click();
+        await waitFor(rightPanel.getByRole('option').first());
+        await rightPanel.getByRole('option').first().click();
         await waitFor(page.getByText('That creature would not learn this lesson.'));
-        await page.evaluate(() => window.scrollTo(0, 0));
         await shot('school-refusal');
         await backToValley();
       } finally {
@@ -4302,10 +4385,15 @@ try {
         await waitFor(page.locator(VALLEY), 'attached');
         await place('school').evaluate((el) => el.click());
         await waitFor(heading('School'));
-        await waitFor(page.getByText(/A visiting teacher comes \w+ to \w+\./));
-        noCountdown(await page.locator('main').innerText(), 'the announced School');
-        await waitFor(page.getByRole('button', { name: /^Send / }));
+        await schoolCanvasChecks();
         await shot('school-announced');
+        await sceneTarget('The lectern').click();
+        await waitFor(rightPanel.getByText(/A visiting teacher comes \w+ to \w+\./));
+        noCountdown(await rightPanel.innerText(), 'the announced School');
+        await waitFor(rightPanel.getByRole('button', { name: /^Send / }));
+        await page.waitForTimeout(300);
+        await shot('school-announced-teacher');
+        await page.keyboard.press('Escape');
         await backToValley();
       } finally {
         schoolOff();
@@ -4314,7 +4402,7 @@ try {
   );
 
   await scenario(
-    'the School when none of yours would learn it ("none of yours this time" in words), and with no teacher (the empty yard and the ceremony)',
+    'the School when none of yours would learn it ("none of yours this time" in words), and with no teacher (the empty yard and the ceremony at the house)',
     () => {
       schoolOn('here', () => []);
     },
@@ -4323,19 +4411,104 @@ try {
         await waitFor(page.locator(VALLEY), 'attached');
         await place('school').evaluate((el) => el.click());
         await waitFor(heading('School'));
-        await waitFor(page.getByText('None of yours this time.'));
-        if ((await page.getByRole('button', { name: /^Send / }).count()) > 0)
+        await schoolCanvasChecks();
+        await sceneTarget('The lectern').click();
+        await waitFor(rightPanel.getByText('None of yours this time.'));
+        if ((await rightPanel.getByRole('button', { name: /^Send / }).count()) > 0)
           throw new Error('a Send with nobody to send');
         await shot('school-none-of-yours');
+        await page.keyboard.press('Escape');
         await backToValley();
         schoolState.phase = 'away';
         // The place is read again each time it is opened.
         await place('school').evaluate((el) => el.click());
-        await waitFor(page.getByText('No teacher at the School right now.'));
-        await waitFor(page.getByText('2 ready to graduate', { exact: true }));
-        await waitFor(page.getByText(/The next ceremony is (today|this evening|tomorrow)/));
-        noCountdown(await page.locator('main').innerText(), 'the School without a teacher');
+        await waitFor(heading('School'));
+        await schoolCanvasChecks();
+        await waitFor(sceneTarget("The School's house"));
+        if ((await page.locator('button.cv-target[aria-label^="The lectern"]').count()) > 0)
+          throw new Error('the lectern stands with no teacher');
+        if ((await schoolSeats().count()) > 0) throw new Error('a seat to use with no teacher');
         await shot('school-away');
+        await sceneTarget("The School's house").click();
+        await waitFor(rightPanel.getByText('No teacher at the School right now.'));
+        await waitFor(rightPanel.getByText('2 ready to graduate', { exact: true }));
+        await waitFor(rightPanel.getByText(/The next ceremony is (today|this evening|tomorrow)/));
+        noCountdown(await rightPanel.innerText(), 'the School without a teacher');
+        await page.waitForTimeout(300);
+        await shot('school-graduation');
+        await page.keyboard.press('Escape');
+        await backToValley();
+      } finally {
+        schoolOff();
+      }
+    },
+  );
+
+  await scenario(
+    'the School while its project is built (V-COM-6): the builders corner stands apart, the table opens the board, the helper spot picks a helper, and the yard keeps its seats',
+    () => {
+      const creatures = schoolOn('here', (ids) => ids.slice(0, 3), {});
+      commonsScene({
+        school: {
+          level: 1,
+          state: 'open',
+          size: 600,
+          have: { acorns: 60, scrap: 100, shards: 4 },
+          given: 0,
+        },
+      });
+      stateOverride = {
+        creatures,
+        balances: { ...baseState.balances, bait: 1000 },
+        valley: valleyBlock(),
+      };
+    },
+    async () => {
+      try {
+        await waitFor(page.locator(VALLEY), 'attached');
+        await place('school').evaluate((el) => el.click());
+        await waitFor(heading('School'));
+        await schoolCanvasChecks();
+        const table = sceneTarget("The builders' table");
+        await waitFor(table);
+        await expectTopmost(table, 'the builders table target');
+        await waitFor(page.locator('button.cv-target.cv-slot[aria-label^="The helper spot"]'));
+        await expectTopmost(sceneTarget('The helper spot'), 'the helper spot');
+        await expectTopmost(sceneTarget('The lectern'), 'the lectern');
+        if ((await schoolSeats().count()) !== 2) throw new Error('the corner took a seat away');
+        const plates = page.locator('.cv-plate .nameplate');
+        for (let i = 0; i < (await plates.count()); i += 1)
+          await expectTopmost(plates.nth(i), `plate ${String(i)} at the School`);
+        await expectNoScroll();
+        await page.waitForTimeout(300);
+        await shot('school-corner');
+        // The table opens the project board in the left drawer (a page on a phone), the give flow a step of it.
+        await table.click();
+        await waitFor(leftPanel.getByRole('button', { name: /^Give/ }));
+        await page.waitForTimeout(300);
+        await shot('school-board');
+        await page.keyboard.press('Escape');
+        await leftPanel.waitFor({ state: 'detached', timeout: 10000 });
+        // The helper spot picks who helps build, in the right drawer; the pick is the commons' post to the School.
+        await sceneTarget('The helper spot').click();
+        await waitFor(rightPanel.getByRole('option').first());
+        await waitFor(rightPanel.getByText(/Who helps build the School/));
+        await page.waitForTimeout(300);
+        await shot('school-helper');
+        await rightPanel
+          .getByRole('option')
+          .filter({ hasText: /Sproutle/ })
+          .first()
+          .click();
+        await rightPanel.waitFor({ state: 'detached', timeout: 10000 });
+        if (!commonsCalls.some(([k, b]) => k === 'communal' && b.place === 'school'))
+          throw new Error('no post to the School');
+        await waitFor(
+          page.locator('button.cv-target[aria-label*="at the builders\' table. Change"]'),
+        );
+        if ((await page.locator('.fi-hammer').count()) !== 1)
+          throw new Error('the helper does not hammer at the table');
+        await shot('school-helper-posted');
         await backToValley();
       } finally {
         schoolOff();

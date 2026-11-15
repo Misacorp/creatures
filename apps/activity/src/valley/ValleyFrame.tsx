@@ -19,7 +19,8 @@ import { MarketCanvas, type MarketActions, type MarketStart } from './MarketCanv
 import { marketState } from './market-view';
 import { VisitorPage, type VisitorFeed } from './VisitorPage';
 import { AWAY_LINE, isHere } from './visitor-view';
-import { SchoolPage, type SchoolFeed } from './SchoolPage';
+import { SchoolCanvas } from './SchoolCanvas';
+import type { SchoolFeed } from './school-feed';
 import { isSchoolHere, studentIds } from './school-view';
 import { commonsOf, levelOf } from './commons-view';
 import { PinnedAct } from './PinnedAct';
@@ -198,14 +199,6 @@ export function ValleyFrame({
     view.place === 'school' &&
     school !== undefined &&
     isSchoolHere(schoolView);
-  const schoolCast = schoolPage
-    ? castFor(
-        'school',
-        { ...placeInput, ...castExtra, visit, school: schoolView },
-        artSize(SCENE_ART.school),
-        bubbles,
-      )
-    : null;
   // Today's page of the place: the House's two books, then the page the game drew.
   const inside = (
     <>
@@ -359,26 +352,27 @@ export function ValleyFrame({
             </div>
           </div>
         )}
-        {schoolPage && schoolCast !== null && school !== undefined && isSchoolHere(schoolView) && (
-          <div class="vy-page">
-            <PlaceScene
-              cast={schoolCast}
-              onAct={() => {
-                scrollAndFocus(insideRef.current);
+        {schoolPage && school !== undefined && isSchoolHere(schoolView) && visit !== null && (
+          <section
+            class="vy-soon"
+            aria-label={placeLabel(view.kind === 'soon' ? view.place : 'school')}
+          >
+            <SchoolCanvas
+              creatures={creatures}
+              visit={visit}
+              view={schoolView}
+              graduation={visit.graduation}
+              now={school.now}
+              zone={school.zone}
+              actions={school.actions}
+              trayInput={tray}
+              onOpenPaddock={() => {
+                onOpen('paddock');
               }}
+              {...(commons === undefined ? {} : { commons, acorns, busy })}
+              {...(commonsStart === undefined ? {} : { start: commonsStart })}
             />
-            <div class="vy-inside" ref={insideRef} tabIndex={-1}>
-              <SchoolPage
-                view={schoolView}
-                creatures={creatures}
-                graduation={visit?.graduation}
-                now={school.now}
-                zone={school.zone}
-                busy={busy}
-                actions={school.actions}
-              />
-            </div>
-          </div>
+          </section>
         )}
         {view.kind === 'soon' &&
           !(view.place === 'bonfire' && visit !== null) &&
