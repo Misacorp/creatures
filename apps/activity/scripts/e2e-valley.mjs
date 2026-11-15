@@ -3464,6 +3464,22 @@ try {
           .locator('button.cv-target[aria-label*="at the builders\' table. Change"]')
           .click();
         await waitFor(rightPanel.getByRole('option').first());
+        await page.waitForTimeout(500);
+        if (width >= 960) {
+          // The builders' corner is kept in view: its table and its helper spot both stand clear of the right drawer.
+          const drawerBox = await rightPanel.boundingBox();
+          for (const name of [/^The builders' table/, /at the builders' table\. Change/]) {
+            const box = await page
+              .locator('button.cv-target')
+              .and(page.getByLabel(name))
+              .first()
+              .boundingBox();
+            if (box === null || drawerBox === null || box.x + box.width > drawerBox.x)
+              throw new Error(
+                `the builders' corner is under the drawer: ${JSON.stringify([box, drawerBox])}`,
+              );
+          }
+        }
         await shot('commons-bonfire-seat');
         await page.keyboard.press('Escape');
         await rightPanel.waitFor({ state: 'detached', timeout: 10000 });
