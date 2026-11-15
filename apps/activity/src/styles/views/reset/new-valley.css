@@ -1,0 +1,92 @@
+/* The "A new valley" card after the reset: the scene look and the full-view welcome (the plain look is .wipe-notice). */
+.new-valley-art {
+  display: flex;
+  justify-content: center;
+  margin: 0 0 0.5rem;
+}
+
+.new-valley-welcome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  min-height: 24rem;
+  padding: 1.5rem 1rem;
+  text-align: center;
+  background: var(--dusk-2);
+  box-shadow: inset 0 0 0 var(--px) var(--gold);
+}
+
+.new-valley-welcome h2,
+.new-valley-welcome p {
+  margin: 0;
+}
+
+.new-valley-welcome p {
+  max-width: 26rem;
+}
+
+/* The goodbye DM as Discord draws it (a preview for judging the layout, workbench only). */
+.dm-preview {
+  padding: 1rem;
+  border-radius: 0.5rem;
+  background: #313338;
+  color: #dbdee1;
+  font-family: system-ui, sans-serif;
+}
+
+.dm-preview-msg {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.dm-preview-avatar {
+  flex: none;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  background: #5865f2;
+}
+
+.dm-preview-body {
+  min-width: 0;
+  line-height: 1.375;
+}
+
+.dm-preview-head {
+  margin: 0;
+}
+
+.dm-preview-name {
+  font-weight: 600;
+  color: #f2f3f5;
+}
+
+.dm-preview-tag {
+  margin-left: 0.25rem;
+  padding: 0 0.25rem;
+  border-radius: 0.1875rem;
+  background: #5865f2;
+  color: #fff;
+  font-size: var(--fs-small);
+  vertical-align: middle;
+}
+
+.dm-preview-time {
+  margin-left: 0.5rem;
+  font-size: var(--fs-small);
+  color: #949ba4;
+}
+
+.dm-preview-text {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.dm-preview-count {
+  margin: 0.5rem 0 0;
+  font-size: var(--fs-small);
+  color: #949ba4;
+}

@@ -17,6 +17,7 @@ const sources = import.meta.glob<string>(
     '../stage/*.tsx',
     '../boss-anim/*.tsx',
     '../games/*.tsx',
+    '../reset/*.tsx',
     '../games/art/*.tsx',
     '../home/*.tsx',
     '../settings/*.tsx',
