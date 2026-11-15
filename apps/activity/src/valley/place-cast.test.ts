@@ -30,25 +30,22 @@ const cast = (place: (typeof CAST_PLACES)[number], base: typeof busy, extra?: Pa
   castFor(place, inputOf(base, extra), ART, placeBubbles(homeAlerts(base), base));
 
 describe('which places have a scene', () => {
-  it('ten (the Signpost, the Forge, the Market, the visitor and the School only with the valley systems on, which ValleyFrame checks; he only while he is here)', () => {
+  it('seven (the Signpost and the Forge only with the valley systems on, which ValleyFrame checks; the Market, the visitor and the School are canvases with no band scene)', () => {
     expect([...CAST_PLACES].sort()).toEqual([
       'arena',
       'cave',
       'fair',
       'forge',
       'house',
-      'market',
       'paddock',
-      'school',
       'signpost',
-      'visitor',
     ]);
     // The Signpost and the Forge are canvases: their scene is the page, so the frame draws no band above them.
     expect(hasScene('signpost')).toBe(false);
-    expect(hasScene('market')).toBe(true);
-    expect(hasScene('visitor')).toBe(true);
+    expect(hasScene('market')).toBe(false);
+    expect(hasScene('visitor')).toBe(false);
     expect(hasScene('forge')).toBe(false);
-    expect(hasScene('school')).toBe(true);
+    expect(hasScene('school')).toBe(false);
     expect(hasScene('bonfire')).toBe(false);
   });
 });

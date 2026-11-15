@@ -122,7 +122,8 @@ function storyOf(h: PaperHeadline, paper: Paper, byId: ReadonlyMap<string, Creat
   const who = h.creatureIds.flatMap((id) => byId.get(id) ?? []);
   const members = who.map(memberOf);
   const first = members[0]?.name ?? null;
-  const newcomers: Find[] = h.newcomers.flatMap((id): Find[] => {
+  // A creature is a newcomer once per story, whatever the server's list says (each is one face in the row).
+  const newcomers: Find[] = [...new Set(h.newcomers)].flatMap((id): Find[] => {
     const c = byId.get(id);
     return c === undefined
       ? []

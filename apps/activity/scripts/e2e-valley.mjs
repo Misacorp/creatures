@@ -175,13 +175,14 @@ const headline = (kind, weight, count, extra = {}) => ({
 const paperOf = (kind, creatures) => {
   const [a, , c] = creatures;
   const newest = creatures[creatures.length - 1];
+  // The fixture has three creatures, so the newest is also `c`: three distinct newcomers are the newest, the second and the first.
   const long = kind === 'long absence';
   const headlines = long
     ? [
         headline('new-species', 95, 3, {
           creatureIds: [a.id],
           species: newest.species,
-          newcomers: [newest.id, creatures[1].id, c.id],
+          newcomers: [newest.id, creatures[1].id, a.id],
         }),
         headline('mastery-scout', 90, 2, { creatureIds: [a.id], step: 3 }),
         headline('found-gear', 95, 7, {
@@ -3286,7 +3287,14 @@ try {
       answerOverride.set('/api/config', () => ({ ...config(), valleySystems: true }));
       // A state with newcomers waiting at the gate (the creatures-state fixture's four duplicates and the roster they belong to).
       const waiting = fixture('creatures-state');
-      const creatures = waiting.creatures.map((c) => ({ ...c, busy: null, away: false }));
+      // Each of them is ready to evolve (its page has the Evolve button, which opens as a step of the same drawer).
+      const creatures = waiting.creatures.map((c) => ({
+        ...c,
+        busy: null,
+        away: false,
+        level: 15,
+        ...(c.evolution === undefined ? {} : { evolution: { ...c.evolution, available: true } }),
+      }));
       scouts.seats = [];
       scouts.ids = creatures.map((c) => c.id);
       stateOverride = { creatures, pending: waiting.pending, valley: valleyBlock() };
@@ -3324,6 +3332,20 @@ try {
       await waitFor(back);
       await page.waitForTimeout(300);
       await shot('paddock-creature-page');
+      // Evolve is a step of the same drawer, not a sheet over it: its own Back returns to the creature's page.
+      await rightPanel
+        .getByRole('button', { name: /^Evolve/ })
+        .first()
+        .click();
+      const evolveBack = rightPanel.getByRole('button', { name: /to .*Back|Back/ });
+      await waitFor(rightPanel.locator('.evolve-forms'));
+      if ((await page.locator('.evolve-drawer').count()) > 0)
+        throw new Error('evolve opened as a sheet over the Paddock drawer');
+      await expectNoScroll();
+      await page.waitForTimeout(300);
+      await shot('paddock-evolve');
+      await evolveBack.first().click();
+      await waitFor(rightPanel.getByRole('button', { name: /^Evolve/ }));
       await back.first().click();
       await waitFor(openPage);
       await page.keyboard.press('Escape');

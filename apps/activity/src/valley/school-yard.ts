@@ -22,12 +22,6 @@ export const YARD_SIZE = { width: 80, height: 24 } as const;
 /** The yard's top-left from the School's top-left (its columns 31 and 32 are under the door). */
 export const YARD_FROM_SCHOOL: Point = { x: -2, y: 38 };
 
-/**
- * Scene pixels the School's art is moved left of centre so the 80-wide composition (yard included) is the centred thing: `bandArtBox`
- * moves the art left by half of this, and the yard hangs 2 px left of the art and 18 px past its right edge.
- */
-export const YARD_ASIDE = 16;
-
 /** The four bench seats' feet points, in the yard's pixels. */
 export const SEAT_FEET: readonly Point[] = [
   { x: 9, y: 12 },

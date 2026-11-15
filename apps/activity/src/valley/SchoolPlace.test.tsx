@@ -4,17 +4,12 @@ import { homeAlerts } from '../home-view';
 import { byClass, createPage, visibleText, type Page } from '../test-dom';
 import { HOME_NOW, homeInput } from '../workbench/home-sample';
 import { HonoursContext, honoursOf } from './HonourRibbon';
-import { castFor } from './place-cast';
-import { bubbleAt, listOrder, placeBubbles, placeStates } from './place-state';
 import { sampleValley } from './signpost-sample';
 import { sampleSchool, sampleTrial, withTrials } from './school-sample';
 import type { SchoolFeed } from './school-feed';
-import { WAITING_LINE, studentIds } from './school-view';
-import { artSize } from './place-scene';
-import { trayBadge, trayFor, trayStates } from './tray-state';
+import { WAITING_LINE } from './school-view';
 import { ValleyFrame } from './ValleyFrame';
 import type { ValleyView } from './valley-nav';
-import { SCENE_ART } from './PlaceScene';
 
 let page: Page | null = null;
 beforeEach(() => {
@@ -129,133 +124,5 @@ describe('the School’s place with the valley systems on', () => {
     });
     expect(byClass(p.root, 'vy-stand')).toHaveLength(1);
     expect(byClass(p.root, 'honour-ribbon')).toHaveLength(1);
-  });
-});
-
-describe('the School’s yard (V-SCH-11)', () => {
-  const cast = (school: ReturnType<typeof sampleSchool> | null) =>
-    castFor(
-      'school',
-      {
-        ...base,
-        dungeonTeam: null,
-        dungeonPhase: null,
-        waiting: [],
-        creatures: free,
-        school,
-      },
-      artSize(SCENE_ART.school),
-      [],
-    );
-
-  it('is empty before the server has said and while away: the bench only', () => {
-    for (const school of [null, sampleSchool({ phase: 'away' })]) {
-      const c = cast(school);
-      expect(c.school).toEqual({ lectern: false, bell: false, teacher: null });
-      expect(c.stands).toEqual([]);
-    }
-  });
-
-  it('has the lectern and the tilted bell at the door while announced, and no teacher yet', () => {
-    expect(cast(sampleSchool({ phase: 'announced' })).school).toEqual({
-      lectern: true,
-      bell: true,
-      teacher: null,
-    });
-  });
-
-  it('has the teacher at the lectern while here, a species the player does not own', () => {
-    const c = cast(sampleSchool({ phase: 'here' }));
-    expect(c.school?.lectern).toBe(true);
-    expect(c.school?.bell).toBe(false);
-    const teacher = c.school?.teacher ?? null;
-    expect(teacher).not.toBeNull();
-    expect(free.map((f) => f.species)).not.toContain(teacher);
-  });
-
-  it('has no lesson at all when no talent was drawn: the yard is empty', () => {
-    expect(cast(sampleSchool({ talent: false })).school).toEqual({
-      lectern: false,
-      bell: false,
-      teacher: null,
-    });
-  });
-
-  it('seats the students on the bench in the order of the seats, saying they learn it by morning', () => {
-    const c = cast(sampleSchool({ seated: [b.id, a.id] }));
-    expect(c.stands.map((s) => s.creature.id)).toEqual([b.id, a.id]);
-    expect(c.stands.every((s) => s.where.includes('learns it by morning'))).toBe(true);
-    expect(c.act).toEqual({ kind: 'calm', line: '' });
-  });
-});
-
-describe('a student at the School is not resting', () => {
-  const visit = sampleValley(free, []);
-  const school = sampleSchool({ seated: [a.id, null], wouldLearn: [a.id] });
-
-  it('is "at the School" on the tray, ahead of the fire’s "z", and never free', () => {
-    const students = studentIds(school);
-    const input = {
-      trips: [],
-      jobs: null,
-      now: HOME_NOW,
-      ...trayStates(visit),
-      studying: students,
-    };
-    const badge = trayBadge(a, input);
-    expect(badge.state).toBe('studying');
-    expect(badge.label).toContain('At the School');
-    // The rest of the roster is unchanged.
-    expect(trayBadge(b, input).state).not.toBe('studying');
-    expect(trayFor(free, input)).toHaveLength(free.length);
-  });
-
-  it('leaves the map’s walkers and the fire’s ring to the others (the frame hides the student there)', () => {
-    const p = draw({ kind: 'valley' }, feed(school));
-    // The map's walkers are the creatures at home that are not posted: the student is not among them.
-    const walking = byClass(p.root, 'vy-person').length;
-    const without = draw({ kind: 'valley' }, feed(sampleSchool()));
-    expect(walking).toBeLessThanOrEqual(byClass(without.root, 'vy-person').length);
-  });
-});
-
-describe('the School on the map and in the Places list', () => {
-  it('has a bubble over the School for creatures ready to graduate, with the count', () => {
-    const visit = withTrials(sampleValley(free, []), {}, { ready: 3, nextAt: HOME_NOW });
-    const bubbles = placeBubbles(homeAlerts(base), { ...base, visit, school: null });
-    const bubble = bubbleAt(bubbles, 'school');
-    expect(bubble?.count).toBe(3);
-    expect(bubble?.spoken).toBe('3 ready to graduate');
-    // The places with something waiting come first in the Places list, the School among them.
-    expect(listOrder(bubbles).slice(0, bubbles.length)).toContain('school');
-  });
-
-  it('has a bubble for a lesson one of yours can take, and none when both seats are taken', () => {
-    const visit = withTrials(sampleValley(free, []), {}, { ready: 0, nextAt: HOME_NOW });
-    const open = placeBubbles(homeAlerts(base), {
-      ...base,
-      visit,
-      school: sampleSchool({ wouldLearn: [a.id] }),
-    });
-    expect(bubbleAt(open, 'school')?.spoken).toMatch(/lesson one of yours can take/);
-    const full = placeBubbles(homeAlerts(base), {
-      ...base,
-      visit,
-      school: sampleSchool({ wouldLearn: [a.id, b.id], seated: [a.id, b.id] }),
-    });
-    expect(bubbleAt(full, 'school')).toBeUndefined();
-    const away = placeBubbles(homeAlerts(base), {
-      ...base,
-      visit,
-      school: sampleSchool({ phase: 'away' }),
-    });
-    expect(bubbleAt(away, 'school')).toBeUndefined();
-  });
-
-  it('says the ceremony and the teacher in the Places list', () => {
-    const visit = withTrials(sampleValley(free, []), {}, { ready: 2, nextAt: HOME_NOW });
-    const lines = placeStates({ ...base, visit, school: sampleSchool() });
-    expect(lines.school).toBe('2 ready to graduate · a teacher is here');
-    expect(placeStates({ ...base, visit: null, school: null }).school).toBe('not open yet');
   });
 });

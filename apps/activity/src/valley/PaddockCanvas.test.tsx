@@ -62,6 +62,8 @@ function draw(
     waiting?: number;
     calls?: Calls;
     start?: PaddockStart;
+    onEvolve?: (species: string) => void;
+    creatures?: typeof free;
   } = {},
 ): Page {
   const calls = options.calls ?? { posts: [] };
@@ -83,7 +85,7 @@ function draw(
       collection={{
         state: {
           ...SAMPLE_STATE,
-          creatures: free,
+          creatures: options.creatures ?? free,
           pending: SAMPLE_STATE.pending.slice(0, options.waiting ?? 0),
         },
         gear: SAMPLE_GEAR,
@@ -91,7 +93,7 @@ function draw(
         catchActions: { chooseMany: () => Promise.resolve(true) },
         onEquip: () => Promise.resolve(true),
         onRibbon: noop,
-        onEvolve: noop,
+        onEvolve: (_c, species) => options.onEvolve?.(species ?? ''),
         onRename: noop,
         onNote: noop,
         onLounge: noop,
@@ -230,6 +232,44 @@ describe('the Paddock canvas: what a click opens', () => {
     expect(byName(p.root, 'button', /^Open its page/)).toHaveLength(0);
     p.click(byClass(p.root, 'cp-back')[0] as FakeElement);
     expect(byName(p.root, 'button', /^Open its page/)).toHaveLength(1);
+  });
+
+  it('Evolve is a step of the same drawer (no sheet over it): its Back returns to the page, and evolving closes it', () => {
+    const ready = free.map((c) => ({
+      ...c,
+      level: 15,
+      evolution: { toSpecies: 'thornbuck', level: 15, essence: 20, available: true },
+    }));
+    const [first] = ready;
+    if (first === undefined) throw new Error('fixture');
+    const evolved: string[] = [];
+    const p = draw(sampleValley(ready, []), {
+      creatures: ready,
+      onEvolve: (species) => evolved.push(species),
+      start: { creature: first.id, page: true },
+    });
+    p.click(byName(p.root, 'button', /^Evolve/)[0] as FakeElement);
+    // The step has its own Back and the one confirm; no drawer sheet is drawn.
+    expect(byClass(p.root, 'evolve-forms')).toHaveLength(1);
+    expect(byClass(p.root, 'evolve-drawer')).toHaveLength(0);
+    expect(byClass(p.root, 'ps-step')).toHaveLength(1);
+    p.click(
+      byName(byClass(p.root, 'ps-step')[0] as FakeElement, 'button', /Back/)[0] as FakeElement,
+    );
+    expect(byClass(p.root, 'evolve-forms')).toHaveLength(0);
+    expect(
+      byClass(p.root, 'creature-page').length + byClass(p.root, 'cp-back').length,
+    ).toBeGreaterThan(0);
+    p.click(byName(p.root, 'button', /^Evolve/)[0] as FakeElement);
+    p.click(
+      byName(
+        byClass(p.root, 'evolve-confirm')[0] as FakeElement,
+        'button',
+        /^Evolve/,
+      )[0] as FakeElement,
+    );
+    expect(evolved).toEqual(['thornbuck']);
+    expect(byClass(p.root, 'evolve-forms')).toHaveLength(0);
   });
 
   it('the gate opens the waiting catches, with one Confirm', () => {

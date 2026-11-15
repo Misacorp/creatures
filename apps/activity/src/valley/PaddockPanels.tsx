@@ -16,7 +16,9 @@ import type { GearState } from '../gear-types';
 import { baseOption } from '../roster-picker';
 import { CreatureList } from '../ui/CreatureList';
 import { WizardFooter } from '../ui/Wizard';
-import { EvolveDrawer } from '../EvolveDrawer';
+import { EvolveContent } from '../EvolveDrawer';
+import { creatureName } from '../game';
+import { StepBody, StepHold } from './PanelStep';
 import { CreaturePage, type CardActions } from '../CreaturePage';
 import type { CreatureGames } from '../games-types';
 import { PendingCatches } from '../PendingCatches';
@@ -95,41 +97,58 @@ export function CreatureStep({
   onAnswerCatch: () => void;
 }) {
   const [evolving, setEvolving] = useState(false);
-  return (
-    <PanelBody>
-      <CreaturePage
-        key={creature.id}
-        creature={creature}
-        state={state}
-        gear={gear}
-        busy={busy}
-        actions={{
-          ...actions,
-          onEvolve: () => {
-            setEvolving(true);
-          },
-        }}
-        focus={null}
-        backLabel="Back"
-        onBack={onBack}
-        onAnswerCatch={onAnswerCatch}
-        loadGames={loadGames}
-      />
-      {evolving && (
-        <EvolveDrawer
-          open
-          creature={creature}
-          busy={busy}
-          onClose={() => {
-            setEvolving(false);
-          }}
-          onEvolve={(c, species) => {
-            setEvolving(false);
-            actions.onEvolve(c, species);
-          }}
-        />
+  const close = (): void => {
+    setEvolving(false);
+  };
+  // Evolve is a step of this panel (no sheet over a drawer): the page stays mounted under it, and Back returns to it.
+  const step = evolving ? (
+    <EvolveContent
+      creature={creature}
+      busy={busy}
+      onEvolve={(c, species) => {
+        setEvolving(false);
+        actions.onEvolve(c, species);
+      }}
+    >
+      {({ body, footer }) => (
+        <StepBody
+          title={`Evolve ${creatureName(creature)}`}
+          backLabel={`to ${creatureName(creature)}`}
+          onBack={close}
+          footer={footer}
+          focusBack
+        >
+          {body}
+        </StepBody>
       )}
-    </PanelBody>
+    </EvolveContent>
+  ) : null;
+  return (
+    <StepHold
+      step={step}
+      list={
+        <PanelBody>
+          <CreaturePage
+            key={creature.id}
+            creature={creature}
+            state={state}
+            gear={gear}
+            busy={busy}
+            actions={{
+              ...actions,
+              onEvolve: () => {
+                setEvolving(true);
+              },
+            }}
+            focus={null}
+            backLabel="Back"
+            onBack={onBack}
+            onAnswerCatch={onAnswerCatch}
+            loadGames={loadGames}
+          />
+        </PanelBody>
+      }
+    />
   );
 }
 
