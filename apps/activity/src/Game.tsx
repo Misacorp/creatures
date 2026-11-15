@@ -9,7 +9,9 @@ import {
   dismissAway,
   dismissLevelReset,
   exchangeShards,
+  fetchSchool,
   fetchState,
+  fetchVisitor,
   giveToProject,
   postCommunal,
   setBroker,
@@ -26,8 +28,10 @@ import {
   type LeetSyncStatus,
   type LoungeSpot,
   type LoungeXpPush,
+  type SchoolState,
   type SessionUser,
   type ValleyVisit,
+  type VisitorState,
 } from './api';
 import { ActionIds } from './actions';
 import { allowanceNotice } from './allowance-text';
@@ -98,9 +102,16 @@ import { Workshop, type ForgeMode } from './Workshop';
 import type { TeamConfigure } from './TeamCreaturePage';
 import { Alert } from './ui/Alert';
 import { WelcomeBack } from './valley/gazette/WelcomeBack';
+import { HouseHost } from './housing/HouseHost';
 import { ValleyFrame } from './valley/ValleyFrame';
+import { createVisitorActions, isAway } from './valley/visitor-actions';
+import { createSchoolActions, isSchoolRefusal, refreshSchool } from './valley/school-actions';
+import { readerZone, studentIds, withoutStudents } from './valley/school-view';
+import { HonoursContext, honoursOf } from './valley/HonourRibbon';
+import { shardsHeld } from './valley/visitor-view';
 import type { MarketActions, MarketStart } from './valley/MarketPage';
-import { SignpostSeats, type SignpostActions } from './valley/SignpostSeats';
+import { SignpostCanvas } from './valley/SignpostCanvas';
+import type { SignpostActions } from './valley/SignpostSeats';
 import type { CommonsActions } from './valley/CommonsBoard';
 import { COMMONS_NAMES } from './valley/commons-view';
 import { ANVIL_KIT_INFO } from './valley/forge-view';
@@ -135,6 +146,7 @@ export function Game({
   loungeLive = false,
   valley = false,
   valleySystems = false,
+  housing = false,
 }: {
   initial: GameState;
   /** The signed-in player (their id and display name put their own creature in the living room). */
@@ -152,6 +164,8 @@ export function Game({
   valley?: boolean;
   /** The valley's base systems are on (`valleySystems` of `/api/config`; phase 5): the Bonfire opens and creatures rest. */
   valleySystems?: boolean;
+  /** The server offers the player's house (`housing` of `/api/config`): the House place is in the navigation. */
+  housing?: boolean;
   /** True on staging and local runs, where the server can start a practice finale. */
   showPractice: boolean;
   /** The daily Bait allowance the server paid when the Activity opened; null when there is none to tell. */
@@ -241,6 +255,12 @@ export function Game({
     onStart: () => {
       actionCount.current += 1;
     },
+    // He left while the page was open: his place turns to his shuttered spot (the refusal came before any spend).
+    onFail: (err) => {
+      if (isAway(err)) setVisitor({ here: false });
+      // The School was not as the screen thought (no teacher now, it would not learn it): read it again.
+      if (isSchoolRefusal(err)) void refreshSchool(setSchool);
+    },
     onStale: async () => {
       try {
         setCurrent(loaded(await fetchState()));
@@ -264,7 +284,51 @@ export function Game({
   useEffect(() => {
     if (game.valley !== null) setVisit(game.valley);
   }, [game.valley]);
-  const systems = valleySystems ? visit : null;
+  // The School as the server last said (`VALLEY_SYSTEMS` on); null until the first answer. It is read when the game opens and each time
+  // its place is opened or left (one small read), and again when the valley's state changes while a student sits there (so a lesson
+  // learned by morning sends the student home on screen), never on a timer.
+  const [school, setSchool] = useState<SchoolState | null>(null);
+  const atSchool = homeAt === 'school';
+  const students = useMemo(() => studentIds(school), [school]);
+  const seated = students.size > 0;
+  const settledAt = visit?.settledAt ?? 0;
+  useEffect(() => {
+    if (!valleySystems || !valley || !game.starterChosen) return;
+    let current = true;
+    fetchSchool().then(
+      (view) => {
+        if (current) setSchool(view);
+      },
+      () => undefined,
+    );
+    return () => {
+      current = false;
+    };
+  }, [valleySystems, valley, game.starterChosen, atSchool, seated ? settledAt : 0]);
+  // The valley's lists leave out the creatures that sit at the School (the server's view has no seat for them and says "resting").
+  const systems = valleySystems && visit !== null ? withoutStudents(visit, students) : null;
+  // Every creature's honours (V-TRIAL-1), from the unfiltered state, for the cards and the sprites.
+  const honours = useMemo(
+    () => honoursOf(valleySystems ? visit?.creatures : undefined),
+    [valleySystems, visit],
+  );
+  // The weekly visitor as the server last said (`VALLEY_SYSTEMS` on): here or away; null until the first answer. It is read when the
+  // game opens and each time his place is opened or left (one small read), never on a timer.
+  const [visitor, setVisitor] = useState<VisitorState | null>(null);
+  const atVisitor = homeAt === 'visitor';
+  useEffect(() => {
+    if (!valleySystems || !valley || !game.starterChosen) return;
+    let current = true;
+    fetchVisitor().then(
+      (view) => {
+        if (current) setVisitor(view);
+      },
+      () => undefined,
+    );
+    return () => {
+      current = false;
+    };
+  }, [valleySystems, valley, game.starterChosen, atVisitor]);
   // The setup row of the Dungeon tab, kept while the player is on other tabs (lost on a reload).
   const dungeonDraft = useRef<Slots | null>(null);
   // The same row as state, so the valley's Cave scene can draw the team standing at the cave mouth (null until the
@@ -455,6 +519,27 @@ export function Game({
       return true;
     },
   };
+  /** The visitor's page (phase 5 step 8b): his read is free, a reroll and the week's blueprint are keyed spends. */
+  const visitorActions = createVisitorActions({
+    run,
+    runKeyed,
+    items: () => gear?.items ?? NO_ITEMS,
+    rerolls: () => (visitor !== null && visitor.here ? visitor.rerolls : 0),
+    takeValley,
+    replaceGear,
+    setVisitor: (update) => {
+      setVisitor(update);
+    },
+    setError,
+  });
+  /** The School's page (phase 5 step 9b): seating a creature is free; each answer's `valley` and state are taken in at once. */
+  const schoolActions = createSchoolActions({
+    run,
+    takeValley,
+    setSchool: (view) => {
+      setSchool(view);
+    },
+  });
   /** Wears an item or takes it off (the card's and the dungeon's); true when the server took it. */
   const equipOn = async (gearId: string, creatureId: string | null): Promise<boolean> =>
     (await gearActions.equip(gearId, creatureId)) !== undefined;
@@ -573,7 +658,7 @@ export function Game({
   const roomMode = useRoomMode();
   // Between the phone and the wide window: one bottom bar with every place (no sub-menus).
   const bar = useBar();
-  const places = navPlaces(alerts);
+  const places = navPlaces(alerts, { housing });
   /** Goes to a place the way the navigation does (the dock, the rail and the valley's places all come through here). */
   const select = (id: Place): void => {
     goTo(id);
@@ -659,6 +744,8 @@ export function Game({
         onSettings={() => {
           setSettingsOpen(true);
         }}
+        // The valley's map takes the whole window: the bar floats over it (purse and cog in a corner).
+        float={valleyOn && view.kind === 'valley' && !settingsOpen}
         {...(valleyOn && view.kind !== 'valley' && !settingsOpen
           ? {
               // The valley's way back lives in the HUD: from a book to the House, from a place to the map.
@@ -681,7 +768,13 @@ export function Game({
   );
 
   const devPanel = (
-    <DevPanelHost enabled={devTools} tab={tab} creatures={game.creatures} onChanged={devRefresh} />
+    <DevPanelHost
+      enabled={devTools}
+      tab={tab}
+      creatures={game.creatures}
+      valleySystems={valleySystems}
+      onChanged={devRefresh}
+    />
   );
 
   /** What the dungeon's and the raid's team screens need to get creatures ready (their configurator and page). */
@@ -805,6 +898,16 @@ export function Game({
             : {})}
         />
       )}
+      {tab === 'house' && housing && (
+        <HouseHost
+          phase={phase}
+          creatures={game.creatures}
+          now={Date.now() + offset}
+          onSpent={() => {
+            refreshState();
+          }}
+        />
+      )}
       {tab === 'collection' && (
         <Collection
           initialNeeds={creaturesNeeds}
@@ -824,7 +927,7 @@ export function Game({
       )}
       {tab === 'expeditions' && valleyOn && valleySystems && systems !== null && (
         // With the valley's systems on the Signpost is its scouts, not trips (`/api/expeditions` answers 404).
-        <SignpostSeats
+        <SignpostCanvas
           visit={systems}
           creatures={game.creatures}
           trayInput={{
@@ -835,6 +938,7 @@ export function Game({
           }}
           acorns={game.balances.bait}
           busy={busy}
+          error={error}
           actions={signpostActions}
           commons={commonsActions}
           onOpenPaddock={() => {
@@ -1052,11 +1156,29 @@ export function Game({
           : {
               commons: commonsActions,
               market: marketActions,
+              visitor: {
+                view: visitor,
+                actions: visitorActions,
+                items: gear === null ? null : gear.items,
+                blueprints: gear === null ? null : gear.blueprints,
+                purse: {
+                  acorns: game.balances.bait,
+                  scrap: gear?.parts.scrap ?? 0,
+                  shards: shardsHeld(gear?.parts ?? null),
+                },
+              },
+              school: {
+                view: school,
+                actions: schoolActions,
+                now: Date.now() + offset,
+                zone: readerZone(),
+              },
               acorns: game.balances.bait,
               busy,
               error,
               ...(marketStart === undefined ? {} : { marketStart }),
             })}
+        housing={housing}
         castExtra={{
           dungeonTeam,
           dungeonPhase,
@@ -1161,12 +1283,14 @@ export function Game({
   return (
     <TreatTimesContext.Provider value={forecast?.today?.treatTimes ?? 2}>
       <GearItemsContext.Provider value={gear?.items ?? NO_ITEMS}>
-        <EquipHost creatures={gear === null ? NO_CREATURES : game.creatures} onEquip={equipOn}>
-          {!game.starterChosen && head}
-          {content}
-          {swap}
-          {devPanel}
-        </EquipHost>
+        <HonoursContext.Provider value={honours}>
+          <EquipHost creatures={gear === null ? NO_CREATURES : game.creatures} onEquip={equipOn}>
+            {!game.starterChosen && head}
+            {content}
+            {swap}
+            {devPanel}
+          </EquipHost>
+        </HonoursContext.Provider>
       </GearItemsContext.Provider>
     </TreatTimesContext.Provider>
   );
@@ -1176,7 +1300,7 @@ export function Game({
 function valleyTitle(view: ValleyView): string {
   if (view.kind === 'valley') return 'Valley';
   if (view.kind === 'place' && view.book !== null) {
-    return view.book === 'journal' ? 'Journal' : 'Stats';
+    return view.book === 'journal' ? 'Journal' : view.book === 'house' ? 'Your house' : 'Stats';
   }
   return placeOf(view.place).name;
 }

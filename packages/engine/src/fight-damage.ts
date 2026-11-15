@@ -137,7 +137,7 @@ export function hurt(
   const { boss, shape, bossCrit, bossCritOn, rules, creatures, events, perCreature } = state;
   state.lastHitDodged = false;
   const crit = die !== undefined && bossCritOn && die < bossCrit.chanceBp;
-  // The boss's own status effects (Mired) change the damage it deals; a reflected hit is a creature's
+  // The boss's own status effects (Bogged Down) change the damage it deals; a reflected hit is a creature's
   // reaction coming back, not the boss's own damage, so they do not touch it.
   const returning = mode === 'reflect' || mode === 'spikes';
   const effectBp = returning ? 0 : effectBpOf(state, BOSS, 'damageDealtBp');

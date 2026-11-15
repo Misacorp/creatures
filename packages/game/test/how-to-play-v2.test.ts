@@ -34,7 +34,7 @@ describe('the combat v2 How to play text', () => {
 
   it('keeps the shipped page as it was: no v2 section in it', () => {
     for (const s of howToPlay.sections) expect(s.id.startsWith('v2-')).toBe(false);
-    expect(howToPlay.sections).toHaveLength(12);
+    expect(howToPlay.sections).toHaveLength(13);
   });
 
   it('uses only keywords the combat v2 content defines, each with a glossary entry', () => {

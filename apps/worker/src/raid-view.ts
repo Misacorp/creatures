@@ -125,9 +125,30 @@ export interface RowSlotView {
     mine: boolean;
     /** Only for the caller's own creatures. */
     creatureId?: string;
+    /** The creature is shiny (absent: it is not). */
+    shiny?: boolean;
     /** A Guard's reach (`guardReachOf`: how many creatures it protects on each side); Guards only. */
     reach?: GuardReach;
   };
+}
+
+const NO_SHINY: ReadonlySet<string> = new Set();
+
+/** Which of these creatures (any owner) are shiny: one query (chunks of 50, the object's SQL binds at most 100 values). */
+export function shinyCreatureIds(sql: SqlStorage, ids: readonly string[]): Set<string> {
+  const shiny = new Set<string>();
+  for (let i = 0; i < ids.length; i += 50) {
+    const part = ids.slice(i, i + 50);
+    for (const row of sql
+      .exec<{ id: string }>(
+        `SELECT id FROM creatures WHERE shiny = 1 AND id IN (${part.map(() => '?').join(', ')})`,
+        ...part,
+      )
+      .toArray()) {
+      shiny.add(row.id);
+    }
+  }
+  return shiny;
 }
 
 /**
@@ -139,6 +160,8 @@ export function cellCreature(
   fight: FightSlot,
   ownerName: string,
   mine: boolean,
+  /** The creature ids that are shiny (`shinyCreatureIds`). */
+  shiny: ReadonlySet<string> = NO_SHINY,
 ): NonNullable<RowSlotView['creature']> {
   return {
     ownerName,
@@ -147,6 +170,7 @@ export function cellCreature(
     level: fight.level,
     mine,
     ...(mine ? { creatureId: fight.id } : {}),
+    ...(shiny.has(fight.id) ? { shiny: true } : {}),
     ...reachField(fight.role, fight.mods),
   };
 }
@@ -304,6 +328,30 @@ export function displayNames(sql: SqlStorage): Map<string, string> {
   );
 }
 
+/**
+ * A finale that started off the calendar (the dev bench's "watch the finale live") is on from when it really started, so the Raid tab opens
+ * the finale view for the party as it does at the Sunday time. A finale on the calendar starts within a moment of it: no change. Edits
+ * `schedule` (the view's own copy); the caller's party's fight is preferred.
+ */
+export function finaleStartedAt(
+  sql: SqlStorage,
+  week: Pick<WeekRow, 'weekId' | 'status'>,
+  userId: string,
+  schedule: Record<RaidEvent, number>,
+): void {
+  if (week.status !== 'finale') return;
+  const live = sql
+    .exec<{ started_at: number }>(
+      `SELECT started_at FROM raid_live WHERE week_id = ? AND practice = 0
+       ORDER BY party = COALESCE((SELECT party FROM raid_party_members WHERE week_id = ? AND user_id = ?), 0) DESC, party LIMIT 1`,
+      week.weekId,
+      week.weekId,
+      userId,
+    )
+    .toArray()[0];
+  if (live !== undefined) schedule.finale = live.started_at;
+}
+
 /** The current week as the caller sees it. Creates the week if needed. */
 export function buildRaidView(
   raid: Raid,
@@ -317,6 +365,7 @@ export function buildRaidView(
   const names = displayNames(sql);
   const boss = bossFor(week.bossId, fightRank(sql, week.weekId));
   const schedule = raid.schedule(week.weekId, tz);
+  finaleStartedAt(sql, week, userId, schedule);
   const pending = nextPendingEvent(week.status);
 
   const memberRows = sql
@@ -364,6 +413,12 @@ export function buildRaidView(
     myAbility = myParty === null ? null : abilityFor(sql, week.weekId, board.memberIds, userId);
     const myIndex = board.memberIds.indexOf(userId);
     myAlias = myIndex < 0 ? null : aliasFor(myIndex);
+    const shiny = shinyCreatureIds(
+      sql,
+      board.cells.flatMap((cell) =>
+        cell.slot === null || cell.origin === 'guest' ? [] : [cell.slot.id],
+      ),
+    );
     const row: RowSlotView[] = board.cells.map((cell, slot) => {
       const fight = cell.slot;
       // Guests are not drawn: their slots show as empty, as before.
@@ -375,7 +430,7 @@ export function buildRaidView(
       return {
         slot,
         zone: zoneOfIndex(slot, length),
-        creature: cellCreature(fight, names.get(ownerId) ?? 'Unknown', mine),
+        creature: cellCreature(fight, names.get(ownerId) ?? 'Unknown', mine, shiny),
       };
     });
     const pool = sql

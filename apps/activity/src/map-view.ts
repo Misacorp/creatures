@@ -42,6 +42,10 @@ export interface MapPlace {
   selected: boolean;
   /** The spoken label, for example "Ember Caves, 2 explorers there, 1 home". */
   label: string;
+  /** The small gold flag's words when `home` is set (default "HOME"; the valley's Signpost says "FULL" or the pack's fill). */
+  flag?: string | null;
+  /** The place is not open yet: its marker is dimmed (the valley's Signpost; `rule` says what opens it). */
+  locked?: boolean;
 }
 
 interface MapPlacesInput {

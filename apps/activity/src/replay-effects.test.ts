@@ -22,7 +22,7 @@ const apply = (
   t: 'effect_apply',
   round,
   target,
-  effect: 'mired',
+  effect: 'bogged-down',
   stacksAdded,
   stacks,
   turnsLeft,
@@ -37,12 +37,12 @@ describe('status effects in the replay state', () => {
 
   it('shows an applied effect on the boss with its stacks and turns', () => {
     const s = at([roundStart(1), apply(1, null, 2, 3)]);
-    expect(s.bossEffects).toEqual([{ effect: 'mired', stacks: 2, turnsLeft: 3 }]);
+    expect(s.bossEffects).toEqual([{ effect: 'bogged-down', stacks: 2, turnsLeft: 3 }]);
   });
 
   it('stacks and refreshes: the event carries the new total and a full timer', () => {
     const s = at([roundStart(1), apply(1, null, 2, 3), apply(1, null, 5, 3, 3)]);
-    expect(s.bossEffects).toEqual([{ effect: 'mired', stacks: 5, turnsLeft: 3 }]);
+    expect(s.bossEffects).toEqual([{ effect: 'bogged-down', stacks: 5, turnsLeft: 3 }]);
   });
 
   it('counts the boss down once a round, at the end of its turn', () => {
@@ -65,7 +65,7 @@ describe('status effects in the replay state', () => {
     const s = at([
       roundStart(1),
       apply(1, null, 1, 1),
-      { t: 'effect_expire', round: 1, target: null, effect: 'mired' },
+      { t: 'effect_expire', round: 1, target: null, effect: 'bogged-down' },
       roundEnd(1),
     ]);
     expect(s.bossEffects).toEqual([]);
@@ -75,7 +75,7 @@ describe('status effects in the replay state', () => {
     const s = at([
       roundStart(1),
       apply(1, null, 3, 3),
-      { t: 'effect_purge', round: 1, removed: [{ effect: 'mired', stacks: 3 }] },
+      { t: 'effect_purge', round: 1, removed: [{ effect: 'bogged-down', stacks: 3 }] },
     ]);
     expect(s.bossEffects).toEqual([]);
   });
@@ -88,7 +88,7 @@ describe('status effects in the replay state', () => {
         t: 'effect_consume',
         round: 1,
         reaction: 'flare',
-        effect: 'mired',
+        effect: 'bogged-down',
         stacks: 4,
         bonusBp: 1200,
       },
@@ -98,7 +98,9 @@ describe('status effects in the replay state', () => {
 
   it('tracks a creature: apply, count down after its own turn, cleanse', () => {
     const start = [roundStart(1), apply(1, 'a', 2, 3)];
-    expect(at(start).creatureEffects['a']).toEqual([{ effect: 'mired', stacks: 2, turnsLeft: 3 }]);
+    expect(at(start).creatureEffects['a']).toEqual([
+      { effect: 'bogged-down', stacks: 2, turnsLeft: 3 },
+    ]);
     // Its turn, then the next creature's turn: a's turn is over, so one less.
     const after = [...start, turn(2, 'a'), turn(2, 'b')];
     expect(at(after).creatureEffects['a']?.[0]?.turnsLeft).toBe(2);
@@ -109,7 +111,7 @@ describe('status effects in the replay state', () => {
       round: 2,
       supporter: 'b',
       target: 'a',
-      effect: 'mired',
+      effect: 'bogged-down',
       stacks: 2,
     };
     expect(at([...start, cleansed]).creatureEffects).toEqual({});
@@ -119,7 +121,10 @@ describe('status effects in the replay state', () => {
     const start = [roundStart(1), apply(1, 'a', 2, 3), apply(1, 'b', 1, 3)];
     const out = at([...start, { t: 'knockout', round: 1, creature: 'a' }]);
     expect(Object.keys(out.creatureEffects)).toEqual(['b']);
-    const expired = at([...start, { t: 'effect_expire', round: 1, target: 'b', effect: 'mired' }]);
+    const expired = at([
+      ...start,
+      { t: 'effect_expire', round: 1, target: 'b', effect: 'bogged-down' },
+    ]);
     expect(Object.keys(expired.creatureEffects)).toEqual(['a']);
   });
 

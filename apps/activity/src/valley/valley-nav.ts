@@ -25,7 +25,7 @@ export function isOpenPlace(id: PlaceId): id is OpenPlaceId {
   return (OPEN_PLACES as readonly string[]).includes(id);
 }
 
-/** The tab a place opens (the House opens Home's tab, drawn as its two entries; Journal and Stats are its two entries). */
+/** The tab a place opens (the House opens Home's tab, drawn as its entries; Journal, Stats and, with housing on, Your house are its entries). */
 export const PLACE_TAB: Readonly<Record<OpenPlaceId, Place>> = {
   cave: 'dungeon',
   fair: 'games',
@@ -65,7 +65,7 @@ export type HomeAt = 'valley' | 'house' | SoonPlaceId;
 /** What the valley shows. */
 export type ValleyView =
   | { kind: 'valley' }
-  | { kind: 'place'; place: OpenPlaceId; book: 'journal' | 'stats' | null }
+  | { kind: 'place'; place: OpenPlaceId; book: 'journal' | 'stats' | 'house' | null }
   | { kind: 'soon'; place: SoonPlaceId };
 
 /** The view for the game's current tab (the tab states are today's; `homeAt` only tells Home's three apart). */
@@ -77,6 +77,7 @@ export function viewOf(tab: Place, homeAt: HomeAt): ValleyView {
       return { kind: 'soon', place: homeAt };
     case 'journal':
     case 'stats':
+    case 'house':
       return { kind: 'place', place: 'house', book: tab };
     case 'collection':
       return { kind: 'place', place: 'paddock', book: null };

@@ -4,6 +4,82 @@ The living room and lounging, the lounge message, Discord DMs and other social f
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-12: Housing: a ceiling and frame left as built are their starters; only a trim can be None
+
+ID: `2026-11-12-housing-a-ceiling-and-frame-left` · Status: current
+
+**Decision.** The client draws a ceiling or a frame left as built (stored null) as its starter in its first colour (Plain Ceiling in white and oak, Timber Frame in oak; `drawnLook` in `interior-art.ts`), shows it on the chip and in the picker as that starter, in use, and offers no "As built" choice for them. Only a trim can be bare; its choice is called "None". Picking the starter stores its look; the picture is the same. The server is unchanged (null stays valid). Alongside: four wallpapers whose names collided with the outside Walls were renamed (Tiled Wall, Plank Wall, Brick Wall, Panelled Wall became Glazed Tiles, Upright Boards, Bare Brick, Moulded Panels), and the tower's spire is drawn at the postcard's pitch (one pixel a side per row).
+
+**Reasoning.** The review (2026-11-12) found "As built" and the starter side by side drawing the same picture, two choices that look identical. Making null mean the starter keeps every stored house valid with no migration and makes the picker honest; the bare day digests were re-pinned once for it. The renames and the spire are wording and art calls within the brief (scalars and small calls: best pick, listed for Misa).
+
+## 2026-11-12: Ground skins fit room kinds and are owned by rule
+
+ID: `2026-11-12-ground-skins-fit-room-kinds-and` · Status: current
+
+**Decision.** A skin is owned by rule when it needs no row: a starter always, and a ground skin that comes with a part (`unlock: part`) once that part is built (`ownsSkin`/`ownedByRule`). No rows are written for either in `ensure()`; the own view lists them with the held skins and the catalogue's `owned` agrees. A ground skin lists the outdoor room kinds it fits (`fits`), the loader checks the list, and `skin()` refuses another room kind with 409 `skin_mismatch`. `groundChoices(content, roomKind)` lists a room's choices for the client. A stored look that no longer validates against content (shape, skin, kind, colour, fit) is shown as the room's default (trim, ceiling and frame bare), with no read.
+
+**Reasoning.** Rows written only at house creation left houses made before a content addition unable to wear or craft its ground skins; a rule needs no migration and no backfill, and a part's room only exists once the part is built, so the skin route decides with data it already read. Matching by id prefix in the client listed nothing for `lawn` and `deck`, and any ground skin could dress any outdoor room. Looks stored under old content must not reach the client as ids it cannot draw.
+
+## 2026-11-12: Room layers: generated patterns owned by pattern, colour free, stored in the existing columns
+
+ID: `2026-11-12-room-layers-generated-patterns-owned-by` · Status: current
+
+**Decision.** Housing C5 is wired for wallpaper and floor patterns, trim, ceilings and the house frame (ways through stay unwired). Each is a skin with a `gen` field (`pattern`, `colours`, `tier`, `family`): owning the skin owns the pattern in every listed colour, and a layer stores `<skin id>:<colour>` (`paper-damask:rose`; `looks.ts` in the game package reads and checks it). Rooms get `trim` and `ceiling`, the exterior gets `frame`, all nullable: null is "as built", so a house that chose nothing paints exactly as before (pinned by day-picture digests taken before the change). No migration: the trim and ceiling ride in the room's `wall` column (`<wall>;ceiling=…;trim=…`) and the frame in the house's `walls` column (`<walls>;frame=…`), read and written only by `housing-store.ts`; a plain column is unchanged. Starters are owned by rule (`ownsSkin`), not by row, so old houses have them. Earning reuses the skin machinery: workbench patterns are `part: hut` unlocks priced by tier (`HOUSING_RULES.price.pattern`), fancy ones are drop blueprints with their own `sources` (skins can now carry `sources`) or feat unlocks. The frame replaces the inner posts and the slabs; the cut edges keep the walls skin. The client generates tiles at runtime from the workshop's pure generators, cached per pattern, colour and size, in the housing chunk only. Cobble and harlequin are left out; starry comes in four dark colours.
+
+**Reasoning.** Owning by pattern keeps the content at 30 entries instead of hundreds and makes colour a free, playful choice. Nullable layers are the only way to keep every existing house pixel-identical (the shipped wallpapers bake their own trim and ceiling line). Packing two extra values into existing text columns avoids a migration on a branch where the next numbers belong to others; the codec is one small function with tests, and housing is still off in production. Starters by rule avoid writing rows to existing houses. Putting the workbench patterns behind the hut uses the existing "a built part teaches it" rule rather than a new unlock kind.
+
+## 2026-11-12: Quiet Verge furniture set: tier 2, no element, stone and moonstone, from the Crossroads and the Reef
+
+ID: `2026-11-12-quiet-verge-furniture-set-tier-2` · Status: current
+
+**Decision.** The Quiet Verge set (the first made with the `furniture-set` skill, `docs/design/housing-next.md` C2) is tier 2 with no element, primary "any stone" and accent Moonstone, and its blueprints drop on trips, scouts and raids at the Old Crossroads and the Moonlit Reef (no boss). Every piece is generated from its style with part hooks; there is no hand override. The workshop's room sheet gained `--night`, which paints the rooms through the lighting pass.
+
+**Reasoning.** The Void is not a shipped element and the Quiet Verge is not a shipped destination, so the set takes no element and drops from the two shipped places the compendium ties to it: the Crossroads (the fifth shadow that leads there) and the Reef (the other night place). It is a late place, like the Reef, so tier 2 like Moonlit, Ancient and Lantern Night. Its furniture is the Verge's stone, and Moonstone ("glows a little when the reef is dark") is the closest shipped material to its pale rims and warm star; a new Void material would need a resource, an icon and a glossary entry, which is for when the place ships. Each is one edit in `sets.json` if Misa wants it otherwise. The night view uses the pure functions of `house-light.ts` so a set is checked at night before it reaches the scene.
+
+## 2026-11-11: Housing: tower, balcony, orchard and pond (prices, prerequisites, where they stand)
+
+ID: `2026-11-11-housing-tower-balcony-orchard-and-pond` · Status: current
+
+**Decision.** Four parts are added to player housing (work package C1 of `housing-next.md`, confirmed by Misa), all content with no migration (a built part is a row keyed by its id in the existing tables). **Tower** (kind `tower`, needs the House): a landing at floor 3 and an observatory at floor 4 on column 1, over the right half of the attic, under a spire; 300 Acorns, 2,000 scrap, 12 any stone, 8 any wood, 4 Bright Copper, 2 Moonstone. **Balcony** (kind `balcony`, side east, needs the House): one outdoor cell at floor 1 on the east edge of the rooms on that floor (core wall, east wing roof, or beside the guest room when the east upper floor is built); 150 Acorns, 1,000 scrap, 8 any wood, 4 any metal, 3 Lantern Silk. **Orchard** (grounds, east of the pool, needs the Garden): 200 Acorns, 1,500 scrap, 12 Grove shards, 8 any wood, 6 Heartbark, 4 Moss Velvet; its fruit (apple, plum, pear) is its ground skin, chosen from a Ground chip like wallpaper. **Pond** (grounds, west of the terrace, needs the Terrace): 250 Acorns, 1,500 scrap, 14 Tide shards, 8 any stone, 6 Driftwood, 4 Sea Glass. Thirteen grounds pieces came with them (beehive, fruit crate, garden swing, scarecrow, duck, lily cluster, lantern boat, fishing stool, stepping stones, sun umbrella, gazing ball, cone topiary, bistro table); the lantern boat is a light. The first eleven parts still total 2,000 Acorns and 13,000 scrap; the four add 900 and 6,000.
+
+**Reasoning.** The tower on the core (a part kind of its own, so the postcard still names the house by its core) is the one change to the silhouette, so it is priced like a wing and asks for the rare Moonstone. The balcony is the first outdoor room above the ground, so it takes its place from the rooms beside it instead of a fixed column, which keeps it attached whatever wing is built and moves it when the east upper floor appears. Orchard and pond sit on the far outer blocks of each side so they never push the core. Prices are in the same loan-style lines as the late parts and are picks for Misa to glance at; each number lives in `parts.json`. A creature standing on the balcony or the bridge is not drawn: housemates only sleep in beds today.
+
+## 2026-11-09: Housing server: how the rules of the first build read
+
+ID: `2026-11-09-housing-server-how-the-rules-of` · Status: current
+
+**Decision.** The worker's housing module (`apps/worker/src/housing*.ts`, migration 67, flag `HOUSING`) reads the spec this way where it was open:
+
+- **Placing.** A piece goes where it fits (`canPlace`) and a copy is free. When every copy is placed the answer is `none_free`; the client empties the other spot first (there is no move across rooms). Replacing a piece frees its copy. One bed per room, enforced as `spot_mismatch`. A bed keeps its sleeper only when another bed replaces it.
+- **Housemates.** At most three per house. Putting a creature on a second bed moves it (the old bed is made up); `already_housemate` is never answered. A creature that is gone drops off its bed on the next read of the own house.
+- **Payments.** `applyPayment` never refuses; the route answers `insufficient_funds`, `insufficient_parts` or `insufficient_materials` when nothing at all could be taken because the player holds none of what the offer named, `nothing_to_pay` when the offer names nothing still owed. A part that is built teaches its exterior skin as a learned blueprint.
+- **Crafting.** A family line of a piece's price takes the family's common materials before rare ones, then the most plentiful.
+- **Feats.** Run when the own house is opened, in the same transaction. The starter set (tier 0) is whole from the first minute, so it does not count for the Matched Set stamp; it does show in the cabinet (`setsComplete` lists it).
+- **Visiting.** The visit path takes a Discord snowflake or a staging dev guest (`dev-guest-<n>`), so the guests the dev tool makes can be opened. The list and the guestbook read each house by index; the guestbook keeps 30 with one boundary read.
+- **Reads.** Measured on 15 full houses (`apps/worker/test/housing-reads.test.ts`): the own house 541 rows, a visit 317, the list 220, the catalogue 350, a partial payment 45. Nothing runs on `/api/state`, the alarm or the start.
+- **The drop hook** never throws into the reward that calls it: a failed drop rolls back its own savepoint, logs the error's name and the reward goes on.
+- **Migrations.** Housing is migration 67; versions 64 to 66 are reserved as no-ops for the valley branch's three migrations, which replace them at the merge.
+
+**Reasoning.** The spec left these open or contradicted itself (`none_free` against "moves it"; `already_housemate` against "it moves"). Each pick keeps the server authoritative and the answers small and strict, and none changes a rule a player must learn. The reads were priced before shipping (`docs/design/database-reads.md`) and are tested against budgets, so a change shows up as a failing test.
+
+## 2026-11-09: Player housing: what is built and its standing rules **[Misa]**
+
+ID: `2026-11-09-player-housing-what-is-built-and` · Status: current
+
+**Decision.** Misa read the housing research (`docs/research/player-housing.md`) and asked for items 1 to 5, 7 and 8 of its ranking to be built as one shippable feature; porch visitors wait. The spec is `docs/design/housing.md`. His rules:
+
+- The house grows visibly as it is built, beyond floors: wings, pools, decorative gardens.
+- Scouts and trips bring luxury materials (exotic woods, gemstones, rare metals) that fuel housing alone.
+- Furniture comes in sets whose pieces look alike, plus wild pieces; the fun is collecting and crafting everything, and only cost needs balancing. Art is not a limit.
+- The house gives no power, ever.
+- The guestbook is stamps, not text. Stamps are collectibles from feats (the journal especially) and rare drops.
+- The bonfire is not emptied at night, and there is no reason to send a creature home over the bonfire.
+- Porch visitors, later: rare, mysterious choices with unknown outcomes (for example sending a creature on a quest to meet the visitor and learn a talent).
+
+The lead's picks, for Misa to change: housing is self-contained behind a `HOUSING` flag (off in production); a bed holds a housemate for show only; crafting is instant at a workbench, with no timer; a part is paid into at any pace and built when fully paid; one free gift a day; displays (raid plaques, medals, keepsakes) fill themselves.
+
+**Reasoning.** The research found homes are loved when they record what a player did and hold something of theirs, and resented when they charge rent, run out or turn decorating into a score. Keeping housing in its own modules, with one hook per reward path, lets it ship while combat and the valley are being reworked in other sessions.
+
 ## 2026-10-25: Opt-in Discord DMs, derived from the game's tables
 
 ID: `2026-10-25-opt-in-discord-dms-derived-from` · Status: current

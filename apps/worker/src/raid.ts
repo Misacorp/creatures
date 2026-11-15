@@ -7,6 +7,7 @@
  * depend on it can never be interleaved with another request. The user is always an argument from
  * the verified session. The guild's timezone is always passed in, never defaulted.
  */
+import type { HousingHook } from '@creatures/game';
 import { basicAbilities, content, RULES, type ReadinessBand, type Rng } from '@creatures/game';
 import type { Analytics } from './analytics';
 import { GameError, atomically, type Outcome } from './outcome';
@@ -55,7 +56,7 @@ import {
   startFinaleV2,
   unresolvedRealV2,
 } from './raid-v2-live';
-import { askSwap, acceptSwap, declineSwap } from './raid-swap';
+import { askSwap, acceptSwap, cancelSwap, declineSwap } from './raid-swap';
 import { endWeekV2 } from './raid-v2-track';
 import { resolveStageV2, type ResultPhase } from './raid-v2-stage';
 import {
@@ -133,10 +134,14 @@ export interface RaidDeps {
   talentRng?: Rng;
   /** The `COMBAT_V2` flag: a Festival creature also rolls its v2 talent (`talent-v2-store.ts`). */
   combatV2?: boolean;
+  /** Player housing's reward hook (`HOUSING` on): a drop at the reward moment. Absent: nothing happens. */
+  housing?: HousingHook | undefined;
   /** Live randomness for gear drops (a cleared phase, a won finale, a Festival piece). Crypto in production. */
   gearRng?: Rng;
   /** The analytics event log (see `analytics.ts`). Optional: without it nothing is logged. */
   analytics?: Analytics;
+  /** The valley's trials (V-TRIAL-2): the boss was killed with these creatures of the player in the party (`ResolveDeps.onKill`). */
+  onKill?: (userId: string, creatureIds: readonly string[]) => void;
   /**
    * The players of a party who have the finale's live socket open (`finale-live.ts`). They count as
    * watching without polling: a socket only gets a push when the stage moves.
@@ -1710,6 +1715,18 @@ export class Raid {
     const outcome = this.atomically(() => {
       const { week, party } = this.swapContext(userId, tz);
       askSwap(this.sql, week, userId, slotA, slotB, this.v2Length(week, party), this.deps.now());
+      return null;
+    });
+    if (!outcome.ok) return outcome;
+    return { ok: true, value: this.swaps(userId, tz) };
+  }
+
+  /** Withdraws a request the caller made (see `cancelSwap`); a request someone else made is left alone. */
+  cancelSwap(userId: string, tz: string, id: string): Outcome<SwapsView> {
+    this.runDue(tz);
+    const outcome = this.atomically(() => {
+      const { week } = this.swapContext(userId, tz);
+      cancelSwap(this.sql, week, userId, id);
       return null;
     });
     if (!outcome.ok) return outcome;

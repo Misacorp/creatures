@@ -20,6 +20,7 @@ export type TrayState =
   | 'smithing'
   | 'helping'
   | 'trading'
+  | 'studying'
   | 'job'
   | 'trip'
   | 'free';
@@ -47,6 +48,8 @@ export interface TrayInput {
   helping?: ReadonlySet<string>;
   /** The creature posted to the broker's seat at the Market (`VALLEY_SYSTEMS` on, once the Market is built); absent with the flag off. */
   trading?: ReadonlySet<string>;
+  /** The creatures seated at the School (`VALLEY_SYSTEMS` on): they are students, not resting; absent with the flag off. */
+  studying?: ReadonlySet<string>;
 }
 
 export function trayBadge(c: Creature, input: TrayInput): TrayBadge {
@@ -95,6 +98,13 @@ export function trayBadge(c: Creature, input: TrayInput): TrayBadge {
   if (input.helping?.has(c.id) === true) {
     return { state: 'helping', destination: null, label: say('Helping build a place.') };
   }
+  if (input.studying?.has(c.id) === true) {
+    return {
+      state: 'studying',
+      destination: null,
+      label: say('At the School, learns it by morning.'),
+    };
+  }
   if (input.resting?.has(c.id) === true) {
     return { state: 'resting', destination: null, label: say('Resting at the fire.') };
   }
@@ -112,6 +122,7 @@ const ORDER: readonly TrayState[] = [
   'smithing',
   'trading',
   'helping',
+  'studying',
   'trip',
 ];
 

@@ -133,6 +133,13 @@
   font-size: 0.75rem;
 }
 
+/* The house section's picture: the postcard, its box kept while it loads (the Home glyph stands in). */
+.howto-house {
+  display: grid;
+  place-items: center;
+  min-height: 4.5rem;
+}
+
 .art-tags {
   justify-content: center;
   margin: 0.5rem 0 0;

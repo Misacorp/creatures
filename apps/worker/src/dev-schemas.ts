@@ -47,6 +47,10 @@ export const DEV_ACTION_TOOLS = [
   'games-bots',
   'games-run-now',
   'games-reset',
+  'housing-grant',
+  'housing-build',
+  'housing-guests',
+  'housing-fresh',
   'analytics-rollup',
   'raid-clear',
   'raid-fill',
@@ -56,10 +60,62 @@ export const DEV_ACTION_TOOLS = [
   'combat-v2-convert',
   'reset-raids-dungeons',
   'valley-fresh',
+  'valley-bots',
+  'valley-sim-day',
+  'valley-report',
+  'visitor-arrive',
+  'school-teacher',
+  'trials-tick',
+  'trials-ceremony',
   'apply-roster-preset',
   'reset-account',
+  'grant-currency',
+  'grant-xp',
+  'grant-talent',
+  'set-knack',
 ] as const;
 export type DevActionTool = (typeof DEV_ACTION_TOOLS)[number];
+
+/**
+ * The tools that act on one player's own data and so may name another player of the guild (2026-11-13, Misa: "give target
+ * players pretty much everything"). The body may carry `userId` (default: the caller); `DevTools.run` takes it off, checks it
+ * (`TargetUserIdSchema`: a real, non-simulated player of this guild) and runs the tool for that player, so each tool's own
+ * strict schema never sees it. Left out on purpose: the clock, the raid bench, the Games, the dungeon's guild-wide day
+ * (`dungeon-modifiers`, `dungeon-seed`), the account reset and the roster presets (which name their target themselves).
+ */
+export const TARGETED_TOOLS: readonly DevActionTool[] = [
+  'set-balances',
+  'grant-parts',
+  'grant-supplies',
+  'grant-blueprints',
+  'grant-creature',
+  'set-creature',
+  'set-explorer',
+  'set-familiarity',
+  'set-crafting-xp',
+  'finish-jobs',
+  'grant-gear',
+  'fill-bag',
+  'finish-trips',
+  'force-offer',
+  'force-gates',
+  'set-slots',
+  'journal',
+  'slot-wipe-notice',
+  'dungeon-depth',
+  'dungeon-reset',
+  'dungeon-streak',
+  'dungeon-retry',
+  'grant-currency',
+  'grant-xp',
+  'grant-talent',
+  'set-knack',
+  'trials-tick',
+  'trials-ceremony',
+];
+
+/** The id of a target player (checked against the guild's players in `DevTools.run`). */
+export const TargetUserIdSchema = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 
 /** Read-only tools (GET). Not logged. */
 export const DEV_READ_TOOLS = ['state', 'events', 'players'] as const;
@@ -135,6 +191,38 @@ export const GrantCreatureBodySchema = v.strictObject({
   shiny: v.optional(v.boolean()),
   level: v.optional(int(1, 99)),
   fusion: v.optional(int(0, 5)),
+  /** How many creatures of the line the player ends up with (1 or 2: a line holds at most two); default 1. */
+  count: v.optional(int(1, 2)),
+});
+
+/** Gives Bait and/or Essence (adds to the balance, through the ledger as source `dev`). */
+export const GrantCurrencyBodySchema = v.pipe(
+  v.strictObject({
+    bait: v.optional(int(1, MAX_AMOUNT)),
+    essence: v.optional(int(1, MAX_AMOUNT)),
+  }),
+  v.check((o) => o.bait !== undefined || o.essence !== undefined, NEED_ONE),
+);
+
+/** Experience for one creature, or for all of the player's creatures (through the game's own `awardExperience`). */
+export const GrantXpBodySchema = v.union([
+  v.strictObject({ creatureId: IdSchema, amount: int(1, 1_000_000) }),
+  v.strictObject({ all: v.literal(true), amount: int(1, 1_000_000) }),
+]);
+
+const TALENT_IDS = Object.keys(combatV2.talents) as [string, ...string[]];
+
+/** A combat v2 talent into a creature's Talent Book (found, learned) and, if asked, into a slot (open slots only). */
+export const GrantTalentBodySchema = v.strictObject({
+  creatureId: IdSchema,
+  talentId: v.picklist(TALENT_IDS),
+  slot: v.optional(int(1, 3)),
+});
+
+/** A creature's saved Knack (one its form knows), or none (`null`). */
+export const SetKnackBodySchema = v.strictObject({
+  creatureId: IdSchema,
+  knack: v.nullable(v.pipe(v.string(), v.minLength(1), v.maxLength(64))),
 });
 
 export const SetCreatureBodySchema = v.pipe(
@@ -185,10 +273,15 @@ export const SetCraftingXpBodySchema = v.strictObject({
 // --- The Workshop ---
 
 export const GrantGearBodySchema = v.strictObject({
-  baseId: v.picklist(BASE_IDS),
-  rarity: v.picklist(['common', 'rare', 'epic']),
-  /** The item level (1 to 20); default 1. */
+  /** A base; absent: a random one (of `slot` when given). */
+  baseId: v.optional(v.picklist(BASE_IDS)),
+  slot: v.optional(v.picklist(['hat', 'scarf', 'charm'])),
+  /** Absent: random among common, rare and epic. */
+  rarity: v.optional(v.picklist(['common', 'rare', 'epic'])),
+  /** The item level (1 to 20); absent: the base's lowest level, or random for a random base. */
   itemLevel: v.optional(int(1, RULES.gear.maxItemLevel)),
+  /** How many items (default 1); the whole grant is refused when the bag cannot hold them. */
+  count: v.optional(int(1, 50)),
 });
 
 // --- Expeditions ---
@@ -280,6 +373,40 @@ export const RaidPlayBodySchema = v.pipe(
 export const MAX_GAMES_BOTS = 12;
 export const GamesBotsBodySchema = v.strictObject({ count: v.optional(int(1, MAX_GAMES_BOTS)) });
 
+// --- Player housing (staging with `HOUSING` on) ---
+
+/** Fills the caller's holdings for a try-out: `materials` of each luxury material, Acorns, scrap, every blueprint and stamp. */
+export const MAX_HOUSING_GUESTS = 12;
+export const HousingGrantBodySchema = v.pipe(
+  v.strictObject({
+    materials: v.optional(int(1, 999)),
+    acorns: v.optional(int(1, MAX_AMOUNT)),
+    scrap: v.optional(int(1, MAX_AMOUNT)),
+    blueprints: v.optional(v.literal('all')),
+    /** Every skin owned at once (the room patterns and frames too), with no making. */
+    skins: v.optional(v.literal('all')),
+    stamps: v.optional(v.literal('all')),
+  }),
+  v.check((o) => Object.values(o).some((x) => x !== undefined), NEED_ONE),
+);
+
+/** Builds parts without paying: all of them, or the named ones (their prerequisites must be built or named). */
+export const HousingBuildBodySchema = v.strictObject({
+  parts: v.union([
+    v.literal('all'),
+    v.pipe(
+      v.array(v.pipe(v.string(), v.maxLength(32), v.regex(/^[a-z][a-z0-9-]*$/))),
+      v.minLength(1),
+      v.maxLength(16),
+    ),
+  ]),
+});
+
+/** Gives the raid's dev guests (`dev-guest-<n>`) houses, furniture, housemates and a stamp in the caller's guestbook. */
+export const HousingGuestsBodySchema = v.strictObject({
+  count: v.optional(int(1, MAX_HOUSING_GUESTS)),
+});
+
 /** Lock the next show day now and start its show in a few seconds (default 15). */
 export const GamesRunNowBodySchema = v.strictObject({
   showInSeconds: v.optional(int(5, 120)),
@@ -311,5 +438,17 @@ export const ResetAccountBodySchema = v.strictObject({ confirm: v.literal('RESET
 
 /** Wipes every raid and dungeon of the guild: the word must be typed. */
 export const ResetRaidsDungeonsBodySchema = v.strictObject({ confirm: v.literal('reset') });
+
+/** Brings the School's teacher now for this week's stay, or announces next week's teacher now (V-SCH-11). */
+export const SchoolTeacherBodySchema = v.strictObject({ mode: v.picklist(['arrive', 'announce']) });
+
+/** One game day of the bots; `maxVisits` plays only that many of the day's visits (a day too long for one request is played in several calls). */
+export const ValleySimDayBodySchema = v.strictObject({
+  maxVisits: v.optional(int(1, 200)),
+});
+
+export const TrialsTickBodySchema = v.strictObject({
+  creatureId: v.pipe(v.string(), v.minLength(1), v.maxLength(64)),
+});
 
 export const NoBodySchema = Empty;

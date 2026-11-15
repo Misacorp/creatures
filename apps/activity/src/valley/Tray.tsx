@@ -70,6 +70,12 @@ function Mark({ badge }: { badge: TrayBadge }) {
           <Sprite sprite={glyphOrUnknown('hand')} scale={2} />
         </span>
       );
+    case 'studying':
+      return (
+        <span class="vy-mark">
+          <Sprite sprite={glyphOrUnknown('journal')} scale={2} />
+        </span>
+      );
     case 'resting':
       return (
         <span class="vy-mark">

@@ -1,3 +1,4 @@
+import { rerollPrice as gameRerollPrice, visitorHere as gameVisitorHere } from '@creatures/game';
 import { rollLines, topCount, wornPieces, type Worn } from './lines';
 import type { Rules } from './rules';
 import type { Player, Server } from './types';
@@ -13,18 +14,13 @@ import { debit, debitShard } from './world';
  * also holds one rotating rare blueprint. Stock is the same for everyone, so nothing here depends on other players.
  */
 
-/** Whether he is in the valley at this hour (V-VIS-1). */
+/** Whether he is in the valley at this hour (V-VIS-1): the game's rule (`@creatures/game`) on the lab's hour of the week. */
 export function visitorHere(rules: Rules, hour: number): boolean {
-  const inWeek = hour % HOURS_PER_WEEK;
-  return inWeek >= rules.visitor.arriveDay * 24 && inWeek < rules.visitor.leaveHour;
+  return gameVisitorHere(rules, hour % HOURS_PER_WEEK);
 }
 
-/** The price of the player's next reroll of a piece of this item level: [Acorns, scrap]. */
-export function rerollPrice(rules: Rules, ilvl: number, rerollsSoFar: number): [number, number] {
-  const v = rules.visitor;
-  const factor = (Math.max(1, ilvl) / v.baseLevel) * v.growth ** rerollsSoFar;
-  return [Math.round(v.acorns * factor), Math.round(v.scrap * factor)];
-}
+/** The price of the player's next reroll of a piece of this item level: [Acorns, scrap] (the game's rule, V-VIS-3). */
+export const rerollPrice = gameRerollPrice;
 
 const affordable = (p: Player, acorns: number, scrap: number): boolean =>
   (p.stock[R.acorns] ?? 0) - acorns >= p.rules.visitor.reserveAcorns &&

@@ -5,6 +5,7 @@
 import { CARDS } from './cards';
 import { runBossJob, type BossJobArgs } from './bossReport';
 import { runDungeonDaysJob } from './dungeonMeasure';
+import { runWorthJob } from './finaleWorth';
 import { runFourSlotJob } from './fourSlot';
 import { runGateJob, type GateJobArgs } from './gate';
 import { runJourneyJob } from './journey';
@@ -77,6 +78,8 @@ export function runJob(job: JobSpec, deps: Readonly<Record<string, unknown>>): u
       return runDungeonDaysJob(job.args);
     case 'gate':
       return runGateJob(job.args as GateJobArgs, deps);
+    case 'finale-worth':
+      return runWorthJob(job.args);
     case 'four-slot':
       return runFourSlotJob(job.args);
     case 'rules':

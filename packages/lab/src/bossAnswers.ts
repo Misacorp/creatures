@@ -127,7 +127,7 @@ export const BOSS_ANSWERS: Readonly<Record<string, readonly BossAnswer[]>> = {
   'cinder-wyrm': [
     {
       label:
-        'Squelch Song keeps Mired on the Wyrm, so Forge Heat builds slowly and each hit lands softer',
+        'Squelch Song keeps Bogged Down on the Wyrm, so Forge Heat builds slowly and each hit lands softer',
       tool: 'Debuff',
       core: ['squelch-song'],
       line: 'magmole/none fogwyrm/thick-fog ohmouse/none geyserpup/none+finisher | tidewing/circle-round+finisher magmole/tunnel-through+bright-boost fogwyrm/wide-reach+flank-guard drizzlewt/none+catch-breath | croakmire/squelch-song+clinging bogwarden/draw-fire+brace drizzlewt/none+bright-boost croakmire/squelch-song | splashet/none+hardy pyrelynx/gnaw-through bogwarden/draw-fire squelch/squelch-song',

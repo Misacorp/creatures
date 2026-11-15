@@ -32,6 +32,7 @@ import { gameDay } from '../src/time';
 import { playV2Day, scaleV2Foes } from './dungeon-v2-reads';
 import { DAY, HELSINKI, HOUR, MINUTE } from './raid-helpers';
 import { V2_WEEK } from './raid-v2-helpers';
+import { housingCore } from './housing-world';
 import type { ReadReport } from './read-meter';
 import {
   BUILD,
@@ -619,13 +620,24 @@ const WEEKEND_DAY_BUDGET = 56_000;
 // players, the jackpot rolls, the track's move) and a last look at the raid. Saturday's stage 1 is played first and is not part of the day.
 
 /** The rows of a v2 raid Sunday, by source. */
-async function simulateWeekendDay(): Promise<DayReads> {
+async function simulateWeekendDay(options: { valleySystems?: boolean } = {}): Promise<DayReads> {
   const reads = new DayReads();
   await inGuild(
     async (env: GuildEnv) => {
-      await seedWorld(env, { combatV2: true });
+      const world = await seedWorld(env, { combatV2: true, ...options });
       const { metered, clock, mk } = env;
-      const flag = { combatV2: true } as const;
+      const flag =
+        options.valleySystems === true
+          ? ({ combatV2: true, valleySystems: true } as const)
+          : ({ combatV2: true } as const);
+      // With the valley's systems on, every player has two scouts and two smiths posted, and the scouts are the creatures on the raid board:
+      // each pass of the day finds a raider's post and reads the raid's windows.
+      if (options.valleySystems === true) {
+        for (let n = 1; n <= PLAYERS; n++) {
+          seedSeats(metered.sql, userId(n), world.creatures[userId(n)] ?? [], 2);
+          seedAnvils(metered.sql, userId(n), world.creatures[userId(n)] ?? [], 2);
+        }
+      }
       const wake = async (source: string): Promise<ReturnType<GuildEnv['mk']>> => {
         const core = mk(BUILD, flag);
         reads.add(source, (await metered.measure(() => core.migrate())).reads);
@@ -709,4 +721,93 @@ describe('a v2 raid weekend day', () => {
       `${reads.describe()}\nBudget: ${String(WEEKEND_DAY_BUDGET)} rows.`,
     ).toBeLessThanOrEqual(WEEKEND_DAY_BUDGET);
   }, 180_000);
+});
+
+/** The same Sunday with all three flags on and raiders on posts: its own budget, because the valley's pass runs on every opening of the day. */
+// Measured 42,263 rows read (37,149 without the valley: request:state 14,559 against 9,664, the rest as before) and 2,404 written. About 1.5x, as the day above.
+const WEEKEND_VALLEY_DAY_BUDGET = 63_000;
+describe('a v2 raid weekend day with the valley systems on', () => {
+  it('reads few rows on the Sunday with raiders posted as scouts and smiths (the pass reads the raid windows)', async () => {
+    const reads = await simulateWeekendDay({ valleySystems: true });
+    expect(
+      reads.total,
+      `${reads.describe()}\nBudget: ${String(WEEKEND_VALLEY_DAY_BUDGET)} rows.`,
+    ).toBeLessThanOrEqual(WEEKEND_VALLEY_DAY_BUDGET);
+  }, 180_000);
+});
+
+/**
+ * A housing day for one active player on a server of 15 full houses (`docs/design/database-reads.md`, checklist item 6): two opens of the
+ * house, four placements, a craft, a payment, a look at the visit list and a visit with a gift and a stamp, a collect and the "seen" mark.
+ * The rest of the day is the other tests' (housing reads nothing on `/api/state`, an alarm tick or the object's start).
+ */
+// Measured 2,717 rows read and 149 written (0.05% of the free tier; was 3,665: craft 441 now 57, and no re-read of the house after the payment): house:own 1,088 (x2), house:place 671 (x4), visit 320, list 221, collect 110, stamp 109, craft 57, pay 50, gift 50, seen 41.
+const HOUSING_DAY_BUDGET = 4_100;
+describe('a housing day', () => {
+  it('reads few rows in a realistic day of an active house owner', async () => {
+    const reads = new DayReads();
+    await inGuild(
+      async (env: GuildEnv) => {
+        const world = await seedWorld(env);
+        const core = housingCore(env, world, BUILD);
+        env.clock.t += 6 * MINUTE;
+        await callAs(core, world.secrets, 1, '/api/house');
+        env.clock.t += MINUTE;
+        const step = async (
+          source: string,
+          path: string,
+          method = 'GET',
+          body?: unknown,
+        ): Promise<void> => {
+          const res = await env.metered.measure(() =>
+            callAs(core, world.secrets, 1, path, {
+              method,
+              ...(body === undefined ? {} : { body }),
+            }),
+          );
+          reads.add(source, res.reads);
+          env.clock.t += MINUTE;
+        };
+        const place = (pieceId: string | null) =>
+          step('house:place', '/api/house/place', 'PUT', {
+            roomId: 'hut:hearth',
+            spotId: 'floor-small-b',
+            pieceId,
+          });
+        await step('house:own', '/api/house');
+        await place('cosy-chair');
+        await place(null);
+        await step('house:craft', '/api/house/craft', 'POST', {
+          itemId: 'rocking-chair',
+          idempotencyKey: 'housing-day-craft',
+        });
+        await place('cosy-chair');
+        await step('house:pay', '/api/house/build', 'POST', {
+          partId: 'pool',
+          pay: { bait: 50 },
+          idempotencyKey: 'housing-day-pay',
+        });
+        // No re-read of the house after the payment: the answer carries what changed.
+        await step('house:list', '/api/houses');
+        await step('house:visit', `/api/houses/${userId(2)}`);
+        await step('house:gift', `/api/houses/${userId(2)}/gift`, 'POST', {
+          idempotencyKey: 'housing-day-gift',
+        });
+        await step('house:stamp', `/api/houses/${userId(2)}/stamp`, 'POST', {
+          stampId: 'paw-print',
+        });
+        await place(null);
+        await step('house:collect', '/api/house/mail/collect', 'POST', {
+          idempotencyKey: 'housing-day-collect',
+        });
+        await step('house:seen', '/api/house/seen', 'POST', {});
+        await step('house:own', '/api/house');
+      },
+      { fresh: true },
+    );
+    expect(
+      reads.total,
+      `${reads.describe()}\nBudget: ${String(HOUSING_DAY_BUDGET)} rows.`,
+    ).toBeLessThanOrEqual(HOUSING_DAY_BUDGET);
+  }, 120_000);
 });

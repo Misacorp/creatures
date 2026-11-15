@@ -317,4 +317,11 @@ describe('the unlock ladder', () => {
     expect(nextUnlock(14, 'common', 15)).toEqual({ level: 15, name: 'Evolution' });
     expect(nextUnlock(30, 'epic')).toBeNull();
   });
+
+  it('leaves the Scarf and the Charm out when every slot is open from level 1 (the valley, V-GEAR-3)', () => {
+    const names = unlockLadder('rare', 15, true).map((u) => u.name);
+    expect(names).not.toContain('Scarf');
+    expect(names).not.toContain('Charm');
+    expect(nextUnlock(1, 'common', 15, true)).toEqual({ level: 10, name: 'Bronze Ribbon' });
+  });
 });

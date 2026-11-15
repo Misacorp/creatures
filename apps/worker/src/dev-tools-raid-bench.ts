@@ -97,6 +97,13 @@ const resultRows = (ctx: ToolCtx, weekId: string, phase?: string): number =>
 const stagePlayed = (ctx: ToolCtx, weekId: string, stage: Stage): boolean =>
   resultRows(ctx, weekId, stage) > 0 || eventRan(ctx, weekId, EVENT_OF[stage]);
 
+/** A live finale is on: its fight is stored and no party has the finale's result yet (a settled one is "played"). */
+const liveFinaleRunning = (ctx: ToolCtx, weekId: string): boolean =>
+  resultRows(ctx, weekId, 'finale') === 0 &&
+  ctx.sql
+    .exec('SELECT 1 FROM raid_live WHERE week_id = ? AND practice = 0 LIMIT 1', weekId)
+    .toArray().length > 0;
+
 /** True once anything of the weekend has been fought: a result, a live fight, an event that ran or a status past `open`. */
 function fought(ctx: ToolCtx, week: WeekRow): boolean {
   if (week.status !== 'open' || resultRows(ctx, week.weekId) > 0) return true;
@@ -398,6 +405,8 @@ export function raidPlay(ctx: ToolCtx, body: Body<typeof RaidPlayBodySchema>) {
   if (week.festival) throw new DevError(409, 'festival');
   const { stage } = body;
   const weekId = week.weekId;
+  if (stage === 'finale' && liveFinaleRunning(ctx, weekId))
+    throw new DevError(409, 'finale_running');
   if (stagePlayed(ctx, weekId, stage)) throw new DevError(409, 'already_played');
   if (stage !== 'stage1' && !stagePlayed(ctx, weekId, 'stage1')) {
     throw new DevError(409, 'play_stage1_first');

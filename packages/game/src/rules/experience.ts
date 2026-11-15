@@ -303,16 +303,21 @@ export interface Unlock {
 /**
  * What a creature's level brings (the ladder of spec 9.3a) in level order, for a species of `rarity`
  * that evolves at `evolveLevel` (omit for one that does not). Slot levels, the ability level and the
- * talent slots come from the rules, so a change there moves the ladder.
+ * talent slots come from the rules, so a change there moves the ladder. `allSlotsOpen` (the valley's
+ * V-GEAR-3: every gear slot open from level 1) leaves the Scarf and the Charm out.
  */
-export function unlockLadder(rarity: Rarity, evolveLevel?: number): Unlock[] {
+export function unlockLadder(rarity: Rarity, evolveLevel?: number, allSlotsOpen = false): Unlock[] {
   const slots = RULES.gear.slotUnlockLevel;
   const bronze = E.ribbons[0]?.level ?? 10;
   const silver = E.ribbons[1]?.level ?? 20;
   const ladder: Unlock[] = [
-    { level: slots.scarf, name: 'Scarf' },
+    ...(allSlotsOpen
+      ? []
+      : [
+          { level: slots.scarf, name: 'Scarf' },
+          { level: slots.charm, name: 'Charm' },
+        ]),
     { level: bronze, name: 'Bronze Ribbon' },
-    { level: slots.charm, name: 'Charm' },
     { level: silver, name: 'Silver Ribbon' },
     { level: E.maxLevel, name: 'Gold Ribbon' },
   ];
@@ -330,8 +335,16 @@ export function unlockLadder(rarity: Rarity, evolveLevel?: number): Unlock[] {
   return ladder.sort((a, b) => a.level - b.level);
 }
 
-/** The next unlock above `level` (a ribbon that is not earned yet still shows at its level), or null at the top. */
-export function nextUnlock(level: number, rarity: Rarity, evolveLevel?: number): Unlock | null {
+/**
+ * The next unlock above `level` (a ribbon that is not earned yet still shows at its level), or null at the top.
+ * `allSlotsOpen` as in `unlockLadder`.
+ */
+export function nextUnlock(
+  level: number,
+  rarity: Rarity,
+  evolveLevel?: number,
+  allSlotsOpen = false,
+): Unlock | null {
   assertLevel(level);
-  return unlockLadder(rarity, evolveLevel).find((u) => u.level > level) ?? null;
+  return unlockLadder(rarity, evolveLevel, allSlotsOpen).find((u) => u.level > level) ?? null;
 }

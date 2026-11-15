@@ -3,7 +3,7 @@
  * stored rows and their JSON shapes, and the plain reads of the player's progress and a run's fights.
  * Types and reads only; nothing here opens a transaction.
  */
-import { type Rng } from '@creatures/game';
+import { type HousingHook, type Rng } from '@creatures/game';
 import { type DungeonRunInput, type FightSlot } from '@creatures/engine';
 import type { Analytics } from './analytics';
 import { type DevFlags } from './dev-state';
@@ -33,11 +33,20 @@ export interface DungeonDeps {
   dev?: DevFlags | undefined;
   /** The valley's weather: every run is fought under the day's Boon and Omen. Absent: none. */
   weather?: Weather | undefined;
+  /** Player housing's reward hook (`HOUSING` on): a drop at the reward moment. Absent: nothing happens. */
+  housing?: HousingHook | undefined;
   /**
    * Combat v2 (the `COMBAT_V2` var is "on"): a run that starts now is a v2 run. Read only when a run starts; a run
    * keeps the rules it started with. Absent: runs start on v1.
    */
   combatV2?: boolean | undefined;
+  /**
+   * The valley's trials (V-TRIAL-2): a run was cleared with these creatures in the team (those that fought), and it beat `undercroftLevels`
+   * keepers of the Undercroft. Called inside the run's transaction; absent with the valley systems off.
+   */
+  onCleared?:
+    | ((userId: string, creatureIds: readonly string[], undercroftLevels: number) => void)
+    | undefined;
 }
 
 // --- Storage ---

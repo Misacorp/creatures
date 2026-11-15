@@ -228,7 +228,6 @@ export class ValleyBonfire {
           span.weekId,
         )
         .toArray();
-      if (placed.length === 0) continue;
       const week = this.sql
         .exec<{ rules_version: number }>(
           'SELECT rules_version FROM raid_weeks WHERE week_id = ?',
@@ -236,6 +235,25 @@ export class ValleyBonfire {
         )
         .toArray()[0];
       if (week === undefined) continue;
+      // A combat v2 stage frees a knocked-out creature's place, but it stays out of the raid for the weekend (it cannot be placed
+      // again), so its post stays paused too: the party's carry lists who is out. One row, only for a v2 week the player joined.
+      // (Ids of other players' creatures may come with it; the caller only looks up its own.)
+      const ids = new Set(placed.map((row) => row.creature_id));
+      if (week.rules_version === 2) {
+        const carry = this.sql
+          .exec<{ carry_json: string | null }>(
+            `SELECT p.carry_json FROM raid_party_members m JOIN raid_parties p ON p.week_id = m.week_id AND p.party = m.party
+             WHERE m.week_id = ? AND m.user_id = ?`,
+            span.weekId,
+            userId,
+          )
+          .toArray()[0]?.carry_json;
+        if (carry !== null && carry !== undefined) {
+          const out = (JSON.parse(carry) as { out?: unknown }).out;
+          if (Array.isArray(out)) for (const key of out) if (typeof key === 'string') ids.add(key);
+        }
+      }
+      if (ids.size === 0) continue;
       const times = eventTimes(span.weekId, tz, week.rules_version === 2 ? 2 : 1);
       const done = this.sql
         .exec<{ done_at: number }>(
@@ -244,7 +262,7 @@ export class ValleyBonfire {
         )
         .toArray()[0];
       const window = { from: times.phase1, to: done?.done_at ?? times.finale + FINALE_GRACE_MS };
-      for (const row of placed) out.push({ creatureId: row.creature_id, window });
+      for (const creatureId of ids) out.push({ creatureId, window });
     }
     return out;
   }

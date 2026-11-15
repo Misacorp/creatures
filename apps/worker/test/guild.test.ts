@@ -1,4 +1,4 @@
-import { SCHEMA_VERSION } from '../src/migrations';
+import { MIGRATION_ROWS, SCHEMA_VERSION } from '../src/migrations';
 import { RULES, content, dailyAllowance, quirkText } from '@creatures/game';
 import { env, exports } from 'cloudflare:workers';
 import { listDurableObjectIds, runInDurableObject } from 'cloudflare:test';
@@ -100,7 +100,7 @@ describe('schema migrations', () => {
       expect(version.v).toBe(SCHEMA_VERSION);
       // Running migrations again is a no-op.
       core.migrate();
-      expect(sql.exec('SELECT * FROM schema_version').toArray()).toHaveLength(SCHEMA_VERSION);
+      expect(sql.exec('SELECT * FROM schema_version').toArray()).toHaveLength(MIGRATION_ROWS);
       return Promise.resolve();
     });
   });
@@ -586,7 +586,7 @@ describe('migration 14 (Auto fire preferences)', () => {
       // Running the migrations again is a no-op.
       core.migrate();
       expect(version(sql)).toBe(SCHEMA_VERSION);
-      expect(sql.exec('SELECT * FROM schema_version').toArray()).toHaveLength(SCHEMA_VERSION);
+      expect(sql.exec('SELECT * FROM schema_version').toArray()).toHaveLength(MIGRATION_ROWS);
     });
   });
 
@@ -659,7 +659,7 @@ describe('migration 15 (content-paced live rounds)', () => {
       // Running the migrations again is a no-op.
       core.migrate();
       expect(version(sql)).toBe(SCHEMA_VERSION);
-      expect(sql.exec('SELECT * FROM schema_version').toArray()).toHaveLength(SCHEMA_VERSION);
+      expect(sql.exec('SELECT * FROM schema_version').toArray()).toHaveLength(MIGRATION_ROWS);
     });
   });
 

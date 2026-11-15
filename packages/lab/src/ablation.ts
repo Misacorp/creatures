@@ -36,7 +36,8 @@ const RULE_FX: Readonly<Record<string, (fx: KnackFx) => boolean>> = {
     ]) || fx.support === 'clearSkies',
   'rule:silence': (fx) =>
     any(fx, ['ignoreSilence', 'besideNoSilence']) || fx.support === 'clearAir',
-  'rule:mired': (fx) => any(fx, ['miresAtStart', 'miresOnHit', 'miredExtraBp', 'clinging']),
+  'rule:boggedDown': (fx) =>
+    any(fx, ['miresAtStart', 'miresOnHit', 'boggedDownExtraBp', 'clinging']),
   'rule:marks': (fx) =>
     any(fx, [
       'seal',
@@ -117,7 +118,7 @@ export interface Measured {
   readonly carried: boolean;
   /** How far the measure falls when it is taken out (0 when the line does not carry it). */
   readonly drop: number;
-  /** The line without it, as a key: mechanics that take the same Knacks and talents off share a key (Mired and the Debuff family, say). */
+  /** The line without it, as a key: mechanics that take the same Knacks and talents off share a key (Bogged Down and the Debuff family, say). */
   readonly key: string;
 }
 

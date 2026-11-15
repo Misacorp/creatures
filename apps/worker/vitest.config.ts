@@ -18,6 +18,11 @@ export default defineConfig({
     testTimeout: 30_000,
     // scripts/*.test.mjs are node:test files (plain Node scripts), run by `node --test`.
     // test/capture/** is the fixture capture (`pnpm fixtures:capture`, vitest.capture.config.ts).
-    exclude: [...configDefaults.exclude, 'scripts/**', 'test/capture/**'],
+    exclude: [
+      ...configDefaults.exclude,
+      'scripts/**',
+      'test/capture/**',
+      'test/valley-month.local.test.ts',
+    ],
   },
 });

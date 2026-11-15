@@ -5,11 +5,10 @@
  * (`apps/worker/src/gear.ts`, `equip`): it refuses a creature that is away or on a job, and also refuses to
  * move or take off an item whose wearer is away or on a job (what a creature wears is frozen then).
  */
-import { wearBlock } from '@creatures/game';
 import type { Creature } from './api';
 import { capitalize, creatureName, getSpecies } from './game';
 import type { GearItem, GearSlot } from './gear-types';
-import { ON_A_JOB_REASON, busyKind, busyReason } from './gear-view';
+import { ON_A_JOB_REASON, busyKind, busyReason, clientWearBlock } from './gear-view';
 import type { PickerOption } from './roster-picker';
 
 /** The id of the "Take off" option (no creature has it). */
@@ -24,14 +23,14 @@ export const WEARS_IT_NOTE = 'Wears it now';
  * whichever blocks. Away and on a job come first, as the server checks them first.
  */
 export function equipReason(
-  item: Pick<GearItem, 'slot' | 'tag' | 'itemLevel'>,
+  item: Pick<GearItem, 'slot' | 'tag' | 'itemLevel'> & { needs?: Pick<GearItem['needs'], 'level'> },
   creature: Pick<Creature, 'level' | 'species' | 'busy' | 'away'>,
 ): string | null {
   const frozen = busyReason(creature);
   if (frozen !== null) return frozen;
   const species = getSpecies(creature.species);
   if (species === undefined) return null;
-  const block = wearBlock(item, { level: creature.level, role: species.role });
+  const block = clientWearBlock(item, { level: creature.level, role: species.role });
   if (block === null) return null;
   return block.reason === 'role'
     ? `${capitalize(block.role)}s only`

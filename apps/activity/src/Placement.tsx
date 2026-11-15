@@ -10,7 +10,6 @@ import { usePopoverHost } from './PopoverHost';
 import { resolveDrop, slotStatuses } from './raid-dnd';
 import type { RaidView } from './raid-api';
 import {
-  askedSlots,
   boardCreatureInfoV2,
   boardCuesV2,
   boardSlotV2,
@@ -19,7 +18,11 @@ import {
   outgoingText,
   placeTextV2,
   rowNameV2,
+  swapActionSpecs,
+  swapMarkText,
+  swapMarks,
   type LitMove,
+  type SwapMark,
 } from './raid-board-v2';
 import type { RaidV2View } from './raid-v2-api';
 import {
@@ -65,6 +68,10 @@ export interface PlacementV2 {
   lit: LitMove | null;
   /** Asks the owner of the creature in `theirSlot` to swap it for your creature in `mySlot`. */
   onAskSwap: (mySlot: number, theirSlot: number) => void;
+  /** Accepts or declines a request asked of you (from the popover of a creature that carries the swap mark). */
+  onAnswerSwap: (id: string, answer: 'accept' | 'decline') => void;
+  /** Withdraws a request you asked (from the popover of a creature that carries the swap mark). */
+  onCancelSwap: (id: string) => void;
 }
 
 interface Props {
@@ -239,7 +246,7 @@ export function Placement(props: Props) {
       : {
           grid,
           creatures: creaturesBySlot(v2.view.creatures),
-          asked: askedSlots(v2.view.swaps.outgoing, party.row),
+          swaps: swapMarks(v2.view.swaps, party.row),
         };
 
   const boardModels: BoardRowModel[] = rows.map((row, rowIndex) => ({
@@ -284,8 +291,16 @@ export function Placement(props: Props) {
       return;
     }
     const id = occupant.creatureId;
+    // A creature in an open swap request opens the request's popover first (yours included: the configurator waits for the answer).
+    const swapMark = v2Context?.swaps.get(slot);
+    const swapLine = swapMark === undefined || grid === null ? null : swapMarkText(swapMark, grid);
     // Yours, with the configurator: a tap shows it under the board (another tap hides it), no popover.
-    if (props.configure !== undefined && occupant.mine && id !== undefined) {
+    if (
+      props.configure !== undefined &&
+      occupant.mine &&
+      id !== undefined &&
+      swapMark === undefined
+    ) {
       setHint(null);
       setSelected(selected === id ? null : id);
       return;
@@ -295,7 +310,8 @@ export function Placement(props: Props) {
     const line =
       v2 === undefined
         ? boardCues({ ...cueArgs, carried: null, pointer: null, inspected: slot }).effect
-        : null;
+        : swapLine;
+    const swapActions = swapMark === undefined ? [] : swapAnswers(swapMark);
     const shown = line === null ? info : { ...info, effect: line };
     const key = `raid-slot:${String(slot)}`;
     if (occupant.mine && id !== undefined) {
@@ -304,40 +320,56 @@ export function Placement(props: Props) {
         ...creatureInfoOf(shown),
         ...(shown.effect === undefined ? {} : { effect: shown.effect }),
       };
-      popovers.openCreature(
-        key,
-        own,
-        button,
-        canEdit
-          ? {
-              label: 'Remove from board',
-              onAct: () => {
-                refocus.current = slot;
-                setHint(null);
-                announce(`${occupant.name} removed from the board.`);
-                props.onIntent({ type: 'unplace', creatureId: id });
+      popovers.openCreature(key, own, button, [
+        ...swapActions,
+        ...(canEdit
+          ? [
+              {
+                label: 'Remove from board',
+                onAct: () => {
+                  refocus.current = slot;
+                  setHint(null);
+                  announce(`${occupant.name} removed from the board.`);
+                  props.onIntent({ type: 'unplace', creatureId: id });
+                },
               },
-            }
-          : undefined,
-      );
+            ]
+          : []),
+      ]);
       return;
     }
     // Another player's creature on a v2 board: ask its owner to swap it for one of yours.
     const mine = party.row.filter((s) => s.creature?.mine === true).length;
-    popovers.openCreature(
-      key,
-      shown,
-      button,
-      v2 !== undefined && canEdit && !occupant.mine && mine > 0
-        ? {
-            label: 'Ask to swap',
-            onAct: () => {
-              setHint(null);
-              setSwapFor(slot);
+    popovers.openCreature(key, shown, button, [
+      ...swapActions,
+      ...(v2 !== undefined && canEdit && !occupant.mine && mine > 0
+        ? [
+            {
+              label: 'Ask to swap',
+              onAct: () => {
+                setHint(null);
+                setSwapFor(slot);
+              },
             },
-          }
-        : undefined,
-    );
+          ]
+        : []),
+    ]);
+  }
+
+  /** The actions a marked creature's popover offers: Accept and Decline for each request asked of its owner, Cancel request for each one you asked. */
+  function swapAnswers(mark: SwapMark): { label: string; onAct: () => void }[] {
+    return swapActionSpecs(mark).map((spec) => ({
+      label: spec.label,
+      onAct: () => {
+        if (spec.kind === 'cancel') {
+          announce('Swap request cancelled.');
+          v2?.onCancelSwap(spec.id);
+          return;
+        }
+        announce(spec.kind === 'accept' ? 'Swap accepted.' : 'Swap declined.');
+        v2?.onAnswerSwap(spec.id, spec.kind);
+      },
+    }));
   }
 
   function pick(creatureId: string): void {

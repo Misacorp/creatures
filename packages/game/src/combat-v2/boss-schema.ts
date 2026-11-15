@@ -24,7 +24,7 @@
  * Breakwater's ward: a ward cuts (1 + the card's share of 20000 bp) times as much of the boss's sweeps, x3 at full strength and
  * less at a lower one. Wards cover a whole row whoever owns them, so a prepared player shelters the others; a party with no ward
  * gains nothing. Stone Skin: a weaker card caps higher (at half strength the cap is double) and at 0 there is none. Slippery is a
- * flat dodge that Mired does not lower, so only a hit that cannot be dodged (Clear Skies) gets past it for certain. Double Strike is
+ * flat dodge that Bogged Down does not lower, so only a hit that cannot be dodged (Clear Skies) gets past it for certain. Double Strike is
  * a crit chance on every damaging hit that lands: each crit doubles the hit before cuts and armour (R7.1).
  *
  * ## Raid bosses (`raid-bosses.json`) and foes (`foes.json`)

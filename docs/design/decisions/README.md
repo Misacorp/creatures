@@ -23,6 +23,8 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [direction.md](direction.md): Roadmap calls, Misa's standing direction, naming and tone, content policy, how agents and Misa work.
 
+- 2026-11-15 \[Misa\] The Forge interior keeps one look for now
+- 2026-11-09 \[Misa\] Valley building levels share one look per level
 - 2026-11-06 The reset: no warning post, the wipe runs when Misa asks, no server rank or bosses in the record \[Misa\]
 - 2026-11-06 The settlers' record keeps eight feats; firsts on the server are read by catch date \[Misa\]
 - 2026-11-06 The reset: settlers appear on every server, each player gets their record by DM, and a hidden trace of who was there is kept \[Misa\] (amended)
@@ -50,10 +52,20 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 - 2026-10-10 Game rules from the research review (amended)
 - 2026-10-10 Name and tone
 
+Superseded: 1 entry (see the topic file).
+
 ## Platform, data and tooling
 
 [platform.md](platform.md): Hosting, Durable Objects, scheduling, CI and deploys, staging, dependencies, security, database reads, data cleanup, analytics, dev tools, the workbench, player feedback, sockets.
 
+- 2026-11-15 Housing's migration is 68: the valley merged first with 64 to 67
+- 2026-11-14 Dev panel: a full-screen layout with sections, and a target player for every per-player tool
+- 2026-11-11 Furniture workshop: silhouette variants per form, chosen by the style
+- 2026-11-11 Housing content is validated on first use in the worker, not at isolate start
+- 2026-11-11 Furniture workshop: sets are styles drawn at load, shipped pixels kept as reasoned overrides and locked
+- 2026-11-10 Housing: a bed moves with its sleeper, and the housing content is its own package entry
+- 2026-11-10 Housing build, craft and skin answer with what changed
+- 2026-11-10 Migrations: applied by recorded version, reserved gaps, never revert the runner
 - 2026-11-06 The settlers' record lives in a production archive object, not the public repo, and keeps no Discord IDs (amended)
 - 2026-11-06 Dev tools: server managers only, roster presets, creatures-per-player override \[Misa\]
 - 2026-11-05 The lab's tests share modules between files, and boss rule measurements live in the report
@@ -149,6 +161,13 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [combat.md](combat.md): The shared combat engine, abilities, statuses, elements, the balance simulator, balance passes, and combat v2 in the lab.
 
+- 2026-11-14 Boss animations: lances pass through the whole column; the aim is the board's highlight, no triangle \[Misa\]
+- 2026-11-14 Rename: the Mire debuff is Bogged Down, the Mire mark is Mired \[Misa\]
+- 2026-11-14 A live finale started off the calendar is on from its real start in the Raid view
+- 2026-11-14 Raid seats are never moved: stage 1 widens the board instead of compacting it
+- 2026-11-14 Boss move animations: five phases, motion by shape, art by boss look (amended)
+- 2026-11-09 Finale actions stay as they are until the playtest; Rally unchanged; six icons accepted \[Misa\]
+- 2026-11-06 Finale actions measured: none dominates, Rally is worth about nothing, and picking the best action changes nothing at three players or more
 - 2026-11-06 Combat v2 goes live with the valley rework in one reset \[Misa\]
 - 2026-11-06 Talents' raid share back in band: Opportunist +50%, Steady Rhythm without its crit bonus
 - 2026-11-06 \[Misa\] Fizzle becomes a telegraphed boss move: immune to reactions every second turn
@@ -237,7 +256,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 - 2026-11-04 Combat v2 kill bonus doubled to two epic and four rare pieces \[Misa\]
 - 2026-11-04 Combat v2 phase 5 answers in the game: the small boss, threshold payouts, the kill bonus and no fight weather (amended)
 - 2026-11-04 Combat v2 phase 5 answers: small parties fight a smaller boss, rewards at HP thresholds with a big kill bonus, no weather in fights \[Misa\] (amended)
-- 2026-11-03 Combat v2 arenas: how the piece, the seats and the spare are built
+- 2026-11-03 Combat v2 arenas: how the piece, the seats and the spare are built (amended)
 - 2026-11-03 Combat v2 arenas: each boss defines one player's piece; the board repeats it per player with one spare until stage 1 \[Misa\]
 - 2026-11-03 Combat v2 replays keep no Pause or 2x \[Misa\]
 - 2026-11-03 Combat v2 bots and the gate run (phase 4, slice 6): v2 guests, the raid-weekend dev tool and one stat calculation (amended)
@@ -452,6 +471,13 @@ Superseded: 1 entry (see the topic file).
 
 [social.md](social.md): The living room and lounging, the lounge message, Discord DMs and other social features.
 
+- 2026-11-12 Housing: a ceiling and frame left as built are their starters; only a trim can be None
+- 2026-11-12 Ground skins fit room kinds and are owned by rule
+- 2026-11-12 Room layers: generated patterns owned by pattern, colour free, stored in the existing columns
+- 2026-11-12 Quiet Verge furniture set: tier 2, no element, stone and moonstone, from the Crossroads and the Reef
+- 2026-11-11 Housing: tower, balcony, orchard and pond (prices, prerequisites, where they stand)
+- 2026-11-09 Housing server: how the rules of the first build read
+- 2026-11-09 Player housing: what is built and its standing rules \[Misa\]
 - 2026-10-25 Opt-in Discord DMs, derived from the game's tables
 - 2026-10-22 Lounging time is stored at every check
 - 2026-10-20 Lounging XP, the evening check (amended)
@@ -468,6 +494,18 @@ Superseded: 1 entry (see the topic file).
 
 [ui.md](ui.md): Navigation and the frame, Home and the notice board, type scale, shared components, look and feel rules that apply across screens.
 
+- 2026-11-12 The house's night indoors follows the living room's look: graded, not ramped
+- 2026-11-11 The postcard follows the phase, lights are data per piece, and one painter stamps every scene
+- 2026-11-11 The house is lit by one painter pass, from the living room's phase (amended)
+- 2026-11-11 Pixel canvases paint in a layout effect, never after the frame
+- 2026-11-11 The Signpost is a canvas: a click on the signpost opens the expedition map, a click on a place opens its scout wizard \[Misa\]
+- 2026-11-11 \[Misa\] A place is a canvas: the scene never scrolls, every action is a click in it, content opens in a left or right drawer holding a wizard
+- 2026-11-11 A valley frame clips instead of scrolling: the HUD's way back never slides off
+- 2026-11-10 Housing screen pass: the whole house, build moment, one pinned action
+- 2026-11-10 Housing client: the build list is rows of parts, a piece moves by emptying then placing, the overview starts on the core
+- 2026-11-10 House scene: canvases at 1x scaled by CSS, yard fixtures, one light
+- 2026-11-06 The School's page and a creature's trial reuse the seat cards, the creature list and the rule card
+- 2026-11-06 The visitor's page reuses the Workshop's grid, card and drawer
 - 2026-11-06 Costs show the resource's icon and a number, never its name \[Misa\]
 - 2026-11-06 \[Misa\] One pan hint, the same on every sideways-scrolling map; a popover never opens after a drag
 - 2026-11-06 Closing a drawer or popover gives the focus back only to a keyboard user
@@ -546,6 +584,29 @@ Superseded: 1 entry (see the topic file).
 
 [valley.md](valley.md): The valley and peaceful systems overhaul planned in docs/design/valley/: job posts, the bonfire, the commons, the Forge loop, gear, trials, the School, the visitor, the economy lab, and Misa's question rounds.
 
+- 2026-11-11 The Forge opens on its outside and goes inside to a workshop of its own \[Misa\]
+- 2026-11-11 Scene trees stand on the grass, and the Bonfire's +N more stays above the pinned action
+- 2026-11-11 A flat place is built on the ground (stakes, rope, planks, tools), a tall one in poles \[Misa\]
+- 2026-11-11 The valley map takes the whole window: the HUD floats over it, and a short window scrolls the map up and down \[Misa\]
+- 2026-11-09 The visitor's weekly blueprint may be any existing piece \[Misa\]
+- 2026-11-09 A creature's born talent is free \[Misa\]
+- 2026-11-07 Step 10c: the month compares against the lab's mixed8-market, the Market the server builds
+- 2026-11-07 Step 10b: what the compare cannot judge, and the waiting team order (not changed) (amended)
+- 2026-11-07 Step 10b: valley-fresh and the end of the month drop the month's dev triggers and tables
+- 2026-11-07 Step 10b: the bots play more like the lab's players, and the month has a stand-in for the human's seat
+- 2026-11-07 Step 10b: Master titles warm the Forge's fire (V-COM-13), a step for every five, counted by the daily job
+- 2026-11-07 Step 10b: an open project nobody has given to follows the daily weight (a new server's first project is sized for the players it has)
+- 2026-11-07 Step 10: the simulated month's stand-ins, flows and report (what the bots do not do, how the numbers are read)
+- 2026-11-07 Step 10: the bots play the lab's policies through the server's own code, one shared policy module
+- 2026-11-06 Phase 5 step 9b: the School's screens and the trials' screens
+- 2026-11-06 Learning on a card costs the School's price times the slot it fills, in Acorns, with the valley systems on
+- 2026-11-06 Phase 5 step 9a: the School's teacher and lessons
+- 2026-11-06 Trials (step 9c): the boxes, where each ticks, and the ceremony
+- 2026-11-06 Phase 5 step 8b: the visitor's screens
+- 2026-11-06 The visitor's weekly blueprint is drawn from the craftable bases for now (scouts can find them too)
+- 2026-11-06 The visitor prices a piece on its stored item level, and rerolls with the shipped line roller
+- 2026-11-06 The visitor's arrival is made by whatever sees him first, and one alarm a week wakes the object for it
+- 2026-11-06 Combat v2 and the valley systems together: a knocked-out raider stays paused; presets empty seats
 - 2026-11-06 Patchwork pieces built: the plainest piece of the shard's element, Rare at best
 - 2026-11-06 Patchwork pieces: blueprints that take any shard, with scrap \[Misa\] (amended)
 - 2026-11-06 The Market takes shards of any element, with no cap \[Misa\]

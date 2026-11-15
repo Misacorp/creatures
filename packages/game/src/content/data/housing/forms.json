@@ -1,0 +1,223 @@
+[
+  {
+    "id": "bed",
+    "name": "Bed",
+    "spot": "floor-large",
+    "box": {
+      "w": 48,
+      "h": 26
+    },
+    "bed": true,
+    "size": "large"
+  },
+  {
+    "id": "cupboard",
+    "name": "Cupboard",
+    "spot": "floor-large",
+    "box": {
+      "w": 30,
+      "h": 36
+    },
+    "size": "large"
+  },
+  {
+    "id": "table",
+    "name": "Table",
+    "spot": "floor-large",
+    "box": {
+      "w": 44,
+      "h": 18
+    },
+    "size": "large"
+  },
+  {
+    "id": "shelf",
+    "name": "Shelf",
+    "spot": "wall-large",
+    "box": {
+      "w": 40,
+      "h": 20
+    },
+    "size": "large"
+  },
+  {
+    "id": "stool",
+    "name": "Stool",
+    "spot": "floor-small",
+    "box": {
+      "w": 16,
+      "h": 12
+    },
+    "size": "small"
+  },
+  {
+    "id": "lamp",
+    "name": "Lamp",
+    "spot": "ceiling",
+    "box": {
+      "w": 20,
+      "h": 16
+    },
+    "size": "small"
+  },
+  {
+    "id": "rug",
+    "name": "Rug",
+    "spot": "rug",
+    "box": {
+      "w": 56,
+      "h": 10
+    },
+    "size": "small"
+  },
+  {
+    "id": "frame",
+    "name": "Frame",
+    "spot": "wall-small",
+    "box": {
+      "w": 24,
+      "h": 16
+    },
+    "size": "small"
+  },
+  {
+    "id": "curtains",
+    "name": "Curtains",
+    "spot": "window",
+    "box": {
+      "w": 36,
+      "h": 26
+    },
+    "size": "small"
+  },
+  {
+    "id": "sofa",
+    "name": "Sofa",
+    "spot": "floor-large",
+    "box": {
+      "w": 64,
+      "h": 36
+    },
+    "size": "large"
+  },
+  {
+    "id": "hearth",
+    "name": "Fireplace",
+    "spot": "floor-large",
+    "box": {
+      "w": 36,
+      "h": 36
+    },
+    "size": "large"
+  },
+  {
+    "id": "chair",
+    "name": "Chair",
+    "spot": "floor-small",
+    "box": {
+      "w": 18,
+      "h": 18
+    },
+    "size": "small"
+  },
+  {
+    "id": "plant",
+    "name": "Plant",
+    "spot": "floor-small",
+    "box": {
+      "w": 16,
+      "h": 20
+    },
+    "size": "small"
+  },
+  {
+    "id": "seat",
+    "name": "Seat",
+    "spot": "floor-small",
+    "box": {
+      "w": 20,
+      "h": 12
+    },
+    "size": "small"
+  },
+  {
+    "id": "clock",
+    "name": "Clock",
+    "spot": "wall-small",
+    "box": {
+      "w": 16,
+      "h": 16
+    },
+    "size": "small"
+  },
+  {
+    "id": "tall",
+    "name": "Tall Piece",
+    "spot": "floor-large",
+    "box": {
+      "w": 20,
+      "h": 40
+    },
+    "size": "large"
+  },
+  {
+    "id": "hanging",
+    "name": "Hanging",
+    "spot": "ceiling",
+    "box": {
+      "w": 20,
+      "h": 16
+    },
+    "size": "small"
+  },
+  {
+    "id": "yard-big",
+    "name": "Large Garden Piece",
+    "spot": "yard-large",
+    "box": {
+      "w": 40,
+      "h": 40
+    },
+    "size": "large"
+  },
+  {
+    "id": "yard-bit",
+    "name": "Small Garden Piece",
+    "spot": "yard-small",
+    "box": {
+      "w": 20,
+      "h": 20
+    },
+    "size": "small"
+  },
+  {
+    "id": "fence",
+    "name": "Fence",
+    "spot": "fence",
+    "box": {
+      "w": 16,
+      "h": 12
+    },
+    "size": "small"
+  },
+  {
+    "id": "poolside",
+    "name": "Poolside Piece",
+    "spot": "poolside",
+    "box": {
+      "w": 32,
+      "h": 20
+    },
+    "size": "small"
+  },
+  {
+    "id": "float",
+    "name": "Pool Float",
+    "spot": "water",
+    "box": {
+      "w": 24,
+      "h": 10
+    },
+    "size": "small"
+  }
+]

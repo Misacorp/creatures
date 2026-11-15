@@ -114,3 +114,16 @@ describe('the valleySystems flag of /api/config', () => {
     vi.unstubAllGlobals();
   });
 });
+
+describe('the housing flag of /api/config', () => {
+  it('is on only for an explicit true', async () => {
+    const base = { discordClientId: '1', environment: 'local', version: 'dev', leetSource: 'mock' };
+    vi.stubGlobal('fetch', () => Promise.resolve(Response.json({ ...base, housing: true })));
+    expect((await fetchConfig()).housing).toBe(true);
+    vi.stubGlobal('fetch', () => Promise.resolve(Response.json(base)));
+    expect((await fetchConfig()).housing).toBe(false);
+    vi.stubGlobal('fetch', () => Promise.resolve(Response.json({ ...base, housing: 'on' })));
+    expect((await fetchConfig()).housing).toBe(false);
+    vi.unstubAllGlobals();
+  });
+});

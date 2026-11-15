@@ -58,6 +58,11 @@ export const ValleyRulesSchema = v.strictObject({
     bronzePostHours: num,
     bronzeSmithHours: num,
     undercroftShare: share,
+    ceremonyHour: int,
+    undercroftLevels: int,
+    rareRouteSmithHours: num,
+    epicRouteSmithHours: num,
+    teacherHours: num,
   }),
   posts: v.strictObject({
     fitBonus: num,

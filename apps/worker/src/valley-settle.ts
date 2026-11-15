@@ -42,6 +42,9 @@ import {
   WELCOME_AFTER_HOURS,
   placeIds,
   placeOpen,
+  trialView,
+  waitsForCeremony,
+  type TrialState,
   placeProfile,
   pieceHours,
   seatLimit,
@@ -61,6 +64,7 @@ import {
   type ValleyAnvilView,
   type ValleySeatView,
   type ValleyView,
+  type ForgeHours,
 } from '@creatures/game';
 import type { CatchChoices } from './catch-choices';
 import { bagItems, trackBag } from './gear-store';
@@ -71,6 +75,15 @@ import { ValleyBonfire } from './valley-bonfire';
 import { ValleyCommons, type CommonsSnapshot } from './valley-commons';
 import { hasDeepArea, type ValleyFinds } from './valley-finds';
 import { PaperRecorder, paperItem, type ValleyGazette } from './valley-gazette';
+import type { SchoolLessons, SchoolWeeks } from './valley-school';
+import {
+  TRIAL_SELECT,
+  TrialLog,
+  trialOfColumns,
+  type TrialColumns,
+  type ValleyTrials,
+} from './valley-trials';
+import type { VisitorWeeks } from './valley-visitor';
 import { scoutClock, specialOfWeek, worldAt } from './valley-world';
 
 /** Without a request for this long, the next one is a new visit: the "+N" starts again and the allowance store comes home. */
@@ -107,7 +120,7 @@ type PlayerRow = {
   joined_day: number;
 };
 
-type CreatureRow = {
+type CreatureColumns = TrialColumns & {
   id: string;
   species: string;
   level: number;
@@ -124,6 +137,9 @@ type CreatureRow = {
   /** The game day the creature last featured in a small moment (null: never). */
   moment_day: number | null;
 };
+
+/** A creature's row; `trial` is its trial state after this pass (absent: read it from the joined columns). */
+type CreatureRow = CreatureColumns & { trial?: TrialState };
 
 export type SeatRow = AnvilColumns & {
   seat_id: string;
@@ -172,6 +188,14 @@ export interface ValleySettleDeps {
   readonly bonfire: ValleyBonfire;
   /** The valley's places, the fire, the collections and the keystones (V-COM, V-SCOUT-9). */
   readonly commons: ValleyCommons;
+  /** The weekly visitor's weeks: the paper mentions him once a week while he is here (V-VIS-1); absent in tests that do not need him. */
+  readonly visitor?: VisitorWeeks;
+  /** The School's teacher and lessons (V-SCH-11, 13): the paper mentions the teacher once a week; students whose morning has come learn in the pass. Absent in tests that do not need them. */
+  readonly school?: { readonly weeks: SchoolWeeks; readonly lessons: SchoolLessons };
+  /** Trials and graduation (V-TRIAL-1 to 5): the pass ticks the boxes the hours meet and runs the ceremonies. */
+  readonly trials: ValleyTrials;
+  /** Staging only (the dev tools on): told what the anvils did with the hours of each pass, for the simulated month's tinkering share. */
+  readonly onForgeHours?: (userId: string, hours: ForgeHours) => void;
 }
 
 const masteryStep = (hours: number): 0 | 1 | 2 | 3 => {
@@ -220,10 +244,12 @@ export class ValleySettle {
 
   private creatureRows(userId: string): CreatureRow[] {
     return this.sql
-      .exec<CreatureRow>(
+      .exec<CreatureColumns>(
         `SELECT c.id, c.species, c.level, c.exp, c.ribbons, c.caught_at, v.creature_id AS tracked,
-                v.xp_carry, v.catchup_bp, v.visit_xp, v.scout_hours, v.smith_hours, v.trade_hours, v.moment_day
+                v.xp_carry, v.catchup_bp, v.visit_xp, v.scout_hours, v.smith_hours, v.trade_hours, v.moment_day,
+                ${TRIAL_SELECT}
          FROM creatures c LEFT JOIN valley_creatures v ON v.creature_id = c.id
+              LEFT JOIN creature_trials t ON t.creature_id = c.id
          WHERE c.user_id = ? ORDER BY c.caught_at, c.rowid`,
         userId,
       )
@@ -238,7 +264,14 @@ export class ValleySettle {
   seats(
     userId: string,
     commons?: CommonsSnapshot,
-  ): { scouts: SeatRow[]; anvils: SeatRow[]; communal: SeatRow[]; broker: SeatRow | null } {
+  ): {
+    scouts: SeatRow[];
+    anvils: SeatRow[];
+    communal: SeatRow[];
+    broker: SeatRow | null;
+    /** The School's student seats (V-SCH-13): their creatures only; the School's own code reads the rest. */
+    school: SeatRow[];
+  } {
     const all = this.sql
       .exec<SeatRow>(
         `SELECT ${SEAT_COLUMNS} FROM valley_seats WHERE user_id = ? ORDER BY position`,
@@ -271,6 +304,7 @@ export class ValleySettle {
       anvils: all.filter((seat) => seat.place === 'forge'),
       communal: all.filter((seat) => seat.place === 'commons'),
       broker,
+      school: all.filter((seat) => seat.place === 'school'),
     };
   }
 
@@ -383,6 +417,7 @@ export class ValleySettle {
       anvils: anvilRows,
       communal: communalRows,
       broker: brokerRow,
+      school: schoolRows,
     } = this.seats(userId, commons);
     const tz = this.deps.timezone();
     const indexOf = new Map(rows.map((row, i) => [row.id, i]));
@@ -484,8 +519,11 @@ export class ValleySettle {
       },
     );
 
+    if (after.forgeHours !== undefined) this.deps.onForgeHours?.(userId, after.forgeHours);
     // The Gazette's log of this arrival (V-POST-14): only an arrival tells a paper, so a pass in the middle of a visit records nothing.
     const rec = newVisit ? new PaperRecorder() : undefined;
+    // Trials (V-TRIAL-2): the events of this stretch that tick a box (a find brought home, a small moment, a keystone, a week at a seat).
+    const trialLog = new TrialLog();
     let visitAllowance = newVisit ? 0 : player.visit_allowance;
     let store = after.allowance?.store ?? 0;
     const carry = after.allowance?.carry ?? 0;
@@ -512,7 +550,18 @@ export class ValleySettle {
     }
 
     // Scouts: the live draws of the stretches, then each store that is due comes home.
-    const seatsOut = this.scoutFinds(userId, to, newVisit, player, seatRows, after, rowOf, tz, rec);
+    const seatsOut = this.scoutFinds(
+      userId,
+      to,
+      newVisit,
+      player,
+      seatRows,
+      after,
+      rowOf,
+      tz,
+      rec,
+      trialLog,
+    );
 
     // The commons: what scouting turned up for the collections (V-COM-12), the keystones the server's clocks have rung for a scout posted
     // there (V-SCOUT-9, at an arrival), and the communal seats' work credited to their projects (V-COM-14, at an arrival or a full store).
@@ -525,6 +574,7 @@ export class ValleySettle {
       communalRows,
       after.communal ?? [],
       paused,
+      trialLog,
     );
 
     // The Forge: what the anvils did is written back, then the floors come home when it is time (an arrival, or a floor that filled).
@@ -645,11 +695,53 @@ export class ValleySettle {
       };
     });
 
+    // V-SCH-13: a student whose morning has come learns now and goes back to its post (read only when a creature sits at the School).
+    if (this.deps.school !== undefined && schoolRows.some((seat) => seat.creature_id !== null)) {
+      this.deps.school.lessons.learnDue(userId, to, rec);
+    }
+
+    // Trials and the ceremony (V-TRIAL-1, 4): the boxes the events and the hours tick, the ceremonies that have passed, and (on an arrival
+    // the paper is written for) the creatures that graduated since the last paper, told once.
+    let trialStates: ReadonlyMap<string, TrialState> | undefined;
+    const runTrials = (tell: boolean): void => {
+      const done = this.deps.trials.pass(
+        userId,
+        creatures.map((c, i) => {
+          const was = payments[i]?.row ?? c.row;
+          return {
+            id: c.row.id,
+            level: c.row.level,
+            state: trialOfColumns(c.row),
+            before: {
+              scout: was.scout_hours ?? 0,
+              smith: was.smith_hours ?? 0,
+              trade: was.trade_hours ?? 0,
+            },
+            after: {
+              scout: c.row.scout_hours ?? 0,
+              smith: c.row.smith_hours ?? 0,
+              trade: c.row.trade_hours ?? 0,
+            },
+          };
+        }),
+        trialLog,
+        player.settled_at,
+        to,
+        tell,
+      );
+      trialStates = done.states;
+      for (const g of done.graduates) rec?.graduate(g.creatureId, g.honour);
+    };
     if (rec !== undefined) {
       const awayHours = Math.floor((to - player.last_visit_at) / HOUR_MS);
       // One or two resting creatures' small moment (V-BON-9), told in the paper when there is one (a short absence has none, so nothing
       // is used up): picked by live draws, weighted toward creatures that have not featured lately, and remembered so they rest next time.
       if (awayHours >= WELCOME_AFTER_HOURS) {
+        // V-VIS-1: the paper says the visitor is here, once a week per player.
+        if (this.deps.visitor?.tellIfHere(userId, to) === true) rec.visitor();
+        // V-SCH-11: the paper says the School's teacher is announced or here, once per teacher week per player.
+        const teaching = this.deps.school?.weeks.tellIfNews(userId, to) ?? null;
+        if (teaching !== null) rec.teacher(teaching);
         const resting = rows.filter((row) => !seated.has(row.id) && row.tracked !== null);
         const day = Math.floor(to / DAY_MS);
         const moment = ValleyBonfire.pickMoments(
@@ -661,6 +753,8 @@ export class ValleySettle {
         if (moment !== null && first !== undefined) {
           const second = moment.second === null ? undefined : resting[moment.second];
           rec.moment(first.id, moment.turn, second?.id);
+          trialLog.tick(first.id, 'fire');
+          trialLog.tick(second?.id ?? null, 'fire');
           for (const row of second === undefined ? [first] : [first, second]) {
             this.sql.exec(
               'UPDATE valley_creatures SET moment_day = ? WHERE creature_id = ?',
@@ -690,6 +784,7 @@ export class ValleySettle {
           ? [{ seatId: seat.seat_id, hours: hoursOf.get(seat.seat_id) ?? 0 }]
           : [],
       );
+      runTrials(awayHours >= WELCOME_AFTER_HOURS);
       const way = this.deps.finds.wayDeeper(candidates);
       const found = seatsOut.rows.find((seat) => seat.seat_id === way);
       this.deps.gazette.publish(
@@ -707,8 +802,15 @@ export class ValleySettle {
             },
       );
     }
+    if (trialStates === undefined) runTrials(false);
     if (newVisit) {
       // Creatures that left the roster (released, fused) leave their rows too; once a visit is enough.
+      this.sql.exec(
+        `DELETE FROM creature_trials WHERE user_id = ? AND creature_id NOT IN
+           (SELECT id FROM creatures WHERE user_id = ?)`,
+        userId,
+        userId,
+      );
       this.sql.exec(
         `DELETE FROM valley_creatures WHERE user_id = ? AND creature_id NOT IN
            (SELECT id FROM creatures WHERE user_id = ?)`,
@@ -757,7 +859,10 @@ export class ValleySettle {
       commons,
       paused,
       fullSeats: seatsOut.full,
-      creatures: [...creatures, ...extra],
+      creatures: [...creatures, ...extra].map((c) => {
+        const trial = trialStates?.get(c.row.id);
+        return trial === undefined ? c : { ...c, row: { ...c.row, trial } };
+      }),
       allowance: { store, cap, brought: visitAllowance },
     });
   }
@@ -776,6 +881,7 @@ export class ValleySettle {
     rowOf: ReadonlyMap<string, CreatureRow>,
     tz: string,
     rec: PaperRecorder | undefined,
+    trialLog: TrialLog,
   ): {
     rows: SeatRow[];
     newcomers: number;
@@ -863,6 +969,8 @@ export class ValleySettle {
           to,
           rec === undefined ? undefined : { rec, by: row.creature_id },
         );
+        // V-TRIAL-2: a find as a scout (anything in the pack that came home) is Bronze's "bring something home".
+        if (waiting) trialLog.tick(row.creature_id, 'home');
         next = {
           ...next,
           store_hours: 0,
@@ -927,6 +1035,7 @@ export class ValleySettle {
     communalRows: readonly SeatRow[],
     stores: readonly SettleCommunal[],
     paused: ReadonlySet<string>,
+    trialLog: TrialLog,
   ): void {
     const finds = scouting.finds;
     if (finds.everyday + finds.residents + finds.pages > 0) {
@@ -938,14 +1047,25 @@ export class ValleySettle {
           seat.creature_id !== null && !paused.has(seat.creature_id) ? [seat.destination_id] : [],
         ),
       );
-      this.deps.commons.keystones(userId, commons, posted, to);
+      const keystones: string[] = [];
+      this.deps.commons.keystones(userId, commons, posted, to, keystones);
+      // V-TRIAL-2: a keystone found is Silver's "go further" for the scouts posted at that place.
+      for (const seat of scouting.rows) {
+        if (keystones.includes(seat.destination_id) && !paused.has(seat.creature_id ?? '')) {
+          trialLog.tick(seat.creature_id, 'further');
+        }
+      }
     }
     const cap = VALLEY_RULES.posts.storeHours;
     const credit: { place: string; hours: number }[] = [];
     for (const [i, row] of communalRows.entries()) {
       const hours = stores[i]?.storeHours ?? row.store_hours;
       const due = hours > 0 && (newVisit || hours >= cap - 1e-9);
-      if (due) credit.push({ place: row.destination_id, hours });
+      if (due) {
+        credit.push({ place: row.destination_id, hours });
+        // V-TRIAL-2: a week at a communal seat (Gold's Teacher box) is the hours credited from the creature's own seat.
+        trialLog.seatHours(row.creature_id, hours);
+      }
       const next = due ? 0 : hours;
       if (next !== row.store_hours) {
         this.sql.exec(
@@ -1085,9 +1205,15 @@ export class ValleySettle {
           gained,
           catchUpBp,
           seatId: at?.id ?? null,
+          trial: trialView(row.trial ?? trialOfColumns(row)),
         };
       }),
       online: this.deps.bonfire.online(input.userId),
+      graduation: {
+        ready: input.creatures.filter((c) => waitsForCeremony(c.row.trial ?? trialOfColumns(c.row)))
+          .length,
+        nextAt: this.deps.trials.nextCeremony(input.to),
+      },
       allowance: input.allowance,
       seats: seatViews,
       ...this.forgeView(input, rowOf),
@@ -1271,7 +1397,7 @@ export class ValleySettle {
       commons: CommonsSnapshot;
     },
     rowOf: ReadonlyMap<string, CreatureRow>,
-  ): Pick<ValleyView, 'anvils' | 'anvilPrices' | 'forge'> {
+  ): Pick<ValleyView, 'anvils' | 'anvilPrices' | 'forge' | 'smiths'> {
     const rules = VALLEY_RULES;
     const shelf = this.deps.forge.shelf(input.userId);
     const orders = input.anvils.length === 0 ? [] : this.deps.forge.orders(input.userId);
@@ -1383,6 +1509,7 @@ export class ValleySettle {
     for (const [e, element] of VALLEY_ELEMENTS.entries()) shards[element] = shelf.shards[e] ?? 0;
     return {
       anvils,
+      smiths: this.deps.forge.backSmiths(input.userId),
       anvilPrices: {
         owned: input.anvils.length,
         max: anvilLimit(rules, forgeLevel),

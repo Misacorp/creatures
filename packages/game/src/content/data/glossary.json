@@ -115,7 +115,7 @@
     "lines": [
       "Each round, its neighbours' next hit deals 15% more damage. In the raid its reach stops at the row's edge.",
       "By element: Ember boosts 25%, Spark adds reaction damage, Tide and Grove heal (Tide clears silence too).",
-      "Mire has no element boost: a Mire Support's own ability leaves the boss Mired instead.",
+      "Mire has no element boost: a Mire Support's own ability leaves the boss Bogged Down instead.",
       "Nothing reaches past a knocked-out neighbour. A knocked-out or silenced Support gives nothing."
     ],
     "visual": {
@@ -2117,7 +2117,7 @@
     "lines": [
       "Hits Ember bosses for 50% more damage.",
       "Ember hits Mire bosses for 50% more. Tide hits them for 25% less.",
-      "Mire hits leave Muddied on the boss. Ember cashes it in.",
+      "Mire hits leave Mired on the boss. Ember cashes it in.",
       "Slow and sturdy: they hold the line and weigh the boss down."
     ],
     "visual": {
@@ -2127,8 +2127,8 @@
     "section": "creatures"
   },
   {
-    "id": "mark-muddied",
-    "title": "Muddied",
+    "id": "mark-mired",
+    "title": "Mired",
     "short": "Mire's mark. Ember cashes it in.",
     "lines": [
       "Left on the boss by a Mire hit.",
@@ -2149,7 +2149,7 @@
     "lines": [
       "A Mire hit on a Scorched boss sets it off.",
       "It deals much more damage than a normal hit.",
-      "It also leaves Mired on the boss.",
+      "It also leaves Bogged Down on the boss.",
       "It uses up the mark. The next hit leaves a new one."
     ],
     "visual": {
@@ -2161,11 +2161,11 @@
   {
     "id": "reaction-flare",
     "title": "Flare",
-    "short": "Ember on Muddied: deals much more damage, burns off Mired.",
+    "short": "Ember on Mired: deals much more damage, burns off Bogged Down.",
     "lines": [
-      "An Ember hit on a Muddied boss sets it off.",
+      "An Ember hit on a Mired boss sets it off.",
       "It deals much more damage than a normal hit.",
-      "It then burns away every Mired stack on the boss, for extra damage on each.",
+      "It then burns away every Bogged Down stack on the boss, for extra damage on each.",
       "Keep the stacks to keep the boss slow, or burn them for one big hit."
     ],
     "visual": {
@@ -2175,8 +2175,8 @@
     "section": "combos"
   },
   {
-    "id": "status-mired",
-    "title": "Mired",
+    "id": "status-bogged-down",
+    "title": "Bogged Down",
     "short": "Stuck in the mud: slower and weaker.",
     "lines": [
       "Each stack lowers Speed and the damage dealt.",
@@ -2186,7 +2186,7 @@
     ],
     "visual": {
       "kind": "glyph",
-      "id": "mired"
+      "id": "bogged-down"
     },
     "section": "combos"
   },
@@ -2447,5 +2447,159 @@
       "id": "fav-big"
     },
     "section": "games"
+  },
+  {
+    "id": "house",
+    "title": "House",
+    "short": "Your own little house. It grows as you build it.",
+    "lines": [
+      "Furnish it, add rooms and wings, and invite the valley to look around.",
+      "It never makes anything stronger. It is only for you, and for fun."
+    ],
+    "section": "housing"
+  },
+  {
+    "id": "house-part",
+    "title": "House part",
+    "short": "One piece of the house to build: a room, a wing or a garden.",
+    "lines": [
+      "Pay into it whenever you like, a little at a time. There is no deadline.",
+      "It is built the moment the last piece is paid."
+    ],
+    "section": "housing"
+  },
+  {
+    "id": "luxury-material",
+    "title": "Luxury material",
+    "short": "Fine woods, stones, metals and cloth for the house.",
+    "lines": [
+      "Trips, scouts, the dungeon, raids and the Games bring them home.",
+      "They are used for building and furniture, and for nothing else."
+    ],
+    "section": "housing"
+  },
+  {
+    "id": "furniture-blueprint",
+    "title": "Furniture blueprint",
+    "short": "Shows you how to make one piece of furniture.",
+    "lines": [
+      "Blueprints are found on trips, in fights and as feats. Learn each one once.",
+      "Make the piece at the workbench from its materials, Bait and scrap."
+    ],
+    "section": "housing"
+  },
+  {
+    "id": "furniture-set",
+    "title": "Furniture set",
+    "short": "Nine pieces that look like they belong together.",
+    "lines": [
+      "Each set belongs to a place and its element.",
+      "Finish a set and its keepsake goes into the trophy hall."
+    ],
+    "section": "housing"
+  },
+  {
+    "id": "housemate",
+    "title": "Housemate",
+    "short": "A creature that sleeps in a bed of your house.",
+    "lines": [
+      "It is drawn asleep when it is home, and the bed is just made when it is away.",
+      "It is a picture, not a post. It earns nothing different from resting."
+    ],
+    "section": "housing"
+  },
+  {
+    "id": "stamp",
+    "title": "Stamp",
+    "short": "A little mark to leave in a friend's guestbook.",
+    "lines": [
+      "You hold one from the start. Feats and rare finds bring the rest.",
+      "Visitors can only leave stamps they own."
+    ],
+    "section": "housing"
+  },
+  {
+    "id": "guestbook",
+    "title": "Guestbook",
+    "short": "The latest stamps left at your house, and by whom.",
+    "lines": ["Stamps only, never words. Old ones make room for new ones."],
+    "section": "housing"
+  },
+  {
+    "id": "mailbox",
+    "title": "Mailbox",
+    "short": "Where a friend's gift waits for you.",
+    "lines": [
+      "Visitors can leave a small gift. It waits here until you collect it.",
+      "It never goes stale."
+    ],
+    "section": "housing"
+  },
+  {
+    "id": "workbench",
+    "title": "Workbench",
+    "short": "Where furniture is made, by the hearth.",
+    "lines": [
+      "Pick a blueprint you know and pay its materials, Bait and scrap.",
+      "Each piece is made once; the finished piece waits in your bag."
+    ],
+    "section": "housing"
+  },
+  {
+    "id": "furniture-catalogue",
+    "title": "Catalogue",
+    "short": "Every piece, set and skin the valley has, found or not.",
+    "lines": [
+      "Pieces you have not found yet show as shapes.",
+      "Open a set to see which of its nine you have."
+    ],
+    "section": "housing"
+  },
+  {
+    "id": "gift",
+    "title": "Gift",
+    "short": "One small present for a friend, once a day.",
+    "lines": [
+      "Visit a house and leave a gift. It waits in the owner's mailbox.",
+      "Gifting is free and gives you no advantage."
+    ],
+    "section": "housing"
+  },
+  {
+    "id": "house-skin",
+    "title": "Skin",
+    "short": "How the house looks, outside and in: roof, walls, wallpaper, floor and more.",
+    "lines": [
+      "Skins change how the outside or a room looks, and nothing else.",
+      "Each set brings its own wallpaper and floor. A pattern comes in many colours: make it once and wear any of them."
+    ],
+    "section": "housing"
+  },
+  {
+    "id": "house-trim",
+    "title": "Trim",
+    "short": "The boards along a wall: a skirting, a rail, panelling.",
+    "lines": [
+      "Each room picks its own trim, in a paint, a wood or a stone.",
+      "A room starts with no trim. Choose None to take one off."
+    ],
+    "section": "housing"
+  },
+  {
+    "id": "house-ceiling",
+    "title": "Ceiling",
+    "short": "The top of a room: plain, beamed, coffered or open rafters.",
+    "lines": ["Each room picks its own ceiling. Open rafters suit a room under the roof."],
+    "section": "housing"
+  },
+  {
+    "id": "house-frame",
+    "title": "Frame",
+    "short": "The posts and floors between the rooms, for the whole house.",
+    "lines": [
+      "Timber, paint or stone. It is chosen with the roof and walls.",
+      "The outer walls keep their own look."
+    ],
+    "section": "housing"
   }
 ]

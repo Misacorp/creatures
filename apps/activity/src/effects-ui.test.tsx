@@ -23,16 +23,26 @@ const floats = (cues: readonly Cue[]) => cues.filter((c) => c.kind === 'float');
 
 describe('the effect icons', () => {
   it('say the name, stacks and turns, from the content', () => {
-    const [mired] = effectIcons([{ effect: 'mired', stacks: 5, turnsLeft: 3 }]);
-    expect(mired).toMatchObject({
-      name: 'Mired',
+    const [boggedDown] = effectIcons([{ effect: 'bogged-down', stacks: 5, turnsLeft: 3 }]);
+    expect(boggedDown).toMatchObject({
+      name: 'Bogged Down',
       kind: 'debuff',
       stacksText: '×5',
       turnsText: '3 turns',
-      entry: 'status-mired',
+      entry: 'status-bogged-down',
     });
-    expect(mired?.label).toContain('5 stacks');
+    expect(boggedDown?.label).toContain('5 stacks');
     expect(turnsText(1)).toBe('1 turn');
+  });
+
+  it('reads the old id of the renamed debuff from a stored fight as Bogged Down', () => {
+    const [old] = effectIcons([{ effect: 'mired', stacks: 2, turnsLeft: 1 }]);
+    expect(old).toMatchObject({
+      id: 'bogged-down',
+      name: 'Bogged Down',
+      entry: 'status-bogged-down',
+    });
+    expect(entryView(old?.entry ?? '')).toBeDefined();
   });
 
   it('has a glossary entry in the content for every status effect', () => {
@@ -43,7 +53,7 @@ describe('the effect icons', () => {
 
   it('draws one chip each, with the stacks and (on the boss) the turns', () => {
     page = createPage();
-    page.draw(<EffectIcons effects={[{ effect: 'mired', stacks: 4, turnsLeft: 2 }]} />);
+    page.draw(<EffectIcons effects={[{ effect: 'bogged-down', stacks: 4, turnsLeft: 2 }]} />);
     const chips = byClass(page.root, 'effect-chip');
     expect(chips).toHaveLength(1);
     const text = visibleText(page.root);
@@ -53,13 +63,17 @@ describe('the effect icons', () => {
 
   it('draws only glyph and a bare stack count on a creature, and nothing without effects', () => {
     page = createPage();
-    page.draw(<EffectIcons compact effects={[{ effect: 'mired', stacks: 4, turnsLeft: 2 }]} />);
+    page.draw(
+      <EffectIcons compact effects={[{ effect: 'bogged-down', stacks: 4, turnsLeft: 2 }]} />,
+    );
     expect(visibleText(page.root)).toContain('4');
     expect(visibleText(page.root)).not.toContain('×');
     expect(visibleText(page.root)).not.toContain('turns');
     page.unmount();
     page = createPage();
-    page.draw(<EffectIcons compact effects={[{ effect: 'mired', stacks: 1, turnsLeft: 2 }]} />);
+    page.draw(
+      <EffectIcons compact effects={[{ effect: 'bogged-down', stacks: 1, turnsLeft: 2 }]} />,
+    );
     expect(visibleText(page.root)).not.toMatch(/\d/);
     page.unmount();
     page = createPage();
@@ -75,7 +89,7 @@ describe('the stage shows effects', () => {
       t: 'effect_apply',
       round: 1,
       target: null,
-      effect: 'mired',
+      effect: 'bogged-down',
       stacksAdded: 3,
       stacks: 3,
       turnsLeft: 3,
@@ -84,7 +98,7 @@ describe('the stage shows effects', () => {
       t: 'effect_apply',
       round: 1,
       target: IDS[0] as string,
-      effect: 'mired',
+      effect: 'bogged-down',
       stacksAdded: 1,
       stacks: 1,
       turnsLeft: 3,
@@ -171,14 +185,14 @@ describe('the cues of dodges and purges', () => {
     const purge: FightEvent = {
       t: 'effect_purge',
       round: 2,
-      removed: [{ effect: 'mired', stacks: 3 }],
+      removed: [{ effect: 'bogged-down', stacks: 3 }],
     };
     const cleanse: FightEvent = {
       t: 'effect_cleanse',
       round: 2,
       supporter: 'a',
       target: 'b',
-      effect: 'mired',
+      effect: 'bogged-down',
       stacks: 1,
     };
     expect(floats(cuesForEvents([purge], 0, 1, ['a']))).toMatchObject([

@@ -4,6 +4,62 @@ The shared combat engine, abilities, statuses, elements, the balance simulator, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-14: Boss animations: lances pass through the whole column; the aim is the board's highlight, no triangle [Misa]
+
+ID: `2026-11-14-boss-animations-lances-pass-through-the` · Status: current · Amends: `2026-11-14-boss-move-animations-five-phases-motion`
+
+**Decision.** A lance (a column strike) flies through the whole column and out past its last row, instead of stopping with its middle on the board's bottom edge. The aim phase shows only the board's own target highlight (the red the lit move uses) on the cells the move will hit; the down-pointing and side-pointing triangle markers are removed.
+
+**Reasoning.** Misa (2026-11-14): "I'd like them to travel through. The triangles showing the targeting are way too big or at least clunky looking. Perhaps the existing way of showing which spaces will be targeted (highlight color) is good and versatile enough." One way to show targets, the one players already know from the boss card.
+
+## 2026-11-14: Rename: the Mire debuff is Bogged Down, the Mire mark is Mired [Misa]
+
+ID: `2026-11-14-rename-the-mire-debuff-is-bogged` · Status: current
+
+**Decision.** Misa (2026-11-13): players read "Mired" as the name of the mark Mire creatures leave, but it was the name of the debuff (the mark was Muddied). The debuff is now **Bogged Down** (status id `bogged-down`, keyword `kw-bogged-down`, glossary `status-bogged-down`, glyph `bogged-down`, v2 board event type `boggedDown`, rule keys `boggedDown...` in `rules.json`, Knack and gear fx `boggedDownExtraBp`). The Mire mark is now **Mired** (mark id `mired`, glossary `mark-mired` and `v2-mark-mired`). Done in two commits, the debuff first, so no name meant two things at any point. The room modifier **Muddy** (id `mud`) is not the mark and keeps its name. Fights stored before the rename name the old ids: `currentStatusId` (`packages/game/src/glossary.ts`) reads the old status id `mired` as `bogged-down` (replay effect icons, event text), and the v2 replay parser reads the old board event type `mired` as `boggedDown`. Stored event text and the dated entries in the decision files and reviews keep the old names, as history. The status effect and the reaction mark are shared content, so the v1 game shows the new names too.
+
+**Reasoning.** One word for one thing. Marks are the thing players watch and cash; the debuff is the quieter one. Reading old ids at the places that parse stored fights keeps replays working without a migration.
+
+## 2026-11-14: A live finale started off the calendar is on from its real start in the Raid view
+
+ID: `2026-11-14-a-live-finale-started-off-the` · Status: current
+
+**Decision.** While a week is in its finale, the Raid view (v1 and v2) reports `schedule.finale` as the start of the party's stored live fight (`finaleStartedAt`) instead of the calendar's Sunday time. On the calendar the two are within a moment of each other, so nothing changes there. The dev bench refuses "Play the finale" while a live finale runs with `finale_running` ("The live finale is already on. Open the Raid tab to watch it"), not "already played".
+
+**Reasoning.** The Raid tab opens the finale view when the clock is inside the finale window computed from `schedule.finale`. The bench's "Watch the finale live" starts the fight now, days before Sunday, so the tab never saw a finale and nothing showed (Misa, 2026-11-13 playtest).
+
+## 2026-11-14: Raid seats are never moved: stage 1 widens the board instead of compacting it
+
+ID: `2026-11-14-raid-seats-are-never-moved-stage` · Status: current · Amends: `2026-11-03-combat-v2-arenas-how-the-piece`
+
+**Decision.** A v2 raid stage fights every creature on the seat it was placed on. Stage 1 no longer moves a placement into a free seat (`compactBoard` is gone from `resolveStageV2`; the dev bench still uses it when a Boss Rank change reshapes the board). Empty seats stay empty. The **boss is sized by the players who placed** (`v2_players`, as before): a gap or a creature in the spare column does not make it harder. The **board's width** is the width those players need, or further when a creature stands beyond it (`boardCols`); the boss's width follows the board (`widened`), its HP and Attack do not. Stage 1 stores the width in its input (`boss.cols`), and stage 2, the live finale, the replay and the view read it back, so freeing a knocked-out creature's place never shrinks the board or moves anyone. The engine already read rows and columns from the seats, so it is unchanged. Misa reported it as a bug (2026-11-13 playtest), not a rule change.
+
+**Reasoning.** Stage 1 used to close the board to the number of players who placed, moving creatures into the lowest free seats, which broke rows players had set and any plan to leave a seat empty beside a creature. The team has no more creatures for a wider board, so the boss must not grow with it. No migration: the width lives in the stage-1 input already stored.
+
+## 2026-11-14: Boss move animations: five phases, motion by shape, art by boss look
+
+ID: `2026-11-14-boss-move-animations-five-phases-motion` · Status: current, amended by `2026-11-14-boss-animations-lances-pass-through-the`
+
+**Decision.** A raid boss's move is animated on the client in five phases (wind-up in the boss's hand, aim with the down-pointing marker on the cells, throw off the top of the screen, strike through the cells, impact), timed in one place (`apps/activity/src/boss-anim/timeline.ts`, `BOSS_MOVE_MS`, which is also the boss beat's length). The motion belongs to the move's shape (one generic motion per engine shape); a boss look (`BOSS_LOOKS` in `looks.ts`, by boss id, per shape or per move id) only supplies the weapon and impact art, falling back to generic art per weapon form in the boss's element colours. The playback holds a boss beat back for the first four phases inside the beat's own time, so the board never runs ahead of the picture and the round's length is unchanged. Reduced motion and dungeon foes skip it. Prototype look: the Storm Sovereign. Guide: `docs/design/boss-animations.md`.
+
+**Reasoning.** Misa asked for longer, clearer boss attacks that show how each pattern works, with art that can be swapped per boss (a lance as a lightning bolt, a trident). Separating motion (by shape, fixed) from art (by boss, data) makes a new boss look one data entry plus its sprites. Running inside the existing beat time keeps the live finale's fixed round budget and the replay in step; no engine or rules change.
+
+## 2026-11-09: Finale actions stay as they are until the playtest; Rally unchanged; six icons accepted [Misa]
+
+ID: `2026-11-09-finale-actions-stay-as-they-are` · Status: current
+
+**Decision.** The live finale's one input stays as it is, a small moment, until the staging playtest shows how it feels ("Leave for now"). Rally keeps its +10% for one round, with no second round or mark: "Let's try to keep it simple for now. 10% damage for one round, when staggered to 8 rounds total from many participants, does add up to something." The six icons not yet reviewed on the board (Boost, Escalating, armour, cracked armour, silence ward, Determination) count as accepted unless Misa says otherwise.
+
+**Reasoning.** The lab (`balance.md` section 10) found no finale action dominating and Rally worth about nothing alone. Misa prefers the simpler rule, and the playtest will show whether the finale needs more weight.
+
+## 2026-11-06: Finale actions measured: none dominates, Rally is worth about nothing, and picking the best action changes nothing at three players or more
+
+ID: `2026-11-06-finale-actions-measured-none-dominates-rally` · Status: current
+
+**Decision.** The lab measures what each live-finale action is worth (`packages/lab/src/finaleWorth.ts`, `report.mjs --finale-worth`) and models a daily player who picks the best action for the boss (`HABITS_BEST_FINALE`, `bestAbilityFor`: Purge for an Element Resistance boss with a three-row arena or more, else Shield Wall). The default habits stay as they were. No scalar changed. Rally (+10% for one round) is worth about nothing and is proposed to Misa, not changed.
+
+**Reasoning.** No action dominates: Purge is best on Old Bogback, Shield Wall on Storm Sovereign and Tidal Colossus, each worth 0 to 9 points of kill chance in the cells where the finale is reached (under half the weekends). Picking the best action moves the mixed server's kill at slots 8 / 11 / 14 by 0, because the worker deals Rally, Shield Wall and Purge to the first three players and a party of three or more already fires every kind. Rally stays as is because the basic abilities are weak by design (decision 2026-10-11) and `rallyBp` 3000 alone would still be under Shield Wall; the numbers and the open proposal are in `docs/design/combat/balance.md` section 10 and `for-misa.md`.
+
 ## 2026-11-06: Combat v2 goes live with the valley rework in one reset [Misa]
 
 ID: `2026-11-06-combat-v2-goes-live-with-the` · Status: current

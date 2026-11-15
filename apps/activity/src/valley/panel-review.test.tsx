@@ -17,6 +17,7 @@ import { wholeObjects } from './gazette/SceneCrop';
 import { gainsText } from './gazette/coming-home';
 import { gazetteOf, homeNote, paperGains, awayGains, type AwayWorld } from './gazette/stories';
 import { CREATURE_PX, castFor, type CastInput } from './place-cast';
+import { WORLD_MAP_SPRITE_DATA } from '../sprites/data/world-map-sprites';
 import { roamPlan, standBounds } from './place-plates';
 import { PROPS, frontProps, propDepth } from './place-props';
 import {
@@ -28,6 +29,7 @@ import {
   placeScale,
   skyBackdrop,
   placeSceneDraw,
+  treesAround,
 } from './place-scene';
 import { LIVE_WINDOW_MS, listOrder, raidTiming, type PlaceBubble } from './place-state';
 import { sceneScale } from './scale';
@@ -171,6 +173,20 @@ describe('every scene scales by a whole number (row 17 check)', () => {
     const box = bandArtBox(sceneGeometry(390, BAND_ROWS * 3, 3), 'arena');
     expect(Number.isInteger(box.x) && Number.isInteger(box.y)).toBe(true);
     expect(art.width).toBeGreaterThan(0);
+  });
+
+  it('every tree of a scene stands on the grass: its base is at or under the line where the hills end', () => {
+    const art = { width: 60, height: 50 };
+    for (const y of [20, 28, 8 + 6]) {
+      const grass = y + 14;
+      const trees = treesAround(100, y, art).filter(
+        (p) =>
+          p.sprite === WORLD_MAP_SPRITE_DATA.smallTree ||
+          p.sprite === WORLD_MAP_SPRITE_DATA.smallPine,
+      );
+      expect(trees).toHaveLength(4);
+      for (const t of trees) expect(t.y + t.sprite.rows.length).toBeGreaterThanOrEqual(grass);
+    }
   });
 
   it('the arena’s boss and the art stand centred together in the band: equal room each side', () => {

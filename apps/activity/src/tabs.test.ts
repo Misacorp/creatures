@@ -3,12 +3,13 @@ import { BUNDLED_GLYPHS } from './glyphs';
 import { DEFAULT_PLACE, NAV_GROUPS, NAV_HOME, TABS, isPlace, isTab, tabPalette } from './tabs';
 
 describe('the tabs', () => {
-  it('has the eight tabs: the Collection (creatures, Workshop, Journal, Stats), then the adventures in rising danger, the Valley Games last', () => {
+  it('has the nine tabs: the Collection (creatures, Workshop, Journal, Stats, House), then the adventures in rising danger, the Valley Games last', () => {
     expect(TABS.map((t) => t.id)).toEqual([
       'collection',
       'workshop',
       'journal',
       'stats',
+      'house',
       'expeditions',
       'dungeon',
       'raid',
@@ -38,7 +39,7 @@ describe('the groups and Home', () => {
     expect(NAV_GROUPS.map((g) => g.id)).toEqual(['collection', 'adventure']);
     expect(NAV_GROUPS.map((g) => g.label)).toEqual(['Collection', 'Adventure']);
     const of = (id: string) => TABS.filter((t) => t.group === id).map((t) => t.id);
-    expect(of('collection')).toEqual(['collection', 'workshop', 'journal', 'stats']);
+    expect(of('collection')).toEqual(['collection', 'workshop', 'journal', 'stats', 'house']);
     expect(of('adventure')).toEqual(['expeditions', 'dungeon', 'raid', 'games']);
   });
 
@@ -61,8 +62,10 @@ describe('the Collection group', () => {
       'workshop',
       'journal',
       'stats',
+      'house',
     ]);
     expect(isTab('stats')).toBe(true);
+    expect(isTab('house')).toBe(true);
   });
 });
 

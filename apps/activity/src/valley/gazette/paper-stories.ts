@@ -41,8 +41,37 @@ const PAIR_MOMENTS: readonly ((a: string, b: string) => string)[] = [
   (a, b) => `${a} chased ${b} round the fire`,
 ];
 
+/**
+ * A talent's name for the paper: its id read as words, each capitalised ("first-pounce" is "First Pounce"). The paper holds the id only,
+ * and the combat library stays out of the main bundle (the production build test forbids its draft text there).
+ */
+const talentName = (id: string | null | undefined): string =>
+  id === null || id === undefined
+    ? 'a talent'
+    : id
+        .split('-')
+        .map((w) => `${w.charAt(0).toUpperCase()}${w.slice(1)}`)
+        .join(' ');
+
+const honourName = (tier: number): string => ['Bronze', 'Silver', 'Gold'][tier - 1] ?? 'Bronze';
 const plural = (n: number, one: string, many: string): string => (n === 1 ? one : many);
 const num = (n: number): string => String(n);
+/** A small count in words ("Three of yours graduated at the School", Misa's own wording); digits from eleven on. */
+const WORDS = [
+  'none',
+  'one',
+  'two',
+  'three',
+  'four',
+  'five',
+  'six',
+  'seven',
+  'eight',
+  'nine',
+  'ten',
+];
+const word = (n: number): string => WORDS[n] ?? String(n);
+const sentence = (text: string): string => `${text.charAt(0).toUpperCase()}${text.slice(1)}`;
 const upper = (text: string): string => text.toUpperCase();
 const article = (word: string): string => (/^[aeiou]/i.test(word) ? 'an' : 'a');
 
@@ -75,6 +104,10 @@ const PLACE_OF: Record<PaperHeadline['kind'], PlaceId> = {
   allowance: 'bonfire',
   moment: 'bonfire',
   'market-open': 'market',
+  visitor: 'visitor',
+  teacher: 'school',
+  lesson: 'school',
+  graduation: 'school',
 };
 
 /** The stories of the server's paper, the biggest first (as the server ranked them), and what it left untold. */
@@ -235,6 +268,52 @@ function storyOf(h: PaperHeadline, paper: Paper, byId: ReadonlyMap<string, Creat
         blurb: 'Your anvils can trade for what they wait on.',
         finds: [],
         scene: scene([]),
+      };
+    case 'visitor':
+      // V-VIS-1: the weekly visitor is at the crossroads (step 8b draws his stall; the paper only says he is here).
+      return {
+        ...base,
+        headline: 'A VISITOR IS AT THE CROSSROADS',
+        blurb: 'They will look over a piece of your gear. They never stay for long.',
+        finds: [],
+        scene: scene([]),
+      };
+    case 'teacher': {
+      // V-SCH-11: a teacher is announced or at the School (the School's page has the lectern and the days); the paper names the talent.
+      return {
+        ...base,
+        headline: upper(`A teacher visits the School: ${talentName(h.talent)}`),
+        blurb: 'Send a creature that can learn it, and it learns it by morning.',
+        finds: [],
+        scene: scene([]),
+      };
+    }
+    case 'lesson': {
+      // V-SCH-13: the lesson is learned; the creature is back at its post.
+      const talent = talentName(h.talent);
+      return {
+        ...base,
+        headline: upper(
+          h.count > 1
+            ? `${first ?? 'A creature'} and ${word(h.count - 1)} more learned ${talent} at the School`
+            : `${first ?? 'A creature'} learned ${talent} at the School`,
+        ),
+        finds: [],
+        scene: scene(members),
+      };
+    }
+    case 'graduation':
+      // V-TRIAL-4: the School's ceremony is told in the paper, several in one line ("Three of yours graduated at the School").
+      return {
+        ...base,
+        headline: upper(
+          h.count === 1
+            ? `${first ?? 'One of yours'} graduated at the School`
+            : `${sentence(word(h.count))} of yours graduated at the School`,
+        ),
+        blurb: h.step === null ? '' : `${honourName(h.step)} honours.`,
+        finds: [],
+        scene: scene(members),
       };
     case 'moment': {
       const turn = h.turn ?? 0;

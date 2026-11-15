@@ -10,7 +10,7 @@ import * as stateMod from './state';
 import type { State } from './state';
 
 // Bound once: a named import is read through a getter on every call under the lab's Vite loader, which costs 15% of a report.
-const { addMired, escalate, movesOf } = escalationMod;
+const { addBoggedDown, escalate, movesOf } = escalationMod;
 const { beside, inReach, targetsOf, usesRoll } = boardMod;
 const {
   alive,
@@ -125,7 +125,7 @@ export function roundStart(s: State): void {
   // R8.2 b: round-start Knacks and talents, in slot order.
   for (const f of aliveBySlot(s)) {
     const k = fx(f);
-    if (k.miresAtStart) addMired(s, f);
+    if (k.miresAtStart) addBoggedDown(s, f);
     // Boiling Point's Heat also builds by itself: +1 at every round start (panel 5: it was filled by damage alone and never picked).
     if (k.bakedShell) setStore(s, f, Math.min(3, f.store + 1));
     if (k.guardMendBp)

@@ -16,6 +16,7 @@
  */
 import {
   GEAR_SLOTS,
+  MAX_BACK_SMITHS,
   VALLEY_ELEMENTS,
   VALLEY_RULES,
   chance,
@@ -35,6 +36,7 @@ import {
   weakLimit,
   wearBlock,
   type AnvilWait,
+  type ValleyBackSmith,
   type Element,
   type GearBase,
   type GearItem,
@@ -146,6 +148,9 @@ export interface TeamMember {
   readonly level: number;
 }
 
+/** The most seats the background smiths' read takes (two to an owner, four smiths shown). */
+const BACK_SEAT_READ = 12;
+
 export class ValleyForgePass {
   constructor(private readonly deps: ValleyForgeDeps) {}
 
@@ -165,6 +170,70 @@ export class ValleyForgePass {
       shards: VALLEY_ELEMENTS.map((e) => held[shardOf(e)]),
       essence: getBalance(this.sql, userId, 'essence'),
     };
+  }
+
+  /**
+   * Other players' smiths at their anvils, for the workshop's background: through the `(place, kind, user_id)` index, at most
+   * `BACK_SEAT_READ` seats read, two to an owner and `MAX_BACK_SMITHS` in all. Each one's creature and owner's name by key. Never the
+   * caller's.
+   */
+  backSmiths(userId: string): ValleyBackSmith[] {
+    const seats = this.sql
+      .exec<{
+        user_id: string;
+        creature_id: string;
+        piece_active: number;
+        wait_reason: string | null;
+      }>(
+        `SELECT user_id, creature_id, piece_active, wait_reason FROM valley_seats
+         WHERE place = 'forge' AND kind = 'anvil' AND user_id != ? AND creature_id IS NOT NULL
+         ORDER BY user_id LIMIT ?`,
+        userId,
+        BACK_SEAT_READ,
+      )
+      .toArray();
+    const perOwner = new Map<string, number>();
+    const out: ValleyBackSmith[] = [];
+    for (const seat of seats) {
+      if (out.length >= MAX_BACK_SMITHS) break;
+      const n = perOwner.get(seat.user_id) ?? 0;
+      if (n >= 2) continue;
+      const creature = this.sql
+        .exec<{
+          id: string;
+          species: string;
+          level: number;
+          shiny: number;
+          nickname: string | null;
+        }>(
+          'SELECT id, species, level, shiny, nickname FROM creatures WHERE id = ?',
+          seat.creature_id,
+        )
+        .toArray()[0];
+      const owner = this.sql
+        .exec<{ display_name: string }>(
+          'SELECT display_name FROM players WHERE user_id = ?',
+          seat.user_id,
+        )
+        .toArray()[0];
+      if (creature === undefined || owner === undefined || owner.display_name === '') continue;
+      perOwner.set(seat.user_id, n + 1);
+      out.push({
+        owner: owner.display_name.slice(0, 40),
+        creature: {
+          id: creature.id,
+          species: creature.species,
+          shiny: creature.shiny === 1,
+          level: creature.level,
+          name:
+            creature.nickname === null || creature.nickname === ''
+              ? null
+              : creature.nickname.slice(0, 40),
+        },
+        working: seat.piece_active === 1 && seat.wait_reason === null,
+      });
+    }
+    return out;
   }
 
   /** The player's orders, in queue order. */

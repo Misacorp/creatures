@@ -131,6 +131,17 @@
         "Gear and blueprints come from won finales, expeditions, the dungeon and Festivals.",
         "A creature on a job cannot go on an expedition. It still fights in raids."
       ]
+    },
+    {
+      "id": "housing",
+      "title": "Your House",
+      "lines": [
+        "Every explorer has a house. It begins as a hut with a good fire and grows in parts, paid at your own pace.",
+        "Furniture is made at the workbench from luxury materials that scouts and trips bring home.",
+        "Pieces come in sets; the catalogue shows what you found. Housemates sleep in beds, for show only.",
+        "Visit a friend's house. Leave one gift and one stamp a day, and read the guestbook.",
+        "Each room picks its wallpaper, floor, trim and ceiling. The house gives no power: it is for you, and for fun."
+      ]
     }
   ],
   "example": {

@@ -17,6 +17,7 @@
 import { knownKnacks, v2Pool } from '@creatures/game/combat-v2';
 import { describe, expect, it } from 'vitest';
 import { playV2Day, scaleV2Foes } from './dungeon-v2-reads';
+import { housingCore, runHousingPaths } from './housing-world';
 import { HELSINKI, MINUTE } from './raid-helpers';
 import { V2_WEEK } from './raid-v2-helpers';
 import {
@@ -673,6 +674,102 @@ describe('query plan audit', () => {
     expect(result.found, scanMessage(result.found)).toEqual([]);
   }, 60_000);
 
+  it("plans the visitor's statements (the first look of the week, a look at a piece, a reroll, the blueprint, the alarm, a return that is told he is here) without a whole-table scan", async () => {
+    const result = await audit({ valleySystems: true, fresh: true }, async (env, world) => {
+      const { clock } = env;
+      const relog = async (): Promise<void> => {
+        world.secrets.set(
+          userId(1),
+          await world.core.createSession(GUILD_ID, { id: userId(1), displayName: 'Player 1' }),
+        );
+      };
+      const post = (path: string, body: unknown): Promise<unknown> =>
+        callAs(world.core, world.secrets, 1, path, { method: 'POST', body });
+      clock.t += 6 * MINUTE;
+      await callAs(world.core, world.secrets, 1, '/api/state');
+      // Thursday afternoon: he is here.
+      clock.t += 2 * 24 * 60 * MINUTE;
+      await relog();
+      const sql = env.metered.sql;
+      sql.exec(
+        "UPDATE balances SET amount = 100000 WHERE user_id = ? AND currency = 'bait'",
+        userId(1),
+      );
+      sql.exec(
+        "INSERT INTO parts (user_id, kind, amount) VALUES (?, 'scrap', 100000), (?, 'mire-shard', 500) ON CONFLICT(user_id, kind) DO UPDATE SET amount = excluded.amount",
+        userId(1),
+        userId(1),
+      );
+      const item = sql
+        .exec<{ id: string }>('SELECT id FROM gear_items WHERE user_id = ? LIMIT 1', userId(1))
+        .one().id;
+      await callAs(world.core, world.secrets, 1, '/api/valley/visitor');
+      await callAs(world.core, world.secrets, 1, `/api/valley/visitor?item=${item}`);
+      await post('/api/valley/visitor/reroll', {
+        itemId: item,
+        idempotencyKey: 'audit-visitor-reroll-0001',
+      });
+      await post('/api/valley/visitor/blueprint', { idempotencyKey: 'audit-visitor-bp-0001' });
+      clock.t += MINUTE;
+      // The alarm's own check (the whole alarm also runs the daily clean-up, which the other audits leave to its own).
+      world.core.valleyVisitorWeeks?.ensureArrival(clock.t);
+      world.core.valleyVisitorWeeks?.nextArrivalAt(clock.t);
+      sql.exec('UPDATE visitor_rerolls SET told = 0 WHERE user_id = ?', userId(1));
+      clock.t += 12 * 60 * MINUTE;
+      await relog();
+      await callAs(world.core, world.secrets, 1, '/api/state');
+    });
+
+    expect(result.seen, 'statements recorded').toBeGreaterThan(40);
+    for (const table of ['visitor_weeks', 'visitor_rerolls', 'gear_items'])
+      expect(
+        result.statements.some((q) => q.includes(table)),
+        table,
+      ).toBe(true);
+    expect(result.found, scanMessage(result.found)).toEqual([]);
+  }, 60_000);
+
+  it("plans the trials' statements (the joined read in a pass, the ticks of a pass, an event tick, a ceremony that graduates and is told, the clean-up) without a whole-table scan", async () => {
+    const result = await audit({ valleySystems: true, fresh: true }, async (env, world) => {
+      const { clock } = env;
+      const relog = async (): Promise<void> => {
+        world.secrets.set(
+          userId(1),
+          await world.core.createSession(GUILD_ID, { id: userId(1), displayName: 'Player 1' }),
+        );
+      };
+      const sql = env.metered.sql;
+      clock.t += 6 * MINUTE;
+      await callAs(world.core, world.secrets, 1, '/api/state');
+      const ids = sql
+        .exec<{ id: string }>('SELECT id FROM creatures WHERE user_id = ?', userId(1))
+        .toArray()
+        .map((r) => r.id);
+      sql.exec('UPDATE creatures SET level = 12 WHERE user_id = ?', userId(1));
+      sql.exec(
+        'UPDATE valley_creatures SET scout_hours = 30, smith_hours = 30 WHERE user_id = ?',
+        userId(1),
+      );
+      clock.t += 2 * MINUTE;
+      await callAs(world.core, world.secrets, 1, '/api/state');
+      world.core.valleyTrials?.tickEvent(userId(1), ids.slice(0, 5), 'dungeon', clock.t);
+      world.core.valleyTrials?.tickEvent(userId(1), ids, 'fire', clock.t);
+      // Two days away: the ceremony has passed, so the arrival graduates them and the paper tells it; a creature that left is cleaned up.
+      sql.exec('DELETE FROM creatures WHERE id = ?', ids[0]);
+      clock.t += 2 * 24 * 60 * MINUTE;
+      await relog();
+      await callAs(world.core, world.secrets, 1, '/api/state');
+    });
+
+    expect(result.seen, 'statements recorded').toBeGreaterThan(40);
+    for (const table of ['creature_trials'])
+      expect(
+        result.statements.some((q) => q.includes(table)),
+        table,
+      ).toBe(true);
+    expect(result.found, scanMessage(result.found)).toEqual([]);
+  }, 60_000);
+
   it("plans the Gazette's statements (an arrival that writes a paper, a joined one, a look with it unread, taking a way deeper, closing it) without a whole-table scan", async () => {
     const result = await audit({ valleySystems: true, fresh: true }, async (env, world) => {
       const { clock } = env;
@@ -729,6 +826,104 @@ describe('query plan audit', () => {
       result.statements.some((q) => q.includes('valley_gazette')),
       'valley_gazette',
     ).toBe(true);
+    expect(result.found, scanMessage(result.found)).toEqual([]);
+  }, 60_000);
+
+  it("plans housing's statements (the house, a visit, the list, the catalogue, a payment and the finishing one, a craft, a placement, a skin, a housemate, a gift, a stamp, the mailbox, and the drop hook) without a whole-table scan", async () => {
+    const result = await audit({ fresh: true }, async (env, world) => {
+      const { clock } = env;
+      clock.t += 6 * MINUTE;
+      const core = housingCore(env, world, BUILD);
+      // Twice: the first call of a day pays one-off work.
+      for (let round = 0; round < 2; round++) {
+        await callAs(core, world.secrets, 1, '/api/state');
+        await callAs(core, world.secrets, 1, '/api/house');
+      }
+      await runHousingPaths(env, world, core, async (_name, run) => {
+        await run();
+      });
+      // The drop hook, for every kind of moment (a cleared raid reads what the player holds and writes the trophies).
+      const hook = core.housingHook;
+      if (hook === null) throw new Error('no housing hook');
+      hook.drop(userId(1), {
+        kind: 'trip',
+        key: 'trip:audit',
+        place: 'tidepools',
+        element: 'tide',
+        ticks: 6,
+      });
+      hook.drop(userId(1), {
+        kind: 'raid',
+        key: 'raid:audit',
+        weekId: '2027-W02',
+        bossId: 'tidal-colossus',
+        rank: 2,
+        cleared: true,
+        festival: 'sunbird',
+        element: 'tide',
+      });
+      hook.drop(userId(1), { kind: 'dungeon', key: 'dungeon:audit', depth: 12, cleared: true });
+      hook.drop(userId(1), { kind: 'games', key: 'games:audit', medal: 'gold' });
+    });
+
+    expect(result.seen, 'statements recorded').toBeGreaterThan(40);
+    for (const table of [
+      'house_items',
+      'house_guestbook',
+      'house_mail',
+      'house_trophies',
+      'house_drops',
+    ]) {
+      expect(
+        result.statements.some((q) => q.includes(table)),
+        table,
+      ).toBe(true);
+    }
+    expect(result.found, scanMessage(result.found)).toEqual([]);
+  }, 120_000);
+
+  it("plans the School's statements (the weekly pick, a look, a seat, the alarm, a return with a lesson) without a whole-table scan", async () => {
+    const result = await audit({ valleySystems: true, fresh: true }, async (env, world) => {
+      const { clock, metered } = env;
+      const { core, secrets } = world;
+      clock.t += 6 * MINUTE;
+      await callAs(core, secrets, 1, '/api/state');
+      // Player 1 has found little (the book keeps only what its creatures learned), so the teacher has a student.
+      metered.sql.exec(
+        `DELETE FROM line_talents WHERE user_id = ? AND NOT EXISTS (
+           SELECT 1 FROM creature_talents_v2 t JOIN creatures c ON c.id = t.creature_id
+           WHERE c.user_id = line_talents.user_id AND c.line = line_talents.line AND t.talent_id = line_talents.talent_id)`,
+        userId(1),
+      );
+      metered.sql.exec('DELETE FROM school_weeks');
+      clock.t += MINUTE;
+      const seen = (await callAs(core, secrets, 1, '/api/valley/school')) as {
+        wouldLearn: string[];
+      };
+      const first = seen.wouldLearn[0];
+      if (first !== undefined) {
+        await callAs(core, secrets, 1, '/api/valley/school/seat', {
+          method: 'POST',
+          body: { index: 0, creatureId: first },
+        });
+      }
+      await core.alarm();
+      // The next morning: the pass learns the lesson.
+      clock.t += 12 * 60 * MINUTE;
+      secrets.set(
+        userId(1),
+        await core.createSession(GUILD_ID, { id: userId(1), displayName: 'Player 1' }),
+      );
+      await callAs(core, secrets, 1, '/api/state');
+    });
+
+    expect(result.seen, 'statements recorded').toBeGreaterThan(40);
+    // The School's own statements ran (a refactor that stops running them would pass for nothing).
+    for (const table of ['school_weeks', 'school_students', 'line_talents'])
+      expect(
+        result.statements.some((q) => q.includes(table)),
+        table,
+      ).toBe(true);
     expect(result.found, scanMessage(result.found)).toEqual([]);
   }, 60_000);
 

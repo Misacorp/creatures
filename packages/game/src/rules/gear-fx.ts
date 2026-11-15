@@ -42,7 +42,7 @@ export interface GearFx {
   momentumBp?: number;
   ownMarkBp?: number;
   braceBp?: number;
-  miredExtraBp?: number;
+  boggedDownExtraBp?: number;
   ignoreSilence?: boolean;
   holdOn?: boolean;
   clinging?: boolean;
@@ -145,7 +145,7 @@ export const GEAR_LINE_FX: Readonly<Record<string, GearLineFx>> = {
     scale: [6, 10],
   },
   // Top pip 40% against today's 30%.
-  'heavy-hand': { field: 'miredExtraBp', unit: 'bp', scale: [4, 3] },
+  'heavy-hand': { field: 'boggedDownExtraBp', unit: 'bp', scale: [4, 3] },
   // Top pip 85% against today's 35%.
   'first-pounce': { field: 'firstHitBp', unit: 'bp', scale: [17, 7] },
   // Top pip 7.5% against today's 17%.

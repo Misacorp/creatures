@@ -33,6 +33,7 @@ import {
   type BossDef,
   type RaidStage,
   type Rng,
+  type HousingHook,
 } from '@creatures/game';
 import {
   skyFightFields,
@@ -96,6 +97,10 @@ export interface ResolveDeps {
   gearRng?: Rng;
   /** The analytics event log. Optional: without it nothing is logged. */
   analytics?: Analytics;
+  /** Player housing's reward hook (`HOUSING` on): a drop at the reward moment. Absent: nothing happens. */
+  housing?: HousingHook | undefined;
+  /** The valley's trials (V-TRIAL-2): the boss was killed with these creatures of the player in the party. Absent with the valley systems off. */
+  onKill?: (userId: string, creatureIds: readonly string[]) => void;
 }
 
 /** What the API shows about a resolved phase. Contains user ids: map to names before sending. */
@@ -705,6 +710,19 @@ export function payStage(
     if (view !== null) recordAway(sql, userId, 'raid', { xp: stageExperience }, now);
   }
 
+  // --- The valley's trials: a raid kill (v1: the finale won; v2: the boss fell) ticks Gold's combat box for the creatures that fought. ---
+  if (
+    deps.onKill !== undefined &&
+    (facts.v2 === undefined ? phase === 'finale' && facts.cleared : facts.v2.kill)
+  ) {
+    const fought = new Map<string, string[]>();
+    for (const slot of facts.fighters) {
+      const userId = slot.ownerAlias === null ? undefined : userOf.get(slot.ownerAlias);
+      if (userId !== undefined) fought.set(userId, [...(fought.get(userId) ?? []), slot.id]);
+    }
+    for (const [userId, ids] of fought) deps.onKill(userId, ids);
+  }
+
   // --- Gear: scrap for a cleared phase, one gear roll for a won finale (members only). A v2 stage pays the scrap of each threshold
   // first crossed here, the finale's roll when the finale is won, and a kill's bonus: lots of epic and rare gear. ---
   if (facts.cleared || (facts.v2 !== undefined && (facts.v2.crossed.length > 0 || facts.v2.kill))) {
@@ -738,6 +756,25 @@ export function payStage(
     phase === 'finale'
       ? rollJackpots(deps, week.weekId, party, memberIds, facts.cleared, payout)
       : [];
+
+  // --- Player housing: one drop for each member at the paid finale (a trophy too when cleared). No hook, no reads. ---
+  if (phase === 'finale' && deps.housing !== undefined) {
+    const progression = facts.cleared ? readWeekProgression(sql, week.weekId) : null;
+    const festival = progression?.festival === true ? progression.festivalSpecies : null;
+    const element = content.bosses.find((b) => b.id === facts.bossId)?.element ?? null;
+    for (const userId of memberIds) {
+      deps.housing.drop(userId, {
+        kind: 'raid',
+        key: `raid:${week.weekId}:${String(party)}`,
+        weekId: week.weekId,
+        bossId: facts.bossId,
+        rank: payout.rank,
+        cleared: facts.cleared,
+        festival,
+        element,
+      });
+    }
+  }
 
   // --- The Festival creature, for every member of a party that won a Festival finale ---
   if (phase === 'finale' && facts.cleared) {

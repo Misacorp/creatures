@@ -60,6 +60,10 @@
   // client (valleySystems). It only counts with VALLEY and COMBAT_V2 both "on"; "on" without them is treated as off
   // and logs a config error once. Any other value turns it off. On in staging only until phase 6; a test pins the top
   // level and production to "off".
+  // HOUSING: "on" turns on player housing (docs/design/housing.md): the /api/house and /api/houses routes exist and
+  // /api/config tells the client (housing). Any other value makes every housing route answer 404 and passes no
+  // drop hook to the reward paths. It does not depend on VALLEY or COMBAT_V2. On locally and in staging; OFF in
+  // production until Misa turns it on (a test pins all three).
   // DISCORD_PUBLIC_KEY: the Discord app's public key (hex, not a secret). The deploy job fills it from
   // Discord's verify_key; empty (or not 64 hex characters) turns POST /api/discord/interactions off (404),
   // which also turns off /feedback (docs/design/feedback.md).
@@ -78,7 +82,8 @@
     "RAID_LIVE": "on",
     "COMBAT_V2": "off",
     "VALLEY": "off",
-    "VALLEY_SYSTEMS": "off"
+    "VALLEY_SYSTEMS": "off",
+    "HOUSING": "on"
   },
   "env": {
     "staging": {
@@ -107,7 +112,8 @@
         "RAID_LIVE": "on",
         "COMBAT_V2": "on",
         "VALLEY": "on",
-        "VALLEY_SYSTEMS": "on"
+        "VALLEY_SYSTEMS": "on",
+        "HOUSING": "on"
       }
     },
     "production": {
@@ -136,7 +142,8 @@
         "RAID_LIVE": "on",
         "COMBAT_V2": "off",
         "VALLEY": "off",
-        "VALLEY_SYSTEMS": "off"
+        "VALLEY_SYSTEMS": "off",
+        "HOUSING": "off"
       }
     }
   }

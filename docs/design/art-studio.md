@@ -41,6 +41,8 @@ Art Misa requests is kept until the content that uses it exists. **The catalogue
 - **When he answers:** set `status` to `liked` or `redo` (per sprite when only some changed) and add his feedback to `notes`, then `pnpm art library`.
 - **When content is added** (a species, boss, item or place): look in the catalogue first. If art was made for it, use it: move the sprite into `src/sprites/data/` under the content id, add its shiny palette, delete the concept and run `pnpm art library` in the same PR. Say in the PR which library art it uses.
 
+**Boss attack art** (weapons, bursts that a boss move throws in the fight) is not a concept set: it ships with `apps/activity/src/boss-anim/` and is tried in the workbench page `BossAnimFrame`. How to give a boss its own look: `docs/design/boss-animations.md`.
+
 ## What the studio draws
 
 - **`<id>.png`, the card.** A large zoom with a coordinate grid: x across the top, y down the side, a stronger line every 4 pixels, and a yellow line at the mirror axis of a mirrored sprite. Transparent pixels are a checker. Beside it, the sprite at 1×, 2×, 3× and 4× on each of the three panel colours (`--night`, `--dusk`, `--dusk-2`), the solid silhouette on a light card, and each alternative palette at 4×. Name fixes by coordinate ("row 6, x 3 should be shade").
@@ -51,6 +53,8 @@ Art Misa requests is kept until the content that uses it exists. **The catalogue
 - **`pnpm art items [--slot hat|scarf|charm]`** draws every shipped gear item as the game does (its look, in its tint), labelled by name, and a card per look with each item that wears it in its own tint. Every item with its own name has its own look; element versions with the same stats share one (`itemLookId`, decision of 2026-10-30 in `decisions/gear.md`). Item sprites are in `src/sprites/data/item-*-sprites.ts`, drawn in the neutral greys the tint swaps.
 
 - **A set's `backdrop`** (a ground tile, with its own colours per alternative palette, such as a night tile for the `night` alt) is repeated behind each sprite in the set sheet and in an extra row of each card, so art that will stand on the valley's or the map's tiles is judged on them, not on the dark panels.
+
+- **`pnpm art levels [--out dir]`** draws each building at every level side by side, a night row and a day row on the set's ground, into `docs/art/levels/<place>.png`. A set lists a place's levels in `levels` (`{ forge: ['valley-glow/forge', 'valley-levels-forge/forge-2', ...] }`, one `set/sprite` per level from 1 to max); `pnpm art library` redraws these sheets and its check fails on a reference to a missing sprite. Every level of a building shares one canvas and base row, and every level's materials come from `concepts/valley-tiers.ts` (`tierPalette`), so a level looks the same across buildings: see `docs/design/art-levels.md`.
 
 - **`pnpm art review [--out file.html]`** builds the art review page: every library set and every shipped item look, each with Like, Redo and a note. Publish the file with the Artifact tool at the page's existing URL (in `docs/progress.md`), declaring the `db` and `user` capabilities. Misa's answers are in its database, collection `reviews` (one document per piece: `piece`, `verdict`, `note`); read them before changing library art, and record them on the pieces (`status`, `notes`).
 
