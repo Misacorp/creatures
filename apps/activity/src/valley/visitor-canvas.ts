@@ -40,10 +40,11 @@ export interface StallTarget {
 /** The visitor, standing left of his stall: a click is the reroll. */
 export const VISITOR_BOX: StallTarget = { x: 3, y: 7, w: 19, h: 34 };
 /**
- * The week's blueprint, lying on the counter (the prop's bottom row is on stall row 46, the first counter row is 47; x 33 to 48, clear
- * of the stall's edges at 27 and 54): the prop's own box, a click is the purchase.
+ * The week's blueprint, lying on the counter: the prop's bottom row is on stall row 29, the row above the counter top (the first orange
+ * row, 30; the Art notes say 46 and 47 for a taller sprite than the stall is, 48 rows), x 33 to 48, clear of the stall's edges at 27 and
+ * 54. The prop's own box; a click is the purchase.
  */
-export const BLUEPRINT_BOX: StallTarget = { x: 33, y: 37, w: 16, h: 10 };
+export const BLUEPRINT_BOX: StallTarget = { x: 33, y: 20, w: 16, h: 10 };
 /** The shuttered stall's sign, on the right: a click reads it. */
 export const SIGN_BOX: StallTarget = { x: 47, y: 13, w: 12, h: 15 };
 

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { PLATE_ROW_PX } from './place-plates';
 import { sceneGeometry } from './SceneFrame';
+import { glowSprite } from './valley-places';
 import {
   BLUEPRINT_BOX,
   SCALE_MAX,
@@ -82,18 +83,20 @@ describe('the visitor canvas: the layout', () => {
     expect(here.at(-1)).toMatchObject({ x: box.x, y: box.y });
   });
 
-  it('the blueprint lies on the counter (bottom row on stall row 46) while it is for sale, drawn after the stall', () => {
+  it('the blueprint lies on the counter (bottom row on stall row 29, above the counter top) while it is for sale, drawn after the stall', () => {
     const g = geometry(1100, 700);
     const box = visitorBox(g);
     const forSale = visitorSceneDraw(true, true)(g);
     const without = visitorSceneDraw(true, false)(g);
     expect(forSale).toHaveLength(without.length + 1);
     const bp = forSale.at(-1);
-    expect(bp).toMatchObject({ x: box.x + 33, y: box.y + 37 });
+    expect(bp).toMatchObject({ x: box.x + 33, y: box.y + 20 });
     expect(bp?.sprite.rows).toHaveLength(10);
-    expect(BLUEPRINT_BOX).toEqual({ x: 33, y: 37, w: 16, h: 10 });
-    // Bottom row 46: 37 + 10 - 1.
-    expect(BLUEPRINT_BOX.y + BLUEPRINT_BOX.h - 1).toBe(46);
+    expect(BLUEPRINT_BOX).toEqual({ x: 33, y: 20, w: 16, h: 10 });
+    // Bottom row 29: 20 + 10 - 1, the row above the counter top (the first orange row of the stall, 30).
+    expect(BLUEPRINT_BOX.y + BLUEPRINT_BOX.h - 1).toBe(29);
+    expect(glowSprite('visitor').rows[30]).toContain('u');
+    expect(glowSprite('visitor').rows[29]).not.toContain('u');
   });
 
   it('while he is away there is no blueprint, whatever the flag says', () => {

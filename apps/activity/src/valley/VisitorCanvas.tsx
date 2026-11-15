@@ -290,7 +290,7 @@ function StallInside({
           h={BLUEPRINT_BOX.h}
           label={`This week's blueprint on the counter, ${gearName(view.blueprint.baseId)}, for sale. Open it`}
           plate="Blueprint"
-          plateAt={BLUEPRINT_BOX.h}
+          plateAt={PLATE_ROW - BLUEPRINT_BOX.y}
           expanded={open === 'blueprint'}
           onClick={onBlueprint}
         />

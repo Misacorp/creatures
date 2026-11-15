@@ -4277,8 +4277,8 @@ try {
         await waitFor(heading('School'));
         await schoolCanvasChecks();
         await waitFor(sceneTarget('The lectern'));
-        // Everything in the scene is a named, topmost tap with a plate: the lectern, the two seats, the house.
-        for (const name of ['The lectern', "The School's house"])
+        // Everything in the scene is a named, topmost tap with a plate: the lectern, the two seats, the graduation stage.
+        for (const name of ['The lectern', 'The graduation stage'])
           await expectTopmost(sceneTarget(name), name);
         if ((await schoolSeats().count()) !== 2) throw new Error('the bench has not two seats');
         await expectTopmost(schoolSeats().first(), 'the first seat');
@@ -4461,12 +4461,12 @@ try {
         await place('school').evaluate((el) => el.click());
         await waitFor(heading('School'));
         await schoolCanvasChecks();
-        await waitFor(sceneTarget("The School's house"));
+        await waitFor(sceneTarget('The graduation stage'));
         if ((await page.locator('button.cv-target[aria-label^="The lectern"]').count()) > 0)
           throw new Error('the lectern stands with no teacher');
         if ((await schoolSeats().count()) > 0) throw new Error('a seat to use with no teacher');
         await shot('school-away');
-        await sceneTarget("The School's house").click();
+        await sceneTarget('The graduation stage').click();
         await waitFor(rightPanel.getByText('No teacher at the School right now.'));
         await waitFor(rightPanel.getByText('2 ready to graduate', { exact: true }));
         await waitFor(rightPanel.getByText(/The next ceremony is (today|this evening|tomorrow)/));
