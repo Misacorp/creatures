@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PopoverHost } from '../PopoverHost';
 import { homeAlerts } from '../home-view';
-import { byClass, byName, createPage, visibleText, type Page } from '../test-dom';
+import { byClass, createPage, visibleText, type Page } from '../test-dom';
 import { HOME_NOW, homeInput } from '../workbench/home-sample';
 import { HonoursContext, honoursOf } from './HonourRibbon';
 import { castFor } from './place-cast';

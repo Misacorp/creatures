@@ -14,7 +14,6 @@
  * `PanelBody` in a one-step `ui/Wizard` whose first step has no Back (the X is the way out).
  */
 import type { Creature, SchoolState } from '../api';
-import { creatureName } from '../game';
 import { baseOption } from '../roster-picker';
 import { TalentChip } from '../TalentChip';
 import type { TalentView } from '../talent-types';
@@ -59,10 +58,9 @@ export function TeacherPanel({
   actions: SchoolActions;
   onClose: () => void;
 }) {
-  const wizard = useWizard(
-    [{ id: 'teacher', title: 'Visiting teacher', backLabel: 'to the School' }],
-    { onExit: onClose },
-  );
+  const wizard = useWizard([{ id: 'teacher', title: 'The lesson', backLabel: 'to the School' }], {
+    onExit: onClose,
+  });
   const faces = learners(view, creatures);
   const free = freeSeat(view);
   return (
@@ -155,7 +153,7 @@ export function SeatPanel({
     [
       {
         id: 'seat',
-        title: student === undefined ? 'Student seat' : creatureName(student),
+        title: student === undefined ? 'Who joins the lesson?' : 'Student',
         backLabel: 'to the School',
       },
     ],
@@ -182,7 +180,7 @@ export function SeatPanel({
         <div class="dr-stack">
           {student === undefined ? (
             <>
-              <p class="sp-note">Who of yours joins the lesson? It learns it by morning.</p>
+              <p class="sp-note">A creature seated now learns it by morning.</p>
               {waiting.length === 0 ? (
                 <p class="sp-line">{NONE_OF_YOURS}</p>
               ) : (
@@ -231,7 +229,7 @@ export function GraduationPanel({
   onClose: () => void;
 }) {
   const wizard = useWizard(
-    [{ id: 'graduation', title: 'Graduation', backLabel: 'to the School' }],
+    [{ id: 'graduation', title: 'The ceremony', backLabel: 'to the School' }],
     {
       onExit: onClose,
     },
