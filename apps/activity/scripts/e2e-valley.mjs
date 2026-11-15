@@ -3625,9 +3625,30 @@ try {
         await expectTopmost(rightPanel, 'the exchange');
         await shot('market-exchange');
         await page.keyboard.press('Escape');
+        // A creature carried from the tray onto the broker takes its seat, and the drag never opens a drawer.
+        const mover = page
+          .locator('section[aria-label="Creatures to post"] button[data-creature]')
+          .nth(1);
+        const moverId = await mover.getAttribute('data-creature');
+        const from = await mover.boundingBox();
+        const to = await broker.boundingBox();
+        if (from === null || to === null) throw new Error('no boxes to drag');
+        await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+        await page.mouse.down();
+        await page.mouse.move(from.x + from.width / 2 + 12, from.y + from.height / 2 + 12, {
+          steps: 4,
+        });
+        await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 10 });
+        await page.mouse.up();
+        await page.waitForTimeout(400);
+        const dragged = scoutCalls.filter(([k]) => k === 'seat').at(-1)?.[1];
+        if (dragged?.seatId !== 'broker-1' || dragged.creatureId !== moverId)
+          throw new Error(`the dragged broker was ${JSON.stringify(dragged)}`);
+        if ((await drawer.count()) !== 0) throw new Error('a drag opened a drawer');
+        await shot('market-tray-drag');
         // The tray (the map's) says Trading for the creature at the seat.
         await backToValley();
-        await waitFor(page.getByRole('button', { name: /Sproutle.*Trading at the Market/ }));
+        await waitFor(page.getByRole('button', { name: /Trading at the Market/ }));
       } finally {
         marketOff();
       }

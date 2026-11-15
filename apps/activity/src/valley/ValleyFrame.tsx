@@ -335,6 +335,10 @@ export function ValleyFrame({
               error={error}
               actions={market}
               {...(commons === undefined ? {} : { commons })}
+              trayInput={tray}
+              onOpenPaddock={() => {
+                onOpen('paddock');
+              }}
               start={{
                 ...marketStart,
                 ...(commonsStart === undefined ? {} : { commons: commonsStart }),

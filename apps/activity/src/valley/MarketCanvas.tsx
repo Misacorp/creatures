@@ -15,10 +15,18 @@
  * broker, the helper's seat), the left for the collection that belongs to no one spot (the project board). A phone shows the open
  * panel as its own page. The scene keeps one size and place for the whole visit; drawers lie over its edges.
  */
-import { useMemo, useState } from 'preact/hooks';
+import { useMemo, useRef, useState } from 'preact/hooks';
 import type { Creature, ValleyVisit } from '../api';
 import { creatureName } from '../game';
+import { busyReason } from '../gear-view';
+import { dropOutcome } from '../slot-outcome';
+import { TOUCH_HOLD_MS } from '../dnd-core';
+import { useDragDrop } from '../use-drag-drop';
+import { DragGhost } from '../ui/DragGhost';
 import { sayText } from '../resource-count';
+import { Tray } from './Tray';
+import { trayFor, type TrayInput } from './tray-state';
+import { seatAt } from './seat-parts';
 import { CommonsBoard, type CommonsActions, type CommonsStart } from './CommonsBoard';
 import { Exchange } from './Exchange';
 import {
@@ -47,6 +55,9 @@ import { brokerLine, brokerOf, marketState } from './market-view';
 import { CREATURE_PX } from './place-cast';
 import { SCAFFOLD_STEPS, scaffoldSteps } from './scaffold';
 import { depthOf } from './valley-logic';
+
+/** The id of the helper's spot a hand drops a creature on to help build. */
+const COMMUNAL_DROP = 'communal:market';
 
 export type { MarketActions } from './MarketPanels';
 
@@ -83,6 +94,8 @@ export function MarketCanvas({
   error = null,
   actions,
   commons,
+  trayInput,
+  onOpenPaddock,
   start = {},
 }: {
   visit: ValleyVisit;
@@ -95,6 +108,10 @@ export function MarketCanvas({
   actions: MarketActions;
   /** The Market's project board while it is built (and its helper seat); absent leaves the stall with no project. */
   commons?: CommonsActions | undefined;
+  /** The creature tray under the scene (a hand carries a creature from it onto the broker or the helper spot). */
+  trayInput: TrayInput;
+  /** A tap on a tray creature: the Paddock, as everywhere in the valley. */
+  onOpenPaddock: () => void;
   start?: MarketStart;
 }) {
   const state = marketState(visit);
@@ -148,6 +165,32 @@ export function MarketCanvas({
     [steps, corner, material, size],
   );
   const broker = creatures.find((c) => c.id === seat?.creatureId);
+
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const drag = useDragDrop<string>({
+    disabled: busy,
+    stripRef: rootRef,
+    touchHoldMs: TOUCH_HOLD_MS,
+    locate: (pt) => seatAt(pt.x, pt.y),
+    onDrop: (creatureId, seatId) => {
+      if (seatId === null) return dropOutcome('none', null, null, 'Cancelled.');
+      if (seatId === COMMUNAL_DROP && commons !== undefined) {
+        void commons.post('market', creatureId);
+        return dropOutcome('valid', null, null, '');
+      }
+      if (built && seat !== null && seatId === seat.id && seat.creatureId !== creatureId) {
+        void actions.post({ seatId, creatureId });
+        return dropOutcome('valid', null, null, '');
+      }
+      return dropOutcome('none', null, null, '');
+    },
+  });
+  const carried = creatures.find((c) => c.id === drag.drag?.creatureId);
+  const ordered = trayFor(
+    creatures.filter((c) => busyReason(c) === null),
+    trayInput,
+  );
+  const overSeat = drag.drag?.over ?? null;
 
   const closeTop = (): void => {
     if (right !== null) setRight(null);
@@ -283,6 +326,7 @@ export function MarketCanvas({
               helper: right?.kind === 'helper',
             }}
             busy={busy}
+            overSeat={overSeat}
             onStall={(opener) => {
               setRight({ kind: 'stall', from: opener });
             }}
@@ -302,8 +346,35 @@ export function MarketCanvas({
   );
 
   return (
-    <div class="mc-root">
-      <PlaceCanvas label="Market" scene={scene} left={leftPanel} right={rightPanel} />
+    <div
+      class="mc-root"
+      ref={rootRef}
+      data-carrying={drag.drag === null ? undefined : 'yes'}
+      data-over={drag.drag?.over ?? undefined}
+    >
+      <PlaceCanvas
+        label="Market"
+        scene={scene}
+        left={leftPanel}
+        right={rightPanel}
+        below={
+          <Tray
+            creatures={ordered}
+            input={trayInput}
+            label="Creatures to post"
+            onPick={onOpenPaddock}
+            drag={drag}
+          />
+        }
+      />
+      <DragGhost
+        ghostRef={drag.ghostRef}
+        creature={
+          carried === undefined
+            ? undefined
+            : { species: carried.species, name: creatureName(carried) }
+        }
+      />
       {broker !== undefined && seat !== null && (
         <p class="visually-hidden" role="status">
           {sayText(brokerLine(seat))}
@@ -324,6 +395,7 @@ function MarketInside({
   corner,
   open,
   busy,
+  overSeat,
   onStall,
   onBroker,
   onHelper,
@@ -342,6 +414,8 @@ function MarketInside({
   corner: { x: number; y: number } | null;
   open: { board: boolean; stall: boolean; broker: boolean; helper: boolean };
   busy: boolean;
+  /** The seat a carried creature is over, if any. */
+  overSeat: string | null;
   onStall: (opener: Opener) => void;
   onBroker: (opener: Opener) => void;
   onHelper: (opener: Opener) => void;
@@ -418,6 +492,8 @@ function MarketInside({
           h={CREATURE_PX}
           z={PLATES_Z + depthOf(brokerAt.x, brokerAt.y)}
           slot={broker === undefined}
+          seat={seat.id}
+          over={overSeat === seat.id}
           label={
             broker === undefined
               ? 'The broker seat: nobody trades here. Choose a creature'
@@ -440,6 +516,8 @@ function MarketInside({
           h={CREATURE_PX}
           z={PLATES_Z + depthOf(helperAt.x, helperAt.y)}
           slot={helper === undefined}
+          seat={COMMUNAL_DROP}
+          over={overSeat === COMMUNAL_DROP}
           label={
             helper === undefined
               ? "The helper spot at the builders' table: nobody helps build. Choose a creature"

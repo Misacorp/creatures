@@ -20,6 +20,7 @@ import { MarketCanvas, type MarketActions, type MarketStart } from './MarketCanv
 import { sampleCommons, withCommons } from './commons-sample';
 import { presetMarket, withMarket, withMarketPlace } from './market-sample';
 import { sampleValley } from './signpost-sample';
+import { trayStates } from './tray-state';
 
 let page: Page | null = null;
 beforeEach(() => {
@@ -109,6 +110,8 @@ function draw(
             return Promise.resolve(true);
           },
         }}
+        trayInput={{ trips: [], jobs: null, now: 0, ...trayStates(visit) }}
+        onOpenPaddock={() => undefined}
         start={start}
       />
     </PopoverHost>,
@@ -145,6 +148,14 @@ describe('the Market canvas while the Market is being built', () => {
     expect(visibleText(p.root)).not.toMatch(/Trade shards/);
   });
 
+  it('keeps the creature tray under the scene, and the helper spot takes a dropped creature', () => {
+    const { page: p } = draw('being built');
+    expect(byClass(p.root, 'vy-tray').length).toBeGreaterThan(0);
+    expect(find(p.root, (el) => el.getAttribute('data-seat') === 'communal:market')).toHaveLength(
+      1,
+    );
+  });
+
   it('every clickable thing has a plate and the decoration has none', () => {
     const { page: p } = draw('being built');
     expect(byClass(p.root, 'cv-plate').length).toBe(targets(p).length);
@@ -161,7 +172,7 @@ describe('the Market canvas while the Market is being built', () => {
       ['Scrap', '380'],
     ]);
     expect(find(p.root, (el) => el.getAttribute('data-seat') === 'communal:market')).toHaveLength(
-      0,
+      1,
     );
     p.click(button(p, /^Give/));
     const rows = byClass(p.root, 'choice').map((c) => badgesIn(c)[0]?.[0] ?? '');
@@ -202,6 +213,9 @@ describe('the Market canvas once it is built', () => {
     expect(labels(p).some((n) => /builders' table|helper spot/.test(n))).toBe(false);
     expect(byClass(p.root, 'cv-plate').length).toBe(targets(p).length);
     expect(visibleText(p.root)).not.toMatch(/Still needed/);
+    // The tray stays under the scene, and a creature can be dropped on the seat.
+    expect(byClass(p.root, 'vy-tray').length).toBeGreaterThan(0);
+    expect(find(p.root, (el) => el.getAttribute('data-seat') === 'broker-1')).toHaveLength(1);
   });
 
   it('posts a creature through the seat’s list, and empties the seat from it', () => {
