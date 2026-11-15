@@ -26,6 +26,9 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 - 2026-11-15 Art glows use the game's rarity colours
 - 2026-11-15 \[Misa\] The Forge interior keeps one look for now
 - 2026-11-09 \[Misa\] Valley building levels share one look per level
+- 2026-11-06 The reset: no warning post, the wipe runs when Misa asks, no server rank or bosses in the record \[Misa\]
+- 2026-11-06 The settlers' record keeps eight feats; firsts on the server are read by catch date \[Misa\]
+- 2026-11-06 The reset: settlers appear on every server, each player gets their record by DM, and a hidden trace of who was there is kept \[Misa\] (amended)
 - 2026-11-06 Overnight sessions: quiet until news, then one message with every open question \[Misa\]
 - 2026-11-05 \[Misa\] Working rules: scalars best-guess and ask later, invent content for misses, fewer decisions for Misa
 - 2026-11-05 \[Misa\] CI runs the full check; agents push after quick local checks
@@ -56,6 +59,7 @@ Superseded: 1 entry (see the topic file).
 
 [platform.md](platform.md): Hosting, Durable Objects, scheduling, CI and deploys, staging, dependencies, security, database reads, data cleanup, analytics, dev tools, the workbench, player feedback, sockets.
 
+- 2026-11-15 The reset is built inert: a dry run on staging, a wipe nothing calls, an archive that is not bound
 - 2026-11-15 Housing's migration is 68: the valley merged first with 64 to 67
 - 2026-11-14 Dev panel: a full-screen layout with sections, and a target player for every per-player tool
 - 2026-11-11 Furniture workshop: silhouette variants per form, chosen by the style
@@ -64,6 +68,7 @@ Superseded: 1 entry (see the topic file).
 - 2026-11-10 Housing: a bed moves with its sleeper, and the housing content is its own package entry
 - 2026-11-10 Housing build, craft and skin answer with what changed
 - 2026-11-10 Migrations: applied by recorded version, reserved gaps, never revert the runner
+- 2026-11-06 The settlers' record lives in a production archive object, not the public repo, and keeps no Discord IDs (amended)
 - 2026-11-06 Dev tools: server managers only, roster presets, creatures-per-player override \[Misa\]
 - 2026-11-05 The lab's tests share modules between files, and boss rule measurements live in the report
 - 2026-11-03 Raid test bench: the staging raid dev tools become four steps \[Misa\]
