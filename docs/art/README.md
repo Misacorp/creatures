@@ -41,6 +41,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | [The School, level by level](#valley-levels-school) | draft | 5 | 2026-11-09 (Misa): "Each building can absolutely change building material as it upgrades in levels, and I'm thinking we might even want to tweak the earlier levels to be less elaborate. Think the school for example. Its bell could be just on the side of the building until a bell tower replaces it in later levels. If you change materials, there needs to be a common motif between buildings of the same level... Think of how Clash of Clans brings a new look with each new town hall level." |
 | [The Signpost at the five valley levels, and the Market](#valley-levels-signpost) | draft | 6 | 2026-11-09 (Misa): "Each building can absolutely change building material as it upgrades in levels, and I'm thinking we might even want to tweak the earlier levels to be less elaborate... If you change materials, there needs to be a common motif between buildings of the same level... Think of how Clash of Clans brings a new look with each new town hall level." Earlier (2026-11-05): the road is short and heads right from the post, and every sign has its full ink outline. |
 | [Valley places: night glow](#valley-night) | archived | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
+| [Place props](#valley-place-props) | draft | 4 | 2026-11-15 (via the release coordinator): props for the place canvases: the visitor's blueprint, the School's graduation, the Market under construction, the Paddock's gate sign. |
 | [Valley places: posters](#valley-posters) | archived | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
 | [The School's visiting teacher](#valley-school) | draft | 4 | 2026-11-03 (via the valley session, Misa's round 22 decision): show the visiting teacher with no banner: the bell swings, a lectern at the door, a bench of students, a teacher prop. |
 | [Valley sky, day and night](#valley-sky) | draft | 2 | 2026-11-03 (Q50, via the valley session): place screens drop the poster; Misa likes "the added depth of having a sky in the background ... We'd just need the proper sky images. Eventually the sky backdrop could vary based on location." |
@@ -1087,6 +1088,29 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | `visitor` | free |  | archived | The weekly visitor: a hooded stranger with violet lamp-light on one edge and two teal-white eyes, beside a small stall whose wares glow. |
 | `visitor-away` | free |  | archived | The same stall shuttered: a "back Thursday" board with a moon and a calendar mark, an unlit lamp with one last spark, a pale moon above. |
 | `market` | free |  | archived | A stall where a creature trades shards: four element shards glow on the counter, a big shard is the sign, and a customer waits with one. |
+
+<a id="valley-place-props"></a>
+
+## Place props
+
+![Place props](valley-place-props.png)
+
+- **Status:** draft
+- **Requested:** 2026-11-15 (via the release coordinator): props for the place canvases: the visitor's blueprint, the School's graduation, the Market under construction, the Paddock's gate sign.
+- **Source:** `apps/activity/src/sprites/concepts/valley-place-props.ts` (draw it with `pnpm art valley-place-props`)
+- **Sheet of:** `d3dfc24d9827`
+- Four optional props for the place canvases, in the valley-glow look: ink, night main palette with warm stepped light on the ground where something is lit (keys 1 2 3), `alts.day` recolours the same pixels, materials from `valley-tiers.ts`. No text anywhere, marks only.
+- visitor-blueprint, 16x10: a rolled-out blue sheet with a white plan, the roll at the left and a brass weight on the far right corner. Not clickable by itself; it lies on the weekly visitor's stall counter (`valley-glow/visitor`, 60x56): the counter top is the first orange row, row 47 (rows 47 and 48 are the lip). Anchor: its bottom row sits on row 46 so the sheet rests on row 47; x 33 to 48 puts it on the counter, clear of the stall edges (x 27 and 54).
+- graduation-stage, 48x24: a plank stage with a back wall, a step at the right, two lantern posts and bunting (a string between the posts and a swag along the front). Anchor: the base row is 19 (the platform foot, ink); row 20 holds the shadow and the lantern light lies on rows 20 to 23. Variation anchors: B base row 22, C base row 21. Clickable: the whole stage if it opens the graduation, nothing else on it.
+- market-building, 60x48 (main is a copy of `valley-levels-signpost/market-1`): the Market staked out and begun. Anchor: base row 40, the ground rows of market-1, unchanged. Same palette keys as market-1 (B and C add only `y` rope, and C adds `F` and `Y` for tool steel). The shard sign (x 44 to 58) is untouched in both and still the landmark; clickable region is the counter frame, x 5 to 39, rows 12 to 39.
+- paddock-gate-sign, 16x16: a plank sign on a post with a cream paw mark. Anchor: the base row is 15, the foot of the post (or posts), centred on x 8. Not lit, so no ground light, only the cast shadow. Clickable: the plank.
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `visitor-blueprint` | free |  | draft | The visitor's blueprint lying on the stall counter, 16x10: blue paper with a white plan, the roll at the left, a brass weight on the far corner. Rests on counter row 47 of `valley-glow/visitor` (bottom row of the sprite on row 46). |
+| `graduation-stage` | free |  | draft | The graduation stage, 48x24, base row 19 (the platform foot; row 20 shadow, light on rows 20 to 23): a plank stage with a step at the right, two lantern posts and a string of bunting; the lanterns' light lies on the ground. Variations: A (this) a stage with bunting; B a banner arch over the School yard (two poles, a teal cloth banner with a cream mortarboard, lanterns, base row 22); C a low stone podium with a lectern, ribbons, rosettes and corner lamps (base row 21). Pick: B (lead's review, 2026-11-15), because the mortarboard banner says graduation at a glance while A reads as any wooden platform; the drawing agent picked A for its warm light and simplicity. |
+| `market-building` | free |  | draft | The Market under construction, 60x48, base row 40; the main is a copy of market-1. Variations: B the frame with scaffolding (a working plank on two poles over the beam, diagonal braces) and a half-hung striped awning, the rest still rolled and roped to the plank; C the counter half-planked from the left with a saw and a hammer and a "coming soon" plank (an hourglass, no words) hung from the beam. Pick: B, because the half-hung awning shows the stall the Market will become and the scaffold reads as building at 1x; C hides the frame behind its sign. |
+| `paddock-gate-sign` | free |  | draft | A gate sign, 16x16, base row 15: a plank on a post with a cream paw mark (no words). Variations: A (this) a plank on a post; B hanging on two ropes from a crossbar over the gate, two posts; C an arched gate top of planks with the sign set under it. Pick: C, because the arch is what says "gate" at 1x and keeps the paw mark clear; A is the fallback where one post is all the room there is. |
 
 <a id="valley-posters"></a>
 
