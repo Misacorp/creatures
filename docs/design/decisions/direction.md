@@ -4,6 +4,14 @@ Roadmap calls, Misa's standing direction, naming and tone, content policy, how a
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-15: Art glows use the game's rarity colours
+
+ID: `2026-11-15-art-glows-use-the-game-s` · Status: current
+
+**Decision.** Art that shows a rarity (the sealed gear crate's seam glow, its open light column, the reveal bursts in `valley-forge-crate`) uses the game's own rarity colours: common `#a8a8b8`, rare `#4da3ff`, epic `#ff6fbf` (with their lighter text tints), so the epic glow is the game's pink-violet, not a plain purple.
+
+**Reasoning.** The valley request said "purple" for epic, but players already read rarity from the labels' colours; one colour per rarity across the game keeps the reveal readable. The valley session agreed (2026-11-14).
+
 ## 2026-11-15: [Misa] The Forge interior keeps one look for now
 
 ID: `2026-11-15-the-forge-interior-keeps-one-look` · Status: current

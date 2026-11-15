@@ -57,7 +57,7 @@ function draw(
   place: string,
   places: ValleyCommonsPlace[],
   options: {
-    host?: 'page' | 'sheet';
+    host?: 'page' | 'sheet' | 'panel';
     acorns?: number;
     scrap?: number;
     helper?: boolean;
@@ -318,5 +318,26 @@ describe('CommonsBoard: the sheet the Bonfire opens', () => {
     if (second === undefined) throw new Error('no creature row');
     p.click(second);
     expect(calls.posts[0]?.place).toBe('bonfire');
+  });
+});
+
+describe('CommonsBoard: inside a canvas place’s drawer or page', () => {
+  const forge = openPlace('forge', 1, 400, 0.35, { mine: { given: 60, shareBp: 4000 } });
+
+  it('Give and the helper list are steps of the panel: no dialog, no second layer, Back returns to the card', () => {
+    const { page: p, calls } = draw('forge', [forge], { host: 'panel' });
+    p.click(button(p, /^Give/));
+    expect(byRole(p.root, 'dialog')).toHaveLength(0);
+    expect(byName(p.root, 'button', /^Give/)).toHaveLength(0);
+    p.click(button(p, /Back/));
+    expect(byName(p.root, 'button', /^Give/)).toHaveLength(1);
+    p.click(button(p, /nobody helps/));
+    expect(byRole(p.root, 'dialog')).toHaveLength(0);
+    const second = byRole(p.root, 'option')[1];
+    if (second === undefined) throw new Error('no creature row');
+    p.click(second);
+    expect(calls.posts[0]?.place).toBe('forge');
+    // The pick returns to the card.
+    expect(byName(p.root, 'button', /^Give/)).toHaveLength(1);
   });
 });

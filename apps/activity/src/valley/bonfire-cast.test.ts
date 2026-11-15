@@ -65,6 +65,7 @@ const visitOf = (list: typeof creatures, at = HOME_NOW): ValleyVisit => ({
     exchange: { rate: 3, critBp: 1000, critYield: 2 },
     queueMax: 3,
     orderCountMax: 99,
+    crate: { count: 0, cap: 30, best: null },
   },
   seatPrices: { owned: 0, max: 2, next: 0, ladder: [0, 113] },
   kit: { owned: [], price: 875 },

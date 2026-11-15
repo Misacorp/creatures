@@ -1,10 +1,11 @@
 /**
- * The Forge as a canvas (Misa, 2026-11-11; the rule is "A place is a canvas" in `ux-patterns.md`): the forge's art fills the view with
- * its yard in front of it, and everything is done by clicking something in it. Nothing scrolls.
+ * The Forge as a canvas (Misa, 2026-11-11; the rule is "A place is a canvas" in `ux-patterns.md`): the forge's interior fills the view
+ * and everything is done by clicking something in it. Nothing scrolls. A click on the Forge in the valley opens this directly (Misa,
+ * 2026-11-15: no outside view first); the door in it, like the place's Back, returns to the valley.
  *
  * In the scene: an anvil for each one the player owns (with its smith standing at it and a small bubble for what the smith does), then
  * the dashed outline of the next anvil with its price as icons, which opens the buy step; under them three props, each the way into a
- * collection (the plans table, the chest that is the bag, the crate of finished pieces that is the floor); and the forge itself, which
+ * collection (the plans table, the chest that is the bag, the crate of finished pieces that is the floor); and the furnace, which
  * opens the fire and the project board. Under the scene stay the shelf (scrap, shards, Essence) and the creature tray (a hand can still
  * carry a creature onto an anvil).
  *
@@ -26,6 +27,7 @@ import { Bar } from '../ui/Bar';
 import { DragGhost } from '../ui/DragGhost';
 import { CommonsBoard, type CommonsActions } from './CommonsBoard';
 import { CommonsFire } from './CommonsFire';
+import { useForgeSteps, type ForgeCard } from './forge-steps';
 import {
   COMMUNAL_DROP,
   Shelf,
@@ -41,11 +43,11 @@ import { SceneFrame, sceneGeometry } from './SceneFrame';
 import { Tray } from './Tray';
 import { trayFor, type TrayInput } from './tray-state';
 import { seatAt } from './seat-parts';
-import { commonsOf, percentFilled, placeOf } from './commons-view';
-import { scaffoldSteps } from './scaffold';
-import { floorTotal, forgeScale, outsideSceneDraw } from './forge-canvas';
+import { floorTotal } from './forge-canvas';
 import { interiorScale, interiorSceneDraw } from './forge-interior';
-import { ForgeInside, ForgeOutside, type InsideOpen } from './ForgeScenes';
+import { ForgeInside, type CrateRun, type InsideOpen } from './ForgeScenes';
+import { RATTLE, RATTLE_LOOPS, RATTLE_STEP_MS } from './crate-view';
+import { usePrefersReducedMotion } from '../hooks';
 import { anvilName, floorLine } from './forge-view';
 
 /** The right drawer: the one thing that was clicked. */
@@ -82,14 +84,16 @@ export interface ForgeCanvasProps {
   blueprints: readonly BlueprintView[] | null;
   /** The bag (the Workshop draws it: its grid, filter, item card and dismantle flow). */
   bag: ComponentChildren;
+  /** The open item card or dismantle flow (the Workshop builds it): a step of the bag's drawer or page, never a sheet over it. */
+  card?: ForgeCard | null | undefined;
   /** The plans table's list (the Workshop draws it); `onOrder` opens the order wizard on a blueprint. */
   plans: (onOrder: (baseId: string, opener: HTMLElement) => void) => ComponentChildren;
   /** The bag has no room: its chest says so. */
   bagFull: boolean;
   /** Something in the bag needs a look (a dismantle result, a gear notice): the bag opens, and its chest says so. */
   bagAttention: boolean;
-  /** Start inside the workshop (the workbench and the tests); else it opens outside unless something that lives inside is asked for. */
-  inside?: boolean | undefined;
+  /** The door: back to the valley. */
+  onLeave: () => void;
 }
 
 /** The anvil whose queue holds this order. */
@@ -127,7 +131,8 @@ function startRight(props: ForgeCanvasProps): Right | null {
 
 function startLeft(props: ForgeCanvasProps): Left | null {
   const { start } = props;
-  if (start?.bag === true) return { kind: 'bag', from: null };
+  if (start?.bag === true || (props.card !== null && props.card !== undefined))
+    return { kind: 'bag', from: null };
   if (start?.commons !== undefined || start?.fire === true) return { kind: 'board', from: null };
   return null;
 }
@@ -136,16 +141,31 @@ export function ForgeCanvas(props: ForgeCanvasProps) {
   const { visit, creatures, trayInput, acorns, busy, error, actions, commons, start } = props;
   const [right, setRight] = useState<Right | null>(() => startRight(props));
   const [left, setLeft] = useState<Left | null>(() => startLeft(props));
-  // The Forge opens on its outside; a click on the building goes in. What is asked for at the start (an anvil's wizard, the bag) lives inside.
-  const [inside, setInside] = useState<boolean>(
-    () => props.inside ?? (startRight(props) !== null || startLeft(props)?.kind === 'bag'),
-  );
   const rootRef = useRef<HTMLDivElement | null>(null);
+  // The sealed crate being opened (V-FORGE-5): it rattles while the server is asked, then the reveal plays from the answer.
+  const [run, setRun] = useState<CrateRun | null>(null);
+  const [crateFailed, setCrateFailed] = useState<string | null>(null);
+  const alive = useRef(true);
+  const reduced = usePrefersReducedMotion();
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+    };
+  }, []);
 
   // A result waiting in the bag (a dismantle's pieces, a notice of changed gear): the bag opens on it.
   useEffect(() => {
     if (props.bagAttention) setLeft((now) => now ?? { kind: 'bag', from: null });
   }, [props.bagAttention]);
+
+  const steps = useForgeSteps({
+    card: props.card,
+    left: left?.kind ?? null,
+    anvilOpen: right !== null,
+    visit,
+    startFire: start?.fire === true,
+  });
 
   const creatureOf = (id: string | null): Creature | undefined =>
     id === null ? undefined : creatures.find((c) => c.id === id);
@@ -177,31 +197,35 @@ export function ForgeCanvas(props: ForgeCanvasProps) {
   const owned = visit.anvils.length;
   const nextPrice = visit.anvilPrices.next;
   const slots = owned + (nextPrice === null ? 0 : 1);
-  const commonsView = commonsOf(visit);
-  const forgePlace = placeOf(commonsView, 'forge');
-  const scaffold =
-    forgePlace?.state === 'open' ? scaffoldSteps(percentFilled(forgePlace) / 100) : 0;
-  const drawOutside = useMemo(() => outsideSceneDraw(scaffold), [scaffold]);
   const drawInside = useMemo(
     () => interiorSceneDraw(owned, slots, visit.night),
     [owned, slots, visit.night],
   );
   const marketBuilt = visit.market?.open === true;
-  const helperId = commonsView?.communal.find((c) => c.place === 'forge')?.creatureId ?? null;
-  const helper = creatureOf(helperId);
   const waiting = floorTotal(visit.anvils);
 
-  /** The door: back outside. What was open for an anvil closes with the room; the project board is outside too and stays. */
-  const goOutside = (): void => {
+  const openCrate = (): void => {
+    if (run !== null || busy) return;
+    const { best, count } = visit.forge.crate;
+    // The reveal has the whole scene: a drawer open beside it would show through.
     setRight(null);
-    setLeft((now) => (now?.kind === 'board' ? now : null));
-    setInside(false);
+    setLeft(null);
+    setCrateFailed(null);
+    setRun({ best, count, answer: null });
+    const rattle = reduced ? 0 : RATTLE.length * RATTLE_LOOPS * RATTLE_STEP_MS;
+    void Promise.all([
+      actions.openCrate(),
+      new Promise<void>((done) => setTimeout(done, rattle)),
+    ]).then(([answer]) => {
+      if (!alive.current) return;
+      if (answer === null) setCrateFailed('The crate would not open. Try again.');
+      setRun(answer === null ? null : { best, count, answer });
+    });
   };
 
   const closeTop = (): void => {
     if (right !== null) setRight(null);
     else if (left !== null) setLeft(null);
-    else if (inside) goOutside();
   };
 
   // --- The drawers' panels ---
@@ -276,6 +300,8 @@ export function ForgeCanvas(props: ForgeCanvasProps) {
       rightPanel = {
         title: anvil === undefined ? 'Order' : anvilName(visit, anvil),
         wizard: true,
+        // Back from the order's first step goes to the anvil it was opened from: that Back stays.
+        keepBack: back !== null,
         returnFocusTo: from,
         onClose: leave,
         children: (
@@ -304,7 +330,11 @@ export function ForgeCanvas(props: ForgeCanvasProps) {
       },
     };
     if (left.kind === 'bag') {
-      leftPanel = { ...base, title: 'Bag', children: <PanelBody>{props.bag}</PanelBody> };
+      leftPanel = {
+        ...base,
+        title: 'Bag',
+        ...steps.hold('bag', <PanelBody>{props.bag}</PanelBody>),
+      };
     } else if (left.kind === 'plans') {
       leftPanel = {
         ...base,
@@ -371,13 +401,15 @@ export function ForgeCanvas(props: ForgeCanvasProps) {
       leftPanel = {
         ...base,
         title: 'Project board',
-        children: (
+        ...steps.hold(
+          'board',
           <PanelBody>
             <div class="fc-hub">
-              <CommonsFire visit={visit} start={start?.fire === true} />
+              <CommonsFire visit={visit} onOpen={steps.openFire} />
               {commons !== undefined && (
                 <CommonsBoard
                   place="forge"
+                  host="panel"
                   visit={visit}
                   creatures={creatures}
                   acorns={acorns}
@@ -389,11 +421,14 @@ export function ForgeCanvas(props: ForgeCanvasProps) {
                 />
               )}
             </div>
-          </PanelBody>
+          </PanelBody>,
         ),
       };
     }
   }
+
+  // A step that opens beside its list (the `beside` look, a wide window) takes the right drawer while no anvil holds it.
+  rightPanel ??= steps.side;
 
   const openLeft = (kind: Left['kind']) => (opener: Opener) => {
     setLeft({ kind, from: opener });
@@ -414,7 +449,7 @@ export function ForgeCanvas(props: ForgeCanvasProps) {
     left: left?.kind ?? null,
   };
 
-  const scene = inside ? (
+  const scene = (
     <SceneFrame
       key="inside"
       id="forge"
@@ -442,6 +477,13 @@ export function ForgeCanvas(props: ForgeCanvasProps) {
             bagAttention={props.bagAttention}
             open={open}
             overSeat={drag.drag?.over ?? null}
+            crate={visit.forge.crate}
+            crateRun={run}
+            crateFailed={crateFailed}
+            onCrate={openCrate}
+            onCrateDone={() => {
+              setRun(null);
+            }}
             onAnvil={(anvilId, hasSmith, opener) => {
               setRight({
                 kind: 'anvil',
@@ -456,37 +498,7 @@ export function ForgeCanvas(props: ForgeCanvasProps) {
             onLeft={(kind, opener) => {
               openLeft(kind)(opener);
             }}
-            onOut={goOutside}
-          />
-        );
-      }}
-    </SceneFrame>
-  ) : (
-    <SceneFrame
-      key="outside"
-      id="forge"
-      label="Forge, Workshop"
-      draw={drawOutside}
-      onLeave={closeTop}
-      scaleFor={forgeScale}
-    >
-      {(measured) => {
-        const g =
-          measured.W > 0 && measured.H > 0
-            ? measured
-            : sceneGeometry(390, 640, forgeScale(390, 640));
-        return (
-          <ForgeOutside
-            g={g}
-            helper={helper}
-            waiting={waiting}
-            bagAttention={props.bagFull || props.bagAttention}
-            boardOpen={left?.kind === 'board'}
-            boardKnown={commonsView !== null}
-            onEnter={() => {
-              setInside(true);
-            }}
-            onBoard={openLeft('board')}
+            onOut={props.onLeave}
           />
         );
       }}

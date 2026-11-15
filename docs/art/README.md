@@ -28,7 +28,8 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | [House: Stormglass set](#house-stormglass) | draft | 14 | 2026-11-09: player housing furniture, batch E3 (Stormglass, Fenkeeper, Ancient, Lantern Night), see docs/design/housing.md section 5. |
 | [House shell (housing E1)](#house-shell) | draft | 33 | 2026-11-09: housing art batch E1, the building, roofs, walls and ground skins. |
 | [Element shards, told apart by shape](#shards) | liked | 15 | 2026-11-03: the element shard icons must differ by shape, not only colour (accessibility review from the valley session; Misa asked to provide what the valley needs). |
-| [The Forge, inside](#valley-forge-interior) | draft | 13 | 2026-11-11 (via the valley session): clicking the Forge goes inside, into a workshop interior. "It would be cool to have the same stuff there (my creatures working at the anvils) but also see some other creatures working in the background, a fire going, etc. Basically make it look like the interior of a workshop." |
+| [The sealed gear crate](#valley-forge-crate) | draft | 9 | 2026-11-14 (via the valley session): collecting gear should be a "big moment": common pieces come home on their own; rare and epic pieces wait in a sealed crate inside the Forge until the player opens it; opening reveals them one by one, best last. |
+| [The Forge, inside](#valley-forge-interior) | draft | 27 | 2026-11-11 (via the valley session): clicking the Forge goes inside, into a workshop interior. "It would be cool to have the same stuff there (my creatures working at the anvils) but also see some other creatures working in the background, a fire going, etc. Basically make it look like the interior of a workshop." |
 | [The camp's other places, glow style](#valley-glow-camp) | draft | 6 | 2026-11-03: the valley prototype's remaining places (arena, fairground, road, chest, lectern, paddock) in the liked glow style, day and night. |
 | [Valley places: glow, day and night](#valley-glow) | liked | 9 | 2026-10-31: night glow redone to stand on the valley ground, with a daytime version of the same assets. |
 | [The honour ribbon](#valley-honours) | liked | 1 | 2026-11-06 (valley phase 5 step 9b, trials.md V-TRIAL-1): a ribbon worn on a graduate's sprite, one for each honour (Bronze, Silver, Gold). |
@@ -716,6 +717,34 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | `mire-a` | part |  | archived | A lump with a single drip hanging from its belly. |
 | `mire-b` | part |  | liked | A slumped blob with two drips, one longer. |
 
+<a id="valley-forge-crate"></a>
+
+## The sealed gear crate
+
+![The sealed gear crate](valley-forge-crate.png)
+
+- **Status:** draft
+- **Requested:** 2026-11-14 (via the valley session): collecting gear should be a "big moment": common pieces come home on their own; rare and epic pieces wait in a sealed crate inside the Forge until the player opens it; opening reveals them one by one, best last.
+- **Source:** `apps/activity/src/sprites/concepts/valley-forge-crate.ts` (draw it with `pnpm art valley-forge-crate`)
+- **Sheet of:** `d84047871d13`
+- Crate pieces are `free`, night palette main plus `alts`: `day` (lighter wood, deeper glow so it reads on pale ground), `epic` (pink-violet glow) and `epic-day`. The main palette is the RARE one (blue seam glow); `epic` swaps only the glow keys `g G h s`. Glow colours are the game rarity colours (`--rarity-rare #4da3ff`, `--rarity-epic #ff6fbf`, tints `#7ebcff`, `#f397ff`). Ink, woods and iron are the Forge props (`valley/forge-props.ts`).
+- `crate-sealed` 20 x 18: the 14-wide crate body sits at x 3-16 (3 px of margin each side), base row 17. Iron bands, a brass padlock on an iron hasp, a glowing lid gap, a glowing plank joint and glowing vertical joints. CRATE_PROP is 16 x 16; this one is 14 wide and 14 tall inside a 20 x 18 canvas that leaves room for the shake.
+- `crate-shake-1`, `-2`, `-3` share the 20 x 18 canvas and base row 17, so they swap in place of the sealed crate: 1 and 2 lean opposite ways (top shifted 1 px) with the lid lifted 1 px (a double glow gap), dust at one foot and two sparks; 3 is upright with dust at both feet. Play sealed, 1, 2, 1, 3 as a rattle. `shake-strip` (80 x 18) shows sealed, 1, 2, 3 side by side.
+- `crate-open` 20 x 27: the box takes the bottom 10 rows (y 17-26), its base row 26 sits on the sealed crate base row (row 17): align the bottom rows; the sprite reaches 9 px higher than the sealed canvas. The lid leans against the left wall (x 0-3) and the padlock hangs open; a stepped column of rarity glow rises from the mouth with sparks. Same glow keys, so `epic` and the days work.
+- `burst-common`, `burst-rare`, `burst-epic` are 48 x 48 UI overlays, one palette each (no night/day), drawn with a dark rim so they read on dark and on light. The centre 16 x 16 (x 16-31, y 16-31) is empty: draw the revealed item there. Escalation: common is a broken grey ring (radius to 17), rare is a blue ring with eight rays (to 22), epic is a pink-violet ring, sixteen rays to the edge, four-point sparkles and loose sparks.
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `crate-sealed` | free |  | draft | A sturdy iron-banded crate with a brass padlock, light seeping from the lid gap and plank joints. Variations: A (main) the iron-banded crate with a brass padlock, B a treasure chest (domed lid, gold corner caps, a big keyhole plate whose keyhole glows, a glowing seam), C a crate bound with glowing rune-bands and a sigil instead of iron and a lock. Both use the main's keys, so `epic` and `day` recolour them (B and C add no colours). Pick: B, because the chest shape says "treasure" before any glow does, and its keyhole is the one bright spot to tap. |
+| `crate-shake-1` | free |  | draft | Rattling: leaning left, lid lifted, dust at the right foot. |
+| `crate-shake-2` | free |  | draft | Rattling: leaning right, lid lifted, dust at the left foot. |
+| `crate-shake-3` | free |  | draft | Rattling: upright hop, dust at both feet. |
+| `shake-strip` | free |  | draft | Sequence: sealed, shake 1, 2, 3 side by side. |
+| `crate-open` | free |  | draft | Lid off and leaning on the left, padlock hanging open, a column of light pouring out. |
+| `burst-common` | free |  | draft | A small grey puff ring; the item sits in the clear centre. |
+| `burst-rare` | free |  | draft | A blue ring with eight rays. |
+| `burst-epic` | free |  | draft | A big pink-violet starburst with sparkles. |
+
 <a id="valley-forge-interior"></a>
 
 ## The Forge, inside
@@ -725,7 +754,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 - **Status:** draft
 - **Requested:** 2026-11-11 (via the valley session): clicking the Forge goes inside, into a workshop interior. "It would be cool to have the same stuff there (my creatures working at the anvils) but also see some other creatures working in the background, a fire going, etc. Basically make it look like the interior of a workshop."
 - **Source:** `apps/activity/src/sprites/concepts/valley-forge-interior.ts` (draw it with `pnpm art valley-forge-interior`)
-- **Sheet of:** `2dfb6c43bb91`
+- **Sheet of:** `7c46281ec723`
 - Pieces the game lays out behind its existing props (`valley/forge-props.ts`: anvil, chest, crate, plans table; creatures stand in front at the anvils). Level 3 look: sandstone, timber, black iron, terracotta. Same ink and woods as the props. Night is the main palette (fire is the light, windows dark blue with a moon glint); `alts.day` recolours the same pixels (windows bright, daylight patches `b` on the wall and `B` on the floor).
 - `back-wall` 128 x 56 tiles sideways (column 0 continues column 127; a timber post crosses the seam; see `seam` and `seam-day`). Beam on rows 0-5, terracotta frieze 6-8, windows at x 20 and x 84 (opening 13-34, sill 35-39), plinth 48-55. Stand it on the floor line: its bottom row is the base.
 - `furnace` 48 x 52: body base on row 51, mouth fire at x 14-33 (mouth centre x 24). Place it so the base row sits a few rows below the wall bottom.
@@ -733,7 +762,10 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 - `shelf` 32 x 16 and `tool-rack` 32 x 24 hang on the wall; `hanging-tools` 24 x 16 hangs from the beam (its top row touches the beam bottom, row 5 of the wall).
 - `workbench` 32 x 20: the top surface starts at row 4; rows 0-3 are clear except a vise at x 1-5 and ingots at x 26-31, so a creature (drawn smaller, behind) stands at x 8-24 and its lower rows hide behind the bench.
 - `floor` 16 x 16 tiles both ways. `barrel` 12 x 16, `quench-trough` 24 x 12, `coal-heap` 16 x 10 stand on the floor (bottom row = base).
-- The 128 x 96 preview is taller than the studio allows (64), so it is two sprites that stack: `preview-top` (rows 0-63) and `preview-bottom` (rows 64-95). The room also has more than 16 colours (borrowed creature colours). Layout (x, y of the top-left): back wall (0, 0) moved 40 to the right so the furnace hides one window; floor tiles from y 56; furnace (2, 11); furnace-glow (0, 56), drawn over the floor and under the props; hanging-tools (52, 6); tool-rack (92, 6); shelf (92, 30); creatures behind the benches at (68, 44) and (104, 44) (1x, lower rows hidden); workbench A (60, 52), workbench B (96, 52); barrel (116, 60); coal-heap (6, 66); ANVIL_PROP at (24, 74) and (66, 74) with a creature at (anvil x + 14, anvil y + 1); quench-trough (100, 78). Drawn in that order. The first anvil, its creature and the coal heap get a warm pixel along their fire (left) side.
+- New pieces (2026-11-14, from Misa's staging notes). Clickable, drawn bold (ink outline, lit edges, a glint): `door` 20 x 32 (plank leaf in a timber frame, two iron strap hinges, a ring handle, a stone step; the base row is the floor line), `door-mat` 20 x 4 (lies in front of the door), `plans-board` 24 x 24 (a drafting board with blue plans, white lines, pins and a pencil on trestle legs, a rolled plan on the bar), `finished-crate` 20 x 16 (an open crate with a steel helmet, a charm on a gold ring with a glint, and a striped scarf end over the side). They replace the plank, the 16 x 16 table and the stick crate of `valley/forge-props.ts`.
+- Edge dressing (not clickable; quieter: soft soot outline `z` instead of ink, mid tones, no lit edges, no glint): `barrel-stack` 24 x 24 (three barrels), `sacks` 18 x 13, `gear-rack` 22 x 26 (a free standing rack with hats on pegs and scarves on a bar), `rug` 48 x 16 (a fixed worn oval; lies flat on the floor, drawn before everything that stands on it), `woodpile` 28 x 19, `cat` 12 x 8 (an ordinary cat asleep, by the furnace; warm on its fire side), `bucket` 10 x 10, `window-2` 12 x 31 (a narrow window for the side wall: lintel rows 0-3, opening 4-25, sill 26-30; repeat it with a 4 px gap), `lantern-hanging` 24 x 40 (a chain from the beam, row 0 touches the beam bottom, the lantern at x 8-15; the warm light on the wall is dithered, so the stones show through, at night in three warm steps; by day the light colours are the plain wall and only the glass stays lit).
+- The room, 128 x 176 for a phone (a tall phone shows about 130 x 281 world px at 3x, so the room is meant to be scaled to the screen width and, if there is spare height, shown from the top with the front zone cut off or the room centred): the back wall stays 56 tall (y 0-55), the floor tiles run from y 56 to 175 (7.5 tiles; tiles start at y 56), then bands. Wall band y 0-55; furnace and bench band y 56-85 (the furnace light, the cat, the coal, the door and its mat); work band y 86-135 (anvils, chest, plans, finished crate, trough); front zone y 136-175 (rug, woodpile, sacks, barrels, gear rack, bucket). On desktop the room widens by tiling `back-wall` and `floor` sideways and by adding wall pieces on the new wall (window-2, tool-rack, hanging-tools, a second lantern, shelves) and floor dressing at the new left and right edges (barrel-stack, sacks, woodpile, gear-rack); the clickable pieces and the furnace stay centred on x 64 (the middle of the phone room), so nothing clickable moves apart.
+- The 128 x 176 preview is taller than the studio allows (64), so it is three sprites that stack: `preview-top` (rows 0-63), `preview-middle` (rows 64-127), `preview-bottom` (rows 128-175). The room has more than 16 colours (borrowed creature colours). Layout (x, y of the top-left; [C] = clickable): back wall (0, 0) moved 40 to the right (the furnace hides one window); floor from y 56; window-2 (46, 9); furnace (2, 11); lantern-hanging (79, 6); hanging-tools (98, 6); [C] door (98, 26) with door-mat (98, 58); shelf (56, 24) on the first window sill; rug (40, 146) is drawn first on the floor; creatures behind the benches at (68, 44) and (104, 74), 1x, lower rows hidden; workbench A (60, 52), workbench B (96, 82); coal-heap (6, 66); cat (32, 66); woodpile (2, 136); sacks (4, 160); bucket (30, 164); barrel-stack (98, 130); [C] ANVIL_PROP at (24, 86) and (66, 86) with a creature at (anvil x + 14, anvil y + 1); [C] chest (the bag, `CHEST_PROP`) (6, 110); [C] plans-board (36, 106); [C] finished-crate (74, 112); quench-trough (98, 114); gear-rack (102, 156). `furnace-glow` (0, 56) is drawn over the floor and the daylight patch (x 60-84 under the window, slanting left, to y 125), under every prop. Not placed on the phone width: `tool-rack`, `barrel` (the barrel-stack replaces it); both are for the desktop sides. Drawn in the order above, then the clickable props, then the gear-rack. The first anvil, its creature, the coal heap get a warm pixel along their fire (left) side.
 
 | Code | Kind | Role | Status | Idea |
 | --- | --- | --- | --- | --- |
@@ -748,8 +780,22 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | `quench-trough` | free |  | draft | A trough of water for quenching. |
 | `hanging-tools` | free |  | draft | Tongs, a hammer and a ladle hung from the beam. |
 | `coal-heap` | free |  | draft | A heap of coal with two embers. |
-| `preview-top` | free |  | draft | The whole room, top 64 rows (see the notes for the layout). |
-| `preview-bottom` | free |  | draft | The whole room, bottom 32 rows. |
+| `door` | free |  | draft | CLICKABLE. A plank door in a timber frame with iron strap hinges, a ring handle and a stone step: the way out. Variations: A (main) the timber-framed plank door, B an arched plank door in a dressed-stone frame with a lantern on an iron bracket at the right (the sprite uses 16 of the 20 columns for the door, the rest is the lantern), C a heavier door with a small barred window (warm light inside at night, plain bars by day) and a painted anvil sign above. Pick: C, because the lit window and the anvil sign say "the forge door" at 1x, and a lit slot is the clearest tap target. |
+| `door-mat` | free |  | draft | CLICKABLE with the door. A woven mat in front of the door. |
+| `plans-board` | free |  | draft | CLICKABLE. A drafting board with blue plans (white lines, pins, a pencil) on trestle legs: the blueprints. |
+| `finished-crate` | free |  | draft | CLICKABLE. An open crate of finished gear: a steel helmet, a charm on a gold ring, a striped scarf over the side: the floor. Variations: A (main) the open crate, B a low display stand with a helmet and a charm on it and the striped scarf draped over the end, C an open chest heaped with a helmet, a charm and coins, the scarf spilling out and glints round it. Pick: C, because the heap and the glints read as "treasure waiting" at 1x, where the stand looks like a plain table. |
+| `barrel-stack` | free |  | draft | Dressing. Three barrels, quiet colours. |
+| `sacks` | free |  | draft | Dressing. Three burlap sacks. |
+| `gear-rack` | free |  | draft | Dressing. A free standing rack with finished hats and scarves. |
+| `rug` | free |  | draft | Dressing. A worn woven oval rug for the floor. |
+| `lantern-hanging` | free |  | draft | Dressing. A lantern on a chain from the beam; warm stepped light on the wall below at night. |
+| `window-2` | free |  | draft | Dressing. A narrow window for the side wall, to repeat. |
+| `woodpile` | free |  | draft | Dressing. Split logs in a pyramid. |
+| `cat` | free |  | draft | Dressing. A cat curled up asleep (by the furnace). Variations: A (main) the loaf-shaped sleeper, B a curled cat with bigger ears (cream inside), closed-eye lines and a striped tail wrapped round the front (12 x 8; no "z", a 3 x 3 z read as an I at this size), C a cat sitting upright facing the fire at the left (12 x 10: two rows taller than the others, so it stands on the same base row and reaches 2 px higher). Pick: B, because it keeps the 12 x 8 footprint and the ears and striped tail stop it reading as bread. |
+| `bucket` | free |  | draft | Dressing. A wooden bucket. |
+| `preview-top` | free |  | draft | The whole room, 128 x 176, top 64 rows (see the notes for the layout). |
+| `preview-middle` | free |  | draft | The whole room, rows 64-127. |
+| `preview-bottom` | free |  | draft | The whole room, rows 128-175. |
 
 <a id="valley-glow-camp"></a>
 

@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { SAMPLE_GEAR } from './creature-card-sample';
 import evolveFixture from './fixtures/branches-evolve.json';
 import evolveOtherFixture from './fixtures/branches-evolve-other.json';
 import branchRequests from './fixtures/branches-request-bodies.json';
@@ -16,6 +17,7 @@ import {
   postCommunal,
   setBroker,
   loungeSocketUrl,
+  openForgeCrate,
   parseLiveMessage,
   jsonRequest,
   parseGameState,
@@ -704,6 +706,7 @@ describe('the valley block of the state (VALLEY_SYSTEMS)', () => {
       exchange: { rate: 3, critBp: 1000, critYield: 2 },
       queueMax: 3,
       orderCountMax: 99,
+      crate: { count: 0, cap: 30, best: null },
     },
     seatPrices: { owned: 0, max: 2, next: 0, ladder: [0, 113] },
     kit: { owned: [], price: 875 },
@@ -769,6 +772,95 @@ describe('the valley block of the state (VALLEY_SYSTEMS)', () => {
         valley: { ...valley, commons: { ...commons, hearthBp: 'big' } },
       }),
     ).toThrow();
+  });
+
+  it("needs the Forge's sealed crate: how many, the cap and the best rarity inside", () => {
+    expect(parseGameState({ ...base, valley }).valley?.forge.crate).toEqual({
+      count: 0,
+      cap: 30,
+      best: null,
+    });
+    const crate = { count: 2, cap: 30, best: 'epic' };
+    expect(
+      parseGameState({ ...base, valley: { ...valley, forge: { ...valley.forge, crate } } }).valley
+        ?.forge.crate,
+    ).toEqual(crate);
+    const without: Partial<typeof valley.forge> = { ...valley.forge };
+    delete without.crate;
+    expect(() => parseGameState({ ...base, valley: { ...valley, forge: without } })).toThrow();
+    for (const bad of [
+      { ...crate, best: 'common' },
+      { ...crate, extra: 1 },
+      { ...crate, count: -1 },
+    ]) {
+      expect(() =>
+        parseGameState({
+          ...base,
+          valley: { ...valley, forge: { ...valley.forge, crate: bad } },
+        }),
+      ).toThrow();
+    }
+  });
+
+  describe('opening the sealed crate', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    const item = (id: string, rarity: string) => ({
+      ...(SAMPLE_GEAR.items[0] as object),
+      id,
+      rarity,
+    });
+
+    it("is one keyed POST; the answer lists the pieces in the server's order, what stays sealed and the valley", async () => {
+      let sent: unknown = null;
+      vi.stubGlobal('fetch', (path: string, init: RequestInit) => {
+        sent = { path, body: JSON.parse(init.body as string) as unknown };
+        return Promise.resolve(
+          Response.json({
+            pieces: [
+              { item: item('i1', 'rare'), wornBy: null, madeBy: 'c1' },
+              { item: item('i2', 'epic'), wornBy: 'c1', madeBy: null },
+            ],
+            sealed: 3,
+            bagFull: true,
+            valley,
+            state: { ...base },
+          }),
+        );
+      });
+      const answer = await openForgeCrate('key-1');
+      expect(sent).toEqual({
+        path: '/api/valley/forge/crate/open',
+        body: { idempotencyKey: 'key-1' },
+      });
+      expect(answer.pieces.map((p) => [p.item.id, p.item.rarity, p.wornBy])).toEqual([
+        ['i1', 'rare', null],
+        ['i2', 'epic', 'c1'],
+      ]);
+      expect(answer.sealed).toBe(3);
+      expect(answer.bagFull).toBe(true);
+      expect(answer.valley.forge.crate.count).toBe(0);
+    });
+
+    it('refuses an answer without its pieces, with a piece it cannot read, or without a valley', async () => {
+      const answers: unknown[] = [
+        { sealed: 0, bagFull: false, valley, state: base },
+        {
+          pieces: [{ item: { id: 'x' }, wornBy: null, madeBy: null }],
+          sealed: 0,
+          bagFull: false,
+          valley,
+          state: base,
+        },
+        { pieces: [], sealed: 0, bagFull: false, state: base },
+      ];
+      for (const answer of answers) {
+        vi.stubGlobal('fetch', () => Promise.resolve(Response.json(answer)));
+        await expect(openForgeCrate('k')).rejects.toThrow();
+      }
+    });
   });
 
   describe('the commons routes', () => {
