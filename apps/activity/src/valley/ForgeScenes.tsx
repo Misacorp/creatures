@@ -3,12 +3,14 @@
  * and their small bubbles. The place opens straight on its interior (Misa, 2026-11-15; there is no outside view).
  *
  * - `ForgeInside` (Misa, 2026-11-11, "the interior of a workshop"): the player's smiths at their anvils with the dashed outline of the
- *   next, the furnace with its fire (opens the project board), the plans table, the chest (the bag) and the crate (the floor), the
- *   door (back to the valley), and at the back benches other players' smiths at work, small, each a tap that shows its creature's plate with the owner's
- *   name (never a list of everyone). With nobody else's, a couple of ambient workers keep the room alive (decoration: no plate, no
- *   tap). Small idle motions step (hammering, carrying) and stop for reduced motion (`canvas.css`).
+ *   next, the furnace with its fire (opens the project board), the plans board, the chest (the bag) and the crate of finished pieces
+ *   (the floor), the door (back to the valley), and at the back benches other players' smiths at work, small, each a tap that shows its
+ *   creature's plate with the owner's name (never a list of everyone). With nobody else's, a couple of ambient workers keep the room
+ *   alive. Small idle motions step (hammering, carrying) and stop for reduced motion (`canvas.css`).
+ * - One cue for every clickable thing, none for decoration (Misa, 2026-11-15: "It was also inconsistent which elements were actually
+ *   clickable and I didn't find any kind of visual cue"): each target has a `plate` (its short name; `art-variants.ts`, `clickCue`
+ *   says how it shows). The racks, shelf, trough, coal, cat, rug and the rest of the dressing are canvas art only: no target, no plate.
  */
-import type { ComponentChildren } from 'preact';
 import { useState } from 'preact/hooks';
 import type { Creature, ValleyVisit } from '../api';
 import { creatureName } from '../game';
@@ -27,6 +29,9 @@ import { WARMING_FLAME } from './valley-art';
 /** The flame's top-left over the furnace's mouth, from the furnace's top-left (the art's fire is at x 14 to 33). */
 const FLAME_AT = { x: 22, y: 36 } as const;
 import { anvilName, anvilPrice } from './forge-view';
+
+/** Where an anvil cell's plate sits, scene pixels down from the cell's top: under the anvil. */
+const PLATE_AT = 28;
 
 /** The two ambient workers (decoration when no one else's smith is at work): species and motion. */
 export const AMBIENT = [
@@ -50,25 +55,6 @@ export function ambientSpots(others: number, spots: number): number[] {
   if (count >= 1) out.push(free[free.length - 1] as number);
   if (count >= 2) out.push(free[0] as number);
   return out;
-}
-
-/** A plate under a thing in the scene, centred on `x`. */
-function FeetPlate({
-  g,
-  x,
-  y,
-  children,
-}: {
-  g: SceneGeometry;
-  x: number;
-  y: number;
-  children: ComponentChildren;
-}) {
-  return (
-    <At x={g.X(x)} y={g.Y(y)} class="vy-feet-plate">
-      <Nameplate size="sm">{children}</Nameplate>
-    </At>
-  );
 }
 
 /** A bubble over a spot, `PROP` pixels wide. */
@@ -146,11 +132,6 @@ export function ForgeInside({
   const others = visit.smiths;
   const bs = Math.max(1, g.s - 1);
   const benchSprite = interiorSprite('workbench', night);
-  const feetPlate = (x: number, y: number, text: string): ComponentChildren => (
-    <FeetPlate g={g} x={x} y={y}>
-      {text}
-    </FeetPlate>
-  );
   // The far smiths: small, behind the benches (the benches come after them, so they stand over their feet).
   const backTop = (spot: { y: number }): number => g.Y(spot.y) - 16 * bs;
   const backLeft = (spot: { x: number }): number => g.X(spot.x) - 8 * bs;
@@ -211,7 +192,6 @@ export function ForgeInside({
             {glyph !== null && (
               <Bubble g={g} x={cell.smith.x} y={cell.smith.y} glyph={glyph} count={null} />
             )}
-            {feetPlate(cell.x + cell.w / 2, cell.anvil.y + PROP, creatureName(smith))}
           </span>
         );
       })}
@@ -219,7 +199,6 @@ export function ForgeInside({
       {(bagFull || bagAttention) && (
         <Bubble g={g} x={lay.chest.x} y={lay.chest.y} glyph="warning" count={null} />
       )}
-      {feetPlate(lay.door.x + lay.door.w / 2, lay.door.y + lay.door.h + 1, 'Valley')}
 
       {/* The targets, over everything above: each a real button. */}
       {others.map((other, i) => {
@@ -235,6 +214,15 @@ export function ForgeInside({
               w={14}
               h={16}
               label={`${who}, ${other.working ? 'at work' : 'at the bench'}. Show who`}
+              {...(peek === i
+                ? {}
+                : {
+                    plate: creatureName({
+                      nickname: other.creature.name,
+                      species: other.creature.species,
+                    }),
+                    plateAt: i % 2 === 0 ? -6 : -12,
+                  })}
               expanded={peek === i}
               onClick={() => {
                 setPeek(peek === i ? null : i);
@@ -257,6 +245,8 @@ export function ForgeInside({
         w={lay.furnace.w}
         h={lay.furnace.h}
         label="The furnace: the fire and the project board. Open"
+        plate="Furnace"
+        plateAt={lay.furnace.h}
         expanded={open.left === 'board'}
         onClick={(opener) => {
           onLeft('board', opener);
@@ -269,6 +259,7 @@ export function ForgeInside({
         w={lay.door.w}
         h={lay.door.h}
         label="The door. Back to the valley"
+        plate="Valley"
         onClick={onOut}
       />
       {visit.anvils.map((anvil, i) => {
@@ -292,6 +283,8 @@ export function ForgeInside({
               anvil,
               marketBuilt,
             )}
+            plate={smith === undefined ? name : creatureName(smith)}
+            plateAt={PLATE_AT}
             expanded={open.anvilId === anvil.id}
             disabled={busy}
             onClick={(opener) => {
@@ -309,11 +302,17 @@ export function ForgeInside({
           h={lay.cells[owned].h}
           slot
           label="A new anvil. Buy it"
+          plate="New anvil"
+          plateAt={PLATE_AT}
           expanded={open.buy}
           disabled={busy}
           onClick={onBuy}
         >
-          <span class="cv-ghost" aria-hidden="true">
+          <span
+            class="cv-ghost"
+            aria-hidden="true"
+            ref={cssVars({ '--gy': `${String(12 * g.s)}px` })}
+          >
             <Pic sprite={ANVIL_PROP} scale={g.s} />
           </span>
           <span class="cv-price">
@@ -324,9 +323,8 @@ export function ForgeInside({
       <CanvasTarget
         g={g}
         {...lay.plans}
-        w={PROP}
-        h={PROP}
         label="The plans: the blueprints you know. Open"
+        plate="Plans"
         expanded={open.left === 'plans'}
         onClick={(opener) => {
           onLeft('plans', opener);
@@ -335,9 +333,8 @@ export function ForgeInside({
       <CanvasTarget
         g={g}
         {...lay.chest}
-        w={PROP}
-        h={PROP}
         label={`The bag${bagFull ? ', full' : ''}. Open`}
+        plate="Bag"
         expanded={open.left === 'bag'}
         onClick={(opener) => {
           onLeft('bag', opener);
@@ -346,9 +343,8 @@ export function ForgeInside({
       <CanvasTarget
         g={g}
         {...lay.crate}
-        w={PROP}
-        h={PROP}
         label={`The floor: ${waiting === 0 ? 'nothing waiting' : `${String(waiting)} pieces waiting`}. Open`}
+        plate="Floor"
         expanded={open.left === 'floor'}
         onClick={(opener) => {
           onLeft('floor', opener);

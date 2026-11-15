@@ -491,13 +491,16 @@ Superseded: 1 entry (see the topic file).
 
 [ui.md](ui.md): Navigation and the frame, Home and the notice board, type scale, shared components, look and feel rules that apply across screens.
 
+- 2026-11-15 The Forge room fills the window: the 128x176 room centred, edges tiled and dressed (two fill variants, A is the pick) \[Misa\]
+- 2026-11-15 One cue for every clickable thing in the Forge and on the Signpost map, none for decoration (three variants behind one switch, A is the pick) \[Misa\]
+- 2026-11-15 Drawers lie over a canvas place; the scene never moves or rescales, and a drawer's first step has only the X \[Misa\]
 - 2026-11-15 No focus outlines in art scenes; keyboard focus shows as an in-world cue \[Misa\]
 - 2026-11-12 The house's night indoors follows the living room's look: graded, not ramped
 - 2026-11-11 The postcard follows the phase, lights are data per piece, and one painter stamps every scene
 - 2026-11-11 The house is lit by one painter pass, from the living room's phase (amended)
 - 2026-11-11 Pixel canvases paint in a layout effect, never after the frame
 - 2026-11-11 The Signpost is a canvas: a click on the signpost opens the expedition map, a click on a place opens its scout wizard \[Misa\] (amended)
-- 2026-11-11 \[Misa\] A place is a canvas: the scene never scrolls, every action is a click in it, content opens in a left or right drawer holding a wizard
+- 2026-11-11 \[Misa\] A place is a canvas: the scene never scrolls, every action is a click in it, content opens in a left or right drawer holding a wizard (amended)
 - 2026-11-11 A valley frame clips instead of scrolling: the HUD's way back never slides off
 - 2026-11-10 Housing screen pass: the whole house, build moment, one pinned action
 - 2026-11-10 Housing client: the build list is rows of parts, a piece moves by emptying then placing, the overview starts on the core

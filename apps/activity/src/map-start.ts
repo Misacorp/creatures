@@ -12,17 +12,22 @@ export function startingPlace(
   return places.find((p) => p.home)?.id ?? trips[0]?.destination ?? HUB;
 }
 
-/** Scrolls `scroller` so `target` is in the middle of it, as far as it can scroll (no glide by default). */
+/**
+ * Scrolls `scroller` so `target` is in the middle of it, as far as it can scroll (no glide by default). `inset` is what lies over the
+ * scroller's left and right edges (a canvas's drawers, CSS px): the middle is then the middle of what is left clear.
+ */
 export function centerOn(
   scroller: HTMLElement,
   target: HTMLElement,
   behavior: ScrollBehavior = 'instant',
+  inset: { left: number; right: number } = { left: 0, right: 0 },
 ): void {
   if (typeof scroller.scrollTo !== 'function') return;
   const box = scroller.getBoundingClientRect();
   const at = target.getBoundingClientRect();
+  const middle = box.left + inset.left + (box.width - inset.left - inset.right) / 2;
   scroller.scrollTo({
-    left: scroller.scrollLeft + (at.left + at.width / 2) - (box.left + box.width / 2),
+    left: scroller.scrollLeft + (at.left + at.width / 2) - middle,
     top: scroller.scrollTop + (at.top + at.height / 2) - (box.top + box.height / 2),
     behavior,
   });

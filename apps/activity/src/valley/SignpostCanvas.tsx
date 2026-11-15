@@ -329,6 +329,7 @@ export function SignpostCanvas(props: SignpostCanvasProps) {
     >
       <PlaceCanvas
         label="Signpost"
+        pan={false}
         scene={main}
         left={leftPanel}
         right={rightPanel}

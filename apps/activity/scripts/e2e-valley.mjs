@@ -33,6 +33,9 @@ const argOf = (flag, fallback) => {
 };
 const out = resolve(argOf('--out', join(here, '../screenshots/e2e-valley')));
 const width = Number.parseInt(argOf('--width', '390'), 10);
+const height = Number.parseInt(argOf('--height', '844'), 10);
+/** Page-address options for a look at a variant of an art scene (`E2E_QUERY='forge-fill=B&click-cue=C'`; `valley/art-variants.ts`). */
+const extraQuery = process.env.E2E_QUERY === undefined ? '' : `&${process.env.E2E_QUERY}`;
 const reduced = args.includes('--reduced');
 /** Runs only the checklist items whose name contains this text (for iterating on one: `--only School`). */
 const only = argOf('--only', null);
@@ -970,7 +973,7 @@ const browser = await chromium.launch(
   process.env.CHROME === undefined ? {} : { executablePath: process.env.CHROME },
 );
 const ctx = await browser.newContext({
-  viewport: { width, height: 844 },
+  viewport: { width, height },
   deviceScaleFactor: 1,
   reducedMotion: reduced ? 'reduce' : 'no-preference',
 });
@@ -1116,6 +1119,7 @@ const expectNoScroll = async () => {
   if (over.length > 0) throw new Error(`the canvas scrolls: ${over.join(' | ')}`);
 };
 /** The Forge opens straight on its interior (Misa, 2026-11-15): one click on the building in the valley, no outside view first. */
+const forgeCanvas = () => page.locator('.vy-in-forge .vy-canvas').first().boundingBox();
 const goInside = async () => {
   await waitFor(sceneTarget('The furnace'));
   if ((await page.locator('button[aria-label^="The forge. Go inside"]').count()) > 0)
@@ -1127,7 +1131,7 @@ const backToValley = async () => {
 };
 
 try {
-  await page.goto(`http://localhost:${String(port)}/?frame_id=e2e`);
+  await page.goto(`http://localhost:${String(port)}/?frame_id=e2e${extraQuery}`);
   await page.evaluate(() => document.fonts.ready);
 
   await step('the valley opens with the map, the tray and the HUD', async () => {
@@ -1650,7 +1654,7 @@ try {
       // A window resize re-renders the map under the player's eyes.
       await page.setViewportSize({ width: width + 20, height: 800 });
       await page.waitForTimeout(500);
-      await page.setViewportSize({ width, height: 844 });
+      await page.setViewportSize({ width, height });
       await page.waitForTimeout(500);
       const result = await flashWatch.stop();
       console.log(
@@ -1671,7 +1675,7 @@ try {
       awayDismissed = true;
       change();
       try {
-        await page.goto(`http://localhost:${String(port)}/?frame_id=e2e`);
+        await page.goto(`http://localhost:${String(port)}/?frame_id=e2e${extraQuery}`);
         await page.evaluate(() => document.fonts.ready);
         await run();
       } finally {
@@ -1918,9 +1922,29 @@ try {
         throw new Error('the map did not pan by drag');
       await shot('signpost-map-dragged');
       // A place is picked: its drawer, with what it is and the one gold button.
+      const mapBefore = await map.boundingBox();
       await place('ember-caves').locator('.wm-pin').click();
       await waitFor(drawer.getByRole('heading', { name: 'Ember Caves' }));
       await waitFor(drawer.getByRole('button', { name: /^Send a scout here/ }));
+      await page.waitForTimeout(500);
+      // The drawer lies over the map's edge: the map keeps its size and place (Misa, 2026-11-15), and the picked place is clear of it.
+      const mapAfter = await map.boundingBox();
+      if (
+        mapBefore === null ||
+        mapAfter === null ||
+        mapBefore.x !== mapAfter.x ||
+        mapBefore.width !== mapAfter.width ||
+        mapBefore.height !== mapAfter.height
+      )
+        throw new Error(
+          `the map moved or resized when a place was picked: ${JSON.stringify([mapBefore, mapAfter])}`,
+        );
+      if (width >= 960) {
+        const pinAt = await place('ember-caves').locator('.wm-pin').boundingBox();
+        const sideAt = await page.locator('.pc-right').boundingBox();
+        if (pinAt === null || sideAt === null || pinAt.x + pinAt.width > sideAt.x)
+          throw new Error('the picked place is under the drawer');
+      }
       await shot('signpost-step-place');
       await drawer.getByRole('button', { name: /^Send a scout here/ }).click();
       await waitFor(drawer.getByRole('heading', { name: 'Who scouts here?' }));
@@ -2168,6 +2192,19 @@ try {
       await expectTopmost(sceneTarget('A new anvil'), 'the dashed outline of the next anvil');
       await expectTopmost(sceneTarget('The door. Back to the valley'), 'the door');
       await expectTopmost(sceneTarget('The furnace'), 'the furnace');
+      // Every clickable thing has its name plate (the cue), and the room fills the window (the scene is as wide as the stage).
+      const bare = await page
+        .locator('.vy-in-forge button.cv-target:not(:has(.cv-plate))')
+        .evaluateAll((els) => els.map((e) => e.getAttribute('aria-label')));
+      if (bare.length > 0) throw new Error(`clickable things without a plate: ${bare.join(' | ')}`);
+      await page.waitForTimeout(300);
+      await shot('layout-forge-rest');
+      if (width >= 960) {
+        await sceneTarget('The plans').hover();
+        await page.waitForTimeout(150);
+        await shot('layout-forge-hover');
+        await page.mouse.move(2, 400);
+      }
       // Rule 6: no focus ring in the art scene. The HUD's back took the focus by script on entry with no key pressed: no ring there.
       const backLook = await focusLook(hudBack());
       if (backLook.visible && !backLook.outline.startsWith('none'))
@@ -2195,10 +2232,31 @@ try {
       await sceneTarget("Bea's Dot").click();
       await page.locator('.nameplate-owner').waitFor({ state: 'detached', timeout: 10000 });
       await shot('forge-canvas-no-anvils');
+      const restCanvas = await forgeCanvas();
       // Buy the first anvil from its outline: the buy step opens beside the canvas (a page on a phone).
       await sceneTarget('A new anvil').click();
       await waitFor(drawer.getByRole('heading', { name: 'A new anvil' }));
       await shot('forge-step-buy');
+      if (width >= 960) {
+        // The drawer lies over the scene: it keeps its size and place, and a drawer's first step has no Back, only the X.
+        await page.waitForTimeout(400);
+        const now = await forgeCanvas();
+        if (
+          now === null ||
+          restCanvas === null ||
+          now.width !== restCanvas.width ||
+          now.height !== restCanvas.height
+        )
+          throw new Error(
+            `the scene resized when the drawer opened: ${JSON.stringify([restCanvas, now])}`,
+          );
+        if (now.x !== restCanvas.x)
+          throw new Error('the scene moved though the clicked anvil was clear of the drawer');
+        if ((await drawer.getByRole('button', { name: /^Back/ }).count()) > 0)
+          throw new Error('the first step of a drawer has a Back');
+        if ((await drawer.getByRole('button', { name: 'Close' }).count()) === 0)
+          throw new Error('the drawer has no X');
+      }
       await drawer.getByRole('button', { name: /^Buy the anvil/ }).click();
       await drawer
         .getByRole('heading', { name: 'A new anvil' })
@@ -2325,6 +2383,24 @@ try {
       await page.waitForTimeout(300);
       await expectTopmost(tools, 'the bag tools header');
       await shot('forge-step-bag');
+      if (width >= 960) {
+        // The bag's chest is under the left drawer's reach: the scene is panned (not resized) to keep it clear.
+        await page.waitForTimeout(400);
+        const now = await forgeCanvas();
+        const chest = await sceneTarget('The bag').boundingBox();
+        const side = await page.locator('.pc-left').boundingBox();
+        if (
+          now === null ||
+          restCanvas === null ||
+          now.width !== restCanvas.width ||
+          now.height !== restCanvas.height
+        )
+          throw new Error(
+            `the scene resized when the bag opened: ${JSON.stringify([restCanvas, now])}`,
+          );
+        if (chest === null || side === null || chest.x < side.x + side.width)
+          throw new Error('the bag chest is under the left drawer');
+      }
       await expectNoScroll();
       await drawer
         .getByRole('button', { name: /Close|^Back/ })
