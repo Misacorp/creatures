@@ -35,7 +35,7 @@ import { FLAG_AT, HELPER_AT, TABLE_BOX, pileMaterial, pileSize } from './builder
 import { cornerSprite } from './builders-corner-art';
 import { commonsOf, percentFilled, placeOf } from './commons-view';
 import {
-  creaturesSpot,
+  signBox,
   gateSpots,
   gateTarget,
   meadowFor,
@@ -325,6 +325,7 @@ export function PaddockCanvas({
             g={g}
             box={lay.box}
             meadow={meadowFor(g, lay)}
+            sign={signBox(g, lay)}
             roamers={roamers}
             waiting={waiting}
             helper={helper}
@@ -376,6 +377,7 @@ function PaddockInside({
   g,
   box,
   meadow,
+  sign,
   roamers,
   waiting,
   helper,
@@ -393,6 +395,8 @@ function PaddockInside({
   box: { x: number; y: number; width: number; height: number };
   /** The meadow the creatures roam (scene pixels). */
   meadow: { x: number; y: number; width: number; height: number };
+  /** The gate sign's box (scene pixels): the "Creatures" button, drawn in the scene's art. */
+  sign: { x: number; y: number; w: number; h: number };
   roamers: readonly Creature[];
   waiting: readonly PendingCatch[];
   helper: Creature | undefined;
@@ -424,7 +428,6 @@ function PaddockInside({
   const { area, fit } = roamMeadow(meadow, roamers.length, limited, plateGap(g.s));
   const shown = roamers.slice(0, Math.min(roamers.length, fit));
   const more = roamers.length - shown.length;
-  const spot = creaturesSpot(meadow, g.s);
   const gate = gateTarget();
   return (
     <>
@@ -516,10 +519,7 @@ function PaddockInside({
       )}
       <CanvasTarget
         g={g}
-        x={spot.x - 14}
-        y={spot.y}
-        w={28}
-        h={Math.ceil(32 / g.s)}
+        {...sign}
         z={PLATES_Z}
         label={
           more > 0
@@ -527,7 +527,6 @@ function PaddockInside({
             : 'Creatures: find and open any of your creatures'
         }
         plate={more > 0 ? moreLabel(more) : 'Creatures'}
-        plateAt={0}
         expanded={open.creatures}
         onClick={onCreatures}
       />

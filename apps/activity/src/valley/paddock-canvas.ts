@@ -17,8 +17,8 @@ import { ART_Y, SCALE_MAX, SCALE_MIN, edgeDressing } from './bonfire-canvas';
 import { buildName } from './commons-view';
 import { isAtHome, isHelping, isScouting, isSmithing, isTrading } from './tray-state';
 import { CORNER, cornerPlacements, type Pile } from './builders-corner';
-import { MORE_CSS } from './bonfire-cast';
 import { CREATURE_PX, PADDOCK_ROAM_AREA } from './place-cast';
+import { propArt, propSize } from './place-prop-art';
 import { PLATE_ROW_PX } from './place-plates';
 import { artSize, grassTo, skyBackdrop, treesAround, type ArtBox } from './place-scene';
 import { scaffoldFor } from './scaffold';
@@ -76,8 +76,16 @@ function ring(): Ring {
   };
 }
 
-/** Scene pixels under the front row's feet that its plates and the "Creatures" button take at scale `s`. */
-const underFront = (s: number): number => Math.ceil((PLATE_ROW_PX + MORE_CSS) / s);
+/**
+ * The yard's gate sign (the art library's `paddock-gate-sign`, Misa's pick C, the arched gate top: 16x16, base row 15): the object the
+ * "Creatures" button is. It stands centred under the meadow, under its front row's plates, and its whole box is the button, the plate
+ * ("Creatures", or "+N more") under it.
+ */
+export const SIGN_SIZE = propSize('paddockGateSign');
+
+/** Scene pixels under the front row's feet that its plates, the sign and the sign's plate take at scale `s`. */
+export const underFront = (s: number): number =>
+  Math.ceil(PLATE_ROW_PX / s) + 1 + SIGN_SIZE.height + Math.ceil(PLATE_ROW_PX / s) + 2;
 
 export type CornerMode = 'none' | 'beside' | 'below';
 
@@ -205,25 +213,40 @@ export function meadowFor(
   };
 }
 
-/** The "Creatures" button's middle: under the meadow's front row and its plates, in scene pixels. */
+/** The gate sign's top and its middle: under the meadow's front row and its plates, in scene pixels. The sign is the "Creatures" button. */
 export function creaturesSpot(
   meadow: { x: number; y: number; width: number; height: number },
   s: number,
 ): { x: number; y: number } {
   return {
     x: meadow.x + Math.floor(meadow.width / 2),
-    y: meadow.y + meadow.height + CREATURE_PX + Math.ceil(PLATE_ROW_PX / s) + 2,
+    y: meadow.y + meadow.height + CREATURE_PX + Math.ceil(PLATE_ROW_PX / s) + 1,
+  };
+}
+
+/** The sign's box in scene pixels (its art's top-left and size): the "Creatures" button's box. */
+export function signBox(
+  g: Pick<SceneGeometry, 'H' | 's'>,
+  lay: Pick<PaddockLayout, 'mode' | 'box' | 'corner'>,
+): { x: number; y: number; w: number; h: number } {
+  const spot = creaturesSpot(meadowFor(g, lay), g.s);
+  return {
+    x: spot.x - Math.floor(SIGN_SIZE.width / 2),
+    y: spot.y,
+    w: SIGN_SIZE.width,
+    h: SIGN_SIZE.height,
   };
 }
 
 /**
  * The scene: grass and sky to every edge, the edges dressed, the trees round the yard, the paddock's art with the scaffolding rising
- * round it as its project fills (`steps`, V-COM-6; 0 for none) and the builders' corner (its pile as `corner` says) while there is one.
+ * round it as its project fills (`steps`, V-COM-6; 0 for none), the gate sign under the meadow and the builders' corner (its pile as `corner` says) while there is one.
  */
 export function paddockSceneDraw(steps: number, corner: Pile | null) {
   return (g: SceneGeometry): Placement[] => {
     const lay = paddockLayout(g, corner !== null);
     const { box } = lay;
+    const sign = signBox(g, lay);
     return [
       ...grassTo(g),
       ...skyBackdrop(g, box.y - g.top),
@@ -236,6 +259,7 @@ export function paddockSceneDraw(steps: number, corner: Pile | null) {
             lay.corner.y,
             corner ?? { material: 'timber', size: 's' },
           )),
+      { sprite: propArt('paddockGateSign'), x: sign.x, y: sign.y },
       { sprite: glowSprite('paddock'), x: box.x, y: box.y },
       ...(steps === 0 ? [] : [{ sprite: scaffoldFor('paddock', steps), x: box.x, y: box.y }]),
     ];

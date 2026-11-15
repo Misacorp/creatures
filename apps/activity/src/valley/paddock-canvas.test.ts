@@ -5,7 +5,11 @@ import { CORNER } from './builders-corner';
 import { withCommons } from './commons-sample';
 import {
   MAX_AT_GATE,
+  SIGN_SIZE,
   creaturesSpot,
+  paddockSceneDraw,
+  signBox,
+  underFront,
   gateSpots,
   gateTarget,
   meadowAt,
@@ -73,7 +77,7 @@ describe('the Paddock canvas: the layout', () => {
       expect(lay.mode === 'none', name).toBe(!corner);
       expect(lay.box.y, name).toBeGreaterThanOrEqual(0);
       const meadow = meadowFor(g, lay);
-      const underFeet = Math.ceil((PLATE_ROW_PX + 40) / g.s);
+      const underFeet = underFront(g.s);
       expect(meadow.y + meadow.height + CREATURE_PX + underFeet, name).toBeLessThanOrEqual(g.H);
       // The gate's newcomers stand on the scene.
       const gate = gateTarget();
@@ -112,18 +116,37 @@ describe('the Paddock canvas: the layout', () => {
     expect(paddockLayout(tall, false).box.y).toBeLessThan(tall.H / 4);
   });
 
-  it('puts the "Creatures" button under the meadow’s front row, inside the scene, above the corner', () => {
+  it('puts the gate sign (the "Creatures" button) under the meadow’s front row, inside the scene, above the corner, and the sign is the prop’s whole box', () => {
     each((w, h, corner) => {
       const g = geometry(w, h, corner);
       const lay = paddockLayout(g, corner);
       const meadow = meadowFor(g, lay);
       const spot = creaturesSpot(meadow, g.s);
-      expect(spot.y).toBeGreaterThanOrEqual(meadow.y + meadow.height + CREATURE_PX);
-      expect(spot.y + Math.ceil(32 / g.s)).toBeLessThanOrEqual(g.H);
-      if (lay.mode === 'below' && lay.corner !== null) {
-        expect(spot.y + Math.ceil(32 / g.s)).toBeLessThanOrEqual(lay.corner.y);
-      }
+      const sign = signBox(g, lay);
+      expect(sign).toMatchObject({ w: 16, h: 16 });
+      expect(SIGN_SIZE).toEqual({ width: 16, height: 16 });
+      expect(sign.x + sign.w / 2).toBe(spot.x);
+      // Under the front row's feet and its plates: no roamer stands on it.
+      expect(sign.y).toBeGreaterThanOrEqual(
+        meadow.y + meadow.height + CREATURE_PX + Math.ceil(PLATE_ROW_PX / g.s),
+      );
+      // The sign and its plate are inside the scene and above the corner.
+      const end = sign.y + sign.h + Math.ceil(PLATE_ROW_PX / g.s);
+      expect(end).toBeLessThanOrEqual(g.H);
+      if (lay.mode === 'below' && lay.corner !== null)
+        expect(end).toBeLessThanOrEqual(lay.corner.y);
+      // The sign is inside the meadow's width, so it never stands under the gate's newcomers or the corner.
+      expect(sign.x).toBeGreaterThanOrEqual(meadow.x);
+      expect(sign.x + sign.w).toBeLessThanOrEqual(meadow.x + meadow.width + CREATURE_PX);
     });
+  });
+
+  it('draws the sign in the scene at the sign’s box', () => {
+    const g = geometry(390, 844, false);
+    const lay = paddockLayout(g, false);
+    const sign = signBox(g, lay);
+    const placed = paddockSceneDraw(0, null)(g).filter((p) => p.x === sign.x && p.y === sign.y);
+    expect(placed).toHaveLength(1);
   });
 });
 
