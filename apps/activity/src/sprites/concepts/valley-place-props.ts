@@ -414,7 +414,7 @@ export const VALLEY_PLACE_PROPS_CONCEPTS: ConceptSet = {
   status: 'draft',
   notes: [
     'Four optional props for the place canvases, in the valley-glow look: ink, night main palette with warm stepped light on the ground where something is lit (keys 1 2 3), `alts.day` recolours the same pixels, materials from `valley-tiers.ts`. No text anywhere, marks only.',
-    "visitor-blueprint, 16x10: a rolled-out blue sheet with a white plan, the roll at the left and a brass weight on the far right corner. Not clickable by itself; it lies on the weekly visitor's stall counter (`valley-glow/visitor`, 60x56): the counter top is the first orange row, row 47 (rows 47 and 48 are the lip). Anchor: its bottom row sits on row 46 so the sheet rests on row 47; x 33 to 48 puts it on the counter, clear of the stall edges (x 27 and 54).",
+    "visitor-blueprint, 16x10: a rolled-out blue sheet with a white plan, the roll at the left and a brass weight on the far right corner. Not clickable by itself; it lies on the weekly visitor's stall counter (`valley-glow/visitor`, 60x48): the counter top is the first orange row, row 30 (rows 30 and 31 are the lip). Anchor: its bottom row sits on row 29 so the sheet rests on row 30; x 33 to 48 puts it on the counter, clear of the stall edges (x 27 and 54).",
     'graduation-stage, 48x24: a plank stage with a back wall, a step at the right, two lantern posts and bunting (a string between the posts and a swag along the front). Anchor: the base row is 19 (the platform foot, ink); row 20 holds the shadow and the lantern light lies on rows 20 to 23. Variation anchors: B base row 22, C base row 21. Clickable: the whole stage if it opens the graduation, nothing else on it.',
     'market-building, 60x48 (main is a copy of `valley-levels-signpost/market-1`): the Market staked out and begun. Anchor: base row 40, the ground rows of market-1, unchanged. Same palette keys as market-1 (B and C add only `y` rope, and C adds `F` and `Y` for tool steel). The shard sign (x 44 to 58) is untouched in both and still the landmark; clickable region is the counter frame, x 5 to 39, rows 12 to 39.',
     'paddock-gate-sign, 16x16: a plank sign on a post with a cream paw mark. Anchor: the base row is 15, the foot of the post (or posts), centred on x 8. Not lit, so no ground light, only the cast shadow. Clickable: the plank.',
@@ -423,7 +423,7 @@ export const VALLEY_PLACE_PROPS_CONCEPTS: ConceptSet = {
   sprites: {
     'visitor-blueprint': {
       kind: 'free',
-      note: "The visitor's blueprint lying on the stall counter, 16x10: blue paper with a white plan, the roll at the left, a brass weight on the far corner. Rests on counter row 47 of `valley-glow/visitor` (bottom row of the sprite on row 46).",
+      note: "The visitor's blueprint lying on the stall counter, 16x10: blue paper with a white plan, the roll at the left, a brass weight on the far corner. Rests on counter row 30 of `valley-glow/visitor` (bottom row of the sprite on row 29).",
       sprite: BP.sprite,
       alts: { day: BP.day },
     },
