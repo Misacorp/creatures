@@ -243,14 +243,17 @@ describe('the visitor canvas: the week`s blueprint (V-VIS-5)', () => {
     expect(byClass(p.root, 'action-btn').filter((b) => /^Buy/.test(visibleText(b)))).toHaveLength(
       0,
     );
-    expect(target(p, /^This week's blueprint/).getAttribute('aria-label')).toMatch(
-      /bought this week/,
-    );
+    // Bought: the blueprint is off the counter, and so is its tap and plate.
+    expect(labels(p).some((n) => /^This week's blueprint/.test(n))).toBe(false);
+    expect(byClass(p.root, 'cv-plate').map((el) => el.textContent.trim())).toEqual(['Visitor']);
   });
 
   it('says it is bought when the server says so (a reload later in the week)', () => {
-    const { page: p } = draw({ view: sampleVisitor({ bought: true }) });
-    openBlueprint(p);
+    const { page: p } = draw({
+      view: sampleVisitor({ bought: true }),
+      start: { blueprint: true },
+    });
+    expect(labels(p).some((n) => /^This week's blueprint/.test(n))).toBe(false);
     expect(visibleText(p.root)).toMatch(/Bought this week\./);
     // Said once: the card's note goes with the Buy button.
     expect(visibleText(p.root)).not.toMatch(/A new one for you/);

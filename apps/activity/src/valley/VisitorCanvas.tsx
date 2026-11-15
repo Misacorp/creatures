@@ -102,7 +102,9 @@ export function VisitorCanvas({
   const [card, setCard] = useState<PieceCard | null>(null);
   const [bought, setBought] = useState<BlueprintDone | null>(null);
 
-  const draw = useMemo(() => visitorSceneDraw(here), [here]);
+  // The blueprint lies on the counter only while it is for sale: not once bought (here or on the server), not while he is away.
+  const forSale = here && !view.blueprint.bought && bought === null;
+  const draw = useMemo(() => visitorSceneDraw(here, forSale), [here, forSale]);
   const ordered = trayFor(creatures, trayInput);
 
   const closeTop = (): void => {
@@ -206,7 +208,7 @@ export function VisitorCanvas({
           <StallInside
             g={g}
             view={view}
-            blueprintBought={here && (view.blueprint.bought || bought !== null)}
+            blueprintForSale={forSale}
             open={right?.kind ?? null}
             onVisitor={open('reroll')}
             onBlueprint={open('blueprint')}
@@ -234,7 +236,7 @@ export function VisitorCanvas({
 function StallInside({
   g,
   view,
-  blueprintBought,
+  blueprintForSale,
   open,
   onVisitor,
   onBlueprint,
@@ -242,7 +244,7 @@ function StallInside({
 }: {
   g: SceneGeometry;
   view: VisitorState;
-  blueprintBought: boolean;
+  blueprintForSale: boolean;
   open: Right['kind'] | null;
   onVisitor: (opener: Opener) => void;
   onBlueprint: (opener: Opener) => void;
@@ -279,18 +281,20 @@ function StallInside({
         expanded={open === 'reroll'}
         onClick={onVisitor}
       />
-      <CanvasTarget
-        g={g}
-        x={box.x + BLUEPRINT_BOX.x}
-        y={box.y + BLUEPRINT_BOX.y}
-        w={BLUEPRINT_BOX.w}
-        h={BLUEPRINT_BOX.h}
-        label={`This week's blueprint on the counter, ${gearName(view.blueprint.baseId)}, ${blueprintBought ? 'bought this week' : 'for sale'}. Open it`}
-        plate="Blueprint"
-        plateAt={PLATE_ROW - BLUEPRINT_BOX.y}
-        expanded={open === 'blueprint'}
-        onClick={onBlueprint}
-      />
+      {blueprintForSale && (
+        <CanvasTarget
+          g={g}
+          x={box.x + BLUEPRINT_BOX.x}
+          y={box.y + BLUEPRINT_BOX.y}
+          w={BLUEPRINT_BOX.w}
+          h={BLUEPRINT_BOX.h}
+          label={`This week's blueprint on the counter, ${gearName(view.blueprint.baseId)}, for sale. Open it`}
+          plate="Blueprint"
+          plateAt={BLUEPRINT_BOX.h}
+          expanded={open === 'blueprint'}
+          onClick={onBlueprint}
+        />
+      )}
     </>
   );
 }

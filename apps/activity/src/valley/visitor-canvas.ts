@@ -5,12 +5,14 @@
  * shuttered stall and its sign, which says he is back Thursday. Pure: the scene's size goes in, scale, placements and boxes come out.
  *
  * The ground is the place scene's (`place-scene.ts`: grass to every edge, the valley's sky above it); the new edges of a wide window
- * are dressed with the Bonfire's quiet pieces (`edgeDressing`: trees, bushes, rocks and flowers, no plate and no tap).
+ * are dressed with the Bonfire's quiet pieces (`edgeDressing`: trees, bushes, rocks and flowers, no plate and no tap). The week's
+ * blueprint lies on the counter only while it is for sale (not once bought, not while he is away).
  */
 import { edgeDressing } from './bonfire-canvas';
 import { PLATE_ROW_PX } from './place-plates';
 import { artSize, grassTo, skyBackdrop, treesAround, type ArtBox } from './place-scene';
 import type { SceneGeometry } from './SceneFrame';
+import { propArt } from './place-props';
 import { glowSprite, visitorName } from './valley-places';
 import type { Placement } from './valley-art';
 
@@ -37,8 +39,11 @@ export interface StallTarget {
 
 /** The visitor, standing left of his stall: a click is the reroll. */
 export const VISITOR_BOX: StallTarget = { x: 3, y: 7, w: 19, h: 34 };
-/** The week's blueprint on the counter (the stall's shelf behind its counter top): a click is the purchase. */
-export const BLUEPRINT_BOX: StallTarget = { x: 28, y: 19, w: 25, h: 13 };
+/**
+ * The week's blueprint, lying on the counter (the prop's bottom row is on stall row 46, the first counter row is 47; x 33 to 48, clear
+ * of the stall's edges at 27 and 54): the prop's own box, a click is the purchase.
+ */
+export const BLUEPRINT_BOX: StallTarget = { x: 33, y: 37, w: 16, h: 10 };
 /** The shuttered stall's sign, on the right: a click reads it. */
 export const SIGN_BOX: StallTarget = { x: 47, y: 13, w: 12, h: 15 };
 
@@ -80,8 +85,8 @@ export function visitorBox(g: Pick<SceneGeometry, 'W' | 'H' | 'cx' | 's' | 'top'
   };
 }
 
-/** The scene: grass and sky to every edge, the edges dressed, the trees round the stall, and the stall (open or shuttered). */
-export function visitorSceneDraw(here: boolean) {
+/** The scene: grass and sky to every edge, the edges dressed, the trees round the stall, the stall (open or shuttered) and, while it is for sale, the blueprint on its counter. */
+export function visitorSceneDraw(here: boolean, blueprintForSale: boolean) {
   return (g: SceneGeometry): Placement[] => {
     const box = visitorBox(g);
     return [
@@ -90,6 +95,15 @@ export function visitorSceneDraw(here: boolean) {
       ...edgeDressing(g, box, { left: box.x, right: box.x + box.width }),
       ...treesAround(box.x, box.y, box),
       { sprite: glowSprite(visitorName(here)), x: box.x, y: box.y },
+      ...(here && blueprintForSale
+        ? [
+            {
+              sprite: propArt('visitorBlueprint'),
+              x: box.x + BLUEPRINT_BOX.x,
+              y: box.y + BLUEPRINT_BOX.y,
+            },
+          ]
+        : []),
     ];
   };
 }

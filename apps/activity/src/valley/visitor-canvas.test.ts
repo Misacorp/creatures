@@ -68,18 +68,37 @@ describe('the visitor canvas: the layout', () => {
 
   it('keeps the scale for the visit: the open and the shuttered stall are the same size and place', () => {
     const g = geometry(1100, 700);
-    expect(visitorSceneDraw(true)(g)).toHaveLength(visitorSceneDraw(false)(g).length);
+    expect(visitorSceneDraw(true, false)(g)).toHaveLength(visitorSceneDraw(false, false)(g).length);
   });
 
-  it('draws the stall itself last, over the ground and the dressing, and the two looks differ in that sprite only', () => {
+  it('draws the stall over the ground and the dressing, and the two looks differ in that sprite only', () => {
     const g = geometry(1100, 700);
-    const here = visitorSceneDraw(true)(g);
-    const away = visitorSceneDraw(false)(g);
+    const here = visitorSceneDraw(true, false)(g);
+    const away = visitorSceneDraw(false, false)(g);
     const differing = here.filter((p, i) => p.sprite !== away[i]?.sprite);
     expect(differing).toHaveLength(1);
     expect(here.at(-1)).toBe(differing[0]);
     const box = visitorBox(g);
     expect(here.at(-1)).toMatchObject({ x: box.x, y: box.y });
+  });
+
+  it('the blueprint lies on the counter (bottom row on stall row 46) while it is for sale, drawn after the stall', () => {
+    const g = geometry(1100, 700);
+    const box = visitorBox(g);
+    const forSale = visitorSceneDraw(true, true)(g);
+    const without = visitorSceneDraw(true, false)(g);
+    expect(forSale).toHaveLength(without.length + 1);
+    const bp = forSale.at(-1);
+    expect(bp).toMatchObject({ x: box.x + 33, y: box.y + 37 });
+    expect(bp?.sprite.rows).toHaveLength(10);
+    expect(BLUEPRINT_BOX).toEqual({ x: 33, y: 37, w: 16, h: 10 });
+    // Bottom row 46: 37 + 10 - 1.
+    expect(BLUEPRINT_BOX.y + BLUEPRINT_BOX.h - 1).toBe(46);
+  });
+
+  it('while he is away there is no blueprint, whatever the flag says', () => {
+    const g = geometry(1100, 700);
+    expect(visitorSceneDraw(false, true)(g)).toHaveLength(visitorSceneDraw(false, false)(g).length);
   });
 });
 

@@ -160,7 +160,7 @@ function stage(): { sprite: SpriteDef; day: Pal } {
   return finish(STAGE_PARTS, lines(g));
 }
 
-function archB(): SpriteDef {
+function archB(): { sprite: SpriteDef; day: Pal } {
   const g = grid(48, 24);
   const rope = (x: number, y: number): void => put(g, x, y, 'k');
   // Two poles on stones, a cross pole, the cloth banner hung from it.
@@ -204,7 +204,7 @@ function archB(): SpriteDef {
       day: { g: '#4a4a58' },
     }),
     lines(g),
-  ).sprite;
+  );
 }
 
 function podiumC(): SpriteDef {
@@ -263,7 +263,7 @@ const MARKET_EXTRA: Parts = {
   day: { y: '#d8bc80', F: '#b8b8c8', Y: '#8a8a9a' },
 };
 
-function marketB(): SpriteDef {
+function marketB(): { sprite: SpriteDef; day: Pal } {
   const g = grab();
   // Scaffold: two poles stand on the beam and carry a working plank.
   box(g, 6, 3, 35, 3, 'u');
@@ -296,7 +296,7 @@ function marketB(): SpriteDef {
       { night: { y: '#c0a468' }, day: { y: '#d8bc80' } },
     ),
     lines(g),
-  ).sprite;
+  );
 }
 
 function marketC(): SpriteDef {
@@ -376,7 +376,7 @@ function signB(): SpriteDef {
   return finish(SIGN_PARTS, lines(g)).sprite;
 }
 
-function signC(): SpriteDef {
+function signC(): { sprite: SpriteDef; day: Pal } {
   const g = grid(16, 16);
   // Two posts with an arch of planks over the gate, the sign set in the arch.
   box(g, 0, 6, 3, 10, 'p');
@@ -396,7 +396,7 @@ function signC(): SpriteDef {
   fill(g, 4, 11, 8, 1, 'P');
   stamp(g, 5, 6, PAW);
   shadow(g, 0, 15, 15);
-  return finish(SIGN_PARTS, lines(g)).sprite;
+  return finish(SIGN_PARTS, lines(g));
 }
 
 // ---------------------------------------------------------------------------------------------------
@@ -404,6 +404,21 @@ function signC(): SpriteDef {
 const BP = blueprint();
 const ST = stage();
 const SA = signA();
+const ARCH_B = archB();
+const MARKET_B = marketB();
+const SIGN_C = signC();
+
+/**
+ * The picks the place canvases draw (each a sprite with its `day` recolour), one constant per prop so a change of Misa's pick is one
+ * line here. Pick by the lead's review, 2026-11-15: the stage is B (the banner arch), the Market is B (scaffold, half-hung awning),
+ * the Paddock's sign is C (arched gate top).
+ */
+export const PLACE_PROP_PICKS = {
+  visitorBlueprint: BP,
+  graduationStage: ARCH_B,
+  marketBuilding: MARKET_B,
+  paddockGateSign: SIGN_C,
+} as const;
 const backdrop = VALLEY_GLOW_CONCEPTS.backdrop;
 
 export const VALLEY_PLACE_PROPS_CONCEPTS: ConceptSet = {
@@ -432,21 +447,21 @@ export const VALLEY_PLACE_PROPS_CONCEPTS: ConceptSet = {
       note: "The graduation stage, 48x24, base row 19 (the platform foot; row 20 shadow, light on rows 20 to 23): a plank stage with a step at the right, two lantern posts and a string of bunting; the lanterns' light lies on the ground. Variations: A (this) a stage with bunting; B a banner arch over the School yard (two poles, a teal cloth banner with a cream mortarboard, lanterns, base row 22); C a low stone podium with a lectern, ribbons, rosettes and corner lamps (base row 21). Pick: B (lead's review, 2026-11-15), because the mortarboard banner says graduation at a glance while A reads as any wooden platform; the drawing agent picked A for its warm light and simplicity.",
       sprite: ST.sprite,
       alts: { day: ST.day },
-      variants: { B: archB(), C: podiumC() },
+      variants: { B: ARCH_B.sprite, C: podiumC() },
     },
     'market-building': {
       kind: 'free',
       note: 'The Market under construction, 60x48, base row 40; the main is a copy of market-1. Variations: B the frame with scaffolding (a working plank on two poles over the beam, diagonal braces) and a half-hung striped awning, the rest still rolled and roped to the plank; C the counter half-planked from the left with a saw and a hammer and a "coming soon" plank (an hourglass, no words) hung from the beam. Pick: B, because the half-hung awning shows the stall the Market will become and the scaffold reads as building at 1x; C hides the frame behind its sign.',
       sprite: { palette: MARKET_PALETTE, rows: [...MARKET_ROWS] },
       alts: { day: { ...MARKET_DAY } },
-      variants: { B: marketB(), C: marketC() },
+      variants: { B: MARKET_B.sprite, C: marketC() },
     },
     'paddock-gate-sign': {
       kind: 'free',
       note: 'A gate sign, 16x16, base row 15: a plank on a post with a cream paw mark (no words). Variations: A (this) a plank on a post; B hanging on two ropes from a crossbar over the gate, two posts; C an arched gate top of planks with the sign set under it. Pick: C, because the arch is what says "gate" at 1x and keeps the paw mark clear; A is the fallback where one post is all the room there is.',
       sprite: SA.sprite,
       alts: { day: SA.day },
-      variants: { B: signB(), C: signC() },
+      variants: { B: signB(), C: SIGN_C.sprite },
     },
   },
 };
