@@ -151,7 +151,11 @@ export function marketSceneDraw(steps: number, corner: Pile | null) {
       ...trees,
       ...(lay.corner === null
         ? []
-        : cornerPlacements(lay.corner.x, lay.corner.y, corner ?? { material: 'timber', size: 's' })),
+        : cornerPlacements(
+            lay.corner.x,
+            lay.corner.y,
+            corner ?? { material: 'timber', size: 's' },
+          )),
       { sprite: glowSprite('market'), x: box.x, y: box.y },
       ...(steps === 0 ? [] : [{ sprite: scaffoldFor('market', steps), x: box.x, y: box.y }]),
     ];

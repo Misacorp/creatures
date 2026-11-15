@@ -70,7 +70,12 @@ export function BrokerPanel({
   const steps: readonly WizardStep<BrokerStep>[] = posted
     ? [
         { id: 'broker', title: creatureName(broker), backLabel: 'to the Market' },
-        { id: 'who', title: 'Who trades at the Market?', backLabel: 'to the broker', back: 'broker' },
+        {
+          id: 'who',
+          title: 'Who trades at the Market?',
+          backLabel: 'to the broker',
+          back: 'broker',
+        },
         { id: 'toward', title: 'Trade toward', backLabel: 'to the broker', back: 'broker' },
       ]
     : [{ id: 'who', title: 'Who trades at the Market?', backLabel: 'to the Market' }];

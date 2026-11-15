@@ -4,6 +4,14 @@ The valley and peaceful systems overhaul planned in docs/design/valley/: job pos
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-15: The Market is a canvas: the stall, the broker, and a building site before it is built
+
+ID: `2026-11-15-the-market-is-a-canvas-the` · Status: current
+
+**Decision.** The Market follows the canvas pattern (Misa, 2026-11-15: "update the other places into the new layout"; `valley/MarketCanvas`). Built: the stall is a target (plate "Exchange") that opens the shard exchange as a wizard in the right drawer ("You get" and "You pay" are steps of it); the broker stands in front of the stall and a tap opens its panel (right drawer: the slot row, the line of words, the rates; "who trades" and "trades toward" are steps); with nobody posted its seat is a dashed outline that opens the list. Not built yet: the place is a building site, the stall under the scaffolding that rises with the project, and the builders' corner beside it (table: project board, left drawer; helper's spot: right drawer); the stall and the broker's seat do not exist until it is built. The scale is the largest whole 3 to 8 at which the stall and the corner fit (`marketScale`). Small calls, my picks: the tray and its drag onto the seat are gone (the seat's list posts, as the Bonfire's helper); "trades toward" is set from the broker's panel, so only with a broker posted; the broker idles like a creature at the fire.
+
+**Reasoning.** The page was three bottom drawers and a card under a band scene, the pattern the canvas rule retires. The Market's own idea is trading shards, so the stall and its broker are the scene and the project is the corner's, as at the Bonfire; before the stall is built there is nothing to trade, so the whole place is the site. The Bonfire's layout rules (beside or below, whole scale) carry over unchanged, with the stall in the ring's place.
+
 ## 2026-11-15: The Bonfire is a canvas of creatures chilling round the fire, and the project lives in a builders' corner **[Misa]**
 
 ID: `2026-11-15-the-bonfire-is-a-canvas-of` · Status: current

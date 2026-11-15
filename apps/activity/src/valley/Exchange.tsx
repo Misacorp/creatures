@@ -163,7 +163,10 @@ export function Exchange({
                   from === null ? (
                     <CountBadge {...anyShardMark()} size="inline" />
                   ) : (
-                    <CountBadge {...shardCount(from, forge.shelf.shards[from] ?? 0)} size="inline" />
+                    <CountBadge
+                      {...shardCount(from, forge.shelf.shards[from] ?? 0)}
+                      size="inline"
+                    />
                   )
                 }
                 sub={from === null ? 'You pay, any other' : 'You pay (have)'}
@@ -173,7 +176,13 @@ export function Exchange({
         />
         <div class="fg-times">
           <span class="fg-times-name">Trades</span>
-          <CountStepper label="trade" value={shown} max={most} onChange={setTimes} disabled={busy} />
+          <CountStepper
+            label="trade"
+            value={shown}
+            max={most}
+            onChange={setTimes}
+            disabled={busy}
+          />
         </div>
         <p class="muted sp-note">
           <SayLine say={exchangeRate(forge)} />

@@ -210,12 +210,7 @@ export function MarketCanvas({
       backLabel: 'to the Market',
       onClose: closeRight,
       children: (
-        <MarketHelperPanel
-          visit={visit}
-          creatures={creatures}
-          helper={post}
-          onClose={closeRight}
-        />
+        <MarketHelperPanel visit={visit} creatures={creatures} helper={post} onClose={closeRight} />
       ),
     };
   }
