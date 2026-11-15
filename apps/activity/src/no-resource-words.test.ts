@@ -144,11 +144,6 @@ const ALLOWED: readonly { file: string; fragment: string; why: string }[] = [
     fragment: 'label={`',
     why: 'a slot`s spoken name',
   },
-  {
-    file: './valley/MarketPage.tsx',
-    fragment: 'label={`',
-    why: 'a slot`s spoken name',
-  },
 ];
 
 function exempt(file: string): boolean {
