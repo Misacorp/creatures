@@ -9,7 +9,7 @@ import { homeAlerts } from '../../home-view';
 import type { Place } from '../../tabs';
 import { GEAR_STATE, SAMPLE_GEAR } from '../../creature-card-sample';
 import type { GearActions } from '../../gear-actions';
-import type { OrderRequest } from '../../api';
+import type { CratePiece, OrderRequest } from '../../api';
 import type { ValleyAnvilView, ValleyCommonsView, ValleyOrderView } from '@creatures/game';
 import { SignpostSeats, type SignpostStart } from '../../valley/SignpostSeats';
 import type { CommonsActions, CommonsStart } from '../../valley/CommonsBoard';
@@ -102,6 +102,9 @@ export const VALLEY_FORGE = [
   'two anvils',
   'tinkering',
   'full floor',
+  'sealed crate (rare)',
+  'sealed crate (epic)',
+  'sealed crate (bag fills)',
 ] as const;
 
 /** What the Signpost's or the Forge's page has open at the start (a picker, a drawer), for the shots. */
@@ -284,6 +287,7 @@ function restingVisit(creatures: readonly Creature[], brought: number): ValleyVi
       exchange: { rate: 3, critBp: 1000, critYield: 2 },
       queueMax: 3,
       orderCountMax: 99,
+      crate: { count: 0, cap: 30, best: null },
     },
     seatPrices: { owned: 0, max: 2, next: 0, ladder: [0, 113] },
     kit: { owned: [], price: 875 },
@@ -393,6 +397,23 @@ function forgeAnvils(roster: readonly Creature[], forge: string): ValleyAnvilVie
         sampleAnvil('anvil-2', b.id, [sampleOrder('order-2', null, 2, { reach: 'rare' })]),
       ];
   }
+}
+
+/** The pieces of a demo crate of `count`: worst first, the best last (the server's order); a creature puts one on. */
+function demoCratePieces(count: number, rareOnly: boolean, wearer: string | null): CratePiece[] {
+  const pool = SAMPLE_GEAR.items;
+  const out: CratePiece[] = [];
+  for (let i = 0; i < count; i += 1) {
+    const item = pool[i % Math.max(1, pool.length)];
+    if (item === undefined) continue;
+    const rarity = !rareOnly && i === count - 1 ? 'epic' : 'rare';
+    out.push({
+      item: { ...item, id: `crate-${String(i)}`, rarity, itemLevel: 6 + i * 3, equippedOn: null },
+      wornBy: i === 1 ? wearer : null,
+      madeBy: wearer,
+    });
+  }
+  return out;
 }
 
 /** What the demo's shelf holds: scrap for some pieces and a few shards. */
@@ -622,6 +643,8 @@ export function ValleyDemo({
   // The anvils, the shelf and the shards live here too, so the Forge's page can be played with.
   const [anvils, setAnvils] = useState<ValleyAnvilView[]>(() => forgeAnvils(base.creatures, forge));
   const [shelf, setShelf] = useState(DEMO_SHELF);
+  // The Forge's sealed crate (V-FORGE-5): how many pieces wait in it, so opening it can be played with.
+  const [crateLeft, setCrateLeft] = useState(() => (forge.startsWith('sealed crate') ? 4 : 0));
   // The commons live here too: a gift fills the project, a helper stands at its seat.
   const [block, setBlock] = useState<ValleyCommonsView | null>(() => {
     const own = presetCommons(commons, base.creatures);
@@ -664,6 +687,11 @@ export function ValleyDemo({
               ...scoutVisit.forge,
               shelf,
               bag: { count: 34, cap: 200 },
+              crate: {
+                count: crateLeft,
+                cap: 30,
+                best: crateLeft === 0 ? null : forge === 'sealed crate (rare)' ? 'rare' : 'epic',
+              },
             },
           },
           anvils,
@@ -998,6 +1026,22 @@ export function ValleyDemo({
                           setAcorns(acorns - visit.kit.price);
                           setOwned((now) => [...now, kit]);
                           return Promise.resolve(true);
+                        },
+                        openCrate: () => {
+                          const first = base.creatures[0]?.id ?? null;
+                          const pieces = demoCratePieces(
+                            crateLeft,
+                            forge === 'sealed crate (rare)',
+                            first,
+                          );
+                          const full = forge === 'sealed crate (bag fills)';
+                          const kept = full ? Math.min(2, pieces.length) : 0;
+                          setCrateLeft(kept);
+                          return Promise.resolve({
+                            pieces: pieces.slice(kept),
+                            sealed: kept,
+                            bagFull: full,
+                          });
                         },
                         buyAnvil: () => {
                           const price = visit.anvilPrices.next;

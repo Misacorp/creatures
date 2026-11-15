@@ -129,6 +129,9 @@ export const ActionIds = {
   kitBuy: (kit: string): ActionId => `kit-buy:${kit}`,
   /** Buying the Forge's next anvil: the number of anvils owned makes it this purchase. */
   anvilBuy: (owned: number): ActionId => `anvil-buy:${String(owned)}`,
+  /** Opening the Forge's sealed crate: what is sealed makes it this opening (the next crate holds other pieces, so it is another action). */
+  crateOpen: (sealed: number, best: string | null): ActionId =>
+    `crate-open:${String(sealed)}:${best ?? 'none'}`,
   /** One reroll of one piece: the player's rerolls so far this week make the next one another action (its price rose). */
   visitorReroll: (itemId: string, rerolls: number): ActionId =>
     `visitor-reroll:${itemId}:${String(rerolls)}`,

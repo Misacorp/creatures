@@ -20,6 +20,7 @@ import { marketLine } from './market-view';
 import { visitorLine } from './visitor-view';
 import { readyLine, schoolLine } from './school-view';
 import { commonsOf, placeMention } from './commons-view';
+import { crateBubbleLine } from './crate-view';
 import { forgeSystemsLine, fullFloors, longWaits } from './forge-view';
 import { fullPacks, signpostSystemsLine } from './signpost-view';
 import { placeLabel, readingOrder } from './valley-logic';
@@ -113,6 +114,16 @@ export function placeBubbles(alerts: TabAlerts, input: PlaceInput): PlaceBubble[
       count: full > 1 ? full : null,
       spoken:
         full === 1 ? 'A scout\u2019s pack is full' : `${String(full)} scouts\u2019 packs are full`,
+    });
+  }
+  // The Forge's sealed crate (V-FORGE-5): rare and epic pieces wait for the player to open it, the Forge's first news.
+  const crate = input.visit?.forge.crate;
+  if (crate !== undefined && crate.count > 0 && !out.some((b) => b.place === 'forge')) {
+    out.push({
+      place: 'forge',
+      glyph: 'sparkle',
+      count: crate.count > 1 ? crate.count : null,
+      spoken: crateBubbleLine(crate.best),
     });
   }
   // The Forge's news (V-FORGE-4, V-FORGE-5): a full floor, or a shortage that has lasted more than a day; never in the return walk.

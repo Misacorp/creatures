@@ -44,7 +44,9 @@ import { trayFor, type TrayInput } from './tray-state';
 import { seatAt } from './seat-parts';
 import { floorTotal } from './forge-canvas';
 import { interiorScale, interiorSceneDraw } from './forge-interior';
-import { ForgeInside, type InsideOpen } from './ForgeScenes';
+import { ForgeInside, type CrateRun, type InsideOpen } from './ForgeScenes';
+import { RATTLE, RATTLE_LOOPS, RATTLE_STEP_MS } from './crate-view';
+import { usePrefersReducedMotion } from '../hooks';
 import { anvilName, floorLine } from './forge-view';
 
 /** The right drawer: the one thing that was clicked. */
@@ -136,6 +138,17 @@ export function ForgeCanvas(props: ForgeCanvasProps) {
   const [right, setRight] = useState<Right | null>(() => startRight(props));
   const [left, setLeft] = useState<Left | null>(() => startLeft(props));
   const rootRef = useRef<HTMLDivElement | null>(null);
+  // The sealed crate being opened (V-FORGE-5): it rattles while the server is asked, then the reveal plays from the answer.
+  const [run, setRun] = useState<CrateRun | null>(null);
+  const [crateFailed, setCrateFailed] = useState<string | null>(null);
+  const alive = useRef(true);
+  const reduced = usePrefersReducedMotion();
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+    };
+  }, []);
 
   // A result waiting in the bag (a dismantle's pieces, a notice of changed gear): the bag opens on it.
   useEffect(() => {
@@ -178,6 +191,25 @@ export function ForgeCanvas(props: ForgeCanvasProps) {
   );
   const marketBuilt = visit.market?.open === true;
   const waiting = floorTotal(visit.anvils);
+
+  const openCrate = (): void => {
+    if (run !== null || busy) return;
+    const { best, count } = visit.forge.crate;
+    // The reveal has the whole scene: a drawer open beside it would show through.
+    setRight(null);
+    setLeft(null);
+    setCrateFailed(null);
+    setRun({ best, count, answer: null });
+    const rattle = reduced ? 0 : RATTLE.length * RATTLE_LOOPS * RATTLE_STEP_MS;
+    void Promise.all([
+      actions.openCrate(),
+      new Promise<void>((done) => setTimeout(done, rattle)),
+    ]).then(([answer]) => {
+      if (!alive.current) return;
+      if (answer === null) setCrateFailed('The crate would not open. Try again.');
+      setRun(answer === null ? null : { best, count, answer });
+    });
+  };
 
   const closeTop = (): void => {
     if (right !== null) setRight(null);
@@ -424,6 +456,13 @@ export function ForgeCanvas(props: ForgeCanvasProps) {
             bagAttention={props.bagAttention}
             open={open}
             overSeat={drag.drag?.over ?? null}
+            crate={visit.forge.crate}
+            crateRun={run}
+            crateFailed={crateFailed}
+            onCrate={openCrate}
+            onCrateDone={() => {
+              setRun(null);
+            }}
             onAnvil={(anvilId, hasSmith, opener) => {
               setRight({
                 kind: 'anvil',

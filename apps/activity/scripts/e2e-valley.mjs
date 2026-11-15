@@ -251,7 +251,12 @@ const forgeState = {
   crowd: [],
   /** An element every smith with an order waits for (Q64's wait line); null: nobody waits for a shard. */
   waitShard: null,
+  /** The sealed crate (V-FORGE-5): the rarities of the pieces waiting in it, oldest first (empty: nothing sealed). */
+  crate: [],
 };
+/** The best rarity sealed in a crate, as the valley block says it. */
+const crateBest = (crate) =>
+  crate.includes('epic') ? 'epic' : crate.includes('rare') ? 'rare' : null;
 const ANVIL_LADDER = [
   { acorns: 0, scrap: 0 },
   { acorns: 123, scrap: 38 },
@@ -368,6 +373,7 @@ const valleyBlock = () => ({
     exchange: { rate: 3, critBp: 1000, critYield: 2 },
     queueMax: 3,
     orderCountMax: 99,
+    crate: { count: forgeState.crate.length, cap: 30, best: crateBest(forgeState.crate) },
   },
   seats: scouts.seats.map(seatView),
   seatPrices: {
@@ -456,6 +462,31 @@ ROUTES.set('/api/valley/anvil/buy', (request) => {
     orders: [],
   });
   return { seatId: forgeState.anvils.at(-1).id, ...syncValley() };
+});
+/** The sealed crate's answers by idempotency key (a retry of the same key answers the same, and opens nothing twice). */
+const crateAnswers = new Map();
+ROUTES.set('/api/valley/forge/crate/open', (request) => {
+  const body = bodyOf(request);
+  forgeCalls.push(['crate/open', body]);
+  const kept = crateAnswers.get(body.idempotencyKey);
+  if (kept !== undefined) return { ...kept, ...syncValley() };
+  const gear = fixture('gear-state').items;
+  const maker = scouts.ids[0] ?? null;
+  const pieces = forgeState.crate.map((rarity, i) => ({
+    item: {
+      ...gear[(i + 2) % gear.length],
+      id: `crate-${String(i)}`,
+      rarity,
+      itemLevel: 5 + i * 4,
+      equippedOn: null,
+    },
+    wornBy: i === 1 ? maker : null,
+    madeBy: maker,
+  }));
+  forgeState.crate = [];
+  const answer = { pieces, sealed: 0, bagFull: false };
+  crateAnswers.set(body.idempotencyKey, answer);
+  return { ...answer, ...syncValley() };
 });
 ROUTES.set('/api/valley/order', (request) => {
   const body = bodyOf(request);
@@ -2414,6 +2445,169 @@ try {
 
       forgeState.anvils = [];
       forgeState.crowd = [];
+    },
+  );
+
+  // The Forge's sealed crate (V-FORGE-5, Misa's option C): rare and epic pieces wait in a crate in the room; the Gazette teases it, the map's
+  // Forge has a bubble, and a click opens it: it rattles, then the pieces are revealed one at a time, worst first and best last, ending on a
+  // summary of everything. One keyed call opens it. `E2E_QUERY='crate-reveal=B&crate-look=C'` shows the variants.
+  await scenario(
+    'valley systems on: the sealed crate is teased, opened and revealed worst first, best last',
+    () => {
+      const config = ROUTES.get('/api/config');
+      answerOverride.set('/api/config', () => ({ ...config(), valleySystems: true }));
+      const creatures = baseState.creatures.map((c) => ({ ...c, busy: null, away: false }));
+      scouts.seats = [];
+      scouts.owned = [];
+      scouts.ids = creatures.map((c) => c.id);
+      forgeState.anvils = [
+        { id: 'anvil-1', creatureId: creatures[0].id, kit: null, orders: [] },
+        { id: 'anvil-2', creatureId: creatures[1].id, kit: null, orders: [] },
+      ];
+      forgeState.crate = ['rare', 'rare', 'epic'];
+      forgeCalls.length = 0;
+      crateAnswers.clear();
+      gazette.paper = {
+        ...paperOf('short absence', creatures),
+        headlines: [headline('crate-waits', 99, 3, { rarity: 'epic' })],
+        decision: null,
+        more: 0,
+      };
+      answerOverride.set('/api/valley/gazette/close', () => {
+        gazette.paper = null;
+        stateOverride = { ...stateOverride, valley: valleyBlock() };
+        return { closed: true };
+      });
+      stateOverride = { creatures, valley: valleyBlock() };
+    },
+    async () => {
+      // The Gazette teases the crate and never names a piece.
+      await waitFor(
+        page.locator('h3.gz-headline', { hasText: /SOMETHING EPIC WAITS AT THE FORGE/i }),
+      );
+      await shot('crate-gazette');
+      await page
+        .getByRole('button', { name: /more things?|Into the valley/i })
+        .last()
+        .click();
+      await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+      await page.locator('.gz-fly').waitFor({ state: 'detached', timeout: 15000 });
+      await waitFor(page.locator(VALLEY), 'attached');
+      // The Forge has its bubble on the map, and says what waits.
+      const forgeLabel = (await place('forge').getAttribute('aria-label')) ?? '';
+      if (!/Something epic waits in the sealed crate/.test(forgeLabel))
+        throw new Error(`the Forge's bubble does not say the crate waits: ${forgeLabel}`);
+      await shot('crate-map-bubble');
+      await place('forge').evaluate((el) => el.click());
+      await waitFor(heading('Forge'));
+      await goInside();
+      const crate = sceneTarget('The sealed crate');
+      await waitFor(crate);
+      await expectNoScroll();
+      await expectTopmost(crate, 'the sealed crate');
+      if ((await page.locator('.vy-in-forge button.cv-target:not(:has(.cv-plate))').count()) > 0)
+        throw new Error('a clickable thing in the Forge has no plate');
+      await page.waitForTimeout(400);
+      await shot('crate-sealed');
+      await expectFocusCue(crate, 'the sealed crate');
+      // A click: it rattles, then the first card (the worst piece) shows over its rare burst.
+      await crate.click();
+      const reveal = page.getByRole('dialog', { name: 'The sealed crate is open' });
+      await waitFor(reveal);
+      const card = reveal.locator('button.cr-card');
+      await waitFor(card);
+      await page.waitForTimeout(900);
+      await shot('crate-reveal-first');
+      if (!/Rare/.test((await card.getAttribute('aria-label')) ?? ''))
+        throw new Error('the first piece is not the rare one');
+      await expectTopmost(card, 'the first card');
+      const look = await focusLook(card);
+      if (!look.outline.startsWith('none') || look.ring)
+        throw new Error(`the card shows a focus ring: ${look.outline}`);
+      // The server was asked once, with a key.
+      const opens = forgeCalls.filter(([k]) => k === 'crate/open');
+      if (opens.length !== 1 || typeof opens[0][1].idempotencyKey !== 'string')
+        throw new Error(`the crate was opened ${String(opens.length)} times, or without a key`);
+      // The scene behind is out of reach: Tab goes round the reveal's own buttons and never leaves it.
+      for (let i = 0; i < 5; i += 1) {
+        await page.keyboard.press('Tab');
+        const inside = await page.evaluate(
+          () => document.activeElement?.closest('.cr-reveal') != null,
+        );
+        if (!inside) throw new Error('Tab left the reveal for the scene behind it');
+      }
+      await card.focus();
+      // Enter goes on to the second piece (a creature puts it on), then the best, last.
+      await page.keyboard.press('Enter');
+      if (/crate-reveal=[CD]/.test(extraQuery) && !reduced) {
+        // Variants C and D: the first piece flies to the bag (or onto its creature) before the next one comes.
+        await page.waitForTimeout(160);
+        await shot('crate-reveal-flying');
+      }
+      await page.waitForFunction(() =>
+        /2 \/ 3/.test(document.querySelector('.cr-count')?.textContent ?? ''),
+      );
+      await page.waitForTimeout(700);
+      if (!/puts it on/.test(await card.innerText()))
+        throw new Error('the second piece does not say who puts it on');
+      await shot('crate-reveal-second');
+      await page.keyboard.press('Space');
+      await page.waitForFunction(() =>
+        /3 \/ 3/.test(document.querySelector('.cr-count')?.textContent ?? ''),
+      );
+      await page.waitForTimeout(900);
+      if (!/Epic/.test((await card.getAttribute('aria-label')) ?? ''))
+        throw new Error('the last piece is not the epic one');
+      await shot('crate-reveal-epic');
+      // The best waits: it does not move on by itself.
+      await page.waitForTimeout(3200);
+      if ((await reveal.locator('button.cr-card').count()) !== 1)
+        throw new Error('the best piece moved on by itself');
+      await card.click();
+      const summary = reveal.locator('.cr-summary');
+      await waitFor(summary);
+      await page.waitForTimeout(500);
+      await expectTopmost(summary, 'the summary');
+      if (
+        !/3 pieces/.test(await summary.innerText()) ||
+        !/1 epic, 2 rare/.test(await summary.innerText())
+      )
+        throw new Error(`the summary says: ${await summary.innerText()}`);
+      await shot('crate-reveal-summary');
+      await reveal.getByRole('button', { name: 'Done' }).click();
+      await reveal.waitFor({ state: 'detached', timeout: 10000 });
+      // The crate is gone from the room (nothing waits), and so is the Forge's bubble.
+      if ((await sceneTarget('The sealed crate').count()) > 0)
+        throw new Error('the crate is still in the room');
+      await expectNoScroll();
+      await shot('crate-after');
+      // Skip shows the summary at once; Escape does the same, and on the summary it closes. A reload keeps nothing of the reveal.
+      for (const how of ['Skip', 'Escape']) {
+        forgeState.crate = ['rare', 'epic'];
+        syncValley();
+        await page.reload();
+        await page.evaluate(() => document.fonts.ready);
+        await waitFor(page.locator(VALLEY), 'attached');
+        await place('forge').evaluate((el) => el.click());
+        await waitFor(heading('Forge'));
+        await sceneTarget('The sealed crate').click();
+        await waitFor(reveal.locator('button.cr-card'));
+        if (how === 'Skip') await reveal.getByRole('button', { name: 'Skip' }).click();
+        else await page.keyboard.press('Escape');
+        await waitFor(reveal.locator('.cr-summary'));
+        if (!/2 pieces/.test(await reveal.locator('.cr-summary').innerText()))
+          throw new Error(`${how}: the summary does not show both pieces`);
+        if (how === 'Skip') {
+          await page.waitForTimeout(500);
+          await shot('crate-reveal-skipped');
+          await reveal.getByRole('button', { name: 'Done' }).click();
+        } else {
+          await page.keyboard.press('Escape');
+        }
+        await reveal.waitFor({ state: 'detached', timeout: 10000 });
+        // Escape closed the reveal, not the Forge.
+        await waitFor(sceneTarget('The furnace'));
+      }
     },
   );
 

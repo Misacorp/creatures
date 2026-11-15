@@ -75,6 +75,7 @@ function forgeMode(anvils: ReturnType<typeof sampleAnvil>[], sent: unknown[] = [
     actions: {
       post: ok,
       buyAnvil: ok,
+      openCrate: () => Promise.resolve(null),
       buyKit: ok,
       setKit: ok,
       order: (request) => {

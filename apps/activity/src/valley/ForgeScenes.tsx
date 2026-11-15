@@ -23,6 +23,10 @@ import { At, CreatureSprite, Pic, SpeechBubble } from './parts';
 import { ANVIL_PROP } from './forge-props';
 import { PROP, anvilGlyph, anvilLabel, anvilWorking } from './forge-canvas';
 import { interiorLayout } from './forge-interior';
+import { CrateProp } from './CrateProp';
+import { CrateReveal } from './CrateReveal';
+import { crateLook, crateReveal } from './art-variants';
+import type { CrateOpened, CrateState } from './crate-view';
 import { interiorSprite } from './forge-interior-art';
 import { WARMING_FLAME } from './valley-art';
 
@@ -82,6 +86,14 @@ function Bubble({
   );
 }
 
+/** The sealed crate being opened: the glow it had (the valley's crate is empty once the server has opened it) and, when it has answered, what it held. */
+export interface CrateRun {
+  best: 'rare' | 'epic' | null;
+  count: number;
+  /** Null while the crate rattles and the server is asked; set when the reveal starts. */
+  answer: CrateOpened | null;
+}
+
 /** The inside's state of the drawers, as the targets need it. */
 export interface InsideOpen {
   /** The anvil whose drawer is open (its wizard or its order), or null. */
@@ -102,6 +114,11 @@ export function ForgeInside({
   bagAttention,
   open,
   overSeat,
+  crate,
+  crateRun,
+  onCrate,
+  onCrateDone,
+  crateFailed,
   onAnvil,
   onBuy,
   onLeft,
@@ -119,6 +136,13 @@ export function ForgeInside({
   open: InsideOpen;
   /** A hand carrying a creature is over this seat (an anvil's id). */
   overSeat: string | null;
+  /** The sealed crate as the valley says it, and the one being opened now (null: none). */
+  crate: CrateState;
+  crateRun: CrateRun | null;
+  onCrate: (opener: Opener) => void;
+  onCrateDone: () => void;
+  /** The crate would not open (the server said no, or nothing came back): a line over it. */
+  crateFailed: string | null;
   onAnvil: (anvilId: string, hasSmith: boolean, opener: Opener) => void;
   onBuy: (opener: Opener) => void;
   onLeft: (kind: 'bag' | 'floor' | 'plans' | 'board', opener: Opener) => void;
@@ -196,6 +220,31 @@ export function ForgeInside({
         );
       })}
       {waiting > 0 && <Bubble g={g} x={lay.crate.x} y={lay.crate.y} glyph="gift" count={waiting} />}
+      {crateFailed !== null && crateRun === null && (
+        <At
+          x={g.X(lay.sealed.x + lay.sealed.w / 2)}
+          y={g.Y(lay.sealed.y - 20)}
+          class="vy-feet-plate vy-over"
+        >
+          <span class="cr-fail pix" role="alert">
+            {crateFailed}
+          </span>
+        </At>
+      )}
+      {(crate.count > 0 || crateRun !== null) &&
+        (crateRun === null || crateRun.answer === null) && (
+          <CrateProp
+            g={g}
+            box={lay.sealed}
+            crate={crate}
+            best={crateRun?.best ?? crate.best}
+            night={night}
+            look={crateLook()}
+            phase={crateRun === null ? 'idle' : 'rattle'}
+            disabled={busy || crateRun !== null}
+            onOpen={onCrate}
+          />
+        )}
       {(bagFull || bagAttention) && (
         <Bubble g={g} x={lay.chest.x} y={lay.chest.y} glyph="warning" count={null} />
       )}
@@ -350,6 +399,30 @@ export function ForgeInside({
           onLeft('floor', opener);
         }}
       />
+      {crateRun !== null && crateRun.answer !== null && (
+        <CrateReveal
+          g={g}
+          crate={lay.sealed}
+          best={crateRun.best}
+          night={night}
+          answer={crateRun.answer}
+          variant={crateReveal()}
+          look={crateLook()}
+          nameOf={(id) => {
+            const c = creatureOf(id);
+            return c === undefined ? undefined : creatureName(c);
+          }}
+          flyTo={(piece) => {
+            const i = visit.anvils.findIndex(
+              (a) => piece.wornBy !== null && a.creatureId === piece.wornBy,
+            );
+            const cell = lay.cells[i];
+            if (cell !== undefined) return { x: cell.smith.x + 8, y: cell.smith.y + 8 };
+            return { x: lay.chest.x + lay.chest.w / 2, y: lay.chest.y + lay.chest.h / 2 };
+          }}
+          onDone={onCrateDone}
+        />
+      )}
     </>
   );
 }

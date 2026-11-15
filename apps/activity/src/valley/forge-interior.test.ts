@@ -5,6 +5,7 @@ import {
   CROP_B,
   ESSENTIAL_H,
   ROOM,
+  CRATE_AT,
   ROOM_AT,
   ROOM_H,
   interiorLayout,
@@ -119,6 +120,7 @@ describe('the Forge interior layout', () => {
             lay.plans,
             lay.chest,
             lay.crate,
+            lay.sealed,
             ...lay.cells,
           ];
           for (const b of boxes) {
@@ -166,6 +168,18 @@ describe('the Forge interior layout', () => {
     // The glow's pool centre (25, 6) is the furnace mouth: furnace x + 23, the furnace's base line.
     expect(ROOM_AT['furnace-glow'].x + 25).toBe(ROOM_AT.furnace.x + 23);
     expect(ROOM_AT['furnace-glow'].y + 6).toBe(ROOM_AT.furnace.y + PIECE_SIZE.furnace.h - 1);
+  });
+
+  it('stands the sealed crate at the right of the front cluster, 20 x 18, clear of the benches, the door and its mat', () => {
+    for (const [w, h] of SIZES) {
+      const g = sceneGeometry(w, h, interiorScale(w, h));
+      const lay = interiorLayout(g, 4);
+      expect(lay.sealed).toEqual({ x: lay.ox + CRATE_AT.x, y: lay.oy + CRATE_AT.y, w: 20, h: 18 });
+      for (const bench of lay.benches) {
+        expect(apart(lay.sealed, { ...bench, w: 32, h: 20 })).toBe(true);
+      }
+      expect(apart(lay.sealed, lay.door)).toBe(true);
+    }
   });
 
   it('draws the wall and the floor to every edge, the glow over the floor, the rug under it, the door and the crate', () => {

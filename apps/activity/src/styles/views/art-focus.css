@@ -4,7 +4,7 @@
 
   An art scene is the valley's map and every place drawn as a canvas: the map's place buttons and edge flags, a canvas's targets
   (`cv-target`), the creatures standing in a scene (`vy-stand-btn`), the expedition map's destinations and its two corner buttons, the
-  Places flag, and the strips under a canvas scene (the shelf's resource chips, the creature tray). On these:
+  Places flag, the sealed crate's reveal (its cards and buttons, `cr-`), and the strips under a canvas scene (the shelf's resource chips, the creature tray). On these:
 
   - no browser focus ring or outline, on any input;
   - a keyboard user still sees where they are: a small gold pixel arrow over the target, shown only on :focus-visible. One rule, the
@@ -23,6 +23,8 @@
     .vy-edge,
     .vy-hatch,
     .sg-map .wm-marker,
+    .cr-reveal button,
+    .cr-summary,
     .pc-below :is(button, a, [tabindex])
   ):is(:focus, :focus-visible),
 .vy-frame .vy-valley:focus {
@@ -31,6 +33,8 @@
 
 /* The target the arrow hangs on needs a box of its own to sit on (the others are positioned already). */
 .vy-frame .vy-stand-btn,
+.vy-frame .cr-card,
+.vy-frame .cr-summary button,
 .vy-frame .pc-below :is(button, a, [tabindex]) {
   position: relative;
 }
@@ -45,6 +49,7 @@
     .vy-edge,
     .vy-hatch,
     .sg-map .wm-marker,
+    .cr-reveal button,
     .pc-below :is(button, a, [tabindex])
   ):focus-visible::after {
   content: '';

@@ -172,11 +172,13 @@ export const ValleyForgeViewSchema = v.strictObject({
   orderCountMax: int,
   /**
    * V-FORGE-5, the sealed crate: rare and epic pieces wait here until the player opens it. Only how many and the best rarity are shown
-   * (no ids and no lines before opening). Optional so older fixtures stay valid; the server always sends it.
+   * (no ids and no lines before opening).
    */
-  crate: v.optional(
-    v.strictObject({ count: int, cap: int, best: v.nullable(v.picklist(['rare', 'epic'])) }),
-  ),
+  crate: v.strictObject({
+    count: int,
+    cap: int,
+    best: v.nullable(v.picklist(['rare', 'epic'])),
+  }),
 });
 
 /**

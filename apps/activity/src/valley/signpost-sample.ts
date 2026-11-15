@@ -116,6 +116,7 @@ export function sampleValley(
       exchange: { rate: 3, critBp: 1000, critYield: 2 },
       queueMax: 3,
       orderCountMax: 99,
+      crate: { count: 0, cap: 30, best: null },
     },
     seats: [...seats],
     seatPrices: {
