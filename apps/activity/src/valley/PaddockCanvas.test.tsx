@@ -18,6 +18,7 @@ import type { CommonsActions } from './CommonsBoard';
 import { buildingPlace, openPlace, sampleCommons, withCommons } from './commons-sample';
 import { PaddockCanvas, type PaddockStart } from './PaddockCanvas';
 import { sampleValley } from './signpost-sample';
+import { trayStates } from './tray-state';
 
 let page: Page | null = null;
 beforeEach(() => {
@@ -64,6 +65,7 @@ function draw(
     start?: PaddockStart;
     onEvolve?: (species: string) => void;
     creatures?: typeof free;
+    row?: boolean;
   } = {},
 ): Page {
   const calls = options.calls ?? { posts: [] };
@@ -80,6 +82,9 @@ function draw(
     <PaddockCanvas
       visit={visit}
       acorns={100}
+      {...(options.row === true
+        ? { trayInput: { trips: [], jobs: null, now: 0, ...trayStates(visit) } }
+        : {})}
       {...(options.withActions === true ? { commons } : {})}
       {...(options.start === undefined ? {} : { start: options.start })}
       collection={{
@@ -198,6 +203,23 @@ describe('the Paddock canvas: the scene', () => {
     });
     expect(labels(p).some((n) => /at home in the Paddock/.test(n))).toBe(false);
     expect(byRole(p.root, 'status')).toHaveLength(1);
+  });
+});
+
+describe('the Paddock canvas: the creature row (variation A)', () => {
+  it('shows the shared tray under the scene, one button for each free creature, and a tap opens that creature’s drawer', () => {
+    const p = draw(home, { row: true });
+    expect(byClass(p.root, 'pc-below')).toHaveLength(1);
+    expect(byClass(p.root, 'vy-tray')).toHaveLength(1);
+    const mons = byClass(p.root, 'vy-mon');
+    expect(mons.length).toBe(free.length);
+    p.click(mons[0] as FakeElement);
+    expect(byClass(p.root, 'cs-summary')).toHaveLength(1);
+  });
+
+  it('leaves the row out when the game gives it no creature states', () => {
+    const p = draw(home);
+    expect(byClass(p.root, 'vy-tray')).toHaveLength(0);
   });
 });
 

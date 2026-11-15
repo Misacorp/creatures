@@ -945,6 +945,12 @@ export function Game({
             commons={commonsActions}
             acorns={game.balances.bait}
             studying={students}
+            trayInput={{
+              trips: game.expeditions,
+              jobs: gear === null ? null : gear.jobs,
+              now: Date.now() + offset,
+              ...trayStates(systems),
+            }}
           />
         ) : (
           <Collection {...collectionProps} />

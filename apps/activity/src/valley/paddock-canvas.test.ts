@@ -19,9 +19,12 @@ import {
   paddockScale,
   roamersOf,
   whereLine,
+  yardFor,
+  PADDOCK_HAS_ROW,
+  PADDOCK_VARIATION,
 } from './paddock-canvas';
 import { CREATURE_PX, PADDOCK_ROAM_AREA } from './place-cast';
-import { PLATE_ROW_PX } from './place-plates';
+import { PLATE_ROW_PX, standBounds } from './place-plates';
 import { artSize } from './place-scene';
 import { sampleValley } from './signpost-sample';
 import { sceneGeometry } from './SceneFrame';
@@ -43,6 +46,36 @@ const geometry = (width: number, height: number, corner: boolean) =>
 const each = (check: (w: number, h: number, corner: boolean) => void): void => {
   for (const [w, h] of SIZES) for (const corner of [false, true]) check(w, h, corner);
 };
+
+describe('the Paddock canvas: the yard fills the meadow', () => {
+  it('spreads over the whole width and height of the scene at every size, ends above the sign and short of a corner beside it', () => {
+    each((w, h, corner) => {
+      const g = geometry(w, h, corner);
+      const lay = paddockLayout(g, corner);
+      const bounds = standBounds(g);
+      const yard = yardFor(g, lay, bounds);
+      const old = meadowFor(g, lay);
+      // Never smaller than the old meadow, and the whole stand width unless a corner stands beside it.
+      expect(yard.width).toBeGreaterThanOrEqual(old.width);
+      expect(yard.x).toBe(bounds.x);
+      if (lay.mode === 'beside' && lay.corner !== null) {
+        expect(yard.x + yard.width).toBeLessThanOrEqual(lay.corner.x - CREATURE_PX);
+      } else {
+        expect(yard.x + yard.width).toBe(bounds.x + bounds.width);
+      }
+      // Feet on the grass at the top, the sign's row at the bottom.
+      expect(yard.y).toBeGreaterThanOrEqual(lay.box.y);
+      expect(yard.y + yard.height).toBe(old.y + old.height);
+      expect(yard.height).toBeGreaterThanOrEqual(old.height);
+      expect(signBox(g, lay).y).toBeGreaterThan(yard.y + yard.height);
+    });
+  });
+
+  it('has one switch for the creature row, and the default is variation A (the row)', () => {
+    expect(PADDOCK_VARIATION).toBe('A');
+    expect(PADDOCK_HAS_ROW).toBe(true);
+  });
+});
 
 describe('the Paddock canvas: the scale', () => {
   it('is a whole number from the phone’s to the biggest, and a taller window never gets a smaller one', () => {

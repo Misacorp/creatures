@@ -25,6 +25,16 @@ import { scaffoldFor } from './scaffold';
 import { glowSprite } from './valley-places';
 import type { Placement } from './valley-art';
 
+/**
+ * Which way the Paddock is laid out (Misa's call, 2026-11-15, kept as one switch): `'A'` has the creature row under the scene (the shared
+ * `Tray`, as every other place has) and the roamers spread over the whole meadow; `'B'` has no row, the roamers alone fill the meadow
+ * (the yard is the row). Flip it here, nowhere else.
+ */
+export const PADDOCK_VARIATION = 'A' as 'A' | 'B';
+
+/** Whether the Paddock shows the creature row under its scene (variation A). */
+export const PADDOCK_HAS_ROW = PADDOCK_VARIATION === 'A';
+
 /** Scene pixels the corner stands from the ring, beside it, and under the button, below it. */
 const GAP_BESIDE = 10;
 const GAP_BELOW = 2;
@@ -210,6 +220,31 @@ export function meadowFor(
     y: base.y,
     width: Math.max(base.width, r.right - r.left - CREATURE_PX),
     height: Math.max(base.height, limit - CREATURE_PX - base.y),
+  };
+}
+
+/**
+ * The yard the creatures roam, in scene pixels (the top-left a creature may stand at): the whole width of the scene inside `bounds` (which
+ * the caller cuts short of the gate) and the whole height from the paddock art's top (feet on the grass) down to the row the "Creatures"
+ * sign stands under, so a wide window's meadow is not an empty field with the creatures bunched at its left. With the corner beside the
+ * yard the yard ends a sprite short of it; with the corner under it the yard ends above it (`meadowFor`).
+ */
+export function yardFor(
+  g: Pick<SceneGeometry, 'H' | 's'>,
+  lay: Pick<PaddockLayout, 'mode' | 'box' | 'corner'>,
+  bounds: { x: number; y: number; width: number; height: number },
+): { x: number; y: number; width: number; height: number } {
+  const base = meadowFor(g, lay);
+  const top = Math.max(bounds.y, lay.box.y);
+  let right = bounds.x + bounds.width;
+  if (lay.mode === 'beside' && lay.corner !== null) {
+    right = Math.min(right, lay.corner.x - CREATURE_PX);
+  }
+  return {
+    x: bounds.x,
+    y: top,
+    width: Math.max(1, right - bounds.x),
+    height: Math.max(1, base.y + base.height - top),
   };
 }
 

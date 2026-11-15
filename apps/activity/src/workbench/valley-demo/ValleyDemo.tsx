@@ -1079,6 +1079,12 @@ export function ValleyDemo({
                   visit={visit}
                   {...(commonsActions === undefined ? {} : { commons: commonsActions })}
                   acorns={acorns}
+                  trayInput={{
+                    trips: base.trips,
+                    jobs: base.jobs,
+                    now: HOME_NOW,
+                    ...trayStates(visit),
+                  }}
                   collection={{
                     state: { ...SAMPLE_STATE, creatures: [...base.creatures] },
                     gear: SAMPLE_GEAR,

@@ -4,6 +4,14 @@ The valley and peaceful systems overhaul planned in docs/design/valley/: job pos
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-16: Pre-playtest layout fixes: creature drawer, Paddock row, seat outlines, corner in view
+
+ID: `2026-11-16-pre-playtest-layout-fixes-creature-drawer` · Status: current
+
+**Decision.** Four layout fixes before the owner's playtest. (1) A creature's drawer at the Bonfire and in the Paddock has one name, the drawer's title, and a real summary under it: `valley/CreatureSummary` (the creature card's own `CreatureHead`, without its name and with a larger portrait, then the page's `ExperienceRow`, one line for what it does and one for what it gains), then the place's actions (help build, "Open its page"). (2) The Paddock has the shared creature row under the scene (the `Tray` in `PlaceCanvas`'s `below` slot, a tap opens that creature's drawer, a creature carried into the yard that holds a builders' seat comes back by clearing that seat) and its roamers spread over the whole meadow (`yardFor`: the whole width and height of the scene, ending short of the gate and of a corner beside it, above the sign). One switch, `PADDOCK_VARIATION` in `paddock-canvas.ts`: `'A'` (default, the row) or `'B'` (no row; the roamers alone fill the meadow and the yard is the row). (3) A free School seat is outlined as the seat only (`freeSeatBox`: from under the house's walls, `HOUSE_BASE_ROW`, to the students' feet), so the dashed boxes no longer cover the house's lower wall. (4) The builders' corner is kept in view: its two targets share a `group` (`CORNER_GROUP`), and when a drawer opens the scene pans (`panWith`) so the clicked thing stays clear first and the whole corner is brought in as far as that allows, in the Bonfire, Market, School and Paddock.
+
+**Reasoning.** The owner's first playtest would otherwise meet a thin drawer that says the name twice, a wide empty field with the creatures bunched at its left and no creature row (he had asked for the row everywhere), outlines over the schoolhouse and a corner half under a drawer. Reusing the card's head keeps one creature header; the pan stays what the canvas rule already says (slide just enough, never rescale), and only widens what counts as "the clicked thing" for the corner. Variation B is kept behind the one constant so the owner can compare the two on staging without a rebuild of the layout code. The Bonfire's summary has no "Open its page": there is no creature page in that place, and adding one would need the game's whole state and gear plumbed in.
+
 ## 2026-11-15: The Market is a canvas: the stall, the broker, and a building site before it is built
 
 ID: `2026-11-15-the-market-is-a-canvas-the` · Status: current
