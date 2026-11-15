@@ -1,15 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GEAR_STATE, SAMPLE_GEAR } from './creature-card-sample';
 import type { GearActions } from './gear-actions';
-import {
-  byClass,
-  byName,
-  byRole,
-  createPage,
-  visibleText,
-  type FakeElement,
-  type Page,
-} from './test-dom';
+import { byClass, byName, byRole, createPage, visibleText, type Page } from './test-dom';
 import { setStepPlace } from './valley/drawer-step';
 import { PopoverHost } from './PopoverHost';
 import { sampleAnvil, sampleOrder, withAnvils } from './valley/forge-sample';
@@ -193,7 +185,7 @@ describe('the item card and the dismantle flow in the Forge are steps, never a s
       let up = side?.parentNode ?? null;
       let found: string | null = null;
       while (up !== null && found === null) {
-        found = (up as FakeElement).getAttribute?.('data-side') ?? null;
+        found = up.getAttribute?.('data-side') ?? null;
         up = up.parentNode;
       }
       // The list is on the page either way; beside leaves it showing.
