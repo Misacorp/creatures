@@ -2,6 +2,7 @@ import type { RefObject } from 'preact';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import {
   buyAnvil,
+  openForgeCrate,
   buyScoutSeat,
   closeGazette,
   setScoutDeep,
@@ -462,6 +463,15 @@ export function Game({
     setKit: async (seatId, kit) =>
       takeValley(await run(() => scoutKit({ action: 'set', seatId, kit }))),
     order: async (request) => takeValley(await run(() => postOrder(request))),
+    openCrate: async () => {
+      const crate = systems?.forge.crate;
+      const answer = await runKeyed(
+        ActionIds.crateOpen(crate?.count ?? 0, crate?.best ?? null),
+        (key) => openForgeCrate(key),
+      );
+      if (!takeValley(answer) || answer === undefined) return null;
+      return { pieces: answer.pieces, sealed: answer.sealed, bagFull: answer.bagFull };
+    },
     buyAnvil: async () => {
       const owned = systems?.anvilPrices.owned ?? 0;
       const ok = takeValley(await runKeyed(ActionIds.anvilBuy(owned), (key) => buyAnvil(key)));
@@ -1011,6 +1021,7 @@ export function Game({
                     openPlace('paddock');
                   },
                   // Q64: an anvil that waits on a shard leads to the Market (its exchange once built, else its project).
+                  onLeave: leavePlace,
                   onOpenMarket: (to: string | null) => {
                     setMarketStart(
                       systems.market?.open === true && to !== null ? { exchange: to } : undefined,

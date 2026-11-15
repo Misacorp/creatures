@@ -2,6 +2,7 @@
  * The Forge as a canvas (`ForgeCanvas`, the rule "A place is a canvas"): what is in the scene and what a click on each thing opens.
  * Drawn in the fake DOM; a phone has no `matchMedia` here, so a panel is its own page (the shell's other half is in `PlaceCanvas.test`).
  */
+import { act } from 'preact/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { OrderRequest } from '../api';
 import { SAMPLE_GEAR } from '../creature-card-sample';
@@ -11,12 +12,15 @@ import {
   badgesIn,
   byClass,
   byName,
+  byRole,
   createPage,
   visibleText,
   type FakeElement,
   type Page,
 } from '../test-dom';
 import { homeInput } from '../workbench/home-sample';
+import type { CratePiece } from '../api';
+import type { CrateOpened } from './crate-view';
 import type { ForgeActions } from './ForgeAnvils';
 import { ForgeCanvas } from './ForgeCanvas';
 import { fullFloor, sampleAnvil, sampleOrder, shardWait, withAnvils } from './forge-sample';
@@ -57,13 +61,14 @@ interface Calls {
   orders: OrderRequest[];
   market: (string | null)[];
   posts: { seatId: string; creatureId: string | null }[];
+  /** What opening the sealed crate answers (null: the server did not open it). */
+  crate?: CrateOpened | null;
 }
 
 function draw(
   visit: ReturnType<typeof withAnvils>,
   acorns = 500,
   calls: Calls = { actions: [], orders: [], market: [], posts: [] },
-  inside = true,
 ): Page {
   const ok = (name: string) => () => {
     calls.actions.push(name);
@@ -75,6 +80,10 @@ function draw(
       return Promise.resolve(true);
     },
     buyAnvil: ok('buyAnvil'),
+    openCrate: () => {
+      calls.actions.push('openCrate');
+      return Promise.resolve(calls.crate ?? null);
+    },
     buyKit: ok('buyKit'),
     setKit: ok('setKit'),
     order: (request) => {
@@ -110,7 +119,9 @@ function draw(
         )}
         bagFull={false}
         bagAttention={false}
-        inside={inside}
+        onLeave={() => {
+          calls.actions.push('leave');
+        }}
       />
     </PopoverHost>,
   );
@@ -126,53 +137,29 @@ const target = (p: Page, name: RegExp): FakeElement => {
   return found;
 };
 
-describe('the Forge canvas: outside and inside', () => {
-  const withFire = (visit: ReturnType<typeof withAnvils>): ReturnType<typeof withAnvils> =>
-    withCommons(visit);
-  const outside = (visit: ReturnType<typeof withAnvils>, calls?: Calls): Page =>
-    draw(visit, 500, calls, false);
-
-  it('opens on the outside: the building (the way in), the project board, and no anvils, props or door', () => {
-    const p = outside(
-      withFire(withAnvils(plain, [sampleAnvil('a1', a.id, [sampleOrder('o1', BP, 3)])])),
+describe('the Forge canvas: it opens straight on the interior', () => {
+  it('has the anvils, the furnace and the props from the first draw, and no outside building or notice board', () => {
+    const p = draw(
+      withCommons(withAnvils(plain, [sampleAnvil('a1', a.id, [sampleOrder('o1', BP, 3)])])),
     );
     const names = targets(p).map((el) => el.getAttribute('aria-label') ?? '');
-    expect(names.some((n) => /^The forge\. Go inside/.test(n))).toBe(true);
-    expect(names.some((n) => /^The project board/.test(n))).toBe(true);
-    expect(names.some((n) => /^Anvil \d/.test(n))).toBe(false);
-    expect(names.some((n) => /^The bag|^The plans|^The floor|^A new anvil/.test(n))).toBe(false);
-    expect(names.some((n) => /^The door/.test(n))).toBe(false);
+    expect(names.some((n) => /^Anvil 1/.test(n))).toBe(true);
+    expect(names.some((n) => /^The furnace/.test(n))).toBe(true);
+    expect(names.some((n) => /^The forge\. Go inside/.test(n))).toBe(false);
+    expect(names.some((n) => /^The project board/.test(n))).toBe(false);
   });
 
-  it('a click on the building goes inside; the door goes back out', () => {
-    const p = outside(withAnvils(plain, [sampleAnvil('a1', a.id, [sampleOrder('o1', BP, 3)])]));
-    p.click(target(p, /^The forge\. Go inside/));
-    const inner = targets(p).map((el) => el.getAttribute('aria-label') ?? '');
-    expect(inner.some((n) => /^Anvil 1/.test(n))).toBe(true);
-    expect(inner.some((n) => /^The forge\. Go inside/.test(n))).toBe(false);
-    p.click(target(p, /^The door\. Go back outside/));
-    const out = targets(p).map((el) => el.getAttribute('aria-label') ?? '');
-    expect(out.some((n) => /^The forge\. Go inside/.test(n))).toBe(true);
-    expect(out.some((n) => /^Anvil 1/.test(n))).toBe(false);
+  it("the door leaves for the valley (it is the place's way back), and closes nothing else", () => {
+    const calls: Calls = { actions: [], orders: [], market: [], posts: [] };
+    const p = draw(withAnvils(plain, [sampleAnvil('a1', a.id, [])]), 500, calls);
+    p.click(target(p, /^The door\. Back to the valley/));
+    expect(calls.actions).toEqual(['leave']);
   });
 
-  it('the project board opens from the board outside and from the furnace inside', () => {
-    const p = outside(withFire(withAnvils(plain, [])));
-    p.click(target(p, /^The project board/));
-    expect(visibleText(p.root)).toMatch(/Project board/);
-    p.unmount();
-    page = null;
-    const q = draw(withAnvils(plain, []));
+  it('the project board opens from the furnace (the notice board that stood outside is gone)', () => {
+    const q = draw(withCommons(withAnvils(plain, [])));
     q.click(target(q, /^The furnace/));
     expect(visibleText(q.root)).toMatch(/Project board/);
-  });
-
-  it("going out closes an anvil's drawer with the room", () => {
-    const p = draw(withAnvils(plain, [sampleAnvil('a1', a.id, [sampleOrder('o1', BP, 3)])]));
-    p.click(target(p, /^Anvil 1/));
-    expect(visibleText(p.root)).toMatch(/Orders|Add an order/);
-    p.click(target(p, /^The door/));
-    expect(visibleText(p.root)).not.toMatch(/Add an order/);
   });
 
   it("puts the player's smiths in the room with other players' smiths at the back, tapped for their owner; ambient workers when there are none", () => {
@@ -437,5 +424,106 @@ describe('the Forge canvas: the left drawer is for the collections', () => {
     // The floor row leads to the anvil's own page, on its floor step: the right drawer.
     expect(byClass(q.root, 'pc-page')[0]?.getAttribute('data-side')).toBe('right');
     expect(visibleText(q.root)).toMatch(/Floor and pace/);
+  });
+});
+
+describe('the fire numbers are a step of the project board, never a sheet over it', () => {
+  it('a tap on the fire shows its numbers in place of the board, and Back returns to it', () => {
+    const q = draw(withCommons(withAnvils(plain, [])));
+    q.click(target(q, /^The furnace/));
+    q.click(byName(q.root, 'button', /^The fire\./)[0] as FakeElement);
+    expect(byRole(q.root, 'dialog')).toHaveLength(0);
+    expect(visibleText(q.root)).toMatch(/What warmed it last/);
+    expect(byClass(q.root, 'ps-list')[0]?.getAttribute('hidden')).not.toBeNull();
+    q.click(byName(q.root, 'button', /^‹ Back to the project board/)[0] as FakeElement);
+    expect(byClass(q.root, 'ps-list')[0]?.getAttribute('hidden')).toBeNull();
+    expect(byName(q.root, 'button', /^‹ Back to the project board/)).toHaveLength(0);
+  });
+});
+
+describe('the Forge canvas: the sealed crate', () => {
+  const sealed = (count: number, best: 'rare' | 'epic' | null) => {
+    const visit = withAnvils(plain, [sampleAnvil('a1', a.id, [])]);
+    return { ...visit, forge: { ...visit.forge, crate: { count, cap: 30, best } } };
+  };
+  const BASE_ITEM = SAMPLE_GEAR.items[0];
+  if (BASE_ITEM === undefined) throw new Error('fixture');
+  const piece = (id: string, rarity: 'rare' | 'epic', level: number): CratePiece => ({
+    item: { ...BASE_ITEM, id, rarity, itemLevel: level },
+    wornBy: null,
+    madeBy: a.id,
+  });
+  const opened: CrateOpened = {
+    pieces: [piece('p1', 'rare', 4), piece('p2', 'epic', 9)],
+    sealed: 0,
+    bagFull: false,
+  };
+  const later = () =>
+    act(async () => {
+      await new Promise((done) => setTimeout(done, 10));
+    });
+
+  it('draws nothing for an empty crate', () => {
+    const p = draw(sealed(0, null));
+    expect(targets(p).some((el) => /sealed crate/i.test(el.getAttribute('aria-label') ?? ''))).toBe(
+      false,
+    );
+  });
+
+  it('draws a button with the shared plate and a count bubble when it holds pieces, naming the best rarity but no piece', () => {
+    const p = draw(sealed(2, 'epic'));
+    const crate = target(p, /^The sealed crate/);
+    expect(crate.getAttribute('aria-label')).toBe(
+      'The sealed crate: 2 pieces, something epic inside. Open it',
+    );
+    expect(byClass(crate, 'cv-plate')[0]?.textContent).toMatch(/Sealed crate/);
+    expect(byClass(p.root, 'vy-bubble').some((el) => el.textContent.includes('2'))).toBe(true);
+  });
+
+  it('a click opens it once; the pieces come out worst first and the summary ends it', async () => {
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: query.includes('reduce'),
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    }));
+    const calls: Calls = { actions: [], orders: [], market: [], posts: [], crate: opened };
+    const p = draw(sealed(2, 'epic'), 500, calls);
+    p.click(target(p, /^The sealed crate/));
+    await later();
+    expect(calls.actions.filter((x) => x === 'openCrate')).toHaveLength(1);
+    expect(byClass(p.root, 'cr-reveal')).toHaveLength(1);
+    expect(byClass(p.root, 'cr-count')[0]?.textContent.trim()).toBe('1 / 2');
+    expect(byClass(p.root, 'cr-card')[0]?.getAttribute('aria-label')).toMatch(/^Rare /);
+    p.click(byClass(p.root, 'cr-card')[0] as FakeElement);
+    expect(byClass(p.root, 'cr-card')[0]?.getAttribute('aria-label')).toMatch(/^Epic /);
+    p.click(byClass(p.root, 'cr-card')[0] as FakeElement);
+    expect(byClass(p.root, 'cr-summary')).toHaveLength(1);
+    p.click(byName(p.root, 'button', 'Done')[0] as FakeElement);
+    expect(byClass(p.root, 'cr-reveal')).toHaveLength(0);
+  });
+
+  it('while it opens the crate cannot be opened again (one call)', async () => {
+    const calls: Calls = { actions: [], orders: [], market: [], posts: [], crate: opened };
+    const p = draw(sealed(2, 'rare'), 500, calls);
+    const crate = target(p, /^The sealed crate/);
+    p.click(crate);
+    p.click(crate);
+    await later();
+    expect(calls.actions.filter((x) => x === 'openCrate')).toHaveLength(1);
+  });
+
+  it('a server that does not open it leaves the crate where it is, with a line saying so', async () => {
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: query.includes('reduce'),
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    }));
+    const calls: Calls = { actions: [], orders: [], market: [], posts: [], crate: null };
+    const p = draw(sealed(2, 'rare'), 500, calls);
+    p.click(target(p, /^The sealed crate/));
+    await later();
+    expect(byClass(p.root, 'cr-reveal')).toHaveLength(0);
+    expect(visibleText(p.root)).toMatch(/The crate would not open/);
+    expect(target(p, /^The sealed crate/).hasAttribute('disabled')).toBe(false);
   });
 });

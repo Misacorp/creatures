@@ -27,20 +27,39 @@ const V1SectionSchema = v.picklist(GLOSSARY_SECTIONS);
 
 /**
  * The sections of the combat v2 How to play page, in order (shown instead of the combat ones above when the
- * server plays combat v2). Marks and reactions, roles and Knacks, the board, armour and crits, the raid weekend
- * and the Boss Rank.
+ * server plays combat v2). Marks and reactions, roles and Knacks, levels and growth, the board, armour and crits,
+ * the raid weekend and the Boss Rank.
  */
 export const GLOSSARY_SECTIONS_V2 = [
   'v2-marks',
   'v2-knacks',
+  'v2-growth',
   'v2-board',
   'v2-armour',
   'v2-weekend',
   'v2-rank',
 ] as const;
 
-/** Every section a glossary entry's "More" link can lead to: the shipped set and the combat v2 set. */
-export const GlossarySectionSchema = v.picklist([...GLOSSARY_SECTIONS, ...GLOSSARY_SECTIONS_V2]);
+/**
+ * The sections of the valley's part of the page (shown with combat v2 when the server runs the valley's base systems,
+ * `valleySystems`): a day, the commons, the Forge, gear, the Market and the visitor, the School and trials. They take
+ * the place of the shipped Expeditions, Gear and Workshop sections. Placeholder text, from `how-to-play-valley.json`.
+ */
+export const GLOSSARY_SECTIONS_VALLEY = [
+  'valley-day',
+  'valley-commons',
+  'valley-forge',
+  'valley-gear',
+  'valley-market',
+  'valley-school',
+] as const;
+
+/** Every section a glossary entry's "More" link can lead to: the shipped set, the combat v2 set and the valley set. */
+export const GlossarySectionSchema = v.picklist([
+  ...GLOSSARY_SECTIONS,
+  ...GLOSSARY_SECTIONS_V2,
+  ...GLOSSARY_SECTIONS_VALLEY,
+]);
 export type GlossarySection = v.InferOutput<typeof GlossarySectionSchema>;
 
 export const MAX_GLOSSARY_TITLE = 32;
@@ -128,6 +147,15 @@ export const HowToPlayV2Schema = v.strictObject({
 });
 export type HowToPlayV2 = v.InferOutput<typeof HowToPlayV2Schema>;
 
+/** The valley's How to play text: its sections in their fixed order, plain text (no chips). */
+export const HowToPlayValleySchema = v.strictObject({
+  sections: v.pipe(
+    v.array(sectionOf(v.picklist(GLOSSARY_SECTIONS_VALLEY))),
+    v.length(GLOSSARY_SECTIONS_VALLEY.length),
+  ),
+});
+export type HowToPlayValley = v.InferOutput<typeof HowToPlayValleySchema>;
+
 function fail(message: string): never {
   throw new Error(`Invalid glossary: ${message}`);
 }
@@ -203,6 +231,19 @@ export function loadHowToPlayV2(raw: unknown): HowToPlayV2 {
     if (section.id !== GLOSSARY_SECTIONS_V2[i]) {
       fail(
         `v2 section ${String(i + 1)} must be "${GLOSSARY_SECTIONS_V2[i] ?? ''}", got "${section.id}"`,
+      );
+    }
+  });
+  return page;
+}
+
+/** Validates the valley's How to play text: the sections come in the page's order. */
+export function loadHowToPlayValley(raw: unknown): HowToPlayValley {
+  const page = parse(HowToPlayValleySchema, raw, 'how-to-play-valley');
+  page.sections.forEach((section, i) => {
+    if (section.id !== GLOSSARY_SECTIONS_VALLEY[i]) {
+      fail(
+        `valley section ${String(i + 1)} must be "${GLOSSARY_SECTIONS_VALLEY[i] ?? ''}", got "${section.id}"`,
       );
     }
   });

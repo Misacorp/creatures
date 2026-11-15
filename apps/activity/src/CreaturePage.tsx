@@ -1,4 +1,5 @@
 import { RULES } from '@creatures/game';
+import { fallbackSlotOpens } from './live-flags';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Creature, GameState } from './api';
 import {
@@ -316,7 +317,7 @@ export function CreaturePage({
     evolveNeed !== undefined ||
     evolveShort !== null ||
     waitingCatch !== undefined;
-  const slotOpens = gear?.slotOpens ?? RULES.gear.slotUnlockLevel;
+  const slotOpens = gear?.slotOpens ?? fallbackSlotOpens();
 
   const start = initialOpen ?? startingDrawer(focus, creature, slotOpens);
   const [gearOpen, setGearOpen] = useState<GearSlot | null>(

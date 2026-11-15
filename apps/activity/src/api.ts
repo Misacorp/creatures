@@ -30,7 +30,7 @@ import {
   type ValleyView as ValleyVisit,
 } from '@creatures/game';
 import { isExperienceView, isRibbonView, type ExperienceView, type RibbonView } from './experience';
-import { isWornGear } from './gear-parse';
+import { isGearItem, isWornGear } from './gear-parse';
 import {
   isCreatureV2Part,
   type CreatureTalentsV2,
@@ -39,7 +39,7 @@ import {
 } from './combat-v2-view';
 import { isCreatureTalents, isPendingCatch } from './talent-parse';
 import type { CreatureTalents, PendingCatch } from './talent-types';
-import type { CreatureGearFields, WornGear } from './gear-types';
+import type { CreatureGearFields, GearItem, WornGear } from './gear-types';
 import {
   isArrayOf,
   isBool,
@@ -855,6 +855,49 @@ export async function buyAnvil(idempotencyKey: string): Promise<ValleyAnswer> {
   return valleyAnswer(
     await apiFetch('/api/valley/anvil/buy', jsonRequest('POST', { idempotencyKey })),
   );
+}
+
+/** One piece of an opened crate: the item, who wears it now (a creature's id; null: it is in the bag) and who made it (null: that anvil is gone). */
+export interface CratePiece {
+  item: GearItem;
+  wornBy: string | null;
+  madeBy: string | null;
+}
+
+/** What opening the Forge's sealed crate answers (V-FORGE-5): the pieces worst first and best last, and what stays sealed. */
+export interface CrateAnswer extends ValleyAnswer {
+  pieces: CratePiece[];
+  /** Pieces still sealed (the bag was full), and whether the bag is why. */
+  sealed: number;
+  bagFull: boolean;
+}
+
+function isCratePiece(value: unknown): value is CratePiece {
+  return (
+    isRecord(value) &&
+    isGearItem(value['item']) &&
+    (value['wornBy'] === null || typeof value['wornBy'] === 'string') &&
+    (value['madeBy'] === null || typeof value['madeBy'] === 'string')
+  );
+}
+
+/** Opens the Forge's sealed crate: a keyed call (the pieces are rolled by the server; a retry returns the same answer). */
+export async function openForgeCrate(idempotencyKey: string): Promise<CrateAnswer> {
+  const data = await apiFetch(
+    '/api/valley/forge/crate/open',
+    jsonRequest('POST', { idempotencyKey }),
+  );
+  const pieces = isRecord(data) ? data['pieces'] : undefined;
+  if (
+    !isRecord(data) ||
+    !Array.isArray(pieces) ||
+    !pieces.every(isCratePiece) ||
+    typeof data['sealed'] !== 'number' ||
+    typeof data['bagFull'] !== 'boolean'
+  ) {
+    throw new Error('the server returned an unexpected crate answer');
+  }
+  return { ...valleyAnswer(data), pieces, sealed: data['sealed'], bagFull: data['bagFull'] };
 }
 
 /** Adds, changes or removes an order of an anvil's queue; the answer carries the settled valley (the order takes effect at once). */

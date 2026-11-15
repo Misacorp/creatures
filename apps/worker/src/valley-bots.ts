@@ -1170,6 +1170,11 @@ function visit(ctx: ToolCtx, w: ValleyWorld, sim: SimState, info: BotInfo, day: 
   let view = w.settle.settle(userId, 'now');
   if (view === null) return;
   exchangeShards(ctx, w, sim, userId, view);
+  // The Forge's sealed crate (V-FORGE-5) is opened at every visit, by the route's own action: a player who sees it glowing opens it.
+  if ((view.forge.crate?.count ?? 0) > 0) {
+    const crate = w.orders.openCrate(userId, keyOf('crate'));
+    if (!crate.ok) bump(sim, `crate:${crate.error}`);
+  }
   if (profile.fights) {
     standInFights(ctx, userId, bot, day);
     if (day % 7 >= 4) bot.raidThisWeek = true;

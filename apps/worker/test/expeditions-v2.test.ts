@@ -38,7 +38,8 @@ const USER = { id: USER_ID, displayName: 'Misa' };
 const OTHER = { id: OTHER_USER_ID, displayName: 'Other' };
 
 let guildCounter = 0;
-const nextGuild = () => String(750000000000000000n + BigInt(++guildCounter));
+// Its own id range: allowance.test.ts uses 75…, and two files sharing ids share a guild when the suite runs them together.
+const nextGuild = () => String(755000000000000000n + BigInt(++guildCounter));
 interface Player {
   id: string;
   call: (method: string, path: string, body?: unknown) => Promise<Json>;

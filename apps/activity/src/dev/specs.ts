@@ -196,7 +196,7 @@ export const VALLEY_SPECS: readonly ToolSpec[] = [
     tool: 'trials-ceremony',
     label: 'Hold the ceremony now',
     fields: [],
-    hint: 'Graduates your creatures whose trial boxes are all ticked.',
+    hint: "Graduates the player's creatures whose trial boxes are all ticked.",
   },
 ];
 

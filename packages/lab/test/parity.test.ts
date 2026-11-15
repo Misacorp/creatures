@@ -27,7 +27,8 @@ describe('the parity digest', () => {
     const got = computeDigest();
     expect(digestDiff(committed, got)).toEqual([]);
     expect(got.overall).toBe(committed.overall);
-  });
+    // The whole corpus takes about 5 s, so the default 5 s timeout trips on a busy machine (6.7 s seen in a full local check).
+  }, 30_000);
 
   it('the corpus is large enough to mean something and every case has a distinct name', () => {
     const names = parityCases().map((c) => c.name);

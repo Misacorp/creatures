@@ -159,6 +159,8 @@ export const ValleyRulesSchema = v.strictObject({
     baseOdds: odds,
     tinkerScrapEveryHours: pos,
     floorPiecesPerAnvil: int,
+    crateMinRarity: int,
+    crateCap: int,
     bag: int,
     queueMax: int,
     orderCountMax: int,

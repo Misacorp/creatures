@@ -4,6 +4,54 @@ Navigation and the frame, Home and the notice board, type scale, shared componen
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-15: The Forge room fills the window: the 128x176 room centred, edges tiled and dressed (two fill variants, A is the pick) **[Misa]**
+
+ID: `2026-11-15-the-forge-room-fills-the-window` · Status: current
+
+**Decision.** Misa (2026-11-15): "the center art was this type of awkward one where everything was in the center and the edges were just practically empty space ... it should fill the screen, even if the clickable elements are still in the middle." The Forge's room is the Art session's 128 x 176 layout (`valley-forge-interior`: door and mat, plans board, finished crate, the quieter dressing), centred at one whole pixel scale chosen from the window alone (never from the number of anvils, so buying one cannot rescale the room). The wall and floor tile sideways and the floor tiles on below the front zone; a wide window's new edges are dressed with quiet pieces (side windows, a tool rack, a lantern, barrels, sacks, a woodpile) that have no plate and no tap. The anvils stand in two columns, up to four, at the preview's two anvil spots and a second row in the front zone. Variants behind `forge-fill` (`valley/art-variants.ts`): **A** (the pick) the largest whole scale that shows the whole working height (170 rows), so every anvil and prop is always in view; **B** one step larger where the window is tall enough, the wall's top 7 rows cropped.
+
+**Reasoning.** A is the pick because it never hides a clickable thing and is the same room on every window; B only differs on tall windows (about 1040 px and up at a desktop width) because the second row of anvils must stay reachable, so it is a small gain for a cropped wall. Misa can switch the default in one line.
+
+## 2026-11-15: One cue for every clickable thing in the Forge and on the Signpost map, none for decoration (three variants behind one switch, A is the pick) **[Misa]**
+
+ID: `2026-11-15-one-cue-for-every-clickable-thing` · Status: current
+
+**Decision.** Misa (2026-11-15): "It was also inconsistent which elements were actually clickable and I didn't find any kind of visual cue for which were clickable. Some had a label and others didn't." In the Forge and on the Signpost map every clickable thing has a short name plate (`CanvasTarget`'s `plate`; the map's two corner buttons too; a destination's name is its logo or plate with its gem pin) and decoration has none and is no target. Variants behind `click-cue` (`valley/art-variants.ts`, `?click-cue=`): **A** (the pick) the plate always; **B** the plate and a 1 px light outline of the target's box on hover or press only; **C** a small gold pip always, the plate on hover or press. Keyboard focus keeps the gold arrow; there is no focus outline.
+
+**Reasoning.** A is the pick because a phone has no hover: B would show nothing before the tap, and C's pip says "clickable" but not what. A also answers "some had a label and others didn't" most directly. B's outline is the target's box, not the sprite's own outline (the art is one canvas), which is a reason to prefer A or C.
+
+## 2026-11-15: Drawers lie over a canvas place; the scene never moves or rescales, and a drawer's first step has only the X **[Misa]**
+
+ID: `2026-11-15-drawers-lie-over-a-canvas-place` · Status: current · Amends: `2026-11-11-a-place-is-a-canvas-the`
+
+**Decision.** Misa (2026-11-15): "At least on Desktop I remember the view jumping around when the drawers opened." The drawers (24 rem each) now lie over the scene's edges and the scene keeps one size and position for the whole visit. Only when a drawer would cover the thing that was clicked is the scene panned sideways (a CSS transform, `panFor`, 12 px clear), and back when it goes; it is never rescaled. The expedition map scrolls on its own, so it turns the pan off and centres the picked place in what the drawers leave clear. A canvas drawer's first wizard step shows only the X, no Back (`Wizard.exits`, `DrillHead` `data-leaves`, hidden in `canvas.css`); a step whose Back goes to another panel (an order opened from an anvil) keeps it (`CanvasPanel.keepBack`). A phone's full-page panels keep their Back.
+
+**Reasoning.** The old layout shrank the scene's box to what lay between the drawers, so the room re-centred (192 px each way at 1440 px) and a scene with both drawers open was redrawn about a quarter smaller. A Back that only closes the drawer duplicates the X. The valley e2e checks that the scene's size is unchanged when a drawer opens and that the clicked thing is clear of it.
+
+## 2026-11-15: No sheet over a drawer in the Forge: the item card, the dismantle flow, the fire's numbers and the project board's lists are steps of their panel
+
+ID: `2026-11-15-no-sheet-over-a-drawer-in` · Status: current
+
+**Decision.** Misa's rule for canvas places (2026-11-14): wide screens open drawers, phones open a page, and there is never a drawer on a drawer. In the Forge four things still opened the app's bottom `Drawer` over the bag's or the board's drawer or page: the item card, the dismantle flow (from the card, and from the bag's bulk bar), the fire's numbers, and the project board's lists (Give, the helper list, the plaque, the collection; the Signpost's board had the same). Each is now a step of the panel that holds it, with Back (`valley/PanelStep`: `StepHold` keeps the list mounted but hidden and puts its scroll and focus back; `StepBody` is the step's frame; `valley/forge-steps`; `DismantlePanelStep`; `FireNumbers`; `CommonsBoard host="panel"`). One switch, `valley/drawer-step`, read from the page's `?step=` (a setter for tests): `replace` (default; the step takes the list's place in the same drawer, a page on a phone) or `beside` (on a wide window the step opens in the OTHER drawer, left list to right step, a phone as `replace`). The Workshop outside the valley's Forge keeps its bottom drawers. The switch covers the item card (with the dismantle flow after it) and the fire's numbers; the board's lists are always a step in place. No third look was built.
+
+**Reasoning.** A step inside the drawer is what the wizard rule already says ("a choice inside a step is a step of the wizard, never a sheet on the drawer"), costs no new component for the board and the dismantle flow (both already were wizard-shaped), and keeps the card where the player looked. `replace` is the pick because the card and the list are one conversation (open, act, back), the card needs the drawer's full width for its tiles and buttons, and `beside` makes the right drawer jump between "an anvil" and "an item" (an anvil click closes the card). `beside` stays one URL away for Misa to compare. Elsewhere (the Market, visitor, School and house pages, the old Signpost seats page) a bottom sheet over a page is left as it was: those places are not canvases yet.
+
+## 2026-11-15: No focus outlines in art scenes; keyboard focus shows as an in-world cue **[Misa]**
+
+ID: `2026-11-15-no-focus-outlines-in-art-scenes` · Status: current
+
+**Decision.** Misa (2026-11-15): "focus outlines should never be visible in these 'art scenes'. I don't generally like them here either way, but especially in the art scenes they just break the immersion entirely." A standing rule. In an art scene (the valley map and every place drawn as a canvas) no browser focus ring or outline is ever visible on a target, on any input (mouse, touch, keyboard): the map's place buttons and edge flags, a canvas's `CanvasTarget`s, the creatures standing in a scene, the expedition map's destinations and its corner buttons, the Places flag, and the strips under a canvas scene (the shelf's resource chips, the creature tray). A keyboard user still sees where they are through one in-world cue, the same for every target: a small gold pixel arrow over the target, drawn only on `:focus-visible`. It is one CSS rule, `styles/views/art-focus.css`; a new kind of target is added to its list. Outside art scenes (drawers, pages, forms) the usual ring stays. Entering a place by click or tap puts the HUD's back button in focus by script without a ring (`arrivedByKeyboard` in `ui/focus-return.ts`); the keyboard's arrival keeps it. Tested by `styles/art-focus.test.ts` (the stylesheet) and the valley e2e (computed style on a real focus).
+
+**Reasoning.** A ring round a sprite, a building or a prop is a box drawn over the picture, which Misa finds breaks the world. Keyboard players still need a place to start from, so the cue lives in the world (an arrow over the thing) and shows for the keyboard only. One shared rule keeps every scene the same and keeps new targets from bringing a ring back.
+
+## 2026-11-15: How to play follows the switches: combat v2 sections, then valley sections
+
+ID: `2026-11-15-how-to-play-follows-the-switches` · Status: current
+
+**Decision.** The How to play page follows `/api/config`: with `combatV2` it shows seven combat v2 sections (a new "Levels and growth" among them) and, with `valleySystems` too, six valley sections (a day, the commons, the Forge, gear, the Market and visitor, the School and trials) in place of the shipped Expeditions, Workshop and Gear. The growth picture has no ribbon or finale ability under v2; with the valley on every gear slot is open from level 1 and the old ribbons show as honours. With the switches off the page is unchanged. The valley text is a placeholder structure (`how-to-play-valley.json`).
+
+**Reasoning.** Combat v2 and the valley go live together; the page must not teach v1 steps (Scarf at 7, Charm at 13, ribbons, the finale ability). Section ids and text are data, the pictures come from the rules, so a rule change moves them.
+
 ## 2026-11-12: The house's night indoors follows the living room's look: graded, not ramped
 
 ID: `2026-11-12-the-house-s-night-indoors-follows` · Status: current · Amends: `2026-11-11-the-house-is-lit-by-one`
@@ -38,7 +86,7 @@ ID: `2026-11-11-pixel-canvases-paint-in-a-layout` · Status: current
 
 ## 2026-11-11: The Signpost is a canvas: a click on the signpost opens the expedition map, a click on a place opens its scout wizard **[Misa]**
 
-ID: `2026-11-11-the-signpost-is-a-canvas-a` · Status: current
+ID: `2026-11-11-the-signpost-is-a-canvas-a` · Status: current, amended by `2026-11-15-a-click-on-a-place-opens`
 
 **Decision.** With the valley's systems on, the Signpost is a canvas (`SignpostCanvas`, built on `PlaceCanvas` like the Forge) and its page of seat cards is gone. It opens on its scene: the road and its signpost, the scouts standing at their seats, the dashed outline of the next seat with its price as icons, and two props (the crate of finds in the packs, the plans table of the project board). **A click on the signpost opens the expedition map as the canvas** (`SignpostMap`: the Expeditions screen's own `WorldMap`, drawn with a new `fill` option so it fills the view instead of sitting in a page). It never scrolls the page; the map itself pans both ways by drag (with the shared drag-click guard: a drag never picks a place), wheel and trackpad. A small "Signpost" button over its top left goes back to the scene; the HUD's back still leaves for the valley. On the map each destination the valley lists is at its map spot (all eight already have one, so no spot was added), the scouts stand at the place they are at (the map's existing creature-at-place look), the pack's state is the small gold flag (FULL, or the fullest pack's percent), a closed place is dimmed with what opens it under it (Festival weeks). **A click on a destination opens its drawer (right; a page on a phone)**, a wizard: the place and who scouts there (a tap on a scout opens its pack and pace, change scout, change kit, move to another place, back to resting), and the gold "Send a scout here": who (`ui/CreatureList`), which seat (free, one that holds someone, or a new one to buy; skipped when the scout already has a seat), kit (owned, none, or buy), then a confirm that reads the choice back and sends it in one post (seat, creature and destination). The left drawer holds the packs of every seat and the project board. Dragging a creature from the tray onto a seat in the scene still works and still previews the fit. Seat rules, prices and limits are the server's, unchanged.
 
@@ -46,7 +94,7 @@ ID: `2026-11-11-the-signpost-is-a-canvas-a` · Status: current
 
 ## 2026-11-11: [Misa] A place is a canvas: the scene never scrolls, every action is a click in it, content opens in a left or right drawer holding a wizard
 
-ID: `2026-11-11-a-place-is-a-canvas-the` · Status: current
+ID: `2026-11-11-a-place-is-a-canvas-the` · Status: current, amended by `2026-11-15-drawers-lie-over-a-canvas-place`
 
 **Decision.** Place pages are a canvas: the scene fills the view and never scrolls, every interaction is a click on something in it (a real, named button over the art), empty or buyable slots are dashed outlines with their price as icons, and content opens beside the canvas in a drawer that holds a wizard (`ui/Wizard`, one small step per page). **Right drawer: the one thing that was clicked** (an anvil, a seat: its wizard, its buy step, its order). **Left drawer: the place's collections and overviews that belong to no one spot** (the bag, the floor, the plans, the project board, a log). From 60 rem (`WIDE_QUERY`) the drawers sit beside the scene (24 rem each); below it there are no drawers: an open panel is its own full page (same wizard, other shell) with the scene hidden behind it, and the right panel wins when both are open. No drawer on a drawer; a single-choice picker inside a step may use a bottom sheet. Focus moves into the panel and, for a keyboard user, back to the target on close. Built first for the Forge (`ForgeCanvas`, `PlaceCanvas`, `CanvasTarget`, the anvil wizard and the order wizard); the Signpost is next, using the expedition location map for destinations; every other place follows.
 

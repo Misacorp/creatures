@@ -8,6 +8,7 @@ import {
   content,
   dungeonContent,
   howToPlay,
+  unlockLadder,
   type CreatureSpecies,
   type DungeonFoeDef,
   type Role,
@@ -188,4 +189,54 @@ export function dungeonRooms(
     element: f.element,
     boss: f.kind === 'boss',
   }));
+}
+
+/** One step of the growth picture: a level and what it brings. */
+export interface GrowthStep {
+  level: number;
+  names: string[];
+}
+
+/**
+ * What a creature's level brings, in order, for the starter that evolves, grouped by level ("Lv 20: Silver honour,
+ * Second talent"). From the rules, so it moves with them. Three pictures:
+ * - the shipped game (`combatV2` off): gear slots, ribbons, the finale ability, evolution and talent slots;
+ * - combat v2: no ribbons and no finale ability (Knacks replace it): a Knack and the first talent from level 1,
+ *   the gear slots, evolution and the later talent slots;
+ * - combat v2 with the valley's base systems (`allSlotsOpen`): every gear slot is open from level 1 (V-GEAR-3), and the
+ *   ribbons are honours (Bronze, Silver, Gold; no stats, no gates).
+ */
+export function growthSteps(
+  options: { combatV2?: boolean; allSlotsOpen?: boolean } = {},
+  creatures: readonly CreatureSpecies[] = content.creatures,
+): GrowthStep[] {
+  const combatV2 = options.combatV2 === true;
+  const allSlotsOpen = combatV2 && options.allSlotsOpen === true;
+  const starter = creatures.find((c) => c.starter && c.evolvesTo !== undefined);
+  const ladder = unlockLadder(starter?.rarity ?? 'common', starter?.evolvesTo?.level, allSlotsOpen);
+  const named: { level: number; name: string }[] = [];
+  if (combatV2) {
+    named.push({ level: 1, name: 'Knack' });
+    named.push({ level: RULES.talents.slotLevels[0] ?? 1, name: 'First talent' });
+    if (allSlotsOpen) named.push({ level: 1, name: 'Hat, Scarf and Charm' });
+  }
+  const ability = { level: RULES.abilities.unlockLevel, name: 'Finale ability' };
+  for (const step of ladder) {
+    if (combatV2 && step.name === 'Ability') continue;
+    if (combatV2 && step.name.endsWith('Ribbon')) {
+      if (allSlotsOpen)
+        named.push({ level: step.level, name: step.name.replace('Ribbon', 'honour') });
+      continue;
+    }
+    named.push(step.name === 'Ability' ? ability : step);
+  }
+  // The ladder leaves out the finale ability when a ribbon shares its level; the shipped picture names it.
+  if (!combatV2 && !ladder.some((step) => step.name === 'Ability')) named.push(ability);
+  const steps: GrowthStep[] = [];
+  for (const step of named.sort((a, b) => a.level - b.level)) {
+    const last = steps.at(-1);
+    if (last?.level === step.level) last.names.push(step.name);
+    else steps.push({ level: step.level, names: [step.name] });
+  }
+  return steps;
 }

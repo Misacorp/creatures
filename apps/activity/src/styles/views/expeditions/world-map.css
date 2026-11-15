@@ -400,12 +400,13 @@
     drop-shadow(0 2px 0 var(--gold)) drop-shadow(0 -2px 0 var(--gold));
 }
 
+/* Keyboard focus on a marker of the valley's map is the in-world cue (`views/art-focus.css`); the plain Expeditions page keeps its ring. */
 .wm-marker:focus-visible {
   outline: none;
 }
 
-.wm-marker:focus-visible .wm-logo .sprite,
-.wm-marker:focus-visible .wm-plate {
+.world-map-wrap:not(.fill) .wm-marker:focus-visible .wm-logo .sprite,
+.world-map-wrap:not(.fill) .wm-marker:focus-visible .wm-plate {
   outline: var(--px) solid var(--bone);
   outline-offset: 2px;
 }
