@@ -100,17 +100,21 @@ export function HelperPanel({
   creatures,
   helper,
   onClose,
+  place = 'bonfire',
+  title = 'Who helps build the hearth?',
+  backLabel = 'to the fire',
 }: {
   visit: ValleyVisit;
   creatures: readonly Creature[];
   helper: HelperPost;
   onClose: () => void;
+  /** The place whose communal seat this is (the Bonfire's by default; the Paddock's builders' corner uses the same panel). */
+  place?: string;
+  title?: string;
+  backLabel?: string;
 }) {
-  const wizard = useWizard(
-    [{ id: 'who', title: 'Who helps build the hearth?', backLabel: 'to the fire' }],
-    { onExit: onClose },
-  );
-  const seat = commonsOf(visit)?.communal.find((c) => c.place === 'bonfire');
+  const wizard = useWizard([{ id: 'who', title, backLabel }], { onExit: onClose });
+  const seat = commonsOf(visit)?.communal.find((c) => c.place === place);
   return (
     <PanelBody>
       <WizardView wizard={wizard}>
@@ -120,9 +124,9 @@ export function HelperPanel({
             options={seatOptions(creatures, visit, seat?.seatId ?? null, helper.creatureId)}
             selection={{
               mode: 'pick',
-              label: 'Who helps build the hearth',
+              label: title,
               onPick: (id) => {
-                void helper.actions.post('bonfire', id === REMOVE_ID ? null : id).then(() => {
+                void helper.actions.post(place, id === REMOVE_ID ? null : id).then(() => {
                   onClose();
                 });
               },
