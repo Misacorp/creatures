@@ -87,9 +87,10 @@ describe('the Bonfire canvas: the layout', () => {
       if (g.s > SCALE_MIN) {
         expect(lay.corner.x, name).toBeGreaterThanOrEqual(0);
         expect(lay.corner.x + CORNER.w, name).toBeLessThanOrEqual(g.W);
-        expect(lay.corner.y + CORNER.feet + Math.ceil(PLATE_ROW_PX / g.s), name).toBeLessThanOrEqual(
-          g.H,
-        );
+        expect(
+          lay.corner.y + CORNER.feet + Math.ceil(PLATE_ROW_PX / g.s),
+          name,
+        ).toBeLessThanOrEqual(g.H);
       }
       // Under the ring or beside it, never over it: the seats and the "+N more" button under the front seat end above or left of it.
       const front = lay.box.y + (grand ? 74 : 80);
@@ -104,7 +105,13 @@ describe('the Bonfire canvas: the layout', () => {
       const g = geometry(390, 780, grand, true);
       const lay = bonfireLayout(g, grand, true);
       const many = Array.from({ length: 7 }, (_, i) => ({
-        creature: { id: `c${String(i)}`, species: 'sproutle', level: 1, shiny: false, nickname: null },
+        creature: {
+          id: `c${String(i)}`,
+          species: 'sproutle',
+          level: 1,
+          shiny: false,
+          nickname: null,
+        },
         gained: 0,
         warm: false,
       }));

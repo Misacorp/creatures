@@ -599,7 +599,8 @@ Misa added: nameplates sit under the creature on an ink background, level first 
 **For Misa to pick** (screenshots in the report): how the reveal plays (A in the scene, B full screen, C and D with flight) and the sealed crate's look (main crate, chest, rune-bound). The chest (the Art session's pick) has no rattle or open frames of its own: it slides while rattling and the main open crate comes out of it, so choosing it needs those frames drawn.
 
 **Not done / to look at.** Home has no notice row for the crate (a Home row for the Forge does not exist yet either: only the map's bubble and the Places line say it waits). The flight goes to the creature's anvil spot or the bag chest, never to a creature in the tray.
-## 2026-11-15: the Bonfire as a canvas (sample, not merged)
+
+## 2026-11-15: the Bonfire as a canvas (the sample; reworked in the entry below)
 
 Misa, 2026-11-15: "We need to update the other places into the new layout. I'd like to fine tune the existing two before we do that." So this is **one sample** of the canvas pattern on its own branch for Misa to judge whether it carries over from the Forge and the Signpost; the other places are untouched and it is not part of the PR. No decision is recorded.
 
@@ -608,3 +609,15 @@ Misa, 2026-11-15: "We need to update the other places into the new layout. I'd l
 **What it took.** The scene never scrolls and keeps one size under drawers (the e2e's `expectNoScroll` and the topmost checks at 390 and 1100). The pinned calm line and the "Help build" button of the old scene are gone: the gain total is read to screen readers, the hearth's bonus heads the board drawer.
 
 **Not merged:** the work stays on its own branch until Misa decides whether the pattern carries over to the other places.
+
+## 2026-11-15: the Bonfire for real: chilling round the fire, a builders' corner, bigger (implementer, worktree of `ccr-93a1de17-yutb1a`)
+
+Misa reviewed the sample: 6a yes, the canvas pattern rolls out; 6b "bigger" (a laptop's fire was small in a big field; scale it like the Forge); 6c "the main idea of the bonfire needs to be just having creatures chill around it. The helper spot should be something that's clearly separate, perhaps next to a construction table or something near the bottom of the screen." Decision `2026-11-15-the-bonfire-is-a-canvas-of` (topic `valley`) holds the detail.
+
+**Built** (behind `VALLEY_SYSTEMS`; the sample's `BonfireCanvas` reworked, brought onto the tip by cherry-picking its one commit). Resting creatures sit on the ring round the fire and idle like the living room's loungers (`CreatureSprite` `idle`: bob and blink); the helper left the ring for the **builders' corner** (`builders-corner.ts`, pictures by name in `builders-corner-art.ts`): a construction table, plans, sawhorse, planks, pail and mallet on a dirt patch, the helper seat beside the table, bottom right of the ring on a wide window and at the bottom of the screen on a phone; the table opens the board (left), the helper spot picks (right). It shows while a project is being built below the top level and while a helper is posted; at the top level it goes with the fire's scaffolding and the fire opens the board again. The scale is `bonfireScale`: the largest whole 3 to 8 at which the working area fits (8 at 1440 x 900 for the plain fire, 4 on a phone). The edges are dressed past the working area. Workbench presets: "a helper posted at the builders' corner" and "the hearth at its top level" (`bonfire max`).
+
+**Art names for the Art session** (`builders-corner-art.ts`; anchor is each piece's top-left, feet on corner row 30, the corner box is 80 x 34, the ground patch 5 x 2 tiles at (0, 2)): `table` 32x20 at (22, 10) (today the Forge's workbench by day), `plans` 24x24 at (0, 6) (the Forge's plans-board by day), `sawhorse` 16x9 at (2, 21), `planks` 15x10 at (64, 12) (behind the helper), `pail` 7x7 at (71, 23), `mallet` 10x6 at (33, 7) (lying on the table), `ground` 16x16 tiled (today the map's dirt tile). The helper is a creature box (16x16) at (54, 14) facing left. Changing a size means changing `CORNER_SIZE` and the placements in `builders-corner.ts` (a test checks every piece against its real sprite).
+
+**Picks to glance at.** `SCALE_MAX` 8; the corner is a plain rectangle of dirt for now (the Art session's set will give it a shape); the fire still shows the ground-work scaffolding (stakes, rope, planks and so on) while the project fills, as before, though the corner now holds the tools too: it could be cut back to stakes and rope if the fire looks crowded.
+
+**Pick up here:** the same corner for the other places' projects when they move onto the canvas (the Paddock and the Signpost keep theirs in their boards); the Art set when it lands.

@@ -93,7 +93,12 @@ function needed(mode: CornerMode, grand: boolean, s: number): { w: number; h: nu
  * (or its width, on a narrow one). It depends on the window and on whether there is a corner, never on who is at the fire, so the
  * scene keeps its size while you are in it.
  */
-export function bonfireScale(width: number, height: number, grand: boolean, corner: boolean): number {
+export function bonfireScale(
+  width: number,
+  height: number,
+  grand: boolean,
+  corner: boolean,
+): number {
   for (let s = SCALE_MAX; s > SCALE_MIN; s -= 1) {
     const w = Math.ceil(width / s);
     const h = Math.ceil(height / s);

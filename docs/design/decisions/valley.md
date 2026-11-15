@@ -4,6 +4,20 @@ The valley and peaceful systems overhaul planned in docs/design/valley/: job pos
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-15: The Bonfire is a canvas of creatures chilling round the fire, and the project lives in a builders' corner **[Misa]**
+
+ID: `2026-11-15-the-bonfire-is-a-canvas-of` · Status: current
+
+**Decision.** The Bonfire is a canvas (`valley/BonfireCanvas`), and the canvas pattern rolls out to the other places after it (Misa, 2026-11-15, on the sample: 6a "yes"). Three parts:
+
+- **Bigger** (Misa, 6b: on a laptop "the fire was small in a big field"; scale it like the Forge). The scene takes the largest whole pixel scale, 3 to 8 (`SCALE_MAX`, my pick: at 8 a creature is 128 CSS px), at which its working area (the fire's ring of seats, and the corner while there is one) fits the window both ways (`bonfireScale`). It depends on the window and on whether there is a corner, never on who is at the fire. On a 1440 x 900 laptop the plain fire gets 8 where the sample had at most 6; a phone gets 4. The edges are dressed as in the sample, past the working area.
+- **The fire is for chilling** (Misa, 6c, his words: "the main idea of the bonfire needs to be just having creatures chill around it. The helper spot should be something that's clearly separate, perhaps next to a construction table or something near the bottom of the screen. The creatures taking it easy can sit around the bonfire similarly to today's lounge, and the construction workers can do their own thing elsewhere."). The resting creatures sit on the ring round the fire and idle as the living room's loungers do (the 3 px two-step bob and the blink: `CreatureSprite` `idle`), each a tap with its plate that opens its rest gains in the right drawer; other players' creatures sit among them; "+N more" stays a left-drawer list. The helper no longer takes a seat of the ring.
+- **The project lives in a builders' corner** (`builders-corner.ts`): a worksite on its own patch of ground with a construction table, the plans, a sawhorse, planks, a pail and a mallet, and the one real helper seat beside the table, where the helper hammers (the Forge's `fi-hammer`). It stands beside the ring at the bottom right on a wide window and at the bottom of the screen under it on a phone, so it is clearly apart. The table opens the project board (left drawer); the empty helper spot is the dashed outline beside it (a tap picks a helper, right drawer). It shows only while the place has a project being built (open or building) below the top level, and while a helper is still posted (so that helper is never out of sight). At the top level the corner and the fire's scaffolding go, the fire's area takes the space, and the fire itself opens the board (its hearth line). While the corner stands the fire is no target: one way into the board at a time.
+
+The corner's pictures are reached by name (`builders-corner-art.ts`) so the Art session's set `valley-builders-corner` drops in without touching the layout. Until then they are the game's own ground-work pieces and the Forge's workbench and plans-board.
+
+**Reasoning.** The sample showed the pattern works but crowded the fire: the helper took a seat of the ring and the board's entrance was the fire itself, so the place had two ideas at once. Splitting rest (the fire) from work (the corner) gives each its own place and its own reading, and a project site is something every place with a project can have, so the rule is reusable (`ux-patterns.md`, "A place's project lives in a builders' corner"). The scale follows the Forge's fill rule (whole scale, the working area fills the height) with a higher cap because the Bonfire's working area is small; the cap is a scalar pick for Misa to glance at.
+
 ## 2026-11-15: The sealed crate's reveal is a modal part of the Forge's art scene, four plays behind one switch
 
 ID: `2026-11-15-the-sealed-crate-s-reveal-is` · Status: current

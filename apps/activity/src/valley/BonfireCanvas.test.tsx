@@ -124,7 +124,9 @@ describe('the Bonfire canvas: the scene', () => {
     );
     expect(labels(helped).some((n) => /^The helper spot/.test(n))).toBe(false);
     expect(
-      labels(helped).some((n) => /helping build the hearth at the builders' table\. Change/.test(n)),
+      labels(helped).some((n) =>
+        /helping build the hearth at the builders' table\. Change/.test(n),
+      ),
     ).toBe(true);
   });
 
@@ -168,10 +170,7 @@ describe('the Bonfire canvas: the scene', () => {
 
 describe('the Bonfire canvas: who does what', () => {
   it('the creatures at the fire idle like the lounge’s, and the helper hammers at the table, not at the fire', () => {
-    const p = draw(
-      withCommons(resting, undefined, { place: 'bonfire', creatureId: a.id }),
-      true,
-    );
+    const p = draw(withCommons(resting, undefined, { place: 'bonfire', creatureId: a.id }), true);
     const idle = byClass(p.root, 'vy-bob');
     const resters = labels(p).filter((n) => /resting by the fire/.test(n)).length;
     expect(idle.length).toBe(resters);

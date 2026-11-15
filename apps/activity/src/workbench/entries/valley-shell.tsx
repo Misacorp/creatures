@@ -220,11 +220,11 @@ const valleyShell: Entry = {
       props: { start: 'bonfire', resting: 'few', commons: 'bonfire level 3', open: 'give list' },
     },
     {
-      name: 'Bonfire: a helper posted at the builders\' corner',
+      name: "Bonfire: a helper posted at the builders' corner",
       props: { start: 'bonfire', resting: 'few', commons: 'helpers posted' },
     },
     {
-      name: 'Bonfire: the hearth at its top level (no builders\' corner)',
+      name: "Bonfire: the hearth at its top level (no builders' corner)",
       props: { start: 'bonfire', resting: 'few', commons: 'bonfire max' },
     },
     {
