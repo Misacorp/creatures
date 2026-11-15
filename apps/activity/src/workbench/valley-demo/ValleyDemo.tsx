@@ -25,7 +25,7 @@ import {
   withMarket,
   withMarketPlace,
 } from '../../valley/market-sample';
-import type { MarketActions, MarketStart } from '../../valley/MarketPage';
+import type { MarketActions, MarketStart } from '../../valley/MarketCanvas';
 import type {
   BlueprintDone,
   RerollDone,
