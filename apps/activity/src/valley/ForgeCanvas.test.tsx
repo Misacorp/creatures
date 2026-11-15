@@ -2,6 +2,7 @@
  * The Forge as a canvas (`ForgeCanvas`, the rule "A place is a canvas"): what is in the scene and what a click on each thing opens.
  * Drawn in the fake DOM; a phone has no `matchMedia` here, so a panel is its own page (the shell's other half is in `PlaceCanvas.test`).
  */
+import { act } from 'preact/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { OrderRequest } from '../api';
 import { SAMPLE_GEAR } from '../creature-card-sample';
@@ -18,6 +19,8 @@ import {
   type Page,
 } from '../test-dom';
 import { homeInput } from '../workbench/home-sample';
+import type { CratePiece } from '../api';
+import type { CrateOpened } from './crate-view';
 import type { ForgeActions } from './ForgeAnvils';
 import { ForgeCanvas } from './ForgeCanvas';
 import { fullFloor, sampleAnvil, sampleOrder, shardWait, withAnvils } from './forge-sample';
@@ -58,6 +61,8 @@ interface Calls {
   orders: OrderRequest[];
   market: (string | null)[];
   posts: { seatId: string; creatureId: string | null }[];
+  /** What opening the sealed crate answers (null: the server did not open it). */
+  crate?: CrateOpened | null;
 }
 
 function draw(
@@ -75,6 +80,10 @@ function draw(
       return Promise.resolve(true);
     },
     buyAnvil: ok('buyAnvil'),
+    openCrate: () => {
+      calls.actions.push('openCrate');
+      return Promise.resolve(calls.crate ?? null);
+    },
     buyKit: ok('buyKit'),
     setKit: ok('setKit'),
     order: (request) => {
@@ -429,5 +438,92 @@ describe('the fire numbers are a step of the project board, never a sheet over i
     q.click(byName(q.root, 'button', /^‹ Back to the project board/)[0] as FakeElement);
     expect(byClass(q.root, 'ps-list')[0]?.getAttribute('hidden')).toBeNull();
     expect(byName(q.root, 'button', /^‹ Back to the project board/)).toHaveLength(0);
+  });
+});
+
+describe('the Forge canvas: the sealed crate', () => {
+  const sealed = (count: number, best: 'rare' | 'epic' | null) => {
+    const visit = withAnvils(plain, [sampleAnvil('a1', a.id, [])]);
+    return { ...visit, forge: { ...visit.forge, crate: { count, cap: 30, best } } };
+  };
+  const BASE_ITEM = SAMPLE_GEAR.items[0];
+  if (BASE_ITEM === undefined) throw new Error('fixture');
+  const piece = (id: string, rarity: 'rare' | 'epic', level: number): CratePiece => ({
+    item: { ...BASE_ITEM, id, rarity, itemLevel: level },
+    wornBy: null,
+    madeBy: a.id,
+  });
+  const opened: CrateOpened = {
+    pieces: [piece('p1', 'rare', 4), piece('p2', 'epic', 9)],
+    sealed: 0,
+    bagFull: false,
+  };
+  const later = () =>
+    act(async () => {
+      await new Promise((done) => setTimeout(done, 10));
+    });
+
+  it('draws nothing for an empty crate', () => {
+    const p = draw(sealed(0, null));
+    expect(targets(p).some((el) => /sealed crate/i.test(el.getAttribute('aria-label') ?? ''))).toBe(
+      false,
+    );
+  });
+
+  it('draws a button with the shared plate and a count bubble when it holds pieces, naming the best rarity but no piece', () => {
+    const p = draw(sealed(2, 'epic'));
+    const crate = target(p, /^The sealed crate/);
+    expect(crate.getAttribute('aria-label')).toBe(
+      'The sealed crate: 2 pieces, something epic inside. Open it',
+    );
+    expect(byClass(crate, 'cv-plate')[0]?.textContent).toMatch(/Sealed crate/);
+    expect(byClass(p.root, 'vy-bubble').some((el) => el.textContent.includes('2'))).toBe(true);
+  });
+
+  it('a click opens it once; the pieces come out worst first and the summary ends it', async () => {
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: query.includes('reduce'),
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    }));
+    const calls: Calls = { actions: [], orders: [], market: [], posts: [], crate: opened };
+    const p = draw(sealed(2, 'epic'), 500, calls);
+    p.click(target(p, /^The sealed crate/));
+    await later();
+    expect(calls.actions.filter((x) => x === 'openCrate')).toHaveLength(1);
+    expect(byClass(p.root, 'cr-reveal')).toHaveLength(1);
+    expect(byClass(p.root, 'cr-count')[0]?.textContent.trim()).toBe('1 / 2');
+    expect(byClass(p.root, 'cr-card')[0]?.getAttribute('aria-label')).toMatch(/^Rare /);
+    p.click(byClass(p.root, 'cr-card')[0] as FakeElement);
+    expect(byClass(p.root, 'cr-card')[0]?.getAttribute('aria-label')).toMatch(/^Epic /);
+    p.click(byClass(p.root, 'cr-card')[0] as FakeElement);
+    expect(byClass(p.root, 'cr-summary')).toHaveLength(1);
+    p.click(byName(p.root, 'button', 'Done')[0] as FakeElement);
+    expect(byClass(p.root, 'cr-reveal')).toHaveLength(0);
+  });
+
+  it('while it opens the crate cannot be opened again (one call)', async () => {
+    const calls: Calls = { actions: [], orders: [], market: [], posts: [], crate: opened };
+    const p = draw(sealed(2, 'rare'), 500, calls);
+    const crate = target(p, /^The sealed crate/);
+    p.click(crate);
+    p.click(crate);
+    await later();
+    expect(calls.actions.filter((x) => x === 'openCrate')).toHaveLength(1);
+  });
+
+  it('a server that does not open it leaves the crate where it is, with a line saying so', async () => {
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: query.includes('reduce'),
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    }));
+    const calls: Calls = { actions: [], orders: [], market: [], posts: [], crate: null };
+    const p = draw(sealed(2, 'rare'), 500, calls);
+    p.click(target(p, /^The sealed crate/));
+    await later();
+    expect(byClass(p.root, 'cr-reveal')).toHaveLength(0);
+    expect(visibleText(p.root)).toMatch(/The crate would not open/);
+    expect(target(p, /^The sealed crate/).hasAttribute('disabled')).toBe(false);
   });
 });

@@ -14,7 +14,7 @@
  * - two benches 32x20 at (60, 52) and (96, 82): other players' smiths stand behind them, two to a bench, small, at x 69, 83 and 105, 119.
  * - the player's anvils [C], two to a row: centres x 32 and 74, rows y 72 and 134; each cell has the smith (16x16) at its top, the anvil
  *   (16x16) 12 below it and the name plate 28 down. The dashed outline of the next anvil takes the next cell.
- * - [C] chest (the bag) (6, 110), plans-board (the plans) (36, 106), finished-crate (the floor) (74, 112); trough (98, 110).
+ * - [C] chest (the bag) (6, 110), plans-board (the plans) (36, 106), finished-crate (the floor) (74, 112); the sealed crate (a prop that is there only while it holds pieces, `CRATE_AT`) (102, 105).
  * - dressing: coal-heap (6, 66), cat (44, 66), woodpile (2, 138), sacks (4, 160), bucket (52, 164), barrel-stack (100, 124), gear-rack
  *   (102, 150).
  * The working height (`ESSENTIAL_H`) is what must be in view whatever the window; the rest of the front zone is dressing and may be cut.
@@ -52,7 +52,6 @@ export const ROOM_AT = {
   chest: { x: 6, y: 110 },
   'plans-board': { x: 36, y: 106 },
   'finished-crate': { x: 74, y: 112 },
-  'quench-trough': { x: 98, y: 110 },
   woodpile: { x: 2, y: 138 },
   rug: { x: 40, y: 146 },
   'barrel-stack': { x: 100, y: 124 },
@@ -61,6 +60,11 @@ export const ROOM_AT = {
   bucket: { x: 52, y: 164 },
   'furnace-glow': { x: 0, y: 56 },
 } as const satisfies Partial<Record<InteriorPiece | 'chest', Pt>>;
+/**
+ * Where the sealed crate stands (V-FORGE-5): at the right of the front cluster, beside the crate of finished pieces, on the spot the
+ * quench trough had (the trough moved to the wide window's right edge). Its box is the art's 20 x 18.
+ */
+export const CRATE_AT: Pt = { x: 102, y: 105 };
 /** The second bench, and how far the wall is moved to the right. */
 const BENCH_B: Pt = { x: 96, y: 82 };
 const WALL_SHIFT = 40;
@@ -90,6 +94,7 @@ const EDGE_DRESSING: readonly { piece: InteriorPiece; x: number; y: number }[] =
   { piece: 'barrel-stack', x: 136, y: 130 },
   { piece: 'sacks', x: 142, y: 162 },
   { piece: 'barrel', x: 164, y: 62 },
+  { piece: 'quench-trough', x: 164, y: 100 },
   { piece: 'barrel-stack', x: 176, y: 140 },
 ];
 
@@ -134,6 +139,8 @@ export interface InteriorLayout {
   plans: Box;
   chest: Box;
   crate: Box;
+  /** The sealed crate (20 x 18, standing on its bottom row). */
+  sealed: Box;
 }
 
 /** How much of the room's top is cropped in a fill variant. */
@@ -194,6 +201,7 @@ export function interiorLayout(
     plans: box('plans-board', ROOM_AT['plans-board']),
     chest: { ...at(ROOM_AT.chest), w: 16, h: 16 },
     crate: box('finished-crate', ROOM_AT['finished-crate']),
+    sealed: { ...at(CRATE_AT), w: 20, h: 18 },
   };
 }
 
@@ -257,7 +265,7 @@ export function interiorSceneDraw(
     out.push(at('window-2'), at('lantern-hanging'), at('hanging-tools'), at('shelf'));
     out.push(at('furnace'), at('door'), at('door-mat'));
     out.push(at('coal-heap'), at('cat'), at('woodpile'), at('sacks'), at('bucket'));
-    out.push(at('quench-trough'), at('barrel-stack'));
+    out.push(at('barrel-stack'));
     for (const d of EDGE_DRESSING) if (seen(d.piece, d.x)) out.push(put(d.piece, d.x, d.y));
     out.push(at('gear-rack'));
     out.push(

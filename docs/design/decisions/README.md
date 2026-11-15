@@ -586,6 +586,7 @@ Superseded: 1 entry (see the topic file).
 
 [valley.md](valley.md): The valley and peaceful systems overhaul planned in docs/design/valley/: job posts, the bonfire, the commons, the Forge loop, gear, trials, the School, the visitor, the economy lab, and Misa's question rounds.
 
+- 2026-11-15 The sealed crate's reveal is a modal part of the Forge's art scene, four plays behind one switch
 - 2026-11-15 The Forge's rare and epic pieces wait in a sealed crate until opened \[Misa\]
 - 2026-11-15 A click on a place opens its real view directly: the Forge interior, the expedition map \[Misa\]
 - 2026-11-11 The Forge opens on its outside and goes inside to a workshop of its own \[Misa\]
