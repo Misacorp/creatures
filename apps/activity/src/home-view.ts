@@ -36,6 +36,11 @@ export interface RaidGlance {
    */
   swapText?: string | null;
   /**
+   * Combat v2: how a swap request the player asked went, until they close its note on the Raid tab (the same seen-once state, so
+   * it shows once in all). Absent or null: none.
+   */
+  swapOutcomeText?: string | null;
+  /**
    * What the valley's Arena scene draws: this week's boss and the creatures the player placed (their ids). Absent
    * where the view did not carry them; the party is empty before the player has placed anyone.
    */
@@ -178,6 +183,7 @@ export function needsYou(input: HomeInput): NeedRow[] {
   const raidReasons = [
     alerts.raid !== null ? 'Creatures to place' : null,
     input.raid?.swapText ?? null,
+    input.raid?.swapOutcomeText ?? null,
   ].filter((r): r is string => r !== null);
   if (raidReasons.length > 0) add('raid', raidReasons.join('; '));
   if (alerts.expeditions !== null) {

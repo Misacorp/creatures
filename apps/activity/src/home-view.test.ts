@@ -45,6 +45,14 @@ describe('needsYou', () => {
     expect(rows[3]?.reason).toBe('Craft Kelp Cap is ready');
   });
 
+  it('adds how a swap request you asked went to the Raid row, until it is closed on the Raid tab', () => {
+    const reason = (state: string): string | undefined =>
+      needsYou(homeInput(state, true)).find((r) => r.place === 'raid')?.reason;
+    expect(reason('swap answer')).toContain('Mira accepted: Cindle and Pyrelynx swapped places');
+    expect(reason('swap answer')).not.toMatch(/\.$/);
+    expect(reason('busy')).not.toContain('Mira accepted');
+  });
+
   it('has a row wherever the navigation has a pip, and only the Creatures notice has one without', () => {
     for (const state of ['busy', 'nothing waiting', 'crowded']) {
       const input = homeInput(state, true);
