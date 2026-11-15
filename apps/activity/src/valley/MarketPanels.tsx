@@ -5,7 +5,7 @@
  *   (the shared slot row: who trades, and what it trades toward; the line of what it is doing; its rates and next step as a table), and
  *   each slot opens a step of its own (the creature list, the choices of what to trade toward). With nobody posted it opens straight on
  *   the creature list. The broker has no store: its trades land on the Forge's shelf as they happen.
- * - `MarketHelperPanel` (right drawer): the helper's seat at the builders' table, who helps build the Market (the Bonfire's, for the Market).
+ * - The helper's seat at the builders' table is the shared `HelperPanel` of `BonfirePanels` (right drawer).
  * - The stall's exchange is `Exchange` (its own wizard); the project board is the left drawer's `CommonsBoard host="panel"`.
  *
  * Every panel is a `PanelBody` holding a one-step-at-a-time `ui/Wizard` whose first step has no Back (the X is the way out). Nothing here
@@ -21,8 +21,7 @@ import { Slot, SlotRow } from '../ui/Slot';
 import { useWizard, type WizardStep } from '../ui/use-wizard';
 import { WizardView } from '../ui/Wizard';
 import { shardMark } from '../resource-count';
-import { REMOVE_ID, seatOptions, type CommonsActions } from './CommonsBoard';
-import { commonsOf } from './commons-view';
+import { REMOVE_ID, seatOptions } from './CommonsBoard';
 import { PanelBody } from './PlaceCanvas';
 import { SlotText } from './seat-parts';
 import {
@@ -188,56 +187,6 @@ export function BrokerPanel({
             />
           </div>
         )}
-      </WizardView>
-    </PanelBody>
-  );
-}
-
-/** The Market's helper post: who holds it and the game's action that moves a creature there. */
-export interface MarketHelperPost {
-  /** The creature that helps now, or null. */
-  creatureId: string | null;
-  actions: CommonsActions;
-}
-
-export function MarketHelperPanel({
-  visit,
-  creatures,
-  helper,
-  onClose,
-}: {
-  visit: ValleyVisit;
-  creatures: readonly Creature[];
-  helper: MarketHelperPost;
-  onClose: () => void;
-}) {
-  const wizard = useWizard(
-    [{ id: 'who', title: 'Who helps build the Market?', backLabel: 'to the Market' }],
-    { onExit: onClose },
-  );
-  const seat = commonsOf(visit)?.communal.find((c) => c.place === 'market');
-  return (
-    <PanelBody>
-      <WizardView wizard={wizard}>
-        <div class="dr-stack">
-          <p class="sp-note">A creature at another post swaps places with this one.</p>
-          <CreatureList
-            options={seatOptions(creatures, visit, seat?.seatId ?? null, helper.creatureId)}
-            selection={{
-              mode: 'pick',
-              label: 'Who helps build the Market',
-              onPick: (id) => {
-                void helper.actions.post('market', id === REMOVE_ID ? null : id).then(() => {
-                  onClose();
-                });
-              },
-            }}
-            placedNote="Posted · swaps here"
-            showEffects={false}
-            reasonSide
-            class="flat"
-          />
-        </div>
       </WizardView>
     </PanelBody>
   );

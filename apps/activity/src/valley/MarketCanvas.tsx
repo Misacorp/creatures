@@ -29,13 +29,8 @@ import { trayFor, type TrayInput } from './tray-state';
 import { seatAt } from './seat-parts';
 import { CommonsBoard, type CommonsActions, type CommonsStart } from './CommonsBoard';
 import { Exchange } from './Exchange';
-import {
-  BrokerPanel,
-  MarketHelperPanel,
-  type BrokerStep,
-  type MarketActions,
-  type MarketHelperPost,
-} from './MarketPanels';
+import { HelperPanel, type HelperPost } from './BonfirePanels';
+import { BrokerPanel, type BrokerStep, type MarketActions } from './MarketPanels';
 import { CanvasTarget, PanelBody, PlaceCanvas, type CanvasPanel, type Opener } from './PlaceCanvas';
 import { PLATES_Z } from './PlaceScene';
 import { SceneFrame, sceneGeometry, type SceneGeometry } from './SceneFrame';
@@ -147,7 +142,7 @@ export function MarketCanvas({
         : 0;
   const helperId = block?.communal.find((c) => c.place === 'market')?.creatureId ?? null;
   const helper = helperId === null ? undefined : creatures.find((c) => c.id === helperId);
-  const post: MarketHelperPost | undefined =
+  const post: HelperPost | undefined =
     commons === undefined || place === undefined
       ? undefined
       : { creatureId: helper?.id ?? null, actions: commons };
@@ -253,7 +248,15 @@ export function MarketCanvas({
       backLabel: 'to the Market',
       onClose: closeRight,
       children: (
-        <MarketHelperPanel visit={visit} creatures={creatures} helper={post} onClose={closeRight} />
+        <HelperPanel
+          visit={visit}
+          creatures={creatures}
+          helper={post}
+          onClose={closeRight}
+          place="market"
+          title="Who helps build the Market?"
+          backLabel="to the Market"
+        />
       ),
     };
   }
