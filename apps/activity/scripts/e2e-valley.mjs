@@ -1158,6 +1158,12 @@ const goInside = async () => {
   if ((await page.locator('button[aria-label^="The forge. Go inside"]').count()) > 0)
     throw new Error('the Forge still has an outside view');
 };
+/** The Bonfire opens straight on its scene as a canvas (no page under it): the scene is inside the canvas shell. */
+const bonfireCanvasChecks = async () => {
+  await waitFor(page.locator('.pc-root .vy-in-bonfire'));
+  if ((await page.locator('.vy-soon .vy-page').count()) > 0)
+    throw new Error('the Bonfire has a page under its scene');
+};
 const backToValley = async () => {
   await hudBack().click();
   await waitFor(page.locator(VALLEY), 'attached');
@@ -1846,27 +1852,46 @@ try {
       await shot('tray-resting');
       await place('bonfire').evaluate((el) => el.click());
       await waitFor(heading('Bonfire'));
-      // Not the "not open yet" line: creatures sit round the fire, each with its +N on the plate.
+      // Not the "not open yet" line: creatures sit round the fire, each with its +N on the plate (a plate of its tap target).
       if ((await page.getByText(/will burn here/).count()) > 0)
         throw new Error('the Bonfire is still "not open yet"');
-      const plates = page.locator('.vy-feet-plate .nameplate-gain');
+      await bonfireCanvasChecks();
+      const plates = page.locator('.cv-plate .nameplate-gain');
       await waitFor(plates);
-      const drawn = await plates.count();
-      for (let i = 0; i < drawn; i += 1)
+      const drawn = await page.locator('button.cv-target[aria-label*="by the fire"]').count();
+      for (let i = 0; i < (await plates.count()); i += 1)
         await expectTopmost(plates.nth(i).locator('xpath=..'), `plate ${String(i)} at the fire`);
+      await expectNoScroll();
       await page.waitForTimeout(300);
       await shot('bonfire-open');
-      const more = page.getByRole('button', { name: /more: show all \d+ resting/ });
-      if ((await more.count()) > 0) {
-        await expectTopmost(more.first(), 'the "+N more" button');
-        await more.first().click();
-        await waitFor(page.getByRole('dialog'));
-        const rows = await page.getByRole('dialog').locator('ul li').count();
+      // A tap on a resting creature opens it in the right drawer: its gain, and the hearth post (a page on a phone).
+      const first = page.locator('button.cv-target[aria-label*="by the fire"]').first();
+      await first.click();
+      await waitFor(rightPanel.getByRole('list', { name: 'Resting creature' }));
+      await page.waitForTimeout(300);
+      await shot('bonfire-creature');
+      await page.keyboard.press('Escape');
+      await rightPanel.waitFor({ state: 'detached', timeout: 10000 });
+      if (
+        (await page.locator('button.cv-target[aria-label*="show everyone resting"]').count()) > 0
+      ) {
+        const moreButton = page
+          .locator('button.cv-target[aria-label*="show everyone resting"]')
+          .first();
+        await expectTopmost(moreButton, 'the "+N more" target');
+        await moreButton.click();
+        await waitFor(leftPanel);
+        const rows = await leftPanel.getByRole('option').count();
         if (rows !== baseState.creatures.length)
           throw new Error(
             `the list shows ${String(rows)} of ${String(baseState.creatures.length)}`,
           );
+        await page.waitForTimeout(300);
         await shot('bonfire-all-resting');
+        // A row of the list opens that creature in the right drawer (a step of the list's panel on a phone).
+        await leftPanel.getByRole('option').first().click();
+        await waitFor(rightPanel.getByRole('list', { name: 'Resting creature' }));
+        await page.keyboard.press('Escape');
         await page.keyboard.press('Escape');
       } else if (drawn !== baseState.creatures.length) {
         throw new Error(`${String(drawn)} drawn, no "+N more" for the rest`);
@@ -2929,15 +2954,19 @@ try {
         await waitFor(page.locator(VALLEY), 'attached');
         await place('bonfire').evaluate((el) => el.click());
         await waitFor(heading('Bonfire'));
-        const owners = page.locator('.vy-feet-plate .nameplate-owner');
+        await bonfireCanvasChecks();
+        const owners = page.locator('.cv-plate .nameplate-owner');
         await waitFor(owners);
         const names = (await owners.allInnerTexts()).join(',');
         if (!names.includes('Mia') || !names.includes('Tobias'))
           throw new Error(`the visitors' owners are not on their plates: ${names}`);
         await waitFor(page.locator('.vy-flame'));
-        const plates = page.locator('.vy-feet-plate .nameplate');
+        const plates = page.locator('.cv-plate .nameplate');
         for (let i = 0; i < (await plates.count()); i += 1)
           await expectTopmost(plates.nth(i), `plate ${String(i)} at the fire`);
+        // A tap on a visitor's creature shows its owner's plate, as at the Forge (no drawer: it is not the player's).
+        await page.locator('button.cv-target[aria-label*="visiting the fire"]').first().click();
+        await waitFor(page.locator('.vy-scene .vy-feet-plate .nameplate-owner'));
         await page.waitForTimeout(300);
         await shot('bonfire5-company');
         await hudBack().click();
@@ -3209,48 +3238,65 @@ try {
         await waitFor(page.locator(VALLEY), 'attached');
         await place('bonfire').evaluate((el) => el.click());
         await waitFor(heading('Bonfire'));
-        await waitFor(page.getByText(/Hearth adds 8% to every creature/));
-        const act = page.getByRole('button', { name: /^Help build the hearth/ });
-        await waitFor(act);
-        await expectTopmost(act, 'the hearth button');
-        const plates = page.locator('.vy-feet-plate .nameplate');
+        await bonfireCanvasChecks();
+        // The fire is the project board's way in; the helper seat is a dashed outline; nothing scrolls.
+        const fire = sceneTarget('The hearth');
+        await waitFor(fire);
+        await expectTopmost(fire, 'the hearth target');
+        await waitFor(page.locator('button.cv-target.cv-slot[aria-label^="The helper seat"]'));
+        const plates = page.locator('.cv-plate .nameplate');
         for (let i = 0; i < (await plates.count()); i += 1)
           await expectTopmost(plates.nth(i), `plate ${String(i)} at the fire`);
+        await expectNoScroll();
         await page.waitForTimeout(300);
         await shot('commons-bonfire-level3');
-        await act.click();
-        await waitFor(dialogOf(/^Bonfire/));
+        // A tap on a resting creature opens it in the right drawer with the one thing it can do here: help build the hearth.
+        await page.locator('button.cv-target[aria-label*="by the fire"]').first().click();
+        await waitFor(rightPanel.getByRole('button', { name: /^Help build the hearth/ }));
+        await page.waitForTimeout(300);
+        await shot('commons-bonfire-creature');
+        await page.keyboard.press('Escape');
+        await rightPanel.waitFor({ state: 'detached', timeout: 10000 });
+        await fire.click();
+        await waitFor(leftPanel.getByText(/The hearth adds 8% to every creature/));
         await page.waitForTimeout(500);
-        await expectTopmost(page.getByRole('dialog').first(), 'the Bonfire board');
+        await expectTopmost(leftPanel, 'the Bonfire board');
         await shot('commons-bonfire-board');
-        // The give flow is a drill-in of the same drawer: one dialog at all times.
-        await page.getByRole('dialog').getByRole('button', { name: /^Give/ }).click();
-        await waitFor(page.getByRole('dialog').getByRole('button', { name: /^Bait/ }));
-        if ((await page.getByRole('dialog').count()) !== 1) throw new Error('two layers are up');
-        await page.getByRole('dialog').getByRole('button', { name: /^Bait/ }).click();
-        await page.getByRole('dialog').getByRole('button', { name: /^Give/ }).click();
+        // The give flow is a step of the same drawer: one panel at all times.
+        await leftPanel.getByRole('button', { name: /^Give/ }).click();
+        await waitFor(leftPanel.getByRole('button', { name: /^Bait/ }));
+        if ((await page.getByRole('dialog').count()) !== 0)
+          throw new Error('a sheet is over the drawer');
+        await leftPanel.getByRole('button', { name: /^Bait/ }).click();
+        await leftPanel.getByRole('button', { name: /^Give/ }).click();
         // The gift lands and the drawer is back on the board.
-        await waitFor(page.getByRole('dialog').getByText(/You gave/));
+        await waitFor(leftPanel.getByText(/You gave/));
         if (!commonsCalls.some(([k, b]) => k === 'gift' && b.place === 'bonfire'))
           throw new Error('no gift to the hearth');
-        // A helper at the fire (the lamplighter) is a drill-in of the same drawer too.
-        await page
-          .getByRole('dialog')
-          .getByRole('button', { name: /^Bonfire: nobody helps/ })
-          .click();
-        await waitFor(page.getByRole('dialog').getByRole('option').first());
-        if ((await page.getByRole('dialog').count()) !== 1) throw new Error('two layers are up');
-        await page
-          .getByRole('dialog')
+        // A helper at the fire (the lamplighter) is a step of the same drawer too.
+        await leftPanel.getByRole('button', { name: /^Bonfire: nobody helps/ }).click();
+        await waitFor(leftPanel.getByRole('option').first());
+        if ((await page.getByRole('dialog').count()) !== 0)
+          throw new Error('a sheet is over the drawer');
+        await leftPanel
           .getByRole('option')
           .filter({ hasText: /Sproutle/ })
           .first()
           .click();
-        await waitFor(page.getByRole('dialog').getByRole('button', { name: /helping/ }));
+        await waitFor(leftPanel.getByRole('button', { name: /helping/ }));
         await page.keyboard.press('Escape');
-        await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
+        await leftPanel.waitFor({ state: 'detached', timeout: 10000 });
         await page.waitForTimeout(300);
         await shot('commons-bonfire-lamplighter');
+        // The helper stands on its seat now; a tap on it picks who helps (the right drawer), and the dashed outline is gone.
+        if ((await page.locator('button.cv-target.cv-slot').count()) !== 0)
+          throw new Error('the helper seat is still an empty outline');
+        await page
+          .locator('button.cv-target[aria-label*="helping build the hearth. Change"]')
+          .click();
+        await waitFor(rightPanel.getByRole('option').first());
+        await shot('commons-bonfire-seat');
+        await page.keyboard.press('Escape');
         // The map draws the grand bonfire too.
         await hudBack().click();
         await waitFor(page.locator(VALLEY), 'attached');
@@ -3930,8 +3976,11 @@ try {
         await place('bonfire').evaluate((el) => el.click());
         await waitFor(heading('Bonfire'));
         await page.waitForTimeout(300);
-        if ((await page.locator(`#scene-${studentId}`).count()) > 0)
-          throw new Error('a student still sits at the fire');
+        const resting = await page
+          .locator('button.cv-target[aria-label*="resting by the fire"]')
+          .count();
+        if (resting !== baseState.creatures.length - 1)
+          throw new Error(`${String(resting)} rest by the fire; a student still sits there`);
         await backToValley();
         // Take off: the seat is free again and the Send comes back.
         await place('school').evaluate((el) => el.click());

@@ -1,0 +1,12 @@
+/*
+  The Bonfire as a canvas (`valley/BonfireCanvas.tsx`): the shell, drawers and targets are `canvas.css`'s (`pc-`, `cv-`). Only its root is
+  here: the same column as the Forge's `fc-root`, filling the place's section under the HUD so the scene fills the window and never scrolls.
+*/
+.bc-root {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}

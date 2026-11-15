@@ -11,7 +11,7 @@ import { useRef, useState } from 'preact/hooks';
 import type { Creature, ValleyVisit } from '../api';
 import type { TabAlerts } from '../tab-alerts';
 import { scrollAndFocus } from '../scroll-to';
-import { BonfireScene } from './BonfireScene';
+import { BonfireCanvas } from './BonfireCanvas';
 import { CommonsBoard, type CommonsActions, type CommonsStart } from './CommonsBoard';
 import { YourHouseRow } from './YourHouseRow';
 import { Keepsakes } from './Keepsakes';
@@ -319,11 +319,10 @@ export function ValleyFrame({
         )}
         {view.kind === 'soon' && view.place === 'bonfire' && visit !== null && (
           <section class="vy-soon" aria-label={placeLabel(view.place)}>
-            <BonfireScene
+            <BonfireCanvas
               creatures={creatures}
               visit={visit}
               level={bonfireLevel}
-              onLeave={onLeave}
               {...(commons === undefined ? {} : { commons, acorns, busy })}
               {...(commonsStart === undefined ? {} : { start: commonsStart })}
             />
