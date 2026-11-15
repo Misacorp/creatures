@@ -4,14 +4,14 @@
  * valley.
  *
  * In the scene: the visiting teacher at the lectern (a tap opens the talent and who of the player's would learn it), the bench's two
- * student seats (a seated student is a tap with its plate: that student; an empty seat is a dashed outline: pick who to send), the School's
- * house (a tap opens the graduation: who is ready, the next ceremony), and, while the School has a project being built, the builders'
+ * student seats (a seated student is a tap with its plate: that student; an empty seat is a dashed outline: pick who to send), the graduation
+ * stage in front of the yard (a tap opens the graduation: who is ready, the next ceremony), and, while the School has a project being built, the builders'
  * corner (`builders-corner.ts`) clearly apart from the yard: its table opens the project board (left drawer), the helper's spot beside it
  * picks who helps build (right drawer). Under the scene stays the creature tray: a hand can carry a creature onto a free seat (or the
  * helper's spot), as at the Forge.
  *
  * What a click opens follows the side rule (`PlaceCanvas`): the right drawer is for the one thing that was clicked (the teacher, a
- * seat, the house, the helper's spot), the left for the collection that belongs to no one spot (the project board). A phone shows the
+ * seat, the stage, the helper's spot), the left for the collection that belongs to no one spot (the project board). A phone shows the
  * open panel as its own page. The scene keeps one size and place for the whole visit; drawers lie over its edges. Every action is the
  * game's and the server decides.
  */
@@ -38,7 +38,7 @@ import { commonsOf, hearthLine, percentFilled, placeOf } from './commons-view';
 import { CREATURE_PX } from './place-cast';
 import { seatAt } from './seat-parts';
 import {
-  HOUSE_BOX,
+  STAGE_BOX,
   lecternBox,
   schoolLayout,
   schoolScale,
@@ -473,7 +473,7 @@ function SchoolInside({
   helper: Creature | undefined;
   /** The builders' corner's top-left (scene pixels), or null when the School has no project being built. */
   corner: { x: number; y: number } | null;
-  /** The ceremony's news (null: the server has not said), for the house's spoken name. */
+  /** The ceremony's news (null: the server has not said), for the stage's spoken name. */
   ready: number | null;
   nextWhen: string | null;
   open: {
@@ -495,7 +495,7 @@ function SchoolInside({
   const seat = corner === null ? null : { x: corner.x + HELPER_AT.x, y: corner.y + HELPER_AT.y };
   const teachingNow = teaching(view);
   const lectern = placed(box, lecternBox());
-  const house = placed(box, HOUSE_BOX);
+  const stage = placed(box, STAGE_BOX);
   const readyText = ready === null ? null : (readyLine(ready) ?? 'nobody is ready to graduate yet');
   return (
     <>
@@ -520,10 +520,9 @@ function SchoolInside({
       {ready !== null && (
         <CanvasTarget
           g={g}
-          {...house}
-          label={`The School's house, ${readyText ?? ''}${nextWhen === null ? '' : `, the next ceremony is ${nextWhen}`}. Show the graduation`}
+          {...stage}
+          label={`The graduation stage, ${readyText ?? ''}${nextWhen === null ? '' : `, the next ceremony is ${nextWhen}`}. Show the graduation`}
           plate="Graduation"
-          plateAt={8}
           expanded={open.graduation}
           onClick={onHouse}
         />

@@ -7,6 +7,7 @@
  *
  * The working area, in art pixels from the School's top-left (the yard's 80 pixels are at x -2 to 78, its bottom row is 62): the School,
  * its yard and the plates under the seats, and the corner, which stands
+ * (the graduation stage stands under the yard, so the working area reaches its bottom row and the plate under it)
  * - beside the yard at the right on a window wide enough for both (`mode: 'beside'`: the corner's feet level with the seats' feet), else
  * - under the yard (`'below'`, a phone), else
  * - nowhere (`'none'`: no project, the School's area uses the whole height).
@@ -15,6 +16,7 @@ import type { SpriteDef } from '../sprites/sprite-data';
 import { SCALE_MAX, SCALE_MIN, edgeDressing, type CornerMode } from './bonfire-canvas';
 import { CORNER, cornerPlacements, type Pile } from './builders-corner';
 import { PLATE_ROW_PX } from './place-plates';
+import { propArt, propSize } from './place-prop-art';
 import { artSize, grassTo, skyBackdrop, treesAround, type ArtBox } from './place-scene';
 import type { SceneGeometry } from './SceneFrame';
 import {
@@ -51,9 +53,18 @@ const EDGE = 6;
 /** The School's own art box (its picture, 60 by 50). */
 export const schoolArt = (): { width: number; height: number } => artSize('school');
 
-/** Scene pixels under the yard's seats that the plates take at scale `s`; the yard itself reaches `YARD_BOTTOM`. */
-const underYard = (s: number): number =>
-  Math.max(0, SEATS_FEET + 1 + Math.ceil(PLATE_ROW_PX / s) - YARD_BOTTOM);
+/**
+ * The graduation stage (the art library's `graduation-stage`, Misa's pick B, the banner arch: 48x24, base row 22) stands in front of the
+ * yard, centred on it, in the grass below the yard's last row: clear of the house, the bench seats, the teacher and the builders' corner.
+ * Its whole box is the Graduation target, the plate under it. In art pixels from the School's top-left.
+ */
+export const STAGE_SIZE = propSize('graduationStage');
+export const STAGE_AT = {
+  x: YARD_LEFT + Math.floor((YARD_RIGHT - YARD_LEFT - STAGE_SIZE.width) / 2),
+  y: YARD_BOTTOM + 1,
+};
+/** The row (from the School's top) the stage's art ends on. */
+export const STAGE_BOTTOM = STAGE_AT.y + STAGE_SIZE.height;
 
 /** The width the yard and the corner side by side need. */
 function besideWidth(): number {
@@ -69,7 +80,7 @@ export function modeFor(width: number, corner: boolean): CornerMode {
 /** The width and the height the working area needs, in scene pixels. */
 function needed(mode: CornerMode, s: number): { w: number; h: number } {
   const yardW = YARD_RIGHT - YARD_LEFT + 2 * EDGE;
-  const groupH = ART_Y + YARD_BOTTOM + underYard(s) + 2;
+  const groupH = ART_Y + STAGE_BOTTOM + Math.ceil(PLATE_ROW_PX / s) + 2;
   if (mode === 'beside') return { w: besideWidth(), h: groupH };
   if (mode === 'none') return { w: yardW, h: groupH };
   return {
@@ -116,7 +127,7 @@ export function schoolLayout(
   const need = needed(mode, g.s);
   const groupW = YARD_RIGHT - YARD_LEFT;
   const cornerY = g.H - (CORNER.feet + Math.ceil(PLATE_ROW_PX / g.s) + 2) - 2;
-  const used = YARD_BOTTOM + underYard(g.s);
+  const used = STAGE_BOTTOM + Math.ceil(PLATE_ROW_PX / g.s);
   const y =
     mode === 'below'
       ? ART_Y + Math.floor(Math.max(0, cornerY - GAP_BELOW - ART_Y - used) / 2)
@@ -154,7 +165,7 @@ export interface YardVisit {
 
 /**
  * The scene: grass and sky to every edge, the edges dressed, the trees round the place, the builders' corner while there is one, the
- * yard under the School, the School, and the visit's pieces (the bell, the lectern, the teacher at it).
+ * yard under the School, the graduation stage in front of it, the School, and the visit's pieces (the bell, the lectern, the teacher at it).
  */
 export function schoolSceneDraw(visit: YardVisit, corner: Pile | null) {
   return (g: SceneGeometry): Placement[] => {
@@ -165,7 +176,7 @@ export function schoolSceneDraw(visit: YardVisit, corner: Pile | null) {
     return [
       ...grassTo(g),
       ...skyBackdrop(g, box.y - g.top),
-      ...edgeDressing(g, { ...box, height: YARD_BOTTOM }, lay.extent),
+      ...edgeDressing(g, { ...box, height: STAGE_BOTTOM }, lay.extent),
       ...treesAround(box.x, box.y, box),
       ...(lay.corner === null
         ? []
@@ -175,6 +186,7 @@ export function schoolSceneDraw(visit: YardVisit, corner: Pile | null) {
             corner ?? { material: 'timber', size: 's' },
           )),
       { sprite: yardSprite(), x: yard.x, y: yard.y },
+      { sprite: propArt('graduationStage'), x: box.x + STAGE_AT.x, y: box.y + STAGE_AT.y },
       { sprite: glowSprite('school'), x: box.x, y: box.y },
       ...(visit.bell ? [{ sprite: bellSprite(), x: box.x + BELL_AT.x, y: box.y + BELL_AT.y }] : []),
       ...(visit.lectern
@@ -222,5 +234,9 @@ export function lecternBox(): TargetBox {
   return { x, y, w: right - x, h: bottom - y };
 }
 
-/** The School's house: the way into the graduation (the ceremony is held at the School). Above the yard, so no seat is under it. */
-export const HOUSE_BOX: TargetBox = { x: 4, y: 8, w: 52, h: 28 };
+/** The graduation stage: the way into the graduation (the ceremony is held at the School). The prop's whole box, in front of the yard. */
+export const STAGE_BOX: TargetBox = {
+  ...STAGE_AT,
+  w: STAGE_SIZE.width,
+  h: STAGE_SIZE.height,
+};

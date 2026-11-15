@@ -94,7 +94,7 @@ describe('the School’s place with the valley systems on', () => {
     expect(byClass(p.root, 'vy-soon')).toHaveLength(1);
     const names = byClass(p.root, 'cv-target').map((el) => el.getAttribute('aria-label') ?? '');
     expect(names.some((n) => /^The lectern, the visiting teacher is here/.test(n))).toBe(true);
-    expect(names.some((n) => /^The School's house, 2 ready to graduate/.test(n))).toBe(true);
+    expect(names.some((n) => /^The graduation stage, 2 ready to graduate/.test(n))).toBe(true);
     expect(visibleText(p.root)).not.toContain(WAITING_LINE);
   });
 

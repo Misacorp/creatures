@@ -129,7 +129,7 @@ describe('the School canvas: the scene', () => {
     const names = labels(p);
     expect(names.every((n) => n !== '')).toBe(true);
     expect(names.some((n) => /^The lectern, the visiting teacher is here/.test(n))).toBe(true);
-    expect(names.some((n) => /^The School's house, 2 ready to graduate/.test(n))).toBe(true);
+    expect(names.some((n) => /^The graduation stage, 2 ready to graduate/.test(n))).toBe(true);
     const seats = targets(p).filter((el) =>
       /^A student seat/.test(el.getAttribute('aria-label') ?? ''),
     );
@@ -167,7 +167,7 @@ describe('the School canvas: the scene', () => {
     });
     expect(labels(p).some((n) => /^The lectern/.test(n))).toBe(false);
     expect(labels(p).some((n) => /^A student seat/.test(n))).toBe(false);
-    expect(labels(p).some((n) => /^The School's house/.test(n))).toBe(true);
+    expect(labels(p).some((n) => /^The graduation stage/.test(n))).toBe(true);
     expect(visibleText(p.root)).toContain('No teacher at the School right now.');
   });
 
@@ -334,7 +334,7 @@ describe('the School canvas: what a click opens', () => {
     const p = draw(sampleSchool({ phase: 'away' }), {
       graduation: { ready: 2, nextAt: NEXT_CEREMONY },
     });
-    p.click(target(p, /^The School's house/));
+    p.click(target(p, /^The graduation stage/));
     const text = visibleText(p.root);
     expect(text).toContain('2 ready to graduate');
     expect(text).toContain('The next ceremony is this evening.');
@@ -345,6 +345,6 @@ describe('the School canvas: what a click opens', () => {
 
   it('has no house before the server sends the ceremony', () => {
     const p = draw(sampleSchool({ phase: 'away' }));
-    expect(labels(p).some((n) => /^The School's house/.test(n))).toBe(false);
+    expect(labels(p).some((n) => /^The graduation stage/.test(n))).toBe(false);
   });
 });

@@ -5,7 +5,10 @@ import { PLATE_ROW_PX } from './place-plates';
 import { sceneGeometry } from './SceneFrame';
 import {
   ART_Y,
-  HOUSE_BOX,
+  STAGE_AT,
+  schoolArt,
+  STAGE_BOTTOM,
+  STAGE_BOX,
   SEATS_FEET,
   YARD_BOTTOM,
   YARD_LEFT,
@@ -69,7 +72,7 @@ describe('the School canvas: the layout', () => {
       expect(lay.box.y, name).toBeGreaterThanOrEqual(ART_Y);
       expect(lay.box.x + YARD_LEFT, name).toBeGreaterThanOrEqual(0);
       expect(lay.box.x + YARD_RIGHT, name).toBeLessThanOrEqual(g.W);
-      expect(lay.box.y + YARD_BOTTOM, name).toBeLessThanOrEqual(g.H);
+      expect(lay.box.y + STAGE_BOTTOM, name).toBeLessThanOrEqual(g.H);
       expect(lay.mode === 'none', name).toBe(!corner);
       if (lay.corner === null) return;
       if (g.s > SCALE_MIN) {
@@ -81,7 +84,7 @@ describe('the School canvas: the layout', () => {
         ).toBeLessThanOrEqual(g.H);
       }
       if (lay.mode === 'below') {
-        expect(lay.corner.y, name).toBeGreaterThanOrEqual(lay.box.y + YARD_BOTTOM);
+        expect(lay.corner.y, name).toBeGreaterThanOrEqual(lay.box.y + STAGE_BOTTOM);
       } else {
         expect(lay.corner.x, name).toBeGreaterThan(lay.box.x + YARD_RIGHT);
       }
@@ -122,11 +125,37 @@ describe('the School canvas: the targets', () => {
     expect(Math.abs(first.x - second.x)).toBeGreaterThanOrEqual(16);
   });
 
-  it('keeps the house above the seats and the lectern inside the yard', () => {
-    const seat = seatBox(0);
-    expect(HOUSE_BOX.y + HOUSE_BOX.h).toBeLessThanOrEqual((seat?.y ?? 0) + 2);
+  it('keeps the lectern inside the yard', () => {
     const lectern = lecternBox();
     expect(lectern.x + lectern.w).toBeLessThanOrEqual(YARD_RIGHT);
     expect(lectern.y + lectern.h).toBeLessThanOrEqual(YARD_BOTTOM);
+  });
+
+  it('the graduation stage is the prop’s whole box, in front of the yard and clear of the house, seats, lectern and teacher', () => {
+    expect(STAGE_BOX).toEqual({ ...STAGE_AT, w: 48, h: 24 });
+    // Under the yard's last row, inside its width.
+    expect(STAGE_BOX.y).toBeGreaterThan(YARD_BOTTOM - 1);
+    expect(STAGE_BOX.x).toBeGreaterThanOrEqual(YARD_LEFT);
+    expect(STAGE_BOX.x + STAGE_BOX.w).toBeLessThanOrEqual(YARD_RIGHT);
+    // The house (the School's art is 50 high) and every seat and the lectern end above it.
+    expect(STAGE_BOX.y).toBeGreaterThanOrEqual(schoolArt().height);
+    for (const n of [0, 1, 2, 3]) {
+      const seat = seatBox(n);
+      expect((seat?.y ?? 0) + (seat?.h ?? 0)).toBeLessThanOrEqual(STAGE_BOX.y);
+    }
+    const lectern = lecternBox();
+    expect(lectern.y + lectern.h).toBeLessThanOrEqual(STAGE_BOX.y);
+  });
+
+  it('the stage is drawn in the scene at its place, whatever the visit', () => {
+    const g = geometry(1100, 800, true);
+    const lay = schoolLayout(g, true);
+    const placements = schoolSceneDraw(
+      { lectern: false, bell: false, teacher: null },
+      { material: 'timber', size: 's' },
+    )(g);
+    expect(
+      placements.some((p) => p.x === lay.box.x + STAGE_AT.x && p.y === lay.box.y + STAGE_AT.y),
+    ).toBe(true);
   });
 });

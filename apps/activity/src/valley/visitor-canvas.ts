@@ -12,7 +12,7 @@ import { edgeDressing } from './bonfire-canvas';
 import { PLATE_ROW_PX } from './place-plates';
 import { artSize, grassTo, skyBackdrop, treesAround, type ArtBox } from './place-scene';
 import type { SceneGeometry } from './SceneFrame';
-import { propArt } from './place-props';
+import { propArt } from './place-prop-art';
 import { glowSprite, visitorName } from './valley-places';
 import type { Placement } from './valley-art';
 
