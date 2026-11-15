@@ -1364,11 +1364,227 @@ function lanternBuild(): { sprite: SpriteDef; day: Pal } {
   };
 }
 
-const free = (note: string, b: { sprite: SpriteDef; day: Pal }) => ({
+// ------------------------------------------------------------------ variations (2026-11-15): B and C for door, finished-crate, cat
+/** Door B: an arched plank door in a dressed-stone frame, a lantern on an iron bracket at the right. 20 x 32. */
+function doorArch(): Grid {
+  const g = new Grid(20, 32);
+  // outline: an arch (x 0-15), then the step
+  const arch = [5, 3, 2, 1, 1];
+  for (let y = 0; y < 30; y++) {
+    const x0 = y < arch.length ? arch[y]! : 0;
+    g.rect(x0, y, 16 - 2 * x0, 1, 'k');
+  }
+  // dressed stone: courses of blocks, mortar lines, lit on the left edge
+  const edge = new Set<string>();
+  for (let y = 1; y < 30; y++)
+    for (let x = 0; x < 16; x++)
+      if (
+        g.at(x, y) === 'k' &&
+        g.at(x - 1, y) === 'k' &&
+        g.at(x + 1, y) === 'k' &&
+        g.at(x, y - 1) === 'k'
+      )
+        edge.add(`${x},${y}`);
+  for (const key of edge) {
+    const [x, y] = key.split(',').map(Number) as [number, number];
+    g.px(x, y, (y + (x >> 1)) % 4 === 0 ? 'S' : 's');
+  }
+  for (let y = 1; y < 30; y++) if (g.at(1, y) === 's') g.px(1, y, 'L');
+  g.rect(7, 1, 2, 2, 'L');
+  // the opening: ink, then planks
+  const open = [5, 4, 3, 3];
+  for (let y = 3; y < 30; y++) {
+    const x0 = y - 3 < open.length ? open[y - 3]! : 3;
+    g.rect(x0, y, 16 - 2 * x0, 1, 'k');
+  }
+  for (let y = 4; y < 30; y++) {
+    const x0 = y - 4 < open.length ? open[y - 4]! + 1 : 4;
+    for (let x = x0; x < 16 - x0; x++) {
+      const col = x - 4;
+      g.px(x, y, col % 3 === 2 ? 'V' : col % 3 === 0 ? 'w' : 'W');
+    }
+  }
+  // iron straps with nails, ring handle on the right
+  for (const y of [9, 22]) {
+    g.rect(4, y, 8, 3, 'k');
+    g.rect(4, y, 8, 1, 'I');
+    g.rect(4, y + 1, 8, 1, 'i');
+    g.px(5, y, 'j');
+    g.px(9, y, 'j');
+  }
+  g.rect(10, 14, 2, 4, 'k');
+  g.px(10, 15, 'I');
+  g.stamp(9, 16, ['kIIk', 'kjjk', '.kk.']);
+  // the lantern bracket and the lantern, right of the frame
+  g.stamp(16, 6, ['kkkk', 'IIIk', '.kIk', '..k.']);
+  g.stamp(16, 10, ['.kk.', 'kyyk', 'kcyk', 'kyyk', 'kook', '.kk.']);
+  // the stone step
+  g.rect(0, 30, 16, 2, 'k');
+  g.rect(1, 30, 14, 1, 'L');
+  return g;
+}
+
+/** Door C: a heavy plank door with a small barred window (warm light inside) and a painted anvil sign. 20 x 32. */
+function doorWindow(): Grid {
+  const g = new Grid(20, 32);
+  // the sign: a board on the wall above the door, an anvil painted on it
+  g.rect(3, 0, 14, 8, 'k');
+  g.rect(4, 1, 12, 6, 'L');
+  g.rect(4, 6, 12, 1, 's');
+  g.stamp(5, 2, ['IIIIIIIIII', '.iIIIIIIi.', '...iiii...', '..iiiiii..']);
+  // the door: thick planks in a heavy ink outline
+  g.rect(1, 8, 18, 22, 'k');
+  for (let y = 9; y < 30; y++)
+    for (let x = 2; x < 18; x++) {
+      const col = (x - 2) % 4;
+      g.px(x, y, col === 3 ? 'V' : col === 0 ? 'w' : 'W');
+    }
+  g.rect(2, 9, 16, 1, 'V');
+  // the window: a barred slot with the room's light behind it
+  g.rect(6, 12, 8, 7, 'k');
+  g.rect(7, 13, 6, 5, 'y');
+  g.rect(7, 16, 6, 2, 'o');
+  g.rect(7, 13, 6, 1, 'c');
+  for (const x of [8, 10, 12]) g.rect(x, 13, 1, 5, 'k');
+  g.rect(6, 19, 8, 1, 'L');
+  // one heavy band across with studs, and a big ring handle below it
+  g.rect(2, 21, 16, 3, 'k');
+  g.rect(2, 21, 16, 1, 'I');
+  g.rect(2, 22, 16, 1, 'i');
+  for (const x of [3, 7, 11, 16]) g.px(x, 21, 'j');
+  g.stamp(13, 25, ['.kkk.', 'kIIIk', 'kj.jk', 'kIIIk', '.kkk.']);
+  // the step
+  g.rect(0, 30, 20, 2, 'k');
+  g.rect(1, 30, 18, 1, 'L');
+  return g;
+}
+
+/** Finished-crate B: a low display stand with a helmet and a charm on it and a striped scarf draped over the end. 20 x 16. */
+function finishedStand(): Grid {
+  const g = new Grid(20, 16);
+  g.stamp(1, 4, ['..kkkk..', '.kIIjjk.', 'kIIIjIIk', 'kIiIIIik', 'kjjjjjjk']);
+  g.stamp(10, 5, ['.kkk.', 'kyuyk', 'kyuyk', '.kyk.']);
+  g.px(15, 4, 'c');
+  g.px(14, 3, 'c');
+  g.px(8, 3, 'c');
+  g.px(9, 4, 'c');
+  // the stand: a top board and two trestles with a back panel
+  g.rect(0, 9, 20, 4, 'k');
+  g.rect(1, 10, 18, 1, 'w');
+  g.rect(1, 11, 18, 1, 'W');
+  g.rect(2, 13, 3, 3, 'k');
+  g.rect(15, 13, 3, 3, 'k');
+  g.rect(3, 13, 1, 2, 'W');
+  g.rect(16, 13, 1, 2, 'W');
+  g.rect(5, 13, 10, 1, 'k');
+  g.rect(5, 14, 10, 1, 'V');
+  g.rect(5, 15, 10, 1, 'k');
+  // the scarf, draped over the right end: bunched on top, hanging down the front with a fringe
+  g.stamp(13, 6, ['.kkkk.', 'krrr,k', 'k,rrrk']);
+  g.rect(14, 9, 5, 7, 'k');
+  g.rect(15, 9, 3, 6, 'r');
+  for (const y of [10, 12]) g.rect(15, y, 3, 1, ',');
+  g.stamp(15, 15, ['y.y']);
+  return g;
+}
+
+/** Finished-crate C: an open chest heaped with gear (helmet, charm, coins, a scarf spilling out) and a glint. 20 x 16. */
+function finishedChest(): Grid {
+  const g = new Grid(20, 16);
+  // the lid, thrown back: only its dark inside shows behind the gear
+  g.rect(3, 0, 14, 8, 'k');
+  g.rect(4, 1, 12, 1, 'W');
+  g.rect(4, 2, 12, 5, 'V');
+  // the heap
+  g.stamp(2, 2, ['..kkkk..', '.kIIjjk.', 'kIIIjIIk', 'kIiIIIik', 'kjjjjjjk']);
+  g.stamp(11, 4, ['.kkk.', 'kyuyk', 'kyuyk', '.kyk.']);
+  g.rect(1, 7, 18, 1, 'k');
+  g.rect(2, 7, 16, 1, 'y');
+  g.px(9, 6, 'y');
+  g.px(10, 6, 'o');
+  g.px(8, 7, 'o');
+  g.px(14, 7, 'o');
+  g.px(5, 7, 'c');
+  // the scarf spilling over the right
+  g.stamp(15, 4, ['.kkk', 'krrk', 'k,rk']);
+  g.rect(15, 7, 4, 1, 'k');
+  g.rect(16, 7, 2, 1, 'r');
+  // the chest: ink box, planks, iron corners and a lock plate
+  g.rect(0, 8, 20, 8, 'k');
+  g.rect(1, 8, 18, 1, 'w');
+  g.rect(1, 9, 18, 5, 'W');
+  g.rect(1, 14, 18, 1, 'V');
+  g.rect(1, 12, 18, 1, 'V');
+  for (const x of [1, 17]) {
+    g.rect(x, 9, 2, 6, 'I');
+    g.rect(x + 1, 9, 1, 6, 'i');
+  }
+  g.px(1, 9, 'j');
+  g.px(17, 9, 'j');
+  g.rect(8, 9, 4, 5, 'k');
+  g.rect(9, 10, 2, 3, 'I');
+  g.px(9, 10, 'j');
+  g.px(10, 11, 'k');
+  g.px(10, 12, 'k');
+  // glints
+  g.px(0, 3, 'c');
+  g.px(1, 2, 'c');
+  g.px(18, 1, 'c');
+  g.px(19, 2, 'c');
+  g.px(10, 0, 'c');
+  return g;
+}
+
+/** Cat B: a cat curled up, big ears, closed eyes, a striped tail wrapped round the front. 12 x 8. */
+function catCurled(): Grid {
+  const g = new Grid(12, 8);
+  g.stamp(0, 0, [
+    '.z...z......',
+    'z_z.z_z.....',
+    'z((((((z....',
+    'z))(())(z...',
+    'z(((__(((((z',
+    'z(((((()(()z',
+    '.z))()()()(z',
+    '..zzzzzzzzz.',
+  ]);
+  return g;
+}
+
+/** Cat C: a cat sitting upright, side on, facing the fire at the left. 12 x 10 (two rows taller than the lying cat). */
+function catSitting(): Grid {
+  const g = new Grid(12, 10);
+  g.stamp(0, 0, [
+    '..z...z.....',
+    '.z_z.z_z....',
+    '.z((((((z...',
+    '.z()(()(z...',
+    '.z((__((zzz.',
+    '..z((((((z)z',
+    '.z__(((((()z',
+    '.z__((()(()z',
+    '.z__(((((((z',
+    '.zzzzzzzzzz.',
+  ]);
+  return g;
+}
+
+const free = (
+  note: string,
+  b: { sprite: SpriteDef; day: Pal },
+  variants?: Record<string, Grid>,
+) => ({
   kind: 'free' as const,
   note,
   sprite: b.sprite,
   alts: { day: b.day },
+  ...(variants
+    ? {
+        variants: Object.fromEntries(
+          Object.entries(variants).map(([name, v]) => [name, build(v).sprite]),
+        ),
+      }
+    : {}),
 });
 
 export const VALLEY_FORGE_INTERIOR_CONCEPTS: ConceptSet = {
@@ -1426,8 +1642,9 @@ export const VALLEY_FORGE_INTERIOR_CONCEPTS: ConceptSet = {
     'hanging-tools': free('Tongs, a hammer and a ladle hung from the beam.', build(hangingTools())),
     'coal-heap': free('A heap of coal with two embers.', build(coalHeap())),
     door: free(
-      'CLICKABLE. A plank door in a timber frame with iron strap hinges, a ring handle and a stone step: the way out.',
+      'CLICKABLE. A plank door in a timber frame with iron strap hinges, a ring handle and a stone step: the way out. Variations: A (main) the timber-framed plank door, B an arched plank door in a dressed-stone frame with a lantern on an iron bracket at the right (the sprite uses 16 of the 20 columns for the door, the rest is the lantern), C a heavier door with a small barred window (warm light inside at night, plain bars by day) and a painted anvil sign above. Pick: C, because the lit window and the anvil sign say "the forge door" at 1x, and a lit slot is the clearest tap target.',
       build(door()),
+      { 'B arched stone': doorArch(), 'C heavy, window and sign': doorWindow() },
     ),
     'door-mat': free(
       'CLICKABLE with the door. A woven mat in front of the door.',
@@ -1438,8 +1655,9 @@ export const VALLEY_FORGE_INTERIOR_CONCEPTS: ConceptSet = {
       build(plansBoard()),
     ),
     'finished-crate': free(
-      'CLICKABLE. An open crate of finished gear: a steel helmet, a charm on a gold ring, a striped scarf over the side: the floor.',
+      'CLICKABLE. An open crate of finished gear: a steel helmet, a charm on a gold ring, a striped scarf over the side: the floor. Variations: A (main) the open crate, B a low display stand with a helmet and a charm on it and the striped scarf draped over the end, C an open chest heaped with a helmet, a charm and coins, the scarf spilling out and glints round it. Pick: C, because the heap and the glints read as "treasure waiting" at 1x, where the stand looks like a plain table.',
       build(finishedCrate()),
+      { 'B display stand': finishedStand(), 'C heaped chest': finishedChest() },
     ),
     'barrel-stack': free('Dressing. Three barrels, quiet colours.', build(barrelStack())),
     sacks: free('Dressing. Three burlap sacks.', build(sacks())),
@@ -1454,7 +1672,14 @@ export const VALLEY_FORGE_INTERIOR_CONCEPTS: ConceptSet = {
     ),
     'window-2': free('Dressing. A narrow window for the side wall, to repeat.', build(window2())),
     woodpile: free('Dressing. Split logs in a pyramid.', build(woodpile())),
-    cat: free('Dressing. A cat curled up asleep (by the furnace).', build(cat())),
+    cat: free(
+      'Dressing. A cat curled up asleep (by the furnace). Variations: A (main) the loaf-shaped sleeper, B a curled cat with bigger ears (cream inside), closed-eye lines and a striped tail wrapped round the front (12 x 8; no "z", a 3 x 3 z read as an I at this size), C a cat sitting upright facing the fire at the left (12 x 10: two rows taller than the others, so it stands on the same base row and reaches 2 px higher). Pick: B, because it keeps the 12 x 8 footprint and the ears and striped tail stop it reading as bread.',
+      build(cat()),
+      {
+        'B curled, ears and tail': catCurled(),
+        'C sitting (12 x 10)': catSitting(),
+      },
+    ),
     bucket: free('Dressing. A wooden bucket.', build(bucket())),
     'preview-top': free(
       'The whole room, 128 x 176, top 64 rows (see the notes for the layout).',

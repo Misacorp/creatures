@@ -726,7 +726,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 - **Status:** draft
 - **Requested:** 2026-11-14 (via the valley session): collecting gear should be a "big moment": common pieces come home on their own; rare and epic pieces wait in a sealed crate inside the Forge until the player opens it; opening reveals them one by one, best last.
 - **Source:** `apps/activity/src/sprites/concepts/valley-forge-crate.ts` (draw it with `pnpm art valley-forge-crate`)
-- **Sheet of:** `5b038cd648f6`
+- **Sheet of:** `d84047871d13`
 - Crate pieces are `free`, night palette main plus `alts`: `day` (lighter wood, deeper glow so it reads on pale ground), `epic` (pink-violet glow) and `epic-day`. The main palette is the RARE one (blue seam glow); `epic` swaps only the glow keys `g G h s`. Glow colours are the game rarity colours (`--rarity-rare #4da3ff`, `--rarity-epic #ff6fbf`, tints `#7ebcff`, `#f397ff`). Ink, woods and iron are the Forge props (`valley/forge-props.ts`).
 - `crate-sealed` 20 x 18: the 14-wide crate body sits at x 3-16 (3 px of margin each side), base row 17. Iron bands, a brass padlock on an iron hasp, a glowing lid gap, a glowing plank joint and glowing vertical joints. CRATE_PROP is 16 x 16; this one is 14 wide and 14 tall inside a 20 x 18 canvas that leaves room for the shake.
 - `crate-shake-1`, `-2`, `-3` share the 20 x 18 canvas and base row 17, so they swap in place of the sealed crate: 1 and 2 lean opposite ways (top shifted 1 px) with the lid lifted 1 px (a double glow gap), dust at one foot and two sparks; 3 is upright with dust at both feet. Play sealed, 1, 2, 1, 3 as a rattle. `shake-strip` (80 x 18) shows sealed, 1, 2, 3 side by side.
@@ -735,7 +735,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 
 | Code | Kind | Role | Status | Idea |
 | --- | --- | --- | --- | --- |
-| `crate-sealed` | free |  | draft | A sturdy iron-banded crate with a brass padlock, light seeping from the lid gap and plank joints. |
+| `crate-sealed` | free |  | draft | A sturdy iron-banded crate with a brass padlock, light seeping from the lid gap and plank joints. Variations: A (main) the iron-banded crate with a brass padlock, B a treasure chest (domed lid, gold corner caps, a big keyhole plate whose keyhole glows, a glowing seam), C a crate bound with glowing rune-bands and a sigil instead of iron and a lock. Both use the main's keys, so `epic` and `day` recolour them (B and C add no colours). Pick: B, because the chest shape says "treasure" before any glow does, and its keyhole is the one bright spot to tap. |
 | `crate-shake-1` | free |  | draft | Rattling: leaning left, lid lifted, dust at the right foot. |
 | `crate-shake-2` | free |  | draft | Rattling: leaning right, lid lifted, dust at the left foot. |
 | `crate-shake-3` | free |  | draft | Rattling: upright hop, dust at both feet. |
@@ -754,7 +754,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 - **Status:** draft
 - **Requested:** 2026-11-11 (via the valley session): clicking the Forge goes inside, into a workshop interior. "It would be cool to have the same stuff there (my creatures working at the anvils) but also see some other creatures working in the background, a fire going, etc. Basically make it look like the interior of a workshop."
 - **Source:** `apps/activity/src/sprites/concepts/valley-forge-interior.ts` (draw it with `pnpm art valley-forge-interior`)
-- **Sheet of:** `d7c91bc986f2`
+- **Sheet of:** `7c46281ec723`
 - Pieces the game lays out behind its existing props (`valley/forge-props.ts`: anvil, chest, crate, plans table; creatures stand in front at the anvils). Level 3 look: sandstone, timber, black iron, terracotta. Same ink and woods as the props. Night is the main palette (fire is the light, windows dark blue with a moon glint); `alts.day` recolours the same pixels (windows bright, daylight patches `b` on the wall and `B` on the floor).
 - `back-wall` 128 x 56 tiles sideways (column 0 continues column 127; a timber post crosses the seam; see `seam` and `seam-day`). Beam on rows 0-5, terracotta frieze 6-8, windows at x 20 and x 84 (opening 13-34, sill 35-39), plinth 48-55. Stand it on the floor line: its bottom row is the base.
 - `furnace` 48 x 52: body base on row 51, mouth fire at x 14-33 (mouth centre x 24). Place it so the base row sits a few rows below the wall bottom.
@@ -780,10 +780,10 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | `quench-trough` | free |  | draft | A trough of water for quenching. |
 | `hanging-tools` | free |  | draft | Tongs, a hammer and a ladle hung from the beam. |
 | `coal-heap` | free |  | draft | A heap of coal with two embers. |
-| `door` | free |  | draft | CLICKABLE. A plank door in a timber frame with iron strap hinges, a ring handle and a stone step: the way out. |
+| `door` | free |  | draft | CLICKABLE. A plank door in a timber frame with iron strap hinges, a ring handle and a stone step: the way out. Variations: A (main) the timber-framed plank door, B an arched plank door in a dressed-stone frame with a lantern on an iron bracket at the right (the sprite uses 16 of the 20 columns for the door, the rest is the lantern), C a heavier door with a small barred window (warm light inside at night, plain bars by day) and a painted anvil sign above. Pick: C, because the lit window and the anvil sign say "the forge door" at 1x, and a lit slot is the clearest tap target. |
 | `door-mat` | free |  | draft | CLICKABLE with the door. A woven mat in front of the door. |
 | `plans-board` | free |  | draft | CLICKABLE. A drafting board with blue plans (white lines, pins, a pencil) on trestle legs: the blueprints. |
-| `finished-crate` | free |  | draft | CLICKABLE. An open crate of finished gear: a steel helmet, a charm on a gold ring, a striped scarf over the side: the floor. |
+| `finished-crate` | free |  | draft | CLICKABLE. An open crate of finished gear: a steel helmet, a charm on a gold ring, a striped scarf over the side: the floor. Variations: A (main) the open crate, B a low display stand with a helmet and a charm on it and the striped scarf draped over the end, C an open chest heaped with a helmet, a charm and coins, the scarf spilling out and glints round it. Pick: C, because the heap and the glints read as "treasure waiting" at 1x, where the stand looks like a plain table. |
 | `barrel-stack` | free |  | draft | Dressing. Three barrels, quiet colours. |
 | `sacks` | free |  | draft | Dressing. Three burlap sacks. |
 | `gear-rack` | free |  | draft | Dressing. A free standing rack with finished hats and scarves. |
@@ -791,7 +791,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | `lantern-hanging` | free |  | draft | Dressing. A lantern on a chain from the beam; warm stepped light on the wall below at night. |
 | `window-2` | free |  | draft | Dressing. A narrow window for the side wall, to repeat. |
 | `woodpile` | free |  | draft | Dressing. Split logs in a pyramid. |
-| `cat` | free |  | draft | Dressing. A cat curled up asleep (by the furnace). |
+| `cat` | free |  | draft | Dressing. A cat curled up asleep (by the furnace). Variations: A (main) the loaf-shaped sleeper, B a curled cat with bigger ears (cream inside), closed-eye lines and a striped tail wrapped round the front (12 x 8; no "z", a 3 x 3 z read as an I at this size), C a cat sitting upright facing the fire at the left (12 x 10: two rows taller than the others, so it stands on the same base row and reaches 2 px higher). Pick: B, because it keeps the 12 x 8 footprint and the ears and striped tail stop it reading as bread. |
 | `bucket` | free |  | draft | Dressing. A wooden bucket. |
 | `preview-top` | free |  | draft | The whole room, 128 x 176, top 64 rows (see the notes for the layout). |
 | `preview-middle` | free |  | draft | The whole room, rows 64-127. |
