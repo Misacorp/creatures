@@ -184,6 +184,30 @@ export function panFor(t0: number, t1: number, lo: number, hi: number, margin = 
 }
 
 /**
+ * The pan that keeps what was clicked (`here`, in the stage's own x) clear of the drawers (`lo` to `hi`) and, as far as that allows, the
+ * whole builders' corner (`crowd`) too. What was clicked comes first: it is never pushed out of the clear stretch for the corner. The
+ * corner is brought in only when it fits the clear stretch (with `margin` each side); with nothing clicked (a creature picked from the
+ * tray) the corner alone decides.
+ */
+export function panWith(
+  here: { from: number; to: number } | null,
+  crowd: { from: number; to: number } | null,
+  lo: number,
+  hi: number,
+  margin = 12,
+): number {
+  const own = here === null ? 0 : panFor(here.from, here.to, lo, hi, margin);
+  if (crowd === null || crowd.to - crowd.from > hi - lo - 2 * margin) return own;
+  const want = panFor(crowd.from, crowd.to, lo, hi, margin);
+  if (want === 0) return own;
+  if (here === null) return want;
+  // Keep the clicked thing inside the clear stretch, with its margin, while the corner is brought as close as it can be.
+  const low = lo + margin - here.from;
+  const high = hi - margin - here.to;
+  return low > high ? own : Math.min(high, Math.max(low, want));
+}
+
+/**
  * The sideways pan of a scene under drawers (`panFor`): the thing that opened the right drawer is kept clear of it first, else the
  * thing that opened the left one. Measured in layout (before the paint, so nothing jumps) and only on a wide window. The wrapper's
  * own box does not move, so the measure takes the current pan off the opener's place.
@@ -203,21 +227,49 @@ function useScenePan(
     const wrap = wrapper.current;
     if (!enabled || root === null || wrap === null) {
       setPan(0);
-      return;
+      return undefined;
     }
-    const leftEl = root.querySelector<HTMLElement>('.pc-left');
-    const rightEl = root.querySelector<HTMLElement>('.pc-right');
-    const box = root.getBoundingClientRect();
-    const lo = leftEl === null ? 0 : leftEl.getBoundingClientRect().right - box.left;
-    const hi = rightEl === null ? box.width : rightEl.getBoundingClientRect().left - box.left;
-    const opener = (right !== null ? right : left)?.returnFocusTo?.el;
-    if (opener === undefined || !opener.isConnected || (left === null && right === null)) {
-      setPan(0);
-      return;
-    }
-    const r = opener.getBoundingClientRect();
-    const t0 = r.left - box.left - current.current;
-    setPan(panFor(t0, t0 + r.width, lo, hi));
+    const measure = (): void => {
+      const leftEl = root.querySelector<HTMLElement>('.pc-left');
+      const rightEl = root.querySelector<HTMLElement>('.pc-right');
+      const box = root.getBoundingClientRect();
+      const lo = leftEl === null ? 0 : leftEl.getBoundingClientRect().right - box.left;
+      const hi = rightEl === null ? box.width : rightEl.getBoundingClientRect().left - box.left;
+      if (left === null && right === null) {
+        setPan(0);
+        return;
+      }
+      const opener = (right !== null ? right : left)?.returnFocusTo?.el;
+      const mine = (el: HTMLElement): { from: number; to: number } => {
+        const r = el.getBoundingClientRect();
+        return {
+          from: r.left - box.left - current.current,
+          to: r.right - box.left - current.current,
+        };
+      };
+      const here = opener === undefined || !opener.isConnected ? null : mine(opener);
+      // The builders' corner (every target of the `group`) is kept in view with what was clicked while the two fit clear of the drawers.
+      const group = Array.from(root.querySelectorAll<HTMLElement>('[data-pan-group]'));
+      const crowd =
+        group.length === 0
+          ? null
+          : (() => {
+              const spans = group.map(mine);
+              return {
+                from: Math.min(...spans.map((x) => x.from)),
+                to: Math.max(...spans.map((x) => x.to)),
+              };
+            })();
+      setPan(panWith(here, crowd, lo, hi));
+    };
+    measure();
+    // The scene draws its targets once it has its size, which can be after a drawer opened at the start: measure again as they appear.
+    if (typeof MutationObserver === 'undefined') return undefined;
+    const watch = new MutationObserver(measure);
+    watch.observe(wrap, { childList: true, subtree: true });
+    return () => {
+      watch.disconnect();
+    };
   }, [enabled, left === null, right === null, left?.returnFocusTo, right?.returnFocusTo]);
   return pan;
 }
@@ -310,6 +362,7 @@ export function CanvasTarget({
   slot = false,
   over = false,
   seat,
+  group,
   z,
   plate,
   plateAt,
@@ -330,6 +383,8 @@ export function CanvasTarget({
   over?: boolean;
   /** A hand dropping a creature on this target finds it by this id (`seatAt`). */
   seat?: string;
+  /** Targets of one group keep each other in view when a drawer would cover one of them (`CORNER_GROUP`: the builders' corner). */
+  group?: string;
   /** Draw order among the scene's things (`depthOf`): a target is above the sprites it covers. */
   z?: number;
   /**
@@ -352,6 +407,7 @@ export function CanvasTarget({
         aria-expanded={expanded === undefined ? undefined : expanded}
         disabled={disabled}
         data-seat={seat}
+        data-pan-group={group}
         ref={cssVars({ '--pw': `${String(w * g.s)}px`, '--ph': `${String(h * g.s)}px` })}
         onClick={(event) => {
           onClick(openerOf(event.currentTarget));

@@ -1882,7 +1882,10 @@ try {
       // A tap on a resting creature opens it in the right drawer: its gain, and the hearth post (a page on a phone).
       const first = page.locator('button.cv-target[aria-label*="by the fire"]').first();
       await first.click();
-      await waitFor(rightPanel.getByRole('list', { name: 'Resting creature' }));
+      await waitFor(rightPanel.locator('.cs-summary'));
+      // One name: the drawer's title; the summary under it draws the portrait, tags and experience, never the name again.
+      if ((await rightPanel.locator('.cs-summary .cc-name').count()) > 0)
+        throw new Error('the creature drawer says the name twice');
       await page.waitForTimeout(300);
       await shot('bonfire-creature');
       await page.keyboard.press('Escape');
@@ -1905,7 +1908,7 @@ try {
         await shot('bonfire-all-resting');
         // A row of the list opens that creature in the right drawer (a step of the list's panel on a phone).
         await leftPanel.getByRole('option').first().click();
-        await waitFor(rightPanel.getByRole('list', { name: 'Resting creature' }));
+        await waitFor(rightPanel.locator('.cs-summary'));
         await page.keyboard.press('Escape');
         await page.keyboard.press('Escape');
       } else if (drawn !== baseState.creatures.length) {

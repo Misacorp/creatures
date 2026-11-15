@@ -1,17 +1,16 @@
 /**
  * What a click in the Bonfire's canvas opens (`BonfireCanvas.tsx` holds the state; the side rule is `PlaceCanvas`'s):
  *
- * - `RestingPanel` (right drawer, a page on a phone): one resting creature of the player's, as a row of the shared creature list (`show`
- *   mode) with what it gained this visit, and the one thing a creature at the fire can do: help build the hearth, or go back to resting
- *   when it already does. Nothing here decides anything: the post is the game's action and the server answers.
+ * - `RestingPanel` (right drawer, a page on a phone): one resting creature of the player's, summed up (`CreatureSummary`: its portrait,
+ *   tags, experience, what it does and gains this visit; the drawer's title is its one name), and the one thing a creature at the fire
+ *   can do: help build the hearth, or go back to resting when it already does. Nothing here decides anything: the post is the game's action and the server answers.
  * - `HelperPanel` (right drawer): the helper's seat, who helps at the builders' table: the creature list with a tap picking, or "Back to resting".
  * - `RestingList` (left drawer): everyone resting with the visit's gain, each row a tap that opens that creature's right drawer.
  *
- * Every panel is a `PanelBody`; the two right ones are a one-step `ui/Wizard` whose first step has no Back (the X is the way out).
+ * Every panel is a `PanelBody`; the helper's is a one-step `ui/Wizard` whose first step has no Back (the X is the way out).
  */
 import { baseOption } from '../roster-picker';
 import { CreatureSummary } from './CreatureSummary';
-import { creatureName } from '../game';
 import type { Creature, GameState } from '../api';
 import { CreatureList } from '../ui/CreatureList';
 import { useWizard } from '../ui/use-wizard';
@@ -53,12 +52,6 @@ export function RestingPanel({
   busy: boolean;
   onClose: () => void;
 }) {
-  const wizard = useWizard(
-    [{ id: 'hub', title: creatureName(resting.creature), backLabel: 'to the fire' }],
-    {
-      onExit: onClose,
-    },
-  );
   const helping = helper?.creatureId === resting.creature.id;
   return (
     <PanelBody
@@ -78,18 +71,16 @@ export function RestingPanel({
         )
       }
     >
-      <WizardView wizard={wizard}>
-        <CreatureSummary
-          creature={creature}
-          state={tagState}
-          doing={helping ? 'Helping build the hearth' : 'Resting at the fire'}
-          gain={restingNote(resting.gained, resting.warm)}
-        >
-          {helper !== undefined && (
-            <p class="sp-note">A creature here helps build, a little each day.</p>
-          )}
-        </CreatureSummary>
-      </WizardView>
+      <CreatureSummary
+        creature={creature}
+        state={tagState}
+        doing={helping ? 'Helping build the hearth' : 'Resting at the fire'}
+        gain={restingNote(resting.gained, resting.warm)}
+      >
+        {helper !== undefined && (
+          <p class="sp-note">A creature here helps build, a little each day.</p>
+        )}
+      </CreatureSummary>
     </PanelBody>
   );
 }

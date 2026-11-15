@@ -48,7 +48,14 @@ import {
   type FireSpot,
 } from './bonfire-cast';
 import { bonfireLayout, bonfireScale, bonfireSceneDraw, fireTarget } from './bonfire-canvas';
-import { FLAG_AT, HELPER_AT, TABLE_BOX, pileMaterial, pileSize } from './builders-corner';
+import {
+  CORNER_GROUP,
+  FLAG_AT,
+  HELPER_AT,
+  TABLE_BOX,
+  pileMaterial,
+  pileSize,
+} from './builders-corner';
 import { cornerSprite } from './builders-corner-art';
 import { commonsOf, hearthLine, percentFilled, placeOf } from './commons-view';
 import { CREATURE_PX } from './place-cast';
@@ -183,7 +190,6 @@ export function BonfireCanvas({
     if (one !== undefined && whole !== undefined) {
       rightPanel = {
         title: creatureName(one.creature),
-        wizard: true,
         returnFocusTo: right.from,
         backLabel: 'to the fire',
         onClose: () => {
@@ -480,6 +486,7 @@ function BonfireInside({
           h={TABLE_BOX.h}
           label={`The builders' table, ${hearthOpen ? "the hearth's project is open" : 'the hearth is being built'}. Open the project board`}
           plate="Project"
+          group={CORNER_GROUP}
           plateAt={TABLE_BOX.h + 1}
           expanded={open.board}
           onClick={onFire}
@@ -553,6 +560,7 @@ function BonfireInside({
               : `${creatureName(helper)}, level ${String(helper.level)}, helping build the hearth at the builders' table. Change`
           }
           plate={helper === undefined ? 'Helper' : creatureName(helper)}
+          group={CORNER_GROUP}
           {...(helper === undefined ? {} : { plateMeta: { level: helper.level } })}
           plateAt={CREATURE_PX + 1}
           expanded={open.helper}
