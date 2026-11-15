@@ -156,8 +156,8 @@ export function MarketCanvas({
   const material = pileMaterial(place?.level ?? 1);
   const size = pileSize(place === undefined ? 0 : percentFilled(place));
   const draw = useMemo(
-    () => marketSceneDraw(steps, corner ? { material, size } : null),
-    [steps, corner, material, size],
+    () => marketSceneDraw(steps, corner ? { material, size } : null, built),
+    [steps, corner, material, size, built],
   );
   const broker = creatures.find((c) => c.id === seat?.creatureId);
 

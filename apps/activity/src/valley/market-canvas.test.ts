@@ -116,17 +116,32 @@ describe('the Market canvas: the layout', () => {
 describe('the Market canvas: the scene', () => {
   it('draws the same placements for the same size, grows with the scaffolding and the corner, and fills every edge', () => {
     const g = geometry(1100, 780, true);
-    const plain = marketSceneDraw(0, null)(g);
-    const again = marketSceneDraw(0, null)(g);
+    const plain = marketSceneDraw(0, null, true)(g);
+    const again = marketSceneDraw(0, null, true)(g);
     expect(again).toEqual(plain);
-    const scaffolded = marketSceneDraw(6, null)(g);
+    const scaffolded = marketSceneDraw(6, null, true)(g);
     expect(scaffolded.length).toBe(plain.length + 1);
-    const withCorner = marketSceneDraw(0, { material: 'timber', size: 's' })(g);
+    const withCorner = marketSceneDraw(0, { material: 'timber', size: 's' }, true)(g);
     expect(withCorner.length).toBeGreaterThan(plain.length);
     // Grass reaches every edge.
     const maxX = Math.max(...plain.map((p) => p.x + (p.sprite.rows[0]?.length ?? 0)));
     const maxY = Math.max(...plain.map((p) => p.y + p.sprite.rows.length));
     expect(maxX).toBeGreaterThanOrEqual(g.W);
     expect(maxY).toBeGreaterThanOrEqual(g.H);
+  });
+
+  it('before it is built the stall’s place is the market-building prop, with no scaffolding over it; once built, the stall', () => {
+    const g = geometry(1100, 780, false);
+    const lay = marketLayout(g, false);
+    const at = (list: ReturnType<ReturnType<typeof marketSceneDraw>>) =>
+      list.filter((p) => p.x === lay.box.x && p.y === lay.box.y);
+    const site = at(marketSceneDraw(6, null, false)(g));
+    const stall = at(marketSceneDraw(6, null, true)(g));
+    // The site is one sprite (the stall's size, the same ground rows); the built stall has its scaffold over it while it grows.
+    expect(site).toHaveLength(1);
+    expect(stall).toHaveLength(2);
+    expect(site[0]?.sprite).not.toBe(stall[0]?.sprite);
+    expect(site[0]?.sprite.rows).toHaveLength(STALL_H);
+    expect(site[0]?.sprite.rows[0]).toHaveLength(STALL_W);
   });
 });

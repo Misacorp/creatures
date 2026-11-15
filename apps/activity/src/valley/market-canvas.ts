@@ -12,6 +12,7 @@
  * - under the stall (`'below'`, a phone), else
  * - nowhere (`'none'`: no project, the stall uses the whole height).
  */
+import { propArt } from './place-prop-art';
 import { PLATE_ROW_PX } from './place-plates';
 import { SCALE_MAX, SCALE_MIN, edgeDressing, type CornerMode } from './bonfire-canvas';
 import { CORNER, cornerPlacements, type Pile } from './builders-corner';
@@ -134,9 +135,11 @@ export function marketLayout(
 /**
  * The scene: grass and sky to every edge, the edges dressed, the trees round the stall (the ones on the corner's side only when
  * the corner is not there), the stall with the scaffolding rising on it as the project fills (`steps`, V-COM-6; 0 for none), and the
- * builders' corner (its pile of materials as `corner` says) while there is one.
+ * builders' corner (its pile of materials as `corner` says) while there is one. Before the Market is built (`built` false) the stall's
+ * place is the art library's `market-building` (Misa's pick B: the frame with scaffolding and a half-hung awning, the same size and
+ * ground rows as the stall) and no scaffolding rises over it: the prop is the site.
  */
-export function marketSceneDraw(steps: number, corner: Pile | null) {
+export function marketSceneDraw(steps: number, corner: Pile | null, built: boolean) {
   return (g: SceneGeometry): Placement[] => {
     const lay = marketLayout(g, corner !== null);
     const { box } = lay;
@@ -156,8 +159,10 @@ export function marketSceneDraw(steps: number, corner: Pile | null) {
             lay.corner.y,
             corner ?? { material: 'timber', size: 's' },
           )),
-      { sprite: glowSprite('market'), x: box.x, y: box.y },
-      ...(steps === 0 ? [] : [{ sprite: scaffoldFor('market', steps), x: box.x, y: box.y }]),
+      { sprite: built ? glowSprite('market') : propArt('marketBuilding'), x: box.x, y: box.y },
+      ...(steps === 0 || !built
+        ? []
+        : [{ sprite: scaffoldFor('market', steps), x: box.x, y: box.y }]),
     ];
   };
 }
