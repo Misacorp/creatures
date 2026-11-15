@@ -3238,10 +3238,12 @@ try {
     () => {
       const config = ROUTES.get('/api/config');
       answerOverride.set('/api/config', () => ({ ...config(), valleySystems: true }));
-      const creatures = baseState.creatures.map((c) => ({ ...c, busy: null, away: false }));
+      // A state with newcomers waiting at the gate (the creatures-state fixture's four duplicates and the roster they belong to).
+      const waiting = fixture('creatures-state');
+      const creatures = waiting.creatures.map((c) => ({ ...c, busy: null, away: false }));
       scouts.seats = [];
       scouts.ids = creatures.map((c) => c.id);
-      stateOverride = { creatures, valley: valleyBlock() };
+      stateOverride = { creatures, pending: waiting.pending, valley: valleyBlock() };
     },
     async () => {
       await waitFor(page.locator(VALLEY), 'attached');
@@ -3291,7 +3293,8 @@ try {
         await page.keyboard.press('Escape');
         await rightPanel.waitFor({ state: 'detached', timeout: 10000 });
       }
-      // The Creatures page is the left drawer; the waiting catches are not repeated in it.
+      // The Creatures page is the left drawer; the waiting catches are not repeated in it (the scene settles back first).
+      await page.waitForTimeout(500);
       await expectTopmost(creaturesButton().first(), 'the Creatures button');
       await creaturesButton().first().click();
       await waitFor(leftPanel.locator('li.creature-card'));
