@@ -84,7 +84,7 @@ function infoOf(c: StandCreature, owner?: string): CreatureInfo {
 }
 
 /** What lets a hand move a creature: the meadow it stays in, and where it is held and put down. */
-interface Hand {
+export interface Hand {
   area: Rect;
   /** Held right now: drawn above every creature. */
   lifted: boolean;
@@ -97,7 +97,7 @@ interface Hand {
  * moves less than a few pixels stays a tap (the popover opens as before); a drag swallows the click that ends it.
  * No long press. Pointer capture keeps the drag with the creature when the pointer leaves it.
  */
-function Draggable({
+export function Draggable({
   hand,
   x,
   y,

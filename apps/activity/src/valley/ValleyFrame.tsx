@@ -12,7 +12,7 @@ import type { Creature, ValleyVisit } from '../api';
 import type { TabAlerts } from '../tab-alerts';
 import { scrollAndFocus } from '../scroll-to';
 import { BonfireCanvas } from './BonfireCanvas';
-import { CommonsBoard, type CommonsActions, type CommonsStart } from './CommonsBoard';
+import type { CommonsActions, CommonsStart } from './CommonsBoard';
 import { YourHouseRow } from './YourHouseRow';
 import { Keepsakes } from './Keepsakes';
 import { MarketCanvas, type MarketActions, type MarketStart } from './MarketCanvas';
@@ -98,7 +98,7 @@ export function ValleyFrame({
   castExtra: CastExtra;
   /** The valley's resting creatures and allowance (`VALLEY_SYSTEMS` on): the Bonfire opens with it; null (flag off, or not heard yet) leaves it "not open yet". */
   visit?: ValleyVisit | null;
-  /** The commons' gifts and communal seats (`VALLEY_SYSTEMS` on): the Bonfire's and the Paddock's project boards; absent shows none. */
+  /** The commons' gifts and communal seats (`VALLEY_SYSTEMS` on): the Bonfire's project board (the Paddock's is drawn by the game, in its canvas); absent shows none. */
   commons?: CommonsActions;
   /** The Market's broker seat (`VALLEY_SYSTEMS` on): its page opens once the Market's project is under way; absent leaves the Market "not open yet". */
   market?: MarketActions;
@@ -158,7 +158,9 @@ export function ValleyFrame({
     view.kind === 'place' &&
     view.book === null &&
     hasScene(view.place) &&
-    ((view.place !== 'signpost' && view.place !== 'forge') || visit !== null)
+    ((view.place !== 'signpost' && view.place !== 'forge') || visit !== null) &&
+    // The Paddock is a canvas with the valley's systems on (`PaddockCanvas`, drawn by the game): its yard is its scene.
+    !(view.place === 'paddock' && visit !== null)
       ? castFor(
           view.place,
           { ...placeInput, ...castExtra, visit },
@@ -237,21 +239,6 @@ export function ValleyFrame({
           <Keepsakes visit={visit} />
         </div>
       )}
-      {view.kind === 'place' &&
-        view.place === 'paddock' &&
-        view.book === null &&
-        visit !== null &&
-        commons !== undefined && (
-          <CommonsBoard
-            place="paddock"
-            visit={visit}
-            creatures={creatures}
-            acorns={acorns}
-            busy={busy}
-            actions={commons}
-            {...(commonsStart?.view === undefined ? {} : { start: { view: commonsStart.view } })}
-          />
-        )}
       {children}
     </>
   );

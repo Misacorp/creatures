@@ -639,3 +639,17 @@ Misa, 2026-11-15: "We need to update the other places into the new layout." The 
 **Where each old function went.** The exchange row and its drawer: the stall, `Exchange` (its "Trade for" and "Pay with" choices are now steps of that wizard, not an in-place drill). The broker slot row (who trades, trades toward) and the rates drawer: the broker's panel, one step with the slot row, the line and the rates table; the creature picker (`RosterPicker`) and the toward drawer: steps of it. The project board: the builders' table, left drawer. The tray under the scene stays (Misa: the bottom creature row is fine); a drag from it onto the broker seat or the helper spot posts (`useDragDrop`, `DragGhost`) and never opens a drawer; a tap on the seat opens its list too. The calm line "Pick a creature, or drag one here": the empty seat's plate and list.
 
 **Not done / to look at.** `place-cast.ts` still has `marketCast` (the band's cast of the broker and the helper); nothing draws it now (its tests still run). `MarketHelperPanel` copies the Bonfire's `HelperPanel` for the Market (the other agent converts another place at the same time, so a shared one waits for the merge). Setting what the broker trades toward needs a broker posted (the old card allowed it with nobody there).
+
+## 2026-11-15: the Paddock as a canvas (implementer, worktree of the Bonfire's tip)
+
+Misa: "We need to update the other places into the new layout." Decision `2026-11-15-the-paddock-is-a-canvas-the` (topic `valley`) holds the detail.
+
+**Built** (behind `VALLEY_SYSTEMS`; the flag off keeps the old page and band scene). `valley/PaddockCanvas.tsx`, `PaddockPanels.tsx`, `paddock-canvas.ts`, `styles/views/paddock-canvas.css`. The yard fills the window (the paddock's art with the Bonfire's ground, sky and edge dressing; scale picked like `bonfireScale`) and never scrolls. The creatures at home roam in a meadow as wide as the working area, each a tap with a plate (right drawer: where it is, "Help build the Paddock", "Open its page"); a drag still moves one (`Draggable`, now exported from `PlaceScene`). The gate (newcomers stand at it, at most two) opens the waiting catches in the right drawer; "Creatures" (or "+N more") opens the Creatures page in the left drawer. The builders' corner holds the project (table: board, left; helper seat: right), as at the Bonfire.
+
+**Where each old function went.** Creatures list, finder, filters, cards and creature pages: the left drawer (`Collection`, with `catchesElsewhere`: no waiting catches in it; a page's "Answer a waiting catch" opens the gate). Waiting catches and Confirm: the gate's drawer. The popover's "View": the creature's page in the right drawer. Roaming and dragging: the yard. The project board and the helper seat (board under the scene before): the builders' corner. The band scene's pinned "Choose for the newcomer" button: the gate tap.
+
+**Small fixes on the way.** `SceneFrame`'s Escape no longer leaves a place when it only closes a popover over it (the popover's re-render could land between the two handlers); the e2e's Paddock steps follow the canvas.
+
+**Picks to glance at.** The level art of the Paddock (`valley-levels-paddock`, five levels) is not wired in the game, so the yard shows today's paddock art. A creature that is not at home opens (from the popover's "View") with where it is.
+
+**Pick up here:** the other places that still have a page under a band scene (Cave, Arena, Fairground, House).
