@@ -13,7 +13,7 @@ import { tierPalette, INK } from './valley-tiers';
 import { VALLEY_GLOW_CONCEPTS } from './valley-glow';
 import type { ConceptSet } from './index';
 
-const t1 = tierPalette(1, { o: 'log', O: 'logShade', r: 'rope' });
+const t1 = tierPalette(1, { o: 'log', O: 'logShade', r: 'rope', g: 'fieldstone' });
 const t2 = tierPalette(2, { p: 'plank', P: 'plankShade' });
 const t3 = tierPalette(3, { s: 'stone', S: 'stoneShade', L: 'stoneLight' });
 const t4 = tierPalette(4, { c: 'cream', t: 'teal' });
@@ -309,118 +309,210 @@ function toolbox(): { sprite: SpriteDef; day: Record<string, string> } {
 // ---------------------------------------------------------------------------------------------------------
 // Material piles: three sizes on the same base row (bottom row), each growing in both width and height.
 
-function stoneBlock(g: Grid, x: number, y: number, w: number, h: number): void {
-  rect(g, x, y, w, h, 's');
+/** Fills a hole between shapes (a notch between two round log ends) with `c`. */
+function fillNotches(g: Grid, c: string): void {
+  for (let y = 0; y < g.length; y++) {
+    const row = g[y] as string[];
+    for (let x = 1; x < row.length - 1; x++) {
+      if (row[x] === '.' && row[x - 1] !== '.' && row[x + 1] !== '.') row[x] = c;
+    }
+  }
+  for (let y = 1; y < g.length - 1; y++)
+    for (let x = 0; x < (g[y] as string[]).length; x++)
+      if (
+        (g[y]?.[x] ?? '') === '.' &&
+        (g[y - 1]?.[x] ?? '.') !== '.' &&
+        (g[y + 1]?.[x] ?? '.') !== '.'
+      )
+        put(g, x, y, c);
+}
+
+/** One block of cut stone: lit top edge, body, shaded foot. `grey` is a greyer fieldstone. */
+function stoneBlock(g: Grid, x: number, y: number, w: number, grey: boolean): void {
+  rect(g, x, y, w, 3, grey ? 'g' : 's');
   rect(g, x, y, w, 1, 'L');
-  rect(g, x + w - 1, y + 1, 1, h - 1, 'S');
-  if (h > 2) rect(g, x, y + h - 1, w, 1, 'S');
+  if (!grey) rect(g, x, y + 2, w, 1, 'S');
+}
+
+/** A block: its width, and whether it is grey. */
+type Block = readonly [number, boolean];
+
+/** Layers of blocks from the top down, each starting at its own x; dark joints between and under them. */
+function stoneLayers(layers: readonly (readonly [number, readonly Block[]])[]): Grid {
+  const g = grid(24, layers.length * 4 - 1);
+  layers.forEach(([x0, blocks], i) => {
+    let x = x0;
+    const y = i * 4;
+    blocks.forEach(([w, grey], j) => {
+      stoneBlock(g, x, y, w, grey);
+      x += w;
+      if (j < blocks.length - 1) {
+        rect(g, x, y, 1, 3, 'O');
+        x += 1;
+      }
+    });
+    if (i < layers.length - 1) rect(g, x0, y + 3, x - x0, 1, 'O');
+  });
+  return g;
+}
+
+function trim(g: Grid): Grid {
+  let maxX = 0;
+  g.forEach((r) =>
+    r.forEach((c, x) => {
+      if (c !== '.') maxX = Math.max(maxX, x);
+    }),
+  );
+  return g.map((r) => r.slice(0, maxX + 1));
 }
 
 function pileStone(size: 's' | 'm' | 'l'): { sprite: SpriteDef; day: Record<string, string> } {
+  // a loose chip at the foot of each pile
   if (size === 's') {
-    const g = grid(8, 4);
-    stoneBlock(g, 0, 2, 4, 2);
-    stoneBlock(g, 4, 2, 4, 2);
-    stoneBlock(g, 2, 0, 4, 2);
-    return finish(g);
+    const g = stoneLayers([
+      [
+        0,
+        [
+          [5, false],
+          [4, true],
+        ],
+      ],
+    ]);
+    put(g, 10, 2, 'S');
+    put(g, 11, 2, 'S');
+    put(g, 11, 1, 'S');
+    return finish(trim(g));
   }
   if (size === 'm') {
-    const g = grid(14, 8);
-    stoneBlock(g, 0, 5, 5, 3);
-    stoneBlock(g, 5, 5, 4, 3);
-    stoneBlock(g, 9, 5, 5, 3);
-    stoneBlock(g, 2, 2, 5, 3);
-    stoneBlock(g, 7, 2, 5, 3);
-    stoneBlock(g, 4, 0, 5, 2);
-    return finish(g);
+    const g = stoneLayers([
+      [
+        2,
+        [
+          [6, false],
+          [5, true],
+          [4, false],
+        ],
+      ],
+      [
+        0,
+        [
+          [5, false],
+          [6, false],
+          [5, false],
+        ],
+      ],
+    ]);
+    put(g, 18, 6, 'S');
+    put(g, 19, 6, 'S');
+    put(g, 19, 5, 'S');
+    return finish(trim(g));
   }
-  const g = grid(22, 12);
-  stoneBlock(g, 0, 9, 6, 3);
-  stoneBlock(g, 6, 9, 5, 3);
-  stoneBlock(g, 11, 9, 6, 3);
-  stoneBlock(g, 17, 9, 5, 3);
-  stoneBlock(g, 2, 6, 6, 3);
-  stoneBlock(g, 8, 6, 6, 3);
-  stoneBlock(g, 14, 6, 6, 3);
-  stoneBlock(g, 5, 3, 6, 3);
-  stoneBlock(g, 11, 3, 6, 3);
-  stoneBlock(g, 8, 0, 6, 3);
-  return finish(g);
+  const g = stoneLayers([
+    [
+      5,
+      [
+        [5, false],
+        [5, true],
+      ],
+    ],
+    [
+      3,
+      [
+        [5, true],
+        [5, false],
+        [5, false],
+      ],
+    ],
+    [
+      0,
+      [
+        [5, false],
+        [5, false],
+        [5, true],
+        [4, false],
+      ],
+    ],
+  ]);
+  put(g, 23, 10, 'S');
+  put(g, 24, 10, 'S');
+  put(g, 24, 9, 'S');
+  return finish(trim(g));
 }
 
-/** A horizontal log: shaded underside, lit cut end on the left. */
-function log(g: Grid, x: number, y: number, w: number): void {
-  rect(g, x, y, w, 1, 'o');
-  rect(g, x, y + 1, w, 1, 'P');
-  put(g, x, y, 'c');
-  put(g, x + 1, y, 'p');
-  put(g, x, y + 1, 'p');
-}
+/** A log end seen side-front: a light ring of end grain, a dark heart, bark below. 4x4. */
+const LOG_END: readonly string[] = ['.cc.', 'cPPp', 'cPPo', '.oo.'];
 
 function pileTimber(size: 's' | 'm' | 'l'): { sprite: SpriteDef; day: Record<string, string> } {
-  if (size === 's') {
-    const g = grid(8, 4);
-    log(g, 0, 0, 6);
-    log(g, 0, 2, 8);
-    return finish(g);
-  }
-  if (size === 'm') {
-    const g = grid(14, 8);
-    log(g, 0, 0, 11);
-    log(g, 0, 2, 13);
-    log(g, 0, 4, 14);
-    log(g, 0, 6, 12);
-    rect(g, 10, 2, 1, 6, 'r');
-    return finish(g);
-  }
-  const g = grid(22, 12);
-  log(g, 0, 0, 15);
-  log(g, 0, 2, 19);
-  log(g, 0, 4, 22);
-  log(g, 0, 6, 21);
-  log(g, 0, 8, 22);
-  log(g, 0, 10, 18);
-  rect(g, 15, 2, 1, 10, 'r');
-  rect(g, 6, 2, 1, 10, 'r');
-  return finish(g);
+  // rows of log ends from the top down: [x of the first, how many]
+  const plan: Record<'s' | 'm' | 'l', readonly (readonly [number, number])[]> = {
+    s: [
+      [2, 1],
+      [0, 2],
+    ],
+    m: [
+      [4, 1],
+      [2, 2],
+      [0, 3],
+    ],
+    l: [
+      [6, 2],
+      [4, 3],
+      [1, 5],
+    ],
+  };
+  const rows = plan[size];
+  const g = grid(24, rows.length * 4);
+  rows.forEach(([x0, n], i) =>
+    Array.from({ length: n }).forEach((_, j) => stamp(g, x0 + j * 4, i * 4, LOG_END)),
+  );
+  fillNotches(g, 'O');
+  return finish(trim(g));
 }
 
-/** A sack: a rope-tied neck, lit left, shaded right. 6 wide, 4 tall. */
-const SACK: readonly string[] = ['..oo..', '.cbbb.', 'cbbbbB', '.BBBB.'];
+/** A plump sack: tied neck with a tuft, lit shoulder on the left, shaded right. 6x6. */
+const SACK: readonly string[] = [
+  '..r.r..',
+  '...P...',
+  '.ccbbb.',
+  'ccbbbbB',
+  'cbbbbbB',
+  'cbbbbBB',
+  '.BBBBB.',
+];
 function sack(g: Grid, x: number, y: number): void {
+  // an ink ring where it lies over another sack, so each sack keeps its own outline
+  for (let j = -1; j <= SACK.length; j++)
+    for (let i = -1; i <= 7; i++) {
+      if (i >= 0 && i < 7 && j >= 0 && j < SACK.length) continue;
+      const solid = (ii: number, jj: number): boolean =>
+        ii >= 0 && ii < 7 && jj >= 0 && jj < SACK.length && SACK[jj]?.[ii] !== '.';
+      const edge = solid(i - 1, j) || solid(i + 1, j) || solid(i, j - 1) || solid(i, j + 1);
+      if (edge && (g[y + j]?.[x + i] ?? '.') !== '.') put(g, x + i, y + j, 'k');
+    }
   stamp(g, x, y, SACK);
 }
 
 function pileBags(size: 's' | 'm' | 'l'): { sprite: SpriteDef; day: Record<string, string> } {
-  // sack body in cream (lit) and rope (body), shade in log shade: swap the paper keys for the sack's own
   const swap = (g: Grid): Grid =>
-    g.map((r) => r.map((c) => (c === 'b' ? 'r' : c === 'B' ? 'P' : c)));
+    g.map((r) => r.map((c) => (c === 'b' ? 'r' : c === 'B' ? 'o' : c)));
   if (size === 's') {
-    const g = grid(8, 4);
+    const g = grid(7, 7);
     sack(g, 0, 0);
-    sack(g, 2, 0);
     return finish(swap(g));
   }
   if (size === 'm') {
-    const g = grid(14, 8);
-    sack(g, 8, 4);
+    const g = grid(15, 11);
     sack(g, 0, 4);
-    sack(g, 4, 4);
-    sack(g, 2, 1);
-    sack(g, 7, 1);
+    sack(g, 8, 4);
+    sack(g, 4, 0);
     return finish(swap(g));
   }
-  const g = grid(22, 12);
-  sack(g, 0, 8);
-  sack(g, 5, 8);
-  sack(g, 10, 8);
-  sack(g, 16, 8);
-  sack(g, 2, 5);
-  sack(g, 8, 5);
-  sack(g, 13, 5);
-  sack(g, 5, 2);
-  sack(g, 11, 2);
-  sack(g, 8, 0);
+  const g = grid(23, 11);
+  sack(g, 0, 4);
+  sack(g, 8, 4);
+  sack(g, 16, 4);
+  sack(g, 4, 0);
+  sack(g, 12, 0);
   return finish(swap(g));
 }
 
@@ -428,24 +520,26 @@ function pileBags(size: 's' | 'm' | 'l'): { sprite: SpriteDef; day: Record<strin
 // Tarp and flag.
 
 function tarp(): { sprite: SpriteDef; day: Record<string, string> } {
-  const g = grid(38, 22);
+  const g = grid(46, 22);
+  // guy ropes from the pole tops down to pegs
+  line(g, 4, 1, 0, 20, 'r');
+  line(g, 41, 1, 45, 20, 'r');
+  rect(g, 0, 20, 1, 2, 'o');
+  rect(g, 45, 20, 1, 2, 'o');
   // two poles with a stone at each foot
-  for (const x of [0, 36]) {
+  for (const x of [4, 40]) {
     rect(g, x, 1, 2, 21, 'o');
     rect(g, x + 1, 1, 1, 21, 'P');
     rect(g, x, 20, 2, 2, 'S');
   }
-  // the canvas: a low sloping roof so the table fits under it; lit ridge, a darker fold band, a scalloped hem
-  hline(g, 3, 34, 0, 'c');
-  hline(g, 1, 36, 1, 'c');
-  hline(g, 0, 37, 2, 'c');
-  hline(g, 0, 37, 3, 'r');
-  for (const x of [8, 15, 22, 29]) {
-    put(g, x, 1, 'r');
-    put(g, x - 1, 2, 'r');
+  // the canvas sags a little between the poles: lit top row, body, and a darker hem (not cream)
+  for (let x = 4; x <= 41; x++) {
+    const d = (x - 22.5) / 18.5;
+    const y = Math.round(1 - d * d);
+    put(g, x, y, 'c');
+    put(g, x, y + 1, 'r');
+    put(g, x, y + 2, x % 2 === 0 ? 'P' : 'r');
   }
-  for (let x = 0; x < 38; x += 2) put(g, x, 4, 'r');
-  for (let x = 1; x < 38; x += 4) put(g, x, 4, 'c');
   return finish(g);
 }
 
@@ -477,10 +571,10 @@ function compose(): { sprite: SpriteDef; day: Record<string, string> } {
     );
   };
   // back row: stone pile, the tarp with the table under it, timber pile
-  place(pileStone('l'), 2, 32);
-  place(tarp(), 28, 32);
-  place(table(), 31, 32);
-  place(pileTimber('l'), 70, 32);
+  place(pileStone('l'), 0, 32);
+  place(tarp(), 25, 32);
+  place(table(), 33, 32);
+  place(pileTimber('l'), 72, 32);
   // front row: sawhorse, planks, toolbox, bags, the help flag
   place(sawhorse(), 2, 46);
   place(planks(), 20, 46);
@@ -526,13 +620,13 @@ export const VALLEY_BUILDERS_CORNER_CONCEPTS: ConceptSet = {
   status: 'draft',
   notes: [
     "A reusable kit for every place with a building project: the corner where the project board and the helper spot stand, apart from the place's own art. Outdoor valley look: ink, night as the main palette and `alts.day` for the same pixels, materials from `valley-tiers` (wood, rope and planks of levels 1 and 2, cut stone of level 3, cream canvas and the teal pennant of level 4), so it matches the buildings. One key set for the kit, so a composed corner stays within 16 colours.",
-    'Every piece stands on its own bottom row (its base row, the lowest ink row); place pieces by that row. Sizes include the 1 px ink outline. Piles: s 10x6, m 16x10, l 24x14, all on the same base row, so a project that grows swaps the sprite in place.',
+    'Every piece stands on its own bottom row (its base row, the lowest ink row); place pieces by that row. Sizes include the 1 px ink outline. Piles grow s to m to l on the same base row, so a project that grows swaps the sprite in place: stone 12x5, 20x9, 24x13 (cut blocks with dark joints, lit top edges, one or two grey blocks, a loose chip: 2, 5, 9 blocks); timber 10x10, 14x14, 22x14 (round log ends, light end grain and dark heart, stacked in a pyramid: 3, 6, 10 logs); bags 9x9, 17x13, 25x13 (plump sacks with tied necks: 1, 3, 5).',
     '`table` 32x20, base row 19 (the feet), is the clickable piece: it opens the project board. It has a lit cream top edge and a small white glint on the weight, so it stands out from the decoration. Variations: B a slanted drafting table on one stand (32x22, base row 21), C the table under a lantern on a pole (36x34, base row 33; warm light on the plan and on the ground at night, plain by day). Pick: see the table note.',
     '`sawhorse` 16x12, base row 11, and `planks` 20x8, base row 7: decoration, mid tones, no glint.',
     '`toolbox` 12x8, base row 7. `pile-stone-s/m/l`, `pile-timber-s/m/l`, `pile-bags-s/m/l`: base row = last row.',
-    '`tarp` 40x24, base row 23 (the pole feet): a canvas canopy on two poles; the table stands between the poles (clear width 34, table 32 at x 3 of the tarp, same base row).',
+    '`tarp` 48x24, base row 23 (the pole feet): a canvas awning that sags a little between two poles, with a darker tan hem and guy ropes to pegs (wider than the 40 asked, for the ropes); the table stands between the poles (clear width 32, table at x 8 of the tarp, same base row).',
     '`help-flag` 8x16, base row 15: a stake with a small teal flag, marks the empty helper spot.',
-    '`preview` 96x48 (the corner composed, base rows 32 and 46): tarp x 28, y 9; table x 31, y 13 (under the tarp); stone pile l x 2, y 19; timber pile l x 70, y 19; sawhorse x 2, y 35; planks x 20, y 39; toolbox x 44, y 39; bags pile l x 58, y 33; help flag x 86, y 31. Tops left, in sprite pixels.',
+    '`preview` 96x48 (the corner composed, base rows 32 and 46): tarp x 25, y 9; table x 33, y 13 (under the tarp); stone pile l x 0, y 20; timber pile l x 72, y 19; sawhorse x 2, y 35; planks x 20, y 39; toolbox x 44, y 39; bags pile l x 58, y 34; help flag x 86, y 31. Tops left, in sprite pixels.',
     'The content needs the project board (the click target) and a helper spot before this art is used.',
   ],
   ...(b === undefined ? {} : { backdrop: b }),
@@ -550,15 +644,18 @@ export const VALLEY_BUILDERS_CORNER_CONCEPTS: ConceptSet = {
     ),
     planks: piece('A stack of sawn planks on two bearers: decoration, quiet.', planks()),
     toolbox: piece('A small wooden toolbox with a handle and a rope strap.', toolbox()),
-    'pile-stone-s': piece('A few dressed stone blocks (3).', pileStone('s')),
-    'pile-stone-m': piece('A stack of dressed stone blocks (6).', pileStone('m')),
-    'pile-stone-l': piece('A tall pyramid of dressed stone blocks (10).', pileStone('l')),
-    'pile-timber-s': piece('Two short logs.', pileTimber('s')),
-    'pile-timber-m': piece('A stack of four logs.', pileTimber('m')),
-    'pile-timber-l': piece('A high stack of logs, roped, with a plank.', pileTimber('l')),
-    'pile-bags-s': piece('Two sacks.', pileBags('s')),
-    'pile-bags-m': piece('Five sacks in two layers.', pileBags('m')),
-    'pile-bags-l': piece('Ten sacks in three layers.', pileBags('l')),
+    'pile-stone-s': piece(
+      'Two cut stone blocks, one of them grey, with a chip at the foot.',
+      pileStone('s'),
+    ),
+    'pile-stone-m': piece('Five cut blocks in two layers with dark joints.', pileStone('m')),
+    'pile-stone-l': piece('Nine cut blocks in three layers, two of them grey.', pileStone('l')),
+    'pile-timber-s': piece('Three logs seen end-on.', pileTimber('s')),
+    'pile-timber-m': piece('Six logs seen end-on in a pyramid.', pileTimber('m')),
+    'pile-timber-l': piece('Ten logs seen end-on in a pyramid.', pileTimber('l')),
+    'pile-bags-s': piece('One tied sack.', pileBags('s')),
+    'pile-bags-m': piece('Three plump tied sacks leaning together.', pileBags('m')),
+    'pile-bags-l': piece('Five plump tied sacks in two layers.', pileBags('l')),
     tarp: piece(
       'A canvas canopy on two poles over the corner, drawn so the table stands under it.',
       tarp(),

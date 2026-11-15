@@ -727,15 +727,15 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 - **Status:** draft
 - **Requested:** 2026-11-15 (valley session): every valley place moves to a "picture you click" layout. On the Bonfire the fire is only where creatures chill; building work happens apart: "The helper spot should be something that's clearly separate, perhaps next to a construction table or something near the bottom of the screen ... the construction workers can do their own thing elsewhere."
 - **Source:** `apps/activity/src/sprites/concepts/valley-builders-corner.ts` (draw it with `pnpm art valley-builders-corner`)
-- **Sheet of:** `9acf5003f7da`
+- **Sheet of:** `eda42b33da8a`
 - A reusable kit for every place with a building project: the corner where the project board and the helper spot stand, apart from the place's own art. Outdoor valley look: ink, night as the main palette and `alts.day` for the same pixels, materials from `valley-tiers` (wood, rope and planks of levels 1 and 2, cut stone of level 3, cream canvas and the teal pennant of level 4), so it matches the buildings. One key set for the kit, so a composed corner stays within 16 colours.
-- Every piece stands on its own bottom row (its base row, the lowest ink row); place pieces by that row. Sizes include the 1 px ink outline. Piles: s 10x6, m 16x10, l 24x14, all on the same base row, so a project that grows swaps the sprite in place.
+- Every piece stands on its own bottom row (its base row, the lowest ink row); place pieces by that row. Sizes include the 1 px ink outline. Piles grow s to m to l on the same base row, so a project that grows swaps the sprite in place: stone 12x5, 20x9, 24x13 (cut blocks with dark joints, lit top edges, one or two grey blocks, a loose chip: 2, 5, 9 blocks); timber 10x10, 14x14, 22x14 (round log ends, light end grain and dark heart, stacked in a pyramid: 3, 6, 10 logs); bags 9x9, 17x13, 25x13 (plump sacks with tied necks: 1, 3, 5).
 - `table` 32x20, base row 19 (the feet), is the clickable piece: it opens the project board. It has a lit cream top edge and a small white glint on the weight, so it stands out from the decoration. Variations: B a slanted drafting table on one stand (32x22, base row 21), C the table under a lantern on a pole (36x34, base row 33; warm light on the plan and on the ground at night, plain by day). Pick: see the table note.
 - `sawhorse` 16x12, base row 11, and `planks` 20x8, base row 7: decoration, mid tones, no glint.
 - `toolbox` 12x8, base row 7. `pile-stone-s/m/l`, `pile-timber-s/m/l`, `pile-bags-s/m/l`: base row = last row.
-- `tarp` 40x24, base row 23 (the pole feet): a canvas canopy on two poles; the table stands between the poles (clear width 34, table 32 at x 3 of the tarp, same base row).
+- `tarp` 48x24, base row 23 (the pole feet): a canvas awning that sags a little between two poles, with a darker tan hem and guy ropes to pegs (wider than the 40 asked, for the ropes); the table stands between the poles (clear width 32, table at x 8 of the tarp, same base row).
 - `help-flag` 8x16, base row 15: a stake with a small teal flag, marks the empty helper spot.
-- `preview` 96x48 (the corner composed, base rows 32 and 46): tarp x 28, y 9; table x 31, y 13 (under the tarp); stone pile l x 2, y 19; timber pile l x 70, y 19; sawhorse x 2, y 35; planks x 20, y 39; toolbox x 44, y 39; bags pile l x 58, y 33; help flag x 86, y 31. Tops left, in sprite pixels.
+- `preview` 96x48 (the corner composed, base rows 32 and 46): tarp x 25, y 9; table x 33, y 13 (under the tarp); stone pile l x 0, y 20; timber pile l x 72, y 19; sawhorse x 2, y 35; planks x 20, y 39; toolbox x 44, y 39; bags pile l x 58, y 34; help flag x 86, y 31. Tops left, in sprite pixels.
 - The content needs the project board (the click target) and a helper spot before this art is used.
 
 | Code | Kind | Role | Status | Idea |
@@ -744,15 +744,15 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | `sawhorse` | free |  | draft | A sawhorse with a plank across it: decoration, mid tones, no glint. |
 | `planks` | free |  | draft | A stack of sawn planks on two bearers: decoration, quiet. |
 | `toolbox` | free |  | draft | A small wooden toolbox with a handle and a rope strap. |
-| `pile-stone-s` | free |  | draft | A few dressed stone blocks (3). |
-| `pile-stone-m` | free |  | draft | A stack of dressed stone blocks (6). |
-| `pile-stone-l` | free |  | draft | A tall pyramid of dressed stone blocks (10). |
-| `pile-timber-s` | free |  | draft | Two short logs. |
-| `pile-timber-m` | free |  | draft | A stack of four logs. |
-| `pile-timber-l` | free |  | draft | A high stack of logs, roped, with a plank. |
-| `pile-bags-s` | free |  | draft | Two sacks. |
-| `pile-bags-m` | free |  | draft | Five sacks in two layers. |
-| `pile-bags-l` | free |  | draft | Ten sacks in three layers. |
+| `pile-stone-s` | free |  | draft | Two cut stone blocks, one of them grey, with a chip at the foot. |
+| `pile-stone-m` | free |  | draft | Five cut blocks in two layers with dark joints. |
+| `pile-stone-l` | free |  | draft | Nine cut blocks in three layers, two of them grey. |
+| `pile-timber-s` | free |  | draft | Three logs seen end-on. |
+| `pile-timber-m` | free |  | draft | Six logs seen end-on in a pyramid. |
+| `pile-timber-l` | free |  | draft | Ten logs seen end-on in a pyramid. |
+| `pile-bags-s` | free |  | draft | One tied sack. |
+| `pile-bags-m` | free |  | draft | Three plump tied sacks leaning together. |
+| `pile-bags-l` | free |  | draft | Five plump tied sacks in two layers. |
 | `tarp` | free |  | draft | A canvas canopy on two poles over the corner, drawn so the table stands under it. |
 | `help-flag` | free |  | draft | A stake with a small teal flag marking the empty helper spot. |
 | `preview` | free |  | draft | The corner composed once, as a starting layout: tarp, table under it, sawhorse, planks, toolbox, an l pile of each material and the help flag. |
