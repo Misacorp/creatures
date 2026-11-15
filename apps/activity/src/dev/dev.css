@@ -387,6 +387,15 @@ body:has(.nav-tray) .dev-fab {
   overflow-wrap: anywhere;
 }
 
+/* The reset dry run: the goodbye DMs as plain text, line breaks kept. */
+.dev-preview {
+  margin: 0.3rem 0 0.6rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: ui-monospace, 'Courier New', monospace;
+  font-size: 0.7rem;
+}
+
 /* The link to the component workbench. */
 .dev-url {
   margin: 0.25rem 0;

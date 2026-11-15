@@ -44,6 +44,8 @@ import {
 } from './specs';
 import { PlayDays } from './PlayDays';
 import { reportRows } from './play-days';
+import { ResetDryRun } from './ResetDryRun';
+import { ResetDryRun } from './ResetDryRun';
 import { RosterPresets } from './RosterPresets';
 import { ToolForm } from './ToolForm';
 import { COMBAT_LAB_URL } from './combat-lab-link';
@@ -474,6 +476,10 @@ export default function DevPanel({
         );
       case 'build':
         return <DataTable class="dev-clock" rows={buildRows(readBuildInfo(document))} />;
+      case 'reset-dry-run':
+        return <ResetDryRun />;
+      case 'reset-dry-run':
+        return <ResetDryRun />;
       case 'local-flags':
         return (
           <div class="dev-quick-row">
