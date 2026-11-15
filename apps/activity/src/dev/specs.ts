@@ -528,7 +528,14 @@ export interface BlockDef {
 
 /** What the panel draws in a section besides its controls: a piece with its own component (`Panel.tsx`). */
 export type SectionExtra =
-  'presets' | 'clock-status' | 'events' | 'look' | 'links' | 'build' | 'local-flags';
+  | 'presets'
+  | 'clock-status'
+  | 'events'
+  | 'look'
+  | 'links'
+  | 'build'
+  | 'local-flags'
+  | 'reset-dry-run';
 
 export interface SectionDef {
   id: string;
@@ -636,6 +643,7 @@ export const SECTIONS: readonly SectionDef[] = [
     tab: null,
     specs: [RESET_ACCOUNT_SPEC],
     before: ['build', 'local-flags'],
+    after: ['reset-dry-run'],
   },
 ];
 

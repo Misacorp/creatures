@@ -106,6 +106,7 @@
 @import './views/expeditions/claim.css';
 @import './views/home-pages.css';
 @import './views/expeditions/wipe-notice.css';
+@import './views/reset/new-valley.css';
 @import './views/expeditions/supply-crafting.css';
 @import './views/expeditions/world-map.css';
 @import './components/side-panel.css';
