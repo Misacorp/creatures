@@ -32,7 +32,7 @@ import type {
   RerollDone,
   VisitorFeed,
   VisitorStart,
-} from '../../valley/VisitorPage';
+} from '../../valley/VisitorPanels';
 import {
   KNOWN_BLUEPRINT,
   SAMPLE_AWAY,
@@ -135,6 +135,7 @@ export const VALLEY_OPEN = [
   'broker rates',
   'reroll picker',
   'reroll piece',
+  'blueprint',
 ] as const;
 
 /** How the demo's commons stand (phase 5 step 6b): off, a young server, a full collection, a grown fire, a bonfire at level 3, helpers posted. */
@@ -167,6 +168,8 @@ function visitorStartOf(setting: string, piece: string | undefined): VisitorStar
       return { reroll: true };
     case 'reroll piece':
       return { reroll: piece ?? true };
+    case 'blueprint':
+      return { blueprint: true };
     default:
       return undefined;
   }

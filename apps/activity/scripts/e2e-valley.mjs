@@ -4022,8 +4022,9 @@ try {
     },
   );
 
-  // The weekly visitor (phase 5 step 8b): his place as the server says (shuttered while away, a stall and a page while here), the reroll
-  // of one piece (picker, price and odds, one confirm, before and after) and the week's blueprint.
+  // The weekly visitor (phase 5 step 8b), his stall as a canvas: his place as the server says (the shuttered stall and its sign while away;
+  // the visitor and the blueprint on his counter while here), the reroll of one piece (picker, price and odds, one confirm, before and
+  // after) and the week's blueprint.
   const visitorOn = (here) => {
     const creatures = commonsOn();
     visitorReset();
@@ -4039,10 +4040,21 @@ try {
     visitorReset();
     commonsOff();
   };
-  const rerollTitle = /Reroll a piece/;
+
+  /** The visitor's stall is a canvas: the scene is inside the canvas shell, with no page under it and no builders' corner. */
+  const visitorCanvasChecks = async () => {
+    await waitFor(page.locator('.pc-root .vy-in-visitor'));
+    if ((await page.locator('.vy-soon .vy-page, .vs-page').count()) > 0)
+      throw new Error('his stall has a page under its scene');
+    if ((await page.locator('button.cv-target[aria-label*="builders" i]').count()) > 0)
+      throw new Error('his stall has a builders corner');
+    await expectNoScroll();
+    // The creature tray stays under the scene, as at the other places.
+    await waitFor(page.locator('.pc-below section[aria-label="Your creatures"]'));
+  };
 
   await scenario(
-    'the visitor away (V-VIS-1): his stall is shuttered on the map, his place says back Thursday and offers nothing',
+    'the visitor away (V-VIS-1): the shuttered stall is the canvas, its sign says back Thursday and it offers nothing else',
     () => {
       visitorOn(false);
     },
@@ -4053,13 +4065,25 @@ try {
         await shot('visitor-map-away');
         await place('visitor').evaluate((el) => el.click());
         await waitFor(heading('Visitor'));
-        await waitFor(page.getByText('Back Thursday.'));
+        await visitorCanvasChecks();
+        // The sign is the one thing to click, and its plate says when he is back (no timer).
+        await waitFor(sceneTarget('The sign'));
+        if ((await page.locator('button.cv-target').locator('visible=true').count()) !== 1)
+          throw new Error('his shuttered place offers more than its sign');
+        await waitFor(page.locator('.cv-plate', { hasText: 'Back Thursday' }));
         if ((await page.getByRole('button', { name: /Reroll|Choose a piece|Buy/ }).count()) > 0)
           throw new Error('his shuttered place offers something');
         const body = await page.locator('main').innerText();
         if (/until|\d+ ?h\b|\d+ ?days?/i.test(body))
           throw new Error(`a countdown on his shuttered place: ${body}`);
+        await page.waitForTimeout(300);
         await shot('visitor-away');
+        await expectFocusCue(sceneTarget('The sign'), 'the sign');
+        await sceneTarget('The sign').click();
+        await waitFor(rightPanel.getByText('The stall is shuttered. Back Thursday.'));
+        await shot('visitor-away-sign');
+        await page.keyboard.press('Escape');
+        await rightPanel.waitFor({ state: 'detached', timeout: 10000 });
         await backToValley();
         // The Places list says it too.
         await page.getByRole('button', { name: /^Places/ }).click();
@@ -4072,7 +4096,7 @@ try {
   );
 
   await scenario(
-    'the visitor here (V-VIS-2, 4, 5): reroll one piece with one confirm, see before and after and the next price, and buy the blueprint',
+    'the visitor here (V-VIS-2, 4, 5): click him to reroll one piece with one confirm, see before and after and the next price; click the blueprint on his counter to buy it',
     () => {
       visitorOn(true);
     },
@@ -4083,39 +4107,40 @@ try {
         await shot('visitor-map-here');
         await place('visitor').evaluate((el) => el.click());
         await waitFor(heading('Visitor'));
-        await waitFor(page.getByRole('heading', { name: rerollTitle }));
-        // His page is two cards under his stall: no timer, no "until" line.
+        await visitorCanvasChecks();
+        // The two things to click, each with one plate; no timer, no "until" line, no away line.
+        await waitFor(sceneTarget('The visitor'));
+        await waitFor(sceneTarget("This week's blueprint"));
+        if ((await page.locator('button.cv-target').locator('visible=true').count()) !== 2)
+          throw new Error('his stall offers more than the visitor and the blueprint');
+        const plates = page.locator('.cv-plate .nameplate');
+        if ((await plates.count()) !== 2) throw new Error('each clickable thing has one plate');
+        for (let i = 0; i < 2; i += 1)
+          await expectTopmost(plates.nth(i), `plate ${String(i)} at his stall`);
         const text = await page.locator('main').innerText();
         if (/until|Back Thursday/i.test(text)) throw new Error(`a countdown or away line: ${text}`);
+        await page.waitForTimeout(300);
         await shot('visitor-here');
-        // The blueprint card: its price is icons and numbers.
-        const buy = page.locator('button.action-btn', { hasText: /^Buy/ });
-        await buy.first().scrollIntoViewIfNeeded();
-        await expectTopmost(buy.first(), 'the Buy button');
-        await shot('visitor-blueprint');
-        // The reroll: the picker (worn pieces first), then a piece.
-        await page
-          .getByRole('button', { name: /Choose a piece/ })
-          .first()
-          .click();
-        const picker = page.getByRole('dialog', { name: rerollTitle });
-        await waitFor(picker);
-        await waitFor(picker.locator('.item-tile'));
+        // The reroll: a click on him opens the picker (worn pieces first) in the right drawer, a page on a phone.
+        await expectNoFocusOnClick(sceneTarget('The visitor'), 'the visitor');
+        await waitFor(rightPanel);
+        await waitFor(rightPanel.locator('.item-tile'));
+        await expectNoScroll();
         await page.waitForTimeout(300);
         await shot('visitor-picker');
-        await picker
+        await rightPanel
           .getByRole('button', { name: /Emberkeeper/ })
           .first()
           .click();
-        await waitFor(picker.getByText(/chance of Tier 4 \/ 5/));
-        await waitFor(picker.getByText(/old lines are gone for good/));
+        await waitFor(rightPanel.getByText(/chance of Tier 4 \/ 5/));
+        await waitFor(rightPanel.getByText(/old lines are gone for good/));
         if (visitorState.calls.length > 0) throw new Error('looking at a piece spent something');
-        const confirm = picker.locator('button.action-btn', { hasText: /^Reroll/ });
+        const confirm = rightPanel.locator('button.action-btn', { hasText: /^Reroll/ });
         await expectTopmost(confirm.first(), 'the Reroll button');
         await page.waitForTimeout(200);
         await shot('visitor-confirm');
         await confirm.first().click();
-        await waitFor(picker.getByText(/Rerolled\. The old lines are gone\./));
+        await waitFor(rightPanel.getByText(/Rerolled\. The old lines are gone\./));
         const [reroll] = visitorState.calls;
         if (
           reroll === undefined ||
@@ -4127,32 +4152,40 @@ try {
             `the reroll was sent without an idempotency key: ${JSON.stringify(reroll)}`,
           );
         if (visitorState.calls.length !== 1) throw new Error('a reroll was sent twice');
-        await waitFor(picker.getByText('Before', { exact: true }));
-        await waitFor(picker.getByText('After', { exact: true }));
-        await waitFor(picker.getByText(/Next reroll/));
+        await waitFor(rightPanel.getByText('Before', { exact: true }));
+        await waitFor(rightPanel.getByText('After', { exact: true }));
+        await waitFor(rightPanel.getByText(/Next reroll/));
         await page.waitForTimeout(200);
         await shot('visitor-result');
-        // Again: back to the piece, whose price rose.
-        await picker
+        // Again: back to the pieces, then a piece, whose price rose.
+        await rightPanel
           .locator('button.action-btn', { hasText: /Reroll again/ })
           .first()
           .click();
-        await waitFor(picker.locator('.item-tile'));
-        await picker
+        await waitFor(rightPanel.locator('.item-tile'));
+        await rightPanel
           .getByRole('button', { name: /Emberkeeper/ })
           .first()
           .click();
-        await waitFor(picker.getByText(/chance of Tier 4 \/ 5/));
+        await waitFor(rightPanel.getByText(/chance of Tier 4 \/ 5/));
         await page.keyboard.press('Escape');
-        await picker.waitFor({ state: 'detached', timeout: 10000 });
-        // The blueprint: one tap, then it says so for the week.
+        await rightPanel.waitFor({ state: 'detached', timeout: 10000 });
+        // The blueprint on the counter: its price is icons and numbers; one tap buys, then it says so for the week.
+        await sceneTarget("This week's blueprint").click();
+        await waitFor(rightPanel);
+        const buy = rightPanel.locator('button.action-btn', { hasText: /^Buy/ });
+        await waitFor(buy.first());
+        await expectTopmost(buy.first(), 'the Buy button');
+        await shot('visitor-blueprint');
         await buy.first().click();
-        await waitFor(page.getByText('Bought this week.'));
+        await waitFor(rightPanel.getByText('Bought this week.'));
         const calls = visitorState.calls.filter(([name]) => name === 'blueprint');
         if (calls.length !== 1 || typeof calls[0][1].idempotencyKey !== 'string')
           throw new Error(`the blueprint was sent without a key: ${JSON.stringify(calls)}`);
-        await page.getByText('Bought this week.').first().scrollIntoViewIfNeeded();
         await shot('visitor-bought');
+        await page.keyboard.press('Escape');
+        await rightPanel.waitFor({ state: 'detached', timeout: 10000 });
+        await expectNoScroll();
         await backToValley();
       } finally {
         visitorOff();
@@ -4161,7 +4194,7 @@ try {
   );
 
   await scenario(
-    'the visitor leaves while his page is open (409 visitor_away before any spend): the page turns to his shuttered place',
+    'the visitor leaves while his blueprint is open (409 visitor_away before any spend): the scene turns to his shuttered stall and its sign',
     () => {
       visitorOn(true);
     },
@@ -4169,14 +4202,15 @@ try {
       try {
         await waitFor(page.locator(VALLEY), 'attached');
         await place('visitor').evaluate((el) => el.click());
-        await waitFor(page.getByRole('heading', { name: rerollTitle }));
+        await waitFor(sceneTarget("This week's blueprint"));
+        await sceneTarget("This week's blueprint").click();
         visitorState.here = false;
-        const buy = page.locator('button.action-btn', { hasText: /^Buy/ });
-        await buy.first().scrollIntoViewIfNeeded();
+        const buy = rightPanel.locator('button.action-btn', { hasText: /^Buy/ });
+        await waitFor(buy.first());
         await buy.first().click();
-        await waitFor(page.getByText('Back Thursday.'));
+        await waitFor(sceneTarget('The sign'));
         if ((await page.getByRole('button', { name: /Choose a piece|^Buy/ }).count()) > 0)
-          throw new Error('the page still offers his stock after he left');
+          throw new Error('the stall still offers his stock after he left');
         await shot('visitor-left');
         await backToValley();
       } finally {
