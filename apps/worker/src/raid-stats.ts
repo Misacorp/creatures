@@ -10,7 +10,7 @@ import { outcomeFlags, type StoredSummary } from './raid-resolve';
 import { isWeekId, RAID_PHASES, type RaidPhase } from './raid-schedule';
 import { isV2Input, type StoredFightInput } from './fight-replay';
 import { RESULT_PHASES, type ResultPhase, type StoredStageResult } from './raid-v2-stage';
-import { stagePlaying } from './raid-v2-core';
+import { stagePlaying, windowRoundsOf } from './raid-v2-core';
 import { buildStatsV2, type AfterActionStatsV2 } from './raid-v2-view';
 
 /** How many of the best creatures are listed (the caller's own are always listed as well). */
@@ -380,7 +380,7 @@ export function readStats(
   if (
     now !== undefined &&
     (phase === 'stage1' || phase === 'stage2') &&
-    stagePlaying(row.created_at, summary.rounds, now) !== null
+    stagePlaying(row.created_at, windowRoundsOf(summary), now) !== null
   ) {
     return null;
   }

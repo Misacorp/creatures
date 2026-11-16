@@ -10,6 +10,7 @@ import { playV2Day, scaleV2Foes } from './dungeon-v2-reads';
 import { RULES } from '@creatures/game';
 import { MINUTE } from './raid-helpers';
 import { V2_WEEK } from './raid-v2-helpers';
+import { windowRoundsOf } from '../src/raid-v2-core';
 import { expectReadsUnder, type ReadReport } from './read-meter';
 import { GUILD_ID, boardSwap, callAs, inGuild, seedWorld, userId } from './read-world';
 
@@ -192,7 +193,12 @@ describe('read budget: a stage that plays as it happens', () => {
             "SELECT created_at, summary FROM raid_results WHERE phase = 'stage1' LIMIT 1",
           )
           .one();
-        const rounds = (JSON.parse(created.summary) as { rounds: number }).rounds;
+        const summary = JSON.parse(created.summary) as {
+          rounds: number;
+          v2?: { windowRounds?: number };
+        };
+        // The window is the boss's full length (the stage may have played fewer rounds).
+        const rounds = windowRoundsOf(summary);
         const path = `/api/raid/replay/${V2_WEEK.id}/1/stage1`;
         clock.t = created.created_at + 1000;
         // Warm: the session and the day's first-call work.
@@ -214,13 +220,55 @@ describe('read budget: a stage that plays as it happens', () => {
         }
         clock.t = created.created_at + rounds * RULES.raid.v2.liveRoundMs;
         const after = await metered.measure(() => callAs(core, secrets, 1, path));
-        expect(after.result).toMatchObject({ rounds });
+        expect(after.result).toMatchObject({ rounds: summary.rounds });
         expect(worst).toBeLessThanOrEqual(BUDGET_PLAYING.replay);
         // Ten watchers over a whole stage stay a small share of the day's allowance.
         expect(watching).toBeLessThanOrEqual(rounds * 10 * BUDGET_PLAYING.replay);
         expectReadsUnder('v2 /api/raid while a stage plays', view, BUDGET_PLAYING['/api/raid']);
         expectReadsUnder('v2 replay while a stage plays', first.reads, BUDGET_PLAYING.replay);
         expectReadsUnder('v2 replay of a played stage', after.reads, BUDGET_PLAYING.afterReplay);
+      },
+      { fresh: true },
+    );
+  }, 60_000);
+});
+
+/** Budgets of the gear lock while a stage plays (a refused equip and Equip best of a whole party), rows read per call. */
+const BUDGET_LOCK = {
+  equip: 40, // measured 26: a refused equip (the item, the creature, one week read and one filtered scan of the recent stage rows)
+  equipBest: 47, // measured 31 for seven creatures (43 when the lock scanned once per creature): the playing creatures are read once per call
+} as const;
+
+describe('read budget: the lock of a stage that plays as it happens', () => {
+  it('reads the playing creatures once for an Equip best of many creatures and once for one equip', async () => {
+    await inGuild(
+      async (env) => {
+        const { metered, clock } = env;
+        const world = await seedWorld(env, { combatV2: true });
+        const { core, creatures } = world;
+        clock.t = V2_WEEK.stage1 + 30_000;
+        await core.alarm();
+        const secrets = new Map<string, string>();
+        secrets.set(
+          userId(1),
+          await core.createSession(GUILD_ID, { id: userId(1), displayName: 'Player 1' }),
+        );
+        const all = creatures[userId(1)] ?? [];
+        const mine = all.slice(0, 3);
+        // Six creatures that stand in no stage, then one that does: the lock checks every one before it refuses.
+        const team = [...all.slice(3, 9), mine[0]];
+        const refused = (path: string, body: unknown) =>
+          metered.measure(() =>
+            callAs(core, secrets, 1, path, { method: 'POST', body }).catch((e: unknown) => e),
+          );
+        const gear = (await callAs(core, secrets, 1, '/api/gear')) as { items?: { id: string }[] };
+        const item = gear.items?.[0]?.id ?? 'x';
+        const equip = await refused(`/api/gear/${item}/equip`, { creatureId: mine[0] });
+        const best = await refused('/api/gear/equip-best', { creatureIds: team });
+        expect(String(equip.result)).toContain('409');
+        expect(String(best.result)).toContain('409');
+        expectReadsUnder('equip while a stage plays', equip.reads, BUDGET_LOCK.equip);
+        expectReadsUnder('equip best while a stage plays', best.reads, BUDGET_LOCK.equipBest);
       },
       { fresh: true },
     );

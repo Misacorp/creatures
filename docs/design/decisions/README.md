@@ -165,6 +165,7 @@ Superseded: 1 entry (see the topic file).
 
 [combat.md](combat.md): The shared combat engine, abilities, statuses, elements, the balance simulator, balance passes, and combat v2 in the lab.
 
+- 2026-11-16 A playing stage's window is the boss's full length; the lock and the reveal follow it
 - 2026-11-16 Stages 1 and 2 play as they happen: the stored stage is revealed round by round, no new timer \[Misa\]
 - 2026-11-15 Raid replays play at the live finale's pace, fixed \[Misa\]
 - 2026-11-14 Boss animations: lances pass through the whole column; the aim is the board's highlight, no triangle \[Misa\]

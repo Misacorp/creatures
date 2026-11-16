@@ -2,6 +2,8 @@
 // its `created_at` until `created_at + rounds * liveRoundMs`. No timer: every read works out the round from the clock. The server never sends
 // a round that has not started or any number that gives the outcome; the board is locked while a stage plays.
 import { RULES } from '@creatures/game';
+import { RAID_ROUNDS } from '@creatures/engine/v2';
+import { weekendBoss, windowRoundsOf } from '../src/raid-v2-core';
 import { describe, expect, it } from 'vitest';
 import type { CoreContext } from './helpers';
 import type { PlayingReplayV2, RaidV2Part, ReplayViewV2 } from '../src/raid-v2-view';
@@ -11,6 +13,7 @@ import { V2_WEEK, finishPlaying, v2Player } from './raid-v2-helpers';
 
 const ROUND = RULES.raid.v2.liveRoundMs;
 const V2 = { combatV2: true } as const;
+const V2_VALLEY = { combatV2: true, valleySystems: true } as const;
 
 const stageRow = (ctx: CoreContext, phase: string) =>
   rows<{ created_at: number; summary: string }>(
@@ -18,8 +21,11 @@ const stageRow = (ctx: CoreContext, phase: string) =>
     'SELECT created_at, summary FROM raid_results WHERE phase = ?',
     phase,
   )[0] as { created_at: number; summary: string };
-const roundsOf = (ctx: CoreContext, phase: string): number =>
+/** The rounds the stage played, and the rounds of its window: the boss's full count (a stage that ended early plays out the rest in silence). */
+const playedOf = (ctx: CoreContext, phase: string): number =>
   (JSON.parse(stageRow(ctx, phase).summary) as { rounds: number }).rounds;
+const roundsOf = (ctx: CoreContext, phase: string): number =>
+  windowRoundsOf(JSON.parse(stageRow(ctx, phase).summary) as Parameters<typeof windowRoundsOf>[0]);
 
 const replay = (ctx: CoreContext, userId: string, phase: 'stage1' | 'stage2') =>
   ctx.core.raid.replay(userId, V2_WEEK.id, 1, phase);
@@ -91,7 +97,9 @@ describe('stages that play as they happen', () => {
         ctx.clock.t = created + rounds * ROUND;
         const full = replay(ctx, a.id, 'stage1') as ReplayViewV2;
         expect(full).not.toHaveProperty('playing');
-        expect(full).toMatchObject({ rounds });
+        expect(full).toMatchObject({ rounds: playedOf(ctx, 'stage1') });
+        // The window is the boss's full length, however early the stage ended.
+        expect(rounds).toBe(RAID_ROUNDS);
         expect(typeof full.cleared).toBe('boolean');
         expect(full.carry.bossHp).toBeGreaterThanOrEqual(0);
         expect(full.events.some((e) => e.board?.type === 'end')).toBe(true);
@@ -304,5 +312,143 @@ describe('stages that play as they happen', () => {
       },
       { start: V2_WEEK.open, core: V2 },
     );
+  });
+
+  it("makes the window the boss's full length, and a short stage plays out in silence", async () => {
+    await runRaid(
+      (ctx) => {
+        const a = pick(stageOne(ctx), 0);
+        const created = stageRow(ctx, 'stage1').created_at;
+        const played = playedOf(ctx, 'stage1');
+        const window = roundsOf(ctx, 'stage1');
+        expect(window).toBe(RAID_ROUNDS);
+        expect(window).toBeGreaterThanOrEqual(played);
+        // Force the stored rounds below the window, as an early kill or a wipe would leave it.
+        const summary = JSON.parse(stageRow(ctx, 'stage1').summary) as { rounds: number };
+        summary.rounds = 2;
+        ctx.sql.exec(
+          "UPDATE raid_results SET summary = ? WHERE phase = 'stage1'",
+          JSON.stringify(summary),
+        );
+        ctx.clock.t = created + 2 * ROUND + 5;
+        const quiet = replay(ctx, a.id, 'stage1') as PlayingReplayV2;
+        expect(quiet.playing).toBe(true);
+        expect(quiet).toMatchObject({ round: 3, nextRoundAt: created + 3 * ROUND });
+        ctx.clock.t = created + window * ROUND - 1;
+        expect((replay(ctx, a.id, 'stage1') as PlayingReplayV2).playing).toBe(true);
+        expect(view(ctx, a.id).v2?.playing?.endsAt).toBe(created + window * ROUND);
+        ctx.clock.t = created + window * ROUND;
+        expect(replay(ctx, a.id, 'stage1')).not.toHaveProperty('playing');
+      },
+      { start: V2_WEEK.open, core: V2 },
+    );
+  });
+
+  it('keeps a killing stage out of the reveal while it plays', async () => {
+    await runRaid(
+      (ctx) => {
+        const a = pick(stageOne(ctx), 0);
+        const row = stageRow(ctx, 'stage1');
+        const summary = JSON.parse(row.summary) as { v2: { kill: boolean } };
+        summary.v2.kill = true;
+        ctx.sql.exec(
+          "UPDATE raid_results SET summary = ? WHERE phase = 'stage1'",
+          JSON.stringify(summary),
+        );
+        const endsAt = row.created_at + roundsOf(ctx, 'stage1') * ROUND;
+        ctx.clock.t = row.created_at + ROUND;
+        expect(view(ctx, a.id).you.reveal).toBeNull();
+        expect(ctx.core.raid.markRevealSeen(a.id, V2_WEEK.id)).toMatchObject({
+          ok: false,
+          status: 404,
+        });
+        ctx.clock.t = endsAt - 1;
+        expect(view(ctx, a.id).you.reveal).toBeNull();
+        ctx.clock.t = endsAt;
+        expect(view(ctx, a.id).you.reveal).toMatchObject({ week: V2_WEEK.id, party: 1 });
+        expect(ctx.core.raid.markRevealSeen(a.id, V2_WEEK.id).ok).toBe(true);
+      },
+      { start: V2_WEEK.open, core: V2 },
+    );
+  });
+
+  it('locks dismantling and rerolling a worn item of a creature in the playing stage', async () => {
+    await runRaid(
+      (ctx) => {
+        ctx.sql.exec(
+          'INSERT INTO raid_track (id, slot, best_share_bp, failed_weekends) VALUES (1, 6, 2500, 1)',
+        );
+        const players = [1, 2, 3, 4].map((n) => v2Player(ctx, n, { level: 22 }));
+        const a = pick(players, 0);
+        const own = a.creatureIds[0] as string;
+        const spare = a.creatureIds[3] as string;
+        const worn = giveItem(ctx.sql, a.id, 'thundercap');
+        const loose = giveItem(ctx.sql, a.id, 'thundercap', { seed: 'loose' });
+        expect(ctx.core.gear.equip(a.id, worn, own).ok).toBe(true);
+        joinRaid(ctx, players);
+        ctx.clock.t = V2_WEEK.stage1 + 30_000;
+        ctx.core.raid.runDue(HELSINKI);
+        const created = stageRow(ctx, 'stage1').created_at;
+        const endsAt = created + roundsOf(ctx, 'stage1') * ROUND;
+        const refused = { ok: false, status: 409, error: 'stage_playing' };
+        const dismantle = (id: string) =>
+          ctx.core.gear.dismantlePile(a.id, {
+            creatureId: spare,
+            itemIds: [id],
+            idempotencyKey: `k-${id}-${String(ctx.clock.t)}`,
+          });
+        const visitor = ctx.core.valleyVisitor;
+        expect(visitor).not.toBeNull();
+
+        ctx.clock.t = endsAt - 1;
+        expect(dismantle(worn)).toEqual(refused);
+        expect(visitor?.reroll(a.id, { itemId: worn, key: 'reroll-worn' })).toEqual(refused);
+        // An item that nobody in the stage wears is free.
+        expect(dismantle(loose).ok).toBe(true);
+
+        ctx.clock.t = endsAt;
+        expect(dismantle(worn).ok).toBe(true);
+      },
+      { start: V2_WEEK.open, core: V2_VALLEY },
+    );
+  });
+
+  it("refuses a player's own Fuse into a creature in the playing stage", async () => {
+    await runRaid(
+      (ctx) => {
+        const a = pick(stageOne(ctx), 0);
+        const own = a.creatureIds[0] as string;
+        const species = rows<{ species: string }>(
+          ctx.sql,
+          'SELECT species FROM creatures WHERE id = ?',
+          own,
+        )[0]?.species as string;
+        const created = stageRow(ctx, 'stage1').created_at;
+        const endsAt = created + roundsOf(ctx, 'stage1') * ROUND;
+        const choices = ctx.core.collection.choices;
+        const card = ctx.storage.transactionSync(() =>
+          choices.addPending(a.id, { species, shiny: false }, { kind: 'expedition', id: 'trip-1' }),
+        );
+        ctx.clock.t = endsAt - 1;
+        expect(
+          choices.choose(a.id, card.id, { choice: 'fuse', creatureId: own }, 'fuse-1'),
+        ).toEqual({ ok: false, status: 409, error: 'stage_playing' });
+        ctx.clock.t = endsAt;
+        const after = choices.choose(a.id, card.id, { choice: 'fuse', creatureId: own }, 'fuse-2');
+        expect(after.ok ? 'ok' : after.error).not.toBe('stage_playing');
+      },
+      { start: V2_WEEK.open, core: V2 },
+    );
+  });
+});
+
+describe('the playing window and the boss', () => {
+  it('no boss of the track has more rounds than the window lock reads (MAX_WINDOW_MS)', () => {
+    // `playingRows` only reads stage rows younger than RAID_ROUNDS rounds: a longer boss would unlock the end of its window.
+    for (let slot = 1; slot <= 40; slot++) {
+      for (const players of [1, 4, 15]) {
+        expect(weekendBoss(slot, players).rounds).toBeLessThanOrEqual(RAID_ROUNDS);
+      }
+    }
   });
 });
