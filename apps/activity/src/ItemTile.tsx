@@ -9,6 +9,22 @@ import type { ClickKeys } from './ui/multi-select';
 import { SelectCheck } from './ui/SelectCheck';
 
 /**
+ * Where the slot mark (the hat, scarf or charm icon) sits on a tile. Options for Misa to pick from pictures
+ * (2026-11-16); `'current'` is the shipped look and stays until he picks. Change the one constant to flip every grid:
+ * - `'current'`: bag tiles at the bottom left (so the checkbox never covers it), the picker's at the top left.
+ * - `'a'`: a corner badge at the top left, "Lv" alone at the bottom (the checkbox covers it while it shows).
+ * - `'b'`: the top right, "Lv" alone at the bottom; "Worn" and the wearer's picture move to the bottom left.
+ * - `'c'`: one dark strip along the bottom, the slot icon then "Lv 16", clear of the art.
+ */
+export type SlotMarkPlacement = 'current' | 'a' | 'b' | 'c';
+export const SLOT_MARK_PLACEMENT: SlotMarkPlacement = 'current';
+
+/** The tile's class for a placement (none for the shipped look). */
+export function slotMarkClass(placement: SlotMarkPlacement): string | null {
+  return placement === 'current' ? null : `slot-${placement}`;
+}
+
+/**
  * How a bag tile takes part in selecting several items (decisions.md, 2026-10-27, "Bulk selection replaces
  * marking"). Only the bag passes it; the item picker's tiles do not select. The list's gestures and the tile's role
  * come from `useSelectGrid` (through `buttonProps`).
@@ -78,6 +94,8 @@ export function ItemTile({
     }
   }, [selected, pressed]);
   const classes = ['item-tile', `rarity-${item.rarity}`, 'rarity-edge'];
+  const slotClass = slotMarkClass(SLOT_MARK_PLACEMENT);
+  if (slotClass !== null) classes.push(slotClass);
   if (selected) classes.push('selected');
   if (blocked) classes.push('blocked');
   if (choice?.chosen === true) classes.push('chosen');
