@@ -19,7 +19,7 @@ export const BAG_HINT: SelectHint = {
  * How many tiles a row of the Forge's bag holds on a wide window, where the bag is a narrow drawer (Misa, 2026-11-16: "think 6-8 items
  * per row"). One number, here; a phone keeps as many as fit at a comfortable size.
  */
-export const BAG_COLUMNS = 7;
+export const BAG_COLUMNS = 6;
 
 /**
  * The bag as the one item grid (`ItemTile`, the same as the item picker): the slot's icon in each tile's bottom-left
