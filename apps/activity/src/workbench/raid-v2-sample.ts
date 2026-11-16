@@ -309,6 +309,9 @@ export function raidV2Sample(o: V2SampleOptions): { view: RaidView; ownedIds: st
       hpMax: fighters.find((f) => f.key === c.id)?.maxHp ?? null,
       knack,
       knackName: knack === null ? null : (combatV2.knacks[knack]?.name ?? null),
+      role: fighters.find((f) => f.key === c.id)?.role ?? 'setter',
+      talents: [],
+      gear: [],
     });
   }
   const swaps = swapsOf(o.swaps, standing);
@@ -332,6 +335,7 @@ export function raidV2Sample(o: V2SampleOptions): { view: RaidView; ownedIds: st
     card: cardOf(boss, carry),
     track: trackOf(o.slot),
     preview,
+    playing: null,
     out,
     creatures: board,
     swaps,

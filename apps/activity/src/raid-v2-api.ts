@@ -5,6 +5,8 @@
  * engine's own targeting, so the client does no fight maths. Parsing is strict like the rest of `raid-api.ts`.
  */
 import { apiFetch, jsonRequest } from './api';
+import { isLine, isRarity, isSlot, isStat, isTag } from './gear-parse';
+import type { GearItem } from './gear-types';
 import {
   isArrayOf,
   isBool,
@@ -72,6 +74,31 @@ export interface BoardCreatureV2 {
   hpMax: number | null;
   knack: string | null;
   knackName: string | null;
+  /** Its role (for the read-only drawer). */
+  role: string;
+  /** The slotted talents in slot order; `golden` marks a golden one. */
+  talents: { id: string; golden: boolean }[];
+  /** What it wears, in slot order: the item card's parts (no id, maker or origin); `lines[].active` says whether a line does anything for it. */
+  gear: WornCardV2[];
+}
+
+/** A worn item as another player sees it. */
+export type WornCardV2 = Pick<
+  GearItem,
+  'baseId' | 'slot' | 'tag' | 'rarity' | 'festival' | 'itemLevel' | 'stats' | 'lines'
+>;
+
+/**
+ * Stage 1 or 2 is playing as it happens (a week view with this shows the party as it stood before the stage: HP and Out marks from before,
+ * the stage not in `results`). Open the live stage; fetch the replay at each `nextRoundAt`; the stage ends at `endsAt`. The board is locked
+ * until then (409 `stage_playing`).
+ */
+export interface PlayingStageV2 {
+  stage: 1 | 2;
+  startsAt: number;
+  roundMs: number;
+  nextRoundAt: number;
+  endsAt: number;
 }
 
 export interface OutCreatureV2 {
@@ -131,6 +158,8 @@ export interface RaidV2View {
   preview: MovePreviewV2 | null;
   out: OutCreatureV2[];
   creatures: BoardCreatureV2[];
+  /** A stage that is playing out now, or null. */
+  playing: PlayingStageV2 | null;
   swaps: SwapsV2;
 }
 
@@ -190,6 +219,25 @@ const isPreview = (value: unknown): value is MovePreviewV2 => {
   );
 };
 
+const isWornCard = (value: unknown): value is WornCardV2 =>
+  isRecord(value) &&
+  isStr(value['baseId']) &&
+  isSlot(value['slot']) &&
+  isTag(value['tag']) &&
+  isRarity(value['rarity']) &&
+  isBool(value['festival']) &&
+  isCount(value['itemLevel']) &&
+  isArrayOf(value['stats'], isStat) &&
+  isArrayOf(value['lines'], isLine);
+
+const isPlaying = (value: unknown): value is PlayingStageV2 =>
+  isRecord(value) &&
+  (value['stage'] === 1 || value['stage'] === 2) &&
+  isInt(value['startsAt']) &&
+  isCount(value['roundMs']) &&
+  isInt(value['nextRoundAt']) &&
+  isInt(value['endsAt']);
+
 const isBoardCreature = (value: unknown): value is BoardCreatureV2 =>
   isRecord(value) &&
   isStr(value['creatureId']) &&
@@ -199,7 +247,14 @@ const isBoardCreature = (value: unknown): value is BoardCreatureV2 =>
   isNullableInt(value['hp']) &&
   isNullableInt(value['hpMax']) &&
   isNullableStr(value['knack']) &&
-  isNullableStr(value['knackName']);
+  isNullableStr(value['knackName']) &&
+  isStr(value['role']) &&
+  isArrayOf(
+    value['talents'],
+    (t): t is { id: string; golden: boolean } =>
+      isRecord(t) && isStr(t['id']) && isBool(t['golden']),
+  ) &&
+  isArrayOf(value['gear'], isWornCard);
 
 const isOut = (value: unknown): value is OutCreatureV2 =>
   isRecord(value) &&
@@ -258,6 +313,7 @@ export function isRaidV2View(value: unknown): value is RaidV2View {
     (value['preview'] === null || isPreview(value['preview'])) &&
     isArrayOf(value['out'], isOut) &&
     isArrayOf(value['creatures'], isBoardCreature) &&
+    (value['playing'] === null || isPlaying(value['playing'])) &&
     isSwaps(value['swaps'])
   );
 }

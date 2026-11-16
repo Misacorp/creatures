@@ -4,6 +4,14 @@ The shared combat engine, abilities, statuses, elements, the balance simulator, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-16: Stages 1 and 2 play as they happen: the stored stage is revealed round by round, no new timer [Misa]
+
+ID: `2026-11-16-stages-1-and-2-play-as` · Status: current
+
+**Decision.** A stage 1 or 2 still resolves and pays at its time, and its result row is stored whole, but it is revealed as it happens. The stored stage is "playing" from its `raid_results.created_at` until `created_at + rounds x RULES.raid.v2.liveRoundMs` (its own rounds; one helper, `stagePlaying` in `raid-v2-core.ts`). No timer or alarm: every read works the round out from the clock. While it plays: the replay route serves only the events of rounds that have started, never the `end` event, and hides `rounds`, `cleared`, `kill`, `bossHpEnd`, `carry` and the seed (it adds `playing`, `startsAt`, `roundMs`, `round`, `nextRoundAt`); `/api/raid` leaves the stage out of `results`, shows the boss HP and the party's carry from before the stage, the board from the stage's stored input (knocked-out creatures still placed) and a `v2.playing` pointer; the after-action stats answer not found; the stage's Discord post is first due at the window's end. The party's board is locked (409 `stage_playing`): placing, removing, swap requests, and a Knack, talent or gear change of a creature in the stage. The Essence payout still lands at resolve time (a known, accepted leak). The finale is unchanged. The board entries of `/api/raid` also carry role, slotted talents (golden marked) and worn gear cards, built from loads the view already made.
+
+**Reasoning.** Misa wants the weekend stages to be watched together, as the finale is, without a second scheduler. The fight is stored at resolve time so payouts, locks and the track stay as they were; only what a request may show depends on the clock. The server never sends a future round or an outcome field, so a client cannot read ahead. Reads: the client fetches the replay at each `nextRoundAt` (about 128 rows a call in the 15-player test guild, ten watchers over a 6-round stage about 7,800 rows), never on a poll.
+
 ## 2026-11-15: Raid replays play at the live finale's pace, fixed **[Misa]**
 
 ID: `2026-11-15-raid-replays-play-at-the-live` · Status: current

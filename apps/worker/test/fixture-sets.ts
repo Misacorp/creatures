@@ -369,6 +369,8 @@ export const FIXTURE_SETS: readonly FixtureSet[] = [
       responses: named(
         'v2-state',
         'v2-raid-open',
+        'v2-raid-stage1-playing',
+        'v2-replay-playing',
         'v2-raid-stage1',
         'v2-replay',
         'v2-stats',

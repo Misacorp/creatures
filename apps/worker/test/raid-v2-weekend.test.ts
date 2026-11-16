@@ -8,7 +8,14 @@ import { describe, expect, it } from 'vitest';
 import type { CoreContext } from './helpers';
 import type { LiveSnapshotV2, RaidV2Part, ReplayViewV2 } from '../src/raid-v2-view';
 import { HELSINKI, MINUTE, count, joinRaid, rows, runRaid } from './raid-helpers';
-import { V2_WEEK, carryOf, eventsOfKind, setBossHp, v2Player } from './raid-v2-helpers';
+import {
+  V2_WEEK,
+  carryOf,
+  finishPlaying,
+  eventsOfKind,
+  setBossHp,
+  v2Player,
+} from './raid-v2-helpers';
 
 const V2 = { combatV2: true } as const;
 const LEVEL = 22;
@@ -141,6 +148,8 @@ describe('a combat v2 raid weekend', () => {
         });
         expect(ctx.core.raid.needsPlacement(late.id, HELSINKI).needed).toBe(false);
 
+        // The stage played as it happened: its window is over, so the view shows the outcome.
+        finishPlaying(ctx);
         // The carry is in the view: who is out, the stage.
         expect(v2Of(ctx, a.id)).toMatchObject({
           slot: 6,
