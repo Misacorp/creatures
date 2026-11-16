@@ -4,6 +4,14 @@ The valley and peaceful systems overhaul planned in docs/design/valley/: job pos
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-16: Bonfire: creatures stand on the ground and a hand can move them (feet under the horizon, no dragging into the sky)
+
+ID: `2026-11-16-bonfire-creatures-stand-on-the-ground` · Status: current
+
+**Decision.** Every resting spot at the Bonfire has its creature's feet at least `GROUND_MARGIN` (6 scene pixels) under the grass line, and the ring grew a row below the fire (seats 6 and 7 are the front corners) instead of one behind it. The grand hearth's outer seats moved down beside its benches, and the trees stand just outside the seats' ring. A hand can pick a resting creature up and put it down anywhere on the ground (the Paddock's `Draggable`): the sky clamps it to the ground, and a drop over a tree, the fire, the corner or another creature goes to the nearest free spot (`settleOnGround`). Positions are display-only, kept in the page, as in the Paddock.
+
+**Reasoning.** The two seats behind the fire had their feet on the horizon line, so the creatures floated on the hills and the trees (Misa's playtest, 2026-11-16). A flattened ellipse cannot hold seven seats a plate's gap apart under a horizon that close to the fire, while a row below has room; the ring stays a U round the fire. One seat list and one margin keep the rule in one place, and a unit test checks every window size and crowd.
+
 ## 2026-11-16: Pre-playtest layout fixes: creature drawer, Paddock row, seat outlines, corner in view
 
 ID: `2026-11-16-pre-playtest-layout-fixes-creature-drawer` · Status: current
