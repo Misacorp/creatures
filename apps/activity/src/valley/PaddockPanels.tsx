@@ -13,8 +13,7 @@
 import { useState } from 'preact/hooks';
 import type { Creature, GameState } from '../api';
 import type { GearState } from '../gear-types';
-import { baseOption } from '../roster-picker';
-import { CreatureList } from '../ui/CreatureList';
+import { CreatureSummary } from './CreatureSummary';
 import { WizardFooter } from '../ui/Wizard';
 import { EvolveContent } from '../EvolveDrawer';
 import { creatureName } from '../game';
@@ -29,6 +28,7 @@ import type { HelperPost } from './BonfirePanels';
 /** The one thing a creature of the yard can do besides open its page: help build, or go back to the meadow. */
 export function CreatureHub({
   creature,
+  state,
   where,
   helper,
   busy,
@@ -36,6 +36,8 @@ export function CreatureHub({
   onClose,
 }: {
   creature: Creature;
+  /** What its tags read (lounging, first on server): the game's state. */
+  state: Pick<GameState, 'loungerId' | 'loungeXp' | 'serverFirsts'>;
   /** Where it is, in a few words ("At home in the Paddock"). */
   where: string;
   /** Absent: the Paddock's project is not on offer (the commons block has not come), so only the creature shows. */
@@ -47,13 +49,7 @@ export function CreatureHub({
   const helping = helper?.creatureId === creature.id;
   return (
     <PanelBody footer={<WizardFooter label="Open its page" onFinish={onPage} />}>
-      <div class="dr-stack">
-        <CreatureList
-          options={[{ ...baseOption(creature), note: where }]}
-          selection={{ mode: 'show', label: 'Creature' }}
-          chips={false}
-          class="flat"
-        />
+      <CreatureSummary creature={creature} state={state} doing={where}>
         {helper !== undefined && (
           <>
             <p class="sp-note">A creature here helps build, a little each day.</p>
@@ -70,7 +66,7 @@ export function CreatureHub({
             </button>
           </>
         )}
-      </div>
+      </CreatureSummary>
     </PanelBody>
   );
 }

@@ -13,6 +13,8 @@ import {
   YARD_BOTTOM,
   YARD_LEFT,
   YARD_RIGHT,
+  HOUSE_BASE_ROW,
+  freeSeatBox,
   lecternBox,
   modeFor,
   schoolLayout,
@@ -123,6 +125,24 @@ describe('the School canvas: the targets', () => {
       expect(seat.x + seat.w).toBeLessThanOrEqual(lecternBox().x);
     }
     expect(Math.abs(first.x - second.x)).toBeGreaterThanOrEqual(16);
+  });
+
+  it('outlines a free seat as the seat only: from under the house’s walls to the students’ feet, the same columns as the seat', () => {
+    for (const n of [0, 1]) {
+      const seat = seatBox(n);
+      const free = freeSeatBox(n);
+      expect(seat).not.toBeNull();
+      expect(free).not.toBeNull();
+      if (seat === null || free === null) continue;
+      expect(free.x).toBe(seat.x);
+      expect(free.w).toBe(seat.w);
+      // It never reaches up over the house, and it ends on the same feet row.
+      expect(free.y).toBeGreaterThanOrEqual(HOUSE_BASE_ROW);
+      expect(free.y + free.h - 1).toBe(SEATS_FEET);
+      expect(free.h).toBeGreaterThan(0);
+      expect(free.h).toBeLessThan(seat.h);
+    }
+    expect(freeSeatBox(4)).toBeNull();
   });
 
   it('keeps the lectern inside the yard', () => {

@@ -26,6 +26,9 @@ import {
 /** The corner's box in art pixels (its ground patch: 5 by 3 tiles), and the row its front row stands on (the helper's feet). */
 export const CORNER = { w: 80, h: 48, feet: 40 } as const;
 
+/** The group the corner's two targets (the table and the helper spot) share: a drawer opened from one keeps both in view (`CanvasTarget` `group`). */
+export const CORNER_GROUP = 'builders-corner';
+
 /** The rows the back row (tarp, table) and the pile stand on. */
 const BACK = 24;
 const PILE_BASE = 22;

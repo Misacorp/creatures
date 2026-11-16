@@ -131,10 +131,16 @@ export function CreatureHead({
   nameId,
   onOpen,
   corner,
+  nameless = false,
+  scale = 4,
 }: {
   creature: Creature;
   state: Pick<GameState, 'loungerId' | 'loungeXp' | 'serverFirsts'>;
-  nameId: string;
+  nameId?: string;
+  /** A drawer that already carries the name in its title (`valley/CreatureSummary`): the portrait and the tags only, no second name. */
+  nameless?: boolean;
+  /** The portrait's pixel scale; above 4 the head draws a larger portrait box (`cc-big`). */
+  scale?: number;
   /** The card's: opens the page. Leave out on the page itself. */
   onOpen?: (() => void) | undefined;
   /** The card's: a small button at the end of the name's line (the armchair of `LoungeCorner`). */
@@ -151,14 +157,14 @@ export function CreatureHead({
   const nameClass =
     species === undefined ? 'cc-name' : `cc-name rarity-name rarity-${species.rarity}`;
   return (
-    <div class="cc-head">
+    <div class={`cc-head${scale > 4 ? ' cc-big' : ''}`}>
       <div class={`portrait${sparkleFrame ? ' sparkle-frame' : ''}`}>
         <Sprite
           sprite={
             wornSprite(creature.species, creature.gear) ??
             creatureSpriteOrFallback(creature.species)
           }
-          scale={4}
+          scale={scale}
           bob
           life={{ seed: creature.id, shiny: creature.shiny }}
           alt={portraitAlt(name, creature.shiny)}
@@ -173,7 +179,7 @@ export function CreatureHead({
         <HonourRibbon honour={honourHeld} scale={3} />
       </div>
       <div class="cc-id">
-        {onOpen === undefined ? (
+        {nameless ? null : onOpen === undefined ? (
           <h2 id={nameId} class={`${nameClass} cc-name-page`}>
             <span class="cc-name-text">{name}</span>
             {species !== undefined && <span class="visually-hidden">, {species.rarity}</span>}

@@ -35,7 +35,14 @@ import { CanvasTarget, PanelBody, PlaceCanvas, type CanvasPanel, type Opener } f
 import { PLATES_Z } from './PlaceScene';
 import { SceneFrame, sceneGeometry, type SceneGeometry } from './SceneFrame';
 import { At, CreatureSprite, Pic } from './parts';
-import { FLAG_AT, HELPER_AT, TABLE_BOX, pileMaterial, pileSize } from './builders-corner';
+import {
+  CORNER_GROUP,
+  FLAG_AT,
+  HELPER_AT,
+  TABLE_BOX,
+  pileMaterial,
+  pileSize,
+} from './builders-corner';
 import { cornerSprite } from './builders-corner-art';
 import { commonsOf, percentFilled, placeOf } from './commons-view';
 import {
@@ -481,6 +488,7 @@ function MarketInside({
           h={TABLE_BOX.h}
           label={`The builders' table, ${built ? 'the Market is being added to' : 'the Market is being built'}. Open the project board`}
           plate="Project"
+          group={CORNER_GROUP}
           plateAt={TABLE_BOX.h + 1}
           expanded={open.board}
           onClick={onBoard}
@@ -527,6 +535,7 @@ function MarketInside({
               : `${creatureName(helper)}, level ${String(helper.level)}, helping build the Market at the builders' table. Change`
           }
           plate={helper === undefined ? 'Helper' : creatureName(helper)}
+          group={CORNER_GROUP}
           {...(helper === undefined ? {} : { plateMeta: { level: helper.level } })}
           plateAt={CREATURE_PX + 1}
           expanded={open.helper}

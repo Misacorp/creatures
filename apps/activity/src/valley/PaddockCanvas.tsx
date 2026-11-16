@@ -17,10 +17,15 @@
  * phone shows the open panel as its own page. The scene keeps one size and place for the whole visit; drawers lie over its edges.
  */
 import type { ComponentProps } from 'preact';
-import { useEffect, useMemo, useState } from 'preact/hooks';
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { Creature, ValleyVisit } from '../api';
 import { Collection } from '../Collection';
 import { creatureName } from '../game';
+import { TOUCH_HOLD_MS } from '../dnd-core';
+import { busyReason } from '../gear-view';
+import { dropOutcome } from '../slot-outcome';
+import { DragGhost } from '../ui/DragGhost';
+import { useDragDrop } from '../use-drag-drop';
 import { usePrefersReducedMotion } from '../hooks';
 import type { PendingCatch } from '../talent-types';
 import { HelperPanel, type HelperPost } from './BonfirePanels';
@@ -31,23 +36,34 @@ import { Draggable, PLATES_Z } from './PlaceScene';
 import { SceneFrame, sceneGeometry, type SceneGeometry } from './SceneFrame';
 import { At, CreatureSprite, Pic, isStill, useTick } from './parts';
 import { moreLabel } from './bonfire-cast';
-import { FLAG_AT, HELPER_AT, TABLE_BOX, pileMaterial, pileSize } from './builders-corner';
+import {
+  CORNER_GROUP,
+  FLAG_AT,
+  HELPER_AT,
+  TABLE_BOX,
+  pileMaterial,
+  pileSize,
+} from './builders-corner';
 import { cornerSprite } from './builders-corner-art';
 import { commonsOf, percentFilled, placeOf } from './commons-view';
 import {
   signBox,
   gateSpots,
   gateTarget,
-  meadowFor,
+  yardFor,
+  PADDOCK_HAS_ROW,
   paddockLayout,
   paddockSceneDraw,
   paddockScale,
+  type PaddockLayout,
   roamersOf,
   whereLine,
 } from './paddock-canvas';
 import { CREATURE_PX } from './place-cast';
 import { plateGap, roamMeadow, standBounds } from './place-plates';
 import { scaffoldSteps } from './scaffold';
+import { Tray } from './Tray';
+import { trayFor, type TrayInput } from './tray-state';
 import { useRoamers } from './use-roamers';
 import { depthOf } from './valley-logic';
 import type { Rect } from './valley-art';
@@ -86,7 +102,22 @@ export interface PaddockCanvasProps {
   acorns?: number;
   /** Who sits at the School's bench (they are not in the yard). */
   studying?: ReadonlySet<string>;
+  /** What each creature in the row under the scene is doing (variation A, `PADDOCK_VARIATION`); absent leaves the row out. */
+  trayInput?: TrayInput | undefined;
   start?: PaddockStart;
+}
+
+/** The yard's drop id: a hand lets a creature go anywhere over the scene (not under a drawer) and it comes home. */
+export const YARD_DROP = 'yard';
+
+/** The yard under a point: the scene's box, unless a drawer lies over it there. */
+export function yardAt(x: number, y: number): string | null {
+  if (typeof document === 'undefined') return null;
+  for (const el of document.elementsFromPoint(x, y)) {
+    if (el.closest('.pc-side, .pc-page') !== null) return null;
+    if (el.closest('.vy-scene-box') !== null) return YARD_DROP;
+  }
+  return null;
 }
 
 export function PaddockCanvas({
@@ -95,6 +126,7 @@ export function PaddockCanvas({
   commons,
   acorns = 0,
   studying = new Set<string>(),
+  trayInput,
   start = {},
 }: PaddockCanvasProps) {
   const { state, gear, busy } = collection;
@@ -163,6 +195,32 @@ export function PaddockCanvas({
     [steps, corner, material, size],
   );
 
+  // --- The creature row under the scene (variation A): a tap opens the creature's drawer, and a creature carried into the yard comes home ---
+
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const drag = useDragDrop<string>({
+    disabled: busy,
+    stripRef: rootRef,
+    touchHoldMs: TOUCH_HOLD_MS,
+    locate: (pt) => yardAt(pt.x, pt.y),
+    onDrop: (creatureId, dropId) => {
+      if (dropId !== YARD_DROP) return dropOutcome('none', null, null, 'Cancelled.');
+      // Home is the Paddock: a creature posted at a place's builders' seat comes back by clearing that seat, the game's own post action.
+      const posted = block?.communal.find((c) => c.creatureId === creatureId);
+      if (posted === undefined || commons === undefined) return dropOutcome('none', null, null, '');
+      void commons.post(posted.place, null);
+      return dropOutcome('valid', null, null, '');
+    },
+  });
+  const carried = creatures.find((c) => c.id === drag.drag?.creatureId);
+  const ordered =
+    trayInput === undefined
+      ? []
+      : trayFor(
+          creatures.filter((c) => busyReason(c) === null),
+          trayInput,
+        );
+
   const closeTop = (): void => {
     if (right !== null) setRight(null);
     else if (left !== null) setLeft(null);
@@ -192,6 +250,7 @@ export function PaddockCanvas({
           <CreatureHub
             key={`hub-${right.id}`}
             creature={one}
+            state={state}
             where={whereLine(one, visit, studying)}
             helper={post}
             busy={busy}
@@ -324,7 +383,7 @@ export function PaddockCanvas({
             key={`${String(g.W)}-${String(g.H)}-${String(g.s)}`}
             g={g}
             box={lay.box}
-            meadow={meadowFor(g, lay)}
+            lay={lay}
             sign={signBox(g, lay)}
             roamers={roamers}
             waiting={waiting}
@@ -361,8 +420,39 @@ export function PaddockCanvas({
   );
 
   return (
-    <div class="pk-root">
-      <PlaceCanvas label="Paddock" scene={scene} left={leftPanel} right={rightPanel} />
+    <div
+      class="pk-root"
+      ref={rootRef}
+      data-carrying={drag.drag === null ? undefined : 'yes'}
+      data-over={drag.drag?.over ?? undefined}
+    >
+      <PlaceCanvas
+        label="Paddock"
+        scene={scene}
+        left={leftPanel}
+        right={rightPanel}
+        below={
+          PADDOCK_HAS_ROW && trayInput !== undefined ? (
+            <Tray
+              creatures={ordered}
+              input={trayInput}
+              label="Your creatures"
+              onPick={(id) => {
+                setRight({ kind: 'creature', id, step: 'hub', from: null });
+              }}
+              drag={drag}
+            />
+          ) : undefined
+        }
+      />
+      <DragGhost
+        ghostRef={drag.ghostRef}
+        creature={
+          carried === undefined
+            ? undefined
+            : { species: carried.species, name: creatureName(carried) }
+        }
+      />
       {roamers.length === 0 && waiting.length === 0 && (
         <p class="visually-hidden" role="status">
           Nobody is home
@@ -376,7 +466,7 @@ export function PaddockCanvas({
 function PaddockInside({
   g,
   box,
-  meadow,
+  lay,
   sign,
   roamers,
   waiting,
@@ -393,8 +483,8 @@ function PaddockInside({
 }: {
   g: SceneGeometry;
   box: { x: number; y: number; width: number; height: number };
-  /** The meadow the creatures roam (scene pixels). */
-  meadow: { x: number; y: number; width: number; height: number };
+  /** The layout the yard is cut from: its mode and corner (the yard spreads over the whole scene, `yardFor`). */
+  lay: Pick<PaddockLayout, 'mode' | 'box' | 'corner'>;
   /** The gate sign's box (scene pixels): the "Creatures" button, drawn in the scene's art. */
   sign: { x: number; y: number; w: number; h: number };
   roamers: readonly Creature[];
@@ -425,7 +515,12 @@ function PaddockInside({
   const first = gates[0];
   const stop = first === undefined ? Infinity : box.x + first.x - CREATURE_PX;
   const limited = { ...bounds, width: Math.max(1, Math.min(bounds.width, stop - bounds.x + 1)) };
-  const { area, fit } = roamMeadow(meadow, roamers.length, limited, plateGap(g.s));
+  const { area, fit } = roamMeadow(
+    yardFor(g, lay, limited),
+    roamers.length,
+    limited,
+    plateGap(g.s),
+  );
   const shown = roamers.slice(0, Math.min(roamers.length, fit));
   const more = roamers.length - shown.length;
   const gate = gateTarget();
@@ -490,6 +585,7 @@ function PaddockInside({
           h={TABLE_BOX.h}
           label={`The builders' table, ${hearthOpen ? "the Paddock's project is open" : 'the Paddock is being built'}. Open the project board`}
           plate="Project"
+          group={CORNER_GROUP}
           plateAt={TABLE_BOX.h + 1}
           expanded={open.board}
           onClick={onBoard}
@@ -510,6 +606,7 @@ function PaddockInside({
               : `${creatureName(helper)}, level ${String(helper.level)}, helping build the Paddock at the builders' table. Change`
           }
           plate={helper === undefined ? 'Helper' : creatureName(helper)}
+          group={CORNER_GROUP}
           {...(helper === undefined ? {} : { plateMeta: { level: helper.level } })}
           plateAt={CREATURE_PX + 1}
           expanded={open.helper}

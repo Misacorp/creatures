@@ -8,7 +8,7 @@
  */
 import type { ComponentChildren } from 'preact';
 import { useRef, useState } from 'preact/hooks';
-import type { Creature, ValleyVisit } from '../api';
+import type { Creature, GameState, ValleyVisit } from '../api';
 import type { TabAlerts } from '../tab-alerts';
 import { scrollAndFocus } from '../scroll-to';
 import { BonfireCanvas } from './BonfireCanvas';
@@ -74,6 +74,7 @@ export function ValleyFrame({
   visitor,
   school,
   acorns = 0,
+  tagState,
   commonsStart,
   marketStart,
   busy = false,
@@ -109,6 +110,8 @@ export function ValleyFrame({
   school?: SchoolFeed;
   /** The player's Acorns, for a gift. */
   acorns?: number;
+  /** What a creature's tags read in a place's drawer (lounging, first on server); absent shows none of those. */
+  tagState?: Pick<GameState, 'loungerId' | 'loungeXp' | 'serverFirsts'>;
   /** The board's sheet or drawer to open at the start (the workbench shows each); the game leaves it out. */
   commonsStart?: CommonsStart & { sheet?: boolean };
   /** The broker's picker or drawer to open at the start (the workbench shows each); the game leaves it out. */
@@ -297,6 +300,7 @@ export function ValleyFrame({
                 onOpen('paddock');
               }}
               level={bonfireLevel}
+              {...(tagState === undefined ? {} : { tagState })}
               {...(commons === undefined ? {} : { commons, acorns, busy })}
               {...(commonsStart === undefined ? {} : { start: commonsStart })}
             />

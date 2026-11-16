@@ -373,3 +373,21 @@ button.cv-slot:hover:not(:disabled) {
     translate: 0 -2px;
   }
 }
+
+/* A creature summed up in a place drawer (`valley/CreatureSummary`): a larger portrait box than the card's; the rest is the card's own. */
+.cc-head.cc-big {
+  grid-template-columns: 96px minmax(0, 1fr);
+}
+
+.cc-head.cc-big .portrait {
+  width: 96px;
+  height: 96px;
+  margin: 0;
+  padding: 0;
+  background: var(--ink);
+  box-shadow: none;
+}
+
+.cs-summary .cc-id {
+  align-self: center;
+}
