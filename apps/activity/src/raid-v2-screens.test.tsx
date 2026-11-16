@@ -109,31 +109,47 @@ const draw = async (view: RaidView) => {
   return page;
 };
 
-describe('a combat v2 week', () => {
-  it("opens the v2 finale at the finale's time, not the shipped one", async () => {
+/** Opens a plate of the scene (Weekend, Boss, Players), which opens the left drawer (a full page here: no wide window). */
+const openPlate = async (p: Page, label: string): Promise<void> => {
+  const plate = byClass(p.root, 'rc-plate').find((el) => visibleText(el) === label);
+  if (plate === undefined) throw new Error(`no plate ${label}`);
+  p.click(plate);
+  await flush();
+};
+
+describe('a combat v2 week (the raid canvas)', () => {
+  it("plays the finale on the scene at the finale's time: no page of its own, never the shipped one", async () => {
     fetchLiveV2.mockResolvedValue({
       ...liveSample({ slot: 4, players: 4, stage: 3, seed: 'screen' }, { round: 2 }),
     });
     const p = await draw(weekAt());
     await flush();
-    const text = visibleText(p.root);
-    expect(text).not.toContain('SHIPPED FINALE');
+    expect(visibleText(p.root)).not.toContain('SHIPPED FINALE');
     expect(fetchLiveV2).toHaveBeenCalled();
-    expect(byClass(p.root, 'drill-head').length).toBe(1);
+    expect(byClass(p.root, 'drill-head')).toHaveLength(0);
+    expect(byClass(p.root, 'rc-scene')).toHaveLength(1);
   });
 
-  it('offers the finale action before the finale and never the practice fight', async () => {
+  it('names the finale action in the now line before the finale and never offers the practice fight', async () => {
     const week = weekAt();
     const later = Date.now() + 3_600_000;
-    const p = await draw({ ...week, schedule: { ...week.schedule, finale: later } });
-    expect(byClass(p.root, 'finale-action')).toHaveLength(1);
-    expect(byName(p.root, 'button', 'Shield Wall').length).toBeGreaterThan(0);
+    const p = await draw({
+      ...week,
+      schedule: { ...week.schedule, finale: later },
+      next: { event: 'finale', at: later },
+    });
+    expect(visibleText(p.root)).toContain('your order: Shield Wall');
     expect(visibleText(p.root)).not.toContain('Start practice fight');
     // The shipped ability chip is not drawn on a v2 week.
     expect(byClass(p.root, 'ability-chip')).toHaveLength(0);
+    // A tap on the line opens the order in the right drawer.
+    p.click(byClass(p.root, 'rc-now-button')[0] as never);
+    await flush();
+    expect(byClass(p.root, 'finale-action')).toHaveLength(1);
+    expect(byName(p.root, 'button', 'Shield Wall').length).toBeGreaterThan(0);
   });
 
-  it('lists a stage in Results as a compact row with Watch, and a tap opens its card', async () => {
+  it('lists a stage in the Weekend drawer as a compact row with Watch, and a tap opens its card', async () => {
     fetchStatsEither.mockResolvedValue({
       rules: 2,
       stats: statsSample({ slot: 4, players: 4, stage: 1, seed: 'screen' }),
@@ -144,8 +160,10 @@ describe('a combat v2 week', () => {
       [result('phase1', 100, 62, true)],
     );
     const p = await draw(view);
+    // Nothing of the result is on the main view.
+    expect(visibleText(p.root)).not.toContain('38% of its HP');
+    await openPlate(p, 'Weekend');
     const text = visibleText(p.root);
-    expect(text).toContain('Results');
     expect(text).toContain('Stage 1 · 38% of its HP · Cleared');
     expect(byName(p.root, 'button', /Watch/).length).toBe(1);
     // The card asks the server for its numbers only when the row is opened.
@@ -159,7 +177,7 @@ describe('a combat v2 week', () => {
     expect(visibleText(p.root).toLowerCase()).not.toMatch(/\bwall\b|harder/);
   });
 
-  it("opens no finale when the boss fell in stage 2: the week's result is shown instead", async () => {
+  it('opens no finale when the boss fell in stage 2: the now line says so and the Weekend drawer has the result', async () => {
     const week = weekAt();
     if (week.v2 === undefined) throw new Error('no v2 part');
     const view = withResults({ ...week, v2: { ...week.v2, stagesPlayed: 2, nextStage: 4 } }, [
@@ -170,9 +188,9 @@ describe('a combat v2 week', () => {
     await flush();
     expect(fetchLiveV2).not.toHaveBeenCalled();
     expect(byClass(p.root, 'drill-head')).toHaveLength(0);
-    const text = visibleText(p.root);
-    expect(text).toContain('Stage 2 · Boss fell · Cleared');
-    expect(text).not.toContain('The finale is on now');
+    expect(visibleText(p.root)).toContain('The boss fell in Stage 2');
+    await openPlate(p, 'Weekend');
+    expect(visibleText(p.root)).toContain('Stage 2 · Boss fell · Cleared');
   });
 });
 

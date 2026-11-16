@@ -17,7 +17,7 @@ import { TOUCH_HOLD_MS } from '../dnd-core';
 import { hitTest } from '../dnd-core';
 import { FinaleInputV2 } from '../FinaleInputV2';
 import { ownInput, type ActionId } from '../finale-v2';
-import type { fetchReplayV2 } from '../fight-v2-api';
+import type { fetchReplayStateV2 } from '../fight-v2-api';
 import { creatureName } from '../game';
 import type { FinaleFeed } from './finale-feed';
 import { useLiveFinaleV2 } from '../LiveV2';
@@ -110,7 +110,7 @@ export interface RaidCanvasProps {
   /** Called when the finale has just ended, so the screen asks for the week again (the reveal). */
   onFinaleDone?: (() => void) | undefined;
   /** Where a stage playing out comes from (the replay route); the workbench gives its own. */
-  stageFetcher?: typeof fetchReplayV2 | undefined;
+  stageFetcher?: typeof fetchReplayStateV2 | undefined;
   /** Opens the creature picker's "no creature" copy etc. is not needed: the tray's own input (trips and jobs are not read here). */
   trayInput: TrayInput;
   /** Starts with these drawers open (the workbench shows each). */

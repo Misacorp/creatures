@@ -9,8 +9,9 @@ import { gearContent } from '@creatures/game';
 import type { Creature } from '../api';
 import { teamSample } from '../creature-page/team-sample';
 import type { FinaleFeed } from '../raid-canvas/finale-feed';
-import type { FightPhaseV2, LiveSnapshotV2, ReplayViewV2 } from '../fight-v2-api';
+import type { FightPhaseV2, LiveSnapshotV2, PlayingReplayV2, ReplayViewV2 } from '../fight-v2-api';
 import type { FinaleWindow } from '../live';
+import type { WornCardV2 } from '../raid-v2-api';
 import type { PhaseResultView, RaidReveal, RaidView } from '../raid-api';
 import type { TeamConfigure } from '../TeamCreaturePage';
 import { liveSample, replaySample } from './fight-v2-sample';
@@ -35,7 +36,11 @@ export interface CanvasSample {
   configure: TeamConfigure;
   finale: FinaleWindow;
   feed?: FinaleFeed;
-  stageFetcher?: (week: string, party: number, phase: FightPhaseV2) => Promise<ReplayViewV2>;
+  stageFetcher?: (
+    week: string,
+    party: number,
+    phase: FightPhaseV2,
+  ) => Promise<ReplayViewV2 | PlayingReplayV2>;
   reveal?: RaidReveal;
   /** The server's clock for this state (the stage playing is placed around it). */
   now: number;
@@ -88,6 +93,35 @@ const result = (
   festivalGrant: null,
 });
 
+/** A worn item as another player sees it (`WornCardV2`): its lines all do something for the wearer here. */
+function wornCard(
+  base: (typeof gearContent.bases)[number],
+  rarity: WornCardV2['rarity'],
+  itemLevel: number,
+  lines: readonly string[],
+): WornCardV2 {
+  return {
+    baseId: base.id,
+    slot: base.slot,
+    tag: base.tag,
+    rarity,
+    festival: false,
+    itemLevel,
+    stats: [],
+    lines: lines.map((text, k) => ({
+      id: `line-${String(k)}`,
+      name: text,
+      text,
+      about: '',
+      source: 'rolled',
+      tier: null,
+      bestTier: null,
+      local: false,
+      active: true,
+    })),
+  };
+}
+
 /** What the server adds to a board creature for the right drawer: its talents and what it wears. */
 function withExtras(view: RaidView): RaidView {
   const v2 = view.v2;
@@ -101,21 +135,15 @@ function withExtras(view: RaidView): RaidView {
       creatures: v2.creatures.map((c, i) => ({
         ...c,
         talents: [
-          {
-            id: 'first-pounce',
-            name: 'First pounce',
-            text: 'First pounce +14%',
-            about: 'Its first hit each fight is stronger.',
-            golden: i % 3 === 0,
-            idle: false,
-          },
+          { id: 'first-pounce', golden: i % 3 === 0 },
+          { id: 'crit-damage', golden: false },
         ],
         gear:
           hat === undefined || scarf === undefined
             ? []
             : [
-                { baseId: hat.id, slot: 'hat', rarity: 'rare', itemLevel: 8 },
-                { baseId: scarf.id, slot: 'scarf', rarity: 'common', itemLevel: 4 },
+                wornCard(hat, 'rare', 8, ['Wildfire bonus +13%', 'First pounce +14%']),
+                wornCard(scarf, 'common', 4, ['Attack +4%']),
               ],
       })),
     },
@@ -238,7 +266,7 @@ export function canvasSample(state: CanvasState): CanvasSample {
       };
       view = {
         ...view,
-        v2: view.v2 === undefined ? view.v2 : ({ ...view.v2, playing } as typeof view.v2),
+        v2: view.v2 === undefined ? view.v2 : { ...view.v2, playing },
       } as RaidView;
       const full = replaySample({ ...fight, stage });
       return {
@@ -251,8 +279,12 @@ export function canvasSample(state: CanvasState): CanvasSample {
           Promise.resolve({
             ...full,
             events: full.events.filter((e) => e.round <= 3 && e.board?.type !== 'end'),
-            playing: { stage, nextRoundAt: playing.nextRoundAt },
-          } as ReplayViewV2),
+            playing: true,
+            startsAt,
+            roundMs: STAGE_MS,
+            round: 3,
+            nextRoundAt: playing.nextRoundAt,
+          } as unknown as PlayingReplayV2),
       };
     }
     case 'between stages': {

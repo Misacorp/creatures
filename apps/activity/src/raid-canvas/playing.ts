@@ -17,25 +17,9 @@ export interface Playing {
   endsAt: number;
 }
 
-const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
-
-/** The playing window of a view, read from `view.v2.playing` (or `view.playing`); null when no stage plays. */
+/** The playing window of a view (`v2.playing`, the server's); null when no stage plays. */
 export function playingOf(view: Pick<RaidView, 'v2'>): Playing | null {
-  const holder: unknown = view;
-  const own = (holder as { playing?: unknown }).playing;
-  const v2 = (view.v2 as { playing?: unknown } | undefined)?.playing;
-  const raw = v2 ?? own;
-  if (typeof raw !== 'object' || raw === null) return null;
-  const p = raw as Record<string, unknown>;
-  const { stage, startsAt, roundMs, endsAt, nextRoundAt } = p;
-  if (!isNum(stage) || !isNum(startsAt) || !isNum(roundMs) || !isNum(endsAt)) return null;
-  return {
-    stage,
-    startsAt,
-    roundMs,
-    nextRoundAt: isNum(nextRoundAt) ? nextRoundAt : null,
-    endsAt,
-  };
+  return view.v2?.playing ?? null;
 }
 
 /** The raid phase name of a playing stage (the results list uses `phase1`, `phase2`, `finale`). */

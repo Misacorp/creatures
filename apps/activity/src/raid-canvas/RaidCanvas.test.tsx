@@ -155,14 +155,21 @@ describe('the raid canvas', () => {
 
 describe('a stage playing out holds the outcome until it ends', () => {
   const withPlaying = (endsAt: number): CanvasSample => {
-    const sample = sampleOf('between stages');
-    const v2 = sample.view.v2;
-    if (v2 === undefined) throw new Error('no v2');
+    const sample = sampleOf('placing');
+    const base = sample.view.v2;
+    const hurt = sample.creatures[2];
+    if (base === undefined || hurt === undefined) throw new Error('no v2');
+    // One of yours that is not on the board was knocked out in the stage that is playing.
+    const v2 = {
+      ...base,
+      swaps: { incoming: [], outgoing: [], settled: [] },
+      out: [{ creatureId: hurt.id, species: hurt.species, name: 'Hurt', owner: 'You', mine: true }],
+    };
     const playing = {
       stage: 2,
       startsAt: endsAt - 240_000,
       roundMs: 30_000,
-      nextRoundAt: null,
+      nextRoundAt: 0,
       endsAt,
     };
     return { ...sample, view: { ...sample.view, v2: { ...v2, playing } as typeof v2 } };

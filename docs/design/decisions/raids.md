@@ -4,6 +4,14 @@ Raid schedule, parties and joining, bosses and the raid curve, the live finale, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-16: The raid screen is a canvas behind combat v2 (client build)
+
+ID: `2026-11-16-the-raid-screen-is-a-canvas` · Status: current
+
+**Decision.** On a combat v2 week the Raid tab is `raid-canvas/RaidCanvas`: one arena scene (boss, HP bar, board), a now line as its caption, the creature tray under it while you can place, a left drawer (Weekend, Boss, Players, Log) and a right drawer for the thing tapped. Stages 1 and 2 and the finale play on the scene; a stage that is playing locks the board and the client holds the "Out" marks, the stage result and the HUD Essence until `endsAt`. Misa's two open choices are the config props `seatPlates` (`mine` default) and `creatureTap` (`popover-first` on a phone). A v1 week keeps today's screen. The client names a drawer talent from its id because it must not carry combat data.
+
+**Reasoning.** `docs/design/combat/raid-screen.md`. Config props, not a description of the surroundings, so the choices can be flipped in one place. The client bundle stays free of combat data (the build test fails otherwise); the server could send talent names to make them exact.
+
 ## 2026-11-04: Combat v2 dungeon runs read no weather at all [Misa]
 
 ID: `2026-11-04-combat-v2-dungeon-runs-read-no` · Status: current · Amends: `2026-11-04-combat-v2-phase-5-answers-in`

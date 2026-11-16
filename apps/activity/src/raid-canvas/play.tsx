@@ -15,7 +15,10 @@ import { useEffect, useMemo, useState } from 'preact/hooks';
 import { bossAnimSetup } from '../boss-anim/setup';
 import { foldSetupOf, stageModelOf } from '../fight-v2';
 import {
+  fetchReplayStateV2,
   fetchReplayV2,
+  isPlayingReplay,
+  type PlayingReplayV2,
   type FightBossV2,
   type FightCreatureV2,
   type FightNamesV2,
@@ -49,7 +52,11 @@ export interface PlayData {
 }
 
 /** A stored or partly stored stage as scene data. `live` is a stage still playing out (its rounds arrive one at a time). */
-export function playDataOfReplay(data: ReplayViewV2, live: boolean, roundMs: number): PlayData {
+export function playDataOfReplay(
+  data: ReplayViewV2 | PlayingReplayV2,
+  live: boolean,
+  roundMs: number,
+): PlayData {
   return {
     id: `${data.weekId}:${String(data.party)}:${data.phase}`,
     boss: data.boss,
@@ -107,11 +114,11 @@ export function useStageFeed(args: {
   playing: Playing | null;
   week: string;
   party: number | null;
-  fetcher?: typeof fetchReplayV2;
+  fetcher?: typeof fetchReplayStateV2;
   clock?: () => number;
-}): ReplayViewV2 | null {
+}): (ReplayViewV2 | PlayingReplayV2) | null {
   const { playing, week, party } = args;
-  const [data, setData] = useState<ReplayViewV2 | null>(null);
+  const [data, setData] = useState<(ReplayViewV2 | PlayingReplayV2) | null>(null);
   const key =
     playing === null || party === null ? null : `${week}:${String(party)}:${String(playing.stage)}`;
   useEffect(() => {
@@ -119,7 +126,7 @@ export function useStageFeed(args: {
       setData(null);
       return undefined;
     }
-    const fetcher = args.fetcher ?? fetchReplayV2;
+    const fetcher = args.fetcher ?? fetchReplayStateV2;
     const clock = args.clock ?? Date.now;
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | null = null;
@@ -129,8 +136,11 @@ export function useStageFeed(args: {
         (replay) => {
           if (cancelled) return;
           setData(replay);
-          const hint = (replay as { playing?: { nextRoundAt?: unknown } }).playing?.nextRoundAt;
-          if (typeof hint === 'number' || hint === null) next = { ...next, nextRoundAt: hint };
+          // The last round's `nextRoundAt` is the window's end; a finished stage has none to wait for.
+          next = {
+            ...next,
+            nextRoundAt: isPlayingReplay(replay) ? (replay as PlayingReplayV2).nextRoundAt : null,
+          };
           schedule();
         },
         () => {

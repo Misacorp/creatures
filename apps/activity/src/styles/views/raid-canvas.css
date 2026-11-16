@@ -293,3 +293,9 @@
   box-shadow: none;
   padding: 0;
 }
+
+/* The week's steps in a drawer: two across (four do not fit a drawer's width). */
+.pc-panel .raid-timeline .schedule,
+.pc-page .raid-timeline .schedule {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}

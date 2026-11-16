@@ -1,56 +1,39 @@
 /**
- * What the server adds to each creature on a combat v2 board for the right drawer: its talents and the gear it wears
- * (`v2.creatures[].talents` / `.gear`). The part lands beside this one, so both are read defensively: absent or malformed means "not
- * known", and the drawer then shows the Knack and role only. Pure. Every name is the server's and is drawn as text.
+ * What a board creature of a combat v2 week carries for the right drawer (`v2.creatures[]`: its slotted talents and what it wears), turned
+ * into what the game's own talent chip and gear list draw. Pure. The server sends a talent as its id only, and the client does not carry
+ * the combat data (it must stay out of the game's bundle), so a talent is named from its id ("first-pounce" is "First pounce"); sending the
+ * name and text with the id would make it exact. Gear lines are the server's own text, drawn as text.
  */
+
 import type { WornItem } from '../gear-view';
 import type { TalentView } from '../talent-types';
 import type { BoardCreatureV2 } from '../raid-v2-api';
 
-const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null;
+/** A talent id as words: "first-pounce" is "First pounce". */
+export const talentWords = (id: string): string => {
+  const words = id.replace(/-/g, ' ');
+  return `${words.slice(0, 1).toUpperCase()}${words.slice(1)}`;
+};
 
-/** The talents of a board creature as the talent chip draws them (a bare string is a name only); [] when unknown. */
+/** The talents of a board creature in slot order. */
 export function talentsOf(entry: BoardCreatureV2 | undefined): TalentView[] {
-  const raw = (entry as { talents?: unknown } | undefined)?.talents;
-  if (!Array.isArray(raw)) return [];
-  return raw.flatMap((t): TalentView[] => {
-    if (typeof t === 'string') {
-      return [{ id: t, name: t, text: '', about: '', golden: false, idle: false }];
-    }
-    if (isRecord(t) && typeof t['name'] === 'string') {
-      return [
-        {
-          id: typeof t['id'] === 'string' ? t['id'] : t['name'],
-          name: t['name'],
-          text: typeof t['text'] === 'string' ? t['text'] : '',
-          about: typeof t['about'] === 'string' ? t['about'] : '',
-          golden: t['golden'] === true,
-          idle: t['idle'] === true,
-        },
-      ];
-    }
-    return [];
-  });
+  return (entry?.talents ?? []).map((t) => ({
+    id: t.id,
+    name: talentWords(t.id),
+    text: '',
+    about: '',
+    golden: t.golden,
+    idle: false,
+  }));
 }
 
-/** The gear a board creature wears, as the gear list draws it; [] when unknown. */
+/** The gear a board creature wears, as the gear list draws it: only the lines that do something for the wearer. */
 export function gearOf(entry: BoardCreatureV2 | undefined): WornItem[] {
-  const raw = (entry as { gear?: unknown } | undefined)?.gear;
-  if (!Array.isArray(raw)) return [];
-  return raw.flatMap((g): WornItem[] =>
-    isRecord(g) &&
-    typeof g['baseId'] === 'string' &&
-    typeof g['slot'] === 'string' &&
-    typeof g['rarity'] === 'string'
-      ? [
-          {
-            baseId: g['baseId'],
-            slot: g['slot'],
-            rarity: g['rarity'],
-            itemLevel: typeof g['itemLevel'] === 'number' ? g['itemLevel'] : 1,
-            ...(Array.isArray(g['lines']) ? { lines: g['lines'].map(String) } : {}),
-          } as WornItem,
-        ]
-      : [],
-  );
+  return (entry?.gear ?? []).map((g) => ({
+    baseId: g.baseId,
+    slot: g.slot,
+    rarity: g.rarity,
+    itemLevel: g.itemLevel,
+    lines: g.lines.filter((l) => l.active !== false).map((l) => l.text),
+  }));
 }

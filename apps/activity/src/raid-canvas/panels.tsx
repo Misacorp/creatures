@@ -14,12 +14,7 @@ import { creatureName, getSpecies } from '../game';
 import { GearList } from '../GearList';
 import { moveHelp } from '../move-help';
 import { usePopoverHost } from '../PopoverHost';
-import {
-  baseOption,
-  pickerOptions,
-  toPickerCreature,
-  type PickerOption,
-} from '../roster-picker';
+import { baseOption, pickerOptions, toPickerCreature, type PickerOption } from '../roster-picker';
 import { RaidNews } from '../RaidNews';
 import { RaidTimeline } from '../RaidTimeline';
 import type { RaidPhaseId, RaidView, RowSlotView } from '../raid-api';

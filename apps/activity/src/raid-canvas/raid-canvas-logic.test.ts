@@ -307,14 +307,12 @@ describe('a stage playing out: the outcome is held until it ends', () => {
     expect(roundAt(playing, 61_000, 8)).toBe(3);
     expect(roundAt(playing, 900_000, 8)).toBe(8);
   });
-  it('reads playing from the v2 part or the view, and nothing when it is missing or malformed', () => {
+  it('reads playing from the v2 part, and nothing when it is missing', () => {
     const view = week();
     expect(playingOf(view)).toBeNull();
     const v2 = view.v2;
     if (v2 === undefined) throw new Error('no v2');
     expect(playingOf({ v2: { ...v2, playing } as never })?.stage).toBe(1);
-    expect(playingOf({ ...view, playing } as never)?.endsAt).toBe(241_000);
-    expect(playingOf({ v2: { ...v2, playing: { stage: 'one' } } as never })).toBeNull();
   });
 });
 
