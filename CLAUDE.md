@@ -10,6 +10,8 @@ Read this file first. Design docs live in `docs/design/`. Decisions live in `doc
 - Ask Misa about game feel and priorities, not implementation details. Make technical decisions yourself and record them in `docs/design/decisions/` (date, decision, reasoning; see Decisions and progress).
 - When Misa must do something manually (Discord portal, Cloudflare token, GitHub setting, secret), give him one short **numbered checklist** with exact names and values, and say what to send back. Batch requests. Never ask him to paste a secret into chat; secrets go straight into GitHub or Cloudflare.
 - Keep messages to him short, plain English.
+- **Report in few words** (Misa, 2026-11-14): status first, then a handful of short lines; details only when he asks. On a page made for him, prefer icons, colours and patterns he can learn once over prose, with more behind a tap.
+- **Every screenshot on a page for Misa enlarges on click or tap** (Misa, 2026-11-16), on a phone too.
 - Ask a waiting question once. When a notification arrives and nothing new needs his answer, say what changed and end with a summary line, not the same question again.
 - **Overnight or unattended sessions** (Misa, 2026-11-06): don't message him about each CI check or routine notification; say nothing until there is news. When every background job has finished and you can only wait, send **one message with all open questions**, numbered, each with a line of context and your pick. He reads on his phone and can't open repo files, so the questions go in the message itself, not only in a doc such as `for-misa.md`.
 - When several numbers are in play and it isn't obvious which is which, say briefly what each one covers (for example per request or per day, measured or estimated).

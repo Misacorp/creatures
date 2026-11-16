@@ -26,6 +26,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 - 2026-11-15 The reset: the goodbye DM is an embed, the new-valley card is look B \[Misa\]
 - 2026-11-15 Art glows use the game's rarity colours
 - 2026-11-15 \[Misa\] The Forge interior keeps one look for now
+- 2026-11-14 \[Misa\] One coordination session, one release board, one merge queue
 - 2026-11-09 \[Misa\] Valley building levels share one look per level
 - 2026-11-06 The reset: no warning post, the wipe runs when Misa asks, no server rank or bosses in the record \[Misa\]
 - 2026-11-06 The settlers' record keeps eight feats; firsts on the server are read by catch date \[Misa\]
@@ -598,6 +599,7 @@ Superseded: 1 entry (see the topic file).
 - 2026-11-16 Place scenes scale to fill the window; narrower drawers; item card config props
 - 2026-11-16 Bonfire: creatures stand on the ground and a hand can move them (feet under the horizon, no dragging into the sky)
 - 2026-11-16 Pre-playtest layout fixes: creature drawer, Paddock row, seat outlines, corner in view
+- 2026-11-15 \[Misa\] Every daily place gets the picture layout before release, after the Forge and Expedition are tuned
 - 2026-11-15 The Market is a canvas: the stall, the broker, and a building site before it is built
 - 2026-11-15 The Paddock is a canvas: the yard is the scene, the gate and each creature are taps, the project in a builders' corner
 - 2026-11-15 The School is a canvas: the lectern, the seats and the house are the taps, its project is in a builders' corner
