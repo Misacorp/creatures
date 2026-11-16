@@ -9,6 +9,10 @@ import type { Creature, ValleyVisit } from '../api';
 import { CREATURE_PX } from './place-cast';
 import type { StandCreature } from './PlaceScene';
 import { PLATE_ROW_PX, crowded, plateGap, standBounds, type PlateScene } from './place-plates';
+import { SKY_BELOW_ART_TOP } from './place-scene';
+
+/** Scene pixels a creature's feet stand under the grass line at the least: on the meadow, clear of the hills' foot. */
+export const GROUND_MARGIN = 6;
 
 /**
  * A creature at the fire with what it gained this visit. `warm`: it is catching up toward the server (V-BON-2), so a small flame is
@@ -122,7 +126,7 @@ export const FIRE_BOX = { width: 56, height: 44 };
 /**
  * The seats on the ring round the fire, in the order they fill: a creature's top-left in scene pixels from the fire art's
  * top-left. The ring is an ellipse about the fire's middle (28, 32), a little wider than the stone ring (radii about 24 by
- * 32, as narrow as a phone's scene (68 scene pixels at scale 5) allows): the front, then front right and left, the sides, and the two behind it, whose feet stand on the meadow, never on the hills (the grass starts 14 scene pixels under the art's top, so a creature's top is at -2 or lower). The same at every screen size, because it
+ * 32, as narrow as a phone's scene (68 scene pixels at scale 5) allows): the front, then front right and left, the sides, and the two front corners. Every seat stands on the meadow: its feet are at least `GROUND_MARGIN` under the grass line, never up on the hills (the grass starts 14 scene pixels under the art's top, so a creature's top is at 4 or lower; Misa, 2026-11-16: the creatures behind the fire "float above the horizon"). The same at every screen size, because it
  * is measured from the fire, not from the scene. Each seat is at least a plate's gap from every other at both pixel scales
  * (3 and 4), so a seat is lost only to the scene's edge.
  */
@@ -132,8 +136,8 @@ export const FIRE_SEATS: readonly { x: number; y: number }[] = [
   { x: -4, y: 42 },
   { x: 44, y: 20 },
   { x: -4, y: 20 },
-  { x: 38, y: -2 },
-  { x: 2, y: -2 },
+  { x: 44, y: 64 },
+  { x: -4, y: 64 },
 ];
 
 /** The grand hearth's art is this big (it has lamp posts at both sides, 9 pixels wide, from row 13 to row 35, and log benches). */
@@ -141,7 +145,7 @@ export const GRAND_BOX = { width: 64, height: 50 };
 
 /**
  * The seats round the grand hearth, from its art's top-left, in the order they fill: the front (on the paved benches, under the
- * lamps' lowest row), then the two front sides, then two beside the lamp posts and, on wide windows, two behind them. Every seat
+ * lamps' lowest row), then the two front sides, then two beside the lamp posts and, on wide windows, two out at the sides of the benches. Every seat
  * and its plate (up to `PLATE_MAX_PX` wide, a row under the feet) is clear of both lamp posts' boxes (`GRAND_LAMPS`), so no
  * creature or plate is ever drawn over a lamp.
  */
@@ -149,10 +153,10 @@ export const GRAND_SEATS: readonly { x: number; y: number }[] = [
   { x: 24, y: 58 },
   { x: 50, y: 50 },
   { x: -2, y: 50 },
-  { x: 66, y: 22 },
-  { x: -18, y: 22 },
-  { x: 72, y: -2 },
-  { x: -26, y: -2 },
+  { x: 66, y: 20 },
+  { x: -18, y: 20 },
+  { x: 74, y: 44 },
+  { x: -26, y: 44 },
 ];
 
 /** The two lamp posts of the grand art, from its top-left (scene pixels): nothing stands over them. */
@@ -195,7 +199,8 @@ export function fireSpots(
         at.x >= bounds.x &&
         at.x < bounds.x + bounds.width &&
         at.y >= bounds.y &&
-        at.y < bounds.y + bounds.height;
+        at.y < bounds.y + bounds.height &&
+        at.y + CREATURE_PX >= art.y + SKY_BELOW_ART_TOP + GROUND_MARGIN;
       if (!inside || out.some((o) => crowded(o, at, gap))) continue;
       out.push({
         creature: r.creature,

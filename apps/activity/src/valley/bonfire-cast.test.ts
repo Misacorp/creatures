@@ -132,13 +132,15 @@ describe('the ring round the fire', () => {
   ];
 
   it('every seat is in the band of an ellipse about the fire, the same at every size', () => {
-    for (const seat of FIRE_SEATS) {
+    // The first five seats are the ellipse; the last two are the front corners (Misa, 2026-11-16: the two behind the fire stood
+    // above the horizon, so the ring grew a row below the fire instead), a little further out.
+    FIRE_SEATS.forEach((seat, i) => {
       const dx = (seat.x + 8 - centre.x) / 24;
       const dy = (seat.y + 8 - centre.y) / 32;
       const r = Math.hypot(dx, dy);
       expect(r).toBeGreaterThan(0.85);
-      expect(r).toBeLessThan(1.3);
-    }
+      expect(r).toBeLessThan(i < 5 ? 1.3 : 1.7);
+    });
     // Relative to the fire, not the scene: moving the fire moves every spot by the same amount.
     for (const scene of scenes) {
       const a = fireSpots(many, { x: 100, y: 30 }, { ...scene, W: 400 });

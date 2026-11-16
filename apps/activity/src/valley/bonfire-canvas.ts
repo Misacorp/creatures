@@ -16,13 +16,14 @@
 import type { SpriteDef } from '../sprites/sprite-data';
 import { WORLD_MAP_SPRITE_DATA } from '../sprites/data/world-map-sprites';
 import type { SceneGeometry } from './SceneFrame';
-import { FIRE_BOX, GRAND_BOX, MORE_CSS } from './bonfire-cast';
+import { FIRE_BOX, GRAND_BOX, GROUND_MARGIN, MORE_CSS } from './bonfire-cast';
 import { CORNER, cornerPlacements, type Pile } from './builders-corner';
-import { PLATE_ROW_PX } from './place-plates';
+import { CREATURE_PX } from './place-cast';
+import { PLATE_ROW_PX, crowded, plateGap, standBounds } from './place-plates';
 import { SKY_BELOW_ART_TOP, grassTo, skyBackdrop, treesAround, type ArtBox } from './place-scene';
 import { scaffoldFor } from './scaffold';
 import { glowSprite, type MapName } from './valley-places';
-import type { Placement } from './valley-art';
+import type { Placement, Rect } from './valley-art';
 
 /** Scene pixels each side of the working area that stay free of dressing, so nothing quiet crowds a seat or the corner. */
 export const CLUSTER_PAD = 14;
@@ -53,7 +54,7 @@ interface Ring {
 
 const RING: Ring = { left: -4, right: 60, narrow: 64, frontFeet: 80, box: FIRE_BOX };
 /** The grand hearth's inner seats (the two behind it and at the lamps come with a wider window). */
-const RING_GRAND: Ring = { left: -18, right: 82, narrow: 68, frontFeet: 74, box: GRAND_BOX };
+const RING_GRAND: Ring = { left: -26, right: 90, narrow: 68, frontFeet: 74, box: GRAND_BOX };
 
 const ringOf = (grand: boolean): Ring => (grand ? RING_GRAND : RING);
 
@@ -162,6 +163,18 @@ export function bonfireLayout(
   };
 }
 
+/**
+ * The trees round the fire (`treesAround`), stood just outside the seats' ring rather than the art's own box: the grand hearth's
+ * outer seats reach 26 pixels past its art, so its trees stand further out (a seat never stands over a tree).
+ */
+function treesRound(box: ArtBox, grand: boolean): Placement[] {
+  const ring = ringOf(grand);
+  return treesAround(box.x + ring.left + 4, box.y, {
+    width: ring.right - ring.left - 4,
+    height: box.height,
+  });
+}
+
 type Dressing = 'smallPine' | 'smallTree' | 'bush' | 'flowers' | 'rock';
 
 /**
@@ -236,7 +249,7 @@ export function bonfireSceneDraw(art: MapName, steps: number, corner: Pile | nul
       ...grassTo(g),
       ...skyBackdrop(g, box.y - g.top),
       ...edgeDressing(g, box, lay.extent),
-      ...treesAround(box.x, box.y, box),
+      ...treesRound(box, grand),
       ...(lay.corner === null
         ? []
         : cornerPlacements(
@@ -256,4 +269,100 @@ export function bonfireSceneDraw(art: MapName, steps: number, corner: Pile | nul
  */
 export function fireTarget(grand: boolean): { x: number; y: number; w: number; h: number } {
   return grand ? { x: 18, y: 14, w: 28, h: 26 } : { x: 14, y: 14, w: 28, h: 26 };
+}
+
+/**
+ * Where a hand may put a resting creature down (Misa, 2026-11-16): anywhere on the ground, never in the sky. The area of a creature's
+ * top-left in scene pixels: inside the scene with its plate (`standBounds`), and no higher than `GROUND_MARGIN` of its feet under the
+ * grass line, so dropping one in the sky clamps it to the meadow.
+ */
+export function groundArea(g: Pick<SceneGeometry, 'W' | 'H' | 's' | 'top'>, box: ArtBox): Rect {
+  const bounds = standBounds(g);
+  const top = Math.max(bounds.y, box.y + SKY_BELOW_ART_TOP + GROUND_MARGIN - CREATURE_PX);
+  const bottom = bounds.y + bounds.height;
+  return { x: bounds.x, y: top, width: bounds.width, height: Math.max(1, bottom - top) };
+}
+
+/**
+ * What a creature may not stand over: every tree, pine, bush, rock and flower of the scene's dressing, the fire's flames and stones,
+ * and the builders' corner (with its helper spot). Boxes in scene pixels.
+ */
+export function groundBlocks(
+  g: Pick<SceneGeometry, 'W' | 'H'>,
+  lay: BonfireLayout,
+  grand: boolean,
+): Rect[] {
+  const { box } = lay;
+  const pieces = [...treesRound(box, grand), ...edgeDressing(g, box, lay.extent)];
+  const out: Rect[] = pieces.map((p) => ({
+    x: p.x,
+    y: p.y,
+    width: widthOf(p.sprite),
+    height: p.sprite.rows.length,
+  }));
+  const fire = fireTarget(grand);
+  out.push({ x: box.x + fire.x, y: box.y + fire.y, width: fire.w, height: fire.h });
+  if (lay.corner !== null) {
+    out.push({ x: lay.corner.x, y: lay.corner.y, width: CORNER.w, height: CORNER.h });
+  }
+  return out;
+}
+
+/** Whether a creature with its top-left at `at` would overlap a box. */
+function over(at: { x: number; y: number }, r: Rect): boolean {
+  return (
+    at.x > r.x - CREATURE_PX &&
+    at.x < r.x + r.width &&
+    at.y > r.y - CREATURE_PX &&
+    at.y < r.y + r.height
+  );
+}
+
+function range(from: number, to: number): number[] {
+  const out: number[] = [];
+  for (let i = from; i <= to; i += 1) out.push(i);
+  return out;
+}
+
+/**
+ * Where a creature put down at `want` (a top-left in scene pixels) stands: clamped to the ground `area`, and if that is over the
+ * dressing, the fire or the corner (`blocks`) or too close to another creature (`others`, a plate's gap), at the nearest free
+ * spot of the ground. Searches outwards in whole pixels, so the same drop always gives the same spot; with no free spot at all it
+ * stays where it was clamped.
+ */
+export function settleOnGround(
+  want: { x: number; y: number },
+  area: Rect,
+  blocks: readonly Rect[],
+  others: readonly { x: number; y: number }[],
+  s: number,
+): { x: number; y: number } {
+  const gap = plateGap(s);
+  const clamp = (v: number, from: number, size: number): number =>
+    Math.min(from + Math.max(1, size) - 1, Math.max(from, Math.round(v)));
+  const start = { x: clamp(want.x, area.x, area.width), y: clamp(want.y, area.y, area.height) };
+  const free = (at: { x: number; y: number }): boolean =>
+    !blocks.some((r) => over(at, r)) && !others.some((o) => crowded(o, at, gap));
+  if (free(start)) return start;
+  const reach = Math.max(area.width, area.height);
+  for (let r = 1; r <= reach; r += 1) {
+    let best: { x: number; y: number } | null = null;
+    let bestD = Infinity;
+    for (let dx = -r; dx <= r; dx += 1) {
+      // The ring's left and right columns take every row, the columns between only its top and bottom rows.
+      const rows = Math.abs(dx) === r ? range(-r, r) : [-r, r];
+      for (const dy of rows) {
+        const at = { x: start.x + dx, y: start.y + dy };
+        if (at.x < area.x || at.x >= area.x + area.width) continue;
+        if (at.y < area.y || at.y >= area.y + area.height) continue;
+        const d = dx * dx + dy * dy;
+        if (d < bestD && free(at)) {
+          best = at;
+          bestD = d;
+        }
+      }
+    }
+    if (best !== null) return best;
+  }
+  return start;
 }
