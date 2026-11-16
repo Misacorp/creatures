@@ -66,4 +66,9 @@ describe('a place whose page draws its own scene', () => {
     expect(byClass(p.root, 'vy-inside')).toHaveLength(0);
     expect(byClass(p.root, 'arena-page')).toHaveLength(1);
   });
+
+  it('only the listed places: another place listed leaves the Arena its scene', () => {
+    const p = draw(['forge']);
+    expect(byClass(p.root, 'vy-inside')).toHaveLength(1);
+  });
 });

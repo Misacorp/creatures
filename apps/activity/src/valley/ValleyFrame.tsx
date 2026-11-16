@@ -48,9 +48,9 @@ import { placeLabel } from './valley-logic';
 import { soonLine, type SoonPlaceId, type ValleyView } from './valley-nav';
 import { DEFAULT_LOOK, type GlowName } from './valley-places';
 
-/** The sprite of a place that is not open yet. */
 const NO_PLACES: readonly PlaceId[] = [];
 
+/** The sprite of a place that is not open yet. */
 const SOON_ART: Readonly<Record<SoonPlaceId, GlowName>> = {
   bonfire: 'bonfire',
   school: 'school',
