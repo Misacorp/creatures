@@ -46,7 +46,7 @@ export const isRarity = (value: unknown): value is GearRarity =>
   (GEAR_RARITIES as readonly unknown[]).includes(value);
 export const isSlot = (value: unknown): value is GearSlot =>
   (GEAR_SLOTS as readonly unknown[]).includes(value);
-const isTag = (value: unknown): boolean => (GEAR_TAGS as readonly unknown[]).includes(value);
+export const isTag = (value: unknown): boolean => (GEAR_TAGS as readonly unknown[]).includes(value);
 const isPartKind = (value: unknown): value is PartKind =>
   (PART_KINDS as readonly unknown[]).includes(value);
 
@@ -90,7 +90,7 @@ const isSnapshot = (value: unknown): value is ItemSnapshot =>
   isRarity(value['rarity']) &&
   isCount(value['itemLevel']);
 
-function isLine(value: unknown): value is GearLine {
+export function isLine(value: unknown): value is GearLine {
   return (
     isRecord(value) &&
     isStr(value['id']) &&
@@ -107,7 +107,7 @@ function isLine(value: unknown): value is GearLine {
 
 const STAT_KINDS: readonly unknown[] = ['atk', 'hp', 'critChance', 'critDamage'];
 
-function isStat(value: unknown): value is GearStat {
+export function isStat(value: unknown): value is GearStat {
   return (
     isRecord(value) &&
     STAT_KINDS.includes(value['stat']) &&

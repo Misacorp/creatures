@@ -31,7 +31,7 @@
     "event": "phase2",
     "at": 1800185820000
   },
-  "serverNow": 1800099450000,
+  "serverNow": 1800099690000,
   "roster": [
     {
       "displayName": "Player 1",
@@ -660,7 +660,15 @@
         "hp": 34,
         "hpMax": 388,
         "knack": "zoom",
-        "knackName": "Zoom"
+        "knackName": "Zoom",
+        "role": "setter",
+        "talents": [
+          {
+            "id": "shoulder-to-shoulder",
+            "golden": false
+          }
+        ],
+        "gear": []
       },
       {
         "creatureId": "00000000-0000-4000-8700-000000000002",
@@ -670,7 +678,15 @@
         "hp": 468,
         "hpMax": 539,
         "knack": "wide-reach",
-        "knackName": "Wide Reach"
+        "knackName": "Wide Reach",
+        "role": "guard",
+        "talents": [
+          {
+            "id": "bright-boost",
+            "golden": false
+          }
+        ],
+        "gear": []
       },
       {
         "creatureId": "00000000-0000-4000-8700-000000000003",
@@ -680,7 +696,15 @@
         "hp": 295,
         "hpMax": 431,
         "knack": "wide-warmth",
-        "knackName": "Wide Embrace"
+        "knackName": "Wide Embrace",
+        "role": "support",
+        "talents": [
+          {
+            "id": "brace",
+            "golden": false
+          }
+        ],
+        "gear": []
       },
       {
         "creatureId": "00000000-0000-4000-8700-000000000006",
@@ -690,7 +714,15 @@
         "hp": 420,
         "hpMax": 420,
         "knack": "detonate",
-        "knackName": "Detonate"
+        "knackName": "Detonate",
+        "role": "payoff",
+        "talents": [
+          {
+            "id": "slow-burn",
+            "golden": false
+          }
+        ],
+        "gear": []
       },
       {
         "creatureId": "00000000-0000-4000-8700-000000000007",
@@ -700,7 +732,15 @@
         "hp": 560,
         "hpMax": 597,
         "knack": "steady-mark",
-        "knackName": "Brand"
+        "knackName": "Brand",
+        "role": "setter",
+        "talents": [
+          {
+            "id": "hardy",
+            "golden": false
+          }
+        ],
+        "gear": []
       },
       {
         "creatureId": "00000000-0000-4000-8700-000000000009",
@@ -710,7 +750,15 @@
         "hp": 222,
         "hpMax": 539,
         "knack": "catch-the-bolts",
-        "knackName": "Take It All"
+        "knackName": "Take It All",
+        "role": "guard",
+        "talents": [
+          {
+            "id": "perfect-timing",
+            "golden": false
+          }
+        ],
+        "gear": []
       },
       {
         "creatureId": "00000000-0000-4000-8700-000000000012",
@@ -720,7 +768,15 @@
         "hp": 362,
         "hpMax": 456,
         "knack": "drizzle",
-        "knackName": "Drizzle"
+        "knackName": "Drizzle",
+        "role": "support",
+        "talents": [
+          {
+            "id": "unbothered",
+            "golden": false
+          }
+        ],
+        "gear": []
       },
       {
         "creatureId": "00000000-0000-4000-8700-000000000013",
@@ -730,7 +786,15 @@
         "hp": 646,
         "hpMax": 657,
         "knack": "draw-fire",
-        "knackName": "Draw Fire"
+        "knackName": "Draw Fire",
+        "role": "guard",
+        "talents": [
+          {
+            "id": "hardy",
+            "golden": false
+          }
+        ],
+        "gear": []
       },
       {
         "creatureId": "00000000-0000-4000-8700-000000000014",
@@ -740,9 +804,18 @@
         "hp": 346,
         "hpMax": 539,
         "knack": "clear-skies",
-        "knackName": "Clear Skies"
+        "knackName": "Clear Skies",
+        "role": "support",
+        "talents": [
+          {
+            "id": "crit-chance",
+            "golden": false
+          }
+        ],
+        "gear": []
       }
     ],
+    "playing": null,
     "swaps": {
       "incoming": [],
       "outgoing": [],

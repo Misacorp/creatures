@@ -5,7 +5,9 @@ import dungeonStart from '../../activity/src/fixtures/v2-dungeon-start.json';
 import dungeonToday from '../../activity/src/fixtures/v2-dungeon-today.json';
 import live from '../../activity/src/fixtures/v2-live.json';
 import raidOpen from '../../activity/src/fixtures/v2-raid-open.json';
+import raidStage1Playing from '../../activity/src/fixtures/v2-raid-stage1-playing.json';
 import raidStage1 from '../../activity/src/fixtures/v2-raid-stage1.json';
+import replayPlaying from '../../activity/src/fixtures/v2-replay-playing.json';
 import replay from '../../activity/src/fixtures/v2-replay.json';
 import state from '../../activity/src/fixtures/v2-state.json';
 import stats from '../../activity/src/fixtures/v2-stats.json';
@@ -30,6 +32,8 @@ describe('the combat v2 fixtures match what the server sends', () => {
     const r = captured.responses;
     sameShape(r['v2-state'], state);
     sameShape(r['v2-raid-open'], raidOpen);
+    sameShape(r['v2-raid-stage1-playing'], raidStage1Playing);
+    sameShape(r['v2-replay-playing'], replayPlaying);
     sameShape(r['v2-raid-stage1'], raidStage1);
     sameShape(r['v2-replay'], replay);
     sameShape(r['v2-stats'], stats);
@@ -46,6 +50,9 @@ describe('the combat v2 fixtures match what the server sends', () => {
     expect(raidOpen.rules).toBe(2);
     expect(raidOpen.v2.stagesPlayed).toBe(0);
     expect(raidStage1.v2.stagesPlayed).toBe(1);
+    expect(raidStage1Playing.v2.playing?.stage).toBe(1);
+    expect(raidStage1Playing.v2.stagesPlayed).toBe(0);
+    expect(replayPlaying.playing).toBe(true);
     expect(replay.rules).toBe(2);
     expect(replay.phase).toBe('stage1');
     expect(stats.rules).toBe(2);

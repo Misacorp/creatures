@@ -5,7 +5,7 @@
  *
  * A post never blocks the raid: `queue*` catch every error and log its type only.
  */
-import { bossAtRank, content } from '@creatures/game';
+import { RULES, bossAtRank, content } from '@creatures/game';
 import type { FightEvent, FightInput, FightResult } from '@creatures/engine';
 import {
   describeGimmick,
@@ -410,6 +410,8 @@ export function queueStagePostV2(sql: SqlStorage, src: StagePostV2Source): void 
         content: JSON.stringify(post),
       },
       src.now,
+      // Stages 1 and 2 play as they happen: their post waits until the last round has played.
+      stage === 3 ? src.now : src.now + summary.rounds * RULES.raid.v2.liveRoundMs,
     );
   } catch (err) {
     console.error('queueing a stage post failed', err instanceof Error ? err.name : 'unknown');

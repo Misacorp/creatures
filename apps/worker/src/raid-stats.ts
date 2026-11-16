@@ -10,6 +10,7 @@ import { outcomeFlags, type StoredSummary } from './raid-resolve';
 import { isWeekId, RAID_PHASES, type RaidPhase } from './raid-schedule';
 import { isV2Input, type StoredFightInput } from './fight-replay';
 import { RESULT_PHASES, type ResultPhase, type StoredStageResult } from './raid-v2-stage';
+import { stagePlaying } from './raid-v2-core';
 import { buildStatsV2, type AfterActionStatsV2 } from './raid-v2-view';
 
 /** How many of the best creatures are listed (the caller's own are always listed as well). */
@@ -356,6 +357,8 @@ export function readStats(
   party: number,
   phase: RaidPhase | ResultPhase,
   names: ReadonlyMap<string, string>,
+  /** The clock: a stage 1 or 2 that is still playing has no stats yet (they would give the outcome). */
+  now?: number,
 ): AfterActionStats | AfterActionStatsV2 | null {
   if (!isWeekId(weekId)) return null;
   const known =
@@ -363,8 +366,8 @@ export function readStats(
     (RESULT_PHASES as readonly string[]).includes(phase);
   if (!known) return null;
   const row = sql
-    .exec<{ input: string; result: string; summary: string }>(
-      'SELECT input, result, summary FROM raid_results WHERE week_id = ? AND party = ? AND phase = ?',
+    .exec<{ input: string; result: string; summary: string; created_at: number }>(
+      'SELECT input, result, summary, created_at FROM raid_results WHERE week_id = ? AND party = ? AND phase = ?',
       weekId,
       party,
       phase,
@@ -374,6 +377,13 @@ export function readStats(
   if (row === undefined || row.input === '') return null;
   const summary = JSON.parse(row.summary) as StoredSummary;
   if (!summary.members.some((m) => m.userId === userId)) return null;
+  if (
+    now !== undefined &&
+    (phase === 'stage1' || phase === 'stage2') &&
+    stagePlaying(row.created_at, summary.rounds, now) !== null
+  ) {
+    return null;
+  }
   // The stored input says which rules the stage was played under (`fight-replay.ts`).
   const input = JSON.parse(row.input) as StoredFightInput;
   if (isV2Input(input)) {

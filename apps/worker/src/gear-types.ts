@@ -78,6 +78,21 @@ export interface GearItemView {
   origin: ItemOrigin | null;
 }
 
+/**
+ * A worn item as another player sees it (the raid board's drawer): the card's own parts, without id, maker or origin. `lines[].active` says
+ * whether the line does anything for its wearer.
+ */
+export interface WornCardView {
+  baseId: string;
+  slot: GearSlot;
+  tag: GearTag;
+  rarity: GearRarity;
+  festival: boolean;
+  itemLevel: number;
+  stats: GearStatView[];
+  lines: GearLineView[];
+}
+
 /** What "Equip best" did: the slots it changed, and the creatures it left alone because they are busy. */
 export interface EquipBestResult {
   changes: { creatureId: string; slot: GearSlot; itemId: string }[];

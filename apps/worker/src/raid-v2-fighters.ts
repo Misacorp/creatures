@@ -6,7 +6,7 @@
  * do the v1 talents, fusion or weather (the lab measured none of them). The creature's id is its `key`, so the stage carry follows the
  * creature when a swap moves it to another slot.
  */
-import { effectiveStats, type CreatureSpecies } from '@creatures/game';
+import { effectiveStats, type CreatureSpecies, type GearItem } from '@creatures/game';
 import type { FighterSpec } from '@creatures/engine/v2';
 import {
   NO_GEAR,
@@ -41,6 +41,8 @@ export interface V2Creature extends V2CreatureRow {
   /** The ids among `talents` that are golden. */
   goldenTalents: string[];
   gear: GearStats;
+  /** The worn items as the rules see them (slot order), for the raid board's read-only drawer. */
+  items: GearItem[];
 }
 
 /**
@@ -116,6 +118,7 @@ export function loadV2Creatures(sql: SqlStorage, ids: readonly string[]): Map<st
         talents: slottedTalents({ species, level: r.level }, learned.get(r.id) ?? []),
         goldenTalents: slottedGolden({ species, level: r.level }, learned.get(r.id) ?? []),
         gear: gearLinesOf(species, r.level, r.fusion_count, worn.get(r.id)),
+        items: wornItems(worn.get(r.id)),
       });
     }
   }

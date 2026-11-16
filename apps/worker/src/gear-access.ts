@@ -36,7 +36,14 @@ import {
 } from './gear-store';
 import { fixFestivalRarity } from './gear-normalise';
 import type { LedgerStorage } from './ledger';
-import type { GearItemView, ItemSnapshot, JobCommon, JobResult, JobView } from './gear-types';
+import type {
+  GearItemView,
+  ItemSnapshot,
+  JobCommon,
+  JobResult,
+  JobView,
+  WornCardView,
+} from './gear-types';
 import { speciesOf } from './species';
 import type { Weather } from './weather';
 
@@ -137,6 +144,24 @@ function cardParts(
       active: idle === null ? null : !idle.has(l.id),
     })),
     needs: { level: Math.max(RULES.gear.slotUnlockLevel[base.slot], item.itemLevel), role },
+  };
+}
+
+/**
+ * The compact card of a worn item for another player's view (the raid board's drawer): the item card's own stats and lines, with `active`
+ * worked out from the wearer's role and element (no query). No id, no maker, no origin.
+ */
+export function wornCardView(item: GearItem, idle: ReadonlySet<string>): WornCardView {
+  const parts = cardParts(item, idle);
+  return {
+    baseId: parts.baseId,
+    slot: parts.slot,
+    tag: parts.tag,
+    rarity: item.rarity,
+    festival: parts.festival,
+    itemLevel: item.itemLevel,
+    stats: parts.stats,
+    lines: parts.lines,
   };
 }
 
