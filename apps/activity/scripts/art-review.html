@@ -242,6 +242,37 @@
   .jump a {
     text-decoration: none;
   }
+  .zoomable {
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: zoom-in;
+    line-height: 0;
+  }
+  .zoomable:focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 2px;
+  }
+  #zoom {
+    max-width: 96vw;
+    max-height: 96vh;
+    padding: 16px;
+    border: 2px solid var(--line);
+    background: var(--night);
+    color: var(--text);
+    text-align: center;
+  }
+  #zoom::backdrop {
+    background: rgb(0 0 0 / 0.75);
+  }
+  .zoom-art canvas {
+    image-rendering: pixelated;
+    max-width: 100%;
+    height: auto;
+  }
+  .zoom-name {
+    margin: 8px 0;
+  }
 </style>
 
 <main>
@@ -264,6 +295,11 @@
   </section>
   <div id="sets" style="display: grid; gap: 40px"></div>
 </main>
+<dialog id="zoom" aria-label="Enlarged picture">
+  <div class="zoom-art" id="zoom-art"></div>
+  <p class="zoom-name" id="zoom-name"></p>
+  <button type="button" class="chip" id="zoom-close">Close</button>
+</dialog>
 
 <script>
   // `pnpm art review` puts the data in place of this string (with its quotes); Prettier leaves strings alone.
@@ -308,6 +344,37 @@
     );
     cv.setAttribute('aria-hidden', 'true');
     return cv;
+  }
+  /**
+   * A picture you can tap to see full size (Misa, 2026-11-16: every review picture enlarges): a button
+   * around the canvas that opens the zoom dialog, drawn as large as the screen allows in whole pixels.
+   */
+  function zoomable(def, scale, name) {
+    const b = el('button', 'zoomable');
+    b.type = 'button';
+    b.setAttribute('aria-label', `Enlarge ${name}`);
+    b.append(draw(def, scale));
+    b.addEventListener('click', () => openZoom(def, name));
+    return b;
+  }
+  function openZoom(def, name) {
+    const w = def.rows[0].length,
+      h = def.rows.length;
+    const fit = Math.floor(
+      Math.min((window.innerWidth * 0.92) / w, (window.innerHeight * 0.72) / h),
+    );
+    const art = document.getElementById('zoom-art');
+    art.replaceChildren(draw(def, Math.max(2, fit)));
+    document.getElementById('zoom-name').textContent = name;
+    document.getElementById('zoom').showModal();
+  }
+  {
+    const dlg = document.getElementById('zoom');
+    document.getElementById('zoom-close').addEventListener('click', () => dlg.close());
+    // A tap outside the picture (on the backdrop) closes it too.
+    dlg.addEventListener('click', (e) => {
+      if (e.target === dlg) dlg.close();
+    });
   }
   const scaleFor = (def, target) =>
     Math.max(1, Math.floor(target / Math.max(def.rows[0].length, def.rows.length)));
@@ -424,12 +491,15 @@
         card.dataset.id = item.id;
         const stage = el('div', 'stage');
         const main = el('div', 'main-art');
-        main.append(draw(item.main, scaleFor(item.main, 112)));
+        main.append(zoomable(item.main, scaleFor(item.main, 112), item.code));
         stage.append(main);
         const vars = el('div', 'variants');
         for (const v of item.variants) {
           const f = el('div', 'variant');
-          f.append(draw(v.def, scaleFor(v.def, 48)), el('span', '', v.name));
+          f.append(
+            zoomable(v.def, scaleFor(v.def, 48), `${item.code}, ${v.name}`),
+            el('span', '', v.name),
+          );
           vars.append(f);
         }
         if (item.variants.length) stage.append(vars);

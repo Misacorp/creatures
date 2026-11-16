@@ -4,6 +4,14 @@ Navigation and the frame, Home and the notice board, type scale, shared componen
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-16: [Misa] Every picture on a review page enlarges on tap
+
+ID: `2026-11-16-every-picture-on-a-review-page` · Status: current
+
+**Decision.** Every picture on a page made for Misa's review (the art review page, and any review page a session makes for him) can be tapped or clicked to open at full size, and closed again (a Close button, a tap outside, or Escape), on a phone too. The art review page does it in its template (`apps/activity/scripts/art-review.html`, `zoomable`), so every rebuild keeps it.
+
+**Reasoning.** Misa (2026-11-16, relayed by the release coordinator): "the screenshots were tiny. Could you ensure that such screenshots always have a way to click to enlarge?"
+
 ## 2026-11-15: Misa's Forge picks: plates, whole room, item card beside, full-screen reveal [Misa]
 
 ID: `2026-11-15-misa-s-forge-picks-plates-whole` · Status: current
