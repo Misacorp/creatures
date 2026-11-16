@@ -37,7 +37,7 @@ import { finaleProgress } from './raid-progress';
 import { BossCard } from './BossCard';
 import { RaidTimeline } from './RaidTimeline';
 import { needsPlacement, type NowTarget } from './raid-now';
-import { showFullResults } from './raid-timeline';
+import { replayOnCanvas, showFullResults } from './raid-timeline';
 import { RaidNews } from './RaidNews';
 import { Placement } from './Placement';
 import { TeamCreaturePage, type TeamConfigure } from './TeamCreaturePage';
@@ -433,26 +433,31 @@ export function Raid({
             },
           }}
           reveal={
-            reveal === null ? undefined : (
-              <RevealCard
-                reveal={reveal}
-                busy={busy}
-                season={{ weekId: view.weekId, season: view.season }}
-                boss={summaryBoss(view, reveal.week)}
-                afterAction={{
-                  week: reveal.week,
-                  party: reveal.party,
-                  onReplay: () => {
-                    setReplay({ week: reveal.week, party: reveal.party, phase: 'finale' });
-                  },
-                }}
-                onDismiss={() => {
-                  void mutate(() => markRevealSeen(reveal.week)).then((ok) => {
-                    if (ok) onBalanceChange();
-                  });
-                }}
-              />
-            )
+            reveal === null
+              ? undefined
+              : (watch) => (
+                  <RevealCard
+                    reveal={reveal}
+                    busy={busy}
+                    season={{ weekId: view.weekId, season: view.season }}
+                    boss={summaryBoss(view, reveal.week)}
+                    afterAction={{
+                      week: reveal.week,
+                      party: reveal.party,
+                      // This week's fight plays on the canvas scene (an early kill: the stage that killed); an older week keeps the replay page.
+                      onReplay: () => {
+                        const phase = replayOnCanvas(view, reveal.week);
+                        if (phase !== null) watch(phase);
+                        else setReplay({ week: reveal.week, party: reveal.party, phase: 'finale' });
+                      },
+                    }}
+                    onDismiss={() => {
+                      void mutate(() => markRevealSeen(reveal.week)).then((ok) => {
+                        if (ok) onBalanceChange();
+                      });
+                    }}
+                  />
+                )
           }
         />
       </>

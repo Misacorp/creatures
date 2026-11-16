@@ -72,3 +72,15 @@ export function earlyKillStage(view: {
   const last = results.at(-1)?.phase;
   return last === 'phase1' || last === 'phase2' ? last : null;
 }
+
+/**
+ * Where the reveal's Replay plays: the stage to watch on the raid canvas's scene (the finale, or the stage that killed the boss early),
+ * for this week of a combat v2 raid; null for an older week or a v1 week, which keep the replay page.
+ */
+export function replayOnCanvas(
+  view: Parameters<typeof earlyKillStage>[0] & { weekId: string },
+  revealWeek: string,
+): 'phase1' | 'phase2' | 'finale' | null {
+  if (view.rules !== 2 || view.v2 === undefined || revealWeek !== view.weekId) return null;
+  return earlyKillStage(view) ?? 'finale';
+}

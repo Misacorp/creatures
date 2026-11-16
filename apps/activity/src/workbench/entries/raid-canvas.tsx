@@ -4,7 +4,7 @@ import { RevealCard } from '../../Reveal';
 import type { RaidView } from '../../raid-api';
 import type { Intent } from '../../raid-slots';
 import { summaryBoss } from '../../raid-summary-view';
-import { RaidCanvas } from '../../raid-canvas/RaidCanvas';
+import { RaidCanvas, type RaidCanvasProps } from '../../raid-canvas/RaidCanvas';
 import { isCreatureTap, isSeatPlates } from '../../raid-canvas/config';
 import type { LeftPanel, RightPanel } from '../../raid-canvas/taps';
 import { CANVAS_STATES, canvasSample, type CanvasState } from '../raid-canvas-sample';
@@ -121,6 +121,26 @@ function CanvasDemo({ p }: { p: Props }) {
   const creatureTap = str(p, 'creatureTap');
   const open = str(p, 'open');
   const start = useMemo(() => startOf(open, sample.view), [open, sample]);
+  const sampleReveal = sample.reveal;
+  const revealCard: RaidCanvasProps['reveal'] =
+    sampleReveal === undefined
+      ? undefined
+      : (watch) => (
+          <RevealCard
+            reveal={sampleReveal}
+            busy={false}
+            season={{ weekId: view.weekId, season: view.season }}
+            boss={summaryBoss(view, sampleReveal.week)}
+            afterAction={{
+              week: sampleReveal.week,
+              party: sampleReveal.party,
+              onReplay: () => {
+                watch('finale');
+              },
+            }}
+            onDismiss={() => undefined}
+          />
+        );
   return (
     <div class="wb-raid-canvas">
       <div class="vy-page">
@@ -152,18 +172,7 @@ function CanvasDemo({ p }: { p: Props }) {
               setAbility: () => undefined,
               setAutofire: () => undefined,
             }}
-            reveal={
-              sample.reveal === undefined ? undefined : (
-                <RevealCard
-                  reveal={sample.reveal}
-                  busy={false}
-                  season={{ weekId: view.weekId, season: view.season }}
-                  boss={summaryBoss(view, sample.reveal.week)}
-                  afterAction={{ week: sample.reveal.week, party: sample.reveal.party }}
-                  onDismiss={() => undefined}
-                />
-              )
-            }
+            reveal={revealCard}
           />
         </div>
       </div>
