@@ -101,8 +101,11 @@ export interface RaidCanvasProps {
   config?: Partial<RaidCanvasConfig> | undefined;
   /** Opens one of your creatures' own page. */
   onOpenPage: (creatureId: string) => void;
-  /** The reveal card over the scene (the finale's result), when there is one to show. */
-  reveal?: ComponentChildren;
+  /**
+   * The reveal card over the scene (the finale's result), when there is one to show. It is given `watch`, which plays a stage of this
+   * week on the scene (the Weekend drawer's Watch), so its Replay opens the canvas and not the old replay page.
+   */
+  reveal?: ((watch: (phase: RaidPhaseId) => void) => ComponentChildren) | undefined;
   /** The finale's data and input: the screen's own, or (absent) the canvas fetches it while the finale is on. */
   feed?: FinaleFeed | undefined;
   /** Called when the Essence may have moved (the finale's loot arrived). */
@@ -263,6 +266,10 @@ function Canvas(props: RaidCanvasProps & { v2: RaidV2View }) {
   );
 
   // --- Drawers ---
+  const watchStage = (phase: RaidPhaseId): void => {
+    if (party !== null) setWatch({ week: view.weekId, party: party.party, phase });
+    setLeft(null);
+  };
   const ctx: PanelCtx | null =
     party === null
       ? null
@@ -292,10 +299,7 @@ function Canvas(props: RaidCanvasProps & { v2: RaidV2View }) {
           openLeft: (panel) => {
             setLeft(panel === null ? null : { panel, from: null });
           },
-          watch: (phase) => {
-            if (party !== null) setWatch({ week: view.weekId, party: party.party, phase });
-            setLeft(null);
-          },
+          watch: watchStage,
           log,
           playing: play !== null,
         };
@@ -708,7 +712,7 @@ function Canvas(props: RaidCanvasProps & { v2: RaidV2View }) {
           }}
           board={board}
           stage={stage}
-          reveal={props.reveal}
+          reveal={watch === null ? props.reveal?.(watchStage) : undefined}
           hint={hint}
         />
       }

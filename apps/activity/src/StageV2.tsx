@@ -23,6 +23,7 @@ import { rowNameV2, slotAtV2, gridRowsV2 } from './raid-board-v2';
 import { initialOf } from './raid-roster';
 import { ownerColour } from './raid-slots';
 import type { BossCardV2 } from './raid-v2-api';
+import { nextBossMoves } from './next-boss-move';
 import { roundLabel } from './stage-rounds';
 import type { FxItem } from './stage-fx';
 import type { BossStrike } from './stage';
@@ -543,11 +544,29 @@ export function StageV2({
 
   // What the boss just did: its move's name over the plain label, or the plain attack.
   const move = landed?.kind === 'boss' ? card.moves.find((m) => m.name === show?.move) : undefined;
-  const moveLine =
-    landed?.kind !== 'boss'
+  const attackLabel = `Attack · ${card.plain.label}`;
+  // On the canvas the line shows the boss's NEXT move, worked out from the card and the round (`next-boss-move.ts`), never the outcome.
+  const next = canvas
+    ? nextBossMoves({
+        card,
+        rows,
+        round: state.round,
+        step: state.step,
+        phase: state.escalation === null ? null : state.escalation.phase,
+      })
+    : undefined;
+  const moveLine = canvas
+    ? state.end !== null
+      ? null
+      : next === null || next === undefined
+        ? attackLabel
+        : next.length === 0
+          ? `Next: ${attackLabel}`
+          : `Next: ${next.map((m) => `${m.name} · ${m.label}`).join(' + ')}`
+    : landed?.kind !== 'boss'
       ? null
       : move === undefined
-        ? `Attack · ${card.plain.label}`
+        ? attackLabel
         : `${move.name} · ${move.label}`;
 
   const art = bossArt(boss.id);

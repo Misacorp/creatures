@@ -4,11 +4,21 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { creatureName } from '../game';
-import { find, byClass, createPage, visibleText, type FakeElement, type Page } from '../test-dom';
+import {
+  find,
+  byClass,
+  byName,
+  createPage,
+  visibleText,
+  type FakeElement,
+  type Page,
+} from '../test-dom';
 import { canvasSample, type CanvasSample, type CanvasState } from '../workbench/raid-canvas-sample';
-import { RaidCanvas } from './RaidCanvas';
+import { RaidCanvas, type RaidCanvasProps } from './RaidCanvas';
 import type { RaidCanvasConfig } from './config';
 import type { RaidView } from '../raid-api';
+import { RevealCard } from '../Reveal';
+import { summaryBoss } from '../raid-summary-view';
 
 let page: Page | null = null;
 beforeEach(() => {
@@ -39,7 +49,12 @@ const noop = (): void => undefined;
 
 function draw(
   sample: CanvasSample,
-  options: { config?: Partial<RaidCanvasConfig>; view?: RaidView; now?: number } = {},
+  options: {
+    config?: Partial<RaidCanvasConfig>;
+    view?: RaidView;
+    now?: number;
+    reveal?: RaidCanvasProps['reveal'];
+  } = {},
 ): Page {
   const p = createPage();
   page = p;
@@ -53,6 +68,7 @@ function draw(
       busy={false}
       trayInput={{ trips: [], jobs: null, now: sample.now }}
       config={options.config ?? { creatureTap: 'drawer', seatPlates: 'mine' }}
+      reveal={options.reveal}
       onOpenPage={noop}
       actions={{
         intent: noop,
@@ -188,5 +204,36 @@ describe('a stage playing out holds the outcome until it ends', () => {
     const p = draw(sample, { now: 2_000 });
     expect(outLabel(p)).toBe(false);
     expect(visibleText(p.root)).toMatch(/Stage 2 is playing/);
+  });
+});
+
+describe("the reveal's Replay plays the fight on the canvas", () => {
+  it('opens the scene in watch mode, with Close replay, and hides the reveal card', () => {
+    const sample = sampleOf('after the finale');
+    const reveal = sample.reveal;
+    if (reveal === undefined) throw new Error('no reveal');
+    const card: RaidCanvasProps['reveal'] = (watch) => (
+      <RevealCard
+        reveal={reveal}
+        busy={false}
+        season={{ weekId: sample.view.weekId, season: sample.view.season }}
+        boss={summaryBoss(sample.view, reveal.week)}
+        afterAction={{
+          week: reveal.week,
+          party: reveal.party,
+          onReplay: () => {
+            watch('finale');
+          },
+        }}
+        onDismiss={noop}
+      />
+    );
+    const p = draw(sample, { reveal: card });
+    const replay = byName(p.root, 'button', /replay/i)[0];
+    expect(replay).toBeDefined();
+    expect(byName(p.root, 'button', /close replay/i)).toHaveLength(0);
+    p.click(replay as FakeElement);
+    expect(byName(p.root, 'button', /close replay/i).length).toBeGreaterThan(0);
+    expect(byClass(p.root, 'rc-reveal')).toHaveLength(0);
   });
 });
