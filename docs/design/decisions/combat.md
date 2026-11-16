@@ -4,6 +4,14 @@ The shared combat engine, abilities, statuses, elements, the balance simulator, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-16: A playing stage's window is the boss's full length; the lock and the reveal follow it
+
+ID: `2026-11-16-a-playing-stage-s-window-is` · Status: current
+
+**Decision.** The window in which a stage 1 or 2 plays as it happens lasts the boss's full round count (`boss.rounds` of the stored input, kept as `summary.v2.windowRounds`, read through `windowRoundsOf`), not the rounds the stage played. The board lock, the reveal (`you.reveal` and its seen mark skip a stage still playing), the stats, the replay and the Discord post all use that one window. The lock reads only stage rows younger than `RAID_ROUNDS` rounds and loads the playing creatures once per call; a test fails if a boss has more rounds than that. A player's own Fuse, a dismantle and a visitor reroll of worn gear are locked with the same 409 `stage_playing`. Essence, XP, scrap and bag gear still land at resolve time (Misa's choice, see `raid-screen.md` section 4).
+
+**Reasoning.** A window of the rounds played would tell players the outcome early (a short window is an early kill or a wipe). Filtering in SQL and loading the set once keeps the lock's reads small on the Equip best path.
+
 ## 2026-11-16: Stages 1 and 2 play as they happen: the stored stage is revealed round by round, no new timer [Misa]
 
 ID: `2026-11-16-stages-1-and-2-play-as` · Status: current

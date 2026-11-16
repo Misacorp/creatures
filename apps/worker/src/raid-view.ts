@@ -533,7 +533,7 @@ export function buildRaidView(
       abilities: abilityPreview(myAbility, myAlias, team, (target) =>
         autofire.isOn(userId, target),
       ),
-      reveal: latestReveal(sql, userId, addWeeks(week.weekId, -1)),
+      reveal: latestReveal(sql, userId, addWeeks(week.weekId, -1), now),
       team:
         team === null
           ? null

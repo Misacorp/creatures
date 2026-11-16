@@ -413,6 +413,7 @@ export function settleStageV2(
       hpRemovedBp: removedBp,
       // The thresholds this stage paid (each is paid once in the weekend, by the stage that first crosses it) and the kill bonus.
       paid: { thresholds: crossed.map((t) => t.id), killBonus: result.won },
+      windowRounds: input.boss.rounds,
     },
   };
   sql.exec(

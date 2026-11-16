@@ -29,7 +29,7 @@ import {
   type WearBlock,
 } from '@creatures/game';
 import { GameError, atomically, type Outcome } from './outcome';
-import { creatureInPlayingStage } from './raid-v2-core';
+import { creaturesInPlayingStage } from './raid-v2-core';
 import { dismantleLocks } from './dismantle-worn';
 import { conversionPending, dismissNotice, pendingNotice } from './gear-convert';
 import { grantWelcomeKit, recentGrants } from './gear-grants';
@@ -265,11 +265,9 @@ export class Gear {
 
   /** Refuses (409 `stage_playing`) a change to creatures that stand in a stage that is playing as it happens. */
   private assertNotPlaying(ids: readonly (string | null)[]): void {
-    const now = this.deps.now();
+    const playing = creaturesInPlayingStage(this.sql, this.deps.now());
     for (const id of ids) {
-      if (id !== null && creatureInPlayingStage(this.sql, id, now)) {
-        throw new GameError(409, 'stage_playing');
-      }
+      if (id !== null && playing.has(id)) throw new GameError(409, 'stage_playing');
     }
   }
 

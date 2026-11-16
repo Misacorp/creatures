@@ -48,12 +48,14 @@ The help prose and placed count text (into the now line as "2 / 3"), the track s
 
 ## 4. Stages 1 and 2 play as they happen (server)
 
-No new timer. A stage still resolves at its time (the guild alarm, `runEventV2`), but its result is **played out** over the next `rounds × liveRoundMs` (about 4 minutes), like the finale:
+No new timer. A stage still resolves at its time (the guild alarm, `runEventV2`), but its result is **played out** over the next `boss.rounds × liveRoundMs` (the boss's **full** round count, 8 rounds, about 4 minutes), like the finale:
 
 - During that window `/api/raid/replay/...` (and a small live view) serve only the events up to the current round, without the end, the cleared/kill flags, the boss's end HP or the carry; they add `startsAt`, `roundMs` and `nextRoundAt`. The client fetches at each `nextRoundAt`, never on a 2 s poll.
 - `/api/raid` treats the stage as playing: no result row, HP from before the stage, the board as it stood (knocked-out creatures still shown), the now line "Stage N is playing".
 - The stage's Discord post waits until the window ends (`next_attempt_at`).
-- Known small leak, accepted: the stage's Essence payout lands at the resolve time (a balance moves a few minutes early). Hiding it would need a second write later.
+- The window is the boss's full length **on purpose**: a window of the rounds actually played would give the outcome away (a short window means an early kill or a wipe). A stage that ended early has no more events after its last round, and the replay shows nothing new until `endsAt`. One helper (`windowRoundsOf`, stored as `v2.windowRounds` in the stage's summary) sets it for the view, the stats, the lock and the post.
+- The reveal (`you.reveal`) and its seen mark skip a stage that is still playing, so a stage 1 or 2 kill is not announced early.
+- **What still lands at resolve time** (a few minutes before the replay finishes): the Essence payout, creature XP (and a level it brings), the threshold scrap and the kill-bonus gear in the bag, the away summary, and the valley trial tick. **Misa's choice: accept, or pay out at the end of the reveal.** The guild alarm already wakes at `endsAt` for the Discord post, so deferring needs no new timer, only a second write at that wake. Not built.
 - **Reads:** about 90 rows per fetch; 10 watchers × 9 fetches ≈ 8,000 rows per stage, against a worst day of about 145,000. A 2 s poll would cost about 108,000 and is not used.
 
 ## 5. Choices for Misa (variations on the review page)

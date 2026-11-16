@@ -3,6 +3,7 @@ import { RULES, createSeededRng } from '@creatures/game';
 import { knownKnacks } from '@creatures/game/combat-v2';
 import type { StageCarry } from '@creatures/engine/v2';
 import { grantFirstTalent } from '../src/talent-v2-store';
+import { windowRoundsOf } from '../src/raid-v2-core';
 import type { CoreContext } from './helpers';
 import { rows, seedPlayer, type SeedOptions, type Seeded } from './raid-helpers';
 
@@ -117,7 +118,7 @@ export function finishPlaying(ctx: Pick<CoreContext, 'sql' | 'clock'>): void {
     ctx.sql,
     "SELECT summary, created_at FROM raid_results WHERE phase IN ('stage1', 'stage2')",
   )) {
-    const rounds = (JSON.parse(r.summary) as { rounds: number }).rounds;
+    const rounds = windowRoundsOf(JSON.parse(r.summary) as Parameters<typeof windowRoundsOf>[0]);
     ctx.clock.t = Math.max(ctx.clock.t, r.created_at + rounds * RULES.raid.v2.liveRoundMs);
   }
 }

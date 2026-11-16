@@ -37,6 +37,7 @@ import {
   readTrack,
   slotAt,
   stagePlaying,
+  windowRoundsOf,
   weekendBoss,
   type PartyCarry,
   type StagePlaying,
@@ -230,7 +231,7 @@ function playingStageOf(
   for (const row of rows) {
     if (row.input === '') continue;
     const summary = JSON.parse(row.summary) as StoredSummary;
-    const window = stagePlaying(row.created_at, summary.rounds, now);
+    const window = stagePlaying(row.created_at, windowRoundsOf(summary), now);
     if (window === null) continue;
     return {
       phase: row.phase,
@@ -719,7 +720,7 @@ export function buildRaidViewV2(
                 autoFire: autofire.isOn(userId, BASIC_TARGET),
               },
             ],
-      reveal: latestReveal(sql, userId, addWeeks(week.weekId, -1)),
+      reveal: latestReveal(sql, userId, addWeeks(week.weekId, -1), now),
       team,
     },
     party: partyView,
@@ -921,7 +922,8 @@ export function buildReplayViewV2(
   for (const m of summary.members) playerNames[m.alias] = players.get(m.userId) ?? 'Unknown';
   const before = carryBefore(sql, weekId, party, phase);
   const fighters = fighterViews(input, before, shinyOf(sql, input));
-  const window = phase === 'finale' ? null : stagePlaying(row.created_at, result.rounds, now);
+  const window =
+    phase === 'finale' ? null : stagePlaying(row.created_at, windowRoundsOf(summary), now);
   if (window !== null) {
     // Still playing: only the rounds that have started, never the end, never a number that gives the outcome.
     return {

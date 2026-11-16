@@ -19,7 +19,7 @@ import {
 } from './discord-format';
 import { announceChannelId, enqueuePost } from './discord-posts';
 import { bossCardView } from './raid-v2-card';
-import { slotBossInfo, weekendBoss } from './raid-v2-core';
+import { slotBossInfo, weekendBoss, windowRoundsOf } from './raid-v2-core';
 import { festivalWinners } from './raid-festival';
 import { rankChangeOf, readWeekProgression } from './raid-ladder';
 import { eligiblePlayerIds } from './raid-roster';
@@ -411,7 +411,7 @@ export function queueStagePostV2(sql: SqlStorage, src: StagePostV2Source): void 
       },
       src.now,
       // Stages 1 and 2 play as they happen: their post waits until the last round has played.
-      stage === 3 ? src.now : src.now + summary.rounds * RULES.raid.v2.liveRoundMs,
+      stage === 3 ? src.now : src.now + windowRoundsOf(summary) * RULES.raid.v2.liveRoundMs,
     );
   } catch (err) {
     console.error('queueing a stage post failed', err instanceof Error ? err.name : 'unknown');

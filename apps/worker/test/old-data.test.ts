@@ -424,8 +424,8 @@ describe('old raid weeks', () => {
         SUMMARY,
       );
       sql.exec('DELETE FROM raid_reveal_seen');
-      expect(latestReveal(sql, 'u1', last)).toBeNull();
-      expect(latestReveal(sql, 'u1', older)?.week).toBe(older);
+      expect(latestReveal(sql, 'u1', last, ctx.clock.t)).toBeNull();
+      expect(latestReveal(sql, 'u1', older, ctx.clock.t)?.week).toBe(older);
       expect(ctx.core.raid.replay('u1', older, 1, 'finale')).toBeNull();
       expect(ctx.core.raid.stats('u1', older, 1, 'finale')).toBeNull();
     });
