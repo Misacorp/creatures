@@ -62,6 +62,7 @@ export function StepBody({
   head,
   footer,
   focusBack = false,
+  showHeader = true,
   onKeys,
   children,
 }: {
@@ -72,6 +73,8 @@ export function StepBody({
   head?: ComponentChildren;
   footer?: ComponentChildren;
   focusBack?: boolean;
+  /** Draws the Back head (Back and the title); off, the step starts with its content (Escape still goes back). */
+  showHeader?: boolean;
   /** Keys the step takes before Escape does (an item's Left and Right flip). */
   onKeys?: ((event: KeyboardEvent) => void) | undefined;
   children: ComponentChildren;
@@ -85,7 +88,9 @@ export function StepBody({
           onDrillKey(onBack)(event);
         }}
       >
-        <DrillHead title={title} backLabel={backLabel} onBack={onBack} focus={focusBack} />
+        {showHeader && (
+          <DrillHead title={title} backLabel={backLabel} onBack={onBack} focus={focusBack} />
+        )}
         {head}
         {children}
       </div>

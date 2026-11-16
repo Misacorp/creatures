@@ -595,6 +595,7 @@ Superseded: 1 entry (see the topic file).
 
 [valley.md](valley.md): The valley and peaceful systems overhaul planned in docs/design/valley/: job posts, the bonfire, the commons, the Forge loop, gear, trials, the School, the visitor, the economy lab, and Misa's question rounds.
 
+- 2026-11-16 Place scenes scale to fill the window; narrower drawers; item card config props
 - 2026-11-16 Pre-playtest layout fixes: creature drawer, Paddock row, seat outlines, corner in view
 - 2026-11-15 The Market is a canvas: the stall, the broker, and a building site before it is built
 - 2026-11-15 The Paddock is a canvas: the yard is the scene, the gate and each creature are taps, the project in a builders' corner

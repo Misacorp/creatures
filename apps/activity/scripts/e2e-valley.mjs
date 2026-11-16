@@ -2460,6 +2460,8 @@ try {
       // The bag is the chest in the yard: it opens in the left drawer (a page on a phone), with its count against the cap and its filter.
       await sceneTarget('The bag').click();
       await waitFor(drawer.getByText(/Bag: \d+ \/ \d+/));
+      await page.waitForTimeout(300);
+      await shot('forge-bag-open');
       const tools = drawer.getByRole('button', { name: /Filter and sort/ });
       await tools.click();
       await drawer.getByRole('button', { name: 'Rare', exact: true }).first().click();
@@ -2467,9 +2469,22 @@ try {
       await expectTopmost(tools, 'the bag tools header');
       await shot('forge-step-bag');
       // An item's card: beside the bag on a wide window, a page of its own on a phone.
-      await drawer.locator('.bag-grid button.item-tile').first().click();
+      await drawer
+        .locator('.bag-grid button.item-tile')
+        .first()
+        .click({ position: { x: 28, y: 28 } });
       await page.waitForTimeout(400);
       await shot('forge-bag-card');
+      {
+        // The card beside the bag has no Back head and no Prev / Next row; on a phone it keeps both.
+        const card = page.locator('.pc-side .ps-step, .pc-page .ps-step');
+        const head = await card.locator('.drill-head').count();
+        const pager = await card.locator('.ps-flip').count();
+        if (width >= 960 && (head > 0 || pager > 0))
+          throw new Error('the item card beside the bag still has its Back head or pager');
+        if (width < 960 && (head === 0 || pager === 0))
+          throw new Error('the phone item card lost its Back or pager');
+      }
       await page.keyboard.press('Escape');
       await page.waitForTimeout(300);
       if (width >= 960) {

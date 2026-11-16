@@ -20,7 +20,8 @@ import { BagTools } from './BagTools';
 import { NO_FILTER, selectableIds, shownItems, type BagFilter } from './bag-filter';
 import { GlossaryTag } from './Glossary';
 import { DismantleDrawer, DismantlePanelStep, type DismantleStep } from './DismantleDrawer';
-import { BAG_HINT, InventoryGrid } from './InventoryGrid';
+import { BAG_COLUMNS, BAG_HINT, InventoryGrid } from './InventoryGrid';
+import { useWide } from './ui/wide-layout';
 import { gearName } from './gear-view';
 import { ItemDetail } from './ItemDetail';
 import { JobReveal } from './JobReveal';
@@ -111,6 +112,7 @@ export function Workshop({
    */
   forge?: ForgeMode;
 }) {
+  const wide = useWide();
   const [selectedId, setSelectedId] = useState<string | null>(initialSelectedId ?? null);
   // The drawer was flipped to another item: the new card does not take the focus from the arrows.
   const [flipped, setFlipped] = useState(false);
@@ -266,6 +268,7 @@ export function Workshop({
         <InventoryGrid
           items={shown}
           inOrder={forge !== undefined}
+          {...(forge !== undefined && wide ? { columns: BAG_COLUMNS } : {})}
           creatures={state.creatures}
           openId={selected?.id ?? null}
           selection={selection}
@@ -437,7 +440,7 @@ export function Workshop({
         onClose: () => {
           setPile(null);
         },
-        node: (
+        node: () => (
           <DismantlePanelStep
             {...dismantleProps}
             items={pile}
@@ -471,7 +474,7 @@ export function Workshop({
           setCardFlow(false);
           setBackFromFlow(true);
         },
-        node: (
+        node: () => (
           <DismantlePanelStep
             {...dismantleProps}
             items={[selected]}
@@ -507,8 +510,8 @@ export function Workshop({
           setBackFromFlow(false);
         },
         onClose: leave,
-        node: (
-          <ItemStep flip={flip} onBack={leave}>
+        node: (chrome) => (
+          <ItemStep flip={flip} onBack={leave} {...chrome}>
             <FlipArea flip={flip}>
               <ItemDetail
                 key={selected.id}
@@ -626,10 +629,16 @@ export function Workshop({
 function ItemStep({
   flip,
   onBack,
+  showHeader = true,
+  showPager = true,
   children,
 }: {
   flip: FlipProps | undefined;
   onBack: () => void;
+  /** The Back head and the "Item" title. */
+  showHeader?: boolean;
+  /** The Prev / Next row; the arrow keys flip either way. */
+  showPager?: boolean;
   children: ComponentChildren;
 }) {
   const live = flip !== undefined && flip.paused !== true;
@@ -638,11 +647,13 @@ function ItemStep({
       title="Item"
       backLabel="to the bag"
       onBack={onBack}
+      showHeader={showHeader}
       onKeys={(event) => {
         if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') handleFlipKey(event, flip);
       }}
       head={
-        live && (
+        live &&
+        showPager && (
           <div class="ps-flip">
             <FlipNav flip={flip} />
           </div>

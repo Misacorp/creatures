@@ -16,13 +16,29 @@ import type { CanvasPanel } from './PlaceCanvas';
 export interface ForgeCard {
   /** The panel's heading when the card is in the right drawer (the item's name). */
   title: string;
-  /** The step (a `StepBody`, with its own Back). */
-  node: ComponentChildren;
+  /**
+   * The step (a `StepBody`, with its own Back), drawn with the chrome the caller asks for. A card that has no header or pager of its own
+   * (the dismantle flow) ignores `chrome`.
+   */
+  node: (chrome: CardChrome) => ComponentChildren;
   /** Back to the bag (from the card), or to the card (from the flow); also the right drawer's X and Escape. */
   onClose: () => void;
   /** Ends the card and the flow whole (its drawer went, or an anvil took the right drawer). */
   dismiss: () => void;
 }
+
+/** What a card draws around its content: plain switches, set by whoever places the card (the caller knows, the card does not). */
+export interface CardChrome {
+  /** The Back head and the title at the top of the card. */
+  showHeader: boolean;
+  /** The Prev / Next row (the flip arrows keep working without it). */
+  showPager: boolean;
+}
+
+/** In the other drawer, whose X, Escape and heading already do what the head does, and whose list stays in view to pick the next item. */
+export const CARD_BESIDE: CardChrome = { showHeader: false, showPager: false };
+/** In place of the list (a phone's page, or the one drawer): the way back and the way to the next item are the card's own. */
+export const CARD_IN_PLACE: CardChrome = { showHeader: true, showPager: true };
 
 export type StepList = 'bag' | 'board';
 
@@ -78,7 +94,12 @@ export function useForgeSteps({
   let side: CanvasPanel | null = null;
   if (beside && !anvilOpen) {
     if (cardOn) {
-      side = { title: card.title, wizard: true, onClose: card.onClose, children: card.node };
+      side = {
+        title: card.title,
+        wizard: true,
+        onClose: card.onClose,
+        children: card.node(CARD_BESIDE),
+      };
     } else if (fireOn) {
       side = { title: 'The fire', wizard: true, onClose: closeFire, children: fireNode };
     }
@@ -90,7 +111,7 @@ export function useForgeSteps({
         ? null
         : kind === 'bag'
           ? cardOn
-            ? card.node
+            ? card.node(CARD_IN_PLACE)
             : null
           : fireOn
             ? fireNode

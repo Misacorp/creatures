@@ -13,6 +13,24 @@
   list-style: none;
 }
 
+.item-grid.item-grid-cols {
+  grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+  gap: 0.375rem;
+}
+
+/* The tiles are small here: the selection box shrinks so it never covers the middle of the tile it sits on. */
+.item-grid-cols .select-check {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.item-grid-cols .select-box {
+  top: 0.125rem;
+  left: 0.125rem;
+  width: 1rem;
+  height: 1rem;
+}
+
 .item-grid > li {
   position: relative;
   display: flex;

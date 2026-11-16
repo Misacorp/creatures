@@ -843,6 +843,8 @@ describe('the one-time hint', () => {
   it('shows the box wording where there is a mouse', () => {
     vi.stubGlobal('matchMedia', (query: string) => ({
       matches: query === '(hover: hover) and (pointer: fine)',
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
     }));
     const p = draw();
     expect(visibleText(hint(p)[0] as FakeElement)).toContain(mouseText);

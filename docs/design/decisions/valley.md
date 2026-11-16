@@ -4,6 +4,14 @@ The valley and peaceful systems overhaul planned in docs/design/valley/: job pos
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-16: Place scenes scale to fill the window; narrower drawers; item card config props
+
+ID: `2026-11-16-place-scenes-scale-to-fill-the` · Status: current
+
+**Decision.** Misa's Forge playtest, three changes (Misa, 2026-11-16). (1) The Forge interior's pixel scale is the largest whole number at which the room fits the window (width over `ROOM.w`, height over `ESSENTIAL_H`, at most `INTERIOR_SCALE_MAX` 8), where it was held at the generic 4 (`sceneScale`); edges tile only the margins the room leaves. Plates are checked not to overlap at six window sizes (`forge-plates.test.ts`): the far smiths' plates step by a whole plate in CSS px (`backPlateAt`), the Furnace and Floor plates sit off-centre (`plateX` on `CanvasTarget`) clear of the anvils' bubbles, the door's plate sits on the door. The other canvas places already allow up to 8 (their own `SCALE_MAX`); the Bonfire needs nothing. (2) A canvas drawer is 22 rem wide (`canvas.css`, one rule), not 24 rem or a share of the window. The Forge's bag on a wide window shows `BAG_COLUMNS` (7, in `InventoryGrid.tsx`) tiles a row through a plain `columns` prop; a phone keeps auto-fit. The select box shrinks on such a grid so it never covers the tile's middle. (3) The bag's item card takes plain switches, `showHeader` and `showPager` (`ItemStep`, `StepBody`), set by the one that places it: `useForgeSteps` passes `CARD_BESIDE` (both off) when the card opens in the other drawer, `CARD_IN_PLACE` (both on) in place of the list. `ForgeCard.node` is a function of those switches. Arrow keys still flip; the drawer's X and Escape close it. The visitor's stall card already had neither head nor pager.
+
+**Reasoning.** On a big window a small room in a huge floor made every target hard to hit; the room should be as large as it fits, with the whole room in view (Misa's pick). Drawers a third of the window left the scene a strip. The card is told what to draw, never where it is, so a drawer, a page or a later place can set the same switches.
+
 ## 2026-11-16: Pre-playtest layout fixes: creature drawer, Paddock row, seat outlines, corner in view
 
 ID: `2026-11-16-pre-playtest-layout-fixes-creature-drawer` · Status: current

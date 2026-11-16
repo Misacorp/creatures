@@ -7,7 +7,7 @@
  *   there yet (an anvil to buy): a click on it starts the step that adds it.
  * - `PlaceCanvas`: the shell. On a wide window (`useWide`, 60 rem) the scene fills the whole stage and never moves or rescales while
  *   you are in it (Misa, 2026-11-15: "the view jumping around when the drawers opened"): the two drawers, `left` and `right`, each a
- *   `ui/SidePanel` of 24 rem, lie over its edges. Only when a drawer would cover the thing that was clicked, the scene is panned
+ *   `ui/SidePanel` of 22 rem, lie over its edges. Only when a drawer would cover the thing that was clicked, the scene is panned
  *   sideways (never rescaled) just far enough to keep it clear, and goes back when the drawer goes (`pan`; a map that scrolls on its
  *   own turns it off). On a phone there are no drawers: an open panel is its own full page with the scene hidden behind it (no drawer
  *   on a drawer), and its Back goes to the scene. The panel's content is the same component either way, normally a `ui/Wizard` (a
