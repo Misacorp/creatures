@@ -41,7 +41,7 @@ function Harness({ list }: { list: string | null }) {
     card,
     left: 'bag',
     anvilOpen: false,
-    visit: visit as never,
+    visit,
     startFire: false,
   });
   const held = steps.hold('bag', <p>THE LIST</p>);
