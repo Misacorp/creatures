@@ -2469,10 +2469,7 @@ try {
       await expectTopmost(tools, 'the bag tools header');
       await shot('forge-step-bag');
       // An item's card: beside the bag on a wide window, a page of its own on a phone.
-      await drawer
-        .locator('.bag-grid button.item-tile')
-        .first()
-        .click({ position: { x: 28, y: 28 } });
+      await drawer.locator('.bag-grid button.item-tile').first().click();
       await page.waitForTimeout(400);
       await shot('forge-bag-card');
       {
