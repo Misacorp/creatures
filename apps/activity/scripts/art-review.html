@@ -361,10 +361,15 @@
     const w = def.rows[0].length,
       h = def.rows.length;
     const fit = Math.floor(
-      Math.min((window.innerWidth * 0.92) / w, (window.innerHeight * 0.72) / h),
+      Math.min(
+        (Math.min(window.innerWidth * 0.96, window.innerWidth) - 72) / w,
+        (window.innerHeight * 0.72) / h,
+      ),
     );
     const art = document.getElementById('zoom-art');
-    art.replaceChildren(draw(def, Math.max(2, fit)));
+    // The dialog's padding, border and margin take about 72 px, so the picture is never squeezed
+    // (squeezing a pixelated canvas makes its pixels uneven).
+    art.replaceChildren(draw(def, Math.max(1, fit)));
     document.getElementById('zoom-name').textContent = name;
     document.getElementById('zoom').showModal();
   }
