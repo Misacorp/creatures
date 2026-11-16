@@ -62,8 +62,9 @@
   top: 0.5rem;
   left: 0.5rem;
   right: 0.5rem;
-  /* Above the map's two corner buttons (the Places flag's z-index, 25). */
-  z-index: 30;
+  /* Above the map's two corner buttons (the Places flag's z-index, 25) and above the creature being dragged, whose picture is
+     centred on the hand and reaches up into this line when the hand is over a seat near the top: the fit must stay readable. */
+  z-index: calc(var(--z-drag) + 1);
   margin: 0;
   pointer-events: none;
 }
