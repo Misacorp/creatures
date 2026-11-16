@@ -44,3 +44,6 @@ docs/patch-notes/draft.md
 
 # Agent worktrees (local only)
 .claude/worktrees/
+
+# Agent screenshots for review pages (never committed)
+screenshots/
