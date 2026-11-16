@@ -77,7 +77,7 @@ export interface BoardCreatureV2 {
   /** Its role (for the read-only drawer). */
   role: string;
   /** The slotted talents in slot order; `golden` marks a golden one. */
-  talents: { id: string; golden: boolean }[];
+  talents: { id: string; golden: boolean; name: string; text: string }[];
   /** What it wears, in slot order: the item card's parts (no id, maker or origin); `lines[].active` says whether a line does anything for it. */
   gear: WornCardV2[];
 }
@@ -251,8 +251,12 @@ const isBoardCreature = (value: unknown): value is BoardCreatureV2 =>
   isStr(value['role']) &&
   isArrayOf(
     value['talents'],
-    (t): t is { id: string; golden: boolean } =>
-      isRecord(t) && isStr(t['id']) && isBool(t['golden']),
+    (t): t is { id: string; golden: boolean; name: string; text: string } =>
+      isRecord(t) &&
+      isStr(t['id']) &&
+      isBool(t['golden']) &&
+      isStr(t['name']) &&
+      isStr(t['text']),
   ) &&
   isArrayOf(value['gear'], isWornCard);
 

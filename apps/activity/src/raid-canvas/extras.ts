@@ -1,26 +1,17 @@
 /**
  * What a board creature of a combat v2 week carries for the right drawer (`v2.creatures[]`: its slotted talents and what it wears), turned
- * into what the game's own talent chip and gear list draw. Pure. The server sends a talent as its id only, and the client does not carry
- * the combat data (it must stay out of the game's bundle), so a talent is named from its id ("first-pounce" is "First pounce"); sending the
- * name and text with the id would make it exact. Gear lines are the server's own text, drawn as text.
+ * into what the game's own talent chip and gear list draw. Pure. Names and lines are the server's own text, drawn as text.
  */
-
 import type { WornItem } from '../gear-view';
 import type { TalentView } from '../talent-types';
 import type { BoardCreatureV2 } from '../raid-v2-api';
 
-/** A talent id as words: "first-pounce" is "First pounce". */
-export const talentWords = (id: string): string => {
-  const words = id.replace(/-/g, ' ');
-  return `${words.slice(0, 1).toUpperCase()}${words.slice(1)}`;
-};
-
-/** The talents of a board creature in slot order. */
+/** The talents of a board creature in slot order, with the name and one-line effect the server sends. */
 export function talentsOf(entry: BoardCreatureV2 | undefined): TalentView[] {
   return (entry?.talents ?? []).map((t) => ({
     id: t.id,
-    name: talentWords(t.id),
-    text: '',
+    name: t.name,
+    text: t.text,
     about: '',
     golden: t.golden,
     idle: false,

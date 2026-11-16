@@ -135,8 +135,13 @@ function withExtras(view: RaidView): RaidView {
       creatures: v2.creatures.map((c, i) => ({
         ...c,
         talents: [
-          { id: 'first-pounce', golden: i % 3 === 0 },
-          { id: 'crit-damage', golden: false },
+          {
+            id: 'first-pounce',
+            golden: i % 3 === 0,
+            name: 'First Pounce',
+            text: 'Its first hit that lands each fight deals +170%.',
+          },
+          { id: 'crit-damage', golden: false, name: 'Amplified Crits', text: 'Its crits are 3x.' },
         ],
         gear:
           hat === undefined || scarf === undefined

@@ -585,7 +585,9 @@
         "talents": [
           {
             "id": "shoulder-to-shoulder",
-            "golden": false
+            "golden": false,
+            "name": "Shoulder to Shoulder",
+            "text": "+23% on its hits for each creature {Beside} it of its element, at most 2."
           }
         ],
         "gear": []
@@ -603,7 +605,9 @@
         "talents": [
           {
             "id": "bright-boost",
-            "golden": false
+            "golden": false,
+            "name": "Bright Boost",
+            "text": "Every second {Boost} it gives is doubled."
           }
         ],
         "gear": []
@@ -621,7 +625,9 @@
         "talents": [
           {
             "id": "brace",
-            "golden": false
+            "golden": false,
+            "name": "Brace",
+            "text": "It takes 40% less from a {Wind-up} hit aimed at its slot."
           }
         ],
         "gear": []
@@ -639,7 +645,9 @@
         "talents": [
           {
             "id": "slow-burn",
-            "golden": false
+            "golden": false,
+            "name": "Slow Burn",
+            "text": "+2.5% on its hits per round from round 2, up to +15%."
           }
         ],
         "gear": []
@@ -657,7 +665,9 @@
         "talents": [
           {
             "id": "hardy",
-            "golden": false
+            "golden": false,
+            "name": "Hardy",
+            "text": "Max HP +22%."
           }
         ],
         "gear": []
@@ -675,7 +685,9 @@
         "talents": [
           {
             "id": "kindred-boost",
-            "golden": false
+            "golden": false,
+            "name": "Kindred Boost",
+            "text": "Its {Boost} +26% on creatures of its own element."
           }
         ],
         "gear": []
@@ -693,7 +705,9 @@
         "talents": [
           {
             "id": "perfect-timing",
-            "golden": false
+            "golden": false,
+            "name": "Perfect Timing",
+            "text": "After it dodges, it stores a {Sure Crit} (up to 3): its next hit that lands is a 3x crit."
           }
         ],
         "gear": []
@@ -711,7 +725,9 @@
         "talents": [
           {
             "id": "momentum",
-            "golden": true
+            "golden": true,
+            "name": "Momentum",
+            "text": "After it dodges, or a Guard takes a hit aimed at it, its next hit deals +38%."
           }
         ],
         "gear": []
@@ -729,7 +745,9 @@
         "talents": [
           {
             "id": "sharp-claws",
-            "golden": false
+            "golden": false,
+            "name": "Sharp Claws",
+            "text": "Attack +10%."
           }
         ],
         "gear": []
@@ -747,7 +765,9 @@
         "talents": [
           {
             "id": "unbothered",
-            "golden": false
+            "golden": false,
+            "name": "Unbothered",
+            "text": "It cannot be {Silenced}, and has +3% Attack and +6% Max HP."
           }
         ],
         "gear": []
@@ -765,7 +785,9 @@
         "talents": [
           {
             "id": "hardy",
-            "golden": false
+            "golden": false,
+            "name": "Hardy",
+            "text": "Max HP +22%."
           }
         ],
         "gear": []
@@ -783,7 +805,9 @@
         "talents": [
           {
             "id": "crit-chance",
-            "golden": false
+            "golden": false,
+            "name": "Crit Chance",
+            "text": "+12 crit chance points."
           }
         ],
         "gear": []

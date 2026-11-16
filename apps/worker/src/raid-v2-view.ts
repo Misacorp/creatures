@@ -161,7 +161,7 @@ export interface BoardCreatureView {
   /** Its role. */
   role: string;
   /** The slotted talents in slot order (the ones open at its level); `golden` marks a golden one. */
-  talents: { id: string; golden: boolean }[];
+  talents: { id: string; golden: boolean; name: string; text: string }[];
   /** What it wears, in slot order, as item cards. */
   gear: WornCardView[];
 }
@@ -529,7 +529,15 @@ export function buildRaidViewV2(
         knack: knack ?? null,
         knackName: knackNameOf(knack ?? null),
         role: species.role,
-        talents: c.talents.map((id) => ({ id, golden: c.goldenTalents.includes(id) })),
+        talents: c.talents.map((id) => {
+          const def = Object.hasOwn(combatV2.talents, id) ? combatV2.talents[id] : undefined;
+          return {
+            id,
+            golden: c.goldenTalents.includes(id),
+            name: def?.name ?? id,
+            text: def?.text ?? '',
+          };
+        }),
         gear: wornCards(c, species),
       });
       if (isMine) {
