@@ -9,22 +9,6 @@ import type { ClickKeys } from './ui/multi-select';
 import { SelectCheck } from './ui/SelectCheck';
 
 /**
- * Where the slot mark (the hat, scarf or charm icon) sits on a tile. Options for Misa to pick from pictures
- * (2026-11-16); `'current'` is the shipped look and stays until he picks. Change the one constant to flip every grid:
- * - `'current'`: bag tiles at the bottom left (so the checkbox never covers it), the picker's at the top left.
- * - `'a'`: a corner badge at the top left, "Lv" alone at the bottom (the checkbox covers it while it shows).
- * - `'b'`: the top right, "Lv" alone at the bottom; "Worn" and the wearer's picture move to the bottom left.
- * - `'c'`: one dark strip along the bottom, the slot icon then "Lv 16", clear of the art.
- */
-export type SlotMarkPlacement = 'current' | 'a' | 'b' | 'c';
-export const SLOT_MARK_PLACEMENT: SlotMarkPlacement = 'current';
-
-/** The tile's class for a placement (none for the shipped look). */
-export function slotMarkClass(placement: SlotMarkPlacement): string | null {
-  return placement === 'current' ? null : `slot-${placement}`;
-}
-
-/**
  * How a bag tile takes part in selecting several items (decisions.md, 2026-10-27, "Bulk selection replaces
  * marking"). Only the bag passes it; the item picker's tiles do not select. The list's gestures and the tile's role
  * come from `useSelectGrid` (through `buttonProps`).
@@ -43,15 +27,15 @@ export interface TileChoice {
 /**
  * One item in an item grid: the one look for every grid of items (the creature page's item picker and the
  * Workshop bag). A square button, the item's art filling it, its rarity as the single edge (its colour and its
- * shape, `rarity-edge`), the slot icon at the top left and the item level at the bottom right, and at the top right a small gold flag ("Worn") or the
+ * shape, `rarity-edge`), the slot icon and the item level together on a dark strip along the bottom, and at the top right a small gold flag ("Worn") or the
  * small picture of another creature that wears it. `selected` lights it from inside with a light edge (the
  * item shown, or shown last); `blocked` dims an item that cannot be worn (or that another creature wears). A selected tile scrolls itself into view (when it is selected and again when its details
  * close), so a closed detail never leaves the player lost in a long grid.
  *
  * Selecting several (bag only, `choice`): the tile is an option of the grid's listbox, and the shared `SelectCheck`
  * sits beside its button in the top left corner (a tap on it toggles, a tap anywhere else on the tile opens the item's
- * card). A chosen tile gets a gold ring and a held one the hold cue (`item-tile.css`). The slot icon of a bag tile
- * sits at the bottom left, so the checkbox never covers it. `buttonProps` carries the role and the pointer and key
+ * card). A chosen tile gets a gold ring and a held one the hold cue (`item-tile.css`). The slot icon sits on the bottom
+ * strip, so the checkbox never covers it. `buttonProps` carries the role and the pointer and key
  * handlers of `useSelectGrid` (long press, context menu, arrow keys) and `focusRef` hands the grid the button.
  */
 export function ItemTile({
@@ -94,8 +78,6 @@ export function ItemTile({
     }
   }, [selected, pressed]);
   const classes = ['item-tile', `rarity-${item.rarity}`, 'rarity-edge'];
-  const slotClass = slotMarkClass(SLOT_MARK_PLACEMENT);
-  if (slotClass !== null) classes.push(slotClass);
   if (selected) classes.push('selected');
   if (blocked) classes.push('blocked');
   if (choice?.chosen === true) classes.push('chosen');

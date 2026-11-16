@@ -1,6 +1,6 @@
 /*
   The one item grid (ItemTile.tsx): the creature page's item picker and the Workshop bag. Square tiles, the art
-  filling them, the rarity as the single edge, the slot icon and the item level in the corners, a gold flag at
+  filling them, the rarity as the single edge, the slot icon and the item level on a strip along the bottom, a gold flag at
   the top right ("Worn"). The tile shown (or shown last) is lit from inside with a light edge inside the rarity
   edge, the same look as the creature list's last viewed card.
 */
@@ -109,11 +109,33 @@ button.item-tile.rarity-edge {
   --edge-in: var(--px);
 }
 
-/* The slot icon of a bag tile sits at the bottom left, so the checkbox at the top left never covers it. */
-.bag-grid canvas.sprite.item-slot {
+/*
+  The slot icon and the level share one dark strip along the bottom of every tile (Misa, 2026-11-16): the icon at the
+  left, "Lv 16" at the right, clear of the art, and the top corners stay free for the checkbox, "Worn" and the
+  wearer's picture.
+*/
+button.item-tile::before {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  right: var(--px);
+  bottom: var(--px);
+  left: var(--px);
+  height: 1.125rem;
+  background: rgb(var(--ink-rgb) / 82%);
+  pointer-events: none;
+}
+
+button.item-tile canvas.sprite.item-slot {
   top: auto;
   bottom: 0.1875rem;
-  left: 0.3125rem;
+  left: 0.25rem;
+}
+
+button.item-tile .item-lv {
+  right: 0.25rem;
+  bottom: 0.3125rem;
+  --lv-size: 0.75rem;
 }
 
 button.item-tile.chosen,
@@ -158,66 +180,4 @@ button.item-tile.holding {
       inset 0 0 0 var(--px) var(--rar),
       0 0 0 3px var(--gold);
   }
-}
-
-/*
-  Slot mark placements to pick from (ItemTile.tsx, `SLOT_MARK_PLACEMENT`; 2026-11-16). `current` adds no class and
-  none of this applies. Delete the losing variants once one is picked.
-*/
-
-/* A: top left corner badge. */
-button.item-tile.slot-a canvas.sprite.item-slot,
-.bag-grid button.item-tile.slot-a canvas.sprite.item-slot {
-  top: 0.1875rem;
-  bottom: auto;
-  left: 0.1875rem;
-}
-
-/* B: top right; the flag and the wearer's picture step to the bottom left. */
-button.item-tile.slot-b canvas.sprite.item-slot,
-.bag-grid button.item-tile.slot-b canvas.sprite.item-slot {
-  top: 0.1875rem;
-  right: 0.1875rem;
-  bottom: auto;
-  left: auto;
-}
-
-button.item-tile.slot-b .item-tile-flag {
-  top: auto;
-  right: auto;
-  bottom: 0.1875rem;
-  left: 0.3125rem;
-}
-
-button.item-tile.slot-b .item-tile-wearer {
-  top: auto;
-  right: auto;
-  bottom: 0.1875rem;
-  left: 0.1875rem;
-}
-
-/* C: a dark strip along the bottom, the slot icon then the level; the art above it is untouched. */
-button.item-tile.slot-c::before {
-  content: '';
-  position: absolute;
-  z-index: 1;
-  right: var(--px);
-  bottom: var(--px);
-  left: var(--px);
-  height: 1.125rem;
-  background: rgb(var(--ink-rgb) / 82%);
-  pointer-events: none;
-}
-
-button.item-tile.slot-c canvas.sprite.item-slot,
-.bag-grid button.item-tile.slot-c canvas.sprite.item-slot {
-  top: auto;
-  bottom: 0.1875rem;
-  left: 0.25rem;
-}
-
-button.item-tile.slot-c .item-lv {
-  right: 0.25rem;
-  bottom: 0.3125rem;
-  --lv-size: 0.75rem;
 }
