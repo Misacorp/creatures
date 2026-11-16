@@ -126,29 +126,29 @@ export function RaidScene(p: RaidSceneProps) {
                   bob={!p.fallen}
                 />
               </button>
-              {p.moves !== null && p.moves.length > 0 && (
-                <ul class="rc-moves" aria-label="Boss moves">
-                  {p.moves.map((move) => (
-                    <li key={move.id}>
-                      <button
-                        type="button"
-                        class={`rc-move${p.litMove === move.id ? ' lit' : ''}`}
-                        aria-pressed={p.litMove === move.id}
-                        aria-label={`${move.name}, ${move.label}`}
-                        onClick={(event) => {
-                          p.onMove(move, event.currentTarget);
-                        }}
-                      >
-                        <Sprite
-                          sprite={combatGlyph(moveGlyphId(move)) ?? glyphOrUnknown('unknown')}
-                          scale={2}
-                        />
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
             </div>
+            {p.moves !== null && p.moves.length > 0 && (
+              <ul class="rc-moves" aria-label="Boss moves">
+                {p.moves.map((move) => (
+                  <li key={move.id}>
+                    <button
+                      type="button"
+                      class={`rc-move${p.litMove === move.id ? ' lit' : ''}`}
+                      aria-pressed={p.litMove === move.id}
+                      aria-label={`${move.name}, ${move.label}`}
+                      onClick={(event) => {
+                        p.onMove(move, event.currentTarget);
+                      }}
+                    >
+                      <Sprite
+                        sprite={combatGlyph(moveGlyphId(move)) ?? glyphOrUnknown('unknown')}
+                        scale={2}
+                      />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
             {hp !== null && p.hp !== null && (
               <div class="rc-hp">
                 <SegmentBar

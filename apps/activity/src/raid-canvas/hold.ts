@@ -16,7 +16,7 @@ export function heldView(view: RaidView, playing: Playing | null, now: number): 
     ...(view.party === null
       ? {}
       : { party: { ...view.party, results: view.party.results.filter((r) => r.phase !== phase) } }),
-    you: { ...view.you, reveal: playing.stage >= 3 ? null : view.you.reveal },
+    you: { ...view.you, reveal: null },
   };
 }
 

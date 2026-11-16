@@ -116,11 +116,12 @@
   filter: grayscale(1) brightness(0.55);
 }
 
-/* The boss's moves while placing: small glyphs beside it, one 44 px target each. */
+/* The boss's moves while placing: a row of small glyphs under the boss, no box; a ring only on hover or focus, gold when lit. */
 .rc-moves {
-  display: grid;
-  grid-template-columns: repeat(4, 2.75rem);
-  gap: 0.25rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.125rem;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -129,16 +130,20 @@
 .rc-scene .rc-move {
   display: grid;
   place-items: center;
-  min-width: 2.75rem;
-  min-height: 2.75rem;
-  background: var(--ink);
-  box-shadow: inset 0 0 0 2px var(--line);
+  min-width: 1.75rem;
+  min-height: 1.75rem;
+  background: transparent;
+  box-shadow: none;
   cursor: pointer;
+}
+
+.rc-scene .rc-move:is(:hover, :focus-visible) {
+  box-shadow: inset 0 0 0 2px var(--line);
 }
 
 .rc-scene .rc-move.lit,
 .rc-scene .rc-move.lit:is(:hover, :active) {
-  background: var(--ink);
+  background: transparent;
   box-shadow: inset 0 0 0 2px var(--gold);
 }
 
@@ -298,4 +303,43 @@
 .pc-panel .raid-timeline .schedule,
 .pc-page .raid-timeline .schedule {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/* The stage on the scene sits close: the boss, its HP and the board as on the placing scene. */
+.stage-canvas .stage-boss {
+  gap: 0.25rem;
+}
+
+.stage-canvas .stage-boss-art {
+  padding-bottom: 0.25rem;
+}
+
+.stage-v2.stage-canvas .stage-move {
+  min-height: 1rem;
+}
+
+/* A phone: no row-name column, so a fifth lane fits; the rows keep their order and a seat says its place to a screen reader. */
+@media (max-width: 45rem) {
+  .rc-scene .board-labels {
+    display: none;
+  }
+
+  .rc-scene .board-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 45rem) {
+  .rc-scene .raid-board,
+  .rc-scene .board-grid {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 45rem) {
+  .rc-scene .stage-v2 .raid-board:not(.single) .board-grid {
+    grid-template-columns: minmax(0, max-content);
+    padding-right: 0;
+  }
 }

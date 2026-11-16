@@ -307,17 +307,19 @@ export function SlotButton(props: SlotButtonProps) {
               <span class="slot-hp-text">{c.hp.text}</span>
             </span>
           )}
-          {c.v2 !== undefined && (c.v2.knack !== null || (c.v2.fight?.silenced ?? 0) > 0) && (
-            <span
-              class={(c.v2.fight?.silenced ?? 0) > 0 ? 'slot-knack silenced' : 'slot-knack'}
-              aria-hidden="true"
-            >
-              <span class="slot-knack-name">{c.v2.knack ?? 'Silenced'}</span>
-              {(c.v2.fight?.silenced ?? 0) > 0 && (
-                <span class="slot-knack-turns">{c.v2.fight?.silenced}</span>
-              )}
-            </span>
-          )}
+          {c.v2 !== undefined &&
+            (slot.bare !== true || (c.v2.fight?.silenced ?? 0) > 0) &&
+            (c.v2.knack !== null || (c.v2.fight?.silenced ?? 0) > 0) && (
+              <span
+                class={(c.v2.fight?.silenced ?? 0) > 0 ? 'slot-knack silenced' : 'slot-knack'}
+                aria-hidden="true"
+              >
+                <span class="slot-knack-name">{c.v2.knack ?? 'Silenced'}</span>
+                {(c.v2.fight?.silenced ?? 0) > 0 && (
+                  <span class="slot-knack-turns">{c.v2.fight?.silenced}</span>
+                )}
+              </span>
+            )}
           {c.v2?.fight !== undefined && c.v2.fight.store > 0 && (
             <span class="slot-store" aria-hidden="true">
               {[1, 2, 3].map((n) => (

@@ -47,3 +47,26 @@ export function nextFetchIn(playing: Playing, now: number, graceMs = 300): numbe
   }
   return Math.max(graceMs, playing.nextRoundAt - now + graceMs);
 }
+
+/** How long to wait after `failures` failed fetches in a row: 3 s, doubling, at most 30 s. */
+export const backoffMs = (failures: number): number =>
+  Math.min(30_000, 3_000 * 2 ** Math.max(0, failures - 1));
+
+/** The least wait before asking again when the answer showed the same round as the one before (a clock that is behind would re-ask at once). */
+export const SAME_ROUND_MIN_MS = 1_000;
+
+/**
+ * When to fetch the playing stage's replay next. After a failure: the back-off. After an answer: at the next round, but never sooner than
+ * `SAME_ROUND_MIN_MS` when the round did not move since the last answer. Null: nothing more is due.
+ */
+export function nextFetchAfter(
+  playing: Playing,
+  now: number,
+  result: { failures: number; round: number | null; previousRound: number | null },
+): number | null {
+  if (result.failures > 0) return backoffMs(result.failures);
+  const wait = nextFetchIn(playing, now);
+  if (wait === null) return null;
+  const same = result.round !== null && result.round === result.previousRound;
+  return same ? Math.max(wait, SAME_ROUND_MIN_MS) : wait;
+}

@@ -252,11 +252,7 @@ const isBoardCreature = (value: unknown): value is BoardCreatureV2 =>
   isArrayOf(
     value['talents'],
     (t): t is { id: string; golden: boolean; name: string; text: string } =>
-      isRecord(t) &&
-      isStr(t['id']) &&
-      isBool(t['golden']) &&
-      isStr(t['name']) &&
-      isStr(t['text']),
+      isRecord(t) && isStr(t['id']) && isBool(t['golden']) && isStr(t['name']) && isStr(t['text']),
   ) &&
   isArrayOf(value['gear'], isWornCard);
 

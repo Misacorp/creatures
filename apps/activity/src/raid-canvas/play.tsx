@@ -29,7 +29,7 @@ import { INTRO_LIVE_MS, REPLAY_PACE, roundBudgetMs } from '../playback-v2';
 import type { BossCardV2 } from '../raid-v2-api';
 import { StageV2 } from '../StageV2';
 import { usePlaybackV2 } from '../use-playback-v2';
-import { nextFetchIn, replayPhaseOfStage, type Playing } from './playing';
+import { nextFetchAfter, replayPhaseOfStage, type Playing } from './playing';
 
 /** What the scene needs to play a stage, from whichever place it comes. */
 export interface PlayData {
@@ -115,6 +115,8 @@ export function useStageFeed(args: {
   week: string;
   party: number | null;
   fetcher?: typeof fetchReplayStateV2;
+  /** The server's clock minus the device's: the window is the server's, so a device clock that is behind must not decide when to ask. */
+  offset?: number;
   clock?: () => number;
 }): (ReplayViewV2 | PlayingReplayV2) | null {
   const { playing, week, party } = args;
@@ -127,7 +129,10 @@ export function useStageFeed(args: {
       return undefined;
     }
     const fetcher = args.fetcher ?? fetchReplayStateV2;
-    const clock = args.clock ?? Date.now;
+    const offset = args.offset ?? 0;
+    const clock = args.clock ?? (() => Date.now() + offset);
+    let failures = 0;
+    let round: number | null = null;
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | null = null;
     let next: Playing = playing;
@@ -135,21 +140,25 @@ export function useStageFeed(args: {
       fetcher(week, party, replayPhaseOfStage(playing.stage)).then(
         (replay) => {
           if (cancelled) return;
+          failures = 0;
+          const previousRound = round;
+          round = isPlayingReplay(replay) ? (replay as PlayingReplayV2).round : null;
           setData(replay);
           // The last round's `nextRoundAt` is the window's end; a finished stage has none to wait for.
           next = {
             ...next,
             nextRoundAt: isPlayingReplay(replay) ? (replay as PlayingReplayV2).nextRoundAt : null,
           };
-          schedule();
+          schedule(previousRound);
         },
         () => {
-          if (!cancelled) schedule();
+          failures += 1;
+          if (!cancelled) schedule(round);
         },
       );
     };
-    const schedule = (): void => {
-      const wait = nextFetchIn(next, clock());
+    const schedule = (previousRound: number | null): void => {
+      const wait = nextFetchAfter(next, clock(), { failures, round, previousRound });
       if (wait === null || cancelled) return;
       timer = setTimeout(load, wait);
     };
@@ -202,9 +211,12 @@ export function useWatchedStage(request: { week: string; party: number; phase: s
 export function ScenePlayer({
   data,
   onLog,
+  bareOthers = false,
   children,
 }: {
   data: PlayData;
+  /** Other players' seats print no name, level or Knack. */
+  bareOthers?: boolean;
   /** The fight's text so far, as the beats have landed. */
   onLog?: (lines: string[]) => void;
   children?: ComponentChildren;
@@ -239,6 +251,7 @@ export function ScenePlayer({
   return (
     <StageV2
       canvas
+      bareOthers={bareOthers}
       boss={data.boss}
       card={data.card}
       fighters={data.fighters}

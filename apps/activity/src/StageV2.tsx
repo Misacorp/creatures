@@ -280,6 +280,8 @@ interface StageV2Props {
    * line's), and the Escalating meter only once it has changed from the card's. Absent: the stage as the replay and the finale draw it.
    */
   canvas?: boolean;
+  /** Seats of other players' creatures print no name, level or Knack (the raid canvas's `seatPlates: 'mine'`). */
+  bareOthers?: boolean;
 }
 
 /** The slot of a creature of the fight on the boss's grid (a slot is `col * rows + row`). */
@@ -308,6 +310,7 @@ export function StageV2({
   boostLook = 'pattern',
   overlay,
   canvas = false,
+  bareOthers = false,
 }: StageV2Props) {
   const popovers = usePopoverHost();
   const reduced = usePrefersReducedMotion();
@@ -465,6 +468,7 @@ export function StageV2({
         hideNumber: true,
         ariaLabel: parts.join(', '),
         occupant: tileOf(f),
+        ...(bareOthers && !(you !== null && f.owner === you) ? { bare: true } : {}),
         ...(pulse === undefined ? {} : { pulse }),
       };
     }),

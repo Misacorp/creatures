@@ -215,6 +215,7 @@ function Canvas(props: RaidCanvasProps & { v2: RaidV2View }) {
     playing: watch === null && !finaleOn ? playing : null,
     week: view.weekId,
     party: party?.party ?? null,
+    offset: serverNow - Date.now(),
     ...(props.stageFetcher === undefined ? {} : { fetcher: props.stageFetcher }),
   });
   const watched = useWatchedStage(
@@ -661,7 +662,14 @@ function Canvas(props: RaidCanvasProps & { v2: RaidV2View }) {
         ]),
   ];
   const stage =
-    play === null ? undefined : <ScenePlayer key={play.id} data={play} onLog={setLog} />;
+    play === null ? undefined : (
+      <ScenePlayer
+        key={play.id}
+        data={play}
+        onLog={setLog}
+        bareOthers={config.seatPlates === 'mine'}
+      />
+    );
   const board =
     party === null
       ? null
