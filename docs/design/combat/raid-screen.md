@@ -61,3 +61,21 @@ No new timer. A stage still resolves at its time (the guild alarm, `runEventV2`)
 1. **Boss moves on the scene:** (A) only the next move, during a stage; the rest in the Boss drawer (pick). (B) the move tiles always under the boss.
 2. **The finale order:** (A) a strip under the scene during the finale, in the tray's place (pick). (B) the right drawer opens by itself at the finale.
 3. **Arriving during a stage:** (A) join at the current round, as live (pick). (B) start from round 1 and catch up fast.
+
+## 6. After the UX review (2026-11-16, adopted)
+
+A review against `review-brief.md` found holes; these are now part of the proposal.
+
+1. **The board locks while a stage plays out.** Place, move, remove, swaps and a placed creature's Knack, talents and gear refuse (`stage_playing`) until the window ends. Every outcome signal waits for the end: the "Out this weekend" marks in the tray and pickers, XP shown on cards, Home notices, and the Essence in the HUD (held on the client, no second server write).
+2. **While placing, the boss's moves show as small glyphs beside the boss**; tapping one lights its slots on the board and opens it in the right drawer. The full move tiles stay in the Boss drawer. (Section 5 choice 1 becomes A with these glyphs.)
+3. **Phone, 390 px:** the board pans sideways (boss and HP bar pinned), opens centred on your column, shows the pan hint, and keeps 44 px seats; sprites never below scale 2.
+4. **The now line** is a caption on the scene (a `Nameplate`), not a strip of its own, and a polite live region. When several messages apply, the first wins: an incoming swap request, a stage playing, still to place, the next time. The round number shows only in the now line.
+5. **A stage on the scene shows:** the HP bar, the next move, the mark strip, small effect icons, and Escalating only when it changes. No turn strip. Reduced motion is respected.
+6. **Between stages**, carried HP and "Out" stay on the seats.
+7. **States written in:** Festival or no raid (the scene shows the next boss, the now line says when the next raid is); the boss fell early (the scene shows the fallen boss until Monday, "The boss fell in Stage 2"); the finale result is the scene's big moment (the existing reveal, played over the scene); stage 1 drops the spare column (the board narrows with a short slide).
+8. **The tray:** raid marks (on the board, out this weekend, away), a tap opens that creature in the right drawer, a drop on the tray removes it from the board.
+9. **Players drawer:** each player with their creatures' sprites and levels; a tap opens one in the right drawer.
+10. **Help:** a "?" in the Boss drawer opens How to play's raid sections; keywords carry glossary tags (the removed help prose is not brought back).
+11. **Another player's empty seat** shows a popover ("Mira's seat"), not the right drawer.
+
+**Choices that stay Misa's** (variations on the review page): **seat plates** (on every seat, or only your own creatures with others relying on the board itself); **a creature tap on a phone** (opens the full-page drawer, or first shows a popover and lights its reach on the board, with Open for the full view).
