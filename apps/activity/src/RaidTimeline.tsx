@@ -20,6 +20,7 @@ export function RaidTimeline({
   owned,
   onAct,
   onReplay,
+  bare = false,
 }: {
   view: RaidView;
   serverNow: number;
@@ -29,6 +30,11 @@ export function RaidTimeline({
   /** The player tapped the "what to do now" button. */
   onAct: (target: NowTarget) => void;
   onReplay: (phase: RaidPhaseId) => void;
+  /**
+   * Only the week's steps and season pips: no heading, no "what to do now" block and no result line under the steps (the raid canvas's
+   * Weekend drawer, whose now line and stage rows say those). Absent: the card as it always was.
+   */
+  bare?: boolean;
 }) {
   const [open, setOpen] = useState<RaidPhaseId | null>(null);
   // A boss that fell in stage 1 or 2 leaves the later steps unplayed: they read "Boss down", not a time that never comes.
@@ -42,26 +48,32 @@ export function RaidTimeline({
   const opened: PhaseResultView | undefined = results.find((r) => r.phase === open);
   const openedMark = opened === undefined ? undefined : marks[opened.phase];
   return (
-    <section class="raid-section raid-timeline" aria-labelledby="raid-schedule-heading">
-      <h3 id="raid-schedule-heading">This week</h3>
-      <div class={`now-action now-${action.kind}`}>
-        {action.target === null ? (
-          <p class="now-text" role="status" aria-live="off">
-            <strong class="pix">{action.label}</strong>
-          </p>
-        ) : (
-          <button
-            type="button"
-            class="primary now-button"
-            onClick={() => {
-              onAct(action.target ?? 'placement');
-            }}
-          >
-            {action.label}
-          </button>
-        )}
-        {action.detail !== null && <p class="muted small now-detail">{action.detail}</p>}
-      </div>
+    <section
+      class="raid-section raid-timeline"
+      aria-labelledby={bare ? undefined : 'raid-schedule-heading'}
+      aria-label={bare ? 'This week' : undefined}
+    >
+      {!bare && <h3 id="raid-schedule-heading">This week</h3>}
+      {!bare && (
+        <div class={`now-action now-${action.kind}`}>
+          {action.target === null ? (
+            <p class="now-text" role="status" aria-live="off">
+              <strong class="pix">{action.label}</strong>
+            </p>
+          ) : (
+            <button
+              type="button"
+              class="primary now-button"
+              onClick={() => {
+                onAct(action.target ?? 'placement');
+              }}
+            >
+              {action.label}
+            </button>
+          )}
+          {action.detail !== null && <p class="muted small now-detail">{action.detail}</p>}
+        </div>
+      )}
       <ol class="schedule">
         {steps.map((step) => {
           const mark = marks[step.event];
@@ -93,7 +105,7 @@ export function RaidTimeline({
         })}
       </ol>
       <SeasonPips season={view.season} />
-      {openedMark !== undefined && opened !== undefined && (
+      {!bare && openedMark !== undefined && opened !== undefined && (
         <p class="schedule-result" role="status">
           <span>
             <SayLine say={openedMark.summary} />

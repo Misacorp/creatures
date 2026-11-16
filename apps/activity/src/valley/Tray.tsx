@@ -6,6 +6,7 @@
  * phone (more creatures scroll sideways behind a cue), one row on a wide window. Tapping one opens the Paddock.
  */
 import { expeditionContent } from '@creatures/game';
+import type { ComponentChildren } from 'preact';
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import type { Creature } from '../api';
 import { silhouettePalette } from '../art';
@@ -89,12 +90,23 @@ function Mark({ badge }: { badge: TrayBadge }) {
   }
 }
 
+/**
+ * A screen's own mark on a tray creature, in place of the valley's (`marks` of the `Tray`): the raid's "on the board" and "out this
+ * weekend". `state` is the CSS class suffix (`vy-mon-<state>`), `label` is said to assistive technology, `mark` is the small picture.
+ */
+export interface TrayMark {
+  state: string;
+  label: string;
+  mark: ComponentChildren;
+}
+
 export function TrayCreature({
   creature,
   input,
   index,
   onPick,
   drag,
+  mark,
 }: {
   creature: Creature;
   input: TrayInput;
@@ -102,16 +114,18 @@ export function TrayCreature({
   onPick: () => void;
   /** Given: the creature can be picked up (the Signpost lets a hand carry it to a seat). */
   drag?: TrayDrag;
+  /** The screen's own mark and spoken name; absent: the valley's (`trayBadge`) and "Opens the Paddock.". */
+  mark?: TrayMark | undefined;
 }) {
   const badge = trayBadge(creature, input);
   const sprite = creatureSpriteOrFallback(creature.species);
-  const away = badge.state === 'trip';
+  const away = mark === undefined && badge.state === 'trip';
   return (
     <button
       type="button"
-      class={`vy-mon vy-mon-${badge.state}`}
+      class={`vy-mon vy-mon-${mark === undefined ? badge.state : mark.state}`}
       data-creature={creature.id}
-      aria-label={`${badge.label} Opens the Paddock.`}
+      aria-label={mark === undefined ? `${badge.label} Opens the Paddock.` : mark.label}
       onClick={(e) => {
         // The click that ends a drag is not a tap.
         if (drag?.consumeClick() === true) {
@@ -130,7 +144,11 @@ export function TrayCreature({
       ref={cssVars({ '--i': index })}
     >
       <span class="vy-mon-head">
-        <Mark badge={badge} />
+        {mark === undefined ? (
+          <Mark badge={badge} />
+        ) : (
+          mark.mark !== null && <span class="vy-mark vy-mark-say">{mark.mark}</span>
+        )}
       </span>
       <span class="vy-mon-body">
         <Sprite
@@ -169,6 +187,8 @@ export function Tray({
   onPick,
   label,
   drag,
+  marks,
+  dropId,
 }: {
   creatures: readonly Creature[];
   input: TrayInput;
@@ -176,6 +196,10 @@ export function Tray({
   label: string;
   /** Given: each creature can be picked up and carried (what a drop means is the screen's own business). */
   drag?: TrayDrag;
+  /** Given: the screen's own mark for each creature (state `free` and a null `mark`: none), in place of the valley's. */
+  marks?: (creature: Creature) => TrayMark;
+  /** Given: the tray is itself a place to drop a creature (`data-drop-id`, for the screen's hit test). */
+  dropId?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [more, setMore] = useState(false);
@@ -210,7 +234,7 @@ export function Tray({
     };
   }, [creatures.length]);
   return (
-    <section class={`vy-tray${more ? ' has-more' : ''}`} aria-label={label}>
+    <section class={`vy-tray${more ? ' has-more' : ''}`} aria-label={label} data-drop-id={dropId}>
       <div class="vy-tray-scroll" ref={ref}>
         <div class="vy-tray-grid" data-rows={rows}>
           {creatures.map((c, i) => (
@@ -223,6 +247,7 @@ export function Tray({
                 onPick(c.id);
               }}
               {...(drag === undefined ? {} : { drag })}
+              {...(marks === undefined ? {} : { mark: marks(c) })}
             />
           ))}
         </div>

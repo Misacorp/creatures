@@ -68,6 +68,11 @@ export interface SlotModel {
    * `aria-label` says it too.
    */
   badge?: string;
+  /**
+   * A tile with no name and no level printed on it (the raid canvas's `seatPlates: 'mine'`: only your own creatures wear their plate; the
+   * others show their picture, role and owner's initial, and the popover or drawer has the rest). `aria-label` still says everything.
+   */
+  bare?: boolean;
 }
 
 /**
@@ -292,8 +297,8 @@ export function SlotButton(props: SlotButtonProps) {
               ? { palette: shinyPalette(c.species) as Readonly<Record<string, string>> }
               : {})}
           />
-          <span class="slot-species">{c.name}</span>
-          {c.level !== null && <span class="slot-meta">Lv {c.level}</span>}
+          {slot.bare !== true && <span class="slot-species">{c.name}</span>}
+          {slot.bare !== true && c.level !== null && <span class="slot-meta">Lv {c.level}</span>}
           {c.hp !== undefined && (
             <span class={`slot-hp ${c.hp.state}`}>
               <span class="slot-hp-bar" aria-hidden="true">
