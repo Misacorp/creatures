@@ -54,7 +54,7 @@ describe('the feed', () => {
         playing,
         week: 'w',
         party: 1,
-        fetcher: fetcher as never,
+        fetcher: fetcher,
         clock,
       });
       return null;
