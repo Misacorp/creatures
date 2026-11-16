@@ -34,6 +34,8 @@ const argOf = (flag, fallback) => {
 const out = resolve(argOf('--out', join(here, '../screenshots/e2e-valley')));
 const width = Number.parseInt(argOf('--width', '390'), 10);
 const height = Number.parseInt(argOf('--height', '844'), 10);
+/** The device pixel ratio of the page (`--dpr 2` for a high-density screen); shots of a ratio other than 1 say so in their names. */
+const dpr = Number.parseFloat(argOf('--dpr', '1'));
 /** Extra page-address options for a look at the game (`E2E_QUERY='name=value'`). */
 const extraQuery = process.env.E2E_QUERY === undefined ? '' : `&${process.env.E2E_QUERY}`;
 const reduced = args.includes('--reduced');
@@ -1006,7 +1008,7 @@ const browser = await chromium.launch(
 );
 const ctx = await browser.newContext({
   viewport: { width, height },
-  deviceScaleFactor: 1,
+  deviceScaleFactor: dpr,
   reducedMotion: reduced ? 'reduce' : 'no-preference',
 });
 const page = await ctx.newPage();
@@ -1047,7 +1049,12 @@ const heading = (text) => page.locator('h1.hud-title', { hasText: text });
 /** The valley's way back, in the HUD before the title. */
 const hudBack = () => page.locator('header.hud button.hud-back');
 const shot = (name) =>
-  page.screenshot({ path: join(out, `${name}-${String(width)}${reduced ? '-reduced' : ''}.png`) });
+  page.screenshot({
+    path: join(
+      out,
+      `${name}-${String(width)}x${String(height)}${dpr === 1 ? '' : `-${String(dpr)}x`}${reduced ? '-reduced' : ''}.png`,
+    ),
+  });
 const waitFor = (locator, state = 'visible') => locator.first().waitFor({ state, timeout: 10000 });
 /** The map's list of place buttons: it has no box of its own (the buttons are placed over the art). */
 const VALLEY = 'ul[aria-label="The valley"]';
@@ -2459,6 +2466,12 @@ try {
       await page.waitForTimeout(300);
       await expectTopmost(tools, 'the bag tools header');
       await shot('forge-step-bag');
+      // An item's card: beside the bag on a wide window, a page of its own on a phone.
+      await drawer.locator('.bag-grid button.item-tile').first().click();
+      await page.waitForTimeout(400);
+      await shot('forge-bag-card');
+      await page.keyboard.press('Escape');
+      await page.waitForTimeout(300);
       if (width >= 960) {
         // The bag's chest is under the left drawer's reach: the scene is panned (not resized) to keep it clear.
         await page.waitForTimeout(400);

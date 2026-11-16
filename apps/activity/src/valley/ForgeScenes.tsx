@@ -20,8 +20,17 @@ import { CanvasTarget, type Opener } from './PlaceCanvas';
 import type { SceneGeometry } from './SceneFrame';
 import { At, CreatureSprite, Pic, SpeechBubble } from './parts';
 import { ANVIL_PROP } from './forge-props';
-import { PROP, anvilGlyph, anvilLabel, anvilWorking } from './forge-canvas';
-import { interiorLayout } from './forge-interior';
+import {
+  FLOOR_PLATE_X,
+  FURNACE_PLATE_X,
+  PLATE_AT,
+  PROP,
+  anvilGlyph,
+  anvilLabel,
+  anvilWorking,
+  backPlateAt,
+} from './forge-canvas';
+import { doorPlateAt, interiorLayout } from './forge-interior';
 import { CrateProp } from './CrateProp';
 import { CrateReveal } from './CrateReveal';
 import type { CrateOpened, CrateState } from './crate-view';
@@ -31,9 +40,6 @@ import { WARMING_FLAME } from './valley-art';
 /** The flame's top-left over the furnace's mouth, from the furnace's top-left (the art's fire is at x 14 to 33). */
 const FLAME_AT = { x: 22, y: 36 } as const;
 import { anvilName, anvilPrice } from './forge-view';
-
-/** Where an anvil cell's plate sits, scene pixels down from the cell's top: under the anvil. */
-const PLATE_AT = 28;
 
 /** The two ambient workers (decoration when no one else's smith is at work): species and motion. */
 export const AMBIENT = [
@@ -267,7 +273,7 @@ export function ForgeInside({
                       nickname: other.creature.name,
                       species: other.creature.species,
                     }),
-                    plateAt: i % 2 === 0 ? -6 : -12,
+                    plateAt: backPlateAt(i, g.s),
                   })}
               expanded={peek === i}
               onClick={() => {
@@ -293,6 +299,7 @@ export function ForgeInside({
         label="The furnace: the fire and the project board. Open"
         plate="Furnace"
         plateAt={lay.furnace.h}
+        plateX={FURNACE_PLATE_X}
         expanded={open.left === 'board'}
         onClick={(opener) => {
           onLeft('board', opener);
@@ -306,6 +313,7 @@ export function ForgeInside({
         h={lay.door.h}
         label="The door. Back to the valley"
         plate="Valley"
+        plateAt={doorPlateAt()}
         onClick={onOut}
       />
       {visit.anvils.map((anvil, i) => {
@@ -391,6 +399,7 @@ export function ForgeInside({
         {...lay.crate}
         label={`The floor: ${waiting === 0 ? 'nothing waiting' : `${String(waiting)} pieces waiting`}. Open`}
         plate="Floor"
+        plateX={FLOOR_PLATE_X}
         expanded={open.left === 'floor'}
         onClick={(opener) => {
           onLeft('floor', opener);

@@ -231,7 +231,7 @@ button.cv-target:is(:hover, :active) {
 */
 .cv-plate {
   position: absolute;
-  left: 50%;
+  left: calc(50% + var(--plate-dx, 0px));
   top: var(--py, 100%);
   z-index: 3;
   transform: translateX(-50%);

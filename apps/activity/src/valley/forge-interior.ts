@@ -20,7 +20,6 @@
  * The working height (`ESSENTIAL_H`) is what must be in view whatever the window; the rest of the front zone is dressing and may be cut.
  */
 import type { Placement } from '../games/art/pixel';
-import { sceneScale } from './scale';
 import { CHEST_PROP, ANVIL_PROP } from './forge-props';
 import { CELL_H, type Cell, type Pt } from './forge-canvas';
 import { PIECE_SIZE, interiorSprite, type InteriorPiece } from './forge-interior-art';
@@ -140,15 +139,22 @@ export interface InteriorLayout {
   sealed: Box;
 }
 
+/** The most the interior is ever enlarged: whole pixels, as the other canvas places (`SCALE_MAX` of the Bonfire, the stall). */
+export const INTERIOR_SCALE_MAX = 8;
+
 /**
- * The interior's pixel scale: as everywhere (3 on a phone, 4 on a wide window), but never wider than the room fits
- * (`ROOM.w` times the scale at most the width) nor taller than the window shows the working height (`ESSENTIAL_H` times the scale at
- * most the height), never under 1. The size depends on the window alone, never on how many anvils there are, so the
- * scene does not change size while you are in it.
+ * The interior's pixel scale: the largest whole number at which the room still fits the window, so a big window shows a big room and its
+ * clickable things stay comfortable to click (Misa, 2026-11-16: on a very wide window everything was tiny in the middle). The room is
+ * never wider than the window (`ROOM.w` times the scale at most the width) nor is its working height cut off (`ESSENTIAL_H` times the
+ * scale at most the height); never under 1, never over `INTERIOR_SCALE_MAX`. The size depends on the window alone, never on how many
+ * anvils there are, so the scene does not change size while you are in it. The edges of a window the room does not fill are tiled.
  */
 export function interiorScale(width: number, height: number): number {
-  let s = Math.min(sceneScale(width), Math.floor(width / ROOM.w));
-  while (s > 1 && ESSENTIAL_H * s > height) s -= 1;
+  const s = Math.min(
+    INTERIOR_SCALE_MAX,
+    Math.floor(width / ROOM.w),
+    Math.floor(height / ESSENTIAL_H),
+  );
   return Math.max(1, s);
 }
 
@@ -188,6 +194,14 @@ export function interiorLayout(
     crate: box('finished-crate', ROOM_AT['finished-crate']),
     sealed: { ...at(CRATE_AT), w: 20, h: 18 },
   };
+}
+
+/**
+ * Where the door's plate sits, scene pixels down from the door's top: on the door's foot, not under its mat, so the far smiths' plates
+ * (which stand just below and right of it) keep clear.
+ */
+export function doorPlateAt(): number {
+  return PIECE_SIZE.door.h - 8;
 }
 
 /** The tiles of one piece along a row, from the first one at or before the left edge to the right edge. */
