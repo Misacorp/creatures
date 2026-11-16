@@ -196,6 +196,7 @@ const ERROR_TEXT: Record<string, string> = {
   not_a_branch: 'That creature cannot grow into that form.',
   // The raid.
   locked: 'The raid is locked. Changes are closed for this week.',
+  stage_playing: 'A stage is playing right now. The board is locked until it ends.',
   slot_taken: 'Someone else already has that slot.',
   not_your_creature: 'That is not one of your creatures.',
   not_in_team: 'Only creatures in your team can be placed. Choose your team first.',

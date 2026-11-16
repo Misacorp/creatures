@@ -211,6 +211,8 @@ export function enqueuePost(
   sql: SqlStorage,
   post: { key: string; content: string },
   now: number,
+  /** When the post is first due (default: now). A stage that plays as it happens posts when it ends. */
+  dueAt: number = now,
 ): boolean {
   const channelId = announceChannelId(sql);
   if (channelId === null) return false;
@@ -222,7 +224,7 @@ export function enqueuePost(
         post.key,
         channelId,
         post.content,
-        now,
+        dueAt,
         now,
       )
       .toArray().length > 0
