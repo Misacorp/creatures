@@ -3058,6 +3058,36 @@ try {
         await waitFor(page.locator('.vy-scene .vy-feet-plate .nameplate-owner'));
         await page.waitForTimeout(300);
         await shot('bonfire5-company');
+        // A hand picks a resting creature up and puts it down anywhere on the ground; dropped high in the sky it lands on the ground
+        // (Misa, 2026-11-16: no dragging into the sky), and a drag opens no drawer.
+        const mine = page.locator('button.cv-target[aria-label*="by the fire"]');
+        const rows = [];
+        for (let i = 0; i < (await mine.count()); i += 1)
+          rows.push(await mine.nth(i).boundingBox());
+        const highest = Math.min(...rows.map((r) => r.y + r.height));
+        const target = mine.first();
+        const was = await target.boundingBox();
+        const label = await target.getAttribute('aria-label');
+        await page.mouse.move(was.x + was.width / 2, was.y + was.height / 2);
+        await page.mouse.down();
+        await page.mouse.move(was.x + was.width / 2 + 60, was.y - 40, { steps: 6 });
+        await page.mouse.move(was.x + was.width / 2 + 120, 70, { steps: 10 });
+        await shot('bonfirefix-drag-mid');
+        await page.mouse.up();
+        await page.waitForTimeout(300);
+        const now = await page.locator(`button.cv-target[aria-label="${label}"]`).boundingBox();
+        // The highest seat's feet are 36 scene pixels under the art's top, the horizon's grass line 14 and the least it may stand 20.
+        const px = was.width / 16;
+        if (now.y + now.height < highest - 16 * px - 1)
+          throw new Error(
+            `a creature dropped in the sky stands above the ground: feet at ${String(now.y + now.height)}, ground from ${String(highest - 16 * px)}`,
+          );
+        if (Math.abs(now.y - was.y) < 1 && Math.abs(now.x - was.x) < 1)
+          throw new Error('the dragged creature did not move');
+        if ((await rightPanel.count()) > 0 && (await rightPanel.isVisible()))
+          throw new Error('a drag opened a drawer');
+        await page.waitForTimeout(300);
+        await shot('bonfirefix-drag');
         await hudBack().click();
         await waitFor(page.locator(VALLEY), 'attached');
         await place('signpost').evaluate((el) => el.click());
