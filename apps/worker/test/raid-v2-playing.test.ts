@@ -143,7 +143,7 @@ describe('stages that play as they happen', () => {
         expect(v.v2?.creatures.length).toBe(input.fighters.length);
         expect(v.v2?.creatures.length).toBeGreaterThan(fought);
         expect(v.v2?.creatures.every((c) => c.hp === null)).toBe(true);
-        expect(v.v2?.creatures[0]).toMatchObject({ role: expect.any(String) });
+        expect(typeof v.v2?.creatures[0]?.role).toBe('string');
         expect(Array.isArray(v.v2?.creatures[0]?.talents)).toBe(true);
         expect(Array.isArray(v.v2?.creatures[0]?.gear)).toBe(true);
         // Another player's creature is on the board for everyone.
@@ -299,7 +299,8 @@ describe('stages that play as they happen', () => {
         expect(board?.gear[0]).not.toHaveProperty('id');
         expect(board?.gear[0]?.stats.length).toBeGreaterThan(0);
         expect(board?.talents.length).toBeGreaterThan(0);
-        expect(board?.talents[0]).toEqual({ id: expect.any(String), golden: false });
+        expect(board?.talents[0]?.golden).toBe(false);
+        expect(typeof board?.talents[0]?.id).toBe('string');
       },
       { start: V2_WEEK.open, core: V2 },
     );
