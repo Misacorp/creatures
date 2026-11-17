@@ -193,6 +193,7 @@ export const WEEK_TABLES = [
   'raid_teams',
   'raid_placements',
   'raid_results',
+  'raid_stage_pay',
   'raid_events',
   'raid_swap_requests',
   'raid_abilities',

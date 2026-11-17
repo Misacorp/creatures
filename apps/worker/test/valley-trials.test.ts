@@ -13,7 +13,7 @@ import { easyFoes, dungeonPlayer } from './dungeon-helpers';
 import { runCore, type CoreContext } from './helpers';
 import { HOUR, newKey, sessionCaller, type SessionCaller } from './kit';
 import { count, joinRaid, nextGuild, rows, seedPlayer, HELSINKI } from './raid-helpers';
-import { V2_WEEK, setBossHp, v2Player } from './raid-v2-helpers';
+import { V2_WEEK, finishPlaying, setBossHp, v2Player } from './raid-v2-helpers';
 import { runRaid } from './raid-helpers';
 
 const SYSTEMS = { ...ON, valleySystems: true, combatV2: true, dailyAllowance: true } as const;
@@ -438,6 +438,9 @@ describe('the dungeon and the raid tick the combat boxes', () => {
         setBossHp(ctx.sql, 5);
         ctx.clock.t = V2_WEEK.stage2 + 30_000;
         ctx.core.raid.runDue(HELSINKI);
+        // The tick lands when the replay ends.
+        finishPlaying(ctx);
+        ctx.core.raid.settleDueLive();
         const gold = (userId: string): number =>
           rows<{ n: number }>(
             ctx.sql,
