@@ -368,7 +368,8 @@ describe('a combat v2 raid weekend', () => {
         expect(eventsOfKind(ctx.sql, 'track_change')).toMatchObject([
           { slot: 6, kill: true, determination: 0 },
         ]);
-        // Essence was paid for the stage that finished the boss, through today's settle code.
+        // Essence was paid for the stage that finished the boss (when its replay ended), through today's settle code.
+        ctx.core.raid.settleDueLive();
         expect(count(ctx.sql, 'ledger', "source = 'raid'")).toBeGreaterThan(0);
         // The next week fights the next boss on the track.
         ctx.clock.t = V2_WEEK.next + 60_000;

@@ -219,6 +219,8 @@ describe('read budget: a stage that plays as it happens', () => {
           }
         }
         clock.t = created.created_at + rounds * RULES.raid.v2.liveRoundMs;
+        // The first touch after the end pays the stage (measured in its own case below); the replay is measured after it.
+        core.raid.settleDueLive();
         const after = await metered.measure(() => callAs(core, secrets, 1, path));
         expect(after.result).toMatchObject({ rounds: summary.rounds });
         expect(worst).toBeLessThanOrEqual(BUDGET_PLAYING.replay);
@@ -314,5 +316,57 @@ describe('read budget: the dungeon on combat v2', () => {
     } finally {
       restore();
     }
+  }, 60_000);
+});
+
+/** Budgets of the stage rewards held until the replay ends, rows read per call (the measured value is in the comment). */
+const BUDGET_PAY = {
+  held: 9, // measured 6: the whole check of a request (the unresolved finales' two queries and the held payouts' one) while a payout is held but not due: the index finds no row
+  idle: 9, // measured 6: the same with nothing held (the table is empty: no row read)
+  pay: 1150, // measured 768: paying one stage to 15 players with 45 fighting creatures (Essence and experience for each, the threshold scrap, the away lines, the stored summary)
+} as const;
+
+describe('read budget: stage rewards held until the replay ends', () => {
+  it('measures a request with nothing due and the payout of a full party of 15 with three creatures each', async () => {
+    await inGuild(
+      async (env) => {
+        const { metered, clock } = env;
+        const world = await seedWorld(env, { combatV2: true });
+        const { core } = world;
+        clock.t = V2_WEEK.stage1 + 30_000;
+        await core.alarm();
+        const secrets = new Map<string, string>();
+        secrets.set(
+          userId(1),
+          await core.createSession(GUILD_ID, { id: userId(1), displayName: 'Player 1' }),
+        );
+        const created = metered.sql
+          .exec<{ created_at: number; summary: string }>(
+            "SELECT created_at, summary FROM raid_results WHERE phase = 'stage1' LIMIT 1",
+          )
+          .one();
+        const rounds = windowRoundsOf(
+          JSON.parse(created.summary) as Parameters<typeof windowRoundsOf>[0],
+        );
+        const pending = () =>
+          metered.sql.exec<{ n: number }>('SELECT COUNT(*) AS n FROM raid_stage_pay').one().n;
+        expect(pending()).toBe(1);
+        // Held, not due: the check is one index read that finds nothing.
+        clock.t = created.created_at + 1000;
+        await callAs(core, secrets, 1, '/api/raid');
+        const held = await metered.measure(() => Promise.resolve(core.raid.settleDueLive()));
+        expect(pending()).toBe(1);
+        // The first request after the end pays everyone.
+        clock.t = created.created_at + rounds * RULES.raid.v2.liveRoundMs;
+        const pay = await metered.measure(() => Promise.resolve(core.raid.settleDueLive()));
+        expect(pending()).toBe(0);
+        // Nothing left: the check again.
+        const idle = await metered.measure(() => Promise.resolve(core.raid.settleDueLive()));
+        expectReadsUnder('settle check while a payout is held', held.reads, BUDGET_PAY.held);
+        expectReadsUnder('settle check, nothing held', idle.reads, BUDGET_PAY.idle);
+        expectReadsUnder('the payout of a stage for 15 players', pay.reads, BUDGET_PAY.pay);
+      },
+      { fresh: true },
+    );
   }, 60_000);
 });

@@ -4,9 +4,17 @@ Raid schedule, parties and joining, bosses and the raid curve, the live finale, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-17: [Misa] Raid screen picks: own seat plates, phone card first, stage rewards when the replay ends
+
+ID: `2026-11-17-raid-screen-picks-own-seat-plates` · Status: current · Amends: `2026-11-16-the-raid-screen-is-a-canvas`
+
+**Decision.** Three picks on the raid screen, agreed with Misa on 2026-11-17. (1) Name plates only on your own seats (`seatPlates: mine`). (2) On a phone a creature tap shows a small card first with its reach lit, and Open gives the full view (`creatureTap: popover-first`). (3) A stage 1 or 2 pays its rewards when its replay ends, with no new timer: Essence, creature XP, threshold scrap, kill-bonus gear, the away summary lines and the valley trial tick all land at `endsAt`. The facts of the payout are stored at resolve in `raid_stage_pay` (migration 70) and paid by `settleDueStagePay` from the guild alarm that already wakes at `endsAt` (also with posting off) or from the first request after it, in one transaction with the row's delete, so a stage pays once. Gear is rolled at payout with the server's live randomness. The finale and v1 weeks pay as before. The client's Essence hold is now redundant but harmless and stays.
+
+**Reasoning.** Misa agreed with the lead's picks. Pick 3 closes the result leak while a stage plays (Essence, XP and a bag drop at resolve time gave the outcome away minutes before the replay ended), without a new timer: the post's wake-up at `endsAt` is reused, and a late alarm loses nothing because every request settles what is due. It amends the earlier entry, which left the Essence hold to the client alone.
+
 ## 2026-11-16: The raid screen is a canvas behind combat v2 (client build)
 
-ID: `2026-11-16-the-raid-screen-is-a-canvas` · Status: current
+ID: `2026-11-16-the-raid-screen-is-a-canvas` · Status: current, amended by `2026-11-17-raid-screen-picks-own-seat-plates`
 
 **Decision.** On a combat v2 week the Raid tab is `raid-canvas/RaidCanvas`: one arena scene (boss, HP bar, board), a now line as its caption, the creature tray under it while you can place, a left drawer (Weekend, Boss, Players, Log) and a right drawer for the thing tapped. Stages 1 and 2 and the finale play on the scene; a stage that is playing locks the board and the client holds the "Out" marks, the stage result and the HUD Essence until `endsAt`. Misa's two open choices are the config props `seatPlates` (`mine` default) and `creatureTap` (`popover-first` on a phone). A v1 week keeps today's screen. The client names a drawer talent from its id because it must not carry combat data.
 

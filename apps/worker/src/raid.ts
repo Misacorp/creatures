@@ -58,6 +58,7 @@ import {
 } from './raid-v2-live';
 import { askSwap, acceptSwap, cancelSwap, declineSwap } from './raid-swap';
 import { endWeekV2 } from './raid-v2-track';
+import { nextStagePayAt, settleDueStagePay } from './raid-v2-pay';
 import { resolveStageV2, type ResultPhase } from './raid-v2-stage';
 import {
   arenaOf,
@@ -1207,7 +1208,14 @@ export class Raid {
     for (const fight of unresolvedRealV2(this.sql)) {
       if (this.trySettleV2(fight.weekId, fight.party, now)) settled++;
     }
+    // Stage 1 and 2 rewards whose replay has ended (one empty index read when none is due).
+    settled += settleDueStagePay(this.deps);
     return settled;
+  }
+
+  /** When the earliest held stage 1 or 2 payout falls due (the alarm wakes for it), or null. */
+  nextStagePayAt(): number | null {
+    return nextStagePayAt(this.sql);
   }
 
   /** When the last round of the earliest unresolved real fight ends (the alarm wakes for it), or null. */

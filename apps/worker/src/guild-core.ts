@@ -1401,6 +1401,9 @@ export class GuildCore {
     if (liveEndAt !== null) {
       candidates.push(liveEndAt > this.now() ? liveEndAt : this.now() + RAID_RETRY_MS);
     }
+    // Stage 1 and 2 rewards are paid when the replay ends, whether or not posts are on. One still due keeps failing: retry it later.
+    const payAt = this.raid.nextStagePayAt();
+    if (payAt !== null) candidates.push(payAt > this.now() ? payAt : this.now() + RAID_RETRY_MS);
     // A finale socket is open: wake at the next round start to push it (the schedule above is untouched).
     const finalePushAt = this.live?.nextFinaleAt() ?? null;
     if (finalePushAt !== null) candidates.push(finalePushAt);
