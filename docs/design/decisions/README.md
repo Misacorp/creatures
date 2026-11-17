@@ -503,6 +503,7 @@ Superseded: 1 entry (see the topic file).
 
 [ui.md](ui.md): Navigation and the frame, Home and the notice board, type scale, shared components, look and feel rules that apply across screens.
 
+- 2026-11-16 \[Misa\] The item tile's slot icon sits beside the level on one bottom strip
 - 2026-11-16 \[Misa\] Every picture on a review page enlarges on tap
 - 2026-11-15 Misa's Forge picks: plates, whole room, item card beside, full-screen reveal \[Misa\]
 - 2026-11-15 The Forge room fills the window: the 128x176 room centred, edges tiled and dressed (two fill variants, A is the pick) \[Misa\]
