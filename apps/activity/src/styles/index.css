@@ -106,6 +106,7 @@
 @import './views/expeditions/claim.css';
 @import './views/home-pages.css';
 @import './views/expeditions/wipe-notice.css';
+@import './views/reset/new-valley.css';
 @import './views/expeditions/supply-crafting.css';
 @import './views/expeditions/world-map.css';
 @import './components/side-panel.css';
@@ -145,8 +146,13 @@
 @import './views/forge.css';
 @import './views/canvas.css';
 @import './views/signpost-canvas.css';
+@import './views/bonfire-canvas.css';
+@import './views/paddock-canvas.css';
+@import './views/school-canvas.css';
+@import './views/art-focus.css';
+@import './views/crate.css';
 @import './views/commons.css';
-@import './views/market.css';
+@import './views/market-canvas.css';
 @import './views/visitor.css';
 @import './views/school.css';
 @import './views/gazette.css';

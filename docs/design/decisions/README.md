@@ -23,8 +23,13 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [direction.md](direction.md): Roadmap calls, Misa's standing direction, naming and tone, content policy, how agents and Misa work.
 
+- 2026-11-15 The reset: the goodbye DM is an embed, the new-valley card is look B \[Misa\]
+- 2026-11-15 Art glows use the game's rarity colours
 - 2026-11-15 \[Misa\] The Forge interior keeps one look for now
 - 2026-11-09 \[Misa\] Valley building levels share one look per level
+- 2026-11-06 The reset: no warning post, the wipe runs when Misa asks, no server rank or bosses in the record \[Misa\]
+- 2026-11-06 The settlers' record keeps eight feats; firsts on the server are read by catch date \[Misa\]
+- 2026-11-06 The reset: settlers appear on every server, each player gets their record by DM, and a hidden trace of who was there is kept \[Misa\] (amended)
 - 2026-11-06 Overnight sessions: quiet until news, then one message with every open question \[Misa\]
 - 2026-11-05 \[Misa\] Working rules: scalars best-guess and ask later, invent content for misses, fewer decisions for Misa
 - 2026-11-05 \[Misa\] CI runs the full check; agents push after quick local checks
@@ -56,6 +61,7 @@ Superseded: 1 entry (see the topic file).
 [platform.md](platform.md): Hosting, Durable Objects, scheduling, CI and deploys, staging, dependencies, security, database reads, data cleanup, analytics, dev tools, the workbench, player feedback, sockets.
 
 - 2026-11-15 The migration runner reads one row at object start
+- 2026-11-15 The reset is built inert: a dry run on staging, a wipe nothing calls, an archive that is not bound
 - 2026-11-15 Housing's migration is 68: the valley merged first with 64 to 67
 - 2026-11-14 Dev panel: a full-screen layout with sections, and a target player for every per-player tool
 - 2026-11-11 Furniture workshop: silhouette variants per form, chosen by the style
@@ -64,6 +70,7 @@ Superseded: 1 entry (see the topic file).
 - 2026-11-10 Housing: a bed moves with its sleeper, and the housing content is its own package entry
 - 2026-11-10 Housing build, craft and skin answer with what changed
 - 2026-11-10 Migrations: applied by recorded version, reserved gaps, never revert the runner
+- 2026-11-06 The settlers' record lives in a production archive object, not the public repo, and keeps no Discord IDs (amended)
 - 2026-11-06 Dev tools: server managers only, roster presets, creatures-per-player override \[Misa\]
 - 2026-11-05 The lab's tests share modules between files, and boss rule measurements live in the report
 - 2026-11-03 Raid test bench: the staging raid dev tools become four steps \[Misa\]
@@ -158,6 +165,7 @@ Superseded: 1 entry (see the topic file).
 
 [combat.md](combat.md): The shared combat engine, abilities, statuses, elements, the balance simulator, balance passes, and combat v2 in the lab.
 
+- 2026-11-15 Raid replays play at the live finale's pace, fixed \[Misa\]
 - 2026-11-14 Boss animations: lances pass through the whole column; the aim is the board's highlight, no triangle \[Misa\]
 - 2026-11-14 Rename: the Mire debuff is Bogged Down, the Mire mark is Mired \[Misa\]
 - 2026-11-14 A live finale started off the calendar is on from its real start in the Raid view
@@ -492,12 +500,19 @@ Superseded: 1 entry (see the topic file).
 
 [ui.md](ui.md): Navigation and the frame, Home and the notice board, type scale, shared components, look and feel rules that apply across screens.
 
+- 2026-11-15 Misa's Forge picks: plates, whole room, item card beside, full-screen reveal \[Misa\]
+- 2026-11-15 The Forge room fills the window: the 128x176 room centred, edges tiled and dressed (two fill variants, A is the pick) \[Misa\]
+- 2026-11-15 One cue for every clickable thing in the Forge and on the Signpost map, none for decoration (three variants behind one switch, A is the pick) \[Misa\]
+- 2026-11-15 Drawers lie over a canvas place; the scene never moves or rescales, and a drawer's first step has only the X \[Misa\]
+- 2026-11-15 No sheet over a drawer in the Forge: the item card, the dismantle flow, the fire's numbers and the project board's lists are steps of their panel
+- 2026-11-15 No focus outlines in art scenes; keyboard focus shows as an in-world cue \[Misa\]
+- 2026-11-15 How to play follows the switches: combat v2 sections, then valley sections
 - 2026-11-12 The house's night indoors follows the living room's look: graded, not ramped
 - 2026-11-11 The postcard follows the phase, lights are data per piece, and one painter stamps every scene
 - 2026-11-11 The house is lit by one painter pass, from the living room's phase (amended)
 - 2026-11-11 Pixel canvases paint in a layout effect, never after the frame
-- 2026-11-11 The Signpost is a canvas: a click on the signpost opens the expedition map, a click on a place opens its scout wizard \[Misa\]
-- 2026-11-11 \[Misa\] A place is a canvas: the scene never scrolls, every action is a click in it, content opens in a left or right drawer holding a wizard
+- 2026-11-11 The Signpost is a canvas: a click on the signpost opens the expedition map, a click on a place opens its scout wizard \[Misa\] (amended)
+- 2026-11-11 \[Misa\] A place is a canvas: the scene never scrolls, every action is a click in it, content opens in a left or right drawer holding a wizard (amended)
 - 2026-11-11 A valley frame clips instead of scrolling: the HUD's way back never slides off
 - 2026-11-10 Housing screen pass: the whole house, build moment, one pinned action
 - 2026-11-10 Housing client: the build list is rows of parts, a piece moves by emptying then placing, the overview starts on the core
@@ -582,6 +597,15 @@ Superseded: 1 entry (see the topic file).
 
 [valley.md](valley.md): The valley and peaceful systems overhaul planned in docs/design/valley/: job posts, the bonfire, the commons, the Forge loop, gear, trials, the School, the visitor, the economy lab, and Misa's question rounds.
 
+- 2026-11-16 Pre-playtest layout fixes: creature drawer, Paddock row, seat outlines, corner in view
+- 2026-11-15 The Market is a canvas: the stall, the broker, and a building site before it is built
+- 2026-11-15 The Paddock is a canvas: the yard is the scene, the gate and each creature are taps, the project in a builders' corner
+- 2026-11-15 The School is a canvas: the lectern, the seats and the house are the taps, its project is in a builders' corner
+- 2026-11-15 The visitor's stall is a canvas: the visitor and the blueprint to click, a sign while he is away
+- 2026-11-15 The Bonfire is a canvas of creatures chilling round the fire, and the project lives in a builders' corner \[Misa\]
+- 2026-11-15 The sealed crate's reveal is a modal part of the Forge's art scene, four plays behind one switch
+- 2026-11-15 The Forge's rare and epic pieces wait in a sealed crate until opened \[Misa\]
+- 2026-11-15 A click on a place opens its real view directly: the Forge interior, the expedition map \[Misa\]
 - 2026-11-11 The Forge opens on its outside and goes inside to a workshop of its own \[Misa\]
 - 2026-11-11 Scene trees stand on the grass, and the Bonfire's +N more stays above the pinned action
 - 2026-11-11 A flat place is built on the ground (stakes, rope, planks, tools), a tall one in poles \[Misa\]
@@ -669,3 +693,5 @@ Superseded: 1 entry (see the topic file).
 - 2026-10-29 Valley: gifts count in full, stores last a day and a half, raiders' seats are kept (round 2)
 - 2026-10-29 Valley: one shared valley, posts instead of timers, away growth in steps (round 1)
 - 2026-10-29 Valley: be brave, and decide in small rounds of questions
+
+Superseded: 1 entry (see the topic file).

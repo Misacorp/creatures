@@ -69,6 +69,8 @@ async function newPlayer(
 
 const buyAnvil = (p: P, key = newKey('anvil')) =>
   p.api.call('POST', '/api/valley/anvil/buy', { idempotencyKey: key });
+const openCrate = (p: P, key = newKey('crate')) =>
+  p.api.call('POST', '/api/valley/forge/crate/open', { idempotencyKey: key });
 const order = (p: P, body: Record<string, unknown>) =>
   p.api.call('POST', '/api/valley/order', body);
 const post = (p: P, body: Record<string, unknown>) => p.api.call('POST', '/api/valley/seat', body);
@@ -599,6 +601,9 @@ describe('making pieces (V-FORGE-3, 4, 5, 7, 9)', () => {
           expect(started.anvils[0]?.piece?.rarity).toBe(rarity === 'epic' ? 2 : 0);
           ctx.clock.t += 20 * HOUR;
           await p.state();
+          // A rare or epic piece waits sealed (V-FORGE-5) until the crate is opened; a common comes home on its own.
+          expect(count(ctx.sql, 'forge_crate')).toBe(rarity === 'common' ? 0 : 1);
+          if (rarity !== 'common') expect((await openCrate(p)).status).toBe(200);
           const made = ctx.sql
             .exec<{ rarity: string }>('SELECT rarity FROM gear_items WHERE user_id = ?', p.id)
             .toArray();
@@ -1140,6 +1145,7 @@ describe('patchwork pieces (V-FORGE-12)', () => {
         expect((await view(p)).anvils[0]?.piece?.rarity).toBe(1);
         ctx.clock.t += 20 * HOUR;
         await p.state();
+        expect((await openCrate(p)).status).toBe(200);
         const made = ctx.sql
           .exec<{ rarity: string; lines_json: string }>(
             'SELECT rarity, lines_json FROM gear_items WHERE user_id = ?',

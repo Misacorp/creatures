@@ -19,7 +19,6 @@ import {
   itemOf,
   itemStats,
   statText,
-  unlockLadder,
   type GlossarySection,
 } from '@creatures/game';
 import { bossArt, markPalette } from './art';
@@ -38,6 +37,7 @@ import {
   exampleSeason,
   exampleSpecies,
   expeditionTrips,
+  growthSteps,
   markExample,
   rankPicture,
   starterSpecies,
@@ -72,29 +72,6 @@ function gearExample(): ItemCardItem {
     stats: itemStats(item).map((st) => ({ ...st, text: statText(st.stat, st.value) })),
     lines: itemLines(item).map((line) => ({ ...line, active: null })),
   };
-}
-
-/**
- * What a creature's level brings, in order, for the starter that evolves (its gear slots, ribbons,
- * finale ability, evolution and talent slots), grouped by level: "Lv 10: Bronze Ribbon, Finale ability". From the
- * rules, so it moves with them.
- */
-function growthSteps(): { level: number; names: string[] }[] {
-  const starter = content.creatures.find((c) => c.starter && c.evolvesTo !== undefined);
-  const ladder = unlockLadder(starter?.rarity ?? 'common', starter?.evolvesTo?.level);
-  const steps: { level: number; names: string[] }[] = [];
-  // The ladder leaves out the finale ability when a ribbon shares its level; the picture names it.
-  const ability = { level: RULES.abilities.unlockLevel, name: 'Finale ability' };
-  const withAbility = ladder.some((step) => step.name === 'Ability')
-    ? ladder
-    : [...ladder, ability];
-  for (const step of [...withAbility].sort((a, b) => a.level - b.level)) {
-    const name = step.name === 'Ability' ? ability.name : step.name;
-    const last = steps.at(-1);
-    if (last?.level === step.level) last.names.push(name);
-    else steps.push({ level: step.level, names: [name] });
-  }
-  return steps;
 }
 
 const titleOf = (id: string): string => entryView(id)?.title ?? id;
@@ -177,6 +154,90 @@ function CreaturesArt() {
     </>
   );
 }
+
+/**
+ * Levels and growth (combat v2): what each level brings, from the rules (`growthSteps`). With the valley's base systems on every gear
+ * slot is open from level 1 and the old ribbons are honours; there is no finale ability (Knacks replace it).
+ */
+function V2GrowthArt({ valley }: { valley: boolean }) {
+  return (
+    <ol class="growth-art" aria-label="What the levels bring">
+      {growthSteps({ combatV2: true, allSlotsOpen: valley }).map((step) => (
+        <li key={step.level}>
+          <span class="lvl-tag pix">Lv {step.level}</span>
+          <span class="pix">{step.names.join(', ')}</span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+/** A row of glyphs with a word under each, for the valley's sections (the page's `art-row` look). */
+function ValleyRow({
+  label,
+  items,
+}: {
+  label: string;
+  items: readonly { glyph: string; word: string }[];
+}) {
+  return (
+    <ul class="art-row" aria-label={label}>
+      {items.map((item) => (
+        <li key={item.word}>
+          <Sprite sprite={glyphOrUnknown(item.glyph)} scale={4} />
+          <span class="muted">{item.word}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+const VALLEY_ART: Readonly<
+  Record<string, { label: string; items: readonly { glyph: string; word: string }[] }>
+> = {
+  'valley-day': {
+    label: 'The valley',
+    items: [
+      { glyph: 'couch', word: 'Bonfire' },
+      { glyph: 'compass', word: 'Signpost' },
+      { glyph: 'anvil', word: 'Forge' },
+      { glyph: 'journal', word: 'Gazette' },
+    ],
+  },
+  'valley-commons': {
+    label: 'The commons',
+    items: [
+      { glyph: 'gift', word: 'Give' },
+      { glyph: 'flag', word: 'Project' },
+      { glyph: 'trophy', word: 'Level up' },
+    ],
+  },
+  'valley-forge': {
+    label: 'The Forge',
+    items: [
+      { glyph: 'anvil', word: 'Anvil' },
+      { glyph: 'satchel', word: 'Floor' },
+      { glyph: 'lock', word: 'Sealed' },
+      { glyph: 'shard-any', word: 'Shards' },
+    ],
+  },
+  'valley-market': {
+    label: 'The Market and the visitor',
+    items: [
+      { glyph: 'swap', word: 'Exchange' },
+      { glyph: 'shard-any', word: 'Shards' },
+      { glyph: 'sparkle', word: 'Reroll' },
+    ],
+  },
+  'valley-school': {
+    label: 'The School and trials',
+    items: [
+      { glyph: 'hand', word: 'Teacher' },
+      { glyph: 'ability', word: 'Talent' },
+      { glyph: 'trophy', word: 'Honour' },
+    ],
+  },
+};
 
 /** The worked example: a real Setter marks, a real creature of the right element sets it off. */
 function ComboExample() {
@@ -717,8 +778,27 @@ function HousingArt() {
 }
 
 /** The picture of one section. */
-export function SectionArt({ id }: { id: GlossarySection }) {
+export function SectionArt({
+  id,
+  valley = false,
+}: {
+  id: GlossarySection;
+  /** The valley's base systems are on: the growth picture shows every gear slot open and honours instead of ribbons. */
+  valley?: boolean;
+}) {
   switch (id) {
+    case 'valley-day':
+    case 'valley-commons':
+    case 'valley-forge':
+    case 'valley-market':
+    case 'valley-school': {
+      const picture = VALLEY_ART[id];
+      return picture === undefined ? null : <ValleyRow {...picture} />;
+    }
+    case 'valley-gear':
+      return <GearSectionArt />;
+    case 'v2-growth':
+      return <V2GrowthArt valley={valley} />;
     case 'first-week':
       return <StartersArt />;
     case 'creatures':

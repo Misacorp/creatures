@@ -45,6 +45,7 @@ import { raidPlacementCapMigration } from './raid-placement-cap-migration';
 import { raidProgressionMigration } from './raid-progression-migration';
 import { valleyMigration } from './valley-migration';
 import { valleyScoutsMigration } from './valley-scouts-migration';
+import { valleyCrateMigration } from './valley-crate-migration';
 import { valleyForgeMigration } from './valley-forge-migration';
 import { valleyBonfireMigration } from './valley-bonfire-migration';
 import { valleyCommonsMigration } from './valley-commons-migration';
@@ -384,6 +385,8 @@ export const MIGRATIONS: readonly Migration[] = [
   valleyForgeCrowdMigration,
   // Version 68: player housing: houses, parts, rooms, items, trophies, guestbook, mail and drops (see housing-migration.ts).
   housingMigration,
+  // Version 69: the Forge's sealed crate: rare and epic pieces wait until it is opened (see valley-crate-migration.ts).
+  valleyCrateMigration,
 ];
 
 /** The schema version of a fresh database: the highest version in the list. */

@@ -98,6 +98,7 @@ const PLACE_OF: Record<PaperHeadline['kind'], PlaceId> = {
   'found-blueprint': 'signpost',
   'found-pages': 'signpost',
   'forge-pieces': 'forge',
+  'crate-waits': 'forge',
   duplicates: 'paddock',
   'resting-xp': 'bonfire',
   'pack-full': 'signpost',
@@ -121,7 +122,8 @@ function storyOf(h: PaperHeadline, paper: Paper, byId: ReadonlyMap<string, Creat
   const who = h.creatureIds.flatMap((id) => byId.get(id) ?? []);
   const members = who.map(memberOf);
   const first = members[0]?.name ?? null;
-  const newcomers: Find[] = h.newcomers.flatMap((id): Find[] => {
+  // A creature is a newcomer once per story, whatever the server's list says (each is one face in the row).
+  const newcomers: Find[] = [...new Set(h.newcomers)].flatMap((id): Find[] => {
     const c = byId.get(id);
     return c === undefined
       ? []
@@ -219,6 +221,14 @@ function storyOf(h: PaperHeadline, paper: Paper, byId: ReadonlyMap<string, Creat
               ),
         blurb: h.count > items.length ? `${num(h.count)} pieces in all.` : '',
         finds: items,
+        scene: scene(members),
+      };
+    case 'crate-waits':
+      // V-FORGE-5: the paper only teases the sealed crate; the pieces are not named before it is opened.
+      return {
+        ...base,
+        headline: `SOMETHING ${h.rarity === 'epic' ? 'EPIC' : 'RARE'} WAITS AT THE FORGE`,
+        finds: [],
         scene: scene(members),
       };
     case 'duplicates':

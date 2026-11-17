@@ -580,6 +580,8 @@ export class ValleySettle {
     // The Forge: what the anvils did is written back, then the floors come home when it is time (an arrival, or a floor that filled).
     let anvilsOut: readonly SeatRow[] = anvilRows;
     let piecesHome = 0;
+    // V-FORGE-5: the sealed crate after a floor came home (unread until then: the row is read only at an arrival).
+    let crate: { count: number; best: 0 | 1 | 2 } | null = null;
     if (forgeIn !== null) {
       anvilsOut = this.deps.forge.save(userId, to, forgeIn, after);
       const capFloor = VALLEY_RULES.forge.floorPiecesPerAnvil;
@@ -587,6 +589,7 @@ export class ValleySettle {
       if (floorDue && anvilsOut.some((a) => a.floor_count > 0)) {
         const home = this.deps.forge.collect(userId, to, team, VALLEY_RULES.forge.bag);
         piecesHome = home.brought;
+        crate = home.crate;
         if (home.items.length > 0) {
           const smith = anvilRows.find((a) => a.seat_id === home.firstSeat)?.creature_id ?? null;
           rec?.forgePieces(home.items.map(paperItem), smith);
@@ -607,6 +610,11 @@ export class ValleySettle {
       }
     }
     void piecesHome;
+    // The paper teases the crate once per arrival while it holds anything (V-FORGE-5); it never lists a sealed piece.
+    if (newVisit && rec !== undefined) {
+      const waiting = crate ?? this.deps.forge.crateOf(userId);
+      if (waiting.best > 0) rec.crateWaits(waiting.best === 2 ? 'epic' : 'rare');
+    }
 
     // The broker's change (V-FORGE-11) is written with its seat; what it traded is already on the shelf.
     if (brokerRow !== null && after.broker !== undefined) {
@@ -1528,9 +1536,23 @@ export class ValleySettle {
         },
         queueMax: rules.forge.queueMax,
         orderCountMax: rules.forge.orderCountMax,
+        crate: crateView(this.deps.forge.crateOf(input.userId)),
       },
     };
   }
+}
+
+/** The sealed crate as the view shows it: how many and the best rarity (V-FORGE-5). */
+function crateView(state: { count: number; best: 0 | 1 | 2 }): {
+  count: number;
+  cap: number;
+  best: 'rare' | 'epic' | null;
+} {
+  return {
+    count: state.count,
+    cap: VALLEY_RULES.forge.crateCap,
+    best: state.count === 0 ? null : state.best === 2 ? 'epic' : state.best === 1 ? 'rare' : null,
+  };
 }
 
 /** V-POST-4: the posted creature's element is the place's (a mixed place likes no element). */

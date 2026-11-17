@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GEAR_STATE, SAMPLE_GEAR } from './creature-card-sample';
 import type { GearActions } from './gear-actions';
-import { byName, createPage, visibleText, type Page } from './test-dom';
+import { byClass, byName, byRole, createPage, visibleText, type Page } from './test-dom';
 import { PopoverHost } from './PopoverHost';
 import { sampleAnvil, sampleOrder, withAnvils } from './valley/forge-sample';
 import { sampleValley } from './valley/signpost-sample';
@@ -75,6 +75,7 @@ function forgeMode(anvils: ReturnType<typeof sampleAnvil>[], sent: unknown[] = [
     actions: {
       post: ok,
       buyAnvil: ok,
+      openCrate: () => Promise.resolve(null),
       buyKit: ok,
       setKit: ok,
       order: (request) => {
@@ -84,7 +85,7 @@ function forgeMode(anvils: ReturnType<typeof sampleAnvil>[], sent: unknown[] = [
     },
     onOpenPaddock: () => undefined,
     onOpenMarket: () => undefined,
-    inside: true,
+    onLeave: () => undefined,
   };
 }
 
@@ -130,5 +131,59 @@ describe('the Workshop with the Forge on', () => {
     expect(text).not.toMatch(/Filter and sort/);
     expect(text).toMatch(/Craft supplies/);
     expect(byName(p.root, 'button', /^Craft$/).length).toBeGreaterThan(0);
+  });
+});
+
+/** The bag open, then a tile pressed: the item's card. */
+function openCard(p: Page): void {
+  p.click(byName(p.root, 'button', /^The bag/)[0] as never);
+  const tile = byRole(p.root, 'option')[0];
+  if (tile === undefined) throw new Error('no item tile in the bag');
+  p.click(tile);
+}
+
+describe('the item card and the dismantle flow in the Forge are steps, never a sheet over the drawer', () => {
+  it('on a phone the card is no dialog; Back returns to the bag list', () => {
+    const p = draw(forgeMode([sampleAnvil('a1', smith.id, [])]));
+    openCard(p);
+    // A phone (the fake DOM has no media query): one page, the card in place of the list.
+    expect(byRole(p.root, 'dialog')).toHaveLength(0);
+    expect(byName(p.root, 'button', /^‹ Back to the bag/)).not.toHaveLength(0);
+    expect(byClass(p.root, 'item-detail')).not.toHaveLength(0);
+    expect(byClass(p.root, 'ps-list')[0]?.getAttribute('hidden')).not.toBeNull();
+    p.click(byName(p.root, 'button', /^‹ Back to the bag/)[0] as never);
+    expect(byClass(p.root, 'item-detail')).toHaveLength(0);
+    expect(byClass(p.root, 'ps-list')[0]?.getAttribute('hidden')).toBeNull();
+  });
+
+  it('Dismantle on the card is the next step of the same panel, and its Back returns to the card', () => {
+    const p = draw(forgeMode([sampleAnvil('a1', smith.id, [])]));
+    openCard(p);
+    p.click(byName(p.root, 'button', /^Dismantle/)[0] as never);
+    expect(byRole(p.root, 'dialog')).toHaveLength(0);
+    expect(visibleText(p.root)).toMatch(/Who dismantles|Worn items/);
+    expect(byClass(p.root, 'item-detail')).toHaveLength(0);
+    p.click(byName(p.root, 'button', /^‹ Back to the item/)[0] as never);
+    expect(byClass(p.root, 'item-detail')).not.toHaveLength(0);
+  });
+
+  it('on a wide window the card opens in the other drawer (beside), the bag list staying on the left', () => {
+    vi.stubGlobal('matchMedia', () => ({
+      matches: true,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    }));
+    const p = draw(forgeMode([sampleAnvil('a1', smith.id, [])]));
+    openCard(p);
+    const side = byClass(p.root, 'item-detail')[0];
+    let up = side?.parentNode ?? null;
+    let found: string | null = null;
+    while (up !== null && found === null) {
+      found = up.getAttribute?.('data-side') ?? null;
+      up = up.parentNode;
+    }
+    expect(found).toBe('right');
+    // The list stays showing.
+    expect(byClass(p.root, 'ps-list')[0]?.getAttribute('hidden')).toBeNull();
   });
 });

@@ -1,0 +1,115 @@
+/* The "A new valley" card after the reset: the quiet bonfire above the words (the card itself is .wipe-notice). */
+.new-valley-art {
+  display: flex;
+  justify-content: center;
+  margin: 0 0 0.5rem;
+}
+
+/* The goodbye DM as Discord draws it (a preview for judging the layout, workbench only). */
+.dm-preview {
+  padding: 1rem;
+  border-radius: 0.5rem;
+  background: #313338;
+  color: #dbdee1;
+  font-family: system-ui, sans-serif;
+}
+
+.dm-preview-msg {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.dm-preview-avatar {
+  flex: none;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  background: #5865f2;
+}
+
+.dm-preview-body {
+  min-width: 0;
+  line-height: 1.375;
+}
+
+.dm-preview-head {
+  margin: 0;
+}
+
+.dm-preview-name {
+  font-weight: 600;
+  color: #f2f3f5;
+}
+
+.dm-preview-tag {
+  margin-left: 0.25rem;
+  padding: 0 0.25rem;
+  border-radius: 0.1875rem;
+  background: #5865f2;
+  color: #fff;
+  font-size: var(--fs-small);
+  vertical-align: middle;
+}
+
+.dm-preview-time {
+  margin-left: 0.5rem;
+  font-size: var(--fs-small);
+  color: #949ba4;
+}
+
+/* The embed: a colour bar on the left, then the title, the description and the fields in a grid. */
+.dm-embed {
+  max-width: 34rem;
+  margin-top: 0.25rem;
+  padding: 0.5rem 1rem 1rem 0.75rem;
+  border-left: 0.25rem solid #f2b33d;
+  border-radius: 0.25rem;
+  background: #2b2d31;
+}
+
+.dm-embed p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.dm-embed-title {
+  margin-top: 0.5rem;
+  font-weight: 700;
+  color: #f2f3f5;
+}
+
+.dm-embed-description {
+  margin-top: 0.5rem;
+  font-size: var(--fs-small);
+}
+
+.dm-embed-fields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.dm-embed-field {
+  grid-column: 1 / -1;
+}
+
+.dm-embed-field.inline {
+  grid-column: auto;
+}
+
+.dm-embed-field-name {
+  font-size: var(--fs-small);
+  font-weight: 700;
+  color: #f2f3f5;
+}
+
+.dm-embed-field-value {
+  font-size: var(--fs-small);
+}
+
+@media (max-width: 30rem) {
+  .dm-embed-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

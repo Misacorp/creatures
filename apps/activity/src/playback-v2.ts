@@ -16,12 +16,26 @@ export type SpeedV2 = 1 | 2;
  */
 export const STAGE_ROUND_MS: number = RULES.raid.v2.liveRoundMs;
 
+/** "Round N" shows this long before the round's first beat lands, at 1x (the replay's; a live round is shorter). */
+export const INTRO_REPLAY_MS = 1000;
+export const INTRO_LIVE_MS = 700;
+
 /** What of a round the live finale keeps free after its beats for the last effects, so a round ends before the next one starts. */
 export const ROUND_TAIL_MS = 3000;
 
 /** What the beats of a round (and its "Round N" intro) may take together at 1x in a round of `roundMs`, for `introMs` of intro. */
 export const roundBudgetMs = (roundMs: number, introMs: number): number =>
   Math.max(2000, roundMs - ROUND_TAIL_MS - introMs);
+
+/**
+ * The pace of a raid replay: the live finale's (Misa, 2026-11-15: "Replay speed is good in the finale and that should be the de-facto raid
+ * replay speed"). The "Round N" intro of a live round, and the beats squeezed into what is left of `STAGE_ROUND_MS`.
+ */
+export const REPLAY_PACE = {
+  introMs: INTRO_LIVE_MS,
+  budgetMs: roundBudgetMs(STAGE_ROUND_MS, INTRO_LIVE_MS),
+  roundMs: STAGE_ROUND_MS,
+} as const;
 
 /**
  * How long each kind of beat stays at 1x, in milliseconds, before a round's budget squeezes it. A boss beat takes the length of a boss
@@ -34,10 +48,6 @@ export const REACTION_HOLD_MS = 450;
 
 /** No beat is quicker than this: a hit has to be seen. */
 const MIN_BEAT_MS = 140;
-
-/** "Round N" shows this long before the round's first beat lands, at 1x (the replay's; a live round is shorter). */
-export const INTRO_REPLAY_MS = 1000;
-export const INTRO_LIVE_MS = 700;
 
 /**
  * The time each beat stays, one number per beat. The beats of a round share `budgetMs` (at 1x) when their base times add up to more;

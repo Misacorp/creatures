@@ -9,6 +9,7 @@ import type { Collection } from './collection';
 import {
   ValleyAnvilBuyBodySchema,
   ValleyBrokerBodySchema,
+  ValleyCrateOpenBodySchema,
   ValleyCommunalBodySchema,
   ValleyDeepBodySchema,
   ValleyExchangeBodySchema,
@@ -133,6 +134,20 @@ export const valleyRoutes: Routes<ValleyRouteContext> = {
       const body = await parseBody(request, ValleyAnvilBuyBodySchema);
       if (body === undefined) return invalidBody();
       const outcome = core.valleyOrders.buyAnvil(user.id, body.idempotencyKey);
+      if (!outcome.ok) return failure(outcome);
+      return json({
+        ...outcome.value,
+        valley: core.valleyState(user.id),
+        state: core.collection.state(user.id),
+      });
+    },
+  },
+  '/api/valley/forge/crate/open': {
+    POST: async (request, { user, core }) => {
+      if (core.valleyOrders === null) return notFound();
+      const body = await parseBody(request, ValleyCrateOpenBodySchema);
+      if (body === undefined) return invalidBody();
+      const outcome = core.valleyOrders.openCrate(user.id, body.idempotencyKey);
       if (!outcome.ok) return failure(outcome);
       return json({
         ...outcome.value,

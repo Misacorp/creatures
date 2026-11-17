@@ -19,7 +19,7 @@ export const SKY_ROWS = 40;
 /** The most rows of one sprite (`MAX_HEIGHT` of `sprite-data`): taller layers are painted in bands. */
 const BAND = 64;
 /** Scene pixels from the top of the place's art to the sky strip's bottom row (the grass): the hills end behind the place. */
-const SKY_BELOW_ART_TOP = 14;
+export const SKY_BELOW_ART_TOP = 14;
 /** Scene pixels from the top of the scene's clear zone to the top of the place's art. */
 const ART_TOP = 20;
 
@@ -198,22 +198,15 @@ export function bandArtBox(g: SceneGeometry, name: MapName, aside = 0): ArtBox {
 }
 
 /**
- * The band's scene: as `placeSceneDraw`, the art higher up to leave the creatures room in front, plus `extra` over it and `under` (the
- * School's yard, whose top rows the art covers) between the trees and the art.
+ * The band's scene: as `placeSceneDraw`, the art higher up to leave the creatures room in front, plus `extra` over it.
  */
-export function bandSceneDraw(
-  name: MapName,
-  extra?: (box: ArtBox) => Placement[],
-  aside = 0,
-  under?: (box: ArtBox) => Placement[],
-) {
+export function bandSceneDraw(name: MapName, extra?: (box: ArtBox) => Placement[], aside = 0) {
   return (g: SceneGeometry): Placement[] => {
     const box = bandArtBox(g, name, aside);
     return [
       ...grassTo(g),
       ...skyBackdrop(g, BAND_ART_TOP),
       ...treesAround(box.x, box.y, box),
-      ...(under?.(box) ?? []),
       { sprite: glowSprite(name), x: box.x, y: box.y },
       ...(extra?.(box) ?? []),
     ];

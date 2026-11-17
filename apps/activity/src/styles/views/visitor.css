@@ -1,12 +1,7 @@
 /*
-  The visitor's page (phase 5 step 8b, `valley/VisitorPage.tsx`): two cards of the Signpost's seat family (`.sp-seat`, `.sp-line`, `.sp-buy`),
-  and the reroll's drawer (the bag's item grid, the card and the odds over one footer with the price and the confirm). Only what these add is
-  here.
+  The visitor's panels (`valley/VisitorPanels.tsx`, opened from the stall's canvas, `valley/VisitorCanvas.tsx`): the reroll's pieces, card,
+  odds and confirm, the blueprint's card and Buy. The shell, drawers and targets are `canvas.css`'s (`pc-`, `cv-`). Only what these add is here.
 */
-.vs-page .sp-line {
-  flex-wrap: wrap;
-  overflow-wrap: anywhere;
-}
 
 /* The prices: icons and numbers, a size up from the small text. */
 

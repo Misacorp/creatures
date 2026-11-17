@@ -10,48 +10,32 @@
  * the new-seat step), the left drawer for the collections that belong to no one spot (the packs of every seat, the project board). A phone
  * shows the open panel as its own page. Every action is the game's and the server decides.
  */
-import type { ComponentChildren } from 'preact';
 import { useRef, useState } from 'preact/hooks';
 import type { Creature, ValleyVisit } from '../api';
 import { creatureName } from '../game';
 import { busyReason } from '../gear-view';
-import { cssVars } from '../css-vars';
 import { dropOutcome } from '../slot-outcome';
 import { TOUCH_HOLD_MS } from '../dnd-core';
 import { useDragDrop } from '../use-drag-drop';
 import { Bar } from '../ui/Bar';
 import { PriceLine } from '../ui/CountBadge';
 import { DragGhost } from '../ui/DragGhost';
-import { Nameplate } from '../ui/Nameplate';
 import { CommonsBoard, type CommonsActions } from './CommonsBoard';
 import { DestinationPanel, SeatBuyPanel, type DestinationStep } from './DestinationPanel';
-import { CanvasTarget, PanelBody, PlaceCanvas, type CanvasPanel, type Opener } from './PlaceCanvas';
-import { SceneFrame, sceneGeometry } from './SceneFrame';
+import { PanelBody, PlaceCanvas, openerOf, type CanvasPanel, type Opener } from './PlaceCanvas';
 import { SignpostMap, signpostMapScale } from './SignpostMap';
 import type { SignpostActions } from './SignpostSeats';
-import { At, CreatureSprite, SpeechBubble, useSize } from './parts';
+import { useSize } from './parts';
 import { Tray } from './Tray';
 import { trayFor, type TrayInput } from './tray-state';
 import { seatAt } from './seat-parts';
-import { commonsOf, percentFilled, placeOf } from './commons-view';
-import { scaffoldSteps } from './scaffold';
-import {
-  PROP,
-  PROP_HIT,
-  fullPackCount,
-  seatLabel,
-  signpostLayout,
-  signpostScale,
-  signpostSceneDraw,
-} from './signpost-canvas';
+import { commonsOf } from './commons-view';
+import { fullPackCount } from './signpost-canvas';
 import { signpostMapPlaces } from './signpost-map';
 import { fitPreview, packLine, placeName, seatPrice } from './signpost-view';
 
 /** The id of the card a hand drops a creature on to help build (the project board's communal seat). */
 const COMMUNAL_DROP = 'communal:signpost';
-
-/** What the canvas shows: its scene, or the expedition map. */
-export type SignpostView = 'scene' | 'map';
 
 /** The right drawer: the one thing that was clicked. */
 type Right =
@@ -69,7 +53,6 @@ type Left = { kind: 'packs' | 'board'; from: Opener | null };
 
 /** What the canvas can open at the start (the workbench and the tests show each). */
 export interface SignpostCanvasStart {
-  view?: SignpostView;
   /** A destination's drawer to open (on the map), with the step and the seat it starts from. */
   place?: string;
   step?: DestinationStep;
@@ -109,9 +92,6 @@ function startRight(start: SignpostCanvasStart | undefined, visit: ValleyVisit):
 export function SignpostCanvas(props: SignpostCanvasProps) {
   const { visit, creatures, trayInput, acorns, busy, actions, commons, start } = props;
   const error = props.error ?? null;
-  const [view, setView] = useState<SignpostView>(
-    start?.view ?? (start?.place !== undefined ? 'map' : 'scene'),
-  );
   const [right, setRight] = useState<Right | null>(() => startRight(start, visit));
   const [left, setLeft] = useState<Left | null>(() =>
     start?.packs === true
@@ -156,26 +136,13 @@ export function SignpostCanvas(props: SignpostCanvasProps) {
   const free = creatures.filter((c) => busyReason(c) === null);
   const ordered = trayFor(free, trayInput);
 
-  const owned = visit.seats.length;
   const nextPrice = visit.seatPrices.next;
-  const slots = owned + (nextPrice === null ? 0 : 1);
   const commonsView = commonsOf(visit);
-  const signpostPlace = placeOf(commonsView, 'signpost');
-  const scaffold =
-    signpostPlace?.state === 'open' ? scaffoldSteps(percentFilled(signpostPlace) / 100) : 0;
-  const helperId = commonsView?.communal.find((c) => c.place === 'signpost')?.creatureId ?? null;
-  const helper = creatureOf(helperId);
   const fullPacks = fullPackCount(visit.seats);
 
   const selected = right?.kind === 'place' ? right.id : null;
   const mapPlaces = signpostMapPlaces(visit, creatures, selected);
   const mapScale = signpostMapScale(size.width, size.height);
-
-  const closeTop = (): void => {
-    if (right !== null) setRight(null);
-    else if (left !== null) setLeft(null);
-    else if (view === 'map') setView('scene');
-  };
 
   // --- The drawers' panels ---
 
@@ -242,9 +209,10 @@ export function SignpostCanvas(props: SignpostCanvasProps) {
         title: 'Packs',
         children: (
           <PanelBody>
-            {visit.seats.length === 0 ? (
+            {visit.seats.length === 0 && (
               <p class="muted">Take a seat, and what your scouts find waits here.</p>
-            ) : (
+            )}
+            {(visit.seats.length > 0 || nextPrice !== null) && (
               <ul class="sg-packs" aria-label="The packs">
                 {visit.seats.map((seat, i) => {
                   const scout = creatureOf(seat.creatureId);
@@ -254,9 +222,9 @@ export function SignpostCanvas(props: SignpostCanvasProps) {
                       <button
                         type="button"
                         class="sp-line sp-pack"
+                        data-seat={seat.id}
                         aria-label={`${name}, ${placeName(seat.destination)}. ${packLine(seat)}. Show this seat`}
                         onClick={(event) => {
-                          setView('map');
                           setRight({
                             kind: 'place',
                             id: seat.destination,
@@ -279,6 +247,23 @@ export function SignpostCanvas(props: SignpostCanvasProps) {
                     </li>
                   );
                 })}
+                {nextPrice !== null && (
+                  <li>
+                    <button
+                      type="button"
+                      class="sp-line sp-pack"
+                      disabled={busy}
+                      aria-label="A new seat. Buy it"
+                      onClick={(event) => {
+                        setRight({ kind: 'buy', from: openerOf(event.currentTarget) });
+                      }}
+                    >
+                      <span class="sp-pack-text">
+                        A new seat <PriceLine price={seatPrice(nextPrice)} />
+                      </span>
+                    </button>
+                  </li>
+                )}
               </ul>
             )}
           </PanelBody>
@@ -293,6 +278,7 @@ export function SignpostCanvas(props: SignpostCanvasProps) {
             {commons !== undefined && (
               <CommonsBoard
                 place="signpost"
+                host="panel"
                 visit={visit}
                 creatures={creatures}
                 acorns={acorns}
@@ -312,214 +298,28 @@ export function SignpostCanvas(props: SignpostCanvasProps) {
     setLeft({ kind, from: opener });
   };
 
-  // --- The scene ---
+  // --- The map: the place ---
 
-  const draw = signpostSceneDraw(scaffold, slots);
-  const scene = (
-    <SceneFrame
-      id="signpost"
-      label="Signpost, scouts"
-      draw={draw}
-      onLeave={closeTop}
-      scaleFor={signpostScale}
-    >
-      {(measured) => {
-        // A scene not measured yet (no size) is laid out as a phone's, so the targets are there from the first draw.
-        const g =
-          measured.W > 0 && measured.H > 0
-            ? measured
-            : sceneGeometry(390, 640, signpostScale(390, 640));
-        const lay = signpostLayout(g, slots);
-        const plate = (x: number, y: number, text: string): ComponentChildren => (
-          <At x={g.X(x)} y={g.Y(y)} class="vy-feet-plate">
-            <Nameplate size="sm">{text}</Nameplate>
-          </At>
-        );
-        const propBox = (p: { x: number; y: number }): { x: number; y: number } => ({
-          x: p.x - (PROP_HIT - PROP) / 2,
-          y: p.y - (PROP_HIT - PROP) / 2,
-        });
-        const placeAt =
-          (seatId: string, step: DestinationStep, destination: string) => (opener: Opener) => {
-            setRight({ kind: 'place', id: destination, start: step, seatId, from: opener });
-          };
-        return (
-          <>
-            {helper !== undefined && (
-              <At
-                x={g.X(lay.art.x + Math.floor(lay.art.width / 2) - 8)}
-                y={g.Y(lay.art.y + lay.art.height - 22)}
-                class="vy-stand"
-              >
-                <CreatureSprite creature={helper} scale={g.s} />
-              </At>
-            )}
-            {visit.seats.map((seat, i) => {
-              const cell = lay.cells[i];
-              const scout = creatureOf(seat.creatureId);
-              if (cell === undefined || scout === undefined) return null;
-              return (
-                <span key={seat.id}>
-                  <At x={g.X(cell.stand.x)} y={g.Y(cell.stand.y)} class="vy-stand">
-                    <CreatureSprite creature={scout} scale={g.s} flip={i % 2 === 1} />
-                  </At>
-                  {seat.store.full && seat.paused === null && (
-                    <At x={g.X(cell.stand.x)} y={g.Y(cell.stand.y)} class="vy-over">
-                      <span
-                        class="vy-region-box"
-                        ref={cssVars({ '--pw': `${String(PROP * g.s)}px`, '--ph': '0px' })}
-                      />
-                      <SpeechBubble glyph="gift" count={null} />
-                    </At>
-                  )}
-                  {plate(cell.x + cell.w / 2, cell.stand.y + PROP + 2, creatureName(scout))}
-                </span>
-              );
-            })}
-            {fullPacks > 0 && (
-              <At x={g.X(lay.crate.x)} y={g.Y(lay.crate.y)} class="vy-over">
-                <span
-                  class="vy-region-box"
-                  ref={cssVars({ '--pw': `${String(PROP * g.s)}px`, '--ph': '0px' })}
-                />
-                <SpeechBubble glyph="gift" count={fullPacks} />
-              </At>
-            )}
-            {plate(lay.crate.x + PROP / 2, lay.crate.y + PROP + 2, 'Packs')}
-            {plate(lay.plans.x + PROP / 2, lay.plans.y + PROP + 2, 'Board')}
-
-            {/* The targets, over everything above: each a real button. */}
-            <CanvasTarget
-              g={g}
-              x={lay.art.x}
-              y={lay.art.y}
-              w={lay.art.width}
-              h={lay.art.height - 8}
-              label="The signpost: the map of places to scout. Open the map"
-              onClick={() => {
-                setView('map');
-              }}
-            />
-            {visit.seats.map((seat, i) => {
-              const cell = lay.cells[i];
-              if (cell === undefined) return null;
-              const scout = creatureOf(seat.creatureId);
-              const n = i + 1;
-              const open =
-                right?.kind === 'place' &&
-                right.seatId === seat.id &&
-                right.id === seat.destination;
-              if (scout === undefined) {
-                return (
-                  <CanvasTarget
-                    key={seat.id}
-                    g={g}
-                    x={cell.x}
-                    y={cell.y}
-                    w={cell.w}
-                    h={cell.h}
-                    seat={seat.id}
-                    slot
-                    over={drag.drag?.over === seat.id}
-                    label={seatLabel(n, undefined, '', '')}
-                    expanded={open}
-                    disabled={busy}
-                    onClick={placeAt(seat.id, 'who', seat.destination)}
-                  >
-                    <span class="cv-price">Seat {n}</span>
-                  </CanvasTarget>
-                );
-              }
-              return (
-                <CanvasTarget
-                  key={seat.id}
-                  g={g}
-                  x={cell.x}
-                  y={cell.y}
-                  w={cell.w}
-                  h={cell.h}
-                  seat={seat.id}
-                  over={drag.drag?.over === seat.id}
-                  label={seatLabel(
-                    n,
-                    { name: creatureName(scout), level: scout.level },
-                    placeName(seat.destination),
-                    packLine(seat),
-                  )}
-                  expanded={open}
-                  disabled={busy}
-                  onClick={placeAt(seat.id, 'seat-view', seat.destination)}
-                />
-              );
-            })}
-            {nextPrice !== null && lay.cells[owned] !== undefined && (
-              <CanvasTarget
-                g={g}
-                x={lay.cells[owned].x}
-                y={lay.cells[owned].y}
-                w={lay.cells[owned].w}
-                h={lay.cells[owned].h}
-                slot
-                label="A new seat. Buy it"
-                expanded={right?.kind === 'buy'}
-                disabled={busy}
-                onClick={(opener) => {
-                  setRight({ kind: 'buy', from: opener });
-                }}
-              >
-                <span class="cv-price">
-                  <PriceLine price={seatPrice(nextPrice)} />
-                </span>
-              </CanvasTarget>
-            )}
-            <CanvasTarget
-              g={g}
-              {...propBox(lay.crate)}
-              w={PROP_HIT}
-              h={PROP_HIT}
-              label={`The packs${fullPacks > 0 ? `: ${String(fullPacks)} full` : ''}. Open`}
-              expanded={left?.kind === 'packs'}
-              onClick={openLeft('packs')}
-            />
-            {commonsView !== null && (
-              <CanvasTarget
-                g={g}
-                {...propBox(lay.plans)}
-                w={PROP_HIT}
-                h={PROP_HIT}
-                label="The project board. Open"
-                expanded={left?.kind === 'board'}
-                onClick={openLeft('board')}
-              />
-            )}
-          </>
+  const main = (
+    <SignpostMap
+      places={mapPlaces}
+      selected={selected}
+      night={visit.night}
+      scale={mapScale}
+      fullPacks={fullPacks}
+      packsOpen={left?.kind === 'packs'}
+      boardOpen={left?.kind === 'board'}
+      {...(commonsView === null ? {} : { onBoard: openLeft('board') })}
+      onPacks={openLeft('packs')}
+      onPick={(id) => {
+        setRight((now) =>
+          now?.kind === 'place' && now.id === id
+            ? now
+            : { kind: 'place', id, start: 'hub', seatId: null, from: null },
         );
       }}
-    </SceneFrame>
+    />
   );
-
-  const main =
-    view === 'map' ? (
-      <SignpostMap
-        places={mapPlaces}
-        selected={selected}
-        night={visit.night}
-        scale={mapScale}
-        onPick={(id) => {
-          setRight((now) =>
-            now?.kind === 'place' && now.id === id
-              ? now
-              : { kind: 'place', id, start: 'hub', seatId: null, from: null },
-          );
-        }}
-        onBack={() => {
-          setRight(null);
-          setView('scene');
-        }}
-      />
-    ) : (
-      scene
-    );
 
   return (
     <div
@@ -527,10 +327,10 @@ export function SignpostCanvas(props: SignpostCanvasProps) {
       ref={rootRef}
       data-carrying={drag.drag === null ? undefined : 'yes'}
       data-over={drag.drag?.over ?? undefined}
-      data-view={view}
     >
       <PlaceCanvas
         label="Signpost"
+        pan={false}
         scene={main}
         left={leftPanel}
         right={rightPanel}

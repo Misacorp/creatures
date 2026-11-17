@@ -5,20 +5,26 @@
  * - `CanvasTarget`: the hit-target layer. A real button laid over the scene at scene-pixel coordinates (the art under it is drawn on the
  *   canvas, the scene's things are its sprites), named for assistive technology. `slot` draws the dashed outline of something that is not
  *   there yet (an anvil to buy): a click on it starts the step that adds it.
- * - `PlaceCanvas`: the shell. On a wide window (`useWide`, 60 rem) the scene sits between two drawers, `left` and `right`, each a
- *   `ui/SidePanel`; the scene keeps its place and scale in the room that is left. On a phone there are no drawers: an open panel is its
- *   own full page with the scene hidden behind it (no drawer on a drawer), and its Back goes to the scene. The panel's content is the
- *   same component either way, normally a `ui/Wizard` (a branch of steps with Back and one gold action).
+ * - `PlaceCanvas`: the shell. On a wide window (`useWide`, 60 rem) the scene fills the whole stage and never moves or rescales while
+ *   you are in it (Misa, 2026-11-15: "the view jumping around when the drawers opened"): the two drawers, `left` and `right`, each a
+ *   `ui/SidePanel` of 24 rem, lie over its edges. Only when a drawer would cover the thing that was clicked, the scene is panned
+ *   sideways (never rescaled) just far enough to keep it clear, and goes back when the drawer goes (`pan`; a map that scrolls on its
+ *   own turns it off). On a phone there are no drawers: an open panel is its own full page with the scene hidden behind it (no drawer
+ *   on a drawer), and its Back goes to the scene. The panel's content is the same component either way, normally a `ui/Wizard` (a
+ *   branch of steps with Back and one gold action).
+ * - The cue: a clickable thing in the scene is a `CanvasTarget` with a `plate`, its short name, always shown under it (`canvas.css`,
+ *   Misa's pick 2026-11-15). Decoration is no target and shows nothing.
  *
  * Which side holds what is the rule's: the right drawer acts on the one thing that was clicked in the scene (an anvil, a seat, its
  * wizard); the left drawer holds the place's collections and overviews that belong to no one spot (the bag, the floor, the plans, the
  * project board). When both are open on a phone the right one is shown.
  */
 import type { ComponentChildren } from 'preact';
-import { useEffect, useId, useRef } from 'preact/hooks';
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import { cssVars } from '../css-vars';
 import { DrillHead } from '../ui/DrillHead';
 import { keyboardHasFocus } from '../ui/focus-return';
+import { Nameplate } from '../ui/Nameplate';
 import { SidePanel } from '../ui/SidePanel';
 import { useWide } from '../ui/wide-layout';
 import type { SceneGeometry } from './SceneFrame';
@@ -73,6 +79,11 @@ export interface CanvasPanel {
   returnFocusTo?: Opener | null;
   /** What a phone's Back says it goes back to, said only to screen readers ("to the Forge"). */
   backLabel?: string;
+  /**
+   * The wizard's first step has a Back that goes somewhere (to the panel this one was opened from, not out of the drawer): a drawer
+   * keeps it. Without this a drawer's first step shows only the X (Misa, 2026-11-15); a phone's page always has its Back.
+   */
+  keepBack?: boolean;
 }
 
 /**
@@ -127,6 +138,7 @@ function Drawer({ panel, side }: { panel: CanvasPanel; side: CanvasSide }) {
       }}
       tabIndex={-1}
       data-side={side}
+      data-keepback={panel.keepBack === true ? 'yes' : undefined}
       onKeyDown={closeOnEscape(panel)}
     >
       <SidePanel title={panel.title} titleId={titleId} onClose={panel.onClose} class="pc-panel">
@@ -164,12 +176,111 @@ function Page({ panel, side }: { panel: CanvasPanel; side: CanvasSide }) {
   );
 }
 
+/** How far the scene's wrapper must move sideways so a thing at [`t0`, `t1`] is in the clear span [`lo`, `hi`] (0 when it already is). */
+export function panFor(t0: number, t1: number, lo: number, hi: number, margin = 12): number {
+  if (t0 >= lo && t1 <= hi) return 0;
+  if (t1 > hi) return Math.min(0, hi - margin - t1);
+  return Math.max(0, lo + margin - t0);
+}
+
+/**
+ * The pan that keeps what was clicked (`here`, in the stage's own x) clear of the drawers (`lo` to `hi`) and, as far as that allows, the
+ * whole builders' corner (`crowd`) too. What was clicked comes first: it is never pushed out of the clear stretch for the corner. The
+ * corner is brought in only when it fits the clear stretch (with `margin` each side); with nothing clicked (a creature picked from the
+ * tray) the corner alone decides.
+ */
+export function panWith(
+  here: { from: number; to: number } | null,
+  crowd: { from: number; to: number } | null,
+  lo: number,
+  hi: number,
+  margin = 12,
+): number {
+  const own = here === null ? 0 : panFor(here.from, here.to, lo, hi, margin);
+  if (crowd === null || crowd.to - crowd.from > hi - lo - 2 * margin) return own;
+  const want = panFor(crowd.from, crowd.to, lo, hi, margin);
+  if (want === 0) return own;
+  if (here === null) return want;
+  // Keep the clicked thing inside the clear stretch, with its margin, while the corner is brought as close as it can be.
+  const low = lo + margin - here.from;
+  const high = hi - margin - here.to;
+  return low > high ? own : Math.min(high, Math.max(low, want));
+}
+
+/**
+ * The sideways pan of a scene under drawers (`panFor`): the thing that opened the right drawer is kept clear of it first, else the
+ * thing that opened the left one. Measured in layout (before the paint, so nothing jumps) and only on a wide window. The wrapper's
+ * own box does not move, so the measure takes the current pan off the opener's place.
+ */
+function useScenePan(
+  enabled: boolean,
+  left: CanvasPanel | null,
+  right: CanvasPanel | null,
+  stage: { current: HTMLElement | null },
+  wrapper: { current: HTMLElement | null },
+): number {
+  const [pan, setPan] = useState(0);
+  const current = useRef(0);
+  current.current = pan;
+  useLayoutEffect(() => {
+    const root = stage.current;
+    const wrap = wrapper.current;
+    if (!enabled || root === null || wrap === null) {
+      setPan(0);
+      return undefined;
+    }
+    const measure = (): void => {
+      const leftEl = root.querySelector<HTMLElement>('.pc-left');
+      const rightEl = root.querySelector<HTMLElement>('.pc-right');
+      const box = root.getBoundingClientRect();
+      const lo = leftEl === null ? 0 : leftEl.getBoundingClientRect().right - box.left;
+      const hi = rightEl === null ? box.width : rightEl.getBoundingClientRect().left - box.left;
+      if (left === null && right === null) {
+        setPan(0);
+        return;
+      }
+      const opener = (right !== null ? right : left)?.returnFocusTo?.el;
+      const mine = (el: HTMLElement): { from: number; to: number } => {
+        const r = el.getBoundingClientRect();
+        return {
+          from: r.left - box.left - current.current,
+          to: r.right - box.left - current.current,
+        };
+      };
+      const here = opener === undefined || !opener.isConnected ? null : mine(opener);
+      // The builders' corner (every target of the `group`) is kept in view with what was clicked while the two fit clear of the drawers.
+      const group = Array.from(root.querySelectorAll<HTMLElement>('[data-pan-group]'));
+      const crowd =
+        group.length === 0
+          ? null
+          : (() => {
+              const spans = group.map(mine);
+              return {
+                from: Math.min(...spans.map((x) => x.from)),
+                to: Math.max(...spans.map((x) => x.to)),
+              };
+            })();
+      setPan(panWith(here, crowd, lo, hi));
+    };
+    measure();
+    // The scene draws its targets once it has its size, which can be after a drawer opened at the start: measure again as they appear.
+    if (typeof MutationObserver === 'undefined') return undefined;
+    const watch = new MutationObserver(measure);
+    watch.observe(wrap, { childList: true, subtree: true });
+    return () => {
+      watch.disconnect();
+    };
+  }, [enabled, left === null, right === null, left?.returnFocusTo, right?.returnFocusTo]);
+  return pan;
+}
+
 export function PlaceCanvas({
   scene,
   below,
   left,
   right,
   label,
+  pan: panEnabled = true,
 }: {
   /** The scene (a `SceneFrame` with its `CanvasTarget`s). Always mounted: a phone's page only hides it. */
   scene: ComponentChildren;
@@ -181,8 +292,19 @@ export function PlaceCanvas({
   right: CanvasPanel | null;
   /** The canvas's spoken name ("Forge"). */
   label: string;
+  /** Pan the scene sideways when a drawer would cover what was clicked (default); false for a scene that scrolls on its own. */
+  pan?: boolean;
 }) {
   const wide = useWide();
+  const stage = useRef<HTMLDivElement | null>(null);
+  const wrapper = useRef<HTMLDivElement | null>(null);
+  const pan = useScenePan(
+    wide && panEnabled,
+    wide ? left : null,
+    wide ? right : null,
+    stage,
+    wrapper,
+  );
   const page = wide
     ? null
     : right !== null
@@ -199,9 +321,18 @@ export function PlaceCanvas({
       data-page={page === null ? undefined : 'yes'}
     >
       <div class="pc-view">
-        <div class="pc-stage">
+        <div class="pc-stage" ref={stage}>
+          <div
+            class="pc-main"
+            ref={(el) => {
+              wrapper.current = el;
+              cssVars({ '--pan': `${String(pan)}px` })(el);
+            }}
+            data-pan={pan === 0 ? undefined : 'yes'}
+          >
+            {scene}
+          </div>
           {wide && left !== null && <Drawer panel={left} side="left" />}
-          <div class="pc-main">{scene}</div>
           {wide && right !== null && <Drawer panel={right} side="right" />}
         </div>
         <div class="pc-below">{below}</div>
@@ -231,7 +362,11 @@ export function CanvasTarget({
   slot = false,
   over = false,
   seat,
+  group,
   z,
+  plate,
+  plateAt,
+  plateMeta,
   children,
 }: {
   g: SceneGeometry;
@@ -248,8 +383,19 @@ export function CanvasTarget({
   over?: boolean;
   /** A hand dropping a creature on this target finds it by this id (`seatAt`). */
   seat?: string;
+  /** Targets of one group keep each other in view when a drawer would cover one of them (`CORNER_GROUP`: the builders' corner). */
+  group?: string;
   /** Draw order among the scene's things (`depthOf`): a target is above the sprites it covers. */
   z?: number;
+  /**
+   * The thing's short name, the cue that it can be clicked, always shown under it.
+   * Every clickable thing in an art scene has one; decoration has none and is not a target. Text only.
+   */
+  plate?: string;
+  /** Where the plate sits, in scene pixels down from the target's top (default: under it). */
+  plateAt?: number;
+  /** A creature's plate (the Bonfire): its level first, a gain ("+N") and an owner's name, as `ui/Nameplate` shows them. */
+  plateMeta?: { level?: number; gain?: number; owner?: string };
   children?: ComponentChildren;
 }) {
   return (
@@ -261,12 +407,29 @@ export function CanvasTarget({
         aria-expanded={expanded === undefined ? undefined : expanded}
         disabled={disabled}
         data-seat={seat}
+        data-pan-group={group}
         ref={cssVars({ '--pw': `${String(w * g.s)}px`, '--ph': `${String(h * g.s)}px` })}
         onClick={(event) => {
           onClick(openerOf(event.currentTarget));
         }}
       >
         {children}
+        {plate !== undefined && (
+          <span
+            class="cv-plate"
+            aria-hidden="true"
+            ref={cssVars({ '--py': `${String((plateAt ?? h) * g.s)}px` })}
+          >
+            <Nameplate
+              size="sm"
+              level={plateMeta?.level}
+              gain={plateMeta?.gain}
+              owner={plateMeta?.owner}
+            >
+              {plate === '' ? undefined : plate}
+            </Nameplate>
+          </span>
+        )}
       </button>
     </At>
   );

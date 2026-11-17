@@ -19,7 +19,7 @@ import { content } from '@creatures/game';
 import { BagTools } from './BagTools';
 import { NO_FILTER, selectableIds, shownItems, type BagFilter } from './bag-filter';
 import { GlossaryTag } from './Glossary';
-import { DismantleDrawer, type DismantleStep } from './DismantleDrawer';
+import { DismantleDrawer, DismantlePanelStep, type DismantleStep } from './DismantleDrawer';
 import { BAG_HINT, InventoryGrid } from './InventoryGrid';
 import { gearName } from './gear-view';
 import { ItemDetail } from './ItemDetail';
@@ -35,7 +35,11 @@ import { Accordion } from './ui/Accordion';
 import { BulkBar } from './ui/BulkBar';
 import { Drawer } from './ui/Drawer';
 import { flipOver } from './ui/flip-logic';
-import { FlipArea } from './ui/Flipper';
+import { FlipArea, FlipLive, FlipNav } from './ui/Flipper';
+import { handleFlipKey } from './ui/flip-keys';
+import type { FlipProps } from './ui/flip-logic';
+import { StepBody } from './valley/PanelStep';
+import type { ForgeCard } from './valley/forge-steps';
 import { Alert } from './ui/Alert';
 import { Column, Columns } from './ui/Columns';
 import { useMultiSelect } from './ui/multi-select';
@@ -56,8 +60,8 @@ export interface ForgeMode {
   /** What the canvas and the order wizard have open at the start (the workbench shows each). */
   start?: ForgeStart;
   orderStart?: { anvilId: string; baseId?: string; orderId?: string };
-  /** Open inside the workshop (the workbench and the tests); else the Forge opens outside. */
-  inside?: boolean;
+  /** The door: back to the valley. */
+  onLeave: () => void;
 }
 
 const ELEMENT_IDS: readonly string[] = content.elements.map((e) => e.id);
@@ -287,7 +291,7 @@ export function Workshop({
           </button>
         </BulkBar>
       )}
-      {pile !== null && (
+      {forge === undefined && pile !== null && (
         <DismantleDrawer
           items={pile}
           gear={gear}
@@ -313,7 +317,7 @@ export function Workshop({
           }}
         />
       )}
-      {selected !== null && cardFlow && (
+      {forge === undefined && selected !== null && cardFlow && (
         <DismantleDrawer
           items={[selected]}
           gear={gear}
@@ -346,7 +350,7 @@ export function Workshop({
         />
       )}
       <Drawer
-        open={selected !== null && !cardFlow}
+        open={forge === undefined && selected !== null && !cardFlow}
         title={selected === null ? 'Item' : gearName(selected.baseId)}
         titleHidden
         class={backFromFlow ? 'item-drawer drawer-swap' : 'item-drawer'}
@@ -409,8 +413,122 @@ export function Workshop({
     />
   );
 
-  // With the valley's Forge the page is a canvas (`ForgeCanvas`): the bag, the plans and the rest open in its drawers.
+  // With the valley's Forge the page is a canvas (`ForgeCanvas`): the bag, the plans and the rest open in its drawers. The item card
+  // and the dismantle flow are steps of the bag's drawer or page (`valley/forge-steps`), never a sheet over it.
   if (forge !== undefined) {
+    const dismantleProps = {
+      gear,
+      creatures: state.creatures,
+      busy,
+      error,
+      loadPreview: actions.previewDismantle,
+      checkLocks: actions.checkDismantle,
+    };
+    let card: ForgeCard | null = null;
+    if (pile !== null) {
+      card = {
+        title: 'Dismantle',
+        dismiss: () => {
+          setPile(null);
+          setCardFlow(false);
+          setSelectedId(null);
+          setBackFromFlow(false);
+        },
+        onClose: () => {
+          setPile(null);
+        },
+        node: (
+          <DismantlePanelStep
+            {...dismantleProps}
+            items={pile}
+            onConfirm={async (creatureId) => {
+              const result = await actions.dismantlePile(
+                creatureId,
+                pile.map((i) => i.id),
+              );
+              if (result === undefined) return false;
+              setPile(null);
+              selection.clear();
+              onClaimed(result);
+              return true;
+            }}
+            onClose={() => {
+              setPile(null);
+            }}
+          />
+        ),
+      };
+    } else if (selected !== null && cardFlow) {
+      card = {
+        title: 'Dismantle',
+        dismiss: () => {
+          setPile(null);
+          setCardFlow(false);
+          setSelectedId(null);
+          setBackFromFlow(false);
+        },
+        onClose: () => {
+          setCardFlow(false);
+          setBackFromFlow(true);
+        },
+        node: (
+          <DismantlePanelStep
+            {...dismantleProps}
+            items={[selected]}
+            exitLabel="to the item"
+            {...(initialCardDismantle === undefined ? {} : { start: initialCardDismantle })}
+            onConfirm={async (creatureId) => {
+              const result = await actions.dismantlePile(creatureId, [selected.id]);
+              if (result === undefined) return false;
+              setCardFlow(false);
+              setSelectedId(null);
+              selection.clear();
+              onClaimed(result);
+              return true;
+            }}
+            onClose={() => {
+              setCardFlow(false);
+              setBackFromFlow(true);
+            }}
+          />
+        ),
+      };
+    } else if (selected !== null) {
+      const leave = (): void => {
+        setSelectedId(null);
+        setBackFromFlow(false);
+      };
+      card = {
+        title: gearName(selected.baseId),
+        dismiss: () => {
+          setPile(null);
+          setCardFlow(false);
+          setSelectedId(null);
+          setBackFromFlow(false);
+        },
+        onClose: leave,
+        node: (
+          <ItemStep flip={flip} onBack={leave}>
+            <FlipArea flip={flip}>
+              <ItemDetail
+                key={selected.id}
+                item={selected}
+                creatures={state.creatures}
+                busy={busy}
+                actions={actions}
+                focusName={!flipped && !backFromFlow}
+                focusDismantle={backFromFlow}
+                onDrill={setDrilling}
+                onDismantle={() => {
+                  setBackFromFlow(false);
+                  setCardFlow(true);
+                }}
+              />
+            </FlipArea>
+          </ItemStep>
+        ),
+      };
+    }
     return (
       <ForgeCanvas
         visit={forge.visit}
@@ -425,7 +543,7 @@ export function Workshop({
         onOpenMarket={forge.onOpenMarket}
         start={forge.start}
         orderStart={forge.orderStart}
-        inside={forge.inside}
+        onLeave={forge.onLeave}
         blueprints={blueprintViews(gear.blueprints, gear.skills, true)}
         bag={
           <>
@@ -434,6 +552,7 @@ export function Workshop({
             {gearSection}
           </>
         }
+        card={card}
         plans={blueprintList}
         bagFull={bagFull(bag)}
         bagAttention={reveal !== null || gear.notice !== null}
@@ -500,5 +619,38 @@ export function Workshop({
         />
       </Column>
     </Columns>
+  );
+}
+
+/** An item's card as a step of the bag's drawer or page: Back, the flip arrows under it (Left and Right flip), the card. */
+function ItemStep({
+  flip,
+  onBack,
+  children,
+}: {
+  flip: FlipProps | undefined;
+  onBack: () => void;
+  children: ComponentChildren;
+}) {
+  const live = flip !== undefined && flip.paused !== true;
+  return (
+    <StepBody
+      title="Item"
+      backLabel="to the bag"
+      onBack={onBack}
+      onKeys={(event) => {
+        if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') handleFlipKey(event, flip);
+      }}
+      head={
+        live && (
+          <div class="ps-flip">
+            <FlipNav flip={flip} />
+          </div>
+        )
+      }
+    >
+      {children}
+      {live && <FlipLive flip={flip} />}
+    </StepBody>
   );
 }

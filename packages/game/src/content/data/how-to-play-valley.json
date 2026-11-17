@@ -1,0 +1,67 @@
+{
+  "sections": [
+    {
+      "id": "valley-day",
+      "title": "A day in the valley",
+      "lines": [
+        "Creatures stand at posts and work: resting at the Bonfire, scouting, smithing at the Forge, trading at the Market.",
+        "Drag a creature from the tray onto a place or seat, or tap a seat and pick one. A creature with no post only rests.",
+        "Coming back after a few hours is a return walk. The Gazette tells what happened, and everything comes home on its own.",
+        "It offers at most one choice: push a scout deeper. There are no timers; creatures that fall behind catch up at the fire.",
+        "Friends who are online send their creatures to visit your fire."
+      ]
+    },
+    {
+      "id": "valley-commons",
+      "title": "The commons",
+      "lines": [
+        "Each place has one project for the whole server. Give Acorns, scrap and shards; the Market's takes shards of any kind.",
+        "A full project takes a few build days, then the place levels up: more seats and anvils, a plaque of helpers, a keepsake.",
+        "Build the hearth, then the Market, then the Forge, then the rest. Give early: the commons unlock everything.",
+        "Collections and keystones are goals for the whole server too."
+      ]
+    },
+    {
+      "id": "valley-forge",
+      "title": "The Forge",
+      "lines": [
+        "Tap the Forge to open the workshop. Each anvil has a smith: give it orders for what to make, or it tinkers on its own.",
+        "Buy the next anvil from the dashed outline. Finished pieces pile up on its floor; a full floor pauses that anvil.",
+        "On your next arrival, common pieces come home by themselves. One made for your team is worn; the rest go to the bag.",
+        "Rare and epic pieces wait in the sealed crate. Open it to reveal them one by one, best last. It never pauses an anvil.",
+        "Patchwork pieces take shards of any kind."
+      ]
+    },
+    {
+      "id": "valley-gear",
+      "title": "Gear",
+      "lines": [
+        "Any creature wears any item, and every slot is open from level 1.",
+        "The Forge's fire sets the item level of new pieces. Master titles, boss kills and the commons warm it.",
+        "A Common has one line, a Rare two and an Epic three. The pips show how well a line rolled.",
+        "Some lines depend on where a creature stands, fire by chance or react in a fight. Set pieces give a bonus worn together."
+      ]
+    },
+    {
+      "id": "valley-market",
+      "title": "The Market and the visitor",
+      "lines": [
+        "Shards are exchanged only at the Market, once the server has built it. A broker seat swaps spare shards for you.",
+        "The visitor is here from Thursday to the end of Sunday and rerolls all lines of one piece for Acorns and scrap.",
+        "A reroll keeps the piece's rarity and item level, and each reroll that week costs more.",
+        "The visitor also sells one blueprint a week, for Acorns and shards of any kind."
+      ]
+    },
+    {
+      "id": "valley-school",
+      "title": "The School and trials",
+      "lines": [
+        "A teacher visits from Monday to Wednesday, announced on Friday. Send the creatures that can learn the talent.",
+        "They learn it by the next morning and it enters your book. Learning on a card costs Acorns; the born talent is free.",
+        "Trials are Bronze from level 10, Silver from 20 and Gold from 30. Each has a combat feat and boxes from the valley.",
+        "Creatures graduate at the School's daily ceremony in the evening, even when you are away.",
+        "An honour is a title, a badge and a ribbon on the sprite. It gives no stats and gates nothing."
+      ]
+    }
+  ]
+}

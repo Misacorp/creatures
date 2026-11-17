@@ -1,0 +1,360 @@
+/*
+  The Forge's sealed crate (`valley/CrateProp.tsx`, `valley/CrateReveal.tsx`; V-FORGE-5): the prop glowing in the room, the rattle, and the
+  reveal over the scene. Every animation is inside `prefers-reduced-motion: no-preference`: a player who asks for less motion gets the
+  still crate and the cards. The reveal is a part of an art scene, so no button of it shows a focus outline (`art-focus.css` draws the
+  gold arrow instead). The reveal is full screen over the place (Misa's pick, 2026-11-15); a piece shows its item card on hover or
+  tap (`.cr-pop`).
+*/
+
+.cr-glow-rare {
+  --cr-glow: var(--rarity-rare);
+}
+
+.cr-glow-epic {
+  --cr-glow: var(--rarity-epic);
+}
+
+/* The crate in the room: a soft glow of its best rarity. */
+.cr-prop {
+  filter: drop-shadow(0 0 3px var(--cr-glow));
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .cr-prop {
+    animation: cr-glow 1800ms steps(1) infinite;
+  }
+}
+
+@keyframes cr-glow {
+  0% {
+    filter: drop-shadow(0 0 2px var(--cr-glow));
+  }
+
+  50% {
+    filter: drop-shadow(0 0 6px var(--cr-glow));
+  }
+}
+
+/* The line over the crate when it would not open. */
+.cr-fail {
+  display: inline-block;
+  padding: 0.125rem 0.375rem;
+  background: var(--ink);
+  color: var(--bone);
+  font-size: var(--fs-small);
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+/* The reveal: over the whole scene, above its targets and bubbles. */
+.cr-reveal {
+  position: absolute;
+  inset: 0;
+  z-index: 3000000;
+  overflow: hidden;
+  color: var(--bone);
+  line-height: 1.2;
+}
+
+.cr-reveal:focus {
+  outline: none;
+}
+
+.cr-dim {
+  position: absolute;
+  inset: 0;
+  background: rgb(var(--ink-rgb) / 0.96);
+}
+
+/* The open crate, big at the bottom of the dark stage. */
+.cr-crate {
+  position: absolute;
+  left: 50%;
+  bottom: 0.75rem;
+  transform: translateX(-50%);
+  line-height: 0;
+}
+
+.cr-open {
+  filter: drop-shadow(0 0 8px var(--cr-glow));
+}
+
+/* The card's place: the area above the crate. A tap on it outside the piece and the buttons goes on. */
+.cr-stage {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 2.75rem;
+  bottom: var(--crate-room, 12rem);
+  display: grid;
+  place-items: center;
+  overflow: auto;
+  cursor: pointer;
+}
+
+.cr-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  margin: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  color: inherit;
+  min-height: 0;
+  text-align: center;
+}
+
+/* The piece: a button holding the burst (no frame of its own; the gold arrow shows the keyboard's place). */
+.cr-piece {
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  color: inherit;
+  min-height: 0;
+  line-height: 0;
+  cursor: pointer;
+}
+
+.cr-piece:is(:hover, :active) {
+  background: transparent;
+  box-shadow: none;
+  filter: none;
+  transform: none;
+}
+
+.cr-next {
+  margin-top: 0.25rem;
+  cursor: default;
+}
+
+.cr-count {
+  font-size: var(--fs-small);
+  color: var(--bone);
+  opacity: 0.7;
+}
+
+.cr-burst {
+  position: relative;
+  display: block;
+  width: var(--bw);
+  height: var(--bw);
+  line-height: 0;
+}
+
+.cr-ring,
+.cr-item {
+  position: absolute;
+}
+
+.cr-ring {
+  left: 0;
+  top: 0;
+}
+
+.cr-item {
+  left: var(--item);
+  top: var(--item);
+}
+
+.cr-name {
+  font-size: 1.75rem;
+  color: var(--rar-text);
+  text-shadow: 0 2px 0 var(--ink);
+}
+
+.cr-meta {
+  font-size: var(--fs-title);
+}
+
+.cr-rarity {
+  color: var(--rar-text);
+  text-transform: uppercase;
+}
+
+.cr-line {
+  font-size: var(--fs-title);
+  color: var(--gold);
+}
+
+.cr-hint {
+  margin-top: 0.25rem;
+  font-size: var(--fs-small);
+  opacity: 0.7;
+}
+
+/*
+  The item card of a shown piece, in a layer over the stage's area (no drawer: the reveal is its own full-screen moment). On a phone it
+  sits in the middle over the stage; from 45 rem it sits beside what it belongs to (`--beside`, half that thing's width), to its right.
+  Hovered, it lets pointers through (the mouse over the piece keeps it); pinned by a tap, it takes the tap that closes it.
+*/
+.cr-pop-layer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 2.75rem;
+  bottom: var(--crate-room, 12rem);
+  display: grid;
+  place-items: center;
+  overflow: auto;
+  pointer-events: none;
+}
+
+.cr-pop {
+  width: min(18rem, 94%);
+  max-height: 100%;
+  overflow: auto;
+  pointer-events: none;
+  text-align: left;
+  color: var(--bone);
+  background: var(--dusk-2);
+  box-shadow:
+    0 0 0 2px var(--ink),
+    0 0 0 4px var(--bone);
+}
+
+.cr-pop.cr-pinned {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+@media (min-width: 45rem) {
+  .cr-pop {
+    width: 18rem;
+    /* Clear of the piece's name, which is wider than its burst. */
+    transform: translateX(calc(max(var(--beside, 0px), 11rem) + 50% + 1.5rem));
+  }
+}
+
+.cr-skip {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 2;
+  padding: 0.25rem 0.75rem;
+  min-height: 0;
+  background: rgb(var(--ink-rgb) / 0.7);
+  color: var(--bone);
+  border: 2px solid var(--bone);
+  border-radius: 0;
+  cursor: pointer;
+}
+
+/* The summary: everything the crate held. */
+.cr-summary {
+  width: min(22rem, 92vw);
+  max-width: 100%;
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: var(--dusk-2);
+  box-shadow:
+    0 0 0 2px var(--ink),
+    0 0 0 4px var(--bone);
+  text-align: center;
+}
+
+.cr-summary:focus {
+  outline: none;
+}
+
+.cr-title {
+  margin: 0;
+  font-size: var(--fs-title);
+}
+
+.cr-thumb {
+  display: block;
+  padding: 0;
+  margin: 0;
+  min-height: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  line-height: 0;
+  cursor: pointer;
+}
+
+.cr-thumb:is(:hover, :active) {
+  background: transparent;
+  box-shadow: none;
+  filter: none;
+  transform: none;
+}
+
+.cr-thumbs {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.375rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cr-sum,
+.cr-sealed {
+  margin: 0;
+  font-size: var(--fs-title);
+}
+
+.cr-sealed {
+  color: var(--gold);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* A piece rises out of the crate in a few pixel steps. The first waits a beat for the lid. */
+  .cr-card {
+    animation: cr-rise 480ms steps(8) both;
+  }
+
+  .cr-card[data-first] {
+    animation-delay: 420ms;
+  }
+
+  .cr-card.cr-last .cr-ring {
+    animation: cr-pulse 900ms steps(2) infinite;
+  }
+
+  .cr-crate .cr-open {
+    animation: cr-light 1400ms steps(1) infinite;
+  }
+
+  .cr-summary {
+    --rise-x: 0px;
+    --rise-y: 1.5rem;
+
+    animation: cr-rise 320ms steps(5) both;
+  }
+}
+
+@keyframes cr-rise {
+  from {
+    opacity: 0;
+    transform: translate(var(--rise-x, 0px), var(--rise-y, 1.5rem)) scale(0.2);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes cr-pulse {
+  50% {
+    transform: scale(1.06);
+  }
+}
+
+@keyframes cr-light {
+  50% {
+    filter: drop-shadow(0 0 14px var(--cr-glow));
+  }
+}

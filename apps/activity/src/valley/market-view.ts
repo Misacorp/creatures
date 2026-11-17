@@ -10,7 +10,7 @@ import { anyShardCount, anyShardMark, shardMark, type Say } from '../resource-co
 import { placeOf, commonsOf } from './commons-view';
 import { masteryName } from './signpost-view';
 
-type Broker = NonNullable<ValleyMarketView['seat']>;
+export type Broker = NonNullable<ValleyMarketView['seat']>;
 
 /** The elements of shards, in the order the shelf lists them. */
 export const BROKER_ELEMENTS = ['tide', 'ember', 'grove', 'spark', 'mire'] as const;

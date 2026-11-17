@@ -1,7 +1,8 @@
-import type { RefObject } from 'preact';
+import type { ComponentProps, RefObject } from 'preact';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import {
   buyAnvil,
+  openForgeCrate,
   buyScoutSeat,
   closeGazette,
   setScoutDeep,
@@ -109,7 +110,8 @@ import { createSchoolActions, isSchoolRefusal, refreshSchool } from './valley/sc
 import { readerZone, studentIds, withoutStudents } from './valley/school-view';
 import { HonoursContext, honoursOf } from './valley/HonourRibbon';
 import { shardsHeld } from './valley/visitor-view';
-import type { MarketActions, MarketStart } from './valley/MarketPage';
+import type { MarketActions, MarketStart } from './valley/MarketCanvas';
+import { PaddockCanvas } from './valley/PaddockCanvas';
 import { SignpostCanvas } from './valley/SignpostCanvas';
 import type { SignpostActions } from './valley/SignpostSeats';
 import type { CommonsActions } from './valley/CommonsBoard';
@@ -462,6 +464,15 @@ export function Game({
     setKit: async (seatId, kit) =>
       takeValley(await run(() => scoutKit({ action: 'set', seatId, kit }))),
     order: async (request) => takeValley(await run(() => postOrder(request))),
+    openCrate: async () => {
+      const crate = systems?.forge.crate;
+      const answer = await runKeyed(
+        ActionIds.crateOpen(crate?.count ?? 0, crate?.best ?? null),
+        (key) => openForgeCrate(key),
+      );
+      if (!takeValley(answer) || answer === undefined) return null;
+      return { pieces: answer.pieces, sealed: answer.sealed, bagFull: answer.bagFull };
+    },
     buyAnvil: async () => {
       const owned = systems?.anvilPrices.owned ?? 0;
       const ok = takeValley(await runKeyed(ActionIds.anvilBuy(owned), (key) => buyAnvil(key)));
@@ -846,6 +857,23 @@ export function Game({
     />
   ) : null;
 
+  /** What the Creatures page reads and does: the tab's page, and the Paddock canvas's left drawer. */
+  const collectionProps: ComponentProps<typeof Collection> = {
+    initialNeeds: creaturesNeeds,
+    openRequest: viewing,
+    onOpenHandled: () => {
+      setViewing(null);
+    },
+    state: game,
+    gear,
+    busy,
+    viewerId: user.id,
+    loadGames: fetchCreatureGames,
+    onEquip: equipOn,
+    catchActions,
+    ...creatureActions,
+  };
+
   const pages = (
     <div key={devNonce} hidden={settingsOpen}>
       {tab === 'home' && !valleyOn && (
@@ -908,23 +936,25 @@ export function Game({
           }}
         />
       )}
-      {tab === 'collection' && (
-        <Collection
-          initialNeeds={creaturesNeeds}
-          openRequest={viewing}
-          onOpenHandled={() => {
-            setViewing(null);
-          }}
-          state={game}
-          gear={gear}
-          busy={busy}
-          viewerId={user.id}
-          loadGames={fetchCreatureGames}
-          onEquip={equipOn}
-          catchActions={catchActions}
-          {...creatureActions}
-        />
-      )}
+      {tab === 'collection' &&
+        (valleyOn && valleySystems && systems !== null ? (
+          // With the valley's systems on the Paddock is a canvas: the yard is the page, the Creatures page is its left drawer.
+          <PaddockCanvas
+            collection={collectionProps}
+            visit={systems}
+            commons={commonsActions}
+            acorns={game.balances.bait}
+            studying={students}
+            trayInput={{
+              trips: game.expeditions,
+              jobs: gear === null ? null : gear.jobs,
+              now: Date.now() + offset,
+              ...trayStates(systems),
+            }}
+          />
+        ) : (
+          <Collection {...collectionProps} />
+        ))}
       {tab === 'expeditions' && valleyOn && valleySystems && systems !== null && (
         // With the valley's systems on the Signpost is its scouts, not trips (`/api/expeditions` answers 404).
         <SignpostCanvas
@@ -1011,6 +1041,7 @@ export function Game({
                     openPlace('paddock');
                   },
                   // Q64: an anvil that waits on a shard leads to the Market (its exchange once built, else its project).
+                  onLeave: leavePlace,
                   onOpenMarket: (to: string | null) => {
                     setMarketStart(
                       systems.market?.open === true && to !== null ? { exchange: to } : undefined,
@@ -1174,6 +1205,7 @@ export function Game({
                 zone: readerZone(),
               },
               acorns: game.balances.bait,
+              tagState: game,
               busy,
               error,
               ...(marketStart === undefined ? {} : { marketStart }),

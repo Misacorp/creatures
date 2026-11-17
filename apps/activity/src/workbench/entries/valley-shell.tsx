@@ -220,8 +220,12 @@ const valleyShell: Entry = {
       props: { start: 'bonfire', resting: 'few', commons: 'bonfire level 3', open: 'give list' },
     },
     {
-      name: 'Bonfire: the lamplighter (a helper) posted',
+      name: "Bonfire: a helper posted at the builders' corner",
       props: { start: 'bonfire', resting: 'few', commons: 'helpers posted' },
+    },
+    {
+      name: "Bonfire: the hearth at its top level (no builders' corner)",
+      props: { start: 'bonfire', resting: 'few', commons: 'bonfire max' },
     },
     {
       name: 'The valley, commons: the grand bonfire on the map, the Forge building in the Places list',
@@ -280,7 +284,7 @@ const valleyShell: Entry = {
       props: { start: 'visitor', visitor: 'here, known blueprint' },
     },
     {
-      name: 'Visitor away: the shuttered stall and one line',
+      name: 'Visitor away: the shuttered stall and its sign (Back Thursday)',
       props: { start: 'visitor', visitor: 'away' },
     },
     {
@@ -290,6 +294,10 @@ const valleyShell: Entry = {
     {
       name: 'Visitor: a piece chosen, its price and the odds',
       props: { start: 'visitor', visitor: 'here', open: 'reroll piece' },
+    },
+    {
+      name: 'Visitor: the week’s blueprint on the counter',
+      props: { start: 'visitor', visitor: 'here', open: 'blueprint' },
     },
     {
       name: 'The valley with the visitor here (his stall open on the map)',

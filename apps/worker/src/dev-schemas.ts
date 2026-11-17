@@ -118,7 +118,7 @@ export const TARGETED_TOOLS: readonly DevActionTool[] = [
 export const TargetUserIdSchema = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 
 /** Read-only tools (GET). Not logged. */
-export const DEV_READ_TOOLS = ['state', 'events', 'players'] as const;
+export const DEV_READ_TOOLS = ['state', 'events', 'players', 'reset-dry-run'] as const;
 
 const int = (min: number, max: number) =>
   v.pipe(v.number(), v.integer(), v.minValue(min), v.maxValue(max));

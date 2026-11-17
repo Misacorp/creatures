@@ -92,6 +92,21 @@ describe('useWizard', () => {
     expect(now().step).toBe('b');
   });
 
+  it('says a step exits when Back would leave the wizard, and marks the head so a drawer can leave its Back out', () => {
+    draw(<Plain onExit={() => undefined} />);
+    expect(now().exits).toBe(true);
+    expect(byClass(page?.root as FakeElement, 'drill-head')[0]?.getAttribute('data-leaves')).toBe(
+      'yes',
+    );
+    page?.update(() => {
+      now().next();
+    });
+    expect(now().exits).toBe(false);
+    expect(
+      byClass(page?.root as FakeElement, 'drill-head')[0]?.getAttribute('data-leaves'),
+    ).toBeNull();
+  });
+
   it('calls onExit from Back on the first step, and does nothing without one', () => {
     const exit = vi.fn();
     draw(<Plain onExit={exit} />);

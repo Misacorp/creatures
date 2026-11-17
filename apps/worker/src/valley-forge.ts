@@ -9,10 +9,12 @@
  * - `save` writes what the pass did: each anvil's piece, floor count and wait, the orders' progress (a finished order leaves the
  *   queue), the shelf's change (scrap and shards through the parts, Essence through the ledger), and the pieces that reached a floor.
  *   Randomness: the rarity of a piece is drawn inside the pass when the piece starts (`gearRng`, `crypto` in production).
- * - `collect` brings the floors home: the pieces come best first (rarity, then item level), each is rolled now with live randomness
+ * - `collect` brings the floors home: the commons come best first (item level), each is rolled now with live randomness
  *   (the base from its blueprint, the lines from its rarity and item level) and goes into the bag until the bag holds its 200; the rest
  *   stays on the floor (the lead's call: a full bag holds pieces on the floor, a full floor pauses the anvil, F-1). A piece "for my team"
  *   is worn at once by the creature of its element whose slot is empty or weakest, and goes to the bag when there is none.
+ *   Since the sealed crate (V-FORGE-5, 2026-11-15) only commons come home this way; rare and epic pieces move, unrolled, to
+ *   `forge_crate` (at most `crateCap`; past it the oldest come home on their own) and `openCrate` rolls them when the player opens it.
  */
 import {
   GEAR_SLOTS,
@@ -113,6 +115,7 @@ type FloorRow = {
   element: number;
   rarity: number;
   item_level: number;
+  made_at: number;
 };
 
 /** Everything `save` needs to know about what the pass started from. */
@@ -481,16 +484,119 @@ export class ValleyForgePass {
   floorRows(userId: string): FloorRow[] {
     return this.sql
       .exec<FloorRow>(
-        `SELECT piece_id, seat_id, blueprint_id, for_team, element, rarity, item_level FROM forge_floor
+        `SELECT piece_id, seat_id, blueprint_id, for_team, element, rarity, item_level, made_at FROM forge_floor
          WHERE user_id = ? ORDER BY rarity DESC, item_level DESC, made_at, piece_id`,
         userId,
       )
       .toArray();
   }
 
+  /** The sealed pieces in the player's crate, oldest first. */
+  crateRows(userId: string): FloorRow[] {
+    return this.sql
+      .exec<FloorRow>(
+        `SELECT piece_id, seat_id, blueprint_id, for_team, element, rarity, item_level, made_at FROM forge_crate
+         WHERE user_id = ? ORDER BY made_at, piece_id`,
+        userId,
+      )
+      .toArray();
+  }
+
+  /** The crate's count and best rarity as the player's row holds them (nothing is read from the crate itself). */
+  crateOf(userId: string): CrateState {
+    const row = this.sql
+      .exec<{ crate_count: number; crate_best: number }>(
+        'SELECT crate_count, crate_best FROM valley_players WHERE user_id = ?',
+        userId,
+      )
+      .toArray()[0];
+    return { count: row?.crate_count ?? 0, best: asRarity(row?.crate_best ?? 0) };
+  }
+
+  /** Writes the crate's count and best rarity to the player's row (one read of at most `crateCap` rows, only when the crate changed). */
+  private syncCrate(userId: string): CrateState {
+    const row = this.sql
+      .exec<{ n: number; best: number | null }>(
+        'SELECT COUNT(*) AS n, MAX(rarity) AS best FROM forge_crate WHERE user_id = ?',
+        userId,
+      )
+      .one();
+    const best = row.n === 0 ? 0 : asRarity(row.best ?? 0);
+    this.sql.exec(
+      'UPDATE valley_players SET crate_count = ?, crate_best = ? WHERE user_id = ?',
+      row.n,
+      best,
+      userId,
+    );
+    return { count: row.n, best };
+  }
+
   /**
-   * Brings the floors home: each piece, best first, is rolled and goes into the bag until the bag is full; the rest stays on the
-   * floor. Returns the seats' new floor counts (by seat id) and how many pieces came home and how many were worn at once.
+   * Rolls one piece now with the live dice (the base from its blueprint, a patchwork base, or a base for the team; the lines from its
+   * rarity and item level), puts it in the bag and, for a "for my team" piece with a creature to dress, on that creature. The caller
+   * has checked the bag has room and deletes the piece's row. `displaced` says an item came off the creature (it went to the bag).
+   */
+  private rollHome(
+    userId: string,
+    to: number,
+    row: FloorRow,
+    target: TeamTargets,
+  ): { id: string; item: GearItem; rarity: GearRarity; wornBy: string | null; displaced: boolean } {
+    const rarity = RARITIES[row.rarity] ?? 'common';
+    let item: GearItem;
+    let wearer: { id: string; slot: GearSlot } | null = null;
+    const patch = row.blueprint_id === null ? undefined : patchworkBlueprint(row.blueprint_id);
+    if (patch !== undefined) {
+      // V-FORGE-12: a patchwork piece is the plainest base of its slot in the shard's element, with fewer rolled lines. No mark: it
+      // has no quality (it is no blueprint the player found).
+      const base = patchworkBase(patch.slot, VALLEY_ELEMENTS[row.element] ?? null);
+      item = rollItem(this.deps.rng, {
+        baseId: base.id,
+        rarity,
+        itemLevel: row.item_level,
+        lines: patchworkRolledLines(rarity),
+      });
+    } else if (row.blueprint_id !== null && gearBase(row.blueprint_id) !== undefined) {
+      item = rollItem(this.deps.rng, {
+        baseId: row.blueprint_id,
+        rarity,
+        itemLevel: row.item_level,
+      });
+      // V-FORGE-9: every piece of a blueprint may add a well-thumbed mark (quality raises the chance of better rarity).
+      if (chance(this.deps.rng, Math.round(VALLEY_RULES.forge.markChance * 10_000), 10_000)) {
+        addMark(this.sql, userId, row.blueprint_id);
+      }
+    } else {
+      const pick = target.pick(row.element, row.item_level);
+      const base = pick?.base ?? teamBase(this.deps.rng, row.element, row.item_level);
+      item = rollItem(this.deps.rng, { baseId: base.id, rarity, itemLevel: row.item_level });
+      if (pick !== undefined && wearBlock(item, pick.wearer, true) === null) {
+        wearer = { id: pick.wearer.id, slot: pick.slot };
+      }
+    }
+    const id = insertItem(this.sql, userId, item, {
+      source: 'craft',
+      now: to,
+      origin: { kind: 'craft' },
+    });
+    let displaced = false;
+    if (wearer !== null) {
+      const off = target.take(wearer.id, wearer.slot, row.item_level);
+      if (off !== null) {
+        setEquipped(this.sql, off, null);
+        displaced = true;
+      }
+      setEquipped(this.sql, id, wearer.id);
+    }
+    return { id, item, rarity, wornBy: wearer?.id ?? null, displaced };
+  }
+
+  /**
+   * Brings the floors home (V-FORGE-5). Commons, best first, are rolled and go into the bag until the bag is full; the rest stays on the
+   * floor. Rare and epic pieces (`crateMinRarity`) do not come home: they move, unrolled, to the sealed crate, which holds at most
+   * `crateCap`. When it is full the oldest sealed piece comes home on its own to make room (if the bag has room; otherwise the newer
+   * piece stays on the floor, so the crate never grows past its cap). Returns the seats' new floor counts (by seat id), how many pieces
+   * came home and how many were worn at once, and the crate as it now stands.
    */
   collect(
     userId: string,
@@ -501,69 +607,88 @@ export class ValleyForgePass {
     counts: Map<string, number>;
     brought: number;
     worn: number;
-    /** The pieces that came home, best first (for the Gazette). */
+    /** The pieces that came home, in the order they did (for the Gazette; a sealed piece pushed out of a full crate is among them). */
     items: { id: string; baseId: string; rarity: GearRarity; itemLevel: number }[];
     /** The seat of the first piece (the smith the Gazette names). */
     firstSeat: string | null;
+    /** Pieces that moved to the crate, and the crate afterwards. */
+    sealed: number;
+    crate: CrateState;
   } {
     const counts = new Map<string, number>();
-    const rows = this.floorRows(userId);
     const items: { id: string; baseId: string; rarity: GearRarity; itemLevel: number }[] = [];
-    if (rows.length === 0) return { counts, brought: 0, worn: 0, items, firstSeat: null };
+    const rows = this.floorRows(userId);
+    if (rows.length === 0) {
+      return {
+        counts,
+        brought: 0,
+        worn: 0,
+        items,
+        firstSeat: null,
+        sealed: 0,
+        crate: this.crateOf(userId),
+      };
+    }
     let bag = bagItems(this.sql, userId);
     const target = new TeamTargets(this.sql, userId, team, this.deps.rng);
     let brought = 0;
     let worn = 0;
-    for (const row of rows) {
-      if (bag >= cap) break;
-      const rarity = RARITIES[row.rarity] ?? 'common';
-      let item: GearItem;
-      let wearer: { id: string; slot: GearSlot } | null = null;
-      const patch = row.blueprint_id === null ? undefined : patchworkBlueprint(row.blueprint_id);
-      if (patch !== undefined) {
-        // V-FORGE-12: a patchwork piece is the plainest base of its slot in the shard's element, with fewer rolled lines. No mark: it
-        // has no quality (it is no blueprint the player found).
-        const base = patchworkBase(patch.slot, VALLEY_ELEMENTS[row.element] ?? null);
-        item = rollItem(this.deps.rng, {
-          baseId: base.id,
-          rarity,
-          itemLevel: row.item_level,
-          lines: patchworkRolledLines(rarity),
-        });
-      } else if (row.blueprint_id !== null && gearBase(row.blueprint_id) !== undefined) {
-        item = rollItem(this.deps.rng, {
-          baseId: row.blueprint_id,
-          rarity,
-          itemLevel: row.item_level,
-        });
-        // V-FORGE-9: every piece of a blueprint may add a well-thumbed mark (quality raises the chance of better rarity).
-        if (chance(this.deps.rng, Math.round(VALLEY_RULES.forge.markChance * 10_000), 10_000)) {
-          addMark(this.sql, userId, row.blueprint_id);
-        }
-      } else {
-        const pick = target.pick(row.element, row.item_level);
-        const base = pick?.base ?? teamBase(this.deps.rng, row.element, row.item_level);
-        item = rollItem(this.deps.rng, { baseId: base.id, rarity, itemLevel: row.item_level });
-        if (pick !== undefined && wearBlock(item, pick.wearer, true) === null) {
-          wearer = { id: pick.wearer.id, slot: pick.slot };
-        }
-      }
-      const id = insertItem(this.sql, userId, item, {
-        source: 'craft',
-        now: to,
-        origin: { kind: 'craft' },
-      });
-      bag += 1;
+    let firstSeat: string | null = null;
+    let crateChanged = false;
+    const home = (row: FloorRow, from: 'forge_floor' | 'forge_crate'): void => {
+      const rolled = this.rollHome(userId, to, row, target);
       brought += 1;
-      items.push({ id, baseId: item.baseId, rarity, itemLevel: row.item_level });
-      if (wearer !== null) {
-        const displaced = target.take(wearer.id, wearer.slot, row.item_level);
-        if (displaced !== null) setEquipped(this.sql, displaced, null);
-        setEquipped(this.sql, id, wearer.id);
-        bag -= displaced === null ? 1 : 0;
-        worn += 1;
+      // In the bag unless worn at once (a piece it displaced goes there instead).
+      bag += rolled.wornBy === null || rolled.displaced ? 1 : 0;
+      if (rolled.wornBy !== null) worn += 1;
+      items.push({
+        id: rolled.id,
+        baseId: rolled.item.baseId,
+        rarity: rolled.rarity,
+        itemLevel: row.item_level,
+      });
+      firstSeat ??= row.seat_id;
+      this.sql.exec(`DELETE FROM ${from} WHERE piece_id = ?`, row.piece_id);
+    };
+    const minRarity = VALLEY_RULES.forge.crateMinRarity;
+    const waiting = this.crateRows(userId);
+    let sealed = 0;
+    // The sealed ones go to the crate oldest first, so the oldest is the first to be pushed out.
+    const toSeal = rows
+      .filter((r) => r.rarity >= minRarity)
+      .sort((a, b) => a.made_at - b.made_at || a.piece_id.localeCompare(b.piece_id, 'en'));
+    for (const row of toSeal) {
+      if (waiting.length >= VALLEY_RULES.forge.crateCap) {
+        const oldest = waiting[0];
+        // Nowhere to put it: the bag is full, so the piece stays on the floor.
+        if (oldest === undefined || bag >= cap) continue;
+        waiting.shift();
+        home(oldest, 'forge_crate');
       }
+      this.sql.exec(
+        `INSERT INTO forge_crate (piece_id, user_id, seat_id, blueprint_id, for_team, element, rarity, item_level, made_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        row.piece_id,
+        userId,
+        row.seat_id,
+        row.blueprint_id,
+        row.for_team,
+        row.element,
+        row.rarity,
+        row.item_level,
+        row.made_at,
+      );
       this.sql.exec('DELETE FROM forge_floor WHERE piece_id = ?', row.piece_id);
+      waiting.push(row);
+      sealed += 1;
+      crateChanged = true;
+      counts.set(row.seat_id, (counts.get(row.seat_id) ?? 0) + 1);
+    }
+    crateChanged ||= items.length > 0;
+    for (const row of rows) {
+      if (row.rarity >= minRarity) continue;
+      if (bag >= cap) break;
+      home(row, 'forge_floor');
       counts.set(row.seat_id, (counts.get(row.seat_id) ?? 0) + 1);
     }
     return {
@@ -571,9 +696,81 @@ export class ValleyForgePass {
       brought,
       worn,
       items,
-      firstSeat: items.length === 0 ? null : (rows[0]?.seat_id ?? null),
+      firstSeat,
+      sealed,
+      crate: crateChanged ? this.syncCrate(userId) : this.crateOf(userId),
     };
   }
+
+  /**
+   * Opens the crate (V-FORGE-5): each sealed piece, best first (rarity, then item level), is rolled now with the live dice and goes to
+   * the bag, or is worn at once ("for my team": the creature of its element with the empty or weakest slot). A full bag keeps the rest
+   * sealed. Returns the pieces in reveal order (worst first, best last) with who wore each, and how many stay sealed.
+   */
+  openCrate(
+    userId: string,
+    to: number,
+    team: readonly TeamMember[],
+    cap: number,
+  ): { opened: OpenedPiece[]; sealed: number; bagFull: boolean; crate: CrateState } {
+    const rows = this.crateRows(userId).sort(
+      (a, b) =>
+        b.rarity - a.rarity ||
+        b.item_level - a.item_level ||
+        a.made_at - b.made_at ||
+        a.piece_id.localeCompare(b.piece_id, 'en'),
+    );
+    if (rows.length === 0) {
+      return { opened: [], sealed: 0, bagFull: false, crate: { count: 0, best: 0 } };
+    }
+    let bag = bagItems(this.sql, userId);
+    const target = new TeamTargets(this.sql, userId, team, this.deps.rng);
+    const makers = new Map<string, string | null>();
+    const opened: OpenedPiece[] = [];
+    for (const row of rows) {
+      if (bag >= cap) break;
+      const rolled = this.rollHome(userId, to, row, target);
+      bag += rolled.wornBy === null || rolled.displaced ? 1 : 0;
+      this.sql.exec('DELETE FROM forge_crate WHERE piece_id = ?', row.piece_id);
+      if (!makers.has(row.seat_id)) {
+        makers.set(
+          row.seat_id,
+          this.sql
+            .exec<{ creature_id: string | null }>(
+              'SELECT creature_id FROM valley_seats WHERE seat_id = ?',
+              row.seat_id,
+            )
+            .toArray()[0]?.creature_id ?? null,
+        );
+      }
+      opened.push({
+        itemId: rolled.id,
+        rarity: rolled.rarity,
+        itemLevel: row.item_level,
+        wornBy: rolled.wornBy,
+        madeBy: makers.get(row.seat_id) ?? null,
+      });
+    }
+    const crate = this.syncCrate(userId);
+    // Worst first, best last: the reveal builds up.
+    opened.reverse();
+    return { opened, sealed: crate.count, bagFull: crate.count > 0, crate };
+  }
+}
+
+/** What the player's row holds about the sealed crate: how many pieces and the best rarity (0 common/none, 1 rare, 2 epic). */
+export interface CrateState {
+  count: number;
+  best: 0 | 1 | 2;
+}
+
+/** A piece the crate gave up, for the answer: its item (by id), who wore it at once, and the creature that made it. */
+export interface OpenedPiece {
+  itemId: string;
+  rarity: GearRarity;
+  itemLevel: number;
+  wornBy: string | null;
+  madeBy: string | null;
 }
 
 /** A base for a team piece with nobody to wear it: any base of its element the item level allows. */

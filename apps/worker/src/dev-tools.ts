@@ -20,6 +20,7 @@
  * Routes (one template, `/api/dev/:tool`):
  * - `GET  /api/dev/state`  the clock, this week's raid, the caller's force flags and the tool list.
  * - `GET  /api/dev/events` the last 50 analytics events of this guild (kind, time and props; no actors).
+ * - `GET  /api/dev/reset-dry-run` what the reset would do to this guild (`reset/dry-run.ts`); writes nothing.
  * - `POST /api/dev/<tool>` one of `DEV_ACTION_TOOLS`, answering `{ ok: true, tool, result }`.
  */
 import { RULES } from '@creatures/game';
@@ -124,6 +125,7 @@ import {
 } from './dev-tools-trips';
 import { raidClear, raidFill, raidPlay, raidRank, raidSeats } from './dev-tools-raid-bench';
 import { resetRaidsDungeons } from './dev-tools-reset-raids';
+import { resetDryRun } from './reset/dry-run';
 import {
   errorResponse,
   json,
@@ -439,6 +441,15 @@ export class DevTools {
     return { ...playersView(this.ctx(userId)), you: userId };
   }
 
+  /**
+   * What a reset of this guild would do (the settlers' record, the goodbye DMs, the rows the wipe would delete; `docs/design/reset.md`).
+   * Writes nothing and is not logged: a read tool.
+   */
+  async resetDryRun() {
+    const d = this.deps;
+    return await resetDryRun(d.storage.sql, { tz: d.timezone(), now: d.now() });
+  }
+
   /** The last 50 analytics events of this guild: kind, time and props. Never an actor. */
   events() {
     const rows = this.deps.storage.sql
@@ -513,6 +524,7 @@ export const devRoutes: Routes<DevRouteContext> = {
       if (dev === null || toolId === undefined || !READ_IDS.has(toolId)) return notFound();
       if (!(await mayUseDevTools(core, user.id))) return notFound();
       if (toolId === 'players') return json(dev.players(user.id));
+      if (toolId === 'reset-dry-run') return json(await dev.resetDryRun());
       return json(toolId === 'state' ? dev.state(user.id) : dev.events());
     },
     POST: async (request, { user, params, core }) => {

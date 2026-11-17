@@ -33,6 +33,8 @@ export interface Wizard<Id extends string = string> {
   last: boolean;
   /** Whether Back does something: not on a step with nowhere to go back to, unless the wizard has an `onExit`. */
   canBack: boolean;
+  /** Back from this step leaves the wizard (calls `onExit`) instead of going to another step: it is the first step of its branch. */
+  exits: boolean;
   /** One step on (the step's `forward`, else the next in the list; stays on a final step: the finish is the caller's). */
   next: () => void;
   /** One step back (the step's `back`, else the one before it); with nowhere to go back to it calls `onExit` when there is one. */
@@ -90,6 +92,7 @@ export function useWizard<Id extends string>(
     first: index === 0,
     last: final,
     canBack: backId !== undefined || options.onExit !== undefined,
+    exits: backId === undefined || indexOf(steps, backId) < 0,
     next: () => {
       if (current.forward !== undefined) {
         if (indexOf(steps, current.forward) >= 0) setStep(current.forward);

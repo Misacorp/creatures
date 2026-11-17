@@ -7,6 +7,7 @@
  */
 import type { AnvilKit, ValleyAnvilView, ValleyOrderView } from '@creatures/game';
 import type { Creature, OrderRequest, ValleyVisit } from '../api';
+import type { CrateOpened } from './crate-view';
 import { PartCount } from '../GearArt';
 import { busyReason } from '../gear-view';
 import { resourceCount, sayText, type Say } from '../resource-count';
@@ -45,6 +46,8 @@ export interface ForgeActions {
   /** Posts a creature to an anvil (a creature that stands elsewhere swaps) or empties it (`null`). */
   post: (body: { seatId: string; creatureId: string | null }) => Promise<boolean>;
   buyAnvil: () => Promise<boolean>;
+  /** Opens the Forge's sealed crate (a keyed call): the pieces to reveal, or null when the server did not open it. */
+  openCrate: () => Promise<CrateOpened | null>;
   /** Buys a kit (a keyed spend). */
   buyKit: (kit: AnvilKit) => Promise<boolean>;
   setKit: (seatId: string, kit: AnvilKit | null) => Promise<boolean>;

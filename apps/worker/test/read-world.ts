@@ -383,6 +383,10 @@ export async function seedWorld(
   const core = mk(BUILD, {
     ...(options.combatV2 === true || options.valleySystems === true ? { combatV2: true } : {}),
     ...(options.valleySystems === true ? { valleySystems: true } : {}),
+    // Seeded dice for scouts and gear: the valley's arrival draws finds and pieces, so live dice made the rows written vary run to
+    // run (a budget a few rows above the worst case failed now and then). With these the counts are the same on every run.
+    scoutRng: createSeededRng('read-budget-scouts'),
+    gearRng: createSeededRng('read-budget-gear'),
   });
   core.migrate();
   const creatures = seedPlayers(metered.sql, metered.storage);

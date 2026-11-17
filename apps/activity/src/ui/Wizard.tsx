@@ -57,6 +57,7 @@ export function WizardHead<Id extends string>({
       level={level}
       focus={focus}
       disabled={disabled || !wizard.canBack}
+      leaves={wizard.exits}
     />
   );
 }

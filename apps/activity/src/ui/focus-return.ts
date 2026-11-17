@@ -15,3 +15,30 @@ export function keyboardHasFocus(): boolean {
     return false;
   }
 }
+
+/** Whether the last thing the player did was press a key (not a click or a tap). Tracked from the first import on. */
+let lastInputWasKeyboard = false;
+if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
+  document.addEventListener(
+    'keydown',
+    () => {
+      lastInputWasKeyboard = true;
+    },
+    true,
+  );
+  document.addEventListener(
+    'pointerdown',
+    () => {
+      lastInputWasKeyboard = false;
+    },
+    true,
+  );
+}
+
+/**
+ * Whether the player arrived by keyboard. For a control that takes the focus by script when a page opens, after the control that was
+ * clicked is already gone (so `keyboardHasFocus` has nothing to read): only then may the focus show a ring there.
+ */
+export function arrivedByKeyboard(): boolean {
+  return keyboardHasFocus() || lastInputWasKeyboard;
+}
