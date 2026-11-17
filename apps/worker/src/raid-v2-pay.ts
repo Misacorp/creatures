@@ -13,6 +13,10 @@
 import { RULES } from '@creatures/game';
 import { payStage, type ResolveDeps, type StoredSummary } from './raid-resolve';
 
+/** The back-off of a payout that fails: 60 s doubling with each failure, never more than 6 h. */
+const PAY_RETRY_BASE_MS = 60_000;
+const PAY_RETRY_MAX_MS = 6 * 60 * 60_000;
+
 /** What `payStage` needs about a stage, kept until it pays. */
 export interface StagePayPayload {
   stage: 1 | 2;
@@ -74,8 +78,17 @@ export function settleDueStagePay(deps: ResolveDeps): number {
     try {
       if (payOne(deps, d.week_id, d.party, d.phase)) paid++;
     } catch (err) {
-      // The row stays (the transaction rolled everything back): the next touch retries.
+      // The transaction rolled everything back and the row stays, so a later fix still pays it; it waits out a back-off first.
       console.error('stage payout failed', err instanceof Error ? err.name : 'unknown');
+      sql.exec(
+        'UPDATE raid_stage_pay SET attempts = attempts + 1, due_at = ? + MIN(? * (1 << MIN(attempts, 20)), ?) WHERE week_id = ? AND party = ? AND phase = ?',
+        now,
+        PAY_RETRY_BASE_MS,
+        PAY_RETRY_MAX_MS,
+        d.week_id,
+        d.party,
+        d.phase,
+      );
     }
   }
   return paid;
@@ -95,6 +108,8 @@ function payOne(deps: ResolveDeps, weekId: string, party: number, phase: string)
       .toArray()[0];
     if (row === undefined) return false;
     const p = JSON.parse(row.payload) as StagePayPayload;
+    // `payStage` reads the week's rank and Festival flag now, not at resolve: a v2 week's rank is set before stage 1 and nothing writes it
+    // afterwards (only the v1 phase-1 redeclare and the dev tools do), so the kill bonus is the same at payout as at resolve.
     const { essence } = payStage(
       deps,
       { weekId },

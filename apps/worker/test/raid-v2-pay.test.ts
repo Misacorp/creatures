@@ -198,4 +198,62 @@ describe('stage rewards held until the replay ends', () => {
       { start: V2_WEEK.open, core: V2 },
     );
   }, 180_000);
+
+  it('a payout that throws keeps its row, backs off, is not retried before then, and pays once when it works', async () => {
+    await runRaid(
+      (ctx) => {
+        stageOne(ctx);
+        const end = endsAt(ctx, 'stage1');
+        const row = () =>
+          rows<{ attempts: number; due_at: number; payload: string }>(
+            ctx.sql,
+            'SELECT attempts, due_at, payload FROM raid_stage_pay',
+          )[0] as { attempts: number; due_at: number; payload: string };
+        const good = row().payload;
+        const quiet = books(ctx);
+        ctx.sql.exec("UPDATE raid_stage_pay SET payload = 'not json'");
+        ctx.clock.t = end;
+        expect(ctx.core.raid.settleDueLive()).toBe(0);
+        expect(row()).toMatchObject({ attempts: 1, due_at: end + 60_000 });
+        expect(books(ctx)).toEqual(quiet);
+        // Before the back-off ends nothing is tried again.
+        ctx.clock.t = end + 59_999;
+        ctx.core.raid.settleDueLive();
+        expect(row().attempts).toBe(1);
+        // Then it fails again, with a longer wait; the wait never passes six hours.
+        ctx.clock.t = end + 60_000;
+        ctx.core.raid.settleDueLive();
+        expect(row()).toMatchObject({ attempts: 2, due_at: end + 60_000 + 120_000 });
+        ctx.sql.exec('UPDATE raid_stage_pay SET attempts = 40');
+        ctx.clock.t = row().due_at;
+        ctx.core.raid.settleDueLive();
+        expect(row().due_at).toBe(ctx.clock.t + 6 * 60 * 60_000);
+        // A fix is deployed (the payload reads again): it pays once, and the row goes.
+        ctx.sql.exec('UPDATE raid_stage_pay SET payload = ?, due_at = ?', good, ctx.clock.t);
+        ctx.core.raid.settleDueLive();
+        const paid = books(ctx);
+        expect(pending(ctx)).toBe(0);
+        expect(paid.xp).not.toEqual(quiet.xp);
+        ctx.core.raid.settleDueLive();
+        expect(books(ctx)).toEqual(paid);
+      },
+      { start: V2_WEEK.open, core: V2 },
+    );
+  }, 180_000);
+
+  it('pays a row whose result row is missing, patches no summary and deletes the row', async () => {
+    await runRaid(
+      (ctx) => {
+        stageOne(ctx);
+        const end = endsAt(ctx, 'stage1');
+        ctx.sql.exec("DELETE FROM raid_results WHERE phase = 'stage1'");
+        ctx.clock.t = end;
+        expect(ctx.core.raid.settleDueLive()).toBe(1);
+        expect(pending(ctx)).toBe(0);
+        expect(count(ctx.sql, 'raid_results')).toBe(0);
+        expect(count(ctx.sql, 'away_rewards', "kind = 'raid'")).toBeGreaterThan(0);
+      },
+      { start: V2_WEEK.open, core: V2 },
+    );
+  }, 180_000);
 });
