@@ -1,7 +1,7 @@
 /*
   A place as a canvas (`valley/PlaceCanvas.tsx`, `docs/design/ux-patterns.md` "A place is a canvas"): the scene fills the view and the
   page never scrolls. Wide (60 rem and up): the scene fills the whole stage and never moves or rescales while you are in it; a left and a
-  right drawer (`ui/SidePanel`), each 24 rem, lie over its edges (only when a drawer would cover what was clicked is the scene panned
+  right drawer (`ui/SidePanel`), each 22 rem, lie over its edges (only when a drawer would cover what was clicked is the scene panned
   sideways, `--pan`, never rescaled). A phone has no drawers: an open panel is a full page over the scene (which stays mounted, only
   hidden, so it keeps its size and the button the focus returns to). Targets are real buttons with no look but a ring and, for a slot,
   a dashed outline.
@@ -90,7 +90,8 @@
   top: 0;
   bottom: 0;
   z-index: 10;
-  width: 24rem;
+  /* The one width of a drawer: a comfortable column, never a third of a big window (Misa, 2026-11-16). */
+  width: 22rem;
   max-width: 40%;
   min-height: 0;
   display: flex;
@@ -231,7 +232,7 @@ button.cv-target:is(:hover, :active) {
 */
 .cv-plate {
   position: absolute;
-  left: 50%;
+  left: calc(50% + var(--plate-dx, 0px));
   top: var(--py, 100%);
   z-index: 3;
   transform: translateX(-50%);

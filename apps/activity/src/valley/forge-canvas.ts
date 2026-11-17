@@ -15,6 +15,28 @@ export const PROP_HIT = 24;
 export const CELL_W = 28;
 export const CELL_H = 34;
 
+/** Where an anvil cell's plate sits, scene pixels down from the cell's top: under the anvil. */
+export const PLATE_AT = 28;
+/** A name plate's height in CSS px (`.nameplate-sm`, one line), the room two plates stacked above each other need. */
+export const PLATE_H_PX = 16;
+
+/**
+ * Where the plate of the `i`th background smith sits, scene pixels down from the target's top (negative: above it). Neighbours at one
+ * bench stand only 14 scene pixels apart, so their plates alternate between two heights; the step is a whole plate in CSS px, so two
+ * plates never touch whatever the pixel scale `s`.
+ */
+export function backPlateAt(i: number, s: number): number {
+  const step = Math.max(6, Math.ceil(PLATE_H_PX / s));
+  return i % 2 === 0 ? -step : -2 * step;
+}
+
+/**
+ * How far (scene pixels) the Furnace's and the Floor's plates sit off their targets' middles: the furnace stands right above the first
+ * anvil and the crate beside the last, so their centred plates ran into those anvils' speech bubbles.
+ */
+export const FURNACE_PLATE_X = -13;
+export const FLOOR_PLATE_X = 6;
+
 export interface Pt {
   x: number;
   y: number;

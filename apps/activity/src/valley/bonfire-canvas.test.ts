@@ -9,9 +9,13 @@ import {
   bonfireScale,
   edgeDressing,
   fireTarget,
+  groundArea,
+  groundBlocks,
   modeFor,
+  settleOnGround,
 } from './bonfire-canvas';
-import { fireSpots, FIRE_BOX, GRAND_BOX, moreSpot } from './bonfire-cast';
+import { fireSpots, FIRE_BOX, GRAND_BOX, GROUND_MARGIN, moreSpot } from './bonfire-cast';
+import { SKY_BELOW_ART_TOP } from './place-scene';
 import {
   CORNER,
   CORNER_AT,
@@ -286,6 +290,91 @@ describe('the Bonfire canvas: the edges of the scene', () => {
       expect(t.y).toBeGreaterThanOrEqual(0);
       expect(t.x + t.w).toBeLessThanOrEqual(size.width);
       expect(t.y + t.h).toBeLessThanOrEqual(size.height);
+    }
+  });
+});
+
+const WIDE: [number, number][] = [...SIZES, [2560, 1080], [1920, 1080], [1100, 800], [390, 844]];
+
+const crowd = (n: number) =>
+  Array.from({ length: n }, (_, i) => ({
+    creature: { id: `c${String(i)}`, species: 'sproutle', level: 1, shiny: false, nickname: null },
+    gained: 0,
+    warm: false,
+  }));
+
+const clearOf = (
+  at: { x: number; y: number },
+  r: { x: number; y: number; width: number; height: number },
+) => at.x + 16 <= r.x || at.x >= r.x + r.width || at.y + 16 <= r.y || at.y >= r.y + r.height;
+
+describe('the Bonfire canvas: the ground (Misa, 2026-11-16: creatures floated above the horizon)', () => {
+  it('stands every resting creature below the horizon and clear of trees, the fire and the corner, at every window and crowd', () => {
+    for (const [w, h] of WIDE) {
+      for (const grand of [false, true]) {
+        for (const corner of [false, true]) {
+          const g = geometry(w, h, grand, corner);
+          const lay = bonfireLayout(g, grand, corner);
+          const blocks = groundBlocks(g, lay, grand);
+          for (const n of [1, 3, 5, 7, 8, 10]) {
+            const spots = fireSpots(crowd(n), lay.box, g, { grand });
+            const name = `${String(w)}x${String(h)} grand ${String(grand)} corner ${String(corner)} x${String(n)}`;
+            expect(spots.length, name).toBeGreaterThan(0);
+            for (const spot of spots) {
+              expect(spot.y + 16, name).toBeGreaterThanOrEqual(
+                lay.box.y + SKY_BELOW_ART_TOP + GROUND_MARGIN,
+              );
+              for (const r of blocks)
+                expect(clearOf(spot, r), `${name} at ${String(spot.x)},${String(spot.y)}`).toBe(
+                  true,
+                );
+            }
+          }
+        }
+      }
+    }
+  });
+
+  it('seats seven creatures round the fire on a wide window', () => {
+    for (const grand of [false, true]) {
+      const g = geometry(2560, 1080, grand, false);
+      const lay = bonfireLayout(g, grand, false);
+      expect(fireSpots(crowd(7), lay.box, g, { grand })).toHaveLength(7);
+    }
+  });
+
+  it('keeps a dropped creature on the ground: the sky clamps down, trees and the fire push it out', () => {
+    for (const grand of [false, true]) {
+      const g = geometry(1920, 1080, grand, true);
+      const lay = bonfireLayout(g, grand, true);
+      const area = groundArea(g, lay.box);
+      const blocks = groundBlocks(g, lay, grand);
+      expect(area.y + 16).toBeGreaterThanOrEqual(lay.box.y + SKY_BELOW_ART_TOP + GROUND_MARGIN);
+      // Dropped high in the sky (and over the fire): lands on the ground, over nothing.
+      const sky = settleOnGround({ x: lay.box.x + 20, y: 0 }, area, blocks, [], g.s);
+      expect(sky.y).toBeGreaterThanOrEqual(area.y);
+      const fire = fireTarget(grand);
+      const land = [
+        settleOnGround(
+          { x: lay.box.x + fire.x + 4, y: lay.box.y + fire.y + 4 },
+          area,
+          blocks,
+          [],
+          g.s,
+        ),
+        ...blocks
+          .slice(0, 6)
+          .map((r) => settleOnGround({ x: r.x + 2, y: r.y + 2 }, area, blocks, [], g.s)),
+      ];
+      for (const at of land) {
+        expect(at.y).toBeGreaterThanOrEqual(area.y);
+        for (const r of blocks) expect(clearOf(at, r)).toBe(true);
+      }
+      // Dropped on another creature: a plate's gap away, and the same drop gives the same spot.
+      const other = { x: lay.box.x + 20, y: lay.box.y + 64 };
+      const near = settleOnGround(other, area, [], [other], g.s);
+      expect(near).not.toEqual(other);
+      expect(settleOnGround(other, area, [], [other], g.s)).toEqual(near);
     }
   });
 });

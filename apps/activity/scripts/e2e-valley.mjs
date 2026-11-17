@@ -34,6 +34,8 @@ const argOf = (flag, fallback) => {
 const out = resolve(argOf('--out', join(here, '../screenshots/e2e-valley')));
 const width = Number.parseInt(argOf('--width', '390'), 10);
 const height = Number.parseInt(argOf('--height', '844'), 10);
+/** The device pixel ratio of the page (`--dpr 2` for a high-density screen); shots of a ratio other than 1 say so in their names. */
+const dpr = Number.parseFloat(argOf('--dpr', '1'));
 /** Extra page-address options for a look at the game (`E2E_QUERY='name=value'`). */
 const extraQuery = process.env.E2E_QUERY === undefined ? '' : `&${process.env.E2E_QUERY}`;
 const reduced = args.includes('--reduced');
@@ -1006,7 +1008,7 @@ const browser = await chromium.launch(
 );
 const ctx = await browser.newContext({
   viewport: { width, height },
-  deviceScaleFactor: 1,
+  deviceScaleFactor: dpr,
   reducedMotion: reduced ? 'reduce' : 'no-preference',
 });
 const page = await ctx.newPage();
@@ -1047,7 +1049,12 @@ const heading = (text) => page.locator('h1.hud-title', { hasText: text });
 /** The valley's way back, in the HUD before the title. */
 const hudBack = () => page.locator('header.hud button.hud-back');
 const shot = (name) =>
-  page.screenshot({ path: join(out, `${name}-${String(width)}${reduced ? '-reduced' : ''}.png`) });
+  page.screenshot({
+    path: join(
+      out,
+      `${name}-${String(width)}x${String(height)}${dpr === 1 ? '' : `-${String(dpr)}x`}${reduced ? '-reduced' : ''}.png`,
+    ),
+  });
 const waitFor = (locator, state = 'visible') => locator.first().waitFor({ state, timeout: 10000 });
 /** The map's list of place buttons: it has no box of its own (the buttons are placed over the art). */
 const VALLEY = 'ul[aria-label="The valley"]';
@@ -2453,12 +2460,30 @@ try {
       // The bag is the chest in the yard: it opens in the left drawer (a page on a phone), with its count against the cap and its filter.
       await sceneTarget('The bag').click();
       await waitFor(drawer.getByText(/Bag: \d+ \/ \d+/));
+      await page.waitForTimeout(300);
+      await shot('forge-bag-open');
       const tools = drawer.getByRole('button', { name: /Filter and sort/ });
       await tools.click();
       await drawer.getByRole('button', { name: 'Rare', exact: true }).first().click();
       await page.waitForTimeout(300);
       await expectTopmost(tools, 'the bag tools header');
       await shot('forge-step-bag');
+      // An item's card: beside the bag on a wide window, a page of its own on a phone.
+      await drawer.locator('.bag-grid button.item-tile').first().click();
+      await page.waitForTimeout(400);
+      await shot('forge-bag-card');
+      {
+        // The card beside the bag has no Back head and no Prev / Next row; on a phone it keeps both.
+        const card = page.locator('.pc-side .ps-step, .pc-page .ps-step');
+        const head = await card.locator('.drill-head').count();
+        const pager = await card.locator('.ps-flip').count();
+        if (width >= 960 && (head > 0 || pager > 0))
+          throw new Error('the item card beside the bag still has its Back head or pager');
+        if (width < 960 && (head === 0 || pager === 0))
+          throw new Error('the phone item card lost its Back or pager');
+      }
+      await page.keyboard.press('Escape');
+      await page.waitForTimeout(300);
       if (width >= 960) {
         // The bag's chest is under the left drawer's reach: the scene is panned (not resized) to keep it clear.
         await page.waitForTimeout(400);
@@ -3030,6 +3055,36 @@ try {
         await waitFor(page.locator('.vy-scene .vy-feet-plate .nameplate-owner'));
         await page.waitForTimeout(300);
         await shot('bonfire5-company');
+        // A hand picks a resting creature up and puts it down anywhere on the ground; dropped high in the sky it lands on the ground
+        // (Misa, 2026-11-16: no dragging into the sky), and a drag opens no drawer.
+        const mine = page.locator('button.cv-target[aria-label*="by the fire"]');
+        const rows = [];
+        for (let i = 0; i < (await mine.count()); i += 1)
+          rows.push(await mine.nth(i).boundingBox());
+        const highest = Math.min(...rows.map((r) => r.y + r.height));
+        const target = mine.first();
+        const was = await target.boundingBox();
+        const label = await target.getAttribute('aria-label');
+        await page.mouse.move(was.x + was.width / 2, was.y + was.height / 2);
+        await page.mouse.down();
+        await page.mouse.move(was.x + was.width / 2 + 60, was.y - 40, { steps: 6 });
+        await page.mouse.move(was.x + was.width / 2 + 120, 70, { steps: 10 });
+        await shot('bonfirefix-drag-mid');
+        await page.mouse.up();
+        await page.waitForTimeout(300);
+        const now = await page.locator(`button.cv-target[aria-label="${label}"]`).boundingBox();
+        // The highest seat's feet are 36 scene pixels under the art's top, the horizon's grass line 14 and the least it may stand 20.
+        const px = was.width / 16;
+        if (now.y + now.height < highest - 16 * px - 1)
+          throw new Error(
+            `a creature dropped in the sky stands above the ground: feet at ${String(now.y + now.height)}, ground from ${String(highest - 16 * px)}`,
+          );
+        if (Math.abs(now.y - was.y) < 1 && Math.abs(now.x - was.x) < 1)
+          throw new Error('the dragged creature did not move');
+        if ((await rightPanel.count()) > 0 && (await rightPanel.isVisible()))
+          throw new Error('a drag opened a drawer');
+        await page.waitForTimeout(300);
+        await shot('bonfirefix-drag');
         await hudBack().click();
         await waitFor(page.locator(VALLEY), 'attached');
         await place('signpost').evaluate((el) => el.click());

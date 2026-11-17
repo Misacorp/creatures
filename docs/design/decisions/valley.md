@@ -4,6 +4,22 @@ The valley and peaceful systems overhaul planned in docs/design/valley/: job pos
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-16: Place scenes scale to fill the window; narrower drawers; item card config props
+
+ID: `2026-11-16-place-scenes-scale-to-fill-the` · Status: current
+
+**Decision.** Misa's Forge playtest, three changes (Misa, 2026-11-16). (1) The Forge interior's pixel scale is the largest whole number at which the room fits the window (width over `ROOM.w`, height over `ESSENTIAL_H`, at most `INTERIOR_SCALE_MAX` 8), where it was held at the generic 4 (`sceneScale`); edges tile only the margins the room leaves. Plates are checked not to overlap at six window sizes (`forge-plates.test.ts`): the far smiths' plates step by a whole plate in CSS px (`backPlateAt`), the Furnace and Floor plates sit off-centre (`plateX` on `CanvasTarget`) clear of the anvils' bubbles, the door's plate sits on the door. The other canvas places already allow up to 8 (their own `SCALE_MAX`); the Bonfire needs nothing. (2) A canvas drawer is 22 rem wide (`canvas.css`, one rule), not 24 rem or a share of the window. The Forge's bag on a wide window shows `BAG_COLUMNS` (6, Misa's pick from screenshots of 6, 7 and 8: "I see some clipping with 7 in a row too so let's use 6"; in `InventoryGrid.tsx`) tiles a row through a plain `columns` prop; a phone keeps auto-fit. The select box shrinks on such a grid so it never covers the tile's middle. (3) The bag's item card takes plain switches, `showHeader` and `showPager` (`ItemStep`, `StepBody`), set by the one that places it: `useForgeSteps` passes `CARD_BESIDE` (both off) when the card opens in the other drawer, `CARD_IN_PLACE` (both on) in place of the list. `ForgeCard.node` is a function of those switches. Arrow keys still flip; the drawer's X and Escape close it. The visitor's stall card already had neither head nor pager.
+
+**Reasoning.** On a big window a small room in a huge floor made every target hard to hit; the room should be as large as it fits, with the whole room in view (Misa's pick). Drawers a third of the window left the scene a strip. The card is told what to draw, never where it is, so a drawer, a page or a later place can set the same switches.
+
+## 2026-11-16: Bonfire: creatures stand on the ground and a hand can move them (feet under the horizon, no dragging into the sky)
+
+ID: `2026-11-16-bonfire-creatures-stand-on-the-ground` · Status: current
+
+**Decision.** Every resting spot at the Bonfire has its creature's feet at least `GROUND_MARGIN` (6 scene pixels) under the grass line, and the ring grew a row below the fire (seats 6 and 7 are the front corners) instead of one behind it. The grand hearth's outer seats moved down beside its benches, and the trees stand just outside the seats' ring. A hand can pick a resting creature up and put it down anywhere on the ground (the Paddock's `Draggable`): the sky clamps it to the ground, and a drop over a tree, the fire, the corner or another creature goes to the nearest free spot (`settleOnGround`). Positions are display-only, kept in the page, as in the Paddock.
+
+**Reasoning.** The two seats behind the fire had their feet on the horizon line, so the creatures floated on the hills and the trees (Misa's playtest, 2026-11-16). A flattened ellipse cannot hold seven seats a plate's gap apart under a horizon that close to the fire, while a row below has room; the ring stays a U round the fire. One seat list and one margin keep the rule in one place, and a unit test checks every window size and crowd.
+
 ## 2026-11-16: Pre-playtest layout fixes: creature drawer, Paddock row, seat outlines, corner in view
 
 ID: `2026-11-16-pre-playtest-layout-fixes-creature-drawer` · Status: current
@@ -11,6 +27,14 @@ ID: `2026-11-16-pre-playtest-layout-fixes-creature-drawer` · Status: current
 **Decision.** Four layout fixes before the owner's playtest. (1) A creature's drawer at the Bonfire and in the Paddock has one name, the drawer's title, and a real summary under it: `valley/CreatureSummary` (the creature card's own `CreatureHead`, without its name and with a larger portrait, then the page's `ExperienceRow`, one line for what it does and one for what it gains), then the place's actions (help build, "Open its page"). (2) The Paddock has the shared creature row under the scene (the `Tray` in `PlaceCanvas`'s `below` slot, a tap opens that creature's drawer, a creature carried into the yard that holds a builders' seat comes back by clearing that seat) and its roamers spread over the whole meadow (`yardFor`: the whole width and height of the scene, ending short of the gate and of a corner beside it, above the sign). One switch, `PADDOCK_VARIATION` in `paddock-canvas.ts`: `'A'` (default, the row) or `'B'` (no row; the roamers alone fill the meadow and the yard is the row). (3) A free School seat is outlined as the seat only (`freeSeatBox`: from under the house's walls, `HOUSE_BASE_ROW`, to the students' feet), so the dashed boxes no longer cover the house's lower wall. (4) The builders' corner is kept in view: its two targets share a `group` (`CORNER_GROUP`), and when a drawer opens the scene pans (`panWith`) so the clicked thing stays clear first and the whole corner is brought in as far as that allows, in the Bonfire, Market, School and Paddock.
 
 **Reasoning.** The owner's first playtest would otherwise meet a thin drawer that says the name twice, a wide empty field with the creatures bunched at its left and no creature row (he had asked for the row everywhere), outlines over the schoolhouse and a corner half under a drawer. Reusing the card's head keeps one creature header; the pan stays what the canvas rule already says (slide just enough, never rescale), and only widens what counts as "the clicked thing" for the corner. Variation B is kept behind the one constant so the owner can compare the two on staging without a rebuild of the layout code. The Bonfire's summary has no "Open its page": there is no creature page in that place, and adding one would need the game's whole state and gear plumbed in.
+
+## 2026-11-15: [Misa] Every daily place gets the picture layout before release, after the Forge and Expedition are tuned
+
+ID: `2026-11-15-every-daily-place-gets-the-picture` · Status: current
+
+**Decision.** The Bonfire, Paddock, Market, School, Visitor and House move to the "place is a picture you click" layout before the valley goes live; they do not ship with the old page layout. First the two places that already have it, the Forge and the Expedition (Signpost), are fine-tuned with Misa; the tuned pattern is then rolled out to the other six. On the same day Misa also took the suggested picks that the Forge interior keeps one look for now (per level later) and that the Paddock gets a taller canvas so its barn can grow.
+
+**Reasoning.** Misa (2026-11-14): "We need to update the other places into the new layout. I'd like to fine tune the existing two before we do that." He finds the big picture on the two existing screens crammed and not intuitive yet, so copying it to six more places now would copy the problems.
 
 ## 2026-11-15: The Market is a canvas: the stall, the broker, and a building site before it is built
 
