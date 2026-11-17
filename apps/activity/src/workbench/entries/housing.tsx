@@ -5,6 +5,8 @@ import { HousePhaseContext } from '../../housing/house-phase';
 import { HouseRows } from '../../housing/HouseRows';
 import { YourHouseRow } from '../../valley/YourHouseRow';
 import { HouseScene } from '../../housing/HouseScene';
+import { DEMO_HOUSES } from '../valley-demo/house-demo';
+import { HouseDemo } from '../valley-demo/HouseDemo';
 import { RoomFocus } from '../../housing/RoomFocus';
 import { VisitHouse } from '../../housing/VisitHouse';
 import {
@@ -287,7 +289,28 @@ const visitHouse: Entry = {
   ),
 };
 
+const housePlace: Entry = {
+  name: 'HousePlace',
+  file: 'apps/activity/src/housing/HousePlace.tsx',
+  group: 'Controls',
+  description:
+    'The valley’s House with housing on (the `VALLEY` and `HOUSING` flags), as a place’s canvas: the player’s own house fills the view and is the scene (drag it to pan; no page scroll), every room, the mailbox and the workbench wear a name plate, and a tap opens the thing in a drawer over the scene’s edge. Down the left edge buttons (Build, Catalogue, Visit, Journal, Stats, and Keepsakes when held) open the collections in the left drawer and pan nothing; a room (a tap) fills the stage at the largest whole scale, a spot shows its plate while looked at and opens its choices in the right drawer (a full page on a phone); the roof, walls and frame (a room’s looks inside a room) are the strip under the scene. Visit lists the houses; a tap walks into one (the guestbook is a corner button, the gift or stamp is pinned under the scene). The requests are answered from samples (`HouseApiContext`), so a spend fails as with no server. `house` picks the house; `off` is the House as it is in production (a scene with Journal and Stats under it); `page:` is the page the Collection group’s tab shows with the valley off.',
+  controls: { house: { kind: 'select', options: DEMO_HOUSES } },
+  defaults: { house: 'a few weeks in' },
+  presets: [
+    { name: 'The hut', props: { house: 'hut' } },
+    { name: 'A house a few weeks in', props: {} },
+    { name: 'The whole estate', props: { house: 'estate' } },
+    { name: 'The estate at twilight', props: { house: 'estate at twilight' } },
+    { name: 'The estate at night', props: { house: 'estate at night' } },
+    { name: 'Housing off (as in production)', props: { house: 'off' } },
+    { name: 'The page (valley off)', props: { house: 'page: a few weeks in' } },
+  ],
+  render: (p) => <HouseDemo key={str(p, 'house')} house={str(p, 'house')} />,
+};
+
 export const housingEntries: readonly Entry[] = [
+  housePlace,
   houseScene,
   roomFocus,
   houseRows,

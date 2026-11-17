@@ -19,6 +19,7 @@ import { useSize } from '../valley/parts';
 import { useDragScroll } from '../ui/use-drag-scroll';
 import { keepsakeArt } from './house-art';
 import { useHousePhase } from './house-phase';
+import { nudgePlates } from './plate-nudge';
 import { paintPlacements } from './house-paint';
 import type { Lighting } from './house-light';
 import { HousePostcard } from './HousePostcard';
@@ -182,6 +183,31 @@ export function HouseScene({
     [house, minWidth, minHeight, mailWaiting, phase],
   );
   useDragScroll(viewRef);
+  // A plate near the edge of what the stage shows is moved in, so it is never cut ("Workbenc"); again as the picture pans.
+  useLayoutEffect(() => {
+    const view = viewRef.current;
+    if (
+      !canvas ||
+      view === null ||
+      typeof view.getBoundingClientRect !== 'function' ||
+      typeof requestAnimationFrame !== 'function'
+    ) {
+      return undefined;
+    }
+    let frame = 0;
+    const again = (): void => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        nudgePlates(view);
+      });
+    };
+    nudgePlates(view);
+    view.addEventListener('scroll', again, { passive: true });
+    return () => {
+      cancelAnimationFrame(frame);
+      view.removeEventListener('scroll', again);
+    };
+  }, [canvas, model, scale, boxWidth, boxHeight]);
   // The scene is composed a little wider than the box (the stepped width); the stage shows the box's width of it, centred, so a
   // house that fits is not scrolled by the rounding. `shift` is the hidden strip left of the stage, in CSS px (whole scene px).
   const fullW = model.width * scale;

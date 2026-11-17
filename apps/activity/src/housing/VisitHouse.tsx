@@ -17,7 +17,8 @@ import { onDrillKey } from '../ui/drill-keys';
 import { SidePanel } from '../ui/SidePanel';
 import { useWide } from '../ui/wide-layout';
 import { WideLayout } from '../ui/WideLayout';
-import { fetchHouse, giftHouse, HOUSE_ERRORS, stampHouse } from './housing-api';
+import { HOUSE_ERRORS } from './housing-api';
+import { useHouseApi } from './house-api-context';
 import { HouseActionIds } from './use-house';
 import { PinnedAct } from '../valley/PinnedAct';
 import { PanelBody, PlaceCanvas, ToolCue, openerOf, type Opener } from '../valley/PlaceCanvas';
@@ -106,8 +107,10 @@ export function VisitHouse({
   house: given,
   canvas = false,
 }: VisitHouseProps) {
+  const api = useHouseApi();
   const loaded = useLoaded(
-    () => (given === undefined ? fetchHouse(userId).then((a) => a.house) : Promise.resolve(given)),
+    () =>
+      given === undefined ? api.fetchHouse(userId).then((a) => a.house) : Promise.resolve(given),
     [userId],
   );
   const [room, setRoom] = useState<string | null>(null);
@@ -142,7 +145,7 @@ export function VisitHouse({
   const title = `${house?.owner.name ?? name}'s house`;
 
   const gift = async (): Promise<void> => {
-    const answer = await runKeyed(HouseActionIds.gift(userId), (key) => giftHouse(userId, key));
+    const answer = await runKeyed(HouseActionIds.gift(userId), (key) => api.giftHouse(userId, key));
     if (answer === undefined) return;
     setToday(answer.today);
     setGifted(true);
@@ -150,7 +153,7 @@ export function VisitHouse({
   };
   const stamp = async (stampId: string): Promise<void> => {
     const answer = await runKeyed(`house-stamp:${userId}:${stampId}`, () =>
-      stampHouse(userId, stampId),
+      api.stampHouse(userId, stampId),
     );
     if (answer === undefined) return;
     setToday(answer.today);
@@ -238,24 +241,23 @@ export function VisitHouse({
         {alerts}
         <PlaceCanvas
           label={title}
-          scene={
-            <div class="hc-stage">
-              {stageScene}
-              {house !== null && (
-                <button
-                  type="button"
-                  class="vy-hatch hc-tool"
-                  aria-label="The guestbook. Open"
-                  aria-expanded={bookFrom !== null}
-                  onClick={(event) => {
-                    setBookFrom({ from: openerOf(event.currentTarget) });
-                  }}
-                >
-                  <Glyph id="paw" scale={2} />
-                  <ToolCue name="Guestbook" />
-                </button>
-              )}
-            </div>
+          scene={<div class="hc-stage">{stageScene}</div>}
+          overlay={
+            house !== null && (
+              <button
+                type="button"
+                class="vy-hatch hc-tool"
+                data-no-pan="yes"
+                aria-label="The guestbook. Open"
+                aria-expanded={bookFrom !== null}
+                onClick={(event) => {
+                  setBookFrom({ from: openerOf(event.currentTarget) });
+                }}
+              >
+                <Glyph id="paw" scale={2} />
+                <ToolCue name="Guestbook" />
+              </button>
+            )
           }
           below={house === null ? null : actions}
           left={null}

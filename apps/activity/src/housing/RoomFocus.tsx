@@ -13,6 +13,7 @@ import { housing } from '@creatures/game/housing-content';
 import { cssVars } from '../css-vars';
 import { creatureName, getSpecies } from '../game';
 import { useElementWidth } from '../hooks';
+import { useSize } from '../valley/parts';
 import { shinyPalette } from '../art';
 import { SmallCreature } from '../SmallCreature';
 import { creatureSpriteOrFallback } from '../sprites/creature-sprites';
@@ -48,6 +49,25 @@ export function focusScale(boxWidth: number, roomWidth: number): number {
     FOCUS_MAX_SCALE,
     Math.max(FOCUS_MIN_SCALE, Math.floor(boxWidth / Math.max(1, roomWidth))),
   );
+}
+
+/** A room in a canvas fills at most this many times its size. */
+export const CANVAS_FOCUS_MAX_SCALE = 10;
+
+/** The integer scale of a room `roomWidth` x `roomHeight` scene px in a stage `boxWidth` x `boxHeight` CSS px: the largest that fits both ways. */
+export function canvasFocusScale(
+  boxWidth: number,
+  boxHeight: number,
+  roomWidth: number,
+  roomHeight: number,
+): number {
+  const fit = Math.floor(
+    Math.min(
+      (boxWidth + FOCUS_BLEED) / Math.max(1, roomWidth),
+      boxHeight / Math.max(1, roomHeight),
+    ),
+  );
+  return Math.min(CANVAS_FOCUS_MAX_SCALE, Math.max(FOCUS_MIN_SCALE, fit));
 }
 
 /** Each spot's stacking layer: the biggest box lowest, so what is small (and what hangs in front of something big) is the one that is tapped. */
@@ -255,6 +275,8 @@ export function RoomFocus({
   const viewRef = useRef<HTMLDivElement>(null);
   useDragScroll(viewRef);
   const boxWidth = useElementWidth(rootRef, FALLBACK_WIDTH);
+  const unmeasured = useRef<HTMLDivElement>(null);
+  const stage = useSize(canvas ? rootRef : unmeasured);
   const phase = useHousePhase();
   const model = useMemo(
     () =>
@@ -272,7 +294,10 @@ export function RoomFocus({
     [model],
   );
   if (model === null) return <p class="muted">That room is gone.</p>;
-  const scale = focusScale(boxWidth + FOCUS_BLEED, model.width);
+  // A canvas fills its stage: the largest whole scale at which the room fits both ways (never under 2, then it pans sideways).
+  const scale = canvas
+    ? canvasFocusScale(stage.width, stage.height, model.width, model.height)
+    : focusScale(boxWidth + FOCUS_BLEED, model.width);
   const layers = spotLayers(model.spots);
   const view = house.rooms.find((r) => r.id === roomId);
   const own = mode === 'own';
@@ -373,37 +398,56 @@ export function RoomFocus({
         </div>
       </div>
       <PanHint target={viewRef} id="house-room" />
-      {own &&
-        view !== undefined &&
-        onSkin !== undefined &&
-        (model.rooms[0]?.outdoor ?? false) &&
-        hasGroundChoice(view.kind) && (
-          <div class="house-chips" data-chips="1">
-            <SkinTrigger
-              kind="ground"
-              id={view.floor}
-              onOpen={(opener) => {
-                onSkin('ground', opener);
-              }}
-            />
-          </div>
-        )}
-      {own && view !== undefined && onSkin !== undefined && !(model.rooms[0]?.outdoor ?? false) && (
-        <div class="house-chips-box">
-          <div class="house-chips" data-chips="4">
-            {(['wall', 'floor', 'trim', 'ceiling'] as const).map((layer) => (
-              <SkinTrigger
-                key={layer}
-                kind={layer}
-                id={view[layer]}
-                onOpen={(opener) => {
-                  onSkin(layer, opener);
-                }}
-              />
-            ))}
-          </div>
-        </div>
+      {own && !canvas && view !== undefined && onSkin !== undefined && (
+        <RoomChips house={house} roomId={roomId} onSkin={onSkin} />
       )}
+    </div>
+  );
+}
+
+/**
+ * A room's look chips: wallpaper, floor, trim and ceiling (an outdoor room's ground). In the page they sit under the room; in a
+ * canvas place they are the strip under the scene (`PlaceCanvas` `below`).
+ */
+export function RoomChips({
+  house,
+  roomId,
+  onSkin,
+}: {
+  house: HouseView;
+  roomId: string;
+  onSkin: NonNullable<RoomFocusProps['onSkin']>;
+}) {
+  const view = house.rooms.find((r) => r.id === roomId);
+  if (view === undefined) return null;
+  const outdoor = housing.rooms.find((k) => k.id === view.kind)?.outdoor ?? false;
+  if (outdoor) {
+    return hasGroundChoice(view.kind) ? (
+      <div class="house-chips" data-chips="1">
+        <SkinTrigger
+          kind="ground"
+          id={view.floor}
+          onOpen={(opener) => {
+            onSkin('ground', opener);
+          }}
+        />
+      </div>
+    ) : null;
+  }
+  return (
+    <div class="house-chips-box">
+      <div class="house-chips" data-chips="4">
+        {(['wall', 'floor', 'trim', 'ceiling'] as const).map((layer) => (
+          <SkinTrigger
+            key={layer}
+            kind={layer}
+            id={view[layer]}
+            onOpen={(opener) => {
+              onSkin(layer, opener);
+            }}
+          />
+        ))}
+      </div>
     </div>
   );
 }

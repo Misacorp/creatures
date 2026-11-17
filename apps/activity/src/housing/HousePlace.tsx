@@ -44,13 +44,13 @@ import {
   VisitList,
   WorkbenchPanel,
 } from './house-panels';
-import { fetchCatalogue, fetchHouses } from './housing-api';
+import { useHouseApi } from './house-api-context';
 import { HouseRows, houseRowLines, type HouseDrill } from './HouseRows';
 import { HouseScene, type ScrollMemory } from './HouseScene';
 import { SPOT_NAMES } from './house-text';
 import { HousePostcard } from './HousePostcard';
 import { PartPreview } from './PartPreview';
-import { RoomFocus } from './RoomFocus';
+import { RoomChips, RoomFocus } from './RoomFocus';
 import { SKIN_KIND_NAMES } from './SkinPicker';
 import { currentLook, skinBody, type SkinKind } from './spot-view';
 import { SkinTrigger } from './SkinTrigger';
@@ -139,7 +139,8 @@ type SidePanelState = {
 
 /** The catalogue page loads its own view when it opens (about 300 rows, never on the page itself). */
 function CatalogueScreen() {
-  const loaded = useLoaded(fetchCatalogue, []);
+  const api = useHouseApi();
+  const loaded = useLoaded(api.fetchCatalogue, []);
   return <CataloguePanel catalogue={loaded.value} failed={loaded.failed} onRetry={loaded.reload} />;
 }
 
@@ -154,7 +155,8 @@ export function HousePlace({ creatures, now, onSpent, canvas }: HousePlaceProps)
   const [side, setSide] = useState<SidePanelState | null>(null);
   const [pickerFrom, setPickerFrom] = useState<Opener | null>(null);
   const memory = useRef<ScrollMemory['current']>(null) as ScrollMemory;
-  const list = useLoaded(fetchHouses, []);
+  const api = useHouseApi();
+  const list = useLoaded(api.fetchHouses, []);
   // What grew since the player last looked, shown once.
   const [finds, setFinds] = useState<{ id: string; n: number }[] | null>(null);
   const announced = useRef(false);
@@ -207,6 +209,8 @@ export function HousePlace({ creatures, now, onSpent, canvas }: HousePlaceProps)
   const home = (): void => {
     setView({ kind: 'home' });
     setPicker(null);
+    // What was opened from the room (a recipe asked for by one of its spots) goes with it; the mailbox and the workbench of the yard stay.
+    setSide((now) => (now !== null && now.backTo !== null ? null : now));
   };
   const back = (): void => {
     if (picker !== null) {
@@ -675,9 +679,14 @@ export function HousePlace({ creatures, now, onSpent, canvas }: HousePlaceProps)
     ];
     // Build and Workbench show a refusal themselves, next to what was tapped: one alert, not two.
     const showError = house.error !== null && left?.kind !== 'build' && side?.kind !== 'workbench';
-    const notes = (moment !== null || finds !== null || showError) && (
+    const inRoom = view.kind === 'room' && roomId !== null;
+    // In the flow under the scene, never over it (a room's head must stay readable). What a part just built or what grew is for the
+    // cutaway only.
+    const showMoment = moment !== null && !inRoom;
+    const showFinds = finds !== null && !inRoom;
+    const notes = (showMoment || showFinds || showError) && (
       <div class="hc-notes">
-        {moment !== null && (
+        {showMoment && (
           <Alert
             level="success"
             onDismiss={() => {
@@ -692,7 +701,7 @@ export function HousePlace({ creatures, now, onSpent, canvas }: HousePlaceProps)
             {house.error}
           </Alert>
         )}
-        {finds !== null && (
+        {showFinds && (
           <CountBadgeList
             class="house-finds"
             label="Since you last looked"
@@ -705,7 +714,25 @@ export function HousePlace({ creatures, now, onSpent, canvas }: HousePlaceProps)
         )}
       </div>
     );
-    const inRoom = view.kind === 'room' && roomId !== null;
+    const toolsOverlay = (
+      <div class="hc-tools" role="group" aria-label="The house" data-no-pan="yes">
+        {tools.map((t) => (
+          <button
+            key={t.kind}
+            type="button"
+            class="vy-hatch hc-tool"
+            aria-label={`${t.name}, ${t.line}`}
+            aria-expanded={left?.kind === t.kind}
+            onClick={(event) => {
+              openLeft(t.kind, openerOf(event.currentTarget));
+            }}
+          >
+            <Glyph id={t.glyph} scale={2} />
+            <ToolCue name={t.name} />
+          </button>
+        ))}
+      </div>
+    );
     const stage = (
       <div class="hc-stage" {...(inRoom ? { onKeyDown: onDrillKey(home) } : {})}>
         {inRoom ? (
@@ -744,26 +771,8 @@ export function HousePlace({ creatures, now, onSpent, canvas }: HousePlaceProps)
                 openSide(kind === 'mailbox' ? 'mailbox' : 'workbench', opener);
               }}
             />
-            <div class="hc-tools" role="group" aria-label="The house">
-              {tools.map((t) => (
-                <button
-                  key={t.kind}
-                  type="button"
-                  class="vy-hatch hc-tool"
-                  aria-label={`${t.name}, ${t.line}`}
-                  aria-expanded={left?.kind === t.kind}
-                  onClick={(event) => {
-                    openLeft(t.kind, openerOf(event.currentTarget));
-                  }}
-                >
-                  <Glyph id={t.glyph} scale={2} />
-                  <ToolCue name={t.name} />
-                </button>
-              ))}
-            </div>
           </>
         )}
-        {notes}
       </div>
     );
     return (
@@ -772,21 +781,35 @@ export function HousePlace({ creatures, now, onSpent, canvas }: HousePlaceProps)
           label="Your house"
           scene={stage}
           below={
-            inRoom ? null : (
-              <div class="house-chips hc-chips" data-chips="3">
-                {(['roof', 'walls', 'frame'] as const).map((layer) => (
-                  <SkinTrigger
-                    key={layer}
-                    kind={layer}
-                    id={view_.exterior[layer]}
-                    onOpen={(opener) => {
-                      askPicker({ kind: 'skin', skin: layer, roomId: null }, opener);
+            <>
+              {notes}
+              {inRoom ? (
+                <div class="hc-chips">
+                  <RoomChips
+                    house={view_}
+                    roomId={roomId}
+                    onSkin={(skin, opener) => {
+                      askPicker({ kind: 'skin', skin, roomId }, opener);
                     }}
                   />
-                ))}
-              </div>
-            )
+                </div>
+              ) : (
+                <div class="house-chips hc-chips" data-chips="3">
+                  {(['roof', 'walls', 'frame'] as const).map((layer) => (
+                    <SkinTrigger
+                      key={layer}
+                      kind={layer}
+                      id={view_.exterior[layer]}
+                      onOpen={(opener) => {
+                        askPicker({ kind: 'skin', skin: layer, roomId: null }, opener);
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
           }
+          overlay={inRoom ? null : toolsOverlay}
           left={leftPanel}
           right={rightPanel}
         />

@@ -19,6 +19,7 @@ vi.mock('./housing-api', async (importOriginal) => ({
 }));
 
 const { HousePlace } = await import('./HousePlace');
+const { canvasFocusScale } = await import('./RoomFocus');
 
 let page: Page | null = null;
 
@@ -173,5 +174,69 @@ describe('the House place as a canvas', () => {
     expect(byClass(p.root, 'house-visit')).toHaveLength(1);
     expect(byClass(p.root, 'pc-root')).toHaveLength(1);
     expect(byName(p.root, 'button', /^The guestbook/)).toHaveLength(1);
+  });
+
+  it('puts the collection buttons in the canvas’s own overlay, outside the scene, marked as panning nothing', async () => {
+    const p = await open();
+    const overlay = first(byClass(p.root, 'pc-overlay'));
+    const tools = byClass(overlay, 'hc-tool');
+    expect(tools.length).toBeGreaterThanOrEqual(5);
+    expect(first(byClass(overlay, 'hc-tools')).getAttribute('data-no-pan')).toBe('yes');
+    expect(byClass(first(byClass(p.root, 'pc-main')), 'hc-tool')).toHaveLength(0);
+  });
+
+  it('keeps every spot reachable by name; its plate is there for the style to show while looked at', async () => {
+    const p = await open();
+    p.click(first(byName(p.root, 'button', /^Hearth/)));
+    await settle(p);
+    for (const el of byClass(p.root, 'house-spot')) {
+      expect(el.getAttribute('aria-label') ?? '').toMatch(/\S/);
+    }
+    // The room fills the stage (a canvas), and its look chips are the strip under it, not inside the stage.
+    expect(first(byClass(p.root, 'house-focus')).getAttribute('data-canvas')).toBe('yes');
+    expect(byClass(first(byClass(p.root, 'hc-stage')), 'house-chips')).toHaveLength(0);
+    expect(byClass(first(byClass(p.root, 'pc-below')), 'house-chips').length).toBeGreaterThan(0);
+  });
+
+  it('Escape with a drawer open closes only the drawer: the room stays', async () => {
+    const p = await open();
+    p.click(first(byName(p.root, 'button', /^Hearth/)));
+    await settle(p);
+    p.click(first(byName(p.root, 'button', /^Small floor: Cosy Chair/)));
+    await settle(p);
+    expect(byClass(p.root, 'pc-page')).toHaveLength(1);
+    p.key(first(byClass(p.root, 'pc-page')), 'Escape');
+    await settle(p);
+    expect(byClass(p.root, 'pc-page')).toHaveLength(0);
+    expect(byClass(p.root, 'house-focus')).toHaveLength(1);
+    expect(byClass(p.root, 'house-scene')).toHaveLength(0);
+  });
+
+  it('Back from a room closes the drawer that belonged to it, so a spot’s choices never stay over the cutaway', async () => {
+    const p = await open();
+    p.click(first(byName(p.root, 'button', /^Hearth/)));
+    await settle(p);
+    p.click(first(byName(p.root, 'button', /^Small floor: Cosy Chair/)));
+    await settle(p);
+    expect(byClass(p.root, 'pc-page')).toHaveLength(1);
+    // The room's own Back (in the stage, hidden behind a phone's page) takes the room and its drawer away together.
+    p.click(first(byClass(first(byClass(p.root, 'hc-stage')), 'drill-back')));
+    await settle(p);
+    expect(byClass(p.root, 'pc-page')).toHaveLength(0);
+    expect(byClass(p.root, 'house-scene')).toHaveLength(1);
+  });
+});
+
+describe('a room in a canvas', () => {
+  it('is drawn at the largest whole scale that fits the stage both ways (never under 2, at most 10)', () => {
+    // A one-cell room (112 x 64) on a phone stage 390 x 560: width allows 3, height allows 8.
+    expect(canvasFocusScale(390, 560, 112, 64)).toBe(3);
+    // The same room on a wide stage 1100 x 650: width allows 9, height 10: the width is the limit.
+    expect(canvasFocusScale(1100, 650, 112, 64)).toBe(9);
+    expect(canvasFocusScale(3000, 3000, 112, 64)).toBe(10);
+    // A tall stage is not the limit; a short one is.
+    expect(canvasFocusScale(1100, 200, 112, 64)).toBe(3);
+    // Too wide for the phone at 2: it stays 2 and pans.
+    expect(canvasFocusScale(390, 560, 336, 64)).toBe(2);
   });
 });
