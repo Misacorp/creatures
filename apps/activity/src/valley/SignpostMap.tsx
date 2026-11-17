@@ -15,23 +15,13 @@ import { scrollBehavior } from '../scroll-to';
 import { HUB } from '../sprites/world-map-art';
 import { WorldMap } from '../WorldMap';
 import { CRATE_PROP, PLANS_PROP } from './forge-props';
-import { Nameplate } from '../ui/Nameplate';
 import { Pic } from './parts';
 import type { Opener } from './PlaceCanvas';
-import { openerOf } from './PlaceCanvas';
+import { openerOf, ToolCue } from './PlaceCanvas';
 
 /** The place a map opens on: one with a pack to look at, else one with a scout, else the hub (Old Crossroads). */
 export function startPlace(places: readonly MapPlace[]): string {
   return places.find((p) => p.flag === 'FULL')?.id ?? places.find((p) => p.count > 0)?.id ?? HUB;
-}
-
-/** The cue of a button over the map (the same plate as a scene's targets, `canvas.css`). */
-function ToolCue({ name }: { name: string }) {
-  return (
-    <span class="cv-plate" aria-hidden="true">
-      <Nameplate size="sm">{name}</Nameplate>
-    </span>
-  );
 }
 
 export function SignpostMap({

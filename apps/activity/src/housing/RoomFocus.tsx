@@ -21,6 +21,8 @@ import { usePopoverTrigger } from '../PopoverHost';
 import type { CreatureInfo } from '../creature-info';
 import { PopoverCard, popupProps } from '../ui/Popover';
 import { PanHint } from '../ui/PanHint';
+import { Nameplate } from '../ui/Nameplate';
+import { openerOf, ToolCue, type Opener } from '../valley/PlaceCanvas';
 import { Tag } from '../ui/Tag';
 import { useDragScroll } from '../ui/use-drag-scroll';
 import { pieceArt, shellArt } from './house-art';
@@ -28,7 +30,7 @@ import { composeRoom, type SceneCreature, type SceneSpot } from './house-scene';
 import { levelMap, tintSprite } from './house-light';
 import { useHousePhase } from './house-phase';
 import { swapPalette } from '../sprites/sprite-data';
-import { displayText, itemName, spotLabel } from './house-text';
+import { displayText, itemName, SPOT_NAMES, spotLabel } from './house-text';
 import { boxVars, HOUSE_DRAWING, SceneLayer } from './HouseScene';
 import { SkinTrigger } from './SkinTrigger';
 import { hasGroundChoice } from './spot-view';
@@ -79,6 +81,7 @@ function SpotButton({
   selected,
   onPick,
   peek,
+  plate,
 }: {
   spot: SceneSpot;
   scale: number;
@@ -87,8 +90,10 @@ function SpotButton({
   label: string;
   selected: boolean;
   /** Own house: the tap asks for the spot's picker. Absent: the tap opens a popover (`peek`). */
-  onPick: (() => void) | undefined;
+  onPick: ((opener: Opener) => void) | undefined;
   peek: { title: string; short: string | undefined; lines: string[]; piece: string | null } | null;
+  /** The spot's short name on a plate under it (a canvas place: every clickable thing wears one). */
+  plate?: string;
 }) {
   const { host, ref, open } = usePopoverTrigger<HTMLButtonElement>();
   const empty = spot.pieceId === null && spot.type !== 'display';
@@ -106,9 +111,9 @@ function SpotButton({
       data-type={spot.type}
       aria-label={label}
       {...(onPick === undefined ? popupProps(open) : {})}
-      onClick={() => {
+      onClick={(event) => {
         if (onPick !== undefined) {
-          onPick();
+          onPick(openerOf(event.currentTarget));
           return;
         }
         if (host === null || ref.current === null || peek === null) return;
@@ -130,7 +135,9 @@ function SpotButton({
           ),
         });
       }}
-    />
+    >
+      {plate !== undefined && <ToolCue name={plate} inside />}
+    </button>
   );
 }
 
@@ -158,6 +165,7 @@ function Sleeper({
   owner,
   phase,
   level,
+  plate = false,
 }: {
   mate: SceneCreature;
   at: { x: number; y: number };
@@ -165,6 +173,8 @@ function Sleeper({
   owner: string | null;
   phase: RoomPhase;
   level: 0 | 1 | 2 | 3;
+  /** The housemate wears a name plate under its bed (a canvas place). */
+  plate?: boolean;
 }) {
   const info = housemateInfo(mate.housemate, owner);
   const species = mate.housemate.creature.species;
@@ -198,6 +208,13 @@ function Sleeper({
         ) : (
           <Sprite sprite={night} scale={scale} bob />
         )}
+        {plate && (
+          <span class="cv-plate cv-plate-in" aria-hidden="true">
+            <Nameplate size="sm" level={info.level}>
+              {info.name}
+            </Nameplate>
+          </span>
+        )}
       </SmallCreature>
       {/* The "z" over the sleeper, as the house view draws it. */}
       <span
@@ -215,12 +232,14 @@ export interface RoomFocusProps {
   house: HouseView;
   roomId: string;
   mode: 'own' | 'visit';
-  /** Own house: a spot was tapped (its picker opens). */
-  onSpot?: (spotId: string) => void;
+  /** Own house: a spot was tapped (its picker opens); `opener` is the spot's button. */
+  onSpot?: (spotId: string, opener: Opener) => void;
   /** Own house: the wallpaper, floor, trim or ceiling chip (or an outdoor room's ground) was tapped. */
-  onSkin?: (kind: 'wall' | 'floor' | 'trim' | 'ceiling' | 'ground') => void;
+  onSkin?: (kind: 'wall' | 'floor' | 'trim' | 'ceiling' | 'ground', opener: Opener) => void;
   /** The spot whose picker is open (it keeps a ring). */
   selectedSpot?: string | null;
+  /** The room is in a place's canvas (`valley/PlaceCanvas`): each spot and the housemate wear a name plate, and none shows a ring. */
+  canvas?: boolean;
 }
 
 export function RoomFocus({
@@ -230,6 +249,7 @@ export function RoomFocus({
   onSpot,
   onSkin,
   selectedSpot = null,
+  canvas = false,
 }: RoomFocusProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<HTMLDivElement>(null);
@@ -258,7 +278,13 @@ export function RoomFocus({
   const own = mode === 'own';
   const owner = own ? null : house.owner.name;
   return (
-    <div class="house-focus" data-mode={mode} data-scale={scale} ref={rootRef}>
+    <div
+      class="house-focus"
+      data-mode={mode}
+      data-scale={scale}
+      data-canvas={canvas ? 'yes' : undefined}
+      ref={rootRef}
+    >
       <div class="house-focus-view" ref={viewRef} data-audit-clip>
         <div
           class="house-stage"
@@ -285,6 +311,7 @@ export function RoomFocus({
               owner={owner}
               phase={phase}
               level={levelAt(levels, model.width, c.x + 8, c.y + 8)}
+              plate={canvas}
             />
           ))}
           <SceneLayer
@@ -307,6 +334,7 @@ export function RoomFocus({
                   selected={false}
                   onPick={undefined}
                   peek={{ title: text.title, short: undefined, lines: text.lines, piece: null }}
+                  {...(canvas ? { plate: text.title } : {})}
                 />
               );
             }
@@ -323,11 +351,12 @@ export function RoomFocus({
                 selected={selectedSpot === spot.spotId}
                 onPick={
                   own
-                    ? () => {
-                        onSpot?.(spot.spotId);
+                    ? (opener) => {
+                        onSpot?.(spot.spotId, opener);
                       }
                     : undefined
                 }
+                {...(canvas ? { plate: SPOT_NAMES[spot.type] } : {})}
                 peek={
                   spot.pieceId === null
                     ? null
@@ -353,8 +382,8 @@ export function RoomFocus({
             <SkinTrigger
               kind="ground"
               id={view.floor}
-              onOpen={() => {
-                onSkin('ground');
+              onOpen={(opener) => {
+                onSkin('ground', opener);
               }}
             />
           </div>
@@ -367,8 +396,8 @@ export function RoomFocus({
                 key={layer}
                 kind={layer}
                 id={view[layer]}
-                onOpen={() => {
-                  onSkin(layer);
+                onOpen={(opener) => {
+                  onSkin(layer, opener);
                 }}
               />
             ))}

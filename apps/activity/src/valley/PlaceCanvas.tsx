@@ -176,6 +176,19 @@ function Page({ panel, side }: { panel: CanvasPanel; side: CanvasSide }) {
   );
 }
 
+/**
+ * The cue of a button laid over a scene that is not a `CanvasTarget` (the map's corner buttons, a house's rooms): the same plate as a
+ * target's (`canvas.css`, `.cv-plate`), always shown, under the button (`inside`: along its bottom edge, for a button that is itself
+ * a big piece of the picture, like a room of the house).
+ */
+export function ToolCue({ name, inside = false }: { name: string; inside?: boolean }) {
+  return (
+    <span class={inside ? 'cv-plate cv-plate-in' : 'cv-plate'} aria-hidden="true">
+      <Nameplate size="sm">{name}</Nameplate>
+    </span>
+  );
+}
+
 /** How far the scene's wrapper must move sideways so a thing at [`t0`, `t1`] is in the clear span [`lo`, `hi`] (0 when it already is). */
 export function panFor(t0: number, t1: number, lo: number, hi: number, margin = 12): number {
   if (t0 >= lo && t1 <= hi) return 0;

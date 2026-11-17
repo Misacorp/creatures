@@ -20,6 +20,8 @@ import { WideLayout } from '../ui/WideLayout';
 import { fetchHouse, giftHouse, HOUSE_ERRORS, stampHouse } from './housing-api';
 import { HouseActionIds } from './use-house';
 import { PinnedAct } from '../valley/PinnedAct';
+import { PanelBody, PlaceCanvas, ToolCue, openerOf, type Opener } from '../valley/PlaceCanvas';
+import { Glyph } from '../valley/parts';
 import { giftReason, GiftButton, Guestbook, ownedStamps, StampPicker } from './house-panels';
 import { HouseScene, type ScrollMemory } from './HouseScene';
 import { RoomFocus } from './RoomFocus';
@@ -43,6 +45,11 @@ export interface VisitHouseProps {
   onToday?: (today: VisitToday, giftUsed: boolean) => void;
   /** A house already in hand (the workbench's samples and tests): nothing is requested. */
   house?: HouseView;
+  /**
+   * The visit is drawn as the place's canvas (`valley/PlaceCanvas`, the valley's House with housing on): the house fills the view, a
+   * corner button opens the guestbook in a drawer over its edge, and the gift or stamp is pinned under the scene. Absent: the page.
+   */
+  canvas?: boolean;
 }
 
 /** What the server turned a visitor away with that the screen did not know: the owner's mailbox is full, or the house is gone. */
@@ -97,6 +104,7 @@ export function VisitHouse({
   onBack,
   onToday,
   house: given,
+  canvas = false,
 }: VisitHouseProps) {
   const loaded = useLoaded(
     () => (given === undefined ? fetchHouse(userId).then((a) => a.house) : Promise.resolve(given)),
@@ -106,6 +114,8 @@ export function VisitHouse({
   const [today, setToday] = useState<VisitToday>(initialToday);
   const [gifted, setGifted] = useState(false);
   const [blocked, setBlocked] = useState<Blocked>(null);
+  // The guestbook's drawer (a canvas visit): open, and the button that opened it.
+  const [bookFrom, setBookFrom] = useState<{ from: Opener | null } | null>(null);
   const [guestbook, setGuestbook] = useState<readonly GuestbookEntry[] | null>(null);
   const wide = useWide();
   const memory = useRef<ScrollMemory['current']>(null) as ScrollMemory;
@@ -189,7 +199,7 @@ export function VisitHouse({
       {error}
     </Alert>
   );
-  const main =
+  const stageScene =
     house === null ? (
       loaded.failed ? (
         <Alert level="alert">
@@ -202,10 +212,69 @@ export function VisitHouse({
         <p class="muted">Walking over...</p>
       )
     ) : room === null ? (
-      <HouseScene house={house} mode="visit" onRoom={setRoom} memory={memory} />
+      <HouseScene
+        house={house}
+        mode="visit"
+        onRoom={(id) => {
+          setRoom(id);
+        }}
+        memory={memory}
+        {...(canvas ? { canvas: true } : {})}
+      />
     ) : (
-      <RoomFocus house={house} roomId={room} mode="visit" />
+      <RoomFocus house={house} roomId={room} mode="visit" {...(canvas ? { canvas: true } : {})} />
     );
+  const main = stageScene;
+  if (canvas) {
+    return (
+      <section class="house-visit hc-root hc-visit" aria-label={title} onKeyDown={onDrillKey(back)}>
+        <DrillHead
+          title={roomName === null ? title : `${title}: ${roomName}`}
+          backLabel={room === null ? 'to the houses' : 'to the house'}
+          onBack={back}
+          scroll
+          focus
+        />
+        {alerts}
+        <PlaceCanvas
+          label={title}
+          scene={
+            <div class="hc-stage">
+              {stageScene}
+              {house !== null && (
+                <button
+                  type="button"
+                  class="vy-hatch hc-tool"
+                  aria-label="The guestbook. Open"
+                  aria-expanded={bookFrom !== null}
+                  onClick={(event) => {
+                    setBookFrom({ from: openerOf(event.currentTarget) });
+                  }}
+                >
+                  <Glyph id="paw" scale={2} />
+                  <ToolCue name="Guestbook" />
+                </button>
+              )}
+            </div>
+          }
+          below={house === null ? null : actions}
+          left={null}
+          right={
+            bookFrom === null
+              ? null
+              : {
+                  title: 'Guestbook',
+                  returnFocusTo: bookFrom.from,
+                  onClose: () => {
+                    setBookFrom(null);
+                  },
+                  children: <PanelBody>{book}</PanelBody>,
+                }
+          }
+        />
+      </section>
+    );
+  }
   return (
     <section class="house-visit" aria-label={title} onKeyDown={onDrillKey(back)}>
       <DrillHead

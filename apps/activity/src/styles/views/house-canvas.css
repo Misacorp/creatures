@@ -1,0 +1,155 @@
+/*
+  The house as a place's canvas (`housing/HousePlace` with `canvas`, `housing/VisitHouse` with `canvas`; the rule is "A place is a
+  canvas" in `docs/design/ux-patterns.md`). The cutaway (`HouseScene`, `canvas`) fills the stage and pans itself by drag like a map; the
+  panels are the shared drawers (`valley/PlaceCanvas`), the collections' buttons (`.hc-tool`) are the Places flag's look (`.vy-hatch`)
+  with the same name plate as every other clickable thing. Nothing here scrolls the page.
+*/
+
+/* The game's page wrapper (`Game.tsx`, `pages`) is a plain div between the frame's page and the canvas: it passes the height on. */
+.vy-page > div:not([hidden]):has(> .hc-root) {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.hc-root {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.hc-root > .drill-head {
+  flex: none;
+  padding: 0.5rem 0.75rem 0;
+}
+
+.hc-root.house-visit > * + * {
+  margin-top: 0;
+}
+
+/* The scene: the whole stage. */
+.hc-stage {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--night);
+}
+
+.hc-stage > .house-scene {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.house-scene[data-canvas] > .house-view {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+}
+
+/* A room alone: centred in the stage; if the window is very short it scrolls inside itself, never the page. */
+.hc-stage > .house-focus {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.hc-stage > .drill-head {
+  flex: none;
+  padding: 0.5rem 0.75rem 0;
+}
+
+/* The cue of every clickable thing is its name plate (always shown); no hover ring on top of it. */
+.house-scene[data-canvas] :is(.house-room, .house-fixture):is(:hover, :active),
+.house-focus[data-canvas] .house-spot:is(:hover, :active) {
+  box-shadow: none;
+}
+
+/* A plate along the bottom of a big thing (a room), or under a housemate's bed, instead of under the button's box. */
+.cv-plate.cv-plate-in {
+  top: auto;
+  bottom: 0.5rem;
+}
+
+.house-scene[data-canvas] .house-room .cv-plate-in {
+  bottom: calc(var(--px) * 12);
+}
+
+.house-sleeper .house-creature {
+  position: relative;
+}
+
+.house-sleeper .cv-plate.cv-plate-in {
+  top: 100%;
+  bottom: auto;
+}
+
+.house-focus[data-canvas] .house-spot .cv-plate-in {
+  bottom: 0.125rem;
+}
+
+/* The collections' buttons, one under another down the scene's left edge. */
+.hc-tools {
+  position: absolute;
+  z-index: 25;
+  top: 0.375rem;
+  left: 0.375rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+
+.hc-tools .hc-tool {
+  position: relative;
+  top: auto;
+  left: auto;
+}
+
+/* A visit's one corner button (the guestbook). */
+.hc-stage > .hc-tool {
+  top: 0.375rem;
+  left: 0.375rem;
+}
+
+/* A built part, the "+N" finds and a refusal: a small stack over the scene's top, clear of the buttons at the left. */
+.hc-notes {
+  position: absolute;
+  z-index: 20;
+  top: 0.5rem;
+  left: 50%;
+  width: min(22rem, calc(100% - 7rem));
+  display: grid;
+  gap: 0.5rem;
+  transform: translateX(-50%);
+}
+
+/* The roof, walls and frame under the scene, in view and never scrolled away (like a place's shelf). */
+.hc-chips {
+  margin: 0;
+  padding: 0.5rem;
+  background: var(--dusk);
+  box-shadow: inset 0 var(--px) 0 0 var(--ink);
+}
+
+/* A visitor's one action under the scene. */
+.hc-visit .vy-act {
+  position: static;
+  padding: 0.5rem;
+  background: var(--dusk);
+}
+
+/* A tool's plate starts at the button's left edge (a long name runs to the right, never off the screen). */
+.hc-tool .cv-plate {
+  left: 0;
+  transform: none;
+}

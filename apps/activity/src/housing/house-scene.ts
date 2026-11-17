@@ -157,6 +157,8 @@ export interface ComposeOptions {
   content?: HousingContent;
   /** The scene is at least this wide (scene pixels): the lawn, earth and sky go on to both edges. */
   minWidth?: number;
+  /** The scene is at least this high (scene pixels): the sky goes on above the roofs, so a canvas taller than the house is filled. */
+  minHeight?: number;
   /** `draw`: housemates are painted into `back` (the overview); `skip`: only listed in `creatures` (the focus view draws buttons). */
   creatures?: 'draw' | 'skip';
   /** Parts built on top of the house's own (the build panel's preview); their rooms are empty. */
@@ -1207,9 +1209,9 @@ export function composeHouse(
     chimneyAt = { x: baseX + local, y: -bottomRel };
   }
   const topExtent = Math.max(aboveGround, chimneyAbove);
-  const groundY = SKY_ABOVE + topExtent;
   const hasCellar = grid.some((r) => r.floor < 0);
   const belowGround = FLOOR_H + 16 + (hasCellar ? CELL_H : 0);
+  const groundY = Math.max(SKY_ABOVE + topExtent, Math.floor(options.minHeight ?? 0) - belowGround);
   const height = groundY + belowGround;
 
   const back: Placement[] = [];

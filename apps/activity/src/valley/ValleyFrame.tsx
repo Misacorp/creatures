@@ -120,7 +120,7 @@ export function ValleyFrame({
   busy?: boolean;
   /** The server's last error, for the Market's exchange drawer (the notice line is behind it). */
   error?: string | null;
-  /** The player's house is on (`housing` of `/api/config`): the House place gets a third row, "Your house". */
+  /** The player's house is on (`housing` of `/api/config`): the House place is the house as a canvas (the game draws it, `housing/HousePlace`), with no scene above and no rows. */
   housing?: boolean;
   /** The place whose button takes the focus when the map comes back. */
   focus: PlaceId | null;
@@ -158,9 +158,13 @@ export function ValleyFrame({
         };
   const insideRef = useRef<HTMLDivElement>(null);
   // The five places with a scene (not while a book of the House is open): the scene above, today's page under it.
+  // With housing on the House is a canvas (the game draws it, `housing/HousePlace`): no scene above and no rows under it.
+  const houseCanvas =
+    housing && view.kind === 'place' && view.place === 'house' && view.book === null;
   const cast =
     view.kind === 'place' &&
     view.book === null &&
+    !houseCanvas &&
     hasScene(view.place) &&
     ((view.place !== 'signpost' && view.place !== 'forge') || visit !== null) &&
     // The Paddock is a canvas with the valley's systems on (`PaddockCanvas`, drawn by the game): its yard is its scene.
@@ -198,7 +202,7 @@ export function ValleyFrame({
   // Today's page of the place: the House's two books, then the page the game drew.
   const inside = (
     <>
-      {view.kind === 'place' && view.place === 'house' && view.book === null && (
+      {view.kind === 'place' && view.place === 'house' && view.book === null && !houseCanvas && (
         <div class="vy-house">
           <ul class="vy-rows" aria-label="In the house">
             {housing && (

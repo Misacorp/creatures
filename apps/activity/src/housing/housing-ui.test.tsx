@@ -67,7 +67,7 @@ describe('HouseScene', () => {
     const hearth = rooms.find((r) => r.getAttribute('aria-label') === 'Hearth');
     if (hearth === undefined) throw new Error('no hearth');
     page.click(hearth);
-    expect(onRoom).toHaveBeenCalledWith('hut:hearth');
+    expect(onRoom).toHaveBeenCalledWith('hut:hearth', expect.anything());
   });
 
   it('names the group and the mailbox, and shows the pan hint', () => {
@@ -192,7 +192,7 @@ describe('RoomFocus', () => {
     const window = spots.find((s) => s.getAttribute('data-type') === 'window');
     expect(window?.getAttribute('aria-label')).toBe('Window: Cosy Curtains');
     page.click(window as NonNullable<typeof window>);
-    expect(onSpot).toHaveBeenCalledWith('window-a');
+    expect(onSpot).toHaveBeenCalledWith('window-a', expect.anything());
     // Layer chips say "look" so they never read like a spot ("Ceiling: Oak Lamp").
     expect(byName(page.root, 'button', /^Wallpaper look: /)).toHaveLength(1);
     expect(byName(page.root, 'button', /^Floor look: /)).toHaveLength(1);
@@ -221,7 +221,7 @@ describe('RoomFocus', () => {
     expect(byName(page.root, 'button', 'Wallpaper look: Damask Paper, Rose')).toHaveLength(1);
     const ceiling = first(byName(page.root, 'button', 'Ceiling look: Beamed Ceiling, Dark boards'));
     page.click(ceiling);
-    expect(onSkin).toHaveBeenCalledWith('ceiling');
+    expect(onSkin).toHaveBeenCalledWith('ceiling', expect.anything());
     expect(byClass(page.root, 'house-chips')[0]?.getAttribute('data-chips')).toBe('4');
   });
 

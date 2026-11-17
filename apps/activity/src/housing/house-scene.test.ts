@@ -426,3 +426,20 @@ describe('the empty sky above the strip', () => {
     expect(colours.size).toBeGreaterThanOrEqual(4);
   });
 });
+
+describe('a scene at least as high as a canvas (minHeight)', () => {
+  it('grows the sky above the roof, keeping the house on the same ground line from the bottom', () => {
+    const plain = composeHouse(sceneHouse({ parts: HUT }));
+    const tall = composeHouse(sceneHouse({ parts: HUT }), { minHeight: plain.height + 200 });
+    expect(tall.height).toBe(plain.height + 200);
+    expect(tall.groundY).toBe(plain.groundY + 200);
+    // The building and its rooms moved down by the same amount: nothing else changed.
+    expect(tall.box.y).toBe(plain.box.y + 200);
+    expect(tall.rooms[0]?.y).toBe((plain.rooms[0]?.y ?? 0) + 200);
+  });
+
+  it('does nothing when the house is already that high', () => {
+    const plain = composeHouse(sceneHouse({ parts: HUT }));
+    expect(composeHouse(sceneHouse({ parts: HUT }), { minHeight: 10 }).height).toBe(plain.height);
+  });
+});
