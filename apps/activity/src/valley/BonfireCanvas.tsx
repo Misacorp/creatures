@@ -18,6 +18,7 @@
  * panel as its own page. The scene keeps one size and place for the whole visit; drawers lie over its edges.
  */
 import { useMemo, useRef, useState } from 'preact/hooks';
+import { clampToArea } from './creature-drag';
 import type { Creature, GameState, ValleyVisit } from '../api';
 import { creatureName } from '../game';
 import { TOUCH_HOLD_MS } from '../dnd-core';
@@ -30,7 +31,7 @@ import { CommonsBoard, type CommonsActions, type CommonsStart } from './CommonsB
 import { HelperPanel, RestingList, RestingPanel, type HelperPost } from './BonfirePanels';
 import { NO_TAG_STATE } from './CreatureSummary';
 import { CanvasTarget, PanelBody, PlaceCanvas, type CanvasPanel, type Opener } from './PlaceCanvas';
-import { PLATES_Z } from './PlaceScene';
+import { Draggable, PLATES_Z } from './PlaceScene';
 import { seatAt } from './seat-parts';
 import { Tray } from './Tray';
 import { trayFor, type TrayInput } from './tray-state';
@@ -47,7 +48,15 @@ import {
   visitorsOf,
   type FireSpot,
 } from './bonfire-cast';
-import { bonfireLayout, bonfireScale, bonfireSceneDraw, fireTarget } from './bonfire-canvas';
+import {
+  bonfireLayout,
+  bonfireScale,
+  bonfireSceneDraw,
+  fireTarget,
+  groundArea,
+  groundBlocks,
+  settleOnGround,
+} from './bonfire-canvas';
 import {
   CORNER_GROUP,
   FLAG_AT,
@@ -63,6 +72,7 @@ import { scaffoldSteps } from './scaffold';
 import { depthOf } from './valley-logic';
 import { WARMING_FLAME } from './valley-art';
 import { GRAND_LEVEL, bonfireName } from './valley-places';
+import type { Rect } from './valley-art';
 
 /** The right drawer: the one thing that was clicked. */
 type Right =
@@ -70,6 +80,12 @@ type Right =
 
 /** The left drawer: a collection. */
 type Left = { kind: 'board' | 'resting'; from: Opener | null };
+
+/** A creature held by a hand: above every creature, below the nameplates. */
+const LIFTED_Z = PLATES_Z - 1;
+
+/** Where a hand put a resting creature down, in scene pixels from the fire art's top-left (display only, never sent to the server). */
+type Placed = Readonly<Record<string, { x: number; y: number }>>;
 
 /** The helper spot's drop id: a creature dropped on it (from the tray) is posted as the hearth's helper. */
 export const HELPER_DROP = 'communal:bonfire';
@@ -115,6 +131,8 @@ export function BonfireCanvas({
         : null,
   );
   const [peek, setPeek] = useState<string | null>(null);
+  // Resting creatures a hand has moved: where each now stands, from the fire. Positions are display-only, as in the Paddock.
+  const [placed, setPlaced] = useState<Placed>({});
 
   const art = bonfireName(level);
   const grand = level >= GRAND_LEVEL;
@@ -314,6 +332,7 @@ export function BonfireCanvas({
         return (
           <BonfireInside
             g={g}
+            art={box}
             spots={spots}
             helper={helper}
             corner={lay.corner}
@@ -321,6 +340,14 @@ export function BonfireCanvas({
             more={more}
             moreAt={moreAt}
             dragOver={drag.drag?.over === HELPER_DROP}
+            ground={{
+              area: groundArea(g, box),
+              blocks: groundBlocks(g, lay, grand),
+              placed,
+              onPlace: (id, at) => {
+                setPlaced((was) => ({ ...was, [id]: at }));
+              },
+            }}
             open={{
               board: left?.kind === 'board',
               resting: left?.kind === 'resting',
@@ -391,6 +418,7 @@ export function BonfireCanvas({
 /** What stands in the scene over its canvas: the creatures, the corner, the fire and "+N more", each real button a `CanvasTarget`. */
 function BonfireInside({
   g,
+  art,
   spots,
   helper,
   corner,
@@ -399,6 +427,7 @@ function BonfireInside({
   moreAt,
   open,
   dragOver,
+  ground,
   hearthOpen,
   peek,
   busy,
@@ -409,6 +438,8 @@ function BonfireInside({
   onMore,
 }: {
   g: SceneGeometry;
+  /** The fire's art box (scene pixels): resting creatures face it. */
+  art: { x: number; y: number; width: number };
   spots: readonly FireSpot[];
   helper: Creature | undefined;
   /** The builders' corner's top-left (scene pixels), or null when the hearth has no project being built. */
@@ -420,6 +451,13 @@ function BonfireInside({
   open: { board: boolean; resting: boolean; restingId: string | null; helper: boolean };
   /** A tray creature is carried over the helper spot. */
   dragOver: boolean;
+  /** What a hand moving a resting creature needs: the ground it may stand on, what it may not stand over, and where each one was put. */
+  ground: {
+    area: Rect;
+    blocks: readonly Rect[];
+    placed: Placed;
+    onPlace: (id: string, at: { x: number; y: number }) => void;
+  };
   hearthOpen: boolean;
   peek: string | null;
   busy: boolean;
@@ -430,16 +468,34 @@ function BonfireInside({
   onMore: (opener: Opener) => void;
 }) {
   const seat = corner === null ? null : { x: corner.x + HELPER_AT.x, y: corner.y + HELPER_AT.y };
+  const [held, setHeld] = useState<{ id: string; x: number; y: number } | null>(null);
+  const heldNow = useRef(held);
+  heldNow.current = held;
+  // Where each resting creature stands now: its seat, or where a hand put it (kept on the ground), or under the hand.
+  const middle = art.x + art.width / 2;
+  const stands = spots.map((spot) => {
+    const mine = ground.placed[spot.creature.id];
+    const at =
+      held?.id === spot.creature.id
+        ? held
+        : mine === undefined
+          ? spot
+          : clampToArea(ground.area, art.x + mine.x, art.y + mine.y);
+    // A creature moved by hand faces the fire from whichever side it stands.
+    const flip =
+      mine === undefined && held?.id !== spot.creature.id ? spot.flip : at.x + 8 > middle;
+    return { ...spot, x: at.x, y: at.y, flip };
+  });
   return (
     <>
       {/* The creatures, then the targets over them: a plate is the one cue that a thing can be clicked. */}
-      {spots.map((spot) => (
+      {stands.map((spot) => (
         <At
           key={spot.creature.id}
           x={g.X(spot.x)}
           y={g.Y(spot.y)}
           class="vy-stand"
-          z={depthOf(spot.x, spot.y)}
+          z={held?.id === spot.creature.id ? LIFTED_Z : depthOf(spot.x, spot.y)}
         >
           <CreatureSprite
             creature={spot.creature}
@@ -492,42 +548,70 @@ function BonfireInside({
           onClick={onFire}
         />
       )}
-      {spots.map((spot) => {
+      {stands.map((spot) => {
         const name = creatureName(spot.creature);
         const visitor = spot.owner !== undefined;
         const peeking = visitor && peek === spot.creature.id;
         const z = PLATES_Z + depthOf(spot.x, spot.y);
+        const id = spot.creature.id;
         return (
-          <span key={spot.creature.id}>
-            <CanvasTarget
-              g={g}
+          <span key={id}>
+            <Draggable
               x={spot.x}
               y={spot.y}
-              w={CREATURE_PX}
-              h={CREATURE_PX}
-              z={z}
-              label={
-                visitor
-                  ? `${spot.owner ?? ''}'s ${name}, level ${String(spot.creature.level)}, visiting the fire. Show who`
-                  : `${name}, level ${String(spot.creature.level)}, ${spot.where}${spot.warm ? ', warming up' : ''}. Show this creature`
-              }
-              {...(peeking
-                ? {}
-                : {
-                    plate: visitor ? '' : name,
-                    plateMeta: {
-                      level: spot.creature.level,
-                      ...(spot.owner === undefined ? {} : { owner: spot.owner }),
-                      ...(spot.gained > 0 ? { gain: spot.gained } : {}),
-                    },
-                    plateAt: CREATURE_PX + 1,
-                  })}
-              expanded={visitor ? peeking : open.restingId === spot.creature.id}
-              onClick={(opener) => {
-                if (visitor) onPeek(peeking ? null : spot.creature.id);
-                else onCreature(spot.creature.id, opener);
+              g={g}
+              hand={{
+                area: ground.area,
+                lifted: held?.id === id,
+                onHold: (x, y) => {
+                  setHeld({ id, x, y });
+                },
+                onDrop: () => {
+                  // Put down: anywhere on the ground, but never over a tree, the fire, the corner or another creature.
+                  const at = heldNow.current;
+                  setHeld(null);
+                  if (at === null || at.id !== id) return;
+                  const to = settleOnGround(
+                    at,
+                    ground.area,
+                    ground.blocks,
+                    stands.filter((o) => o.creature.id !== id),
+                    g.s,
+                  );
+                  ground.onPlace(id, { x: to.x - art.x, y: to.y - art.y });
+                },
               }}
-            />
+            >
+              <CanvasTarget
+                g={g}
+                x={spot.x}
+                y={spot.y}
+                w={CREATURE_PX}
+                h={CREATURE_PX}
+                z={z}
+                label={
+                  visitor
+                    ? `${spot.owner ?? ''}'s ${name}, level ${String(spot.creature.level)}, visiting the fire. Show who`
+                    : `${name}, level ${String(spot.creature.level)}, ${spot.where}${spot.warm ? ', warming up' : ''}. Show this creature`
+                }
+                {...(peeking
+                  ? {}
+                  : {
+                      plate: visitor ? '' : name,
+                      plateMeta: {
+                        level: spot.creature.level,
+                        ...(spot.owner === undefined ? {} : { owner: spot.owner }),
+                        ...(spot.gained > 0 ? { gain: spot.gained } : {}),
+                      },
+                      plateAt: CREATURE_PX + 1,
+                    })}
+                expanded={visitor ? peeking : open.restingId === spot.creature.id}
+                onClick={(opener) => {
+                  if (visitor) onPeek(peeking ? null : spot.creature.id);
+                  else onCreature(spot.creature.id, opener);
+                }}
+              />
+            </Draggable>
             {peeking && (
               <At
                 x={g.X(spot.x + CREATURE_PX / 2)}

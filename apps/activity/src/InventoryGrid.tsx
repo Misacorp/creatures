@@ -2,6 +2,7 @@ import type { Creature } from './api';
 import { creatureName } from './game';
 import type { GearItem } from './gear-types';
 import { gearName, itemLabel, slotName, sortItems } from './gear-view';
+import { cssVars } from './css-vars';
 import { ItemTile } from './ItemTile';
 import type { MultiSelect } from './ui/multi-select';
 import type { SelectHint } from './ui/select-hint';
@@ -13,6 +14,12 @@ export const BAG_HINT: SelectHint = {
   touch: 'Press and hold an item to select several',
   mouse: 'Click the box on an item to select several',
 };
+
+/**
+ * How many tiles a row of the Forge's bag holds on a wide window, where the bag is a narrow drawer (Misa, 2026-11-16: "think 6-8 items
+ * per row"). One number, here; a phone keeps as many as fit at a comfortable size.
+ */
+export const BAG_COLUMNS = 6;
 
 /**
  * The bag as the one item grid (`ItemTile`, the same as the item picker): the slot's icon in each tile's bottom-left
@@ -31,6 +38,7 @@ export function InventoryGrid({
   onOpen,
   selection,
   inOrder = false,
+  columns,
 }: {
   items: readonly GearItem[];
   creatures: readonly Creature[];
@@ -41,6 +49,8 @@ export function InventoryGrid({
   selection: MultiSelect;
   /** The items are already in the order to show (the bag's sort and filter chose it); else the best first. */
   inOrder?: boolean;
+  /** A fixed number of tiles in a row (the tiles share the width); else as many as fit at a comfortable size. */
+  columns?: number;
 }) {
   const ordered = inOrder ? [...items] : sortItems(items);
   const nameOf = (id: string): string => {
@@ -57,7 +67,11 @@ export function InventoryGrid({
 
   return (
     <>
-      <ul class={`item-grid bag-grid ${grid.listClass}`} {...grid.listProps}>
+      <ul
+        class={`item-grid bag-grid ${grid.listClass}${columns === undefined ? '' : ' item-grid-cols'}`}
+        {...grid.listProps}
+        ref={cssVars({ '--cols': columns ?? 0 })}
+      >
         {ordered.map((item, index) => {
           const wearer = creatures.find((c) => c.id === item.equippedOn);
           const label = [

@@ -7,7 +7,7 @@
  *   there yet (an anvil to buy): a click on it starts the step that adds it.
  * - `PlaceCanvas`: the shell. On a wide window (`useWide`, 60 rem) the scene fills the whole stage and never moves or rescales while
  *   you are in it (Misa, 2026-11-15: "the view jumping around when the drawers opened"): the two drawers, `left` and `right`, each a
- *   `ui/SidePanel` of 24 rem, lie over its edges. Only when a drawer would cover the thing that was clicked, the scene is panned
+ *   `ui/SidePanel` of 22 rem, lie over its edges. Only when a drawer would cover the thing that was clicked, the scene is panned
  *   sideways (never rescaled) just far enough to keep it clear, and goes back when the drawer goes (`pan`; a map that scrolls on its
  *   own turns it off). On a phone there are no drawers: an open panel is its own full page with the scene hidden behind it (no drawer
  *   on a drawer), and its Back goes to the scene. The panel's content is the same component either way, normally a `ui/Wizard` (a
@@ -379,6 +379,7 @@ export function CanvasTarget({
   z,
   plate,
   plateAt,
+  plateX,
   plateMeta,
   children,
 }: {
@@ -407,6 +408,8 @@ export function CanvasTarget({
   plate?: string;
   /** Where the plate sits, in scene pixels down from the target's top (default: under it). */
   plateAt?: number;
+  /** How far the plate sits to the right of the target's middle, in scene pixels (negative: left); default centred. */
+  plateX?: number;
   /** A creature's plate (the Bonfire): its level first, a gain ("+N") and an owner's name, as `ui/Nameplate` shows them. */
   plateMeta?: { level?: number; gain?: number; owner?: string };
   children?: ComponentChildren;
@@ -431,7 +434,10 @@ export function CanvasTarget({
           <span
             class="cv-plate"
             aria-hidden="true"
-            ref={cssVars({ '--py': `${String((plateAt ?? h) * g.s)}px` })}
+            ref={cssVars({
+              '--py': `${String((plateAt ?? h) * g.s)}px`,
+              '--plate-dx': `${String((plateX ?? 0) * g.s)}px`,
+            })}
           >
             <Nameplate
               size="sm"

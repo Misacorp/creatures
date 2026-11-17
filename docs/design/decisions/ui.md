@@ -12,6 +12,22 @@ ID: `2026-11-17-the-house-place-is-a-canvas` · Status: current
 
 **Reasoning.** Misa's rule (2026-11-15): every daily place is a canvas. The house already is a picture with things to click, so it is the scene; the rows were the forms the rule removes. Nothing else was built: the drawer, plates, wizard steps and strip are the shared ones. Not moved: the tab page with the valley off keeps the page (the canvas needs the valley frame's bounded height), and the build-complete postcard note became a one-line note over the scene because the new rooms are in the scene itself.
 
+## 2026-11-16: [Misa] The item tile's slot icon sits beside the level on one bottom strip
+
+ID: `2026-11-16-the-item-tile-s-slot-icon` · Status: current
+
+**Decision.** Misa (2026-11-16) picked placement C of four: on every `ItemTile` the slot icon (hat, scarf, charm) sits at the left of one dark strip along the tile's bottom and "Lv 16" at its right. The top corners stay free for the select checkbox, the "Worn" flag and the wearer's picture. The other placements and the switch are gone.
+
+**Reasoning.** Before, the icon hid behind "Lv" on small tiles (the Forge's 6-a-row grid, about 50 px), and a top-left icon sat under the checkbox. One strip keeps both readable at any tile size and clear of the art.
+
+## 2026-11-16: [Misa] Every picture on a review page enlarges on tap
+
+ID: `2026-11-16-every-picture-on-a-review-page` · Status: current
+
+**Decision.** Every picture on a page made for Misa's review (the art review page, and any review page a session makes for him) can be tapped or clicked to open at full size, and closed again (a Close button, a tap outside, or Escape), on a phone too. The art review page does it in its template (`apps/activity/scripts/art-review.html`, `zoomable`), so every rebuild keeps it.
+
+**Reasoning.** Misa (2026-11-16, relayed by the release coordinator): "the screenshots were tiny. Could you ensure that such screenshots always have a way to click to enlarge?"
+
 ## 2026-11-15: Misa's Forge picks: plates, whole room, item card beside, full-screen reveal [Misa]
 
 ID: `2026-11-15-misa-s-forge-picks-plates-whole` · Status: current

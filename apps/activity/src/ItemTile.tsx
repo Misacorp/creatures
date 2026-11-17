@@ -27,15 +27,15 @@ export interface TileChoice {
 /**
  * One item in an item grid: the one look for every grid of items (the creature page's item picker and the
  * Workshop bag). A square button, the item's art filling it, its rarity as the single edge (its colour and its
- * shape, `rarity-edge`), the slot icon at the top left and the item level at the bottom right, and at the top right a small gold flag ("Worn") or the
+ * shape, `rarity-edge`), the slot icon and the item level together on a dark strip along the bottom, and at the top right a small gold flag ("Worn") or the
  * small picture of another creature that wears it. `selected` lights it from inside with a light edge (the
  * item shown, or shown last); `blocked` dims an item that cannot be worn (or that another creature wears). A selected tile scrolls itself into view (when it is selected and again when its details
  * close), so a closed detail never leaves the player lost in a long grid.
  *
  * Selecting several (bag only, `choice`): the tile is an option of the grid's listbox, and the shared `SelectCheck`
  * sits beside its button in the top left corner (a tap on it toggles, a tap anywhere else on the tile opens the item's
- * card). A chosen tile gets a gold ring and a held one the hold cue (`item-tile.css`). The slot icon of a bag tile
- * sits at the bottom left, so the checkbox never covers it. `buttonProps` carries the role and the pointer and key
+ * card). A chosen tile gets a gold ring and a held one the hold cue (`item-tile.css`). The slot icon sits on the bottom
+ * strip, so the checkbox never covers it. `buttonProps` carries the role and the pointer and key
  * handlers of `useSelectGrid` (long press, context menu, arrow keys) and `focusRef` hands the grid the button.
  */
 export function ItemTile({
