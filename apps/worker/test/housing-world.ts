@@ -282,8 +282,13 @@ export async function runHousingPaths(
 }
 
 /** The world's build with housing on, full houses seeded, player 1's stock in place: what both checks start from. */
-export function housingCore(env: GuildEnv, world: World, build: string): GuildCore {
-  const core = env.mk(build, { housing: true });
+export function housingCore(
+  env: GuildEnv,
+  world: World,
+  build: string,
+  flags: { combatV2?: boolean; valleySystems?: boolean } = {},
+): GuildCore {
+  const core = env.mk(build, { housing: true, ...flags });
   seedHouses(env, { ...world, core });
   stockPlayerOne(env);
   return core;

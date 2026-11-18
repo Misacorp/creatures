@@ -43,6 +43,7 @@ export function useSize(ref: { current: HTMLElement | null }): { width: number; 
       setSize({ width: el.clientWidth, height: el.clientHeight });
     };
     update();
+    if (typeof ResizeObserver !== 'function') return undefined;
     const observer = new ResizeObserver(update);
     observer.observe(el);
     return () => {

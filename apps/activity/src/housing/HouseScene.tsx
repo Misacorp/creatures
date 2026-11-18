@@ -14,9 +14,12 @@ import { cssVars } from '../css-vars';
 import { creatureName } from '../game';
 import { useElementWidth } from '../hooks';
 import { PanHint } from '../ui/PanHint';
+import { openerOf, ToolCue, type Opener } from '../valley/PlaceCanvas';
+import { useSize } from '../valley/parts';
 import { useDragScroll } from '../ui/use-drag-scroll';
 import { keepsakeArt } from './house-art';
 import { useHousePhase } from './house-phase';
+import { nudgePlates } from './plate-nudge';
 import { paintPlacements } from './house-paint';
 import type { Lighting } from './house-light';
 import { HousePostcard } from './HousePostcard';
@@ -91,10 +94,10 @@ export interface HouseSceneProps {
   house: HouseView;
   /** `own`: your house (the mailbox and workbench are buttons); `visit`: read-only. */
   mode: 'own' | 'visit';
-  /** A room was tapped. */
-  onRoom: (roomId: string) => void;
+  /** A room was tapped (`opener`: the button, for the canvas's drawers to give the focus back to). */
+  onRoom: (roomId: string, opener: Opener) => void;
   /** The mailbox or the workbench was tapped (own house; absent: they are only pictures). */
-  onFixture?: (kind: 'mailbox' | 'workbench') => void;
+  onFixture?: (kind: 'mailbox' | 'workbench', opener: Opener) => void;
   /** The mailbox's spoken name ("Mailbox, 2 gifts waiting"). */
   mailboxLabel?: string;
   /** Gifts wait in the mailbox: its flag is up (down otherwise). */
@@ -112,6 +115,12 @@ export interface HouseSceneProps {
   focusRoom?: string | null;
   /** Rooms that open with a short stepped reveal (the new part); with reduced motion they simply appear. */
   reveal?: readonly string[];
+  /**
+   * The scene is a place's canvas (`valley/PlaceCanvas`, "A place is a canvas"): it fills the height it is given instead of being at
+   * most 60vh high, each room and fixture wears a name plate, and none shows a hover ring or a focus ring (the keyboard's cue is the
+   * art scenes' gold arrow, `styles/views/art-focus.css`).
+   */
+  canvas?: boolean;
 }
 
 /** The cutaway: see the file comment. */
@@ -127,6 +136,7 @@ export function HouseScene({
   postcard,
   focusRoom = null,
   reveal = [],
+  canvas = false,
 }: HouseSceneProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<HTMLDivElement>(null);
@@ -137,7 +147,14 @@ export function HouseScene({
     () => composeHouse(house, { content: housing, creatures: 'skip', drawing: HOUSE_DRAWING }),
     [house],
   );
-  const boxHeight = typeof window === 'undefined' ? 480 : window.innerHeight * VIEW_HEIGHT;
+  // A canvas fills its stage: the box is as high as the stage; else the view is at most 60vh.
+  const unmeasured = useRef<HTMLDivElement>(null);
+  const stageSize = useSize(canvas ? viewRef : unmeasured);
+  const boxHeight = canvas
+    ? stageSize.height
+    : typeof window === 'undefined'
+      ? 480
+      : window.innerHeight * VIEW_HEIGHT;
   // The building is what has to fit (with the grass its door stands on): the workbench and the mailbox in the yard are a pan away.
   const fit = overviewScale(
     boxWidth,
@@ -146,22 +163,51 @@ export function HouseScene({
     boxHeight,
   );
   const scale = Math.max(1, Math.floor(scaleFor === undefined ? fit.scale : scaleFor(boxWidth)));
-  const wholeInView = scaleFor === undefined ? fit.fits : true;
+  // A canvas is a map you pan, never a page with a postcard above it.
+  const wholeInView = canvas || (scaleFor === undefined ? fit.fits : true);
   // Stepped, so a resize tick of a few pixels (a scrollbar, a phone's toolbar) neither re-composes the house nor resizes the canvas.
   const minWidth = sceneMinWidth(boxWidth, scale);
+  // A canvas taller than the house: the sky goes on above it (stepped like the width, so a small resize draws nothing new).
+  const minHeight = sceneMinWidth(boxHeight, scale);
   const model: SceneModel = useMemo(
     () =>
       composeHouse(house, {
         content: housing,
         minWidth,
+        ...(canvas ? { minHeight } : {}),
         creatures: 'draw',
         drawing: HOUSE_DRAWING,
         mailWaiting,
         phase,
       }),
-    [house, minWidth, mailWaiting, phase],
+    [house, minWidth, minHeight, mailWaiting, phase],
   );
   useDragScroll(viewRef);
+  // A plate near the edge of what the stage shows is moved in, so it is never cut ("Workbenc"); again as the picture pans.
+  useLayoutEffect(() => {
+    const view = viewRef.current;
+    if (
+      !canvas ||
+      view === null ||
+      typeof view.getBoundingClientRect !== 'function' ||
+      typeof requestAnimationFrame !== 'function'
+    ) {
+      return undefined;
+    }
+    let frame = 0;
+    const again = (): void => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        nudgePlates(view);
+      });
+    };
+    nudgePlates(view);
+    view.addEventListener('scroll', again, { passive: true });
+    return () => {
+      cancelAnimationFrame(frame);
+      view.removeEventListener('scroll', again);
+    };
+  }, [canvas, model, scale, boxWidth, boxHeight]);
   // The scene is composed a little wider than the box (the stepped width); the stage shows the box's width of it, centred, so a
   // house that fits is not scrolled by the rounding. `shift` is the hidden strip left of the stage, in CSS px (whole scene px).
   const fullW = model.width * scale;
@@ -218,7 +264,13 @@ export function HouseScene({
   const owner = house.owner.name;
   const label = mode === 'own' ? 'Your house' : `${owner}'s house`;
   return (
-    <div class="house-scene" data-mode={mode} data-scale={scale} ref={rootRef}>
+    <div
+      class="house-scene"
+      data-mode={mode}
+      data-scale={scale}
+      data-canvas={canvas ? 'yes' : undefined}
+      ref={rootRef}
+    >
       {!wholeInView && postcard !== false && (
         <div class="house-postcard-band">
           <HousePostcard house={house} maxWidth={boxWidth} label={label} />
@@ -265,10 +317,12 @@ export function HouseScene({
                   model.creatures.filter((c) => c.roomId === room.roomId),
                 )}
                 ref={boxVars(room, scale)}
-                onClick={() => {
-                  onRoom(room.roomId);
+                onClick={(event) => {
+                  onRoom(room.roomId, openerOf(event.currentTarget));
                 }}
-              />
+              >
+                {canvas && <ToolCue name={room.name} inside />}
+              </button>
             ))}
             {model.rooms
               .filter((room) => reveal.includes(room.roomId))
@@ -290,10 +344,14 @@ export function HouseScene({
                     class="house-fixture"
                     aria-label={f.kind === 'mailbox' ? mailboxLabel : 'Workbench'}
                     ref={boxVars(f, scale)}
-                    onClick={() => {
-                      if (f.kind === 'mailbox' || f.kind === 'workbench') onFixture(f.kind);
+                    onClick={(event) => {
+                      if (f.kind === 'mailbox' || f.kind === 'workbench') {
+                        onFixture(f.kind, openerOf(event.currentTarget));
+                      }
                     }}
-                  />
+                  >
+                    {canvas && <ToolCue name={f.kind === 'mailbox' ? 'Mailbox' : 'Workbench'} />}
+                  </button>
                 ))}
           </div>
         </div>

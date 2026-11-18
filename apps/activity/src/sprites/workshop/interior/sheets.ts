@@ -6,7 +6,8 @@
 import { CEILING_COLOURS, CEILING_KINDS, ceilingOverlay, type CeilingKind } from './ceilings';
 import { FLOOR_PATTERNS, floorPatternById, floorTile } from './floors';
 import { FRAMES, frameById, type FrameMaterial } from './frame';
-import { CELL_H, CELL_W, FEET, Raster, type Tones } from './kit';
+import { CELL_H, CELL_W, FEET, hexToRgb, Raster, type Tones } from './kit';
+import type { NightPhase } from '../../../housing/house-light';
 import { FLOOR_COLOURS, TRIM_COLOURS, WALL_COLOURS } from './palettes';
 import {
   drawRoom,
@@ -14,6 +15,7 @@ import {
   nightRaster,
   renderRoom,
   shippedFrame,
+  type LightAt,
   type RoomLook,
   type RoomOpts,
 } from './scene';
@@ -661,10 +663,82 @@ function roof(w: number, h: number): Raster {
 
 export interface HouseOpts {
   frame: string;
+  /** One doorway style on every floor (default: a different one per floor, as the first sheets showed). */
+  door?: DoorStyle;
+  /** One stair style for both stairs (default: a spiral and a straight stair). */
+  stairs?: StairStyle;
 }
 
 /** Three floors of two rooms: doorways between the rooms of every floor, stairs between floors, a roof, a lawn. */
 export function houseMock(opts: HouseOpts = { frame: 'timber-dark' }): Raster {
+  return buildHouse(opts).raster;
+}
+
+/**
+ * The house with one doorway style and one stair style, by day, and again by twilight and night through the house's own
+ * lighting pass (`house-light.ts`, read only): the look of the ways through, as the cutaway would show them.
+ */
+export function waysHouse(
+  door: DoorStyle,
+  stairs: StairStyle,
+  phase: 'day' | NightPhase,
+  frame = 'timber-dark',
+): Raster {
+  const { raster, lights } = buildHouse({ frame, door, stairs });
+  if (phase === 'day') return raster;
+  paintBackdrop(raster, phase);
+  return nightRaster(raster, phase, lights);
+}
+
+/** The three doorway styles and three stair styles shown on the same house (see `waysHouse`). */
+export const WAYS_DOORS: readonly DoorStyle[] = ['arch', 'ajar', 'curtain'];
+export const WAYS_STAIRS: readonly StairStyle[] = ['straight', 'ladder', 'spiral'];
+
+/**
+ * One row of the same house in three looks: `doors` (three doorway styles, spiral stairs) or `stairs` (three stair styles,
+ * open arches), by day or night. Labelled like the other sheets.
+ */
+export function waysRow(kind: 'doors' | 'stairs', phase: 'day' | NightPhase): Raster {
+  const samples: Sample[] =
+    kind === 'doors'
+      ? WAYS_DOORS.map((d) => ({
+          label: DOOR_STYLES.find((x) => x.id === d)?.name ?? d,
+          raster: waysHouse(d, 'spiral', phase),
+        }))
+      : WAYS_STAIRS.map((t) => ({
+          label: STAIR_STYLES.find((x) => x.id === t)?.name ?? t,
+          raster: waysHouse('arch', t, phase),
+        }));
+  return grid(samples, 3);
+}
+
+/** The sky and lawn of the mock drawn for the phase already (`fixed`: the lighting pass leaves them), in bands. */
+function paintBackdrop(r: Raster, phase: NightPhase): void {
+  const skies =
+    phase === 'twilight'
+      ? ['#2e2868', '#463a80', '#7a4a86', '#c0607a', '#e8905e']
+      : ['#101640', '#161e4e', '#1c2860', '#22326c', '#283c78'];
+  const lawn = phase === 'twilight' ? ['#436a4c', '#35563e'] : ['#1f4636', '#183a2c'];
+  const sky = hexToRgb(SKY);
+  const grass = [hexToRgb(LAWN), hexToRgb(LAWN_TOP)];
+  const ground = r.h - 22;
+  for (let y = 0; y < r.h; y++) {
+    for (let x = 0; x < r.w; x++) {
+      const i = (y * r.w + x) * 3;
+      const at: [number, number, number] = [r.px[i] ?? 0, r.px[i + 1] ?? 0, r.px[i + 2] ?? 0];
+      const is = (c: readonly number[]): boolean =>
+        c[0] === at[0] && c[1] === at[1] && c[2] === at[2];
+      if (is(sky)) {
+        const band = Math.min(skies.length - 1, Math.floor((y / ground) * skies.length));
+        r.rect(x, y, 1, 1, skies[band] ?? '#101640', 'fixed');
+      } else if (is(grass[0] ?? []) || is(grass[1] ?? [])) {
+        r.rect(x, y, 1, 1, lawn[is(grass[1] ?? []) ? 0 : 1] ?? '#183a2c', 'fixed');
+      }
+    }
+  }
+}
+
+function buildHouse(opts: HouseOpts): { raster: Raster; lights: LightAt[] } {
   const side = 28;
   const roofH = 40;
   const top = roofH + 6;
@@ -728,13 +802,23 @@ export function houseMock(opts: HouseOpts = { frame: 'timber-dark' }): Raster {
       },
     ],
   ];
-  const doors: DoorStyle[] = ['curtain', 'arch', 'square'];
+  const doors: DoorStyle[] =
+    opts.door === undefined ? ['curtain', 'arch', 'square'] : [opts.door, opts.door, opts.door];
+  const lights: LightAt[] = [];
   const spec: { f: number; c: number }[] = [];
   for (const f of [0, 1, 2]) for (const c of [0, 1]) spec.push({ f, c });
   // floor 0 (top) col 0 receives a stair from floor 1 col 0; floor 1 (middle) col 1 receives one from floor 2 col 1
+  const left = stair(opts.stairs ?? 'spiral', WOOD_DARK);
+  const right = stair(opts.stairs ?? 'straight', WOOD_DARK);
+  const leftX = 6;
+  const rightX =
+    CELL_W -
+    (opts.stairs === undefined
+      ? 50
+      : (STAIR_STYLES.find((t) => t.id === opts.stairs)?.w ?? 10) + 4);
   const holeIn = (f: number, c: number): { x: number; w: number } | undefined => {
-    if (f === 0 && c === 0) return { x: 6 + 4, w: 17 };
-    if (f === 1 && c === 1) return { x: CELL_W - 50 + 28, w: 14 };
+    if (f === 0 && c === 0) return { x: leftX + left.hole.x, w: left.hole.w };
+    if (f === 1 && c === 1) return { x: rightX + right.hole.x, w: right.hole.w };
     return undefined;
   };
   for (const { f, c } of spec) {
@@ -743,12 +827,14 @@ export function houseMock(opts: HouseOpts = { frame: 'timber-dark' }): Raster {
     const look = lookOf(mix);
     const hole = holeIn(f, c);
     if (hole !== undefined) look.hole = hole;
-    if (f === 1 && c === 0) look.stair = { stair: stair('spiral', WOOD_DARK), x: 6 };
-    if (f === 2 && c === 1) look.stair = { stair: stair('straight', WOOD_DARK), x: CELL_W - 50 };
-    drawRoom(r, x0 + c * CELL_W, top + f * CELL_H, look, {
-      furnish: f === 2 ? 'full' : 'light',
-      creature: c === 1 ? 'cindle' : f === 1 ? 'sproutle' : null,
-    });
+    if (f === 1 && c === 0) look.stair = { stair: left, x: leftX };
+    if (f === 2 && c === 1) look.stair = { stair: right, x: rightX };
+    lights.push(
+      ...drawRoom(r, x0 + c * CELL_W, top + f * CELL_H, look, {
+        furnish: f === 2 ? 'full' : 'light',
+        creature: c === 1 ? 'cindle' : f === 1 ? 'sproutle' : null,
+      }),
+    );
   }
   for (const f of [0, 1, 2]) {
     const d = doorway(doors[f] ?? 'arch', trimTones('paint-white'), wallTones('rose'));
@@ -757,7 +843,7 @@ export function houseMock(opts: HouseOpts = { frame: 'timber-dark' }): Raster {
   // the ground floor's door, the step, a plinth
   r.rect(x0 - 2, ground - 3, bodyW, 3, '#706b60');
   r.rect(x0 - 2, ground - 3, bodyW, 1, '#0d0a1a');
-  return r;
+  return { raster: r, lights };
 }
 
 const WOOD_DARK: Tones = {

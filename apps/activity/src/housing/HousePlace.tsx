@@ -24,6 +24,16 @@ import { CountBadgeList } from '../ui/CountBadge';
 import { SidePanel } from '../ui/SidePanel';
 import { useWide } from '../ui/wide-layout';
 import { WideLayout } from '../ui/WideLayout';
+import { Glyph } from '../valley/parts';
+import {
+  PanelBody,
+  PlaceCanvas,
+  ToolCue,
+  openerOf,
+  type CanvasPanel,
+  type Opener,
+} from '../valley/PlaceCanvas';
+import { StepBody } from '../valley/PanelStep';
 import {
   BuildPanel,
   CataloguePanel,
@@ -34,13 +44,13 @@ import {
   VisitList,
   WorkbenchPanel,
 } from './house-panels';
-import { fetchCatalogue, fetchHouses } from './housing-api';
-import { HouseRows, type HouseDrill } from './HouseRows';
+import { useHouseApi } from './house-api-context';
+import { HouseRows, houseRowLines, type HouseDrill } from './HouseRows';
 import { HouseScene, type ScrollMemory } from './HouseScene';
 import { SPOT_NAMES } from './house-text';
 import { HousePostcard } from './HousePostcard';
 import { PartPreview } from './PartPreview';
-import { RoomFocus } from './RoomFocus';
+import { RoomChips, RoomFocus } from './RoomFocus';
 import { SKIN_KIND_NAMES } from './SkinPicker';
 import { currentLook, skinBody, type SkinKind } from './spot-view';
 import { SkinTrigger } from './SkinTrigger';
@@ -98,21 +108,55 @@ export interface HousePlaceProps {
   now: number;
   /** Runs after a payment, a craft or a collect: the game screen reloads its balances. */
   onSpent?: () => void;
+  /**
+   * The place is the valley's House with housing on: it is drawn as a canvas ("A place is a canvas", `docs/design/ux-patterns.md`):
+   * the house is the scene and every panel is a drawer over its edge. Absent (the tab page of the Collection group, with `VALLEY`
+   * off): the page as before. `book` draws the Journal or the Stats page for a left drawer; `keepsakes` is the shelf of the valley's
+   * keepsakes (null when the player holds none).
+   */
+  canvas?: {
+    book: (page: 'journal' | 'stats') => ComponentChildren;
+    keepsakes?: ComponentChildren;
+  };
 }
+
+/** The left drawer of the canvas: the house's collections and overviews, which belong to no one spot. */
+type LeftPanel = {
+  kind: 'build' | 'catalogue' | 'visits' | 'journal' | 'stats' | 'keepsakes';
+  /** The part whose page is open in Build (a step of the drawer). */
+  focus?: string;
+  from: Opener | null;
+};
+
+/** The right drawer's other contents (a spot's or a skin's choices are the `picker`): a thing of the yard, which opens its own page. */
+type SidePanelState = {
+  kind: 'mailbox' | 'workbench';
+  focus?: string;
+  /** The picker this workbench was opened from (a "Make" on a spot): Back goes there. */
+  backTo: Picker | null;
+  from: Opener | null;
+};
 
 /** The catalogue page loads its own view when it opens (about 300 rows, never on the page itself). */
 function CatalogueScreen() {
-  const loaded = useLoaded(fetchCatalogue, []);
+  const api = useHouseApi();
+  const loaded = useLoaded(api.fetchCatalogue, []);
   return <CataloguePanel catalogue={loaded.value} failed={loaded.failed} onRetry={loaded.reload} />;
 }
 
-export function HousePlace({ creatures, now, onSpent }: HousePlaceProps) {
+export function HousePlace({ creatures, now, onSpent, canvas }: HousePlaceProps) {
   const house = useHouse(true, onSpent);
   const wide = useWide();
   const [view, setView] = useState<View>({ kind: 'home' });
   const [picker, setPicker] = useState<Picker | null>(null);
+  // The canvas's drawers (the valley's House): the left holds the collections, the right the thing that was clicked (the picker above,
+  // or the yard's mailbox and workbench); each remembers the button that opened it.
+  const [left, setLeft] = useState<LeftPanel | null>(null);
+  const [side, setSide] = useState<SidePanelState | null>(null);
+  const [pickerFrom, setPickerFrom] = useState<Opener | null>(null);
   const memory = useRef<ScrollMemory['current']>(null) as ScrollMemory;
-  const list = useLoaded(fetchHouses, []);
+  const api = useHouseApi();
+  const list = useLoaded(api.fetchHouses, []);
   // What grew since the player last looked, shown once.
   const [finds, setFinds] = useState<{ id: string; n: number }[] | null>(null);
   const announced = useRef(false);
@@ -145,12 +189,17 @@ export function HousePlace({ creatures, now, onSpent }: HousePlaceProps) {
 
   // The part whose page is open in Build: one to build, or one that waits for another (a goal to look at). A part that has just
   // been built has no page: the list shows.
+  const buildFocus =
+    canvas !== undefined
+      ? left?.kind === 'build'
+        ? left.focus
+        : undefined
+      : view.kind === 'drill' && view.drill === 'build'
+        ? view.focus
+        : undefined;
   const buildOpen =
-    view.kind === 'drill' &&
-    view.drill === 'build' &&
-    housing.parts.some((p) => p.id === view.focus) &&
-    !view_.built.includes(view.focus ?? '')
-      ? view.focus
+    housing.parts.some((p) => p.id === buildFocus) && !view_.built.includes(buildFocus ?? '')
+      ? buildFocus
       : undefined;
   const drillTitle = (drill: HouseDrill): string =>
     drill === 'build' && buildOpen !== undefined
@@ -160,6 +209,8 @@ export function HousePlace({ creatures, now, onSpent }: HousePlaceProps) {
   const home = (): void => {
     setView({ kind: 'home' });
     setPicker(null);
+    // What was opened from the room (a recipe asked for by one of its spots) goes with it; the mailbox and the workbench of the yard stay.
+    setSide((now) => (now !== null && now.backTo !== null ? null : now));
   };
   const back = (): void => {
     if (picker !== null) {
@@ -180,6 +231,12 @@ export function HousePlace({ creatures, now, onSpent }: HousePlaceProps) {
     setView({ kind: 'drill', drill, from: view });
   };
   const make = (itemId: string): void => {
+    if (canvas !== undefined) {
+      // The recipe opens in the same drawer, a step whose Back returns to the spot or the look that asked for it.
+      setSide({ kind: 'workbench', focus: itemId, backTo: picker, from: pickerFrom });
+      setPicker(null);
+      return;
+    }
     setPicker(null);
     setView({ kind: 'drill', drill: 'workbench', focus: itemId, from: view });
   };
@@ -189,6 +246,7 @@ export function HousePlace({ creatures, now, onSpent }: HousePlaceProps) {
       if (done === false || !done.built) return;
       // The part is built: leave its page, go back to the house and show the new rooms.
       setPicker(null);
+      setLeft(null);
       setView({ kind: 'home' });
       setMoment(partId);
     });
@@ -211,6 +269,16 @@ export function HousePlace({ creatures, now, onSpent }: HousePlaceProps) {
             onPay={pay}
             open={buildOpen ?? null}
             onOpen={(partId) => {
+              if (canvas !== undefined) {
+                setLeft((now) =>
+                  now?.kind !== 'build'
+                    ? now
+                    : partId === null
+                      ? { kind: 'build', from: now.from }
+                      : { kind: 'build', focus: partId, from: now.from },
+                );
+                return;
+              }
               if (view.kind !== 'drill' || view.drill !== 'build') return;
               setView(
                 partId === null
@@ -342,6 +410,7 @@ export function HousePlace({ creatures, now, onSpent }: HousePlaceProps) {
         onToday={() => {
           list.reload();
         }}
+        {...(canvas === undefined ? {} : { canvas: true })}
       />
     );
   }
@@ -462,6 +531,291 @@ export function HousePlace({ creatures, now, onSpent }: HousePlaceProps) {
     roomId !== null && view.kind === 'room' ? (
       <DrillHead title={roomTitle} backLabel="to your house" onBack={home} scroll focus />
     ) : null;
+
+  // The valley's House with housing on: the house is the scene, every panel a drawer over its edge (`valley/PlaceCanvas`).
+  if (canvas !== undefined) {
+    const lines = houseRowLines(view_, own, list.value === null ? null : list.value.houses.length);
+    const askPicker = (p: Picker, opener: Opener | null): void => {
+      setSide(null);
+      setPickerFrom(opener);
+      setPicker(p);
+    };
+    const openSide = (kind: SidePanelState['kind'], opener: Opener): void => {
+      setMoment(null);
+      setPicker(null);
+      setSide({ kind, backTo: null, from: opener });
+    };
+    const openLeft = (kind: LeftPanel['kind'], opener: Opener): void => {
+      setMoment(null);
+      if (kind === 'visits') list.reload();
+      setLeft({ kind, from: opener });
+    };
+    const closeLeft = (): void => {
+      setLeft(null);
+    };
+
+    // The left drawer: the house's collections and overviews, which belong to no one spot.
+    let leftPanel: CanvasPanel | null = null;
+    if (left !== null) {
+      const base = { returnFocusTo: left.from, onClose: closeLeft };
+      if (left.kind === 'build') {
+        const part = buildOpen === undefined ? null : housing.parts.find((p) => p.id === buildOpen);
+        const body = drillBody('build', left.focus);
+        leftPanel = {
+          ...base,
+          title: DRILL_TITLES.build,
+          ...(part === null || part === undefined
+            ? { children: <PanelBody>{body}</PanelBody> }
+            : {
+                wizard: true,
+                backLabel: 'to the parts',
+                children: (
+                  <StepBody
+                    title={part.name}
+                    backLabel="to the parts"
+                    onBack={() => {
+                      setLeft({ kind: 'build', from: left.from });
+                    }}
+                    focusBack
+                  >
+                    {body}
+                  </StepBody>
+                ),
+              }),
+        };
+      } else if (left.kind === 'catalogue' || left.kind === 'visits') {
+        leftPanel = {
+          ...base,
+          title: DRILL_TITLES[left.kind],
+          children: <PanelBody>{drillBody(left.kind, undefined)}</PanelBody>,
+        };
+      } else if (left.kind === 'keepsakes') {
+        leftPanel = {
+          ...base,
+          title: 'Keepsakes',
+          children: <PanelBody>{canvas.keepsakes}</PanelBody>,
+        };
+      } else {
+        leftPanel = {
+          ...base,
+          title: left.kind === 'journal' ? 'Journal' : 'Stats',
+          children: <PanelBody>{canvas.book(left.kind)}</PanelBody>,
+        };
+      }
+    }
+
+    // The right drawer: the one thing that was clicked (a spot or a look, the mailbox, the workbench).
+    let rightPanel: CanvasPanel | null = null;
+    if (side !== null) {
+      const closeSide = (): void => {
+        setSide(null);
+      };
+      if (side.kind === 'mailbox') {
+        rightPanel = {
+          title: 'Mailbox',
+          returnFocusTo: side.from,
+          onClose: closeSide,
+          children: (
+            <PanelBody>
+              {drillBody('mailbox', undefined)}
+              {view_.guestbook.length > 0 && <Guestbook entries={view_.guestbook} now={now} />}
+            </PanelBody>
+          ),
+        };
+      } else {
+        const bench = drillBody('workbench', side.focus);
+        rightPanel = {
+          title: 'Workbench',
+          returnFocusTo: side.from,
+          onClose: closeSide,
+          ...(side.backTo === null
+            ? { children: <PanelBody>{bench}</PanelBody> }
+            : {
+                wizard: true,
+                backLabel: 'to the choices',
+                keepBack: true,
+                children: (
+                  <StepBody
+                    title="Workbench"
+                    backLabel="to the choices"
+                    onBack={() => {
+                      setPicker(side.backTo);
+                      setPickerFrom(side.from);
+                      setSide(null);
+                    }}
+                    focusBack
+                  >
+                    {bench}
+                  </StepBody>
+                ),
+              }),
+        };
+      }
+    } else if (pickerPage !== null) {
+      rightPanel = {
+        title: pickerPage.title,
+        returnFocusTo: pickerFrom,
+        onClose: () => {
+          setPicker(null);
+        },
+        children: <PanelBody>{pickerPage.body}</PanelBody>,
+      };
+    }
+
+    const tools: {
+      kind: LeftPanel['kind'];
+      name: string;
+      glyph: string;
+      line: string;
+    }[] = [
+      { kind: 'build', name: 'Build', glyph: 'home', line: lines.build },
+      { kind: 'catalogue', name: 'Catalogue', glyph: 'gem', line: lines.catalogue },
+      { kind: 'visits', name: 'Visit', glyph: 'door', line: lines.visits },
+      { kind: 'journal', name: 'Journal', glyph: 'journal', line: 'your finds and firsts' },
+      { kind: 'stats', name: 'Stats', glyph: 'stats', line: 'your numbers' },
+      ...(canvas.keepsakes === undefined || canvas.keepsakes === null
+        ? []
+        : [{ kind: 'keepsakes' as const, name: 'Keepsakes', glyph: 'gift', line: 'thanks kept' }]),
+    ];
+    // Build and Workbench show a refusal themselves, next to what was tapped: one alert, not two.
+    const showError = house.error !== null && left?.kind !== 'build' && side?.kind !== 'workbench';
+    const inRoom = view.kind === 'room' && roomId !== null;
+    // In the flow under the scene, never over it (a room's head must stay readable). What a part just built or what grew is for the
+    // cutaway only.
+    const showMoment = moment !== null && !inRoom;
+    const showFinds = finds !== null && !inRoom;
+    const notes = (showMoment || showFinds || showError) && (
+      <div class="hc-notes">
+        {showMoment && (
+          <Alert
+            level="success"
+            onDismiss={() => {
+              setMoment(null);
+            }}
+          >
+            {`The ${housing.parts.find((p) => p.id === moment)?.name ?? 'part'} is built`}
+          </Alert>
+        )}
+        {showError && (
+          <Alert level="alert" onDismiss={house.clearError}>
+            {house.error}
+          </Alert>
+        )}
+        {showFinds && (
+          <CountBadgeList
+            class="house-finds"
+            label="Since you last looked"
+            items={finds.map((f) => ({
+              ...resourceCount(f.id, f.n),
+              amount: `+${String(f.n)}`,
+              spokenAmount: `${String(f.n)} new`,
+            }))}
+          />
+        )}
+      </div>
+    );
+    const toolsOverlay = (
+      <div class="hc-tools" role="group" aria-label="The house" data-no-pan="yes">
+        {tools.map((t) => (
+          <button
+            key={t.kind}
+            type="button"
+            class="vy-hatch hc-tool"
+            aria-label={`${t.name}, ${t.line}`}
+            aria-expanded={left?.kind === t.kind}
+            onClick={(event) => {
+              openLeft(t.kind, openerOf(event.currentTarget));
+            }}
+          >
+            <Glyph id={t.glyph} scale={2} />
+            <ToolCue name={t.name} />
+          </button>
+        ))}
+      </div>
+    );
+    const stage = (
+      <div class="hc-stage" {...(inRoom ? { onKeyDown: onDrillKey(home) } : {})}>
+        {inRoom ? (
+          <>
+            <DrillHead title={roomTitle} backLabel="to your house" onBack={home} scroll focus />
+            <RoomFocus
+              house={view_}
+              roomId={roomId}
+              mode="own"
+              canvas
+              selectedSpot={picker?.kind === 'spot' ? picker.spotId : null}
+              onSpot={(spotId, opener) => {
+                askPicker({ kind: 'spot', roomId, spotId }, opener);
+              }}
+              onSkin={(skin, opener) => {
+                askPicker({ kind: 'skin', skin, roomId }, opener);
+              }}
+            />
+          </>
+        ) : (
+          <>
+            <HouseScene
+              house={view_}
+              mode="own"
+              canvas
+              mailboxLabel={mailLabel}
+              mailWaiting={own.mailbox.gifts > 0}
+              memory={memory}
+              focusRoom={builtRooms[0] ?? null}
+              reveal={builtRooms}
+              onRoom={(id) => {
+                setMoment(null);
+                setView({ kind: 'room', roomId: id });
+              }}
+              onFixture={(kind, opener) => {
+                openSide(kind === 'mailbox' ? 'mailbox' : 'workbench', opener);
+              }}
+            />
+          </>
+        )}
+      </div>
+    );
+    return (
+      <section class="house-place hc-root" aria-label="Your house">
+        <PlaceCanvas
+          label="Your house"
+          scene={stage}
+          below={
+            <>
+              {notes}
+              {inRoom ? (
+                <div class="hc-chips">
+                  <RoomChips
+                    house={view_}
+                    roomId={roomId}
+                    onSkin={(skin, opener) => {
+                      askPicker({ kind: 'skin', skin, roomId }, opener);
+                    }}
+                  />
+                </div>
+              ) : (
+                <div class="house-chips hc-chips" data-chips="3">
+                  {(['roof', 'walls', 'frame'] as const).map((layer) => (
+                    <SkinTrigger
+                      key={layer}
+                      kind={layer}
+                      id={view_.exterior[layer]}
+                      onOpen={(opener) => {
+                        askPicker({ kind: 'skin', skin: layer, roomId: null }, opener);
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
+          }
+          overlay={inRoom ? null : toolsOverlay}
+          left={leftPanel}
+          right={rightPanel}
+        />
+      </section>
+    );
+  }
 
   // A wide window: the scene (or the room) stays in the main area, the panel of the page or the picker beside it.
   if (wide) {

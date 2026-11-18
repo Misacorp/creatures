@@ -61,6 +61,7 @@ Superseded: 1 entry (see the topic file).
 
 [platform.md](platform.md): Hosting, Durable Objects, scheduling, CI and deploys, staging, dependencies, security, database reads, data cleanup, analytics, dev tools, the workbench, player feedback, sockets.
 
+- 2026-11-15 The migration runner reads one row at object start
 - 2026-11-15 The reset is built inert: a dry run on staging, a wipe nothing calls, an archive that is not bound
 - 2026-11-15 Housing's migration is 68: the valley merged first with 64 to 67
 - 2026-11-14 Dev panel: a full-screen layout with sections, and a target player for every per-player tool
@@ -480,6 +481,7 @@ Superseded: 1 entry (see the topic file).
 
 [social.md](social.md): The living room and lounging, the lounge message, Discord DMs and other social features.
 
+- 2026-11-15 A scout pack's housing drop chance scales with its hours
 - 2026-11-12 Housing: a ceiling and frame left as built are their starters; only a trim can be None
 - 2026-11-12 Ground skins fit room kinds and are owned by rule
 - 2026-11-12 Room layers: generated patterns owned by pattern, colour free, stored in the existing columns
@@ -503,6 +505,7 @@ Superseded: 1 entry (see the topic file).
 
 [ui.md](ui.md): Navigation and the frame, Home and the notice board, type scale, shared components, look and feel rules that apply across screens.
 
+- 2026-11-17 The House place is a canvas: the player's house is the scene
 - 2026-11-16 \[Misa\] The item tile's slot icon sits beside the level on one bottom strip
 - 2026-11-16 \[Misa\] Every picture on a review page enlarges on tap
 - 2026-11-15 Misa's Forge picks: plates, whole room, item card beside, full-screen reveal \[Misa\]

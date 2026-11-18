@@ -93,13 +93,15 @@ describe('reserved migration versions', () => {
       applyMigrations(storage, sql, l.housingBranch);
       expect(runs).toEqual(['houses']);
       expect(recorded(sql)).not.toContain(64);
-      // Later: the merged list (valley in place of the gaps).
-      applyMigrations(storage, sql, l.merged);
+      // Later: the merged list (valley in place of the gaps). The runner's fast path only looks at the highest
+      // version, so the change that fills the gaps also appends a migration (the rule in `applyMigrations`).
+      const grown = [...l.merged, noop];
+      applyMigrations(storage, sql, grown);
       expect(runs).toEqual(['houses', 'visitor', 'school', 'trials']);
-      expect(recorded(sql)).toEqual(range(67));
+      expect(recorded(sql)).toEqual(range(68));
       expect(tables(sql)).toEqual(['houses', 'school', 'trials', 'visitor']);
       // And never again.
-      applyMigrations(storage, sql, l.merged);
+      applyMigrations(storage, sql, grown);
       expect(runs).toHaveLength(4);
       return Promise.resolve();
     });

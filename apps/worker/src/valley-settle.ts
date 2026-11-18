@@ -972,6 +972,7 @@ export class ValleySettle {
             gear: next.gear_finds,
             blueprints: next.blueprint_finds,
             pages: next.page_finds,
+            hours: next.store_hours,
           },
           worker?.level ?? 1,
           to,

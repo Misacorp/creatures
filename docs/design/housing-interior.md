@@ -21,6 +21,8 @@ Every pattern uses four palette keys (`a` ground, `b` body, `c` detail, `d` line
 
 A room alone can look like 156 x 72 x 33 x 16, about 6 million ways (the frame and the ways are house wide), against 9 wallpaper and floor pairs today. The cost is small functions and about 50 palettes, not drawings.
 
+`pnpm housing interior-sheets` also writes `9-ways-doors-{day,night}.png` and `9-ways-stairs-{day,night}.png`: the same three floor house with three doorway styles (arch, door ajar, curtain) and three stair styles (straight, ladder, spiral), by day and through the night pass (`waysHouse` in `sheets.ts`). Looks only; nothing is wired.
+
 ## What the sheets show (art-director notes)
 
 Judged at 1x and enlarged against `review-brief.md` (pixel art, hard edges, limited ramps, readable on a phone, the paper never fights the furniture).

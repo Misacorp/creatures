@@ -3,6 +3,7 @@ import { HouseViewSchema, houseGrid, parseHouseAnswer } from '@creatures/game';
 import { housing } from '@creatures/game/housing-content';
 import { spriteSize } from '../sprites/sprite-data';
 import { skyForPhase } from './house-light';
+import { nudgeFor } from './plate-nudge';
 import { ART_PENDING, hasPieceArt, pendingArt, pieceArt } from './house-art';
 import {
   CELL_H,
@@ -424,5 +425,32 @@ describe('the empty sky above the strip', () => {
       dusk.filter((p) => p.y < skyTop).flatMap((p) => Object.values(p.sprite.palette)),
     );
     expect(colours.size).toBeGreaterThanOrEqual(4);
+  });
+});
+
+describe('a scene at least as high as a canvas (minHeight)', () => {
+  it('grows the sky above the roof, keeping the house on the same ground line from the bottom', () => {
+    const plain = composeHouse(sceneHouse({ parts: HUT }));
+    const tall = composeHouse(sceneHouse({ parts: HUT }), { minHeight: plain.height + 200 });
+    expect(tall.height).toBe(plain.height + 200);
+    expect(tall.groundY).toBe(plain.groundY + 200);
+    // The building and its rooms moved down by the same amount: nothing else changed.
+    expect(tall.box.y).toBe(plain.box.y + 200);
+    expect(tall.rooms[0]?.y).toBe((plain.rooms[0]?.y ?? 0) + 200);
+  });
+
+  it('does nothing when the house is already that high', () => {
+    const plain = composeHouse(sceneHouse({ parts: HUT }));
+    expect(composeHouse(sceneHouse({ parts: HUT }), { minHeight: 10 }).height).toBe(plain.height);
+  });
+});
+
+describe('a plate near the edge of the view is moved in', () => {
+  it('shifts by just enough, either way, and never when it already fits or cannot', () => {
+    const box = { from: 0, to: 300 };
+    expect(nudgeFor({ from: -20, to: 40 }, box)).toBe(24);
+    expect(nudgeFor({ from: 270, to: 330 }, box)).toBe(-34);
+    expect(nudgeFor({ from: 100, to: 160 }, box)).toBe(0);
+    expect(nudgeFor({ from: -50, to: 400 }, box)).toBe(0);
   });
 });

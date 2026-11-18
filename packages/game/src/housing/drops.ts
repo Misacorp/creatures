@@ -16,6 +16,19 @@ interface Plan {
   materialPct: number;
   blueprintPct: number;
   stampPct: number;
+  /** What the three chances are out of: 100 (whole percents), or a million for a scout pack's scaled chances. */
+  den: number;
+}
+
+const PPM = 1_000_000;
+
+/**
+ * A scout pack's chance in parts per million: the listed whole percent times `hours / fullHours` (`HOUSING_RULES.drops.scout`),
+ * rounded to the nearest, never above a sure thing; a pack with no hours has none.
+ */
+export function scoutChancePpm(pct: number, hours: number): number {
+  if (!(hours > 0)) return 0;
+  return Math.min(PPM, Math.round(((pct * 10_000) / D.scout.fullHours) * hours));
 }
 
 function planFor(moment: HousingMoment): Plan {
@@ -26,13 +39,15 @@ function planFor(moment: HousingMoment): Plan {
         materialPct: D.trip.materialPct,
         blueprintPct: D.trip.blueprintPct,
         stampPct: D.trip.stampPct,
+        den: 100,
       };
     case 'scout':
       return {
-        rolls: 1 + moment.finds,
-        materialPct: D.scout.materialPct,
-        blueprintPct: D.scout.blueprintPct,
-        stampPct: D.scout.stampPct,
+        rolls: moment.hours > 0 ? 1 + moment.finds : 0,
+        materialPct: scoutChancePpm(D.scout.materialPct, moment.hours),
+        blueprintPct: scoutChancePpm(D.scout.blueprintPct, moment.hours),
+        stampPct: scoutChancePpm(D.scout.stampPct, moment.hours),
+        den: PPM,
       };
     case 'dungeon':
       return {
@@ -43,6 +58,7 @@ function planFor(moment: HousingMoment): Plan {
         materialPct: D.dungeon.materialPct,
         blueprintPct: moment.cleared ? D.dungeon.blueprintPct : 0,
         stampPct: moment.cleared ? D.dungeon.stampPct : 0,
+        den: 100,
       };
     case 'raid':
       return {
@@ -50,6 +66,7 @@ function planFor(moment: HousingMoment): Plan {
         materialPct: D.raid.materialPct,
         blueprintPct: moment.cleared ? D.raid.blueprintPct : 0,
         stampPct: moment.cleared ? D.raid.stampPct : 0,
+        den: 100,
       };
     case 'games': {
       const medal = moment.medal;
@@ -58,6 +75,7 @@ function planFor(moment: HousingMoment): Plan {
         materialPct: medal === null ? 0 : D.games.materialPct[medal],
         blueprintPct: medal === 'gold' ? D.games.blueprintPct : 0,
         stampPct: medal === 'gold' ? D.games.stampPct : 0,
+        den: 100,
       };
     }
   }
@@ -162,7 +180,7 @@ export function rollHouseDropsLazy(
       weight: m.rare ? D.rareWeight : D.commonWeight,
     }));
     for (let i = 0; i < plan.rolls; i++) {
-      if (chance(rng, plan.materialPct, 100)) add(pickWeighted(rng, weighted).m.id, 1);
+      if (chance(rng, plan.materialPct, plan.den)) add(pickWeighted(rng, weighted).m.id, 1);
     }
   }
   if (moment.kind === 'raid' && moment.cleared) {
@@ -177,12 +195,12 @@ export function rollHouseDropsLazy(
   let known: KnownKeepsakes | undefined;
   const holdings = (): KnownKeepsakes => (known ??= loadKnown());
   let blueprint: string | null = null;
-  if (plan.blueprintPct > 0 && chance(rng, plan.blueprintPct, 100)) {
+  if (plan.blueprintPct > 0 && chance(rng, plan.blueprintPct, plan.den)) {
     const candidates = blueprintPool(content, moment, holdings().blueprints);
     if (candidates.length > 0) blueprint = candidates[int(rng, candidates.length)] ?? null;
   }
   let stamp: string | null = null;
-  if (plan.stampPct > 0 && chance(rng, plan.stampPct, 100)) {
+  if (plan.stampPct > 0 && chance(rng, plan.stampPct, plan.den)) {
     const stamps = holdings().stamps;
     const candidates = content.stamps.filter(
       (s) =>

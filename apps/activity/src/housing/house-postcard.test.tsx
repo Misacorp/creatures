@@ -278,6 +278,34 @@ describe('the postcard in a phase', () => {
         expect(bytes[(y * night.width + x) * 4 + 3], `${String(x)},${String(y)}`).toBe(255);
   });
 
+  it('dims the conservatory glass at twilight and night like the rest of the house (it stayed as bright as day)', () => {
+    const house = { parts: [...THREE_FLOORS, 'east-wing'], ...skins() };
+    const m = composePostcard(house);
+    const glass = m.boxes
+      .filter((b) => b.kind === 'room')
+      .reduce((a, b) => (b.x > a.x || (b.x === a.x && b.y > a.y) ? b : a));
+    // a pane of the glass cell (not a bar, not a light speck): the same pixel in each phase
+    const px = glass.x + 2;
+    const py = glass.y + 3;
+    const sum = (phase: 'day' | 'twilight' | 'night'): number => {
+      const model = composePostcard(house, undefined, phase);
+      const a = bytesOf(model);
+      const i = (py * model.width + px) * 4;
+      return (a[i] ?? 0) + (a[i + 1] ?? 0) + (a[i + 2] ?? 0);
+    };
+    const wall = (phase: 'day' | 'twilight' | 'night'): number => {
+      const model = composePostcard(house, undefined, phase);
+      const a = bytesOf(model);
+      const box = model.boxes.find((b) => b.kind === 'room');
+      const i = (((box?.y ?? 0) + 4) * model.width + (box?.x ?? 0) + 2) * 4;
+      return (a[i] ?? 0) + (a[i + 1] ?? 0) + (a[i + 2] ?? 0);
+    };
+    // glass goes dark in step with the wall beside it: at twilight it keeps no more than the wall's share of its day light
+    expect(sum('twilight')).toBeLessThan(sum('day') * 0.75);
+    expect(sum('night')).toBeLessThan(sum('twilight'));
+    expect(sum('twilight') / sum('day')).toBeLessThan((wall('twilight') / wall('day')) * 1.25);
+  });
+
   it('makes the walls and the lawn darker at night and keeps the outline dark', () => {
     const house = { parts: THREE_FLOORS, ...skins() };
     const day = bytesOf(composePostcard(house));

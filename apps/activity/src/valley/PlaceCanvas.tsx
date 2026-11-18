@@ -176,6 +176,19 @@ function Page({ panel, side }: { panel: CanvasPanel; side: CanvasSide }) {
   );
 }
 
+/**
+ * The cue of a button laid over a scene that is not a `CanvasTarget` (the map's corner buttons, a house's rooms): the same plate as a
+ * target's (`canvas.css`, `.cv-plate`), always shown, under the button (`inside`: along its bottom edge, for a button that is itself
+ * a big piece of the picture, like a room of the house).
+ */
+export function ToolCue({ name, inside = false }: { name: string; inside?: boolean }) {
+  return (
+    <span class={inside ? 'cv-plate cv-plate-in' : 'cv-plate'} aria-hidden="true">
+      <Nameplate size="sm">{name}</Nameplate>
+    </span>
+  );
+}
+
 /** How far the scene's wrapper must move sideways so a thing at [`t0`, `t1`] is in the clear span [`lo`, `hi`] (0 when it already is). */
 export function panFor(t0: number, t1: number, lo: number, hi: number, margin = 12): number {
   if (t0 >= lo && t1 <= hi) return 0;
@@ -247,7 +260,11 @@ function useScenePan(
           to: r.right - box.left - current.current,
         };
       };
-      const here = opener === undefined || !opener.isConnected ? null : mine(opener);
+      // A button of the canvas's own tools (`overlay`, marked `data-no-pan`) is no thing in the scene: it pans nothing.
+      const here =
+        opener === undefined || !opener.isConnected || opener.closest('[data-no-pan]') !== null
+          ? null
+          : mine(opener);
       // The builders' corner (every target of the `group`) is kept in view with what was clicked while the two fit clear of the drawers.
       const group = Array.from(root.querySelectorAll<HTMLElement>('[data-pan-group]'));
       const crowd =
@@ -281,6 +298,7 @@ export function PlaceCanvas({
   right,
   label,
   pan: panEnabled = true,
+  overlay,
 }: {
   /** The scene (a `SceneFrame` with its `CanvasTarget`s). Always mounted: a phone's page only hides it. */
   scene: ComponentChildren;
@@ -294,6 +312,11 @@ export function PlaceCanvas({
   label: string;
   /** Pan the scene sideways when a drawer would cover what was clicked (default); false for a scene that scrolls on its own. */
   pan?: boolean;
+  /**
+   * The canvas's own buttons (a place's tools in a corner): laid over the stage but not part of the scene, so a pan never moves them
+   * and they pan nothing. A drawer lies over them. Give the container `data-no-pan` on any button that opens a panel.
+   */
+  overlay?: ComponentChildren;
 }) {
   const wide = useWide();
   const stage = useRef<HTMLDivElement | null>(null);
@@ -332,6 +355,7 @@ export function PlaceCanvas({
           >
             {scene}
           </div>
+          {overlay !== undefined && overlay !== null && <div class="pc-overlay">{overlay}</div>}
           {wide && left !== null && <Drawer panel={left} side="left" />}
           {wide && right !== null && <Drawer panel={right} side="right" />}
         </div>

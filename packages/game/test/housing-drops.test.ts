@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
+  HOUSING_RULES,
   createSeededRng,
   rollHouseDrops,
   rollHouseDropsLazy,
+  scoutChancePpm,
   type Rng,
   type HouseDrop,
   type HousingContent,
@@ -112,7 +114,14 @@ describe('rollHouseDrops: materials', () => {
   });
 
   it('a scout rolls 1 + finds at 30%', () => {
-    const drops = many(1500, { kind: 'scout', key: 'k', place: 'reef', element: null, finds: 3 });
+    const drops = many(1500, {
+      kind: 'scout',
+      key: 'k',
+      place: 'reef',
+      element: null,
+      finds: 3,
+      hours: 24,
+    });
     expect(Math.max(...drops.map(total))).toBeLessThanOrEqual(4);
     const mean = drops.reduce((n, d) => n + total(d), 0) / drops.length;
     expect(mean).toBeGreaterThan(1.05); // 4 x 0.3 = 1.2
@@ -258,5 +267,66 @@ describe('rollHouseDropsLazy: the known set is read only when a keepsake roll hi
       return none;
     });
     expect(loads).toBe(1);
+  });
+});
+
+describe('a scout pack scales its housing chances with its hours', () => {
+  const base = HOUSING_RULES.drops.scout;
+  const ppm = (pct: number): number => pct * 10_000;
+
+  it('keeps the listed chance at fullHours, half at half, three times at the 72 h cap, none at no hours', () => {
+    expect(base.fullHours).toBe(24);
+    expect(scoutChancePpm(base.materialPct, 24)).toBe(ppm(30));
+    expect(scoutChancePpm(base.blueprintPct, 24)).toBe(ppm(2));
+    expect(scoutChancePpm(base.stampPct, 24)).toBe(ppm(1));
+    expect(scoutChancePpm(base.materialPct, 12)).toBe(ppm(15));
+    expect(scoutChancePpm(base.blueprintPct, 72)).toBe(ppm(6));
+    expect(scoutChancePpm(base.materialPct, 72)).toBe(900_000);
+    expect(scoutChancePpm(100, 72)).toBe(1_000_000); // capped at a sure thing
+    expect(scoutChancePpm(base.materialPct, 0)).toBe(0);
+    expect(scoutChancePpm(base.materialPct, -1)).toBe(0);
+    // 30 minutes of a 2% chance is about 0.04%: small chances keep their grain.
+    expect(scoutChancePpm(base.blueprintPct, 0.5)).toBe(417);
+  });
+
+  it('a pack with no hours rolls nothing, whatever it found', () => {
+    const drops = many(300, {
+      kind: 'scout',
+      key: 'k',
+      place: 'reef',
+      element: null,
+      finds: 9,
+      hours: 0,
+    });
+    for (const d of drops) {
+      expect(total(d)).toBe(0);
+      expect(d.blueprint).toBeNull();
+      expect(d.stamp).toBeNull();
+    }
+  });
+
+  it('48 half-hour packs bring the same expected materials as one 24 h pack', () => {
+    const rng = createSeededRng('scout-farm');
+    const pack = (hours: number): HousingMoment => ({
+      kind: 'scout',
+      key: 'k',
+      place: 'reef',
+      element: null,
+      finds: 0,
+      hours,
+    });
+    const days = 4000;
+    let tapped = 0;
+    let patient = 0;
+    for (let d = 0; d < days; d++) {
+      for (let i = 0; i < 48; i++) tapped += total(rollHouseDrops(rng, content, pack(0.5), none));
+      patient += total(rollHouseDrops(rng, content, pack(24), none));
+    }
+    // Each is 0.3 a day: the means agree within sampling noise (about 0.01 each), so the farm gains nothing.
+    expect(tapped / days).toBeGreaterThan(0.25);
+    expect(tapped / days).toBeLessThan(0.36);
+    expect(patient / days).toBeGreaterThan(0.25);
+    expect(patient / days).toBeLessThan(0.36);
+    expect(Math.abs(tapped - patient) / days).toBeLessThan(0.06);
   });
 });

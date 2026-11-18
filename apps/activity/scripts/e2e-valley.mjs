@@ -1003,6 +1003,16 @@ const server = await createServer({
 await server.listen();
 const address = server.httpServer?.address();
 const port = typeof address === 'object' && address !== null ? address.port : 5173;
+/** The housing samples (what the server's house routes answer), built from the app's own samples. */
+const houseSamples = await (async () => {
+  const sample = await server.ssrLoadModule('/src/housing/house-sample.ts');
+  return {
+    house: sample.sampleHouse(),
+    own: sample.sampleOwn('rich'),
+    list: sample.sampleList(),
+    catalogue: sample.sampleCatalogue(),
+  };
+})();
 const browser = await chromium.launch(
   process.env.CHROME === undefined ? {} : { executablePath: process.env.CHROME },
 );
@@ -4762,6 +4772,60 @@ try {
         gazette.paper = null;
         schoolOff();
       }
+    },
+  );
+
+  // The House as a canvas (housing on): the house is the scene, no ring in it, a drawer opens and closes, a room fills the stage.
+  await scenario(
+    'the House with housing on is a canvas: no focus ring in the scene, a drawer opens and closes, a room fills the stage',
+    () => {
+      const samples = houseSamples;
+      answerOverride.set('/api/config', () => ({ ...ROUTES.get('/api/config')(), housing: true }));
+      answerOverride.set('/api/house', () => ({ house: samples.house, own: samples.own }));
+      answerOverride.set('/api/houses', () => samples.list);
+      answerOverride.set('/api/house/catalogue', () => samples.catalogue);
+    },
+    async () => {
+      await waitFor(page.locator(VALLEY), 'attached');
+      await place('house').evaluate((el) => el.click());
+      await waitFor(page.locator('.hc-root .house-scene[data-canvas]'));
+      await page.waitForTimeout(400);
+      await expectNoScroll();
+      // The house is the scene: no rows, no outside picture.
+      if ((await page.locator('.hc-root .vy-row, .vy-house').count()) > 0)
+        throw new Error('the House still has its rows');
+      // No focus ring: the keyboard sees the gold arrow on a room, a mouse click leaves nothing.
+      const room = page.locator('.house-scene button.house-room').locator('visible=true');
+      await expectFocusCue(room.first(), 'a room of the house');
+      await expectFocusCue(page.locator('.hc-tools button.hc-tool').first(), 'a collection button');
+      // A drawer opens from a corner button and closes with its X (a phone: its Back); the house does not move.
+      const before = await page.locator('.house-plane').first().boundingBox();
+      await page.locator('.hc-tools button.hc-tool[aria-label^="Build"]').click();
+      await waitFor(leftPanel);
+      if (width >= 960) {
+        const during = await page.locator('.house-plane').first().boundingBox();
+        if (before === null || during === null || Math.abs(during.x - before.x) > 1)
+          throw new Error('a corner button moved the house');
+      }
+      await shot('house-build-drawer');
+      await drawer.locator('button.side-panel-close, button.drill-back').first().click();
+      await leftPanel.first().waitFor({ state: 'detached', timeout: 10000 });
+      // A room fills the stage at a whole scale; its looks are the strip under it.
+      await room.first().click();
+      await waitFor(page.locator('.hc-root .house-focus[data-canvas]'));
+      await page.waitForTimeout(300);
+      const box = await page.locator('.house-focus').first().boundingBox();
+      const stage = await page.locator('.house-focus .house-stage').first().boundingBox();
+      if (box === null || stage === null) throw new Error('no room on screen');
+      if (stage.width < box.width * 0.6 && stage.height < box.height * 0.6)
+        throw new Error(
+          `the room does not fill the stage: ${String(stage.width)}x${String(stage.height)} in ${String(box.width)}x${String(box.height)}`,
+        );
+      if ((await page.locator('.hc-stage .house-chips').count()) > 0)
+        throw new Error('the look chips are inside the stage');
+      await waitFor(page.locator('.pc-below .house-chips'));
+      await expectNoScroll();
+      await shot('house-room');
     },
   );
 

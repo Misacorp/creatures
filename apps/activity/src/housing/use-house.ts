@@ -16,17 +16,10 @@ import {
 } from '@creatures/game';
 import { housing } from '@creatures/game/housing-content';
 import { errorText } from '../game';
+import { useHouseApi } from './house-api-context';
 import { useActionRunner } from '../use-action-runner';
 import {
-  buildPart,
-  collectMail,
-  craftItem,
-  fetchOwnHouse,
   HOUSE_ERRORS,
-  markSeen,
-  placePiece,
-  setHousemate,
-  setSkin,
   type BuildAnswer,
   type CollectAnswer,
   type CraftAnswer,
@@ -265,6 +258,7 @@ export interface UseHouse {
  * payment, a craft, a collect) so the game screen reloads its balances.
  */
 export function useHouse(enabled: boolean, onSpent?: () => void): UseHouse {
+  const api = useHouseApi();
   const [state, setState] = useState<OwnHouse | null>(null);
   const [failed, setFailed] = useState(false);
   const latest = useRef<OwnHouse | null>(null);
@@ -278,7 +272,7 @@ export function useHouse(enabled: boolean, onSpent?: () => void): UseHouse {
   const load = async (): Promise<void> => {
     const mine = ++seq.current;
     try {
-      const answer = await fetchOwnHouse();
+      const answer = await api.fetchOwnHouse();
       if (mine !== seq.current) return;
       round.current += 1;
       setState(answer);
@@ -312,7 +306,7 @@ export function useHouse(enabled: boolean, onSpent?: () => void): UseHouse {
       const at = current();
       if (at === null) return false;
       const answer = await runKeyed(HouseActionIds.build(partId, pay), (key) =>
-        buildPart(partId, pay, key),
+        api.buildPart(partId, pay, key),
       );
       if (answer === undefined) return false;
       take(afterBuild(latest.current ?? at, answer), true);
@@ -323,7 +317,7 @@ export function useHouse(enabled: boolean, onSpent?: () => void): UseHouse {
       if (at === null) return false;
       const held = at.own.items.pieces[itemId] ?? 0;
       const answer = await runKeyed(HouseActionIds.craft(itemId, held), (key) =>
-        craftItem(itemId, key),
+        api.craftItem(itemId, key),
       );
       if (answer === undefined) return false;
       const finished = finishesSet(latest.current ?? at, answer);
@@ -335,7 +329,7 @@ export function useHouse(enabled: boolean, onSpent?: () => void): UseHouse {
     place: async (roomId, spotId, pieceId) => {
       const at = current();
       if (at === null) return false;
-      const answer = await run(() => placePiece(roomId, spotId, pieceId));
+      const answer = await run(() => api.placePiece(roomId, spotId, pieceId));
       if (answer === undefined) return false;
       take(afterPlace(latest.current ?? at, answer));
       return true;
@@ -343,7 +337,7 @@ export function useHouse(enabled: boolean, onSpent?: () => void): UseHouse {
     move: async (from, to, pieceId) => {
       const at = current();
       if (at === null) return false;
-      const answer = await run(() => placePiece(to.roomId, to.spotId, pieceId, from));
+      const answer = await run(() => api.placePiece(to.roomId, to.spotId, pieceId, from));
       if (answer === undefined) return false;
       take(afterPlace(latest.current ?? at, answer));
       return true;
@@ -351,7 +345,7 @@ export function useHouse(enabled: boolean, onSpent?: () => void): UseHouse {
     skin: async (body) => {
       const at = current();
       if (at === null) return false;
-      const answer = await run(() => setSkin(body));
+      const answer = await run(() => api.setSkin(body));
       if (answer === undefined) return false;
       take(afterSkin(latest.current ?? at, answer));
       return true;
@@ -359,7 +353,7 @@ export function useHouse(enabled: boolean, onSpent?: () => void): UseHouse {
     housemate: async (roomId, spotId, creatureId) => {
       const at = current();
       if (at === null) return false;
-      const answer = await run(() => setHousemate(roomId, spotId, creatureId));
+      const answer = await run(() => api.setHousemate(roomId, spotId, creatureId));
       if (answer === undefined) return false;
       take(afterHousemate(latest.current ?? at, answer.housemates));
       return true;
@@ -368,7 +362,7 @@ export function useHouse(enabled: boolean, onSpent?: () => void): UseHouse {
       const at = current();
       if (at === null) return false;
       const answer = await runKeyed(HouseActionIds.collect(round.current), (key) =>
-        collectMail(key),
+        api.collectMail(key),
       );
       if (answer === undefined) return false;
       take(afterCollect(latest.current ?? at, answer), true);
@@ -378,7 +372,7 @@ export function useHouse(enabled: boolean, onSpent?: () => void): UseHouse {
       const at = current();
       if (at === null || !hasFresh(at.own)) return;
       take(afterSeen(at));
-      void markSeen().catch(() => undefined);
+      void api.markSeen().catch(() => undefined);
     },
   };
 

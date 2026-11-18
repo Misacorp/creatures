@@ -3,7 +3,14 @@ import type { Element } from '../content/schema';
 
 export type HousingMoment =
   | { kind: 'trip'; key: string; place: string; element: Element | null; ticks: number }
-  | { kind: 'scout'; key: string; place: string; element: Element | null; finds: number }
+  | {
+      kind: 'scout';
+      key: string;
+      place: string;
+      element: Element | null;
+      finds: number;
+      hours: number;
+    }
   | { kind: 'dungeon'; key: string; depth: number; cleared: boolean }
   | {
       kind: 'raid';

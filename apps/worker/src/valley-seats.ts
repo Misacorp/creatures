@@ -371,6 +371,7 @@ export class ValleySeats {
           gear: seat.gear_finds,
           blueprints: seat.blueprint_finds,
           pages: seat.page_finds,
+          hours: seat.store_hours,
         },
         level,
         now,

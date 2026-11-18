@@ -31,6 +31,25 @@
   outline: none;
 }
 
+/*
+  The house as a canvas (`housing/HousePlace`, `canvas`): its rooms, the mailbox and the workbench in the cutaway, a room's spots and
+  its sleeping housemate. The same rule: no ring or outline on any focus (the house's own `--ring` box-shadow and dashed spot outline
+  are cleared here), the gold arrow on :focus-visible.
+*/
+.vy-frame
+  :is(
+    .house-scene[data-canvas] :is(.house-room, .house-fixture),
+    .house-focus[data-canvas] :is(.house-spot, .house-creature)
+  ):is(:focus, :focus-visible) {
+  outline: none;
+  box-shadow: none;
+}
+
+/* An empty spot's dashed outline is for a mouse over it; a keyboard gets the arrow above. */
+.vy-frame .house-focus[data-canvas] .house-spot[data-empty='true']:focus-visible:not(:hover) {
+  outline: none;
+}
+
 /* The target the arrow hangs on needs a box of its own to sit on (the others are positioned already). */
 .vy-frame .vy-stand-btn,
 .vy-frame .cr-piece,
@@ -51,6 +70,42 @@
     .sg-map .wm-marker,
     .cr-reveal button,
     .pc-below :is(button, a, [tabindex])
+  ):focus-visible::after {
+  content: '';
+  position: absolute;
+  z-index: 30;
+  left: 50%;
+  top: -0.875rem;
+  width: 0.75rem;
+  height: 0.5rem;
+  translate: -50% 0;
+  background: var(--gold);
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    100% 25%,
+    83% 25%,
+    83% 50%,
+    67% 50%,
+    67% 75%,
+    58% 75%,
+    58% 100%,
+    42% 100%,
+    42% 75%,
+    33% 75%,
+    33% 50%,
+    17% 50%,
+    17% 25%,
+    0 25%
+  );
+  filter: drop-shadow(0 1px 0 var(--ink));
+  pointer-events: none;
+}
+
+.vy-frame
+  :is(
+    .house-scene[data-canvas] :is(.house-room, .house-fixture),
+    .house-focus[data-canvas] :is(.house-spot, .house-creature)
   ):focus-visible::after {
   content: '';
   position: absolute;

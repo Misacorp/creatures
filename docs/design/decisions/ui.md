@@ -4,6 +4,14 @@ Navigation and the frame, Home and the notice board, type scale, shared componen
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-17: The House place is a canvas: the player's house is the scene
+
+ID: `2026-11-17-the-house-place-is-a-canvas` · Status: current
+
+**Decision.** With the valley and housing both on, the House place opens straight on the player's own house, drawn as a place's canvas (`housing/HousePlace` with `canvas`, on `valley/PlaceCanvas`). The cutaway fills the stage at one scale and pans itself by drag like the expedition map; every room, the mailbox and the workbench wear a name plate (`valley/PlaceCanvas` `ToolCue`, the shared plate); no focus rings (the gold arrow of `art-focus.css`). Build, Catalogue, Visit, Journal, Stats (and Keepsakes when held) are corner buttons down the left edge that open the left drawer; the mailbox (with the guestbook under the gifts), the workbench, a spot's choices and a look's choices open the right drawer; a part of Build and a recipe opened from a spot are steps of their drawer with Back. A room is a view that fills the stage (its spots each wear a plate); a visited house is the same canvas read-only, its guestbook a drawer and its gift or stamp pinned under the scene. The roof, walls and frame triggers sit in the strip under the scene. The rows page (and the "Your house" row) is gone from the valley with housing on. With housing off, and in the Collection group's tab with the valley off, the House is exactly as before (same component, page layout).
+
+**Reasoning.** Misa's rule (2026-11-15): every daily place is a canvas. The house already is a picture with things to click, so it is the scene; the rows were the forms the rule removes. Nothing else was built: the drawer, plates, wizard steps and strip are the shared ones. Review 2026-11-17: a room fills the stage and its looks are the strip under it; a spot shows its plate only while looked at or open (the lead's default; Misa is asked); the collection buttons are `PlaceCanvas`'s new `overlay` and pan nothing; notes sit in the flow, never over the scene; the house requests are injectable (`HouseApiContext`) so the workbench shows the canvas. Not moved: the tab page with the valley off keeps the page (the canvas needs the valley frame's bounded height), and the build-complete postcard note became a one-line note over the scene because the new rooms are in the scene itself.
+
 ## 2026-11-16: [Misa] The item tile's slot icon sits beside the level on one bottom strip
 
 ID: `2026-11-16-the-item-tile-s-slot-icon` · Status: current

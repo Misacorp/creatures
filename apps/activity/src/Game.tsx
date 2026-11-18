@@ -104,6 +104,7 @@ import type { TeamConfigure } from './TeamCreaturePage';
 import { Alert } from './ui/Alert';
 import { WelcomeBack } from './valley/gazette/WelcomeBack';
 import { HouseHost } from './housing/HouseHost';
+import { Keepsakes, keepsakesOf } from './valley/Keepsakes';
 import { ValleyFrame } from './valley/ValleyFrame';
 import { createVisitorActions, isAway } from './valley/visitor-actions';
 import { createSchoolActions, isSchoolRefusal, refreshSchool } from './valley/school-actions';
@@ -928,6 +929,34 @@ export function Game({
             : {})}
         />
       )}
+      {valleyOn &&
+        housing &&
+        view.kind === 'place' &&
+        view.place === 'house' &&
+        view.book === null && (
+          // With housing on the valley's House is a canvas: the player's own house is the scene, its panels are drawers over its edge.
+          <HouseHost
+            phase={phase}
+            creatures={game.creatures}
+            now={Date.now() + offset}
+            onSpent={() => {
+              refreshState();
+            }}
+            canvas={{
+              book: (page) => (
+                <HomeBook
+                  page={page}
+                  creatures={game.creatures}
+                  tripsFinished={game.slots.tripsFinished}
+                  bare
+                />
+              ),
+              ...(keepsakesOf(systems).length === 0
+                ? {}
+                : { keepsakes: <Keepsakes visit={systems} /> }),
+            }}
+          />
+        )}
       {tab === 'house' && housing && (
         <HouseHost
           phase={phase}

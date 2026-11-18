@@ -1,4 +1,5 @@
 import { DropChevron } from '../ui/DropChevron';
+import { openerOf, type Opener } from '../valley/PlaceCanvas';
 import { GameIcon } from '../ui/GameIcon';
 import { chipName, itemName } from './house-names';
 import { drawnLook } from './interior-art';
@@ -24,7 +25,8 @@ export function SkinTrigger({
 }: {
   kind: SkinKind;
   id: string | null;
-  onOpen: () => void;
+  /** `opener` is this button, for a canvas drawer to give the focus back to. */
+  onOpen: (opener: Opener) => void;
 }) {
   const drawn = drawnLook(kind, id);
   return (
@@ -33,7 +35,9 @@ export function SkinTrigger({
       class="equip-trigger hp-skin-trigger"
       aria-haspopup="dialog"
       aria-label={lookLabel(kind, id)}
-      onClick={onOpen}
+      onClick={(event) => {
+        onOpen(openerOf(event.currentTarget));
+      }}
     >
       <span class="hp-chip-pic" aria-hidden="true">
         {drawn === null ? (

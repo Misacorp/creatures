@@ -59,6 +59,18 @@
   overflow: hidden;
 }
 
+/* The canvas's own buttons over the stage (not the scene: a pan never moves them); a drawer lies over them. */
+.pc-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.pc-overlay > * {
+  pointer-events: auto;
+}
+
 /* The scene: the whole stage, one size and place; panned sideways only to keep what was clicked clear of a drawer. */
 .pc-main {
   flex: 1;

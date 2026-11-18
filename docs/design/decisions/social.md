@@ -4,6 +4,14 @@ The living room and lounging, the lounge message, Discord DMs and other social f
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-15: A scout pack's housing drop chance scales with its hours
+
+ID: `2026-11-15-a-scout-pack-rolls-a-housing` · Status: current
+
+**Decision.** A scout pack's housing drop chances (material, blueprint, stamp) are the listed scout chances times `hours / HOUSING_RULES.drops.scout.fullHours` (24), where `hours` is the seat's `store_hours`: a 24 h pack rolls at 30 / 2 / 1 %, a 30-minute pack at a 48th, a 72 h pack at three times (capped at 100 %). A pack with no hours rolls nothing. The scaling is integer parts per million in the game package. `fullHours` is a scalar Misa can change in one place.
+
+**Reasoning.** A pack comes home on a visit and on every free destination change or "go deeper", and about 30 minutes of scouting holds a scrap, so a flat roll per pack gave about 190 rolls a day from four tapped seats (design intent: one or two per seat). A 12-hour floor was tried first and dropped: a visit also brings packs home, so a player who opens the game every few hours would only ever hold short packs and never roll. Scaling by hours keeps a seat's expected drops per day the same however often packs come home: farming gains nothing and frequent visitors lose nothing.
+
 ## 2026-11-12: Housing: a ceiling and frame left as built are their starters; only a trim can be None
 
 ID: `2026-11-12-housing-a-ceiling-and-frame-left` · Status: current

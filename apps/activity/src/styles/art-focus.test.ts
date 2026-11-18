@@ -17,7 +17,15 @@ describe('focus in art scenes', () => {
   const rule = css('views/art-focus.css');
 
   it('names every kind of target once for the no-outline rule and once for the cue', () => {
-    for (const target of [...TARGETS, '.sg-map .wm-marker', '.pc-below']) {
+    for (const target of [
+      ...TARGETS,
+      '.sg-map .wm-marker',
+      '.pc-below',
+      '.house-room',
+      '.house-fixture',
+      '.house-spot',
+      '.house-creature',
+    ]) {
       expect(rule.split(target).length - 1, target).toBeGreaterThanOrEqual(2);
     }
     expect(rule).toMatch(/:is\(:focus, :focus-visible\)[^{]*\{\s*outline: none;/s);

@@ -44,7 +44,12 @@ export const HOUSING_RULES = {
     commonWeight: 4,
     rareWeight: 1,
     trip: { ticksPerExtraRoll: 3, materialPct: 40, blueprintPct: 3, stampPct: 1 },
-    scout: { materialPct: 30, blueprintPct: 2, stampPct: 1 },
+    /**
+     * `fullHours`: the chances below are a pack of this many effective hours of scouting; a pack's own chances are these times
+     * `hours / fullHours` (a 30-minute pack a 48th, a 72-hour pack three times, material capped at 100%). However often packs come
+     * home, a seat's expected drops per day are the same, so tapping seats cannot farm rolls. A pick, a scalar to change here.
+     */
+    scout: { fullHours: 24, materialPct: 30, blueprintPct: 2, stampPct: 1 },
     dungeon: {
       depthPerExtraRoll: 5,
       clearedExtraRolls: 1,
