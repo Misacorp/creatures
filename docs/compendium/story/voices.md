@@ -19,6 +19,7 @@ Every fragment players read is spoken by someone inside the world. Nobody inside
 
 ## Rules for voices
 
+- **Which voice for which thing:** a find or a collection piece is described by the field notes (what it looks like, nothing more); a keepsake or a piece of furniture by the makers; a quirk by the creatures.
 - **One voice per fragment.** The field notes do not suddenly know history. The clerk does not get wistful.
 - **Knowing voices under-explain; ignorant voices mis-explain.** The clerk writes "the usual five" and stops. The committee says the long benches are "for the crowds", and there are no crowds.
 - **Two voices may disagree, and neither is corrected.** A maker says the ring-and-dot is a lucky knot. A plaque uses it as a count. Leave both.

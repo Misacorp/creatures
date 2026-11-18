@@ -20,17 +20,17 @@ The research behind it is `docs/research/worldbuilding.md`.
 
 The truth must exist and be complete, or the hints hold nothing up (Hemingway: leaving out what you do not know "only makes hollow places"). And it must stay under the water. Both halves matter.
 
-**Until Misa accepts the story (the story folder's `README.md` says which state it is in), it is a draft: write nothing from it into shipped content.** Texture needs no story and can always ship. In a draft-only job, hand over the fragments and the ledger rows you would have added, in a scratch file, and change nothing in the repo.
+**Until Misa accepts the story (the story folder's `README.md` says which state it is in), it is a draft: write nothing from it into shipped content.** Texture needs no story and can always ship. In a draft-only job, hand over the fragments and the ledger rows you would have added (fact, grade, kind, where, the line and its device, chapter), in a scratch file, and change nothing in the repo.
 
 ## What to read, by job
 
 Read as little of the truth as the job needs. You cannot leak what you have not read.
 
-| Job                                                        | Read                                                                                                                                               | Do not open                       |
-| ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
-| **Texture** (words for content, no story)                  | `docs/compendium/README.md` (tone, naming); the compendium file of the thing; `story/voices.md` (voices and "Loaded things": safe, no facts)       | `truth.md`, `arc.md`, `ledger.md` |
-| **A clue** for a named fact                                | The same, plus `node .claude/skills/lore/check.mjs --fact S05` (that fact and its ledger rows only), and the beats for that fact in `story/arc.md` | The rest of `truth.md`            |
-| **A beat**, **a change to the truth**, or **a leak audit** | The whole story folder                                                                                                                             |                                   |
+| Job                                                        | Read                                                                                                                                                                                       | Do not open                       |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------- |
+| **Texture** (words for content, no story)                  | `docs/compendium/README.md` (tone, naming); the compendium file of the thing; `story/voices.md` (voices and "Loaded things": safe, no facts)                                               | `truth.md`, `arc.md`, `ledger.md` |
+| **A clue** for a named fact                                | The same, plus `node .claude/skills/lore/check.mjs --fact S05` (that fact and its ledger rows only), and the "Beats" table in `story/arc.md` (so you do not use an image a beat is saving) | The rest of `truth.md`            |
+| **A beat**, **a change to the truth**, or **a leak audit** | The whole story folder                                                                                                                                                                     |                                   |
 
 ## Three kinds of fragment
 
@@ -42,7 +42,7 @@ Read as little of the truth as the job needs. You cannot leak what you have not 
 
 A clue is never a different kind of sentence. It is an ordinary flavour line with something slightly off in it. A player who is not looking reads it as texture and loses nothing; that is the test of a good one.
 
-Texture has one duty to the story: **stay out of its way.** `voices.md` lists the "Loaded things" (lamps, the number five, things made for a crowd, and so on). A texture line that uses one becomes a false clue, or spends a real one early.
+Texture has one duty to the story: **stay out of its way.** `voices.md` lists the "Loaded things" (lamps, the number five, things made for a crowd, and so on). A texture line that uses one becomes a false clue, or spends a real one early. A clue, of course, uses the loaded things of its own fact: that is what they are for.
 
 ## Grades of clue
 
@@ -62,11 +62,11 @@ There is no grade for a line that says the fact. If you have written one, it is 
 
    | Surface                               | Budget                                                                                                                            |
    | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-   | Gear, furniture, keepsake, quirk      | One sentence, at most 20 words. Gear slots are hat, scarf and charm.                                                              |
+   | Gear, furniture, keepsake, quirk      | One sentence, at most 20 words (quirks about 14). Gear slots are hat, scarf and charm.                                            |
    | Journal page                          | Two or three sentences, at most 45 words. It still hints at a real mechanic (`docs/compendium/journal.md` lists which are taken). |
    | Ledger scrap, shelf label (the clerk) | At most 20 words: three or four plain entries. The loaded one is never first or last.                                             |
    | Plaque                                | At most 8 words round the names the game fills in. It may speak to the reader.                                                    |
-   | Gazette headline                      | At most 10 words. A dry small-town joke is welcome.                                                                               |
+   | Gazette headline                      | At most 10 words, in capitals like the shipped ones. A dry small-town joke is welcome.                                            |
    | A find (collection piece, landmark)   | Its name, and one sentence of at most 20 words about what it looks like.                                                          |
 
    A new thing's display name and a page's title follow the naming table in `docs/compendium/README.md`. Each fragment must read whole on its own: a player may meet it first, last or never.
@@ -101,7 +101,7 @@ Three jobs in 45 words: a scene, a mechanic hint, a story detail. The mechanic l
 Run every candidate through these, in order. Each is a way explaining gets in.
 
 1. **Delete the last sentence** (of a fragment with more than one). If what is left still works, it stays deleted: last sentences are where the meaning gets announced. The one exception is when the last sentence is the object itself. (The shipped voice likes to end on "a quiet truth": keep that for mechanic hints, never for the story.)
-2. **Strike the contrast.** This is the one that readers feel most. You wrote the odd thing and then, to make sure it was noticed, the normal thing beside it: "nine stools **and one cobbler**", "forty pairs, **and we have only ever needed six**", "steps over the creaky stair **even on its first visit**". Cut the second half. The player already has it: they know how many cobblers there are. "Soled at the bench with nine stools."
+2. **Strike the contrast.** This is the one that readers feel most. You wrote the odd thing and then, to make sure it was noticed, the normal thing beside it: "nine stools **and one cobbler**", "forty pairs, **and we have only ever needed six**", "steps over the creaky stair **even on its first visit**". Cut the second half. The player already has it: they know how many cobblers there are. (The gap device is the one place a comparison stays, because the missing thing can only be shown against what is there: "a colour none of the roads wears". Even then, never count for the reader.) "Soled at the bench with nine stools."
 3. **Strike the cause.** No "because", "so that", "in order to", "which is why", "for the day when" attached to anything old. The object is the effect. The reader supplies the cause.
 4. **Strike the caption.** No "as if waiting", "as though it remembered", no feeling named (sad, lonely, hopeful, strange). A creature sits facing the far hills at dusk. Stop there.
 5. **Strike the pointer.** No "mysterious", "secret", "long ago", "forgotten", "legend", "it is said", no question to the reader, no trailing dots. These say "this is a clue" instead of being one. (`sealed.json` has the list.)
@@ -129,7 +129,7 @@ It catches only the wording writers reach for first. Passing it means little; fa
 
 You have read the truth, so you cannot judge whether a fragment gives it away. Use a reader who has not.
 
-Start a **fresh agent** (general-purpose; not a fork, which inherits what you know). Put in its prompt only: one line on what the game is; the fragments, each labelled with where a player would meet it and mixed in with the batch's texture; and the lines already shipped for the same facts (the ledger's "line" cells, without fact IDs), as "lines you have seen before". **No file paths under `docs/compendium/story/`, no fact IDs, no hint of what you hope it finds.** Tell it to open no files and use no tools. Ask exactly:
+Start a **fresh agent** (general-purpose; not a fork, which inherits what you know). If you are a delegated agent with no Agent tool, write the reader's prompt into your scratch folder, say in your report that the batch is unread, and the lead runs it; never stand in for the reader yourself. Put in its prompt only: one line on what the game is; the fragments, each labelled with where a player would meet it and mixed in with the batch's texture; and the lines already shipped for the same facts (the ledger's "line" cells, without fact IDs), as "lines you have seen before". **No file paths under `docs/compendium/story/`, no fact IDs, no hint of what you hope it finds.** Tell it to open no files and use no tools. Ask exactly:
 
 1. What do you now know for certain about this world's past? Quote the words that told you.
 2. What do you suspect? For each, how sure are you, out of 10?
