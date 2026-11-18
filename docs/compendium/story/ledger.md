@@ -1,6 +1,6 @@
 # The clue ledger
 
-Status: **draft, not accepted** (2026-11-18). Spoilers: read `README.md` in this folder first.
+Status: **direction accepted by Misa 2026-11-18; he does not read this file** (see `README.md`). Spoilers: read `README.md` in this folder first.
 
 Every fragment that leans on a sealed fact gets a row here, in the same change that writes it. The ledger answers three questions a writer cannot hold in their head: has this fact been hinted enough to be found, has it been hinted so much that it is told, and did two fragments say the same thing twice.
 
@@ -58,5 +58,12 @@ These shipped lines were written before the story. They already lean the right w
 
 Add rows below as fragments are written. Newest last.
 
-| Fact | Grade | Kind | Where (id) | The line or detail | Chapter | Status |
-| ---- | ----- | ---- | ---------- | ------------------ | ------- | ------ |
+| Fact | Grade | Kind    | Where (id)                      | The line or detail                                                             | Chapter | Status |
+| ---- | ----- | ------- | ------------------------------- | ------------------------------------------------------------------------------ | ------- | ------ |
+| S01  | trace | Gazette | chapter-1: hearth headline      | Black stones under the new ring (device: a thing already there)                | 1       | draft  |
+| S07  | trace | find    | chapter-1: The Forge Ledger     | A neat ruled ledger, back pages blank (device: a gap)                          | 1       | draft  |
+| S04  | seed  | journal | chapter-1: ledger page 1        | "Lamp oil: the usual five" among nails and coal                                | 1       | draft  |
+| S04  | seed  | find    | chapter-1: Tally Post           | Notched in fives, a small ring round every fifth (also the ring shape, S09)    | 1       | draft  |
+| S01  | trace | journal | chapter-1: ledger page 2        | "Hooks for the hall: 40" (device: count)                                       | 1       | draft  |
+| S13  | trace | journal | chapter-1: ledger page 3        | The hut and the Games in the old ledger; lamp oil "not for bunting" (S03 seed) | 1       | draft  |
+| S13  | slant | place   | chapter-1: the committee's line | "the hut came with the meadow"                                                 | 1       | draft  |

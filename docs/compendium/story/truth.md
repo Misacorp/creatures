@@ -1,6 +1,6 @@
 # The truth: what lies under the valley
 
-Status: **draft, not accepted** (written 2026-11-18 as a test bed for the `lore` skill). Misa has not picked this story. Nothing here is canon until he does, and nothing here ships.
+Status: **draft, not accepted**. The facts are the lead's to keep; nothing here ships as written.
 
 **Spoilers.** This is the whole iceberg. Players see none of it directly, ever: they see objects, habits and half-heard remarks that only make sense if this is true. Read `README.md` in this folder before using it. Never quote or paraphrase this file in player text, PR descriptions, commit messages, patch notes, Discord posts or pages for Misa (unless he asked for spoilers).
 

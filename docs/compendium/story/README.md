@@ -1,6 +1,6 @@
 # The story layer
 
-Status: **draft, not accepted** (2026-11-18). Misa asked for a slow story the whole server plays through, told by allusion. This folder is a first proposal and the test bed for the `lore` skill. **Nothing here is canon or ships until Misa accepts a story.** If he picks another, `truth.md`, `arc.md` and the lists are rewritten; the skill and the method stay.
+Status: **direction accepted by Misa, 2026-11-18** ("someone lived here before, and the server pieces together why"). **Misa plays the game and has asked to keep the secret hidden from him:** he approves the direction and each chapter's player-facing text, never `truth.md`. So the facts below the surface are the lead's to keep consistent and to record; what players read still needs his OK before it ships. Chapter one's words are in `chapter-1.md`, waiting for him.
 
 **Spoilers.** `truth.md`, `arc.md`, `voices.md` and `ledger.md` hold what players are meant to work out for themselves. Agents writing texture do not need to read `truth.md`. Nobody quotes it outside this folder (see the skill, "Keeping the secret outside the game").
 
@@ -16,13 +16,14 @@ How to write for it: the `lore` skill (`.claude/skills/lore/SKILL.md`). Why it i
 
 ## Files
 
-| File          | What it holds                                                                               |
-| ------------- | ------------------------------------------------------------------------------------------- |
-| `truth.md`    | The hidden story as facts S01 ..., what is left for Misa, the planned false leads           |
-| `arc.md`      | Chapters, the server milestones that open them, and the planned beats                       |
-| `voices.md`   | Who speaks on which surface, what each cannot know, and the small stock of repeating names  |
-| `ledger.md`   | Every clue per fact: grade, surface, status. Starts with the shipped lines that already fit |
-| `sealed.json` | Word lists for `node .claude/skills/lore/check.mjs`                                         |
+| File           | What it holds                                                                               |
+| -------------- | ------------------------------------------------------------------------------------------- |
+| `truth.md`     | The hidden story as facts S01 ..., what is left for Misa, the planned false leads           |
+| `arc.md`       | Chapters, the server milestones that open them, and the planned beats                       |
+| `voices.md`    | Who speaks on which surface, what each cannot know, and the small stock of repeating names  |
+| `ledger.md`    | Every clue per fact: grade, surface, status. Starts with the shipped lines that already fit |
+| `chapter-1.md` | Chapter one: the player-facing text for the guided start, and what blind readers made of it |
+| `sealed.json`  | Word lists for `node .claude/skills/lore/check.mjs`                                         |
 
 ## How it sits with the rest of the compendium
 

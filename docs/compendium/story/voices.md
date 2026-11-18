@@ -1,6 +1,6 @@
 # Voices: who is speaking, and what they do not know
 
-Status: **draft, not accepted** (2026-11-18). **Safe to read for any writing job:** this file holds no story facts. (The stock of repeating names is in `ledger.md`, which does.)
+Status: **direction accepted by Misa 2026-11-18; he does not read this file** (see `README.md`). **Safe to read for any writing job:** this file holds no story facts. (The stock of repeating names is in `ledger.md`, which does.)
 
 Every fragment players read is spoken by someone inside the world. Nobody inside the world knows the whole truth, so no fragment can tell it. Pick the voice first; what it cannot know is your limit.
 

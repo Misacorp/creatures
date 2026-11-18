@@ -4,6 +4,14 @@ Roadmap calls, Misa's standing direction, naming and tone, content policy, how a
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-18: The story: someone lived here before; Misa is kept unspoiled [Misa]
+
+ID: `2026-11-18-the-story-someone-lived-here-before` · Status: current
+
+**Decision.** The game's story is "someone lived here before, and the server pieces together why", told slowly and by allusion, advanced by what a server builds and beats together, with no new mechanics. Misa approves the direction and each chapter's player-facing text; the secret under it stays hidden from him (he plays too), so the lead keeps `docs/compendium/story/truth.md` consistent and never puts its facts in messages, PRs or pages for him. Chapter one (the guided start: hearth, Market, Forge) is drafted in `docs/compendium/story/chapter-1.md` and waits for his OK on the words before it is built. The earlier entry's "draft, not canon" now means: direction accepted, words per chapter still to approve.
+
+**Reasoning.** Misa (2026-11-18), asked whether to be spoiled, which direction, and whether to start: "Keep it hidden, go with the first, write chapter one." Amends: `2026-11-18-story-is-told-by-allusion-a`.
+
 ## 2026-11-18: Story is told by allusion: a sealed truth, a clue ledger and a blind reader (the lore skill)
 
 ID: `2026-11-18-story-is-told-by-allusion-a` · Status: current

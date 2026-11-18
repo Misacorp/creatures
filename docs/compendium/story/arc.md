@@ -1,6 +1,6 @@
 # The arc: how the story comes up, chapter by chapter
 
-Status: **draft, not accepted** (2026-11-18). Spoilers: read `README.md` in this folder first.
+Status: **direction accepted by Misa 2026-11-18; he does not read this file** (see `README.md`). Spoilers: read `README.md` in this folder first.
 
 The story is told per server. A chapter opens on a server when that server reaches a milestone **together**; no player opens one alone, and no chapter ever closes, expires or can be missed (valley filters F-1, F-7: a newcomer finds every fragment the server has opened, in the places where they lie).
 

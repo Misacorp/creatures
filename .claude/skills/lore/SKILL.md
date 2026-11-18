@@ -20,7 +20,7 @@ The research behind it is `docs/research/worldbuilding.md`.
 
 The truth must exist and be complete, or the hints hold nothing up (Hemingway: leaving out what you do not know "only makes hollow places"). And it must stay under the water. Both halves matter.
 
-**Until Misa accepts the story (the story folder's `README.md` says which state it is in), it is a draft: write nothing from it into shipped content.** Texture needs no story and can always ship. In a draft-only job, hand over the fragments and the ledger rows you would have added (fact, grade, kind, where, the line and its device, chapter), in a scratch file, and change nothing in the repo.
+**Misa has accepted the story's direction and asked not to be told its secret** (the story folder's `README.md`). He approves what players will read, chapter by chapter: show him the fragments and where they appear, never what they mean. Until he has approved a chapter's words, they stay a draft in the story folder; texture needs no story and ships as usual. In a draft-only job, hand over the fragments and the ledger rows you would have added (fact, grade, kind, where, the line and its device, chapter), in a scratch file, and change nothing in the repo.
 
 ## What to read, by job
 
