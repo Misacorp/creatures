@@ -174,6 +174,18 @@ function fact(id) {
         new RegExp(`\\|[^|]*\\b${id}\\b[^|]*\\|\\s*[^|]*\\|\\s*$`).test(l),
     );
   console.log(rows.length ? `Ledger rows:\n${rows.join('\n')}` : 'No ledger rows yet.');
+  const leads = truth
+    .split('\n')
+    .filter((l) => l.startsWith('|') && new RegExp(`\\b${id}\\b`).test(l));
+  if (leads.length)
+    console.log(
+      `\nPlanned false leads (a reader who suspects one of these is on track):\n${leads.join('\n')}`,
+    );
+  const saved = readFileSync(join(STORY, 'arc.md'), 'utf8')
+    .split('\n')
+    .filter((l) => /^\|\s*B\d/.test(l))
+    .map((l) => `- ${l.split('|')[4].trim()}`);
+  console.log(`\nImages saved for beats (do not use, for any fact):\n${saved.join('\n')}`);
 }
 
 let failed = false;
@@ -190,13 +202,13 @@ if (args.includes('--fact')) {
   failed = scan(texts, { strict: true });
   failed = ration() || failed;
   console.log(`${texts.length} added text value(s) checked.`);
-} else if (args.length > 0) {
+} else if (args.length > 0 && !args.some((x) => x.startsWith('-'))) {
   const texts = draftTexts(args);
   failed = scan(texts, { strict: true });
   console.log(`${texts.length} draft line(s) checked.`);
 } else {
   console.log(
-    'Usage: node .claude/skills/lore/check.mjs <draft files> | --changed | --content | --ledger',
+    'Usage: node .claude/skills/lore/check.mjs <draft files> | --changed | --content | --ledger | --fact S05',
   );
   process.exit(2);
 }

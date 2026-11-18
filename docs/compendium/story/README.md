@@ -50,3 +50,23 @@ What it showed, and what changed in the skill:
 - **Texture next to clues gets read as a clue,** and stray numbers get joined up. The skill now has a batch pass and `voices.md` a list of loaded things to keep out of texture.
 - **A writer could not read one fact without seeing the whole secret.** `check.mjs --fact` prints one fact; the summary moved to the bottom of `truth.md`; `voices.md` was made safe for texture jobs.
 - The word check found nothing in any batch. It stays as a cheap guard for the content data, not as the test.
+
+### Round 2 (2026-11-18): twelve fragments, three leaning on a fact
+
+Two new writers followed the rewritten skill end to end, with the reading limits (one fact at a time) and their own blind readers.
+
+| Writer                               | Sealed facts called certain | Highest suspicion of a sealed fact | Highest story nudge (1 to 3)         | Reader wanted                                               |
+| ------------------------------------ | --------------------------- | ---------------------------------- | ------------------------------------ | ----------------------------------------------------------- |
+| C (three readers, two rewrites)      | None                        | 5                                  | 3, from the game's own frame (below) | To know what the find was a part of                         |
+| D (smaller model; the lead's reader) | None                        | 7 (one find, a notch too strong)   | 2                                    | "What else the Fen is holding. I'd send more scouts there." |
+
+What it showed, and what changed:
+
+- **The loop works without the lead.** Writer C failed its first reader on one find, rewrote from a different object, and passed on suspicion. Writer D's too-strong find was caught by the reader, as intended.
+- **Texture stayed texture:** readers skipped every texture line, and both S02 and S10 clues passed as flavour on a first read.
+- **A frame can be the pointer.** A find that the game announces with "This belongs at the Signpost!" is rated a nudge whatever its sentence says. The reader's labels are now plain, and how loudly the game presents a story find is a design question for the beat, not the writer.
+- **A delegated writer has no Agent tool.** The skill now allows a fresh tool-less `claude -p` process as the reader, or hands the prompt to the lead.
+- **A clue writer needed three things from files it must not open:** the stock names, the planned false leads and the images saved for beats. `check.mjs --fact` now prints all three.
+- Smaller fixes: an "out of place" device, old shipped lines in the batch check, which rule wins when the telling word is the thing's name.
+
+Not yet tested: a whole chapter read by one reader ("what happened here?"), which needs a chapter's worth of fragments; and real players, who talk to each other.

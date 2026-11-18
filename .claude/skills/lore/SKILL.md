@@ -26,11 +26,11 @@ The truth must exist and be complete, or the hints hold nothing up (Hemingway: l
 
 Read as little of the truth as the job needs. You cannot leak what you have not read.
 
-| Job                                                        | Read                                                                                                                                                                                       | Do not open                       |
-| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------- |
-| **Texture** (words for content, no story)                  | `docs/compendium/README.md` (tone, naming); the compendium file of the thing; `story/voices.md` (voices and "Loaded things": safe, no facts)                                               | `truth.md`, `arc.md`, `ledger.md` |
-| **A clue** for a named fact                                | The same, plus `node .claude/skills/lore/check.mjs --fact S05` (that fact and its ledger rows only), and the "Beats" table in `story/arc.md` (so you do not use an image a beat is saving) | The rest of `truth.md`            |
-| **A beat**, **a change to the truth**, or **a leak audit** | The whole story folder                                                                                                                                                                     |                                   |
+| Job                                                        | Read                                                                                                                                                                                                        | Do not open                       |
+| ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| **Texture** (words for content, no story)                  | `docs/compendium/README.md` (tone, naming); the compendium file of the thing; `story/voices.md` (voices and "Loaded things": safe, no facts)                                                                | `truth.md`, `arc.md`, `ledger.md` |
+| **A clue** for a named fact                                | The same, plus `node .claude/skills/lore/check.mjs --fact S05` (that fact and its ledger rows only), which also lists the stock names you may echo, the planned false leads, and the images saved for beats | `truth.md`, `arc.md`, `ledger.md` |
+| **A beat**, **a change to the truth**, or **a leak audit** | The whole story folder                                                                                                                                                                                      |                                   |
 
 ## Three kinds of fragment
 
@@ -72,7 +72,7 @@ There is no grade for a line that says the fact. If you have written one, it is 
    A new thing's display name and a page's title follow the naming table in `docs/compendium/README.md`. Each fragment must read whole on its own: a player may meet it first, last or never.
 
 2. **Voice.** Choose one row of `voices.md`. Write down, for yourself, what that voice does not know. That is the edge of the fragment. (A quirk is the creatures' voice: the field notes report the habit and add nothing.)
-3. **Kind and grade.** Texture unless the plan for this batch says otherwise. For a clue: which one fact, which grade. Look at the fact's ledger rows: what they already said, on which surfaces, **with which device** (step 4). A new clue says something the others did not. Prefer a kind of surface the fact does not have yet; when the job fixes the surface, that is fine, but it adds nothing to the count rule. Check `arc.md`: a small fragment never uses the image a planned beat is saving.
+3. **Kind and grade.** Texture unless the plan for this batch says otherwise. For a clue: which one fact, which grade. Look at the fact's ledger rows: what they already said, on which surfaces, **with which device** (step 4). A new clue says something the others did not. Prefer a kind of surface the fact does not have yet; when the job fixes the surface, that is fine, but it adds nothing to the count rule. A small fragment never uses an image saved for a beat (`--fact` lists them); if the job puts your clue on the very surface a beat is saved for, write a smaller thing beside it and tell the lead. If `--fact` shows no stock name for your fact, the grade is trace or slant. A clue may invent a small fitting of something the fact already has (a peg from the post, a lid from the jar) and records it in its ledger row; an object that would need its own explanation is a change to the truth.
 4. **Find the object.** The fact is abstract; a clue is a thing. If this fact is true, what is lying in a drawer because of it? Pick a device, and not the one the last two clues for this fact used:
 
    | Device               | Example of the shape (not to copy)                                |
@@ -86,7 +86,9 @@ There is no grade for a line that says the fact. If you have written one, it is 
    | A direction          | All the chairs in the hut are turned a little to the east         |
    | A gap                | The dust on the shelf is thinner in one square                    |
 
-   Write the thing. Leave out why.
+| Out of place | A pickling weight, down among the cellar's stones |
+
+Write the thing. Leave out why.
 
 5. **Write several, not one.** Five for a clue, different objects, not five wordings of one. Two or three for texture. The first idea is the one every writer has: in the first test, two writers working apart both gave a creature the same habit with a stair. Keep the candidates in your scratch file.
 6. **Cut** (next section), then keep one.
@@ -109,12 +111,13 @@ Run every candidate through these, in order. Each is a way explaining gets in.
 7. **Take out the most telling word.** Find the single word carrying the most information about the truth. Remove or blunt it. If the line is still a clue to someone who has seen two others, it was too strong before. ("Oil, five measures, one to each far place" becomes "Lamp oil, the usual five.")
 8. **Swap abstract for exact.** Numbers, materials, wear, quantities. "Many" becomes "29". "Old" becomes "worn on the left".
 9. **No new names.** No new Capitalised Noun and no new person (a ledger that mentions "Carter" has started a character). Names come from the stock in `ledger.md`. A name that appears once is noise; the same plain phrase three times in three places is a mystery.
-10. **The skimmer.** Read it as someone who does not care about story. Is it still a nice line about a hat? If it only works as a clue, it is not finished.
+10. **The skimmer.** Read it as someone who does not care about story. Is it still a nice line about a hat? If it only works as a clue, it is not finished. This rule beats rule 7: a line must still be about something.
 
 Then look at **the batch as a whole**, as a suspicious reader would:
 
 - **Numbers.** Do any two numbers in the batch add up, match or differ by one? Readers will connect them ("six needed" and "the usual five, plus our own fire" became a theory about six households). Change one unless you meant it.
 - **Texture that has started to look like a clue** because of its neighbours. Check it against "Loaded things" again.
+- **Old lines.** Does a texture noun match one in the shipped lines you are about to show the reader (a hat's "boots" beside the bog's "pair of boots")? Change it.
 - **Density.** If more than one in four leans on a fact, hold some back for a later batch.
 
 Then run the word check on your drafts (one fragment per line in a scratch file):
@@ -129,7 +132,7 @@ It catches only the wording writers reach for first. Passing it means little; fa
 
 You have read the truth, so you cannot judge whether a fragment gives it away. Use a reader who has not.
 
-Start a **fresh agent** (general-purpose; not a fork, which inherits what you know). If you are a delegated agent with no Agent tool, write the reader's prompt into your scratch folder, say in your report that the batch is unread, and the lead runs it; never stand in for the reader yourself. Put in its prompt only: one line on what the game is; the fragments, each labelled with where a player would meet it and mixed in with the batch's texture; and the lines already shipped for the same facts (the ledger's "line" cells, without fact IDs), as "lines you have seen before". **No file paths under `docs/compendium/story/`, no fact IDs, no hint of what you hope it finds.** Tell it to open no files and use no tools. Ask exactly:
+Start a **fresh agent** (general-purpose; not a fork, which inherits what you know). If you are a delegated agent with no Agent tool, a new `claude -p --tools ""` process started in an empty folder, with the prompt on its input, is just as good; failing that, write the reader's prompt into your scratch folder, say in your report that the batch is unread, and the lead runs it. Never stand in for the reader yourself. Put in its prompt only: one line on what the game is; the fragments, each labelled plainly with where a player would meet it ("a find from the Fen", not the game's own "This belongs at the Signpost!": a frame that points is not yours to test) and mixed in with the batch's texture; and the lines already shipped for the same facts (the ledger's "line" cells, without fact IDs), as "lines you have seen before". **No file paths under `docs/compendium/story/`, no fact IDs, no hint of what you hope it finds.** Tell it to open no files and use no tools. Ask exactly:
 
 1. What do you now know for certain about this world's past? Quote the words that told you.
 2. What do you suspect? For each, how sure are you, out of 10?
@@ -148,7 +151,7 @@ Read the answers against the truth:
 | 4. Nudged            | Every clue at 1, or not listed. A reader asked this question always lists something.                | A 2: strike the contrast (rule 2). A 3: rewrite from a different object.               |
 | 5. Skips             | All the texture, and ideally a clue or two.                                                         | A texture line is not skipped: it reads as a clue. See "Loaded things".                |
 
-One fragment alone should teach a reader **nothing** certain. A whole chapter's set should get a careful reader to "I think I know, and I want to check". If your reader solved it from one batch, you blurted; do not argue with the reader. After a rewrite, use a **new** reader: the old one has seen the stronger version.
+One fragment alone should teach a reader **nothing** certain. A whole chapter's set should get a careful reader to "I think I know, and I want to check". If your reader solved it from one batch, you blurted; do not argue with the reader. After rewriting a clue, use a **new** reader: the old one has seen the stronger version. A texture-only fix needs no new reader. Journal pages will be listed as nudges because they teach a rule of the game; that is their job, and only a nudge toward the story counts.
 
 For a finished chapter, ask a second fresh agent the opposite question: given every fragment of the chapter, what happened here? If it cannot get near, the mystery is not fair: check the count rule in the ledger.
 
