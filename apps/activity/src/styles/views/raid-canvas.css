@@ -1,0 +1,345 @@
+/*
+  The raid as a place (`raid-canvas/`): the shell, drawers and phone pages are `canvas.css`'s (`pc-`). Here are only the scene (the arena: the
+  boss on top with its HP bar, the board below, a now line and up to three plates on its frame), the strip under it and what the
+  drawers hold. The scene keeps its size in every state; a stage playing takes the place of the boss and the board inside it.
+*/
+
+/* The canvas fills the page under the HUD; outside the valley's frame it still has room to be a scene. */
+.pc-root:has(.rc-scene) {
+  min-height: min(40rem, calc(100dvh - 9rem));
+}
+
+.vy-page > div:not([hidden]):has(> .pc-root .rc-scene) {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Things in the world are not raised buttons: the art is the button. */
+.rc-scene :is(.rc-plate, .rc-now-button, .rc-boss-art, .rc-move),
+.rc-scene :is(.rc-plate, .rc-now-button, .rc-boss-art, .rc-move):is(:hover, :active),
+.rc-tray .vy-mon,
+.rc-tray .vy-mon:is(:hover, :active),
+.rc-mini,
+.rc-mini:is(:hover, :active) {
+  min-height: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  filter: none;
+  transform: none;
+  color: var(--bone);
+}
+
+.rc-scene {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.5rem 0.5rem 0.25rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+  background: var(--night);
+}
+
+.rc-top {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.rc-plates {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* A plate is a 44 px target around its small label. */
+.rc-plate,
+.rc-now-button {
+  display: inline-flex;
+  align-items: center;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.rc-now {
+  display: flex;
+  justify-content: center;
+  max-width: 100%;
+  min-height: 1.5rem;
+  text-align: center;
+}
+
+.rc-now .nameplate {
+  max-width: 100%;
+  white-space: normal;
+}
+
+.rc-boss {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.rc-boss-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.rc-boss-art {
+  display: block;
+  line-height: 0;
+  cursor: pointer;
+}
+
+/* The fallen boss stays on the scene, dim, until the week ends. */
+.rc-boss-art.fallen .sprite {
+  filter: grayscale(1) brightness(0.55);
+}
+
+/* The boss's moves while placing: a row of small glyphs under the boss, no box; a ring only on hover or focus, gold when lit. */
+.rc-moves {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.125rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rc-scene .rc-move {
+  display: grid;
+  place-items: center;
+  min-width: 1.75rem;
+  min-height: 1.75rem;
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.rc-scene .rc-move:is(:hover, :focus-visible) {
+  box-shadow: inset 0 0 0 2px var(--line);
+}
+
+.rc-scene .rc-move.lit,
+.rc-scene .rc-move.lit:is(:hover, :active) {
+  background: transparent;
+  box-shadow: inset 0 0 0 2px var(--gold);
+}
+
+.rc-hp {
+  width: min(100%, 22rem);
+}
+
+.rc-board {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  flex: none;
+  min-width: 0;
+}
+
+.rc-board > .raid-board {
+  max-width: 100%;
+}
+
+.rc-stage {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.rc-hint {
+  flex: none;
+  margin: 0;
+  text-align: center;
+}
+
+/* The finale's result, the scene's big moment: the reveal card lies over the scene. */
+.rc-reveal {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  overflow-y: auto;
+  padding: 0.75rem;
+  background: rgb(var(--ink-rgb) / 0.88);
+}
+
+.rc-reveal > * {
+  max-width: 32rem;
+  margin-inline: auto;
+}
+
+.rc-tray[data-over] {
+  box-shadow: inset 0 0 0 var(--px) var(--gold);
+}
+
+.rc-strip {
+  padding: 0.5rem 0.75rem;
+  background: var(--dusk);
+  box-shadow: inset 0 var(--px) 0 0 var(--ink);
+}
+
+/* The tray's raid marks: out this weekend is dim, so it is not only the mark that says it. */
+.vy-mon-raid-out .vy-mon-body {
+  opacity: 0.45;
+}
+
+.rc-tray-mark {
+  display: inline-flex;
+  line-height: 0;
+}
+
+/* --- What the drawers hold --- */
+.rc-stack {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.rc-head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.rc-head-text {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+  justify-items: start;
+}
+
+.rc-talents {
+  display: grid;
+  gap: 0.375rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rc-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.rc-boss-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.rc-help {
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  margin-left: auto;
+}
+
+.rc-players {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  list-style: none;
+}
+
+.rc-player {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.rc-player-team {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.rc-mini {
+  display: grid;
+  justify-items: center;
+  gap: 0.125rem;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  cursor: pointer;
+}
+
+.rc-log {
+  max-height: none;
+  margin: 0;
+}
+
+/* The stage on the scene: it fills the scene's room and takes no card frame of its own. */
+.stage-canvas {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+
+/* The week's steps in a drawer: two across (four do not fit a drawer's width). */
+.pc-panel .raid-timeline .schedule,
+.pc-page .raid-timeline .schedule {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/* The stage on the scene sits close: the boss, its HP and the board as on the placing scene. */
+.stage-canvas .stage-boss {
+  gap: 0.25rem;
+}
+
+.stage-canvas .stage-boss-art {
+  padding-bottom: 0.25rem;
+}
+
+.stage-v2.stage-canvas .stage-move {
+  min-height: 1rem;
+}
+
+/* A phone: no row-name column, so a fifth lane fits; the rows keep their order and a seat says its place to a screen reader. */
+@media (max-width: 45rem) {
+  .rc-scene .board-labels {
+    display: none;
+  }
+
+  .rc-scene .board-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 45rem) {
+  .rc-scene .raid-board,
+  .rc-scene .board-grid {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 45rem) {
+  .rc-scene .stage-v2 .raid-board:not(.single) .board-grid {
+    grid-template-columns: minmax(0, max-content);
+    padding-right: 0;
+  }
+}

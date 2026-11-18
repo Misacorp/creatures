@@ -30,7 +30,7 @@ import type { WornBySlot } from './gear-store';
 import { keyTaken, settleSpend } from './keyed-action';
 import { lookupSpend, spend, type LedgerStorage } from './ledger';
 import { GameError, atomically, type Outcome } from './outcome';
-import { hasFoughtThisWeekend } from './raid-v2-core';
+import { creatureInPlayingStage, hasFoughtThisWeekend } from './raid-v2-core';
 import { fighterOf, gearLinesOf } from './raid-v2-fighters';
 import { speciesOf } from './species';
 import {
@@ -43,6 +43,14 @@ import {
   type BookEntry,
   type LearnedTalent,
 } from './talent-v2-store';
+
+/** The refusal for a locked Knack or talent: `stage_playing` while the creature's stage plays as it happens, `locked` after. */
+function lockError(sql: SqlStorage, creatureId: string, now: number): GameError {
+  return new GameError(
+    409,
+    creatureInPlayingStage(sql, creatureId, now) ? 'stage_playing' : 'locked',
+  );
+}
 
 /**
  * Whether a creature's Knack may not change now because it has fought this weekend (R11: a Knack locks for a creature once it has
@@ -207,6 +215,7 @@ export function statsV2Of(c: StatsV2Source): StatsV2View {
       talents: [...c.talents],
       goldenTalents: [...(c.goldenTalents ?? [])],
       gear: gearLinesOf(c.species, c.level, c.fusionCount, c.worn),
+      items: [],
     },
     'page',
     { row: 0, col: 0 },
@@ -338,7 +347,7 @@ export class CreatureV2 {
       if (knack !== null && !knownKnacks(row.species).includes(knack)) {
         throw new GameError(409, 'knack_not_known');
       }
-      if (knackLocked(this.sql, row.id)) throw new GameError(409, 'locked');
+      if (knackLocked(this.sql, row.id)) throw lockError(this.sql, row.id, this.deps.now());
       // What the creature has now, as a player sees it: a Knack its form no longer knows counts as none.
       const previous =
         row.knack !== null && knownKnacks(row.species).includes(row.knack) ? row.knack : null;
@@ -418,7 +427,7 @@ export class CreatureV2 {
     if (learnedOf(this.sql, row.id).some((l) => l.talentId === talentId)) {
       throw new GameError(409, 'already_learned');
     }
-    if (talentsLocked(this.sql, row.id)) throw new GameError(409, 'locked');
+    if (talentsLocked(this.sql, row.id)) throw lockError(this.sql, row.id, this.deps.now());
   }
 
   /**
@@ -442,7 +451,7 @@ export class CreatureV2 {
           throw new GameError(409, 'slot_closed', `needs_level_${String(opens)}`);
       }
       if (have.slot === slot) return { creatureId: row.id, talentId, slot };
-      if (talentsLocked(this.sql, row.id)) throw new GameError(409, 'locked');
+      if (talentsLocked(this.sql, row.id)) throw lockError(this.sql, row.id, this.deps.now());
       setTalentSlot(this.sql, row.id, talentId, slot);
       return { creatureId: row.id, talentId, slot };
     });

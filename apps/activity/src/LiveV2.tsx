@@ -30,31 +30,24 @@ import { onDrillKey } from './ui/drill-keys';
 import { bossAnimSetup } from './boss-anim/setup';
 import { usePlaybackV2 } from './use-playback-v2';
 
-export function LiveV2({
+/**
+ * The live finale's data and its one input (the poll, the socket, `fire` / `hold`): everything `LiveV2` and the raid canvas share. With
+ * `enabled` false nothing is fetched (the canvas calls it on every render and turns it on for the finale's window only).
+ */
+export function useLiveFinaleV2({
   initial,
-  onClose,
+  enabled = true,
   onBalanceChange,
-  onRevealSeen,
-  onReplay,
-  season = null,
-  view = null,
 }: {
   initial: LiveSnapshotV2 | null;
-  onClose: () => void;
+  enabled?: boolean;
   /** Called when the Essence balance may have changed. */
   onBalanceChange: () => void;
-  /** Called when the player has seen the loot reveal. */
-  onRevealSeen: (week: string) => void;
-  /** Opens the replay of the finished finale (it closes this view first). */
-  onReplay: (week: string, party: number) => void;
-  season?: { weekId: string; season: RaidView['season'] } | null;
-  view?: Pick<RaidView, 'weekId' | 'boss' | 'effectiveRank'> | null;
 }) {
   const [snapshot, setSnapshot] = useState<LiveSnapshotV2 | null>(initial);
   const [pollError, setPollError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [dismissed, setDismissed] = useState(false);
   const latest = useRef<LiveSnapshotV2 | null>(initial);
   /** Server clock minus local clock, from the newest snapshot. */
   const offset = useRef(0);
@@ -72,6 +65,7 @@ export function LiveV2({
   // The poll (every 2 s and after each round boundary, or a slow safety poll while the socket delivers) and the socket on top of it.
   const poller = useRef<FinalePoller<LiveSnapshotV2> | null>(null);
   useEffect(() => {
+    if (!enabled) return undefined;
     const next = createFinalePoller<LiveSnapshotV2>({
       fetchSnapshot: fetchLiveV2,
       accept,
@@ -90,8 +84,8 @@ export function LiveV2({
       next.stop();
       poller.current = null;
     };
-  }, []);
-  const target = finaleSocketTarget(finaleLiveOffered(), snapshot);
+  }, [enabled]);
+  const target = enabled ? finaleSocketTarget(finaleLiveOffered(), snapshot) : null;
   const targetKey = target === null ? null : `${target.week}:${String(target.party)}`;
   useEffect(() => {
     const active = poller.current;
@@ -134,6 +128,35 @@ export function LiveV2({
       setBusy(false);
     }
   }
+
+  return { snapshot, pollError, actionError, busy, serverNow, act };
+}
+
+export function LiveV2({
+  initial,
+  onClose,
+  onBalanceChange,
+  onRevealSeen,
+  onReplay,
+  season = null,
+  view = null,
+}: {
+  initial: LiveSnapshotV2 | null;
+  onClose: () => void;
+  /** Called when the Essence balance may have changed. */
+  onBalanceChange: () => void;
+  /** Called when the player has seen the loot reveal. */
+  onRevealSeen: (week: string) => void;
+  /** Opens the replay of the finished finale (it closes this view first). */
+  onReplay: (week: string, party: number) => void;
+  season?: { weekId: string; season: RaidView['season'] } | null;
+  view?: Pick<RaidView, 'weekId' | 'boss' | 'effectiveRank'> | null;
+}) {
+  const [dismissed, setDismissed] = useState(false);
+  const { snapshot, pollError, actionError, busy, serverNow, act } = useLiveFinaleV2({
+    initial,
+    onBalanceChange,
+  });
 
   const back = <DrillHead title="Finale" onBack={onClose} backLabel="to the raid" />;
   const errors = pollError !== null && <Alert level="alert">{pollError}</Alert>;

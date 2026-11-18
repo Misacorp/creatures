@@ -114,6 +114,26 @@ export interface ReplayViewV2 {
   carry: FightCarryV2;
 }
 
+/**
+ * A stage that is still playing (`GET /api/raid/replay/...` while its window runs): the events of the rounds that have started, no `end`
+ * event, and none of the outcome (`rounds`, `cleared`, `kill`, `bossHpEnd`, `carry`) or the seed. Ask again at `nextRoundAt`; after the
+ * stage ends the same route answers the full `ReplayViewV2`.
+ */
+export type PlayingReplayV2 = Omit<
+  ReplayViewV2,
+  'rounds' | 'cleared' | 'kill' | 'bossHpEnd' | 'carry'
+> & {
+  playing: true;
+  startsAt: number;
+  roundMs: number;
+  /** The round the clock is in. */
+  round: number;
+  nextRoundAt: number;
+};
+
+export const isPlayingReplay = (value: unknown): boolean =>
+  isRecord(value) && value['playing'] === true;
+
 export type LiveStatusV2 = 'none' | 'lobby' | 'live' | 'done';
 
 /** The caller's one live input and what they did with it. */
@@ -437,6 +457,41 @@ export function parseReplayV2(data: unknown): ReplayViewV2 {
   return { ...(data as unknown as ReplayViewV2), boss, carry };
 }
 
+/** A replay that may still be playing: the full stage, or the playing one (`isPlayingReplay` tells them apart). */
+export function parseReplayStateV2(data: unknown): ReplayViewV2 | PlayingReplayV2 {
+  if (!isPlayingReplay(data)) return parseReplayV2(data);
+  const fail = (): never => {
+    throw new Error('the server returned an unexpected replay');
+  };
+  if (!isRecord(data) || data['rules'] !== 2) return fail();
+  const boss = bossOf(data['boss']);
+  if (
+    boss === null ||
+    !isStr(data['weekId']) ||
+    !isCount(data['party']) ||
+    !isStr(data['phase']) ||
+    !PHASES.includes(data['phase']) ||
+    !isCount(data['stage']) ||
+    !isInt(data['at']) ||
+    !isStrRecord(data['moveNames']) ||
+    !isCard(data['card']) ||
+    !isCount(data['bossHpMax']) ||
+    !isInt(data['bossHpStart']) ||
+    !isNullableStr(data['you']) ||
+    !isArrayOf(data['fighters'], isCreature) ||
+    data['actions'] !== null ||
+    !isArrayOf(data['events'], isFightEventV2) ||
+    !isNames(data['names']) ||
+    !isInt(data['startsAt']) ||
+    !isCount(data['roundMs']) ||
+    !isCount(data['round']) ||
+    !isInt(data['nextRoundAt'])
+  ) {
+    return fail();
+  }
+  return { ...(data as unknown as PlayingReplayV2), boss };
+}
+
 export function parseLiveV2(data: unknown): LiveSnapshotV2 {
   const fail = (): never => {
     throw new Error('the server returned an unexpected finale state');
@@ -600,6 +655,16 @@ export async function fetchReplayV2(
 ): Promise<ReplayViewV2> {
   const path = `/api/raid/replay/${encodeURIComponent(weekId)}/${String(party)}/${phase}`;
   return parseReplayV2(await apiFetch(path));
+}
+
+/** A stored stage that may still be playing (see `PlayingReplayV2`). */
+export async function fetchReplayStateV2(
+  weekId: string,
+  party: number,
+  phase: FightPhaseV2,
+): Promise<ReplayViewV2 | PlayingReplayV2> {
+  const path = `/api/raid/replay/${encodeURIComponent(weekId)}/${String(party)}/${phase}`;
+  return parseReplayStateV2(await apiFetch(path));
 }
 
 export async function fetchStatsV2(

@@ -5,6 +5,7 @@ import {
   CLEARED_GLYPH,
   earlyKillStage,
   MISSED_GLYPH,
+  replayOnCanvas,
   showFullResults,
   stepMark,
   stepMarks,
@@ -83,5 +84,24 @@ describe('toggleMark', () => {
     expect(toggleMark(null, 'phase1')).toBe('phase1');
     expect(toggleMark('phase1', 'phase1')).toBeNull();
     expect(toggleMark('phase1', 'phase2')).toBe('phase2');
+  });
+});
+
+describe('replayOnCanvas', () => {
+  const week = (nextStage: number, ...results: PhaseResultView[]) => ({
+    weekId: '2026-W46',
+    rules: 2 as const,
+    v2: { nextStage },
+    party: { results },
+  });
+
+  it('plays this week of a v2 raid on the canvas: the finale, or the stage that killed early', () => {
+    expect(replayOnCanvas(week(4, result('finale', true)), '2026-W46')).toBe('finale');
+    expect(replayOnCanvas(week(4, result('phase2', true)), '2026-W46')).toBe('phase2');
+  });
+
+  it('leaves an older week and a v1 week on the replay page', () => {
+    expect(replayOnCanvas(week(4, result('finale', true)), '2026-W45')).toBeNull();
+    expect(replayOnCanvas({ weekId: '2026-W46', party: { results: [] } }, '2026-W46')).toBeNull();
   });
 });

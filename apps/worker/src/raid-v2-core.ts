@@ -20,6 +20,7 @@ import {
   type BossDef,
   type Shipped,
   type StageCarry,
+  RAID_ROUNDS,
   type StageInputV2,
 } from '@creatures/engine/v2';
 import { RULES } from '@creatures/game';
@@ -281,4 +282,116 @@ export function hasFoughtThisWeekend(sql: SqlStorage, creatureId: string): boole
     if (Object.hasOwn(carry.hp, creatureId) || carry.out.includes(creatureId)) return true;
   }
   return false;
+}
+
+// --- Stages that play as they happen ---
+
+/** Where a stored stage 1 or 2 stands in its playing window (see `stagePlaying`). */
+export interface StagePlaying {
+  /** When the stage began (its result row's `created_at`). */
+  startsAt: number;
+  roundMs: number;
+  /** The round the clock is in, 1..rounds. */
+  round: number;
+  /** When the next round starts; after the last round, when the stage ends (`endsAt`). */
+  nextRoundAt: number;
+  endsAt: number;
+}
+
+/** The part of a stored summary the playing window reads. */
+interface WindowSummary {
+  rounds: number;
+  v2?: { windowRounds?: number } | undefined;
+}
+
+/**
+ * The rounds a stage's playing window lasts: the boss's **full** round count (`boss.rounds` of the stored input, kept in the summary), not the
+ * rounds it played. A stage that ended early (a kill, a wipe) simply has no more events after its last round, so the window's length never
+ * gives the outcome away (Misa, 2026-11-16). A row stored before `windowRounds` falls back to the rounds it played.
+ */
+export function windowRoundsOf(summary: WindowSummary): number {
+  return summary.v2?.windowRounds ?? summary.rounds;
+}
+
+/**
+ * Stages 1 and 2 resolve at their time but play as they happen (Misa, 2026-11-16): a stored stage is playing from its `created_at` until
+ * `created_at + windowRounds * liveRoundMs` (`windowRoundsOf`). The one place that window is worked out; null once it has ended. No timer:
+ * every read works it out from the clock.
+ */
+export function stagePlaying(
+  createdAt: number,
+  windowRounds: number,
+  now: number,
+): StagePlaying | null {
+  const rounds = windowRounds;
+  const roundMs = RULES.raid.v2.liveRoundMs;
+  const endsAt = createdAt + rounds * roundMs;
+  if (rounds < 1 || now >= endsAt) return null;
+  const round = Math.min(rounds, Math.max(1, Math.floor((now - createdAt) / roundMs) + 1));
+  return {
+    startsAt: createdAt,
+    roundMs,
+    round,
+    nextRoundAt: round < rounds ? createdAt + round * roundMs : endsAt,
+    endsAt,
+  };
+}
+
+/** The longest a window can be: no stage row older than this is playing (the cheap SQL predicate of `playingRows`). */
+const MAX_WINDOW_MS = RAID_ROUNDS * RULES.raid.v2.liveRoundMs;
+
+/** True if a stored stage row (its `created_at` and `summary` text) is inside its playing window at `now`. */
+export function rowPlaying(row: { created_at: number; summary: string }, now: number): boolean {
+  const summary = JSON.parse(row.summary) as WindowSummary;
+  return stagePlaying(row.created_at, windowRoundsOf(summary), now) !== null;
+}
+
+/** The stage rows of a week's party (or of every party: null) that are inside their playing window. Only recent rows are read. */
+function playingRows(
+  sql: SqlStorage,
+  weekId: string,
+  party: number | null,
+  now: number,
+): { party: number; input: string }[] {
+  return sql
+    .exec<{ party: number; summary: string; created_at: number; input: string }>(
+      `SELECT party, summary, created_at, input FROM raid_results
+       WHERE week_id = ? AND (? IS NULL OR party = ?) AND phase IN ('stage1', 'stage2')
+         AND input <> '' AND created_at > ?`,
+      weekId,
+      party,
+      party,
+      now - MAX_WINDOW_MS,
+    )
+    .toArray()
+    .filter((r) => rowPlaying(r, now));
+}
+
+/** True while a stage of this party is playing as it happens: the party's board is locked (409 `stage_playing`). */
+export function boardPlaying(sql: SqlStorage, weekId: string, party: number, now: number): boolean {
+  return playingRows(sql, weekId, party, now).length > 0;
+}
+
+/**
+ * The creatures that stand in a stage that is playing as it happens (in the latest v2 week): their Knack, talents and gear are locked
+ * (409 `stage_playing`) so the board stays as it stood. Two small reads when nothing plays; load it once per call.
+ */
+export function creaturesInPlayingStage(sql: SqlStorage, now: number): Set<string> {
+  const out = new Set<string>();
+  const week = sql
+    .exec<{
+      week_id: string;
+      rules_version: number;
+    }>('SELECT week_id, rules_version FROM raid_weeks ORDER BY week_id DESC LIMIT 1')
+    .toArray()[0];
+  if (week === undefined || week.rules_version !== 2) return out;
+  for (const r of playingRows(sql, week.week_id, null, now)) {
+    for (const f of (JSON.parse(r.input) as StageInputV2).fighters) out.add(f.key ?? f.uid);
+  }
+  return out;
+}
+
+/** True while the creature stands in a stage that is playing as it happens (see `creaturesInPlayingStage`). */
+export function creatureInPlayingStage(sql: SqlStorage, creatureId: string, now: number): boolean {
+  return creaturesInPlayingStage(sql, now).has(creatureId);
 }

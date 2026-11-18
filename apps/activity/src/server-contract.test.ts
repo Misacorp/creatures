@@ -146,7 +146,9 @@ import type { StartJobRequest } from './gear-types';
 import { errorText } from './game';
 import { autoFireTarget, buildAction } from './live';
 import { sendLiveAction, startPractice } from './live-api';
-import { parseLiveV2, parseReplayV2, parseStatsV2 } from './fight-v2-api';
+import { parseLiveV2, parseReplayStateV2, parseReplayV2, parseStatsV2 } from './fight-v2-api';
+import v2RaidStage1Playing from './fixtures/v2-raid-stage1-playing.json';
+import v2ReplayPlaying from './fixtures/v2-replay-playing.json';
 import { parseRaidView } from './raid-api';
 import { fetchStats, markRevealSeen, setRaidAbility, setRaidAutofire } from './raid-api';
 
@@ -1424,6 +1426,22 @@ describe('combat v2 payloads, captured from the server (`pnpm fixtures:capture -
     const after = parseRaidView(v2RaidStage1);
     expect(after.v2?.stagesPlayed).toBe(1);
     expect(after.party?.results.length).toBe(1);
+  });
+
+  it('reads a stage that is still playing: the week view as it stood, and the replay so far', () => {
+    const view = parseRaidView(v2RaidStage1Playing);
+    expect(view.v2?.playing).toMatchObject({ stage: 1 });
+    expect(view.v2?.stagesPlayed).toBe(0);
+    expect(view.party?.results).toEqual([]);
+    const board = view.v2?.creatures[0];
+    expect(board?.role).toBeTruthy();
+    expect(board?.talents.length).toBeGreaterThan(0);
+    const replay = parseReplayStateV2(v2ReplayPlaying);
+    expect('playing' in replay && replay.playing).toBe(true);
+    expect(replay.events.length).toBeGreaterThan(0);
+    // The strict parser of a played stage refuses it: it has no outcome yet.
+    expect(() => parseReplayV2(v2ReplayPlaying)).toThrow('unexpected replay');
+    expect(parseReplayStateV2(v2Replay)).toHaveProperty('rounds');
   });
 
   it('reads a stored stage, its after-action stats and the live finale', () => {

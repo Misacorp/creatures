@@ -44,6 +44,7 @@ import {
   setItemLines,
 } from './gear-store';
 import { runKeyed, settleSpend } from './keyed-action';
+import { creatureInPlayingStage } from './raid-v2-core';
 import { spend, type LedgerStorage } from './ledger';
 import { GameError, atomically, type Outcome } from './outcome';
 import { addDays, zonedTimeToEpoch } from './time';
@@ -326,6 +327,12 @@ export class ValleyVisitor {
           const item = findItem(this.sql, userId, input.itemId);
           const base = item === undefined ? undefined : gearBase(item.base_id);
           if (item === undefined || base === undefined) throw new GameError(404, 'not_found');
+          if (
+            item.equipped_on !== null &&
+            creatureInPlayingStage(this.sql, item.equipped_on, this.deps.now())
+          ) {
+            throw new GameError(409, 'stage_playing');
+          }
           const mine = this.deps.weeks.playerRow(userId, now.weekKey);
           const price = priceOf(rerollPrice(VALLEY_RULES, item.item_level, mine.rerolls));
           const grant = (): RerollResult => {

@@ -6,6 +6,7 @@ import { jackpotEssenceFor } from '@creatures/game';
 import { readFestivalGrant, type FestivalGrantView } from './raid-festival';
 import { payoutWeek, rankChangeOf, type RankChangeView } from './raid-ladder';
 import type { StoredSummary } from './raid-resolve';
+import { rowPlaying } from './raid-v2-core';
 
 export interface RevealView {
   week: string;
@@ -41,19 +42,21 @@ export function totalEssenceOf(
 
 /**
  * The finales (newest first) whose stored summary lists the user, with that summary. On a combat v2 week the boss can fall in stage 1 or
- * 2 and nothing more is fought: the stage that killed it counts as that party's finale (its `v2.kill` is set).
+ * 2 and nothing more is fought: the stage that killed it counts as that party's finale (its `v2.kill` is set), but only once it has been
+ * played out: a stage still playing as it happens (`rowPlaying`) gives nothing away.
  */
 function finalesOf(
   sql: SqlStorage,
   userId: string,
   limit = Number.POSITIVE_INFINITY,
   sinceWeek = '',
+  now = Number.POSITIVE_INFINITY,
 ): { weekId: string; party: number; summary: StoredSummary }[] {
   const out: { weekId: string; party: number; summary: StoredSummary }[] = [];
   // The text match only narrows the rows; the parsed member list decides.
   const rows = sql
-    .exec<{ week_id: string; party: number; phase: string; summary: string }>(
-      `SELECT week_id, party, phase, summary FROM raid_results
+    .exec<{ week_id: string; party: number; phase: string; summary: string; created_at: number }>(
+      `SELECT week_id, party, phase, summary, created_at FROM raid_results
        WHERE week_id >= ? AND instr(summary, ?) > 0
          AND (phase = 'finale' OR (phase IN ('stage1', 'stage2') AND instr(summary, '"kill":true') > 0))
        ORDER BY created_at DESC, rowid DESC`,
@@ -63,7 +66,7 @@ function finalesOf(
     .toArray();
   for (const r of rows) {
     const summary = JSON.parse(r.summary) as StoredSummary;
-    const ends = r.phase === 'finale' || summary.v2?.kill === true;
+    const ends = r.phase === 'finale' || (summary.v2?.kill === true && !rowPlaying(r, now));
     if (ends && summary.members.some((m) => m.userId === userId)) {
       out.push({ weekId: r.week_id, party: r.party, summary });
       if (out.length >= limit) break;
@@ -81,8 +84,9 @@ export function latestReveal(
   sql: SqlStorage,
   userId: string,
   sinceWeek: string,
+  now: number,
 ): RevealView | null {
-  const latest = finalesOf(sql, userId, 1, sinceWeek)[0];
+  const latest = finalesOf(sql, userId, 1, sinceWeek, now)[0];
   if (latest === undefined) return null;
   const seen = sql
     .exec('SELECT 1 FROM raid_reveal_seen WHERE user_id = ? AND week_id = ?', userId, latest.weekId)
@@ -109,7 +113,8 @@ export function markRevealSeen(
   weekId: string,
   now: number,
 ): boolean {
-  if (!finalesOf(sql, userId).some((f) => f.weekId === weekId)) return false;
+  if (!finalesOf(sql, userId, Number.POSITIVE_INFINITY, '', now).some((f) => f.weekId === weekId))
+    return false;
   sql.exec(
     'INSERT OR IGNORE INTO raid_reveal_seen (user_id, week_id, seen_at) VALUES (?, ?, ?)',
     userId,

@@ -7,6 +7,7 @@ import { HOUSING_TABLES, housingMigration } from '../src/housing-migration';
 import { MIGRATIONS } from '../src/migrations';
 import { valleyForgeCrowdMigration } from '../src/valley-forge-crowd-migration';
 import { valleyCrateMigration } from '../src/valley-crate-migration';
+import { raidStagePayMigration } from '../src/raid-pay-migration';
 import { valleyTrialsMigration } from '../src/valley-trials-migration';
 import { GuildCore, type GuildCoreOptions } from '../src/guild-core';
 import { DiscordError, type DiscordApi, type GuildApi } from '../src/discord';
@@ -342,8 +343,18 @@ export function undoValleySchoolMigration(sql: SqlStorage): void {
   sql.exec('DELETE FROM schema_version WHERE version = 65');
 }
 
-/** Puts a database back to before migration 69 (the Forge's sealed crate, the last one): its table and the player columns go. */
+/** Puts a database back to before migration 70 (stage rewards held until the replay ends, the last one): its table goes. */
+export function undoRaidStagePayMigration(sql: SqlStorage): void {
+  sql.exec('DROP TABLE IF EXISTS raid_stage_pay');
+  sql.exec(
+    'DELETE FROM schema_version WHERE version = ?',
+    MIGRATIONS.indexOf(raidStagePayMigration) + 1,
+  );
+}
+
+/** Puts a database back to before migration 69 (the Forge sealed crate): its table and the player columns go. */
 export function undoValleyCrateMigration(sql: SqlStorage): void {
+  undoRaidStagePayMigration(sql);
   sql.exec('DROP TABLE IF EXISTS forge_crate');
   for (const column of ['crate_count', 'crate_best']) {
     const has = sql

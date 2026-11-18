@@ -21,6 +21,7 @@ import {
 import { bumpStat } from './expedition-store';
 import { aliasFor, drawSeed, payStage, type ResolveDeps, type StoredSummary } from './raid-resolve';
 import { queueStagePostV2 } from './raid-posts';
+import { deferStagePay, stagePayDueAt } from './raid-v2-pay';
 import { partyMembers } from './raid-roster';
 import type { RaidPhase } from './raid-schedule';
 import { partyPlacements, type PlacementRow } from './raid-teams';
@@ -378,13 +379,33 @@ export function settleStageV2(
     contributionOf.set(f.owner, (contributionOf.get(f.owner) ?? 0) + f.damageDealt);
   }
   const phase = STAGE_EVENT[stage];
-  const { essence, jackpot, userOf } = payStage(deps, week, party, phase, built, {
+  const payFacts = {
     cleared,
-    contribution: (alias) => contributionOf.get(alias) ?? 0,
+    contribution: (alias: string) => contributionOf.get(alias) ?? 0,
     fighters: result.fighters.map((f) => ({ id: f.key ?? f.uid, ownerAlias: f.owner })),
     bossId: input.boss.id,
     v2: { crossed: crossed.map((t) => t.pays), kill: result.won },
-  });
+  };
+  // The finale pays now. A stage 1 or 2 plays out live: what it pays (Essence, experience, scrap, the kill bonus) waits for the end of
+  // its replay (Misa, 2026-11-17), so the facts are stored and `settleDueStagePay` pays them then.
+  const userOf = new Map(aliases.map((alias, i) => [alias, memberIds[i] as string]));
+  let essence: Record<string, number> = {};
+  let jackpot: string[] = [];
+  if (stage === 3) {
+    ({ essence, jackpot } = payStage(deps, week, party, phase, built, payFacts));
+  } else {
+    deferStagePay(sql, week.weekId, party, stagePayDueAt(now, input.boss.rounds), {
+      stage,
+      memberIds: [...memberIds],
+      aliases: [...aliases],
+      cleared,
+      contribution: Object.fromEntries(aliases.map((a) => [a, contributionOf.get(a) ?? 0])),
+      fighters: payFacts.fighters,
+      bossId: input.boss.id,
+      crossed: payFacts.v2.crossed,
+      kill: result.won,
+    });
+  }
   const contributors = aliases
     .map((alias) => ({
       userId: userOf.get(alias) as string,
@@ -413,6 +434,7 @@ export function settleStageV2(
       hpRemovedBp: removedBp,
       // The thresholds this stage paid (each is paid once in the weekend, by the stage that first crosses it) and the kill bonus.
       paid: { thresholds: crossed.map((t) => t.id), killBonus: result.won },
+      windowRounds: input.boss.rounds,
     },
   };
   sql.exec(
