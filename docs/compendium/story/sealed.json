@@ -1,0 +1,103 @@
+{
+  "note": "Word lists for .claude/skills/lore/check.mjs. Patterns are case-insensitive regular expressions matched against player-facing text. Spoilers: see README.md in this folder.",
+  "sealed": [
+    { "pattern": "\\bfirst valley\\b", "fact": "S01", "why": "dev name" },
+    { "pattern": "\\b(the )?walkers\\b", "fact": "S03", "why": "dev name" },
+    { "pattern": "\\bstayers?\\b", "fact": "S03", "why": "dev name" },
+    { "pattern": "\\bway-?lights?\\b", "fact": "S04", "why": "dev name" },
+    { "pattern": "\\blow night\\b", "fact": "S02", "why": "dev name" },
+    { "pattern": "\\bthe clerk\\b", "fact": "S07", "why": "dev name" },
+    { "pattern": "\\bthe roll\\b", "fact": "S09", "why": "dev name" },
+    {
+      "pattern": "\\b(the|a|their|old) promise\\b",
+      "fact": "S03",
+      "why": "names the thing the story is about"
+    },
+    { "pattern": "\\bpromised\\b", "fact": "S03", "why": "names the thing the story is about" },
+    {
+      "pattern": "\\b(come|came|coming|find|found|finding) (their|the|its) way (back|home)\\b",
+      "fact": "S03",
+      "why": "states the purpose of the lights"
+    },
+    {
+      "pattern": "\\b(walked|went|wandered|drifted) (out|off|away) into the (dark|night)\\b",
+      "fact": "S03",
+      "why": "states the leaving"
+    },
+    {
+      "pattern": "\\bfifth (road|arm|arrow|path|way)\\b",
+      "fact": "S08",
+      "why": "show the gap, never count it for the reader"
+    },
+    {
+      "pattern": "\\b(descendants?|ancestors?|forebears?|grandparents?)\\b",
+      "fact": "S11",
+      "why": "states the kinship"
+    },
+    {
+      "pattern": "\\b(kept|keeps|keeping) (a|the) (light|lamp|lantern) (on|lit|burning) for\\b",
+      "fact": "S03",
+      "why": "the one-breath summary"
+    }
+  ],
+  "banned": [
+    {
+      "pattern": "\\b(mysterious|mystery|mysteries|enigma(tic)?|secrets?|riddles?)\\b",
+      "why": "says 'this is a clue' instead of being one"
+    },
+    {
+      "pattern": "\\b(legend|legends|lore|myth|myths|prophecy|prophecies|destiny|fate[ds]?)\\b",
+      "why": "narrator stepping outside the world"
+    },
+    {
+      "pattern": "\\b(long ago|ages ago|in ages past|once upon|time immemorial|in days of old|bygone)\\b",
+      "why": "points at history instead of showing its leftovers"
+    },
+    {
+      "pattern": "\\b(it is said|some say|they say|rumou?r has it|whispers?|whispered|tales? (tell|speak)|stories (tell|speak))\\b",
+      "why": "hearsay with no speaker; pick a voice"
+    },
+    {
+      "pattern": "\\b(forgotten|long-lost|lost to time|shrouded|veiled|untold|unspoken)\\b",
+      "why": "mystery adjectives"
+    },
+    {
+      "pattern": "\\bas (if|though) (it|they|he|she|someone|something) (were |was |had |is |are )?(waiting|remember\\w*|mourn\\w*|griev\\w*|searching|looking for|expecting|missing|longing)",
+      "why": "captions the image with its meaning"
+    },
+    {
+      "pattern": "\\b(perhaps|maybe|who knows|one wonders|you wonder|makes you wonder)\\b",
+      "why": "does the reader's wondering for them"
+    },
+    {
+      "pattern": "\\?\\s*$",
+      "why": "a fragment that ends on a question asks the reader to be curious"
+    },
+    { "pattern": "(\\.\\.\\.|…)", "why": "trailing off" },
+    {
+      "pattern": "\\b(tapestry|testament|echo(es|ed|ing)? of|a reminder (that|of)|bittersweet|poignant|haunting|eerie|ominous|foreboding|beckons?)\\b",
+      "why": "stock prose that states the mood"
+    },
+    {
+      "pattern": "\\b(the ancients|ancients\\b|old ones|the elders|precursors?|forerunners?|first ones|those who came before)\\b",
+      "why": "a name for the first valley; they have none"
+    }
+  ],
+  "rationed": [
+    {
+      "pattern": "\\bnobody (remembers|knows|can say|asks)\\b",
+      "max": 8,
+      "why": "the game's own motif; it stops working if every page uses it"
+    },
+    {
+      "pattern": "\\b(ancient|age-old|timeworn)\\b",
+      "max": 19,
+      "why": "already used 19 times (2026-11-18); no more. Say what it is older than, or show the wear"
+    },
+    {
+      "pattern": "\\balways (been|done|was|has)\\b",
+      "max": 6,
+      "why": "the committee's line; keep it theirs"
+    }
+  ]
+}

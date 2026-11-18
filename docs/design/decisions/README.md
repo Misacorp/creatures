@@ -23,6 +23,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [direction.md](direction.md): Roadmap calls, Misa's standing direction, naming and tone, content policy, how agents and Misa work.
 
+- 2026-11-18 Story is told by allusion: a sealed truth, a clue ledger and a blind reader (the lore skill)
 - 2026-11-15 The reset: the goodbye DM is an embed, the new-valley card is look B \[Misa\]
 - 2026-11-15 Art glows use the game's rarity colours
 - 2026-11-15 \[Misa\] The Forge interior keeps one look for now

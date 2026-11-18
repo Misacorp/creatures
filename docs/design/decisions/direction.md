@@ -4,6 +4,14 @@ Roadmap calls, Misa's standing direction, naming and tone, content policy, how a
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-18: Story is told by allusion: a sealed truth, a clue ledger and a blind reader (the lore skill)
+
+ID: `2026-11-18-story-is-told-by-allusion-a` · Status: current
+
+**Decision.** Story and lore are written with the `lore` skill (`.claude/skills/lore/`). Three parts. (1) Two layers: a hidden story written in full as numbered facts (`docs/compendium/story/truth.md`), and surface fragments that never state a fact; each fragment has one in-world voice and at most one odd detail. (2) A clue ledger (`story/ledger.md`): three clues on three kinds of surface before a fact is meant to be found, one key at most. (3) A blind reader: a fresh agent that has not seen the truth reads each batch and says what it knows, suspects and felt nudged by; the batch is rewritten until nothing sealed is certain. A word check (`check.mjs`) guards the content data. The story advances per server, by milestones the server reaches together, on surfaces the game already has; nothing is missable. The story now in `docs/compendium/story/` is a **draft** used to test the skill: it is not canon and ships nothing until Misa picks a story.
+
+**Reasoning.** Misa (2026-11-18) asked for a slow story the whole server plays through, with depth, and named the problem: Claude "is generally bad at not blurting out everything". Research (`docs/research/worldbuilding.md`): omission only works over a complete hidden truth; fragment lore works through partial voices, repeated names and redundancy. Our test (`story/README.md`, "Test rounds"): a writer told only to allude stated a sealed fact outright; with the skill none did, and the blind reader caught what the writers could not see in their own text. The word check alone caught nothing, so the reader is the gate.
+
 ## 2026-11-15: The reset: the goodbye DM is an embed, the new-valley card is look B **[Misa]**
 
 ID: `2026-11-15-the-reset-the-goodbye-dm-is` · Status: current
