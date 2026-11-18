@@ -643,3 +643,16 @@
 .wb-valley main.card:has(.vy-frame) {
   height: 780px;
 }
+
+/* The raid canvas fills its window in the game; on this page it is a frame of a fixed height with the game's page around it. */
+.wb-raid-canvas {
+  display: flex;
+  flex-direction: column;
+  height: 780px;
+  background: var(--night);
+}
+
+.wb-raid-canvas > .vy-page {
+  flex: 1;
+  min-height: 0;
+}

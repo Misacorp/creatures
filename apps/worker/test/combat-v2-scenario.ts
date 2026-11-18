@@ -9,14 +9,14 @@
  * Knacks, on easy foes, who starts a run and plays its first room.
  */
 import { combatV2, knownKnacks } from '@creatures/game/combat-v2';
-import { createSeededRng } from '@creatures/game';
+import { RULES, createSeededRng } from '@creatures/game';
 import { grantFirstTalent } from '../src/talent-v2-store';
 import { dungeonPlayer } from './dungeon-helpers';
 import { createRecorder, type Captured } from './fixture-contract';
 import type { CoreContext } from './helpers';
 import { sessionCaller } from './kit';
 import { HELSINKI, joinRaid, rows } from './raid-helpers';
-import { V2_WEEK, v2Player } from './raid-v2-helpers';
+import { V2_WEEK, finishPlaying, v2Player } from './raid-v2-helpers';
 
 /** The rngs and flags the scenario's guilds must be built with, so the output is the same every time. */
 export const combatV2ScenarioOptions = () => ({
@@ -47,6 +47,16 @@ export async function runV2RaidScenario(ctx: CoreContext): Promise<Captured> {
 
   ctx.clock.t = V2_WEEK.stage1 + 30_000;
   ctx.core.raid.runDue(HELSINKI);
+  // The stage plays as it happens: in its second round the view and the replay show the party as it stood and the rounds so far.
+  const stage1 = rows<{ created_at: number; summary: string }>(
+    ctx.sql,
+    "SELECT created_at, summary FROM raid_results WHERE phase = 'stage1'",
+  )[0];
+  if (stage1 === undefined) throw new Error('stage 1 did not resolve');
+  ctx.clock.t = stage1.created_at + RULES.raid.v2.liveRoundMs + 1000;
+  await record('v2-raid-stage1-playing', 'GET', '/api/raid');
+  await record('v2-replay-playing', 'GET', `/api/raid/replay/${V2_WEEK.id}/1/stage1`);
+  finishPlaying(ctx);
   await record('v2-raid-stage1', 'GET', '/api/raid');
   await record('v2-replay', 'GET', `/api/raid/replay/${V2_WEEK.id}/1/stage1`);
   await record('v2-stats', 'GET', `/api/raid/stats/${V2_WEEK.id}/1/stage1`);

@@ -1,8 +1,9 @@
 // Helpers of the combat v2 raid tests: players with v2 talents and Knacks, the weekend's clock and what a stage stored.
-import { createSeededRng } from '@creatures/game';
+import { RULES, createSeededRng } from '@creatures/game';
 import { knownKnacks } from '@creatures/game/combat-v2';
 import type { StageCarry } from '@creatures/engine/v2';
 import { grantFirstTalent } from '../src/talent-v2-store';
+import { windowRoundsOf } from '../src/raid-v2-core';
 import type { CoreContext } from './helpers';
 import { rows, seedPlayer, type SeedOptions, type Seeded } from './raid-helpers';
 
@@ -106,4 +107,18 @@ export function setBossHp(sql: SqlStorage, hp: number, party = 1, weekId = V2_WE
     weekId,
     party,
   );
+}
+
+/**
+ * Moves the fake clock to the end of every stage that is playing as it happens (stages 1 and 2 are revealed round by round from the moment
+ * they resolve): from then on the replay, the week view and the stats show the outcome. Never moves it back.
+ */
+export function finishPlaying(ctx: Pick<CoreContext, 'sql' | 'clock'>): void {
+  for (const r of rows<{ summary: string; created_at: number }>(
+    ctx.sql,
+    "SELECT summary, created_at FROM raid_results WHERE phase IN ('stage1', 'stage2')",
+  )) {
+    const rounds = windowRoundsOf(JSON.parse(r.summary) as Parameters<typeof windowRoundsOf>[0]);
+    ctx.clock.t = Math.max(ctx.clock.t, r.created_at + rounds * RULES.raid.v2.liveRoundMs);
+  }
 }

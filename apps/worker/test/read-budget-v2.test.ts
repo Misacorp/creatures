@@ -7,16 +7,19 @@
 // file of its own because the guild is seeded once per file.
 import { describe, expect, it } from 'vitest';
 import { playV2Day, scaleV2Foes } from './dungeon-v2-reads';
+import { RULES } from '@creatures/game';
 import { MINUTE } from './raid-helpers';
+import { V2_WEEK } from './raid-v2-helpers';
+import { windowRoundsOf } from '../src/raid-v2-core';
 import { expectReadsUnder, type ReadReport } from './read-meter';
-import { boardSwap, callAs, inGuild, seedWorld, userId } from './read-world';
+import { GUILD_ID, boardSwap, callAs, inGuild, seedWorld, userId } from './read-world';
 
 /** Budgets, rows read per call (the measured value is in the comment). */
 const BUDGET_V2 = {
   '/api/state': 900, // measured 607: the creature page load with the flag on (465 in the v1 world; the v2 books and learned talents add 2 statements, about 140 rows)
   knack: 650, // measured 435: saving a Knack, which answers with the state (the Knack itself is 3 statements)
   learn: 680, // measured 454: learning a talent for Bait (the ledger spend, the book check, the insert), and the state
-  '/api/raid': 780, // measured 517: a v2 week with 15 players and three placed creatures each (the track's boss, the carry row, the open swap requests of the caller, one load of the board's creatures with their talents and gear lines for the board and the move preview; no readiness band)
+  '/api/raid': 780, // measured 744 (517 when set; 743 before the stage-playing check, which adds one row; the board's talents and worn gear come from the loads that were already there): a v2 week with 15 players and three placed creatures each (the track's boss, the carry row, the open swap requests of the caller, one load of the board's creatures with their talents and gear lines for the board and the move preview; no readiness band)
   board: 170, // measured 110: one placement (a swap of two creatures, without the view) with a teammate's board socket open on a v2 week
   ask: 135, // measured 87: a swap request (the party's two slots, the caller's open requests, the insert) and the answer's list
   accept: 90, // measured 57: accepting a request (the request by its indexes, both slots, the move)
@@ -158,6 +161,122 @@ describe('read budget: combat v2', () => {
   }, 60_000);
 });
 
+/** Budgets of a stage that plays as it happens, rows read per call (the measured value is in the comment). */
+const BUDGET_PLAYING = {
+  '/api/raid': 920, // measured 614: the same week view as the open one (the stage's input is read once more for the board as it stood) in the 15-player party of 45 creatures
+  replay: 190, // measured 128 (90 of them the shiny check of the stage's 45 fighters, 15 the players' names); no query for the clock: the window comes from the stored row
+  afterReplay: 190, // measured 128: the played stage's replay is the same call
+} as const;
+
+describe('read budget: a stage that plays as it happens', () => {
+  it('measures the week view and the replay while stage 1 plays, and ten players watching it', async () => {
+    await inGuild(
+      async (env) => {
+        const { metered, clock } = env;
+        const world = await seedWorld(env, { combatV2: true });
+        const { core } = world;
+        clock.t = V2_WEEK.stage1 + 30_000;
+        await core.alarm();
+        // The sessions of a Monday are over by Saturday: the ten watchers log in again.
+        const secrets = new Map<string, string>();
+        for (let p = 1; p <= 10; p++) {
+          secrets.set(
+            userId(p),
+            await core.createSession(GUILD_ID, {
+              id: userId(p),
+              displayName: `Player ${String(p)}`,
+            }),
+          );
+        }
+        const created = metered.sql
+          .exec<{ created_at: number; summary: string }>(
+            "SELECT created_at, summary FROM raid_results WHERE phase = 'stage1' LIMIT 1",
+          )
+          .one();
+        const summary = JSON.parse(created.summary) as {
+          rounds: number;
+          v2?: { windowRounds?: number };
+        };
+        // The window is the boss's full length (the stage may have played fewer rounds).
+        const rounds = windowRoundsOf(summary);
+        const path = `/api/raid/replay/${V2_WEEK.id}/1/stage1`;
+        clock.t = created.created_at + 1000;
+        // Warm: the session and the day's first-call work.
+        await callAs(core, secrets, 1, '/api/raid');
+        const view = (await metered.measure(() => callAs(core, secrets, 1, '/api/raid'))).reads;
+        const first = await metered.measure(() => callAs(core, secrets, 1, path));
+        expect(first.result).toMatchObject({ playing: true });
+        // Ten watchers fetch the replay at the start of every round (the client's `nextRoundAt`), never on a poll.
+        let watching = 0;
+        let worst = 0;
+        // Measured: 10 watchers x 6 rounds = 60 fetches, 7,756 rows (worst call 132). A real stage is about 9 rounds: about 11,600 rows a stage.
+        for (let r = 0; r < rounds; r++) {
+          clock.t = created.created_at + r * RULES.raid.v2.liveRoundMs + 1000;
+          for (let p = 1; p <= 10; p++) {
+            const m = await metered.measure(() => callAs(core, secrets, p, path));
+            watching += m.reads.total;
+            worst = Math.max(worst, m.reads.total);
+          }
+        }
+        clock.t = created.created_at + rounds * RULES.raid.v2.liveRoundMs;
+        // The first touch after the end pays the stage (measured in its own case below); the replay is measured after it.
+        core.raid.settleDueLive();
+        const after = await metered.measure(() => callAs(core, secrets, 1, path));
+        expect(after.result).toMatchObject({ rounds: summary.rounds });
+        expect(worst).toBeLessThanOrEqual(BUDGET_PLAYING.replay);
+        // Ten watchers over a whole stage stay a small share of the day's allowance.
+        expect(watching).toBeLessThanOrEqual(rounds * 10 * BUDGET_PLAYING.replay);
+        expectReadsUnder('v2 /api/raid while a stage plays', view, BUDGET_PLAYING['/api/raid']);
+        expectReadsUnder('v2 replay while a stage plays', first.reads, BUDGET_PLAYING.replay);
+        expectReadsUnder('v2 replay of a played stage', after.reads, BUDGET_PLAYING.afterReplay);
+      },
+      { fresh: true },
+    );
+  }, 60_000);
+});
+
+/** Budgets of the gear lock while a stage plays (a refused equip and Equip best of a whole party), rows read per call. */
+const BUDGET_LOCK = {
+  equip: 40, // measured 26: a refused equip (the item, the creature, one week read and one filtered scan of the recent stage rows)
+  equipBest: 47, // measured 31 for seven creatures (43 when the lock scanned once per creature): the playing creatures are read once per call
+} as const;
+
+describe('read budget: the lock of a stage that plays as it happens', () => {
+  it('reads the playing creatures once for an Equip best of many creatures and once for one equip', async () => {
+    await inGuild(
+      async (env) => {
+        const { metered, clock } = env;
+        const world = await seedWorld(env, { combatV2: true });
+        const { core, creatures } = world;
+        clock.t = V2_WEEK.stage1 + 30_000;
+        await core.alarm();
+        const secrets = new Map<string, string>();
+        secrets.set(
+          userId(1),
+          await core.createSession(GUILD_ID, { id: userId(1), displayName: 'Player 1' }),
+        );
+        const all = creatures[userId(1)] ?? [];
+        const mine = all.slice(0, 3);
+        // Six creatures that stand in no stage, then one that does: the lock checks every one before it refuses.
+        const team = [...all.slice(3, 9), mine[0]];
+        const refused = (path: string, body: unknown) =>
+          metered.measure(() =>
+            callAs(core, secrets, 1, path, { method: 'POST', body }).catch((e: unknown) => e),
+          );
+        const gear = (await callAs(core, secrets, 1, '/api/gear')) as { items?: { id: string }[] };
+        const item = gear.items?.[0]?.id ?? 'x';
+        const equip = await refused(`/api/gear/${item}/equip`, { creatureId: mine[0] });
+        const best = await refused('/api/gear/equip-best', { creatureIds: team });
+        expect(String(equip.result)).toContain('409');
+        expect(String(best.result)).toContain('409');
+        expectReadsUnder('equip while a stage plays', equip.reads, BUDGET_LOCK.equip);
+        expectReadsUnder('equip best while a stage plays', best.reads, BUDGET_LOCK.equipBest);
+      },
+      { fresh: true },
+    );
+  }, 60_000);
+});
+
 describe('read budget: the dungeon on combat v2', () => {
   it('measures a v2 run: its start, a room, the camp, the other acts and the replay', async () => {
     const restore = scaleV2Foes(500, 500);
@@ -197,5 +316,57 @@ describe('read budget: the dungeon on combat v2', () => {
     } finally {
       restore();
     }
+  }, 60_000);
+});
+
+/** Budgets of the stage rewards held until the replay ends, rows read per call (the measured value is in the comment). */
+const BUDGET_PAY = {
+  held: 9, // measured 6: the whole check of a request (the unresolved finales' two queries and the held payouts' one) while a payout is held but not due: the index finds no row
+  idle: 9, // measured 6: the same with nothing held (the table is empty: no row read)
+  pay: 1150, // measured 768: paying one stage to 15 players with 45 fighting creatures (Essence and experience for each, the threshold scrap, the away lines, the stored summary)
+} as const;
+
+describe('read budget: stage rewards held until the replay ends', () => {
+  it('measures a request with nothing due and the payout of a full party of 15 with three creatures each', async () => {
+    await inGuild(
+      async (env) => {
+        const { metered, clock } = env;
+        const world = await seedWorld(env, { combatV2: true });
+        const { core } = world;
+        clock.t = V2_WEEK.stage1 + 30_000;
+        await core.alarm();
+        const secrets = new Map<string, string>();
+        secrets.set(
+          userId(1),
+          await core.createSession(GUILD_ID, { id: userId(1), displayName: 'Player 1' }),
+        );
+        const created = metered.sql
+          .exec<{ created_at: number; summary: string }>(
+            "SELECT created_at, summary FROM raid_results WHERE phase = 'stage1' LIMIT 1",
+          )
+          .one();
+        const rounds = windowRoundsOf(
+          JSON.parse(created.summary) as Parameters<typeof windowRoundsOf>[0],
+        );
+        const pending = () =>
+          metered.sql.exec<{ n: number }>('SELECT COUNT(*) AS n FROM raid_stage_pay').one().n;
+        expect(pending()).toBe(1);
+        // Held, not due: the check is one index read that finds nothing.
+        clock.t = created.created_at + 1000;
+        await callAs(core, secrets, 1, '/api/raid');
+        const held = await metered.measure(() => Promise.resolve(core.raid.settleDueLive()));
+        expect(pending()).toBe(1);
+        // The first request after the end pays everyone.
+        clock.t = created.created_at + rounds * RULES.raid.v2.liveRoundMs;
+        const pay = await metered.measure(() => Promise.resolve(core.raid.settleDueLive()));
+        expect(pending()).toBe(0);
+        // Nothing left: the check again.
+        const idle = await metered.measure(() => Promise.resolve(core.raid.settleDueLive()));
+        expectReadsUnder('settle check while a payout is held', held.reads, BUDGET_PAY.held);
+        expectReadsUnder('settle check, nothing held', idle.reads, BUDGET_PAY.idle);
+        expectReadsUnder('the payout of a stage for 15 players', pay.reads, BUDGET_PAY.pay);
+      },
+      { fresh: true },
+    );
   }, 60_000);
 });

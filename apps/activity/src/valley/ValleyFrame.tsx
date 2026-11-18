@@ -48,6 +48,8 @@ import { placeLabel } from './valley-logic';
 import { soonLine, type SoonPlaceId, type ValleyView } from './valley-nav';
 import { DEFAULT_LOOK, type GlowName } from './valley-places';
 
+const NO_PLACES: readonly PlaceId[] = [];
+
 /** The sprite of a place that is not open yet. */
 const SOON_ART: Readonly<Record<SoonPlaceId, GlowName>> = {
   bonfire: 'bonfire',
@@ -87,6 +89,7 @@ export function ValleyFrame({
   notices,
   away,
   settings,
+  sceneless = NO_PLACES,
   children,
 }: {
   view: ValleyView;
@@ -124,6 +127,8 @@ export function ValleyFrame({
   housing?: boolean;
   /** The place whose button takes the focus when the map comes back. */
   focus: PlaceId | null;
+  /** Places whose page draws its own scene, so no scene is drawn above it (the Arena while its page is a canvas); default none. */
+  sceneless?: readonly PlaceId[];
   /** Opens a place (from the map, the Places list or the tray). */
   onOpen: (id: PlaceId) => void;
   /** Leaves a place for the valley. */
@@ -168,7 +173,8 @@ export function ValleyFrame({
     hasScene(view.place) &&
     ((view.place !== 'signpost' && view.place !== 'forge') || visit !== null) &&
     // The Paddock is a canvas with the valley's systems on (`PaddockCanvas`, drawn by the game): its yard is its scene.
-    !(view.place === 'paddock' && visit !== null)
+    !(view.place === 'paddock' && visit !== null) &&
+    !sceneless.includes(view.place)
       ? castFor(
           view.place,
           { ...placeInput, ...castExtra, visit },

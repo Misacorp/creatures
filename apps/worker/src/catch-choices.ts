@@ -41,6 +41,7 @@ import {
 } from '@creatures/game';
 import type { Analytics } from './analytics';
 import { creditParts } from './gear-store';
+import { creatureInPlayingStage } from './raid-v2-core';
 import { keyTaken, runKeyed, settleSpend } from './keyed-action';
 import { lookupSpend, spend, type LedgerStorage } from './ledger';
 import { GameError, atomically, type Outcome } from './outcome';
@@ -453,6 +454,10 @@ export class CatchChoices {
       }
       case 'fuse': {
         const target = this.lineCreature(creatures, choice.creatureId);
+        // A player's own Fuse is refused while the creature's stage plays as it happens; the server's choices (auto, Recommended) go on.
+        if (!auto && creatureInPlayingStage(this.sql, target.id, now)) {
+          throw new GameError(409, 'stage_playing');
+        }
         const points = fuseInto(target.fusionPoints, species.rarity);
         if (points === null) throw new GameError(409, 'max_fusions');
         const next = fusionLevel(points);

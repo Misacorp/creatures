@@ -29,6 +29,7 @@ import {
   type WearBlock,
 } from '@creatures/game';
 import { GameError, atomically, type Outcome } from './outcome';
+import { creaturesInPlayingStage } from './raid-v2-core';
 import { dismantleLocks } from './dismantle-worn';
 import { conversionPending, dismissNotice, pendingNotice } from './gear-convert';
 import { grantWelcomeKit, recentGrants } from './gear-grants';
@@ -262,6 +263,14 @@ export class Gear {
     );
   }
 
+  /** Refuses (409 `stage_playing`) a change to creatures that stand in a stage that is playing as it happens. */
+  private assertNotPlaying(ids: readonly (string | null)[]): void {
+    const playing = creaturesInPlayingStage(this.sql, this.deps.now());
+    for (const id of ids) {
+      if (id !== null && playing.has(id)) throw new GameError(409, 'stage_playing');
+    }
+  }
+
   /**
    * Puts an item on a creature, or takes it off with `creatureId` null. One item per slot per
    * creature: the item that was in the slot goes back to the inventory (a swap). An item that was on
@@ -277,6 +286,8 @@ export class Gear {
     return this.atomically(() => {
       const row = ownedItem(this.sql, userId, gearId);
       const creature = creatureId === null ? null : ownedCreature(this.sql, userId, creatureId);
+      // What a creature wears is frozen while its stage plays as it happens (the board stays as it stood).
+      this.assertNotPlaying([creature?.id ?? null, row.equipped_on]);
       // Trip and Workshop lines are read when a trip or job is claimed, so what a creature wears is
       // frozen while it is away or on a job: neither the new wearer nor the one losing the item may be busy.
       if (creature !== null && row.equipped_on !== creature.id) assertNotBusy(this.sql, creature);
@@ -355,6 +366,7 @@ export class Gear {
         return [creature];
       });
       const unique = creatures.map((c) => c.id);
+      this.assertNotPlaying(unique);
       const rows = ownedItems(this.sql, userId);
       const planned = new Set(unique);
       const candidates = rows.filter((r) => r.equipped_on === null || planned.has(r.equipped_on));

@@ -136,6 +136,8 @@ import {
 /** Before the gear view has loaded. */
 const NO_ITEMS: readonly GearItem[] = [];
 const NO_CREATURES: readonly Creature[] = [];
+/** A combat v2 week's raid page is a canvas with its own scene (`RaidCanvas`): the Arena draws none above it. */
+const CANVAS_PLACES: readonly PlaceId[] = ['arena'];
 
 export function Game({
   initial,
@@ -1192,6 +1194,7 @@ export function Game({
       {head}
       <ValleyFrame
         view={view}
+        {...(raidGlance?.rules === 2 ? { sceneless: CANVAS_PLACES } : {})}
         creatures={game.creatures}
         trayInput={{
           trips: game.expeditions,

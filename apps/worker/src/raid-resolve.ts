@@ -137,6 +137,8 @@ export interface StoredSummary {
     hpRemovedBp: number;
     /** What the stage paid: the HP thresholds it crossed first (ids) and whether the kill bonus was paid. Absent in older rows. */
     paid?: { thresholds: string[]; killBonus: boolean };
+    /** The rounds the stage's playing window lasts: the boss's full round count, never the rounds played (`windowRoundsOf`). Absent in older rows. */
+    windowRounds?: number;
   };
 }
 

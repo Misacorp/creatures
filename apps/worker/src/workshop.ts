@@ -81,6 +81,7 @@ import {
 } from './gear-store';
 import { fixFestivalRarity } from './gear-normalise';
 import { dismantleLocks } from './dismantle-worn';
+import { creaturesInPlayingStage } from './raid-v2-core';
 import { gearRulesOf, minusBp } from './gear-worn';
 import { credit, spend } from './ledger';
 import type {
@@ -379,6 +380,13 @@ export class Workshop {
           // the delete below, unless its wearer is away or on a job that reads it live (`dismantle-worn.ts`).
           for (const row of rows) {
             if (openJobHoldsItem(this.sql, row.id)) throw new GameError(409, 'item_in_job');
+          }
+          // What a creature wears is frozen while its stage plays as it happens (the board stays as it stood).
+          const playing = creaturesInPlayingStage(this.sql, this.deps.now());
+          for (const row of rows) {
+            if (row.equipped_on !== null && playing.has(row.equipped_on)) {
+              throw new GameError(409, 'stage_playing');
+            }
           }
           const locked = dismantleLocks(this.sql, userId, rows)[0];
           if (locked !== undefined) throw new GameError(409, 'item_locked');

@@ -28,6 +28,7 @@ const EXPECTED_TABLES = [
   'raid_readiness',
   'raid_results',
   'raid_reveal_seen',
+  'raid_stage_pay',
   'raid_swap_requests',
   'raid_team_cache',
   'raid_teams',

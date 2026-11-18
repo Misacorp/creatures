@@ -46,6 +46,7 @@ import { raidProgressionMigration } from './raid-progression-migration';
 import { valleyMigration } from './valley-migration';
 import { valleyScoutsMigration } from './valley-scouts-migration';
 import { valleyCrateMigration } from './valley-crate-migration';
+import { raidStagePayMigration } from './raid-pay-migration';
 import { valleyForgeMigration } from './valley-forge-migration';
 import { valleyBonfireMigration } from './valley-bonfire-migration';
 import { valleyCommonsMigration } from './valley-commons-migration';
@@ -387,6 +388,8 @@ export const MIGRATIONS: readonly Migration[] = [
   housingMigration,
   // Version 69: the Forge's sealed crate: rare and epic pieces wait until it is opened (see valley-crate-migration.ts).
   valleyCrateMigration,
+  // Version 70: combat v2 stage rewards held until the replay ends (see raid-pay-migration.ts).
+  raidStagePayMigration,
 ];
 
 /** The schema version of a fresh database: the highest version in the list. */

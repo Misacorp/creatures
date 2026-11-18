@@ -10,7 +10,7 @@ import { ON, type Json } from './dev-helpers';
 import type { CoreContext } from './helpers';
 import { sessionCaller } from './kit';
 import { HELSINKI, count, rows, runRaid } from './raid-helpers';
-import { V2_WEEK, v2Player } from './raid-v2-helpers';
+import { V2_WEEK, finishPlaying, v2Player } from './raid-v2-helpers';
 
 const CORE = { ...ON, combatV2: true } as const;
 const LEVEL = 22;
@@ -141,6 +141,7 @@ describe('the raid test bench', () => {
 
         // --- Play stage 1: the replay opens, as the client asks for it ---
         const one = await me.ok('raid-play', { stage: 'stage1' });
+        finishPlaying(ctx);
         expect(one).toMatchObject({
           stage: 1,
           live: false,
@@ -166,6 +167,7 @@ describe('the raid test bench', () => {
 
         // --- Play stage 2 ---
         const two = await me.ok('raid-play', { stage: 'stage2' });
+        finishPlaying(ctx);
         expect(two).toMatchObject({ stage: 2, watch: { phase: 'stage2' } });
         expect(two.bossFell).toBe(false);
         expect((await me.replayOf('stage2')).body).toMatchObject({ phase: 'stage2', stage: 2 });
@@ -247,6 +249,7 @@ describe('the raid test bench', () => {
         expect((await me.place(me.creatureIds[0] as string, 0)).status).toBe(200);
         await me.ok('raid-fill', { count: 3 });
         await me.ok('raid-play', { stage: 'stage1' });
+        finishPlaying(ctx);
         // The view names the stage `stage1`; the client turns it into `phase1` for its own use and back into `stage1` for the route.
         const view = await me.call('GET', '/api/raid');
         const [result] = view.body.party.results;

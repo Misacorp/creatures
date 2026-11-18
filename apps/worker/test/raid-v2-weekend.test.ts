@@ -8,7 +8,14 @@ import { describe, expect, it } from 'vitest';
 import type { CoreContext } from './helpers';
 import type { LiveSnapshotV2, RaidV2Part, ReplayViewV2 } from '../src/raid-v2-view';
 import { HELSINKI, MINUTE, count, joinRaid, rows, runRaid } from './raid-helpers';
-import { V2_WEEK, carryOf, eventsOfKind, setBossHp, v2Player } from './raid-v2-helpers';
+import {
+  V2_WEEK,
+  carryOf,
+  finishPlaying,
+  eventsOfKind,
+  setBossHp,
+  v2Player,
+} from './raid-v2-helpers';
 
 const V2 = { combatV2: true } as const;
 const LEVEL = 22;
@@ -141,6 +148,8 @@ describe('a combat v2 raid weekend', () => {
         });
         expect(ctx.core.raid.needsPlacement(late.id, HELSINKI).needed).toBe(false);
 
+        // The stage played as it happened: its window is over, so the view shows the outcome.
+        finishPlaying(ctx);
         // The carry is in the view: who is out, the stage.
         expect(v2Of(ctx, a.id)).toMatchObject({
           slot: 6,
@@ -359,7 +368,8 @@ describe('a combat v2 raid weekend', () => {
         expect(eventsOfKind(ctx.sql, 'track_change')).toMatchObject([
           { slot: 6, kill: true, determination: 0 },
         ]);
-        // Essence was paid for the stage that finished the boss, through today's settle code.
+        // Essence was paid for the stage that finished the boss (when its replay ended), through today's settle code.
+        ctx.core.raid.settleDueLive();
         expect(count(ctx.sql, 'ledger', "source = 'raid'")).toBeGreaterThan(0);
         // The next week fights the next boss on the track.
         ctx.clock.t = V2_WEEK.next + 60_000;

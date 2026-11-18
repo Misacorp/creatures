@@ -23,6 +23,7 @@ import { rowNameV2, slotAtV2, gridRowsV2 } from './raid-board-v2';
 import { initialOf } from './raid-roster';
 import { ownerColour } from './raid-slots';
 import type { BossCardV2 } from './raid-v2-api';
+import { nextBossMoves } from './next-boss-move';
 import { roundLabel } from './stage-rounds';
 import type { FxItem } from './stage-fx';
 import type { BossStrike } from './stage';
@@ -275,6 +276,13 @@ interface StageV2Props {
   boostLook?: BoostLook;
   /** Drawn over the stage inside its padding, like the effects' layer (the dungeon's room banner); it lets taps through. */
   overlay?: ComponentChildren;
+  /**
+   * The stage drawn on the raid canvas's scene (docs/design/combat/raid-screen.md, 6.5): no head and no turn strip (the round is the now
+   * line's), and the Escalating meter only once it has changed from the card's. Absent: the stage as the replay and the finale draw it.
+   */
+  canvas?: boolean;
+  /** Seats of other players' creatures print no name, level or Knack (the raid canvas's `seatPlates: 'mine'`). */
+  bareOthers?: boolean;
 }
 
 /** The slot of a creature of the fight on the boss's grid (a slot is `col * rows + row`). */
@@ -302,6 +310,8 @@ export function StageV2({
   children,
   boostLook = 'pattern',
   overlay,
+  canvas = false,
+  bareOthers = false,
 }: StageV2Props) {
   const popovers = usePopoverHost();
   const reduced = usePrefersReducedMotion();
@@ -459,6 +469,7 @@ export function StageV2({
         hideNumber: true,
         ariaLabel: parts.join(', '),
         occupant: tileOf(f),
+        ...(bareOthers && !(you !== null && f.owner === you) ? { bare: true } : {}),
         ...(pulse === undefined ? {} : { pulse }),
       };
     }),
@@ -533,11 +544,29 @@ export function StageV2({
 
   // What the boss just did: its move's name over the plain label, or the plain attack.
   const move = landed?.kind === 'boss' ? card.moves.find((m) => m.name === show?.move) : undefined;
-  const moveLine =
-    landed?.kind !== 'boss'
+  const attackLabel = `Attack · ${card.plain.label}`;
+  // On the canvas the line shows the boss's NEXT move, worked out from the card and the round (`next-boss-move.ts`), never the outcome.
+  const next = canvas
+    ? nextBossMoves({
+        card,
+        rows,
+        round: state.round,
+        step: state.step,
+        phase: state.escalation === null ? null : state.escalation.phase,
+      })
+    : undefined;
+  const moveLine = canvas
+    ? state.end !== null
+      ? null
+      : next === null || next === undefined
+        ? attackLabel
+        : next.length === 0
+          ? `Next: ${attackLabel}`
+          : `Next: ${next.map((m) => `${m.name} · ${m.label}`).join(' + ')}`
+    : landed?.kind !== 'boss'
       ? null
       : move === undefined
-        ? `Attack · ${card.plain.label}`
+        ? attackLabel
         : `${move.name} · ${move.label}`;
 
   const art = bossArt(boss.id);
@@ -546,6 +575,9 @@ export function StageV2({
       ? null
       : { ...card.escalation, step: state.escalation?.step ?? card.escalation.step };
   const resisted = state.resistance;
+  // On the canvas the Escalating meter shows only when it has moved from the card's step.
+  const showEscalation =
+    escalation !== null && (!canvas || escalation.step !== (card.escalation?.step ?? 0));
   const strike: BossStrike | null =
     landed?.kind === 'boss' && show !== null && show.bossHit
       ? {
@@ -560,20 +592,22 @@ export function StageV2({
 
   return (
     <section
-      class={single ? 'stage stage-v2 stage-single' : 'stage stage-v2'}
+      class={`${single ? 'stage stage-v2 stage-single' : 'stage stage-v2'}${canvas ? ' stage-canvas' : ''}`}
       aria-label="Fight stage"
       ref={cssVars({ '--beat': '600ms' })}
     >
-      <StageHead
-        place={place}
-        round={
-          state.round > 0
-            ? roundLabel(state.round, rounds)
-            : lobby === true
-              ? 'Get ready'
-              : roundLabel(1, rounds)
-        }
-      />
+      {!canvas && (
+        <StageHead
+          place={place}
+          round={
+            state.round > 0
+              ? roundLabel(state.round, rounds)
+              : lobby === true
+                ? 'Get ready'
+                : roundLabel(1, rounds)
+          }
+        />
+      )}
       <div class="stage-boss">
         <div class="stage-boss-row">
           <div
@@ -605,10 +639,10 @@ export function StageV2({
         {(state.boggedDown > 0 ||
           state.fizzled ||
           resisted !== null ||
-          escalation !== null ||
+          showEscalation ||
           actions.length > 0) && (
           <div class="stage-status">
-            {escalation !== null && <EscalatingMeter {...escalation} />}
+            {showEscalation && escalation !== null && <EscalatingMeter {...escalation} />}
             {state.boggedDown > 0 && (
               <Tag
                 kind="chip"
@@ -644,7 +678,7 @@ export function StageV2({
         )}
       </div>
 
-      <TurnStrip chips={strip} label="One round: the rows and the boss" />
+      {!canvas && <TurnStrip chips={strip} label="One round: the rows and the boss" />}
 
       <RaidBoard
         stripRef={stripRef}

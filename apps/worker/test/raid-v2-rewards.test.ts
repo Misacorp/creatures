@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import type { CoreContext } from './helpers';
 import { crossedThresholds } from '../src/raid-v2-stage';
 import { HELSINKI, count, joinRaid, rows, runRaid } from './raid-helpers';
-import { V2_WEEK, setBossHp, v2Player } from './raid-v2-helpers';
+import { V2_WEEK, finishPlaying, setBossHp, v2Player } from './raid-v2-helpers';
 
 const V2 = { combatV2: true } as const;
 const IDS = RULES.raid.v2.rewards.thresholds.map((t) => t.id);
@@ -85,6 +85,9 @@ describe('the payout of a combat v2 weekend', () => {
         setBossHp(ctx.sql, 5);
         ctx.clock.t = V2_WEEK.stage2 + 30_000;
         ctx.core.raid.runDue(HELSINKI);
+        // What a stage pays lands when its replay ends.
+        finishPlaying(ctx);
+        ctx.core.raid.settleDueLive();
         const one = paidOf(ctx, 'stage1')?.thresholds ?? [];
         const two = paidOf(ctx, 'stage2');
         // Each threshold was paid by exactly one stage, and the kill crossed whatever was left.
@@ -143,6 +146,8 @@ describe('the payout of a combat v2 weekend', () => {
         ctx.core.raid.runDue(HELSINKI);
         const one = paidOf(ctx, 'stage1');
         expect(one).toEqual({ thresholds: IDS, killBonus: true });
+        finishPlaying(ctx);
+        ctx.core.raid.settleDueLive();
         const week = V2_WEEK.id;
         const kill = grants(ctx, `raid:${week}:kill`);
         expect(kill).toHaveLength(4);

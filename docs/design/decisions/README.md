@@ -166,6 +166,8 @@ Superseded: 1 entry (see the topic file).
 
 [combat.md](combat.md): The shared combat engine, abilities, statuses, elements, the balance simulator, balance passes, and combat v2 in the lab.
 
+- 2026-11-16 A playing stage's window is the boss's full length; the lock and the reveal follow it
+- 2026-11-16 Stages 1 and 2 play as they happen: the stored stage is revealed round by round, no new timer \[Misa\]
 - 2026-11-15 Raid replays play at the live finale's pace, fixed \[Misa\]
 - 2026-11-14 Boss animations: lances pass through the whole column; the aim is the board's highlight, no triangle \[Misa\]
 - 2026-11-14 Rename: the Mire debuff is Bogged Down, the Mire mark is Mired \[Misa\]
@@ -258,6 +260,8 @@ Superseded: 1 entry (see the topic file).
 
 [raids.md](raids.md): Raid schedule, parties and joining, bosses and the raid curve, the live finale, raid board and summaries, raid Discord posts.
 
+- 2026-11-17 \[Misa\] Raid screen picks: own seat plates, phone card first, stage rewards when the replay ends
+- 2026-11-16 The raid screen is a canvas behind combat v2 (client build) (amended)
 - 2026-11-04 Combat v2 dungeon runs read no weather at all \[Misa\]
 - 2026-11-04 Combat v2 kill bonus doubled to two epic and four rare pieces \[Misa\]
 - 2026-11-04 Combat v2 phase 5 answers in the game: the small boss, threshold payouts, the kill bonus and no fight weather (amended)

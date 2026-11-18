@@ -7,7 +7,7 @@
  * A creature is named in the board events by its id (`FighterSpec.key`); the views list the creatures of the fight beside the events, so a
  * client folds them into board states. A creature's id is only a handle: every action checks the session's ownership.
  */
-import { RULES, content, seasonOf } from '@creatures/game';
+import { RULES, content, seasonOf, wornEffects, type CreatureSpecies } from '@creatures/game';
 import { combatV2 } from '@creatures/game/combat-v2';
 import type {
   BossDef,
@@ -35,8 +35,12 @@ import {
   gridPlace,
   readPartyCarry,
   readTrack,
+  slotAt,
+  stagePlaying,
+  windowRoundsOf,
   weekendBoss,
   type PartyCarry,
+  type StagePlaying,
 } from './raid-v2-core';
 import {
   DEFAULT_WALL_ROW,
@@ -56,6 +60,9 @@ import {
   type TrackView,
 } from './raid-v2-card';
 import { fighterOf, knackOf, loadV2Creatures, type V2Creature } from './raid-v2-fighters';
+import { wornCardView } from './gear-access';
+import type { WornCardView } from './gear-types';
+import { wearerOf } from './gear-store';
 import {
   displayNames,
   finaleStartedAt,
@@ -133,20 +140,40 @@ export interface RaidV2Part {
   carry: StageCarry | null;
   /** The party's creatures that are out for the weekend. */
   out: { creatureId: string; species: string; name: string; owner: string; mine: boolean }[];
-  /** The board's creatures with their carried HP (null: has not fought yet) and saved Knack. */
-  creatures: {
-    creatureId: string;
-    slot: number;
-    row: number;
-    col: number;
-    hp: number | null;
-    /** Its Max HP, for the carried HP bar (null: not known). */
-    hpMax: number | null;
-    knack: string | null;
-    /** The saved Knack's name (null: none). */
-    knackName: string | null;
-  }[];
+  /** The board's creatures with their carried HP (null: has not fought yet), saved Knack, talents and worn gear. */
+  creatures: BoardCreatureView[];
+  /** Stage 1 or 2 is playing out as it happens (the view then shows the party as it stood before the stage); null otherwise. */
+  playing: PlayingStageView | null;
   swaps: SwapsView;
+}
+
+/** A creature on the board, with what the read-only drawer shows (every party member can see it all: it is what the creature brought). */
+export interface BoardCreatureView {
+  creatureId: string;
+  slot: number;
+  row: number;
+  col: number;
+  hp: number | null;
+  /** Its Max HP, for the carried HP bar (null: not known). */
+  hpMax: number | null;
+  knack: string | null;
+  /** The saved Knack's name (null: none). */
+  knackName: string | null;
+  /** Its role. */
+  role: string;
+  /** The slotted talents in slot order (the ones open at its level); `golden` marks a golden one. */
+  talents: { id: string; golden: boolean; name: string; text: string }[];
+  /** What it wears, in slot order, as item cards. */
+  gear: WornCardView[];
+}
+
+/** A stage that is playing as it happens: the week view's pointer to open the live stage. */
+export interface PlayingStageView {
+  stage: 1 | 2;
+  startsAt: number;
+  roundMs: number;
+  nextRoundAt: number;
+  endsAt: number;
 }
 
 /**
@@ -176,6 +203,68 @@ function previewOf(
     return [fighter];
   });
   return { preview: movePreviewView(boss, fighters, carry, slotOf), maxHp };
+}
+
+/** A stage 1 or 2 inside its playing window (`stagePlaying`), with the board it fought on. */
+interface PlayingStage {
+  phase: 'stage1' | 'stage2';
+  stage: 1 | 2;
+  window: StagePlaying;
+  /** The creatures that stood in it (the knocked-out ones too: their places were freed when it resolved), from the stage's stored input. */
+  placements(rows: number): { slot: number; user_id: string; creature_id: string }[];
+}
+
+/** The party's stage that is playing at `now`, or null. At most two small rows; the finale has its own live path. */
+function playingStageOf(
+  sql: SqlStorage,
+  weekId: string,
+  party: number,
+  now: number,
+): PlayingStage | null {
+  const rows = sql
+    .exec<{ phase: 'stage1' | 'stage2'; summary: string; created_at: number; input: string }>(
+      "SELECT phase, summary, created_at, input FROM raid_results WHERE week_id = ? AND party = ? AND phase IN ('stage1', 'stage2')",
+      weekId,
+      party,
+    )
+    .toArray();
+  for (const row of rows) {
+    if (row.input === '') continue;
+    const summary = JSON.parse(row.summary) as StoredSummary;
+    const window = stagePlaying(row.created_at, windowRoundsOf(summary), now);
+    if (window === null) continue;
+    return {
+      phase: row.phase,
+      stage: row.phase === 'stage1' ? 1 : 2,
+      window,
+      placements: (rows) => {
+        const input = JSON.parse(row.input) as StageInputV2;
+        return input.fighters.flatMap((f) => {
+          const userId = summary.members.find((m) => m.alias === f.owner)?.userId;
+          return userId === undefined
+            ? []
+            : [{ slot: slotAt(f.row, f.col, rows), user_id: userId, creature_id: f.key ?? f.uid }];
+        });
+      },
+    };
+  }
+  return null;
+}
+
+const playingView = (p: PlayingStage): PlayingStageView => ({
+  stage: p.stage,
+  startsAt: p.window.startsAt,
+  roundMs: p.window.roundMs,
+  nextRoundAt: p.window.nextRoundAt,
+  endsAt: p.window.endsAt,
+});
+
+/** The worn items of a creature as cards (no query: the worn rows came with the creature's load). */
+function wornCards(c: V2Creature, species: CreatureSpecies): WornCardView[] {
+  if (c.items.length === 0) return [];
+  const { idle } = wornEffects(wearerOf(species), c.items);
+  const idleSet = new Set(idle);
+  return c.items.map((item) => wornCardView(item, idleSet));
 }
 
 /** A saved Knack's name, or null for none (or one the pack no longer has). */
@@ -357,6 +446,7 @@ export function buildRaidViewV2(
     | 'out'
     | 'creatures'
     | 'preview'
+    | 'playing'
   > = {
     stagesPlayed: 0,
     nextStage: 1,
@@ -369,11 +459,23 @@ export function buildRaidViewV2(
     out: [],
     creatures: [],
     preview: null,
+    playing: null,
   };
   let ability: { abilityId: string; chosen: boolean } | null = null;
   if (shownParty !== null) {
     const members = partyMembers(sql, week.weekId, shownParty);
-    const stored: PartyCarry | null = readPartyCarry(sql, week.weekId, shownParty);
+    const storedNow: PartyCarry | null = readPartyCarry(sql, week.weekId, shownParty);
+    // A stage 1 or 2 that is still playing: the party shows as it stood before it (the server never shows an outcome early).
+    const playingRow = playingStageOf(sql, week.weekId, shownParty, now);
+    const stored: { carry: StageCarry | null; players: number } | null =
+      storedNow === null
+        ? null
+        : playingRow === null
+          ? storedNow
+          : {
+              carry: carryBefore(sql, week.weekId, shownParty, playingRow.phase),
+              players: storedNow.players,
+            };
     const players = stored?.players ?? Math.max(1, members.length);
     // The spare piece stays until stage 1 locks the players (the carry is stored then).
     const spare = stored === null && week.status === 'open';
@@ -381,7 +483,10 @@ export function buildRaidViewV2(
       ? colsFor(players, true, arena)
       : boardCols(sql, week.weekId, shownParty, players, arena);
     const length = rows * cols;
-    const placements = partyPlacements(sql, week.weekId, shownParty, seats);
+    const placements =
+      playingRow === null
+        ? partyPlacements(sql, week.weekId, shownParty, seats)
+        : playingRow.placements(rows);
     // One load for the board and its move preview: the creatures with their slotted talents and gear lines, a few statements however many.
     const creatureOf = loadV2Creatures(
       sql,
@@ -420,10 +525,21 @@ export function buildRaidViewV2(
         slot: p.slot,
         row: place.row,
         col: place.col,
-        hp: stored?.carry.hp[c.id] ?? null,
+        hp: stored?.carry?.hp[c.id] ?? null,
         hpMax: null,
         knack: knack ?? null,
         knackName: knackNameOf(knack ?? null),
+        role: species.role,
+        talents: c.talents.map((id) => {
+          const def = Object.hasOwn(combatV2.talents, id) ? combatV2.talents[id] : undefined;
+          return {
+            id,
+            golden: c.goldenTalents.includes(id),
+            name: def?.name ?? id,
+            text: def?.text ?? '',
+          };
+        }),
+        gear: wornCards(c, species),
       });
       if (isMine) {
         mine.push({
@@ -437,7 +553,7 @@ export function buildRaidViewV2(
     }
     if (myParty !== null) team = { creatures: mine };
     const boss = weekendBoss(slot, effectivePlayers(players, arena));
-    const out = stored === null ? [] : stored.carry.out;
+    const out = stored?.carry?.out ?? [];
     const outRows =
       out.length === 0
         ? []
@@ -454,7 +570,7 @@ export function buildRaidViewV2(
             .toArray()
             // In the order the carry lists them (the order the fight knocked them out), not the order of their random ids.
             .sort((a, b) => out.indexOf(a.id) - out.indexOf(b.id));
-    const stagesPlayed = stored?.carry.stage ?? 0;
+    const stagesPlayed = stored?.carry?.stage ?? 0;
     const pool = sql
       .exec<{ hp_max: number | null; hp_current: number | null }>(
         'SELECT hp_max, hp_current FROM raid_parties WHERE week_id = ? AND party = ?',
@@ -470,6 +586,7 @@ export function buildRaidViewV2(
       )
       .toArray()
       .sort((a, b) => RESULT_PHASES.indexOf(a.phase) - RESULT_PHASES.indexOf(b.phase))
+      .filter((r) => r.phase !== playingRow?.phase)
       .map((r) =>
         stageResultView(
           sql,
@@ -487,16 +604,22 @@ export function buildRaidViewV2(
       row: cells,
       guests: false,
       bossHp:
-        pool === undefined || pool.hp_max === null || pool.hp_current === null
-          ? stored === null
-            ? { max: boss.hp, current: boss.hp }
-            : null
-          : { max: pool.hp_max, current: pool.hp_current },
+        playingRow !== null
+          ? // The HP before the stage that is playing.
+            {
+              max: pool?.hp_max ?? boss.hp,
+              current: stored?.carry?.bossHp ?? pool?.hp_max ?? boss.hp,
+            }
+          : pool === undefined || pool.hp_max === null || pool.hp_current === null
+            ? stored === null
+              ? { max: boss.hp, current: boss.hp }
+              : null
+            : { max: pool.hp_max, current: pool.hp_current },
       adaptation: null,
       results,
       readiness: null,
     };
-    const killed = stored !== null && stored.carry.bossHp <= 0;
+    const killed = stored?.carry != null && stored.carry.bossHp <= 0;
     v2Party = {
       stagesPlayed,
       nextStage: killed ? 4 : Math.min(4, stagesPlayed + 1),
@@ -506,6 +629,7 @@ export function buildRaidViewV2(
       boss,
       moveNames: moveNamesOf(boss),
       carry: stored?.carry ?? null,
+      playing: playingRow === null ? null : playingView(playingRow),
       out: outRows.map((c) => ({
         creatureId: c.id,
         species: c.species,
@@ -596,7 +720,7 @@ export function buildRaidViewV2(
                 autoFire: autofire.isOn(userId, BASIC_TARGET),
               },
             ],
-      reveal: latestReveal(sql, userId, addWeeks(week.weekId, -1)),
+      reveal: latestReveal(sql, userId, addWeeks(week.weekId, -1), now),
       team,
     },
     party: partyView,
@@ -621,6 +745,7 @@ export function buildRaidViewV2(
       carry: v2Party.carry,
       out: v2Party.out,
       creatures: v2Party.creatures,
+      playing: v2Party.playing,
       swaps: swapsView(sql, week.weekId, userId, names),
     },
   };
@@ -651,6 +776,23 @@ export interface FighterView {
   /** The creature is shiny (absent: it is not); read from the creature's row now, not stored with the fight. */
   shiny?: boolean;
 }
+
+/**
+ * A stage that is still playing: the replay up to the round the clock is in. No `end` event, and nothing that gives the outcome (the
+ * rounds it lasts, whether it cleared or killed, the boss's HP at the end, the carry) or lets a client play ahead (the seed).
+ */
+export type PlayingReplayV2 = Omit<
+  ReplayViewV2,
+  'rounds' | 'cleared' | 'kill' | 'bossHpEnd' | 'carry' | 'seed'
+> & {
+  playing: true;
+  startsAt: number;
+  roundMs: number;
+  /** The round the clock is in. */
+  round: number;
+  /** When the next round's events can be asked for (after the last round: when the stage ends). */
+  nextRoundAt: number;
+};
 
 export interface ReplayViewV2 {
   rules: 2;
@@ -760,7 +902,8 @@ export function buildReplayViewV2(
   weekId: string,
   party: number,
   phase: ResultPhase,
-): ReplayViewV2 | null {
+  now: number,
+): ReplayViewV2 | PlayingReplayV2 | null {
   if (!isWeekId(weekId)) return null;
   const row = sql
     .exec<StoredRow>(
@@ -779,6 +922,37 @@ export function buildReplayViewV2(
   for (const m of summary.members) playerNames[m.alias] = players.get(m.userId) ?? 'Unknown';
   const before = carryBefore(sql, weekId, party, phase);
   const fighters = fighterViews(input, before, shinyOf(sql, input));
+  const window =
+    phase === 'finale' ? null : stagePlaying(row.created_at, windowRoundsOf(summary), now);
+  if (window !== null) {
+    // Still playing: only the rounds that have started, never the end, never a number that gives the outcome.
+    return {
+      rules: 2,
+      weekId,
+      party,
+      phase,
+      stage: result.stage,
+      at: row.created_at,
+      boss: input.boss,
+      moveNames: moveNamesOf(input.boss),
+      card: bossCardView(input.boss, before),
+      bossHpMax: summary.bossHpMax,
+      bossHpStart: summary.bossHpStart,
+      you: summary.members.find((m) => m.userId === userId)?.alias ?? null,
+      fighters,
+      actions: null,
+      events: result.events.filter((e) => e.round <= window.round && e.board?.type !== 'end'),
+      names: {
+        players: playerNames,
+        creatures: Object.fromEntries(fighters.map((f) => [f.key, f.name])),
+      },
+      playing: true,
+      startsAt: window.startsAt,
+      roundMs: window.roundMs,
+      round: window.round,
+      nextRoundAt: window.nextRoundAt,
+    };
+  }
   return {
     rules: 2,
     weekId,

@@ -58,9 +58,11 @@ import {
 } from './raid-v2-live';
 import { askSwap, acceptSwap, cancelSwap, declineSwap } from './raid-swap';
 import { endWeekV2 } from './raid-v2-track';
+import { nextStagePayAt, settleDueStagePay } from './raid-v2-pay';
 import { resolveStageV2, type ResultPhase } from './raid-v2-stage';
 import {
   arenaOf,
+  boardPlaying,
   colsFor,
   ensureTrack,
   outOf,
@@ -77,6 +79,7 @@ import {
   swapsView,
   type LiveContextV2,
   type LiveSnapshotV2,
+  type PlayingReplayV2,
   type ReplayViewV2,
   type SwapsView,
 } from './raid-v2-view';
@@ -190,6 +193,7 @@ export const WEEK_TABLES = [
   'raid_teams',
   'raid_placements',
   'raid_results',
+  'raid_stage_pay',
   'raid_events',
   'raid_swap_requests',
   'raid_abilities',
@@ -748,6 +752,17 @@ export class Raid {
     if (week.rules === 2 && week.festival) throw new GameError(409, 'festival');
   }
 
+  /** A stage that plays as it happens locks its party's board until its last round has played (`stage_playing`). */
+  private requireNotPlaying(week: WeekRow, party: number | null): void {
+    if (
+      week.rules === 2 &&
+      party !== null &&
+      boardPlaying(this.sql, week.weekId, party, this.deps.now())
+    ) {
+      throw new GameError(409, 'stage_playing');
+    }
+  }
+
   /**
    * The slots of a combat v2 party's board: the slot's boss's rows by the columns its players make (one per player), plus the
    * spare piece (one more column) until stage 1 locks the players (Misa, 2026-11-03), so a newcomer can always place.
@@ -782,6 +797,7 @@ export class Raid {
       this.requireEditable(week);
       const species = this.requireOwnedCreature(userId, creatureId);
       let party = partyOf(this.sql, week.weekId, userId);
+      this.requireNotPlaying(week, party);
       const joining = party === null;
       // Players lock when stage 1 begins (Misa, 2026-11-02): no one joins a combat v2 weekend after that.
       if (party === null && week.rules === 2 && week.status !== 'open') {
@@ -960,6 +976,7 @@ export class Raid {
       const week = this.ensureWeek(weekIdFor(this.deps.now(), tz));
       this.requireEditable(week);
       const species = this.requireOwnedCreature(userId, creatureId);
+      this.requireNotPlaying(week, partyOf(this.sql, week.weekId, userId));
       this.readinessCache.invalidate();
       const removed = this.sql
         .exec<{ slot: number; party: number }>(
@@ -1192,7 +1209,14 @@ export class Raid {
     for (const fight of unresolvedRealV2(this.sql)) {
       if (this.trySettleV2(fight.weekId, fight.party, now)) settled++;
     }
+    // Stage 1 and 2 rewards whose replay has ended (one empty index read when none is due).
+    settled += settleDueStagePay(this.deps);
     return settled;
+  }
+
+  /** When the earliest held stage 1 or 2 payout falls due (the alarm wakes for it), or null. */
+  nextStagePayAt(): number | null {
+    return nextStagePayAt(this.sql);
   }
 
   /** When the last round of the earliest unresolved real fight ends (the alarm wakes for it), or null. */
@@ -1645,19 +1669,19 @@ export class Raid {
     weekId: string,
     party: number,
     phase: RaidPhase | ResultPhase,
-  ): ReplayView | ReplayViewV2 | null;
+  ): ReplayView | ReplayViewV2 | PlayingReplayV2 | null;
   replay(
     userId: string,
     weekId: string,
     party: number,
     phase: RaidPhase | ResultPhase,
-  ): ReplayView | ReplayViewV2 | null {
+  ): ReplayView | ReplayViewV2 | PlayingReplayV2 | null {
     // A stage is a combat v2 stage; the finale is whichever rules its week was played under.
     if (phase === 'stage1' || phase === 'stage2') {
-      return buildReplayViewV2(this.sql, userId, weekId, party, phase);
+      return buildReplayViewV2(this.sql, userId, weekId, party, phase, this.deps.now());
     }
     if (phase === 'finale' && weekRules(this.sql, weekId) === 2) {
-      return buildReplayViewV2(this.sql, userId, weekId, party, phase);
+      return buildReplayViewV2(this.sql, userId, weekId, party, phase, this.deps.now());
     }
     return buildReplayView(this.sql, userId, weekId, party, phase);
   }
@@ -1669,7 +1693,15 @@ export class Raid {
     party: number,
     phase: RaidPhase | ResultPhase,
   ): AfterActionStats | AfterActionStatsV2 | null {
-    return readStats(this.sql, userId, weekId, party, phase, displayNames(this.sql));
+    return readStats(
+      this.sql,
+      userId,
+      weekId,
+      party,
+      phase,
+      displayNames(this.sql),
+      this.deps.now(),
+    );
   }
 
   /** Event times of a week in the guild's timezone. */
@@ -1691,6 +1723,7 @@ export class Raid {
     if (week.status === 'finale' || week.festival) throw new GameError(409, 'locked');
     const party = partyOf(this.sql, week.weekId, userId);
     if (party === null) throw new GameError(409, 'not_in_roster');
+    this.requireNotPlaying(week, party);
     return { week, party };
   }
 
