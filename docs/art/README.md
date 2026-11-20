@@ -29,6 +29,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | [House shell (housing E1)](#house-shell) | draft | 33 | 2026-11-09: housing art batch E1, the building, roofs, walls and ground skins. |
 | [Element shards, told apart by shape](#shards) | liked | 15 | 2026-11-03: the element shard icons must differ by shape, not only colour (accessibility review from the valley session; Misa asked to provide what the valley needs). |
 | [Builders' corner](#valley-builders-corner) | draft | 16 | 2026-11-15 (valley session): every valley place moves to a "picture you click" layout. On the Bonfire the fire is only where creatures chill; building work happens apart: "The helper spot should be something that's clearly separate, perhaps next to a construction table or something near the bottom of the screen ... the construction workers can do their own thing elsewhere." |
+| [Fairground: the grandstand and props](#valley-fairground-props) | draft | 9 | 2026-11-20: for the Fairground canvas (direction A, each game is a stall you tap): a grandstand strip of tiered benches with a small crowd that tiles sideways, the tent with its flaps closed for the locked state, a rules board, gold, silver and bronze rosettes that hang on the tent (light and airy), and optional loungers on the grass. Glow style of valley-glow-camp, day and night, no text on signs. |
 | [The sealed gear crate](#valley-forge-crate) | draft | 9 | 2026-11-14 (via the valley session): collecting gear should be a "big moment": common pieces come home on their own; rare and epic pieces wait in a sealed crate inside the Forge until the player opens it; opening reveals them one by one, best last. |
 | [The Forge, inside](#valley-forge-interior) | draft | 27 | 2026-11-11 (via the valley session): clicking the Forge goes inside, into a workshop interior. "It would be cool to have the same stuff there (my creatures working at the anvils) but also see some other creatures working in the background, a fire going, etc. Basically make it look like the interior of a workshop." |
 | [The camp's other places, glow style](#valley-glow-camp) | draft | 6 | 2026-11-03: the valley prototype's remaining places (arena, fairground, road, chest, lectern, paddock) in the liked glow style, day and night. |
@@ -757,6 +758,37 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | `tarp` | free |  | draft | A canvas canopy on two poles over the corner, drawn so the table stands under it. |
 | `help-flag` | free |  | draft | A stake with a small teal flag marking the empty helper spot. |
 | `preview` | free |  | draft | The corner composed once, as a starting layout: tarp, table under it, sawhorse, planks, toolbox, an l pile of each material and the help flag. |
+
+<a id="valley-fairground-props"></a>
+
+## Fairground: the grandstand and props
+
+![Fairground: the grandstand and props](valley-fairground-props.png)
+
+- **Status:** draft
+- **Requested:** 2026-11-20: for the Fairground canvas (direction A, each game is a stall you tap): a grandstand strip of tiered benches with a small crowd that tiles sideways, the tent with its flaps closed for the locked state, a rules board, gold, silver and bronze rosettes that hang on the tent (light and airy), and optional loungers on the grass. Glow style of valley-glow-camp, day and night, no text on signs.
+- **Source:** `apps/activity/src/sprites/concepts/valley-fairground-props.ts` (draw it with `pnpm art valley-fairground-props`)
+- **Sheet of:** `2d4455f6849c`
+- Glow style of `valley-glow-camp` (the `fairground` tent is the reference): ink outline, night as the main palette and `alts.day` for the same pixels, materials from `valley-tiers` (rope and log of level 1, plank of level 2, the teal and cream of level 4), a cast shadow `x`. Backdrop as in `valley-glow`. Each sprite stays under 16 colours. No text on any sign or sheet, only marks.
+- `grandstand` 128x48, base row 47 (the bottom ink row), tiles sideways: column 0 continues column 127 (the crowd's heads and the bunting wrap, and every pattern repeats at a divisor of 128). The `seam` and `seam-day` variants (64 wide) show the join in the middle: the right quarter, then the left quarter. Three rows of benches (plank seat, face with a joint every 16 px, a dark riser) with 16 seats a row, 3 of them empty, and a crowd of round creature-ish blobs (not real creatures): ear tufts, two one-pixel eyes, five body colours (red, blue, green, yellow, purple), a few sitting a pixel lower. A rope of flags sags in four swings above. For the back of the scene; no ground spill.
+- Variations of the grandstand: B (`B`, `B-day`) has a teal and cream striped awning with a scalloped hem over the stands, held by four posts, instead of the bunting; the back row sits a little lower under it. C (`C`, `C-day`) is an open wooden bleacher with no roof and no bunting: seat boards on legs every 16 px with open gaps under each row so the grass shows through.
+- `tent-closed` 64x54, base row 40 (the tent's bottom ink row; the shadow and ground marks run to row 51): the same canvas and base row as `valley-glow-camp/fairground`, whose rows it copies with only the doorway and the light changed. The doorway is shut with two teal flaps, an ink seam and two rope ties; the lantern glass is dull (unlit) and the light rings on the ground are gone, so the ground is the plain grass of the backdrop (the pebbles and flowers stay). By day the same, with the lantern glass pale.
+- `rules-board` 24x32, base row 31 (the feet): a notice board on two legs, a log frame with a lit top edge and a plank face, four cream sheets pinned with red pins (marks only: bars, a teal tab with a star, a tick-like mark, dashes). Wood matches the Market props (log, log shade, orange lit edge).
+- `rosette-gold`, `rosette-silver`, `rosette-bronze`, 12x16 each (the disc is 12x12 at the top, two ribbon tails under it to row 15; hang point is the disc centre at x 5.5, y 5.5): a pleated disc of twelve alternating light and mid pleats round a cream centre, two thin ribbon tails with a notch, outlined in the metal's dark shade instead of ink so they stay light on the tent. Day versions are a little deeper so they hold against the cream stripes.
+- `lounger-1`, `lounger-2`, `lounger-3`, 16x10 each, base row 9: the crowd blob on the grass, sitting hugging its knees, lying back with its feet in the air, and sitting waving one arm. One body colour each (red, blue, green); a cast shadow on the grass. For the locked state.
+- Variations on the grandstand: A bunting and closed risers, B striped awning, C open bleacher. Pick: A, because the bunting and the closed risers give the strip a solid back for the scene, the crowd fills the whole height and reads at 1x, and its top is a flat enough line to sit behind the stalls; B hides the back row under the awning and is taller-looking, C is open so the crowd floats against the grass.
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `grandstand` | free |  | draft | A strip of three tiered plank benches with a crowd of small round creature-ish heads (ear tufts, two-pixel eyes, five colours) and a rope of bunting above. Tiles sideways: column 0 continues column 127. Variations: B a striped awning over the stands, C an open wooden bleacher with no roof. Pick: A, because the bunting and the closed risers give the back of the scene a solid strip. |
+| `tent-closed` | free |  | draft | The fairground tent with its flaps closed: the doorway is two teal flaps with an ink seam and two rope ties, the lanterns are unlit and there is no light on the grass. For the locked state. |
+| `rules-board` | free |  | draft | A small notice board on two legs with four pinned sheets, marks only (no text), in the Market props wood. |
+| `rosette-gold` | free |  | draft | A light pleated rosette with a cream centre and two hanging ribbon tails, gold. Hangs on the tent. |
+| `rosette-silver` | free |  | draft | The same rosette in silver. |
+| `rosette-bronze` | free |  | draft | The same rosette in bronze. |
+| `lounger-1` | free |  | draft | A crowd blob sitting on the grass, hugging its knees (red). For the locked state. |
+| `lounger-2` | free |  | draft | A crowd blob lying back with its feet in the air (blue). |
+| `lounger-3` | free |  | draft | A crowd blob sitting and waving one arm (green). |
 
 <a id="valley-forge-crate"></a>
 
