@@ -211,6 +211,16 @@ function furled(g: Grid, s: Stall): void {
   for (let y = 1; y <= 6; y++) put(g, s.w - 2, y, 'S');
 }
 
+/** A small dark padlock (5x6: a rounded shackle over a square body with a keyhole), the closed mark on a tag. */
+function padlock(g: Grid, x: number, y: number): void {
+  rect(g, x + 1, y, 3, 1, 'i');
+  rect(g, x, y + 1, 1, 1, 'i');
+  rect(g, x + 4, y + 1, 1, 1, 'i');
+  rect(g, x, y + 2, 5, 4, 'i');
+  put(g, x + 2, y + 3, 'C');
+  put(g, x + 2, y + 4, 'C');
+}
+
 /** Shutters down over the front and the poster slot: slats, iron bands, a latch and a hanging tag. */
 function shutters(g: Grid, s: Stall): void {
   const x0 = 4;
@@ -222,12 +232,10 @@ function shutters(g: Grid, s: Stall): void {
   const mid = Math.floor(s.w / 2);
   rect(g, mid - 4, 38, 8, 4, 'i'); // latch plate
   rect(g, mid - 1, 39, 2, 2, 'b');
-  // hanging closed tag: a cream tag on a rope with one red cross mark
+  // hanging closed tag: a cream tag on a rope with a padlock mark
   rect(g, mid, WALL_TOP, 1, 6, 'W');
   rect(g, mid - 3, WALL_TOP + 6, 7, 9, 'C');
-  rect(g, mid - 1, WALL_TOP + 8, 3, 1, 'R');
-  rect(g, mid, WALL_TOP + 7, 1, 3, 'R');
-  rect(g, mid - 1, WALL_TOP + 10, 3, 1, 'R');
+  padlock(g, mid - 2, WALL_TOP + 8);
 }
 
 type Style = 'A' | 'B' | 'C';
@@ -301,9 +309,7 @@ function prize(shuttered: boolean): ReturnType<typeof finish> {
     rect(g, mx - 1, 30, 2, 2, 'b');
     rect(g, mx, 12, 1, 4, 'W');
     rect(g, mx - 3, 16, 7, 9, 'C');
-    rect(g, mx - 1, 18, 3, 1, 'R');
-    rect(g, mx, 17, 1, 3, 'R');
-    rect(g, mx - 1, 20, 3, 1, 'R');
+    padlock(g, mx - 2, 18);
   } else {
     // streamers under the awning
     for (const x of [8, mx - 1, PW - 10]) rect(g, x, 12, 1, 3, 'n');
@@ -354,9 +360,9 @@ export const VALLEY_FAIRGROUND_STALLS_CONCEPTS: ConceptSet = {
   status: 'draft',
   notes: [
     'Glow style of `valley-glow-camp`; night main palette, `alts.day` the same pixels; wood, cream, teal, brass and iron from `valley-tiers`. No text on any sign. Backdrop as in `valley-glow`.',
-    '`stall` 80x56, base row 55 (the lowest ink row). Poster slot: x 20, y 16, w 40, h 20 (rows 16 to 35, columns 20 to 59), one flat colour `f` inside a two-line frame (frame x 18 to 61, y 14 to 37): the code paints the event strip over it. Counter ledge: the flat lit top row is row 44, columns 4 to 75 between the posts (the lit row runs x 1 to 78); a creature stands with its feet on row 43. `stall-locked` has the same canvas, posts, ledge and base row: shutters down over the wall and the poster slot (rows 12 to 43; the poster must not be painted on it), awning furled into a tied roll, lanterns unlit, a hanging cream tag with a red cross mark; closed for now, tidy and latched, not broken.',
+    '`stall` 80x56, base row 55 (the lowest ink row). Poster slot: x 20, y 16, w 40, h 20 (rows 16 to 35, columns 20 to 59), one flat colour `f` inside a two-line frame (frame x 18 to 61, y 14 to 37): the code paints the event strip over it. Counter ledge: the flat lit top row is row 44, columns 4 to 75 between the posts (the lit row runs x 1 to 78); a creature stands with its feet on row 43. `stall-locked` has the same canvas, posts, ledge and base row: shutters down over the wall and the poster slot (rows 12 to 43; the poster must not be painted on it), awning furled into a tied roll, lanterns unlit, a hanging cream tag with a dark padlock mark; closed for now, tidy and latched, not broken.',
     '`team-stall` 112x56, base row 55. Poster slot: x 36, y 16, w 40, h 20 (columns 36 to 75; frame x 34 to 77, y 14 to 37). Counter ledge: row 44, columns 4 to 107 (lit row x 1 to 110). `team-stall-locked`: same canvas, shutters rows 12 to 43. Four lanterns.',
-    '`prize-stall` 64x48, base row 47 (open on Wednesdays): teal-and-cream awning with a pink bow, streamers, two shelves of wrapped prizes with ribbons and a brass bell on the counter (counter ledge row 36, columns 4 to 59). `prize-stall-shuttered`: same canvas, plank shutters over the shelves (rows 12 to 35), iron bands and latch, a hanging cream tag with a red cross mark, the bell put away.',
+    '`prize-stall` 64x48, base row 47 (open on Wednesdays): teal-and-cream awning with a pink bow, streamers, two shelves of wrapped prizes with ribbons and a brass bell on the counter (counter ledge row 36, columns 4 to 59). `prize-stall-shuttered`: same canvas, plank shutters over the shelves (rows 12 to 35), iron bands and latch, a hanging cream tag with a dark padlock mark, the bell put away.',
     'Light: no ground light is drawn (the canvas is the stall only), so the game may add the lantern glow on the ground itself.',
     'Variations of the stall awning, same body, ledge and slot (variants are shown at night): B a scalloped awning edge with three pennants, C a peaked shingle roof (tier 2 shingles) with a red flag. Pick: A, because its straight striped canvas is the fairground tent Misa already likes, stays the quietest above the poster and gives the widest clear band for the lanterns; B is the liveliest but the scallops and pennants crowd the poster at 1x, C reads as a cottage more than a fair.',
   ],
@@ -384,7 +390,7 @@ export const VALLEY_FAIRGROUND_STALLS_CONCEPTS: ConceptSet = {
     ),
     'prize-stall-shuttered': mk(
       prize(true),
-      'The Prize Stall shuttered: plank shutters and a hanging closed tag (a red cross, no text).',
+      'The Prize Stall shuttered: plank shutters and a hanging closed tag (a dark padlock, no text).',
     ),
   },
 };

@@ -768,11 +768,11 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 - **Status:** draft
 - **Requested:** 2026-11-20 (valley session): Misa picked direction A for the Fairground canvas: each game is a stall you tap and your creature stands at its stall. Glow style of the camp fairground tent (striped red-and-cream canvas, pennants, lanterns), night and day, no text on signs.
 - **Source:** `apps/activity/src/sprites/concepts/valley-fairground-stalls.ts` (draw it with `pnpm art valley-fairground-stalls`)
-- **Sheet of:** `5b5e39b85e92`
+- **Sheet of:** `b8fdf8eabbde`
 - Glow style of `valley-glow-camp`; night main palette, `alts.day` the same pixels; wood, cream, teal, brass and iron from `valley-tiers`. No text on any sign. Backdrop as in `valley-glow`.
-- `stall` 80x56, base row 55 (the lowest ink row). Poster slot: x 20, y 16, w 40, h 20 (rows 16 to 35, columns 20 to 59), one flat colour `f` inside a two-line frame (frame x 18 to 61, y 14 to 37): the code paints the event strip over it. Counter ledge: the flat lit top row is row 44, columns 4 to 75 between the posts (the lit row runs x 1 to 78); a creature stands with its feet on row 43. `stall-locked` has the same canvas, posts, ledge and base row: shutters down over the wall and the poster slot (rows 12 to 43; the poster must not be painted on it), awning furled into a tied roll, lanterns unlit, a hanging cream tag with a red cross mark; closed for now, tidy and latched, not broken.
+- `stall` 80x56, base row 55 (the lowest ink row). Poster slot: x 20, y 16, w 40, h 20 (rows 16 to 35, columns 20 to 59), one flat colour `f` inside a two-line frame (frame x 18 to 61, y 14 to 37): the code paints the event strip over it. Counter ledge: the flat lit top row is row 44, columns 4 to 75 between the posts (the lit row runs x 1 to 78); a creature stands with its feet on row 43. `stall-locked` has the same canvas, posts, ledge and base row: shutters down over the wall and the poster slot (rows 12 to 43; the poster must not be painted on it), awning furled into a tied roll, lanterns unlit, a hanging cream tag with a dark padlock mark; closed for now, tidy and latched, not broken.
 - `team-stall` 112x56, base row 55. Poster slot: x 36, y 16, w 40, h 20 (columns 36 to 75; frame x 34 to 77, y 14 to 37). Counter ledge: row 44, columns 4 to 107 (lit row x 1 to 110). `team-stall-locked`: same canvas, shutters rows 12 to 43. Four lanterns.
-- `prize-stall` 64x48, base row 47 (open on Wednesdays): teal-and-cream awning with a pink bow, streamers, two shelves of wrapped prizes with ribbons and a brass bell on the counter (counter ledge row 36, columns 4 to 59). `prize-stall-shuttered`: same canvas, plank shutters over the shelves (rows 12 to 35), iron bands and latch, a hanging cream tag with a red cross mark, the bell put away.
+- `prize-stall` 64x48, base row 47 (open on Wednesdays): teal-and-cream awning with a pink bow, streamers, two shelves of wrapped prizes with ribbons and a brass bell on the counter (counter ledge row 36, columns 4 to 59). `prize-stall-shuttered`: same canvas, plank shutters over the shelves (rows 12 to 35), iron bands and latch, a hanging cream tag with a dark padlock mark, the bell put away.
 - Light: no ground light is drawn (the canvas is the stall only), so the game may add the lantern glow on the ground itself.
 - Variations of the stall awning, same body, ledge and slot (variants are shown at night): B a scalloped awning edge with three pennants, C a peaked shingle roof (tier 2 shingles) with a red flag. Pick: A, because its straight striped canvas is the fairground tent Misa already likes, stays the quietest above the poster and gives the widest clear band for the lanterns; B is the liveliest but the scallops and pennants crowd the poster at 1x, C reads as a cottage more than a fair.
 
@@ -783,7 +783,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | `team-stall` | free |  | draft | The wider stall for team events: the same parts, a longer ledge and four lanterns. |
 | `team-stall-locked` | free |  | draft | The wide stall closed for now. |
 | `prize-stall` | free |  | draft | The Prize Stall: a gift stall with a pink bow, ribbons, wrapped prizes on two shelves and a brass bell. |
-| `prize-stall-shuttered` | free |  | draft | The Prize Stall shuttered: plank shutters and a hanging closed tag (a red cross, no text). |
+| `prize-stall-shuttered` | free |  | draft | The Prize Stall shuttered: plank shutters and a hanging closed tag (a dark padlock, no text). |
 
 <a id="valley-forge-crate"></a>
 
