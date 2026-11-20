@@ -9,6 +9,7 @@ The daily dungeon: paths, rooms and rare rooms, the camp, the Undercroft, foes, 
 ID: `2026-11-20-the-cave-as-a-place-the` · Status: current
 
 **Decision.** Misa (2026-11-20) agreed to the lead's picks from the Cave concepts page:
+
 1. **Direction C.** The daily dungeon becomes a valley canvas place where today's map is the scene. The rooms are the taps; the room tapped opens in the right drawer (foe, twist, prize, Go); Pack, Route and Log are on the left. A room fight takes over the scene as on the raid canvas.
 2. **The Undercroft on a phone** is dragged like the raid's phone board, opening on the team, instead of scrolling inside the map.
 3. **Before a run on a phone,** the creature tray is one row, so every room on the map keeps its name plate.
