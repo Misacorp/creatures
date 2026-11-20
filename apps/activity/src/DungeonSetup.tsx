@@ -1,38 +1,23 @@
-import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
-import { TreatBox } from './TreatBox';
+import { useEffect, useRef, useState } from 'preact/hooks';
+import { DungeonTreats } from './DungeonTreats';
 import type { Creature } from './api';
 import { CreatureConfigurator, type ConfiguratorParts } from './CreatureConfigurator';
 import { DepthPicker } from './DepthPicker';
-import type { PreviewStatusName } from './use-job-preview';
 import { DungeonPrerun } from './DungeonPrerun';
-import { fetchDungeonPreview } from './dungeon-api';
 import { DungeonTeam } from './DungeonTeam';
 import { TeamCreaturePage, type TeamConfigure } from './TeamCreaturePage';
-import {
-  isComplete,
-  pruneSlots,
-  sameSlots,
-  setupTeam,
-  slotIndexOf,
-  unplace,
-  type Slots,
-} from './dungeon-team';
+import { isComplete, slotIndexOf, unplace, type Slots } from './dungeon-team';
 import { blockedText, isRetryOffer, RETRY_TEXT } from './dungeon-text';
 import type { DungeonPreview, DungeonToday } from './dungeon-types';
-import { baitCount } from './count-items';
 import { GlossaryTag } from './Glossary';
-import { CountBadge } from './ui/CountBadge';
 import { glyphOrUnknown } from './glyphs';
 import { Sprite } from './sprites/Sprite';
 import { tabPalette } from './tabs';
-import { creatureName } from './game';
-import { toPickerCreature } from './roster-picker';
 import { scrollAndFocus } from './scroll-to';
-import { useDungeonDraft } from './use-dungeon-draft';
+import { useDungeonSetup } from './use-dungeon-setup';
 import { BagFullNote } from './ui/BagFullNote';
 import type { Forecast } from './weather-types';
 import { Alert } from './ui/Alert';
-import { resourceName } from '@creatures/game';
 
 interface Props {
   today: DungeonToday;
@@ -111,8 +96,26 @@ export function DungeonSetup({
   onSeeLast,
   configure,
 }: Props) {
-  const pickable = useMemo(() => creatures.map(toPickerCreature), [creatures]);
-  const saver = useDungeonDraft(saveDraft);
+  const {
+    pickable,
+    saver,
+    slots,
+    change,
+    own,
+    pickDepth,
+    depth,
+    setPick,
+    previewStatus,
+    shownToday,
+  } = useDungeonSetup({
+    today,
+    creatures,
+    draft,
+    onDraftChange,
+    saveDraft,
+    loadPreview,
+    initialDepth,
+  });
   // The creatures that get a treat on this run (not kept for the next one: each run pays for its own).
   const [treats, setTreats] = useState<ReadonlySet<string>>(new Set());
   /** The creature whose configurator is shown. */
@@ -121,77 +124,6 @@ export function DungeonSetup({
   const [page, setPage] = useState<string | null>(null);
   /** Back from a page: the tile of the creature shown last gets the focus. */
   const backTo = useRef<string | null>(null);
-  // Combat v2: the depth to play, any the player has unlocked (1 to their own, `today.depth`); their own to begin with.
-  const own = today.depth;
-  const pickDepth = today.rules === 2 && own >= 2;
-  // `null` is "my own depth", whatever it is when the card is used: a card left open while the depth moves on then
-  // starts the new own depth, never a lower run by surprise.
-  const [pick, setPick] = useState<number | null>(initialDepth ?? null);
-  const depth = pickDepth && pick !== null ? Math.min(Math.max(1, pick), own) : own;
-  const [preview, setPreview] = useState<DungeonPreview | null>(null);
-  const [previewStatus, setPreviewStatus] = useState<PreviewStatusName>('idle');
-  // A depth below their own shows that depth's map and floor boss. Until the answer is in (or if it fails) the card
-  // says so under the picker and does not show the own depth's map as if it were the picked depth's.
-  useEffect(() => {
-    if (!pickDepth || depth >= own) {
-      setPreview(null);
-      setPreviewStatus('idle');
-      return undefined;
-    }
-    let live = true;
-    setPreview(null);
-    setPreviewStatus('loading');
-    (loadPreview ?? ((d: number) => fetchDungeonPreview(d)))(depth).then(
-      (answer) => {
-        if (!live) return;
-        setPreview(answer);
-        setPreviewStatus('ready');
-      },
-      () => {
-        if (!live) return;
-        setPreview(null);
-        setPreviewStatus('failed');
-      },
-    );
-    return () => {
-      live = false;
-    };
-  }, [pickDepth, depth, own]);
-  const shownToday: DungeonToday =
-    preview !== null && preview.depth === depth && depth < own
-      ? {
-          ...today,
-          depth,
-          landmark: preview.landmark,
-          landmarkBoss: preview.landmarkBoss,
-          map: preview.map,
-        }
-      : pickDepth && depth < own
-        ? // The picked depth's map is not here yet (or failed): draw no map rather than the own depth's.
-          { ...today, depth, landmark: false, landmarkBoss: null, map: null }
-        : today;
-  const [slots, setSlots] = useState<Slots>(() =>
-    setupTeam({
-      memory: draft,
-      saved: today.draftTeam,
-      lastTeam: today.lastTeam,
-      creatures: pickable,
-    }),
-  );
-
-  /** A change of the row by the player (or by the collection): keep it, report it and save it soon. */
-  function change(next: Slots): void {
-    setSlots(next);
-    onDraftChange(next);
-    saver.change(next);
-  }
-
-  // The collection can change under the screen (a refresh after another tab): drop creatures that are gone.
-  const owned = creatures.map((c) => c.id);
-  useEffect(() => {
-    const pruned = pruneSlots(slots, owned);
-    if (!sameSlots(pruned, slots)) change(pruned);
-  }, [owned.join(',')]);
 
   // Back from a page: the card is drawn again; its creature's tile is scrolled to and focused.
   useEffect(() => {
@@ -255,8 +187,6 @@ export function DungeonSetup({
   const shown = selected === null ? undefined : team.find((c) => c.id === selected);
 
   const complete = isComplete(slots);
-  // What the packed treats leave of the Bait, shown once above the boxes (they share one purse).
-  const baitLeft = team.reduce((n, c) => n - (treats.has(c.id) ? c.treatCost : 0), bait);
   return (
     <>
       {isRetryOffer(today) && (
@@ -321,49 +251,22 @@ export function DungeonSetup({
               ]}
             />
           )}
-          <div class="dungeon-treats">
-            {team.length > 0 && (
-              <p class="treats-head">
-                <span class="treats-title">Treats</span>
-                <GlossaryTag entry="treat" look="help" />
-                <span class="treats-left">
-                  <CountBadge {...baitCount(baitLeft)} label={`${resourceName('bait')} left`} />
-                  <span>left</span>
-                </span>
-              </p>
-            )}
-            <div class="treat-list">
-              {slots.flatMap((id) => {
-                const creature = creatures.find((c) => c.id === id);
-                if (creature === undefined) return [];
-                // A treat is paid up front: the boxes cannot add up to more Bait than the player has.
-                const others = [...treats]
-                  .filter((t) => t !== creature.id)
-                  .reduce((n, t) => n + (creatures.find((c) => c.id === t)?.treatCost ?? 0), 0);
-                return [
-                  <TreatBox
-                    key={creature.id}
-                    cost={creature.treatCost}
-                    bait={bait - others}
-                    checked={treats.has(creature.id)}
-                    disabled={busy}
-                    who={creatureName(creature)}
-                    help={false}
-                    {...(today.rules === 2 ? { times: 2 } : {})}
-                    listed
-                    onChange={(on) => {
-                      setTreats((now) => {
-                        const next = new Set(now);
-                        if (on) next.add(creature.id);
-                        else next.delete(creature.id);
-                        return next;
-                      });
-                    }}
-                  />,
-                ];
-              })}
-            </div>
-          </div>
+          <DungeonTreats
+            creatures={creatures}
+            slots={slots}
+            treats={treats}
+            bait={bait}
+            busy={busy}
+            rules={today.rules}
+            onChange={(id, on) => {
+              setTreats((now) => {
+                const next = new Set(now);
+                if (on) next.add(id);
+                else next.delete(id);
+                return next;
+              });
+            }}
+          />
           <div class="dungeon-enter">
             {error !== null && <Alert level="alert">{error}</Alert>}
             <BagFullNote
