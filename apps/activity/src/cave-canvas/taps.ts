@@ -12,7 +12,12 @@ import {
   type Slots,
 } from '../dungeon-team';
 import type { DungeonRunState } from '../dungeon-types';
-import { CANCEL_ANNOUNCEMENT, dropOutcome, type DropOutcome, type DropTarget } from '../slot-outcome';
+import {
+  CANCEL_ANNOUNCEMENT,
+  dropOutcome,
+  type DropOutcome,
+  type DropTarget,
+} from '../slot-outcome';
 import type { CaveView } from './hold';
 import type { NowTap } from './now-line';
 
@@ -82,7 +87,10 @@ export function autoKey(input: { view: CaveView; blocked: boolean; retry: boolea
 }
 
 /** What a tap on the now line opens. */
-export function nowTapPanel(tap: NowTap, state: Pick<DungeonRunState, 'pending'> | null): RightPanel | null {
+export function nowTapPanel(
+  tap: NowTap,
+  state: Pick<DungeonRunState, 'pending'> | null,
+): RightPanel | null {
   switch (tap) {
     case 'enter':
       return { kind: 'enter' };
@@ -110,8 +118,11 @@ export interface CaveDrop {
   outcome: DropOutcome;
 }
 
-const outcome = (status: DropOutcome['status'], hint: string | null, announce: string): DropOutcome =>
-  dropOutcome<never>(status, null, hint, announce);
+const outcome = (
+  status: DropOutcome['status'],
+  hint: string | null,
+  announce: string,
+): DropOutcome => dropOutcome<never>(status, null, hint, announce);
 
 /**
  * A hand carrying creature `id` lets go (before a run; `busy` while the run is being sent). On the tray: off the team. On the cave
@@ -134,10 +145,14 @@ export function resolveCaveDrop(
   if (target.slot === TRAY_SLOT) {
     return from === null
       ? { slots, outcome: outcome('none', null, `${name} stays off the team.`) }
-      : { slots: unplace(slots, id), outcome: outcome('valid', null, `${name} removed from the team.`) };
+      : {
+          slots: unplace(slots, id),
+          outcome: outcome('valid', null, `${name} removed from the team.`),
+        };
   }
   if (target.slot === MOUTH_SLOT) {
-    if (from !== null) return { slots, outcome: outcome('none', null, `${name} is already on the team.`) };
+    if (from !== null)
+      return { slots, outcome: outcome('none', null, `${name} is already on the team.`) };
     const free = slots.findIndex((s) => s === null);
     if (free < 0 || placedCount(slots) >= ROW_PLACES.length) {
       const hint = 'The team is full. Drop one on the tray first.';

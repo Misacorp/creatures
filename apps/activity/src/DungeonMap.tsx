@@ -21,7 +21,7 @@ import {
   type LaidNode,
   type MapRun,
 } from './dungeon-map';
-import type { DungeonMapView } from './dungeon-types';
+import type { DungeonMapNode, DungeonMapView } from './dungeon-types';
 import { DungeonNodeDrawer } from './DungeonNodeDrawer';
 import { glyphOrUnknown } from './glyphs';
 import { Sprite } from './sprites/Sprite';
@@ -72,6 +72,8 @@ export interface CanvasMap {
   layoutWidth?: number;
   /** The map is drawn small: a plain fight keeps its icon only (its name is in its panel). */
   dense?: boolean;
+  /** Scenery beside a room (the camp's fire, the stair at the way down); `descent` says the room is the way down. */
+  decor?: (node: DungeonMapNode, descent: boolean) => ComponentChildren;
 }
 
 const PERCENT = (n: number, of: number): string =>
@@ -299,6 +301,7 @@ export function DungeonMap({
                       </Nameplate>
                     </span>
                   )}
+                {canvas?.decor?.(node, down)}
                 {here && canvas?.team}
               </li>
             );

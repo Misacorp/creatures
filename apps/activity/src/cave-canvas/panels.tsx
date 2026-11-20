@@ -106,7 +106,7 @@ export const rightTitle = (ctx: PanelCtx, panel: RightPanel): string => {
   switch (panel.kind) {
     case 'room': {
       const node = allNodes(ctx.scene).find((n) => n.id === panel.id);
-      return node === undefined ? 'Room' : roomSheet(ctx, panel.id)?.title ?? 'Room';
+      return node === undefined ? 'Room' : (roomSheet(ctx, panel.id)?.title ?? 'Room');
     }
     case 'enter':
       return 'Enter the cave';

@@ -11,7 +11,7 @@
 import type { ComponentChildren } from 'preact';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { stackLayout, type MapRun } from '../dungeon-map';
-import type { DungeonMapView } from '../dungeon-types';
+import type { DungeonMapNode, DungeonMapView } from '../dungeon-types';
 import { DungeonMap } from '../DungeonMap';
 import { usePrefersReducedMotion } from '../hooks';
 import { creatureSpriteOrFallback } from '../sprites/creature-sprites';
@@ -24,6 +24,7 @@ import { useWide } from '../ui/wide-layout';
 import type { TrayDrag } from '../valley/Tray';
 import { cssVars } from '../css-vars';
 import { SceneTop, type ScenePlate } from '../raid-canvas/RaidScene';
+import { caveSize, caveSprite, caveVars } from './cave-art';
 import { mapSize, startOffset, type MapSize } from './map-size';
 import type { NowLine } from './now-line';
 
@@ -87,7 +88,13 @@ function Figure({ c, scale }: { c: SceneCreature; scale: number }) {
     <span class={`cave-fig${out ? ' ko' : ''}`}>
       <Sprite sprite={creatureSpriteOrFallback(c.speciesId)} scale={scale} />
       {c.hp !== undefined && (
-        <SegmentBar size="unit" current={c.hp.current} max={Math.max(1, c.hp.max)} label={c.name} text="" />
+        <SegmentBar
+          size="unit"
+          current={c.hp.current}
+          max={Math.max(1, c.hp.max)}
+          label={c.name}
+          text=""
+        />
       )}
     </span>
   );
@@ -96,7 +103,11 @@ function Figure({ c, scale }: { c: SceneCreature; scale: number }) {
 /** What a creature button says: text only. */
 const figureLabel = (c: SceneCreature): string =>
   `${c.name}, level ${String(c.level)}${
-    c.hp === undefined ? '' : c.hp.current <= 0 ? ', knocked out' : `, ${String(c.hp.current)} of ${String(c.hp.max)} HP`
+    c.hp === undefined
+      ? ''
+      : c.hp.current <= 0
+        ? ', knocked out'
+        : `, ${String(c.hp.current)} of ${String(c.hp.max)} HP`
   }. Opens it.`;
 
 /** The team on the room it stands in: a button per creature, one gold plate for all. */
@@ -131,15 +142,28 @@ function TeamOnMap({
   );
 }
 
-function Mouth({ mouth }: { mouth: CaveMouth }) {
+/**
+ * The cave mouth (the art's variant C) with the team standing on its ground strip, feet on row 41, and the Enter plate under row 44.
+ * The picture is drawn at a whole-number scale; the art's anchors (opening x 15 to 49, strip rows 38 to 43) are the stylesheet's.
+ */
+function Mouth({ mouth, scale }: { mouth: CaveMouth; scale: number }) {
   const setup = mouth.mode === 'setup';
+  const size = caveSize('cave-mouth');
   return (
     <div
       class="cave-mouth"
       data-drop-id="cave-mouth"
       data-over={mouth.over ? 'yes' : undefined}
       data-mode={mouth.mode}
+      ref={cssVars({
+        '--mouth-w': `${String(size.width * scale)}px`,
+        '--mouth-h': `${String(size.height * scale)}px`,
+        '--mouth-s': String(scale),
+      })}
     >
+      <span class="cave-mouth-art" aria-hidden="true">
+        <Sprite sprite={caveSprite('cave-mouth')} scale={scale} />
+      </span>
       <ul class="cave-places" aria-label="Your team, left to right">
         {mouth.slots.map((c, i) => (
           <li
@@ -172,10 +196,7 @@ function Mouth({ mouth }: { mouth: CaveMouth }) {
                       },
                     })}
               >
-                <Figure c={c} scale={3} />
-                <Nameplate size="sm" level={c.level}>
-                  {c.name}
-                </Nameplate>
+                <Figure c={c} scale={scale} />
               </button>
             )}
           </li>
@@ -191,14 +212,12 @@ function Mouth({ mouth }: { mouth: CaveMouth }) {
             mouth.onEnter?.(event.currentTarget);
           }}
         >
-          <span class="cave-arch" aria-hidden="true" />
           <Nameplate size="md" tone="gold">
             Enter
           </Nameplate>
         </button>
       ) : (
         <span class="cave-enter cave-enter-still" aria-hidden="true">
-          <span class="cave-arch" />
           {!setup && (
             <Nameplate size="sm" tone="gold">
               Your team
@@ -223,10 +242,20 @@ function MapBox({
   onTeamCreature,
 }: Pick<
   CaveSceneProps,
-  'map' | 'undercroft' | 'depth' | 'landmark' | 'run' | 'openId' | 'onRoom' | 'team' | 'onTeamCreature'
+  | 'map'
+  | 'undercroft'
+  | 'depth'
+  | 'landmark'
+  | 'run'
+  | 'openId'
+  | 'onRoom'
+  | 'team'
+  | 'onTeamCreature'
 > & { map: DungeonMapView }) {
   const wide = useWide();
   const reduced = usePrefersReducedMotion();
+  // The outer box is the room the scene leaves (it never depends on what is in it); the scroller inside it is dragged when the map is taller.
+  const outer = useRef<HTMLDivElement>(null);
   const box = useRef<HTMLDivElement>(null);
   const layoutWidth = wide ? 520 : 320;
   const layout = useMemo(
@@ -236,15 +265,23 @@ function MapBox({
   const deep = undercroft.length > 0;
   const [sized, setSized] = useState<MapSize | null>(null);
   useLayoutEffect(() => {
-    const el = box.current;
+    const el = outer.current;
     if (el === null) return undefined;
+    let frame = 0;
     const measure = (): void => {
-      setSized(mapSize({ width: el.clientWidth, height: el.clientHeight }, layout, deep));
+      setSized(
+        mapSize({ width: el.clientWidth, height: el.clientHeight - PLATE_ROOM }, layout, deep),
+      );
     };
     measure();
-    const observer = new ResizeObserver(measure);
+    // Measured in a frame of its own: the size changes what the box holds, which must not feed back into the same observation.
+    const observer = new ResizeObserver(() => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(measure);
+    });
     observer.observe(el);
     return () => {
+      cancelAnimationFrame(frame);
       observer.disconnect();
     };
   }, [layout.width, layout.height, deep]);
@@ -265,59 +302,96 @@ function MapBox({
     const top = (n: HTMLElement): number =>
       n.getBoundingClientRect().top - board.getBoundingClientRect().top;
     const to =
-      here === undefined ? 0 : startOffset(top(here), here.offsetHeight, board.offsetHeight, el.clientHeight);
+      here === undefined
+        ? 0
+        : startOffset(top(here), here.offsetHeight, board.offsetHeight, el.clientHeight);
     el.scrollTo({ top: to, behavior: shown.current && !reduced ? 'smooth' : 'auto' });
     shown.current = true;
   }, [tall, sized?.size, at, run?.status]);
   const band = layout.bands[0];
   return (
     <>
-      <div class="cave-fit" data-tall={tall ? 'yes' : undefined} ref={box}>
-        <div class="cave-sheet">
-          {band !== undefined && (
+      <div class="cave-fit" ref={outer}>
+        <div class="cave-scroll" data-tall={tall ? 'yes' : undefined} ref={box}>
+          <div class="cave-sheet">
+            {band !== undefined && (
+              <div
+                class="cave-under"
+                aria-hidden="true"
+                ref={cssVars({ '--under-top': `${String((band.y / layout.height) * 100)}%` })}
+              />
+            )}
             <div
-              class="cave-under"
-              aria-hidden="true"
-              ref={cssVars({ '--under-top': `${String((band.y / layout.height) * 100)}%` })}
-            />
-          )}
-          <div
-            class="cave-map"
-            style={sized === null ? undefined : { width: `${String(sized.size)}px` }}
-          >
-            <DungeonMap
-              map={map}
-              undercroft={undercroft}
-              depth={depth}
-              state={run}
-              landmark={landmark}
-              canvas={{
-                openId,
-                onRoom,
-                layoutWidth,
-                dense: sized?.dense === true,
-                ...(team === null
-                  ? {}
-                  : { team: <TeamOnMap team={team} onCreature={onTeamCreature} /> }),
-              }}
-            />
+              class="cave-map"
+              style={sized === null ? undefined : { width: `${String(sized.size)}px` }}
+            >
+              <DungeonMap
+                map={map}
+                undercroft={undercroft}
+                depth={depth}
+                state={run}
+                landmark={landmark}
+                canvas={{
+                  openId,
+                  onRoom,
+                  layoutWidth,
+                  dense: sized?.dense === true,
+                  decor: decorOf,
+                  ...(team === null
+                    ? {}
+                    : { team: <TeamOnMap team={team} onCreature={onTeamCreature} /> }),
+                }}
+              />
+            </div>
           </div>
         </div>
+        <PanHint target={box} id="cave-canvas-map" axis="y" />
       </div>
-      <PanHint target={box} id="cave-canvas-map" axis="y" />
     </>
   );
 }
 
+/** Room kept under the map for the last room's name plate (px). */
+const PLATE_ROOM = 28;
+
+/** Scale of the tiles and props: whole pixels per art pixel. */
+const ART_SCALE = 2;
+
+/** Scenery on a room: the fire beside the camp, the stair beside the way down. */
+function decorOf(node: DungeonMapNode, descent: boolean): ComponentChildren {
+  if (node.kind === 'camp' && node.id.startsWith('f')) {
+    return (
+      <span class="cave-prop cave-prop-fire" aria-hidden="true">
+        <Sprite sprite={caveSprite('campfire-prop')} scale={ART_SCALE} />
+      </span>
+    );
+  }
+  if (descent) {
+    return (
+      <span class="cave-prop cave-prop-stair" aria-hidden="true">
+        <Sprite sprite={caveSprite('cracked-stair')} scale={ART_SCALE} />
+      </span>
+    );
+  }
+  return null;
+}
+
 export function CaveScene(p: CaveSceneProps) {
   return (
-    <div class="rc-scene cave-scene cave-rock" data-state={p.state}>
+    <div
+      class="rc-scene cave-scene cave-rock"
+      data-state={p.state}
+      ref={cssVars(caveVars(ART_SCALE))}
+    >
+      <span class="cave-wall cave-wall-top" aria-hidden="true" />
+      <span class="cave-wall cave-wall-left" aria-hidden="true" />
+      <span class="cave-wall cave-wall-right" aria-hidden="true" />
       <SceneTop label="Cave overviews" plates={p.plates} now={p.now} onNow={p.onNow} />
       {p.stage !== undefined && p.stage !== null ? (
         <div class="rc-stage">{p.stage}</div>
       ) : (
         <>
-          {p.mouth !== null && <Mouth mouth={p.mouth} />}
+          {p.mouth !== null && <Mouth mouth={p.mouth} scale={2} />}
           {p.map === null ? (
             <p class="muted cave-nomap">The map is not here yet.</p>
           ) : (

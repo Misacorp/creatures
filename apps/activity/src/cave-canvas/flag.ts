@@ -7,7 +7,7 @@ import type { DungeonToday } from '../dungeon-types';
 
 export function caveCanvasOn(
   valley: boolean,
-  today: Pick<DungeonToday, 'rules' | 'active' | 'canRun' | 'last'> | null,
+  today: (Pick<DungeonToday, 'active' | 'canRun' | 'last'> & { rules?: 2 | undefined }) | null,
 ): boolean {
   if (!valley || today === null || today.rules !== 2) return false;
   const open = today.active ?? null;

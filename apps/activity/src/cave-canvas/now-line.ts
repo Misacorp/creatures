@@ -11,15 +11,7 @@ import type { DungeonRunState } from '../dungeon-types';
 export type NowTap = 'enter' | 'blocked' | 'pending' | 'result' | null;
 
 export type NowId =
-  | 'blocked'
-  | 'pick'
-  | 'enter'
-  | 'next'
-  | 'event'
-  | 'camp'
-  | 'descend'
-  | 'fight'
-  | 'over';
+  'blocked' | 'pick' | 'enter' | 'next' | 'event' | 'camp' | 'descend' | 'fight' | 'over';
 
 export interface NowLine {
   id: NowId;

@@ -58,7 +58,12 @@ export function routeRows(
     const node = nodes.find((n) => n.id === entry.node);
     return {
       key: `${String(i)}:${entry.node}`,
-      title: node === undefined ? entry.node : node.foe === undefined ? roomPlate(node) : foeDisplayName(node),
+      title:
+        node === undefined
+          ? entry.node
+          : node.foe === undefined
+            ? roomPlate(node)
+            : foeDisplayName(node),
       text: lineOf(entry),
     };
   });

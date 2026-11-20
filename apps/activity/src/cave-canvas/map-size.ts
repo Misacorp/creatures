@@ -12,7 +12,7 @@ export const READABLE_UNDERCROFT = 0.95;
 /** A dragged map is drawn at most this much bigger than the coordinate space (so the rooms do not balloon on a wide window). */
 export const DRAGGED_MAX = 1.15;
 /** Below this share of the coordinate space a plain fight keeps its icon only (its name is in its panel). */
-export const DENSE_BELOW = 0.9;
+export const DENSE_BELOW = 0.75;
 
 export interface MapSize {
   /** The map's width in CSS px. */
