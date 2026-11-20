@@ -20,7 +20,7 @@ import { cssVars } from '../css-vars';
 import { usePrefersReducedMotion } from '../hooks';
 import { Sprite } from '../sprites/Sprite';
 import { creatureSpriteOrFallback } from '../sprites/creature-sprites';
-import { Elsewhere } from '../ui/Elsewhere';
+import { Elsewhere } from './Elsewhere';
 import { LiveRegion } from '../ui/LiveRegion';
 import { PixelHeading } from '../ui/PixelHeading';
 import { PlaybackControls } from '../ui/PlaybackControls';
