@@ -52,11 +52,11 @@ describe('the now line', () => {
 
   it('on the map: the next room to choose, counted from 1', () => {
     expect(nowLine({ screen: 'run', state: midway() }).text).toBe(
-      'Room 3 of 7: choose the next room',
+      'Room 3 / 7: choose the next room',
     );
     const entrance = sampleState('entrance') as DungeonRunState;
     expect(nowLine({ screen: 'run', state: entrance }).text).toBe(
-      'Room 1 of 7: choose the next room',
+      'Room 1 / 7: choose the next room',
     );
   });
 
@@ -70,12 +70,12 @@ describe('the now line', () => {
 
   it('in the Undercroft the floor is named for the level', () => {
     const run = undercroftState('keeper');
-    expect(nowLine({ screen: 'run', state: run }).text).toMatch(/^Undercroft 1 · Room \d of \d/);
+    expect(nowLine({ screen: 'run', state: run }).text).toMatch(/^Undercroft 1 · Room \d \/ \d/);
   });
 
   it('during a fight it is the room and its foe; the run over reads the same', () => {
     const room = playingRoom({ node: 'f2l1', foe: { name: 'Drift Wisp' } }, 7);
-    expect(nowLine({ screen: 'playing', room }).text).toBe('Room 3 of 7: Drift Wisp');
+    expect(nowLine({ screen: 'playing', room }).text).toBe('Room 3 / 7: Drift Wisp');
     expect(nowLine({ screen: 'playing', room: null }).text).toBe('A fight');
     expect(nowLine({ screen: 'results' }).text).toBe('The run is over');
   });
@@ -84,7 +84,7 @@ describe('the now line', () => {
     expect(playingRoom({ node: 'f1l0', elite: true, foe: { name: 'Imp' } }, 7).foe).toBe(
       'Fierce Imp',
     );
-    expect(roomPlace('u1f1l0', 4)).toBe('Undercroft 1 · Room 2 of 4');
+    expect(roomPlace('u1f1l0', 4)).toBe('Undercroft 1 · Room 2 / 4');
   });
 });
 

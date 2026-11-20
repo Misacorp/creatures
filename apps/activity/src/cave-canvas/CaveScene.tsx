@@ -107,7 +107,7 @@ const figureLabel = (c: SceneCreature): string =>
       ? ''
       : c.hp.current <= 0
         ? ', knocked out'
-        : `, ${String(c.hp.current)} of ${String(c.hp.max)} HP`
+        : `, ${String(c.hp.current)} / ${String(c.hp.max)} HP`
   }. Opens it.`;
 
 /** The team on the room it stands in: a button per creature, one gold plate for all. */

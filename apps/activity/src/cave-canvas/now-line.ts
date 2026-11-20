@@ -21,7 +21,7 @@ export interface NowLine {
 
 /** The room a fight or a replay is playing: where it stands in its floor count, and its foe. */
 export interface PlayingRoom {
-  /** "Room 3 of 7", or "Undercroft 1 · Room 2 of 4". */
+  /** "Room 3 / 7", or "Undercroft 1 · Room 2 / 4". */
   place: string;
   foe: string;
 }
@@ -35,11 +35,11 @@ export type NowInput =
   | { screen: 'playing'; room: PlayingRoom | null }
   | { screen: 'results' };
 
-/** "Room 3 of 7" for a room's node; in the Undercroft "Undercroft 1 · Room 2 of 4". `floors` is its own level's. */
+/** "Room 3 / 7" for a room's node; in the Undercroft "Undercroft 1 · Room 2 / 4". `floors` is its own level's. */
 export function roomPlace(node: string | undefined, floors: number): string {
   const floor = node === undefined ? null : nodeFloor(node);
   const level = node === undefined ? 0 : nodeLevel(node);
-  const room = `Room ${String((floor ?? 0) + 1)} of ${String(floors)}`;
+  const room = `Room ${String((floor ?? 0) + 1)} / ${String(floors)}`;
   return level > 0 ? `${undercroftName(level)} · ${room}` : room;
 }
 
@@ -59,7 +59,7 @@ function nextPlace(state: Pick<DungeonRunState, 'at' | 'map' | 'undercroft' | 'l
   const at = state.at === null ? null : nodeFloor(state.at);
   // Standing on a floor, the next pick is one floor down (the first room of a level when it has just been entered).
   const next = at === null || (state.at !== null && nodeLevel(state.at) !== level) ? 0 : at + 1;
-  const room = `Room ${String(next + 1)} of ${String(floors)}`;
+  const room = `Room ${String(next + 1)} / ${String(floors)}`;
   return level > 0 ? `${undercroftName(level)} · ${room}` : room;
 }
 

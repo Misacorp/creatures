@@ -231,7 +231,7 @@ describe('a room fight holds its answer until it has played', () => {
     const scene = byClass(p.root, 'cave-scene')[0] as FakeElement;
     expect(scene.getAttribute('data-state')).toBe('playing');
     expect(byClass(p.root, 'dmap')).toHaveLength(0);
-    expect(visibleText(scene)).toMatch(/Room 3 of 7: /);
+    expect(visibleText(scene)).toMatch(/Room 3 \/ 7: /);
     // Nothing of the answer: today's pip and the Cave line are still the open run's.
     expect(canRun).not.toContain(true);
     expect(phases.at(-1)).toBe('active');
@@ -292,7 +292,7 @@ describe('the canvas shows the run it is given, not a later one', () => {
     );
     // The fight view carries both; its scene shows neither state's map or line, only the fight, and the line is the room's.
     const fight = textOf(sample.view);
-    expect(fight).toMatch(/Room 3 of 7: Puddle Imp/);
+    expect(fight).toMatch(/Room 3 \/ 7: Puddle Imp/);
     expect(fight).not.toMatch(/choose the next room/);
   });
 });

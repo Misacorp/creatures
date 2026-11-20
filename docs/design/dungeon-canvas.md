@@ -23,11 +23,11 @@ The scene is `CaveScene`: the day's map (`DungeonMap` with its `canvas` option),
 | -------------------------- | ------------------------------------------------------------------------------------------------- |
 | Before a run               | "Pick your team · Enter the cave", then "Your team is ready · Enter the cave" (a tap opens Enter) |
 | Blocked                    | "Not today" (a tap opens the reason)                                                              |
-| On the map                 | "Room 2 of 7: choose the next room"; in the Undercroft "Undercroft 1 · Room 3 of 4: ..."          |
+| On the map                 | "Room 2 / 7: choose the next room"; in the Undercroft "Undercroft 1 · Room 3 / 4: ..."            |
 | Mystery room               | "<room name>: pick one"                                                                           |
 | Camp                       | "Camp: rest, keepsake or swap"                                                                    |
 | The way down               | "The way down: descend or go home"                                                                |
-| A fight (or a watched run) | "Room 3 of 7: Drift Wisp"                                                                         |
+| A fight (or a watched run) | "Room 3 / 7: Drift Wisp"                                                                          |
 | After                      | "The run is over" (a tap opens the result)                                                        |
 
 ## Drawers and actions
