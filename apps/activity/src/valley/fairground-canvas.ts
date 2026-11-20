@@ -60,7 +60,7 @@ const PLATE_PAD_CSS = 10;
 
 /** A creature's box (`CREATURE_PX`) and where it stands at a stall: feet on the counter's ledge, from the stall's top-left. */
 const CREATURE = 16;
-export const COUNTER_FEET = 52;
+export const COUNTER_FEET = 44;
 const SINGLE_AT: readonly number[] = [Math.floor((SINGLE_W - CREATURE) / 2)];
 const TEAM_AT: readonly number[] = [
   12,
@@ -294,12 +294,10 @@ export function rosetteSpots(n: number): { x: number; y: number }[] {
 
 /** What the scene's pictures depend on besides the lineup. */
 export interface FairLook {
-  /** Entries are closed: the stalls are shut. */
+  /** Entries are closed: the stalls are shut and the tent's flaps are closed. */
   locked: boolean;
   /** The Prize Stall is open (Wednesdays). */
   prizeOpen: boolean;
-  /** The crowd has filled the stands (entries are locked). */
-  crowd: boolean;
   /** The medals of the last show hanging on the tent as rosettes, in order. */
   medals: readonly RosetteMetal[];
 }
@@ -313,10 +311,10 @@ export function fairSceneDraw(lineup: readonly StallEvent[], look: FairLook) {
   return (g: SceneGeometry): Placement[] => {
     const lay = fairLayout(g, lineup);
     const out: Placement[] = [...grassTo(g)];
-    for (const x of lay.stands) out.push(...at(grandstandArt(look.crowd), x, 0));
+    for (const x of lay.stands) out.push(...at(grandstandArt(), x, 0));
     out.push(...at(boardArt(), lay.rules.x, lay.rules.y));
     out.push(...at(prizeArt(look.prizeOpen), lay.prize.x, lay.prize.y));
-    out.push(...at(tentArt(), lay.tent.x, lay.tent.y));
+    out.push(...at(tentArt(look.locked), lay.tent.x, lay.tent.y));
     rosetteSpots(look.medals.length).forEach((spot, i) => {
       const metal = look.medals[i];
       if (metal !== undefined)

@@ -242,7 +242,7 @@ function Fair({
   const medalsKey = medals.join(',');
   const prizeOpen = view.stall.open;
   const draw = useMemo(
-    () => fairSceneDraw(lineup, { locked, prizeOpen, crowd: locked, medals }),
+    () => fairSceneDraw(lineup, { locked, prizeOpen, medals }),
     [lineupKey, locked, prizeOpen, medalsKey],
   );
 
@@ -674,9 +674,11 @@ function FairInside({
         const cast = casts.find((c) => c.eventId === event.id);
         return (
           <div key={event.id} class="fg-stall" data-event={event.id}>
-            <At x={g.X(box.x + poster.x)} y={g.Y(box.y + poster.y)} class="fg-poster-at">
-              <Poster scene={event.scene} scale={g.s} />
-            </At>
+            {!locked && (
+              <At x={g.X(box.x + poster.x)} y={g.Y(box.y + poster.y)} class="fg-poster-at">
+                <Poster scene={event.scene} scale={g.s} />
+              </At>
+            )}
             {event.bonus === true && (
               <At x={g.X(box.x + 2)} y={g.Y(box.y + 2)} class="fg-ribbon-at">
                 <span class="fg-ribbon pix">Bonus</span>

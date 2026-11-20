@@ -32,7 +32,7 @@ ID: `2026-11-20-fairground-the-live-show-takes-over` · Status: current
 
 ID: `2026-11-20-fairground-direction-a-stalls-one-scene` · Status: current
 
-**Decision.** Misa (2026-11-20), his pick of the three Fairground concepts, direction A: stalls. The Fairground is one scene (`valley/FairgroundCanvas`, on `PlaceCanvas`): the tent, one stall for each event of the day (single stalls and wider team stalls), the Prize Stall and a Rules board. The creatures the player entered stand at their stall's counter, a crowd fills the grandstand when entries lock, and after a show the medals hang on the tent as rosettes. It is behind `VALLEY` plus `VALLEY_SYSTEMS`; with them off the Games tab is today's page.
+**Decision.** Misa (2026-11-20), his pick of the three Fairground concepts, direction A: stalls. The Fairground is one scene (`valley/FairgroundCanvas`, on `PlaceCanvas`): the tent, one stall for each event of the day (single stalls and wider team stalls), the Prize Stall and a Rules board. The creatures the player entered stand at their stall's counter, a crowd fills the grandstand when entries lock (the art has its crowd always, so the tent closes its flaps too), and after a show the medals hang on the tent as rosettes. It is behind `VALLEY` plus `VALLEY_SYSTEMS`; with them off the Games tab is today's page.
 
 **Reasoning.** An event is a place you walk up to, like the Market's stall, so the lineup is the scene and the page of cards is gone. The layout is pure (`fairground-canvas.ts`) and every picture is named in one file (`fairground-canvas-art.ts`), so the Art session's real pieces swap in by name.
 

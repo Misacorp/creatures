@@ -278,14 +278,13 @@ describe('the Fairground canvas: who stands where', () => {
     expect(COUNTER_FEET).toBeLessThanOrEqual(STALL_H);
   });
 
-  it('puts the creatures under the poster, never over it', () => {
+  it('stands the creatures in front of the poster wall with their feet on the counter ledge (row 43, the ledge row 44)', () => {
     for (const team of [1, 3] as const) {
       const poster = posterBox({ team });
       expect(poster.w).toBe(POSTER.w);
       expect(poster.h).toBe(POSTER.h);
       expect(poster.x + poster.w).toBeLessThanOrEqual(stallWidth({ team }));
-      for (const spot of slotSpots({ team }))
-        expect(spot.y).toBeGreaterThanOrEqual(poster.y + poster.h);
+      for (const spot of slotSpots({ team })) expect(spot.y + 16).toBe(COUNTER_FEET);
     }
   });
 
@@ -332,18 +331,17 @@ describe('the Fairground canvas: rosettes and the drawing', () => {
     const calm = fairSceneDraw(THREE, {
       locked: false,
       prizeOpen: false,
-      crowd: false,
       medals: [],
     })(g);
     const locked = fairSceneDraw(THREE, {
       locked: true,
       prizeOpen: true,
-      crowd: true,
       medals: ['gold', 'bronze'],
     })(g);
     expect(calm.length).toBeGreaterThan(g.W);
-    // The crowd, the dimmed stalls and the rosettes add to or change what is drawn.
-    expect(locked.length).toBeGreaterThan(calm.length);
+    // The shut stalls and the rosettes add to or change what is drawn.
+    expect(locked.length).toBeGreaterThan(calm.length - 1);
+    expect(locked).not.toEqual(calm);
     for (const p of [...calm, ...locked]) {
       expect(Number.isFinite(p.x) && Number.isFinite(p.y)).toBe(true);
     }
