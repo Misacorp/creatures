@@ -5135,6 +5135,9 @@ try {
       await waitFor(rightPanel.getByRole('button', { name: 'Buy' }));
       await page.waitForTimeout(300);
       await shot('fair-prize-open');
+      // Back to the valley for the checks that follow (the map's last shots).
+      await closeDrawers();
+      await backToValley();
     },
   );
 
