@@ -80,7 +80,7 @@ export function MedalCabinet({
   you: GamesYou;
   board: readonly BoardRow[];
   selfId: string;
-  /** In a panel that has its own title (the Fairground's drawer): no frame and no heading. */
+  /** True draws it with no frame and no heading. */
   bare?: boolean;
 }) {
   return (

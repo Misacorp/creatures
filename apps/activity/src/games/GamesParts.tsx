@@ -514,7 +514,7 @@ export function EventCard({
   event: LineupEvent;
   next: GamesNext;
   creatures: readonly Creature[];
-  /** False: no name on the card, because the panel it sits in is headed by it (the Fairground's stall). */
+  /** False leaves the event's name heading off the card. */
   named?: boolean;
   onSlot?: ((slot: number, button: HTMLButtonElement) => void) | undefined;
   busy?: boolean;

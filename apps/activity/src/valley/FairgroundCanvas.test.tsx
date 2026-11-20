@@ -284,6 +284,78 @@ describe('the Fairground canvas, the live standings', () => {
   });
 });
 
+describe('the Fairground canvas, when the show starts and ends', () => {
+  const props = (name: GamesViewName, start: FairgroundStart = {}) => {
+    const { view, offset } = gamesView(name);
+    return (
+      <PopoverHost onOpenHowTo={() => undefined}>
+        <FairgroundCanvas
+          view={view}
+          failed={false}
+          creatures={roster}
+          selfId={GAMES_SELF_ID}
+          // A clear ten seconds on: the captured "after" view starts the moment the show ends.
+          offset={offset + 10_000}
+          onView={() => undefined}
+          onReload={() => undefined}
+          onPurchased={() => undefined}
+          trayInput={{ trips: [], jobs: null, now: 0 }}
+          onOpenPaddock={() => undefined}
+          start={start}
+        />
+      </PopoverHost>
+    );
+  };
+
+  it('closes the right drawer when the show starts', async () => {
+    const p = createPage();
+    page = p;
+    p.draw(props('entries: none entered', { right: 'rules' }));
+    expect(visibleText(p.root)).toContain('Good fit');
+    p.draw(props('show: live'));
+    await flush();
+    expect(byClass(p.root, 'fg-rules')).toHaveLength(0);
+    expect(byClass(p.root, 'games-show')).toHaveLength(1);
+  });
+
+  it('closes Standings when the show ends, and the corner buttons are Last show and Medals again', async () => {
+    const p = createPage();
+    page = p;
+    p.draw(props('show: live'));
+    p.click(button(p, /^Standings/));
+    await flush();
+    expect(byClass(p.root, 'fg-standings')).toHaveLength(1);
+    p.draw(props('after: results and the next lineup'));
+    await flush();
+    expect(byClass(p.root, 'fg-standings')).toHaveLength(0);
+    expect(byClass(p.root, 'games-show')).toHaveLength(0);
+    // The corner buttons are back, and Last show opens as before.
+    p.click(button(p, /^Last show/));
+    expect(byClass(p.root, 'gr-row').length).toBeGreaterThan(0);
+  });
+
+  it('closes the open stall when its event leaves the lineup (the day rolled)', async () => {
+    const p = createPage();
+    page = p;
+    p.draw(props('entries: none entered', { right: 'stall' }));
+    expect(byClass(p.root, 'ge-slot').length).toBeGreaterThan(0);
+    // The next day's lineup has other events: the stall the drawer shows is gone.
+    p.draw(props('after: results and the next lineup'));
+    await flush();
+    expect(byClass(p.root, 'ge-slot')).toHaveLength(0);
+    expect(byClass(p.root, 'pc-page')).toHaveLength(0);
+  });
+});
+
+describe('the Fairground canvas, a refused drop', () => {
+  it('rules entries come from the Games section of the glossary, without the favours', () => {
+    const { page: p } = draw('entries: none entered', { right: 'rules' });
+    const text = visibleText(p.root);
+    expect(text).toContain('Event badges');
+    expect(text).not.toContain('This event favours');
+  });
+});
+
 describe('the Fairground canvas before its answer', () => {
   it('says it is loading, and offers Try again when it failed', () => {
     const p = createPage();

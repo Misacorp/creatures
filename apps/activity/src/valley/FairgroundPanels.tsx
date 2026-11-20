@@ -11,7 +11,7 @@
  *
  * Nothing here decides anything: every move is the game's action and the server answers.
  */
-import { glossaryEntry } from '@creatures/game';
+import { glossary, type GlossaryEntry } from '@creatures/game';
 import type { Creature } from '../api';
 import { Alert } from '../ui/Alert';
 import { DrillHead } from '../ui/DrillHead';
@@ -186,24 +186,15 @@ export function PrizePanel({
   );
 }
 
-/** The glossary entries the Rules board shows, in order: what the Games are, then what its words mean. */
-export const RULES_ENTRIES: readonly string[] = [
-  'games',
-  'games-team',
-  'games-good-fit',
-  'games-bonus',
-  'games-medals',
-  'games-pins',
-  'games-medal-points',
-  'games-prize-stall',
-  'games-badges',
-];
+/**
+ * The glossary entries the Rules board shows: the Games section of the glossary (the words the tags and icons open), without the
+ * favours (each has its own line on the event's icon). Nothing is listed twice: new entries of the section appear here.
+ */
+export const rulesEntries = (): GlossaryEntry[] =>
+  glossary.filter((e) => e.section === 'games' && !e.id.startsWith('games-favour-'));
 
 export function RulesPanel() {
-  const entries = RULES_ENTRIES.flatMap((id) => {
-    const entry = glossaryEntry(id);
-    return entry === undefined ? [] : [entry];
-  });
+  const entries = rulesEntries();
   return (
     <PanelBody>
       <ul class="fg-rules" aria-label="The rules of the Valley Games">

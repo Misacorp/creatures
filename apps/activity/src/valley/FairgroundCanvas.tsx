@@ -206,6 +206,11 @@ function Fair({
   );
   const [purchase, setPurchase] = useState<StallPurchase['purchase'] | null>(null);
   const [boardHost, setBoardHost] = useState<HTMLElement | null>(null);
+  // A refused drop's line, under the scene: its own, so it never shows in a drawer it has nothing to do with.
+  const [dropError, setDropError] = useState<string | null>(null);
+  useEffect(() => {
+    setDropError(null);
+  }, [right?.kind, left?.kind]);
 
   // The stage opens on its standings on a wide window (a phone keeps the stage in view); they close when the stage does.
   useEffect(() => {
@@ -216,7 +221,7 @@ function Fair({
     }
     setLeft((was) => (was?.kind === 'standings' ? null : was));
     return undefined;
-  }, [staged]);
+  }, [staged, wide]);
   // Escape leaves a replay (a drawer takes Escape first and stops it).
   useEffect(() => {
     if (replay === null) return undefined;
@@ -267,7 +272,7 @@ function Fair({
       const did = dropEntry(next, event, creatureId);
       if (did.kind === 'none') return dropOutcome('none', null, null, '');
       if (did.kind === 'refuse') {
-        setError(did.message);
+        setDropError(did.message);
         return dropOutcome('invalid', null, did.message, did.message);
       }
       void setEntry(event, did.slot, creatureId);
@@ -284,6 +289,7 @@ function Fair({
   };
   const dismissError = (): void => {
     setError(null);
+    setDropError(null);
   };
   const lineupNames = show?.lineup ?? next.lineup;
   const onReplay =
@@ -302,6 +308,11 @@ function Fair({
   };
   const stallEvent =
     right?.kind === 'stall' ? next.lineup.find((e) => e.id === right.eventId) : undefined;
+  // The day rolled and the open stall's event is gone from the lineup: nothing is left to show, so the drawer closes.
+  const stallGone = right?.kind === 'stall' && stallEvent === undefined;
+  useEffect(() => {
+    if (stallGone) setRight(null);
+  }, [stallGone]);
   if (right?.kind === 'stall' && stallEvent !== undefined) {
     rightPanel = {
       title: stallEvent.name,
@@ -439,6 +450,7 @@ function Fair({
       <div class="fg-stage" data-pushed={wide && left?.kind === 'standings' ? 'yes' : undefined}>
         <GamesShow
           stage
+          fill
           boardHost={left?.kind === 'standings' ? boardHost : null}
           events={show.events}
           lineup={show.timeline.map((s) => s.eventId)}
@@ -495,12 +507,12 @@ function Fair({
   );
 
   const tools = (
-    <div class="fg-tools" role="group" aria-label="The fair" data-no-pan="yes">
+    <div class="pc-tools" role="group" aria-label="The fair" data-no-pan="yes">
       {staged ? (
         <>
           <button
             type="button"
-            class="vy-hatch fg-tool"
+            class="vy-hatch pc-tool"
             aria-label="Standings. Open"
             aria-expanded={left?.kind === 'standings'}
             onClick={(event) => {
@@ -517,7 +529,7 @@ function Fair({
           {replay !== null && (
             <button
               type="button"
-              class="vy-hatch fg-tool"
+              class="vy-hatch pc-tool"
               aria-label="Back to the fair"
               onClick={() => {
                 setReplay(null);
@@ -534,7 +546,7 @@ function Fair({
         <>
           <button
             type="button"
-            class="vy-hatch fg-tool"
+            class="vy-hatch pc-tool"
             aria-label="Last show. Open"
             aria-expanded={left?.kind === 'last'}
             onClick={(event) => {
@@ -546,7 +558,7 @@ function Fair({
           </button>
           <button
             type="button"
-            class="vy-hatch fg-tool"
+            class="vy-hatch pc-tool"
             aria-label="Medals. Open"
             aria-expanded={left?.kind === 'medals'}
             onClick={(event) => {
@@ -577,10 +589,10 @@ function Fair({
         overlay={tools}
         below={
           <>
-            {error !== null && right === null && (
+            {(dropError ?? (right === null ? error : null)) !== null && (
               <div class="fg-error">
-                <Alert key={error} level="alert" onDismiss={dismissError}>
-                  {error}
+                <Alert key={dropError ?? error} level="alert" onDismiss={dismissError}>
+                  {dropError ?? error}
                 </Alert>
               </div>
             )}

@@ -151,7 +151,7 @@ export function GamesResults({
   creatures: readonly Creature[];
   /** Plays the show from an event (or from the start, with null); absent: no replay (no show stored). */
   onReplay?: ((eventId: string | null) => void) | undefined;
-  /** In a panel that has its own title (the Fairground's drawer): no frame and no heading, the whole-show replay says "Watch the show". */
+  /** True draws it with no frame and no heading, and the whole-show replay button says "Watch the show". */
   bare?: boolean;
 }) {
   const byId = new Map(creatures.map((c) => [c.id, c]));

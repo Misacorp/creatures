@@ -4797,10 +4797,10 @@ try {
       // No focus ring: the keyboard sees the gold arrow on a room, a mouse click leaves nothing.
       const room = page.locator('.house-scene button.house-room').locator('visible=true');
       await expectFocusCue(room.first(), 'a room of the house');
-      await expectFocusCue(page.locator('.hc-tools button.hc-tool').first(), 'a collection button');
+      await expectFocusCue(page.locator('.pc-tools button.pc-tool').first(), 'a collection button');
       // A drawer opens from a corner button and closes with its X (a phone: its Back); the house does not move.
       const before = await page.locator('.house-plane').first().boundingBox();
-      await page.locator('.hc-tools button.hc-tool[aria-label^="Build"]').click();
+      await page.locator('.pc-tools button.pc-tool[aria-label^="Build"]').click();
       await waitFor(leftPanel);
       if (width >= 960) {
         const during = await page.locator('.house-plane').first().boundingBox();
@@ -4947,7 +4947,7 @@ try {
       await openFair();
       await waitFor(page.locator('.vy-in-fairground'), 'attached');
       await fairChecks();
-      if ((await page.locator('.vy-hatch.fg-tool').count()) !== 2)
+      if ((await page.locator('.vy-hatch.pc-tool').count()) !== 2)
         throw new Error('the Fairground does not have its two corner buttons');
       const stalls = page.locator('.vy-in-fairground button.cv-target[data-seat^="stall:"]');
       if ((await stalls.count()) !== 3)
@@ -5065,7 +5065,7 @@ try {
       await page.waitForTimeout(2000);
       await shot('fair-running');
       // The standings are in the left drawer: open on a wide window, a corner button's page on a phone.
-      if (width < 960) await page.locator('button.fg-tool[aria-label^="Standings"]').click();
+      if (width < 960) await page.locator('button.pc-tool[aria-label^="Standings"]').click();
       await waitFor(leftPanel.locator('.fg-standings .gs-board'));
       await page.waitForTimeout(500);
       await expectNoScroll();
@@ -5101,12 +5101,12 @@ try {
       await waitFor(rightPanel.getByText('Entries close'));
       await closeDrawers();
       // Medals: the cabinet in the left drawer.
-      await page.locator('button.fg-tool[aria-label^="Medals"]').click();
+      await page.locator('button.pc-tool[aria-label^="Medals"]').click();
       await waitFor(leftPanel.locator('.gm-cabinet'));
       await shot('fair-medals');
       await closeDrawers();
       // Last show: the medals per event, the XP rows and Watch the show, which puts the replay on the stage.
-      await page.locator('button.fg-tool[aria-label^="Last show"]').click();
+      await page.locator('button.pc-tool[aria-label^="Last show"]').click();
       await waitFor(leftPanel.locator('.gr-row'));
       await waitFor(leftPanel.getByRole('button', { name: /Watch the show/ }));
       await shot('fair-last-show');
@@ -5116,7 +5116,7 @@ try {
       await expectNoScroll();
       await shot('fair-replay');
       // Back is the left drawer's foot on a wide window (the corner button lies under the drawer), the corner button on a phone.
-      if (width < 960) await page.locator('button.fg-tool[aria-label="Back to the fair"]').click();
+      if (width < 960) await page.locator('button.pc-tool[aria-label="Back to the fair"]').click();
       else await leftPanel.getByRole('button', { name: 'Back to the fair' }).click();
       await waitFor(page.locator('.vy-in-fairground'), 'attached');
     },

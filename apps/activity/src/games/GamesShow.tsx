@@ -15,6 +15,7 @@ import type { GamesEventResult } from '@creatures/engine';
 import type { ComponentChildren } from 'preact';
 import { gamesEventInfo, gamesEventName } from '@creatures/game';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
+import { useSize } from '../valley/parts';
 import { shinyPalette } from '../art';
 import { cssVars } from '../css-vars';
 import { usePrefersReducedMotion } from '../hooks';
@@ -90,11 +91,16 @@ export interface GamesShowProps {
    */
   wide?: boolean | undefined;
   /**
-   * The show as the stage of a place that is a canvas (the Fairground): no frame of its own, the arena, the commentary, the event pips
-   * and the replay controls only. The standings are drawn into `boardHost` (an empty element of the place's left drawer) while it is
-   * given, and not at all while it is null: they are never inline in the stage.
+   * Draws only the arena, the commentary, the event pips and the replay controls, with no frame of its own. The standings are never
+   * inline: they are drawn into `boardHost` while it is given, and not at all while it is null.
    */
   stage?: boolean | undefined;
+  /**
+   * With `stage`: draw the show at the largest whole pixel scale at which the arena and the rows under it fit the room the stage has
+   * (its box, measured), never smaller than the width-filling size of today. Absent: today's size (at most 3x).
+   */
+  fill?: boolean | undefined;
+  /** With `stage`: an empty element (given by the caller) the standings are drawn into; null or absent: no standings. */
   boardHost?: HTMLElement | null | undefined;
 }
 
@@ -668,6 +674,8 @@ export function GamesShow(props: GamesShowProps) {
       <ShowLayout
         wide={wide}
         stage={stage}
+        fill={props.fill === true}
+        controls={mode === 'replay'}
         boardHost={props.boardHost}
         title={name}
         board={board}
@@ -719,6 +727,8 @@ export function GamesShow(props: GamesShowProps) {
     <ShowLayout
       wide={wide}
       stage={stage}
+      fill={props.fill === true}
+      controls={mode === 'replay'}
       boardHost={props.boardHost}
       title={name}
       board={board}
@@ -774,6 +784,8 @@ export function GamesShow(props: GamesShowProps) {
 function ShowLayout({
   wide,
   stage,
+  fill,
+  controls,
   boardHost,
   title,
   board,
@@ -782,6 +794,8 @@ function ShowLayout({
 }: {
   wide: boolean;
   stage: boolean;
+  fill: boolean;
+  controls: boolean;
   boardHost: HTMLElement | null | undefined;
   title: string;
   board: ComponentChildren;
@@ -790,11 +804,9 @@ function ShowLayout({
 }) {
   if (stage) {
     return (
-      <section class="games-show is-stage" aria-label="Valley Games">
-        <div class="gs-main">{main}</div>
-        <LiveRegion>{live}</LiveRegion>
-        <Elsewhere into={boardHost ?? null}>{board}</Elsewhere>
-      </section>
+      <StageLayout fill={fill} controls={controls} boardHost={boardHost} board={board} live={live}>
+        {main}
+      </StageLayout>
     );
   }
   return (
@@ -812,6 +824,63 @@ function ShowLayout({
       >
         <LiveRegion>{live}</LiveRegion>
       </WideLayout>
+    </section>
+  );
+}
+
+/** CSS px the rows under the arena (commentary, pips, controls) and the gaps between them take, kept clear when the stage fills its room. */
+const STAGE_UNDER_PX = 90;
+/** What the replay's controls add under them. */
+const STAGE_CONTROLS_PX = 50;
+/** The arena's and the stands' height in scene pixels (`SCENE_SIZE`, `STANDS_SIZE`). */
+const ARENA_ROWS = 112 + 48;
+const ARENA_COLS = 192;
+
+/** The widest the arena is drawn (CSS px) in a stage `width` by `height`: the largest whole scale that fits, never under today's. */
+export function stageWidth(width: number, height: number, controls = false): number {
+  const s = Math.min(
+    Math.floor(width / ARENA_COLS),
+    Math.floor((height - STAGE_UNDER_PX - (controls ? STAGE_CONTROLS_PX : 0)) / ARENA_ROWS),
+  );
+  return Math.max(s * ARENA_COLS, Math.min(width, 576));
+}
+
+/** The show as a stage: no frame; with `fill` the arena takes the largest whole scale the stage's box has room for. */
+function StageLayout({
+  fill,
+  controls,
+  boardHost,
+  board,
+  live,
+  children,
+}: {
+  fill: boolean;
+  /** The rows under the arena include the replay's controls. */
+  controls: boolean;
+  boardHost: HTMLElement | null | undefined;
+  board: ComponentChildren;
+  live: string;
+  children: ComponentChildren;
+}) {
+  const box = useRef<HTMLElement | null>(null);
+  const size = useSize(box);
+  return (
+    <section
+      ref={box}
+      class="games-show is-stage"
+      aria-label="Valley Games"
+      data-fill={fill ? 'yes' : undefined}
+    >
+      <div
+        class="gs-main"
+        ref={cssVars(
+          fill ? { '--gs-max': `${String(stageWidth(size.width, size.height, controls))}px` } : {},
+        )}
+      >
+        {children}
+      </div>
+      <LiveRegion>{live}</LiveRegion>
+      <Elsewhere into={boardHost ?? null}>{board}</Elsewhere>
     </section>
   );
 }
