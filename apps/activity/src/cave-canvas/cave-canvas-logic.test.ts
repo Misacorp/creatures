@@ -70,7 +70,7 @@ describe('the now line', () => {
 
   it('in the Undercroft the floor is named for the level', () => {
     const run = undercroftState('keeper');
-    expect(nowLine({ screen: 'run', state: run }).text).toMatch(/^Undercroft 1 · Room \d \/ \d/);
+    expect(nowLine({ screen: 'run', state: run }).text).toMatch(/^Undercroft 1 · Room \d \/ \d$/);
   });
 
   it('during a fight it is the room and its foe; the run over reads the same', () => {

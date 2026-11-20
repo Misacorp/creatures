@@ -57,9 +57,14 @@ export function CavePlayback({
   const playable = current !== undefined && current.rules === 2;
   const skip = useRef(finishRoom);
   skip.current = finishRoom;
+  const nothing = current === undefined;
+  const done = useRef(onDone);
+  done.current = onDone;
   useEffect(() => {
-    if (!playable) skip.current();
-  }, [playable, room]);
+    // A run with no room to show goes straight on (never an empty scene).
+    if (nothing) done.current();
+    else if (!playable) skip.current();
+  }, [playable, room, nothing]);
   if (current === undefined || current.rules !== 2) return null;
   return (
     <CaveRoom

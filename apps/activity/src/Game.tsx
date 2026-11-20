@@ -345,6 +345,10 @@ export function Game({
   const [dungeonPhase, setDungeonPhase] = useState<DungeonPhase | null>(null);
   // The Dungeon page says whether the Cave is drawn as a canvas (valley on and combat v2): then no scene of the valley's above it.
   const [caveCanvas, setCaveCanvas] = useState(false);
+  // Away from the Dungeon tab nothing says it is a canvas: the next visit starts from the valley's own scene until it loads.
+  useEffect(() => {
+    if (tab !== 'dungeon') setCaveCanvas(false);
+  }, [tab]);
 
   // The daily allowance lands once (the server tells the player on one request only): say so on the
   // notice line, which the next action clears.

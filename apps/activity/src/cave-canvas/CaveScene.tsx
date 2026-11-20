@@ -124,7 +124,7 @@ function TeamOnMap({
         <button
           key={c.id}
           type="button"
-          class="cave-creature"
+          class="cave-creature vy-stand-btn"
           aria-label={figureLabel(c)}
           onClick={(event) => {
             onCreature(c.id, event.currentTarget);
@@ -177,7 +177,7 @@ function Mouth({ mouth, scale }: { mouth: CaveMouth; scale: number }) {
             ) : (
               <button
                 type="button"
-                class="cave-creature"
+                class="cave-creature vy-stand-btn"
                 data-creature={c.id}
                 aria-label={figureLabel(c)}
                 disabled={mouth.disabled && setup}

@@ -17,6 +17,10 @@ The scene is `CaveScene`: the day's map (`DungeonMap` with its `canvas` option),
 - **Undercroft / tall map:** the map keeps a readable size; when it is taller than the box, the box is dragged up and down (mouse drag by `useDragScroll`, a finger scrolls it natively, `PanHint axis="y"` is the same cue as the raid board's), opening on the team (`map-size.ts`, `startOffset`). A map that fits is not dragged. No scrolling inside the map otherwise.
 - **Reduced motion** is respected (no smooth scroll to the team); no focus rings in the art (`art-focus.css`), the gold arrow instead; every room and creature is a real button.
 
+## The team at the mouth: the standers
+
+The creatures at the cave mouth (and on the map) are buttons of the valley's stander look: the same class, `vy-stand-btn` (no box, no ring, the gold focus arrow of `art-focus.css`), so tap and keyboard behave as for the Bonfire's and the Paddock's creatures. They do not use `valley/PlaceScene`'s `Stander` itself, because that places a creature at scene coordinates (`SceneGeometry`), opens a creature popover and is moved by the Paddock's free-roam `Hand`; the mouth needs three ordered places that are drop targets, a tap that opens the configurator drawer, and the tray's drag (`useDragDrop`), as the raid's seats do.
+
 ## Now line
 
 | Where                      | Text                                                                                              |
@@ -49,4 +53,4 @@ What left the main view: the run strip (it is the Pack drawer), the page's map-b
 
 ## The hold rule
 
-The server answers a move at once with the room's stored fight and the run after it. On the canvas nothing of that answer shows until the fight has played: the scene, the HP shown on the map, the Pack, the Route, the now line, the valley's Cave line and the Home pips all stay as they were before the room (`hold.ts`). `Dungeon` keeps the run before the room in the `fight` view (`before`) and keeps the answer's `today` (or the reload that a finished run needs) in a ref, applied when the playback ends (`fightDone`). Balances already waited (`refreshOwed`). The raid canvas's `hold.ts` is the model; there the end is a clock (`endsAt`), here it is the playback's own end.
+The server answers a move at once with the room's stored fight and the run after it. On the canvas nothing of that answer shows until the fight has played: the scene, the HP shown on the map, the Pack, the Route, the now line, the valley's Cave line and the Home pips all stay as they were before the room (`hold.ts`). `Dungeon` keeps the run before the room in the `fight` view (`before`) and keeps the answer's `today` (or the reload that a finished run needs) in a ref, applied when the playback ends (`fightDone`). Balances already waited (`refreshOwed`). The raid canvas's `hold.ts` is the model; there the end is a clock (`endsAt`), here it is the playback's own end. Leaving the Cave mid-fight hands the held answer to the game at unmount (the pip, the Cave line, the balances), and a day reset that comes while an answer is held waits for the release before it reloads today.

@@ -50,8 +50,8 @@
   background-size: calc(64px * var(--cave-s, 1)) calc(32px * var(--cave-s, 1));
 }
 
-.cave-wall-left,
-.cave-wall-right {
+.cave-scene > .cave-wall-left,
+.cave-scene > .cave-wall-right {
   top: 0;
   bottom: 0;
   width: calc(32px * var(--cave-s, 1));
@@ -60,18 +60,18 @@
   background-size: calc(32px * var(--cave-s, 1)) calc(64px * var(--cave-s, 1));
 }
 
-.cave-wall-left {
+.cave-scene > .cave-wall-left {
   left: 0;
 }
 
-.cave-wall-right {
+.cave-scene > .cave-wall-right {
   right: 0;
   transform: scaleX(-1);
 }
 
-/* The stage of a fight and the room's rests: the fight sits on the rock, the walls stay at the edges. */
+/* The stage of a fight and the room's rests: the fight sits on the rock close under the frame, the walls stay at the edges. */
 .cave-scene > .rc-stage {
-  padding: 0.25rem 0.5rem 0.5rem;
+  padding: 0 0.5rem 0.5rem;
 }
 
 .cave-scene > .rc-hint {
@@ -119,6 +119,7 @@
   flex: none;
   width: 100%;
   margin: auto 0;
+  padding-top: 0.5rem;
   display: flex;
   justify-content: center;
 }
@@ -389,11 +390,17 @@
   padding-left: 22rem;
 }
 
-/* A fight sits in the middle of the scene. */
+/* A fight sits close under the frame on a phone, and in the middle of a tall desktop scene. */
 .cave-scene > .rc-stage {
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
+}
+
+@media (min-width: 60rem) {
+  .cave-scene > .rc-stage {
+    justify-content: center;
+  }
 }
 
 /* The Route drawer's list. */

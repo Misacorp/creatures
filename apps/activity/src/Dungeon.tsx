@@ -144,6 +144,13 @@ export function Dungeon({
   canvasNow.current = onCanvas;
   const latestFinished = useRef(onRunFinished);
   latestFinished.current = onRunFinished;
+  // What the page tells the game, read at unmount (a held answer is released to it then).
+  const latestCanRun = useRef(onCanRunChange);
+  latestCanRun.current = onCanRunChange;
+  const latestPhase = useRef(onPhaseChange);
+  latestPhase.current = onPhaseChange;
+  // The day reset while an answer was held: the reload waits for the release.
+  const resetSkipped = useRef(false);
   // The dungeon's own words, and its own idea of a stale screen (by code, not by status). After
   // such a "no" today is loaded again: the run may exist.
   const runner = useActionRunner({
@@ -160,6 +167,24 @@ export function Dungeon({
       unmounted.current = true;
       // Left while a fight was still playing (or the results not yet shown): the run was paid anyway.
       if (refreshOwed.current) latestFinished.current();
+      // Left mid-fight on the canvas: the held answer is the game's now, as the end of the playback would have sent it.
+      const h = held.current;
+      if (h !== null) {
+        const v = latestView.current;
+        const ended = v.kind === 'fight' && v.summary !== null;
+        if (h.today !== null) latestCanRun.current(h.today.canRun);
+        else if (h.reload) {
+          fetchDungeonToday().then(
+            (next) => {
+              latestCanRun.current(next.canRun);
+            },
+            () => undefined,
+          );
+        }
+        const phase = dungeonPhase('fight', h.today?.canRun ?? false, ended);
+        if (phase !== null) latestPhase.current?.(phase);
+        held.current = null;
+      }
     },
     [],
   );
@@ -223,6 +248,11 @@ export function Dungeon({
         // A fight on screen plays out first.
         const playing =
           latestView.current.kind === 'playback' || latestView.current.kind === 'fight';
+        // An answer held back by the canvas is applied first; the reload follows it (`fightDone`).
+        if (held.current !== null) {
+          resetSkipped.current = true;
+          return;
+        }
         if (!runner.inFlight()) load(playing ? 'keep' : 'initial');
       },
       Math.min(wait, 2 ** 31 - 1),
@@ -258,6 +288,10 @@ export function Dungeon({
       },
     });
     held.current = null;
+    if (resetSkipped.current) {
+      resetSkipped.current = false;
+      load('keep');
+    }
     if (screenAfterFight(fight.summary ?? undefined, fight.state) === 'results') {
       if (fight.summary !== null) finish(fight.summary);
     } else setView({ kind: 'run', state: fight.state });

@@ -10,8 +10,8 @@ import { sampleRoster } from '../creature-card-sample';
 import { Dungeon } from '../Dungeon';
 import { nodeLabel } from '../dungeon-map';
 import { sampleState } from '../dungeon-map-sample';
-import { sampleToday } from '../dungeon-path-samples';
-import type { DungeonActResponse, DungeonRunState } from '../dungeon-types';
+import { sampleSummary, sampleToday } from '../dungeon-path-samples';
+import type { DungeonActResponse, DungeonRunState, DungeonToday } from '../dungeon-types';
 import { SAMPLE_MAP } from '../dungeon-map-sample';
 import { byClass, byName, createPage, FakeElement, visibleText, type Page } from '../test-dom';
 import { caveSample } from '../workbench/cave-canvas-sample';
@@ -107,6 +107,8 @@ interface DrawOptions {
   onCanRunChange?: (canRun: boolean) => void;
   onPhaseChange?: (phase: 'active' | 'ready' | 'none') => void;
   onCanvasChange?: (on: boolean) => void;
+  onRunFinished?: () => void;
+  today?: Partial<DungeonToday>;
 }
 
 function drawDungeon(o: DrawOptions): Page {
@@ -118,6 +120,7 @@ function drawDungeon(o: DrawOptions): Page {
       canRun: open === null,
       map: o.rules === 2 ? mapV2(SAMPLE_MAP, 6) : SAMPLE_MAP,
       active: open,
+      ...(o.today ?? {}),
     }),
   );
   page = createPage();
@@ -132,7 +135,7 @@ function drawDungeon(o: DrawOptions): Page {
       onDraftChange={noop}
       onRunStarted={noop}
       onCanRunChange={o.onCanRunChange ?? noop}
-      onRunFinished={noop}
+      onRunFinished={o.onRunFinished ?? noop}
       canvas={o.canvas}
       onPhaseChange={o.onPhaseChange}
       onCanvasChange={o.onCanvasChange}
@@ -294,5 +297,165 @@ describe('the canvas shows the run it is given, not a later one', () => {
     const fight = textOf(sample.view);
     expect(fight).toMatch(/Room 3 \/ 7: Puddle Imp/);
     expect(fight).not.toMatch(/choose the next room/);
+  });
+});
+
+describe('after the fight', () => {
+  const sceneState = (p: Page): string | null =>
+    byClass(p.root, 'cave-scene')[0]?.getAttribute('data-state') ?? null;
+
+  /** Plays the fight on the scene to its end (fake timers), a second at a time. */
+  async function playOut(p: Page): Promise<void> {
+    for (let i = 0; i < 900 && sceneState(p) === 'playing'; i++) {
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1000);
+      });
+    }
+    expect(sceneState(p)).not.toBe('playing');
+  }
+
+  /** Draws the Cave with an open run, answers its move into `f2l1` with `answer`, and goes. */
+  async function goFight(o: Partial<DrawOptions>, ends: boolean) {
+    vi.useFakeTimers();
+    const run = v2Run();
+    const { room } = sampleRoomV2({
+      foe: 'puddle-imp',
+      depth: 6,
+      level: 14,
+      seed: 'cave-canvas-test',
+      node: 'f2l1',
+    });
+    const after: DungeonRunState = {
+      ...run,
+      step: run.step + 1,
+      at: 'f2l1',
+      status: ends ? 'done' : 'active',
+    };
+    const next = sampleToday({ rules: 2, depth: 6, canRun: true, active: null, map: run.map });
+    const answer: DungeonActResponse = {
+      state: after,
+      room,
+      today: next,
+      ...(ends ? { summary: sampleSummary('cleared', { rules: 2 }) } : {}),
+    };
+    api.dungeonAct.mockResolvedValue(answer);
+    const p = drawDungeon({ canvas: true, rules: 2, run, ...o });
+    await settle();
+    const node = run.map.nodes.find((n) => n.id === 'f2l1');
+    if (node === undefined) throw new Error('no room');
+    const label = nodeLabel(node).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    p.click(button(p.root, new RegExp(`^${label}\\.`)));
+    p.click(button(p.root, /^Go/));
+    await settle();
+    expect(sceneState(p)).toBe('playing');
+    return { p, next };
+  }
+
+  it('the held today is applied only when the playback has ended', async () => {
+    const canRun: boolean[] = [];
+    const phases: string[] = [];
+    const { p } = await goFight(
+      { onCanRunChange: (c) => canRun.push(c), onPhaseChange: (ph) => phases.push(ph) },
+      false,
+    );
+    expect(canRun).not.toContain(true);
+    await playOut(p);
+    expect(canRun.at(-1)).toBe(true);
+    expect(byClass(p.root, 'dmap').length).toBe(1);
+  });
+
+  it('the fight that ends the run: the Cave line and the results come only after the playback', async () => {
+    const phases: string[] = [];
+    const finished = vi.fn();
+    const { p } = await goFight(
+      { onPhaseChange: (ph) => phases.push(ph), onRunFinished: finished },
+      true,
+    );
+    expect(phases.at(-1)).toBe('active');
+    expect(byClass(p.root, 'dungeon-result')).toHaveLength(0);
+    expect(visibleText(p.root)).not.toMatch(/The run is over/);
+    expect(finished).not.toHaveBeenCalled();
+    await playOut(p);
+    expect(phases.at(-1)).toBe('none');
+    expect(sceneState(p)).toBe('over');
+    expect(visibleText(p.root)).toMatch(/The run is over/);
+    expect(finished).toHaveBeenCalled();
+  });
+
+  it('leaving the Cave mid-fight hands the held answer to the game and pays the run', async () => {
+    const canRun: boolean[] = [];
+    const phases: string[] = [];
+    const finished = vi.fn();
+    const { p } = await goFight(
+      {
+        onCanRunChange: (c) => canRun.push(c),
+        onPhaseChange: (ph) => phases.push(ph),
+        onRunFinished: finished,
+      },
+      true,
+    );
+    expect(canRun).not.toContain(true);
+    p.unmount();
+    page = null;
+    expect(canRun.at(-1)).toBe(true);
+    expect(phases.at(-1)).toBe('none');
+    expect(finished).toHaveBeenCalled();
+  });
+
+  it('a day reset during a fight reloads only after the held answer is applied', async () => {
+    const now = Date.now();
+    const { p } = await goFight({ today: { serverNow: now, resetsAt: now + 4000 } }, false);
+    const before = api.fetchDungeonToday.mock.calls.length;
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(6000);
+    });
+    expect(sceneState(p)).toBe('playing');
+    expect(api.fetchDungeonToday.mock.calls.length).toBe(before);
+    await playOut(p);
+    expect(api.fetchDungeonToday.mock.calls.length).toBe(before + 1);
+  });
+});
+
+describe('treats', () => {
+  const enterText = (treatsOff: boolean): string => {
+    const sample = caveSample('before a run');
+    const p = createPage();
+    page = p;
+    Reflect.set(p.document, 'addEventListener', noop);
+    Reflect.set(p.document, 'removeEventListener', noop);
+    p.draw(
+      <CaveCanvas
+        today={sample.today}
+        offset={0}
+        view={sample.view}
+        creatures={sample.creatures}
+        busy={false}
+        error={null}
+        bait={100}
+        treatsOff={treatsOff}
+        draft={[sample.creatures[0]?.id ?? null, sample.creatures[1]?.id ?? null, null]}
+        onDraftChange={noop}
+        onEnter={noop}
+        onAct={noop}
+        onFightDone={noop}
+        onPlaybackDone={noop}
+        onWatch={noop}
+        onRetry={noop}
+        onSeeLast={noop}
+        configure={sample.configure}
+        trayInput={{ trips: [], jobs: null, now: 0 }}
+        start={{ right: { kind: 'enter' } }}
+      />,
+    );
+    const text = visibleText(p.root);
+    p.unmount();
+    page = null;
+    return text;
+  };
+
+  it('are offered at the cave mouth, and hidden when the server refuses them', () => {
+    expect(enterText(false)).toMatch(/Treats/);
+    expect(enterText(true)).not.toMatch(/Treats/);
+    expect(enterText(true)).toMatch(/Enter the cave/);
   });
 });

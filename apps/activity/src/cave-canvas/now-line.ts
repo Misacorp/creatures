@@ -88,7 +88,12 @@ export function nowLine(input: NowInput): NowLine {
         case 'descend':
           return { id: 'descend', text: 'The way down: descend or go home', tap: 'pending' };
         default:
-          return { id: 'next', text: `${nextPlace(state)}: choose the next room`, tap: null };
+          // In the Undercroft the place alone: the longer line does not fit a phone on one line.
+          return {
+            id: 'next',
+            text: state.level > 0 ? nextPlace(state) : `${nextPlace(state)}: choose the next room`,
+            tap: null,
+          };
       }
     }
   }
