@@ -199,7 +199,7 @@ describe('the Fairground canvas, the Prize Stall', () => {
   it('is shuttered off Wednesday: its plate says when it opens and the drawer has no Buy', () => {
     const { page: p } = draw('after: results and the next lineup');
     const stall = target(p, /^The Prize Stall is shuttered/);
-    expect(visibleText(stall.parentElement ?? stall)).toMatch(/^Opens /);
+    expect(visibleText(stall)).toMatch(/^Opens /);
     p.click(stall);
     expect(visibleText(p.root)).toMatch(/Opens /);
     expect(byName(p.root, 'button', /^Buy/)).toHaveLength(0);
@@ -208,7 +208,7 @@ describe('the Fairground canvas, the Prize Stall', () => {
   it('is open on Wednesday: its offers are in the drawer with Buy', () => {
     const { page: p } = draw('after: stall open');
     const stall = target(p, /^The Prize Stall is open/);
-    expect(visibleText(stall.parentElement ?? stall)).toContain('Prize Stall');
+    expect(visibleText(stall)).toContain('Prize Stall');
     p.click(stall);
     expect(byName(p.root, 'button', /Buy/).length).toBeGreaterThan(0);
   });

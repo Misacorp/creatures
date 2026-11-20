@@ -229,6 +229,9 @@ function Fair({
     };
   }, [replay === null]);
 
+  // The live show's clock is corrected by the server's time read once when the stage opens (a value that changed every second would
+  // restart the show's frame loop each time).
+  const stageClock = useMemo(() => Date.now() + offset, [staged, offset]);
   const byId = useMemo(() => new Map(creatures.map((c) => [c.id, c])), [creatures]);
   const casts = useMemo(
     () => stallCasts(lineup, next.entries, new Set(byId.keys())),
@@ -440,7 +443,9 @@ function Fair({
           events={show.events}
           lineup={show.timeline.map((s) => s.eventId)}
           mode={replay === null ? 'live' : 'replay'}
-          {...(replay === null ? { startsAt: show.showAt, serverNow: now } : { startMs: replay })}
+          {...(replay === null
+            ? { startsAt: show.showAt, serverNow: stageClock }
+            : { startMs: replay })}
           youId={selfId}
           names={names}
           onDone={replay === null ? onReload : undefined}
