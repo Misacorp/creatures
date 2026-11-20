@@ -348,6 +348,11 @@ interface ThumbProp {
   y: number;
 }
 
+/** The row of a scene's thumbnail strip where the crop starts (scene pixels; the Fairground's poster crops the same way). */
+export function thumbTop(scene: GamesSceneId): number {
+  return Math.max(0, Math.min(SCENE_SIZE.height - THUMB_ROWS, THUMBS[scene].top));
+}
+
 /** The strip's height in scene pixels (the card shows it at 2x). */
 const THUMB_ROWS = 52;
 
@@ -364,7 +369,7 @@ export function EventThumb({
 }) {
   const id = sceneOf(scene);
   const thumb = THUMBS[id];
-  const top = Math.max(0, Math.min(SCENE_SIZE.height - THUMB_ROWS, thumb.top));
+  const top = thumbTop(id);
   const n = creatures.length;
   return (
     <div
@@ -503,11 +508,14 @@ export function EventCard({
   creatures,
   onSlot,
   busy = false,
+  named = true,
   children,
 }: {
   event: LineupEvent;
   next: GamesNext;
   creatures: readonly Creature[];
+  /** False: no name on the card, because the panel it sits in is headed by it (the Fairground's stall). */
+  named?: boolean;
   onSlot?: ((slot: number, button: HTMLButtonElement) => void) | undefined;
   busy?: boolean;
   /** More under the slots (a result). */
@@ -532,7 +540,7 @@ export function EventCard({
         })}
       />
       <div class="ge-head">
-        <h3 class="ge-name">{event.name}</h3>
+        {named && <h3 class="ge-name">{event.name}</h3>}
         {team && (
           <Tag entry="games-team" label="Team event">
             Team

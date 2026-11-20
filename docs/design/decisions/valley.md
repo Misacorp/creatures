@@ -4,6 +4,38 @@ The valley and peaceful systems overhaul planned in docs/design/valley/: job pos
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-20: Fairground: medals behind corner buttons, the Prize Stall and Rules are things in the scene **[Misa]**
+
+ID: `2026-11-20-fairground-medals-behind-corner-buttons-the` · Status: current
+
+**Decision.** Misa (2026-11-20). "Last show" and "Medals" are two corner buttons over the Fairground's scene that open the left drawer. Last show holds the medals per event, the experience rows and "Watch the show" (the replay on the stage). Medals holds the medal cabinet with the server's standings. The Prize Stall and the Rules board are things to tap in the scene: the Prize Stall's offers open in the right drawer (the stall is shuttered except on Wednesday and its plate then says when it opens), Rules shows the Games' glossary text in the right drawer. The tent opens the schedule. Badges and records stay on the creature page, the trophy shelf stays in the House, errors show in the flow under the scene or inside the drawer, never over it.
+
+**Reasoning.** Each thing keeps one place and one plate, and the side rule of a place as a canvas holds: what was tapped in the scene opens on the right, collections that belong to no one spot (the results, the cabinet) on the left. Nothing needs a second navigation or a page under the scene.
+
+## 2026-11-20: Fairground: entering by tap and by drag, the same server action **[Misa]**
+
+ID: `2026-11-20-fairground-entering-by-tap-and-by` · Status: current
+
+**Decision.** Misa (2026-11-20). Entering works by tap and by drag. Tapping a stall opens its event in the right drawer: the story, the favours and the player's entry slots; a slot opens the creature list as a step of that panel (`PanelStep`, with Back), and Clear lives in that step. Dragging a creature from the tray onto a stall enters it by the same server action as the picker (`games/entry-flow.ts`, `putEntry`). A stall that is locked refuses the drop with the closed-entries line, a stall with every slot taken refuses it with the line the server gives for a team that does not fit; both show in the flow under the scene.
+
+**Reasoning.** The tray is the one place every creature is in reach, so a drag is the quick way in, and the slot step keeps the picker's badges (Good fit, event badges) for a considered choice. One function sends both, so the two ways cannot disagree about a move from another event or a full team.
+
+## 2026-11-20: Fairground: the live show takes over the picture, standings in the left drawer **[Misa]**
+
+ID: `2026-11-20-fairground-the-live-show-takes-over` · Status: current
+
+**Decision.** Misa (2026-11-20). The live show takes over the picture while it runs: `GamesShow` is the stage in the place of the scene, the way the raid hides the place scene (`sceneless` in `ValleyFrame`). Its commentary, event pips and replay controls sit under the stage, and the live standings are in the left drawer (open by default on a wide window, behind a corner button "Standings" on a phone). "Watch the show" from Last show plays the replay on the same stage, with "Back to the fair" in the drawer's foot.
+
+**Reasoning.** The show is the thing the whole day builds to and it has its own picture, so it gets the whole one. The standings are a list that belongs to no one spot, so they take the left drawer (`GamesShow` gets `stage` and `boardHost`: it draws the board into the drawer's element while the clock keeps running in the stage).
+
+## 2026-11-20: Fairground: direction A, stalls, one scene (Valley Games as a canvas) **[Misa]**
+
+ID: `2026-11-20-fairground-direction-a-stalls-one-scene` · Status: current
+
+**Decision.** Misa (2026-11-20), his pick of the three Fairground concepts, direction A: stalls. The Fairground is one scene (`valley/FairgroundCanvas`, on `PlaceCanvas`): the tent, one stall for each event of the day (single stalls and wider team stalls), the Prize Stall and a Rules board. The creatures the player entered stand at their stall's counter, a crowd fills the grandstand when entries lock, and after a show the medals hang on the tent as rosettes. It is behind `VALLEY` plus `VALLEY_SYSTEMS`; with them off the Games tab is today's page.
+
+**Reasoning.** An event is a place you walk up to, like the Market's stall, so the lineup is the scene and the page of cards is gone. The layout is pure (`fairground-canvas.ts`) and every picture is named in one file (`fairground-canvas-art.ts`), so the Art session's real pieces swap in by name.
+
 ## 2026-11-16: Place scenes scale to fill the window; narrower drawers; item card config props
 
 ID: `2026-11-16-place-scenes-scale-to-fill-the` · Status: current

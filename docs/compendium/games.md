@@ -17,6 +17,9 @@ Read `README.md` for the tags.
 - A creature that wins an event (gold) earns that event's **badge**, a little medallion in the event's colours with a count of its wins ("Pepper Panic ×3"). Every member of a winning team earns it. `(design)`
 - Only creatures their explorers entered that day take part; nobody is entered for them. `(design)`
 
+- **The Fairground as a place** (the valley's systems on): the meadow is drawn as a small fair. A tent in the middle, a grandstand along the back that fills with a crowd when entries close, one stall for each event of the day (the team event's stall is the wide one), the Prize Stall and a Rules board. Your entered creatures stand at their stall's counter. After a show the committee hangs rosettes on the tent for your medals. `(design: decisions, 2026-11-20)`
+- Player-facing words of it: the plates **Last show**, **Medals**, **Standings**, **Rules**, **Prize Stall** ("Opens Wed 13:37" while it is shuttered), the tent's **Show in 2:53** and **Show Wed 13:40**, the drawer heads **The show** ("Entries close", "The show"; "Only the creatures you enter play."), **Your entry**, **Who enters Melon Run?**, "There is no show to look back on yet." and "Watch the show". `(content: valley/FairgroundPanels.tsx)`
+
 **Compendium detail, not shipped** (feel):
 
 - _Mood:_ a village fete with a loudspeaker. The Games are silly on purpose. Nobody is hurt, nobody is shamed, and everybody gets a cheer. Losing means a splash, a squash, a pink face or a shiver, and then a towel.

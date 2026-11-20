@@ -20,6 +20,7 @@ import { cssVars } from '../css-vars';
 import { usePrefersReducedMotion } from '../hooks';
 import { Sprite } from '../sprites/Sprite';
 import { creatureSpriteOrFallback } from '../sprites/creature-sprites';
+import { Elsewhere } from '../ui/Elsewhere';
 import { LiveRegion } from '../ui/LiveRegion';
 import { PixelHeading } from '../ui/PixelHeading';
 import { PlaybackControls } from '../ui/PlaybackControls';
@@ -88,6 +89,13 @@ export interface GamesShowProps {
    * the Expeditions map. The workbench forces it either way.
    */
   wide?: boolean | undefined;
+  /**
+   * The show as the stage of a place that is a canvas (the Fairground): no frame of its own, the arena, the commentary, the event pips
+   * and the replay controls only. The standings are drawn into `boardHost` (an empty element of the place's left drawer) while it is
+   * given, and not at all while it is null: they are never inline in the stage.
+   */
+  stage?: boolean | undefined;
+  boardHost?: HTMLElement | null | undefined;
 }
 
 const SEATS = 16;
@@ -570,7 +578,10 @@ function EmptyStands({ scene, still }: { scene: GamesSceneId; still: boolean }) 
 export function GamesShow(props: GamesShowProps) {
   const { events, mode, youId, names, still = false } = props;
   const wideMedia = useWide();
+  const stage = props.stage === true;
   const wide = props.wide ?? wideMedia;
+  // The board is inline under the commentary on a narrow screen, but never in a stage (its place is the drawer).
+  const inlineBoard = !wide && !stage;
   const prepared = useMemo(() => events.map(prepareEvent), [events]);
   const timeline = useMemo(() => buildShowTimeline(events, props.lineup), [events, props.lineup]);
   const spoken = useMemo(
@@ -656,6 +667,8 @@ export function GamesShow(props: GamesShowProps) {
     return (
       <ShowLayout
         wide={wide}
+        stage={stage}
+        boardHost={props.boardHost}
         title={name}
         board={board}
         live={spokenNow?.text ?? ''}
@@ -677,7 +690,7 @@ export function GamesShow(props: GamesShowProps) {
               {liveBadge}
             </div>
             <p class="gs-say is-empty" aria-hidden="true" />
-            {!wide && board}
+            {inlineBoard && board}
             <Pips prepared={prepared} timeline={timeline} cursor={cursor} youId={youId} />
             {controls}
           </>
@@ -705,6 +718,8 @@ export function GamesShow(props: GamesShowProps) {
   return (
     <ShowLayout
       wide={wide}
+      stage={stage}
+      boardHost={props.boardHost}
       title={name}
       board={board}
       live={spokenNow?.text ?? ''}
@@ -736,7 +751,7 @@ export function GamesShow(props: GamesShowProps) {
             {liveBadge}
           </div>
           <SayLine p={p} frame={frame} cursor={cursor} youId={youId} names={names} />
-          {!wide && board}
+          {inlineBoard && board}
           <Pips
             prepared={prepared}
             timeline={timeline}
@@ -758,17 +773,30 @@ export function GamesShow(props: GamesShowProps) {
  */
 function ShowLayout({
   wide,
+  stage,
+  boardHost,
   title,
   board,
   main,
   live,
 }: {
   wide: boolean;
+  stage: boolean;
+  boardHost: HTMLElement | null | undefined;
   title: string;
   board: ComponentChildren;
   main: ComponentChildren;
   live: string;
 }) {
+  if (stage) {
+    return (
+      <section class="games-show is-stage" aria-label="Valley Games">
+        <div class="gs-main">{main}</div>
+        <LiveRegion>{live}</LiveRegion>
+        <Elsewhere into={boardHost ?? null}>{board}</Elsewhere>
+      </section>
+    );
+  }
   return (
     <section class="games-show pix-panel" aria-label="Valley Games">
       <WideLayout

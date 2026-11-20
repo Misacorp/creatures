@@ -75,16 +75,24 @@ export function MedalCabinet({
   you,
   board,
   selfId,
+  bare = false,
 }: {
   you: GamesYou;
   board: readonly BoardRow[];
   selfId: string;
+  /** In a panel that has its own title (the Fairground's drawer): no frame and no heading. */
+  bare?: boolean;
 }) {
   return (
-    <section class="gm-cabinet pix-panel" aria-labelledby="gm-cabinet-title">
-      <h3 id="gm-cabinet-title" class="gm-title">
-        <GlossaryTag entry="games-medals">Medals</GlossaryTag>
-      </h3>
+    <section
+      class={bare ? 'gm-cabinet is-bare' : 'gm-cabinet pix-panel'}
+      {...(bare ? { 'aria-label': 'Medals' } : { 'aria-labelledby': 'gm-cabinet-title' })}
+    >
+      {!bare && (
+        <h3 id="gm-cabinet-title" class="gm-title">
+          <GlossaryTag entry="games-medals">Medals</GlossaryTag>
+        </h3>
+      )}
       <div class="gm-shelf">
         <MedalCountsRow medals={you.medals} scale={3} />
         <CountBadge

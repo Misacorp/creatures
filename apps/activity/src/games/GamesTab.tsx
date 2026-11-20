@@ -5,7 +5,7 @@ import { ActionIds } from '../actions';
 import { errorText } from '../game';
 import { buyStallOffer, setGamesEntry } from '../games-api';
 import type { GamesView, LineupEvent, StallOffer, StallPurchase } from '../games-types';
-import { entryOf, replayStart, screenOf, withSlot } from '../games-view';
+import { replayStart, screenOf } from '../games-view';
 import { useServerNow } from '../hooks';
 import { formatCountdown } from '../time-format';
 import { Alert } from '../ui/Alert';
@@ -13,6 +13,7 @@ import { DrillHead } from '../ui/DrillHead';
 import { GameIcon } from '../ui/GameIcon';
 import { PixelHeading } from '../ui/PixelHeading';
 import { useActionRunner } from '../use-action-runner';
+import { putEntry } from './entry-flow';
 import { EntryPicker } from './EntryPicker';
 import { GamesResults } from './GamesResults';
 import { GamesShow } from './GamesShow';
@@ -43,7 +44,7 @@ export interface GamesApi {
 const SERVER_API: GamesApi = { setEntry: setGamesEntry, buy: buyStallOffer };
 
 /** A piece of the tab that follows the server's clock every second (a countdown), alone. */
-function Ticking({
+export function Ticking({
   offset,
   children,
 }: {
@@ -172,20 +173,7 @@ export function GamesTab({
   async function setEntry(event: LineupEvent, slot: number, creatureId: string | null) {
     const { next } = current;
     await run(async () => {
-      let entries = next.entries;
-      const from = creatureId === null ? null : entryOf(next, creatureId);
-      if (from !== null && from !== event.id && creatureId !== null) {
-        // Moving: the server refuses a creature that is in another event, so it leaves that one first.
-        const left = await api.setEntry(
-          next.day,
-          from,
-          (entries[from] ?? []).filter((id) => id !== creatureId),
-        );
-        entries = left.entries;
-      }
-      const list = withSlot(entries[event.id] ?? [], slot, creatureId);
-      const answer = await api.setEntry(next.day, event.id, list);
-      onView({ ...current, next: answer });
+      onView({ ...current, next: await putEntry(api.setEntry, next, event, slot, creatureId) });
     });
   }
 

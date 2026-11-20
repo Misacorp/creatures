@@ -70,6 +70,7 @@ import { Raid } from './Raid';
 import { SYNC_POLL_INTERVAL_MS, shouldRefetchLeet } from './leet-status';
 import { Dungeon } from './Dungeon';
 import { GamesTab } from './games/GamesTab';
+import { FairgroundCanvas } from './valley/FairgroundCanvas';
 import { gamesAlert } from './games-view';
 import { fetchCreatureGames } from './games-api';
 import { useGames } from './use-games';
@@ -137,7 +138,9 @@ import {
 const NO_ITEMS: readonly GearItem[] = [];
 const NO_CREATURES: readonly Creature[] = [];
 /** A combat v2 week's raid page is a canvas with its own scene (`RaidCanvas`): the Arena draws none above it. */
-const CANVAS_PLACES: readonly PlaceId[] = ['arena'];
+const RAID_CANVAS_PLACES: readonly PlaceId[] = ['arena'];
+/** With the valley's systems on the Fairground's page is a canvas (`FairgroundCanvas`) with its own scene: the Fair draws none above it. */
+const FAIR_CANVAS_PLACES: readonly PlaceId[] = ['fair'];
 
 export function Game({
   initial,
@@ -196,6 +199,7 @@ export function Game({
   // The raid's week times for Home, loaded when the game opens and whenever Home is shown (a failed load
   // leaves the raid rows out).
   const valleyOn = valley && game.starterChosen;
+  const fairCanvas = valleyOn && valleySystems;
   // The valley shell: Home's tab is drawn as the map, the House's living room, or a place that is not open yet.
   const [homeAt, setHomeAt] = useState<HomeAt>('valley');
   // The Market's page opens its exchange on the shard a smith waits for when the Forge sends the player there (Q64); forgotten on leaving.
@@ -210,6 +214,11 @@ export function Game({
     valleyOn || tab === 'home',
     offset,
   );
+  // The places whose page draws its own scene, so the frame draws none above it.
+  const scenelessPlaces: readonly PlaceId[] = [
+    ...(raidGlance?.rules === 2 ? RAID_CANVAS_PLACES : []),
+    ...(fairCanvas ? FAIR_CANVAS_PLACES : []),
+  ];
   // The Settings page (from the cog in the HUD) is drawn in place of the screen; the screen stays mounted under it,
   // so Back finds it as it was. Choosing a place closes it.
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -1097,22 +1106,48 @@ export function Game({
           }}
         />
       )}
-      {tab === 'games' && (
-        <GamesTab
-          view={games.view}
-          failed={games.failed}
-          creatures={game.creatures}
-          selfId={user.id}
-          offset={offset}
-          onView={games.replace}
-          onReload={games.load}
-          onPurchased={() => {
-            // A prize pays Bait, parts, a supply or a gear piece: the balances and the bag.
-            refreshState();
-            loadGear();
-          }}
-        />
-      )}
+      {tab === 'games' &&
+        (fairCanvas ? (
+          // With the valley's systems on the Fairground is a canvas: one stall for each event, the show on its stage.
+          <FairgroundCanvas
+            view={games.view}
+            failed={games.failed}
+            creatures={game.creatures}
+            selfId={user.id}
+            offset={offset}
+            onView={games.replace}
+            onReload={games.load}
+            onPurchased={() => {
+              // A prize pays Bait, parts, a supply or a gear piece: the balances and the bag.
+              refreshState();
+              loadGear();
+            }}
+            trayInput={{
+              trips: game.expeditions,
+              jobs: gear === null ? null : gear.jobs,
+              now: Date.now() + offset,
+              ...(systems === null ? {} : trayStates(systems)),
+            }}
+            onOpenPaddock={() => {
+              openPlace('paddock');
+            }}
+          />
+        ) : (
+          <GamesTab
+            view={games.view}
+            failed={games.failed}
+            creatures={game.creatures}
+            selfId={user.id}
+            offset={offset}
+            onView={games.replace}
+            onReload={games.load}
+            onPurchased={() => {
+              // A prize pays Bait, parts, a supply or a gear piece: the balances and the bag.
+              refreshState();
+              loadGear();
+            }}
+          />
+        ))}
       {tab === 'raid' && (
         <Raid
           creatures={game.creatures}
@@ -1194,7 +1229,7 @@ export function Game({
       {head}
       <ValleyFrame
         view={view}
-        {...(raidGlance?.rules === 2 ? { sceneless: CANVAS_PLACES } : {})}
+        {...(scenelessPlaces.length > 0 ? { sceneless: scenelessPlaces } : {})}
         creatures={game.creatures}
         trayInput={{
           trips: game.expeditions,

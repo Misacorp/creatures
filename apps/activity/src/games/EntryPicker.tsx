@@ -38,7 +38,6 @@ export function EntryPicker({
   onClose: () => void;
   returnFocusTo?: HTMLElement | null;
 }) {
-  const rows = pickerRows(next, event, slot, creatures);
   const filled = (next.entries[event.id] ?? [])[slot] !== undefined;
   return (
     <Drawer
@@ -56,6 +55,31 @@ export function EntryPicker({
         ) : undefined
       }
     >
+      <PickList event={event} slot={slot} next={next} creatures={creatures} onPick={onPick} />
+    </Drawer>
+  );
+}
+
+/**
+ * What an entry slot's picker lists, in a drawer (`EntryPicker`) or as a step of the Fairground's stall panel: the event's favours
+ * and teaser line, then the player's creatures, good fits first.
+ */
+export function PickList({
+  event,
+  slot,
+  next,
+  creatures,
+  onPick,
+}: {
+  event: LineupEvent;
+  slot: number;
+  next: GamesNext;
+  creatures: readonly Creature[];
+  onPick: (creatureId: string) => void;
+}) {
+  const rows = pickerRows(next, event, slot, creatures);
+  return (
+    <>
       <div class="ge-picker-head pix-panel">
         <FavourIcons event={event} />
         <p class="ge-line prose">{event.line}</p>
@@ -78,7 +102,7 @@ export function EntryPicker({
           )
         }
       />
-    </Drawer>
+    </>
   );
 }
 
