@@ -179,10 +179,10 @@ describe('the House place as a canvas', () => {
   it('puts the collection buttons in the canvas’s own overlay, outside the scene, marked as panning nothing', async () => {
     const p = await open();
     const overlay = first(byClass(p.root, 'pc-overlay'));
-    const tools = byClass(overlay, 'hc-tool');
+    const tools = byClass(overlay, 'pc-tool');
     expect(tools.length).toBeGreaterThanOrEqual(5);
-    expect(first(byClass(overlay, 'hc-tools')).getAttribute('data-no-pan')).toBe('yes');
-    expect(byClass(first(byClass(p.root, 'pc-main')), 'hc-tool')).toHaveLength(0);
+    expect(first(byClass(overlay, 'pc-tools')).getAttribute('data-no-pan')).toBe('yes');
+    expect(byClass(first(byClass(p.root, 'pc-main')), 'pc-tool')).toHaveLength(0);
   });
 
   it('keeps every spot reachable by name; its plate is there for the style to show while looked at', async () => {

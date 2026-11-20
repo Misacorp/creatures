@@ -15,11 +15,13 @@ import type { GamesEventResult } from '@creatures/engine';
 import type { ComponentChildren } from 'preact';
 import { gamesEventInfo, gamesEventName } from '@creatures/game';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
+import { useSize } from '../valley/parts';
 import { shinyPalette } from '../art';
 import { cssVars } from '../css-vars';
 import { usePrefersReducedMotion } from '../hooks';
 import { Sprite } from '../sprites/Sprite';
 import { creatureSpriteOrFallback } from '../sprites/creature-sprites';
+import { Elsewhere } from './Elsewhere';
 import { LiveRegion } from '../ui/LiveRegion';
 import { PixelHeading } from '../ui/PixelHeading';
 import { PlaybackControls } from '../ui/PlaybackControls';
@@ -88,6 +90,18 @@ export interface GamesShowProps {
    * the Expeditions map. The workbench forces it either way.
    */
   wide?: boolean | undefined;
+  /**
+   * Draws only the arena, the commentary, the event pips and the replay controls, with no frame of its own. The standings are never
+   * inline: they are drawn into `boardHost` while it is given, and not at all while it is null.
+   */
+  stage?: boolean | undefined;
+  /**
+   * With `stage`: draw the show at the largest whole pixel scale at which the arena and the rows under it fit the room the stage has
+   * (its box, measured), never smaller than the width-filling size of today. Absent: today's size (at most 3x).
+   */
+  fill?: boolean | undefined;
+  /** With `stage`: an empty element (given by the caller) the standings are drawn into; null or absent: no standings. */
+  boardHost?: HTMLElement | null | undefined;
 }
 
 const SEATS = 16;
@@ -570,7 +584,10 @@ function EmptyStands({ scene, still }: { scene: GamesSceneId; still: boolean }) 
 export function GamesShow(props: GamesShowProps) {
   const { events, mode, youId, names, still = false } = props;
   const wideMedia = useWide();
+  const stage = props.stage === true;
   const wide = props.wide ?? wideMedia;
+  // The board is inline under the commentary on a narrow screen, but never in a stage (its place is the drawer).
+  const inlineBoard = !wide && !stage;
   const prepared = useMemo(() => events.map(prepareEvent), [events]);
   const timeline = useMemo(() => buildShowTimeline(events, props.lineup), [events, props.lineup]);
   const spoken = useMemo(
@@ -656,6 +673,10 @@ export function GamesShow(props: GamesShowProps) {
     return (
       <ShowLayout
         wide={wide}
+        stage={stage}
+        fill={props.fill === true}
+        controls={mode === 'replay'}
+        boardHost={props.boardHost}
         title={name}
         board={board}
         live={spokenNow?.text ?? ''}
@@ -677,7 +698,7 @@ export function GamesShow(props: GamesShowProps) {
               {liveBadge}
             </div>
             <p class="gs-say is-empty" aria-hidden="true" />
-            {!wide && board}
+            {inlineBoard && board}
             <Pips prepared={prepared} timeline={timeline} cursor={cursor} youId={youId} />
             {controls}
           </>
@@ -705,6 +726,10 @@ export function GamesShow(props: GamesShowProps) {
   return (
     <ShowLayout
       wide={wide}
+      stage={stage}
+      fill={props.fill === true}
+      controls={mode === 'replay'}
+      boardHost={props.boardHost}
       title={name}
       board={board}
       live={spokenNow?.text ?? ''}
@@ -736,7 +761,7 @@ export function GamesShow(props: GamesShowProps) {
             {liveBadge}
           </div>
           <SayLine p={p} frame={frame} cursor={cursor} youId={youId} names={names} />
-          {!wide && board}
+          {inlineBoard && board}
           <Pips
             prepared={prepared}
             timeline={timeline}
@@ -758,17 +783,32 @@ export function GamesShow(props: GamesShowProps) {
  */
 function ShowLayout({
   wide,
+  stage,
+  fill,
+  controls,
+  boardHost,
   title,
   board,
   main,
   live,
 }: {
   wide: boolean;
+  stage: boolean;
+  fill: boolean;
+  controls: boolean;
+  boardHost: HTMLElement | null | undefined;
   title: string;
   board: ComponentChildren;
   main: ComponentChildren;
   live: string;
 }) {
+  if (stage) {
+    return (
+      <StageLayout fill={fill} controls={controls} boardHost={boardHost} board={board} live={live}>
+        {main}
+      </StageLayout>
+    );
+  }
   return (
     <section class="games-show pix-panel" aria-label="Valley Games">
       <WideLayout
@@ -784,6 +824,63 @@ function ShowLayout({
       >
         <LiveRegion>{live}</LiveRegion>
       </WideLayout>
+    </section>
+  );
+}
+
+/** CSS px the rows under the arena (commentary, pips, controls) and the gaps between them take, kept clear when the stage fills its room. */
+const STAGE_UNDER_PX = 90;
+/** What the replay's controls add under them. */
+const STAGE_CONTROLS_PX = 50;
+/** The arena's and the stands' height in scene pixels (`SCENE_SIZE`, `STANDS_SIZE`). */
+const ARENA_ROWS = 112 + 48;
+const ARENA_COLS = 192;
+
+/** The widest the arena is drawn (CSS px) in a stage `width` by `height`: the largest whole scale that fits, never under today's. */
+export function stageWidth(width: number, height: number, controls = false): number {
+  const s = Math.min(
+    Math.floor(width / ARENA_COLS),
+    Math.floor((height - STAGE_UNDER_PX - (controls ? STAGE_CONTROLS_PX : 0)) / ARENA_ROWS),
+  );
+  return Math.max(s * ARENA_COLS, Math.min(width, 576));
+}
+
+/** The show as a stage: no frame; with `fill` the arena takes the largest whole scale the stage's box has room for. */
+function StageLayout({
+  fill,
+  controls,
+  boardHost,
+  board,
+  live,
+  children,
+}: {
+  fill: boolean;
+  /** The rows under the arena include the replay's controls. */
+  controls: boolean;
+  boardHost: HTMLElement | null | undefined;
+  board: ComponentChildren;
+  live: string;
+  children: ComponentChildren;
+}) {
+  const box = useRef<HTMLElement | null>(null);
+  const size = useSize(box);
+  return (
+    <section
+      ref={box}
+      class="games-show is-stage"
+      aria-label="Valley Games"
+      data-fill={fill ? 'yes' : undefined}
+    >
+      <div
+        class="gs-main"
+        ref={cssVars(
+          fill ? { '--gs-max': `${String(stageWidth(size.width, size.height, controls))}px` } : {},
+        )}
+      >
+        {children}
+      </div>
+      <LiveRegion>{live}</LiveRegion>
+      <Elsewhere into={boardHost ?? null}>{board}</Elsewhere>
     </section>
   );
 }

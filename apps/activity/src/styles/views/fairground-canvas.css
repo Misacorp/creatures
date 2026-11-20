@@ -1,0 +1,168 @@
+/*
+  The Fairground as a canvas (`valley/FairgroundCanvas.tsx`): the shell, drawers and targets are `canvas.css`'s (`pc-`, `cv-`). Here:
+  its root (the same column as the Market's), the posters on the stalls' back walls, the bonus ribbon, the corner buttons, the show's
+  stage, and the text of the panels (rules, schedule, standings).
+*/
+.fg-root {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.fg-wait {
+  padding: 0.75rem;
+}
+
+/* The game's page wrapper (`Game.tsx`, `pages`) is a plain div between the frame's page and the canvas: it passes the height on. */
+.vy-page > div:not([hidden]):has(> .fg-root) {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* The poster: the event's own scene strip on a small canvas over the stall's back wall, hard edged. */
+.fg-poster {
+  display: block;
+  image-rendering: pixelated;
+  box-shadow: 0 0 0 1px var(--ink);
+}
+
+/* The bonus event's ribbon: gold pixel text on the stall's top left corner. */
+.fg-ribbon {
+  display: inline-block;
+  padding: 0 0.25rem;
+  background: var(--gold);
+  color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--ink);
+  font-size: var(--fs-small);
+  line-height: 1.3;
+}
+
+.fg-back {
+  font-size: var(--fs-title);
+  line-height: 1;
+}
+
+/* The show in place of the scene: the arena, the commentary, the pips and the controls, centred in the stage, nothing scrolling. */
+.fg-stage {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 0.5rem;
+  overflow: hidden;
+  background: var(--night);
+}
+
+/* The standings drawer is open on a wide window: the stage keeps clear of it (a drawer lies over the stage's edge). */
+.fg-stage[data-pushed] {
+  padding-left: min(22rem, 40%);
+}
+
+.fg-stage .games-show {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: 100%;
+}
+
+/* `fill`: the arena as wide as the whole-scale fit allows (`GamesShow` `stageWidth`). */
+.fg-stage .games-show[data-fill] .gs-main {
+  max-width: var(--gs-max, 576px);
+}
+
+/* The standings in the left drawer: the show's board as the show draws it, filling the drawer's width. */
+.fg-standings {
+  display: block;
+  padding: 0.5rem 0.75rem;
+}
+
+.fg-standings .gs-board {
+  min-height: 0;
+}
+
+/* An error under the scene, in the flow above the tray. */
+.fg-error {
+  padding: 0.25rem 0.5rem;
+  background: var(--dusk);
+}
+
+/* A stall's drawer: the event card, then its story line. */
+.fg-stall .ge-cards {
+  margin: 0;
+}
+
+.fg-line {
+  margin: 0;
+  padding: 0 0.75rem 0.75rem;
+}
+
+/* The Rules board's drawer: each of the Games' words with its picture, then what it means. */
+.fg-rules {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fg-rule {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.fg-rule-art {
+  flex: none;
+  display: inline-flex;
+  min-width: 2rem;
+  justify-content: center;
+}
+
+.fg-rule-text {
+  min-width: 0;
+}
+
+.fg-rule-title {
+  margin: 0 0 0.125rem;
+  color: var(--gold);
+  font-size: var(--fs-heading);
+  font-weight: normal;
+}
+
+.fg-rule-text p {
+  margin: 0 0 0.25rem;
+}
+
+/* The tent's drawer: the times and the day's events in order. */
+.fg-times {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+}
+
+.fg-times > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.fg-times dt {
+  color: var(--muted, inherit);
+}
+
+.fg-times dd {
+  margin: 0;
+}
+
+.fg-lineup {
+  margin: 0;
+  padding-left: 1.5rem;
+}
