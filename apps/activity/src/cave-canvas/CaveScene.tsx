@@ -23,6 +23,7 @@ import { useDragScroll } from '../ui/use-drag-scroll';
 import { useWide } from '../ui/wide-layout';
 import type { TrayDrag } from '../valley/Tray';
 import { cssVars } from '../css-vars';
+import { PlaceCanvas } from '../valley/PlaceCanvas';
 import { SceneTop, type ScenePlate } from '../raid-canvas/RaidScene';
 import { caveSize, caveSprite, caveVars } from './cave-art';
 import { mapSize, startOffset, type MapSize } from './map-size';
@@ -415,5 +416,33 @@ export function CaveScene(p: CaveSceneProps) {
         </>
       )}
     </div>
+  );
+}
+
+/** The Cave's rock and now line before today has loaded, so the canvas place does not jump when the map arrives. */
+export function CaveLoading() {
+  return (
+    <PlaceCanvas
+      label="Cave"
+      left={null}
+      right={null}
+      scene={
+        <div
+          class="rc-scene cave-scene cave-rock"
+          data-state="loading"
+          ref={cssVars(caveVars(ART_SCALE))}
+        >
+          <span class="cave-wall cave-wall-top" aria-hidden="true" />
+          <span class="cave-wall cave-wall-left" aria-hidden="true" />
+          <span class="cave-wall cave-wall-right" aria-hidden="true" />
+          <SceneTop
+            label="Cave overviews"
+            plates={[]}
+            now={{ id: 'loading', text: 'Loading the cave...', tap: null }}
+            onNow={() => undefined}
+          />
+        </div>
+      }
+    />
   );
 }

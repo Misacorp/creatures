@@ -23,6 +23,10 @@
   overflow: hidden;
 }
 
+.cave-scene[data-state='loading'] {
+  min-height: 16rem;
+}
+
 .cave-scene > * {
   position: relative;
   z-index: 1;

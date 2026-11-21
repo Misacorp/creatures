@@ -3,6 +3,8 @@ import { ActionIds } from './actions';
 import type { Creature } from './api';
 import { CaveCanvas } from './cave-canvas/CaveCanvas';
 import { caveCanvasOn } from './cave-canvas/flag';
+import { CaveLoading } from './cave-canvas/CaveScene';
+import { combatV2On } from './live-flags';
 import {
   heldOf,
   release,
@@ -396,7 +398,8 @@ export function Dungeon({
     );
   }
   if (today === null || view.kind === 'loading') {
-    return <p class="muted">Loading the dungeon...</p>;
+    // The canvas place's rock and now line when the Cave will almost surely be one (the valley and combat v2 are both on): no jump.
+    return canvas && combatV2On() ? <CaveLoading /> : <p class="muted">Loading the dungeon...</p>;
   }
 
   if (onCanvas) {

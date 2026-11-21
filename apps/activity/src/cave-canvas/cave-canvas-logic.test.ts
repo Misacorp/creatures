@@ -165,7 +165,7 @@ describe('a creature let go of at the cave mouth', () => {
     expect(off.outcome.status).toBe('none');
   });
 
-  it('on a place of the row it moves, swaps, or (from the tray) takes an empty one only', () => {
+  it('on a place of the row it moves, swaps, or (from the tray) takes it, sending the one there back to the tray', () => {
     expect(resolveCaveDrop(['a', 'b', null], 'a', { kind: 'slot', slot: 1 }, nameOf).slots).toEqual(
       ['b', 'a', null],
     );
@@ -175,8 +175,11 @@ describe('a creature let go of at the cave mouth', () => {
       'd',
     ]);
     const taken = resolveCaveDrop(['a', null, null], 'd', { kind: 'slot', slot: 0 }, nameOf);
-    expect(taken.slots).toEqual(['a', null, null]);
-    expect(taken.outcome.status).toBe('invalid');
+    expect(taken.slots).toEqual(['d', null, null]);
+    expect(taken.outcome.status).toBe('valid');
+    expect(taken.outcome.hint).toBeNull();
+    const full = resolveCaveDrop(['a', 'b', 'c'], 'd', { kind: 'slot', slot: 1 }, nameOf);
+    expect(full.slots).toEqual(['a', 'd', 'c']);
   });
 
   it('anywhere else is a cancel, and nothing moves while the run is being sent', () => {
