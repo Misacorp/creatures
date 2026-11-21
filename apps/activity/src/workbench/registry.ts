@@ -14,6 +14,7 @@ import { gamesShowEntries } from './entries/games-show';
 import { gamesTabEntries } from './entries/games-tab';
 import { dataTableEntries } from './entries/data-table';
 import { effectEntries } from './entries/effects';
+import { caveCanvasEntries } from './entries/cave-canvas';
 import { dungeonMapEntries } from './entries/dungeon-map';
 import { dungeonRunEntries } from './entries/dungeon-run';
 import { headingEntries } from './entries/headings';
@@ -67,6 +68,7 @@ export const ENTRIES: readonly Entry[] = [
   ...raidBoardEntries,
   ...raidV2Entries,
   ...raidCanvasEntries,
+  ...caveCanvasEntries,
   ...fightV2Entries,
   ...bossAnimEntries,
   ...raidSummaryEntries,

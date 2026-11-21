@@ -107,3 +107,93 @@
     transform: translateX(3px);
   }
 }
+
+/* Up and down (the Cave's Undercroft): the same fade and arrow, turned a quarter, on the top and bottom edges. */
+.pan-hint-y .pan-hint-edge {
+  left: 0;
+  right: 0;
+  top: auto;
+  bottom: auto;
+  width: auto;
+  height: 24px;
+}
+
+.pan-hint-y .pan-hint-left {
+  top: 0;
+  background: linear-gradient(
+    to bottom,
+    var(--pan-hint-bg) 0 6px,
+    rgb(5 8 24 / 0.35) 6px 12px,
+    rgb(5 8 24 / 0.18) 12px 18px,
+    rgb(5 8 24 / 0.07) 18px 24px
+  );
+}
+
+.pan-hint-y .pan-hint-right {
+  bottom: 0;
+  background: linear-gradient(
+    to top,
+    var(--pan-hint-bg) 0 6px,
+    rgb(5 8 24 / 0.35) 6px 12px,
+    rgb(5 8 24 / 0.18) 12px 18px,
+    rgb(5 8 24 / 0.07) 18px 24px
+  );
+}
+
+.pan-hint-y .pan-hint-edge::after {
+  top: auto;
+  right: auto;
+  left: calc(50% - 8px);
+  width: 16px;
+  height: 8px;
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    100% 25%,
+    87.5% 25%,
+    87.5% 50%,
+    75% 50%,
+    75% 75%,
+    62.5% 75%,
+    62.5% 100%,
+    37.5% 100%,
+    37.5% 75%,
+    25% 75%,
+    25% 50%,
+    12.5% 50%,
+    12.5% 25%,
+    0 25%
+  );
+}
+
+.pan-hint-y .pan-hint-left::after {
+  top: 4px;
+  transform: scaleY(-1);
+}
+
+.pan-hint-y .pan-hint-right::after {
+  bottom: 4px;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pan-hint-y .pan-hint-left::after {
+    animation: pan-hint-nudge-up 1.2s steps(2) infinite;
+  }
+
+  .pan-hint-y .pan-hint-right::after {
+    animation: pan-hint-nudge-down 1.2s steps(2) infinite;
+  }
+}
+
+@keyframes pan-hint-nudge-up {
+  50% {
+    transform: translateY(-3px) scaleY(-1);
+  }
+}
+
+@keyframes pan-hint-nudge-down {
+  50% {
+    transform: translateY(3px);
+  }
+}

@@ -63,49 +63,69 @@ export interface RaidSceneProps {
   hint?: string | null;
 }
 
+/**
+ * The frame of a canvas scene (the raid's, the Cave's): up to three plates that open the left drawer, and the now line as a caption on
+ * the scene, a polite live region (a tap on it opens what it names). `label` names the plates for assistive technology.
+ */
+export function SceneTop({
+  label,
+  plates,
+  now,
+  onNow,
+}: {
+  label: string;
+  plates: readonly ScenePlate[];
+  now: { id: string; text: string; tap: unknown };
+  onNow: (button: HTMLElement) => void;
+}) {
+  return (
+    <div class="rc-top">
+      <ul class="rc-plates" aria-label={label}>
+        {plates.map((plate) => (
+          <li key={plate.id}>
+            <button
+              type="button"
+              class="rc-plate"
+              aria-expanded={plate.open}
+              onClick={(event) => {
+                plate.onOpen(event.currentTarget);
+              }}
+            >
+              <Nameplate size="sm" tone={plate.open ? 'gold' : 'bone'}>
+                {plate.label}
+              </Nameplate>
+            </button>
+          </li>
+        ))}
+      </ul>
+      {/* The now line: a caption on the scene, and a polite live region. A tap opens what it names. */}
+      <div class="rc-now" role="status" aria-live="polite" data-now={now.id}>
+        {now.tap === null ? (
+          <Nameplate size="md">{now.text}</Nameplate>
+        ) : (
+          <button
+            type="button"
+            class="rc-now-button"
+            onClick={(event) => {
+              onNow(event.currentTarget);
+            }}
+          >
+            <Nameplate size="md" tone="gold">
+              {now.text}
+            </Nameplate>
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function RaidScene(p: RaidSceneProps) {
   const art = bossArt(p.boss.id);
   const hp = p.hp === null ? null : bossHpWords(p.hp.current, p.hp.max);
   return (
     <div class="rc-scene" data-state={p.state}>
-      <div class="rc-top">
-        <ul class="rc-plates" aria-label="Raid overviews">
-          {p.plates.map((plate) => (
-            <li key={plate.id}>
-              <button
-                type="button"
-                class="rc-plate"
-                aria-expanded={plate.open}
-                onClick={(event) => {
-                  plate.onOpen(event.currentTarget);
-                }}
-              >
-                <Nameplate size="sm" tone={plate.open ? 'gold' : 'bone'}>
-                  {plate.label}
-                </Nameplate>
-              </button>
-            </li>
-          ))}
-        </ul>
-        {/* The now line: a caption on the scene, and a polite live region. A tap opens what it names. */}
-        <div class="rc-now" role="status" aria-live="polite" data-now={p.now.id}>
-          {p.now.tap === null ? (
-            <Nameplate size="md">{p.now.text}</Nameplate>
-          ) : (
-            <button
-              type="button"
-              class="rc-now-button"
-              onClick={(event) => {
-                p.onNow(event.currentTarget);
-              }}
-            >
-              <Nameplate size="md" tone="gold">
-                {p.now.text}
-              </Nameplate>
-            </button>
-          )}
-        </div>
-      </div>
+      <SceneTop label="Raid overviews" plates={p.plates} now={p.now} onNow={p.onNow} />
       {p.stage !== undefined && p.stage !== null ? (
         <div class="rc-stage">{p.stage}</div>
       ) : (

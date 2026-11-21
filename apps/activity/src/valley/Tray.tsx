@@ -189,6 +189,7 @@ export function Tray({
   drag,
   marks,
   dropId,
+  oneRow = false,
 }: {
   creatures: readonly Creature[];
   input: TrayInput;
@@ -200,16 +201,18 @@ export function Tray({
   marks?: (creature: Creature) => TrayMark;
   /** Given: the tray is itself a place to drop a creature (`data-drop-id`, for the screen's hit test). */
   dropId?: string;
+  /** Always one row, scrolling sideways behind the arrow when they do not fit (the Cave on a phone, which keeps its scene tall). */
+  oneRow?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [more, setMore] = useState(false);
   // One row when every creature fits across (the tray is as tall as its content); two rows, scrolling sideways, when not.
-  const [rows, setRows] = useState(creatures.length <= 1 ? 1 : 2);
+  const [rows, setRows] = useState(oneRow || creatures.length <= 1 ? 1 : 2);
   useLayoutEffect(() => {
     const el = ref.current;
     if (el === null) return undefined;
     const fit = (): void => {
-      setRows(creatures.length <= trayColumnsFit(el.clientWidth) ? 1 : 2);
+      setRows(oneRow || creatures.length <= trayColumnsFit(el.clientWidth) ? 1 : 2);
     };
     fit();
     const observer = new ResizeObserver(fit);
@@ -217,7 +220,7 @@ export function Tray({
     return () => {
       observer.disconnect();
     };
-  }, [creatures.length]);
+  }, [creatures.length, oneRow]);
   useEffect(() => {
     const el = ref.current;
     if (el === null) return undefined;

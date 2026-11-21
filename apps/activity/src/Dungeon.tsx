@@ -1,6 +1,17 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { ActionIds } from './actions';
 import type { Creature } from './api';
+import { CaveCanvas } from './cave-canvas/CaveCanvas';
+import { caveCanvasOn } from './cave-canvas/flag';
+import { CaveLoading } from './cave-canvas/CaveScene';
+import { combatV2On } from './live-flags';
+import {
+  heldOf,
+  release,
+  runEndedForPhase,
+  type CaveView,
+  type HeldAnswer,
+} from './cave-canvas/hold';
 import { DungeonPlayback } from './DungeonPlayback';
 import { DungeonResults } from './DungeonResults';
 import { DungeonRun } from './DungeonRun';
@@ -36,6 +47,7 @@ import type {
 } from './dungeon-types';
 import { clockOffset } from './game';
 import { useActionRunner } from './use-action-runner';
+import type { TrayInput } from './valley/tray-state';
 import type { Forecast } from './weather-types';
 import { Alert } from './ui/Alert';
 
@@ -54,6 +66,8 @@ type View =
       input: PlaybackInput;
       state: DungeonRunState;
       summary: DungeonRunSummary | null;
+      /** The run as it stood before the room: what the Cave canvas shows until the fight has played (`cave-canvas/hold.ts`). */
+      before: DungeonRunState;
     }
   | { kind: 'playback'; input: PlaybackInput; run: DungeonRunSummary }
   | { kind: 'results'; run: DungeonRunSummary };
@@ -79,6 +93,10 @@ export function Dungeon({
   onPhaseChange,
   onRunFinished,
   configure,
+  canvas = false,
+  treatsOff = false,
+  trayInput,
+  onCanvasChange,
 }: {
   creatures: readonly Creature[];
   /** The valley's sky for today and tomorrow, for the one line on the pre-run card (null: none loaded). */
@@ -99,6 +117,17 @@ export function Dungeon({
   onRunFinished: () => void;
   /** Getting the team ready on the pre-run card (see `DungeonSetup`); absent: the creature popover only. */
   configure?: TeamConfigure | undefined;
+  /**
+   * The valley is on: the Cave may be a canvas (`cave-canvas/`), which it is when the day's dungeon also plays by combat v2 and any
+   * open run began on it (`caveCanvasOn`). Otherwise, and always when this is off, the page below.
+   */
+  canvas?: boolean;
+  /** The server refuses treats (the valley's systems are on): the canvas does not offer them. */
+  treatsOff?: boolean;
+  /** What the creature tray under the canvas's scene reads (trips and jobs); absent: nothing is away. */
+  trayInput?: TrayInput | undefined;
+  /** Whether the Cave is drawn as a canvas, whenever today changes: the valley then draws no scene of its own above it. */
+  onCanvasChange?: ((on: boolean) => void) | undefined;
 }) {
   const [today, setToday] = useState<DungeonToday | null>(null);
   const [offset, setOffset] = useState(0);
@@ -110,8 +139,20 @@ export function Dungeon({
   const refreshOwed = useRef(false);
   // The timers below outlive a render: they read the latest view and callback through these.
   const latestView = useRef<View>({ kind: 'loading' });
+  // What the canvas holds back while a room's fight plays (`cave-canvas/hold.ts`), applied when it has.
+  const held = useRef<HeldAnswer | null>(null);
+  const onCanvas = caveCanvasOn(canvas, today);
+  const canvasNow = useRef(false);
+  canvasNow.current = onCanvas;
   const latestFinished = useRef(onRunFinished);
   latestFinished.current = onRunFinished;
+  // What the page tells the game, read at unmount (a held answer is released to it then).
+  const latestCanRun = useRef(onCanRunChange);
+  latestCanRun.current = onCanRunChange;
+  const latestPhase = useRef(onPhaseChange);
+  latestPhase.current = onPhaseChange;
+  // The day reset while an answer was held: the reload waits for the release.
+  const resetSkipped = useRef(false);
   // The dungeon's own words, and its own idea of a stale screen (by code, not by status). After
   // such a "no" today is loaded again: the run may exist.
   const runner = useActionRunner({
@@ -128,6 +169,24 @@ export function Dungeon({
       unmounted.current = true;
       // Left while a fight was still playing (or the results not yet shown): the run was paid anyway.
       if (refreshOwed.current) latestFinished.current();
+      // Left mid-fight on the canvas: the held answer is the game's now, as the end of the playback would have sent it.
+      const h = held.current;
+      if (h !== null) {
+        const v = latestView.current;
+        const ended = v.kind === 'fight' && v.summary !== null;
+        if (h.today !== null) latestCanRun.current(h.today.canRun);
+        else if (h.reload) {
+          fetchDungeonToday().then(
+            (next) => {
+              latestCanRun.current(next.canRun);
+            },
+            () => undefined,
+          );
+        }
+        const phase = dungeonPhase('fight', h.today?.canRun ?? false, ended);
+        if (phase !== null) latestPhase.current?.(phase);
+        held.current = null;
+      }
     },
     [],
   );
@@ -139,14 +198,16 @@ export function Dungeon({
     if (today !== null) onCanRunChange(today.canRun);
   }, [today]);
 
+  // The valley draws no scene of its own above the canvas. A failed first load shows the old page's error, under the valley's scene.
+  useEffect(() => {
+    if (today !== null) onCanvasChange?.(onCanvas);
+    else if (loadError !== null) onCanvasChange?.(false);
+  }, [onCanvas, today === null, loadError === null]);
+
   // The valley's Cave says what the page knows: a run in progress is not "quiet".
   useEffect(() => {
     if (today === null || onPhaseChange === undefined) return;
-    const phase = dungeonPhase(
-      view.kind,
-      today.canRun,
-      view.kind === 'fight' && view.summary !== null,
-    );
+    const phase = dungeonPhase(view.kind, today.canRun, runEndedForPhase(view, onCanvas));
     if (phase !== null) onPhaseChange(phase);
   }, [today, view]);
 
@@ -190,6 +251,11 @@ export function Dungeon({
         // A fight on screen plays out first.
         const playing =
           latestView.current.kind === 'playback' || latestView.current.kind === 'fight';
+        // An answer held back by the canvas is applied first; the reload follows it (`fightDone`).
+        if (held.current !== null) {
+          resetSkipped.current = true;
+          return;
+        }
         if (!runner.inFlight()) load(playing ? 'keep' : 'initial');
       },
       Math.min(wait, 2 ** 31 - 1),
@@ -214,6 +280,26 @@ export function Dungeon({
     );
   }
 
+  /** A room's fight has played out: what the canvas held back is applied now, then the run goes on or its results show. */
+  function fightDone(fight: Extract<View, { kind: 'fight' }>): void {
+    release(held.current, {
+      accept: (next) => {
+        accept(next, 'keep');
+      },
+      load: () => {
+        load('keep');
+      },
+    });
+    held.current = null;
+    if (resetSkipped.current) {
+      resetSkipped.current = false;
+      load('keep');
+    }
+    if (screenAfterFight(fight.summary ?? undefined, fight.state) === 'results') {
+      if (fight.summary !== null) finish(fight.summary);
+    } else setView({ kind: 'run', state: fight.state });
+  }
+
   /** The run is over and its summary is in: show the results and reload the balances. */
   function finish(run: DungeonRunSummary): void {
     refreshOwed.current = false;
@@ -223,7 +309,10 @@ export function Dungeon({
 
   /** What an act answered: the fight to play, the results, or the run as it stands now. */
   function apply(answer: DungeonActResponse): void {
-    if (answer.today !== undefined) accept(answer.today, 'keep');
+    // On the canvas a room's fight plays on the scene and nothing of the answer shows before it has (`cave-canvas/hold.ts`).
+    const hold = canvasNow.current && answer.room !== undefined;
+    if (hold) held.current = heldOf(answer);
+    else if (answer.today !== undefined) accept(answer.today, 'keep');
     else if (answer.summary !== undefined) load('keep');
     if (answer.summary !== undefined) {
       replays.current.delete(answer.summary.id);
@@ -243,6 +332,7 @@ export function Dungeon({
             ),
             state: answer.state,
             summary: answer.summary ?? null,
+            before: latestView.current.kind === 'run' ? latestView.current.state : answer.state,
           });
         }
         return;
@@ -309,7 +399,62 @@ export function Dungeon({
     );
   }
   if (today === null || view.kind === 'loading') {
-    return <p class="muted">Loading the dungeon...</p>;
+    // The canvas place's rock and now line when the Cave will almost surely be one (the valley and combat v2 are both on): no jump.
+    return canvas && combatV2On() ? <CaveLoading /> : <p class="muted">Loading the dungeon...</p>;
+  }
+
+  if (onCanvas) {
+    const shown: CaveView =
+      view.kind === 'fight'
+        ? {
+            kind: 'fight',
+            input: view.input,
+            before: view.before,
+            after: view.state,
+            summary: view.summary,
+          }
+        : view;
+    return (
+      <CaveCanvas
+        today={today}
+        offset={offset}
+        view={shown}
+        creatures={creatures}
+        busy={busy}
+        error={error ?? loadError}
+        bait={bait}
+        treatsOff={treatsOff}
+        draft={draft}
+        onDraftChange={onDraftChange}
+        saveDraft={(team) => saveDungeonTeam({ team })}
+        onEnter={(slots, treats, depth) => {
+          void enter(slots, treats, depth);
+        }}
+        onAct={(what) => {
+          if (view.kind === 'run') void act(view.state, what);
+        }}
+        onFightDone={() => {
+          if (view.kind === 'fight') fightDone(view);
+        }}
+        onPlaybackDone={() => {
+          if (view.kind !== 'playback') return;
+          setView({ kind: 'results', run: view.run });
+          onRunFinished();
+        }}
+        onWatch={(run) => {
+          void watch(run);
+        }}
+        onRetry={() => {
+          setError(null);
+          setView({ kind: 'setup' });
+        }}
+        onSeeLast={() => {
+          if (today.last !== null) setView({ kind: 'results', run: today.last });
+        }}
+        configure={configure}
+        trayInput={trayInput ?? { trips: [], jobs: null, now: Date.now() + offset }}
+      />
+    );
   }
 
   return (
@@ -350,9 +495,7 @@ export function Dungeon({
         <DungeonPlayback
           input={view.input}
           onDone={() => {
-            if (screenAfterFight(view.summary ?? undefined, view.state) === 'results') {
-              if (view.summary !== null) finish(view.summary);
-            } else setView({ kind: 'run', state: view.state });
+            fightDone(view);
           }}
         />
       )}

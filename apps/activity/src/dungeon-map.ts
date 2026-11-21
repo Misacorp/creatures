@@ -554,6 +554,26 @@ export function nodeTitle(node: Pick<DungeonMapNode, 'id' | 'kind' | 'marks'>): 
   }
 }
 
+/**
+ * The short name under a room on the Cave canvas's map (a `Nameplate`, always shown): the foe's own name for a plain fight, else the
+ * kind in one word ("Elite", "Mystery", "Camp", "Cache", "Door", "Epic", "Floor boss", "Keeper").
+ */
+export function roomPlate(node: Pick<DungeonMapNode, 'id' | 'kind' | 'marks' | 'foe'>): string {
+  const kind = shownKind(node);
+  if (kind === 'boss') return isKeeper(node) ? 'Keeper' : 'Floor boss';
+  if (kind === 'fight' && node.foe !== undefined) return foeDisplayName(node);
+  return {
+    fight: 'Fight',
+    elite: 'Elite',
+    mystery: 'Mystery',
+    cache: 'Cache',
+    camp: 'Camp',
+    door: 'Door',
+    epic: 'Epic',
+    boss: 'Floor boss',
+  }[kind];
+}
+
 export const MYSTERY_LINE = "Something stirs. You'll see when you step in.";
 export const CACHE_LINE = `Free loot: ${resourceName('bait')} and ${resourceName('scrap').toLowerCase()} for your pack.`;
 export const CAMP_LINE =

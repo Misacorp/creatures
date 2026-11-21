@@ -148,7 +148,7 @@ export function DungeonPlayback({ input, onDone, showControls = false }: Props) 
  * gets one status sentence. `ms` is how long it stays: a yellow outline round the stage drains over
  * exactly that time.
  */
-function RoomBanner({
+export function RoomBanner({
   room,
   total,
   landmark,
@@ -223,7 +223,7 @@ function RoomBanner({
  * share one time), then the fight starts; the arena is brought into view when the room opens and again when its fight begins; pausing
  * stops the beats; and once the last beat has played the final state rests a moment and the run moves on.
  */
-function useRoomRhythm({
+export function useRoomRhythm({
   room,
   total,
   landmark,
@@ -232,6 +232,7 @@ function useRoomRhythm({
   finished,
   setPlaying,
   onFinished,
+  scroll = true,
 }: {
   room: DungeonReplayRoom;
   total: number;
@@ -241,6 +242,8 @@ function useRoomRhythm({
   finished: boolean;
   setPlaying: (playing: boolean) => void;
   onFinished: () => void;
+  /** Bring the arena into view when the room opens (the page's way); off on the Cave canvas, where the stage is the scene and nothing scrolls. */
+  scroll?: boolean;
 }) {
   // The banner shows for a moment with the room standing behind it, then the fight starts. While paused it waits.
   const [banner, setBanner] = useState(true);
@@ -263,6 +266,7 @@ function useRoomRhythm({
   // The run's own screen (the map, or the results) is taller than the screen and was scrolled: when a
   // room opens, bring its arena to the top once the page has laid out the new screen.
   useEffect(() => {
+    if (!scroll) return undefined;
     const frame = requestAnimationFrame(() => {
       arena.current?.scrollIntoView(fightScroll(reduced));
     });
@@ -274,7 +278,7 @@ function useRoomRhythm({
   // When the banner goes and the fight starts, the arena must be in view: if the page was scrolled
   // away (or moved) meanwhile, bring it back.
   useEffect(() => {
-    if (banner) return;
+    if (banner || !scroll) return;
     const el = arena.current;
     if (el !== null && arenaOutOfView(el.getBoundingClientRect(), window.innerHeight)) {
       el.scrollIntoView(fightScroll(reduced));

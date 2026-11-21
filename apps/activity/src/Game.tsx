@@ -69,6 +69,7 @@ import { applyLoungeXp, settleClaim } from './room-data';
 import { Raid } from './Raid';
 import { SYNC_POLL_INTERVAL_MS, shouldRefetchLeet } from './leet-status';
 import { Dungeon } from './Dungeon';
+import { combatV2On } from './live-flags';
 import { GamesTab } from './games/GamesTab';
 import { gamesAlert } from './games-view';
 import { fetchCreatureGames } from './games-api';
@@ -138,6 +139,8 @@ const NO_ITEMS: readonly GearItem[] = [];
 const NO_CREATURES: readonly Creature[] = [];
 /** A combat v2 week's raid page is a canvas with its own scene (`RaidCanvas`): the Arena draws none above it. */
 const CANVAS_PLACES: readonly PlaceId[] = ['arena'];
+/** The Cave is a canvas too when the day's dungeon plays by combat v2 (`CaveCanvas`): the same, for the Cave. */
+const CAVE_CANVAS_PLACES: readonly PlaceId[] = ['cave'];
 
 export function Game({
   initial,
@@ -341,6 +344,15 @@ export function Game({
   const [dungeonTeam, setDungeonTeam] = useState<Slots | null>(null);
   // What the Dungeon page last said about today (a run in progress, one to start, neither); null until it has.
   const [dungeonPhase, setDungeonPhase] = useState<DungeonPhase | null>(null);
+  // The Dungeon page says whether the Cave is drawn as a canvas (valley on and combat v2, and the day's rules are v2). Until it
+  // has, what start-up knows decides: with the valley and combat v2 both on the Cave starts sceneless, so the valley's own scene
+  // never flashes above the canvas while today loads. The page reports `false` in the rare case of a v1 day or run.
+  const [caveReported, setCaveReported] = useState<boolean | null>(null);
+  const caveCanvas = caveReported ?? (valleyOn && combatV2On());
+  // Away from the Dungeon tab nothing has reported yet: the next visit starts from what start-up knows again.
+  useEffect(() => {
+    if (tab !== 'dungeon') setCaveReported(null);
+  }, [tab]);
 
   // The daily allowance lands once (the server tells the player on one request only): say so on the
   // notice line, which the next action clears.
@@ -1147,6 +1159,14 @@ export function Game({
             if (valleyOn) setDungeonTeam(null);
           }}
           onPhaseChange={valleyOn ? setDungeonPhase : undefined}
+          canvas={valleyOn}
+          treatsOff={valleySystems}
+          trayInput={{
+            trips: game.expeditions,
+            jobs: gear === null ? null : gear.jobs,
+            now: Date.now() + offset,
+          }}
+          onCanvasChange={setCaveReported}
           onCanRunChange={(canRun) => {
             setAttention((now) => ({
               raid: false,
@@ -1194,7 +1214,13 @@ export function Game({
       {head}
       <ValleyFrame
         view={view}
-        {...(raidGlance?.rules === 2 ? { sceneless: CANVAS_PLACES } : {})}
+        {...(() => {
+          const canvases = [
+            ...(raidGlance?.rules === 2 ? CANVAS_PLACES : []),
+            ...(caveCanvas ? CAVE_CANVAS_PLACES : []),
+          ];
+          return canvases.length === 0 ? {} : { sceneless: canvases };
+        })()}
         creatures={game.creatures}
         trayInput={{
           trips: game.expeditions,

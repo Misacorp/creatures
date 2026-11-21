@@ -4,6 +4,28 @@ The daily dungeon: paths, rooms and rare rooms, the camp, the Undercroft, foes, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-20: The Cave canvas: native drag for the Undercroft, a held answer, art taken from the library set
+
+ID: `2026-11-20-the-cave-canvas-native-drag-for` · Status: current
+
+**Decision.** Three technical calls in building the Cave canvas (`docs/design/dungeon-canvas.md`). (1) The dragged map is a native scroll box (a finger scrolls it, a mouse drags it with `useDragScroll`, no scrollbar) with the shared `PanHint` turned to the vertical (`axis="y"`), opening on the team; the map inside is never a second scroller. (2) A room's answer is held on the client until its fight has played: the run before the room is kept in the `fight` view, the answer's `today` (or the reload a finished run needs) in a ref, applied by the playback's `onDone`. (3) The scene's art is taken from the art library's `valley-cave-canvas` set straight from `sprites/concepts/` (as `valley-place-props` is), the mouth being the art session's pick, variant C, which the coordinator accepted; the set stays `draft` in the library until Misa has seen it.
+
+**Reasoning.** (1) The raid's phone board pans the same way and the Undercroft is a long map: native scroll is accessible, keyboard-reachable and needs no hand-written touch code. (2) The page's own rule showed the new state at once and flipped the Cave line mid-fight; holding the answer is the only way not to tell the fight in advance, and it needs no change on the server. (3) The art is already in the repo and listed; importing it where it is used avoids a second copy, and promoting it into `sprites/data/` waits for the set to be liked.
+
+## 2026-11-20: [Misa] The Cave as a place: the map is the scene, drag the Undercroft on a phone, a one-row tray before a run
+
+ID: `2026-11-20-the-cave-as-a-place-the` · Status: current
+
+**Decision.** Misa (2026-11-20) agreed to the lead's picks from the Cave concepts page:
+
+1. **Direction C.** The daily dungeon becomes a valley canvas place where today's map is the scene. The rooms are the taps; the room tapped opens in the right drawer (foe, twist, prize, Go); Pack, Route and Log are on the left. A room fight takes over the scene as on the raid canvas.
+2. **The Undercroft on a phone** is dragged like the raid's phone board, opening on the team, instead of scrolling inside the map.
+3. **Before a run on a phone,** the creature tray is one row, so every room on the map keeps its name plate.
+
+It is built behind the staging-only switches; the old dungeon page stays for everything else.
+
+**Reasoning.** The map is the choice the player makes, so it stays in view. It reuses today's map, the raid's fight scene and the valley drawers, and needs the least new art: cave walls and a cave mouth. The cavern (A) and room by room (B) both needed much more art and B hid the map. Dragging matches the raid board, and the one-row tray keeps the "a name plate on every clickable" rule.
+
 ## 2026-11-06: Combat v2 dungeon: Puddle Imp, Ash Sprite and Bog Toad ask their questions
 
 ID: `2026-11-06-combat-v2-dungeon-puddle-imp-ash` · Status: current

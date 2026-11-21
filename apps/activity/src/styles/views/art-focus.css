@@ -25,6 +25,7 @@
     .sg-map .wm-marker,
     .cr-reveal button,
     .cr-summary,
+    .cave-scene :is(.dmap-node, .cave-creature, .cave-enter),
     .pc-below :is(button, a, [tabindex])
   ):is(:focus, :focus-visible),
 .vy-frame .vy-valley:focus {
@@ -54,6 +55,7 @@
 .vy-frame .vy-stand-btn,
 .vy-frame .cr-piece,
 .vy-frame .cr-summary button,
+.vy-frame .cave-scene :is(.cave-creature),
 .vy-frame .pc-below :is(button, a, [tabindex]) {
   position: relative;
 }
@@ -69,6 +71,7 @@
     .vy-hatch,
     .sg-map .wm-marker,
     .cr-reveal button,
+    .cave-scene :is(.dmap-node, .cave-creature, .cave-enter),
     .pc-below :is(button, a, [tabindex])
   ):focus-visible::after {
   content: '';

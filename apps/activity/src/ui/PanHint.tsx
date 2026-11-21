@@ -23,11 +23,14 @@ import {
 export function PanHint({
   target,
   id,
+  axis = 'x',
 }: {
-  /** The box that scrolls sideways. */
+  /** The box that scrolls sideways (up and down with `axis` `y`). */
   target: RefObject<HTMLElement | null>;
   /** The map's name for the memory, for example `world-map`. */
   id: string;
+  /** Which way the box pans: sideways (default) or up and down (the Cave's Undercroft). The edges are then top and bottom. */
+  axis?: 'x' | 'y';
 }) {
   const [edges, setEdges] = useState<Edges>({ left: false, right: false });
   const layer = useRef<HTMLDivElement>(null);
@@ -61,7 +64,9 @@ export function PanHint({
   useEffect(() => {
     if (box === null || isLearned(id) || typeof window === 'undefined') return;
     let lastInput: number | null = null;
-    let startLeft = box.scrollLeft;
+    const vertical = axis === 'y';
+    const at = (): number => (vertical ? box.scrollTop : box.scrollLeft);
+    let startLeft = at();
     let done = false;
 
     const measure = (): void => {
@@ -72,7 +77,9 @@ export function PanHint({
         mark.style.setProperty('--ph-width', `${String(box.offsetWidth)}px`);
         mark.style.setProperty('--ph-height', `${String(box.offsetHeight)}px`);
       }
-      const next = edgesWithMore(box.scrollLeft, box.clientWidth, box.scrollWidth);
+      const next = vertical
+        ? edgesWithMore(box.scrollTop, box.clientHeight, box.scrollHeight)
+        : edgesWithMore(box.scrollLeft, box.clientWidth, box.scrollWidth);
       setEdges((was) => (was.left === next.left && was.right === next.right ? was : next));
     };
     const input = (): void => {
@@ -83,14 +90,14 @@ export function PanHint({
     };
     const onScroll = (): void => {
       if (done) return;
-      if (playerScrolled(Date.now(), lastInput, startLeft, box.scrollLeft)) {
+      if (playerScrolled(Date.now(), lastInput, startLeft, at())) {
         done = true;
         markLearned(id);
         setEdges({ left: false, right: false });
         return;
       }
       // A scroll the game made (centring on a place, the room's idle pan) moves the baseline.
-      if (lastInput === null) startLeft = box.scrollLeft;
+      if (lastInput === null) startLeft = at();
       measure();
     };
 
@@ -104,7 +111,7 @@ export function PanHint({
     measure();
     // A map may centre itself just after it mounts (not the player's doing): take that as the start.
     const settle = setTimeout(() => {
-      startLeft = box.scrollLeft;
+      startLeft = at();
       measure();
     }, 400);
     return () => {
@@ -115,11 +122,17 @@ export function PanHint({
       window.removeEventListener('resize', measure);
       clearTimeout(settle);
     };
-  }, [box, id]);
+  }, [box, id, axis]);
 
   const shown = !isLearned(id) && (edges.left || edges.right);
   return (
-    <div ref={layer} class={`pan-hint${shown ? '' : ' off'}`} aria-hidden="true" data-pan-hint={id}>
+    <div
+      ref={layer}
+      class={`pan-hint${shown ? '' : ' off'}${axis === 'y' ? ' pan-hint-y' : ''}`}
+      aria-hidden="true"
+      data-pan-hint={id}
+    >
+      {/* Left and right are the first and last edge: top and bottom when the box pans up and down. */}
       {edges.left && <span class="pan-hint-edge pan-hint-left" />}
       {edges.right && <span class="pan-hint-edge pan-hint-right" />}
     </div>

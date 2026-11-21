@@ -29,6 +29,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | [House shell (housing E1)](#house-shell) | draft | 33 | 2026-11-09: housing art batch E1, the building, roofs, walls and ground skins. |
 | [Element shards, told apart by shape](#shards) | liked | 15 | 2026-11-03: the element shard icons must differ by shape, not only colour (accessibility review from the valley session; Misa asked to provide what the valley needs). |
 | [Builders' corner](#valley-builders-corner) | draft | 16 | 2026-11-15 (valley session): every valley place moves to a "picture you click" layout. On the Bonfire the fire is only where creatures chill; building work happens apart: "The helper spot should be something that's clearly separate, perhaps next to a construction table or something near the bottom of the screen ... the construction workers can do their own thing elsewhere." |
+| [The Cave as a place](#valley-cave-canvas) | draft | 9 | 2026-11-20 (combat session; Misa agreed to direction C on the Cave concepts page): the daily dungeon becomes a valley canvas place where today's map is the scene. The room icons and name plates are drawn on a cave backdrop, the team stands on its room, and tapping the cave mouth starts a run. Needs cave floor and wall tiles that fill every window edge, the same darker for the Undercroft, and a cave mouth. |
 | [The sealed gear crate](#valley-forge-crate) | draft | 9 | 2026-11-14 (via the valley session): collecting gear should be a "big moment": common pieces come home on their own; rare and epic pieces wait in a sealed crate inside the Forge until the player opens it; opening reveals them one by one, best last. |
 | [The Forge, inside](#valley-forge-interior) | draft | 27 | 2026-11-11 (via the valley session): clicking the Forge goes inside, into a workshop interior. "It would be cool to have the same stuff there (my creatures working at the anvils) but also see some other creatures working in the background, a fire going, etc. Basically make it look like the interior of a workshop." |
 | [The camp's other places, glow style](#valley-glow-camp) | draft | 6 | 2026-11-03: the valley prototype's remaining places (arena, fairground, road, chest, lectern, paddock) in the liked glow style, day and night. |
@@ -757,6 +758,35 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | `tarp` | free |  | draft | A canvas canopy on two poles over the corner, drawn so the table stands under it. |
 | `help-flag` | free |  | draft | A stake with a small teal flag marking the empty helper spot. |
 | `preview` | free |  | draft | The corner composed once, as a starting layout: tarp, table under it, sawhorse, planks, toolbox, an l pile of each material and the help flag. |
+
+<a id="valley-cave-canvas"></a>
+
+## The Cave as a place
+
+![The Cave as a place](valley-cave-canvas.png)
+
+- **Status:** draft
+- **Requested:** 2026-11-20 (combat session; Misa agreed to direction C on the Cave concepts page): the daily dungeon becomes a valley canvas place where today's map is the scene. The room icons and name plates are drawn on a cave backdrop, the team stands on its room, and tapping the cave mouth starts a run. Needs cave floor and wall tiles that fill every window edge, the same darker for the Undercroft, and a cave mouth.
+- **Source:** `apps/activity/src/sprites/concepts/valley-cave-canvas.ts` (draw it with `pnpm art valley-cave-canvas`)
+- **Sheet of:** `b40e1e62574a`
+- Tiles carry no ink (they repeat); edges are a darker rock line. Keep the floor quiet: its colours span about 10 lightness steps, so room icons and name plates on top stay readable. The only light on a tile is a tiny teal crystal glint on the side wall.
+- Tiles: cave-floor 32x32 (tiles both ways), cave-wall-top 64x32 (tiles sideways; rock band on top, stalactites hang into the transparent part, which shows the floor), cave-wall-side 32x64 (tiles vertically; rock at the left, edge on the right, flip it for the right-hand wall). Each has a `seam` row with the tile repeated twice (floor 2x2) so the join can be judged.
+- Undercroft: separate sprites (undercroft-floor, -wall-top, -wall-side), the same pixels with a darker, bluer palette; a palette swap in code would work as well (the pixels are identical, only `palette` differs), your call.
+- cave-mouth 64x48: night main, `alts.day` for the outdoor ground. The rock arch spans x 2..61, the opening is x 15..49 (centre x 32), the crystals sit inside it, and the flat ground strip where creatures stand is rows 38..43, x 5..58 (stand feet on row 41; the light spill is brightest in x 20..44). Name plate "Enter" goes just below row 44 or over the opening.
+- Variations: A is the plain rocky mouth (from valley-glow/cave, one arch with crystals). B has wooden mine-shaft beams, a lintel and a hanging lantern at x 23, y 13..21 (warm light on the ground). C is a carved stone archway, ring of cut blocks with a crystal keystone at the top (x 30..34, y 4..8). Pick: C, because the keystone gives a clear thing to tap and its cut stone ring stays readable at 1x on dark rock; B is warmer and friendlier but reads busier, and the lantern competes with the room plates.
+- Optional: campfire-prop 24x16 (a rest room; flame centred at x 12, base row 11, warm light spill rows 9..15) and cracked-stair 32x24 (the way down at the floor boss; steps descend into the dark crack at centre x 16, rows 3..20).
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `cave-floor` | free |  | draft | Dark rock floor with subtle cracks and a few pebbles. Tiles both ways; quiet. |
+| `cave-wall-top` | free |  | draft | Rock ceiling edge with stalactites hanging down. Tiles sideways; the area under the rock is transparent. |
+| `cave-wall-side` | free |  | draft | Rock wall edge (rock on the left) with hanging roots and two tiny teal crystals. Tiles vertically. |
+| `undercroft-floor` | free |  | draft | The cave floor, darker and bluer, for the Undercroft band below the floor boss. |
+| `undercroft-wall-top` | free |  | draft | The cave ceiling edge, darker and bluer. |
+| `undercroft-wall-side` | free |  | draft | The cave side wall, darker and bluer. |
+| `cave-mouth` | free |  | draft | The arch the team stands at before a run: a rocky arch into darkness, teal crystals inside, their light on the ground in front of it. Ground strip rows 38..43, x 5..58. Variants B (mine-shaft beams, lantern) and C (carved stone arch, crystal keystone). |
+| `campfire-prop` | free |  | draft | A small campfire for a rest room: logs, flame and a warm light on the ground. By day the ground is grass-toned. |
+| `cracked-stair` | free |  | draft | Steps going down into a dark crack in the floor, for the way down at the floor boss; one deep crystal glint at the bottom. |
 
 <a id="valley-forge-crate"></a>
 

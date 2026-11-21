@@ -107,6 +107,42 @@ export function DungeonNodeDrawer({
   returnFocusTo,
 }: Props) {
   if (node === null) return null;
+  const sheet = nodeSheet({ node, state, ahead, onGo, busy, landmark, crack, descent, onClose });
+  return (
+    <Drawer
+      open
+      onClose={onClose}
+      title={sheet.title}
+      titleHelp={sheet.help === null ? undefined : <GlossaryTag entry={sheet.help} look="help" />}
+      class="dnd"
+      footer={sheet.footer}
+      returnFocusTo={returnFocusTo}
+    >
+      {sheet.body}
+    </Drawer>
+  );
+}
+
+/**
+ * What a room's sheet says, apart from the frame it is drawn in: the bottom sheet of the page (`DungeonNodeDrawer`) and the Cave
+ * canvas's right drawer (`cave-canvas/panels`) both show it. `help` is the glossary entry for the "?" after the title.
+ */
+export function nodeSheet({
+  node,
+  state,
+  ahead = null,
+  onGo,
+  busy = false,
+  landmark,
+  crack = false,
+  descent = false,
+  onClose,
+}: Omit<Props, 'node' | 'returnFocusTo'> & { node: DungeonMapNode }): {
+  title: string;
+  help: string | null;
+  footer: ComponentChildren;
+  body: ComponentChildren;
+} {
   const status = nodeStatus(node, state, ahead);
   const go = onGo !== undefined && canGo(node, state);
   const entries =
@@ -137,21 +173,14 @@ export function DungeonNodeDrawer({
   ) : why !== null ? (
     <p class="muted dnd-blocked">{why}</p>
   ) : undefined;
-  return (
-    <Drawer
-      open
-      onClose={onClose}
-      title={nodeTitle(
-        entry?.result === 'fight' && entry.sealed === true
-          ? { ...node, marks: [SEALED_MARK] }
-          : node,
-      )}
-      titleHelp={help === null ? undefined : <GlossaryTag entry={help} look="help" />}
-      class="dnd"
-      footer={footer}
-      returnFocusTo={returnFocusTo}
-    >
-      {node.foe !== undefined && node.kind !== 'mystery' ? (
+  return {
+    title: nodeTitle(
+      entry?.result === 'fight' && entry.sealed === true ? { ...node, marks: [SEALED_MARK] } : node,
+    ),
+    help,
+    footer,
+    body:
+      node.foe !== undefined && node.kind !== 'mystery' ? (
         <FoeBody
           node={node}
           landmark={state?.landmark ?? landmark ?? false}
@@ -165,9 +194,8 @@ export function DungeonNodeDrawer({
         <PlainBody node={node} entry={entry} visited={visited}>
           <Outcomes entries={entries} />
         </PlainBody>
-      )}
-    </Drawer>
-  );
+      ),
+  };
 }
 
 /** The line in the footer when a room cannot be gone to: off the path, out of reach for good, or not visited by a finished run. */
@@ -338,7 +366,7 @@ function MarkNotes({ marks }: { marks: readonly RoomMark[] | undefined }) {
   );
 }
 
-function PlainBody({
+export function PlainBody({
   node,
   entry,
   visited,
@@ -372,7 +400,7 @@ function PlainBody({
   );
 }
 
-function FoeBody({
+export function FoeBody({
   node,
   landmark,
   crack,
