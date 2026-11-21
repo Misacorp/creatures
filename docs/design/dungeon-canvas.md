@@ -6,6 +6,8 @@ Misa agreed concept C on 2026-11-20 (decision `dungeon.md`, "The Cave as a place
 
 Only with the valley on AND the day's dungeon playing by combat v2 (`today.rules === 2`), and, when a run is open, only if that run started on v2 (`cave-canvas/flag.ts`, `caveCanvasOn`). Both switches are staging-only, so production keeps the old page (`Dungeon.tsx`'s page branch, untouched). When the canvas shows, `Dungeon` tells `Game` (`onCanvasChange`) and `Game` adds `cave` to `ValleyFrame`'s `sceneless`: the valley draws no scene of its own above it, as for the raid's `arena`.
 
+**No flash on the first load.** `Game` does not wait for `onCanvasChange`: until the Dungeon has reported, it decides from what start-up knows, so with the valley and combat v2 (`/api/config`'s `combatV2`, `live-flags`) both on the Cave starts sceneless and the valley's own scene never draws above "Loading". While today loads the place shows `CaveLoading` (the cave rock and a "Loading the cave..." now line). In the rare case of a v1 day or open run `Dungeon` reports `false` and the old page with the valley scene shows. The report resets when the tab leaves the Cave.
+
 ## The scene
 
 The scene is `CaveScene`: the day's map (`DungeonMap` with its `canvas` option), every room a 44 px button with a name plate under it (`roomPlate`: the foe's name, Elite, Mystery, Camp, Cache, Door, Epic, Floor boss, Keeper). The run so far is lit (the map's own statuses), the team stands on the room it is in with one gold "Your team" plate. Frame: `SceneTop` (plates for the left drawer, the now line as a caption), shared with the raid scene.
@@ -18,6 +20,8 @@ The scene is `CaveScene`: the day's map (`DungeonMap` with its `canvas` option),
 - **Reduced motion** is respected (no smooth scroll to the team); no focus rings in the art (`art-focus.css`), the gold arrow instead; every room and creature is a real button.
 
 ## The team at the mouth: the standers
+
+**Drops before a run.** Dropped on a place that is taken, a creature from the tray swaps in: the one that stood there goes back to the tray (owned, unplaced). A drag between two places moves or swaps. On the cave mouth with a full team a drop is still refused, with a hint ("The team is full. Drop one on the tray first."). The team reaches the server only through the debounced draft (`PUT /api/dungeon/team`).
 
 The creatures at the cave mouth (and on the map) are buttons of the valley's stander look: the same class, `vy-stand-btn` (no box, no ring, the gold focus arrow of `art-focus.css`), so tap and keyboard behave as for the Bonfire's and the Paddock's creatures. They do not use `valley/PlaceScene`'s `Stander` itself, because that places a creature at scene coordinates (`SceneGeometry`), opens a creature popover and is moved by the Paddock's free-roam `Hand`; the mouth needs three ordered places that are drop targets, a tap that opens the configurator drawer, and the tray's drag (`useDragDrop`), as the raid's seats do.
 

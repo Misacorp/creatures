@@ -127,7 +127,7 @@ const outcome = (
 /**
  * A hand carrying creature `id` lets go (before a run; `busy` while the run is being sent). On the tray: off the team. On the cave
  * mouth: onto the first free place, while the team has one. On a place of the row: a creature of the team moves there (or swaps), one
- * from the tray takes it when it is empty. Anywhere else is a cancel.
+ * from the tray takes it (the one standing there goes back to the tray). Anywhere else is a cancel.
  */
 export function resolveCaveDrop(
   slots: Slots,
@@ -169,9 +169,17 @@ export function resolveCaveDrop(
     const hint = 'That place does not exist.';
     return { slots, outcome: outcome('invalid', hint, hint) };
   }
-  if (slots[target.slot] !== null) {
-    const hint = 'That place is taken. Drop on an empty one or on the cave mouth.';
-    return { slots, outcome: outcome('invalid', hint, hint) };
+  const standing = slots[target.slot];
+  if (standing !== null && standing !== undefined) {
+    // The one that stood there goes back to the tray: still owned, no longer placed.
+    return {
+      slots: place(unplace(slots, standing), id, target.slot),
+      outcome: outcome(
+        'valid',
+        null,
+        `${name} takes the ${spot} place; ${nameOf(standing)} goes back to the tray.`,
+      ),
+    };
   }
   return {
     slots: place(slots, id, target.slot),

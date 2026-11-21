@@ -69,6 +69,7 @@ import { applyLoungeXp, settleClaim } from './room-data';
 import { Raid } from './Raid';
 import { SYNC_POLL_INTERVAL_MS, shouldRefetchLeet } from './leet-status';
 import { Dungeon } from './Dungeon';
+import { combatV2On } from './live-flags';
 import { GamesTab } from './games/GamesTab';
 import { gamesAlert } from './games-view';
 import { fetchCreatureGames } from './games-api';
@@ -343,11 +344,14 @@ export function Game({
   const [dungeonTeam, setDungeonTeam] = useState<Slots | null>(null);
   // What the Dungeon page last said about today (a run in progress, one to start, neither); null until it has.
   const [dungeonPhase, setDungeonPhase] = useState<DungeonPhase | null>(null);
-  // The Dungeon page says whether the Cave is drawn as a canvas (valley on and combat v2): then no scene of the valley's above it.
-  const [caveCanvas, setCaveCanvas] = useState(false);
-  // Away from the Dungeon tab nothing says it is a canvas: the next visit starts from the valley's own scene until it loads.
+  // The Dungeon page says whether the Cave is drawn as a canvas (valley on and combat v2, and the day's rules are v2). Until it
+  // has, what start-up knows decides: with the valley and combat v2 both on the Cave starts sceneless, so the valley's own scene
+  // never flashes above the canvas while today loads. The page reports `false` in the rare case of a v1 day or run.
+  const [caveReported, setCaveReported] = useState<boolean | null>(null);
+  const caveCanvas = caveReported ?? (valleyOn && combatV2On());
+  // Away from the Dungeon tab nothing has reported yet: the next visit starts from what start-up knows again.
   useEffect(() => {
-    if (tab !== 'dungeon') setCaveCanvas(false);
+    if (tab !== 'dungeon') setCaveReported(null);
   }, [tab]);
 
   // The daily allowance lands once (the server tells the player on one request only): say so on the
@@ -1162,7 +1166,7 @@ export function Game({
             jobs: gear === null ? null : gear.jobs,
             now: Date.now() + offset,
           }}
-          onCanvasChange={setCaveCanvas}
+          onCanvasChange={setCaveReported}
           onCanRunChange={(canRun) => {
             setAttention((now) => ({
               raid: false,

@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AwaySummary, GameState } from '../api';
 import { SAMPLE_STATE } from '../creature-card-sample';
 import { Game } from '../Game';
+import { setCombatV2 } from '../live-flags';
 import { aloneParticipants } from '../participants';
 import { PopoverHost } from '../PopoverHost';
 import { FakeElement, byClass, byName, createPage, visibleText, type Page } from '../test-dom';
@@ -258,6 +259,19 @@ describe('the places’ scenes above today’s page', () => {
     expect(byName(p.root, 'button', /^Stats/)).toHaveLength(1);
     const off = draw(false, { loungerId: firstId });
     expect(byClass(off.root, 'room-view').length).toBeGreaterThan(0);
+  });
+
+  it("Cave with the valley and combat v2 on: no scene of the valley's above the loading canvas", () => {
+    setCombatV2(true);
+    try {
+      const p = draw(true);
+      open(p, 'Cave');
+      expect(byClass(p.root, 'vy-inside')).toHaveLength(0);
+      expect(byClass(p.root, 'vy-band')).toHaveLength(0);
+      expect(visibleText(p.root)).toContain('Loading the cave...');
+    } finally {
+      setCombatV2(false);
+    }
   });
 
   it('Cave: a run waits, so the action says Start the run and goes to the page', () => {

@@ -26,6 +26,7 @@ mkdirSync(out, { recursive: true });
 const SHOTS = [
   ['before a run', 'before-a-run', false, 1200],
   ['before a run', 'before-a-run-scene', true, 1200],
+  ['loading', 'loading', true, 600],
   ['blocked', 'blocked', false, 1200],
   ['blocked', 'blocked-scene', true, 1200],
   ['retry', 'retry', false, 1200],
