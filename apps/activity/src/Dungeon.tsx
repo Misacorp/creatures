@@ -198,10 +198,11 @@ export function Dungeon({
     if (today !== null) onCanRunChange(today.canRun);
   }, [today]);
 
-  // The valley draws no scene of its own above the canvas.
+  // The valley draws no scene of its own above the canvas. A failed first load shows the old page's error, under the valley's scene.
   useEffect(() => {
     if (today !== null) onCanvasChange?.(onCanvas);
-  }, [onCanvas, today === null]);
+    else if (loadError !== null) onCanvasChange?.(false);
+  }, [onCanvas, today === null, loadError === null]);
 
   // The valley's Cave says what the page knows: a run in progress is not "quiet".
   useEffect(() => {
