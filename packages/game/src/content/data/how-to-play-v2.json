@@ -59,10 +59,10 @@
       "id": "v2-weekend",
       "title": "The raid weekend",
       "lines": [
-        "Stage 1 plays on Saturday, stage 2 on Sunday, and the live finale on Sunday evening.",
-        "The three stages share one boss. Only HP carries over: marks and the rest start fresh each stage.",
+        "Stage 1 plays on Saturday, stage 2 on Sunday, and the finale on Sunday evening, all live: watch them happen.",
+        "The stages share one boss; only HP carries over, marks start fresh. The board locks while a stage plays.",
         "A creature that is knocked out is out for the weekend. A spare can take its empty slot before the next stage.",
-        "Players lock in at stage 1. In the live finale you give one order, when you choose: Rally, Shield Wall or Purge.",
+        "Players lock in at stage 1; a stage pays when it ends. In the finale, give one order: Rally, Shield Wall or Purge.",
         "To pair up differently, tap a teammate's creature and Ask to swap. They answer from Home; you can Cancel."
       ]
     },
