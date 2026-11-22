@@ -1,7 +1,7 @@
 /*
   The house as a place's canvas (`housing/HousePlace` with `canvas`, `housing/VisitHouse` with `canvas`; the rule is "A place is a
   canvas" in `docs/design/ux-patterns.md`). The cutaway (`HouseScene`, `canvas`) fills the stage and pans itself by drag like a map; the
-  panels are the shared drawers (`valley/PlaceCanvas`), the collections' buttons (`.hc-tool`) are the Places flag's look (`.vy-hatch`)
+  panels are the shared drawers (`valley/PlaceCanvas`), the collections' buttons (`.pc-tool`, `canvas.css`) are the Places flag's look (`.vy-hatch`)
   with the same name plate as every other clickable thing. Nothing here scrolls the page.
 */
 
@@ -125,23 +125,6 @@
   z-index: 6;
 }
 
-/* The collections' buttons, one under another down the scene's left edge. */
-.hc-tools {
-  position: absolute;
-  z-index: 25;
-  top: 0.375rem;
-  left: 0.375rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.75rem;
-}
-
-.hc-tools .hc-tool {
-  position: relative;
-  top: auto;
-  left: auto;
-}
-
 /* A built part and a refusal: in the flow under the scene (never over it, so a room's head stays readable). */
 .hc-notes {
   display: grid;
@@ -164,12 +147,6 @@
   position: static;
   padding: 0.5rem;
   background: var(--dusk);
-}
-
-/* A tool's plate starts at the button's left edge (a long name runs to the right, never off the screen). */
-.hc-tool .cv-plate {
-  left: 0;
-  transform: none;
 }
 
 /* A plate that would run off the scene's visible edge is moved in (`housing/plate-nudge`, `--nudge`). */

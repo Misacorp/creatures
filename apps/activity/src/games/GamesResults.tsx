@@ -144,12 +144,15 @@ export function GamesResults({
   lineup,
   creatures,
   onReplay,
+  bare = false,
 }: {
   results: readonly GamesResult[];
   lineup: readonly Pick<LineupEvent, 'id' | 'name'>[];
   creatures: readonly Creature[];
   /** Plays the show from an event (or from the start, with null); absent: no replay (no show stored). */
   onReplay?: ((eventId: string | null) => void) | undefined;
+  /** True draws it with no frame and no heading, and the whole-show replay button says "Watch the show". */
+  bare?: boolean;
 }) {
   const byId = new Map(creatures.map((c) => [c.id, c]));
   const events = new Map(lineup.map((e) => [e.id, e]));
@@ -161,11 +164,16 @@ export function GamesResults({
     }),
   );
   return (
-    <section class="gr-results pix-panel" aria-labelledby="gr-title">
+    <section
+      class={bare ? 'gr-results is-bare' : 'gr-results pix-panel'}
+      {...(bare ? { 'aria-label': 'Last show' } : { 'aria-labelledby': 'gr-title' })}
+    >
       <div class="gr-head">
-        <h3 id="gr-title" class="gr-title">
-          Last show
-        </h3>
+        {!bare && (
+          <h3 id="gr-title" class="gr-title">
+            Last show
+          </h3>
+        )}
         {onReplay !== undefined && (
           <button
             type="button"
@@ -174,7 +182,7 @@ export function GamesResults({
               onReplay(null);
             }}
           >
-            <span aria-hidden="true">▶</span> Watch
+            <span aria-hidden="true">▶</span> {bare ? 'Watch the show' : 'Watch'}
           </button>
         )}
       </div>
