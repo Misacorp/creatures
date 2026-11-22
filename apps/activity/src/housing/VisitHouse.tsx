@@ -246,7 +246,7 @@ export function VisitHouse({
             house !== null && (
               <button
                 type="button"
-                class="vy-hatch hc-tool"
+                class="vy-hatch pc-tool"
                 data-no-pan="yes"
                 aria-label="The guestbook. Open"
                 aria-expanded={bookFrom !== null}

@@ -4797,10 +4797,10 @@ try {
       // No focus ring: the keyboard sees the gold arrow on a room, a mouse click leaves nothing.
       const room = page.locator('.house-scene button.house-room').locator('visible=true');
       await expectFocusCue(room.first(), 'a room of the house');
-      await expectFocusCue(page.locator('.hc-tools button.hc-tool').first(), 'a collection button');
+      await expectFocusCue(page.locator('.pc-tools button.pc-tool').first(), 'a collection button');
       // A drawer opens from a corner button and closes with its X (a phone: its Back); the house does not move.
       const before = await page.locator('.house-plane').first().boundingBox();
-      await page.locator('.hc-tools button.hc-tool[aria-label^="Build"]').click();
+      await page.locator('.pc-tools button.pc-tool[aria-label^="Build"]').click();
       await waitFor(leftPanel);
       if (width >= 960) {
         const during = await page.locator('.house-plane').first().boundingBox();
@@ -4826,6 +4826,318 @@ try {
       await waitFor(page.locator('.pc-below .house-chips'));
       await expectNoScroll();
       await shot('house-room');
+    },
+  );
+
+  // --- The Fairground as a canvas (Misa's pick A, stalls, 2026-11-20): the games API answers per state ---------------------
+  // The four states of a show day come from the captured games fixtures (never edited): entries open, locked (stands filling), the
+  // show live, and after it (results). The fixtures name their own creatures; the scenario's five are put in their place when read.
+  const FAIR_IDS = [1, 2, 3, 4, 5].map((n) => `00000000-0000-4000-8500-0000000000a${String(n)}`);
+  const fairState = { base: 'games-entries', entries: null, wednesday: false, puts: [] };
+  const fairView = () => {
+    const text = JSON.stringify(fixture(fairState.base)).replace(
+      /00000000-0000-4000-8600-00000000000([1-5])/g,
+      (_, n) => FAIR_IDS[Number(n) - 1],
+    );
+    const view = JSON.parse(text);
+    if (fairState.entries !== null) view.next.entries = { ...fairState.entries };
+    if (fairState.wednesday) {
+      view.stall = {
+        ...view.stall,
+        open: true,
+        opensAt: view.serverNow - 3600000,
+        closesAt: view.serverNow + 86400000,
+      };
+      view.you = { ...view.you, pocket: 12 };
+    }
+    return view;
+  };
+  const fairScenario = (name, base, setup, run) =>
+    scenario(
+      name,
+      () => {
+        const config = ROUTES.get('/api/config');
+        answerOverride.set('/api/config', () => ({ ...config(), valleySystems: true }));
+        const creatures = FAIR_IDS.map((id, i) => ({
+          ...baseState.creatures[i % baseState.creatures.length],
+          id,
+          nickname: ['Splash', 'Toast', 'Sprout', 'Pip', 'Mossy'][i],
+          busy: null,
+          away: false,
+        }));
+        scouts.seats = [];
+        scouts.owned = [];
+        scouts.ids = creatures.map((c) => c.id);
+        // The game's clock is the state's: it is the games fixture's, so "now" is where that day's fixture says.
+        stateOverride = { creatures, valley: valleyBlock(), serverNow: fixture(base).serverNow };
+        fairState.base = base;
+        fairState.entries = null;
+        fairState.wednesday = false;
+        fairState.puts = [];
+        setup();
+        answerOverride.set('/api/games', fairView);
+        answerOverride.set('/api/games/entry', (request) => {
+          const body = request.postDataJSON();
+          const view = fairView();
+          if (!view.next.open) return { refuse: 409, error: 'entries_closed' };
+          const entries = { ...view.next.entries };
+          const elsewhere = Object.entries(entries).some(
+            ([event, ids]) =>
+              event !== body.eventId && body.creatureIds.some((id) => ids.includes(id)),
+          );
+          if (elsewhere) return { refuse: 409, error: 'already_entered' };
+          entries[body.eventId] = body.creatureIds;
+          if (body.creatureIds.length === 0) delete entries[body.eventId];
+          fairState.entries = entries;
+          fairState.puts.push(body);
+          return { next: { ...view.next, entries } };
+        });
+      },
+      run,
+    );
+  const fairStall = (name) => sceneTarget(name);
+  const fairIn = (eventId) => page.locator(`.fg-stall[data-event="${eventId}"] .vy-creature`);
+  const fairCount = (eventId, n) =>
+    page.waitForFunction(
+      ([id, want]) =>
+        document.querySelectorAll(`.fg-stall[data-event="${id}"] .vy-creature`).length === want,
+      [eventId, n],
+    );
+  const openFair = async () => {
+    await waitFor(page.locator(VALLEY), 'attached');
+    await place('fair').evaluate((el) => el.click());
+    await waitFor(heading('Fairground'));
+    await page.waitForTimeout(600);
+  };
+  /** Closes whatever drawer (or phone page) is open. */
+  const closeDrawers = async () => {
+    while ((await drawer.count()) > 0) {
+      await drawer.first().locator('button.side-panel-close, button.drill-back').first().click();
+      await page.waitForTimeout(150);
+    }
+  };
+  const dragFromTray = async (creatureId, to) => {
+    const from = await page
+      .locator(`.fg-root section.vy-tray button[data-creature="${creatureId}"]`)
+      .boundingBox();
+    const target = await to.boundingBox();
+    if (from === null || target === null) throw new Error('no boxes to drag');
+    await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(from.x + from.width / 2 + 12, from.y + from.height / 2 + 12, {
+      steps: 4,
+    });
+    await page.mouse.move(target.x + target.width / 2, target.y + target.height / 2, { steps: 10 });
+    await page.mouse.up();
+  };
+  /** The frame never scrolls and every thing you can tap has a plate. */
+  const fairChecks = async () => {
+    await expectNoScroll();
+    if ((await page.locator('.vy-in-fairground button.cv-target:not(:has(.cv-plate))').count()) > 0)
+      throw new Error('a clickable thing in the Fairground has no plate');
+    if ((await page.locator('.fg-root .vy-page, .fg-root .vy-act').count()) > 0)
+      throw new Error('the Fairground has a page or a pinned action under its scene');
+  };
+
+  await fairScenario(
+    'the Fairground with entries open: a stall, a slot and the picker, a drag from the tray, the plates',
+    'games-entries',
+    () => {},
+    async () => {
+      await openFair();
+      await waitFor(page.locator('.vy-in-fairground'), 'attached');
+      await fairChecks();
+      if ((await page.locator('.vy-hatch.pc-tool').count()) !== 2)
+        throw new Error('the Fairground does not have its two corner buttons');
+      const stalls = page.locator('.vy-in-fairground button.cv-target[data-seat^="stall:"]');
+      if ((await stalls.count()) !== 3)
+        throw new Error('the day has three events, not three stalls');
+      // Plates never cover each other.
+      const plates = await page
+        .locator('.vy-in-fairground .cv-plate')
+        .evaluateAll((els) =>
+          els.map((el) => el.getBoundingClientRect()).map((r) => [r.x, r.y, r.right, r.bottom]),
+        );
+      for (let i = 0; i < plates.length; i += 1)
+        for (let j = i + 1; j < plates.length; j += 1) {
+          const [a, b] = [plates[i], plates[j]];
+          if (a[0] < b[2] && b[0] < a[2] && a[1] < b[3] && b[1] < a[3])
+            throw new Error(`two plates overlap: ${JSON.stringify(a)} ${JSON.stringify(b)}`);
+        }
+      await expectFocusCue(fairStall('Melon Run'), 'a stall');
+      await page.mouse.move(2, 2);
+      await shot('fair-open');
+      // Tap a stall: its event in the right drawer, with its slot; the slot opens the creature list as a step, with Back.
+      await expectNoFocusOnClick(fairStall('Melon Run'), 'the Melon Run stall');
+      await waitFor(rightPanel);
+      await waitFor(rightPanel.locator('.ge-slot'));
+      await waitFor(rightPanel.getByText('A giant watermelon is rolling down the hill'));
+      await page.waitForTimeout(300);
+      await shot('fair-stall-drawer');
+      await rightPanel.locator('button.ge-slot').first().click();
+      await waitFor(rightPanel.locator('[role="option"]'));
+      await waitFor(rightPanel.locator('.ps-step .drill-back'));
+      await shot('fair-stall-picker');
+      // Back returns to the event; the slot again, then a creature enters.
+      await rightPanel.locator('.ps-step .drill-back').first().click();
+      await waitFor(rightPanel.locator('button.ge-slot'));
+      await rightPanel.locator('button.ge-slot').first().click();
+      await rightPanel.locator('[role="option"]').first().click();
+      await fairCount('melon-run', 1);
+      if (fairState.puts.length !== 1 || fairState.puts[0].eventId !== 'melon-run')
+        throw new Error(`the picker asked the server ${JSON.stringify(fairState.puts)}`);
+      await waitFor(rightPanel.locator('.ge-slot.is-filled'));
+      await shot('fair-stall-entered');
+      // Clear lives in the picker step.
+      await rightPanel.locator('button.ge-slot').first().click();
+      await rightPanel.getByRole('button', { name: 'Clear' }).click();
+      await fairCount('melon-run', 0);
+      await closeDrawers();
+      // A creature dragged from the tray onto a stall enters it by the same action.
+      await dragFromTray(FAIR_IDS[2], fairStall('Pepper Panic'));
+      await fairCount('pepper-panic', 1);
+      // Dragged on to another stall, it moves (the picker's own rule).
+      await dragFromTray(FAIR_IDS[2], fairStall('Melon Run'));
+      await fairCount('melon-run', 1);
+      await fairCount('pepper-panic', 0);
+      // The three seats of the team stall fill; a fourth is refused with the line the server gives for a team that does not fit.
+      await dragFromTray(FAIR_IDS[0], fairStall('Log Carry'));
+      await fairCount('log-carry', 1);
+      await dragFromTray(FAIR_IDS[1], fairStall('Log Carry'));
+      await fairCount('log-carry', 2);
+      await dragFromTray(FAIR_IDS[3], fairStall('Log Carry'));
+      await fairCount('log-carry', 3);
+      await shot('fair-open-entered');
+      await dragFromTray(FAIR_IDS[4], fairStall('Log Carry'));
+      await waitFor(page.locator('.fg-error', { hasText: 'That team does not fit the event.' }));
+      await expectNoScroll();
+      await shot('fair-drop-refused-full');
+      if ((await fairIn('log-carry').count()) !== 3)
+        throw new Error('the refused creature went in');
+    },
+  );
+
+  await fairScenario(
+    'the Fairground locked: the stands fill, the stalls are shut and refuse a drop',
+    'games-locked',
+    () => {
+      fairState.entries = {
+        'melon-run': [FAIR_IDS[0]],
+        'log-carry': [FAIR_IDS[1], FAIR_IDS[2]],
+      };
+    },
+    async () => {
+      await openFair();
+      await waitFor(page.locator('.vy-in-fairground'), 'attached');
+      await fairChecks();
+      await waitFor(page.locator('.cv-plate', { hasText: /Show in/ }));
+      if ((await fairIn('melon-run').count()) !== 1 || (await fairIn('log-carry').count()) !== 2)
+        throw new Error('the entered creatures are not at their counters');
+      await page.mouse.move(2, 2);
+      await shot('fair-locked');
+      await dragFromTray(FAIR_IDS[3], fairStall('Pepper Panic'));
+      await waitFor(page.locator('.fg-error', { hasText: 'Entries are closed for this show.' }));
+      if ((await fairIn('pepper-panic').count()) !== 0)
+        throw new Error('a locked stall took a creature');
+      // The stall still opens, its slots plain (nothing to pick for).
+      await fairStall('Melon Run').click();
+      await waitFor(rightPanel.getByText('Entries are closed for this show.'));
+      if ((await rightPanel.locator('button.ge-slot').count()) !== 0)
+        throw new Error('a slot can be tapped after the lock');
+    },
+  );
+
+  await fairScenario(
+    'the Fairground with the show live: the stage takes the picture, the standings are in the left drawer',
+    'games-show',
+    () => {},
+    async () => {
+      await openFair();
+      const stage = page.locator('.fg-root .fg-stage .games-show.is-stage');
+      await waitFor(stage);
+      if ((await page.locator('.vy-in-fairground').count()) > 0)
+        throw new Error('the scene is still drawn under the live show');
+      await expectNoScroll();
+      // The caption and the pips sit under the stage, and no board is inline in it.
+      await waitFor(stage.locator('.gs-pips'));
+      if ((await stage.locator('.gs-board').count()) > 0)
+        throw new Error('the standings are inline in the stage');
+      await page.waitForTimeout(2000);
+      await shot('fair-running');
+      // The standings are in the left drawer: open on a wide window, a corner button's page on a phone.
+      if (width < 960) await page.locator('button.pc-tool[aria-label^="Standings"]').click();
+      await waitFor(leftPanel.locator('.fg-standings .gs-board'));
+      await page.waitForTimeout(500);
+      await expectNoScroll();
+      if (width < 960) await shot('fair-running-standings');
+    },
+  );
+
+  await fairScenario(
+    'the Fairground after the show: rosettes on the tent, Last show with its replay, the Medals, the Prize Stall shuttered, the Rules',
+    'games-after',
+    () => {},
+    async () => {
+      await openFair();
+      await waitFor(page.locator('.vy-in-fairground'), 'attached');
+      await fairChecks();
+      await shot('fair-results');
+      // Prize Stall off Wednesday: shuttered, its plate says when it opens, the drawer the same.
+      await waitFor(page.locator('.cv-plate', { hasText: /^Opens / }));
+      await sceneTarget('The Prize Stall is shuttered').click();
+      await waitFor(rightPanel.getByText(/^Opens /));
+      if ((await rightPanel.getByRole('button', { name: 'Buy' }).count()) > 0)
+        throw new Error('a shuttered stall offers Buy');
+      await shot('fair-prize-shuttered');
+      await closeDrawers();
+      // The Rules board: the Games' words.
+      await sceneTarget('The rules').click();
+      await waitFor(rightPanel.getByText('Good fit').first());
+      await waitFor(rightPanel.getByText(/Gold, silver and bronze/));
+      await shot('fair-rules');
+      await closeDrawers();
+      // The tent: the schedule.
+      await sceneTarget('The show tent').click();
+      await waitFor(rightPanel.getByText('Entries close'));
+      await closeDrawers();
+      // Medals: the cabinet in the left drawer.
+      await page.locator('button.pc-tool[aria-label^="Medals"]').click();
+      await waitFor(leftPanel.locator('.gm-cabinet'));
+      await shot('fair-medals');
+      await closeDrawers();
+      // Last show: the medals per event, the XP rows and Watch the show, which puts the replay on the stage.
+      await page.locator('button.pc-tool[aria-label^="Last show"]').click();
+      await waitFor(leftPanel.locator('.gr-row'));
+      await waitFor(leftPanel.getByRole('button', { name: /Watch the show/ }));
+      await shot('fair-last-show');
+      await leftPanel.getByRole('button', { name: /Watch the show/ }).click();
+      await waitFor(page.locator('.fg-stage .games-show.is-stage'));
+      await page.waitForTimeout(1500);
+      await expectNoScroll();
+      await shot('fair-replay');
+      // Back is the left drawer's foot on a wide window (the corner button lies under the drawer), the corner button on a phone.
+      if (width < 960) await page.locator('button.pc-tool[aria-label="Back to the fair"]').click();
+      else await leftPanel.getByRole('button', { name: 'Back to the fair' }).click();
+      await waitFor(page.locator('.vy-in-fairground'), 'attached');
+    },
+  );
+
+  await fairScenario(
+    'the Fairground on a Wednesday: the Prize Stall is open and its offers are in the right drawer',
+    'games-after',
+    () => {
+      fairState.wednesday = true;
+    },
+    async () => {
+      await openFair();
+      await waitFor(page.locator('.cv-plate', { hasText: /^Prize Stall$/ }));
+      await sceneTarget('The Prize Stall is open').click();
+      await waitFor(rightPanel.getByRole('button', { name: 'Buy' }));
+      await page.waitForTimeout(300);
+      await shot('fair-prize-open');
+      // Back to the valley for the checks that follow (the map's last shots).
+      await closeDrawers();
+      await backToValley();
     },
   );
 

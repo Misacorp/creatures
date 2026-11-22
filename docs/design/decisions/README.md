@@ -607,6 +607,10 @@ Superseded: 1 entry (see the topic file).
 
 [valley.md](valley.md): The valley and peaceful systems overhaul planned in docs/design/valley/: job posts, the bonfire, the commons, the Forge loop, gear, trials, the School, the visitor, the economy lab, and Misa's question rounds.
 
+- 2026-11-20 Fairground: medals behind corner buttons, the Prize Stall and Rules are things in the scene \[Misa\]
+- 2026-11-20 Fairground: entering by tap and by drag, the same server action \[Misa\]
+- 2026-11-20 Fairground: the live show takes over the picture, standings in the left drawer \[Misa\]
+- 2026-11-20 Fairground: direction A, stalls, one scene (Valley Games as a canvas) \[Misa\]
 - 2026-11-16 Place scenes scale to fill the window; narrower drawers; item card config props
 - 2026-11-16 Bonfire: creatures stand on the ground and a hand can move them (feet under the horizon, no dragging into the sky)
 - 2026-11-16 Pre-playtest layout fixes: creature drawer, Paddock row, seat outlines, corner in view

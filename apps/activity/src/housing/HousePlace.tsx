@@ -715,12 +715,12 @@ export function HousePlace({ creatures, now, onSpent, canvas }: HousePlaceProps)
       </div>
     );
     const toolsOverlay = (
-      <div class="hc-tools" role="group" aria-label="The house" data-no-pan="yes">
+      <div class="pc-tools" role="group" aria-label="The house" data-no-pan="yes">
         {tools.map((t) => (
           <button
             key={t.kind}
             type="button"
-            class="vy-hatch hc-tool"
+            class="vy-hatch pc-tool"
             aria-label={`${t.name}, ${t.line}`}
             aria-expanded={left?.kind === t.kind}
             onClick={(event) => {
