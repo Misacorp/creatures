@@ -1,9 +1,10 @@
 #!/usr/bin/env node
-// SessionStart hook: makes this checkout commit as the owner, so a squash merge on GitHub adds no
-// "Co-authored-by" line for an agent identity (CLAUDE.md, Pull requests). Sets the repository-local
-// user.name and user.email from .claude/owner.json (github, commitEmail). Local config wins over the
-// global one a cloud session sets, and worktrees share it (`--local` writes the common config).
-// Does nothing without a valid email. Never fails the session.
+// SessionStart hook: makes the owner the author of this checkout's commits, so a squash merge on GitHub
+// adds no "Co-authored-by" line for an agent identity (CLAUDE.md, Pull requests). Sets the repository-local
+// author.name and author.email from .claude/owner.json (github, commitEmail). The committer stays the
+// session's own identity (user.name, user.email), so a cloud session's commits keep their verified
+// signature. Worktrees share it (`--local` writes the common config). Clears a local user.* that an
+// earlier version set to the owner. Does nothing without a valid email. Never fails the session.
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -41,9 +42,14 @@ async function main() {
       return '';
     }
   };
-  if (current('user.email') !== who.email) git('config', '--local', 'user.email', who.email);
-  if (who.name && current('user.name') !== who.name)
-    git('config', '--local', 'user.name', who.name);
+  if (current('author.email') !== who.email) git('config', '--local', 'author.email', who.email);
+  if (who.name && current('author.name') !== who.name)
+    git('config', '--local', 'author.name', who.name);
+  // An earlier version made the owner the committer too; give that back to the session.
+  if (current('user.email') === who.email) {
+    git('config', '--local', '--unset', 'user.email');
+    if (current('user.name') === who.name) git('config', '--local', '--unset', 'user.name');
+  }
 }
 
 if (process.argv[1]?.endsWith('git-identity.mjs')) {
