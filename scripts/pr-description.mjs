@@ -45,7 +45,7 @@ async function main() {
   if (!res.ok) throw new Error(`GET the PR: HTTP ${res.status}`);
   const { body } = await res.json();
   const cleaned = stripFooter(body);
-  if (cleaned === (body ?? '').replace(/\r\n/g, '\n')) {
+  if (cleaned.trimEnd() === (body ?? '').replace(/\r\n/g, '\n').trimEnd()) {
     console.log('The description has no footer to remove.');
     return;
   }
