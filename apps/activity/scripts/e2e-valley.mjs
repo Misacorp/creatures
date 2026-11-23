@@ -10,7 +10,7 @@
  * `shoot.mjs`). There is no server: every `/api/*` call is answered from the worker's captured fixtures
  * (`src/fixtures/`, staging-shaped data from `pnpm fixtures:capture`), with `valley: true` in the config, the
  * starter chosen, and an away notice that the first dismissal clears. Nothing is mocked inside the game.
- *   --only <text>   run only the items whose name contains the text (for iterating on one)
+ *   --only <text>   run only the items whose name contains the text (for iterating on one); the Gazette is closed first, in setup
  *
  * It prints one line per checklist item and exits 1 on the first failure (with a screenshot of it in `--out`).
  * With `--out` it also writes a shot of the map at the end. About 30 s; not part of `check:changed`.
@@ -114,12 +114,22 @@ const ROUTES = new Map([
   ['/api/raid', () => fixture('raid-reveal-seen')],
   ['/api/raid/channel', () => fixture('raid-channel')],
   ['/api/raid/live', () => fixture('live-none')],
+  ['/api/house/seen', () => ({ ok: true })],
 ]);
+
+/** Answers for the paths with an id in them (a week, a creature): by prefix, the captured fixture each one is shaped like. */
+const PREFIX_ROUTES = [
+  ['/api/raid/stats/', () => fixture('raid-stats-close-win')],
+  ['/api/games/creature/', () => fixture('games-creature')],
+];
 
 const unanswered = new Set();
 async function answer(route) {
   const url = new URL(route.request().url());
-  const make = answerOverride.get(url.pathname) ?? ROUTES.get(url.pathname);
+  const make =
+    answerOverride.get(url.pathname) ??
+    ROUTES.get(url.pathname) ??
+    PREFIX_ROUTES.find(([prefix]) => url.pathname.startsWith(prefix))?.[1];
   const wait = delays.get(url.pathname);
   if (wait !== undefined) await new Promise((r) => setTimeout(r, wait));
   if (make === undefined) {
@@ -1217,7 +1227,8 @@ try {
     await waitFor(page.locator('article[aria-label="The Valley Gazette"]'));
   });
 
-  await step('closing the Gazette dismisses the notice and leaves the valley', async () => {
+  /** The Gazette's close button: the notice is dismissed and the valley is left. */
+  const closeGazette = async () => {
     const dismissed = page
       .waitForRequest((r) => r.url().endsWith('/api/away/dismiss'), { timeout: 10000 })
       .catch((e) => e);
@@ -1229,9 +1240,20 @@ try {
     if (sent instanceof Error) throw sent;
     await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
     await waitFor(page.locator(VALLEY), 'attached');
+  };
+  let gazetteClosed = false;
+  await step('closing the Gazette dismisses the notice and leaves the valley', async () => {
+    await closeGazette();
+    gazetteClosed = true;
     // The still of the coming-home note (reduced motion: "+N" by the purse, at least five seconds).
     if (reduced) await shot('gains-note');
   });
+  // A run of only some items (`--only Forge`) skips the step above, and the Gazette would stay open over the place: close it here, as
+  // setup, for every run.
+  if (!gazetteClosed) {
+    await waitFor(page.getByRole('dialog'));
+    await closeGazette();
+  }
 
   // The coming-home moment is over before the HUD is measured or shot (its plates fly over the purse).
   await page.locator('.gz-fly').waitFor({ state: 'detached', timeout: 15000 });
