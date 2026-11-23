@@ -690,7 +690,6 @@ function Canvas(props: RaidCanvasProps & { v2: RaidV2View }) {
   return (
     <PlaceCanvas
       label="Raid"
-      pan={false}
       left={leftPanel}
       right={rightPanel}
       scene={

@@ -586,7 +586,8 @@
 @media (min-width: 60rem) {
   .wb-frame-stage:has(> main.card),
   .wb-frame-stage:has(> .wb-valley),
-  .wb-frame-stage:has(> .wb-cave-canvas) {
+  .wb-frame-stage:has(> .wb-cave-canvas),
+  .wb-frame-stage:has(> .wb-raid-canvas) {
     width: 100%;
     margin: 0;
     padding: 0;

@@ -16,19 +16,6 @@
   flex-direction: column;
 }
 
-/*
-  A wide window's drawers lie over the scene's edges, so the scene's own room is what they leave clear (Misa, 2026-11-23: the board is
-  centred): padding the width of a drawer (`canvas.css`: 22 rem, at most 40% of the stage) on the side that has one centres the boss, the
-  now line and the board in the clear stretch. The scene never pans for a drawer (`pan={false}`).
-*/
-.pc-root[data-drawer-left] .rc-scene {
-  padding-left: calc(0.5rem + min(22rem, 40%));
-}
-
-.pc-root[data-drawer-right] .rc-scene {
-  padding-right: calc(0.5rem + min(22rem, 40%));
-}
-
 /* Things in the world are not raised buttons: the art is the button. */
 .rc-scene :is(.rc-plate, .rc-now-button, .rc-boss-art, .rc-move),
 .rc-scene :is(.rc-plate, .rc-now-button, .rc-boss-art, .rc-move):is(:hover, :active),
