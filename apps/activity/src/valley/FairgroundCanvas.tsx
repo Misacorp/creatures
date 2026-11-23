@@ -190,7 +190,7 @@ function Fair({
   const [replay, setReplay] = useState<number | null>(null);
   const staged = (screen === 'show' && show !== null) || (replay !== null && show !== null);
   const locked = !next.open;
-  const lineup: StallEvent[] = next.lineup.map((e) => ({ id: e.id, team: e.team }));
+  const lineup: StallEvent[] = next.lineup.map((e) => ({ id: e.id, team: e.team, name: e.name }));
 
   const [right, setRight] = useState<Right | null>(() => {
     const kind = start.right;
@@ -242,7 +242,7 @@ function Fair({
     () => stallCasts(lineup, next.entries, new Set(byId.keys())),
     [next.entries, next.lineup, byId],
   );
-  const lineupKey = lineup.map((e) => `${e.id}:${String(e.team)}`).join(',');
+  const lineupKey = lineup.map((e) => `${e.id}:${String(e.team)}:${e.name ?? ''}`).join(',');
   const medals = rosettesOf(view);
   const medalsKey = medals.join(',');
   const prizeOpen = view.stall.open;
@@ -507,7 +507,7 @@ function Fair({
   );
 
   const tools = (
-    <div class="pc-tools" role="group" aria-label="The fair" data-no-pan="yes">
+    <div class="pc-tools pc-tools-row" role="group" aria-label="The fair" data-no-pan="yes">
       {staged ? (
         <>
           <button
@@ -600,6 +600,7 @@ function Fair({
               creatures={ordered}
               input={trayInput}
               label={staged ? 'Your creatures' : 'Creatures to enter'}
+              oneRow
               onPick={onOpenPaddock}
               {...(staged ? {} : { drag })}
               marks={(c) => {

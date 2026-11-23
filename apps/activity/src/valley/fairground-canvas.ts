@@ -15,7 +15,7 @@
 import { PLATE_ROW_PX } from './place-plates';
 import { grassTo } from './place-scene';
 import type { SceneGeometry } from './SceneFrame';
-import type { Placement } from './valley-art';
+import { TILE, type Placement } from './valley-art';
 import {
   BOARD,
   POSTER,
@@ -40,18 +40,31 @@ import type { Box } from './fairground-canvas-art';
 
 export type { Box };
 
-/** The scale range: a phone's 390 px is 195 scene pixels at 2, room for two single stalls side by side. */
-export const SCALE_MIN = 2;
+/**
+ * The scale range: a phone's 390 px is 195 scene pixels at 2, room for two single stalls side by side. A small phone with a long
+ * day (four or five stalls) gets 1, the one scale where every stall and its name plate fit above the tray without panning.
+ */
+export const SCALE_MIN = 1;
 export const SCALE_MAX = 5;
 
 /** Scene pixels kept clear at each side edge, between two things in a row, and between rows (the plate's room is added). */
 export const EDGE = 4;
 export const GAP = 10;
-const ROW_GAP = 6;
+const ROW_GAP = 4;
 /** How far the tent's peak stands over the grandstand's bottom edge. */
 const TENT_OVERLAP = 8;
-/** The room between the tent and the board or the stall beside it. */
+/** The room between the tent and the board or the stall beside it: this much when there is room, down to `ASIDE_GAP_MIN`. */
 const ASIDE_GAP = 18;
+const ASIDE_GAP_MIN = 8;
+/**
+ * The corner buttons ("Last show", "Medals") lie in a row over the scene's top, this many CSS px tall with their plates
+ * (`canvas.css`, `.pc-tools-row`). The scene keeps that band clear of art: bare grass, the grandstand starts under it.
+ */
+export const TOOLS_PX = 76;
+/** The grandstand's height when the window is short: its lower benches only (the bunting and the top row are left off). */
+export const STAND_SHORT = 24;
+/** How many characters the tent's and the Prize Stall's plates can say ("Opens Wed 13:37"), for the room they need. */
+const ASIDE_PLATE_CHARS = 16;
 
 /** The most a plate can be wide (`canvas.css`: 7.5 rem) and how wide a character of it is, in CSS px. */
 const PLATE_MAX_CSS = 120;
@@ -72,6 +85,8 @@ const TEAM_AT: readonly number[] = [
 export interface StallEvent {
   id: string;
   team: 1 | 3;
+  /** The name on its plate: a long one widens the stall's slot so two plates never meet. */
+  name?: string;
 }
 
 /** How wide a stall is: a team stall is the wide one. */
@@ -80,6 +95,9 @@ export const stallWidth = (event: Pick<StallEvent, 'team'>): number =>
 
 /** Scene pixels the plates under a row take at scale `s`. */
 export const plateRows = (s: number): number => Math.ceil(PLATE_ROW_PX / s);
+
+/** The rows of bare grass kept for the corner buttons at scale `s`: whole grass tiles, so the grass patch that covers it has no seam. */
+export const bandRows = (s: number): number => Math.ceil(Math.ceil(TOOLS_PX / s) / TILE) * TILE;
 
 /** How wide a plate saying `text` is, in scene pixels at scale `s` (a long name is cut at the plate's greatest width). */
 export function plateWidth(text: string, s: number): number {
@@ -166,13 +184,28 @@ export function packRows<T extends { w: number }>(
   return rows;
 }
 
-/** Whether a scene `width` scene pixels wide has room for the board, the tent and the stall on one row. */
-export const asideFits = (width: number): boolean =>
-  width >= BOARD.w + ASIDE_GAP + TENT.w + ASIDE_GAP + PRIZE.w + 2 * EDGE;
+/** The room the tent and the Prize Stall each take on the tent row at scale `s`: their art, or their plate when that is wider. */
+const asideSlot = (art: number, s: number): number =>
+  Math.max(art, plateWidth('x'.repeat(ASIDE_PLATE_CHARS), s));
+
+/** The room between the tent and what stands beside it in a scene `width` wide at scale `s` (0: the three do not fit on one row). */
+function asideGap(width: number, s: number): number {
+  const rest = width - 2 * EDGE - BOARD.w - asideSlot(TENT.w, s) - asideSlot(PRIZE.w, s);
+  const gap = Math.min(ASIDE_GAP, Math.floor(rest / 2));
+  return gap >= ASIDE_GAP_MIN ? gap : 0;
+}
+
+/** Whether a scene `width` scene pixels wide has room for the board, the tent and the stall on one row at scale `s`. */
+export const asideFits = (width: number, s: number): boolean => asideGap(width, s) > 0;
 
 export interface FairLayout {
-  /** The grandstand tiles' left edges (scene pixels), side by side to both edges; they stand at row 0. */
+  /** The grandstand tiles' left edges (scene pixels), side by side to both edges. */
   stands: number[];
+  /** The grandstand's top row and how many of its rows show (the whole strip, or its lower part on a short window). */
+  standTop: number;
+  standH: number;
+  /** The rows kept for the corner buttons, bare grass from the top. */
+  band: number;
   tent: Box;
   /** The Prize Stall and the Rules board. */
   prize: Box;
@@ -197,44 +230,69 @@ export function standColumns(width: number, cx: number): number[] {
 /** The most rows the spare height of a tall window is spread over (the tent and what is under it move down by a part of it). */
 const MAX_SHIFT = 24;
 
-/** Where everything stands in a scene of `g`'s size for the day's `lineup`. */
-export function fairLayout(
-  g: Pick<SceneGeometry, 'W' | 'H' | 'cx' | 's'>,
-  lineup: readonly StallEvent[],
-): FairLayout {
-  const base = layoutAt(g, lineup, 0);
+type Geo = Pick<SceneGeometry, 'W' | 'H' | 'cx' | 's'>;
+
+/**
+ * Where everything stands in a scene of `g`'s size for the day's `lineup`. The whole grandstand when the fair fits under it, else
+ * its lower part (`STAND_SHORT`): the window decides, never who stands where.
+ */
+export function fairLayout(g: Geo, lineup: readonly StallEvent[]): FairLayout {
+  const full = layoutAt(g, lineup, 0, STAND_H);
+  if (full.height > g.H && g.H > 0) return layoutAt(g, lineup, 0, STAND_SHORT);
   // The spare height goes a little under the grandstand (the tent stands clear of it) and the rest below, so the fair is not pushed up.
-  const shift = Math.min(MAX_SHIFT, Math.floor(Math.max(0, g.H - base.height) * 0.4));
-  return shift === 0 ? base : layoutAt(g, lineup, shift);
+  const shift = Math.min(MAX_SHIFT, Math.floor(Math.max(0, g.H - full.height) * 0.4));
+  return shift === 0 ? full : layoutAt(g, lineup, shift, STAND_H);
 }
 
-/** The layout with the tent and everything under it `shift` rows lower. */
+/** The layout with the grandstand `standH` rows high, and the tent and everything under it `shift` rows lower. */
 function layoutAt(
-  g: Pick<SceneGeometry, 'W' | 'H' | 'cx' | 's'>,
+  g: Geo,
   lineup: readonly StallEvent[],
   shift: number,
+  standH: number,
 ): FairLayout {
   const plates = plateRows(g.s);
-  const aside = asideFits(g.W);
-  const tentTop = STAND_H - TENT_OVERLAP + shift;
+  const gap = asideGap(g.W, g.s);
+  const aside = gap > 0;
+  const band = bandRows(g.s);
+  const tentTop = band + standH - TENT_OVERLAP + shift;
   const tentBottom = tentTop + TENT.h;
-  const tent: Box = { x: g.cx - Math.floor(TENT.w / 2), y: tentTop, w: TENT.w, h: TENT.h };
+  let tent: Box = { x: g.cx - Math.floor(TENT.w / 2), y: tentTop, w: TENT.w, h: TENT.h };
   let rules: Box = { x: 0, y: 0, w: BOARD.w, h: BOARD.h };
   let prize: Box = { x: 0, y: 0, w: PRIZE.w, h: PRIZE.h };
   let rowTop = tentBottom + plates + ROW_GAP;
-  const flow: (Item & { place: 'stall' | 'rules' | 'prize'; id: string })[] = lineup.map((e) => ({
-    key: e.id,
-    id: e.id,
-    place: 'stall',
-    w: stallWidth(e),
-    h: STALL_H,
-  }));
+  const flow: (Item & { place: 'stall' | 'rules' | 'prize'; id: string; art: number })[] =
+    lineup.map((e) => ({
+      key: e.id,
+      id: e.id,
+      place: 'stall',
+      art: stallWidth(e),
+      // The slot is the stall or its plate, whichever is wider, so neighbours' plates never meet.
+      w: Math.max(stallWidth(e), e.name === undefined ? 0 : plateWidth(e.name, g.s)),
+      h: STALL_H,
+    }));
   if (aside) {
-    rules = { x: tent.x - ASIDE_GAP - BOARD.w, y: tentBottom - BOARD.h, w: BOARD.w, h: BOARD.h };
-    prize = { x: tent.x + TENT.w + ASIDE_GAP, y: tentBottom - PRIZE.h, w: PRIZE.w, h: PRIZE.h };
+    // The tent and the Prize Stall keep the room their plates need (a long plate at a small scale is wider than the art).
+    const prizeSlot = asideSlot(PRIZE.w, g.s);
+    const tentSlot = asideSlot(TENT.w, g.s);
+    const tentPad = Math.floor((tentSlot - TENT.w) / 2);
+    // The tent stands in the middle; the Prize Stall is the wider side, so a narrow scene moves the three left together.
+    const overflow = tent.x - tentPad + tentSlot + gap + prizeSlot - (g.W - EDGE);
+    if (overflow > 0) tent = { ...tent, x: tent.x - overflow };
+    const prizeX = tent.x - tentPad + tentSlot + gap + Math.floor((prizeSlot - PRIZE.w) / 2);
+    const rulesX = tent.x - tentPad - gap - BOARD.w;
+    rules = { x: rulesX, y: tentBottom - BOARD.h, w: BOARD.w, h: BOARD.h };
+    prize = { x: prizeX, y: tentBottom - PRIZE.h, w: PRIZE.w, h: PRIZE.h };
   } else {
-    flow.push({ key: 'prize', id: 'prize', place: 'prize', w: PRIZE.w, h: PRIZE.h });
-    flow.push({ key: 'rules', id: 'rules', place: 'rules', w: BOARD.w, h: BOARD.h });
+    flow.push({
+      key: 'prize',
+      id: 'prize',
+      place: 'prize',
+      art: PRIZE.w,
+      w: asideSlot(PRIZE.w, g.s),
+      h: PRIZE.h,
+    });
+    flow.push({ key: 'rules', id: 'rules', place: 'rules', art: BOARD.w, w: BOARD.w, h: BOARD.h });
   }
   const stalls: Record<string, Box> = {};
   let bottom = tentBottom;
@@ -243,7 +301,12 @@ function layoutAt(
     const rowH = Math.max(...row.map((item) => item.h));
     let x = g.cx - Math.floor(rowW / 2);
     for (const item of row) {
-      const box: Box = { x, y: rowTop + rowH - item.h, w: item.w, h: item.h };
+      const box: Box = {
+        x: x + Math.floor((item.w - item.art) / 2),
+        y: rowTop + rowH - item.h,
+        w: item.art,
+        h: item.h,
+      };
       if (item.place === 'stall') stalls[item.id] = box;
       else if (item.place === 'prize') prize = box;
       else rules = box;
@@ -254,6 +317,9 @@ function layoutAt(
   }
   return {
     stands: standColumns(g.W, g.cx),
+    standTop: band,
+    standH,
+    band,
     tent,
     prize,
     rules,
@@ -263,16 +329,16 @@ function layoutAt(
   };
 }
 
-/** The rows a scene of width `width` needs at scale `s` for the lineup. */
+/** The rows a scene of width `width` needs at scale `s` for the lineup (with the short grandstand: the least the fair can take). */
 export function neededRows(width: number, s: number, lineup: readonly StallEvent[]): number {
   const W = Math.ceil(width / s);
-  return fairLayout({ W, H: 0, cx: Math.floor(W / 2), s }, lineup).height;
+  return layoutAt({ W, H: 0, cx: Math.floor(W / 2), s }, lineup, 0, STAND_SHORT).height;
 }
 
 /**
  * The scene's one pixel scale: the largest whole number from `SCALE_MIN` to `SCALE_MAX` at which the whole fair fits the window's
- * height, so it fills it. It depends on the window and the lineup, never on who stands where, so the scene keeps its size while you are
- * in it. A window too short even at `SCALE_MIN` still gets `SCALE_MIN` (the fair is cut at the bottom rather than scrolled).
+ * height (with the short grandstand if need be), so it fills it. It depends on the window and the lineup, never on who stands where,
+ * so the scene keeps its size while you are in it. A window too short even at `SCALE_MIN` still gets `SCALE_MIN`.
  */
 export function fairScale(width: number, height: number, lineup: readonly StallEvent[]): number {
   for (let s = SCALE_MAX; s > SCALE_MIN; s -= 1) {
@@ -311,7 +377,10 @@ export function fairSceneDraw(lineup: readonly StallEvent[], look: FairLook) {
   return (g: SceneGeometry): Placement[] => {
     const lay = fairLayout(g, lineup);
     const out: Placement[] = [...grassTo(g)];
-    for (const x of lay.stands) out.push(...at(grandstandArt(), x, 0));
+    // The grandstand's lower `standH` rows stand under the band; the strip's top rows lie in the band and are grassed over.
+    for (const x of lay.stands)
+      out.push(...at(grandstandArt(), x, lay.standTop + lay.standH - STAND_H));
+    out.push(...grassTo({ ...g, H: lay.band }));
     out.push(...at(boardArt(), lay.rules.x, lay.rules.y));
     out.push(...at(prizeArt(look.prizeOpen), lay.prize.x, lay.prize.y));
     out.push(...at(tentArt(look.locked), lay.tent.x, lay.tent.y));
