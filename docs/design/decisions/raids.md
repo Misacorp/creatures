@@ -4,6 +4,14 @@ Raid schedule, parties and joining, bosses and the raid curve, the live finale, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-24: The raid board is centred; a board too wide for the screen opens centred unless your column would be off screen
+
+ID: `2026-11-24-the-raid-board-is-centred-a` · Status: current
+
+**Decision.** On the combat v2 raid canvas, the board's seats are centred under the boss at every width, whether placing or while a stage plays. The stage's centring rules now apply to the whole scene, and the Lane and Row label column is balanced on the other side. On a phone the board grid fits its seats. When the board is wider than the screen and has to pan, it opens on its middle while the player's own lanes are visible there, and otherwise on the player's column as before. Drawers still lie over the scene; the board does not move or shrink when one opens.
+
+**Reasoning.** Misa (2026-11-23, playtesting staging): "Can we horizontally center the raid roster? I meant the creature rows and stuff on the raid screen specifically." The placing board sat up to 28 px left on a 412 px phone and 26 px right on desktop, because only the stage got the centring rule. Opening on the middle keeps the board looking centred, and falling back to your column keeps your own creatures in view. Shifting the scene for a drawer was tried and dropped: it shrank the board by a lane and breaks the rule that drawers lie over the scene.
+
 ## 2026-11-17: [Misa] Raid screen picks: own seat plates, phone card first, stage rewards when the replay ends
 
 ID: `2026-11-17-raid-screen-picks-own-seat-plates` · Status: current · Amends: `2026-11-16-the-raid-screen-is-a-canvas`
