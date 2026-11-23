@@ -131,6 +131,23 @@ export function scrollToSpan(
 }
 
 /**
+ * Where a board that pans (wider than its window) opens (Misa, 2026-11-23: the raid's board is centred): on its middle, so it sits
+ * under the boss like a board that fits; but only while your own creatures (`own`, in scroll-content pixels) are on screen there,
+ * else on your creatures as `scrollToSpan` places them. With no creature of yours the middle stands. Never past either end.
+ */
+export function openingScroll(
+  own: { left: number; right: number } | null,
+  viewport: number,
+  scrollWidth: number,
+): number {
+  const max = Math.max(0, scrollWidth - viewport);
+  const middle = Math.round(max / 2);
+  if (own === null) return middle;
+  if (own.left >= middle && own.right <= middle + viewport) return middle;
+  return scrollToSpan(own.left, own.right, viewport, scrollWidth);
+}
+
+/**
  * Snaps a scroll position to a lane boundary, so the board never opens with a tile cut in half: the
  * left edge of the lane (`laneLefts`, in scroll-content pixels) nearest to `target` that still shows the
  * span `left` to `right` whole. When no lane edge does (the span is wider than the window), `target`

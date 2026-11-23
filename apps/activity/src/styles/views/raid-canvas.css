@@ -16,6 +16,19 @@
   flex-direction: column;
 }
 
+/*
+  A wide window's drawers lie over the scene's edges, so the scene's own room is what they leave clear (Misa, 2026-11-23: the board is
+  centred): padding the width of a drawer (`canvas.css`: 22 rem, at most 40% of the stage) on the side that has one centres the boss, the
+  now line and the board in the clear stretch. The scene never pans for a drawer (`pan={false}`).
+*/
+.pc-root[data-drawer-left] .rc-scene {
+  padding-left: calc(0.5rem + min(22rem, 40%));
+}
+
+.pc-root[data-drawer-right] .rc-scene {
+  padding-right: calc(0.5rem + min(22rem, 40%));
+}
+
 /* Things in the world are not raised buttons: the art is the button. */
 .rc-scene :is(.rc-plate, .rc-now-button, .rc-boss-art, .rc-move),
 .rc-scene :is(.rc-plate, .rc-now-button, .rc-boss-art, .rc-move):is(:hover, :active),
@@ -324,22 +337,16 @@
     display: none;
   }
 
-  .rc-scene .board-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-@media (max-width: 45rem) {
   .rc-scene .raid-board,
   .rc-scene .board-grid {
     width: 100%;
     min-width: 0;
   }
-}
 
-@media (max-width: 45rem) {
-  .rc-scene .stage-v2 .raid-board:not(.single) .board-grid {
+  /* The seats alone, as wide as they are and centred under the boss (fight-v2.css); more lanes than fit pan inside the scene's width. */
+  .pc-root .rc-scene .raid-board:not(.single) .board-grid {
     grid-template-columns: minmax(0, max-content);
+    width: fit-content;
     padding-right: 0;
   }
 }

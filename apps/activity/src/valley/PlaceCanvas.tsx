@@ -342,6 +342,8 @@ export function PlaceCanvas({
       aria-label={label}
       data-wide={wide ? 'yes' : 'no'}
       data-page={page === null ? undefined : 'yes'}
+      data-drawer-left={wide && left !== null ? 'yes' : undefined}
+      data-drawer-right={wide && right !== null ? 'yes' : undefined}
     >
       <div class="pc-view">
         <div class="pc-stage" ref={stage}>
