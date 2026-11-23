@@ -17,7 +17,7 @@
  * helper's seat), the left for the collections that belong to no one spot (the project board, everyone resting). A phone shows the open
  * panel as its own page. The scene keeps one size and place for the whole visit; drawers lie over its edges.
  */
-import { useMemo, useRef, useState } from 'preact/hooks';
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { clampToArea } from './creature-drag';
 import type { Creature, GameState, ValleyVisit } from '../api';
 import { creatureName } from '../game';
@@ -55,6 +55,7 @@ import {
   fireTarget,
   groundArea,
   groundBlocks,
+  resettlePlaced,
   settleOnGround,
 } from './bonfire-canvas';
 import {
@@ -142,6 +143,15 @@ export function BonfireCanvas({
     () => atTheFire(resting, visitors, visit.settledAt),
     [resting, visitors, visit],
   );
+  // A creature that left the fire forgets where a hand put it (it takes a seat again when it comes back).
+  const firesideKey = fireside.map((r) => r.creature.id).join(',');
+  useEffect(() => {
+    const here = new Set(firesideKey.split(','));
+    setPlaced((was) => {
+      const kept = Object.entries(was).filter(([id]) => here.has(id));
+      return kept.length === Object.keys(was).length ? was : Object.fromEntries(kept);
+    });
+  }, [firesideKey]);
   const block = commonsOf(visit);
   const place = placeOf(block, 'bonfire');
   const hearth = block === null ? null : hearthLine(block.hearthBp);
@@ -473,6 +483,26 @@ function BonfireInside({
   heldNow.current = held;
   // Where each resting creature stands now: its seat, or where a hand put it (kept on the ground), or under the hand.
   const middle = art.x + art.width / 2;
+  const placedAt = (id: string): { x: number; y: number } | undefined => {
+    const mine = ground.placed[id];
+    return mine === undefined
+      ? undefined
+      : clampToArea(ground.area, art.x + mine.x, art.y + mine.y);
+  };
+  // The seats may have turned over since a hand put a creature down: a seat that now lands on one is the one that stays, the placed
+  // creature is settled to the nearest free spot (a held one is under the hand, not on the ground).
+  const settled = resettlePlaced(
+    spots.flatMap((spot) => {
+      const at = placedAt(spot.creature.id);
+      return at === undefined || held?.id === spot.creature.id
+        ? []
+        : [{ id: spot.creature.id, ...at }];
+    }),
+    spots.filter((spot) => ground.placed[spot.creature.id] === undefined),
+    ground.area,
+    ground.blocks,
+    g.s,
+  );
   const stands = spots.map((spot) => {
     const mine = ground.placed[spot.creature.id];
     const at =
@@ -480,7 +510,7 @@ function BonfireInside({
         ? held
         : mine === undefined
           ? spot
-          : clampToArea(ground.area, art.x + mine.x, art.y + mine.y);
+          : (settled[spot.creature.id] ?? spot);
     // A creature moved by hand faces the fire from whichever side it stands.
     const flip =
       mine === undefined && held?.id !== spot.creature.id ? spot.flip : at.x + 8 > middle;
