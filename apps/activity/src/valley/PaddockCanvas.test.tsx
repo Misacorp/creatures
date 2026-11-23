@@ -217,6 +217,15 @@ describe('the Paddock canvas: the creature row (variation A)', () => {
     expect(byClass(p.root, 'cs-summary')).toHaveLength(1);
   });
 
+  it('says what a tap does here: the creature’s page, never "Opens the Paddock"', () => {
+    const p = draw(home, { row: true });
+    for (const mon of byClass(p.root, 'vy-mon')) {
+      const label = mon.getAttribute('aria-label') ?? '';
+      expect(label).toContain('Opens its page.');
+      expect(label).not.toContain('Opens the Paddock');
+    }
+  });
+
   it('leaves the row out when the game gives it no creature states', () => {
     const p = draw(home);
     expect(byClass(p.root, 'vy-tray')).toHaveLength(0);
