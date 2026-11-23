@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { NO_ALERTS } from '../tab-alerts';
 import { homeInput } from '../workbench/home-sample';
-import { castFor } from './place-cast';
 import { placeBubbles, placeStates } from './place-state';
 import { fullFloor, sampleAnvil, sampleOrder, shardWait, withAnvils } from './forge-sample';
 import {
@@ -10,7 +9,6 @@ import {
   exchangeReason,
   exchangeSources,
   floorLine,
-  forgeCalm,
   forgeSystemsLine,
   needsItems,
   orderWait,
@@ -36,7 +34,6 @@ describe('a smith in the raid (V-POST-7)', () => {
     });
     const visit = withAnvils(plain, [paused]);
     expect(forgeSystemsLine(visit)).toBe('a smith is in the raid');
-    expect(forgeCalm(visit)).toBe('A smith is in the raid');
     const mixed = withAnvils(plain, [paused, sampleAnvil('an2', b.id, [sampleOrder('o2', BP, 3)])]);
     expect(forgeSystemsLine(mixed)).toBe('1 smith at work');
   });
@@ -191,43 +188,7 @@ describe('the Forge words', () => {
   });
 });
 
-describe('the Forge scene and the tray', () => {
-  const input = {
-    ...base,
-    creatures: free,
-    dungeonTeam: null,
-    dungeonPhase: null,
-    waiting: [],
-  };
-  const ART = { width: 64, height: 54 };
-
-  it('smiths stand in front of the forge, each at its anvil; a free anvil shows nobody', () => {
-    const visit = withAnvils(plain, [
-      sampleAnvil('a1', a.id, [sampleOrder('o1', BP, 2)]),
-      sampleAnvil('a2', null, []),
-    ]);
-    const cast = castFor('forge', { ...input, visit }, ART, []);
-    expect(cast.stands.map((s) => s.creature.id)).toEqual([a.id]);
-    expect(cast.stands[0]?.where).toBe('smithing at anvil 1');
-  });
-
-  it('the one step is the first anvil, then a smith for a free anvil, else a calm line', () => {
-    const first = castFor('forge', { ...input, visit: plain }, ART, []);
-    expect(first.act).toMatchObject({
-      kind: 'step',
-      label: 'Take your first anvil',
-      detail: 'free',
-    });
-    const open = withAnvils(plain, [sampleAnvil('a1', null, [])]);
-    expect(castFor('forge', { ...input, visit: open }, ART, []).act).toMatchObject({
-      kind: 'step',
-      label: 'Post a smith',
-    });
-    const busy = withAnvils(plain, [fullFloor('a1', a.id, BP)]);
-    const calm = castFor('forge', { ...input, visit: busy, creatures: [a] }, ART, []).act;
-    expect(calm).toEqual({ kind: 'calm', line: 'A floor is full' });
-  });
-
+describe('the Forge tray', () => {
   it('a smithing creature shows Smithing in the tray, and does not rest or wander', () => {
     const visit = withAnvils(plain, [sampleAnvil('a1', a.id, [sampleOrder('o1', BP, 2)])]);
     const badge = trayBadge(a, { trips: [], jobs: null, now: 0, ...trayStates(visit) });

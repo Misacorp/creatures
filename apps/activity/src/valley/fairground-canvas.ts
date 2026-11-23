@@ -50,7 +50,7 @@ export const SCALE_MAX = 5;
 /** Scene pixels kept clear at each side edge, between two things in a row, and between rows (the plate's room is added). */
 export const EDGE = 4;
 export const GAP = 10;
-const ROW_GAP = 4;
+const ROW_GAP = 3;
 /** How far the tent's peak stands over the grandstand's bottom edge. */
 const TENT_OVERLAP = 8;
 /** The room between the tent and the board or the stall beside it: this much when there is room, down to `ASIDE_GAP_MIN`. */
@@ -60,7 +60,7 @@ const ASIDE_GAP_MIN = 8;
  * The corner buttons ("Last show", "Medals") lie in a row over the scene's top, this many CSS px tall with their plates
  * (`canvas.css`, `.pc-tools-row`). The scene keeps that band clear of art: bare grass, the grandstand starts under it.
  */
-export const TOOLS_PX = 76;
+export const TOOLS_PX = 68;
 /** The grandstand's height when the window is short: its lower benches only (the bunting and the top row are left off). */
 export const STAND_SHORT = 24;
 /** How many characters the tent's and the Prize Stall's plates can say ("Opens Wed 13:37"), for the room they need. */
@@ -96,8 +96,8 @@ export const stallWidth = (event: Pick<StallEvent, 'team'>): number =>
 /** Scene pixels the plates under a row take at scale `s`. */
 export const plateRows = (s: number): number => Math.ceil(PLATE_ROW_PX / s);
 
-/** The rows of bare grass kept for the corner buttons at scale `s`: whole grass tiles, so the grass patch that covers it has no seam. */
-export const bandRows = (s: number): number => Math.ceil(Math.ceil(TOOLS_PX / s) / TILE) * TILE;
+/** The rows of bare grass kept for the corner buttons at scale `s`. */
+export const bandRows = (s: number): number => Math.ceil(TOOLS_PX / s);
 
 /** How wide a plate saying `text` is, in scene pixels at scale `s` (a long name is cut at the plate's greatest width). */
 export function plateWidth(text: string, s: number): number {
@@ -325,7 +325,7 @@ function layoutAt(
     rules,
     stalls,
     aside,
-    height: bottom + plates + 2,
+    height: bottom + plates + 1,
   };
 }
 
@@ -380,7 +380,9 @@ export function fairSceneDraw(lineup: readonly StallEvent[], look: FairLook) {
     // The grandstand's lower `standH` rows stand under the band; the strip's top rows lie in the band and are grassed over.
     for (const x of lay.stands)
       out.push(...at(grandstandArt(), x, lay.standTop + lay.standH - STAND_H));
-    out.push(...grassTo({ ...g, H: lay.band }));
+    // Grass tiles laid up from the band's bottom edge (the rows over the top of the scene are cut off), so the band ends at the stand.
+    const tiled = Math.ceil(lay.band / TILE) * TILE;
+    out.push(...at(grassTo({ ...g, H: tiled }), 0, lay.band - tiled));
     out.push(...at(boardArt(), lay.rules.x, lay.rules.y));
     out.push(...at(prizeArt(look.prizeOpen), lay.prize.x, lay.prize.y));
     out.push(...at(tentArt(look.locked), lay.tent.x, lay.tent.y));

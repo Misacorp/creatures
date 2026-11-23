@@ -255,22 +255,6 @@ export function forgeSystemsLine(visit: ValleyVisit): string {
   return visit.anvils.length === 0 ? 'a free anvil waits' : 'nobody at the anvils';
 }
 
-/** The scene's one calm line under the Forge's art. */
-export function forgeCalm(visit: ValleyVisit): string {
-  const full = fullFloors(visit);
-  if (full > 0) return full === 1 ? 'A floor is full' : `${String(full)} floors are full`;
-  const tink = tinkering(visit);
-  if (tink > 0)
-    return tink === 1 ? 'An anvil is tinkering' : `${String(tink)} anvils are tinkering`;
-  const work = smithsAtWork(visit);
-  if (visit.anvils.length === 0) return 'Your first anvil is free';
-  const away = pausedAnvils(visit);
-  if (work === 0 && away > 0)
-    return away === 1 ? 'A smith is in the raid' : 'Smiths are in the raid';
-  if (work === 0) return 'Nobody at the anvils';
-  return work === 1 ? '1 smith at work' : `${String(work)} smiths at work`;
-}
-
 /** What the next anvil costs, as badges ("free" for the first); nothing for no anvil to buy. */
 export function anvilPrice(price: { acorns: number; scrap: number } | null): Price {
   if (price === null) return { text: '', items: [] };

@@ -227,16 +227,5 @@ export function signpostSystemsLine(visit: ValleyVisit): string {
   return `${plural(out, 'a scout', 'scouts')} out`;
 }
 
-/** The scene's one calm line under the Signpost's art. */
-export function signpostCalm(visit: ValleyVisit): string {
-  const full = fullPacks(visit);
-  if (full > 0) return full === 1 ? 'A pack is full' : `${String(full)} packs are full`;
-  const out = scoutsOut(visit);
-  if (visit.seats.length === 0) return 'Your first seat is free';
-  if (out === 0 && scoutsInRaid(visit) > 0) return 'Scouts are in the raid';
-  if (out === 0) return 'No scouts out';
-  return out === 1 ? '1 scout out' : `${String(out)} scouts out`;
-}
-
 /** What the next seat costs, as Acorns with their icon ("free" for the first). */
 export const seatPrice = (price: number): Price => priceOf([acornCount(price)]);

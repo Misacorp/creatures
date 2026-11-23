@@ -171,7 +171,6 @@ export function ValleyFrame({
     view.book === null &&
     !houseCanvas &&
     hasScene(view.place) &&
-    ((view.place !== 'signpost' && view.place !== 'forge') || visit !== null) &&
     // The Paddock is a canvas with the valley's systems on (`PaddockCanvas`, drawn by the game): its yard is its scene.
     !(view.place === 'paddock' && visit !== null) &&
     !sceneless.includes(view.place)
