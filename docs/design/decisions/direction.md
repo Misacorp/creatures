@@ -4,6 +4,22 @@ Roadmap calls, Misa's standing direction, naming and tone, content policy, how a
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-22: Agents commit as the owner **[Misa]**
+
+ID: `2026-11-22-agents-commit-as-the-owner` · Status: current · Amends: `2026-11-22-squash-merges-only-the-pr-title`
+
+**Decision.** Agents' commits are authored as the owner: a SessionStart hook (`.claude/hooks/git-identity.mjs`) sets the checkout's repository-local `author.name` and `author.email` to the owner's GitHub login and no-reply address (`.claude/owner.json`). The committer stays the session's own identity: a cloud session signs its commits only for that identity, and a commit committed as the owner shows as Unverified on GitHub. GitHub's squash co-author lines follow the authors, so the owner as author is enough (this repo's one change from behemoth-road, which sets `user.*`). Commit messages and PR descriptions carry no `Co-Authored-By:` or other trailers. Worktrees share the setting, because it is written to the common git config. Adopted from `Misacorp/behemoth-road` at Misa's request.
+
+**Reasoning.** GitHub adds a `Co-authored-by:` line to a squash commit for every branch commit author other than the person merging and for every co-author trailer, and no setting turns that off. Misa wants the history on `main` to be the PR title and description only, and accepts that commits no longer show which were agent-made.
+
+## 2026-11-22: Squash merges only: the PR title and description are the commit **[Misa]**
+
+ID: `2026-11-22-squash-merges-only-the-pr-title` · Status: current, amended by `2026-11-22-agents-commit-as-the-owner`
+
+**Decision.** The repository allows only squash merges (already set in GitHub), and a squash takes the PR title as the commit title and the PR description as the commit body. So agents write the title and description as a commit message for history: what changed and why, as short as the change allows, with no test steps, check reports, review notes, generated-by footers or `Co-Authored-By:` trailers. Anything only needed before the merge goes to Misa in chat, or in a PR comment. The `pr-description` workflow strips footers that tools append to a description. Adopted from `Misacorp/behemoth-road` at Misa's request; it replaces the old "Squash merge message" section in PR descriptions.
+
+**Reasoning.** Misa merges agents' PRs but already knows what was done from the session, so long descriptions went unread, and GitHub's default squash message lists every branch commit. One concise commit per PR keeps `git log` on `main` readable as a list of features and fixes.
+
 ## 2026-11-15: The reset: the goodbye DM is an embed, the new-valley card is look B **[Misa]**
 
 ID: `2026-11-15-the-reset-the-goodbye-dm-is` · Status: current

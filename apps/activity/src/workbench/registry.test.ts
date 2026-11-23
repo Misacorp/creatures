@@ -23,6 +23,7 @@ const sources = import.meta.glob<string>(
     '../settings/*.tsx',
     '../valley/*.tsx',
     '../raid-canvas/*.tsx',
+    '../cave-canvas/*.tsx',
     '../housing/*.tsx',
     './game-screens/*.tsx',
   ],

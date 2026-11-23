@@ -585,7 +585,8 @@
 /* As the app card (`components/main-nav.css`): from 60 rem the game's own card is the whole window. */
 @media (min-width: 60rem) {
   .wb-frame-stage:has(> main.card),
-  .wb-frame-stage:has(> .wb-valley) {
+  .wb-frame-stage:has(> .wb-valley),
+  .wb-frame-stage:has(> .wb-cave-canvas) {
     width: 100%;
     margin: 0;
     padding: 0;
@@ -650,6 +651,18 @@
   flex-direction: column;
   height: 780px;
   background: var(--night);
+}
+
+.wb-cave-canvas {
+  display: flex;
+  flex-direction: column;
+  height: 780px;
+  background: var(--night);
+}
+
+.wb-cave-canvas > .vy-page {
+  flex: 1;
+  min-height: 0;
 }
 
 .wb-raid-canvas > .vy-page {

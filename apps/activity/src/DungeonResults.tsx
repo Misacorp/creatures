@@ -54,6 +54,11 @@ interface Props {
   onRetry: () => void;
   /** Which view of the route opens first. Default: the map. */
   initialView?: RouteView | undefined;
+  /**
+   * Draw the route's map (default). Off on the Cave canvas, where the scene itself shows the route: the card keeps the list of
+   * rooms only, with no Map/Rooms toggle.
+   */
+  showMap?: boolean | undefined;
 }
 
 /**
@@ -73,6 +78,7 @@ export function DungeonResults({
   onWatch,
   onRetry,
   initialView,
+  showMap = true,
 }: Props) {
   const { rewards } = run;
   const empty = noRewards(rewards);
@@ -166,7 +172,7 @@ export function DungeonResults({
         </RevealLater>
       )}
 
-      <RouteSection run={run} initialView={initialView ?? 'map'} />
+      <RouteSection run={run} initialView={initialView ?? 'map'} showMap={showMap} />
       <TeamBreakdown team={teamBreakdown(run)} recap={experienceRecap(run)} />
       {run.keepsakes !== undefined && <RunKeepsakes keepsakes={run.keepsakes} />}
       <DungeonNext today={today} offset={offset} />
@@ -184,7 +190,15 @@ type RouteView = 'map' | 'rooms';
  * went through, one panel each, in order. A run with no route (an older one) has only the strip of its
  * fights, with no toggle.
  */
-function RouteSection({ run, initialView }: { run: DungeonRunSummary; initialView: RouteView }) {
+function RouteSection({
+  run,
+  initialView,
+  showMap,
+}: {
+  run: DungeonRunSummary;
+  initialView: RouteView;
+  showMap: boolean;
+}) {
   const [view, setView] = useState<RouteView>(initialView);
   const route = routeRun(run);
   const path = run.outcome !== undefined;
@@ -194,6 +208,14 @@ function RouteSection({ run, initialView }: { run: DungeonRunSummary; initialVie
       <>
         <h4>{path ? 'Fights' : 'Rooms'}</h4>
         <RoomStrip rooms={roomStrip(run)} path={path} />
+      </>
+    );
+  }
+  if (!showMap) {
+    return (
+      <>
+        <h4>Route</h4>
+        <RoomLog rows={rooms} />
       </>
     );
   }

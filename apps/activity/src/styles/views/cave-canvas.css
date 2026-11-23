@@ -1,0 +1,415 @@
+/*
+  The Cave as a place (`cave-canvas/`; docs/design/dungeon-canvas.md). The shell and drawers are `canvas.css`'s (`pc-`), the scene's frame
+  (plates, now line) is `raid-canvas.css`'s (`rc-`). Here: the scene (today's map on the cave's rock, the cave mouth, the team on its
+  room, the Undercroft's band), the map's name plates, and the Route list.
+
+  The rock is ONE class, `cave-rock`: the art's floor tile under everything, the walls as three layers at the scene's edges. Where the
+  art cannot be drawn (no variables set) the dark gradient below shows instead, so a missing tile never leaves a hole.
+*/
+
+.cave-rock {
+  background-color: #14111f;
+  background-image: var(
+    --cave-floor,
+    radial-gradient(ellipse at 50% 30%, #2a2238 0%, transparent 70%)
+  );
+  background-size: calc(32px * var(--cave-s, 1)) calc(32px * var(--cave-s, 1));
+  image-rendering: pixelated;
+}
+
+.cave-scene {
+  padding: 0;
+  gap: 0;
+  overflow: hidden;
+}
+
+.cave-scene[data-state='loading'] {
+  min-height: 16rem;
+}
+
+.cave-scene > * {
+  position: relative;
+  z-index: 1;
+}
+
+.cave-scene > .rc-top {
+  padding: 0.5rem 0.5rem 0.25rem;
+}
+
+/* The walls: rock along the top and both sides, drawn at the art's scale and laid under everything. */
+.cave-scene > .cave-wall {
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+  image-rendering: pixelated;
+  background-repeat: repeat-x;
+}
+
+.cave-wall-top {
+  top: 0;
+  left: 0;
+  right: 0;
+  height: calc(32px * var(--cave-s, 1));
+  background-image: var(--cave-wall-top, none);
+  background-size: calc(64px * var(--cave-s, 1)) calc(32px * var(--cave-s, 1));
+}
+
+.cave-scene > .cave-wall-left,
+.cave-scene > .cave-wall-right {
+  top: 0;
+  bottom: 0;
+  width: calc(32px * var(--cave-s, 1));
+  background-image: var(--cave-wall-side, none);
+  background-repeat: repeat-y;
+  background-size: calc(32px * var(--cave-s, 1)) calc(64px * var(--cave-s, 1));
+}
+
+.cave-scene > .cave-wall-left {
+  left: 0;
+}
+
+.cave-scene > .cave-wall-right {
+  right: 0;
+  transform: scaleX(-1);
+}
+
+/* The stage of a fight and the room's rests: the fight sits on the rock close under the frame, the walls stay at the edges. */
+.cave-scene > .rc-stage {
+  padding: 0 0.5rem 0.5rem;
+}
+
+.cave-scene > .rc-hint {
+  padding: 0 0.5rem 0.25rem;
+}
+
+.cave-nomap {
+  margin: 1rem;
+  text-align: center;
+}
+
+/* --- The map box: the map is as big as it fits; a tall one (the Undercroft) is dragged up and down --- */
+.cave-fit {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+}
+
+/* The scroller fills the box and is dragged when the map is taller; a map that fits sits in the middle of it. */
+.cave-scroll {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  overflow: hidden;
+}
+
+.cave-scroll[data-tall] {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  cursor: grab;
+}
+
+.cave-scroll[data-tall].dragging {
+  cursor: grabbing;
+}
+
+.cave-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.cave-sheet {
+  position: relative;
+  flex: none;
+  width: 100%;
+  margin: auto 0;
+  padding-top: 0.5rem;
+  display: flex;
+  justify-content: center;
+}
+
+.cave-map {
+  position: relative;
+  z-index: 1;
+}
+
+/* The Undercroft's band: the darker, bluer floor from the seam down, with its own ceiling edge and side walls, to both edges. */
+.cave-under {
+  position: absolute;
+  z-index: 0;
+  left: 0;
+  right: 0;
+  top: var(--under-top, 100%);
+  bottom: 0;
+  background-color: #0d0b16;
+  background-image: var(--under-wall-top, none), var(--under-floor, none);
+  background-repeat: repeat-x, repeat;
+  background-position:
+    0 0,
+    0 0;
+  background-size:
+    calc(64px * var(--cave-s, 1)) calc(32px * var(--cave-s, 1)),
+    calc(32px * var(--cave-s, 1)) calc(32px * var(--cave-s, 1));
+  image-rendering: pixelated;
+}
+
+.cave-under::before,
+.cave-under::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: calc(32px * var(--cave-s, 1));
+  background-image: var(--under-wall-side, none);
+  background-repeat: repeat-y;
+  background-size: calc(32px * var(--cave-s, 1)) calc(64px * var(--cave-s, 1));
+  image-rendering: pixelated;
+}
+
+.cave-under::before {
+  left: 0;
+}
+
+.cave-under::after {
+  right: 0;
+  transform: scaleX(-1);
+}
+
+.cave-fit .dmap {
+  margin: 0 auto;
+}
+
+/* The last room's plate hangs under the map: room for it. */
+.cave-sheet {
+  padding-bottom: 28px;
+}
+
+/* The map is the scene: no frame, the rock shows through; rooms keep their 44 px taps (`dmap-slot`). */
+.cave-fit .dmap-board {
+  max-width: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+.dmap-canvas :is(.dmap-uband, .dmap-band) {
+  fill: transparent;
+}
+
+.dmap-canvas .dmap-slot {
+  z-index: 1;
+}
+
+.dmap-canvas .dmap-slot.dmap-here {
+  z-index: 3;
+}
+
+/* A room's name: a plate under it, always shown (the cue that it can be tapped); a room not yet reachable is dimmer. */
+.dmap-plate {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.dmap-canvas .dmap-slot[data-status='locked'] .dmap-plate,
+.dmap-canvas .dmap-slot[data-status='unreachable'] .dmap-plate {
+  opacity: 0.55;
+}
+
+.dmap-canvas .dmap-slot[data-status='visited'] .dmap-plate {
+  opacity: 0.8;
+}
+
+/* The art's props beside a room: the camp's fire, the stair at the way down. */
+.cave-prop {
+  width: max-content;
+  position: absolute;
+  top: 50%;
+  line-height: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.cave-prop .sprite {
+  max-width: none;
+}
+
+.cave-prop-fire {
+  left: calc(100% + 4px);
+  transform: translateY(-40%);
+}
+
+.cave-prop-stair {
+  right: calc(100% + 4px);
+  transform: translateY(-40%);
+}
+
+/* The team standing on the room it is in: over its disc, one gold plate for all. */
+.cave-team {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -62%);
+  display: flex;
+  align-items: flex-end;
+  width: max-content;
+  z-index: 4;
+}
+
+.cave-team .cave-creature + .cave-creature {
+  margin-left: -14px;
+}
+
+.cave-team .cave-team-plate {
+  top: calc(100% - 2px);
+}
+
+/* A creature standing in the scene is the art's own button: no box. */
+.cave-scene :is(.cave-creature, .cave-enter),
+.cave-scene :is(.cave-creature, .cave-enter):is(:hover, :active) {
+  min-height: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  filter: none;
+  transform: none;
+  color: var(--bone);
+  cursor: pointer;
+}
+
+.cave-fig {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.cave-fig .sprite {
+  max-width: none;
+  flex: none;
+}
+
+.cave-fig .seg-unit {
+  width: 2rem;
+}
+
+.cave-fig.ko {
+  filter: grayscale(1) brightness(0.6);
+}
+
+/* --- The cave mouth: the art, the team on its ground strip (rows 38 to 43, feet on 41), Enter under row 44 --- */
+.cave-mouth {
+  flex: none;
+  position: relative;
+  align-self: center;
+  width: var(--mouth-w);
+  height: calc(var(--mouth-h) + 1.75rem);
+  margin-top: 0.25rem;
+}
+
+.cave-mouth[data-over] {
+  filter: drop-shadow(0 0 var(--px) var(--gold));
+}
+
+.cave-mouth-art {
+  position: absolute;
+  inset: 0 auto auto 0;
+  line-height: 0;
+  pointer-events: none;
+}
+
+/* The three places stand along the strip: feet on row 41 of the art. */
+.cave-places {
+  position: absolute;
+  left: calc(5px * var(--mouth-s));
+  width: calc(54px * var(--mouth-s));
+  top: calc(41px * var(--mouth-s));
+  transform: translateY(-100%);
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-end;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cave-place {
+  display: flex;
+  justify-content: center;
+  min-width: calc(14px * var(--mouth-s));
+}
+
+.cave-place[data-over] {
+  outline: var(--px) solid var(--gold);
+}
+
+/* An empty place: a faint ring on the ground, for a creature to be dropped on. */
+.cave-empty {
+  display: block;
+  width: calc(10px * var(--mouth-s));
+  height: calc(4px * var(--mouth-s));
+  margin-bottom: calc(1px * var(--mouth-s));
+  border: var(--px) dashed rgb(255 255 255 / 0.25);
+  border-radius: 50%;
+}
+
+.cave-enter {
+  position: absolute;
+  left: 50%;
+  top: calc(44px * var(--mouth-s));
+  transform: translateX(-50%);
+  display: flex;
+  justify-content: center;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  white-space: nowrap;
+}
+
+.cave-scene .cave-enter,
+.cave-scene .cave-enter:is(:hover, :active) {
+  transform: translateX(-50%);
+}
+
+/* A wide window's drawer lies over the scene's edge: the frame (plates, now line) is centred in what it leaves clear. */
+.pc-stage:has(.pc-right) .cave-scene > .rc-top {
+  padding-right: calc(22rem + 0.5rem);
+}
+
+.pc-stage:has(.pc-left) .cave-scene > .rc-top {
+  padding-left: calc(22rem + 0.5rem);
+}
+
+/* The map, too, is centred in what the drawers leave clear (its size does not change: it moves, it is not rescaled). */
+.pc-stage:has(.pc-right) .cave-scroll {
+  padding-right: 22rem;
+}
+
+.pc-stage:has(.pc-left) .cave-scroll {
+  padding-left: 22rem;
+}
+
+/* A fight sits close under the frame on a phone, and in the middle of a tall desktop scene. */
+.cave-scene > .rc-stage {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+@media (min-width: 60rem) {
+  .cave-scene > .rc-stage {
+    justify-content: center;
+  }
+}
+
+/* The Route drawer's list. */
+.cave-route {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}

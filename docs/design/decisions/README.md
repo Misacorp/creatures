@@ -23,6 +23,8 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [direction.md](direction.md): Roadmap calls, Misa's standing direction, naming and tone, content policy, how agents and Misa work.
 
+- 2026-11-22 Agents commit as the owner \[Misa\]
+- 2026-11-22 Squash merges only: the PR title and description are the commit \[Misa\] (amended)
 - 2026-11-15 The reset: the goodbye DM is an embed, the new-valley card is look B \[Misa\]
 - 2026-11-15 Art glows use the game's rarity colours
 - 2026-11-15 \[Misa\] The Forge interior keeps one look for now
@@ -339,6 +341,8 @@ Superseded: 1 entry (see the topic file).
 
 [dungeon.md](dungeon.md): The daily dungeon: paths, rooms and rare rooms, the camp, the Undercroft, foes, its screens and payouts.
 
+- 2026-11-20 The Cave canvas: native drag for the Undercroft, a held answer, art taken from the library set
+- 2026-11-20 \[Misa\] The Cave as a place: the map is the scene, drag the Undercroft on a phone, a one-row tray before a run
 - 2026-11-06 Combat v2 dungeon: Puddle Imp, Ash Sprite and Bog Toad ask their questions
 - 2026-11-05 \[Misa\] The Undercroft curve stays; the skill tree and gear are the tools past depth 40
 - 2026-11-05 Combat v2 dungeon XP: about 120 a run, a step at each landmark; more gear \[Misa\]

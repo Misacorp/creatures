@@ -1,3 +1,4 @@
+import type { ComponentChildren } from 'preact';
 import { useMemo, useState } from 'preact/hooks';
 import { elementClass } from './art';
 import { cssVars } from './css-vars';
@@ -13,16 +14,18 @@ import {
   nodeLevel,
   nodeStatus,
   reachableAheadAcross,
+  roomPlate,
   stackLayout,
   startLevel,
   startMarkers,
   type LaidNode,
   type MapRun,
 } from './dungeon-map';
-import type { DungeonMapView } from './dungeon-types';
+import type { DungeonMapNode, DungeonMapView } from './dungeon-types';
 import { DungeonNodeDrawer } from './DungeonNodeDrawer';
 import { glyphOrUnknown } from './glyphs';
 import { Sprite } from './sprites/Sprite';
+import { Nameplate } from './ui/Nameplate';
 import { RoomMarks } from './ui/RoomMark';
 
 interface Props {
@@ -51,6 +54,26 @@ interface Props {
   landmark?: boolean | undefined;
   /** A room whose drawer is open from the start (the workbench shows it so). */
   initialOpen?: string | undefined;
+  /**
+   * The map as the Cave canvas's scene (`cave-canvas/`): a tap on a room is the canvas's to answer (`onRoom`; there is no sheet of its
+   * own), every room has its short name under it (`roomPlate`) and the team (`team`) stands on the room the run is in.
+   */
+  canvas?: CanvasMap | undefined;
+}
+
+/** What the map needs to be a scene: see `Props.canvas`. */
+export interface CanvasMap {
+  /** The room whose panel is open (its button says so). */
+  openId: string | null;
+  onRoom: (nodeId: string, button: HTMLElement) => void;
+  /** Stands on the room the run is in; absent: nothing stands on the map (before a run, or at the entrance). */
+  team?: ComponentChildren;
+  /** The coordinate space's width (wide for a wide window: the rooms sit further apart); default the map's own. */
+  layoutWidth?: number;
+  /** The map is drawn small: a plain fight keeps its icon only (its name is in its panel). */
+  dense?: boolean;
+  /** Scenery beside a room (the camp's fire, the stair at the way down); `descent` says the room is the way down. */
+  decor?: (node: DungeonMapNode, descent: boolean) => ComponentChildren;
 }
 
 const PERCENT = (n: number, of: number): string =>
@@ -81,9 +104,18 @@ export function DungeonMap({
   busy = false,
   landmark,
   initialOpen,
+  canvas,
 }: Props) {
   const levels = useMemo(() => [map, ...(undercroft ?? [])], [map, undercroft]);
-  const layout = useMemo(() => stackLayout(map, undercroft ?? []), [map, undercroft]);
+  const layout = useMemo(
+    () =>
+      stackLayout(
+        map,
+        undercroft ?? [],
+        canvas?.layoutWidth === undefined ? {} : { width: canvas.layoutWidth },
+      ),
+    [map, undercroft, canvas?.layoutWidth],
+  );
   // The way down: the floor boss at a depth that opens the Undercroft, and every cracked-floor boss.
   const descent = useMemo(() => descentRooms(levels, depth), [levels, depth]);
   // Before the first move (the preview, or a run at an entrance) a green triangle under each entrance room.
@@ -127,7 +159,7 @@ export function DungeonMap({
   );
 
   return (
-    <div class="dmap">
+    <div class={canvas === undefined ? 'dmap' : 'dmap dmap-canvas'}>
       <div
         class="dmap-board"
         role="group"
@@ -202,11 +234,13 @@ export function DungeonMap({
             ]
               .filter(Boolean)
               .join(' ');
+            const here = canvas !== undefined && status === 'current' && canvas.team !== undefined;
             return (
               <li
                 key={node.id}
-                class="dmap-slot"
+                class={here ? 'dmap-slot dmap-here' : 'dmap-slot'}
                 data-node={node.id}
+                data-status={status}
                 ref={cssVars({
                   '--x': PERCENT(at.x, layout.width),
                   '--y': PERCENT(at.y, layout.height),
@@ -217,9 +251,15 @@ export function DungeonMap({
                   type="button"
                   class={classes}
                   aria-label={nodeAriaLabel(node, status, { crack, descent: down, lost })}
-                  aria-haspopup="dialog"
+                  {...(canvas === undefined
+                    ? { 'aria-haspopup': 'dialog' as const }
+                    : { 'aria-expanded': canvas.openId === node.id })}
                   {...(status === 'current' ? { 'aria-current': 'step' as const } : {})}
                   onClick={(event) => {
+                    if (canvas !== undefined) {
+                      canvas.onRoom(node.id, event.currentTarget);
+                      return;
+                    }
                     setOpener(event.currentTarget);
                     setOpenId(node.id);
                   }}
@@ -252,25 +292,38 @@ export function DungeonMap({
                     )
                   )}
                 </button>
+                {canvas !== undefined &&
+                  !here &&
+                  !(canvas.dense === true && node.kind === 'fight') && (
+                    <span class="dmap-plate" aria-hidden="true">
+                      <Nameplate size="sm" tone={status === 'reachable' ? 'gold' : 'bone'}>
+                        {roomPlate(node)}
+                      </Nameplate>
+                    </span>
+                  )}
+                {canvas?.decor?.(node, down)}
+                {here && canvas?.team}
               </li>
             );
           })}
         </ol>
       </div>
-      <DungeonNodeDrawer
-        node={opened}
-        state={state}
-        ahead={ahead}
-        crack={opened !== null && cracked.has(opened.id)}
-        descent={opened !== null && descent.has(opened.id)}
-        {...(landmark === undefined ? {} : { landmark })}
-        {...(onGo === undefined ? {} : { onGo })}
-        busy={busy}
-        returnFocusTo={opener}
-        onClose={() => {
-          setOpenId(null);
-        }}
-      />
+      {canvas === undefined && (
+        <DungeonNodeDrawer
+          node={opened}
+          state={state}
+          ahead={ahead}
+          crack={opened !== null && cracked.has(opened.id)}
+          descent={opened !== null && descent.has(opened.id)}
+          {...(landmark === undefined ? {} : { landmark })}
+          {...(onGo === undefined ? {} : { onGo })}
+          busy={busy}
+          returnFocusTo={opener}
+          onClose={() => {
+            setOpenId(null);
+          }}
+        />
+      )}
     </div>
   );
 }

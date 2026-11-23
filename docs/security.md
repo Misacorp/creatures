@@ -19,7 +19,7 @@ Sources: code.claude.com/docs/en/security · code.claude.com/docs/en/permissions
 
 ## 2. GitHub Actions
 
-- ✅ `permissions: {}` at workflow level; each job grants only `contents: read`.
+- ✅ `permissions: {}` at workflow level; each job grants only `contents: read` (the one exception is below).
 - ✅ Every action pinned to a full commit SHA with a version comment (`actions/checkout`, `actions/setup-node`, `pnpm/action-setup`, `zizmorcore/zizmor-action`). Tag pinning is not safe: the March 2025 tj-actions/changed-files compromise (CVE-2025-30066) repointed tags to malicious code. Dependabot keeps the SHAs updated.
 - ✅ Deploy runs `wrangler` from our own lockfile instead of a third-party deploy action, so the Cloudflare token is only handed to code we pinned.
 - ✅ Downloaded CLI tools (gitleaks, actionlint) are checked against pinned SHA-256 hashes.
@@ -28,6 +28,7 @@ Sources: code.claude.com/docs/en/security · code.claude.com/docs/en/permissions
 - ✅ `persist-credentials: false` on every checkout.
 - ✅ Deploy secrets live in GitHub **environments**: `production` (deployable from `main` only) and `staging`. Pushing a branch deploys nothing, Dependabot's included.
 - ✅ No agent merges: the GitHub connection acts as Misa's account, so GitHub cannot tell an agent's merge from Misa's. `.claude/settings.json` denies the merge and auto-merge tools and `gh pr merge`. Direct pushes to `main` are stopped for everyone by the ruleset (no bypass), so no agent-side push guard is kept.
+- ✅ The `pr-description` workflow is the one job with a write token on pull requests (`pull-requests: write`, to remove footers from descriptions). It skips fork PRs, runs only a dependency-free script, and edits only the description. Its own edit does not start it again (edits made with `GITHUB_TOKEN` start no workflows), and it edits only when a footer is present.
 - ✅ CI lints workflows with **actionlint** and audits them with **zizmor** (offline mode).
 - 👤 Repo settings: default `GITHUB_TOKEN` read-only; require actions pinned to full SHA; require approval for workflows from outside collaborators; ruleset on `main` (PR required, `ci` check required, no force push or deletion).
 

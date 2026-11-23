@@ -34,6 +34,15 @@
   "hooks": {
     "SessionStart": [
       {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/git-identity.mjs",
+            "timeout": 10
+          }
+        ]
+      },
+      {
         "matcher": "compact|clear",
         "hooks": [
           {
