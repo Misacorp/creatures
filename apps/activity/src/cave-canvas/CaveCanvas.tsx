@@ -308,7 +308,7 @@ export function CaveCanvas(props: CaveCanvasProps) {
   const kits = useMemo(() => kitsOf(creatures, []), [creatures]);
   const partners = useReactionPartners({
     kits,
-    look: props.partnerLook ?? 'badge',
+    look: props.partnerLook ?? 'dim',
     pinned: right?.panel.kind === 'mine' ? right.panel.creatureId : null,
     off: dragging !== null || fighting,
     initial: props.start?.touch ?? null,

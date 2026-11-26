@@ -321,21 +321,21 @@ describe('the config props', () => {
     expect(defaultConfig(true)).toEqual({
       seatPlates: 'mine',
       creatureTap: 'popover-first',
-      partnerLook: 'badge',
+      partnerLook: 'dim',
     });
   });
   it('a wide window opens the drawer at once', () => {
     expect(defaultConfig(false)).toEqual({
       seatPlates: 'mine',
       creatureTap: 'drawer',
-      partnerLook: 'badge',
+      partnerLook: 'dim',
     });
   });
   it('a caller’s value wins, a missing one takes the default', () => {
     expect(resolveConfig(true, { seatPlates: 'all' })).toEqual({
       seatPlates: 'all',
       creatureTap: 'popover-first',
-      partnerLook: 'badge',
+      partnerLook: 'dim',
     });
     expect(resolveConfig(true, { creatureTap: 'drawer' }).creatureTap).toBe('drawer');
     expect(resolveConfig(false, undefined)).toEqual(defaultConfig(false));

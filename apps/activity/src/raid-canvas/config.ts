@@ -26,7 +26,7 @@ export function defaultConfig(phone: boolean): RaidCanvasConfig {
   return {
     seatPlates: 'mine',
     creatureTap: phone ? 'popover-first' : 'drawer',
-    partnerLook: 'badge',
+    partnerLook: 'dim',
   };
 }
 
