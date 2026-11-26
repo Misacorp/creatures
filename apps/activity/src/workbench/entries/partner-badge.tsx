@@ -9,7 +9,7 @@ const partnerBadge: Entry = {
   file: 'apps/activity/src/ui/PartnerBadge.tsx',
   group: 'Creatures & game pieces',
   description:
-    "The reaction-partner highlight's parts: the badge (look A, the pick), the mark's element icon or icons on a dark plate with a gold edge for a partner and a bone one for the creature touched; and the glow (look B), a soft inner wash in the mark's colour. Look C (the others dim) has no part of its own. The canvases (RaidCanvas, CaveCanvas) show all three on seats, in the tray and on the Cave's figures.",
+    "The reaction-partner highlight's parts: the badge (look A, a review variant), the mark's element icon or icons on a dark plate with a gold edge for a partner and a bone one for the creature touched; and the glow (look B), a soft inner wash in the mark's colour. Look C (the others dim) has no part of its own. The canvases (RaidCanvas, CaveCanvas) show all three on seats, in the tray and on the Cave's figures.",
   covers: ['PartnerGlow'],
   controls: {
     who: { kind: 'select', options: ['partner', 'touched'] },

@@ -1,10 +1,11 @@
 /*
   The reaction-partner highlight (reaction-partners.ts, ui/PartnerBadge.tsx): touch a creature and the creatures that can cash its marks,
   or set the marks it cashes, are lit. Three looks (a Misa comparison), on a board seat, a tray creature or a creature standing in the Cave:
-  - badge (A, the default): a dark plate with the mark's element icon, or icons. A partner has a gold edge, the creature touched a bone
+  - badge (A, a review variant): a dark plate with the mark's element icon, or icons. A partner has a gold edge, the creature touched a bone
     one. It is still, so reduced motion changes nothing.
   - glow (B): a soft inner wash in the mark's colour over each partner (the first mark's, `--cue`).
-  - dim (C): everything that is no partner recedes; the partners and the touched one stay full.
+  - dim (C, the pick: it read clearest and adds no new shape): everything that is no partner recedes; the partners and the touched one
+    stay full. A seat that carries a board cue (reach, buff, cover, boss target) is not dimmed, so those cues stay readable.
   None of them is the boss-target red, the Guard's reach shade or a ring, so they never meet the board's own cues.
 */
 

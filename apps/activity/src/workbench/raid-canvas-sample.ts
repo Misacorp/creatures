@@ -230,7 +230,7 @@ function withTeam(view: RaidView, team: readonly Creature[]): RaidView {
 }
 
 /**
- * What the reaction-partner presets need on the board and in the tray: Cindle in the tray keeps Leave a Trail (it sets Ember and cashes
+ * What the reaction-partner presets need on the board and in the tray: Sproutle keeps Primed by Pain (a Guard that marks Grove when it intercepts, so it has partners and a reach), Cindle in the tray keeps Leave a Trail (it sets Ember and cashes
  * Grove and Mire, so it does both), and the last seat of the board (Ann's Magmole, a Support) is Coralynx, a Tide Payoff that cashes
  * Cindle's Ember. With Mossback (a Grove Setter, yours), Pyrelynx and Jun's Cindle (Ember Payoffs), Ancientshell (a Grove Setter, Ann's)
  * and the unplaced Cindles in the tray, a touched creature has partners on the board, in the tray and among another player's.
@@ -239,7 +239,11 @@ function withPartnerKits(view: RaidView, creatures: readonly Creature[]): [RaidV
   const v2 = view.v2;
   const last = (view.party?.row ?? []).filter((r) => r.creature !== null).at(-1);
   const trailing = creatures.map((c) =>
-    c.id === 'demo-cindle' ? { ...c, knack: 'leave-a-trail' } : c,
+    c.id === 'demo-cindle'
+      ? { ...c, knack: 'leave-a-trail' }
+      : c.id === 'demo-sprout'
+        ? { ...c, knack: 'primed-by-pain' }
+        : c,
   );
   if (v2 === undefined || last === undefined || last.creature?.mine === true) {
     return [view, trailing];
@@ -263,7 +267,11 @@ function withPartnerKits(view: RaidView, creatures: readonly Creature[]): [RaidV
       v2: {
         ...v2,
         creatures: v2.creatures.map((e) =>
-          e.slot === last.slot ? { ...e, role: 'payoff', knack: null, knackName: null } : e,
+          e.slot === last.slot
+            ? { ...e, role: 'payoff', knack: null, knackName: null }
+            : e.creatureId === 'demo-sprout'
+              ? { ...e, knack: 'primed-by-pain' }
+              : e,
         ),
       },
     },

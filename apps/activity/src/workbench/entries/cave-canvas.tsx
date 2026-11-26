@@ -87,7 +87,7 @@ const caveCanvas: Entry = {
   file: 'apps/activity/src/cave-canvas/CaveCanvas.tsx',
   group: 'Creatures & game pieces',
   description:
-    "The daily dungeon (the valley's Cave) as a place, behind the valley and combat v2: today's map is the scene, every room a button with a name plate, the run so far lit and the team standing on its room. Before a run the team stands at the cave mouth with an Enter plate and your creatures sit in a one-row tray under the scene (drag one onto the mouth to add it, onto a place that is taken to swap, onto the tray to take it off). A now line is the scene's caption; plates open the left drawer (Pack, Route, Log during a fight); a tap on a room, the mouth, a creature, a mystery room, the camp, the way down or the result opens the right drawer. A room's fight takes the scene over and nothing of its answer shows until it has played. The Undercroft stands below the floor boss in a darker band, dragged up and down when the map is taller than the scene. `state` picks the moment (`loading`: the rock and now line before today has loaded). Touching a creature (a pointer over it, the keyboard on it, its drawer open) lights its reaction partners on the mouth, the map and the tray: the creatures that can cash a mark it sets, or set a mark it cashes, from their kits alone; `touch` starts with one touched, `partnerLook` is the look (badge is the pick, glow and dim are for the review).",
+    "The daily dungeon (the valley's Cave) as a place, behind the valley and combat v2: today's map is the scene, every room a button with a name plate, the run so far lit and the team standing on its room. Before a run the team stands at the cave mouth with an Enter plate and your creatures sit in a one-row tray under the scene (drag one onto the mouth to add it, onto a place that is taken to swap, onto the tray to take it off). A now line is the scene's caption; plates open the left drawer (Pack, Route, Log during a fight); a tap on a room, the mouth, a creature, a mystery room, the camp, the way down or the result opens the right drawer. A room's fight takes the scene over and nothing of its answer shows until it has played. The Undercroft stands below the floor boss in a darker band, dragged up and down when the map is taller than the scene. `state` picks the moment (`loading`: the rock and now line before today has loaded). Touching a creature (a pointer over it, the keyboard on it, its drawer open) lights its reaction partners on the mouth, the map and the tray: the creatures that can cash a mark it sets, or set a mark it cashes, from their kits alone; `touch` starts with one touched, `partnerLook` is the look (dim is the pick; badge and glow are review variants).",
   covers: [],
   controls: {
     state: { kind: 'select', options: [...CAVE_STATES, 'loading'] },
@@ -105,7 +105,7 @@ const caveCanvas: Entry = {
     ...[...CAVE_STATES, 'loading' as const].map((s) => ({ name: s, props: { state: s } })),
     ...TOUCH.slice(1).flatMap((touch) =>
       (['badge', 'glow', 'dim'] as const).map((partnerLook) => ({
-        name: `Partners: ${touch} touched (${partnerLook}${partnerLook === 'badge' ? ', the pick' : ''})`,
+        name: `Partners: ${touch} touched (${partnerLook}${partnerLook === 'dim' ? ', the pick' : ''})`,
         props: { state: 'before a run', drawers: 'closed', touch, partnerLook },
       })),
     ),

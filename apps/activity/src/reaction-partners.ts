@@ -28,12 +28,7 @@ import { content, gearBase, gearFx, type Element, type GearItem, type Role } fro
  */
 export interface PartnerPack {
   readonly knacks: Readonly<Record<string, { readonly fx: Readonly<Record<string, unknown>> }>>;
-  readonly talents: Readonly<
-    Record<
-      string,
-      { readonly roles: readonly string[]; readonly fx: Readonly<Record<string, unknown>> }
-    >
-  >;
+  readonly talents: Readonly<Record<string, { readonly fx: Readonly<Record<string, unknown>> }>>;
 }
 
 /** A mark is the element id of the creature that sets it ('tide', 'ember', ...). */
@@ -140,8 +135,9 @@ function fxOf(kit: PartnerKit, pack: PartnerPack | null): KitFx {
   }
   for (const id of pack === null ? [] : (kit.talents ?? [])) {
     const talent = Object.hasOwn(pack?.talents ?? {}, id) ? pack?.talents[id] : undefined;
-    // A talent that does nothing for this role is idle (`roles`).
-    if (talent !== undefined && talent.roles.includes(kit.role)) take(talent.fx);
+    // The engine merges every slotted talent into a creature's effects whatever the talent's `roles` (`createResolver` never reads them): a
+    // talent that is idle for a role is idle because the fight reads its fields only on that role's paths, not because it is left out.
+    if (talent !== undefined) take(talent.fx);
   }
   take(gearFxOf(kit));
   return out;
@@ -230,7 +226,7 @@ export function partnersOf(
 
 // --- How a partner is drawn ---
 
-/** The three looks (a Misa comparison): a badge of the mark's icon, a glow in the mark's colour, or the others dimmed. */
+/** The three looks (a Misa comparison): the others dimmed (the pick), a badge of the mark's icon, or a glow in the mark's colour. */
 export type PartnerLook = 'badge' | 'glow' | 'dim';
 export const PARTNER_LOOKS: readonly PartnerLook[] = ['badge', 'glow', 'dim'];
 export const isPartnerLook = (value: unknown): value is PartnerLook =>

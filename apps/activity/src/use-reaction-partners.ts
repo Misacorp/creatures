@@ -3,7 +3,7 @@
  * while it is. A creature is touched by the pointer over it or the keyboard focus on it (`touch`), or is `pinned` by the screen (the one
  * whose card is open); the pointer wins. Display only: the kits come from what the screen already has (`reaction-partner-kits.ts`).
  */
-import { useCallback, useMemo, useState } from 'preact/hooks';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { useCombatPack } from './combat-pack';
 import {
   partnersOf,
@@ -36,6 +36,15 @@ export function useReactionPartners(args: {
   const touch = useCallback((id: string | null) => {
     setHover(id);
   }, []);
+  // A hover left behind when the highlight goes off (a drag starts or ends, a stage plays) is forgotten: the creature that was under the
+  // pointer may be gone (a tray creature that moved to the board), and its leave event would never come.
+  const off = args.off === true;
+  const wasOff = useRef(off);
+  useEffect(() => {
+    // Not on the first draw: a preset may start with a creature touched.
+    if (wasOff.current !== off) setHover(null);
+    wasOff.current = off;
+  }, [off]);
   const touched = args.off === true ? null : (hover ?? args.pinned);
   const { kits, look } = args;
   const pack = useCombatPack();

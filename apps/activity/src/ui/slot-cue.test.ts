@@ -335,4 +335,17 @@ describe('the class names', () => {
     expect(cueClasses({ buff: true })).toEqual(['cue-buff']);
     expect(cueClasses({ cover: true })).toEqual(['cue-cover']);
   });
+
+  it('dims a seat with no board cue, and never one that carries a reach, buff, cover, boss-target or plain-attack cue', () => {
+    expect(cueClasses({ dim: true })).toContain('partner-dim');
+    for (const cue of [
+      { cover: true as const },
+      { buff: true as const },
+      { hit: { glyph: 'sweep' } },
+      { plain: true as const },
+    ]) {
+      expect(cueClasses({ ...cue, dim: true })).not.toContain('partner-dim');
+    }
+    expect(cueClasses({ cover: true, dim: true })).toContain('cue-cover');
+  });
 });

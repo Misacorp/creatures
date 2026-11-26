@@ -201,7 +201,14 @@ export function cueClasses(cue: SlotCue | undefined): string[] {
   if (cue.hit !== undefined) out.push('cue-hit');
   if (cue.plain === true) out.push('cue-plain');
   if (cue.partner !== undefined) out.push(...partnerClasses(cue.partner));
-  if (cue.dim === true) out.push('partner-dim');
+  // The recede look never fades a seat that carries a board cue (reach, buff, cover, boss target, reaction): those must stay readable.
+  const boardCue =
+    cue.reaction !== undefined ||
+    cue.buff === true ||
+    cue.cover === true ||
+    cue.hit !== undefined ||
+    cue.plain === true;
+  if (cue.dim === true && !boardCue) out.push('partner-dim');
   return out.filter((c) => c !== '');
 }
 

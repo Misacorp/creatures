@@ -86,7 +86,7 @@ export interface CaveCanvasProps {
   trayInput: TrayInput;
   /** Starts with these drawers open (the workbench shows each). */
   start?: { right?: RightPanel; left?: LeftPanel; closed?: true; touch?: string } | undefined;
-  /** How the reaction partners of a touched creature are lit (the pick is `badge`; the workbench shows the others). */
+  /** How the reaction partners of a touched creature are lit (the pick is `dim`; `badge` and `glow` are review variants the workbench shows). */
   partnerLook?: PartnerLook | undefined;
 }
 

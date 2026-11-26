@@ -98,7 +98,7 @@ describe('kitMarks', () => {
     expect([...marks.cashes].sort()).toEqual(['grove', 'mire']);
   });
 
-  it('talents are read from the data: a talent that sets marks counts when it works for the role, and is idle otherwise', () => {
+  it('talents are read from the data: a talent that sets marks counts on any role, as the engine merges every slotted talent', () => {
     const talents = combatV2.talents as Record<string, unknown>;
     talents['zz-test-marker'] = {
       id: 'zz-test-marker',
@@ -111,8 +111,9 @@ describe('kitMarks', () => {
       expect([...kitMarks(kit('a', 'sproutle', { talents: ['zz-test-marker'] })).sets]).toEqual([
         'grove',
       ]);
-      // Idle for a Support.
-      expect(kitMarks(kit('a', 'ashmole', { talents: ['zz-test-marker'] })).sets.size).toBe(0);
+      expect([...kitMarks(kit('a', 'ashmole', { talents: ['zz-test-marker'] })).sets]).toEqual([
+        'ember',
+      ]);
     } finally {
       delete talents['zz-test-marker'];
     }
