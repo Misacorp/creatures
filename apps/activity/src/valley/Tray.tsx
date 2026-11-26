@@ -15,7 +15,12 @@ import { glyphOrUnknown } from '../glyphs';
 import { Sprite } from '../sprites/Sprite';
 import { creatureSpriteOrFallback } from '../sprites/creature-sprites';
 import { PACK_ART } from '../sprites/pack-art';
+import { elementName } from '../game';
+import { partnerWords, type PartnerPaint } from '../reaction-partners';
 import { GameIcon } from '../ui/GameIcon';
+import { PartnerBadge, PartnerGlow } from '../ui/PartnerBadge';
+import { partnerTouchProps } from '../ui/partner-touch';
+import { partnerClasses } from '../ui/slot-cue';
 import { Nameplate } from '../ui/Nameplate';
 import { UpArrow } from './parts';
 import { trayBadge, type TrayBadge, type TrayInput } from './tray-state';
@@ -107,6 +112,7 @@ export function TrayCreature({
   onPick,
   drag,
   mark,
+  partner,
 }: {
   creature: Creature;
   input: TrayInput;
@@ -116,16 +122,26 @@ export function TrayCreature({
   drag?: TrayDrag;
   /** The screen's own mark and spoken name; absent: the valley's (`trayBadge`) and "Opens the Paddock.". */
   mark?: TrayMark | undefined;
+  /** Given: the creature shows the reaction-partner highlight (`paint`) and tells the screen when it is touched (`touch`). */
+  partner?: TrayPartner | undefined;
 }) {
   const badge = trayBadge(creature, input);
+  const paint = partner?.paint(creature.id);
+  const cue = paint?.partner;
+  const label = mark === undefined ? `${badge.label} Opens the Paddock.` : mark.label;
   const sprite = creatureSpriteOrFallback(creature.species);
   const away = mark === undefined && badge.state === 'trip';
   return (
     <button
       type="button"
-      class={`vy-mon vy-mon-${mark === undefined ? badge.state : mark.state}`}
+      class={[
+        `vy-mon vy-mon-${mark === undefined ? badge.state : mark.state}`,
+        ...(cue === undefined ? [] : partnerClasses(cue)),
+        ...(paint?.dim === true ? ['partner-dim'] : []),
+      ].join(' ')}
       data-creature={creature.id}
-      aria-label={mark === undefined ? `${badge.label} Opens the Paddock.` : mark.label}
+      aria-label={cue === undefined ? label : `${label} ${partnerWords(cue, elementName)}`}
+      {...partnerTouchProps(partner?.touch, creature.id)}
       onClick={(e) => {
         // The click that ends a drag is not a tap.
         if (drag?.consumeClick() === true) {
@@ -151,6 +167,8 @@ export function TrayCreature({
         )}
       </span>
       <span class="vy-mon-body">
+        {cue !== undefined && <PartnerGlow cue={cue} />}
+        {cue !== undefined && <PartnerBadge cue={cue} />}
         <Sprite
           sprite={sprite}
           scale={3}
@@ -168,6 +186,12 @@ export function TrayCreature({
       </span>
     </button>
   );
+}
+
+/** The reaction-partner highlight on a tray: what each creature is drawn with, and where touch is reported (`use-reaction-partners.ts`). */
+export interface TrayPartner {
+  paint: (creatureId: string) => PartnerPaint | undefined;
+  touch: (creatureId: string | null) => void;
 }
 
 /** What lets a hand carry a tray creature: `startDrag` and `consumeClick` of `useDragDrop`. */
@@ -190,6 +214,7 @@ export function Tray({
   marks,
   dropId,
   oneRow = false,
+  partner,
 }: {
   creatures: readonly Creature[];
   input: TrayInput;
@@ -203,6 +228,8 @@ export function Tray({
   dropId?: string;
   /** Always one row, scrolling sideways behind the arrow when they do not fit (the Cave on a phone, which keeps its scene tall). */
   oneRow?: boolean;
+  /** Given: touching a creature (the pointer over it, the keyboard focus on it) lights its reaction partners here and on the scene. */
+  partner?: TrayPartner | undefined;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [more, setMore] = useState(false);
@@ -251,6 +278,7 @@ export function Tray({
               }}
               {...(drag === undefined ? {} : { drag })}
               {...(marks === undefined ? {} : { mark: marks(c) })}
+              {...(partner === undefined ? {} : { partner })}
             />
           ))}
         </div>

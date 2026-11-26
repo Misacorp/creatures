@@ -40,6 +40,8 @@ import type { Intent } from '../raid-slots';
 import { earlyKillStage } from '../raid-timeline';
 import type { DropTarget } from '../slot-outcome';
 import { creatureInfoOf } from '../creature-info';
+import { kitsOf } from '../reaction-partner-kits';
+import { useReactionPartners } from '../use-reaction-partners';
 import { glyphOrUnknown } from '../glyphs';
 import { Sprite } from '../sprites/Sprite';
 import type { TeamConfigure } from '../TeamCreaturePage';
@@ -117,7 +119,7 @@ export interface RaidCanvasProps {
   /** Opens the creature picker's "no creature" copy etc. is not needed: the tray's own input (trips and jobs are not read here). */
   trayInput: TrayInput;
   /** Starts with these drawers open (the workbench shows each). */
-  start?: { right?: RightPanel; left?: LeftPanel } | undefined;
+  start?: { right?: RightPanel; left?: LeftPanel; touch?: string } | undefined;
   /** The player is a guest of the board's finale only when in a party: gates the finale's live data. */
   inParty?: boolean;
 }
@@ -457,6 +459,38 @@ function Canvas(props: RaidCanvasProps & { v2: RaidV2View }) {
           ]),
         );
 
+  // --- The reaction partners of a creature touched (the pointer over it, the keyboard on it, its popover or drawer open) ---
+  const v2BySlot = useMemo(() => creaturesBySlot(v2.creatures), [v2.creatures]);
+  const kits = useMemo(
+    () =>
+      kitsOf(
+        creatures,
+        v2.creatures.flatMap((entry) => {
+          const species = party?.row.find((s) => s.slot === entry.slot)?.creature?.species;
+          return species === undefined ? [] : [{ entry, species }];
+        }),
+      ),
+    [creatures, v2.creatures, party?.row],
+  );
+  const idAt = (slot: number | null): string | null =>
+    slot === null ? null : (v2BySlot.get(slot)?.creatureId ?? null);
+  // A phone's popover is anchored on its seat; a drawer on a creature (a wide window's tap) names it. Either shows its partners while it is open.
+  const popoverSeat = popovers?.anchor?.closest<HTMLElement>('[data-slot]')?.dataset['slot'];
+  const pinned =
+    popoverSeat !== undefined
+      ? idAt(Number(popoverSeat))
+      : right?.panel.kind === 'mine'
+        ? right.panel.creatureId
+        : right?.panel.kind === 'theirs'
+          ? idAt(right.panel.slot)
+          : null;
+  const partners = useReactionPartners({
+    kits,
+    look: config.partnerLook,
+    pinned,
+    off: dragging !== null || play !== null,
+    initial: props.start?.touch ?? null,
+  });
   const tappedMove = v2.card.moves.find((m) => m.id === litId);
   const cues = useMemo(() => {
     const out = new Map<number, SlotCue>(
@@ -482,6 +516,13 @@ function Canvas(props: RaidCanvasProps & { v2: RaidV2View }) {
     return out;
   }, [v2.preview, tappedMove, litSlot, party?.row]);
 
+  // The board's cues with the partner highlight on top (a seat can carry both: the reach shade and a partner's badge).
+  const seatCues = new Map(cues);
+  for (const s of party?.row ?? []) {
+    const id = s.creature === null ? null : idAt(s.slot);
+    const paint = id === null ? undefined : partners.paint(id);
+    if (paint !== undefined) seatCues.set(s.slot, { ...seatCues.get(s.slot), ...paint });
+  }
   const swaps = swapMarks(v2.swaps, party?.row ?? []);
   const bySlot = new Map((party?.row ?? []).map((s) => [s.slot, s]));
   const boardModels: BoardRowModel[] = gridRowsV2(grid).map((row, rowIndex) => ({
@@ -593,6 +634,7 @@ function Canvas(props: RaidCanvasProps & { v2: RaidV2View }) {
         dropId={TRAY_ID}
         drag={dragDrop}
         marks={(c) => trayMark(c, onBoardIds, outIds)}
+        partner={{ paint: partners.paint, touch: partners.touch }}
         onPick={(id) => {
           const el = document.querySelector<HTMLElement>(`[data-creature="${id}"]`);
           openRight({ kind: 'mine', creatureId: id }, el === null ? null : openerOf(el));
@@ -684,7 +726,10 @@ function Canvas(props: RaidCanvasProps & { v2: RaidV2View }) {
           disabled: busy,
           drag: dragDrop,
           statuses,
-          cues,
+          cues: seatCues,
+          onHoverSlot: (slot: number | null) => {
+            partners.touch(idAt(slot));
+          },
           onTap: tapSlot,
         };
   return (

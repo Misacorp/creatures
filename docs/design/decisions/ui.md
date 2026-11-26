@@ -4,6 +4,14 @@ Navigation and the frame, Home and the notice board, type scale, shared componen
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-26: Touching a creature lights its reaction partners, from kits alone [Misa]
+
+ID: `2026-11-26-touching-a-creature-lights-its-reaction` · Status: current
+
+**Decision.** On the raid and Cave canvases, touching a creature (a tap, hover, keyboard focus, or its card open) lights its reaction partners on the board, in the tray and on the Cave's figures: for a Setter every other creature that can cash a mark it sets, for a Payoff every other creature that can set a mark it reacts to, both for one that does both. Other players' creatures count. Display only; the look is the `partnerLook` config (badge with the mark's element icon is the default, glow and dim are review variants).
+
+**Reasoning.** A mark can be cashed by any Payoff later, so reach and position say nothing about who can react; the kit does. The sets are worked out from the shipped data (the element chart, the Knacks' and talents' effects, the gear sets' `gearFx`) in `apps/activity/src/reaction-partners.ts`, so new content is picked up, and a test fails when a new effect names marks and the helper cannot place it. It uses only what `/api/raid` and the state already carry, so no server field or read is added.
+
 ## 2026-11-17: The House place is a canvas: the player's house is the scene
 
 ID: `2026-11-17-the-house-place-is-a-canvas` · Status: current

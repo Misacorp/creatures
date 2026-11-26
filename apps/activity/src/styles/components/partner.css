@@ -1,0 +1,76 @@
+/*
+  The reaction-partner highlight (reaction-partners.ts, ui/PartnerBadge.tsx): touch a creature and the creatures that can cash its marks,
+  or set the marks it cashes, are lit. Three looks (a Misa comparison), on a board seat, a tray creature or a creature standing in the Cave:
+  - badge (A, the default): a dark plate with the mark's element icon, or icons. A partner has a gold edge, the creature touched a bone
+    one. It is still, so reduced motion changes nothing.
+  - glow (B): a soft inner wash in the mark's colour over each partner (the first mark's, `--cue`).
+  - dim (C): everything that is no partner recedes; the partners and the touched one stay full.
+  None of them is the boss-target red, the Guard's reach shade or a ring, so they never meet the board's own cues.
+*/
+
+.partner-badge {
+  position: absolute;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 1px;
+  background: var(--ink);
+  box-shadow: 0 0 0 1px var(--gold);
+  line-height: 0;
+  pointer-events: none;
+}
+
+.partner-badge.touched {
+  box-shadow: 0 0 0 1px var(--bone);
+}
+
+.partner-badge canvas.sprite {
+  display: block;
+  margin: 0;
+}
+
+/* On a seat: the left edge under the role icon (the owner's initial is on the right, the swap mark in the middle). */
+.board-row .party-slot .partner-badge {
+  top: 1.25rem;
+  left: 3px;
+}
+
+.board-row .party-slot .partner-badge canvas.sprite {
+  margin: 0;
+}
+
+/* In the tray: the top right of the picture. */
+.vy-mon-body .partner-badge {
+  top: -6px;
+  right: -10px;
+}
+
+/* In the Cave: above the figure's head. */
+.cave-fig .partner-badge {
+  top: -4px;
+  right: -8px;
+}
+
+.partner-glow-fill {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  box-shadow: inset 0 0 14px 4px color-mix(in srgb, var(--cue, var(--gold)) 75%, transparent);
+  pointer-events: none;
+}
+
+/* The Cave's figures have no tile: the glow is a halo round the picture. */
+.cave-fig {
+  position: relative;
+}
+
+.cave-fig.partner-look-glow {
+  filter: drop-shadow(0 0 5px var(--cue, var(--gold))) drop-shadow(0 0 2px var(--cue, var(--gold)));
+}
+
+.party-slot.partner-dim,
+.vy-mon.partner-dim,
+.cave-fig.partner-dim {
+  opacity: 0.4;
+}

@@ -510,6 +510,7 @@ Superseded: 1 entry (see the topic file).
 
 [ui.md](ui.md): Navigation and the frame, Home and the notice board, type scale, shared components, look and feel rules that apply across screens.
 
+- 2026-11-26 Touching a creature lights its reaction partners, from kits alone \[Misa\]
 - 2026-11-17 The House place is a canvas: the player's house is the scene
 - 2026-11-16 \[Misa\] The item tile's slot icon sits beside the level on one bottom strip
 - 2026-11-16 \[Misa\] Every picture on a review page enlarges on tap

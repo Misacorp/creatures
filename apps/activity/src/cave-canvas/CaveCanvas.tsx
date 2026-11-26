@@ -8,7 +8,7 @@
  * The screen above (`Dungeon.tsx`) owns the data and every act that goes to the server; this component draws, opens and asks.
  */
 import type { ComponentChildren } from 'preact';
-import { useEffect, useRef, useState } from 'preact/hooks';
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { Creature } from '../api';
 import { creatureName } from '../game';
 import { DragGhost } from '../ui/DragGhost';
@@ -26,6 +26,9 @@ import { PlaceCanvas, openerOf, type CanvasPanel, type Opener } from '../valley/
 import { Tray, type TrayMark } from '../valley/Tray';
 import type { TrayInput } from '../valley/tray-state';
 import { useDragDrop } from '../use-drag-drop';
+import { kitsOf } from '../reaction-partner-kits';
+import type { PartnerLook } from '../reaction-partners';
+import { useReactionPartners } from '../use-reaction-partners';
 import { useDungeonSetup } from '../use-dungeon-setup';
 import type { ScenePlate } from '../raid-canvas/RaidScene';
 import { CavePlayback } from './CavePlayback';
@@ -82,7 +85,9 @@ export interface CaveCanvasProps {
   configure?: TeamConfigure | undefined;
   trayInput: TrayInput;
   /** Starts with these drawers open (the workbench shows each). */
-  start?: { right?: RightPanel; left?: LeftPanel; closed?: true } | undefined;
+  start?: { right?: RightPanel; left?: LeftPanel; closed?: true; touch?: string } | undefined;
+  /** How the reaction partners of a touched creature are lit (the pick is `badge`; the workbench shows the others). */
+  partnerLook?: PartnerLook | undefined;
 }
 
 const TRAY_ID = 'cave-tray';
@@ -298,6 +303,18 @@ export function CaveCanvas(props: CaveCanvasProps) {
   const overSlot = dragDrop.drag?.over?.slot ?? null;
   const overTray = overSlot === TRAY_SLOT;
 
+  // The reaction partners of a creature touched (the pointer over it, the keyboard on it, its drawer open): the kit of each of your
+  // creatures is what the state already carries (saved Knack, slotted talents, worn gear), the team and the tray alike.
+  const kits = useMemo(() => kitsOf(creatures, []), [creatures]);
+  const partners = useReactionPartners({
+    kits,
+    look: props.partnerLook ?? 'badge',
+    pinned: right?.panel.kind === 'mine' ? right.panel.creatureId : null,
+    off: dragging !== null || fighting,
+    initial: props.start?.touch ?? null,
+  });
+  const partner = { paint: partners.paint, touch: partners.touch };
+
   const mouth: CaveMouth | null =
     isSetup && blocked === null
       ? {
@@ -406,6 +423,7 @@ export function CaveCanvas(props: CaveCanvasProps) {
           dropId={TRAY_ID}
           drag={dragDrop}
           oneRow
+          partner={partner}
           marks={(c) => trayMark(c, onTeam.has(c.id))}
           onPick={(id) => {
             const el = document.querySelector<HTMLElement>(`[data-creature="${id}"]`);
@@ -487,6 +505,7 @@ export function CaveCanvas(props: CaveCanvasProps) {
             openRight({ kind: 'mine', creatureId: id }, openerOf(button));
           }}
           mouth={mouth}
+          partner={partner}
           stage={stage}
           hint={hint ?? (right === null ? props.error : null)}
         />

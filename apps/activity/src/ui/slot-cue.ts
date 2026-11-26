@@ -29,6 +29,7 @@ import {
   type AffectSlot,
   type GuardReach,
 } from '@creatures/engine';
+import type { PartnerCue, PartnerPaint } from '../reaction-partners';
 
 /** What a reaction cue says about a tile. */
 export interface ReactionCue {
@@ -42,8 +43,8 @@ export interface ReactionCue {
   element: Element;
 }
 
-/** What is drawn on one tile. */
-export interface SlotCue {
+/** What is drawn on one tile. `partner` and `dim` are the reaction-partner highlight (`reaction-partners.ts`). */
+export interface SlotCue extends PartnerPaint {
   /** A Support's buff reaches this tile. */
   buff?: true;
   /** A Guard would take this tile's hits. */
@@ -177,6 +178,17 @@ export function cueElementClass(element: string): string {
   return ELEMENT_SLUG.test(element) ? `cue-el-${element}` : '';
 }
 
+/**
+ * The classes a creature gets for being a reaction partner (or the one touched): `partner-<look>`, and for the glow the first mark's
+ * element colour (`--cue`). Shared by the board's tiles, the tray and the Cave's standers.
+ */
+export function partnerClasses(cue: PartnerCue): string[] {
+  const out = [`partner-look-${cue.look}`, `partner-is-${cue.who}`];
+  const first = cue.marks[0];
+  if (cue.look === 'glow' && first !== undefined) out.push(cueElementClass(first));
+  return out.filter((c) => c !== '');
+}
+
 /** The classes a tile gets for its cue (empty for no cue). */
 export function cueClasses(cue: SlotCue | undefined): string[] {
   if (cue === undefined) return [];
@@ -188,6 +200,8 @@ export function cueClasses(cue: SlotCue | undefined): string[] {
   if (cue.cover === true) out.push('cue-cover');
   if (cue.hit !== undefined) out.push('cue-hit');
   if (cue.plain === true) out.push('cue-plain');
+  if (cue.partner !== undefined) out.push(...partnerClasses(cue.partner));
+  if (cue.dim === true) out.push('partner-dim');
   return out.filter((c) => c !== '');
 }
 
