@@ -16,7 +16,7 @@
  * How it cashes: only a Payoff, and only with a hit (`noDamage` hits cash nothing), cashes a mark whose element its own element
  * triggers (the chart's strong pairs, 150%).
  *
- * `reactionPaint` turns the result into what a tile, a tray creature or a stander is drawn with, in one of three looks.
+ * `reactionPaint` turns the result into what a tile, a tray creature or a stander is drawn with, (a tile also wears the reaction ring, `ui/slot-cue.ts`).
  */
 import { content, gearBase, gearFx, type Element, type GearItem, type Role } from '@creatures/game';
 
@@ -226,19 +226,12 @@ export function partnersOf(
 
 // --- How a partner is drawn ---
 
-/** The three looks (a Misa comparison): the others dimmed (the pick), a badge of the mark's icon, or a glow in the mark's colour. */
-export type PartnerLook = 'badge' | 'glow' | 'dim';
-export const PARTNER_LOOKS: readonly PartnerLook[] = ['badge', 'glow', 'dim'];
-export const isPartnerLook = (value: unknown): value is PartnerLook =>
-  value === 'badge' || value === 'glow' || value === 'dim';
-
 /** What a partner (or the touched creature) wears: the marks' elements, and how it is drawn. */
 export interface PartnerCue {
   /** `touched`: the creature in hand. `partner`: one of its partners. */
   who: 'touched' | 'partner';
   /** The element ids of the marks that link them. */
   marks: readonly Mark[];
-  look: PartnerLook;
   /** What the partner does with them: for the spoken name. */
   as?: Partner['as'];
 }
@@ -246,32 +239,26 @@ export interface PartnerCue {
 /** What a seat, a tray creature or a stander is drawn with besides itself. */
 export interface PartnerPaint {
   partner?: PartnerCue;
-  /** The look `dim`: this one is no partner, and recedes. */
+  /** This one is no partner, and recedes. */
   dim?: true;
 }
 
 /**
- * The paint of each creature while `touchedId` is touched, in one look; `undefined` for a creature that gets none. Nothing at all when
+ * The paint of each creature while `touchedId` is touched; `undefined` for a creature that gets none. Nothing at all when
  * the touched creature has no partners (so `dim` never greys the whole board for a Guard that marks nothing).
  */
 export function reactionPaint(
-  look: PartnerLook,
   touchedId: string | null,
   partners: ReadonlyMap<string, Partner>,
 ): (id: string) => PartnerPaint | undefined {
   if (touchedId === null || partners.size === 0) return () => undefined;
   const all = byElementOrder([...partners.values()].flatMap((p) => p.marks));
   return (id) => {
-    if (id === touchedId) {
-      return look === 'badge' ? { partner: { who: 'touched', marks: all, look } } : undefined;
-    }
+    if (id === touchedId) return { partner: { who: 'touched', marks: all } };
     const partner = partners.get(id);
-    if (partner !== undefined) {
-      return look === 'dim'
-        ? undefined
-        : { partner: { who: 'partner', marks: partner.marks, look, as: partner.as } };
-    }
-    return look === 'dim' ? { dim: true } : undefined;
+    return partner !== undefined
+      ? { partner: { who: 'partner', marks: partner.marks, as: partner.as } }
+      : { dim: true };
   };
 }
 

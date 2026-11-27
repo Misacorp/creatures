@@ -486,7 +486,6 @@ function Canvas(props: RaidCanvasProps & { v2: RaidV2View }) {
           : null;
   const partners = useReactionPartners({
     kits,
-    look: config.partnerLook,
     pinned,
     off: dragging !== null || play !== null,
     initial: props.start?.touch ?? null,

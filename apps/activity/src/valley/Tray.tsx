@@ -18,7 +18,6 @@ import { PACK_ART } from '../sprites/pack-art';
 import { elementName } from '../game';
 import { partnerWords, type PartnerPaint } from '../reaction-partners';
 import { GameIcon } from '../ui/GameIcon';
-import { PartnerBadge, PartnerGlow } from '../ui/PartnerBadge';
 import { partnerTouchProps } from '../ui/partner-touch';
 import { partnerClasses } from '../ui/slot-cue';
 import { Nameplate } from '../ui/Nameplate';
@@ -167,8 +166,6 @@ export function TrayCreature({
         )}
       </span>
       <span class="vy-mon-body">
-        {cue !== undefined && <PartnerGlow cue={cue} />}
-        {cue !== undefined && <PartnerBadge cue={cue} />}
         <Sprite
           sprite={sprite}
           scale={3}

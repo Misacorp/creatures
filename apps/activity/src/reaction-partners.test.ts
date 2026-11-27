@@ -225,44 +225,24 @@ describe('reactionPaint', () => {
   const guard = kit('guard', 'sproutle');
   const partners = partnersOf(setter, [spark, guard]);
 
-  it('badge: the partner and the touched creature carry the mark; others nothing', () => {
-    const paint = reactionPaint('badge', 'setter', partners);
-    expect(paint('spark')).toEqual({
-      partner: { who: 'partner', marks: ['tide'], look: 'badge', as: 'cashes' },
-    });
-    expect(paint('setter')).toEqual({
-      partner: { who: 'touched', marks: ['tide'], look: 'badge' },
-    });
-    expect(paint('guard')).toBeUndefined();
-  });
-
-  it('glow: the partner glows, nothing else is drawn', () => {
-    const paint = reactionPaint('glow', 'setter', partners);
-    expect(paint('spark')?.partner?.look).toBe('glow');
-    expect(paint('setter')).toBeUndefined();
-    expect(paint('guard')).toBeUndefined();
-  });
-
-  it('dim: the others recede, the partner and the touched creature stay full', () => {
-    const paint = reactionPaint('dim', 'setter', partners);
+  it('the partner and the touched creature carry the marks; the others dim', () => {
+    const paint = reactionPaint('setter', partners);
+    expect(paint('spark')).toEqual({ partner: { who: 'partner', marks: ['tide'], as: 'cashes' } });
+    expect(paint('setter')).toEqual({ partner: { who: 'touched', marks: ['tide'] } });
     expect(paint('guard')).toEqual({ dim: true });
-    expect(paint('spark')).toBeUndefined();
-    expect(paint('setter')).toBeUndefined();
   });
 
   it('paints nothing when nothing is touched or the touched creature has no partners', () => {
-    expect(reactionPaint('dim', null, partners)('guard')).toBeUndefined();
-    expect(
-      reactionPaint('dim', 'guard', partnersOf(guard, [setter, spark]))('setter'),
-    ).toBeUndefined();
+    expect(reactionPaint(null, partners)('guard')).toBeUndefined();
+    expect(reactionPaint('guard', partnersOf(guard, [setter, spark]))('setter')).toBeUndefined();
   });
 
   it('says what it is in words for a screen reader', () => {
     const words = (id: string) => (id === 'tide' ? 'Tide' : id);
-    expect(
-      partnerWords({ who: 'partner', marks: ['tide'], look: 'badge', as: 'cashes' }, words),
-    ).toBe('Reaction partner: cashes the Tide mark.');
-    expect(partnerWords({ who: 'touched', marks: ['tide'], look: 'badge' }, words)).toBe(
+    expect(partnerWords({ who: 'partner', marks: ['tide'], as: 'cashes' }, words)).toBe(
+      'Reaction partner: cashes the Tide mark.',
+    );
+    expect(partnerWords({ who: 'touched', marks: ['tide'] }, words)).toBe(
       'Reaction partners are lit, for Tide.',
     );
   });

@@ -17,7 +17,6 @@ import { usePrefersReducedMotion } from '../hooks';
 import { elementName } from '../game';
 import { partnerWords } from '../reaction-partners';
 import { creatureSpriteOrFallback } from '../sprites/creature-sprites';
-import { PartnerBadge, PartnerGlow } from '../ui/PartnerBadge';
 import { partnerTouchProps } from '../ui/partner-touch';
 import { partnerClasses } from '../ui/slot-cue';
 import type { TrayPartner } from '../valley/Tray';
@@ -109,8 +108,6 @@ function Figure({
   if (paint?.dim === true) classes.push('partner-dim');
   return (
     <span class={classes.join(' ')}>
-      {cue !== undefined && <PartnerGlow cue={cue} />}
-      {cue !== undefined && <PartnerBadge cue={cue} />}
       <Sprite sprite={creatureSpriteOrFallback(c.speciesId)} scale={scale} />
       {c.hp !== undefined && (
         <SegmentBar

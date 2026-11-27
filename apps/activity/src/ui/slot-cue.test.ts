@@ -348,4 +348,33 @@ describe('the class names', () => {
     }
     expect(cueClasses({ cover: true, dim: true })).toContain('cue-cover');
   });
+
+  it('a partner tile wears the reaction ring in the first shared mark colour, with no name bar; the touched one too', () => {
+    const partner = cueClasses({
+      partner: { who: 'partner', marks: ['ember', 'tide'], as: 'cashes' },
+    });
+    expect(partner).toEqual(expect.arrayContaining(['cue-react', 'cue-el-ember']));
+    expect(partner).not.toContain('cue-el-tide');
+    expect(partner).not.toContain('partner-dim');
+    expect(cueClasses({ partner: { who: 'touched', marks: ['tide'] } })).toEqual(
+      expect.arrayContaining(['cue-react', 'cue-el-tide']),
+    );
+  });
+
+  it("keeps a seat's own board cue readable beside the ring: buff and cover show with it, a boss-target ring wins, a reaction cue is not doubled", () => {
+    const partner = { who: 'partner' as const, marks: ['tide'] };
+    expect(cueClasses({ partner, cover: true })).toEqual(
+      expect.arrayContaining(['cue-react', 'cue-cover']),
+    );
+    expect(cueClasses({ partner, buff: true })).toEqual(
+      expect.arrayContaining(['cue-react', 'cue-buff']),
+    );
+    expect(cueClasses({ partner, hit: { glyph: 'sweep' } })).not.toContain('cue-react');
+    const own = cueClasses({
+      partner,
+      reaction: { id: 'steam', name: 'Steam', role: 'marker', element: 'ember' },
+    });
+    expect(own.filter((c) => c === 'cue-react')).toHaveLength(1);
+    expect(own).toContain('cue-el-ember');
+  });
 });

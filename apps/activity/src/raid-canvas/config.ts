@@ -7,18 +7,13 @@
  *   picture, role, the owner's initial; a tap has the rest).
  * - `creatureTap`: `drawer` opens the right drawer at once (a full page on a phone); `popover-first` first shows a popover and lights the
  *   creature's reach on the board, with Open for the full view.
- * - `partnerLook`: how the reaction partners of a touched creature are lit (`reaction-partners.ts`): `dim` everything that is no partner recedes
- *   (the pick), `badge` the mark's element icon on each partner and `glow` a soft wash in the mark's colour (review variants).
  */
-import type { PartnerLook } from '../reaction-partners';
-
 export type SeatPlates = 'all' | 'mine';
 export type CreatureTap = 'drawer' | 'popover-first';
 
 export interface RaidCanvasConfig {
   seatPlates: SeatPlates;
   creatureTap: CreatureTap;
-  partnerLook: PartnerLook;
 }
 
 /** The reviewer's picks: plates on your own seats, and on a phone a popover first (a wide window's drawer hides nothing). */
@@ -26,7 +21,6 @@ export function defaultConfig(phone: boolean): RaidCanvasConfig {
   return {
     seatPlates: 'mine',
     creatureTap: phone ? 'popover-first' : 'drawer',
-    partnerLook: 'dim',
   };
 }
 

@@ -100,42 +100,36 @@ describe('the reaction partners of a touched creature', () => {
     await loadCombatPack();
   });
 
-  const config = (partnerLook: 'badge' | 'glow' | 'dim'): Partial<RaidCanvasConfig> => ({
-    creatureTap: 'drawer',
-    seatPlates: 'mine',
-    partnerLook,
+  const config: Partial<RaidCanvasConfig> = { creatureTap: 'drawer', seatPlates: 'mine' };
+
+  it('a touched setter: its partner seats wear the reaction ring in the mark colour with no name bar, the rest dim', () => {
+    const p = draw(sampleOf('placing'), { config, start: { touch: 'demo-moss' } });
+    const rings = byClass(p.root, 'cue-react');
+    // Mossback (touched), Pyrelynx and Jun's Cindle on the board.
+    expect(rings.length).toBeGreaterThanOrEqual(3);
+    for (const seat of rings) {
+      expect(String(seat.getAttribute('class'))).toContain('party-slot');
+      expect(String(seat.getAttribute('class'))).toContain('cue-el-grove');
+    }
+    expect(byClass(p.root, 'slot-cue-badge')).toHaveLength(0);
+    expect(byClass(p.root, 'partner-badge')).toHaveLength(0);
+    expect(byClass(p.root, 'partner-dim').length).toBeGreaterThan(0);
+    for (const seat of byClass(p.root, 'partner-dim')) {
+      expect(String(seat.getAttribute('class'))).not.toContain('cue-react');
+    }
   });
 
-  it('badge: a touched setter lights the Payoffs that can cash its mark, on the board and in the tray, and itself', () => {
-    const p = draw(sampleOf('placing'), {
-      config: config('badge'),
-      start: { touch: 'demo-moss' },
-    });
-    const badges = byClass(p.root, 'partner-badge');
-    // Mossback (touched, in the tray and on the board), Pyrelynx and Jun's Cindle on the board, two Cindles in the tray.
-    expect(badges.length).toBeGreaterThanOrEqual(5);
+  it('the tray has no tile: a partner stays full strength, a non-partner dims, and neither wears the ring', () => {
+    const p = draw(sampleOf('placing'), { config, start: { touch: 'demo-moss' } });
     const tray = find(p.root, (el) => el.getAttribute('data-creature') === 'demo-cindle')[0];
-    expect(byClass(tray as FakeElement, 'partner-badge')).toHaveLength(1);
-    const guard = find(p.root, (el) => el.getAttribute('data-creature') === 'demo-sprout')[0];
-    expect(byClass(guard as FakeElement, 'partner-badge')).toHaveLength(0);
+    expect(String(tray?.getAttribute('class'))).not.toContain('partner-dim');
+    expect(String(tray?.getAttribute('class'))).not.toContain('cue-react');
   });
 
   it('nothing is lit when no creature is touched', () => {
-    const p = draw(sampleOf('placing'), { config: config('badge') });
-    expect(byClass(p.root, 'partner-badge')).toHaveLength(0);
-  });
-
-  it('dim: the creatures that are no partner recede', () => {
-    const p = draw(sampleOf('placing'), { config: config('dim'), start: { touch: 'demo-moss' } });
-    expect(byClass(p.root, 'partner-dim').length).toBeGreaterThan(0);
-    expect(byClass(p.root, 'partner-badge')).toHaveLength(0);
-    const tray = find(p.root, (el) => el.getAttribute('data-creature') === 'demo-cindle')[0];
-    expect(String(tray?.getAttribute('class'))).not.toContain('partner-dim');
-  });
-
-  it('glow: partners carry the glow and the mark colour', () => {
-    const p = draw(sampleOf('placing'), { config: config('glow'), start: { touch: 'demo-moss' } });
-    expect(byClass(p.root, 'partner-glow-fill').length).toBeGreaterThan(0);
+    const p = draw(sampleOf('placing'), { config });
+    expect(byClass(p.root, 'cue-react')).toHaveLength(0);
+    expect(byClass(p.root, 'partner-dim')).toHaveLength(0);
   });
 });
 

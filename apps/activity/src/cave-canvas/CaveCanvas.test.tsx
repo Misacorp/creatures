@@ -491,7 +491,6 @@ describe('the reaction partners in the Cave', () => {
         configure={sample.configure}
         trayInput={{ trips: [], jobs: null, now: 0 }}
         start={{ closed: true, ...(touched === undefined ? {} : { touch: touched }) }}
-        partnerLook="badge"
       />,
     );
     return p;
@@ -500,8 +499,9 @@ describe('the reaction partners in the Cave', () => {
   it('lights the partners of a touched creature before a run, on the mouth and in the tray', async () => {
     await loadCombatPack();
     const p = drawCave('before a run', 'mossback');
-    // Mossback (a Grove Setter, touched) and the Ember Payoffs in the tray that cash Grove.
-    expect(byClass(p.root, 'partner-badge').length).toBeGreaterThanOrEqual(3);
+    // Figures and tray creatures have no tile: the others dim, the partners stay full, and no ring or badge is drawn.
+    expect(byClass(p.root, 'partner-dim').length).toBeGreaterThan(0);
+    expect(byClass(p.root, 'partner-badge')).toHaveLength(0);
   });
 
   it('lights nothing during a fight, whichever creature is touched', async () => {

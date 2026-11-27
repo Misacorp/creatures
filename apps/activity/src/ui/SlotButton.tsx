@@ -10,7 +10,6 @@ import { Sprite } from '../sprites/Sprite';
 import { creatureSpriteOrFallback } from '../sprites/creature-sprites';
 import type { DropStatus } from '../slot-outcome';
 import type { DragDrop } from '../use-drag-drop';
-import { PartnerBadge, PartnerGlow } from './PartnerBadge';
 import { cueClasses, type SlotCue } from './slot-cue';
 import { TinyHp } from './TinyHp';
 
@@ -293,7 +292,6 @@ export function SlotButton(props: SlotButtonProps) {
           </span>
         </span>
       )}
-      {partner !== undefined && <PartnerGlow cue={partner} />}
       {slot.hideNumber !== true && <span class="slot-num">{slot.index + 1}</span>}
       {c === null ? (
         <span class="slot-empty">{props.emptyLabel}</span>
@@ -374,7 +372,6 @@ export function SlotButton(props: SlotButtonProps) {
           {slot.badge}
         </span>
       )}
-      {partner !== undefined && <PartnerBadge cue={partner} />}
       {badge !== undefined && (
         <span class="slot-cue-badge" aria-hidden="true">
           {badge.name}

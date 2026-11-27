@@ -4,9 +4,17 @@ Navigation and the frame, Home and the notice board, type scale, shared componen
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-27: [Misa] Reaction partners: dim the rest, partners wear v1's reaction ring
+
+ID: `2026-11-27-reaction-partners-dim-the-rest-partners` · Status: current · Amends: `2026-11-26-touching-a-creature-lights-its-reaction`
+
+**Decision.** Misa chose look C, dim the rest (2026-11-27, trusting our recommendation on the design language). The A (badge) and B (glow) variants and the `partnerLook` switch are removed. A partner seat (and the touched one, as v1's focused seat) reuses v1's `cue-react` ring with `cueElementClass` of the first shared mark, without its `.slot-cue-badge` name bar. Tray creatures and every creature on the Cave canvas (figures, tray; it draws no tiles) only dim or stay full. A boss-target ring wins over the partner ring; reach, buff, cover and plain-attack cues show beside it.
+
+**Reasoning.** Dim read clearest. The ring keeps one meaning ("reacts with what you touched") in v1 and v2, so players learn one language. No words, as Misa asked: icons and colours.
+
 ## 2026-11-26: Touching a creature lights its reaction partners, from kits alone [Misa]
 
-ID: `2026-11-26-touching-a-creature-lights-its-reaction` · Status: current
+ID: `2026-11-26-touching-a-creature-lights-its-reaction` · Status: current, amended by `2026-11-27-reaction-partners-dim-the-rest-partners`
 
 **Decision.** On the raid and Cave canvases, touching a creature (a tap, hover, keyboard focus, or its card open) lights its reaction partners on the board, in the tray and on the Cave's figures: for a Setter every other creature that can cash a mark it sets, for a Payoff every other creature that can set a mark it reacts to, both for one that does both. Other players' creatures count. Display only; the look is the `partnerLook` config (dim, the non-partners receding, is the default: it read clearest in the screenshots and adds no new shape; the badge with the mark's element icon and a glow are review variants for Misa).
 

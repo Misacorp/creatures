@@ -36,7 +36,6 @@ import { supplyCraftingEntries } from './entries/supply-crafting';
 import { raidBoardEntries } from './entries/raid-board';
 import { raidV2Entries } from './entries/raid-v2';
 import { raidCanvasEntries } from './entries/raid-canvas';
-import { partnerBadgeEntries } from './entries/partner-badge';
 import { fightV2Entries } from './entries/fight-v2';
 import { bossAnimEntries } from './entries/boss-anim';
 import { raidSummaryEntries } from './entries/raid-summary';
@@ -69,7 +68,6 @@ export const ENTRIES: readonly Entry[] = [
   ...raidBoardEntries,
   ...raidV2Entries,
   ...raidCanvasEntries,
-  ...partnerBadgeEntries,
   ...caveCanvasEntries,
   ...fightV2Entries,
   ...bossAnimEntries,

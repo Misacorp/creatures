@@ -27,7 +27,6 @@ import { Tray, type TrayMark } from '../valley/Tray';
 import type { TrayInput } from '../valley/tray-state';
 import { useDragDrop } from '../use-drag-drop';
 import { kitsOf } from '../reaction-partner-kits';
-import type { PartnerLook } from '../reaction-partners';
 import { useReactionPartners } from '../use-reaction-partners';
 import { useDungeonSetup } from '../use-dungeon-setup';
 import type { ScenePlate } from '../raid-canvas/RaidScene';
@@ -86,8 +85,6 @@ export interface CaveCanvasProps {
   trayInput: TrayInput;
   /** Starts with these drawers open (the workbench shows each). */
   start?: { right?: RightPanel; left?: LeftPanel; closed?: true; touch?: string } | undefined;
-  /** How the reaction partners of a touched creature are lit (the pick is `dim`; `badge` and `glow` are review variants the workbench shows). */
-  partnerLook?: PartnerLook | undefined;
 }
 
 const TRAY_ID = 'cave-tray';
@@ -308,7 +305,6 @@ export function CaveCanvas(props: CaveCanvasProps) {
   const kits = useMemo(() => kitsOf(creatures, []), [creatures]);
   const partners = useReactionPartners({
     kits,
-    look: props.partnerLook ?? 'dim',
     pinned: right?.panel.kind === 'mine' ? right.panel.creatureId : null,
     off: dragging !== null || fighting,
     initial: props.start?.touch ?? null,

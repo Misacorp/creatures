@@ -179,14 +179,11 @@ export function cueElementClass(element: string): string {
 }
 
 /**
- * The classes a creature gets for being a reaction partner (or the one touched): `partner-<look>`, and for the glow the first mark's
- * element colour (`--cue`). Shared by the board's tiles, the tray and the Cave's standers.
+ * The classes a creature gets for being a reaction partner (or the one touched): who it is. Shared by the board's tiles, the tray and the
+ * Cave's standers. The reaction ring is not here: only a tile wears it (`cueClasses`).
  */
 export function partnerClasses(cue: PartnerCue): string[] {
-  const out = [`partner-look-${cue.look}`, `partner-is-${cue.who}`];
-  const first = cue.marks[0];
-  if (cue.look === 'glow' && first !== undefined) out.push(cueElementClass(first));
-  return out.filter((c) => c !== '');
+  return [`partner-is-${cue.who}`];
 }
 
 /** The classes a tile gets for its cue (empty for no cue). */
@@ -200,7 +197,15 @@ export function cueClasses(cue: SlotCue | undefined): string[] {
   if (cue.cover === true) out.push('cue-cover');
   if (cue.hit !== undefined) out.push('cue-hit');
   if (cue.plain === true) out.push('cue-plain');
-  if (cue.partner !== undefined) out.push(...partnerClasses(cue.partner));
+  if (cue.partner !== undefined) {
+    out.push(...partnerClasses(cue.partner));
+    // A tile wears v1's reaction ring (`cue-react`, in the first shared mark's colour) with no name bar. A tile that already has its own
+    // reaction cue keeps it, and the boss-target ring (`cue-hit`) wins over this one; reach, buff and plain shows alongside it.
+    const first = cue.partner.marks[0];
+    if (first !== undefined && cue.reaction === undefined && cue.hit === undefined) {
+      out.push('cue-react', cueElementClass(first));
+    }
+  }
   // The recede look never fades a seat that carries a board cue (reach, buff, cover, boss target, reaction): those must stay readable.
   const boardCue =
     cue.reaction !== undefined ||

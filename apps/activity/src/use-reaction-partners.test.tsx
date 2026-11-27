@@ -21,7 +21,7 @@ describe('useReactionPartners', () => {
   it('forgets a hover when the highlight goes off, so a creature that left cannot leave it behind', () => {
     let now: ReactionPartners | null = null;
     function Probe({ off }: { off: boolean }) {
-      now = useReactionPartners({ kits: KITS, look: 'badge', pinned: null, off });
+      now = useReactionPartners({ kits: KITS, pinned: null, off });
       return null;
     }
     page = createPage();
@@ -41,7 +41,7 @@ describe('useReactionPartners', () => {
   it('a pinned creature is touched while no pointer is on one', () => {
     let now: ReactionPartners | null = null;
     function Probe() {
-      now = useReactionPartners({ kits: KITS, look: 'badge', pinned: 'spark' });
+      now = useReactionPartners({ kits: KITS, pinned: 'spark' });
       return null;
     }
     page = createPage();

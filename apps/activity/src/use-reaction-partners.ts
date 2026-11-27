@@ -5,13 +5,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { useCombatPack } from './combat-pack';
-import {
-  partnersOf,
-  reactionPaint,
-  type PartnerKit,
-  type PartnerLook,
-  type PartnerPaint,
-} from './reaction-partners';
+import { partnersOf, reactionPaint, type PartnerKit, type PartnerPaint } from './reaction-partners';
 
 export interface ReactionPartners {
   /** The creature touched now (the pointer's, else the pinned one), or null. */
@@ -24,7 +18,6 @@ export interface ReactionPartners {
 
 export function useReactionPartners(args: {
   kits: readonly PartnerKit[];
-  look: PartnerLook;
   /** The creature whose card is open (a phone's popover, a drawer): touched while the pointer is on none. */
   pinned: string | null;
   /** Nothing is highlighted (a creature is being carried, a stage is playing). */
@@ -46,12 +39,12 @@ export function useReactionPartners(args: {
     wasOff.current = off;
   }, [off]);
   const touched = args.off === true ? null : (hover ?? args.pinned);
-  const { kits, look } = args;
+  const { kits } = args;
   const pack = useCombatPack();
   const partners = useMemo(() => {
     const kit = touched === null ? undefined : kits.find((k) => k.id === touched);
     return kit === undefined ? new Map() : partnersOf(kit, kits, pack);
   }, [kits, touched, pack]);
-  const paint = useMemo(() => reactionPaint(look, touched, partners), [look, touched, partners]);
+  const paint = useMemo(() => reactionPaint(touched, partners), [touched, partners]);
   return { touched, touch, paint };
 }
