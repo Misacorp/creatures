@@ -39,16 +39,16 @@ import { sceneGeometry } from './SceneFrame';
 
 /** A day's lineup as the fixtures have it: two single events and a team event. */
 const THREE: StallEvent[] = [
-  { id: 'melon-run', team: 1 },
-  { id: 'pepper-panic', team: 1 },
-  { id: 'log-carry', team: 3 },
+  { id: 'melon-run', team: 1, name: 'Melon Run' },
+  { id: 'pepper-panic', team: 1, name: 'Pepper Panic' },
+  { id: 'log-carry', team: 3, name: 'Log Carry' },
 ];
 /** A Wednesday: four events, the bonus one a team event too. */
 const FOUR: StallEvent[] = [
-  { id: 'shark-derby', team: 1 },
-  { id: 'sauna-showdown', team: 1 },
-  { id: 'floe-sumo', team: 1 },
-  { id: 'bucket-brigade', team: 3 },
+  { id: 'shark-derby', team: 1, name: 'Shark Derby' },
+  { id: 'sauna-showdown', team: 1, name: 'Sauna Showdown' },
+  { id: 'floe-sumo', team: 1, name: 'Floe Sumo' },
+  { id: 'bucket-brigade', team: 3, name: 'Bucket Brigade' },
 ];
 const NAMES: Record<string, string> = {
   'melon-run': 'Melon Run',
@@ -196,7 +196,7 @@ describe('the Fairground canvas: the layout', () => {
     expect(wide.rules.y + wide.rules.h).toBe(wide.tent.y + wide.tent.h);
     expect(wide.prize.y + wide.prize.h).toBe(wide.tent.y + wide.tent.h);
     const narrow = sceneGeometry(300, 800, 2);
-    expect(asideFits(narrow.W)).toBe(false);
+    expect(asideFits(narrow.W, narrow.s)).toBe(false);
     const flow = fairLayout(narrow, THREE);
     expect(flow.aside).toBe(false);
     expect(flow.prize.y).toBeGreaterThan(flow.tent.y + flow.tent.h);
@@ -346,5 +346,58 @@ describe('the Fairground canvas: rosettes and the drawing', () => {
       expect(Number.isFinite(p.x) && Number.isFinite(p.y)).toBe(true);
     }
     expect(PRIZE.w).toBe(64);
+  });
+});
+
+describe('the Fairground canvas: every stall fits above the tray on a phone', () => {
+  /** The valley's HUD over the scene and the one-row tray under it (CSS px; the Fairground's tray is one row, as the Cave's). */
+  const HUD = 46;
+  const TRAY = 94;
+  const FIVE: StallEvent[] = [
+    { id: 'a', team: 1, name: 'Melon Run' },
+    { id: 'b', team: 1, name: 'Pepper Panic' },
+    { id: 'c', team: 1, name: 'Sauna Showdown' },
+    { id: 'd', team: 1, name: 'Floe Sumo' },
+    { id: 'e', team: 3, name: 'Bucket Brigade' },
+  ];
+  const PHONES: [number, number][] = [
+    [360, 640],
+    [390, 844],
+    [412, 915],
+    [412, 780],
+  ];
+
+  it('keeps every target, its plate, the tent, Rules and the Prize Stall inside the space above the tray, clear of the buttons', () => {
+    for (const lineup of [THREE, FOUR, FIVE])
+      for (const [w, h] of PHONES) {
+        const sceneH = h - HUD - TRAY;
+        const s = fairScale(w, sceneH, lineup);
+        const g = sceneGeometry(w, sceneH, s);
+        const lay = fairLayout(g, lineup);
+        const where = `${String(w)}x${String(h)}, ${String(lineup.length)} events, scale ${String(s)}`;
+        const things = [
+          { box: lay.tent, text: 'Show Tue 13:40' },
+          { box: lay.prize, text: 'Opens Wed 13:37' },
+          { box: lay.rules, text: 'Rules' },
+          ...lineup.map((e) => ({ box: lay.stalls[e.id] as Box, text: e.name ?? e.id })),
+        ];
+        for (const { box, text } of things) {
+          const pw = plateWidth(text, s);
+          const plateX = box.x + Math.floor(box.w / 2) - Math.floor(pw / 2);
+          expect(box.x, where).toBeGreaterThanOrEqual(0);
+          expect(box.x + box.w, where).toBeLessThanOrEqual(g.W);
+          expect(plateX, where).toBeGreaterThanOrEqual(0);
+          expect(plateX + pw, where).toBeLessThanOrEqual(g.W);
+          expect(box.y, where).toBeGreaterThanOrEqual(lay.band);
+          expect(box.y + box.h + 1 + plateRows(s), where).toBeLessThanOrEqual(g.H);
+        }
+      }
+  });
+
+  it('uses the lower grandstand and the smallest scale only when the window needs them', () => {
+    const roomy = fairLayout(sceneGeometry(412, 915 - HUD - TRAY, 2), THREE);
+    expect(roomy.standH).toBe(STAND_H);
+    const tight = geometry(360, 640 - HUD - TRAY, FIVE);
+    expect(tight.s).toBe(SCALE_MIN);
   });
 });

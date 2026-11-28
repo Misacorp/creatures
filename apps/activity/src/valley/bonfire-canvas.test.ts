@@ -12,6 +12,7 @@ import {
   groundArea,
   groundBlocks,
   modeFor,
+  resettlePlaced,
   settleOnGround,
 } from './bonfire-canvas';
 import { fireSpots, FIRE_BOX, GRAND_BOX, GROUND_MARGIN, moreSpot } from './bonfire-cast';
@@ -376,5 +377,40 @@ describe('the Bonfire canvas: the ground (Misa, 2026-11-16: creatures floated ab
       expect(near).not.toEqual(other);
       expect(settleOnGround(other, area, [], [other], g.s)).toEqual(near);
     }
+  });
+});
+
+describe('the Bonfire canvas: a hand-placed creature after the seats turn over', () => {
+  const g = geometry(1920, 1080, false, true);
+  const lay = bonfireLayout(g, false, true);
+  const area = groundArea(g, lay.box);
+
+  it('keeps a spot nobody sits near, and moves one a seat now lands on to the nearest free spot', () => {
+    const away = { id: 'a', x: area.x + 4, y: area.y + 4 };
+    const seat = { x: lay.box.x + 20, y: lay.box.y + 64 };
+    const calm = resettlePlaced([away], [seat], area, [], g.s);
+    expect(calm['a']).toEqual({ x: away.x, y: away.y });
+    // The next hour a seat comes up where "b" was put: "b" gives way, a plate's gap off the seat, and stays on the ground.
+    const clash = resettlePlaced([{ id: 'b', ...seat }], [seat], area, [], g.s);
+    expect(clash['b']).not.toEqual(seat);
+    expect(clash['b']?.y).toBeGreaterThanOrEqual(area.y);
+    // The same seats give the same spots.
+    expect(resettlePlaced([{ id: 'b', ...seat }], [seat], area, [], g.s)).toEqual(clash);
+  });
+
+  it('never leaves two hand-placed creatures on one spot either', () => {
+    const at = { x: lay.box.x + 20, y: lay.box.y + 64 };
+    const out = resettlePlaced(
+      [
+        { id: 'a', ...at },
+        { id: 'b', ...at },
+      ],
+      [],
+      area,
+      [],
+      g.s,
+    );
+    expect(out['a']).toEqual(at);
+    expect(out['b']).not.toEqual(at);
   });
 });

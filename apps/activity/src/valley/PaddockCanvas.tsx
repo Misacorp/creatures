@@ -437,6 +437,7 @@ export function PaddockCanvas({
               creatures={ordered}
               input={trayInput}
               label="Your creatures"
+              tapLabel="Opens its page."
               onPick={(id) => {
                 setRight({ kind: 'creature', id, step: 'hub', from: null });
               }}

@@ -366,3 +366,29 @@ export function settleOnGround(
   }
   return start;
 }
+
+/**
+ * Where the creatures a hand put down stand once the seats are as they are now. The hourly seat rotation moves who sits where, so a
+ * seat can come up under a creature a hand put there; each hand-placed creature (`placed`, in the order given, each a top-left in
+ * scene pixels) keeps its spot unless it is now too close to a seated creature (`seated`) or to one placed before it, and is then
+ * settled to the nearest free spot (`settleOnGround`). Pure, so the same seats and drops always give the same spots.
+ */
+export function resettlePlaced(
+  placed: readonly { id: string; x: number; y: number }[],
+  seated: readonly { x: number; y: number }[],
+  area: Rect,
+  blocks: readonly Rect[],
+  s: number,
+): Record<string, { x: number; y: number }> {
+  const gap = plateGap(s);
+  const standing: { x: number; y: number }[] = [...seated];
+  const out: Record<string, { x: number; y: number }> = {};
+  for (const want of placed) {
+    const at = standing.some((o) => crowded(o, want, gap))
+      ? settleOnGround(want, area, blocks, standing, s)
+      : { x: want.x, y: want.y };
+    out[want.id] = at;
+    standing.push(at);
+  }
+  return out;
+}

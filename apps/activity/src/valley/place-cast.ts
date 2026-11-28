@@ -9,6 +9,7 @@
  * - Arena: the raid party the player placed, and the week's boss, once the raid view has loaded on the map.
  * - Fairground: the creatures entered in today's Games, a group for each event.
  * - Paddock: the creatures at home (they wander; the map shows the same eight), and the waiting catches at the gate.
+ * (The Signpost and the Forge are canvases and have no cast.)
  *
  * Positions are scene pixels from the top-left of the place's art, a creature's own top-left (16 x 16).
  */
@@ -21,36 +22,20 @@ import { isAtHome } from './tray-state';
 import type { PlaceBubble } from './place-state';
 import { bubbleAt, raidTiming } from './place-state';
 import { commonsOf, percentFilled, placeOf } from './commons-view';
-import { forgeCalm } from './forge-view';
 import { scaffoldSteps } from './scaffold';
-import { placeName, scoutsOut, signpostCalm } from './signpost-view';
 import type { PlaceId } from './valley-art';
 import type { Rect } from './valley-art';
 
 /**
- * The places that have a scene of their own over today's page. The Signpost's and the Forge's are drawn only with the valley's
- * systems on (the scouts and the smiths stand in them; `ValleyFrame` checks).
+ * The places that have a scene of their own over today's page. The Signpost and the Forge are canvases (`SignpostCanvas`,
+ * `ForgeCanvas`) and have none.
  */
-export const CAST_PLACES = [
-  'house',
-  'cave',
-  'arena',
-  'fair',
-  'paddock',
-  'signpost',
-  'forge',
-] as const;
+export const CAST_PLACES = ['house', 'cave', 'arena', 'fair', 'paddock'] as const;
 export type CastPlace = (typeof CAST_PLACES)[number];
 
-/**
- * The places that are a canvas (`valley/PlaceCanvas.tsx`): their scene fills the page and is drawn by the place itself (the Forge's
- * is `ForgeCanvas`), so the frame draws no band scene above their page. Their cast is still the same data (`castFor`).
- */
-export const CANVAS_PLACES: readonly string[] = ['forge', 'signpost'];
-
-/** Whether the frame draws a band scene above this place's page: the places with a cast that are not a canvas. */
+/** Whether the frame draws a band scene above this place's page: the places with a cast. */
 export function hasScene(id: PlaceId): id is CastPlace {
-  return (CAST_PLACES as readonly string[]).includes(id) && !CANVAS_PLACES.includes(id);
+  return (CAST_PLACES as readonly string[]).includes(id);
 }
 
 /** A creature's sprite is 16 x 16 scene pixels. */
@@ -373,115 +358,6 @@ function scaffoldOf(input: CastInput, place: string): number {
   return p?.state === 'open' ? scaffoldSteps(percentFilled(p) / 100) : 0;
 }
 
-// --- Signpost ---
-
-/** The scouts stand this far apart sideways in front of the signpost (scene pixels). */
-const SCOUT_STEP = 24;
-
-/**
- * The scouts at their seats in front of the signpost, in the order the seats were bought, each saying where it is out. A free
- * seat shows nobody (the page under the scene says it is free). The scene's one action is the next step: take the first seat,
- * or post a scout to a free seat; else a calm line of how many are out.
- */
-function signpostCast(input: CastInput, art: Size): Pick<Cast, 'stands' | 'act'> {
-  const visit = input.visit;
-  if (visit == null) return { stands: [], act: { kind: 'calm', line: '' } };
-  const scouts = visit.seats.flatMap((seat) => {
-    const creature = input.creatures.find((c) => c.id === seat.creatureId);
-    return creature === undefined
-      ? []
-      : [{ creature, where: `scouting at ${placeName(seat.destination)}` }];
-  });
-  // The helper on the Signpost's communal seat stands with them (V-COM-6): it works on the road.
-  const helper = helperOf(input, 'signpost');
-  if (helper !== undefined) {
-    scouts.push({ creature: helper, where: 'helping build the road' });
-  }
-  const spots = row(scouts.length, Math.floor(art.width / 2), art.height - 10, SCOUT_STEP);
-  const stands = scouts.flatMap(({ creature, where }, i) => {
-    const spot = spots[i];
-    return spot === undefined ? [] : [{ creature, x: spot.x, y: spot.y, flip: i % 2 === 1, where }];
-  });
-  if (visit.seats.length === 0 && visit.seatPrices.next !== null) {
-    return {
-      stands,
-      act: {
-        kind: 'step',
-        label: 'Take your first seat',
-        ...(visit.seatPrices.next === 0 ? { detail: 'free' } : {}),
-      },
-    };
-  }
-  const free = visit.seats.filter((s) => s.creatureId === null).length;
-  const posted = new Set(visit.seats.map((s) => s.creatureId));
-  const spare = input.creatures.filter((c) => !posted.has(c.id) && isAtHome(c)).length;
-  if (free > 0 && spare > 0) {
-    return {
-      stands,
-      act: {
-        kind: 'step',
-        label: 'Post a scout',
-        detail: plural(free, 'a seat is free', 'seats are free'),
-      },
-    };
-  }
-  return {
-    stands,
-    act: { kind: 'calm', line: scoutsOut(visit) === 0 ? '' : signpostCalm(visit) },
-  };
-}
-
-// --- Forge ---
-
-/** The smiths stand this far apart sideways in front of the forge (scene pixels). */
-const SMITH_STEP = 24;
-
-/**
- * The smiths at their anvils in front of the forge, in the order the anvils were bought, each saying which anvil. A free anvil shows
- * nobody (the page under the scene says it is free). The scene's one action is the next step: take the first anvil, or post a smith to a
- * free anvil; else a calm line of how many smiths are at work.
- */
-function forgeCast(input: CastInput, art: Size): Pick<Cast, 'stands' | 'act'> {
-  const visit = input.visit;
-  if (visit == null) return { stands: [], act: { kind: 'calm', line: '' } };
-  const smiths = visit.anvils.flatMap((anvil, n) => {
-    const creature = input.creatures.find((c) => c.id === anvil.creatureId);
-    return creature === undefined
-      ? []
-      : [{ creature, where: `smithing at anvil ${String(n + 1)}` }];
-  });
-  // The helper on the Forge's communal seat stands with them (V-COM-6): it hauls for the building.
-  const helper = helperOf(input, 'forge');
-  if (helper !== undefined) smiths.push({ creature: helper, where: 'helping build the Forge' });
-  // Right of the door: the anvil stands at its left, and a smith in front of it would hide it.
-  const spots = row(smiths.length, Math.floor(art.width / 2) + 10, art.height - 10, SMITH_STEP);
-  const stands = smiths.flatMap(({ creature, where }, i) => {
-    const spot = spots[i];
-    return spot === undefined ? [] : [{ creature, x: spot.x, y: spot.y, flip: i % 2 === 1, where }];
-  });
-  if (visit.anvils.length === 0 && visit.anvilPrices.next !== null) {
-    const free = visit.anvilPrices.next.acorns === 0 && visit.anvilPrices.next.scrap === 0;
-    return {
-      stands,
-      act: { kind: 'step', label: 'Take your first anvil', ...(free ? { detail: 'free' } : {}) },
-    };
-  }
-  const free = visit.anvils.filter((a) => a.creatureId === null).length;
-  const posted = new Set(visit.anvils.map((a) => a.creatureId));
-  const spare = input.creatures.filter((c) => !posted.has(c.id) && isAtHome(c)).length;
-  if (free > 0 && spare > 0) {
-    return {
-      stands,
-      act: {
-        kind: 'step',
-        label: 'Post a smith',
-        detail: plural(free, 'an anvil is free', 'anvils are free'),
-      },
-    };
-  }
-  return { stands, act: { kind: 'calm', line: smiths.length === 0 ? '' : forgeCalm(visit) } };
-}
-
 interface Size {
   width: number;
   height: number;
@@ -518,9 +394,5 @@ export function castFor(
       return { ...base, ...fairCast(input, art) };
     case 'paddock':
       return { ...base, ...paddockCast(input, art), scaffold };
-    case 'signpost':
-      return { ...base, ...signpostCast(input, art), scaffold };
-    case 'forge':
-      return { ...base, ...forgeCast(input, art), scaffold };
   }
 }

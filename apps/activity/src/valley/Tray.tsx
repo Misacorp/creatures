@@ -107,6 +107,7 @@ export function TrayCreature({
   onPick,
   drag,
   mark,
+  tapLabel = 'Opens the Paddock.',
 }: {
   creature: Creature;
   input: TrayInput;
@@ -116,6 +117,8 @@ export function TrayCreature({
   drag?: TrayDrag;
   /** The screen's own mark and spoken name; absent: the valley's (`trayBadge`) and "Opens the Paddock.". */
   mark?: TrayMark | undefined;
+  /** What a tap does, said after the valley's label (the places where it is not the Paddock say so). */
+  tapLabel?: string;
 }) {
   const badge = trayBadge(creature, input);
   const sprite = creatureSpriteOrFallback(creature.species);
@@ -125,7 +128,7 @@ export function TrayCreature({
       type="button"
       class={`vy-mon vy-mon-${mark === undefined ? badge.state : mark.state}`}
       data-creature={creature.id}
-      aria-label={mark === undefined ? `${badge.label} Opens the Paddock.` : mark.label}
+      aria-label={mark === undefined ? `${badge.label} ${tapLabel}` : mark.label}
       onClick={(e) => {
         // The click that ends a drag is not a tap.
         if (drag?.consumeClick() === true) {
@@ -190,6 +193,7 @@ export function Tray({
   marks,
   dropId,
   oneRow = false,
+  tapLabel,
 }: {
   creatures: readonly Creature[];
   input: TrayInput;
@@ -203,6 +207,8 @@ export function Tray({
   dropId?: string;
   /** Always one row, scrolling sideways behind the arrow when they do not fit (the Cave on a phone, which keeps its scene tall). */
   oneRow?: boolean;
+  /** What a tap on a creature does, for the spoken label of the valley's own marks (default: "Opens the Paddock."). */
+  tapLabel?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [more, setMore] = useState(false);
@@ -250,6 +256,7 @@ export function Tray({
                 onPick(c.id);
               }}
               {...(drag === undefined ? {} : { drag })}
+              {...(tapLabel === undefined ? {} : { tapLabel })}
               {...(marks === undefined ? {} : { mark: marks(c) })}
             />
           ))}
