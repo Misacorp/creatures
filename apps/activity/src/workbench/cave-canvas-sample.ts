@@ -77,9 +77,33 @@ function eventRun(): DungeonRunState {
   };
 }
 
-export function caveSample(state: CaveState): CaveSample {
+/**
+ * Your creatures for the reaction-partner presets: the first place on the mouth is Sproutle (a Guard that marks nothing), the second
+ * Mossback (a Grove Setter), and in the tray Cindle (an Ember Payoff with Leave a Trail: it cashes Grove and Mire and sets Ember),
+ * Pyrelynx (an Ember Payoff) and Coralynx (a Tide Payoff that cashes Cindle's Ember). So a touched creature has partners on the mouth and
+ * in the tray.
+ */
+export const PARTNER_SPECIES = [
+  'sproutle',
+  'mossback',
+  'cindle',
+  'pyrelynx',
+  'coralynx',
+  'thornbuck',
+];
+
+export function withPartnerKits(owned: readonly Creature[]): Creature[] {
+  return owned.map((c, i) => {
+    const species = PARTNER_SPECIES[i];
+    return species === undefined
+      ? c
+      : { ...c, species, ...(species === 'cindle' ? { knack: 'leave-a-trail' } : {}) };
+  });
+}
+
+export function caveSample(state: CaveState, partners = false): CaveSample {
   const roster = canvasSample('placing');
-  const owned = sampleCampCreatures(6);
+  const owned = partners ? withPartnerKits(sampleCampCreatures(6)) : sampleCampCreatures(6);
   const base = sampleToday({
     rules: 2,
     depth: CAVE_DEPTH,

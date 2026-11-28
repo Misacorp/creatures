@@ -7,6 +7,7 @@ import { act } from 'preact/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Creature } from '../api';
 import { sampleRoster } from '../creature-card-sample';
+import { loadCombatPack } from '../combat-pack';
 import { Dungeon } from '../Dungeon';
 import { nodeLabel } from '../dungeon-map';
 import { sampleState } from '../dungeon-map-sample';
@@ -457,5 +458,56 @@ describe('treats', () => {
     expect(enterText(false)).toMatch(/Treats/);
     expect(enterText(true)).not.toMatch(/Treats/);
     expect(enterText(true)).toMatch(/Enter the cave/);
+  });
+});
+
+describe('the reaction partners in the Cave', () => {
+  const drawCave = (state: 'before a run' | 'a fight', touch: string): Page => {
+    const sample = caveSample(state, true);
+    const touched = sample.creatures.find((c) => c.species === touch)?.id;
+    const p = createPage();
+    page = p;
+    Reflect.set(p.document, 'addEventListener', noop);
+    Reflect.set(p.document, 'removeEventListener', noop);
+    p.draw(
+      <CaveCanvas
+        today={sample.today}
+        offset={0}
+        view={sample.view}
+        creatures={sample.creatures}
+        busy={false}
+        error={null}
+        bait={100}
+        treatsOff={false}
+        draft={sample.draft}
+        onDraftChange={noop}
+        onEnter={noop}
+        onAct={noop}
+        onFightDone={noop}
+        onPlaybackDone={noop}
+        onWatch={noop}
+        onRetry={noop}
+        onSeeLast={noop}
+        configure={sample.configure}
+        trayInput={{ trips: [], jobs: null, now: 0 }}
+        start={{ closed: true, ...(touched === undefined ? {} : { touch: touched }) }}
+      />,
+    );
+    return p;
+  };
+
+  it('lights the partners of a touched creature before a run, on the mouth and in the tray', async () => {
+    await loadCombatPack();
+    const p = drawCave('before a run', 'mossback');
+    // Figures and tray creatures have no tile: the others dim, the partners stay full, and no ring or badge is drawn.
+    expect(byClass(p.root, 'partner-dim').length).toBeGreaterThan(0);
+    expect(byClass(p.root, 'partner-badge')).toHaveLength(0);
+  });
+
+  it('lights nothing during a fight, whichever creature is touched', async () => {
+    await loadCombatPack();
+    const p = drawCave('a fight', 'mossback');
+    expect(byClass(p.root, 'partner-badge')).toHaveLength(0);
+    expect(byClass(p.root, 'partner-dim')).toHaveLength(0);
   });
 });

@@ -6,6 +6,7 @@
  * a snapshot. The server's new fields (`v2.playing`, a board creature's `talents` and `gear`) are filled in here. Fixture data only.
  */
 import { gearContent } from '@creatures/game';
+import { getSpecies } from '../game';
 import type { Creature } from '../api';
 import { teamSample } from '../creature-page/team-sample';
 import type { FinaleFeed } from '../raid-canvas/finale-feed';
@@ -196,7 +197,16 @@ function withTeam(view: RaidView, team: readonly Creature[]): RaidView {
             ...v2,
             creatures: v2.creatures.map((e) => {
               const c = bySlot.get(e.slot);
-              return c === undefined ? e : { ...e, creatureId: c.id };
+              // The server sends a board creature's own role and saved Knack: those of the creature that stands there.
+              return c === undefined
+                ? e
+                : {
+                    ...e,
+                    creatureId: c.id,
+                    role: getSpecies(c.species)?.role ?? e.role,
+                    knack: c.knack ?? null,
+                    knackName: null,
+                  };
             }),
             out: v2.out.map((o, i) => {
               const c = team[(i + 2) % team.length];
@@ -219,14 +229,65 @@ function withTeam(view: RaidView, team: readonly Creature[]): RaidView {
   };
 }
 
+/**
+ * What the reaction-partner presets need on the board and in the tray: Sproutle keeps Primed by Pain (a Guard that marks Grove when it intercepts, so it has partners and a reach), Cindle in the tray keeps Leave a Trail (it sets Ember and cashes
+ * Grove and Mire, so it does both), and the last seat of the board (Ann's Magmole, a Support) is Coralynx, a Tide Payoff that cashes
+ * Cindle's Ember. With Mossback (a Grove Setter, yours), Pyrelynx and Jun's Cindle (Ember Payoffs), Ancientshell (a Grove Setter, Ann's)
+ * and the unplaced Cindles in the tray, a touched creature has partners on the board, in the tray and among another player's.
+ */
+function withPartnerKits(view: RaidView, creatures: readonly Creature[]): [RaidView, Creature[]] {
+  const v2 = view.v2;
+  const last = (view.party?.row ?? []).filter((r) => r.creature !== null).at(-1);
+  const trailing = creatures.map((c) =>
+    c.id === 'demo-cindle'
+      ? { ...c, knack: 'leave-a-trail' }
+      : c.id === 'demo-sprout'
+        ? { ...c, knack: 'primed-by-pain' }
+        : c,
+  );
+  if (v2 === undefined || last === undefined || last.creature?.mine === true) {
+    return [view, trailing];
+  }
+  const party = view.party;
+  return [
+    {
+      ...view,
+      ...(party === null
+        ? {}
+        : {
+            party: {
+              ...party,
+              row: party.row.map((r) =>
+                r.slot === last.slot && r.creature !== null
+                  ? { ...r, creature: { ...r.creature, species: 'coralynx', name: 'Coralynx' } }
+                  : r,
+              ),
+            },
+          }),
+      v2: {
+        ...v2,
+        creatures: v2.creatures.map((e) =>
+          e.slot === last.slot
+            ? { ...e, role: 'payoff', knack: null, knackName: null }
+            : e.creatureId === 'demo-sprout'
+              ? { ...e, knack: 'primed-by-pain' }
+              : e,
+        ),
+      },
+    },
+    trailing,
+  ];
+}
+
 export function canvasSample(state: CanvasState): CanvasSample {
-  const { team, creatures, gear, state: gameState } = teamSample();
+  const { team, creatures: owned, gear, state: gameState } = teamSample();
   const realClock =
     state === 'stage playing' || state === 'live finale' || state === 'finale lobby';
   const now = realClock ? Date.now() : raidV2Sample({ ...WEEK, ...OPTIONS[state] }).view.serverNow;
   const options = { ...WEEK, ...OPTIONS[state] };
   const base = raidV2Sample(options).view;
-  let view = withExtras(withTeam(base, team));
+  const [paired, creatures] = withPartnerKits(withExtras(withTeam(base, team)), owned);
+  let view = paired;
   // Stage 1 locks the players: from then on nothing on the board changes. The calendar's next event follows the stages played.
   const locked = options.stagesPlayed > 0;
   const nextEvent =

@@ -1,7 +1,7 @@
 import type { Zone } from '@creatures/engine';
 import type { ComponentChildren, RefObject } from 'preact';
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
-import { laneStates, ownLaneSpan, scrollToSpan, snapToLane } from '../raid-board';
+import { laneStates, openingScroll, ownLaneSpan, scrollToSpan, snapToLane } from '../raid-board';
 import { SlotButton, type SlotModel, type SlotStripProps } from './SlotButton';
 import { CueRail, type CueRailProps } from './CueRail';
 import { useMediaQuery } from '../hooks';
@@ -60,17 +60,34 @@ const LARGE_TILE_SCALE = 3;
 /** The window width from which the Raid screen has two columns: the grid draws its larger tiles. */
 const DESKTOP = '(min-width: 80rem)';
 
-/** Scrolls the board sideways to show lanes `first` to `last` (from 0). */
-function showLanes(scroller: HTMLElement | null, first: number, last: number) {
+/**
+ * Scrolls the board sideways to show lanes `first` to `last` (from 0); with `centred` (a v2 board) it opens on the board's middle
+ * unless those lanes would be off screen there (`openingScroll`). `first` null: no lanes of yours, only the middle.
+ */
+function showLanes(
+  scroller: HTMLElement | null,
+  first: number | null,
+  last: number | null,
+  centred: boolean,
+) {
   if (scroller === null) return;
   const lanes = scroller.querySelectorAll<HTMLElement>('[data-lane]');
-  const a = lanes[first];
-  const b = lanes[last];
-  if (a === undefined || b === undefined) return;
+  const a = first === null ? undefined : lanes[first];
+  const b = last === null ? undefined : lanes[last];
+  if (a === undefined || b === undefined) {
+    if (centred && lanes.length > 0)
+      scroller.scrollTo({
+        left: openingScroll(null, scroller.clientWidth, scroller.scrollWidth),
+        behavior: 'auto',
+      });
+    return;
+  }
   const box = scroller.getBoundingClientRect();
   const left = a.getBoundingClientRect().left - box.left + scroller.scrollLeft;
   const right = b.getBoundingClientRect().right - box.left + scroller.scrollLeft;
-  const target = scrollToSpan(left, right, scroller.clientWidth, scroller.scrollWidth);
+  const target = centred
+    ? openingScroll({ left, right }, scroller.clientWidth, scroller.scrollWidth)
+    : scrollToSpan(left, right, scroller.clientWidth, scroller.scrollWidth);
   const laneLefts = [...lanes].map(
     (l) => l.getBoundingClientRect().left - box.left + scroller.scrollLeft,
   );
@@ -112,9 +129,11 @@ export function RaidBoard(props: RaidBoardProps) {
 
   // Start at your own creatures (once, when the board opens).
   const first = useRef(props.single === undefined ? own : null);
+  const centred = props.v2 === true && props.single === undefined;
   useLayoutEffect(() => {
     if (first.current !== null)
-      showLanes(stripRef.current, first.current.first, first.current.last);
+      showLanes(stripRef.current, first.current.first, first.current.last, centred);
+    else if (centred) showLanes(stripRef.current, null, null, true);
   }, [desktop]);
 
   // On the desktop board: whether lanes continue past the left or right edge (a hard-edged marker, raid-board.css).

@@ -18,7 +18,10 @@ export interface RaidCanvasConfig {
 
 /** The reviewer's picks: plates on your own seats, and on a phone a popover first (a wide window's drawer hides nothing). */
 export function defaultConfig(phone: boolean): RaidCanvasConfig {
-  return { seatPlates: 'mine', creatureTap: phone ? 'popover-first' : 'drawer' };
+  return {
+    seatPlates: 'mine',
+    creatureTap: phone ? 'popover-first' : 'drawer',
+  };
 }
 
 /** What the caller gives: any part left out takes the default. */

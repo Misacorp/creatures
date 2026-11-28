@@ -16,6 +16,7 @@ import {
   laneCount,
   laneStates,
   keepSpanInView,
+  openingScroll,
   ownLaneSpan,
   parseTurnOrder,
   placeOf,
@@ -142,6 +143,26 @@ describe('lanes', () => {
   it('finds your first and last lane, or none', () => {
     expect(ownLaneSpan(['empty', 'mine', 'taken', 'mine', 'empty'])).toEqual({ first: 1, last: 3 });
     expect(ownLaneSpan(['empty', 'taken'])).toBeNull();
+  });
+});
+
+describe('openingScroll', () => {
+  it('opens on the middle of a board that pans while your lanes are on screen there', () => {
+    // A 900 wide board in a 240 window: the middle is 330, showing 330 to 570.
+    expect(openingScroll({ left: 400, right: 460 }, 240, 900)).toBe(330);
+    expect(openingScroll({ left: 330, right: 570 }, 240, 900)).toBe(330);
+  });
+
+  it('falls back to your lanes when the middle would hide them', () => {
+    expect(openingScroll({ left: 0, right: 60 }, 240, 900)).toBe(0);
+    expect(openingScroll({ left: 800, right: 860 }, 240, 900)).toBe(660);
+    expect(openingScroll({ left: 100, right: 300 }, 240, 900)).toBe(80);
+  });
+
+  it('opens on the middle with no lane of yours, and at 0 when the board fits', () => {
+    expect(openingScroll(null, 240, 900)).toBe(330);
+    expect(openingScroll({ left: 10, right: 60 }, 300, 300)).toBe(0);
+    expect(openingScroll(null, 300, 280)).toBe(0);
   });
 });
 

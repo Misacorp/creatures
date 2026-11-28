@@ -1,7 +1,9 @@
 import type { ComponentChildren } from 'preact';
 import { elementClass, shinyPalette } from '../art';
 import { combatGlyph, roleGlyphId } from '../combat-glyphs';
+import { elementName } from '../game';
 import { glyphOrUnknown } from '../glyphs';
+import { partnerWords } from '../reaction-partners';
 import { cssVars } from '../css-vars';
 import { percent } from '../progress-math';
 import { Sprite } from '../sprites/Sprite';
@@ -205,6 +207,7 @@ export function SlotButton(props: SlotButtonProps) {
   if (props.shaking) classes.push('shake');
   classes.push(...cueClasses(props.cue));
   const badge = props.cue?.reaction;
+  const partner = props.cue?.partner;
   const hover = props.onHover;
   const fightLook = c?.v2?.fight;
   // The background pattern: a debuff's red downward arrows win over a boost's yellow upward ones.
@@ -222,7 +225,11 @@ export function SlotButton(props: SlotButtonProps) {
       type="button"
       class={classes.join(' ')}
       data-slot={slot.index}
-      aria-label={slot.ariaLabel}
+      aria-label={
+        partner === undefined
+          ? slot.ariaLabel
+          : `${slot.ariaLabel} ${partnerWords(partner, elementName)}`
+      }
       disabled={props.disabled}
       onPointerDown={
         own === null

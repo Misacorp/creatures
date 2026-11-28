@@ -1,0 +1,19 @@
+/*
+  The reaction-partner highlight (reaction-partners.ts): touch a creature and the creatures that can cash its marks, or set the marks it
+  cashes, keep full strength while everything else recedes (`partner-dim`).
+  - A board seat (a `party-slot`) also wears v1's reaction ring (`cue-react` in slot-cue.css, in the first shared mark's colour via
+    `cueElementClass`), with no name bar: icons and colours, no words. The creature touched wears it too, as in v1.
+  - A tray creature and a Cave figure have no tile: they only dim or stay full.
+  - A seat that carries a board cue (reach, buff, cover, boss target) is not dimmed, so those cues stay readable. The boss-target ring
+    wins over the reaction ring.
+*/
+
+.cave-fig {
+  position: relative;
+}
+
+.party-slot.partner-dim,
+.vy-mon.partner-dim,
+.cave-fig.partner-dim {
+  opacity: 0.4;
+}

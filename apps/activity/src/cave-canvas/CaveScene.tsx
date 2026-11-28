@@ -14,7 +14,12 @@ import { stackLayout, type MapRun } from '../dungeon-map';
 import type { DungeonMapNode, DungeonMapView } from '../dungeon-types';
 import { DungeonMap } from '../DungeonMap';
 import { usePrefersReducedMotion } from '../hooks';
+import { elementName } from '../game';
+import { partnerWords } from '../reaction-partners';
 import { creatureSpriteOrFallback } from '../sprites/creature-sprites';
+import { partnerTouchProps } from '../ui/partner-touch';
+import { partnerClasses } from '../ui/slot-cue';
+import type { TrayPartner } from '../valley/Tray';
 import { Sprite } from '../sprites/Sprite';
 import { Nameplate } from '../ui/Nameplate';
 import { PanHint } from '../ui/PanHint';
@@ -77,16 +82,32 @@ export interface CaveSceneProps {
   team: readonly SceneCreature[] | null;
   onTeamCreature: (id: string, button: HTMLElement) => void;
   mouth: CaveMouth | null;
+  /** The reaction-partner highlight on the standers (the mouth's and the map's): what each is drawn with and where touch is reported. */
+  partner?: TrayPartner | undefined;
   /** A room's fight takes the place of the map. */
   stage?: ComponentChildren;
   hint?: string | null;
 }
 
 /** A creature standing in the scene: its sprite, with a thin HP bar under it when it has any. */
-function Figure({ c, scale }: { c: SceneCreature; scale: number }) {
+function Figure({
+  c,
+  scale,
+  partner,
+}: {
+  c: SceneCreature;
+  scale: number;
+  partner?: TrayPartner | undefined;
+}) {
   const out = c.hp !== undefined && c.hp.current <= 0;
+  const paint = partner?.paint(c.id);
+  const cue = paint?.partner;
+  const classes = ['cave-fig'];
+  if (out) classes.push('ko');
+  if (cue !== undefined) classes.push(...partnerClasses(cue));
+  if (paint?.dim === true) classes.push('partner-dim');
   return (
-    <span class={`cave-fig${out ? ' ko' : ''}`}>
+    <span class={classes.join(' ')}>
       <Sprite sprite={creatureSpriteOrFallback(c.speciesId)} scale={scale} />
       {c.hp !== undefined && (
         <SegmentBar
@@ -101,23 +122,27 @@ function Figure({ c, scale }: { c: SceneCreature; scale: number }) {
   );
 }
 
-/** What a creature button says: text only. */
-const figureLabel = (c: SceneCreature): string =>
-  `${c.name}, level ${String(c.level)}${
+/** What a creature button says: text only (a reaction partner says so). */
+const figureLabel = (c: SceneCreature, partner?: TrayPartner): string => {
+  const cue = partner?.paint(c.id)?.partner;
+  return `${c.name}, level ${String(c.level)}${
     c.hp === undefined
       ? ''
       : c.hp.current <= 0
         ? ', knocked out'
         : `, ${String(c.hp.current)} / ${String(c.hp.max)} HP`
-  }. Opens it.`;
+  }. Opens it.${cue === undefined ? '' : ` ${partnerWords(cue, elementName)}`}`;
+};
 
 /** The team on the room it stands in: a button per creature, one gold plate for all. */
 function TeamOnMap({
   team,
   onCreature,
+  partner,
 }: {
   team: readonly SceneCreature[];
   onCreature: (id: string, button: HTMLElement) => void;
+  partner?: TrayPartner | undefined;
 }) {
   return (
     <span class="cave-team" role="group" aria-label="Your team, standing here">
@@ -126,12 +151,13 @@ function TeamOnMap({
           key={c.id}
           type="button"
           class="cave-creature vy-stand-btn"
-          aria-label={figureLabel(c)}
+          aria-label={figureLabel(c, partner)}
+          {...partnerTouchProps(partner?.touch, c.id)}
           onClick={(event) => {
             onCreature(c.id, event.currentTarget);
           }}
         >
-          <Figure c={c} scale={2} />
+          <Figure c={c} scale={2} partner={partner} />
         </button>
       ))}
       <span class="dmap-plate cave-team-plate" aria-hidden="true">
@@ -147,7 +173,15 @@ function TeamOnMap({
  * The cave mouth (the art's variant C) with the team standing on its ground strip, feet on row 41, and the Enter plate under row 44.
  * The picture is drawn at a whole-number scale; the art's anchors (opening x 15 to 49, strip rows 38 to 43) are the stylesheet's.
  */
-function Mouth({ mouth, scale }: { mouth: CaveMouth; scale: number }) {
+function Mouth({
+  mouth,
+  scale,
+  partner,
+}: {
+  mouth: CaveMouth;
+  scale: number;
+  partner?: TrayPartner | undefined;
+}) {
   const setup = mouth.mode === 'setup';
   const size = caveSize('cave-mouth');
   return (
@@ -180,7 +214,8 @@ function Mouth({ mouth, scale }: { mouth: CaveMouth; scale: number }) {
                 type="button"
                 class="cave-creature vy-stand-btn"
                 data-creature={c.id}
-                aria-label={figureLabel(c)}
+                aria-label={figureLabel(c, partner)}
+                {...partnerTouchProps(partner?.touch, c.id)}
                 disabled={mouth.disabled && setup}
                 onClick={(event) => {
                   if (mouth.drag?.consumeClick() === true) {
@@ -197,7 +232,7 @@ function Mouth({ mouth, scale }: { mouth: CaveMouth; scale: number }) {
                       },
                     })}
               >
-                <Figure c={c} scale={scale} />
+                <Figure c={c} scale={scale} partner={partner} />
               </button>
             )}
           </li>
@@ -241,6 +276,7 @@ function MapBox({
   onRoom,
   team,
   onTeamCreature,
+  partner,
 }: Pick<
   CaveSceneProps,
   | 'map'
@@ -252,6 +288,7 @@ function MapBox({
   | 'onRoom'
   | 'team'
   | 'onTeamCreature'
+  | 'partner'
 > & { map: DungeonMapView }) {
   const wide = useWide();
   const reduced = usePrefersReducedMotion();
@@ -340,7 +377,11 @@ function MapBox({
                   decor: decorOf,
                   ...(team === null
                     ? {}
-                    : { team: <TeamOnMap team={team} onCreature={onTeamCreature} /> }),
+                    : {
+                        team: (
+                          <TeamOnMap team={team} onCreature={onTeamCreature} partner={partner} />
+                        ),
+                      }),
                 }}
               />
             </div>
@@ -392,7 +433,7 @@ export function CaveScene(p: CaveSceneProps) {
         <div class="rc-stage">{p.stage}</div>
       ) : (
         <>
-          {p.mouth !== null && <Mouth mouth={p.mouth} scale={2} />}
+          {p.mouth !== null && <Mouth mouth={p.mouth} scale={2} partner={p.partner} />}
           {p.map === null ? (
             <p class="muted cave-nomap">The map is not here yet.</p>
           ) : (
@@ -406,6 +447,7 @@ export function CaveScene(p: CaveSceneProps) {
               onRoom={p.onRoom}
               team={p.team}
               onTeamCreature={p.onTeamCreature}
+              partner={p.partner}
             />
           )}
           {p.hint !== undefined && p.hint !== null && (

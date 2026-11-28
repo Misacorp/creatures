@@ -2,7 +2,8 @@
  * The raid canvas drawn in the fake DOM (a phone: no `matchMedia`, so a panel is its own page): the now line, which panel opens for which
  * tap, the seat plates choice, and the outcome held until a stage ends. The decisions themselves are proved in `raid-canvas-logic.test.ts`.
  */
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { loadCombatPack } from '../combat-pack';
 import { creatureName } from '../game';
 import {
   find,
@@ -54,6 +55,7 @@ function draw(
     view?: RaidView;
     now?: number;
     reveal?: RaidCanvasProps['reveal'];
+    start?: RaidCanvasProps['start'];
   } = {},
 ): Page {
   const p = createPage();
@@ -69,6 +71,7 @@ function draw(
       trayInput={{ trips: [], jobs: null, now: sample.now }}
       config={options.config ?? { creatureTap: 'drawer', seatPlates: 'mine' }}
       reveal={options.reveal}
+      start={options.start}
       onOpenPage={noop}
       actions={{
         intent: noop,
@@ -91,6 +94,44 @@ const seat = (p: Page, slot: number): FakeElement => {
 const pageLabel = (p: Page): string | null =>
   byClass(p.root, 'pc-page')[0]?.getAttribute('aria-label') ?? null;
 const sampleOf = (state: CanvasState): CanvasSample => canvasSample(state);
+
+describe('the reaction partners of a touched creature', () => {
+  beforeAll(async () => {
+    await loadCombatPack();
+  });
+
+  const config: Partial<RaidCanvasConfig> = { creatureTap: 'drawer', seatPlates: 'mine' };
+
+  it('a touched setter: its partner seats wear the reaction ring in the mark colour with no name bar, the rest dim', () => {
+    const p = draw(sampleOf('placing'), { config, start: { touch: 'demo-moss' } });
+    const rings = byClass(p.root, 'cue-react');
+    // Mossback (touched), Pyrelynx and Jun's Cindle on the board.
+    expect(rings.length).toBeGreaterThanOrEqual(3);
+    for (const seat of rings) {
+      expect(String(seat.getAttribute('class'))).toContain('party-slot');
+      expect(String(seat.getAttribute('class'))).toContain('cue-el-grove');
+    }
+    expect(byClass(p.root, 'slot-cue-badge')).toHaveLength(0);
+    expect(byClass(p.root, 'partner-badge')).toHaveLength(0);
+    expect(byClass(p.root, 'partner-dim').length).toBeGreaterThan(0);
+    for (const seat of byClass(p.root, 'partner-dim')) {
+      expect(String(seat.getAttribute('class'))).not.toContain('cue-react');
+    }
+  });
+
+  it('the tray has no tile: a partner stays full strength, a non-partner dims, and neither wears the ring', () => {
+    const p = draw(sampleOf('placing'), { config, start: { touch: 'demo-moss' } });
+    const tray = find(p.root, (el) => el.getAttribute('data-creature') === 'demo-cindle')[0];
+    expect(String(tray?.getAttribute('class'))).not.toContain('partner-dim');
+    expect(String(tray?.getAttribute('class'))).not.toContain('cue-react');
+  });
+
+  it('nothing is lit when no creature is touched', () => {
+    const p = draw(sampleOf('placing'), { config });
+    expect(byClass(p.root, 'cue-react')).toHaveLength(0);
+    expect(byClass(p.root, 'partner-dim')).toHaveLength(0);
+  });
+});
 
 describe('the raid canvas', () => {
   it('shows the now line as a polite live region on the scene', () => {

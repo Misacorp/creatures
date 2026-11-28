@@ -318,10 +318,16 @@ describe('a stage playing out: the outcome is held until it ends', () => {
 
 describe('the config props', () => {
   it('default to the reviewer’s picks on a phone', () => {
-    expect(defaultConfig(true)).toEqual({ seatPlates: 'mine', creatureTap: 'popover-first' });
+    expect(defaultConfig(true)).toEqual({
+      seatPlates: 'mine',
+      creatureTap: 'popover-first',
+    });
   });
   it('a wide window opens the drawer at once', () => {
-    expect(defaultConfig(false)).toEqual({ seatPlates: 'mine', creatureTap: 'drawer' });
+    expect(defaultConfig(false)).toEqual({
+      seatPlates: 'mine',
+      creatureTap: 'drawer',
+    });
   });
   it('a caller’s value wins, a missing one takes the default', () => {
     expect(resolveConfig(true, { seatPlates: 'all' })).toEqual({

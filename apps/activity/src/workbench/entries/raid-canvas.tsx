@@ -25,6 +25,27 @@ const OPEN = [
   'log',
 ] as const;
 
+const TOUCH = ['none', 'a setter', 'a payoff', 'a creature that does both'] as const;
+
+/**
+ * The creature a preset starts touched (the reaction partners): a setter (your Mossback, on the board), a payoff (Mira's Pyrelynx, on the
+ * board) or one that does both (Cindle with Leave a Trail, in your tray: its partners are on the board, another player's among them).
+ */
+function touchOf(touch: string, view: RaidView): string | undefined {
+  switch (touch) {
+    case 'a setter':
+      return 'demo-moss';
+    case 'a payoff': {
+      const seat = (view.party?.row ?? []).find((s) => s.creature?.species === 'pyrelynx');
+      return view.v2?.creatures.find((e) => e.slot === seat?.slot)?.creatureId;
+    }
+    case 'a creature that does both':
+      return 'demo-cindle';
+    default:
+      return undefined;
+  }
+}
+
 const stateOf = (p: Props): CanvasState =>
   CANVAS_STATES.find((s) => s === str(p, 'state')) ?? 'placing';
 
@@ -120,7 +141,12 @@ function CanvasDemo({ p }: { p: Props }) {
   const seatPlates = str(p, 'seatPlates');
   const creatureTap = str(p, 'creatureTap');
   const open = str(p, 'open');
-  const start = useMemo(() => startOf(open, sample.view), [open, sample]);
+  const touch = str(p, 'touch');
+  const start = useMemo(() => {
+    const touched = touchOf(touch, sample.view);
+    const opened = startOf(open, sample.view);
+    return touched === undefined ? opened : { ...opened, touch: touched };
+  }, [open, touch, sample]);
   const sampleReveal = sample.reveal;
   const revealCard: RaidCanvasProps['reveal'] =
     sampleReveal === undefined
@@ -146,7 +172,7 @@ function CanvasDemo({ p }: { p: Props }) {
       <div class="vy-page">
         <div>
           <RaidCanvas
-            key={`${state}-${open}-${seatPlates}-${creatureTap}`}
+            key={`${state}-${open}-${seatPlates}-${creatureTap}-${touch}`}
             view={view}
             serverNow={sample.now}
             finale={sample.finale}
@@ -185,15 +211,22 @@ const raidCanvas: Entry = {
   file: 'apps/activity/src/raid-canvas/RaidCanvas.tsx',
   group: 'Creatures & game pieces',
   description:
-    "The raid as a place (combat v2): one scene that keeps its size (the boss with its HP bar, the board of seats under it), a now line as its caption (the only text: an incoming swap request, a stage playing, what is left to place, the next time), up to three plates on its frame (Weekend, Boss, Players; Log while a stage plays) that open the left drawer, and, while you can place, your creatures in a tray under the scene (drag one to a seat, drop one on the tray to take it off the board, tap to open it) and the boss's moves as small glyphs beside it. A tap on a seat, a move, a swap mark or the now line opens the right drawer: your creature (the configurator), another player's (read-only: owner, level, role, Knack, talents, worn gear, Ask to swap), a seat (pick a creature), a boss move, a swap request, the finale order. Stages play on the scene as they happen; the finale draws on the same scene with its order in a strip under it. `state` picks the moment; `open` starts with a drawer open; `seatPlates` and `creatureTap` are Misa's two open choices (on a phone `popover-first` shows a popover and lights the reach first, with Open for the full view).",
+    "The raid as a place (combat v2): one scene that keeps its size (the boss with its HP bar, the board of seats under it), a now line as its caption (the only text: an incoming swap request, a stage playing, what is left to place, the next time), up to three plates on its frame (Weekend, Boss, Players; Log while a stage plays) that open the left drawer, and, while you can place, your creatures in a tray under the scene (drag one to a seat, drop one on the tray to take it off the board, tap to open it) and the boss's moves as small glyphs beside it. A tap on a seat, a move, a swap mark or the now line opens the right drawer: your creature (the configurator), another player's (read-only: owner, level, role, Knack, talents, worn gear, Ask to swap), a seat (pick a creature), a boss move, a swap request, the finale order. Stages play on the scene as they happen; the finale draws on the same scene with its order in a strip under it. `state` picks the moment; `open` starts with a drawer open; `seatPlates` and `creatureTap` are Misa's two open choices (on a phone `popover-first` shows a popover and lights the reach first, with Open for the full view). Touching a creature (a pointer over it, the keyboard on it, its card open) lights its reaction partners on the board and in the tray: the creatures that can cash a mark it sets, or set a mark it cashes, from their kits alone. `touch` starts with one touched. On a seat the partners wear v1's reaction ring in the mark's colour (no name bar) and the rest dim; in the tray the rest only dim.",
   covers: [],
   controls: {
     state: { kind: 'select', options: CANVAS_STATES },
     open: { kind: 'select', options: OPEN },
     seatPlates: { kind: 'select', options: ['mine', 'all'] },
     creatureTap: { kind: 'select', options: ['drawer', 'popover-first'] },
+    touch: { kind: 'select', options: TOUCH },
   },
-  defaults: { state: 'placing', open: 'none', seatPlates: 'mine', creatureTap: 'drawer' },
+  defaults: {
+    state: 'placing',
+    open: 'none',
+    seatPlates: 'mine',
+    creatureTap: 'drawer',
+    touch: 'none',
+  },
   presets: [
     { name: 'Before the weekend (nothing placed)', props: { state: 'before the weekend' } },
     { name: 'Placing, a swap request waiting', props: { state: 'placing' } },
@@ -216,6 +249,10 @@ const raidCanvas: Entry = {
     { name: 'Log drawer (a stage playing)', props: { state: 'stage playing', open: 'log' } },
     { name: 'Choice: plates on every seat', props: { seatPlates: 'all' } },
     { name: 'Choice: a tap shows a popover first', props: { creatureTap: 'popover-first' } },
+    ...TOUCH.slice(1).map((touch) => ({
+      name: `Partners: ${touch} touched`,
+      props: { touch },
+    })),
   ],
   render: (p) => <CanvasDemo p={p} />,
 };

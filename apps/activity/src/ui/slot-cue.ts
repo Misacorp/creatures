@@ -29,6 +29,7 @@ import {
   type AffectSlot,
   type GuardReach,
 } from '@creatures/engine';
+import type { PartnerCue, PartnerPaint } from '../reaction-partners';
 
 /** What a reaction cue says about a tile. */
 export interface ReactionCue {
@@ -42,8 +43,8 @@ export interface ReactionCue {
   element: Element;
 }
 
-/** What is drawn on one tile. */
-export interface SlotCue {
+/** What is drawn on one tile. `partner` and `dim` are the reaction-partner highlight (`reaction-partners.ts`). */
+export interface SlotCue extends PartnerPaint {
   /** A Support's buff reaches this tile. */
   buff?: true;
   /** A Guard would take this tile's hits. */
@@ -177,6 +178,14 @@ export function cueElementClass(element: string): string {
   return ELEMENT_SLUG.test(element) ? `cue-el-${element}` : '';
 }
 
+/**
+ * The classes a creature gets for being a reaction partner (or the one touched): who it is. Shared by the board's tiles, the tray and the
+ * Cave's standers. The reaction ring is not here: only a tile wears it (`cueClasses`).
+ */
+export function partnerClasses(cue: PartnerCue): string[] {
+  return [`partner-is-${cue.who}`];
+}
+
 /** The classes a tile gets for its cue (empty for no cue). */
 export function cueClasses(cue: SlotCue | undefined): string[] {
   if (cue === undefined) return [];
@@ -188,6 +197,23 @@ export function cueClasses(cue: SlotCue | undefined): string[] {
   if (cue.cover === true) out.push('cue-cover');
   if (cue.hit !== undefined) out.push('cue-hit');
   if (cue.plain === true) out.push('cue-plain');
+  if (cue.partner !== undefined) {
+    out.push(...partnerClasses(cue.partner));
+    // A tile wears v1's reaction ring (`cue-react`, in the first shared mark's colour) with no name bar. A tile that already has its own
+    // reaction cue keeps it, and the boss-target ring (`cue-hit`) wins over this one; reach, buff and plain shows alongside it.
+    const first = cue.partner.marks[0];
+    if (first !== undefined && cue.reaction === undefined && cue.hit === undefined) {
+      out.push('cue-react', cueElementClass(first));
+    }
+  }
+  // The recede look never fades a seat that carries a board cue (reach, buff, cover, boss target, reaction): those must stay readable.
+  const boardCue =
+    cue.reaction !== undefined ||
+    cue.buff === true ||
+    cue.cover === true ||
+    cue.hit !== undefined ||
+    cue.plain === true;
+  if (cue.dim === true && !boardCue) out.push('partner-dim');
   return out.filter((c) => c !== '');
 }
 

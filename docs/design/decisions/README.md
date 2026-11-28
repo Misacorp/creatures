@@ -262,6 +262,7 @@ Superseded: 1 entry (see the topic file).
 
 [raids.md](raids.md): Raid schedule, parties and joining, bosses and the raid curve, the live finale, raid board and summaries, raid Discord posts.
 
+- 2026-11-24 The raid board is centred; a board too wide for the screen opens centred unless your column would be off screen
 - 2026-11-17 \[Misa\] Raid screen picks: own seat plates, phone card first, stage rewards when the replay ends
 - 2026-11-16 The raid screen is a canvas behind combat v2 (client build) (amended)
 - 2026-11-04 Combat v2 dungeon runs read no weather at all \[Misa\]
@@ -509,6 +510,8 @@ Superseded: 1 entry (see the topic file).
 
 [ui.md](ui.md): Navigation and the frame, Home and the notice board, type scale, shared components, look and feel rules that apply across screens.
 
+- 2026-11-27 \[Misa\] Reaction partners: dim the rest, partners wear v1's reaction ring
+- 2026-11-26 Touching a creature lights its reaction partners, from kits alone \[Misa\] (amended)
 - 2026-11-17 The House place is a canvas: the player's house is the scene
 - 2026-11-16 \[Misa\] The item tile's slot icon sits beside the level on one bottom strip
 - 2026-11-16 \[Misa\] Every picture on a review page enlarges on tap
