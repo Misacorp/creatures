@@ -112,6 +112,7 @@ export function TrayCreature({
   drag,
   mark,
   partner,
+  tapLabel = 'Opens the Paddock.',
 }: {
   creature: Creature;
   input: TrayInput;
@@ -123,11 +124,13 @@ export function TrayCreature({
   mark?: TrayMark | undefined;
   /** Given: the creature shows the reaction-partner highlight (`paint`) and tells the screen when it is touched (`touch`). */
   partner?: TrayPartner | undefined;
+  /** What a tap does, said after the valley's label (the places where it is not the Paddock say so). */
+  tapLabel?: string;
 }) {
   const badge = trayBadge(creature, input);
   const paint = partner?.paint(creature.id);
   const cue = paint?.partner;
-  const label = mark === undefined ? `${badge.label} Opens the Paddock.` : mark.label;
+  const label = mark === undefined ? `${badge.label} ${tapLabel}` : mark.label;
   const sprite = creatureSpriteOrFallback(creature.species);
   const away = mark === undefined && badge.state === 'trip';
   return (
@@ -212,6 +215,7 @@ export function Tray({
   dropId,
   oneRow = false,
   partner,
+  tapLabel,
 }: {
   creatures: readonly Creature[];
   input: TrayInput;
@@ -227,6 +231,8 @@ export function Tray({
   oneRow?: boolean;
   /** Given: touching a creature (the pointer over it, the keyboard focus on it) lights its reaction partners here and on the scene. */
   partner?: TrayPartner | undefined;
+  /** What a tap on a creature does, for the spoken label of the valley's own marks (default: "Opens the Paddock."). */
+  tapLabel?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [more, setMore] = useState(false);
@@ -274,6 +280,7 @@ export function Tray({
                 onPick(c.id);
               }}
               {...(drag === undefined ? {} : { drag })}
+              {...(tapLabel === undefined ? {} : { tapLabel })}
               {...(marks === undefined ? {} : { mark: marks(c) })}
               {...(partner === undefined ? {} : { partner })}
             />

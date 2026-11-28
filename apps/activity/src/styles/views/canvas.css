@@ -85,6 +85,11 @@
   gap: 1.75rem;
 }
 
+.pc-tools.pc-tools-row {
+  flex-direction: row;
+  gap: 1.5rem;
+}
+
 .pc-tools .pc-tool {
   position: relative;
   top: auto;

@@ -4,6 +4,14 @@ The valley and peaceful systems overhaul planned in docs/design/valley/: job pos
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-23: The Fairground fits a phone: lower grandstand, buttons in a clear band, one-row tray
+
+ID: `2026-11-24-the-fairground-fits-a-phone-lower` · Status: current
+
+**Decision.** Misa's staging playtest (2026-11-23): on a phone every stall with its name plate, the tent, Rules and the Prize Stall must fit above the tray with no panning. Five changes, each number in one place (`valley/fairground-canvas.ts`). The Fairground's tray is one row (`oneRow`, as the Cave's) and scrolls sideways past five creatures. The two corner buttons lie in a row (`.pc-tools-row`) over a band of bare grass at the top (`TOOLS_PX`, 68 CSS px) with the grandstand under it, so they cover no art. A window too short for the whole grandstand draws only its lower 24 rows (`STAND_SHORT`). The tent, Rules and the Prize Stall share one row down to a scene 180 scene pixels wide (the gap between them shrinks from 18 to 8). The scale goes down to 1 (`SCALE_MIN`) for a small phone with four or five stalls, the one scale where they all fit. A stall's slot is as wide as its plate, so plates never meet at scale 1. Not changed: the tray's centring (the raid's request was for the raid board, which the combat session is fixing).
+
+**Reasoning.** The three-event day fits at scale 2 on 360 x 640 and every size of the unit test (360 x 640, 390 x 844, 412 x 915, 412 x 780; three, four and five events) fits above the tray; a larger lineup on the smallest phone is small but whole, which beats being cut off.
+
 ## 2026-11-20: Fairground: medals behind corner buttons, the Prize Stall and Rules are things in the scene **[Misa]**
 
 ID: `2026-11-20-fairground-medals-behind-corner-buttons-the` · Status: current

@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { NO_ALERTS } from '../tab-alerts';
 import { homeInput } from '../workbench/home-sample';
-import { castFor } from './place-cast';
 import { placeBubbles } from './place-state';
 import { sampleSeat, sampleValley } from './signpost-sample';
 import {
@@ -9,7 +8,6 @@ import {
   fitPreview,
   packLine,
   perDayText,
-  signpostCalm,
   signpostSystemsLine,
 } from './signpost-view';
 import { trayBadge, trayStates } from './tray-state';
@@ -31,7 +29,6 @@ describe('the Signpost words', () => {
     expect(packLine(paused)).toBe('In the raid until Sunday');
     const visit = sampleValley(free, [paused]);
     expect(signpostSystemsLine(visit)).toBe('scouts are in the raid');
-    expect(signpostCalm(visit)).toBe('Scouts are in the raid');
     const both = sampleValley(free, [paused, sampleSeat('t', 'tidepools', b.id, 24)]);
     expect(signpostSystemsLine(both)).toBe('a scout out');
   });
@@ -80,21 +77,6 @@ describe('the fit preview (V-POST-4)', () => {
 });
 
 describe('the Signpost scene and the tray with scouts', () => {
-  it('scouts stand in the scene, a free seat asks for a scout, a first seat asks to be taken', () => {
-    const input = { ...base, creatures: free, dungeonTeam: null, dungeonPhase: null, waiting: [] };
-    const art = { width: 64, height: 54 };
-    const none = castFor('signpost', { ...input, visit: sampleValley(free, []) }, art, []);
-    expect(none.act).toMatchObject({ kind: 'step', label: 'Take your first seat', detail: 'free' });
-    const visit = sampleValley(free, [
-      sampleSeat('s1', 'tidepools', a.id, 10),
-      sampleSeat('s2', 'tidepools', null, 0),
-    ]);
-    const cast = castFor('signpost', { ...input, visit }, art, []);
-    expect(cast.stands.map((s) => s.creature.id)).toEqual([a.id]);
-    expect(cast.stands[0]?.where).toMatch(/^scouting at /);
-    expect(cast.act).toMatchObject({ kind: 'step', label: 'Post a scout' });
-  });
-
   it('a scouting creature says Scouting in the tray and carries no z', () => {
     const visit = sampleValley(free, [sampleSeat('s1', 'tidepools', a.id, 10)]);
     const input = { trips: [], jobs: null, now: 0, ...trayStates(visit) };
